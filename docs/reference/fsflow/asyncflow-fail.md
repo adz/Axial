@@ -5,11 +5,11 @@ description: API reference for AsyncFlow.fail
 
 # fail
 
-Creates a failing async flow.
+Alias for `error` that reads well in some call sites.
 
 
 ```fsharp
-let fail (error: 'error) : AsyncFlow<'env, 'error, 'value>
+let fail (failure: 'error) : AsyncFlow<'env, 'error, 'value>
 ```
 
 
@@ -18,5 +18,5 @@ let fail (error: 'error) : AsyncFlow<'env, 'error, 'value>
 ## Information
 
 - **Module**: `AsyncFlow`
-- **Source**: [source](https://github.com/adz/FsFlow/blob/main/src/FsFlow/AsyncFlow.fs#L27)
+- **Source**: [source](https://github.com/adz/FsFlow/blob/main/src/FsFlow/AsyncFlow.fs#L35)
 

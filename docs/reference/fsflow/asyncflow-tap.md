@@ -18,5 +18,5 @@ let tap (binder: 'value -> AsyncFlow<'env, 'error, unit>) (flow: AsyncFlow<'env,
 ## Information
 
 - **Module**: `AsyncFlow`
-- **Source**: [source](https://github.com/adz/FsFlow/blob/main/src/FsFlow/AsyncFlow.fs#L154)
+- **Source**: [source](https://github.com/adz/FsFlow/blob/main/src/FsFlow/AsyncFlow.fs#L173)
 

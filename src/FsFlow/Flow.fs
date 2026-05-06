@@ -16,6 +16,10 @@ module Flow =
         operation environment
 
     /// <summary>Creates a successful synchronous flow.</summary>
+    let ok (value: 'value) : Flow<'env, 'error, 'value> =
+        Flow(fun _ -> Ok value)
+
+    /// <summary>Alias for <see cref="ok" /> that reads well in some call sites.</summary>
     /// <example>
     /// <code>
     /// let flow = Flow.succeed 42
@@ -24,9 +28,9 @@ module Flow =
     /// </code>
     /// </example>
     let succeed (value: 'value) : Flow<'env, 'error, 'value> =
-        Flow(fun _ -> Ok value)
+        ok value
 
-    /// <summary>Alias for <see cref="succeed" /> that reads well in some call sites.</summary>
+    /// <summary>Alias for <see cref="ok" /> that reads well in some call sites.</summary>
     /// <example>
     /// <code>
     /// let flow = Flow.value "constant"
@@ -36,6 +40,10 @@ module Flow =
         succeed item
 
     /// <summary>Creates a failing synchronous flow.</summary>
+    let error (failure: 'error) : Flow<'env, 'error, 'value> =
+        Flow(fun _ -> Error failure)
+
+    /// <summary>Alias for <see cref="error" /> that reads well in some call sites.</summary>
     /// <example>
     /// <code>
     /// let flow = Flow.fail "error"
@@ -43,8 +51,8 @@ module Flow =
     /// // result = Error "error"
     /// </code>
     /// </example>
-    let fail (error: 'error) : Flow<'env, 'error, 'value> =
-        Flow(fun _ -> Error error)
+    let fail (failure: 'error) : Flow<'env, 'error, 'value> =
+        error failure
 
     /// <summary>Lifts a <see cref="T:System.Result`2" /> into a synchronous flow.</summary>
     /// <example>
@@ -131,6 +139,10 @@ module Flow =
         : Flow<'env, 'error, 'next> =
         Flow(InternalCombinatorCore.mapWith (fun mapOutcome outcome -> mapOutcome outcome) mapper (fun environment -> run environment flow))
 
+    /// <summary>Maps the successful value of a synchronous flow to <c>unit</c>.</summary>
+    let ignore (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, unit> =
+        map (fun _ -> ()) flow
+
     /// <summary>Sequences a synchronous continuation after a successful value.</summary>
     /// <remarks>
     /// This is the "flatmap" operation for <see cref="T:FsFlow.Flow`3" />. It allows for dependent
@@ -153,6 +165,13 @@ module Flow =
                 Error
                 (fun environment -> run environment flow)
         )
+
+    /// <summary>Sequences a synchronous continuation after a successful value.</summary>
+    let inline (>>=)
+        (flow: Flow<'env, 'error, 'value>)
+        (binder: 'value -> Flow<'env, 'error, 'next>)
+        : Flow<'env, 'error, 'next> =
+        bind binder flow
 
     /// <summary>Runs a synchronous side effect on success and preserves the original value.</summary>
     /// <remarks>
@@ -232,14 +251,22 @@ module Flow =
                 Error(handler error))
 
     /// <summary>Falls back to another flow when the source flow fails.</summary>
-    let orElse
-        (fallback: Flow<'env, 'error, 'value>)
+    /// <summary>Computes a fallback flow from the source error when the source flow fails.</summary>
+    let orElseWith
+        (fallback: 'error -> Flow<'env, 'error, 'value>)
         (flow: Flow<'env, 'error, 'value>)
         : Flow<'env, 'error, 'value> =
         Flow(fun environment ->
             match run environment flow with
             | Ok value -> Ok value
-            | Error _ -> run environment fallback)
+            | Error error -> run environment (fallback error))
+
+    /// <summary>Falls back to another flow when the source flow fails.</summary>
+    let orElse
+        (fallback: Flow<'env, 'error, 'value>)
+        (flow: Flow<'env, 'error, 'value>)
+        : Flow<'env, 'error, 'value> =
+        orElseWith (fun _ -> fallback) flow
 
     /// <summary>Combines two flows into a tuple of their values.</summary>
     let zip
@@ -260,6 +287,38 @@ module Flow =
         : Flow<'env, 'error, 'value> =
         zip left right
         |> map (fun (leftValue, rightValue) -> mapper leftValue rightValue)
+
+    /// <summary>Applies a flow-wrapped function to a flow-wrapped value.</summary>
+    let apply
+        (flow: Flow<'env, 'error, 'value -> 'next>)
+        (value: Flow<'env, 'error, 'value>)
+        : Flow<'env, 'error, 'next> =
+        map2 (fun mapper input -> mapper input) flow value
+
+    /// <summary>Combines three flows with a mapping function.</summary>
+    let map3
+        (mapper: 'left -> 'middle -> 'right -> 'value)
+        (left: Flow<'env, 'error, 'left>)
+        (middle: Flow<'env, 'error, 'middle>)
+        (right: Flow<'env, 'error, 'right>)
+        : Flow<'env, 'error, 'value> =
+        apply
+            (map2 (fun leftValue middleValue -> fun rightValue -> mapper leftValue middleValue rightValue) left middle)
+            right
+
+    /// <summary>Maps the successful value of a synchronous flow.</summary>
+    let inline (<!>)
+        (mapper: 'value -> 'next)
+        (flow: Flow<'env, 'error, 'value>)
+        : Flow<'env, 'error, 'next> =
+        map mapper flow
+
+    /// <summary>Applies a flow-wrapped function to a flow-wrapped value.</summary>
+    let inline (<*>)
+        (flow: Flow<'env, 'error, 'value -> 'next>)
+        (value: Flow<'env, 'error, 'value>)
+        : Flow<'env, 'error, 'next> =
+        apply flow value
 
     /// <summary>Transforms the environment before running the flow.</summary>
     let localEnv

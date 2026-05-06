@@ -18,5 +18,5 @@ let zip (left: AsyncFlow<'env, 'error, 'left>) (right: AsyncFlow<'env, 'error, '
 ## Information
 
 - **Module**: `AsyncFlow`
-- **Source**: [source](https://github.com/adz/FsFlow/blob/main/src/FsFlow/AsyncFlow.fs#L227)
+- **Source**: [source](https://github.com/adz/FsFlow/blob/main/src/FsFlow/AsyncFlow.fs#L254)
 

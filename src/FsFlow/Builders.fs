@@ -5,10 +5,10 @@ open System.Threading.Tasks
 
 type FlowBuilder() =
     member _.Return(value: 'value) : Flow<'env, 'error, 'value> =
-        Flow.succeed value
+        Flow.ok value
 
     member _.Yield(value: obj) : Flow<'env, 'error, 'value> =
-        Flow.succeed (unbox<'value> value)
+        Flow.ok (unbox<'value> value)
 
     member _.Yield(project: 'env -> 'value) : Flow<'env, 'error, 'value> =
         Flow.read project
@@ -33,7 +33,7 @@ type FlowBuilder() =
         |> Flow.fromResult
 
     member _.Zero() : Flow<'env, 'error, unit> =
-        Flow.succeed ()
+        Flow.ok ()
 
     member _.Bind
         (
@@ -142,10 +142,10 @@ type FlowBuilder() =
 /// <exclude/>
 type AsyncFlowBuilder() =
     member _.Return(value: 'value) : AsyncFlow<'env, 'error, 'value> =
-        AsyncFlow.succeed value
+        AsyncFlow.ok value
 
     member _.Yield(value: obj) : AsyncFlow<'env, 'error, 'value> =
-        AsyncFlow.succeed (unbox<'value> value)
+        AsyncFlow.ok (unbox<'value> value)
 
     member _.Yield(project: 'env -> 'value) : AsyncFlow<'env, 'error, 'value> =
         AsyncFlow.read project
@@ -189,7 +189,7 @@ type AsyncFlowBuilder() =
         |> AsyncFlow.fromResult
 
     member _.Zero() : AsyncFlow<'env, 'error, unit> =
-        AsyncFlow.succeed ()
+        AsyncFlow.ok ()
 
     member _.Bind
         (

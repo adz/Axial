@@ -18,5 +18,5 @@ let orElse (fallback: Flow<'env, 'error, 'value>) (flow: Flow<'env, 'error, 'val
 ## Information
 
 - **Module**: `Flow`
-- **Source**: [source](https://github.com/adz/FsFlow/blob/main/src/FsFlow/Flow.fs#L235)
+- **Source**: [source](https://github.com/adz/FsFlow/blob/main/src/FsFlow/Flow.fs#L265)
 

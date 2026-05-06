@@ -18,5 +18,5 @@ let inline provideLayer (layer: ^layer) (flow: ^flow) : ^flow when ^flow : (stat
 ## Information
 
 - **Module**: `Layer`
-- **Source**: [source](https://github.com/adz/FsFlow/blob/main/src/FsFlow/TaskFlow.fs#L789)
+- **Source**: [source](https://github.com/adz/FsFlow/blob/main/src/FsFlow/TaskFlow.fs#L848)
 

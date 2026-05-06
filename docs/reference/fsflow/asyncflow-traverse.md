@@ -18,5 +18,5 @@ let traverse (mapping: 'value -> AsyncFlow<'env, 'error, 'next>) (values: seq<'v
 ## Information
 
 - **Module**: `AsyncFlow`
-- **Source**: [source](https://github.com/adz/FsFlow/blob/main/src/FsFlow/AsyncFlow.fs#L272)
+- **Source**: [source](https://github.com/adz/FsFlow/blob/main/src/FsFlow/AsyncFlow.fs#L331)
 

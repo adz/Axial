@@ -5,11 +5,11 @@ description: API reference for Flow.fail
 
 # fail
 
-Creates a failing synchronous flow.
+Alias for `error` that reads well in some call sites.
 
 
 ```fsharp
-let fail (error: 'error) : Flow<'env, 'error, 'value>
+let fail (failure: 'error) : Flow<'env, 'error, 'value>
 ```
 
 
@@ -18,7 +18,7 @@ let fail (error: 'error) : Flow<'env, 'error, 'value>
 ## Information
 
 - **Module**: `Flow`
-- **Source**: [source](https://github.com/adz/FsFlow/blob/main/src/FsFlow/Flow.fs#L46)
+- **Source**: [source](https://github.com/adz/FsFlow/blob/main/src/FsFlow/Flow.fs#L54)
 
 ## Examples
 

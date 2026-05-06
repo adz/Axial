@@ -93,6 +93,137 @@ module WorkflowTests =
             test <@ asyncResult = Ok 19 @>
 
         [<Fact>]
+        let ``flow families expose normalized constructors operators and fallback helpers`` () =
+            let syncOk = Flow.ok 41
+            let syncAlias = Flow.succeed 41
+            let syncError = Flow.error "missing"
+            let syncErrorAlias = Flow.fail "missing"
+
+            let syncMapped =
+                Flow.(<!>) ((+) 1) syncOk
+                |> Flow.run ()
+
+            let syncApplied =
+                Flow.(<*>) (Flow.ok ((+) 1)) syncOk
+                |> Flow.run ()
+
+            let syncMapped3 =
+                Flow.map3 (fun left middle right -> left + middle + right) (Flow.ok 1) (Flow.ok 2) (Flow.ok 3)
+                |> Flow.run ()
+
+            let syncIgnored =
+                Flow.ignore syncOk
+                |> Flow.run ()
+
+            let syncBound =
+                Flow.(>>=) syncOk (fun value -> Flow.ok (value + 1))
+                |> Flow.run ()
+
+            let syncRecovered =
+                Flow.orElseWith (fun (error: string) -> Flow.ok error.Length) syncError
+                |> Flow.run ()
+
+            let asyncOk = AsyncFlow.ok 41
+            let asyncAlias = AsyncFlow.succeed 41
+            let asyncError = AsyncFlow.error "missing"
+            let asyncErrorAlias = AsyncFlow.fail "missing"
+
+            let asyncMapped =
+                AsyncFlow.(<!>) ((+) 1) asyncOk
+                |> AsyncFlow.run ()
+                |> Async.RunSynchronously
+
+            let asyncApplied =
+                AsyncFlow.(<*>) (AsyncFlow.ok ((+) 1)) asyncOk
+                |> AsyncFlow.run ()
+                |> Async.RunSynchronously
+
+            let asyncMapped3 =
+                AsyncFlow.map3 (fun left middle right -> left + middle + right) (AsyncFlow.ok 1) (AsyncFlow.ok 2) (AsyncFlow.ok 3)
+                |> AsyncFlow.run ()
+                |> Async.RunSynchronously
+
+            let asyncIgnored =
+                AsyncFlow.ignore asyncOk
+                |> AsyncFlow.run ()
+                |> Async.RunSynchronously
+
+            let asyncBound =
+                AsyncFlow.(>>=) asyncOk (fun value -> AsyncFlow.ok (value + 1))
+                |> AsyncFlow.run ()
+                |> Async.RunSynchronously
+
+            let asyncRecovered =
+                AsyncFlow.orElseWith (fun (error: string) -> AsyncFlow.ok error.Length) asyncError
+                |> AsyncFlow.run ()
+                |> Async.RunSynchronously
+
+            let asyncOkResult = AsyncFlow.run () asyncOk |> Async.RunSynchronously
+            let asyncAliasResult = AsyncFlow.run () asyncAlias |> Async.RunSynchronously
+            let asyncErrorResult = AsyncFlow.run () asyncError |> Async.RunSynchronously
+            let asyncErrorAliasResult = AsyncFlow.run () asyncErrorAlias |> Async.RunSynchronously
+
+            let taskOk = TaskFlow.ok 41
+            let taskAlias = TaskFlow.succeed 41
+            let taskError = TaskFlow.error "missing"
+            let taskErrorAlias = TaskFlow.fail "missing"
+
+            let taskMapped =
+                TaskFlow.(<!>) ((+) 1) taskOk
+                |> TaskFlow.run () CancellationToken.None
+                |> fun task -> task.GetAwaiter().GetResult()
+
+            let taskApplied =
+                TaskFlow.(<*>) (TaskFlow.ok ((+) 1)) taskOk
+                |> TaskFlow.run () CancellationToken.None
+                |> fun task -> task.GetAwaiter().GetResult()
+
+            let taskMapped3 =
+                TaskFlow.map3 (fun left middle right -> left + middle + right) (TaskFlow.ok 1) (TaskFlow.ok 2) (TaskFlow.ok 3)
+                |> TaskFlow.run () CancellationToken.None
+                |> fun task -> task.GetAwaiter().GetResult()
+
+            let taskIgnored =
+                TaskFlow.ignore taskOk
+                |> TaskFlow.run () CancellationToken.None
+                |> fun task -> task.GetAwaiter().GetResult()
+
+            let taskBound =
+                TaskFlow.(>>=) taskOk (fun value -> TaskFlow.ok (value + 1))
+                |> TaskFlow.run () CancellationToken.None
+                |> fun task -> task.GetAwaiter().GetResult()
+
+            let taskRecovered =
+                TaskFlow.orElseWith (fun (error: string) -> TaskFlow.ok error.Length) taskError
+                |> TaskFlow.run () CancellationToken.None
+                |> fun task -> task.GetAwaiter().GetResult()
+
+            test <@ Flow.run () syncOk = Flow.run () syncAlias @>
+            test <@ Flow.run () syncError = Flow.run () syncErrorAlias @>
+            test <@ syncMapped = Ok 42 @>
+            test <@ syncApplied = Ok 42 @>
+            test <@ syncMapped3 = Ok 6 @>
+            test <@ syncIgnored = Ok () @>
+            test <@ syncBound = Ok 42 @>
+            test <@ syncRecovered = Ok 7 @>
+            test <@ asyncOkResult = asyncAliasResult @>
+            test <@ asyncErrorResult = asyncErrorAliasResult @>
+            test <@ asyncMapped = Ok 42 @>
+            test <@ asyncApplied = Ok 42 @>
+            test <@ asyncMapped3 = Ok 6 @>
+            test <@ asyncIgnored = Ok () @>
+            test <@ asyncBound = Ok 42 @>
+            test <@ asyncRecovered = Ok 7 @>
+            test <@ (TaskFlow.run () CancellationToken.None taskOk |> fun task -> task.GetAwaiter().GetResult()) = (TaskFlow.run () CancellationToken.None taskAlias |> fun task -> task.GetAwaiter().GetResult()) @>
+            test <@ (TaskFlow.run () CancellationToken.None taskError |> fun task -> task.GetAwaiter().GetResult()) = (TaskFlow.run () CancellationToken.None taskErrorAlias |> fun task -> task.GetAwaiter().GetResult()) @>
+            test <@ taskMapped = Ok 42 @>
+            test <@ taskApplied = Ok 42 @>
+            test <@ taskMapped3 = Ok 6 @>
+            test <@ taskIgnored = Ok () @>
+            test <@ taskBound = Ok 42 @>
+            test <@ taskRecovered = Ok 7 @>
+
+        [<Fact>]
         let ``Flow composition helpers cover error tapping fallback and pairing`` () =
             let tappedErrors = ResizeArray<string>()
 

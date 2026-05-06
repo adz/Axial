@@ -18,5 +18,5 @@ let map (mapper: 'value -> 'next) (flow: AsyncFlow<'env, 'error, 'value>) : Asyn
 ## Information
 
 - **Module**: `AsyncFlow`
-- **Source**: [source](https://github.com/adz/FsFlow/blob/main/src/FsFlow/AsyncFlow.fs#L118)
+- **Source**: [source](https://github.com/adz/FsFlow/blob/main/src/FsFlow/AsyncFlow.fs#L126)
 

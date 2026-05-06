@@ -18,5 +18,5 @@ let fromValueOption (error: 'error) (value: 'value voption) : AsyncFlow<'env, 'e
 ## Information
 
 - **Module**: `AsyncFlow`
-- **Source**: [source](https://github.com/adz/FsFlow/blob/main/src/FsFlow/AsyncFlow.fs#L41)
+- **Source**: [source](https://github.com/adz/FsFlow/blob/main/src/FsFlow/AsyncFlow.fs#L49)
 

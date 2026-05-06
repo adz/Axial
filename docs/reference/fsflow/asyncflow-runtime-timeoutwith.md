@@ -18,5 +18,5 @@ let timeoutWith (after: TimeSpan) (fallback: unit -> AsyncFlow<'env, 'error, 'va
 ## Information
 
 - **Module**: `AsyncFlow.Runtime`
-- **Source**: [source](https://github.com/adz/FsFlow/blob/main/src/FsFlow/AsyncFlow.fs#L500)
+- **Source**: [source](https://github.com/adz/FsFlow/blob/main/src/FsFlow/AsyncFlow.fs#L559)
 

@@ -18,5 +18,5 @@ let catch (handler: exn -> 'error) (flow: AsyncFlow<'env, 'error, 'value>) : Asy
 ## Information
 
 - **Module**: `AsyncFlow`
-- **Source**: [source](https://github.com/adz/FsFlow/blob/main/src/FsFlow/AsyncFlow.fs#L200)
+- **Source**: [source](https://github.com/adz/FsFlow/blob/main/src/FsFlow/AsyncFlow.fs#L219)
 

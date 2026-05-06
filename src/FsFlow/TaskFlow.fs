@@ -137,18 +137,26 @@ module TaskFlow =
     /// <summary>Creates a successful task flow.</summary>
     /// <param name="value">The success value of type <c>'value</c>.</param>
     /// <returns>A <see cref="T:FsFlow.TaskFlow`3" /> that always succeeds.</returns>
-    let succeed (value: 'value) : TaskFlow<'env, 'error, 'value> =
+    let ok (value: 'value) : TaskFlow<'env, 'error, 'value> =
         TaskFlow(fun _ _ -> Task.FromResult(Ok value))
 
-    /// <summary>Alias for <see cref="succeed" /> that reads well in some call sites.</summary>
+    /// <summary>Alias for <see cref="ok" /> that reads well in some call sites.</summary>
+    let succeed (value: 'value) : TaskFlow<'env, 'error, 'value> =
+        ok value
+
+    /// <summary>Alias for <see cref="ok" /> that reads well in some call sites.</summary>
     let value (item: 'value) : TaskFlow<'env, 'error, 'value> =
         succeed item
 
     /// <summary>Creates a failing task flow.</summary>
     /// <param name="error">The failure value of type <c>'error</c>.</param>
     /// <returns>A <see cref="T:FsFlow.TaskFlow`3" /> that always fails.</returns>
-    let fail (error: 'error) : TaskFlow<'env, 'error, 'value> =
-        TaskFlow(fun _ _ -> Task.FromResult(Error error))
+    let error (failure: 'error) : TaskFlow<'env, 'error, 'value> =
+        TaskFlow(fun _ _ -> Task.FromResult(Error failure))
+
+    /// <summary>Alias for <see cref="error" /> that reads well in some call sites.</summary>
+    let fail (failure: 'error) : TaskFlow<'env, 'error, 'value> =
+        error failure
 
     /// <summary>Lifts a standard <see cref="T:System.Result`2" /> into a task flow.</summary>
     /// <param name="result">The result to lift.</param>
@@ -307,6 +315,10 @@ module TaskFlow =
                 (fun (environment, cancellationToken) -> run environment cancellationToken flow)
                 (environment, cancellationToken))
 
+    /// <summary>Maps the successful value of a task flow to <c>unit</c>.</summary>
+    let ignore (flow: TaskFlow<'env, 'error, 'value>) : TaskFlow<'env, 'error, unit> =
+        map (fun _ -> ()) flow
+
     /// <summary>Sequences a task-flow-producing continuation after a successful value.</summary>
     /// <remarks>
     /// This is the "flatmap" operation for <see cref="T:FsFlow.TaskFlow`3" />. It allows for dependent
@@ -333,6 +345,13 @@ module TaskFlow =
                 (Error >> Task.FromResult)
                 (fun (environment, cancellationToken) -> run environment cancellationToken flow)
                 (environment, cancellationToken))
+
+    /// <summary>Sequences a task-flow-producing continuation after a successful value.</summary>
+    let inline (>>=)
+        (flow: TaskFlow<'env, 'error, 'value>)
+        (binder: 'value -> TaskFlow<'env, 'error, 'next>)
+        : TaskFlow<'env, 'error, 'next> =
+        bind binder flow
 
     /// <summary>Runs a task-based side effect on success and preserves the original value.</summary>
     /// <param name="binder">A function that produces a side-effect task flow from the successful value.</param>
@@ -409,8 +428,9 @@ module TaskFlow =
     /// <param name="fallback">The fallback flow of type <see cref="T:FsFlow.TaskFlow`3" />.</param>
     /// <param name="flow">The primary task flow.</param>
     /// <returns>A task flow that tries the primary first, then the fallback.</returns>
-    let orElse
-        (fallback: TaskFlow<'env, 'error, 'value>)
+    /// <summary>Computes a fallback task flow from the source error when the source flow fails.</summary>
+    let orElseWith
+        (fallback: 'error -> TaskFlow<'env, 'error, 'value>)
         (flow: TaskFlow<'env, 'error, 'value>)
         : TaskFlow<'env, 'error, 'value> =
         TaskFlow(fun environment cancellationToken ->
@@ -419,8 +439,15 @@ module TaskFlow =
 
                 match result with
                 | Ok value -> return Ok value
-                | Error _ -> return! run environment cancellationToken fallback
+                | Error error -> return! run environment cancellationToken (fallback error)
             })
+
+    /// <summary>Falls back to another task flow when the source flow fails.</summary>
+    let orElse
+        (fallback: TaskFlow<'env, 'error, 'value>)
+        (flow: TaskFlow<'env, 'error, 'value>)
+        : TaskFlow<'env, 'error, 'value> =
+        orElseWith (fun _ -> fallback) flow
 
     /// <summary>Combines two task flows into a tuple of their values.</summary>
     /// <param name="left">The first task flow.</param>
@@ -448,6 +475,38 @@ module TaskFlow =
         : TaskFlow<'env, 'error, 'value> =
         zip left right
         |> map (fun (leftValue, rightValue) -> mapper leftValue rightValue)
+
+    /// <summary>Applies a task-flow-wrapped function to a task-flow-wrapped value.</summary>
+    let apply
+        (flow: TaskFlow<'env, 'error, 'value -> 'next>)
+        (value: TaskFlow<'env, 'error, 'value>)
+        : TaskFlow<'env, 'error, 'next> =
+        map2 (fun mapper input -> mapper input) flow value
+
+    /// <summary>Combines three task flows with a mapping function.</summary>
+    let map3
+        (mapper: 'left -> 'middle -> 'right -> 'value)
+        (left: TaskFlow<'env, 'error, 'left>)
+        (middle: TaskFlow<'env, 'error, 'middle>)
+        (right: TaskFlow<'env, 'error, 'right>)
+        : TaskFlow<'env, 'error, 'value> =
+        apply
+            (map2 (fun leftValue middleValue -> fun rightValue -> mapper leftValue middleValue rightValue) left middle)
+            right
+
+    /// <summary>Maps the successful value of a task flow.</summary>
+    let inline (<!>)
+        (mapper: 'value -> 'next)
+        (flow: TaskFlow<'env, 'error, 'value>)
+        : TaskFlow<'env, 'error, 'next> =
+        map mapper flow
+
+    /// <summary>Applies a task-flow-wrapped function to a task-flow-wrapped value.</summary>
+    let inline (<*>)
+        (flow: TaskFlow<'env, 'error, 'value -> 'next>)
+        (value: TaskFlow<'env, 'error, 'value>)
+        : TaskFlow<'env, 'error, 'next> =
+        apply flow value
 
     /// <summary>Transforms the environment before running a task flow.</summary>
     /// <param name="mapping">A function of type <c>'outerEnvironment -> 'innerEnvironment</c>.</param>
@@ -794,10 +853,10 @@ module Layer =
 /// <exclude/>
 type TaskFlowBuilder() =
     member _.Return(value: 'value) : TaskFlow<'env, 'error, 'value> =
-        TaskFlow.succeed value
+        TaskFlow.ok value
 
     member _.Yield(value: obj) : TaskFlow<'env, 'error, 'value> =
-        TaskFlow.succeed (unbox<'value> value)
+        TaskFlow.ok (unbox<'value> value)
 
     member _.Yield(project: 'env -> 'value) : TaskFlow<'env, 'error, 'value> =
         TaskFlow.read project
@@ -838,16 +897,16 @@ type TaskFlowBuilder() =
 
     member _.ReturnFrom(option: 'value option) : TaskFlow<'env, unit, 'value> =
         match option with
-        | Some value -> TaskFlow.succeed value
-        | None -> TaskFlow.fail ()
+        | Some value -> TaskFlow.ok value
+        | None -> TaskFlow.error ()
 
     member _.ReturnFrom(option: 'value voption) : TaskFlow<'env, unit, 'value> =
         match option with
-        | ValueSome value -> TaskFlow.succeed value
-        | ValueNone -> TaskFlow.fail ()
+        | ValueSome value -> TaskFlow.ok value
+        | ValueNone -> TaskFlow.error ()
 
     member _.Zero() : TaskFlow<'env, 'error, unit> =
-        TaskFlow.succeed ()
+        TaskFlow.ok ()
 
     member _.Bind
         (
@@ -935,7 +994,7 @@ type TaskFlowBuilder() =
         ) : TaskFlow<'env, unit, 'next> =
         match option with
         | Some value -> binder value
-        | None -> TaskFlow.fail ()
+        | None -> TaskFlow.error ()
 
     member _.Bind
         (
@@ -944,7 +1003,7 @@ type TaskFlowBuilder() =
         ) : TaskFlow<'env, unit, 'next> =
         match option with
         | ValueSome value -> binder value
-        | ValueNone -> TaskFlow.fail ()
+        | ValueNone -> TaskFlow.error ()
 
     member _.Delay(factory: unit -> TaskFlow<'env, 'error, 'value>) : TaskFlow<'env, 'error, 'value> =
         TaskFlow.delay factory

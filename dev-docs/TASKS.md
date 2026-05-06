@@ -17,7 +17,7 @@ The numbered items below are intentionally linear so the ralph loop can move thr
    add `>>=` if we want an explicit monadic shortcut alongside `map2` / `apply` / `and!`; keep
    `map`, `bind`, `mapError`, `toResult`, `fromResult`, `sequence`, `collect`, `merge`,
    `traverseIndexed`, `at`, `key`, `index`, and `name` here.
-3. [ ] Normalize `Flow`, `AsyncFlow`, and `TaskFlow`:
+3. [x] Normalize `Flow`, `AsyncFlow`, and `TaskFlow`:
    `ok` and `error` become the primary constructors; `succeed` and `fail` stay as aliases; add
    `map2`, `map3`, `apply`, `ignore`, `orElse`, and `orElseWith` on each family; add `<!>` for
    `map`, `>>=` for `bind`, and `<*>` only where it reads naturally beside `map2`; keep the family

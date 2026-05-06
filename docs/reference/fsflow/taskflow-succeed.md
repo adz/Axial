@@ -5,7 +5,7 @@ description: API reference for TaskFlow.succeed
 
 # succeed
 
-Creates a successful task flow.
+Alias for `ok` that reads well in some call sites.
 
 
 ```fsharp
@@ -15,16 +15,8 @@ let succeed (value: 'value) : TaskFlow<'env, 'error, 'value>
 
 
 
-## Parameters
-
-- `value`: The success value of type `'value`.
-
-## Returns
-
-A `TaskFlow` that always succeeds.
-
 ## Information
 
 - **Module**: `TaskFlow`
-- **Source**: [source](https://github.com/adz/FsFlow/blob/main/src/FsFlow/TaskFlow.fs#L140)
+- **Source**: [source](https://github.com/adz/FsFlow/blob/main/src/FsFlow/TaskFlow.fs#L144)
 

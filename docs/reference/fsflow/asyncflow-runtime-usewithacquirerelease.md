@@ -24,5 +24,5 @@ let useWithAcquireRelease (acquire: AsyncFlow<'env, 'error, 'resource>) (release
 ## Information
 
 - **Module**: `AsyncFlow.Runtime`
-- **Source**: [source](https://github.com/adz/FsFlow/blob/main/src/FsFlow/AsyncFlow.fs#L414)
+- **Source**: [source](https://github.com/adz/FsFlow/blob/main/src/FsFlow/AsyncFlow.fs#L473)
 

@@ -18,5 +18,5 @@ let timeoutToOk (after: TimeSpan) (value: 'value) (flow: AsyncFlow<'env, 'error,
 ## Information
 
 - **Module**: `AsyncFlow.Runtime`
-- **Source**: [source](https://github.com/adz/FsFlow/blob/main/src/FsFlow/AsyncFlow.fs#L466)
+- **Source**: [source](https://github.com/adz/FsFlow/blob/main/src/FsFlow/AsyncFlow.fs#L525)
 
