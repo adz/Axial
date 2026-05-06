@@ -1,15 +1,19 @@
 # Functional Architecture, Recast with FsFlow
 
-Mark Seemann has a useful article about refactoring a registration workflow into an impure/pure/impure sandwich. The shape is the important part, not the exact mechanics: keep the decision in the middle pure, keep the side effects at the edges, and make the composition root explicit.
+Mark Seemann's impure/pure/impure sandwich is still the right shape for a workflow that mixes decisions and side effects. The useful part is not the specific technique around it. The useful part is the structure:
 
-This draft takes that same pathway, but limits the toolset to FsFlow. The point is not to introduce a new architecture library. The point is to show that FsFlow already gives you the pieces you need:
+- keep the edge effects at the edges
+- keep the decision in the middle pure
+- make the composition root explicit
 
-- `Check` for pure predicate checks
+FsFlow already gives you the vocabulary for that shape without forcing a second result library or a custom helper world.
+
+- `Check` for pure predicates
 - `result {}` for fail-fast composition over standard `FSharp.Core.Result`
 - `Guard` for binding check-like or error-bearing sources directly in a computation expression
 - `AsyncFlow` for the impure edges
 
-The result is still an impure/pure/impure sandwich, but the sandwich is more explicit about where each concern lives.
+The result is still the same sandwich, but FsFlow makes each layer more explicit.
 
 ## The Workflow
 
@@ -20,7 +24,7 @@ We are modelling a two-factor registration flow:
 3. If the proof is valid, complete the registration.
 4. If the proof is invalid, create a new proof and ask again.
 
-The basic domain types can stay small:
+The domain types can stay small:
 
 ```fsharp
 open System
@@ -45,16 +49,13 @@ type RegistrationError =
     | CompletionFailed
 ```
 
-The important detail is that `RegistrationError` is a plain domain error type. FsFlow does not require a special error wrapper.
+The important detail is that `RegistrationError` is just a domain error type. FsFlow does not require a special wrapper.
 
-## Start With Plain Result
+## Start With `Check`
 
-The first place FsFlow earns its keep is not the workflow itself. It is the validation leading into the workflow.
+The first place FsFlow helps is not the workflow itself. It is the validation leading into the workflow.
 
-FsFlow should not replace `FSharp.Core.Result`. That is the default result story.
-Instead, `result {}` gives you a computation expression that composes ordinary `Ok` and `Error` values in a readable way.
-
-That means you can keep `Check` as the pure predicate layer:
+`Check` is the pure predicate layer. It returns ordinary `Result<'value, unit>` values, which means it stays small and easy to compose.
 
 ```fsharp
 let requireName (name: string) : Result<string, RegistrationError> =
@@ -68,7 +69,7 @@ let requireMobile (mobile: Mobile option) : Result<Mobile, RegistrationError> =
     |> Check.orError MissingMobile
 ```
 
-If you want the middle of the workflow to stay fail-fast and explicit, you can compose the checks with `result {}`:
+If you want the middle of the workflow to stay fail-fast and explicit, `result {}` composes the ordinary `Ok` and `Error` values directly:
 
 ```fsharp
 type RegistrationCommand =
@@ -83,9 +84,44 @@ let validateCommand (command: RegistrationCommand) : Result<Registration, Regist
     }
 ```
 
-That is the central idea: `result {}` does not reinvent result handling. It just gives you a clear way to compose the standard `Result` type that FSharp.Core already provides.
+That is the main point: `result {}` does not reinvent result handling. It gives you a readable way to orchestrate the standard `Result` type that FSharp.Core already provides.
 
-## Keep the Decision Pure
+## The Same Story With Operators
+
+The operator story belongs to the same layer.
+
+- `<!>` maps over a successful result
+- `<*>` combines independent results
+- `>>=` sequences dependent steps
+
+Those names are useful because they describe the shape of the flow, not a separate abstraction. They are just different ways to say "stay in `Result`, keep going when the previous step worked, and stop when it failed."
+
+For a pure registration command, the operator form reads like this:
+
+```fsharp
+let createRegistration name mobile =
+    { Name = name; Mobile = mobile }
+
+let validateCommandWithOperators (command: RegistrationCommand) : Result<Registration, RegistrationError> =
+    createRegistration
+    <!> requireName command.Name
+    <*> requireMobile command.Mobile
+```
+
+When the second step depends on the first, `>>=` is the clearer spelling:
+
+```fsharp
+let validateNameThenMobile (command: RegistrationCommand) : Result<Registration, RegistrationError> =
+    requireName command.Name
+    >>= fun name ->
+        requireMobile command.Mobile
+        >>= fun mobile ->
+            Ok { Name = name; Mobile = mobile }
+```
+
+`result {}` is the more maintainable default for most code, but the operators explain the same fail-fast shape in a smaller notation.
+
+## Keep The Decision Pure
 
 The middle of the sandwich should be a pure function. Not `Async`, not `Task`, not `Flow`. Just a decision.
 
@@ -103,7 +139,7 @@ let decideRegistration (proofIsValid: bool) (registration: Registration) : Regis
 
 That function is the real architectural center. It is tiny on purpose. It can be unit tested without any doubles or runtime plumbing.
 
-## Put The Edges In AsyncFlow
+## Put The Edges In `AsyncFlow`
 
 The impure parts live at the edges. In FsFlow, `AsyncFlow` is the natural place for them.
 
@@ -149,15 +185,15 @@ There are three things to notice here:
 
 1. The workflow does not hide the effects.
 2. The decision is still pure.
-3. `result {}` remains a local tool for validation, not the thing that drives the whole architecture.
+3. `result {}` stays local to validation instead of becoming the thing that drives the whole architecture.
 
 That is the FsFlow version of the sandwich.
 
-## When Guard Helps
+## Where `Guard` Fits
 
-Sometimes a dependency already returns a shape that should bind directly inside the computation expression.
+`Guard` is the bindable version of the same idea. It is useful when the source already looks like a check or already carries an error.
 
-If the source is already a check-like value, `Guard.Of` keeps the source visible:
+If the source is check-shaped, `Guard.Of` keeps the source visible:
 
 ```fsharp
 let requireVerifiedMobile (mobile: Mobile option) : AsyncFlow<unit, RegistrationError, Mobile> =
@@ -182,9 +218,16 @@ let loadProof
 
 This matters because it keeps the workflow honest. You do not have to flatten everything into a custom helper module just to make the computation expression readable.
 
+`Check`, `Guard`, and `result {}` are all part of the same progression:
+
+- `Check` expresses the predicate
+- `Check.orError` attaches the domain error
+- `result {}` composes the ordinary `Result` values fail-fast
+- `Guard` lets the same shape bind directly inside the computation expression when the source already comes wrapped
+
 ## Testing The Sandwich
 
-Mark Seemann’s article uses fakes at the composition root. That is still the right testing story here.
+Mark Seemann's article uses fakes at the composition root. That is still the right testing story here.
 
 The pure middle gets direct unit tests:
 
@@ -195,7 +238,7 @@ let ``a valid proof completes registration`` () =
 
     let decision = decideRegistration true registration
 
-    decision = Complete registration |> should equal true
+    decision |> should equal (Complete registration)
 ```
 
 The composition root gets characterization tests with small fakes.
@@ -213,6 +256,7 @@ type Fake2FA() =
                     let proofId = ProofId(Guid.NewGuid())
                     proofs <- Map.add mobile (proofId, false) proofs
                     proofId
+
             return proofId
         }
 
@@ -270,7 +314,7 @@ let ``missing proof id asks for proof`` () = async {
 
     let! expectedProofId = twoFA.CreateProof (Mobile 123)
 
-    actual = ProofRequired expectedProofId |> should equal true
+    actual |> should equal (ProofRequired expectedProofId)
     db.Registrations |> should beEmpty
 }
 ```
@@ -289,13 +333,12 @@ FsFlow is at its best when it helps you avoid inventing a separate helper world 
 
 That is why the architecture here stays simple:
 
-- `Check` handles pure predicates.
-- `result {}` handles fail-fast validation over ordinary `Result`.
-- `Guard` lets source values bind directly inside a computation expression.
-- `AsyncFlow` carries the impure edges.
-- The pure middle stays pure.
+- `Check` handles pure predicates
+- `result {}` handles fail-fast validation over ordinary `Result`
+- `Guard` lets source values bind directly inside a computation expression
+- `AsyncFlow` carries the impure edges
+- the pure middle stays pure
 
 This is the useful part of the Mark Seemann style of architecture: not the particular dependency injection technique, but the separation of decisions from effects.
 
-FsFlow is a good fit for that because it keeps the abstraction surface small. You do not need to build a second result library to get the architectural win.
-
+FsFlow fits that shape because it keeps the abstraction surface small. You do not need to build a second result library to get the architectural win.

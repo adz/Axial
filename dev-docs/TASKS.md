@@ -7,7 +7,7 @@ Keep live product and architecture direction in `dev-docs/PLAN.md`.
 
 The numbered items below are intentionally linear so the ralph loop can move through them one at a time.
 
-1. [ ] Draft the blog in `dev-docs/func-arch-from-mark-seemann-as-fsflow.md`:
+1. [x] Draft the blog in `dev-docs/func-arch-from-mark-seemann-as-fsflow.md`:
    explain the impure/pure/impure sandwich with FsFlow idioms, show how `result {}` bridges plain
    `FSharp.Core.Result` without reinventing it, document the relationship to `Check` and `Guard`,
    and include the `<!>`, `<*>`, and `>>=` operators in the same story.
