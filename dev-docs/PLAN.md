@@ -8,7 +8,7 @@ This file tracks live product-shape direction and any remaining open questions.
 
 FsFlow should be framed as one model for Result-based programs in F#.
 
-Start with validation and plain `Result`, then lift the same logic into `Flow`, `AsyncFlow`, or `TaskFlow` when you need environment, async, task, cancellation, logging, or runtime concerns.
+Start with plain `FSharp.Core.Result` and `Check`, then lift the same logic into `Validation`, `Flow`, `AsyncFlow`, or `TaskFlow` when you need environment, async, task, cancellation, logging, or runtime concerns.
 
 The core progression is:
 
@@ -34,15 +34,27 @@ These items are no longer live design questions and are tracked in the decision 
 
 ## Live Direction
 
-The current focus is making the validation graph usable in real user code.
+The remaining product-shape question is how far to normalize the core combinator surface across the
+flow families without reintroducing a second helper world, while keeping plain `FSharp.Core.Result`
+as the default result story.
 
-- keep `Diagnostics<'error>` as the explicit tree-shaped graph type
-- keep `Errors` as diagnostics attached to the current node and `Children` as nested branches
-- add scoped validation helpers so users can write branch-aware validation without manually constructing `Diagnostics`
-- prefer a surface like `validate.key`, `validate.index`, and `validate.name` (or equivalent scoped helpers) that prefixes diagnostics produced by a sub-validation block
-- keep `validate {}` itself root-local so sibling failures accumulate at the current node
-- update the narrative guides and API reference to explain how branch scopes produce `Key` / `Index` / `Name` paths and how `Diagnostics.flatten` reports them
-- avoid using hand-built `Diagnostics` trees in user-facing examples except when the tree type itself is the point being documented
+- make `ok` / `error` the primary constructors across `Validation`, `Flow`, `AsyncFlow`, and
+  `TaskFlow`
+- keep `succeed` / `fail` only as aliases where those families already expose them so older code and
+  docs still read cleanly during the transition
+- add `apply`, `ignore`, and the standard infix operators where the shape fits:
+  - `Result`: `<!>`, `<*>`, `>>=`
+  - `Validation`: `<!>`, `<*>`, and `>>=` only if we want an explicit monadic shortcut in addition
+    to `map2` / `apply` / `and!`
+  - `Flow`, `AsyncFlow`, `TaskFlow`: `<!>`, `>>=`, and `<*>` only where it reads naturally beside
+    `map2`
+- normalize `orElse` and `orElseWith` across the families that support fallback
+- keep the `result {}` computation expression as the FsFlow-friendly way to work with
+  `FSharp.Core.Result` without adding a parallel helper module
+- document `result {}` carefully so it is clear how it composes with standard FSharp.Core
+  `Result` values and the `<!>`, `<*>`, and `>>=` operators
+- avoid reintroducing separate ad-hoc helper names when the same shape is already covered by the
+  existing family combinators and builders
 
 ## Done Means
 

@@ -7,8 +7,21 @@ Keep live product and architecture direction in `dev-docs/PLAN.md`.
 
 The numbered items below are intentionally linear so the ralph loop can move through them one at a time.
 
-1. [ ] Update the user-facing docs to introduce `Guard` as a central concept that evolves from `Check` / validation, including the getting started guide, semantics guide, validation/result guide, task/async interop guide, index, why-fsflow, examples, llms.txt, and any versioned docs that mirror those pages.
-2. [ ] Regenerate and verify the API reference docs so the new `Guard` surface, updated `Check` surface, and any removed tuple smart-bind references are reflected consistently in `docs/reference/fsflow` and the versioned site output.
-3. [ ] Normalize the alternate-computation APIs across all flow families so `orElse` / `orElseWith` consistently mean fallback to another result/validation/flow of the same family, returning the family type rather than raw inner results.
-4. [ ] Replace `Check`'s error-bridging naming with `Check.orError`, removing the old `Check.orElse` / `Check.orElseWith` bridge semantics from `Check` while keeping the predicate algebra intact.
-5. [ ] Sweep examples, tests, and docs for the new `Guard` / `Check.orError` / `orElse` naming so all code samples, matrices, and cross-references match the final API shape.
+1. [ ] Draft the blog in `dev-docs/func-arch-from-mark-seemann-as-fsflow.md`:
+   explain the impure/pure/impure sandwich with FsFlow idioms, show how `result {}` bridges plain
+   `FSharp.Core.Result` without reinventing it, document the relationship to `Check` and `Guard`,
+   and include the `<!>`, `<*>`, and `>>=` operators in the same story.
+2. [ ] Normalize `Validation`:
+   `ok` and `error` become the primary constructors; `succeed` and `fail` stay as aliases; add
+   `map2`, `map3`, `apply`, `ignore`, `orElse`, and `orElseWith` here; add `<!>` and `<*>`, and only
+   add `>>=` if we want an explicit monadic shortcut alongside `map2` / `apply` / `and!`; keep
+   `map`, `bind`, `mapError`, `toResult`, `fromResult`, `sequence`, `collect`, `merge`,
+   `traverseIndexed`, `at`, `key`, `index`, and `name` here.
+3. [ ] Normalize `Flow`, `AsyncFlow`, and `TaskFlow`:
+   `ok` and `error` become the primary constructors; `succeed` and `fail` stay as aliases; add
+   `map2`, `map3`, `apply`, `ignore`, `orElse`, and `orElseWith` on each family; add `<!>` for
+   `map`, `>>=` for `bind`, and `<*>` only where it reads naturally beside `map2`; keep the family
+   builders and modules aligned with the same operator story.
+4. [ ] Keep `FSharp.Core.Result` as the default result surface:
+   do not introduce a parallel FsFlow `Result` helper module; keep the docs and examples pointed at
+   standard `Ok` / `Error` usage plus `result {}` for CE-based orchestration.
