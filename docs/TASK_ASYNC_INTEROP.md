@@ -43,14 +43,14 @@ The builders already bind `Result`, `Flow`, `AsyncFlow`, `Task`, `Task<Result<_,
 The "task surface" means the `TaskFlow` builder plus the `TaskFlowBuilderExtensions` and `AsyncFlowBuilderExtensions` members in the main `FsFlow` package.
 That surface is available in .NET builds, and it is what adds `Task`, `ValueTask`, and `ColdTask` binding support.
 If you are targeting `AsyncFlow` alone, or using `FsFlow` in a Fable-only async context, those task-aware members are simply not part of the surface you rely on.
-That means normal docs examples should not reach for `TaskFlow.fromFlow` or `AsyncFlow.fromResult` inside the computation expression unless the point of the example is the bridge API itself.
+That means normal docs examples should not reach for `TaskFlow.fromFlow`, `AsyncFlow.fromResult`, or `AsyncFlow.fromAsync` inside the computation expression unless the point of the example is the bridge API itself.
 
-## Auto-Lifts At A Glance
+## Direct Binds At A Glance
 
 These are the values you can usually drop directly into `let!` in each builder.
-The option and value-option cases auto-lift only when the computation error type is `unit`.
+The option and value-option cases bind directly only when the computation error type is `unit`.
 
-| Builder | Auto-lifts directly |
+| Builder | Binds directly |
 | --- | --- |
 | `flow {}` | `Flow<'env, 'error, 'value>`, `Result<'value, 'error>`, `option<'value>` when `error = unit`, `voption<'value>` when `error = unit` |
 | `asyncFlow {}` in core `FsFlow` | `Flow<'env, 'error, 'value>`, `AsyncFlow<'env, 'error, 'value>`, `Async<'value>`, `Async<Result<'value, 'error>>`, `Result<'value, 'error>`, `option<'value>` when `error = unit`, `voption<'value>` when `error = unit` |
@@ -67,6 +67,8 @@ The sync builder binds:
 - `ValueOption<'value>` when the error type is `unit`
 
 Use `flow {}` when the body is synchronous.
+Use `<!>` for mapping a pure function over a `Result` or flow value.
+Use `<*>` only when the function is already inside the same `Result` or flow shape.
 
 ### `asyncFlow {}`
 
@@ -131,7 +133,7 @@ let computation : TaskFlow<unit, string, int> =
 
 ## When Explicit Lifting Still Matters
 
-For some types you only get the direct auto-lift when the computation error type can stay `unit`.
+For some types you only get the direct bind when the computation error type can stay `unit`.
 Use an explicit lift when you want to choose the error value yourself.
 
 For example, `option<'value>` can bind directly in a `unit`-error computation:
@@ -167,6 +169,8 @@ let typedError : Flow<unit, string, string> =
         return name
     }
 ```
+
+For applicative code, keep the distinction clear: `<!>` lifts a pure function into the same shape as the value, and `<*>` applies a function that has already been lifted.
 
 ## When To Choose `AsyncFlow`
 
