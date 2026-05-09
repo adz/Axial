@@ -1,5 +1,6 @@
 ---
-title: failIfNotNull
+title: Check.failIfNotNull
+linkTitle: failIfNotNull
 ---
 
 Returns success when the value is null.

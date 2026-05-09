@@ -1,5 +1,6 @@
 ---
-title: tap
+title: AsyncFlow.tap
+linkTitle: tap
 ---
 
 Runs an async side effect on success and preserves the original value.

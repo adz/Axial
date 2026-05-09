@@ -1,5 +1,6 @@
 ---
-title: toResult
+title: Validation.toResult
+linkTitle: toResult
 ---
 
 Converts a `Validation` into a standard `Result`.

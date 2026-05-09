@@ -1,5 +1,6 @@
 ---
-title: succeed
+title: Validation.succeed
+linkTitle: succeed
 ---
 
 Alias for `ok`.

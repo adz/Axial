@@ -1,5 +1,6 @@
 ---
-title: withEnvironment
+title: RuntimeContext.withEnvironment
+linkTitle: withEnvironment
 ---
 
 Replaces the environment half of a runtime context.

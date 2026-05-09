@@ -1,5 +1,6 @@
 ---
-title: traverseIndexed
+title: Validation.traverseIndexed
+linkTitle: traverseIndexed
 ---
 
 Maps a sequence into validations while prefixing each item with its index.

@@ -1,5 +1,6 @@
 ---
-title: ensureNotCanceled
+title: TaskFlow.Runtime.ensureNotCanceled
+linkTitle: ensureNotCanceled
 ---
 
 Returns a typed error immediately when the runtime token is already canceled.

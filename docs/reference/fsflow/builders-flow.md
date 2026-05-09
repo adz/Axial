@@ -1,13 +1,10 @@
 ---
-title: flow
+title: Builders.flow
+linkTitle: flow
 ---
 
 The sync-only `flow { }` computation expression.
 
-
-```fsharp
-let flow
-```
 
 
 ## Remarks

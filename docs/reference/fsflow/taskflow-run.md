@@ -1,5 +1,6 @@
 ---
-title: run
+title: TaskFlow.run
+linkTitle: run
 ---
 
 Executes a task flow with the provided environment and cancellation token.

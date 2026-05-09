@@ -1,5 +1,6 @@
 ---
-title: orError
+title: Check.orError
+linkTitle: orError
 ---
 
 Maps a unit error into the supplied application error value.

@@ -1,5 +1,6 @@
 ---
-title: blank
+title: Check.blank
+linkTitle: blank
 ---
 
 Returns success when the string is blank.

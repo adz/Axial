@@ -1,5 +1,6 @@
 ---
-title: runtime
+title: RuntimeContext.runtime
+linkTitle: runtime
 ---
 
 Reads the runtime half of a runtime context.

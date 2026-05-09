@@ -1,5 +1,6 @@
 ---
-title: sleep
+title: AsyncFlow.Runtime.sleep
+linkTitle: sleep
 ---
 
 Suspends the flow for the specified duration, observing cancellation.

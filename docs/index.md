@@ -18,7 +18,7 @@ Write predicate checks once. Keep fail-fast logic in <code>Result</code>, accumu
 </div>
 
 <div class="docs-home-meta">
-<a class="docs-chip" href="./docs/start/validate-and-result/">Check -> Result -> Validation</a>
+<a class="docs-chip" href="./docs/validation-results/">Check -> Result -> Validation</a>
 <a class="docs-chip" href="./docs/start/getting-started/">Flow / AsyncFlow / TaskFlow</a>
 <a class="docs-chip" href="./docs/core-model/why-fsflow/">Typed failure</a>
 <a class="docs-chip" href="./docs/core-model/env-slicing/">Explicit environment</a>

@@ -1,5 +1,6 @@
 ---
-title: fromResult
+title: TaskFlow.fromResult
+linkTitle: fromResult
 ---
 
 Lifts a standard `Result` into a task flow.

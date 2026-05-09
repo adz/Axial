@@ -1,5 +1,6 @@
 ---
-title: error
+title: Flow.error
+linkTitle: error
 ---
 
 Creates a failing synchronous flow.

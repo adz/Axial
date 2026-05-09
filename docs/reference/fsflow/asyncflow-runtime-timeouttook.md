@@ -1,5 +1,6 @@
 ---
-title: timeoutToOk
+title: AsyncFlow.Runtime.timeoutToOk
+linkTitle: timeoutToOk
 ---
 
 Wraps a flow with a timeout. If the flow does not complete within the specified duration, returns a success value.

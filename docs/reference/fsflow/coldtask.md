@@ -1,5 +1,6 @@
 ---
 title: ColdTask
+linkTitle: ColdTask
 ---
 
 Represents delayed task work that can observe a runtime cancellation token when it is started.

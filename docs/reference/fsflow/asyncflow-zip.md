@@ -1,5 +1,6 @@
 ---
-title: zip
+title: AsyncFlow.zip
+linkTitle: zip
 ---
 
 Combines two async flows into a tuple of their values.

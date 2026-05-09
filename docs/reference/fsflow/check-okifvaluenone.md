@@ -1,5 +1,6 @@
 ---
-title: okIfValueNone
+title: Check.okIfValueNone
+linkTitle: okIfValueNone
 ---
 
 Returns success when the value option is `ValueNone`.

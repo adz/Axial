@@ -1,5 +1,6 @@
 ---
-title: timeout
+title: AsyncFlow.Runtime.timeout
+linkTitle: timeout
 ---
 
 Wraps a flow with a timeout. If the flow does not complete within the specified duration, returns a typed error.

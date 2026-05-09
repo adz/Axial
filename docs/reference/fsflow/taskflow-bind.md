@@ -1,5 +1,6 @@
 ---
-title: bind
+title: TaskFlow.bind
+linkTitle: bind
 ---
 
 Sequences a task-flow-producing continuation after a successful value.

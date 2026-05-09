@@ -1,5 +1,6 @@
 ---
-title: error
+title: Validation.error
+linkTitle: error
 ---
 
 Creates a failing validation result with the provided diagnostics.

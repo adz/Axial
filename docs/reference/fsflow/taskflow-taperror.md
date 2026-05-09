@@ -1,5 +1,6 @@
 ---
-title: tapError
+title: TaskFlow.tapError
+linkTitle: tapError
 ---
 
 Runs a task-based side effect on failure and preserves the original error.

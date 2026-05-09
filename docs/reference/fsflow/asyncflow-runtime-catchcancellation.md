@@ -1,5 +1,6 @@
 ---
-title: catchCancellation
+title: AsyncFlow.Runtime.catchCancellation
+linkTitle: catchCancellation
 ---
 
 Catches `OperationCanceledException` and converts it into a typed error.

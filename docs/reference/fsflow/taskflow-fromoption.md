@@ -1,5 +1,6 @@
 ---
-title: fromOption
+title: TaskFlow.fromOption
+linkTitle: fromOption
 ---
 
 Lifts an option into a task flow with the supplied error.

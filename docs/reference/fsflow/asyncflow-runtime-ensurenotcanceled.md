@@ -1,5 +1,6 @@
 ---
-title: ensureNotCanceled
+title: AsyncFlow.Runtime.ensureNotCanceled
+linkTitle: ensureNotCanceled
 ---
 
 Checks if cancellation has been requested and returns a typed error if it has.

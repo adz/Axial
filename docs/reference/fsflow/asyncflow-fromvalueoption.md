@@ -1,5 +1,6 @@
 ---
-title: fromValueOption
+title: AsyncFlow.fromValueOption
+linkTitle: fromValueOption
 ---
 
 Lifts a value option into an async flow with the supplied error.

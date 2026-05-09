@@ -1,5 +1,6 @@
 ---
-title: retry
+title: TaskFlow.Runtime.retry
+linkTitle: retry
 ---
 
 Retries a flow according to the supplied policy.

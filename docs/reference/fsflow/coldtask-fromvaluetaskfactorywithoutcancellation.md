@@ -1,5 +1,6 @@
 ---
-title: fromValueTaskFactoryWithoutCancellation
+title: ColdTask.fromValueTaskFactoryWithoutCancellation
+linkTitle: fromValueTaskFactoryWithoutCancellation
 ---
 
 

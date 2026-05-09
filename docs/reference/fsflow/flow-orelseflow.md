@@ -1,5 +1,6 @@
 ---
-title: orElseFlow
+title: Flow.orElseFlow
+linkTitle: orElseFlow
 ---
 
 Turns a pure validation result into a synchronous flow with environment-provided failure.

@@ -1,5 +1,6 @@
 ---
-title: apply
+title: Validation.apply
+linkTitle: apply
 ---
 
 Applies a validation-wrapped function to a validation-wrapped value.

@@ -1,5 +1,6 @@
 ---
-title: map2
+title: AsyncFlow.map2
+linkTitle: map2
 ---
 
 Combines two async flows with a mapping function.

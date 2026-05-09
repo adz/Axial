@@ -1,5 +1,6 @@
 ---
-title: log
+title: AsyncFlow.Runtime.log
+linkTitle: log
 ---
 
 Writes a log entry using the writer provided by the environment.

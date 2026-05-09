@@ -1,13 +1,10 @@
 ---
 title: Env
+linkTitle: Env
 ---
 
 Request token for binding a whole dependency inside a workflow.
 
-
-```fsharp
-type Env<'dep>
-```
 
 
 ## Remarks

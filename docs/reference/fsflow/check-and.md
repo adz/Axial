@@ -1,5 +1,6 @@
 ---
-title: and
+title: Check.and
+linkTitle: and
 ---
 
 Returns success when both checks succeed.

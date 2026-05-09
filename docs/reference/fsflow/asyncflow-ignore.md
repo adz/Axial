@@ -1,5 +1,6 @@
 ---
-title: ignore
+title: AsyncFlow.ignore
+linkTitle: ignore
 ---
 
 Maps the successful value of an async flow to `unit`.

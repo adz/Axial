@@ -1,5 +1,6 @@
 ---
-title: map
+title: Flow.map
+linkTitle: map
 ---
 
 Maps the successful value of a synchronous flow.

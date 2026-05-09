@@ -1,5 +1,6 @@
 ---
-title: mapRuntime
+title: RuntimeContext.mapRuntime
+linkTitle: mapRuntime
 ---
 
 Maps the runtime half of a runtime context.

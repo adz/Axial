@@ -1,5 +1,6 @@
 ---
 title: Diagnostics
+linkTitle: Diagnostics
 ---
 
 A mergeable validation graph that carries local errors and nested child branches.

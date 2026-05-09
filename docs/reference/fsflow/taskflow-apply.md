@@ -1,5 +1,6 @@
 ---
-title: apply
+title: TaskFlow.apply
+linkTitle: apply
 ---
 
 Applies a task-flow-wrapped function to a task-flow-wrapped value.

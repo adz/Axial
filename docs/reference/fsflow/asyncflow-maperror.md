@@ -1,5 +1,6 @@
 ---
-title: mapError
+title: AsyncFlow.mapError
+linkTitle: mapError
 ---
 
 Maps the error value of an async flow.

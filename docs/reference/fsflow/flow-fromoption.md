@@ -1,5 +1,6 @@
 ---
-title: fromOption
+title: Flow.fromOption
+linkTitle: fromOption
 ---
 
 Lifts an option into a synchronous flow with the supplied error.

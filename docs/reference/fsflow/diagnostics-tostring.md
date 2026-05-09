@@ -1,5 +1,6 @@
 ---
-title: toString
+title: Diagnostics.toString
+linkTitle: toString
 ---
 
 Renders a diagnostics graph in a YAML-like layout for display.

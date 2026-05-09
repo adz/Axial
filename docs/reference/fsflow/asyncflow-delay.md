@@ -1,5 +1,6 @@
 ---
-title: delay
+title: AsyncFlow.delay
+linkTitle: delay
 ---
 
 Defers async flow construction until execution time.

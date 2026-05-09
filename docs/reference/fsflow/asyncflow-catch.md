@@ -1,5 +1,6 @@
 ---
-title: catch
+title: AsyncFlow.catch
+linkTitle: catch
 ---
 
 Catches exceptions raised during execution and maps them to a typed error.

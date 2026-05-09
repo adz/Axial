@@ -1,5 +1,6 @@
 ---
-title: bind
+title: Flow.bind
+linkTitle: bind
 ---
 
 Sequences a synchronous continuation after a successful value.

@@ -1,5 +1,6 @@
 ---
-title: toTask
+title: TaskFlow.toTask
+linkTitle: toTask
 ---
 
 Converts a task flow into a hot `Task`.

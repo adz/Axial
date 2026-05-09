@@ -1,5 +1,6 @@
 ---
-title: okIfEmpty
+title: Check.okIfEmpty
+linkTitle: okIfEmpty
 ---
 
 Returns success when the sequence is empty.

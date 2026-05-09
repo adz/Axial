@@ -1,5 +1,6 @@
 ---
-title: sequence
+title: Validation.sequence
+linkTitle: sequence
 ---
 
 Transforms a sequence of validations into a validation of a list.

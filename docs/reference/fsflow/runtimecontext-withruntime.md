@@ -1,5 +1,6 @@
 ---
-title: withRuntime
+title: RuntimeContext.withRuntime
+linkTitle: withRuntime
 ---
 
 Replaces the runtime half of a runtime context.

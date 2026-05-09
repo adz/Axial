@@ -1,5 +1,6 @@
 ---
-title: key
+title: Validation.key
+linkTitle: key
 ---
 
 Prefixes a validation with a keyed branch.

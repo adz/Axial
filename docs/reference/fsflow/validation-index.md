@@ -1,5 +1,6 @@
 ---
-title: index
+title: Validation.index
+linkTitle: index
 ---
 
 Prefixes a validation with an indexed branch.

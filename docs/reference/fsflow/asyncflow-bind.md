@@ -1,5 +1,6 @@
 ---
-title: bind
+title: AsyncFlow.bind
+linkTitle: bind
 ---
 
 Sequences an async continuation after a successful value.

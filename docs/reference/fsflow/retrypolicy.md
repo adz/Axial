@@ -1,5 +1,6 @@
 ---
 title: RetryPolicy
+linkTitle: RetryPolicy
 ---
 
 Defines how runtime retry helpers repeat typed failures in a controlled way.

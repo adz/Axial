@@ -1,5 +1,6 @@
 ---
-title: log
+title: TaskFlow.Runtime.log
+linkTitle: log
 ---
 
 Writes a fixed log message through the environment-provided logger.

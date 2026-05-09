@@ -1,5 +1,6 @@
 ---
-title: orElse
+title: AsyncFlow.orElse
+linkTitle: orElse
 ---
 
 Falls back to another async flow when the source flow fails.

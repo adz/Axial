@@ -1,5 +1,6 @@
 ---
-title: timeoutToError
+title: AsyncFlow.Runtime.timeoutToError
+linkTitle: timeoutToError
 ---
 
 Transitions to a failure value on timeout.

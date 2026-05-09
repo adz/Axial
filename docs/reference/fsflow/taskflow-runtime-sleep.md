@@ -1,5 +1,6 @@
 ---
-title: sleep
+title: TaskFlow.Runtime.sleep
+linkTitle: sleep
 ---
 
 Suspends the flow for the specified duration while observing cancellation.

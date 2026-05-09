@@ -1,5 +1,6 @@
 ---
-title: traverse
+title: TaskFlow.traverse
+linkTitle: traverse
 ---
 
 Transforms a sequence of values into a task flow and stops at the first failure.

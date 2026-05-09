@@ -1,5 +1,6 @@
 ---
 title: LogLevel
+linkTitle: LogLevel
 ---
 
 Log levels used by runtime logging helpers and environment-provided logging functions.

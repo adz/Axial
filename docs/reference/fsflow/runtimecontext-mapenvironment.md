@@ -1,5 +1,6 @@
 ---
-title: mapEnvironment
+title: RuntimeContext.mapEnvironment
+linkTitle: mapEnvironment
 ---
 
 Maps the application environment half of a runtime context.

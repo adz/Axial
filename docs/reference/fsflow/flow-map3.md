@@ -1,5 +1,6 @@
 ---
-title: map3
+title: Flow.map3
+linkTitle: map3
 ---
 
 Combines three flows with a mapping function.

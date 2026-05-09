@@ -1,5 +1,6 @@
 ---
-title: error
+title: AsyncFlow.error
+linkTitle: error
 ---
 
 Creates a failing async flow.

@@ -1,5 +1,6 @@
 ---
 title: Needs
+linkTitle: Needs
 ---
 
 Describes the capability contract for a single dependency.

@@ -1,13 +1,10 @@
 ---
-title: validate
+title: Builders.validate
+linkTitle: validate
 ---
 
 The accumulating `validate { }` computation expression.
 
-
-```fsharp
-let validate
-```
 
 
 ## Remarks

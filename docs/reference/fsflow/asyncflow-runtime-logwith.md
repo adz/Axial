@@ -1,5 +1,6 @@
 ---
-title: logWith
+title: AsyncFlow.Runtime.logWith
+linkTitle: logWith
 ---
 
 Writes a log entry using a message produced from the environment.

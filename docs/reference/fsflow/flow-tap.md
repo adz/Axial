@@ -1,5 +1,6 @@
 ---
-title: tap
+title: Flow.tap
+linkTitle: tap
 ---
 
 Runs a synchronous side effect on success and preserves the original value.

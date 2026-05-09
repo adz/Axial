@@ -1,5 +1,6 @@
 ---
-title: failIf
+title: Check.failIf
+linkTitle: failIf
 ---
 
 Returns success when the condition is false.

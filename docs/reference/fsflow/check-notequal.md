@@ -1,5 +1,6 @@
 ---
-title: notEqual
+title: Check.notEqual
+linkTitle: notEqual
 ---
 
 Returns success when the values are not equal.

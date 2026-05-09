@@ -1,5 +1,6 @@
 ---
-title: environment
+title: RuntimeContext.environment
+linkTitle: environment
 ---
 
 Reads the application environment half of a runtime context.

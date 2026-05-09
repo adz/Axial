@@ -1,5 +1,6 @@
 ---
-title: zip
+title: TaskFlow.zip
+linkTitle: zip
 ---
 
 Combines two task flows into a tuple of their values.

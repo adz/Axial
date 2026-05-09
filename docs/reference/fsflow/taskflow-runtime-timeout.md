@@ -1,5 +1,6 @@
 ---
-title: timeout
+title: TaskFlow.Runtime.timeout
+linkTitle: timeout
 ---
 
 Fails with the supplied error when the flow does not complete before the timeout.

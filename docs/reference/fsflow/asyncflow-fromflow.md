@@ -1,5 +1,6 @@
 ---
-title: fromFlow
+title: AsyncFlow.fromFlow
+linkTitle: fromFlow
 ---
 
 Lifts a synchronous flow into an async flow.

@@ -1,5 +1,6 @@
 ---
-title: orElseAsync
+title: TaskFlow.orElseAsync
+linkTitle: orElseAsync
 ---
 
 Turns a pure validation result into a task flow with task-provided failure.

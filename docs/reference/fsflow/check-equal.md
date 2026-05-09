@@ -1,5 +1,6 @@
 ---
-title: equal
+title: Check.equal
+linkTitle: equal
 ---
 
 Returns success when the values are equal.

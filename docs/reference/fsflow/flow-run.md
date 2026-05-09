@@ -1,5 +1,6 @@
 ---
-title: run
+title: Flow.run
+linkTitle: run
 ---
 
 Executes a synchronous flow with the provided environment.

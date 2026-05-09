@@ -1,5 +1,6 @@
 ---
-title: fromResult
+title: Flow.fromResult
+linkTitle: fromResult
 ---
 
 Lifts a `Result` into a synchronous flow.

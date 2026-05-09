@@ -1,5 +1,6 @@
 ---
-title: singleton
+title: Diagnostics.singleton
+linkTitle: singleton
 ---
 
 Creates a diagnostics graph containing exactly one error at the root.

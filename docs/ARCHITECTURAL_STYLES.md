@@ -1,5 +1,5 @@
 ---
-weight: 60
+weight: 40
 title: Architectural Styles
 ---
 
@@ -15,7 +15,7 @@ FsFlow supports three valid architectural styles.
 
 Use this when your application already has a conventional booted runtime and passing one explicit application environment keeps composition simple.
 
-The environment is the full booted application runtime and config:
+This is the most direct use of the [Record Pattern](./env-slicing/). The environment is the full booted application runtime and config:
 
 - DB
 - logging
@@ -93,7 +93,7 @@ The shape is:
 deps -> input -> Flow<'ctx, 'err, 'a>
 ```
 
-`'ctx` is request or execution context only. Typical examples:
+Here, the [Record Pattern](./env-slicing/) is used only for the thin `'ctx` (request or execution context). Typical examples:
 
 - trace id
 - request id
@@ -150,6 +150,8 @@ type ShipOrderWorkflow() =
         }
 ```
 
+This style often utilizes the [CAPS Pattern](./capabilities/) to bridge existing .NET services into a decoupled FsFlow contract.
+
 Use this style for:
 
 - mixed C# and F# teams
@@ -175,7 +177,7 @@ The important constraint is that the chosen workflow family stays explicit at th
 
 ## Next
 
-Read [`docs/GETTING_STARTED.md`](./GETTING_STARTED.md) for the core workflow model,
-[`docs/ENV_SLICING.md`](./ENV_SLICING.md) for smaller environment projections, and
-[`docs/WHY_FSFLOW.md`](./WHY_FSFLOW.md) for the trade-offs against manual
+Read [`docs/GETTING_STARTED.md`](../start/getting-started/) for the core workflow model,
+[`docs/ENV_SLICING.md`](./env-slicing/) for smaller environment projections, and
+[`docs/WHY_FSFLOW.md`](./why-fsflow/) for the trade-offs against manual
 threading and wrapper-based shapes.

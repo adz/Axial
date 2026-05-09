@@ -1,5 +1,6 @@
 ---
-title: fromTask
+title: ColdTask.fromTask
+linkTitle: fromTask
 ---
 
 

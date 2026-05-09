@@ -1,5 +1,6 @@
 ---
-title: value
+title: AsyncFlow.value
+linkTitle: value
 ---
 
 Alias for `ok` that reads well in some call sites.

@@ -1,5 +1,6 @@
 ---
 title: LogEntry
+linkTitle: LogEntry
 ---
 
 A structured log entry written through a runtime logger.

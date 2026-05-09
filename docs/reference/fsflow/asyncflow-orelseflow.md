@@ -1,5 +1,6 @@
 ---
-title: orElseFlow
+title: AsyncFlow.orElseFlow
+linkTitle: orElseFlow
 ---
 
 Turns a pure validation result into an async flow with synchronous environment-provided failure.

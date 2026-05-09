@@ -1,5 +1,6 @@
 ---
-title: apply
+title: AsyncFlow.apply
+linkTitle: apply
 ---
 
 Applies an async-flow-wrapped function to an async-flow-wrapped value.

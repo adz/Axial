@@ -1,5 +1,6 @@
 ---
-title: useWithAcquireRelease
+title: TaskFlow.Runtime.useWithAcquireRelease
+linkTitle: useWithAcquireRelease
 ---
 
 Acquires a resource, uses it, and always runs the release action.

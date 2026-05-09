@@ -1,5 +1,6 @@
 ---
-title: read
+title: Flow.read
+linkTitle: read
 ---
 
 Projects a value from the current environment.

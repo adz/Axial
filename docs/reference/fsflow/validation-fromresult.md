@@ -1,5 +1,6 @@
 ---
-title: fromResult
+title: Validation.fromResult
+linkTitle: fromResult
 ---
 
 Lifts a standard `Result` into the `Validation` context.

@@ -1,5 +1,6 @@
 ---
-title: merge
+title: Diagnostics.merge
+linkTitle: merge
 ---
 
 Recursively merges two diagnostics graphs, combining shared branches and local errors.

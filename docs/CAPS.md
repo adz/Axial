@@ -1,199 +1,73 @@
 ---
-weight: 50
-title: Using FsFlow CAPS
-description: This page shows how to model explicit capability boundaries in FsFlow with `Needs<'dep>`, `Env<'dep>`, and `Env<'dep, 'value>`.
+weight: 10
+title: Managing Dependencies
+description: Introduction to dependency management in FsFlow.
 ---
 
+# Managing Dependencies
 
-# Using FsFlow CAPS
+In FsFlow, a workflow is not just a function; it is a description of work that needs an **environment** to run. 
 
-This page shows how to keep a flow honest about the dependencies it needs, without passing a full application runtime everywhere.
+As your application grows, you might be tempted to create a single "God Object" (like `AppEnv`) that contains every service in your system: Database, Logger, API Gateways, and more. However, if every small workflow depends on this massive record, your code becomes hard to test and tightly coupled. You'd have to mock the entire universe just to test a simple calculation.
 
-FsFlow CAPS are named capability sets built on `Needs<'dep>`. They let a workflow say "I need a store and a clock" instead of "I take whatever the whole app happens to provide."
+FsFlow provides two primary architectural styles to help you "slice" your dependencies so that each workflow only asks for what it actually needs.
 
-Use `Env<'dep>` when the workflow needs the dependency itself, and `Env<'dep, 'value>` when it needs a projected value from that dependency.
+## The Two Styles
 
-The code snippets below are illustrative. `IUserStore`, `IClock`, `ILogger`, and the cap-set interfaces are application-specific types that show the intended shape of the API.
+### 1. The Record Pattern (Environment Slicing)
+This is the simplest way to start. You define your environment as a standard F# record. Workflows "read" or "project" the fields they need from this record. It is perfect for local helpers, internal logic, and smaller applications where record types are stable.
 
-## Start with a small, meaningful boundary
+**Read the Deep Dive:** [Environment Slicing](./env-slicing/)
+
+### 2. The CAPS Pattern (Decoupled Capabilities)
+This style decouples your workflows from specific record types using interface-based contracts. A workflow says "I need a clock," and it doesn't care if that clock comes from a massive app runtime or a tiny test object. It is the best choice for public APIs, shared libraries, and large-scale systems.
+
+**Read the Deep Dive:** [Capabilities (CAPS)](./capabilities/)
+
+---
+
+## Relationship to Architecture
+
+These two patterns support different **Architectural Styles**:
+
+- **Style 1: The Booted App**: Usually uses a single large record (Record Pattern) for simplicity.
+- **Style 2: Parameters + Context**: Uses parameters for core logic and a thin record (Record Pattern) for request context.
+- **Style 3: .NET DI**: Often uses the CAPS Pattern to bridge .NET services into the FsFlow execution model.
+
+For more details on these structures, see [Architectural Styles](./architectural-styles/).
+
+---
+
+## Comparison at a Glance
+
+| Feature | Record Pattern | CAPS Pattern |
+| :--- | :--- | :--- |
+| **Typical Use** | Local helpers, small apps | Public APIs, shared libraries |
+| **Coupling** | Bound to a specific record type | Bound to an interface/contract |
+| **Simplicity** | High (Standard F#) | Medium (Interface-based) |
+| **Flexibility** | Moderate | Very High |
+
+---
+
+## Which style should I use?
+
+**Start with the Record Pattern.** It is the most idiomatic way to write F# and requires the least amount of boilerplate. 
+
+Move to the **CAPS Pattern** when:
+- You are building a library that others will consume.
+- You find yourself writing complex "shim" records just to run a workflow in a different context.
+- You want your workflows to read like a set of required "Capabilities" rather than a set of record fields.
+
+## Shared Helpers: The Capability Module
+
+Regardless of which style you choose, FsFlow provides a `Capability` module that works across both. These helpers are polymorphic, meaning they work in `flow {}`, `asyncFlow {}`, and `taskFlow {}` without needing specific module prefixes.
 
 ```fsharp
-open System
-open System.Threading
-open System.Threading.Tasks
-open FsFlow
-
-type IUserStore =
-    abstract FindByEmail : string -> Task<string option>
-
-type IClock =
-    abstract UtcNow : unit -> DateTimeOffset
-
-type ILogger =
-    abstract Info : string -> unit
-
-type UserStoreCaps =
-    inherit Needs<IUserStore>
-    abstract UserStore : IUserStore
-
-type ClockCaps =
-    inherit Needs<IClock>
-    abstract Clock : IClock
-
-type LoggerCaps =
-    inherit Needs<ILogger>
-    abstract Logger : ILogger
-
-type LoginCaps =
-    inherit UserStoreCaps
-    inherit ClockCaps
-    inherit LoggerCaps
-
-type Session =
-    { Email : string option
-      IssuedAt : DateTimeOffset }
-
-let login : TaskFlow<#LoginCaps, unit, Session> =
+let log message =
     taskFlow {
-        let! user = Env<IUserStore> (fun store -> store.FindByEmail "ada@example.com")
-        let! now = Env<IClock> _.UtcNow
-        do! Env<ILogger> (fun log -> log.Info $"Login at {now}")
-
-        return { Email = user; IssuedAt = now }
+        let! logger = Capability.service _.Logger
+        logger.Log message
     }
 ```
 
-This is the shape to aim for:
-
-- the type name describes the use case
-- the flow only asks for the dependencies it actually needs
-- callers can provide a larger runtime, not just an exact match
-
-## Read dependencies with `Env<'dep>`
-
-Use `Env<'dep>` when you need the dependency itself.
-
-```fsharp
-taskFlow {
-    let! clock = Env<IClock>
-    let now = clock.UtcNow()
-    return now
-}
-```
-
-Use `Env<'dep, 'value>` when you want to project a value from the dependency.
-
-```fsharp
-taskFlow {
-    let! now = Env<IClock> _.UtcNow
-    return now
-}
-```
-
-If the projection returns a Result, `Async`, `Task`, `ValueTask`, ColdTask, `option`, or `voption`, FsFlow binds it with the same normal workflow rules you already use elsewhere.
-
-## Prefer named cap sets for public boundaries
-
-Named cap sets are useful when the combination means something.
-
-Good:
-
-```fsharp
-type ChooseTodoCaps =
-    inherit TodoStoreCaps
-    inherit RandomCaps
-
-let chooseTodo : TaskFlow<#ChooseTodoCaps, unit, string option> = ...
-```
-
-Too broad for a public API:
-
-```fsharp
-let chooseTodo : TaskFlow<AppRuntime, unit, string option> = ...
-```
-
-Use the smaller, meaningful type. It makes the boundary obvious and keeps tests lighter.
-
-## Run on a larger runtime
-
-A runtime can be larger than the cap set the flow asks for.
-
-```fsharp
-type AppRuntime =
-    { UserStoreService : IUserStore
-      ClockService : IClock
-      LoggerService : ILogger
-      Audit : string -> unit }
-
-    interface LoginCaps with
-        member x.UserStore = x.UserStoreService
-        member x.Clock = x.ClockService
-        member x.Logger = x.LoggerService
-
-    interface Needs<IUserStore> with
-        member x.Dep = x.UserStoreService
-
-    interface Needs<IClock> with
-        member x.Dep = x.ClockService
-
-    interface Needs<ILogger> with
-        member x.Dep = x.LoggerService
-
-login
-|> TaskFlow.run appRuntime CancellationToken.None
-```
-
-The important part is the contract, not the exact runtime shape.
-
-## Testing stays small
-
-For tests, implement only the caps the flow needs.
-
-```fsharp
-type LoginTestRuntime =
-    { UserStoreService : IUserStore
-      ClockService : IClock
-      LoggerService : ILogger }
-
-    interface LoginCaps with
-        member x.UserStore = x.UserStoreService
-        member x.Clock = x.ClockService
-        member x.Logger = x.LoggerService
-
-    interface Needs<IUserStore> with
-        member x.Dep = x.UserStoreService
-
-    interface Needs<IClock> with
-        member x.Dep = x.ClockService
-
-    interface Needs<ILogger> with
-        member x.Dep = x.LoggerService
-```
-
-That keeps the test focused on the workflow, not on constructing an entire application shell.
-
-## When not to use CAPS
-
-Use CAPS when the dependency boundary matters.
-
-Do not reach for them when:
-
-- a private helper can just take a parameter
-- the flow only needs a tiny local dependency and a named cap set would be noise
-- you are tempted to hide service lookup behind `IServiceProvider`
-
-For very small helpers, a direct generic constraint can still be fine. Keep the named cap set for public use-case boundaries.
-
-## Source-Lifted Notes
-
-The implementation matches the guide in two important ways:
-
-- [`flow {}`]({{< relref "builders-flow.md" >}}), [`asyncFlow {}`]({{< relref "builders-asyncflow.md" >}}), and [`taskFlow {}`]({{< relref "taskbuilders-taskflow.md" >}}) read `Env<'dep>` from any environment that implements `Needs<'dep>`
-- projected requests like `Env<'dep, 'value>` reuse the existing bind/lift behavior for the projected value, so you do not need a separate capability API for each workflow family
-
-That is why the same cap-set style works across Flow, AsyncFlow, and TaskFlow.
-
-## Next
-
-If you want the record-based version of the same idea, read [Environment Slicing](./ENV_SLICING.md).
-If you want the broader workflow model, read [The FsFlow Model](./WHY_FSFLOW.md).
+Learn more about these polymorphic helpers in the [Environment Slicing](./env-slicing/#the-capability-module) guide.

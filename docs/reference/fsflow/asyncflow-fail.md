@@ -1,5 +1,6 @@
 ---
-title: fail
+title: AsyncFlow.fail
+linkTitle: fail
 ---
 
 Alias for `error` that reads well in some call sites.

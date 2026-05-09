@@ -1,5 +1,6 @@
 ---
-title: fromTaskResult
+title: TaskFlow.fromTaskResult
+linkTitle: fromTaskResult
 ---
 
 

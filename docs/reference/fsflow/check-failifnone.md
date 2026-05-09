@@ -1,5 +1,6 @@
 ---
-title: failIfNone
+title: Check.failIfNone
+linkTitle: failIfNone
 ---
 
 Returns the value when the option is `Some`.

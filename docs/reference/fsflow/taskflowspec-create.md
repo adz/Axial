@@ -1,5 +1,6 @@
 ---
-title: create
+title: TaskFlowSpec.create
+linkTitle: create
 ---
 
 Creates a task-flow spec from runtime services, application dependencies, and a build function.

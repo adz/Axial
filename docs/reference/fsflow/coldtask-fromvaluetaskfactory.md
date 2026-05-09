@@ -1,5 +1,6 @@
 ---
-title: fromValueTaskFactory
+title: ColdTask.fromValueTaskFactory
+linkTitle: fromValueTaskFactory
 ---
 
 

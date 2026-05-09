@@ -1,5 +1,6 @@
 ---
-title: ignore
+title: Validation.ignore
+linkTitle: ignore
 ---
 
 Maps a successful validation value to `unit` while preserving the diagnostics.

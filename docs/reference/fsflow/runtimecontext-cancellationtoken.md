@@ -1,5 +1,6 @@
 ---
-title: cancellationToken
+title: RuntimeContext.cancellationToken
+linkTitle: cancellationToken
 ---
 
 Reads the cancellation token stored in a runtime context.

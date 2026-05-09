@@ -1,5 +1,6 @@
 ---
-title: succeed
+title: AsyncFlow.succeed
+linkTitle: succeed
 ---
 
 Alias for `ok` that reads well in some call sites.

@@ -1,14 +1,11 @@
 ---
 title: Flow
+linkTitle: Flow
 ---
 
 Represents a cold synchronous workflow that reads an environment, returns a typed result,
 and is executed explicitly through `Flow.run`.
 
-
-```fsharp
-type Flow<'env, 'error, 'value>
-```
 
 
 

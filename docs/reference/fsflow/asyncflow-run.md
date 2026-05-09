@@ -1,5 +1,6 @@
 ---
-title: run
+title: AsyncFlow.run
+linkTitle: run
 ---
 
 Executes an async flow with the provided environment.

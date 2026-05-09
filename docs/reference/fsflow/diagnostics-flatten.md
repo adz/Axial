@@ -1,5 +1,6 @@
 ---
-title: flatten
+title: Diagnostics.flatten
+linkTitle: flatten
 ---
 
 Flattens the structured diagnostics graph into a linear list of diagnostics.

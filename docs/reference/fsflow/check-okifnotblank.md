@@ -1,5 +1,6 @@
 ---
-title: okIfNotBlank
+title: Check.okIfNotBlank
+linkTitle: okIfNotBlank
 ---
 
 Returns the string when it is not blank.

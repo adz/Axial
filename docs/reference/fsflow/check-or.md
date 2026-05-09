@@ -1,5 +1,6 @@
 ---
-title: or
+title: Check.or
+linkTitle: or
 ---
 
 Returns success when either check succeeds.

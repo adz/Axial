@@ -1,5 +1,6 @@
 ---
-title: orErrorWith
+title: Check.orErrorWith
+linkTitle: orErrorWith
 ---
 
 Maps a unit error into an application error produced on demand.

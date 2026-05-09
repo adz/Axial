@@ -1,5 +1,6 @@
 ---
-title: service
+title: Capability.service
+linkTitle: service
 ---
 
 Reads a capability from a record-based environment projection.

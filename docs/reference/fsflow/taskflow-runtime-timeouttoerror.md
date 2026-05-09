@@ -1,5 +1,6 @@
 ---
-title: timeoutToError
+title: TaskFlow.Runtime.timeoutToError
+linkTitle: timeoutToError
 ---
 
 Forwards to `timeout` for a typed failure on timeout.

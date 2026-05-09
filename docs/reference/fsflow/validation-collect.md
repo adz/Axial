@@ -1,5 +1,6 @@
 ---
-title: collect
+title: Validation.collect
+linkTitle: collect
 ---
 
 Collects a sequence of validations into a single validation of a list.

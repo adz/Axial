@@ -1,5 +1,6 @@
 ---
-title: cancellationToken
+title: AsyncFlow.Runtime.cancellationToken
+linkTitle: cancellationToken
 ---
 
 Reads the current cancellation token from the flow.

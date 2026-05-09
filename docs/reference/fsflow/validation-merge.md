@@ -1,5 +1,6 @@
 ---
-title: merge
+title: Validation.merge
+linkTitle: merge
 ---
 
 Merges two validations into a validation of a tuple.

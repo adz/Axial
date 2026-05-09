@@ -1,5 +1,6 @@
 ---
-title: okIfNonEmptyStr
+title: Check.okIfNonEmptyStr
+linkTitle: okIfNonEmptyStr
 ---
 
 Returns the string when it is not null or empty.

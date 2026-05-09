@@ -1,5 +1,6 @@
 ---
-title: succeed
+title: TaskFlow.succeed
+linkTitle: succeed
 ---
 
 Alias for `ok` that reads well in some call sites.

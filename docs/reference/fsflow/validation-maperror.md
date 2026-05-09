@@ -1,5 +1,6 @@
 ---
-title: mapError
+title: Validation.mapError
+linkTitle: mapError
 ---
 
 Maps the error type of a validation graph.

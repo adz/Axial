@@ -1,5 +1,6 @@
 ---
-title: map
+title: TaskFlow.map
+linkTitle: map
 ---
 
 Maps the successful value of a task flow.

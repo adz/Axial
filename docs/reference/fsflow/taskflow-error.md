@@ -1,5 +1,6 @@
 ---
-title: error
+title: TaskFlow.error
+linkTitle: error
 ---
 
 Creates a failing task flow.

@@ -1,5 +1,6 @@
 ---
-title: fail
+title: Validation.fail
+linkTitle: fail
 ---
 
 Alias for `error`.

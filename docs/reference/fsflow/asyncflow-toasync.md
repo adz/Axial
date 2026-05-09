@@ -1,5 +1,6 @@
 ---
-title: toAsync
+title: AsyncFlow.toAsync
+linkTitle: toAsync
 ---
 
 Converts an async flow into its raw async result shape.

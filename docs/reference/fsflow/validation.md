@@ -1,5 +1,6 @@
 ---
 title: Validation
+linkTitle: Validation
 ---
 
 An accumulating validation result that keeps the structured diagnostics graph visible.

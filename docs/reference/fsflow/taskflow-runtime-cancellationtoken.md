@@ -1,5 +1,6 @@
 ---
-title: cancellationToken
+title: TaskFlow.Runtime.cancellationToken
+linkTitle: cancellationToken
 ---
 
 Reads the current runtime cancellation token.

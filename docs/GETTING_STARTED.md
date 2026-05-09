@@ -231,7 +231,7 @@ let describe : AsyncFlow<AsyncEnv, ValidationError, string> =
 ```
 
 When task work has separate runtime services from application capabilities, use
-`RuntimeContext<'runtime, 'env>` and the `TaskFlow.readRuntime`, `TaskFlow.read`, or `Capability`
+`RuntimeContext<'runtime, 'env>` and the `TaskFlow.readRuntime`, `TaskFlow.readEnvironment`, or `Capability`
 helpers from the task surface.
 
 When the application capability boundary itself deserves a name, define a cap set with
@@ -280,7 +280,7 @@ Do not assume that a flow builder is trying to merge independent failures.
 
 ## 11. What To Read Next
 
-Read [`docs/VALIDATE_AND_RESULT.md`](./VALIDATE_AND_RESULT.md) for the validation-first story.
-Read [`docs/TASK_ASYNC_INTEROP.md`](./TASK_ASYNC_INTEROP.md) for the direct binding surface in [`asyncFlow {}`]({{< relref "builders-asyncflow.md" >}}) and [`taskFlow {}`]({{< relref "taskbuilders-taskflow.md" >}}),
-then [`docs/ENV_SLICING.md`](./ENV_SLICING.md) for environment and capability design, then
-[`docs/examples/README.md`](./examples/README.md) for reference examples.
+- **[Validation & Results](../validation-results/)**: Learn the full story from pure checks to structured diagnostics.
+- **[Straightforward Examples](./basic-examples/)**: Practical snippets for common tasks.
+- **[Task & Async Interop](../core-model/task-async-interop/)**: Deep dive into binding tasks and async blocks.
+- **[Managing Dependencies](../core-model/managing-dependencies/)**: Design environment and capability boundaries.

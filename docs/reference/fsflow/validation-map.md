@@ -1,5 +1,6 @@
 ---
-title: map
+title: Validation.map
+linkTitle: map
 ---
 
 Maps the successful value of a validation.

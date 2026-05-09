@@ -1,5 +1,6 @@
 ---
-title: retry
+title: AsyncFlow.Runtime.retry
+linkTitle: retry
 ---
 
 Retries a flow according to the specified policy.

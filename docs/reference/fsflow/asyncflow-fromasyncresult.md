@@ -1,5 +1,6 @@
 ---
-title: fromAsyncResult
+title: AsyncFlow.fromAsyncResult
+linkTitle: fromAsyncResult
 ---
 
 Lifts an async result into an async flow.

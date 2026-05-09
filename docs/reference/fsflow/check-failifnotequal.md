@@ -1,5 +1,6 @@
 ---
-title: failIfNotEqual
+title: Check.failIfNotEqual
+linkTitle: failIfNotEqual
 ---
 
 Returns success when the values are not equal.

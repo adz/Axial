@@ -1,5 +1,6 @@
 ---
-title: empty
+title: Diagnostics.empty
+linkTitle: empty
 ---
 
 Creates an empty diagnostics graph with no errors.

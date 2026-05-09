@@ -1,5 +1,6 @@
 ---
 title: TaskFlowSpec
+linkTitle: TaskFlowSpec
 ---
 
 Describes a task-flow program that is built against a runtime context and later executed with a cancellation token.

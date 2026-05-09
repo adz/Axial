@@ -1,5 +1,6 @@
 ---
-title: okIfSome
+title: Check.okIfSome
+linkTitle: okIfSome
 ---
 
 Returns the value when the option is `Some`.

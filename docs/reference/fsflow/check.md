@@ -1,5 +1,6 @@
 ---
 title: Check
+linkTitle: Check
 ---
 
 A reusable predicate result that either preserves a value on success or acts as a gate with

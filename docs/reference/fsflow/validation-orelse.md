@@ -1,5 +1,6 @@
 ---
-title: orElse
+title: Validation.orElse
+linkTitle: orElse
 ---
 
 Falls back to another validation when the source validation fails.

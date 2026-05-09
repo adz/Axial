@@ -1,5 +1,6 @@
 ---
-title: env
+title: Flow.env
+linkTitle: env
 ---
 
 Reads the current environment as the flow value.

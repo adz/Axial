@@ -1,5 +1,6 @@
 ---
-title: name
+title: Validation.name
+linkTitle: name
 ---
 
 Prefixes a validation with a named branch.

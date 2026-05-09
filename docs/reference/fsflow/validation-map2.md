@@ -1,5 +1,6 @@
 ---
-title: map2
+title: Validation.map2
+linkTitle: map2
 ---
 
 Combines two validations, accumulating errors if both fail.

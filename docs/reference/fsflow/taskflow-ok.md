@@ -1,5 +1,6 @@
 ---
-title: ok
+title: TaskFlow.ok
+linkTitle: ok
 ---
 
 Creates a successful task flow.

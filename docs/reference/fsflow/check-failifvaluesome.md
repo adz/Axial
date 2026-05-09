@@ -1,5 +1,6 @@
 ---
-title: failIfValueSome
+title: Check.failIfValueSome
+linkTitle: failIfValueSome
 ---
 
 Returns success when the value option is `ValueNone`.

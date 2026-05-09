@@ -1,5 +1,6 @@
 ---
-title: ignore
+title: TaskFlow.ignore
+linkTitle: ignore
 ---
 
 Maps the successful value of a task flow to `unit`.

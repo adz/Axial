@@ -1,5 +1,6 @@
 ---
-title: sequence
+title: TaskFlow.sequence
+linkTitle: sequence
 ---
 
 Transforms a sequence of task flows into a task flow of a sequence and stops at the first failure.

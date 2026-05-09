@@ -1,5 +1,6 @@
 ---
-title: environment
+title: Capability.environment
+linkTitle: environment
 ---
 
 Reads a capability from the application half of a two-context runtime environment.

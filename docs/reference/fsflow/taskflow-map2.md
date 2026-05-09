@@ -1,5 +1,6 @@
 ---
-title: map2
+title: TaskFlow.map2
+linkTitle: map2
 ---
 
 Combines two task flows with a mapping function.

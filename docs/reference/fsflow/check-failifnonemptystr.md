@@ -1,5 +1,6 @@
 ---
-title: failIfNonEmptyStr
+title: Check.failIfNonEmptyStr
+linkTitle: failIfNonEmptyStr
 ---
 
 Returns success when the string is null or empty.

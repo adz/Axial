@@ -1,5 +1,6 @@
 ---
-title: any
+title: Check.any
+linkTitle: any
 ---
 
 Returns success when at least one check in the sequence succeeds.

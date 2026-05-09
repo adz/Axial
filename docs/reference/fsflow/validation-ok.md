@@ -1,5 +1,6 @@
 ---
-title: ok
+title: Validation.ok
+linkTitle: ok
 ---
 
 Creates a successful validation result.

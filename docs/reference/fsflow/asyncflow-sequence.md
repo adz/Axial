@@ -1,5 +1,6 @@
 ---
-title: sequence
+title: AsyncFlow.sequence
+linkTitle: sequence
 ---
 
 Transforms a sequence of async flows into an async flow of a sequence and stops at the first failure.

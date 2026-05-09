@@ -1,5 +1,6 @@
 ---
-title: mapError
+title: TaskFlow.mapError
+linkTitle: mapError
 ---
 
 Maps the error value of a task flow.

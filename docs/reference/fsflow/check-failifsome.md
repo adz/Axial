@@ -1,5 +1,6 @@
 ---
-title: failIfSome
+title: Check.failIfSome
+linkTitle: failIfSome
 ---
 
 Returns success when the option is `None`.

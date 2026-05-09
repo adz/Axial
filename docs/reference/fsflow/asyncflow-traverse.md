@@ -1,5 +1,6 @@
 ---
-title: traverse
+title: AsyncFlow.traverse
+linkTitle: traverse
 ---
 
 Transforms a sequence of values into an async flow and stops at the first failure.

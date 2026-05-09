@@ -1,5 +1,6 @@
 ---
-title: delay
+title: TaskFlow.delay
+linkTitle: delay
 ---
 
 Defers task flow construction until execution time.

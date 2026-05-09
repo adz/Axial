@@ -1,5 +1,6 @@
 ---
-title: tapError
+title: AsyncFlow.tapError
+linkTitle: tapError
 ---
 
 Runs an async side effect on failure and preserves the original error.
