@@ -34,7 +34,8 @@ These items are no longer live design questions and are tracked in the decision 
 
 ## Live Direction
 
-The next development phase is the CAPS story: explicit capability environments for workflows.
+The next development phase is the CAPS story: explicit capability environments for workflows, delivered
+as opt-in packages for the FsFlow platform and common .NET/system effects.
 
 Reference documents:
 
@@ -52,12 +53,26 @@ The core direction is:
 - keep named cap-set interfaces as the public composition model
 - use default interface implementations so runtime records implement the named cap members, not
   repeated `Needs<'dep>` plumbing
+- package capabilities by concern so users only reference the pieces they need
 - document flexible environment types such as `TaskFlow<#LoginCaps, LoginError, Session>` as the
   preferred shape for public workflow boundaries that should accept larger runtimes
 - keep `IServiceProvider` and manifest-style capability ideas as edge or future tooling stories,
   not the strict core model
 - do not make SRTP, anonymous capability intersections, or runtime-only service lookup the primary
   public API
+
+Target package families:
+
+- `FsFlow.Caps.Core`
+- `FsFlow.Caps.Context`
+- `FsFlow.Caps.Observability`
+- `FsFlow.Caps.Observability.MicrosoftLogging`
+- `FsFlow.Caps.Observability.OpenTelemetry`
+- `FsFlow.Caps.Console`
+- `FsFlow.Caps.FileSystem`
+- `FsFlow.Caps.Http`
+- `FsFlow.Caps.Process`
+- `FsFlow.Caps.ServiceProvider`
 
 `dev-docs/TASKS.md` is the executable backlog for this phase and is shaped so
 `scripts/ralph-loop-tasks.sh` can complete the work one task and one commit at a time.
