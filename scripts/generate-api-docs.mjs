@@ -224,6 +224,36 @@ const pageSpecs = [
     ],
   },
   {
+    outPath: ['caps-core', 'core.md'],
+    title: 'CAPS Core',
+    description: 'Source-documented synchronous capability primitives for FsFlow.Caps.Core.',
+    intro:
+      'This page shows the source-documented `FsFlow.Caps.Core` surface: the clock, random, GUID, and environment-variable capabilities, plus the live and deterministic providers used by production and tests.',
+    sourceFiles: ['src/FsFlow.Caps.Core/Core.fs'],
+    sections: [
+      {
+        title: 'Capability types',
+        symbols: ['type:IClock', 'type:IRandom', 'type:IGuid', 'type:IEnvironmentVariables', 'type:EnvironmentVariableError'],
+      },
+      {
+        title: 'Clock',
+        symbols: ['module:Clock', 'Clock.now', 'Clock.live', 'Clock.fromValue'],
+      },
+      {
+        title: 'Random',
+        symbols: ['module:Random', 'Random.nextInt', 'Random.live', 'Random.fromValue'],
+      },
+      {
+        title: 'GUID',
+        symbols: ['module:Guid', 'Guid.newGuid', 'Guid.live', 'Guid.fromValue'],
+      },
+      {
+        title: 'Environment variables',
+        symbols: ['module:EnvironmentVariables', 'EnvironmentVariables.tryGet', 'EnvironmentVariables.live', 'EnvironmentVariables.fromPairs', 'module:EnvironmentVariable', 'EnvironmentVariable.tryGet', 'EnvironmentVariable.get', 'EnvironmentVariable.getInt', 'EnvironmentVariable.getGuid', 'EnvironmentVariable.getBool', 'module:EnvironmentVariableErrors', 'EnvironmentVariableErrors.describe'],
+      },
+    ],
+  },
+  {
     outPath: ['fsflow', 'coldtask.md'],
     title: 'ColdTask',
     description: 'Source-documented delayed task helpers used by FsFlow.',

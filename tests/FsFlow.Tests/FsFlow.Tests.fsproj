@@ -10,6 +10,7 @@
   <ItemGroup>
     <Compile Include="TestSupport.fs" />
     <Compile Include="CapsPrimitiveTests.fs" />
+    <Compile Include="CapsCoreTests.fs" />
     <Compile Include="CapsRuntimePatternTests.fs" />
     <Compile Include="WorkflowTests.fs" />
     <Compile Include="ValidationTests.fs" />
@@ -27,6 +28,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\FsFlow\FsFlow.fsproj" />
+    <ProjectReference Include="..\..\src\FsFlow.Caps.Core\FsFlow.Caps.Core.fsproj" />
   </ItemGroup>
 
 </Project>

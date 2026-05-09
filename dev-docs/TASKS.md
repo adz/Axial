@@ -19,7 +19,7 @@ Shared conventions for the package work:
   boundary where they can be caught and translated
 - keep each package as its own NuGet so users only pull in the capabilities they explicitly choose
 
-1. [ ] Implement `FsFlow.Caps.Core` as the smallest shared capability package: provide clock,
+1. [x] Implement `FsFlow.Caps.Core` as the smallest shared capability package: provide clock,
    random, GUID, and environment-variable capabilities with live and test implementations, typed
    errors for meaningful absence or invalid values, and docs/examples showing the sync-first surface
    shape.

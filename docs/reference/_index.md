@@ -19,6 +19,7 @@ This package groups the synchronous, async, and task workflow families plus the 
 - the [`result {}`](/reference/result/) builder for fail-fast orchestration over standard `Result` values
 - the CAPS request tokens [`Needs<'dep>`](/reference/caps/) and [`Env<'dep>`](/reference/caps/) / `Env<'dep, 'value>` for named
   capability boundaries
+- the [`FsFlow.Caps.Core`](/reference/caps-core/) package for the shared clock, random, GUID, and environment-variable primitives
 - support types that shape runtime [`logging`](/reference/asyncflow-runtime/) and [`retry`](/reference/asyncflow-runtime/) behavior
 - the [`flow {}`](/reference/flow/builders-flow.md), [`asyncFlow {}`](/reference/asyncflow/builders-asyncflow.md), [`taskFlow {}`](/reference/taskflow/taskbuilders-taskflow.md), [`result {}`](/reference/result/builders-result.md), and [`validate {}`](/reference/validation/builders-validate.md) entry points
 

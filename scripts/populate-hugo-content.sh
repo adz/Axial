@@ -46,10 +46,11 @@ create_ref_section() {
   local title="$2"
   local weight="$3"
   local main_file="$4"
+  local source_subdir="${5:-fsflow}"
   mkdir -p "$ref_dir/$name"
   
-  if [ -f "$src_dir/$main_file" ]; then
-    cp "$src_dir/$main_file" "$ref_dir/$name/_index.md"
+  if [ -f "$root_dir/docs/reference/$source_subdir/$main_file" ]; then
+    cp "$root_dir/docs/reference/$source_subdir/$main_file" "$ref_dir/$name/_index.md"
     upsert_frontmatter "$ref_dir/$name/_index.md" "title" "\"$title\""
     upsert_frontmatter "$ref_dir/$name/_index.md" "type" "docs"
     upsert_frontmatter "$ref_dir/$name/_index.md" "weight" "$weight"
@@ -108,6 +109,21 @@ copy_group "taskflow-spec" "taskflowspec-*.md"
 copy_group "coldtask" "coldtask-*.md"
 copy_group "caps" "needs.md" "env.md" "capability-*.md" "layer-providelayer.md" "missingcapability.md"
 copy_group "interop" "interop.md"
+copy_group_from() {
+  local source_subdir="$1"
+  local target="$2"
+  shift 2
+  local patterns=("$@")
+
+  mkdir -p "$ref_dir/$target"
+
+  for pattern in "${patterns[@]}"; do
+    find "$root_dir/docs/reference/$source_subdir" -maxdepth 1 -name "$pattern" -exec cp {} "$ref_dir/$target/" \;
+  done
+}
+
+create_ref_section "caps-core" "CAPS Core" 131 "_index.md" "caps-core"
+copy_group_from "caps-core" "caps-core" "core.md"
 
 find "$ref_dir" -type f -name "*.md" ! -name "_index.md" -print0 |
   while IFS= read -r -d '' page; do

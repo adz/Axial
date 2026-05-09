@@ -10,12 +10,14 @@
     <Project Path="examples/FsFlow.ReadmeExample/FsFlow.ReadmeExample.fsproj" />
     <Project Path="examples/FsFlow.MaintenanceExamples/FsFlow.MaintenanceExamples.fsproj" />
     <Project Path="examples/FsFlow.Playground/FsFlow.Playground.fsproj" />
+    <Project Path="examples/FsFlow.Caps.Core.Examples/FsFlow.Caps.Core.Examples.fsproj" />
   </Folder>
   <Folder Name="/benchmarks/">
     <Project Path="benchmarks/FsFlow.Benchmarks/FsFlow.Benchmarks.fsproj" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/FsFlow/FsFlow.fsproj" />
+    <Project Path="src/FsFlow.Caps.Core/FsFlow.Caps.Core.fsproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/FsFlow.Tests/FsFlow.Tests.fsproj" />
