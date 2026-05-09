@@ -18,6 +18,7 @@ module.exports = {
         { type: 'doc', id: 'SEMANTICS', label: 'Execution Semantics' },
         { type: 'doc', id: 'TASK_ASYNC_INTEROP', label: 'Task and Async Interop' },
         { type: 'doc', id: 'ENV_SLICING', label: 'Environment Slicing' },
+        { type: 'doc', id: 'CAPS', label: 'CAPS' },
         { type: 'doc', id: 'ARCHITECTURAL_STYLES', label: 'Architectural Styles' },
       ],
     },

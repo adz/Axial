@@ -28,7 +28,7 @@ The numbered items below are intentionally linear so the ralph loop can move thr
    implementations, composed use-case caps, larger app runtimes satisfying smaller flows, and small
    test runtimes; include the flexible type style (`TaskFlow<#SomeCaps, _, _>`) where it improves
    public boundary examples.
-5. [ ] Add the user-facing CAPS guide:
+5. [x] Add the user-facing CAPS guide:
    turn `dev-docs/CAPS_INTENDED_USER_GUIDE.md` into a polished guide under `docs/`, wire it into the
    Docusaurus sidebar, and make the examples compile or stay clearly marked as illustrative when they
    depend on user-defined services; follow `dev-docs/DOCS.md`.
