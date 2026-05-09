@@ -34,27 +34,33 @@ These items are no longer live design questions and are tracked in the decision 
 
 ## Live Direction
 
-The remaining product-shape question is how far to normalize the core combinator surface across the
-flow families without reintroducing a second helper world, while keeping plain `FSharp.Core.Result`
-as the default result story.
+The next development phase is the CAPS story: explicit capability environments for workflows.
 
-- make `ok` / `error` the primary constructors across `Validation`, `Flow`, `AsyncFlow`, and
-  `TaskFlow`
-- keep `succeed` / `fail` only as aliases where those families already expose them so older code and
-  docs still read cleanly during the transition
-- add `apply`, `ignore`, and the standard infix operators where the shape fits:
-  - `Result`: `<!>`, `<*>`, `>>=`
-  - `Validation`: `<!>`, `<*>`, and `>>=` only if we want an explicit monadic shortcut in addition
-    to `map2` / `apply` / `and!`
-  - `Flow`, `AsyncFlow`, `TaskFlow`: `<!>`, `>>=`, and `<*>` only where it reads naturally beside
-    `map2`
-- normalize `orElse` and `orElseWith` across the families that support fallback
-- keep the `result {}` computation expression as the FsFlow-friendly way to work with
-  `FSharp.Core.Result` without adding a parallel helper module
-- document `result {}` carefully so it is clear how it composes with standard FSharp.Core
-  `Result` values and the `<!>`, `<*>`, and `>>=` operators
-- avoid reintroducing separate ad-hoc helper names when the same shape is already covered by the
-  existing family combinators and builders
+Reference documents:
+
+- [CAPS plan](CAPS_PLAN.md): locked internal design and implementation direction
+- [CAPS intended user guide](CAPS_INTENDED_USER_GUIDE.md): target user-facing documentation shape
+- [CAPS research](caps-research/README.md): alternatives and discarded approaches
+
+The core direction is:
+
+- add `Needs<'dep>` as the fine-grained dependency contract
+- add `Env<'dep>` and `Env<'dep, 'value>` as computation-expression requests
+- support direct `let!` / `do!` binding of `Env` requests in `flow {}`, `asyncFlow {}`, and
+  `taskFlow {}`
+- reuse the existing FsFlow auto-bind/lift behavior for projected `Env<'dep, 'value>` results
+- keep named cap-set interfaces as the public composition model
+- use default interface implementations so runtime records implement the named cap members, not
+  repeated `Needs<'dep>` plumbing
+- document flexible environment types such as `TaskFlow<#LoginCaps, LoginError, Session>` as the
+  preferred shape for public workflow boundaries that should accept larger runtimes
+- keep `IServiceProvider` and manifest-style capability ideas as edge or future tooling stories,
+  not the strict core model
+- do not make SRTP, anonymous capability intersections, or runtime-only service lookup the primary
+  public API
+
+`dev-docs/TASKS.md` is the executable backlog for this phase and is shaped so
+`scripts/ralph-loop-tasks.sh` can complete the work one task and one commit at a time.
 
 ## Done Means
 

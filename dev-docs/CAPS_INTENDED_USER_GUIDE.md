@@ -1,8 +1,9 @@
-Got it — the user doc should start from library consumer usage, not internals.
-
-Core tone/shape:
-
 # Using FsFlow Caps
+
+Draft target guide for the CAPS implementation phase.
+
+When this becomes user-facing documentation, move it under `docs/`, keep the code examples aligned
+with the implemented API, and follow [`dev-docs/DOCS.md`](DOCS.md).
 
 FsFlow caps let a flow say what it needs without passing every dependency as an argument.
 
@@ -409,5 +410,4 @@ Rule of Thumb
 Use named cap sets for meaningful boundaries.
 Use #CapName to allow larger runtimes to satisfy them.
 Use generic constraints sparingly for tiny local helpers.
-
 

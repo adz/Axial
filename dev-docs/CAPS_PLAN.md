@@ -1,10 +1,13 @@
-Below is the design doc.
-
 # FsFlow Capability Environment Design
 
 ## Status
 
-Locked direction.
+Locked direction for the next development phase.
+
+This document is the implementation reference for the CAPS backlog in
+[`dev-docs/TASKS.md`](TASKS.md). The consumer-facing target shape is sketched in
+[`CAPS_INTENDED_USER_GUIDE.md`](CAPS_INTENDED_USER_GUIDE.md), and the discarded alternatives are
+kept under [`caps-research/`](caps-research/).
 
 Use:
 
@@ -1050,5 +1053,4 @@ Rule of Thumb
 Use named cap sets for meaningful boundaries.
 Use #CapName to allow larger runtimes to satisfy them.
 Use generic constraints sparingly for tiny local helpers.
-
 

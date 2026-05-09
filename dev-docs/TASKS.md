@@ -7,21 +7,36 @@ Keep live product and architecture direction in `dev-docs/PLAN.md`.
 
 The numbered items below are intentionally linear so the ralph loop can move through them one at a time.
 
-1. [x] Draft the blog in `dev-docs/func-arch-from-mark-seemann-as-fsflow.md`:
-   explain the impure/pure/impure sandwich with FsFlow idioms, show how `result {}` bridges plain
-   `FSharp.Core.Result` without reinventing it, document the relationship to `Check` and `Guard`,
-   and include the `<!>`, `<*>`, and `>>=` operators in the same story.
-2. [x] Normalize `Validation`:
-   `ok` and `error` become the primary constructors; `succeed` and `fail` stay as aliases; add
-   `map2`, `map3`, `apply`, `ignore`, `orElse`, and `orElseWith` here; add `<!>` and `<*>`, and only
-   add `>>=` if we want an explicit monadic shortcut alongside `map2` / `apply` / `and!`; keep
-   `map`, `bind`, `mapError`, `toResult`, `fromResult`, `sequence`, `collect`, `merge`,
-   `traverseIndexed`, `at`, `key`, `index`, and `name` here.
-3. [x] Normalize `Flow`, `AsyncFlow`, and `TaskFlow`:
-   `ok` and `error` become the primary constructors; `succeed` and `fail` stay as aliases; add
-   `map2`, `map3`, `apply`, `ignore`, `orElse`, and `orElseWith` on each family; add `<!>` for
-   `map`, `>>=` for `bind`, and `<*>` only where it reads naturally beside `map2`; keep the family
-   builders and modules aligned with the same operator story.
-4. [x] Keep `FSharp.Core.Result` as the default result surface:
-   do not introduce a parallel FsFlow `Result` helper module; keep the docs and examples pointed at
-   standard `Ok` / `Error` usage plus `result {}` for CE-based orchestration.
+1. [ ] Add the core CAPS primitives:
+   introduce public `Needs<'dep>`, `Env<'dep>`, and `Env<'dep, 'value>` types in the FsFlow package,
+   with XML doc comments and examples that match `dev-docs/CAPS_PLAN.md`; keep the names available
+   from the normal `open FsFlow` surface; add focused tests for the primitive shapes and public type
+   visibility.
+2. [ ] Bind whole-dependency `Env<'dep>` requests in `flow {}`, `asyncFlow {}`, and `taskFlow {}`:
+   each builder should read the dependency from environments satisfying `Needs<'dep>`, pass it to the
+   continuation, preserve existing cold/restartable semantics, and include tests for success,
+   missing/wrong environment compile failures where practical, and parity across all three flow
+   families.
+3. [ ] Bind projected `Env<'dep, 'value>` requests in `flow {}`, `asyncFlow {}`, and `taskFlow {}`:
+   projection results must reuse the existing direct bind/lift behavior for plain values, `Result`,
+   `Flow`, `Async`, `Async<Result<_,_>>`, `Task`, `Task<Result<_,_>>`, `ValueTask`,
+   `ValueTask<Result<_,_>>`, `ColdTask`, `ColdTask<Result<_,_>>`, `option` when `error = unit`, and
+   `voption` when `error = unit`; cover representative projection tests without duplicating every
+   existing builder test.
+4. [ ] Prove the named cap-set runtime pattern:
+   add tests and runnable examples showing fine-grained caps with default `Needs<'dep>`
+   implementations, composed use-case caps, larger app runtimes satisfying smaller flows, and small
+   test runtimes; include the flexible type style (`TaskFlow<#SomeCaps, _, _>`) where it improves
+   public boundary examples.
+5. [ ] Add the user-facing CAPS guide:
+   turn `dev-docs/CAPS_INTENDED_USER_GUIDE.md` into a polished guide under `docs/`, wire it into the
+   Docusaurus sidebar, and make the examples compile or stay clearly marked as illustrative when they
+   depend on user-defined services; follow `dev-docs/DOCS.md`.
+6. [ ] Update generated and agent-facing documentation for CAPS:
+   refresh XML docs, generated API reference pages, `docs/AGENT.md`, `llms.txt`, and any guide pages
+   that should mention `Env<T>`, `Needs<T>`, cap-set interfaces, and flexible runtime boundaries;
+   do not hand-edit generated reference pages as the primary fix.
+7. [ ] Validate and polish the full CAPS story:
+   run `dotnet test`, `bash scripts/generate-api-docs.sh`, and the Docusaurus build in `site`; fix
+   broken links, MDX issues, package/API reference gaps, and stale examples so the implementation,
+   docs, generated outputs, and planning docs all agree.
