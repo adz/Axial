@@ -15,8 +15,7 @@ Use:
 - `Env<'dep>` as the computation-expression request for a dependency.
 - `Env<'dep, 'value>` as the projected dependency request.
 - Named cap-set interfaces for meaningful dependency bundles.
-- Interface default implementations to avoid repeating `Needs<'dep>` implementations on every container.
-- Concrete runtime/container records that simply implement the relevant cap-set interface.
+- Concrete runtime/container records that implement the relevant cap-set and `Needs<'dep>` interfaces.
 - Optional tooling later for diagnostics/suggestions, not core semantics.
 
 Do **not** use SRTP as the main public model.
@@ -198,55 +197,24 @@ Each fine-grained cap-set interface should:
 2. Expose a strongly named abstract member.
 
 
-3. Provide the Needs<'dep>.Dep implementation via default interface implementation.
-
-
 
 Example:
 
 type ClockCaps =
-
     inherit Needs<IClock>
-
     abstract Clock : IClock
 
-    interface Needs<IClock> with
-        member x.Dep = x.Clock
-
 type LoggerCaps =
-
     inherit Needs<ILogger>
-
     abstract Logger : ILogger
 
-    interface Needs<ILogger> with
-        member x.Dep = x.Logger
-
 type RandomCaps =
-
     inherit Needs<IRandom>
-
     abstract Random : IRandom
 
-    interface Needs<IRandom> with
-        member x.Dep = x.Random
-
 type TodoStoreCaps =
-
     inherit Needs<ITodoStore>
-
     abstract TodoStore : ITodoStore
-
-    interface Needs<ITodoStore> with
-        member x.Dep = x.TodoStore
-
-This means containers do not repeat:
-
-interface Needs<IRandom> with
-    member x.Dep = x.Random
-
-They only provide the required members.
-
 
 ---
 
@@ -296,6 +264,14 @@ type AppRuntime =
       TodoStore : ITodoStore }
 
     interface TodoSubsystem
+    interface ClockCaps with member x.Clock = x.Clock
+    interface LoggerCaps with member x.Logger = x.Logger
+    interface RandomCaps with member x.Random = x.Random
+    interface TodoStoreCaps with member x.TodoStore = x.TodoStore
+    interface Needs<IClock> with member x.Dep = x.Clock
+    interface Needs<ILogger> with member x.Dep = x.Logger
+    interface Needs<IRandom> with member x.Dep = x.Random
+    interface Needs<ITodoStore> with member x.Dep = x.TodoStore
 
 Because TodoSubsystem inherits ClockCaps, LoggerCaps, RandomCaps, and TodoStoreCaps, this works if the record has the required members:
 
@@ -304,9 +280,7 @@ Logger : ILogger
 Random : IRandom
 TodoStore : ITodoStore
 
-The mapping from named member to Needs<'dep>.Dep lives in the cap-set interface, not the container.
-
-This is the main ergonomic win.
+The container implements both the domain-specific cap interfaces and the generic `Needs<'dep>` interfaces.
 
 
 ---
@@ -368,35 +342,19 @@ type ITodoStore =
 
 type ClockCaps =
     inherit Needs<IClock>
-
     abstract Clock : IClock
-
-    interface Needs<IClock> with
-        member x.Dep = x.Clock
 
 type LoggerCaps =
     inherit Needs<ILogger>
-
     abstract Logger : ILogger
-
-    interface Needs<ILogger> with
-        member x.Dep = x.Logger
 
 type RandomCaps =
     inherit Needs<IRandom>
-
     abstract Random : IRandom
-
-    interface Needs<IRandom> with
-        member x.Dep = x.Random
 
 type TodoStoreCaps =
     inherit Needs<ITodoStore>
-
     abstract TodoStore : ITodoStore
-
-    interface Needs<ITodoStore> with
-        member x.Dep = x.TodoStore
 
 type ChooseTodoCaps =
     inherit TodoStoreCaps
@@ -445,6 +403,14 @@ type AppRuntime =
       TodoStore : ITodoStore }
 
     interface TodoSubsystem
+    interface ClockCaps with member x.Clock = x.Clock
+    interface LoggerCaps with member x.Logger = x.Logger
+    interface RandomCaps with member x.Random = x.Random
+    interface TodoStoreCaps with member x.TodoStore = x.TodoStore
+    interface Needs<IClock> with member x.Dep = x.Clock
+    interface Needs<ILogger> with member x.Dep = x.Logger
+    interface Needs<IRandom> with member x.Dep = x.Random
+    interface Needs<ITodoStore> with member x.Dep = x.TodoStore
 
 type ChooseTodoTestRuntime =
     { Random : IRandom
@@ -859,13 +825,9 @@ Needed because flows should not call System.Random.Shared directly if we want te
 
 type RandomCaps =
     inherit Needs<IRandom>
-
     abstract Random : IRandom
 
-    interface Needs<IRandom> with
-        member x.Dep = x.Random
-
-Needed once so containers do not each implement Needs<IRandom> manually.
+Needed to provide a domain-named entry point for the dependency.
 
 3. Add to relevant use-case cap set
 
@@ -941,7 +903,7 @@ type ChooseTodoRuntime =
 
     interface ChooseTodoCaps
 
-The design is explicit, nominal, testable, LLM-readable, and avoids the worst boilerplate by moving Needs<'T> implementation into default interface members on cap-set interfaces.
+The design is explicit, nominal, testable, and LLM-readable. While F# requires explicit implementation of inherited interfaces on the container, the clear separation of concerns and naming benefits remain.
 Addendum: Using # Flexible Types
 F# flexible types (#Type) work well with the cap-set approach and are recommended for many public APIs.
 Example:

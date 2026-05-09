@@ -18,9 +18,9 @@ type ChooseTodoCaps =
     inherit TodoStoreCaps
     inherit RandomCaps
 
-let chooseTodo : TaskFlow<ChooseTodoCaps, TodoError, string option> =
+let chooseTodo : TaskFlow<#ChooseTodoCaps, TodoError, string option> =
     taskFlow {
-        let! todos = Env<ITodoStore> _.Load
+        let! todos = Env<ITodoStore> (fun s -> s.Load())
 
         if List.isEmpty todos then
             return None
@@ -246,11 +246,7 @@ Define the cap once:
 ```fsharp
 type UserStoreCaps =
     inherit Needs<IUserStore>
-
     abstract UserStore : IUserStore
-
-    interface Needs<IUserStore> with
-        member x.Dep = x.UserStore
 ```
 
 Then users just compose it:
@@ -262,22 +258,22 @@ type LoginCaps =
     inherit LoggerCaps
 ```
 
-And use it:
+And the runtime provides the concrete implementations:
 
 ```fsharp
-let login : TaskFlow<LoginCaps, LoginError, Session> =
-    taskFlow {
-        let! user =
-            Env<IUserStore> (fun users ->
-                users.FindByEmail "ada@example.com")
+type AppRuntime =
+    { UserStore : IUserStore
+      Clock : IClock
+      Logger : ILogger }
 
-        let! now = Env<IClock> _.UtcNow
+    interface LoginCaps with
+        member x.UserStore = x.UserStore
+        member x.Clock = x.Clock
+        member x.Logger = x.Logger
 
-        do! Env<ILogger> (fun log ->
-            log.Info $"Login at {now}")
-
-        return ...
-    }
+    interface Needs<IUserStore> with member x.Dep = x.UserStore
+    interface Needs<IClock> with member x.Dep = x.Clock
+    interface Needs<ILogger> with member x.Dep = x.Logger
 ```
 
 ## The rule of thumb
@@ -286,10 +282,7 @@ Use the smallest meaningful cap set.
 
 ```fsharp
 // Good
-let chooseTodo : TaskFlow<ChooseTodoCaps, TodoError, string option>
-
-// Too broad for most code
-let chooseTodo : TaskFlow<AppRuntime, TodoError, string option>
+let chooseTodo : TaskFlow<#ChooseTodoCaps, TodoError, string option>
 ```
 
 Caps are useful because they make this visible:
