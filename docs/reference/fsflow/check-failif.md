@@ -1,9 +1,6 @@
 ---
 title: failIf
-description: API reference for Check.failIf
 ---
-
-# failIf
 
 Returns success when the condition is false.
 

@@ -1,9 +1,6 @@
 ---
 title: LogLevel
-description: API reference for LogLevel
 ---
-
-# LogLevel
 
 Log levels used by runtime logging helpers and environment-provided logging functions.
 

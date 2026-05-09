@@ -1,9 +1,6 @@
 ---
 title: apply
-description: API reference for TaskFlow.apply
 ---
-
-# apply
 
 Applies a task-flow-wrapped function to a task-flow-wrapped value.
 

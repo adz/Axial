@@ -1,9 +1,6 @@
 ---
 title: TaskFlowSpec
-description: Source-documented task workflow specification for FsFlow.
 ---
-
-# TaskFlowSpec
 
 This page shows the source-documented `TaskFlowSpec` surface, used for defining and running task workflows with explicit configurations.
 

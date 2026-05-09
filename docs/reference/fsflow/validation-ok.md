@@ -1,9 +1,6 @@
 ---
 title: ok
-description: API reference for Validation.ok
 ---
-
-# ok
 
 Creates a successful validation result.
 

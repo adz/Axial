@@ -1,9 +1,6 @@
 ---
 title: zip
-description: API reference for AsyncFlow.zip
 ---
-
-# zip
 
 Combines two async flows into a tuple of their values.
 

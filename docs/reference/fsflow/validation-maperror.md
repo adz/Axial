@@ -1,9 +1,6 @@
 ---
 title: mapError
-description: API reference for Validation.mapError
 ---
-
-# mapError
 
 Maps the error type of a validation graph.
 

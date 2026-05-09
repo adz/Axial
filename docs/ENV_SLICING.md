@@ -1,3 +1,8 @@
+---
+weight: 40
+title: Environment Slicing
+---
+
 # Environment Slicing
 
 This page shows two ways to keep an FsFlow workflow honest about dependencies:
@@ -161,33 +166,41 @@ on the field it actually needs.
 
 ## Layering and Composition
 
-Layers allow you to build up environments modularly. A `Layer<'env, 'provider>` describes how
-to produce an environment segment `'provider` given a base environment `'env`.
+Layers are flows that derive the smaller environment required by a downstream flow. Use
+`Flow.provideLayer`, `AsyncFlow.provideLayer`, or `TaskFlow.provideLayer` when the layer itself
+can validate, fail, or read from an outer environment.
 
 ```fsharp
-type Layer<'env, 'provider> = 'env -> 'provider
+type RuntimeServices =
+    { ConnectionString : string }
+
+type AppDependencies =
+    { Database : IDatabase }
+
+let appLayer : TaskFlow<RuntimeServices, AppError, AppDependencies> =
+    taskFlow {
+        let! connectionString = TaskFlow.read _.ConnectionString
+        let! database = Database.connect connectionString
+        return { Database = database }
+    }
+
+let workflow : TaskFlow<AppDependencies, AppError, Response> =
+    taskFlow {
+        let! database = TaskFlow.read _.Database
+        return! database.Load()
+    }
+
+let runnable : TaskFlow<RuntimeServices, AppError, Response> =
+    workflow
+    |> TaskFlow.provideLayer appLayer
 ```
 
-You can compose layers to create the final application environment:
-
-```fsharp
-let loggerLayer : Layer<unit, ILogger> = 
-    fun () -> ConsoleLogger() :> ILogger
-
-let databaseLayer : Layer<ILogger, IDatabase> = 
-    fun logger -> SqlDatabase(logger) :> IDatabase
-
-// Compose layers
-let appLayer = 
-    Layer.compose loggerLayer databaseLayer
-```
-
-This "onion" style of environment construction ensures that each component only sees the 
-dependencies it needs, and the order of construction is explicit and type-safe.
+The downstream workflow stays typed against the smaller environment, while the runnable workflow
+accepts the outer environment needed to build it.
 
 ## Runtime Context vs. Application Environment
 
-In `TaskFlow`, we distinguish between:
+In TaskFlow, we distinguish between:
 
 1.  **Runtime Context (`'runtime`)**: Low-level operational services like logging, 
     cancellation, and retry policies. These are usually provided by the infrastructure.
@@ -199,11 +212,9 @@ The `RuntimeContext<'runtime, 'env>` type carries both, allowing you to use
 
 ## Why Layering?
 
-- **Testability**: You can swap out a single layer with a mock without changing the rest 
-  of the environment.
-- **Modularity**: Components can define their own environment requirements independently.
-- **Explicit Dependencies**: The type signature of a `Layer` tells you exactly what it 
-  needs to start and what it provides to the rest of the app.
+- **Testability**: you can run the workflow with a small test environment or replace the layer.
+- **Modularity**: components can define their own environment requirements independently.
+- **Explicit dependencies**: the layer type says what it needs to start and what it provides to the workflow.
 
 ## Next
 

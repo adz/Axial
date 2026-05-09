@@ -1,9 +1,6 @@
 ---
 title: service
-description: API reference for Capability.service
 ---
-
-# service
 
 Reads a capability from a record-based environment projection.
 

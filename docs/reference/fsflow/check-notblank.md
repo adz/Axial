@@ -1,9 +1,6 @@
 ---
 title: notBlank
-description: API reference for Check.notBlank
 ---
-
-# notBlank
 
 Returns the string when it is not blank.
 

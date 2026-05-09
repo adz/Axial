@@ -1,9 +1,6 @@
 ---
 title: okIfEmpty
-description: API reference for Check.okIfEmpty
 ---
-
-# okIfEmpty
 
 Returns success when the sequence is empty.
 

@@ -1,9 +1,6 @@
 ---
 title: traverse
-description: API reference for AsyncFlow.traverse
 ---
-
-# traverse
 
 Transforms a sequence of values into an async flow and stops at the first failure.
 

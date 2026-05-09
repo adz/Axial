@@ -1,9 +1,6 @@
 ---
 title: sleep
-description: API reference for AsyncFlow.Runtime.sleep
 ---
-
-# sleep
 
 Suspends the flow for the specified duration, observing cancellation.
 

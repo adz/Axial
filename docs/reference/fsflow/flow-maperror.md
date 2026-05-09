@@ -1,9 +1,6 @@
 ---
 title: mapError
-description: API reference for Flow.mapError
 ---
-
-# mapError
 
 Maps the error value of a synchronous flow.
 

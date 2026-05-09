@@ -1,7 +1,9 @@
 ---
+weight: 20
 title: Validus Integration
 description: How FsFlow fits beside Validus validation pipelines.
 ---
+
 
 # Validus Integration
 
@@ -13,8 +15,8 @@ composition, accumulation, or value-object style checks.
 FsFlow can usually begin after that work is done.
 
 `Validus` and `FsFlow.Check` fit especially well together: `Validus` can handle richer validation rules,
-while `FsFlow.Check` stays available for smaller pure guards that feed directly into `Result`,
-`Validation`, `Flow`, `AsyncFlow`, or `TaskFlow`.
+while `FsFlow.Check` stays available for smaller pure guards that feed directly into Result,
+Validation, Flow, AsyncFlow, or TaskFlow.
 
 ## Keep Validation Before Workflow Orchestration
 
@@ -30,9 +32,9 @@ That keeps the validation step reusable and keeps the runtime boundary honest.
 Common patterns:
 
 - validate with `Validus`
-- convert the final success/failure into a plain `Result`
-- bind that `Result` directly inside a flow when the workflow starts
-- use `Check` when you want a smaller pure-guard layer without the heavier validation model
+- convert the final success/failure into a plain Result
+- bind that Result directly inside a flow when the workflow starts
+- use Check when you want a smaller pure-guard layer without the heavier validation model
 
 ## Why The Pair Works
 

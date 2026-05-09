@@ -1,9 +1,6 @@
 ---
 title: failIfNone
-description: API reference for Check.failIfNone
 ---
-
-# failIfNone
 
 Returns the value when the option is `Some`.
 

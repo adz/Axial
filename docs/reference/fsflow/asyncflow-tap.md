@@ -1,9 +1,6 @@
 ---
 title: tap
-description: API reference for AsyncFlow.tap
 ---
-
-# tap
 
 Runs an async side effect on success and preserves the original value.
 

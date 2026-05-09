@@ -1,9 +1,6 @@
 ---
 title: orError
-description: API reference for Check.orError
 ---
-
-# orError
 
 Maps a unit error into the supplied application error value.
 

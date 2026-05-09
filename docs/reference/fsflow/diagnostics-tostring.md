@@ -1,9 +1,6 @@
 ---
 title: toString
-description: API reference for Diagnostics.toString
 ---
-
-# toString
 
 Renders a diagnostics graph in a YAML-like layout for display.
 

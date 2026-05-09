@@ -1,9 +1,6 @@
 ---
 title: fromResult
-description: API reference for Validation.fromResult
 ---
-
-# fromResult
 
 Lifts a standard `Result` into the `Validation` context.
 

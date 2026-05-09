@@ -1,9 +1,6 @@
 ---
 title: flow
-description: API reference for Builders.flow
 ---
-
-# flow
 
 The sync-only `flow { }` computation expression.
 

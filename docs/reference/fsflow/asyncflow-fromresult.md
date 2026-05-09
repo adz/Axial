@@ -1,9 +1,6 @@
 ---
 title: fromResult
-description: API reference for AsyncFlow.fromResult
 ---
-
-# fromResult
 
 Lifts a `Result` into an async flow.
 

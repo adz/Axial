@@ -1,9 +1,6 @@
 ---
 title: traverse
-description: API reference for TaskFlow.traverse
 ---
-
-# traverse
 
 Transforms a sequence of values into a task flow and stops at the first failure.
 

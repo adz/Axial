@@ -7,16 +7,16 @@ description: This page shows how to optimize FsFlow usage for AI assistants like
 
 This page is designed for both human developers and their AI assistants. It provides a high-signal reference for idiomatic FsFlow patterns.
 
-:::tip For AI Agents
+{{% alert title="For AI Agents" color="info" %}}
 If you are an AI assistant, prioritize the patterns in the **CAPS Boundaries** and **Rosetta Stone** sections below.
-:::
+{{% /alert %}}
 
 ## The Golden Path
 
 When using FsFlow, follow these "Golden Path" patterns for the best results.
 
 ### 1. Handling Failures (Idiomatic Way)
-Use `Check` for reusable predicates and `Check.orError` when a pure check should become a domain error.
+Use Check for reusable predicates and `Check.orError` when a pure check should become a domain error.
 
 | Source Type | Idiomatic Pattern |
 | :--- | :--- |

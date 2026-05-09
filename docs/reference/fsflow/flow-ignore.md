@@ -1,9 +1,6 @@
 ---
 title: ignore
-description: API reference for Flow.ignore
 ---
-
-# ignore
 
 Maps the successful value of a synchronous flow to `unit`.
 

@@ -1,3 +1,8 @@
+---
+weight: 60
+title: Architectural Styles
+---
+
 # Architectural Styles
 
 This page shows how the FsFlow workflow family should fit into your application architecture without forcing one app shape on every codebase.

@@ -1,7 +1,9 @@
 ---
+weight: 60
 title: Ecosystem Overview
 description: How FsFlow fits beside FsToolkit, Validus, IcedTasks, and FSharpPlus.
 ---
+
 
 # Ecosystem Overview
 
@@ -13,19 +15,19 @@ The rule of thumb is simple: keep each library on the boundary it already owns, 
 
 - `FsToolkit.ErrorHandling` is the established result-oriented layer: it uses core F# types, a small number of wrappers such as `Task<Result<_,_>>`, and a familiar module-and-builder surface. It fits existing code with low overhead.
 - `Validus` is a richer validation DSL if you already use it. FsFlow now covers the common check/result/validation path itself.
-- `IcedTasks` is the task-shape layer: it is interesting for performance and task-native ergonomics, but it still lives in the `Async` / `Task` / `Result` space rather than in a richer environment model.
+- `IcedTasks` is the task-shape layer: it is interesting for performance and task-native ergonomics, but it still lives in the `Async` / `Task` / Result space rather than in a richer environment model.
 - `FSharpPlus` is the generic FP layer: it brings broad abstractions and monad-transformer-style composition, but that also means more compiler work and more complex error surfacing when you are trying to follow a FsFlow boundary.
 
 ## What FsFlow Adds
 
 FsFlow captures the common application boundary needs in one model:
 
-- `Check` for reusable predicates
-- `Result` for fail-fast typed failures
-- `Validation` for structured accumulation
-- `Flow` for synchronous boundaries
-- `AsyncFlow` for async boundaries
-- `TaskFlow` for task boundaries
+- Check for reusable predicates
+- Result for fail-fast typed failures
+- Validation for structured accumulation
+- Flow for synchronous boundaries
+- AsyncFlow for async boundaries
+- TaskFlow for task boundaries
 - `'env` / `'ctx` style context threading for implicit dependencies, request metadata, and other runtime state
 
 That gives you a smaller surface area when the application boundary is what you want to make explicit.
@@ -41,13 +43,13 @@ Read [`Runnable Examples`](./examples/README.md) after this page if you want to 
 
 ## Replacing FsToolkit.ErrorHandling
 
-Use `FsToolkit.ErrorHandling` when you already have `Result`, `AsyncResult`, or `TaskResult` code in production.
+Use `FsToolkit.ErrorHandling` when you already have Result, `AsyncResult`, or `TaskResult` code in production.
 
 This is the closest migration path for existing railway-oriented code:
 
-- keep pure validation and mapping code as plain `Result`
-- move the orchestration boundary into `Flow`, `AsyncFlow`, or `TaskFlow`
-- use `Check` when the check itself can stay pure and only the final error provisioning becomes effectful
+- keep pure validation and mapping code as plain Result
+- move the orchestration boundary into Flow, AsyncFlow, or TaskFlow
+- use Check when the check itself can stay pure and only the final error provisioning becomes effectful
 
 Go to [`Replacing FsToolkit.ErrorHandling`](./INTEGRATIONS_FSTOOLKIT.md) for the migration shape and coexistence patterns.
 
@@ -59,13 +61,13 @@ The best coexistence pattern is:
 
 - validate the incoming model with `Validus`
 - keep the result pure
-- bridge the final `Result` into FsFlow when the runtime boundary begins
+- bridge the final Result into FsFlow when the runtime boundary begins
 
 Go to [`Validus Integration`](./INTEGRATIONS_VALIDUS.md) for the integration shape and examples.
 
 ## IcedTasks Integration
 
-Use `IcedTasks` when the codebase already thinks in task-centric computation expressions, especially `ColdTask` and cancellable task shapes.
+Use `IcedTasks` when the codebase already thinks in task-centric computation expressions, especially ColdTask and cancellable task shapes.
 
 FsFlow fits beside it when you want:
 

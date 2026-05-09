@@ -1,9 +1,6 @@
 ---
 title: fail
-description: API reference for TaskFlow.fail
 ---
-
-# fail
 
 Alias for `error` that reads well in some call sites.
 

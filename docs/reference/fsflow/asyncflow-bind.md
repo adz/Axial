@@ -1,9 +1,6 @@
 ---
 title: bind
-description: API reference for AsyncFlow.bind
 ---
-
-# bind
 
 Sequences an async continuation after a successful value.
 

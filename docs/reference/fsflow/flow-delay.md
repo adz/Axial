@@ -1,9 +1,6 @@
 ---
 title: delay
-description: API reference for Flow.delay
 ---
-
-# delay
 
 Defers flow construction until execution time.
 

@@ -1,9 +1,6 @@
 ---
 title: bind
-description: API reference for Flow.bind
 ---
-
-# bind
 
 Sequences a synchronous continuation after a successful value.
 

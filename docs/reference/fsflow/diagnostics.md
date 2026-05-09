@@ -1,9 +1,6 @@
 ---
 title: Diagnostics
-description: API reference for Diagnostics
 ---
-
-# Diagnostics
 
 A mergeable validation graph that carries local errors and nested child branches.
 

@@ -1,9 +1,6 @@
 ---
 title: fromValueTaskFactory
-description: API reference for ColdTask.fromValueTaskFactory
 ---
-
-# fromValueTaskFactory
 
 
 

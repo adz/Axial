@@ -1,9 +1,6 @@
 ---
 title: failIfNotBlank
-description: API reference for Check.failIfNotBlank
 ---
-
-# failIfNotBlank
 
 Returns success when the string is blank.
 

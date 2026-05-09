@@ -1,9 +1,6 @@
 ---
 title: map3
-description: API reference for Validation.map3
 ---
-
-# map3
 
 Combines three validations, accumulating errors when any input fails.
 

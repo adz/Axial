@@ -1,9 +1,6 @@
 ---
 title: useWithAcquireRelease
-description: API reference for AsyncFlow.Runtime.useWithAcquireRelease
 ---
-
-# useWithAcquireRelease
 
 Safely acquires a resource, uses it, and ensures it is released via a task-based action.
 

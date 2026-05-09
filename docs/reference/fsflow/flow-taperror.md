@@ -1,9 +1,6 @@
 ---
 title: tapError
-description: API reference for Flow.tapError
 ---
-
-# tapError
 
 Runs a synchronous side effect on failure and preserves the original error.
 

@@ -1,9 +1,6 @@
 ---
 title: withRuntime
-description: API reference for RuntimeContext.withRuntime
 ---
-
-# withRuntime
 
 Replaces the runtime half of a runtime context.
 

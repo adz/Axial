@@ -1,9 +1,6 @@
 ---
 title: catchCancellation
-description: API reference for TaskFlow.Runtime.catchCancellation
 ---
-
-# catchCancellation
 
 Converts an `OperationCanceledException` into a typed error.
 

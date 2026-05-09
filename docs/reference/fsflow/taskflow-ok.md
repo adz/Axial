@@ -1,9 +1,6 @@
 ---
 title: ok
-description: API reference for TaskFlow.ok
 ---
-
-# ok
 
 Creates a successful task flow.
 

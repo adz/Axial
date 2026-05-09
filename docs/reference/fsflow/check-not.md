@@ -1,9 +1,6 @@
 ---
 title: not
-description: API reference for Check.not
 ---
-
-# not
 
 Returns success when the supplied check fails.
 

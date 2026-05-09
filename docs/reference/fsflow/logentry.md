@@ -1,9 +1,6 @@
 ---
 title: LogEntry
-description: API reference for LogEntry
 ---
-
-# LogEntry
 
 A structured log entry written through a runtime logger.
 

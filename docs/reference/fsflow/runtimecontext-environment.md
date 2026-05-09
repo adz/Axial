@@ -1,9 +1,6 @@
 ---
 title: environment
-description: API reference for RuntimeContext.environment
 ---
-
-# environment
 
 Reads the application environment half of a runtime context.
 

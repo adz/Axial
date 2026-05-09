@@ -1,9 +1,6 @@
 ---
 title: Validation
-description: API reference for Validation
 ---
-
-# Validation
 
 An accumulating validation result that keeps the structured diagnostics graph visible.
 

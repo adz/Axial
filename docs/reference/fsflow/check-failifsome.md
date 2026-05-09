@@ -1,9 +1,6 @@
 ---
 title: failIfSome
-description: API reference for Check.failIfSome
 ---
-
-# failIfSome
 
 Returns success when the option is `None`.
 

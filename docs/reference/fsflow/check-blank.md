@@ -1,9 +1,6 @@
 ---
 title: blank
-description: API reference for Check.blank
 ---
-
-# blank
 
 Returns success when the string is blank.
 

@@ -1,9 +1,6 @@
 ---
 title: RetryPolicy
-description: API reference for RetryPolicy
 ---
-
-# RetryPolicy
 
 Defines how runtime retry helpers repeat typed failures in a controlled way.
 

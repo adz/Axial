@@ -1,9 +1,6 @@
 ---
 title: noDelay
-description: API reference for RetryPolicy.noDelay
 ---
-
-# noDelay
 
 
 

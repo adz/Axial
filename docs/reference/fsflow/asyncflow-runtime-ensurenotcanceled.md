@@ -1,9 +1,6 @@
 ---
 title: ensureNotCanceled
-description: API reference for AsyncFlow.Runtime.ensureNotCanceled
 ---
-
-# ensureNotCanceled
 
 Checks if cancellation has been requested and returns a typed error if it has.
 

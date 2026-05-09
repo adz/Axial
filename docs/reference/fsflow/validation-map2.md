@@ -1,9 +1,6 @@
 ---
 title: map2
-description: API reference for Validation.map2
 ---
-
-# map2
 
 Combines two validations, accumulating errors if both fail.
 

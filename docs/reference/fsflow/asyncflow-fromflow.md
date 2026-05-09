@@ -1,9 +1,6 @@
 ---
 title: fromFlow
-description: API reference for AsyncFlow.fromFlow
 ---
-
-# fromFlow
 
 Lifts a synchronous flow into an async flow.
 

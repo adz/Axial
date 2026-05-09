@@ -1,0 +1,62 @@
+{{- $u := .Destination -}}
+{{- $isExternal := or (strings.HasPrefix $u "http") (strings.HasPrefix $u "https") (strings.HasPrefix $u "mailto") -}}
+{{- if $isExternal -}}
+  <a href="{{ $u | safeURL }}"{{ with .Title }} title="{{ . }}"{{ end }}{{ if strings.HasPrefix $u "http" }} target="_blank" rel="noopener"{{ end }}>{{ .Text | safeHTML }}</a>
+{{- else -}}
+  {{- /* Internal link logic */ -}}
+  {{- $link := $u -}}
+  {{- $fragment := "" -}}
+  {{- if strings.Contains $u "#" -}}
+    {{- $parts := split $u "#" -}}
+    {{- $link = index $parts 0 -}}
+    {{- $fragment = index $parts 1 -}}
+  {{- end -}}
+  
+  {{- /* Handle Docusaurus style: strip .md and handle common patterns */ -}}
+  {{- $cleanLink := strings.TrimSuffix ".md" $link -}}
+  {{- $cleanLink = strings.TrimPrefix "./" $cleanLink -}}
+  
+  {{- /* Search for the page */ -}}
+  {{- $page := .Page.GetPage $link -}}
+  {{- if not $page -}}
+    {{- $page = .Page.GetPage $cleanLink -}}
+  {{- end -}}
+  
+  {{- if not $page -}}
+    {{- /* Find a page by filename if GetPage fails due to ambiguity or case */ -}}
+    {{- $targetFile := lower (path.Base $cleanLink) -}}
+    {{- if not (strings.HasSuffix $targetFile ".md") -}}
+       {{- $targetFile = print $targetFile ".md" -}}
+    {{- end -}}
+    
+    {{- $matches := slice -}}
+    {{- range site.AllPages -}}
+      {{- if .File -}}
+        {{- if eq (lower (path.Base .File.Path)) $targetFile -}}
+          {{- $matches = $matches | append . -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+    
+    {{- if gt (len $matches) 0 -}}
+      {{- /* Pick the one that is NOT an index page if possible, or just the first one */ -}}
+      {{- $page = index $matches 0 -}}
+      {{- range $matches -}}
+         {{- if not (strings.HasPrefix .File.BaseFileName "_index") -}}
+            {{- $page = . -}}
+         {{- end -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+  
+  {{- if $page -}}
+    <a href="{{ $page.RelPermalink }}{{ with $fragment }}#{{ . }}{{ end }}"{{ with .Title }} title="{{ . }}"{{ end }}>{{ .Text | safeHTML }}</a>
+  {{- else -}}
+    {{- /* Fallback: if it looks like a symbol mention, just render the text without broken-link class unless it's an actual .md link */ -}}
+    {{- if strings.HasSuffix $u ".md" -}}
+      <a href="{{ $u | safeURL }}"{{ with .Title }} title="{{ . }}"{{ end }} class="broken-link">{{ .Text | safeHTML }}</a>
+    {{- else -}}
+      {{ .Text | safeHTML }}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}

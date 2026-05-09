@@ -1,9 +1,6 @@
 ---
 title: map2
-description: API reference for TaskFlow.map2
 ---
-
-# map2
 
 Combines two task flows with a mapping function.
 

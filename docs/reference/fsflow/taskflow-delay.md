@@ -1,9 +1,6 @@
 ---
 title: delay
-description: API reference for TaskFlow.delay
 ---
-
-# delay
 
 Defers task flow construction until execution time.
 

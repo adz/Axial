@@ -1,9 +1,6 @@
 ---
 title: RuntimeContext
-description: API reference for RuntimeContext
 ---
-
-# RuntimeContext
 
 Captures the two-context shape of a task workflow execution:
 runtime services, application capabilities, and the cancellation token for the current run.

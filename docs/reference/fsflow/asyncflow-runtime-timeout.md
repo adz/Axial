@@ -1,9 +1,6 @@
 ---
 title: timeout
-description: API reference for AsyncFlow.Runtime.timeout
 ---
-
-# timeout
 
 Wraps a flow with a timeout. If the flow does not complete within the specified duration, returns a typed error.
 

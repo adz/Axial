@@ -1,7 +1,9 @@
 ---
+weight: 30
 title: IcedTasks Integration
 description: How FsFlow fits beside IcedTasks and task-oriented code.
 ---
+
 
 # IcedTasks Integration
 
@@ -32,7 +34,7 @@ The difference is the model:
 - the task surface keeps the boundary model explicit with `TaskFlow<'env, 'error, 'value>`
 - the combination works well when you need task-native interop without giving up typed failures or environment/threaded context
 
-One naming caveat matters here: `IcedTasks` uses `ColdTask` as an alias-style task shape, while the task surface uses a nominal `ColdTask<'value>` wrapper type. The names are similar, but the types are not interchangeable without an explicit bridge.
+One naming caveat matters here: `IcedTasks` uses ColdTask as an alias-style task shape, while the task surface uses a nominal `ColdTask<'value>` wrapper type. The names are similar, but the types are not interchangeable without an explicit bridge.
 
 This page is about coexistence, not a literal side-by-side API sample from both libraries. The code below shows both sides of the boundary, with each bridge made explicit.
 
@@ -40,11 +42,11 @@ This page is about coexistence, not a literal side-by-side API sample from both 
 
 Use `IcedTasks` when the codebase already centers `task {}` and its adjacent task CE helpers.
 
-Use `TaskFlow` when you want:
+Use TaskFlow when you want:
 
 - a typed success/error boundary
 - explicit environment threading
-- `ColdTask` interop without losing the boundary shape
+- ColdTask interop without losing the boundary shape
 
 ## Example
 
@@ -72,7 +74,7 @@ let fsFlowUsesIcedTasks : TaskFlow<unit, string, string> =
     }
 ```
 
-`taskFlow {}` auto-binds the `ColdTask<'value>` wrapper produced by `ColdTask.fromTaskFactory icedLoadConfig`, so the IcedTasks helper stays cold until the boundary runs. The distinction still matters: `icedLoadConfig` is an IcedTasks alias-style cold task, while `ColdTask<'value>` is a nominal wrapper type.
+[`taskFlow {}`]({{< relref "taskbuilders-taskflow.md" >}}) auto-binds the `ColdTask<'value>` wrapper produced by `ColdTask.fromTaskFactory icedLoadConfig`, so the IcedTasks helper stays cold until the boundary runs. The distinction still matters: `icedLoadConfig` is an IcedTasks alias-style cold task, while `ColdTask<'value>` is a nominal wrapper type.
 
 `coldTask` does not take a `CancellationToken`; it is just `unit -> Task<'value>`. If the IcedTasks helper needs token flow, use `cancellableTask` instead:
 
@@ -104,7 +106,7 @@ Use `TaskFlow.toTask` when you want to consume an FsFlow boundary from an IcedTa
 
 ## Keep Started Task Work As Task
 
-If you already have started `Task` work, keep it as `Task` and bind it directly in `taskFlow {}`:
+If you already have started `Task` work, keep it as `Task` and bind it directly in [`taskFlow {}`]({{< relref "taskbuilders-taskflow.md" >}}):
 
 ```fsharp
 let started = Task.FromResult 42

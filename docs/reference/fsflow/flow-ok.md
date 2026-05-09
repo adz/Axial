@@ -1,9 +1,6 @@
 ---
 title: ok
-description: API reference for Flow.ok
 ---
-
-# ok
 
 Creates a successful synchronous flow.
 

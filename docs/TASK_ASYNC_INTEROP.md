@@ -1,7 +1,9 @@
 ---
+weight: 30
 title: Task and Async Interop
 description: Direct binding rules for async and task work in FsFlow.
 ---
+
 
 # Task and Async Interop
 
@@ -14,21 +16,21 @@ The core package includes sync, async, and task concepts together.
 
 Choose the family that matches the runtime shape of the boundary itself:
 
-- `Flow` for synchronous boundaries
-- `AsyncFlow` for `Async`-based boundaries
-- `TaskFlow` for `.NET Task`-based boundaries
+- Flow for synchronous boundaries
+- AsyncFlow for `Async`-based boundaries
+- TaskFlow for `.NET Task`-based boundaries
 
 Use interop to cross boundaries.
-Avoid keeping a task-oriented boundary in `Flow` just because a helper can be adapted.
+Avoid keeping a task-oriented boundary in Flow just because a helper can be adapted.
 
-Use `Check` for reusable predicates, `Check.orError` for pure failure-to-error bridging,
+Use Check for reusable predicates, `Check.orError` for pure failure-to-error bridging,
 `Guard.Of` / `Guard.MapError` when the source is already effect-shaped and you want the CE to
 bind the source while preserving its attached error,
-`Result` for fail-fast validation, and `Validation` plus `validate {}` when sibling failures should accumulate.
+Result for fail-fast validation, and Validation plus [`validate {}`]({{< relref "builders-validate.md" >}}) when sibling failures should accumulate.
 
 ## Preferred Style Inside Computation Expressions
 
-Inside `flow {}`, `asyncFlow {}`, and `taskFlow {}`, prefer direct binding:
+Inside [`flow {}`]({{< relref "builders-flow.md" >}}), [`asyncFlow {}`]({{< relref "builders-asyncflow.md" >}}), and [`taskFlow {}`]({{< relref "taskbuilders-taskflow.md" >}}), prefer direct binding:
 
 ```fsharp
 taskFlow {
@@ -39,10 +41,10 @@ taskFlow {
 }
 ```
 
-The builders already bind `Result`, `Flow`, `AsyncFlow`, `Task`, `Task<Result<_,_>>`, and `ColdTask` where supported.
-The "task surface" means the `TaskFlow` builder plus the `TaskFlowBuilderExtensions` and `AsyncFlowBuilderExtensions` members in the main `FsFlow` package.
-That surface is available in .NET builds, and it is what adds `Task`, `ValueTask`, and `ColdTask` binding support.
-If you are targeting `AsyncFlow` alone, or using `FsFlow` in a Fable-only async context, those task-aware members are simply not part of the surface you rely on.
+The builders already bind Result, Flow, AsyncFlow, `Task`, `Task<Result<_,_>>`, and ColdTask where supported.
+The "task surface" means the TaskFlow builder plus the `TaskFlowBuilderExtensions` and `AsyncFlowBuilderExtensions` members in the main `FsFlow` package.
+That surface is available in .NET builds, and it is what adds `Task`, `ValueTask`, and ColdTask binding support.
+If you are targeting AsyncFlow alone, or using `FsFlow` in a Fable-only async context, those task-aware members are simply not part of the surface you rely on.
 That means normal docs examples should not reach for `TaskFlow.fromFlow`, `AsyncFlow.fromResult`, or `AsyncFlow.fromAsync` inside the computation expression unless the point of the example is the bridge API itself.
 
 ## Direct Binds At A Glance
@@ -52,12 +54,12 @@ The option and value-option cases bind directly only when the computation error 
 
 | Builder | Binds directly |
 | --- | --- |
-| `flow {}` | `Flow<'env, 'error, 'value>`, `Result<'value, 'error>`, `option<'value>` when `error = unit`, `voption<'value>` when `error = unit` |
-| `asyncFlow {}` in core `FsFlow` | `Flow<'env, 'error, 'value>`, `AsyncFlow<'env, 'error, 'value>`, `Async<'value>`, `Async<Result<'value, 'error>>`, `Result<'value, 'error>`, `option<'value>` when `error = unit`, `voption<'value>` when `error = unit` |
-| `asyncFlow {}` with the task surface available | everything above, plus `Task<'value>`, `Task<Result<'value, 'error>>`, `ValueTask<'value>`, `ValueTask<Result<'value, 'error>>`, `ColdTask<'value>`, `ColdTask<Result<'value, 'error>>` |
-| `taskFlow {}` | `Flow<'env, 'error, 'value>`, `AsyncFlow<'env, 'error, 'value>`, `TaskFlow<'env, 'error, 'value>`, `Async<'value>`, `Async<Result<'value, 'error>>`, `Task<'value>`, `Task<Result<'value, 'error>>`, `ValueTask<'value>`, `ValueTask<Result<'value, 'error>>`, `ColdTask<'value>`, `ColdTask<Result<'value, 'error>>`, `Result<'value, 'error>`, `option<'value>` when `error = unit`, `voption<'value>` when `error = unit` |
+| [`flow {}`]({{< relref "builders-flow.md" >}}) | `Flow<'env, 'error, 'value>`, `Result<'value, 'error>`, `option<'value>` when `error = unit`, `voption<'value>` when `error = unit` |
+| [`asyncFlow {}`]({{< relref "builders-asyncflow.md" >}}) in core `FsFlow` | `Flow<'env, 'error, 'value>`, `AsyncFlow<'env, 'error, 'value>`, `Async<'value>`, `Async<Result<'value, 'error>>`, `Result<'value, 'error>`, `option<'value>` when `error = unit`, `voption<'value>` when `error = unit` |
+| [`asyncFlow {}`]({{< relref "builders-asyncflow.md" >}}) with the task surface available | everything above, plus `Task<'value>`, `Task<Result<'value, 'error>>`, `ValueTask<'value>`, `ValueTask<Result<'value, 'error>>`, `ColdTask<'value>`, `ColdTask<Result<'value, 'error>>` |
+| [`taskFlow {}`]({{< relref "taskbuilders-taskflow.md" >}}) | `Flow<'env, 'error, 'value>`, `AsyncFlow<'env, 'error, 'value>`, `TaskFlow<'env, 'error, 'value>`, `Async<'value>`, `Async<Result<'value, 'error>>`, `Task<'value>`, `Task<Result<'value, 'error>>`, `ValueTask<'value>`, `ValueTask<Result<'value, 'error>>`, `ColdTask<'value>`, `ColdTask<Result<'value, 'error>>`, `Result<'value, 'error>`, `option<'value>` when `error = unit`, `voption<'value>` when `error = unit` |
 
-### `flow {}`
+### [`flow {}`]({{< relref "builders-flow.md" >}})
 
 The sync builder binds:
 
@@ -66,13 +68,13 @@ The sync builder binds:
 - `Option<'value>` when the error type is `unit`
 - `ValueOption<'value>` when the error type is `unit`
 
-Use `flow {}` when the body is synchronous.
-Use `<!>` for mapping a pure function over a `Result` or flow value.
-Use `<*>` only when the function is already inside the same `Result` or flow shape.
+Use [`flow {}`]({{< relref "builders-flow.md" >}}) when the body is synchronous.
+Use `<!>` for mapping a pure function over a Result or flow value.
+Use `<*>` only when the function is already inside the same Result or flow shape.
 
-### `asyncFlow {}`
+### [`asyncFlow {}`]({{< relref "builders-asyncflow.md" >}})
 
-In the core `FsFlow` package, `asyncFlow {}` binds:
+In the core `FsFlow` package, [`asyncFlow {}`]({{< relref "builders-asyncflow.md" >}}) binds:
 
 - `Flow<'env, 'error, 'value>`
 - `AsyncFlow<'env, 'error, 'value>`
@@ -82,7 +84,7 @@ In the core `FsFlow` package, `asyncFlow {}` binds:
 - `Option<'value>` when the error type is `unit`
 - `ValueOption<'value>` when the error type is `unit`
 
-When the task surface is available, `asyncFlow {}` also binds task-oriented inputs such as:
+When the task surface is available, [`asyncFlow {}`]({{< relref "builders-asyncflow.md" >}}) also binds task-oriented inputs such as:
 
 - `Task<'value>`
 - `Task<Result<'value, 'error>>`
@@ -102,9 +104,9 @@ let computation : AsyncFlow<unit, string, string> =
     }
 ```
 
-### `taskFlow {}`
+### [`taskFlow {}`]({{< relref "taskbuilders-taskflow.md" >}})
 
-`taskFlow {}` binds:
+[`taskFlow {}`]({{< relref "taskbuilders-taskflow.md" >}}) binds:
 
 - `Flow<'env, 'error, 'value>`
 - `AsyncFlow<'env, 'error, 'value>`
@@ -172,9 +174,9 @@ let typedError : Flow<unit, string, string> =
 
 For applicative code, keep the distinction clear: `<!>` lifts a pure function into the same shape as the value, and `<*>` applies a function that has already been lifted.
 
-## When To Choose `AsyncFlow`
+## When To Choose AsyncFlow
 
-Prefer `AsyncFlow` when:
+Prefer AsyncFlow when:
 
 - the outer application code already uses `Async`
 - you want to stay in core `FsFlow`
@@ -182,12 +184,12 @@ Prefer `AsyncFlow` when:
 
 Use `AsyncFlow.toAsync` to run it.
 
-Choose `AsyncFlow` on its own when you want `Async`-native code without committing to task interop.
+Choose AsyncFlow on its own when you want `Async`-native code without committing to task interop.
 That is the right choice for Fable-oriented async code paths and for codebases that intentionally avoid `.NET Task` at the boundary.
 
-## When To Choose `TaskFlow`
+## When To Choose TaskFlow
 
-Prefer `TaskFlow` when:
+Prefer TaskFlow when:
 
 - the public boundary is `.NET Task`
 - task interop is central to the computation
@@ -202,12 +204,12 @@ Use `TaskFlow.Runtime` when you want the same helpers in a task-native shape.
 
 Use `FsFlow.Check` for pure `Result<'value, unit>` validation.
 Use `Check.orError` when you want to turn a unit failure into a domain error.
-Use `Validation` and `validate {}` when the checks should accumulate.
+Use Validation and [`validate {}`]({{< relref "builders-validate.md" >}}) when the checks should accumulate.
 
-The builders bind `Result` directly, so extra bridge calls are only needed when the error value itself needs a different conversion shape.
+The builders bind Result directly, so extra bridge calls are only needed when the error value itself needs a different conversion shape.
 When the source itself should bind directly in `flow`, `asyncFlow`, or `taskFlow`, wrap it with
 `Guard.Of` or remap the existing error with `Guard.MapError`. The source stays visible to the CE;
-`Guard` only packages the failure value.
+Guard only packages the failure value.
 
 ## `ColdTask<'value>`
 
@@ -232,7 +234,7 @@ let computation : TaskFlow<unit, string, string> =
     }
 ```
 
-## Hot `Task` And `ValueTask` Versus `ColdTask`
+## Hot `Task` And `ValueTask` Versus ColdTask
 
 Binding a started `Task<'value>` or `ValueTask<'value>` is not the same as binding a `ColdTask<'value>`.
 
@@ -242,15 +244,15 @@ Started task inputs are hot:
 - rerunning the boundary re-awaits the same started work
 - the current cancellation token cannot be pushed into that work after the fact
 
-`ColdTask` inputs are cold:
+ColdTask inputs are cold:
 
 - the work starts when the boundary runs
 - rerunning the boundary starts the work again from scratch
-- the current cancellation token is passed into the `ColdTask` factory
+- the current cancellation token is passed into the ColdTask factory
 
 Use a direct `Task` or `ValueTask` bind when you intentionally want to reuse existing started work.
 
-Use `ColdTask` when the task helper is part of the boundary effect and can stay delayed, restartable, and cancellation-aware.
+Use ColdTask when the task helper is part of the boundary effect and can stay delayed, restartable, and cancellation-aware.
 
 Example with a started task:
 
@@ -284,12 +286,12 @@ Read [`docs/SEMANTICS.md`](./SEMANTICS.md) when you need the exact rerun and can
 
 Use:
 
-- `Flow` when the boundary is sync
-- `AsyncFlow` when the boundary is `Async`-first
-- `TaskFlow` when the boundary is `Task`-first
+- Flow when the boundary is sync
+- AsyncFlow when the boundary is `Async`-first
+- TaskFlow when the boundary is `Task`-first
 - `ColdTask<'value>` when a task helper can stay delayed, rerunnable, and cancellable at run time
 
-If you are unsure between `AsyncFlow` and `TaskFlow`, choose the one that matches the boundary you
+If you are unsure between AsyncFlow and TaskFlow, choose the one that matches the boundary you
 need to return and run today.
 
 ## Next

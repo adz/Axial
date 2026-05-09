@@ -1,9 +1,6 @@
 ---
 title: orElseAsyncFlow
-description: API reference for AsyncFlow.orElseAsyncFlow
 ---
-
-# orElseAsyncFlow
 
 Turns a pure validation result into an async flow whose failure value comes from another async flow.
 

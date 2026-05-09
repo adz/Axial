@@ -1,9 +1,6 @@
 ---
 title: okIfSome
-description: API reference for Check.okIfSome
 ---
-
-# okIfSome
 
 Returns the value when the option is `Some`.
 

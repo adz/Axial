@@ -1,9 +1,6 @@
 ---
 title: fromResult
-description: API reference for TaskFlow.fromResult
 ---
-
-# fromResult
 
 Lifts a standard `Result` into a task flow.
 

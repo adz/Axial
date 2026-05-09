@@ -1,9 +1,6 @@
 ---
 title: bind
-description: API reference for TaskFlow.bind
 ---
-
-# bind
 
 Sequences a task-flow-producing continuation after a successful value.
 

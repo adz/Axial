@@ -1,9 +1,6 @@
 ---
 title: Path
-description: API reference for Path
 ---
-
-# Path
 
 A path through a validation graph, represented as a list of `PathSegment`.
 

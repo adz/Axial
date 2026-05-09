@@ -1,9 +1,6 @@
 ---
 title: map
-description: API reference for TaskFlow.map
 ---
-
-# map
 
 Maps the successful value of a task flow.
 

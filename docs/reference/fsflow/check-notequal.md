@@ -1,9 +1,6 @@
 ---
 title: notEqual
-description: API reference for Check.notEqual
 ---
-
-# notEqual
 
 Returns success when the values are not equal.
 

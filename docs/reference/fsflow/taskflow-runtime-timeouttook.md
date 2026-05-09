@@ -1,9 +1,6 @@
 ---
 title: timeoutToOk
-description: API reference for TaskFlow.Runtime.timeoutToOk
 ---
-
-# timeoutToOk
 
 Returns the supplied success value when the flow times out.
 

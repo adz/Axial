@@ -1,9 +1,6 @@
 ---
 title: succeed
-description: API reference for AsyncFlow.succeed
 ---
-
-# succeed
 
 Alias for `ok` that reads well in some call sites.
 

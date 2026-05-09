@@ -1,9 +1,6 @@
 ---
 title: Interop
-description: Source-documented task and async interop helpers for FsFlow.
 ---
-
-# Interop
 
 This page shows the interop helpers that bridge task, async, and synchronous boundaries in FsFlow.
 

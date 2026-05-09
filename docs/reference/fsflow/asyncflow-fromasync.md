@@ -1,9 +1,6 @@
 ---
 title: fromAsync
-description: API reference for AsyncFlow.fromAsync
 ---
-
-# fromAsync
 
 Lifts an async value into an async flow.
 

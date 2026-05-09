@@ -1,9 +1,6 @@
 ---
 title: MissingCapability
-description: API reference for MissingCapability
 ---
-
-# MissingCapability
 
 Describes a missing service-provider capability.
 

@@ -1,9 +1,6 @@
 ---
 title: mapRuntime
-description: API reference for RuntimeContext.mapRuntime
 ---
-
-# mapRuntime
 
 Maps the runtime half of a runtime context.
 

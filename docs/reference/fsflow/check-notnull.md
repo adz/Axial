@@ -1,9 +1,6 @@
 ---
 title: notNull
-description: API reference for Check.notNull
 ---
-
-# notNull
 
 Returns the value when it is not null.
 

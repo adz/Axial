@@ -1,7 +1,9 @@
 ---
+weight: 40
 title: FSharpPlus Integration
 description: How FsFlow fits beside FSharpPlus-based codebases.
 ---
+
 
 # FSharpPlus Integration
 
@@ -30,7 +32,7 @@ Typical coexistence patterns:
 
 - keep pure transformations in `FSharpPlus`
 - use FsFlow to sequence those transformations against a runtime boundary
-- let FsFlow own the `Flow`, `AsyncFlow`, or `TaskFlow` type at the edge
+- let FsFlow own the Flow, AsyncFlow, or TaskFlow type at the edge
 
 The practical rule is: if the code is generic and reusable across many domains, `FSharpPlus` can own it. If the code is choosing the runtime shape, the environment, or the typed failure boundary, FsFlow can own it.
 

@@ -1,9 +1,6 @@
 ---
 title: tapError
-description: API reference for AsyncFlow.tapError
 ---
-
-# tapError
 
 Runs an async side effect on failure and preserves the original error.
 

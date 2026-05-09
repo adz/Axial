@@ -1,9 +1,6 @@
 ---
 title: useWithAcquireRelease
-description: API reference for TaskFlow.Runtime.useWithAcquireRelease
 ---
-
-# useWithAcquireRelease
 
 Acquires a resource, uses it, and always runs the release action.
 

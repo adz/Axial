@@ -1,9 +1,6 @@
 ---
 title: or
-description: API reference for Check.or
 ---
-
-# or
 
 Returns success when either check succeeds.
 

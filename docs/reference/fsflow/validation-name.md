@@ -1,9 +1,6 @@
 ---
 title: name
-description: API reference for Validation.name
 ---
-
-# name
 
 Prefixes a validation with a named branch.
 

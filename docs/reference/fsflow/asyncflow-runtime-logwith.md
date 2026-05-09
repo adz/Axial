@@ -1,9 +1,6 @@
 ---
 title: logWith
-description: API reference for AsyncFlow.Runtime.logWith
 ---
-
-# logWith
 
 Writes a log entry using a message produced from the environment.
 

@@ -1,9 +1,6 @@
 ---
 title: okIfNotBlank
-description: API reference for Check.okIfNotBlank
 ---
-
-# okIfNotBlank
 
 Returns the string when it is not blank.
 

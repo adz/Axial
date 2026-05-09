@@ -1,0 +1,154 @@
+locale = "en-us"
+title = "FsFlow"
+theme = ["github.com/google/docsy"]
+
+# Language configuration
+defaultContentLanguage = "en"
+
+[module]
+  [[module.imports]]
+    path = "github.com/google/docsy"
+    disable = false
+  [[module.imports]]
+    path = "github.com/google/docsy/dependencies"
+    disable = false
+
+  # Basic mounts
+  [[module.mounts]]
+    source = "static"
+    target = "static"
+  [[module.mounts]]
+    source = "assets"
+    target = "assets"
+  [[module.mounts]]
+    source = "layouts"
+    target = "layouts"
+  [[module.mounts]]
+    source = "content"
+    target = "content"
+
+  # Root homepage
+  [[module.mounts]]
+    source = "../docs/index.md"
+    target = "content/_index.md"
+  
+  # Guides Sections
+  [[module.mounts]]
+    source = "../docs/GETTING_STARTED.md"
+    target = "content/docs/start/getting-started.md"
+  [[module.mounts]]
+    source = "../docs/VALIDATE_AND_RESULT.md"
+    target = "content/docs/start/validate-and-result.md"
+  [[module.mounts]]
+    source = "../docs/TINY_EXAMPLES.md"
+    target = "content/docs/start/tiny-examples.md"
+
+  [[module.mounts]]
+    source = "../docs/WHY_FSFLOW.md"
+    target = "content/docs/core-model/why-fsflow.md"
+  [[module.mounts]]
+    source = "../docs/SEMANTICS.md"
+    target = "content/docs/core-model/semantics.md"
+  [[module.mounts]]
+    source = "../docs/TASK_ASYNC_INTEROP.md"
+    target = "content/docs/core-model/task-async-interop.md"
+  [[module.mounts]]
+    source = "../docs/ENV_SLICING.md"
+    target = "content/docs/core-model/env-slicing.md"
+  [[module.mounts]]
+    source = "../docs/CAPS.md"
+    target = "content/docs/core-model/caps.md"
+  [[module.mounts]]
+    source = "../docs/ARCHITECTURAL_STYLES.md"
+    target = "content/docs/core-model/architectural-styles.md"
+
+  [[module.mounts]]
+    source = "../docs/examples/README.md"
+    target = "content/docs/patterns/examples/_index.md"
+  [[module.mounts]]
+    source = "../docs/TROUBLESHOOTING_TYPES.md"
+    target = "content/docs/patterns/troubleshooting-types.md"
+  [[module.mounts]]
+    source = "../docs/BENCHMARKS.md"
+    target = "content/docs/patterns/benchmarks.md"
+
+  [[module.mounts]]
+    source = "../docs/INTEGRATIONS_FSTOOLKIT.md"
+    target = "content/docs/ecosystem/integrations-fstoolkit.md"
+  [[module.mounts]]
+    source = "../docs/INTEGRATIONS_VALIDUS.md"
+    target = "content/docs/ecosystem/integrations-validus.md"
+  [[module.mounts]]
+    source = "../docs/INTEGRATIONS_ICEDTASKS.md"
+    target = "content/docs/ecosystem/integrations-icedtasks.md"
+  [[module.mounts]]
+    source = "../docs/INTEGRATIONS_FSHARPPLUS.md"
+    target = "content/docs/ecosystem/integrations-fsharpplus.md"
+  [[module.mounts]]
+    source = "../docs/EFFECT_TS_COMPARISON.md"
+    target = "content/docs/ecosystem/effect-ts-comparison.md"
+  [[module.mounts]]
+    source = "../docs/INTEGRATIONS.md"
+    target = "content/docs/ecosystem/integrations.md"
+
+  # Images and content assets
+  [[module.mounts]]
+    source = "../docs/content"
+    target = "static/content"
+
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true
+  [markup.highlight]
+    codeFences = true
+    guessSyntax = true
+    lineNoStart = 1
+    lineNos = false
+    style = "tango"
+
+[params]
+  copyright = "Adam Davies"
+  github_repo = "https://github.com/adz/FsFlow"
+  version = "next"
+  version_menu = "next"
+  version_menu_pagelinks = true
+  [[params.versions]]
+    version = "next"
+    name = "next"
+    url = "/"
+  
+  # Navigation links
+  [[params.links.user]]
+    name = "GitHub"
+    url = "https://github.com/adz/FsFlow"
+    icon = "fab fa-github"
+    desc = "Source Code"
+
+[params.ui]
+  sidebar_menu_compact = true
+  sidebar_menu_truncate = 500
+  breadcrumb_disable = false
+  footer_about_enable = true
+
+[outputFormats]
+  [outputFormats.Print]
+    baseName = "index"
+    isHTML = true
+    mediaType = "text/html"
+    path = "print"
+    rel = "alternate"
+
+[menu]
+  [[menu.main]]
+    name = "Docs"
+    pageRef = "/docs"
+    weight = 10
+  [[menu.main]]
+    name = "Reference"
+    pageRef = "/reference"
+    weight = 20
+  [[menu.main]]
+    name = "GitHub"
+    url = "https://github.com/adz/FsFlow"
+    weight = 30

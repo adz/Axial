@@ -1,9 +1,6 @@
 ---
 title: ensureNotCanceled
-description: API reference for TaskFlow.Runtime.ensureNotCanceled
 ---
-
-# ensureNotCanceled
 
 Returns a typed error immediately when the runtime token is already canceled.
 

@@ -1,9 +1,6 @@
 ---
 title: notEmpty
-description: API reference for Check.notEmpty
 ---
-
-# notEmpty
 
 Returns the sequence when it is not empty.
 

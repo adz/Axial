@@ -1,9 +1,6 @@
 ---
 title: okIfNull
-description: API reference for Check.okIfNull
 ---
-
-# okIfNull
 
 Returns success when the value is null.
 

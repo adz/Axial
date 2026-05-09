@@ -1,9 +1,6 @@
 ---
 title: okIfNotEqual
-description: API reference for Check.okIfNotEqual
 ---
-
-# okIfNotEqual
 
 Returns success when the values are not equal.
 

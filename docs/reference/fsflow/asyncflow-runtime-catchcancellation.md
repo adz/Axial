@@ -1,9 +1,6 @@
 ---
 title: catchCancellation
-description: API reference for AsyncFlow.Runtime.catchCancellation
 ---
-
-# catchCancellation
 
 Catches `OperationCanceledException` and converts it into a typed error.
 

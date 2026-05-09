@@ -1,9 +1,6 @@
 ---
 title: timeoutToError
-description: API reference for AsyncFlow.Runtime.timeoutToError
 ---
-
-# timeoutToError
 
 Transitions to a failure value on timeout.
 

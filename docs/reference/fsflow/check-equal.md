@@ -1,9 +1,6 @@
 ---
 title: equal
-description: API reference for Check.equal
 ---
-
-# equal
 
 Returns success when the values are equal.
 

@@ -1,9 +1,6 @@
 ---
 title: failIfNotNull
-description: API reference for Check.failIfNotNull
 ---
-
-# failIfNotNull
 
 Returns success when the value is null.
 

@@ -1,9 +1,6 @@
 ---
 title: apply
-description: API reference for Validation.apply
 ---
-
-# apply
 
 Applies a validation-wrapped function to a validation-wrapped value.
 

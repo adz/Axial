@@ -1,9 +1,6 @@
 ---
 title: catch
-description: API reference for Flow.catch
 ---
-
-# catch
 
 Catches exceptions raised during execution and maps them to a typed error.
 

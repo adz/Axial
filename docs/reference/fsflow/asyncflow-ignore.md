@@ -1,9 +1,6 @@
 ---
 title: ignore
-description: API reference for AsyncFlow.ignore
 ---
-
-# ignore
 
 Maps the successful value of an async flow to `unit`.
 

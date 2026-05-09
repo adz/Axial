@@ -1,9 +1,6 @@
 ---
 title: orElse
-description: API reference for Validation.orElse
 ---
-
-# orElse
 
 Falls back to another validation when the source validation fails.
 

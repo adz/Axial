@@ -1,7 +1,9 @@
 ---
+weight: 10
 title: The FsFlow Model
 description: The core FsFlow progression from Check and Result into Validation, Flow, AsyncFlow, and TaskFlow.
 ---
+
 
 # The FsFlow Model
 
@@ -16,10 +18,10 @@ Check -> Result -> Validation -> Flow -> AsyncFlow -> TaskFlow
 The validation vocabulary stays the same while the execution context grows.
 
 - start with reusable predicate checks, whether they preserve a value on success or act as a gate
-- keep fail-fast logic in plain `Result`
-- accumulate sibling failures with `Validation` and `validate {}`
-- lift into `Flow` when you need explicit environment access
-- lift again into `AsyncFlow` or `TaskFlow` when the runtime becomes asynchronous
+- keep fail-fast logic in plain Result
+- accumulate sibling failures with Validation and [`validate {}`]({{< relref "builders-validate.md" >}})
+- lift into Flow when you need explicit environment access
+- lift again into AsyncFlow or TaskFlow when the runtime becomes asynchronous
 
 That matters because many F# codebases end up with separate worlds:
 
@@ -44,21 +46,21 @@ AsyncFlow<'env, 'error, 'value>
 TaskFlow<'env, 'error, 'value>
 ```
 
-The point is not to replace `Result`, `Async`, or `Task`.
+The point is not to replace Result, `Async`, or `Task`.
 The point is to let one Result-based style scale into real application boundaries without changing the mental model.
 
-`AsyncFlow` is the async-native sibling. `TaskFlow` is the .NET task sibling.
-Use `AsyncFlow` by itself when you want an `Async` boundary without `Task` or `ColdTask` interop.
-`Guard` is the explicit bridge that keeps check-like sources and existing error-bearing sources readable
-when they need to enter `flow {}`, `asyncFlow {}`, or `taskFlow {}`.
+AsyncFlow is the async-native sibling. TaskFlow is the .NET task sibling.
+Use AsyncFlow by itself when you want an `Async` boundary without `Task` or ColdTask interop.
+Guard is the explicit bridge that keeps check-like sources and existing error-bearing sources readable
+when they need to enter [`flow {}`]({{< relref "builders-flow.md" >}}), [`asyncFlow {}`]({{< relref "builders-asyncflow.md" >}}), or [`taskFlow {}`]({{< relref "taskbuilders-taskflow.md" >}}).
 
 ## The Main Claim
 
 FsFlow unifies Result-based programming across pure logic and effectful execution.
 
-- write predicate logic once with `Check`, using value-preserving checks when you need the input again and gate checks when you only need yes/no
-- keep fail-fast domain logic in `Result`
-- accumulate sibling validation with `Validation`
+- write predicate logic once with Check, using value-preserving checks when you need the input again and gate checks when you only need yes/no
+- keep fail-fast domain logic in Result
+- accumulate sibling validation with Validation
 - lift the same logic directly into flows when you need environment, async, task, cancellation, logging, or resource handling
 - keep the smallest honest runtime shape at each boundary
 
@@ -81,7 +83,7 @@ let validateEmail (email: string) : Result<string, RegistrationError> =
 
 This is already enough for pure code and should stay plain when the surrounding logic is still plain.
 
-If sibling checks should accumulate, move to `Validation` instead of forcing everything through `Result`:
+If sibling checks should accumulate, move to Validation instead of forcing everything through Result:
 
 ```fsharp
 let validateRegistration (email: string) (name: string) : Validation<string * string, RegistrationError> =
@@ -121,7 +123,7 @@ There is no separate task-result validation vocabulary to switch to first.
 
 FsFlow is strongest when you would otherwise spread the same use case across:
 
-- plain `Check`, `Result`, and `Validation` helpers
+- plain Check, Result, and Validation helpers
 - `Async<Result<_,_>>` or `Task<Result<_,_>>` wrappers
 - extra helper modules for each wrapper shape
 - manual environment threading or ad hoc service lookups
@@ -130,7 +132,7 @@ Instead, the same logic can move upward through the computation families while k
 
 ## Adoption Rule
 
-Use FsFlow by default in the effectful application layer where the boundary genuinely needs more than plain `Result`:
+Use FsFlow by default in the effectful application layer where the boundary genuinely needs more than plain Result:
 
 - handlers
 - use cases
@@ -142,16 +144,16 @@ Keep the domain plain F# by default:
 - domain models
 - pure business rules
 - small validation helpers
-- plain `Result` when it already reads clearly
+- plain Result when it already reads clearly
 
 ## Short-Circuiting Is Intentional
 
-`Check`, `Result`, `Flow`, `AsyncFlow`, and `TaskFlow` are short-circuiting.
+Check, Result, Flow, AsyncFlow, and TaskFlow are short-circuiting.
 They stop on the first typed failure.
 
 That is a feature, not a missing applicative layer.
 
-If you need accumulated validation, use `Validation` and `validate {}` explicitly.
+If you need accumulated validation, use Validation and [`validate {}`]({{< relref "builders-validate.md" >}}) explicitly.
 FsFlow does not try to hide that behavior inside the workflow builders.
 
 ## What Keeps It Readable
@@ -184,8 +186,8 @@ Stay with plain F# when:
 
 - the code is mostly pure
 - a direct function parameter is clearer
-- plain `Result` already says everything
-- `Validation` or a plain `Task<'T>` / `Async<'T>` boundary is the simplest honest shape
+- plain Result already says everything
+- Validation or a plain `Task<'T>` / `Async<'T>` boundary is the simplest honest shape
 
 ## Next
 

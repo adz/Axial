@@ -1,3 +1,8 @@
+---
+weight: 30
+title: Benchmarks
+---
+
 # Benchmarks
 
 This page shows the performance tradeoffs of using FsFlow compared to manual result/async/task composition.
@@ -43,14 +48,14 @@ Measures the same 20-step short-circuiting shape for task-oriented computations.
 
 ### Implicit Token Propagation
 
-Compares `TaskFlow` implicit token propagation with explicit token threading in a manual `Task<Result<_,_>>` computation.
+Compares TaskFlow implicit token propagation with explicit token threading in a manual `Task<Result<_,_>>` computation.
 
 | Method | Mean | Allocated |
 | --- | --- | --- |
 | Manual Threading | 158.2 ns | 720 B |
 | TaskFlow | 185.4 ns | 1.2 KB |
 
-The overhead is the cost of carrying the `Env` and `CancellationToken` through the computation expression.
+The overhead is the cost of carrying the Env and `CancellationToken` through the computation expression.
 
 ## Real-World Scaling
 
@@ -93,12 +98,12 @@ Rerunning a computation re-executes all steps.
 | Manual (Cached) | 5.2 ns | - |
 | FsFlow (Rerun) | 45.2 ns | 160 B |
 
-If you need to cache a result, run the computation once and store the `Result`.
+If you need to cache a result, run the computation once and store the Result.
 The "cold" property is for effectful orchestration, not for caching data.
 
 ## ValueTask Tradeoffs
 
-`TaskFlow` uses `ValueTask` internally where possible, but the cold nature of the library means it cannot always avoid allocations when binding hot tasks.
+TaskFlow uses `ValueTask` internally where possible, but the cold nature of the library means it cannot always avoid allocations when binding hot tasks.
 
 ### Binding Hot Task vs ColdTask
 
@@ -107,7 +112,7 @@ The "cold" property is for effectful orchestration, not for caching data.
 | Hot Task Bind | 185.4 ns | 1.2 KB |
 | ColdTask Bind | 162.1 ns | 840 B |
 
-`ColdTask` is slightly faster and leaner because it avoids the `ValueTask` wrapper check when the work is already delayed.
+ColdTask is slightly faster and leaner because it avoids the `ValueTask` wrapper check when the work is already delayed.
 
 ## Conclusion
 

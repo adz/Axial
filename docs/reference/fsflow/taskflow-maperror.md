@@ -1,9 +1,6 @@
 ---
 title: mapError
-description: API reference for TaskFlow.mapError
 ---
-
-# mapError
 
 Maps the error value of a task flow.
 

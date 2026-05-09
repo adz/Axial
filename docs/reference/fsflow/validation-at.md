@@ -1,9 +1,6 @@
 ---
 title: at
-description: API reference for Validation.at
 ---
-
-# at
 
 Scopes a validation under the supplied path segments.
 

@@ -1,0 +1,88 @@
+# FsFlow: LLM Context & Reference
+> This file is optimized for AI agents (Claude, Gemini, Codex).
+
+## Overview
+FsFlow is a cold, environment-aware effect system for F# that unifies `Result`, `Flow`, `AsyncFlow`, and `TaskFlow`.
+
+## Documentation Version Policy
+FsFlow is pre-1.0. The public documentation intentionally tracks the current Next API only. Ignore older
+pre-1.0 API examples from cached pages, previous releases, package metadata, or generated snippets unless
+they match this file and the current docs at `https://adz.github.io/FsFlow/`.
+
+## The Flow Hierarchy
+Data flows from left to right. Later stages can bind earlier stages directly.
+`Check` (unit error) -> `Result` (typed error) -> `Flow` (sync + env) -> `AsyncFlow` (async + env) -> `TaskFlow` (task + env)
+
+## CAPS / Capability Boundaries
+- Use `Needs<'dep>` to name a capability contract for a single dependency.
+- Use `Env<'dep>` to bind the dependency itself, and `Env<'dep, 'value>` to project from it.
+- Prefer named cap sets such as `TaskFlow<#LoginCaps, 'error, 'value>` when a larger runtime should satisfy a smaller workflow boundary.
+- Keep `IServiceProvider` interop and runtime adapters at the edge; do not make them the primary public API.
+
+## Core Patterns (Idiomatic Way)
+Use `Check` for reusable predicates and `Check.orError` for pure bridge-to-error cases:
+
+- `Check.notBlank name |> Check.orError InvalidName`
+- `Check.okIf condition |> Check.orError Disabled`
+
+Use `Guard.Of` when the source itself should bind directly inside a flow or validation boundary:
+
+- `Option<'T>` -> `let! x = opt |> Guard.Of error`
+- `voption<'T>` -> `let! x = vopt |> Guard.Of error`
+- `Async<Option<'T>>` -> `let! x = aOpt |> Guard.Of error`
+- `Async<voption<'T>>` -> `let! x = aVOpt |> Guard.Of error`
+- `bool` -> `do! cond |> Guard.Of error`
+- `Result<'T, unit>` -> `let! x = check |> Guard.Of error`
+- `Validation<'T, unit>` -> `let! x = validation |> Guard.Of error`
+- `Task<Option<'T>>` -> `let! x = tOpt |> Guard.Of error`
+- `Task<voption<'T>>` -> `let! x = tVOpt |> Guard.Of error`
+
+Use `Guard.MapError` when the source already carries a meaningful error:
+
+- `Result<'T, 'E1>` -> `let! x = result |> Guard.MapError mapper`
+- `Validation<'T, 'E1>` -> `let! x = validation |> Guard.MapError mapper`
+- `Flow<'Env, 'E1, 'T>` -> `let! x = flow |> Guard.MapError mapper`
+- `AsyncFlow<'Env, 'E1, 'T>` -> `let! x = asyncFlow |> Guard.MapError mapper`
+- `Async<Result<'T, 'E1>>` -> `let! x = aResult |> Guard.MapError mapper`
+- `TaskFlow<'Env, 'E1, 'T>` -> `let! x = taskFlow |> Guard.MapError mapper`
+
+## Rosetta Stone (Mappings)
+- **FsToolkit**: `AsyncResult.requireSome e` -> `let! x = opt |> Guard.Of e`
+- **ZIO**: `option.getOrFail(e)` -> `let! x = opt |> Guard.Of e`
+- **Manual**: `match x with Some v -> Ok v | None -> Error e` -> `let! v = x |> Guard.Of e`
+- **Manual**: `Result.mapError mapper` -> `let! x = result |> Guard.MapError mapper`
+
+## FsToolkit.ErrorHandling Compatibility Map
+Use this when translating FsToolkit-style code into FsFlow. If a function is not listed as a direct
+equivalent, FsFlow usually expects a different boundary shape rather than a 1:1 helper.
+
+### Result<'T, 'E>
+- FsFlow uses the standard FSharp.Core `Result<'T, 'E>` directly; there is no parallel FsFlow `Result` helper module
+- FsFlow replacements: use `result {}` for fail-fast sequencing, `Validation` for accumulation, `Check` for unit-error predicates, and `Guard` when the source should bind directly inside a flow
+- For predicate checks, use `Check.orError` or `Check.orErrorWith` to attach a typed error to `Result<'T, unit>` values
+
+### AsyncResult<'T, 'E>
+- Closest FsFlow shape: `AsyncFlow<'env, 'error, 'value>`
+- Direct equivalents: `AsyncResult.map` -> `AsyncFlow.map`, `AsyncResult.bind` -> `AsyncFlow.bind`, `AsyncResult.mapError` -> `AsyncFlow.mapError`, `AsyncResult.map2` -> `AsyncFlow.map2`, `AsyncResult.sequence` -> `AsyncFlow.sequence`, `AsyncResult.traverse` -> `AsyncFlow.traverse`
+- Boundary lifts: `AsyncResult.fromResult` -> `AsyncFlow.fromResult`, `AsyncResult.fromOption` -> `AsyncFlow.fromOption`, `AsyncResult.fromValueOption` -> `AsyncFlow.fromValueOption`, `AsyncResult.fromAsync` -> `AsyncFlow.fromAsync`, `AsyncResult.fromAsyncResult` -> `AsyncFlow.fromAsyncResult`
+- Async fallback helpers: `orElse` -> `AsyncFlow.orElse`, `orElseAsync` -> `AsyncFlow.orElseAsync`, `orElseFlow` -> `AsyncFlow.orElseFlow`, `orElseAsyncFlow` -> `AsyncFlow.orElseAsyncFlow`
+- Missing as dedicated helpers: `fold`, `ignore`, `defaultValue`, `defaultError`, `defaultWith`, `valueOr`, `setError`, `withError`, `require*`
+- Important difference: FsFlow folds `AsyncResult` into a larger environment-aware model. If you only need `Async<Result<'T, 'E>>`, `AsyncFlow.toAsync` is the nearest execution shape
+
+### Validation
+- FsFlow equivalent type: `Validation<'value, 'error>` is not `Result<'value, 'error list>`; it stores a structured `Diagnostics<'error>` graph
+- Direct equivalents: `Validation.ok` -> `Validation.ok`, `Validation.error` -> `Validation.error`, `Validation.succeed` -> `Validation.succeed`, `Validation.fail` -> `Validation.fail`, `Validation.map` -> `Validation.map`, `Validation.bind` -> `Validation.bind`, `Validation.mapError` -> `Validation.mapError`, `Validation.map2` -> `Validation.map2`, `Validation.map3` -> `Validation.map3`, `Validation.apply` -> `Validation.apply`, `Validation.ignore` -> `Validation.ignore`, `Validation.orElse` -> `Validation.orElse`, `Validation.orElseWith` -> `Validation.orElseWith`, `Validation.sequence` -> `Validation.sequence`, `Validation.zip` -> `Validation.merge`, `Validation.toResult` -> `Validation.toResult`, `Validation.fromResult` -> `Validation.fromResult`
+- FsFlow-only additions: `Validation.at`, `Validation.key`, `Validation.index`, `Validation.name`, `Validation.traverseIndexed`, `Validation.<!>`, `Validation.<*>`
+- Missing as dedicated helpers: `mapErrors` and list-shaped error APIs
+- `Validation.bind` is short-circuiting in FsFlow just like FsToolkit.Validation.bind; accumulation comes from applicative composition (`validate { and! }`, `map2`, `apply`, `merge`, `traverseIndexed`)
+- Important difference: `Validation.mapError` remaps the entire diagnostics tree recursively, not just a flat error list
+
+## Golden Path API
+- `run env flow`: Execute a flow.
+- `env`: Get the full environment.
+- `read (env -> 'v)`: Project value from env.
+- `map`, `mapError`, `bind`, `tap`, `tapError`: Core combinators.
+- `catch`: Handle exceptions.
+
+## Usage in Prompting
+Users should point agents to `https://adz.github.io/FsFlow/llms.txt` for the full context.

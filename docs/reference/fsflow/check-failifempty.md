@@ -1,9 +1,6 @@
 ---
 title: failIfEmpty
-description: API reference for Check.failIfEmpty
 ---
-
-# failIfEmpty
 
 Returns the sequence when it is not empty.
 

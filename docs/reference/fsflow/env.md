@@ -1,9 +1,6 @@
 ---
 title: Env
-description: API reference for Env
 ---
-
-# Env
 
 Request token for binding a whole dependency inside a workflow.
 

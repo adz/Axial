@@ -1,9 +1,6 @@
 ---
 title: merge
-description: API reference for Validation.merge
 ---
-
-# merge
 
 Merges two validations into a validation of a tuple.
 

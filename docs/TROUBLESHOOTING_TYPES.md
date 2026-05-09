@@ -1,3 +1,8 @@
+---
+weight: 20
+title: Troubleshooting Types
+---
+
 # Troubleshooting Types
 
 This page shows the compiler errors that usually mean you picked the wrong workflow family or crossed a wrapper boundary in the wrong place.
@@ -51,12 +56,12 @@ flow {
 }
 ```
 
-`flow {}` is sync-only.
+[`flow {}`]({{< relref "builders-flow.md" >}}) is sync-only.
 
 Fix it by moving to the honest family:
 
-- use `asyncFlow {}` for `Async`
-- use `taskFlow {}` for `.NET Task`
+- use [`asyncFlow {}`]({{< relref "builders-asyncflow.md" >}}) for `Async`
+- use [`taskFlow {}`]({{< relref "taskbuilders-taskflow.md" >}}) for `.NET Task`
 
 Example:
 
@@ -116,9 +121,9 @@ let workflow : Flow<unit, string, int> =
     |> Flow.fromOption "missing value"
 ```
 
-The same pattern exists for `AsyncFlow` and `TaskFlow`.
+The same pattern exists for AsyncFlow and TaskFlow.
 
-## Error: `ColdTask` Does Not Match `Task`
+## Error: ColdTask Does Not Match `Task`
 
 `TaskFlow.fromTask` and direct `taskFlow { let! ... }` support `ColdTask<'value>` for delayed task work.
 
@@ -135,7 +140,7 @@ let load : ColdTask<int> =
     ColdTask(fun _ -> Task.FromResult 42)
 ```
 
-If you already have a started `Task<'value>`, bind it directly in `taskFlow {}` instead.
+If you already have a started `Task<'value>`, bind it directly in [`taskFlow {}`]({{< relref "taskbuilders-taskflow.md" >}}) instead.
 
 ## When Type Errors Usually Mean A Boundary Problem
 
@@ -152,10 +157,10 @@ If the compiler error mentions one of these shapes, check the boundary first:
 
 Most fixes are one of:
 
-- choose `flow {}`, `asyncFlow {}`, or `taskFlow {}` based on the real runtime shape
+- choose [`flow {}`]({{< relref "builders-flow.md" >}}), [`asyncFlow {}`]({{< relref "builders-asyncflow.md" >}}), or [`taskFlow {}`]({{< relref "taskbuilders-taskflow.md" >}}) based on the real runtime shape
 - add a type annotation to disambiguate `let!`
 - derive a smaller local environment with `localEnv`
-- move back to plain `Result` until the real workflow boundary appears
+- move back to plain Result until the real workflow boundary appears
 
 ## Next
 

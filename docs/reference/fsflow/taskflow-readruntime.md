@@ -1,9 +1,6 @@
 ---
 title: readRuntime
-description: API reference for TaskFlow.readRuntime
 ---
-
-# readRuntime
 
 Reads the runtime half of a runtime-context environment.
 

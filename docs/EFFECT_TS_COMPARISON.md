@@ -1,7 +1,9 @@
 ---
+weight: 50
 title: Effect-TS Comparison
 description: Where FsFlow overlaps with Effect-TS and where it stays intentionally smaller.
 ---
+
 
 # Effect-TS Comparison
 
@@ -20,8 +22,8 @@ These ideas are shared:
 
 FsFlow is aimed at ordinary F# application code:
 
-- `flow {}`, `asyncFlow {}`, and `taskFlow {}` instead of generator-based syntax
-- first-class interop with `Result`, `Async`, and `.NET Task`
+- [`flow {}`]({{< relref "builders-flow.md" >}}), [`asyncFlow {}`]({{< relref "builders-asyncflow.md" >}}), and [`taskFlow {}`]({{< relref "taskbuilders-taskflow.md" >}}) instead of generator-based syntax
+- first-class interop with Result, `Async`, and `.NET Task`
 - explicit environment reads such as `Flow.read _.Gateway` or `TaskFlow.read _.Gateway`
 - a much smaller surface focused on application flows rather than a broader runtime platform
 

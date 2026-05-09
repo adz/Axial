@@ -1,9 +1,6 @@
 ---
 title: any
-description: API reference for Check.any
 ---
-
-# any
 
 Returns success when at least one check in the sequence succeeds.
 

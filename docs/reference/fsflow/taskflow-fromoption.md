@@ -1,9 +1,6 @@
 ---
 title: fromOption
-description: API reference for TaskFlow.fromOption
 ---
-
-# fromOption
 
 Lifts an option into a task flow with the supplied error.
 

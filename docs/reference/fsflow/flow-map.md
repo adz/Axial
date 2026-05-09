@@ -1,9 +1,6 @@
 ---
 title: map
-description: API reference for Flow.map
 ---
-
-# map
 
 Maps the successful value of a synchronous flow.
 

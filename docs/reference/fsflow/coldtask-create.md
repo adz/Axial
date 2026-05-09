@@ -1,9 +1,6 @@
 ---
 title: create
-description: API reference for ColdTask.create
 ---
-
-# create
 
 
 

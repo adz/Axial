@@ -1,9 +1,6 @@
 ---
 title: cancellationToken
-description: API reference for AsyncFlow.Runtime.cancellationToken
 ---
-
-# cancellationToken
 
 Reads the current cancellation token from the flow.
 

@@ -1,9 +1,6 @@
 ---
 title: timeoutToError
-description: API reference for TaskFlow.Runtime.timeoutToError
 ---
-
-# timeoutToError
 
 Forwards to `timeout` for a typed failure on timeout.
 

@@ -1,9 +1,6 @@
 ---
 title: ColdTask
-description: API reference for ColdTask
 ---
-
-# ColdTask
 
 Represents delayed task work that can observe a runtime cancellation token when it is started.
 

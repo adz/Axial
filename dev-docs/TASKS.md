@@ -40,3 +40,9 @@ The numbered items below are intentionally linear so the ralph loop can move thr
    run `dotnet test`, `bash scripts/generate-api-docs.sh`, and the Docusaurus build in `site`; fix
    broken links, MDX issues, package/API reference gaps, and stale examples so the implementation,
    docs, generated outputs, and planning docs all agree.
+8. [x] Execute Hugo/Docsy documentation migration:
+   Implement the migration plan detailed in `dev-docs/DOCSY-PLAN.md` by replacing the Docusaurus
+   setup in `site/` with Hugo and Docsy. This includes adding `hugo = "extended"` to `mise.toml`,
+   updating the navigation structure to use Hugo `_index.md` and frontmatter instead of `sidebars.js`,
+   and modifying `scripts/build-docs-site.sh` to run Hugo. Ensure the default Docsy visual theme is used.
+

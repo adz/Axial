@@ -1,9 +1,6 @@
 ---
 title: create
-description: API reference for TaskFlowSpec.create
 ---
-
-# create
 
 Creates a task-flow spec from runtime services, application dependencies, and a build function.
 

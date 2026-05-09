@@ -1,9 +1,6 @@
 ---
 title: ok
-description: API reference for AsyncFlow.ok
 ---
-
-# ok
 
 Creates a successful async flow.
 

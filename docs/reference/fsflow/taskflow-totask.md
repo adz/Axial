@@ -1,9 +1,6 @@
 ---
 title: toTask
-description: API reference for TaskFlow.toTask
 ---
-
-# toTask
 
 Converts a task flow into a hot `Task`.
 

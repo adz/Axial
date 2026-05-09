@@ -1,9 +1,6 @@
 ---
 title: index
-description: API reference for Validation.index
 ---
-
-# index
 
 Prefixes a validation with an indexed branch.
 

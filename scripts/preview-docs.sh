@@ -6,4 +6,7 @@ root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 "$root_dir/scripts/generate-example-docs.sh"
 bash "$root_dir/scripts/generate-api-docs.sh"
-npm --prefix "$root_dir/site" run start -- --host 127.0.0.1 --port 3000
+bash "$root_dir/scripts/populate-hugo-content.sh"
+
+# Hugo preview
+hugo server --source "$root_dir/site" --bind 127.0.0.1 --port 3000

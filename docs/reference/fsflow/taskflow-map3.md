@@ -1,9 +1,6 @@
 ---
 title: map3
-description: API reference for TaskFlow.map3
 ---
-
-# map3
 
 Combines three task flows with a mapping function.
 

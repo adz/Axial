@@ -1,9 +1,6 @@
 ---
 title: map3
-description: API reference for AsyncFlow.map3
 ---
-
-# map3
 
 Combines three async flows with a mapping function.
 

@@ -1,9 +1,6 @@
 ---
 title: timeoutWith
-description: API reference for AsyncFlow.Runtime.timeoutWith
 ---
-
-# timeoutWith
 
 Transitions to a fallback workflow on timeout.
 

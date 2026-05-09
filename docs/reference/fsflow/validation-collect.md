@@ -1,9 +1,6 @@
 ---
 title: collect
-description: API reference for Validation.collect
 ---
-
-# collect
 
 Collects a sequence of validations into a single validation of a list.
 

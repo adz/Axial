@@ -1,9 +1,6 @@
 ---
 title: merge
-description: API reference for Diagnostics.merge
 ---
-
-# merge
 
 Recursively merges two diagnostics graphs, combining shared branches and local errors.
 

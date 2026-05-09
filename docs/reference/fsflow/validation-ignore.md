@@ -1,9 +1,6 @@
 ---
 title: ignore
-description: API reference for Validation.ignore
 ---
-
-# ignore
 
 Maps a successful validation value to `unit` while preserving the diagnostics.
 

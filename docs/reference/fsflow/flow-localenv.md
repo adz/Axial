@@ -1,9 +1,6 @@
 ---
 title: localEnv
-description: API reference for Flow.localEnv
 ---
-
-# localEnv
 
 Transforms the environment before running the flow.
 

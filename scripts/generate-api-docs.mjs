@@ -606,10 +606,7 @@ function renderFunctionPage(spec, symbolRef, symbolsByFile, pageIndex, currentPa
 
   let content = `---
 title: ${shortName}
-description: API reference for ${qualifiedName}
 ---
-
-# ${shortName}
 
 ${doc.summary || ''}
 
@@ -705,10 +702,7 @@ function renderItem(symbols, sourcePath, symbolRef, pagePath, pageIndex) {
 function renderPage(spec, symbolsByFile, outPath, pageIndex) {
   let content = `---
 title: ${spec.title}
-description: ${spec.description}
 ---
-
-# ${spec.title}
 
 ${spec.intro}
 

@@ -1,9 +1,6 @@
 ---
 title: succeed
-description: API reference for Validation.succeed
 ---
-
-# succeed
 
 Alias for `ok`.
 

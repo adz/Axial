@@ -1,9 +1,6 @@
 ---
 title: toAsync
-description: API reference for AsyncFlow.toAsync
 ---
-
-# toAsync
 
 Converts an async flow into its raw async result shape.
 

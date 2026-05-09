@@ -1,9 +1,6 @@
 ---
 title: readEnvironment
-description: API reference for TaskFlow.readEnvironment
 ---
-
-# readEnvironment
 
 Reads the application environment half of a runtime-context environment.
 

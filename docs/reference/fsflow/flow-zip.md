@@ -1,9 +1,6 @@
 ---
 title: zip
-description: API reference for Flow.zip
 ---
-
-# zip
 
 Combines two flows into a tuple of their values.
 

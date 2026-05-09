@@ -1,9 +1,6 @@
 ---
 title: okIf
-description: API reference for Check.okIf
 ---
-
-# okIf
 
 Returns success when the condition is true.
 

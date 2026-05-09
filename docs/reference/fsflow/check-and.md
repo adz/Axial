@@ -1,9 +1,6 @@
 ---
 title: and
-description: API reference for Check.and
 ---
-
-# and
 
 Returns success when both checks succeed.
 

@@ -1,9 +1,6 @@
 ---
 title: Needs
-description: API reference for Needs
 ---
-
-# Needs
 
 Describes the capability contract for a single dependency.
 

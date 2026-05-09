@@ -1,0 +1,28 @@
+---
+title: fail
+type: docs
+---
+
+Alias for `error`.
+
+
+```fsharp
+let fail (diagnostics: Diagnostics<'error>) : Validation<'value, 'error>
+```
+
+
+
+
+## Parameters
+
+- `diagnostics`: The `Diagnostics` graph.
+
+## Returns
+
+A failing `Validation`.
+
+## Information
+
+- **Module**: `Validation`
+- **Source**: [source](https://github.com/adz/FsFlow/blob/main/src/FsFlow/Validate.fs#L200)
+

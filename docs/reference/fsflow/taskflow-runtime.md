@@ -1,9 +1,6 @@
 ---
 title: TaskFlow Runtime
-description: Source-documented task runtime helpers for FsFlow.
 ---
-
-# TaskFlow Runtime
 
 This page shows the source-documented task runtime surface: the runtime context and the task-specific operational helpers.
 

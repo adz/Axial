@@ -1,9 +1,6 @@
 ---
 title: orErrorWith
-description: API reference for Check.orErrorWith
 ---
-
-# orErrorWith
 
 Maps a unit error into an application error produced on demand.
 

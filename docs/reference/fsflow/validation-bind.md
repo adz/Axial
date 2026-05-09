@@ -1,9 +1,6 @@
 ---
 title: bind
-description: API reference for Validation.bind
 ---
-
-# bind
 
 Sequences a validation-producing continuation.
 

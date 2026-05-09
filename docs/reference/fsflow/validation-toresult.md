@@ -1,9 +1,6 @@
 ---
 title: toResult
-description: API reference for Validation.toResult
 ---
-
-# toResult
 
 Converts a `Validation` into a standard `Result`.
 

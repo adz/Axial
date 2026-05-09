@@ -1,9 +1,6 @@
 ---
 title: value
-description: API reference for AsyncFlow.value
 ---
-
-# value
 
 Alias for `ok` that reads well in some call sites.
 

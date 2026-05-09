@@ -1,9 +1,6 @@
 ---
 title: okIfBlank
-description: API reference for Check.okIfBlank
 ---
-
-# okIfBlank
 
 Returns success when the string is blank.
 

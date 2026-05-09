@@ -1,9 +1,6 @@
 ---
 title: failIfEqual
-description: API reference for Check.failIfEqual
 ---
-
-# failIfEqual
 
 Returns success when the values are equal.
 

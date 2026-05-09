@@ -1,9 +1,6 @@
 ---
 title: sequence
-description: API reference for Validation.sequence
 ---
-
-# sequence
 
 Transforms a sequence of validations into a validation of a list.
 

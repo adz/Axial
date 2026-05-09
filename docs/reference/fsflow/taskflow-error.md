@@ -1,9 +1,6 @@
 ---
 title: error
-description: API reference for TaskFlow.error
 ---
-
-# error
 
 Creates a failing task flow.
 

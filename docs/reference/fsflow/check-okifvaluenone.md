@@ -1,9 +1,6 @@
 ---
 title: okIfValueNone
-description: API reference for Check.okIfValueNone
 ---
-
-# okIfValueNone
 
 Returns success when the value option is `ValueNone`.
 

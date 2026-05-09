@@ -1,9 +1,6 @@
 ---
 title: serviceFromProvider
-description: API reference for Capability.serviceFromProvider
 ---
-
-# serviceFromProvider
 
 Reads a service from `IServiceProvider` and fails when it is not registered.
 

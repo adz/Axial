@@ -1,9 +1,6 @@
 ---
 title: apply
-description: API reference for AsyncFlow.apply
 ---
-
-# apply
 
 Applies an async-flow-wrapped function to an async-flow-wrapped value.
 

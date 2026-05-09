@@ -1,9 +1,6 @@
 ---
 title: logWith
-description: API reference for TaskFlow.Runtime.logWith
 ---
-
-# logWith
 
 Writes a log message computed from the current environment.
 

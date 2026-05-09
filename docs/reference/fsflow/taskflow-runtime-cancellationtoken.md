@@ -1,9 +1,6 @@
 ---
 title: cancellationToken
-description: API reference for TaskFlow.Runtime.cancellationToken
 ---
-
-# cancellationToken
 
 Reads the current runtime cancellation token.
 

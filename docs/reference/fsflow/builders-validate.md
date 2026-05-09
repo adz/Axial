@@ -1,9 +1,6 @@
 ---
 title: validate
-description: API reference for Builders.validate
 ---
-
-# validate
 
 The accumulating `validate { }` computation expression.
 

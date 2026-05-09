@@ -1,9 +1,6 @@
 ---
 title: tap
-description: API reference for Flow.tap
 ---
-
-# tap
 
 Runs a synchronous side effect on success and preserves the original value.
 

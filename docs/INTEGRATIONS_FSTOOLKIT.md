@@ -1,7 +1,9 @@
 ---
+weight: 10
 title: FsToolkit.ErrorHandling
 description: Comparing FsFlow and FsToolkit.ErrorHandling models and how they work together.
 ---
+
 
 # FsToolkit.ErrorHandling
 
@@ -11,13 +13,13 @@ focuses on a unified execution model that carries environments and runtime polic
 
 ## The Model Difference
 
-`FsToolkit.ErrorHandling` provides a broad toolbox of helpers for working with `Result`, 
+`FsToolkit.ErrorHandling` provides a broad toolbox of helpers for working with Result, 
 `AsyncResult`, and `TaskResult` as separate, wrapped types.
 
 FsFlow provides a single, scalable progression:
 
 ```text
-Check -> Result -> Validation -> Flow -> AsyncFlow -> TaskFlow
+[Check]({{< relref "check.md" >}}) -> [Result]({{< relref "builders-result.md" >}}) -> [Validation]({{< relref "validation.md" >}}) -> [Flow]({{< relref "flow.md" >}}) -> [AsyncFlow]({{< relref "asyncflow.md" >}}) -> [TaskFlow]({{< relref "taskflow.md" >}})
 ```
 
 In FsFlow, the environment and runtime concerns are baked into the computation, allowing you to
@@ -30,11 +32,11 @@ If you use these FsToolkit patterns, here is how they correspond to FsFlow:
 
 | FsToolkit.ErrorHandling | FsFlow |
 | --- | --- |
-| `Result.requireTrue` | `Check.okIf condition |> Check.orError` |
-| `Result.requireSome` | `Check.okIfSome opt |> Check.orError` |
-| `asyncResult { }` | `asyncFlow { }` |
-| `taskResult { }` | `taskFlow { }` |
-| `Validation` helpers | `Validation` and `validate { }` |
+| [Result]({{< relref "builders-result.md" >}}).requireTrue | `Check.okIf condition |> Check.orError` |
+| [Result]({{< relref "builders-result.md" >}}).requireSome | `Check.okIfSome opt |> Check.orError` |
+| `asyncResult { }` | [`asyncFlow {}`]({{< relref "builders-asyncflow.md" >}}) |
+| `taskResult { }` | [`taskFlow {}`]({{< relref "taskbuilders-taskflow.md" >}}) |
+| [Validation]({{< relref "validation.md" >}}) helpers | [Validation]({{< relref "validation.md" >}}) and [`validate {}`]({{< relref "builders-validate.md" >}}) |
 
 ## New Things You Get
 
@@ -45,7 +47,7 @@ standard result wrappers:
     to manually thread dependencies through every function.
 2.  **Runtime Policies**: Retries, timeouts, and logging are first-class citizens in the 
     `AsyncFlow.Runtime` and `TaskFlow.Runtime` modules.
-3.  **Task Temperature**: Built-in support for `ColdTask`, ensuring tasks only start when 
+3.  **Task Temperature**: Built-in support for ColdTask, ensuring tasks only start when 
     the flow is actually executed.
 4.  **Diagnostics Graph**: A structured, path-aware error graph for complex validation that
     goes beyond a flat list of errors.
@@ -53,18 +55,18 @@ standard result wrappers:
 ## Getting the Most Benefit
 
 You will get the most benefit from FsFlow by using it at your **application boundaries** (e.g., 
-API handlers, background jobs) while keeping your **pure domain logic** in plain `Result` 
+API handlers, background jobs) while keeping your **pure domain logic** in plain Result 
 functions.
 
-- **Keep existing pure helpers**: If you have a library of `Result` transformation helpers
-  from FsToolkit, keep using them! FsFlow's `flow {}` builders bind `Result` directly.
-- **Move orchestration**: Use `TaskFlow` or `AsyncFlow` when you need to combine those pure 
+- **Keep existing pure helpers**: If you have a library of Result transformation helpers
+  from FsToolkit, keep using them! FsFlow's [`flow {}`]({{< relref "builders-flow.md" >}}) builders bind Result directly.
+- **Move orchestration**: Use TaskFlow or AsyncFlow when you need to combine those pure 
   functions with I/O, configuration, or operational policies.
 
 ## Semantic Boundary
 
 FsFlow flows are short-circuiting by default. If your current FsToolkit usage leans on
-independent validation that should report multiple errors, use `Validation` and `validate {}`
+independent validation that should report multiple errors, use Validation and [`validate {}`]({{< relref "builders-validate.md" >}})
 to maintain that explicit concern.
 
 ```fsharp

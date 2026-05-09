@@ -1,9 +1,6 @@
 ---
 title: failIfNonEmptyStr
-description: API reference for Check.failIfNonEmptyStr
 ---
-
-# failIfNonEmptyStr
 
 Returns success when the string is null or empty.
 

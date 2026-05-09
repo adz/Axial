@@ -1,9 +1,6 @@
 ---
 title: okIfEmptyStr
-description: API reference for Check.okIfEmptyStr
 ---
-
-# okIfEmptyStr
 
 Returns success when the string is null or empty.
 

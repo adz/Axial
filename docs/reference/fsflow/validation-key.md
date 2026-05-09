@@ -1,9 +1,6 @@
 ---
 title: key
-description: API reference for Validation.key
 ---
-
-# key
 
 Prefixes a validation with a keyed branch.
 

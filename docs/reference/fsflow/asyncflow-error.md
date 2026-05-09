@@ -1,9 +1,6 @@
 ---
 title: error
-description: API reference for AsyncFlow.error
 ---
-
-# error
 
 Creates a failing async flow.
 

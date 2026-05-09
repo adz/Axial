@@ -1,9 +1,6 @@
 ---
 title: fromTaskResult
-description: API reference for TaskFlow.fromTaskResult
 ---
-
-# fromTaskResult
 
 
 

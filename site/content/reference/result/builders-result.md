@@ -1,0 +1,48 @@
+---
+title: result
+description: API reference for Builders.result
+type: docs
+---
+
+# result
+
+The fail-fast `result { }` computation expression.
+
+
+```fsharp
+let result
+```
+
+
+## Remarks
+
+<para>
+Use this builder when the happy path should short-circuit on the first error
+and you want to keep the workflow in `Result` shape all the way through.
+</para>
+<para>
+It works well for parsing, validation, and other boundaries where failure is expected
+to stop the flow immediately instead of accumulating diagnostics.
+</para>
+<para>
+Use `Check.orError` when a pure check needs a domain error, and `Guard.MapError` when
+you need to remap an existing error before entering the CE.
+</para>
+
+
+## Information
+
+- **Module**: `Builders`
+- **Source**: [source](https://github.com/adz/FsFlow/blob/main/src/FsFlow/Builders.fs#L379)
+
+## Examples
+
+```fsharp
+let parsedUser =
+    result {
+        let! age = parseAge input
+        let! name = parseName input
+        return { Age = age; Name = name }
+    }
+```
+

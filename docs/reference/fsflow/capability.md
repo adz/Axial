@@ -1,9 +1,6 @@
 ---
 title: Capability
-description: Source-documented capabilities and layers for FsFlow.
 ---
-
-# Capability
 
 This page shows the source-documented capability and layer surface, including the CAPS request tokens, named capability helpers, and layer composition used for environment management in task workflows.
 

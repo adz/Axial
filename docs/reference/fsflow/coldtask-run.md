@@ -1,9 +1,6 @@
 ---
 title: run
-description: API reference for ColdTask.run
 ---
-
-# run
 
 
 

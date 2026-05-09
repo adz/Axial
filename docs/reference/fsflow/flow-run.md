@@ -1,9 +1,6 @@
 ---
 title: run
-description: API reference for Flow.run
 ---
-
-# run
 
 Executes a synchronous flow with the provided environment.
 

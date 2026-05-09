@@ -1,17 +1,19 @@
 ---
+weight: 20
 title: Validate and Result
 description: The progression from `Result<'value, unit>` checks to fail-fast `Result<'value, 'error>`, guarded flow bindings, accumulating `Validation<'value, 'error>`, and diagnostics graphs in FsFlow.
 ---
+
 
 # Validate and Result
 
 FsFlow moves through a simple progression:
 
-1. build a pure check with `Check` (`Result<'value, unit>`)
+1. build a pure check with Check (`Result<'value, unit>`)
 2. turn that `Result<'value, unit>` into a `Result<'value, ValidationError>` with `Check.orError`
-3. use `Guard` when the same value needs to bind directly inside `result {}`, `flow {}`, `asyncFlow {}`, `taskFlow {}`, or `validate {}` while carrying an error
-4. use `result {}` when you want to stop on the first failure
-5. use `Validation` and `validate {}` when sibling failures should accumulate into a diagnostics graph
+3. use Guard when the same value needs to bind directly inside [`result {}`]({{< relref "builders-result.md" >}}), [`flow {}`]({{< relref "builders-flow.md" >}}), [`asyncFlow {}`]({{< relref "builders-asyncflow.md" >}}), [`taskFlow {}`]({{< relref "taskbuilders-taskflow.md" >}}), or [`validate {}`]({{< relref "builders-validate.md" >}}) while carrying an error
+4. use [`result {}`]({{< relref "builders-result.md" >}}) when you want to stop on the first failure
+5. use Validation and [`validate {}`]({{< relref "builders-validate.md" >}}) when sibling failures should accumulate into a diagnostics graph
 
 The examples below follow that progression.
 
@@ -22,7 +24,7 @@ The examples below follow that progression.
 - `Check<'value>` when the check preserves a value on success
 - `Check<unit>` when the check is a gate and only answers yes/no
 
-If the answer is no, `Check` returns `Error ()`.
+If the answer is no, Check returns `Error ()`.
 
 Attach your application error, such as `NameRequired`, with `Check.orError`:
 
@@ -67,21 +69,21 @@ let tryGetUser : string -> Async<Result<string, AuthError>> =
 
 ## 2. Guarded Bindings
 
-`Guard` is the bindable version of the same idea.
+Guard is the bindable version of the same idea.
 
 Think of it this way:
 
-- `Check` says whether a predicate succeeds and returns `Ok value` or `Error ()`
-- `Guard` keeps the value visible to the computation expression and carries a failure value such as `MissingPassword`
+- Check says whether a predicate succeeds and returns `Ok value` or `Error ()`
+- Guard keeps the value visible to the computation expression and carries a failure value such as `MissingPassword`
 - the computation expression binds the value, and the guard decides what error comes out if the check fails
 
 Use `Guard.Of` when the value is boolean or check-shaped, and `Guard.MapError` when the value already carries an error of its own.
 
-That matters when the predicate itself is already inside `Async`, `Task`, `Flow`, `AsyncFlow`, `TaskFlow`,
-or `Validation`: `Guard` lets the CE bind the wrapped value directly. With `Check` alone, you would
+That matters when the predicate itself is already inside `Async`, `Task`, Flow, AsyncFlow, TaskFlow,
+or Validation: Guard lets the CE bind the wrapped value directly. With Check alone, you would
 first produce a `Result<'value, unit>` and then attach the error with `Check.orError`.
 
-Without `Guard`, you usually spell that out in two steps:
+Without Guard, you usually spell that out in two steps:
 
 ```fsharp
 let loginWithoutGuard username password =
@@ -102,7 +104,7 @@ let loginWithoutGuard username password =
 // loginWithoutGuard "unknown" "secret" -> Error Unauthorized
 ```
 
-With `Guard`, the same flow reads directly at the binding site:
+With Guard, the same flow reads directly at the binding site:
 
 ```fsharp
 let login username password =
@@ -125,7 +127,7 @@ The important part is not the syntax trick. The important part is the shape:
 
 ## 3. Fail-Fast Result
 
-Use `result {}` when the next step depends on the previous one and you want the first `Error MissingName` or `Error MissingEmail` to stop the workflow.
+Use [`result {}`]({{< relref "builders-result.md" >}}) when the next step depends on the previous one and you want the first `Error MissingName` or `Error MissingEmail` to stop the workflow.
 
 ```fsharp
 type UserInputError =
@@ -148,14 +150,14 @@ validateInput "" "ada@example.com"     // Error MissingName
 validateInput "Ada" ""                 // Error MissingEmail
 ```
 
-`result {}` is fail-fast:
+[`result {}`]({{< relref "builders-result.md" >}}) is fail-fast:
 
 - if the first step fails, later steps do not run
 - the error stays in a single `Result<'value, 'error>` value
 
 ## 4. Accumulating Validation
 
-Use `Validation` and `validate {}` when sibling checks are independent and you want every failure collected into a `Validation<'value, RegistrationError>` graph.
+Use Validation and [`validate {}`]({{< relref "builders-validate.md" >}}) when sibling checks are independent and you want every failure collected into a `Validation<'value, RegistrationError>` graph.
 Use `and!` for the sibling checks you want merged together. Plain `let!` and `do!` are
 sequential: if one step fails, later steps in that chain are not evaluated.
 
@@ -189,20 +191,20 @@ validateRegistration { Name = ""; Email = "" }
 // }
 ```
 
-That last line is the key difference from `result {}`:
+That last line is the key difference from [`result {}`]({{< relref "builders-result.md" >}}):
 
-- `result {}` stops at the first error
-- `validate {}` keeps going and merges sibling failures when you use `and!`
+- [`result {}`]({{< relref "builders-result.md" >}}) stops at the first error
+- [`validate {}`]({{< relref "builders-validate.md" >}}) keeps going and merges sibling failures when you use `and!`
 - plain `let!` and `do!` still short-circuit on the first failure in their sequence
 
 The current builder emits root-level diagnostics for direct `Check.orError` results unless you
 wrap the work in a scoped helper like `validate.key`, `validate.index`, or `validate.name`.
-Inside those scoped blocks, you can `return!` the `Result` directly. You do not need
+Inside those scoped blocks, you can `return!` the Result directly. You do not need
 `Validation.fromResult` there.
 
 ## 5. Diagnostics Graph
 
-`Validation` does not store a flat list of strings.
+Validation does not store a flat list of strings.
 It stores a `Diagnostics<'error>` graph.
 
 That graph is what lets FsFlow remember where each failure came from in nested data.
@@ -370,10 +372,10 @@ let validateCustomer customer =
 
 The practical rule is:
 
-- use `Check` when you are still expressing the predicate as `Result<'value, unit>`
+- use Check when you are still expressing the predicate as `Result<'value, unit>`
 - use `Check.orError` when you want that `Result<'value, unit>` to become a `Result<'value, 'error>`
-- use `Guard` when the same value needs to bind inside a CE while carrying an error value like `MissingPassword`
-- use `result {}` when the workflow is ordered and fail-fast
-- use `Validation<'value, 'error>` and `validate {}` when sibling failures should accumulate
+- use Guard when the same value needs to bind inside a CE while carrying an error value like `MissingPassword`
+- use [`result {}`]({{< relref "builders-result.md" >}}) when the workflow is ordered and fail-fast
+- use `Validation<'value, 'error>` and [`validate {}`]({{< relref "builders-validate.md" >}}) when sibling failures should accumulate
 
 That gives you one path from predicate, to result, to guarded flow binding, to accumulating diagnostics.

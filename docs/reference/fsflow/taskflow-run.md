@@ -1,9 +1,6 @@
 ---
 title: run
-description: API reference for TaskFlow.run
 ---
-
-# run
 
 Executes a task flow with the provided environment and cancellation token.
 

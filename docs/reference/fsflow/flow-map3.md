@@ -1,9 +1,6 @@
 ---
 title: map3
-description: API reference for Flow.map3
 ---
-
-# map3
 
 Combines three flows with a mapping function.
 

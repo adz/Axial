@@ -1,9 +1,6 @@
 ---
 title: succeed
-description: API reference for Flow.succeed
 ---
-
-# succeed
 
 Alias for `ok` that reads well in some call sites.
 

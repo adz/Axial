@@ -1,9 +1,6 @@
 ---
 title: empty
-description: API reference for Diagnostics.empty
 ---
-
-# empty
 
 Creates an empty diagnostics graph with no errors.
 

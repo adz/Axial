@@ -8,4 +8,7 @@ artifacts/*
 .fsdocs/
 output/
 tmp/
+site/node_modules/
+site/resources/
+site/.hugo_build.lock
 BenchmarkDotNet.Artifacts/

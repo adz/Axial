@@ -1,9 +1,6 @@
 ---
 title: fromValueTaskFactoryWithoutCancellation
-description: API reference for ColdTask.fromValueTaskFactoryWithoutCancellation
 ---
-
-# fromValueTaskFactoryWithoutCancellation
 
 
 

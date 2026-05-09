@@ -1,9 +1,6 @@
 ---
 title: run
-description: API reference for AsyncFlow.run
 ---
-
-# run
 
 Executes an async flow with the provided environment.
 

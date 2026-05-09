@@ -1,9 +1,6 @@
 ---
 title: flatten
-description: API reference for Diagnostics.flatten
 ---
-
-# flatten
 
 Flattens the structured diagnostics graph into a linear list of diagnostics.
 

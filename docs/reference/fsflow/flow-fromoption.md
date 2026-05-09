@@ -1,9 +1,6 @@
 ---
 title: fromOption
-description: API reference for Flow.fromOption
 ---
-
-# fromOption
 
 Lifts an option into a synchronous flow with the supplied error.
 

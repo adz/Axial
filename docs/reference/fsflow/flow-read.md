@@ -1,9 +1,6 @@
 ---
 title: read
-description: API reference for Flow.read
 ---
-
-# read
 
 Projects a value from the current environment.
 

@@ -1,9 +1,6 @@
 ---
 title: log
-description: API reference for AsyncFlow.Runtime.log
 ---
-
-# log
 
 Writes a log entry using the writer provided by the environment.
 

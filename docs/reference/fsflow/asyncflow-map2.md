@@ -1,9 +1,6 @@
 ---
 title: map2
-description: API reference for AsyncFlow.map2
 ---
-
-# map2
 
 Combines two async flows with a mapping function.
 

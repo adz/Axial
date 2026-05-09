@@ -1,9 +1,6 @@
 ---
 title: ignore
-description: API reference for TaskFlow.ignore
 ---
-
-# ignore
 
 Maps the successful value of a task flow to `unit`.
 

@@ -1,9 +1,6 @@
 ---
 title: fromValueTask
-description: API reference for ColdTask.fromValueTask
 ---
-
-# fromValueTask
 
 
 

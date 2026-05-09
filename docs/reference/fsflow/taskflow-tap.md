@@ -1,9 +1,6 @@
 ---
 title: tap
-description: API reference for TaskFlow.tap
 ---
-
-# tap
 
 Runs a task-based side effect on success and preserves the original value.
 

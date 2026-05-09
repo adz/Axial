@@ -1,9 +1,6 @@
 ---
 title: error
-description: API reference for Flow.error
 ---
-
-# error
 
 Creates a failing synchronous flow.
 

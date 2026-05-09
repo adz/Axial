@@ -1,9 +1,6 @@
 ---
 title: mapEnvironment
-description: API reference for RuntimeContext.mapEnvironment
 ---
-
-# mapEnvironment
 
 Maps the application environment half of a runtime context.
 

@@ -1,9 +1,6 @@
 ---
 title: okIfEqual
-description: API reference for Check.okIfEqual
 ---
-
-# okIfEqual
 
 Returns success when the values are equal.
 

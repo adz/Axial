@@ -1,9 +1,6 @@
 ---
 title: apply
-description: API reference for Flow.apply
 ---
-
-# apply
 
 Applies a flow-wrapped function to a flow-wrapped value.
 

@@ -1,9 +1,6 @@
 ---
 title: fromResult
-description: API reference for Flow.fromResult
 ---
-
-# fromResult
 
 Lifts a `Result` into a synchronous flow.
 

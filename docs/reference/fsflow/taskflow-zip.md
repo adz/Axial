@@ -1,9 +1,6 @@
 ---
 title: zip
-description: API reference for TaskFlow.zip
 ---
-
-# zip
 
 Combines two task flows into a tuple of their values.
 

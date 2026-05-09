@@ -1,9 +1,6 @@
 ---
 title: singleton
-description: API reference for Diagnostics.singleton
 ---
-
-# singleton
 
 Creates a diagnostics graph containing exactly one error at the root.
 

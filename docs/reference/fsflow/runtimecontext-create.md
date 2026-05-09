@@ -1,9 +1,6 @@
 ---
 title: create
-description: API reference for RuntimeContext.create
 ---
-
-# create
 
 Creates a runtime context from the supplied runtime services, environment, and cancellation token.
 

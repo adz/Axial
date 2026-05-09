@@ -1,9 +1,6 @@
 ---
 title: Flow
-description: API reference for Flow
 ---
-
-# Flow
 
 Represents a cold synchronous workflow that reads an environment, returns a typed result,
 and is executed explicitly through `Flow.run`.

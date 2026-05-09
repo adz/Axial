@@ -1,9 +1,6 @@
 ---
 title: error
-description: API reference for Validation.error
 ---
-
-# error
 
 Creates a failing validation result with the provided diagnostics.
 

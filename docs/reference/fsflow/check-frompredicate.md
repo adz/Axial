@@ -1,9 +1,6 @@
 ---
 title: fromPredicate
-description: API reference for Check.fromPredicate
 ---
-
-# fromPredicate
 
 Builds a check from a predicate while preserving the successful value.
 

@@ -1,9 +1,6 @@
 ---
 title: Check
-description: API reference for Check
 ---
-
-# Check
 
 A reusable predicate result that either preserves a value on success or acts as a gate with
 `unit` on success, while carrying a unit failure placeholder until the caller maps it into

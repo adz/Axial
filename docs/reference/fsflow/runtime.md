@@ -1,9 +1,6 @@
 ---
 title: AsyncFlow.Runtime
-description: Source-documented async runtime support and helpers for FsFlow.
 ---
-
-# AsyncFlow.Runtime
 
 This page shows the source-documented `AsyncFlow.Runtime` surface: logging, retry policies, and async operational helpers.
 

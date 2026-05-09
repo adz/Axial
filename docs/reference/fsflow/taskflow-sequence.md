@@ -1,9 +1,6 @@
 ---
 title: sequence
-description: API reference for TaskFlow.sequence
 ---
-
-# sequence
 
 Transforms a sequence of task flows into a task flow of a sequence and stops at the first failure.
 

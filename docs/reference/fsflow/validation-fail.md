@@ -1,9 +1,6 @@
 ---
 title: fail
-description: API reference for Validation.fail
 ---
-
-# fail
 
 Alias for `error`.
 

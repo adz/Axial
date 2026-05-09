@@ -1,7 +1,9 @@
 ---
+weight: 50
 title: Using FsFlow CAPS
 description: This page shows how to model explicit capability boundaries in FsFlow with `Needs<'dep>`, `Env<'dep>`, and `Env<'dep, 'value>`.
 ---
+
 
 # Using FsFlow CAPS
 
@@ -88,7 +90,7 @@ taskFlow {
 }
 ```
 
-If the projection returns a `Result`, `Async`, `Task`, `ValueTask`, `ColdTask`, `option`, or `voption`, FsFlow binds it with the same normal workflow rules you already use elsewhere.
+If the projection returns a Result, `Async`, `Task`, `ValueTask`, ColdTask, `option`, or `voption`, FsFlow binds it with the same normal workflow rules you already use elsewhere.
 
 ## Prefer named cap sets for public boundaries
 
@@ -186,12 +188,12 @@ For very small helpers, a direct generic constraint can still be fine. Keep the 
 
 The implementation matches the guide in two important ways:
 
-- `flow {}`, `asyncFlow {}`, and `taskFlow {}` read `Env<'dep>` from any environment that implements `Needs<'dep>`
+- [`flow {}`]({{< relref "builders-flow.md" >}}), [`asyncFlow {}`]({{< relref "builders-asyncflow.md" >}}), and [`taskFlow {}`]({{< relref "taskbuilders-taskflow.md" >}}) read `Env<'dep>` from any environment that implements `Needs<'dep>`
 - projected requests like `Env<'dep, 'value>` reuse the existing bind/lift behavior for the projected value, so you do not need a separate capability API for each workflow family
 
-That is why the same cap-set style works across `Flow`, `AsyncFlow`, and `TaskFlow`.
+That is why the same cap-set style works across Flow, AsyncFlow, and TaskFlow.
 
 ## Next
 
-If you want the record-based version of the same idea, read [Environment Slicing](../ENV_SLICING).
-If you want the broader workflow model, read [The FsFlow Model](../WHY_FSFLOW).
+If you want the record-based version of the same idea, read [Environment Slicing](./ENV_SLICING.md).
+If you want the broader workflow model, read [The FsFlow Model](./WHY_FSFLOW.md).

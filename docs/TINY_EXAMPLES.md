@@ -1,7 +1,9 @@
 ---
+weight: 30
 title: Common Shapes
 description: Small examples for the main FsFlow computation families.
 ---
+
 
 # Common Shapes
 
@@ -10,7 +12,7 @@ This page shows the smallest useful examples for each FsFlow computation family 
 These examples are intentionally small.
 They are the quickest way to sanity-check the model before moving on to the longer docs.
 
-## Plain `Result` In `flow {}`
+## Plain Result In [`flow {}`]({{< relref "builders-flow.md" >}})
 
 ```fsharp
 let validatePort value =
@@ -41,7 +43,7 @@ let computation : Flow<AppEnv, string, string> =
     }
 ```
 
-## Lift Sync Work Into `asyncFlow {}`
+## Lift Sync Work Into [`asyncFlow {}`]({{< relref "builders-asyncflow.md" >}})
 
 ```fsharp
 let validateName name =
@@ -65,7 +67,7 @@ let result =
     |> Async.RunSynchronously
 ```
 
-## Bind A Task In `taskFlow {}`
+## Bind A Task In [`taskFlow {}`]({{< relref "taskbuilders-taskflow.md" >}})
 
 ```fsharp
 let computation : TaskFlow<unit, string, int> =
@@ -87,7 +89,7 @@ let result =
 
 Use a direct `Task` bind when you already have started work and reusing that same work on rerun is acceptable.
 
-## Bind A `ColdTask`
+## Bind A ColdTask
 
 ```fsharp
 let readText path : ColdTask<string> =

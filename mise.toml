@@ -1,2 +1,4 @@
 [tools]
 dotnet = "10.0"
+hugo-extended = "latest"
+go = "latest"
