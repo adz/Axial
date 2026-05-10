@@ -26,7 +26,7 @@ Avoid keeping a task-oriented boundary in Flow just because a helper can be adap
 Use Check for reusable predicates, `Check.orError` for pure failure-to-error bridging,
 `Guard.Of` / `Guard.MapError` when the source is already effect-shaped and you want the CE to
 bind the source while preserving its attached error,
-Result for fail-fast validation, and Validation plus [`validate {}`]({{< relref "builders-validate.md" >}}) when sibling failures should accumulate.
+Result for fail-fast validation, and Validation plus [`validate {}`]({{< relref "/reference/validation/builders-validate.md" >}}) when sibling failures should accumulate.
 
 ## Preferred Style Inside Computation Expressions
 
@@ -62,7 +62,7 @@ The builder binds:
 - `Option<'value>` when the error type is `unit`
 - `ValueOption<'value>` when the error type is `unit`
 
-Use [`flow {}`]({{< relref "builders-flow.md" >}}) when the body is synchronous.
+Use [`flow {}`]({{< relref "/reference/flow/builders-flow.md" >}}) when the body is synchronous.
 Use `<!>` for mapping a pure function over a Result or flow value.
 Use `<*>` only when the function is already inside the same Result or flow shape.
 
@@ -139,7 +139,7 @@ Use `Flow.Runtime` for shared operational helpers like `sleep`, `timeout`, `retr
 
 Use `FsFlow.Check` for pure `Result<'value, unit>` validation.
 Use `Check.orError` when you want to turn a unit failure into a domain error.
-Use Validation and [`validate {}`]({{< relref "builders-validate.md" >}}) when the checks should accumulate.
+Use Validation and [`validate {}`]({{< relref "/reference/validation/builders-validate.md" >}}) when the checks should accumulate.
 
 The builder binds Result directly, so extra bridge calls are only needed when the error value itself needs a different conversion shape.
 When the source itself should bind directly in `flow`, wrap it with `Guard.Of` or remap the existing error with `Guard.MapError`. The source stays visible to the CE; Guard only packages the failure value.

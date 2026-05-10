@@ -260,9 +260,10 @@ function getQualifiedName(id) {
 
 function getPageName(id) {
   let name = getQualifiedName(id);
+  const kind = id.split(':')[0].toLowerCase();
   // Strip common namespace prefixes for cleaner filenames
   name = name.replace(/^FsFlow\.(Caps\.)?/, '');
-  return `${name.toLowerCase().split('.').join('-')}.md`;
+  return `${kind}-${name.toLowerCase().split('.').join('-')}.md`;
 }
 
 function renderSymbolPage(id, doc) {

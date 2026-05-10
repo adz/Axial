@@ -56,7 +56,7 @@ flow {
 }
 ```
 
-[`flow {}`]({{< relref "builders-flow.md" >}}) is sync-only.
+[`flow {}`]({{< relref "/reference/flow/builders-flow.md" >}}) is sync-only.
 
 Fix it by moving to the honest boundary:
 

@@ -149,7 +149,7 @@ defaultContentLanguage = "en"
 
 [params.ui]
   sidebar_menu_compact = true
-  sidebar_menu_truncate = 500
+  sidebar_menu_truncate = 600
   breadcrumb_disable = false
   footer_about_enable = true
 

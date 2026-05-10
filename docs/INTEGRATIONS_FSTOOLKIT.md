@@ -19,7 +19,7 @@ focuses on a unified execution model that carries environments and runtime polic
 FsFlow provides a single, scalable progression:
 
 ```text
-[Check]({{< relref "check.md" >}}) -> [Result]({{< relref "builders-result.md" >}}) -> [Validation]({{< relref "validation.md" >}}) -> [Flow]({{< relref "flow.md" >}})
+[Check]({{< relref "/reference/check/" >}}) -> [Result]({{< relref "/reference/result/" >}}) -> [Validation]({{< relref "/reference/validation/" >}}) -> [Flow]({{< relref "/reference/flow/" >}})
 ```
 
 In FsFlow, the environment and runtime concerns are baked into the computation, allowing you to
@@ -32,11 +32,11 @@ If you use these FsToolkit patterns, here is how they correspond to FsFlow:
 
 | FsToolkit.ErrorHandling | FsFlow |
 | --- | --- |
-| [Result]({{< relref "builders-result.md" >}}).requireTrue | `Check.okIf condition |> Check.orError` |
-| [Result]({{< relref "builders-result.md" >}}).requireSome | `Check.okIfSome opt |> Check.orError` |
+| [Result]({{< relref "/reference/result/" >}}).requireTrue | `Check.okIf condition |> Check.orError` |
+| [Result]({{< relref "/reference/result/" >}}).requireSome | `Check.okIfSome opt |> Check.orError` |
 | `asyncResult { }` | `flow {}` |
 | `taskResult { }` | `flow {}` |
-| [Validation]({{< relref "validation.md" >}}) helpers | [Validation]({{< relref "validation.md" >}}) and [`validate {}`]({{< relref "builders-validate.md" >}}) |
+| [Validation]({{< relref "validation.md" >}}) helpers | [Validation]({{< relref "/reference/validation/" >}}) and [`validate {}`]({{< relref "/reference/validation/builders-validate.md" >}}) |
 
 ## New Things You Get
 
@@ -58,7 +58,7 @@ API handlers, background jobs) while keeping your **pure domain logic** in plain
 functions.
 
 - **Keep existing pure helpers**: If you have a library of Result transformation helpers
-  from FsToolkit, keep using them! FsFlow's [`flow {}`]({{< relref "builders-flow.md" >}}) builders bind Result directly.
+  from FsToolkit, keep using them! FsFlow's [`flow {}`]({{< relref "/reference/flow/builders-flow.md" >}}) builders bind Result directly.
 - **Move orchestration**: Use Flow when you need to combine those pure functions with I/O, configuration, or operational policies.
 
 ## Semantic Boundary

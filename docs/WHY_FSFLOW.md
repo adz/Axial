@@ -19,7 +19,7 @@ The validation vocabulary stays the same while the execution context grows.
 
 - start with reusable predicate checks, whether they preserve a value on success or act as a gate
 - keep fail-fast logic in plain Result
-- accumulate sibling failures with Validation and [`validate {}`]({{< relref "builders-validate.md" >}})
+- accumulate sibling failures with Validation and [`validate {}`]({{< relref "/reference/validation/builders-validate.md" >}})
 - lift into Flow when you need explicit environment access or when the runtime becomes asynchronous
 
 That matters because many F# codebases end up with separate worlds:
@@ -149,7 +149,7 @@ They stop on the first typed failure.
 
 That is a feature, not a missing applicative layer.
 
-If you need accumulated validation, use Validation and [`validate {}`]({{< relref "builders-validate.md" >}}) explicitly.
+If you need accumulated validation, use Validation and [`validate {}`]({{< relref "/reference/validation/builders-validate.md" >}}) explicitly.
 FsFlow does not try to hide that behavior inside the workflow builders.
 
 ## What Keeps It Readable

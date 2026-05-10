@@ -8,7 +8,7 @@ description: The fastest path from Check and Result into Flow.
 
 This page shows the fastest path from plain checks into the right FsFlow family as the execution context grows.
 
-The core `FsFlow` package contains Flow, Check, Result, Validation, and [`validate {}`]({{< relref "builders-validate.md" >}}).
+The core `FsFlow` package contains Flow, Check, Result, Validation, and [`validate {}`]({{< relref "/reference/validation/builders-validate.md" >}}).
 The entire task and async surface is now unified in the main `FsFlow` package.
 
 ## 1. Start With The Continuum
@@ -56,7 +56,7 @@ let login username password =
 
 ## 3. Add Validation When Siblings Are Independent
 
-Use **Validation** and [`validate {}`]({{< relref "builders-validate.md" >}}) when you want sibling checks to accumulate instead of stopping at the first one:
+Use **Validation** and [`validate {}`]({{< relref "/reference/validation/builders-validate.md" >}}) when you want sibling checks to accumulate instead of stopping at the first one:
 
 ```fsharp
 type Registration = { Name: string; Email: string }
@@ -73,7 +73,7 @@ let v = validateRegistration { Name = ""; Email = "" }
 // v = Validation (Error { Errors = [NameRequired; EmailRequired]; Children = [] })
 ```
 
-Use [`result {}`]({{< relref "builders-result.md" >}}) when the next step depends on the previous one and should stop immediately on failure.
+Use [`result {}`]({{< relref "/reference/result/" >}}) when the next step depends on the previous one and should stop immediately on failure.
 
 ## 4. One Flow to Rule Them All
 
