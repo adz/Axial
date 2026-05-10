@@ -2,6 +2,12 @@
 
 This document proposes a transition to a **Unified Concrete Effect** architecture. While inspired by Tagless Final "Algebra" (like Shopfoo), it adopts the **ZIO** model of a single, powerful data type to achieve "One Builder to Rule Them All" without the complexity of SRTP.
 
+## Core Goals
+- **Unified DX:** One `flow { }` builder for all effects (Sync, Async, Task, JS Promise).
+- **Clean Stack Traces:** Leverage F# 6+ Resumable Code to flatten monadic steps into a single state machine.
+- **Deep Observability:** Use a Fiber runtime to provide virtual stack traces and snapshotting across concurrent operations.
+- **Fable 5 Native:** Direct mapping to JS `Promise` for maximum performance and browser interop.
+
 ## 1. The Core Type: The "Wide" Effect
 
 Instead of maintaining `Flow`, `AsyncFlow`, and `TaskFlow`, we collapse them into a single, portable type.
@@ -28,7 +34,13 @@ type Flow<'env, 'err, 'res> = 'env -> CancellationToken -> Effect<'res, 'err>
 
 ## 2. The Universal `flow { }` Builder
 
-We achieve the "same builder" goal using **Method Overloading** instead of SRTP. This is easier to maintain, provides better IDE support, and is fully compatible with Fable.
+We achieve the "same builder" goal using **Method Overloading** and **Resumable Code**.
+
+### Resumable State Machines (F# 6+)
+Instead of traditional closure-based builders (which create a nested function for every `let!`), the `flow` builder will be implemented using **Resumable Code**. 
+
+- **Flattened Stacks:** The entire workflow is compiled into a single state machine struct. Stack traces show a single `MoveNext` instead of a deep "staircase" of nested closures.
+- **Zero-Allocation:** Synchronous "hot paths" (e.g., cached reads) execute without heap allocations.
 
 ### Overload Resolution
 The `FlowBuilder` will provide `Bind` overloads for every common type:
@@ -36,19 +48,19 @@ The `FlowBuilder` will provide `Bind` overloads for every common type:
 ```fsharp
 type FlowBuilder() =
     // Primary Bind (Flow to Flow)
-    member _.Bind(flw: Flow<'env, 'e, 'v>, binder) = ...
+    member inline _.Bind(flw: Flow<'env, 'e, 'v>, [<InlineIfLambda>] binder) = ...
     
     // Auto-Lifting Binds
-    member _.Bind(res: Result<'v, 'e>, binder) = ...
-    member _.Bind(asn: Async<'v>, binder) = ...
-    member _.Bind(tsk: Task<'v>, binder) = ...
+    member inline _.Bind(res: Result<'v, 'e>, [<InlineIfLambda>] binder) = ...
+    member inline _.Bind(asn: Async<'v>, [<InlineIfLambda>] binder) = ...
+    member inline _.Bind(tsk: Task<'v>, [<InlineIfLambda>] binder) = ...
     
     #if FABLE_COMPILER
-    member _.Bind(prm: JS.Promise<'v>, binder) = ...
+    member inline _.Bind(prm: JS.Promise<'v>, [<InlineIfLambda>] binder) = ...
     #endif
     
     // Support for external effects (e.g., fio)
-    member _.Bind(eff: IEffect<'v, 'e>, binder) = ...
+    member inline _.Bind(eff: IEffect<'v, 'e>, [<InlineIfLambda>] binder) = ...
 ```
 
 ---
@@ -57,9 +69,13 @@ type FlowBuilder() =
 
 By standardizing on a single `Flow` type, we can implement advanced ZIO features that work identically on .NET and Fable.
 
-### A. Fibers (Concurrency)
-- **.NET:** Maps to `Task.Run` or custom `Fiber` scheduling.
-- **Fable:** Maps to `setTimeout(0)` or `queueMicrotask` to prevent blocking the main thread.
+### A. Fibers (Concurrency & Observability)
+Fibers are logical threads managed by the FsFlow runtime.
+- **Virtual Stack Traces:** Because the runtime manages fiber lifecycles, it can stitch together "causal" stack traces. If a child fiber fails, the error includes the trace of the parent fiber that spawned it.
+- **System Snapshots:** A built-in "Fiber Supervisor" allows developers to inspect all currently running fibers, helping identify "hanging" tasks or resource leaks.
+- **Execution:** 
+    - **.NET:** Maps to `Task.Run` or custom `Fiber` scheduling.
+    - **Fable:** Maps to `setTimeout(0)` or `queueMicrotask` to prevent blocking the main thread.
 - **Primitives:** `Flow.fork`, `Flow.join`, `Flow.interrupt`.
 
 ### B. Software Transactional Memory (STM)
@@ -76,10 +92,11 @@ Since `CancellationToken` is now a core part of the `Flow` signature, we get **N
 ## 4. Pros & Cons
 
 ### Pros
-- **Fable 5 First-Class:** No more "Is this supported in Fable?" anxiety. If it works in FsFlow, it works in the browser.
-- **Simpler Implementation:** We delete thousands of lines of code by merging the three effect families.
+- **Fable 5 First-Class:** No more "Is this supported in Fable?" anxiety.
+- **Clean Observability:** Virtual stack traces and fiber snapshotting make debugging concurrent code a breeze.
+- **Performance:** Resumable code ensures the unified flow is as fast as native C# `async/await`.
 - **Zero SRTP Maze:** Users get standard, readable compiler errors. "Go to Definition" works perfectly.
-- **Extensible:** Adding support for a new library (like `fio`) just requires adding a single `Bind` overload or an extension method.
+- **Extensible:** Adding support for a new library (like `fio`) just requires adding a single `Bind` overload.
 
 ### Cons
 - **Breaking Change:** This is a major version shift. Existing `asyncFlow` and `taskFlow` code must be migrated to `flow`.
@@ -89,9 +106,9 @@ Since `CancellationToken` is now a core part of the `Flow` signature, we get **N
 
 ## 5. Implementation Roadmap
 
-1.  **Phase 1 (The Core):** Create the unified `Flow` type and the overloaded `flow` builder. 
+1.  **Phase 1 (The Core):** Create the unified `Flow` type and the **Resumable** `flow` builder. 
 2.  **Phase 2 (The Bridge):** Port `FsFlow.Caps.Core` to return the new unified `Flow`.
-3.  **Phase 3 (ZIO Core):** Implement the `Fiber` runtime for .NET and Fable.
+3.  **Phase 3 (ZIO Core):** Implement the **Fiber Runtime** with Virtual Tracing and Supervision.
 4.  **Phase 4 (Advanced):** Port/Build `FlowStream` and `STM` on top of the new core.
 5.  **Phase 5 (Compatibility):** Add interpreters for `fio` and other F# effect libraries.
 
@@ -112,4 +129,4 @@ The viability of this architecture has been verified via an empirical probe (`de
 ---
 
 ## Conclusion
-By leveraging Fable 5's new capabilities and moving to a "Wide" concrete type, FsFlow becomes more than just a ReaderT library—it becomes a **cross-platform functional runtime** that rivals ZIO in power while remaining uniquely F#-idiomatic.
+By leveraging Resumable Code and a Fiber-based runtime, FsFlow becomes more than just a ReaderT library—it becomes a **high-performance, observable functional runtime** that rivals ZIO in power while remaining uniquely F#-idiomatic.
