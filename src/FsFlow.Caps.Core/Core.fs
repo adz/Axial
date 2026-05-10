@@ -3,6 +3,7 @@ namespace FsFlow.Caps.Core
 open System
 open System.Collections.Generic
 open System.Globalization
+open FsFlow
 
 /// <summary>Provides synchronous access to the current UTC clock.</summary>
 type IClock =
@@ -36,8 +37,9 @@ type EnvironmentVariableError =
 /// <summary>Helpers for clock capabilities.</summary>
 [<RequireQualifiedAccess>]
 module Clock =
-    /// <summary>Reads the current UTC timestamp from a clock capability.</summary>
-    let now (clock: IClock) : DateTimeOffset = clock.UtcNow()
+    /// <summary>Reads the current UTC timestamp from the environment.</summary>
+    let now<'env when 'env :> Needs<IClock>> : Flow<'env, 'e, DateTimeOffset> =
+        Flow.read (fun (env: 'env) -> env.Dep.UtcNow())
 
     /// <summary>Creates a live clock backed by <see cref="P:System.DateTimeOffset.UtcNow" />.</summary>
     let live : IClock =
@@ -52,9 +54,9 @@ module Clock =
 /// <summary>Helpers for random-number capabilities.</summary>
 [<RequireQualifiedAccess>]
 module Random =
-    /// <summary>Reads a random integer from a random capability.</summary>
-    let nextInt (random: IRandom) (minInclusive: int) (maxExclusive: int) : int =
-        random.NextInt minInclusive maxExclusive
+    /// <summary>Reads a random integer from the environment.</summary>
+    let nextInt (minInclusive: int) (maxExclusive: int) : Flow<'env, 'e, int> when 'env :> Needs<IRandom> =
+        Flow.read (fun (env: 'env) -> env.Dep.NextInt minInclusive maxExclusive)
 
     /// <summary>Creates a live random-number generator backed by <see cref="T:System.Random" />.</summary>
     let live : IRandom =
@@ -63,7 +65,12 @@ module Random =
 
         { new IRandom with
             member _.NextInt minInclusive maxExclusive =
-                lock gate (fun () -> rng.Next(minInclusive, maxExclusive)) }
+                #if FABLE_COMPILER
+                rng.Next(minInclusive, maxExclusive)
+                #else
+                lock gate (fun () -> rng.Next(minInclusive, maxExclusive)) 
+                #endif
+        }
 
     /// <summary>Creates a deterministic random generator that always returns the supplied value.</summary>
     let fromValue (value: int) : IRandom =
@@ -73,8 +80,9 @@ module Random =
 /// <summary>Helpers for GUID capabilities.</summary>
 [<RequireQualifiedAccess>]
 module Guid =
-    /// <summary>Reads a GUID from a GUID capability.</summary>
-    let newGuid (generator: IGuid) : global.System.Guid = generator.NewGuid()
+    /// <summary>Reads a GUID from the environment.</summary>
+    let newGuid<'env when 'env :> Needs<IGuid>> : Flow<'env, 'e, Guid> =
+        Flow.read (fun (env: 'env) -> env.Dep.NewGuid())
 
     /// <summary>Creates a live GUID generator backed by <see cref="M:System.Guid.NewGuid" />.</summary>
     let live : IGuid =
@@ -89,17 +97,24 @@ module Guid =
 /// <summary>Helpers for environment-variable providers.</summary>
 [<RequireQualifiedAccess>]
 module EnvironmentVariables =
-    /// <summary>Reads a raw environment-variable value from a provider.</summary>
-    let tryGet (environment: IEnvironmentVariables) (name: string) : string option =
-        environment.TryGet name
+    /// <summary>Reads a raw environment-variable value from the environment.</summary>
+    let tryGet (name: string) : Flow<'env, 'e, string option> when 'env :> Needs<IEnvironmentVariables> =
+        Flow.read (fun (env: 'env) -> env.Dep.TryGet name)
 
     /// <summary>Creates a live provider backed by the current process environment.</summary>
     let live : IEnvironmentVariables =
         { new IEnvironmentVariables with
             member _.TryGet name =
+                #if FABLE_COMPILER
+                // Fable/JS environment variable access depends on the host (Node/Browser).
+                // For now, we return None or could try process.env in Node.
+                None 
+                #else
                 match Environment.GetEnvironmentVariable name with
                 | null -> None
-                | value -> Some value }
+                | value -> Some value 
+                #endif
+        }
 
     /// <summary>Creates a deterministic provider from a fixed set of name/value pairs.</summary>
     let fromPairs (values: seq<string * string>) : IEnvironmentVariables =
@@ -114,52 +129,57 @@ module EnvironmentVariables =
                 | true, value -> Some value
                 | false, _ -> None }
 
-/// <summary>Helpers for reading and parsing environment variables.</summary>
+/// <summary>Helpers for reading and parsing environment variables from the environment.</summary>
 [<RequireQualifiedAccess>]
 module EnvironmentVariable =
     let private readParsed
         (expected: string)
         (parser: string -> 'value option)
-        (environment: IEnvironmentVariables)
         (name: string)
-        : Result<'value, EnvironmentVariableError> =
-        match EnvironmentVariables.tryGet environment name with
-        | None -> Error(EnvironmentVariableError.MissingVariable name)
-        | Some value ->
-            match parser value with
-            | Some parsed -> Ok parsed
-            | None -> Error(EnvironmentVariableError.InvalidVariable(name, value, expected))
+        : Flow<'env, EnvironmentVariableError, 'value> when 'env :> Needs<IEnvironmentVariables> =
+        flow {
+            let! (env: 'env) = Flow.env
+            match env.Dep.TryGet name with
+            | None -> return! Flow.fail (EnvironmentVariableError.MissingVariable name)
+            | Some value ->
+                match parser value with
+                | Some parsed -> return parsed
+                | None -> return! Flow.fail (EnvironmentVariableError.InvalidVariable(name, value, expected))
+        }
 
-    /// <summary>Reads a raw string environment variable.</summary>
-    let get (environment: IEnvironmentVariables) (name: string) : Result<string, EnvironmentVariableError> =
-        match EnvironmentVariables.tryGet environment name with
-        | Some value -> Ok value
-        | None -> Error(EnvironmentVariableError.MissingVariable name)
+    /// <summary>Reads a raw string environment variable from the environment.</summary>
+    let get (name: string) : Flow<'env, EnvironmentVariableError, string> when 'env :> Needs<IEnvironmentVariables> =
+        flow {
+            let! (env: 'env) = Flow.env
+            match env.Dep.TryGet name with
+            | Some value -> return value
+            | None -> return! Flow.fail (EnvironmentVariableError.MissingVariable name)
+        }
 
     /// <summary>Reads a raw string environment variable without wrapping it in a result.</summary>
-    let tryGet (environment: IEnvironmentVariables) (name: string) : string option =
-        EnvironmentVariables.tryGet environment name
+    let tryGet (name: string) : Flow<'env, 'e, string option> when 'env :> Needs<IEnvironmentVariables> =
+        EnvironmentVariables.tryGet name
 
-    /// <summary>Reads an integer environment variable.</summary>
-    let getInt (environment: IEnvironmentVariables) (name: string) : Result<int, EnvironmentVariableError> =
+    /// <summary>Reads an integer environment variable from the environment.</summary>
+    let getInt (name: string) : Flow<'env, EnvironmentVariableError, int> when 'env :> Needs<IEnvironmentVariables> =
         readParsed "an integer" (fun value ->
             match Int32.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture) with
             | true, parsed -> Some parsed
-            | false, _ -> None) environment name
+            | false, _ -> None) name
 
-    /// <summary>Reads a GUID environment variable.</summary>
-    let getGuid (environment: IEnvironmentVariables) (name: string) : Result<global.System.Guid, EnvironmentVariableError> =
+    /// <summary>Reads a GUID environment variable from the environment.</summary>
+    let getGuid (name: string) : Flow<'env, EnvironmentVariableError, Guid> when 'env :> Needs<IEnvironmentVariables> =
         readParsed "a GUID" (fun value ->
-            match global.System.Guid.TryParse value with
+            match Guid.TryParse value with
             | true, parsed -> Some parsed
-            | false, _ -> None) environment name
+            | false, _ -> None) name
 
-    /// <summary>Reads a boolean environment variable.</summary>
-    let getBool (environment: IEnvironmentVariables) (name: string) : Result<bool, EnvironmentVariableError> =
+    /// <summary>Reads a boolean environment variable from the environment.</summary>
+    let getBool (name: string) : Flow<'env, EnvironmentVariableError, bool> when 'env :> Needs<IEnvironmentVariables> =
         readParsed "a boolean" (fun value ->
             match Boolean.TryParse value with
             | true, parsed -> Some parsed
-            | false, _ -> None) environment name
+            | false, _ -> None) name
 
 /// <summary>Helpers for formatting environment-variable errors.</summary>
 [<RequireQualifiedAccess>]

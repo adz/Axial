@@ -96,7 +96,7 @@ render_example_section \
   "https://github.com/adz/FsFlow/blob/main/examples/FsFlow.Caps.Core.Examples/CoreCapabilitiesExample.fs" \
   "dotnet run --project examples/FsFlow.Caps.Core.Examples/FsFlow.Caps.Core.Examples.fsproj --nologo"
 
-  generate_example \
+render_example_section \
   'Playground Example' \
   "This example shows the same core boundary across Flow using the normal direct-bind style inside each computation expression." \
   "$root_dir/examples/FsFlow.Playground/FsFlow.Playground.fsproj" \

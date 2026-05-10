@@ -1,31 +1,47 @@
 namespace FsFlow.Caps.Core.Examples
 
 open System
+open FsFlow
 open FsFlow.Caps.Core
 
 module CoreCapabilitiesExample =
-    let private renderResult formatter result =
+    type private AppCaps =
+        {
+            Clock: IClock
+            Random: IRandom
+            Guid: IGuid
+            EnvVars: IEnvironmentVariables
+        }
+        interface Needs<IClock> with member this.Dep = this.Clock
+        interface Needs<IRandom> with member this.Dep = this.Random
+        interface Needs<IGuid> with member this.Dep = this.Guid
+        interface Needs<IEnvironmentVariables> with member this.Dep = this.EnvVars
+
+    let private renderExit formatter result =
         match result with
-        | Ok value -> $"Ok {formatter value}"
-        | Error error -> $"Error {EnvironmentVariableErrors.describe error}"
+        | Exit.Success value -> $"Ok {formatter value}"
+        | Exit.Failure (Cause.Fail error) -> $"Error {EnvironmentVariableErrors.describe error}"
+        | Exit.Failure cause -> $"Failure {cause}"
 
     let run () =
-        let clock = Clock.fromValue (DateTimeOffset(2026, 5, 10, 12, 0, 0, TimeSpan.Zero))
-        let random = Random.fromValue 7
-        let guid = Guid.fromValue (global.System.Guid.Parse "11111111-1111-1111-1111-111111111111")
+        let caps =
+            {
+                Clock = Clock.fromValue (DateTimeOffset(2026, 5, 10, 12, 0, 0, TimeSpan.Zero))
+                Random = Random.fromValue 7
+                Guid = Guid.fromValue (global.System.Guid.Parse "11111111-1111-1111-1111-111111111111")
+                EnvVars =
+                    EnvironmentVariables.fromPairs
+                        [ "FSFLOW_CAPS_PORT", "8080"
+                          "FSFLOW_CAPS_ENABLED", "true"
+                          "FSFLOW_CAPS_SESSION", "22222222-2222-2222-2222-222222222222"
+                          "FSFLOW_CAPS_PORT_TEXT", "abc" ]
+            }
 
-        let environment =
-            EnvironmentVariables.fromPairs
-                [ "FSFLOW_CAPS_PORT", "8080"
-                  "FSFLOW_CAPS_ENABLED", "true"
-                  "FSFLOW_CAPS_SESSION", "22222222-2222-2222-2222-222222222222"
-                  "FSFLOW_CAPS_PORT_TEXT", "abc" ]
-
-        printfn "clock=%O" (Clock.now clock)
-        printfn "random=%d" (Random.nextInt random 0 10)
-        printfn "guid=%O" (Guid.newGuid guid)
-        printfn "port=%s" (renderResult string (EnvironmentVariable.getInt environment "FSFLOW_CAPS_PORT"))
-        printfn "enabled=%s" (renderResult string (EnvironmentVariable.getBool environment "FSFLOW_CAPS_ENABLED"))
-        printfn "session=%s" (renderResult string (EnvironmentVariable.getGuid environment "FSFLOW_CAPS_SESSION"))
-        printfn "missing=%s" (renderResult string (EnvironmentVariable.get environment "FSFLOW_CAPS_MISSING"))
-        printfn "invalid=%s" (renderResult string (EnvironmentVariable.getInt environment "FSFLOW_CAPS_PORT_TEXT"))
+        printfn "clock=%O" (Flow.run caps Clock.now)
+        printfn "random=%d" (Flow.run caps (Random.nextInt 0 10) |> function Exit.Success v -> v | _ -> -1)
+        printfn "guid=%O" (Flow.run caps Guid.newGuid)
+        printfn "port=%s" (renderExit string (Flow.run caps (EnvironmentVariable.getInt "FSFLOW_CAPS_PORT")))
+        printfn "enabled=%s" (renderExit string (Flow.run caps (EnvironmentVariable.getBool "FSFLOW_CAPS_ENABLED")))
+        printfn "session=%s" (renderExit string (Flow.run caps (EnvironmentVariable.getGuid "FSFLOW_CAPS_SESSION")))
+        printfn "missing=%s" (renderExit string (Flow.run caps (EnvironmentVariable.get "FSFLOW_CAPS_MISSING")))
+        printfn "invalid=%s" (renderExit string (Flow.run caps (EnvironmentVariable.getInt "FSFLOW_CAPS_PORT_TEXT")))
