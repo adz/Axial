@@ -20,8 +20,7 @@ The validation vocabulary stays the same while the execution context grows.
 - start with reusable predicate checks, whether they preserve a value on success or act as a gate
 - keep fail-fast logic in plain Result
 - accumulate sibling failures with Validation and [`validate {}`]({{< relref "builders-validate.md" >}})
-- lift into Flow when you need explicit environment access
-- lift again into Flow or Flow when the runtime becomes asynchronous
+- lift into Flow when you need explicit environment access or when the runtime becomes asynchronous
 
 That matters because many F# codebases end up with separate worlds:
 
@@ -41,8 +40,6 @@ FsFlow gives those shapes one coherent family:
 Check<'value>
 Result<'value, 'error>
 Validation<'value, 'error>
-Flow<'env, 'error, 'value>
-Flow<'env, 'error, 'value>
 Flow<'env, 'error, 'value>
 ```
 
@@ -159,7 +156,7 @@ FsFlow does not try to hide that behavior inside the workflow builders.
 
 The design stays explicit in the places that matter for teams:
 
-- env access is visible through `Flow.read`, `Flow.read`, or `Flow.read`
+- env access is visible through `Flow.read`
 - execution is visible through `Flow.run` or `Flow.runFull`
 - expected failures stay in the type
 - the computation family tells you whether the use case is sync, `Async`, or `.NET Task`
