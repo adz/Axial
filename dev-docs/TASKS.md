@@ -20,13 +20,24 @@ Keep live product and architecture direction in `dev-docs/PLAN.md`.
 8. [x] Update existing unit tests and examples in `tests/FsFlow.Tests` and `examples/FsFlow.Examples` to use the unified `flow { }` builder.
 9. [x] Regenerate API documentation to reflect the single-type model and the removal of the effect-family split.
 
+## Phase 2.5: The Exit Model (Algebraic Interruption)
+
+See [EXIT_CAUSE_PLAN.md](EXIT_CAUSE_PLAN.md) for the design.
+
+10. [ ] Define `Cause<'e>` (Fail, Die, Interrupt) and `Exit<'v, 'e>` types in `FsFlow/Core.fs`.
+11. [ ] Refactor the unified `Flow` signature to return `ValueTask<Exit<'v, 'e>>` (or `JS.Promise` on Fable).
+12. [ ] Update the `flow { }` builder to handle the `Exit` channels; ensure `try...finally` and `use` blocks respect interruption signals.
+13. [ ] Update core `Flow` primitives (`map`, `bind`, `catch`, `run`) to operate on the `Exit` model.
+14. [ ] Implement `Flow.toResult` and `Flow.fromResult` interop helpers to maintain compatibility with standard F# results.
+
 ## Phase 3: ZIO Core Features (The Runtime)
 
-10. [ ] Implement the `Fiber` abstraction for light-weight concurrency; provide `Flow.fork`, `Flow.join`, and `Flow.interrupt` with platform-specific implementations for the .NET ThreadPool and JS Microtasks.
-11. [ ] Implement `Flow.zipPar` and `Flow.race` using the Fiber runtime to enable high-performance parallel orchestration.
-12. [ ] Implement Software Transactional Memory (STM) core: provide `Ref<'T>`, `TRef<'T>`, and the `stm { }` builder for atomic state updates.
-13. [ ] Implement the `FlowStream<'env, 'e, 'v>` type: provide environment-aware, error-typed streaming with `map`, `filter`, `fold`, and backpressure support (using `IAsyncEnumerable` for Fable 5 parity).
-14. [ ] Implement the Scheduling API: provide fluent retry and repeat logic (e.g., `Schedule.exponential`, `Schedule.jittered`, `Schedule.recur`).
+15. [ ] Implement the `Fiber` abstraction for light-weight concurrency; provide `Flow.fork`, `Flow.join`, and `Flow.interrupt` using the `Exit.Interrupt` signal.
+16. [ ] Implement `Flow.zipPar` and `Flow.race` using the Fiber runtime to enable high-performance parallel orchestration with structured interruption.
+17. [ ] Implement Software Transactional Memory (STM) core: provide `Ref<'T>`, `TRef<'T>`, and the `stm { }` builder for atomic state updates.
+18. [ ] Implement the `FlowStream<'env, 'e, 'v>` type: provide environment-aware, error-typed streaming with backpressure support (using `IAsyncEnumerable` for Fable 5 parity).
+19. [ ] Implement the Scheduling API: provide fluent retry and repeat logic (e.g., `Schedule.exponential`, `Schedule.jittered`, `Schedule.recur`).
+
 
 ## Phase 4: Post-Unification CAPS
 

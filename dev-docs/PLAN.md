@@ -13,7 +13,7 @@ Instead of choosing between `Flow`, `AsyncFlow`, and `TaskFlow`, the library pro
 The core progression is:
 
 ```text
-Check -> Result -> Validation -> Flow (Unified)
+Check -> Result -> Validation -> Flow (Exit Model)
 ```
 
 The unified model leverages **Fable 5** to provide a consistent developer experience across the entire stack, from backend microservices to frontend web applications, with built-in support for ZIO-like features such as Fibers, STM, and Streams.
@@ -23,6 +23,7 @@ The unified model leverages **Fable 5** to provide a consistent developer experi
 ... (previous items unchanged) ...
 
 - [Unified ZIO-style Architecture](tagless-final-idea.md): Move to a single `Flow<'env, 'e, 'v>` type based on `ValueTask` (.NET) and `Promise` (Fable) to eliminate effect-family friction.
+- [Exit/Cause Model](EXIT_CAUSE_PLAN.md): Use an explicit `Exit` type instead of `Result` to separate domain failures, defects, and interruption.
 
 ## Live Direction
 
@@ -30,11 +31,12 @@ The current priority is **Convergent Evolution**: merging the separate effect fa
 
 ### 1. The Unified Core
 - Adopt a single `Flow<'env, 'err, 'res>` type defined as `'env -> CancellationToken -> Effect<'res, 'err>`.
-- Use `ValueTask` on .NET for zero-allocation performance and native `Promise` on Fable 5.
+- Use `ValueTask` on .NET and `Promise` on Fable 5.
+- Transition from `Result<'v, 'e>` to `Exit<'v, 'e>` to support structured concurrency and robust interruption.
 - Implement the universal `flow { }` builder using method overloading for `Async`, `Task`, `Result`, and environment requests.
 
 ### 2. ZIO Features (The Cross-Platform Runtime)
-- **Fibers:** Light-weight concurrency that works on both the .NET ThreadPool and the JS Event Loop.
+- **Fibers:** Light-weight concurrency that works on both the .NET ThreadPool and the JS Event Loop, powered by the `Exit.Interrupt` signal.
 - **STM:** Software Transactional Memory for atomic state updates.
 - **Streams:** Unified `FlowStream` for environment-aware, error-typed streaming with backpressure.
 - **Scheduling:** Fluent retry and repeat logic.
