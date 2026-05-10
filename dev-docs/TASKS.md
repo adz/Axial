@@ -42,7 +42,7 @@ See [EXIT_CAUSE_PLAN.md](EXIT_CAUSE_PLAN.md) for the design.
 ## Phase 4: Host & Runtime Integration (The Pivot)
 
 20. [x] Deprecate and remove `FsFlow.Caps.Context`; pivot to a trait-based metadata model.
-21. [ ] Implement core metadata traits in `FsFlow.Runtime` (e.g., `IHasRequestId`, `IHasCorrelationId`, `IHasUser`).
+21. [x] Implement core metadata traits in `FsFlow.Runtime` (e.g., `IHasRequestId`, `IHasCorrelationId`, `IHasUser`).
 22. [ ] Refactor `FsFlow.Caps.Core` to use the unified `Flow` type and ensure Fable 5 compatibility.
 23. [ ] Implement `FsFlow.Hosting`: provide `IServiceProvider` adapters for `Flow.Runtime` (Logging, Clock) and automatic startup validation helpers.
 24. [ ] Implement `FsFlow.Runtime.Telemetry`: provide automatic mapping of metadata traits to `System.Diagnostics.Activity` tags.
