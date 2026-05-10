@@ -146,6 +146,19 @@ module WorkflowTests =
 
             test <@ Flow.run () workflow = Exit.Success (15, 15) @>
 
+        [<Fact>]
+        let ``FlowStream: consumes sequence correctly`` () =
+            let mutable sum = 0
+            let stream = FlowStream.fromSeq [1; 2; 3; 4; 5]
+            let workflow = 
+                stream 
+                |> FlowStream.map (fun v -> v * 2)
+                |> FlowStream.runForEach () (fun v -> sum <- sum + v)
+
+            let result = Flow.run () workflow
+            test <@ result = Exit.Success () @>
+            test <@ sum = 30 @>
+
         type private DeviceClient(name: string) =
             interface IDeviceClient with
                 member _.Name = name

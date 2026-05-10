@@ -49,6 +49,7 @@
     <Compile Include="Flow.fs" />
     <Compile Include="Ref.fs" />
     <Compile Include="Stm.fs" />
+    <Compile Include="Stream.fs" />
     <Compile Include="Builders.fs" />
     <Compile Include="Guard.fs" />
   </ItemGroup>

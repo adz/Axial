@@ -35,7 +35,7 @@ See [EXIT_CAUSE_PLAN.md](EXIT_CAUSE_PLAN.md) for the design.
 15. [x] Implement the `Fiber` abstraction for light-weight concurrency; provide `Flow.fork`, `Flow.join`, and `Flow.interrupt` using the `Exit.Interrupt` signal.
 16. [x] Implement `Flow.zipPar` and `Flow.race` using the Fiber runtime to enable high-performance parallel orchestration with structured interruption.
 17. [x] Implement Software Transactional Memory (STM) core: provide `Ref<'T>`, `TRef<'T>`, and the `stm { }` builder for atomic state updates.
-18. [ ] Implement the `FlowStream<'env, 'e, 'v>` type: provide environment-aware, error-typed streaming with backpressure support (using `IAsyncEnumerable` for Fable 5 parity).
+18. [x] Implement the `FlowStream<'env, 'e, 'v>` type: provide environment-aware, error-typed streaming with backpressure support (using `IAsyncEnumerable` for Fable 5 parity).
 19. [ ] Implement the Scheduling API: provide fluent retry and repeat logic (e.g., `Schedule.exponential`, `Schedule.jittered`, `Schedule.recur`).
 
 
