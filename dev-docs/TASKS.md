@@ -45,6 +45,6 @@ See [EXIT_CAUSE_PLAN.md](EXIT_CAUSE_PLAN.md) for the design.
 21. [x] Implement core metadata traits in `FsFlow.Runtime` (e.g., `IHasRequestId`, `IHasCorrelationId`, `IHasUser`).
 22. [x] Refactor `FsFlow.Caps.Core` to use the unified `Flow` type and ensure Fable 5 compatibility.
 23. [x] Implement `FsFlow.Hosting`: provide `IServiceProvider` adapters for `Flow.Runtime` (Logging, Clock) and automatic startup validation helpers.
-24. [ ] Implement `FsFlow.Runtime.Telemetry`: provide automatic mapping of metadata traits to `System.Diagnostics.Activity` tags.
+24. [x] Implement `FsFlow.Runtime.Telemetry`: provide automatic mapping of metadata traits to `System.Diagnostics.Activity` tags.
 25. [ ] Implement remaining unified effect packages: `FsFlow.Caps.Console`, `FileSystem`, `Http`, and `Process`.
 26. [ ] Perform a full project-wide validation: run all tests, verify Fable 5 transpilation for all packages, and update all documentation for the FsFlow 1.0 release.

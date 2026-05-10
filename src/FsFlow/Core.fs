@@ -96,7 +96,7 @@ type Effect<'value, 'error> = ValueTask<Exit<'value, 'error>>
 /// <typeparam name="error">The type of the failure value.</typeparam>
 /// <typeparam name="value">The type of the success value.</typeparam>
 type Flow<'env, 'error, 'value> =
-    private
+    internal
     | Flow of ('env -> CancellationToken -> Effect<'value, 'error>)
 
 /// <summary>

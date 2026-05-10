@@ -12,6 +12,7 @@
     <Compile Include="CapsPrimitiveTests.fs" />
     <Compile Include="CapsCoreTests.fs" />
     <Compile Include="HostingTests.fs" />
+    <Compile Include="TelemetryTests.fs" />
     <Compile Include="CapsRuntimePatternTests.fs" />
     <Compile Include="WorkflowTests.fs" />
     <Compile Include="ValidationTests.fs" />
@@ -21,6 +22,7 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
+    <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="8.0.1" />
     <PackageReference Include="xunit" Version="2.9.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -33,6 +35,7 @@
     <ProjectReference Include="..\..\src\FsFlow\FsFlow.fsproj" />
     <ProjectReference Include="..\..\src\FsFlow.Caps.Core\FsFlow.Caps.Core.fsproj" />
     <ProjectReference Include="..\..\src\FsFlow.Hosting\FsFlow.Hosting.fsproj" />
+    <ProjectReference Include="..\..\src\FsFlow.Runtime.Telemetry\FsFlow.Runtime.Telemetry.fsproj" />
   </ItemGroup>
 
 </Project>
