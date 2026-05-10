@@ -121,7 +121,7 @@ let workflow : Flow<unit, string, int> =
     |> Flow.fromOption "missing value"
 ```
 
-The same pattern exists for Flow and Flow.
+The same pattern exists for all workflow types.
 
 ## Error: ColdTask Does Not Match `Task`
 
@@ -152,13 +152,11 @@ If the compiler error mentions one of these shapes, check the boundary first:
 - `Task<...>`
 - `Task<Result<...>>`
 - `Flow<...>`
-- `Flow<...>`
-- `Flow<...>`
 
 Most fixes are one of:
 
-- choose `flow {}` based on the real runtime shape
-- add a type annotation to disambiguate `let!`
+- ensure the appropriate `flow {}` or `taskFlow {}` builder is used
+- add a type annotation to disambiguate `let!` overloads
 - derive a smaller local environment with `localEnv`
 - move back to plain Result until the real workflow boundary appears
 
