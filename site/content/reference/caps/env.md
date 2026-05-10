@@ -11,7 +11,7 @@ Request token for binding a whole dependency inside a workflow.
 ## Remarks
 
 Use this token when a workflow needs the dependency itself rather than a value projected from
-that dependency. The `flow {}`, `asyncFlow {}`, and `taskFlow {}` builders
+that dependency. The `flow {}` builder and its internal compatibility helpers
 read it from any environment that implements `Needs&lt;'dep&gt;`.
 
 
@@ -57,8 +57,8 @@ type ClockCaps =
     inherit Needs&lt;IClock&gt;
     abstract Clock : IClock
 
-let readClockNow : TaskFlow&lt;#ClockCaps, unit, DateTimeOffset&gt; =
-    taskFlow {
+let readClockNow : Flow&lt;#ClockCaps, unit, DateTimeOffset&gt; =
+    flow {
         let! now = Env&lt;IClock&gt; _.UtcNow
         return now
     }

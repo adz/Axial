@@ -181,7 +181,7 @@ module Flow =
             |> EffectFlow.bind (fun value -> invoke (binder value) environment cancellationToken))
 
     /// <summary>Sequences a synchronous continuation after a successful value.</summary>
-    let inline (>>=)
+    let (>>=)
         (flow: Flow<'env, 'error, 'value>)
         (binder: 'value -> Flow<'env, 'error, 'next>)
         : Flow<'env, 'error, 'next> =
@@ -319,14 +319,14 @@ module Flow =
             right
 
     /// <summary>Maps the successful value of a synchronous flow.</summary>
-    let inline (<!>)
+    let (<!>)
         (mapper: 'value -> 'next)
         (flow: Flow<'env, 'error, 'value>)
         : Flow<'env, 'error, 'next> =
         map mapper flow
 
     /// <summary>Applies a flow-wrapped function to a flow-wrapped value.</summary>
-    let inline (<*>)
+    let (<*>)
         (flow: Flow<'env, 'error, 'value -> 'next>)
         (value: Flow<'env, 'error, 'value>)
         : Flow<'env, 'error, 'next> =
@@ -381,7 +381,7 @@ module Flow =
 open System
 open System.Threading.Tasks
 
-module AsyncFlow =
+module internal AsyncFlow =
     /// <summary>Executes an async flow with the provided environment.</summary>
     let run
         (environment: 'env)
@@ -541,7 +541,7 @@ module AsyncFlow =
         )
 
     /// <summary>Sequences an async continuation after a successful value.</summary>
-    let inline (>>=)
+    let (>>=)
         (flow: AsyncFlow<'env, 'error, 'value>)
         (binder: 'value -> AsyncFlow<'env, 'error, 'next>)
         : AsyncFlow<'env, 'error, 'next> =
@@ -667,14 +667,14 @@ module AsyncFlow =
             right
 
     /// <summary>Maps the successful value of an async flow.</summary>
-    let inline (<!>)
+    let (<!>)
         (mapper: 'value -> 'next)
         (flow: AsyncFlow<'env, 'error, 'value>)
         : AsyncFlow<'env, 'error, 'next> =
         map mapper flow
 
     /// <summary>Applies an async-flow-wrapped function to an async-flow-wrapped value.</summary>
-    let inline (<*>)
+    let (<*>)
         (flow: AsyncFlow<'env, 'error, 'value -> 'next>)
         (value: AsyncFlow<'env, 'error, 'value>)
         : AsyncFlow<'env, 'error, 'next> =
@@ -1004,7 +1004,7 @@ open FsFlow
 /// <typeparam name="env">The type of the environment dependency.</typeparam>
 /// <typeparam name="error">The type of the failure value.</typeparam>
 /// <typeparam name="value">The type of the success value.</typeparam>
-type TaskFlow<'env, 'error, 'value> =
+type internal TaskFlow<'env, 'error, 'value> =
     private
     | TaskFlow of ('env -> CancellationToken -> Task<Result<'value, 'error>>)
 
@@ -1012,10 +1012,10 @@ type TaskFlow<'env, 'error, 'value> =
 /// Represents delayed task work that can observe a runtime cancellation token when it is started.
 /// </summary>
 /// <typeparam name="value">The type of the produced task value.</typeparam>
-type ColdTask<'value> =
+type internal ColdTask<'value> =
     | ColdTask of (CancellationToken -> Task<'value>)
 
-type TaskFlow<'env, 'error, 'value> with
+type internal TaskFlow<'env, 'error, 'value> with
     static member CapabilityService
         (projection: 'env -> 'service)
         : TaskFlow<'env, 'error, 'service> =
@@ -1056,7 +1056,7 @@ type TaskFlow<'env, 'error, 'value> with
 /// </summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
-module ColdTask =
+module internal ColdTask =
     let create (operation: CancellationToken -> Task<'value>) : ColdTask<'value> =
         ColdTask operation
 
@@ -1088,7 +1088,7 @@ module ColdTask =
 /// </summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
-module TaskFlow =
+module internal TaskFlow =
     /// <summary>Executes a task flow with the provided environment and cancellation token.</summary>
     /// <param name="environment">The environment of type <c>'env</c>.</param>
     /// <param name="cancellationToken">The <see cref="T:System.Threading.CancellationToken" />.</param>
@@ -1339,7 +1339,7 @@ module TaskFlow =
                 (environment, cancellationToken))
 
     /// <summary>Sequences a task-flow-producing continuation after a successful value.</summary>
-    let inline (>>=)
+    let (>>=)
         (flow: TaskFlow<'env, 'error, 'value>)
         (binder: 'value -> TaskFlow<'env, 'error, 'next>)
         : TaskFlow<'env, 'error, 'next> =
@@ -1487,14 +1487,14 @@ module TaskFlow =
             right
 
     /// <summary>Maps the successful value of a task flow.</summary>
-    let inline (<!>)
+    let (<!>)
         (mapper: 'value -> 'next)
         (flow: TaskFlow<'env, 'error, 'value>)
         : TaskFlow<'env, 'error, 'next> =
         map mapper flow
 
     /// <summary>Applies a task-flow-wrapped function to a task-flow-wrapped value.</summary>
-    let inline (<*>)
+    let (<*>)
         (flow: TaskFlow<'env, 'error, 'value -> 'next>)
         (value: TaskFlow<'env, 'error, 'value>)
         : TaskFlow<'env, 'error, 'next> =
@@ -1761,7 +1761,7 @@ module TaskFlow =
 /// <typeparam name="env">The application environment type captured by the spec.</typeparam>
 /// <typeparam name="error">The error type produced by the task flow.</typeparam>
 /// <typeparam name="value">The success type produced by the task flow.</typeparam>
-type TaskFlowSpec<'runtime, 'env, 'error, 'value> =
+type internal TaskFlowSpec<'runtime, 'env, 'error, 'value> =
     {
         /// <summary>Runtime services to supply when the spec is run.</summary>
         Runtime: 'runtime
@@ -1776,7 +1776,7 @@ type TaskFlowSpec<'runtime, 'env, 'error, 'value> =
 /// <summary>Helpers for creating and running <see cref="TaskFlowSpec{runtime, env, error, value}" /> values.</summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
-module TaskFlowSpec =
+module internal TaskFlowSpec =
     /// <summary>Creates a task-flow spec from runtime services, application dependencies, and a build function.</summary>
     let create
         (runtime: 'runtime)
@@ -1815,26 +1815,25 @@ module Capability =
     /// <summary>Reads a capability from the runtime half of a two-context runtime environment.</summary>
     let runtime
         (projection: 'runtime -> 'service)
-        : TaskFlow<RuntimeContext<'runtime, 'env>, 'error, 'service> =
-        TaskFlow.read (fun context -> projection context.Runtime)
+        : Flow<RuntimeContext<'runtime, 'env>, 'error, 'service> =
+        Flow.read (fun context -> projection context.Runtime)
 
     /// <summary>Reads a capability from the application half of a two-context runtime environment.</summary>
     let environment
         (projection: 'env -> 'service)
-        : TaskFlow<RuntimeContext<'runtime, 'env>, 'error, 'service> =
-        TaskFlow.read (fun context -> projection context.Environment)
+        : Flow<RuntimeContext<'runtime, 'env>, 'error, 'service> =
+        Flow.read (fun context -> projection context.Environment)
 
     /// <summary>Reads a service from <see cref="IServiceProvider" /> and fails when it is not registered.</summary>
-    let serviceFromProvider<'service> : TaskFlow<IServiceProvider, MissingCapability, 'service> =
-        TaskFlow(fun provider _ ->
+    let serviceFromProvider<'service> : Flow<IServiceProvider, MissingCapability, 'service> =
+        Flow(fun provider _ ->
             match provider.GetService typeof<'service> with
             | null ->
-                Task.FromResult(
-                    Error
-                        {
-                            CapabilityType = typeof<'service>
-                        })
-            | value -> Task.FromResult(Ok(unbox<'service> value)))
+                EffectFlow.ofError
+                    {
+                        CapabilityType = typeof<'service>
+                    }
+            | value -> EffectFlow.ofValue (unbox<'service> value))
 
 /// <summary>Helpers for deriving an environment in one flow and consuming it in another.</summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -1847,7 +1846,7 @@ module Layer =
 
 /// [omit]
 /// <exclude/>
-type TaskFlowBuilder() =
+type internal TaskFlowBuilder() =
     member _.Return(value: 'value) : TaskFlow<'env, 'error, 'value> =
         TaskFlow.ok value
 
@@ -2279,7 +2278,7 @@ type TaskFlowBuilder() =
         )
 
 [<AutoOpen>]
-module TaskFlowBuilderExtensions =
+module internal TaskFlowBuilderExtensions =
     type TaskFlowBuilder with
         member this.ReturnFrom(operation: ValueTask) : TaskFlow<'env, 'error, unit> =
             operation.AsTask()
@@ -2432,7 +2431,7 @@ module TaskFlowBuilderExtensions =
                 })
 
 [<AutoOpen>]
-module TaskBuilders =
+module internal TaskBuilders =
     /// <summary>
     /// The .NET <c>taskFlow { }</c> computation expression.
     /// </summary>
@@ -2468,4 +2467,4 @@ module TaskBuilders =
     /// }
     /// ```
     /// </example>
-    let taskFlow = TaskFlowBuilder()
+    let internal taskFlow = TaskFlowBuilder()

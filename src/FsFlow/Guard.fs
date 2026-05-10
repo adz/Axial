@@ -133,13 +133,13 @@ type Guard private () =
             | Ok value -> EffectFlow.ofValue value
             | Error () -> EffectFlow.ofError error)
 
-    static member Of(error: 'error, flow: AsyncFlow<'env, unit, 'value>) : AsyncFlow<'env, 'error, 'value> =
+    static member internal Of(error: 'error, flow: AsyncFlow<'env, unit, 'value>) : AsyncFlow<'env, 'error, 'value> =
         flow
         |> GuardFlow.fromAsyncFlow
         |> Flow.mapError (fun () -> error)
         |> AsyncFlow.fromFlow
 
-    static member Of(error: 'error, flow: TaskFlow<'env, unit, 'value>) : TaskFlow<'env, 'error, 'value> =
+    static member internal Of(error: 'error, flow: TaskFlow<'env, unit, 'value>) : TaskFlow<'env, 'error, 'value> =
         flow
         |> GuardFlow.fromTaskFlow
         |> Flow.mapError (fun () -> error)
@@ -174,20 +174,20 @@ type Guard private () =
     static member MapError(mapper: 'error1 -> 'error2, flow: Flow<'env, 'error1, 'value>) : Flow<'env, 'error2, 'value> =
         Flow.mapError mapper flow
 
-    static member MapError(mapper: 'error1 -> 'error2, flow: AsyncFlow<'env, 'error1, 'value>) : AsyncFlow<'env, 'error2, 'value> =
+    static member internal MapError(mapper: 'error1 -> 'error2, flow: AsyncFlow<'env, 'error1, 'value>) : AsyncFlow<'env, 'error2, 'value> =
         flow
         |> GuardFlow.fromAsyncFlow
         |> Flow.mapError mapper
         |> AsyncFlow.fromFlow
 
-    static member MapError(mapper: 'error1 -> 'error2, flow: TaskFlow<'env, 'error1, 'value>) : TaskFlow<'env, 'error2, 'value> =
+    static member internal MapError(mapper: 'error1 -> 'error2, flow: TaskFlow<'env, 'error1, 'value>) : TaskFlow<'env, 'error2, 'value> =
         flow
         |> GuardFlow.fromTaskFlow
         |> Flow.mapError mapper
         |> TaskFlow.fromFlow
 
 [<AutoOpen>]
-module AsyncFlowBuilderExtensions =
+module internal AsyncFlowBuilderExtensions =
     type AsyncFlowBuilder with
         member this.ReturnFrom(operation: ValueTask) : AsyncFlow<'env, 'error, unit> =
             operation.AsTask()

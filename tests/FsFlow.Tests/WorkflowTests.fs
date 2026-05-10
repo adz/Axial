@@ -651,42 +651,6 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
             test <@ seen.Value = cts.Token @>
 
         [<Fact>]
-        let ``TaskFlow.fromTask requires the nominal ColdTask wrapper`` () =
-            let fsFlowAssemblyPath = typeof<FlowBuilder>.Assembly.Location
-            let fsFlowNetAssemblyPath = typeof<TaskFlowBuilder>.Assembly.Location
-
-            let rawFactoryProbe =
-                $"""
-    #r @"{fsFlowAssemblyPath}"
-    #r @"{fsFlowNetAssemblyPath}"
-    open System.Threading
-    open System.Threading.Tasks
-    open FsFlow
-
-    let probe : TaskFlow<unit, string, int> =
-        TaskFlow.fromTask(fun (_: CancellationToken) -> Task.FromResult 42)
-    """
-
-            let wrappedFactoryProbe =
-                $"""
-    #r @"{fsFlowAssemblyPath}"
-    #r @"{fsFlowNetAssemblyPath}"
-    open System.Threading.Tasks
-    open FsFlow
-
-    let probe : TaskFlow<unit, string, int> =
-        TaskFlow.fromTask(ColdTask(fun _ -> Task.FromResult 42))
-    """
-
-            let rawExitCode, rawOutput = runFsiScript rawFactoryProbe
-            let wrappedExitCode, wrappedOutput = runFsiScript wrappedFactoryProbe
-
-            test <@ rawExitCode <> 0 @>
-            test <@ rawOutput.Contains("error FS") @>
-            test <@ wrappedExitCode = 0 @>
-            test <@ wrappedOutput = "" @>
-
-        [<Fact>]
         let ``Runnable example docs are generated from executable example projects`` () =
             let repoRoot = Path.GetFullPath(Path.Combine(__SOURCE_DIRECTORY__, "..", ".."))
             let docsExamplesPath = Path.Combine(repoRoot, "docs", "examples", "README.md")
@@ -1063,28 +1027,18 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
 
             let providerResult =
                 Capability.serviceFromProvider<IDeviceClient>
-                |> TaskFlow.run provider CancellationToken.None
-                |> fun task -> task.GetAwaiter().GetResult()
+                |> Flow.run provider
 
             let missingProviderResult =
                 Capability.serviceFromProvider<IDeviceClient>
-                |> TaskFlow.run (RecordingServiceProvider(typeof<string>, "nope") :> IServiceProvider) CancellationToken.None
-                |> fun task -> task.GetAwaiter().GetResult()
+                |> Flow.run (RecordingServiceProvider(typeof<string>, "nope") :> IServiceProvider)
 
             let flowCapability : Flow<AppDependencies, string, IDeviceClient> =
-                Capability.service _.DeviceClient
-
-            let asyncCapability : AsyncFlow<AppDependencies, string, IDeviceClient> =
                 Capability.service _.DeviceClient
 
             let flowCapabilityResult =
                 flowCapability
                 |> Flow.run app
-
-            let asyncCapabilityResult =
-                asyncCapability
-                |> AsyncFlow.run app
-                |> Async.RunSynchronously
 
             let flowLayerWorkflow : Flow<AppDependencies, string, string> =
                 flow {
@@ -1098,27 +1052,11 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                 |> Flow.provideLayer (Flow.succeed app)
                 |> Flow.run ()
 
-            let asyncLayerWorkflow : AsyncFlow<AppDependencies, string, string> =
-                flow {
-                    let! client = Flow.read _.DeviceClient
-                    let! value = Flow.read _.Value
-                    return $"{client.Name}:{value}"
-                }
-                |> AsyncFlow.fromFlow
-
-            let asyncLayerResult =
-                asyncLayerWorkflow
-                |> AsyncFlow.provideLayer (AsyncFlow.succeed app)
-                |> AsyncFlow.run ()
-                |> Async.RunSynchronously
-
             test <@ composedResult = Ok "provider-client:10" @>
             test <@ providerResult = Ok app.DeviceClient @>
             test <@ missingProviderResult = Error { CapabilityType = typeof<IDeviceClient> } @>
             test <@ flowCapabilityResult = Ok app.DeviceClient @>
-            test <@ asyncCapabilityResult = Ok app.DeviceClient @>
             test <@ flowLayerResult = Ok "provider-client:10" @>
-            test <@ asyncLayerResult = Ok "provider-client:10" @>
 
         [<Fact>]
         let ``Flow traverse and sequence work as expected`` () =
@@ -1561,50 +1499,6 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
             test <@ taskNone = Error "missing value" @>
             test <@ taskValueSome = Ok 42 @>
             test <@ taskValueNone = Error "missing value" @>
-
-        [<Fact>]
-        let ``flow computation expression directly binds async and task values when task helpers are imported`` () =
-            let fsFlowAssemblyPath = typeof<FlowBuilder>.Assembly.Location
-            let fsFlowNetAssemblyPath = typeof<TaskFlowBuilder>.Assembly.Location
-
-            let taskProbe =
-                $"""
-    #r @"{fsFlowAssemblyPath}"
-    #r @"{fsFlowNetAssemblyPath}"
-    open System.Threading.Tasks
-    open FsFlow
-    open FsFlow
-
-    let probe : Flow<unit, string, int> =
-        flow {{
-            do! (Task.CompletedTask : Task)
-            let! asyncValue = (async {{ return 21 }} : Async<int>)
-            let! taskValue = (Task.FromResult 21 : Task<int>)
-            let! resultValue = (Ok 21 : Result<int, string>)
-            return asyncValue + taskValue + resultValue
-        }}
-    """
-
-            let taskFlowProbe =
-                $"""
-    #r @"{fsFlowAssemblyPath}"
-    #r @"{fsFlowNetAssemblyPath}"
-    open FsFlow
-    open FsFlow
-
-    let probe : Flow<unit, string, int> =
-        flow {{
-            let! value = TaskFlow.succeed 42
-            return value
-        }}
-    """
-
-            let taskExitCode, taskOutput = runFsiScript taskProbe
-            let taskFlowExitCode, taskFlowOutput = runFsiScript taskFlowProbe
-
-            test <@ taskExitCode = 0 @>
-            test <@ taskFlowExitCode <> 0 @>
-            test <@ taskFlowOutput.Contains("Bind") @>
 
         [<Fact>]
         let ``flow lives in FsFlow and composes sync flows`` () =

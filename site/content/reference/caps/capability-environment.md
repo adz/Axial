@@ -8,7 +8,7 @@ Reads a capability from the application half of a two-context runtime environmen
 
 
 ```fsharp
-let environment (projection: 'env -> 'service) : TaskFlow<RuntimeContext<'runtime, 'env>, 'error, 'service>
+let environment (projection: 'env -> 'service) : Flow<RuntimeContext<'runtime, 'env>, 'error, 'service>
 ```
 
 

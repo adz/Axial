@@ -47,7 +47,7 @@ type RequestEnv =
     { TraceId: Guid
       Prefix: string
       Db: AppDb
-      LoadSuffix: ColdTask<string> }
+      LoadSuffix: Task<string> }
 
 let validateName (name: string) : Result<string, string> =
     Check.notBlank name
@@ -60,19 +60,19 @@ let loadUser : Flow<RequestEnv, string, User> =
         return user
     }
 
-let renderTrace : AsyncFlow<RequestEnv, string, string> =
-    asyncFlow {
-        let! env = AsyncFlow.env // AsyncFlow<RequestEnv, string, RequestEnv>
-        let! user = loadUser // AsyncFlow<RequestEnv, string, User>
-        let! validName = validateName user.Name // AsyncFlow<RequestEnv, string, string>
+let renderTrace : Flow<RequestEnv, string, string> =
+    flow {
+        let! env = Flow.env // Flow<RequestEnv, string, RequestEnv>
+        let! user = loadUser // Flow<RequestEnv, string, User>
+        let! validName = validateName user.Name // Flow<RequestEnv, string, string>
         return $"{env.Prefix} [{env.TraceId}] {validName}"
     }
 
-let publishResponse : TaskFlow<RequestEnv, string, string> =
-    taskFlow {
-        let! env = TaskFlow.env // TaskFlow<RequestEnv, string, RequestEnv>
-        let! user = loadUser // TaskFlow<RequestEnv, string, User>
-        let! suffix = env.LoadSuffix // TaskFlow<RequestEnv, string, string>
+let publishResponse : Flow<RequestEnv, string, string> =
+    flow {
+        let! env = Flow.env // Flow<RequestEnv, string, RequestEnv>
+        let! user = loadUser // Flow<RequestEnv, string, User>
+        let! suffix = env.LoadSuffix // Flow<RequestEnv, string, string>
         return $"{env.Prefix} [{env.TraceId}] {user.Name}{suffix}"
     }
 
@@ -85,7 +85,7 @@ let run () =
                 function
                 | 42 -> Some { Id = 42; Name = "Ada" }
                 | _ -> None }
-          LoadSuffix = ColdTask(fun _ -> Task.FromResult "!") }
+          LoadSuffix = Task.FromResult "!" }
 
     let syncResult =
         loadUser
@@ -93,20 +93,18 @@ let run () =
 
     let asyncResult =
         renderTrace
-        |> AsyncFlow.run environment
-        |> Async.RunSynchronously
+        |> Flow.run environment
 
     let taskResult =
         publishResponse
-        |> TaskFlow.run environment CancellationToken.None
-        |> fun task -> task.GetAwaiter().GetResult()
+        |> Flow.run environment
 
     printfn "Flow result: %A" syncResult
-    printfn "AsyncFlow result: %A" asyncResult
-    printfn "TaskFlow result: %A" taskResult
+    printfn "Flow result: %A" asyncResult
+    printfn "Flow result: %A" taskResult
     // Flow result: Ok { Id = 42; Name = "Ada" }
-    // AsyncFlow result: Ok "Hello [11111111-1111-1111-1111-111111111111] Ada"
-    // TaskFlow result: Ok "Hello [11111111-1111-1111-1111-111111111111] Ada!"
+    // Flow result: Ok "Hello [11111111-1111-1111-1111-111111111111] Ada"
+    // Flow result: Ok "Hello [11111111-1111-1111-1111-111111111111] Ada!"
 
 ```
 

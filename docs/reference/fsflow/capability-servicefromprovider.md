@@ -7,7 +7,7 @@ Reads a service from `IServiceProvider` and fails when it is not registered.
 
 
 ```fsharp
-let serviceFromProvider<'service> : TaskFlow<IServiceProvider, MissingCapability, 'service>
+let serviceFromProvider<'service> : Flow<IServiceProvider, MissingCapability, 'service>
 ```
 
 

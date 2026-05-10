@@ -26,12 +26,12 @@ type Flow<'env, 'error, 'value> =
 
 /// <summary>
 /// Represents a cold async workflow that reads an environment, returns a typed result,
-/// and is executed explicitly through <c>AsyncFlow.run</c>.
+/// and is used internally to implement the unified <c>Flow</c> surface.
 /// </summary>
 /// <typeparam name="env">The type of the environment dependency.</typeparam>
 /// <typeparam name="error">The type of the failure value.</typeparam>
 /// <typeparam name="value">The type of the success value.</typeparam>
-type AsyncFlow<'env, 'error, 'value> =
+type internal AsyncFlow<'env, 'error, 'value> =
     private
     | AsyncFlow of ('env -> Async<Result<'value, 'error>>)
 
@@ -101,7 +101,7 @@ type Needs<'dep> =
 /// <summary>Request token for binding a whole dependency inside a workflow.</summary>
 /// <remarks>
 /// Use this token when a workflow needs the dependency itself rather than a value projected from
-/// that dependency. The <c>flow {}</c>, <c>asyncFlow {}</c>, and <c>taskFlow {}</c> builders
+/// that dependency. The <c>flow {}</c> builder and its internal compatibility helpers
 /// read it from any environment that implements <c>Needs&lt;'dep&gt;</c>.
 /// </remarks>
 /// <typeparam name="dep">The dependency type to read from the environment.</typeparam>
@@ -143,8 +143,8 @@ type Env<'dep> =
 ///     inherit Needs&lt;IClock&gt;
 ///     abstract Clock : IClock
 ///
-/// let readClockNow : TaskFlow&lt;#ClockCaps, unit, DateTimeOffset&gt; =
-///     taskFlow {
+/// let readClockNow : Flow&lt;#ClockCaps, unit, DateTimeOffset&gt; =
+///     flow {
 ///         let! now = Env&lt;IClock&gt; _.UtcNow
 ///         return now
 ///     }
@@ -321,7 +321,7 @@ type Flow<'env, 'error, 'value> with
             | Ok environment -> flowOperation environment ct
             | Error error -> EffectFlow.ofError error)
 
-type AsyncFlow<'env, 'error, 'value> with
+type internal AsyncFlow<'env, 'error, 'value> with
     static member CapabilityService
         (projection: 'env -> 'service)
         : AsyncFlow<'env, 'error, 'service> =

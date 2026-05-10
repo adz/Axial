@@ -18,7 +18,7 @@ Keep live product and architecture direction in `dev-docs/PLAN.md`.
 6. [x] Migrate existing `FsFlow` internal modules (Guard, Validate) to use the new unified `Flow` type instead of separate `Flow`/`AsyncFlow`/`TaskFlow`.
 7. [x] Refactor the project structure to remove the separate `AsyncFlow.fs` and `TaskFlow.fs` files, merging their unique logic (e.g., retries, timeouts) into the unified `Flow` module.
 8. [x] Update existing unit tests and examples in `tests/FsFlow.Tests` and `examples/FsFlow.Examples` to use the unified `flow { }` builder.
-9. [ ] Regenerate API documentation to reflect the single-type model and the removal of the effect-family split.
+9. [x] Regenerate API documentation to reflect the single-type model and the removal of the effect-family split.
 
 ## Phase 3: ZIO Core Features (The Runtime)
 

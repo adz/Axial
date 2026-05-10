@@ -7,6 +7,11 @@ ref_dir="$root_dir/site/content/reference"
 docs_dir="$root_dir/site/content/docs"
 src_dir="$root_dir/docs/reference/fsflow"
 
+# Rebuild the generated reference subtree from scratch so removed API pages do
+# not linger as stale site content.
+rm -rf "$ref_dir"
+mkdir -p "$ref_dir"
+
 upsert_frontmatter() {
   local file="$1"
   local key="$2"

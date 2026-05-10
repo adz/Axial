@@ -41,7 +41,7 @@ the user benefits from seeing every problem at once.
 ## Information
 
 - **Module**: `Builders`
-- **Source**: [source](https://github.com/adz/FsFlow/blob/main/src/FsFlow/Builders.fs#L946)
+- **Source**: [source](https://github.com/adz/FsFlow/blob/main/src/FsFlow/Builders.fs#L918)
 
 ## Examples
 

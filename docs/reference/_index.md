@@ -5,36 +5,30 @@ description: Module index for the public FsFlow API surface.
 
 # API Reference
 
-This categorical index covers the synchronous, async, and task workflow families plus the pure validation bridge.
+This categorical index covers the synchronous workflow surface, the capability helpers, the pure validation bridge, and the CAPS support packages.
 
-This package groups the synchronous, async, and task workflow families plus the pure validation bridge:
+This package groups the main public surfaces:
 
 - `Flow<'env, 'error, 'value>` and the [`Flow`](/reference/flow/) module
-- `AsyncFlow<'env, 'error, 'value>` and the [`AsyncFlow`](/reference/asyncflow/) module
-- `TaskFlow<'env, 'error, 'value>` and the [`TaskFlow`](/reference/taskflow/) module
-- `ColdTask<'value>` and the [`ColdTask`](/reference/coldtask/) module
+- [`Capability`](/reference/capability/) for named capability helpers and environment access
 - [`Check`](/reference/check/) for pure `Result<'value, unit>` predicates
-- [`Guard`](/reference/guard/) for bindable check-like sources and error remapping
 - [`Validation`](/reference/validation/) for accumulated diagnostics
-- the [`result {}`](/reference/result/) builder for fail-fast orchestration over standard `Result` values
-- the CAPS request tokens [`Needs<'dep>`](/reference/caps/) and [`Env<'dep>`](/reference/caps/) / `Env<'dep, 'value>` for named
-  capability boundaries
+- [`Diagnostics`](/reference/diagnostics/) for the structured validation graph
+- the [`flow {}`](/reference/flow/builders-flow.md) and [`validate {}`](/reference/validation/builders-validate.md) entry points
+- the CAPS request tokens [`Needs<'dep>`](/reference/caps/) and [`Env<'dep>`](/reference/caps/) / `Env<'dep, 'value>` for explicit capability boundaries
 - the [`FsFlow.Caps.Core`](/reference/caps-core/) package for the shared clock, random, GUID, and environment-variable primitives
 - the [`FsFlow.Caps.Context`](/reference/caps-context/) package for request, user, locale, metadata, and request-flag context
-- support types that shape runtime [`logging`](/reference/asyncflow-runtime/) and [`retry`](/reference/asyncflow-runtime/) behavior
-- the [`flow {}`](/reference/flow/builders-flow.md), [`asyncFlow {}`](/reference/asyncflow/builders-asyncflow.md), [`taskFlow {}`](/reference/taskflow/taskbuilders-taskflow.md), [`result {}`](/reference/result/builders-result.md), and [`validate {}`](/reference/validation/builders-validate.md) entry points
 
-The builder types themselves stay below the surface. The families and their modules are the public story.
+The builder types themselves stay below the surface. The flow, capability, and validation modules are the public story.
 
 ## Flow
 
-[`Flow`](/reference/flow/) is the synchronous family:
+[`Flow`](/reference/flow/) is the synchronous workflow family:
 
 - build from values, options, and results
 - read the environment explicitly
 - compose with `map`, `bind`, `tap`, and `orElse`
 - collect lists and sequences
-- bridge into [`AsyncFlow`](/reference/asyncflow/) or validation when needed
 
 <div class="docs-grid">
 
@@ -42,29 +36,29 @@ The builder types themselves stay below the surface. The families and their modu
 <span class="label">Flow</span>
 <h2>Sync boundaries</h2>
 <p>The <code>Flow&lt;'env, 'error, 'value&gt;</code> type and <code>Flow</code> module cover synchronous composition, explicit environment reads, short-circuiting, and execution.</p>
-<p>The next page expands the full member map, including creation helpers, composition helpers, environment access, traversals, runtime helpers, and interop points.</p>
+<p>The next page expands the full member map, including creation helpers, composition helpers, environment access, traversals, and interop points.</p>
 <div class="docs-card-links">
 <a href="/reference/flow/">Open the Flow page</a>
 </div>
 </section>
 
 <section class="docs-card">
-<span class="label">AsyncFlow</span>
-<h2>Async boundaries</h2>
-<p>The <code>AsyncFlow&lt;'env, 'error, 'value&gt;</code> type and <code>AsyncFlow</code> module cover async composition, <code>Async</code> interop, explicit environment reads, and execution.</p>
-<p>The next page expands the full member map, including creation helpers, composition helpers, traversals, runtime helpers, and async bridges.</p>
+<span class="label">Capability</span>
+<h2>Capability boundaries</h2>
+<p><code>FsFlow.Capability</code> keeps the named-capability story explicit while staying on the unified flow surface.</p>
+<p>The <code>Capability</code> page covers the request tokens, record projections, service-provider lookups, and layer composition helpers.</p>
 <div class="docs-card-links">
-<a href="/reference/asyncflow/">Open the AsyncFlow page</a>
+<a href="/reference/capability/">Open the Capability page</a>
 </div>
 </section>
 
 <section class="docs-card">
-<span class="label">TaskFlow</span>
-<h2>Task boundaries</h2>
-<p>The <code>TaskFlow&lt;'env, 'error, 'value&gt;</code> type and <code>TaskFlow</code> module cover task-native composition, explicit environment reads, cancellation, and execution.</p>
-<p>The next pages expand the full member map for the task surface, including cold task helpers, runtime helpers, and async bridges.</p>
+<span class="label">Validation</span>
+<h2>Accumulating validation</h2>
+<p><code>FsFlow.Validation</code> gives an accumulating result for sibling failures and structured diagnostics.</p>
+<p>The <code>Validation</code> page expands the full member map and the builder used to collect diagnostics into a graph.</p>
 <div class="docs-card-links">
-<a href="/reference/taskflow/">Open the TaskFlow page</a>
+<a href="/reference/validation/">Open the Validation page</a>
 </div>
 </section>
 
@@ -74,17 +68,17 @@ The builder types themselves stay below the surface. The families and their modu
 <p><code>FsFlow.Check</code> gives pure <code>Result&lt;_, unit&gt;</code> checks for booleans, options, value options, nulls, collections, equality, and strings.</p>
 <p>The <code>Check</code> page expands the full member map and the bridge that turns unit failures into application errors.</p>
 <div class="docs-card-links">
-<a href="/reference/check/">Open the check page</a>
+<a href="/reference/check/">Open the Check page</a>
 </div>
 </section>
 
 <section class="docs-card">
-<span class="label">Guard</span>
-<h2>Bindable guard sources</h2>
-<p><code>FsFlow.Guard</code> keeps the source visible to the computation expression and packages the failure value alongside it so the CE can bind the source directly.</p>
-<p>The <code>Guard</code> page expands the constructors for check-like, effectful, and error-bearing sources across <code>flow</code>, <code>asyncFlow</code>, <code>taskFlow</code>, <code>result</code>, and <code>validate</code>.</p>
+<span class="label">Diagnostics</span>
+<h2>Validation graph</h2>
+<p><code>FsFlow.Diagnostics</code> keeps validation failures structured so callers can flatten or render them after aggregation.</p>
+<p>The <code>Diagnostics</code> page expands the graph shape and the associated merge and formatting helpers.</p>
 <div class="docs-card-links">
-<a href="/reference/guard/">Open the Guard page</a>
+<a href="/reference/diagnostics/">Open the Diagnostics page</a>
 </div>
 </section>
 
@@ -93,40 +87,19 @@ The builder types themselves stay below the surface. The families and their modu
 <div class="docs-stack">
 
 <section class="docs-card">
-<span class="label">AsyncFlow.Runtime</span>
-<h3>Operational support</h3>
-<p>These types and modules handle the "how" of execution: <code>LogEntry</code>, <code>LogLevel</code>, <code>RetryPolicy</code>, and the <code>AsyncFlow.Runtime</code> helpers for timeouts, sleep, logging, and cancellation.</p>
-<div class="docs-card-links">
-<a href="/reference/asyncflow-runtime/">Open the runtime page</a>
-</div>
+<span class="label">CAPS packages</span>
+<h3>Shared context packages</h3>
+<p>The CAPS packages keep common application concerns explicit: <code>FsFlow.Caps.Core</code> for shared primitives and <code>FsFlow.Caps.Context</code> for request-scoped metadata.</p>
 </section>
 
 <section class="docs-card">
 <span class="label">Entry points</span>
 <h3>Workflow builders</h3>
-<p>The <code>flow {}</code>, <code>asyncFlow {}</code>, <code>taskFlow {}</code>, <code>result {}</code>, and <code>validate {}</code> entry points are available, but the builder types themselves are treated as plumbing rather than headline API.</p>
+<p>The <code>flow {}</code> and <code>validate {}</code> entry points are available, but the builder types themselves are treated as plumbing rather than headline API.</p>
 <p>Use the builders for readable orchestration, and use the modules for the actual API surface.</p>
 </section>
 
 </div>
-
-## AsyncFlow
-
-[`AsyncFlow`](/reference/asyncflow/) follows the same shape as [`Flow`](/reference/flow/), but its execution model is async-first:
-
-- lift from synchronous flows when the boundary stays the same
-- lift from `Async` and `Async<Result<_, _>>` when the runtime already is async
-- keep the same explicit environment model
-- bridge to [`TaskFlow`](/reference/taskflow/) when the application boundary moves to tasks
-
-## TaskFlow
-
-[`TaskFlow`](/reference/taskflow/) follows the same shape as [`Flow`](/reference/flow/) and [`AsyncFlow`](/reference/asyncflow/), but its runtime is task-first:
-
-- lift from [`Flow`](/reference/flow/) and [`AsyncFlow`](/reference/asyncflow/) when the outer boundary already carries them
-- lift from `Task`, `Task<Result<_, _>>`, `ValueTask`, `ValueTask<Result<_, _>>`, and [`ColdTask`](/reference/coldtask/)
-- keep the same explicit environment model
-- preserve cancellation through the boundary
 
 ## Read the subpages
 
@@ -135,19 +108,13 @@ The builder types themselves stay below the surface. The families and their modu
 <section class="docs-card">
 <span class="label">Flow</span>
 <h3><a href="/reference/flow/">Sync boundaries</a></h3>
-<p>Type, module, composition, environment, and execution in the synchronous family.</p>
+<p>Type, module, composition, environment, and execution in the flow family.</p>
 </section>
 
 <section class="docs-card">
-<span class="label">AsyncFlow</span>
-<h3><a href="/reference/asyncflow/">Async boundaries</a></h3>
-<p>The async family surface, including async bridges and the same explicit environment model.</p>
-</section>
-
-<section class="docs-card">
-<span class="label">TaskFlow</span>
-<h3><a href="/reference/taskflow/">Task boundaries</a></h3>
-<p>The task family surface, including cold task helpers, task-native runtime helpers, and async bridges.</p>
+<span class="label">Capability</span>
+<h3><a href="/reference/capability/">Named capability helpers</a></h3>
+<p>Request tokens, service lookup, and environment/layer composition.</p>
 </section>
 
 <section class="docs-card">
@@ -157,27 +124,27 @@ The builder types themselves stay below the surface. The families and their modu
 </section>
 
 <section class="docs-card">
-<span class="label">Guard</span>
-<h3><a href="/reference/guard/">Bindable guard sources</a></h3>
-<p>Direct binding for check-like values and existing-error remapping.</p>
-</section>
-
-<section class="docs-card">
 <span class="label">Validation</span>
 <h3><a href="/reference/validation/">Accumulating validation</a></h3>
 <p>The <code>Validation</code> type and <code>validate {}</code> builder for collecting diagnostics into a structured graph.</p>
 </section>
 
 <section class="docs-card">
-<span class="label">result { }</span>
-<h3><a href="/reference/result/">Fail-fast orchestration</a></h3>
-<p>The <code>result {}</code> builder for short-circuiting workflows over standard <code>Result</code> values.</p>
+<span class="label">Diagnostics</span>
+<h3><a href="/reference/diagnostics/">Structured diagnostics</a></h3>
+<p>The validation graph and the helpers that render and flatten it.</p>
 </section>
 
 <section class="docs-card">
-<span class="label">AsyncFlow.Runtime</span>
-<h3><a href="/reference/asyncflow-runtime/">Operational support</a></h3>
-<p><code>AsyncFlow.Runtime</code> covers logging, retry helpers, cancellation, and async runtime operations like timeouts and sleep.</p>
+<span class="label">CAPS Core</span>
+<h3><a href="/reference/caps-core/">Shared primitives</a></h3>
+<p>The clock, random, GUID, and environment-variable package.</p>
+</section>
+
+<section class="docs-card">
+<span class="label">CAPS Context</span>
+<h3><a href="/reference/caps-context/">Request context</a></h3>
+<p>Request-scoped user, locale, metadata, and flag helpers.</p>
 </section>
 
 </div>

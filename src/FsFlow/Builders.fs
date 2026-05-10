@@ -444,10 +444,10 @@ type FlowBuilder() =
         )
 
 /// <summary>
-/// Computation expression builder for async <see cref="T:FsFlow.AsyncFlow`3" /> workflows.
+/// Computation expression builder for internal async compatibility helpers.
 /// </summary>
 /// <exclude/>
-type AsyncFlowBuilder() =
+type internal AsyncFlowBuilder() =
     member _.Return(value: 'value) : AsyncFlow<'env, 'error, 'value> =
         AsyncFlow.ok value
 
@@ -860,35 +860,7 @@ module Builders =
     /// </example>
     let flow = FlowBuilder()
 
-    /// <summary>
-    /// The core <c>asyncFlow { }</c> computation expression.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Use this builder when the runtime boundary is async-first and you need to compose
-    /// <c>Async</c> work with the same explicit environment model as <c>Flow</c>.
-    /// </para>
-    /// <para>
-    /// It is the right landing point for async orchestration that still wants typed failures
-    /// instead of exceptions.
-    /// </para>
-    /// <para>
-    /// Use <c>Guard.Of</c> for check-like sources and <c>Guard.MapError</c> for
-    /// existing-error remapping before binding into the async CE. `Guard` keeps the source
-    /// visible to the CE and only packages the failure value.
-    /// </para>
-    /// </remarks>
-    /// <example>
-    /// ```fsharp
-    /// let fetchProfile =
-    ///     asyncFlow {
-    ///         let! api = AsyncFlow.read (fun env -> env.Api)
-    ///         let! profile = api.LoadProfile()
-    ///         return profile
-    ///     }
-    /// ```
-    /// </example>
-    let asyncFlow = AsyncFlowBuilder()
+    let internal asyncFlow = AsyncFlowBuilder()
 
     /// <summary>
     /// The accumulating <c>validate { }</c> computation expression.

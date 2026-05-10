@@ -24,6 +24,6 @@ This page shows the source-documented capability and layer surface, including th
 
 ## Layers
 
-- module `Layer`: Helpers for deriving an environment in one flow and consuming it in another. [source](https://github.com/adz/FsFlow/blob/main/src/FsFlow/Flow.fs#L1842)
-- [`Layer.provideLayer`](./layer-providelayer.md): Provides a derived environment from a layer flow to a downstream flow. [source](https://github.com/adz/FsFlow/blob/main/src/FsFlow/Flow.fs#L1844)
+- module `Layer`: Helpers for deriving an environment in one flow and consuming it in another. [source](https://github.com/adz/FsFlow/blob/main/src/FsFlow/Flow.fs#L1841)
+- [`Layer.provideLayer`](./layer-providelayer.md): Provides a derived environment from a layer flow to a downstream flow. [source](https://github.com/adz/FsFlow/blob/main/src/FsFlow/Flow.fs#L1843)
 

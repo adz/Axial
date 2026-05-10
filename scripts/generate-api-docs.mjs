@@ -35,29 +35,6 @@ const pageSpecs = [
     ],
   },
   {
-    outPath: ['fsflow', 'asyncflow.md'],
-    title: 'AsyncFlow',
-    description: 'Source-documented async workflow surface in FsFlow.',
-    intro:
-      "This page shows the source-documented `AsyncFlow` surface: the core type, the module functions, and the `asyncFlow { }` builder.",
-    sourceFiles: ['src/FsFlow/Core.fs', 'src/FsFlow/Flow.fs', 'src/FsFlow/Builders.fs'],
-    sections: [
-      
-      {
-        title: 'Core type',
-        symbols: ['type:AsyncFlow'],
-      },
-      {
-        title: 'Builder',
-        symbols: ['Builders.asyncFlow'],
-      },
-      {
-        title: 'Module functions',
-        symbols: ['module:AsyncFlow', 'AsyncFlow.run', 'AsyncFlow.toAsync', 'AsyncFlow.ok', 'AsyncFlow.error', 'AsyncFlow.succeed', 'AsyncFlow.value', 'AsyncFlow.fail', 'AsyncFlow.fromResult', 'AsyncFlow.fromOption', 'AsyncFlow.fromValueOption', 'AsyncFlow.orElseAsync', 'AsyncFlow.orElseFlow', 'AsyncFlow.orElseAsyncFlow', 'AsyncFlow.fromFlow', 'AsyncFlow.fromAsync', 'AsyncFlow.fromAsyncResult', 'AsyncFlow.env', 'AsyncFlow.read', 'AsyncFlow.map', 'AsyncFlow.bind', 'AsyncFlow.tap', 'AsyncFlow.tapError', 'AsyncFlow.mapError', 'AsyncFlow.catch', 'AsyncFlow.orElseWith', 'AsyncFlow.orElse', 'AsyncFlow.zip', 'AsyncFlow.map2', 'AsyncFlow.map3', 'AsyncFlow.apply', 'AsyncFlow.ignore', 'AsyncFlow.localEnv', 'AsyncFlow.provideLayer', 'AsyncFlow.delay', 'AsyncFlow.traverse', 'AsyncFlow.sequence'],
-      },
-    ],
-  },
-  {
     outPath: ['fsflow', 'check.md'],
     title: 'Check',
     description: 'Source-documented pure predicate helpers for FsFlow.',
@@ -117,87 +94,6 @@ const pageSpecs = [
       {
         title: 'Path scoping',
         symbols: ['Validation.at', 'Validation.key', 'Validation.index', 'Validation.name'],
-      },
-    ],
-  },
-  {
-    outPath: ['fsflow', 'runtime.md'],
-    title: 'AsyncFlow.Runtime',
-    description: 'Source-documented async runtime support and helpers for FsFlow.',
-    intro:
-      'This page shows the source-documented `AsyncFlow.Runtime` surface: logging, retry policies, and async operational helpers.',
-    sourceFiles: ['src/FsFlow/Core.fs', 'src/FsFlow/Flow.fs'],
-    sections: [
-      {
-        title: 'Logging',
-        symbols: ['type:LogLevel', 'type:LogEntry'],
-      },
-      {
-        title: 'Retry policy',
-        symbols: ['type:RetryPolicy', 'module:RetryPolicy', 'RetryPolicy.noDelay'],
-      },
-      {
-        title: 'Async operational helpers',
-        symbols: ['module:AsyncFlow.Runtime', 'AsyncFlow.Runtime.cancellationToken', 'AsyncFlow.Runtime.catchCancellation', 'AsyncFlow.Runtime.ensureNotCanceled', 'AsyncFlow.Runtime.sleep', 'AsyncFlow.Runtime.log', 'AsyncFlow.Runtime.logWith', 'AsyncFlow.Runtime.useWithAcquireRelease', 'AsyncFlow.Runtime.timeout', 'AsyncFlow.Runtime.timeoutToOk', 'AsyncFlow.Runtime.timeoutToError', 'AsyncFlow.Runtime.timeoutWith', 'AsyncFlow.Runtime.retry'],
-      },
-    ],
-  },
-  {
-    outPath: ['fsflow', 'taskflow.md'],
-    title: 'TaskFlow',
-    description: 'Source-documented task workflow surface in FsFlow.',
-    intro:
-      'This page shows the source-documented `TaskFlow` surface: the core type, the module functions, and the `taskFlow { }` builder.',
-    sourceFiles: ['src/FsFlow/Flow.fs'],
-    sections: [
-      
-      {
-        title: 'Core type',
-        symbols: ['type:TaskFlow'],
-      },
-      {
-        title: 'Builder',
-        symbols: ['TaskBuilders.taskFlow'],
-      },
-      {
-        title: 'Module functions',
-        symbols: ['module:TaskFlow', 'TaskFlow.run', 'TaskFlow.runContext', 'TaskFlow.toTask', 'TaskFlow.ok', 'TaskFlow.error', 'TaskFlow.succeed', 'TaskFlow.value', 'TaskFlow.fail', 'TaskFlow.fromResult', 'TaskFlow.fromOption', 'TaskFlow.fromValueOption', 'TaskFlow.orElseTask', 'TaskFlow.orElseAsync', 'TaskFlow.orElseFlow', 'TaskFlow.orElseAsyncFlow', 'TaskFlow.orElseTaskFlow', 'TaskFlow.fromFlow', 'TaskFlow.fromAsyncFlow', 'TaskFlow.fromTask', 'TaskFlow.fromTaskResult', 'TaskFlow.env', 'TaskFlow.read', 'TaskFlow.readRuntime', 'TaskFlow.readEnvironment', 'TaskFlow.map', 'TaskFlow.bind', 'TaskFlow.tap', 'TaskFlow.tapError', 'TaskFlow.mapError', 'TaskFlow.catch', 'TaskFlow.orElseWith', 'TaskFlow.orElse', 'TaskFlow.zip', 'TaskFlow.map2', 'TaskFlow.map3', 'TaskFlow.apply', 'TaskFlow.ignore', 'TaskFlow.localEnv', 'TaskFlow.provideLayer', 'TaskFlow.delay', 'TaskFlow.traverse', 'TaskFlow.sequence'],
-      },
-    ],
-  },
-  {
-    outPath: ['fsflow', 'taskflow-runtime.md'],
-    title: 'TaskFlow Runtime',
-    description: 'Source-documented task runtime helpers for FsFlow.',
-    intro:
-      'This page shows the source-documented task runtime surface: the runtime context and the task-specific operational helpers.',
-    sourceFiles: ['src/FsFlow/Runtime.fs', 'src/FsFlow/Flow.fs'],
-    sections: [
-      {
-        title: 'Runtime context',
-        symbols: ['type:RuntimeContext', 'module:RuntimeContext', 'RuntimeContext.create', 'RuntimeContext.runtime', 'RuntimeContext.environment', 'RuntimeContext.cancellationToken', 'RuntimeContext.mapRuntime', 'RuntimeContext.mapEnvironment', 'RuntimeContext.withRuntime', 'RuntimeContext.withEnvironment'],
-      },
-      {
-        title: 'Runtime helpers',
-        symbols: ['src/FsFlow/Flow.fs::module:TaskFlow.Runtime', 'src/FsFlow/Flow.fs::TaskFlow.Runtime.cancellationToken', 'src/FsFlow/Flow.fs::TaskFlow.Runtime.catchCancellation', 'src/FsFlow/Flow.fs::TaskFlow.Runtime.ensureNotCanceled', 'src/FsFlow/Flow.fs::TaskFlow.Runtime.sleep', 'src/FsFlow/Flow.fs::TaskFlow.Runtime.log', 'src/FsFlow/Flow.fs::TaskFlow.Runtime.logWith', 'src/FsFlow/Flow.fs::TaskFlow.Runtime.useWithAcquireRelease', 'src/FsFlow/Flow.fs::TaskFlow.Runtime.timeout', 'src/FsFlow/Flow.fs::TaskFlow.Runtime.timeoutToOk', 'src/FsFlow/Flow.fs::TaskFlow.Runtime.timeoutToError', 'src/FsFlow/Flow.fs::TaskFlow.Runtime.timeoutWith', 'src/FsFlow/Flow.fs::TaskFlow.Runtime.retry'],
-      },
-    ],
-  },
-  {
-    outPath: ['fsflow', 'taskflow-spec.md'],
-    title: 'TaskFlowSpec',
-    description: 'Source-documented task workflow specification for FsFlow.',
-    intro:
-      'This page shows the source-documented `TaskFlowSpec` surface, used for defining and running task workflows with explicit configurations.',
-    sourceFiles: ['src/FsFlow/Flow.fs'],
-    sections: [
-      {
-        title: 'Core type',
-        symbols: ['type:TaskFlowSpec'],
-      },
-      {
-        title: 'Module functions',
-        symbols: ['module:TaskFlowSpec', 'TaskFlowSpec.create', 'TaskFlowSpec.run'],
       },
     ],
   },
@@ -280,42 +176,6 @@ const pageSpecs = [
       {
         title: 'Metadata and flags',
         symbols: ['module:RequestMetadata', 'RequestMetadata.empty', 'RequestMetadata.fromPairs', 'RequestMetadata.tryGet', 'RequestMetadata.contains', 'module:RequestFlags', 'RequestFlags.empty', 'RequestFlags.fromPairs', 'RequestFlags.tryGet', 'RequestFlags.isEnabled'],
-      },
-    ],
-  },
-  {
-    outPath: ['fsflow', 'coldtask.md'],
-    title: 'ColdTask',
-    description: 'Source-documented delayed task helpers used by FsFlow.',
-    intro:
-      'This page shows the source-documented `ColdTask` surface: the delayed task helper used to anchor execution to the runtime context.',
-    sourceFiles: ['src/FsFlow/Flow.fs'],
-    sections: [
-      {
-        title: 'Core type',
-        symbols: ['type:ColdTask'],
-      },
-      {
-        title: 'Module functions',
-        symbols: ['module:ColdTask', 'ColdTask.run', 'ColdTask.create', 'ColdTask.fromTaskFactory', 'ColdTask.fromTask', 'ColdTask.fromValueTaskFactory', 'ColdTask.fromValueTaskFactoryWithoutCancellation', 'ColdTask.fromValueTask'],
-      },
-    ],
-  },
-  {
-    outPath: ['fsflow', 'interop.md'],
-    title: 'Interop',
-    description: 'Source-documented task and async interop helpers for FsFlow.',
-    intro:
-      'This page shows the interop helpers that bridge task, async, and synchronous boundaries in FsFlow.',
-    sourceFiles: ['src/FsFlow/Flow.fs', 'src/FsFlow/Guard.fs'],
-    sections: [
-      {
-        title: 'TaskFlow bridges',
-        symbols: ['TaskFlow.fromFlow', 'TaskFlow.fromAsyncFlow', 'TaskFlow.orElseTask', 'TaskFlow.orElseAsync', 'TaskFlow.orElseFlow', 'TaskFlow.orElseAsyncFlow', 'TaskFlow.orElseTaskFlow', 'Flow.provideLayer', 'AsyncFlow.provideLayer', 'TaskFlow.provideLayer'],
-      },
-      {
-        title: 'Builder extensions',
-        symbols: ['module:TaskFlowBuilderExtensions', 'module:AsyncFlowBuilderExtensions'],
       },
     ],
   },

@@ -96,99 +96,47 @@
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/check/check-any/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow/asyncflow-apply/</loc>
-  </url><url>
     <loc>http://localhost:3000/FsFlow/reference/flow/flow-apply/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-apply/</loc>
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/validation/validation-apply/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow/builders-asyncflow/</loc>
-  </url><url>
     <loc>http://localhost:3000/FsFlow/reference/validation/validation-at/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow/asyncflow-bind/</loc>
-  </url><url>
     <loc>http://localhost:3000/FsFlow/reference/flow/flow-bind/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-bind/</loc>
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/validation/validation-bind/</loc>
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/check/check-blank/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow-runtime/asyncflow-runtime-cancellationtoken/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow-runtime/runtimecontext-cancellationtoken/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow-runtime/taskflow-runtime-cancellationtoken/</loc>
-  </url><url>
     <loc>http://localhost:3000/FsFlow/reference/caps-context/context/</loc>
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/caps-core/core/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow/asyncflow-catch/</loc>
-  </url><url>
     <loc>http://localhost:3000/FsFlow/reference/flow/flow-catch/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-catch/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow-runtime/asyncflow-runtime-catchcancellation/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow-runtime/taskflow-runtime-catchcancellation/</loc>
   </url><url>
     <loc>http://localhost:3000/FsFlow/categories/</loc>
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/validation/validation-collect/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/coldtask/coldtask-create/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow-runtime/runtimecontext-create/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow-spec/taskflowspec-create/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow/asyncflow-delay/</loc>
-  </url><url>
     <loc>http://localhost:3000/FsFlow/reference/flow/flow-delay/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-delay/</loc>
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/diagnostics/diagnostic/</loc>
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/diagnostics/diagnostics-empty/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow-runtime/asyncflow-runtime-ensurenotcanceled/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow-runtime/taskflow-runtime-ensurenotcanceled/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow/asyncflow-env/</loc>
-  </url><url>
     <loc>http://localhost:3000/FsFlow/reference/flow/flow-env/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-env/</loc>
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/caps/env/</loc>
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/caps/capability-environment/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow-runtime/runtimecontext-environment/</loc>
-  </url><url>
     <loc>http://localhost:3000/FsFlow/reference/check/check-equal/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow/asyncflow-error/</loc>
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/flow/flow-error/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-error/</loc>
-  </url><url>
     <loc>http://localhost:3000/FsFlow/reference/validation/validation-error/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow/asyncflow-fail/</loc>
-  </url><url>
     <loc>http://localhost:3000/FsFlow/reference/flow/flow-fail/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-fail/</loc>
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/validation/validation-fail/</loc>
   </url><url>
@@ -226,123 +174,43 @@
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/flow/builders-flow/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow/asyncflow-fromasync/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-fromasyncflow/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow/asyncflow-fromasyncresult/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow/asyncflow-fromflow/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-fromflow/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow/asyncflow-fromoption/</loc>
-  </url><url>
     <loc>http://localhost:3000/FsFlow/reference/flow/flow-fromoption/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-fromoption/</loc>
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/check/check-frompredicate/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow/asyncflow-fromresult/</loc>
-  </url><url>
     <loc>http://localhost:3000/FsFlow/reference/flow/flow-fromresult/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-fromresult/</loc>
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/validation/validation-fromresult/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/coldtask/coldtask-fromtask/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-fromtask/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/coldtask/coldtask-fromtaskfactory/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-fromtaskresult/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow/asyncflow-fromvalueoption/</loc>
-  </url><url>
     <loc>http://localhost:3000/FsFlow/reference/flow/flow-fromvalueoption/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-fromvalueoption/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/coldtask/coldtask-fromvaluetask/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/coldtask/coldtask-fromvaluetaskfactory/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/coldtask/coldtask-fromvaluetaskfactorywithoutcancellation/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/guard/guard/</loc>
   </url><url>
     <loc>http://localhost:3000/FsFlow/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow/asyncflow-ignore/</loc>
-  </url><url>
     <loc>http://localhost:3000/FsFlow/reference/flow/flow-ignore/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-ignore/</loc>
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/validation/validation-ignore/</loc>
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/validation/validation-index/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/interop/interop/</loc>
-  </url><url>
     <loc>http://localhost:3000/FsFlow/reference/validation/validation-key/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow/asyncflow-localenv/</loc>
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/flow/flow-localenv/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-localenv/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow-runtime/asyncflow-runtime-log/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow-runtime/taskflow-runtime-log/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow-runtime/logentry/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow-runtime/loglevel/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow-runtime/asyncflow-runtime-logwith/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow-runtime/taskflow-runtime-logwith/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow/asyncflow-map/</loc>
-  </url><url>
     <loc>http://localhost:3000/FsFlow/reference/flow/flow-map/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-map/</loc>
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/validation/validation-map/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow/asyncflow-map2/</loc>
-  </url><url>
     <loc>http://localhost:3000/FsFlow/reference/flow/flow-map2/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-map2/</loc>
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/validation/validation-map2/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow/asyncflow-map3/</loc>
-  </url><url>
     <loc>http://localhost:3000/FsFlow/reference/flow/flow-map3/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-map3/</loc>
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/validation/validation-map3/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow-runtime/runtimecontext-mapenvironment/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow/asyncflow-maperror/</loc>
-  </url><url>
     <loc>http://localhost:3000/FsFlow/reference/flow/flow-maperror/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-maperror/</loc>
-  </url><url>
     <loc>http://localhost:3000/FsFlow/reference/validation/validation-maperror/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow-runtime/runtimecontext-mapruntime/</loc>
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/diagnostics/diagnostics-merge/</loc>
   </url><url>
@@ -354,8 +222,6 @@
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/caps/needs/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow-runtime/retrypolicy-nodelay/</loc>
-  </url><url>
     <loc>http://localhost:3000/FsFlow/reference/check/check-not/</loc>
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/check/check-notblank/</loc>
@@ -366,11 +232,7 @@
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/check/check-notnull/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow/asyncflow-ok/</loc>
-  </url><url>
     <loc>http://localhost:3000/FsFlow/reference/flow/flow-ok/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-ok/</loc>
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/validation/validation-ok/</loc>
   </url><url>
@@ -406,37 +268,13 @@
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/check/check-or/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow/asyncflow-orelse/</loc>
-  </url><url>
     <loc>http://localhost:3000/FsFlow/reference/flow/flow-orelse/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-orelse/</loc>
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/validation/validation-orelse/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow/asyncflow-orelseasync/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-orelseasync/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow/asyncflow-orelseasyncflow/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-orelseasyncflow/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow/asyncflow-orelseflow/</loc>
-  </url><url>
     <loc>http://localhost:3000/FsFlow/reference/flow/flow-orelseflow/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-orelseflow/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-orelsetask/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-orelsetaskflow/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow/asyncflow-orelsewith/</loc>
-  </url><url>
     <loc>http://localhost:3000/FsFlow/reference/flow/flow-orelsewith/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-orelsewith/</loc>
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/validation/validation-orelsewith/</loc>
   </url><url>
@@ -448,43 +286,15 @@
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/diagnostics/pathsegment/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow/asyncflow-providelayer/</loc>
-  </url><url>
     <loc>http://localhost:3000/FsFlow/reference/caps/layer-providelayer/</loc>
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/flow/flow-providelayer/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-providelayer/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow/asyncflow-read/</loc>
-  </url><url>
     <loc>http://localhost:3000/FsFlow/reference/flow/flow-read/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-read/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-readenvironment/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-readruntime/</loc>
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/result/builders-result/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow-runtime/asyncflow-runtime-retry/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow-runtime/taskflow-runtime-retry/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow-runtime/retrypolicy/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow/asyncflow-run/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/coldtask/coldtask-run/</loc>
-  </url><url>
     <loc>http://localhost:3000/FsFlow/reference/flow/flow-run/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow-spec/taskflowspec-run/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-run/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-runcontext/</loc>
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/flow/flow-runfull/</loc>
   </url><url>
@@ -492,17 +302,9 @@
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/caps/capability-runtime/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow-runtime/runtimecontext-runtime/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow-runtime/runtimecontext/</loc>
-  </url><url>
     <loc>http://localhost:3000/FsFlow/reference/flow/flow-runwithtoken/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow/asyncflow-sequence/</loc>
-  </url><url>
     <loc>http://localhost:3000/FsFlow/reference/flow/flow-sequence/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-sequence/</loc>
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/validation/validation-sequence/</loc>
   </url><url>
@@ -512,88 +314,28 @@
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/diagnostics/diagnostics-singleton/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow-runtime/asyncflow-runtime-sleep/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow-runtime/taskflow-runtime-sleep/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow/asyncflow-succeed/</loc>
-  </url><url>
     <loc>http://localhost:3000/FsFlow/reference/flow/flow-succeed/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-succeed/</loc>
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/validation/validation-succeed/</loc>
   </url><url>
     <loc>http://localhost:3000/FsFlow/tags/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow/asyncflow-tap/</loc>
-  </url><url>
     <loc>http://localhost:3000/FsFlow/reference/flow/flow-tap/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-tap/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow/asyncflow-taperror/</loc>
-  </url><url>
     <loc>http://localhost:3000/FsFlow/reference/flow/flow-taperror/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-taperror/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskbuilders-taskflow/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-runtime/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow-runtime/asyncflow-runtime-timeout/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow-runtime/taskflow-runtime-timeout/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow-runtime/asyncflow-runtime-timeouttoerror/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow-runtime/taskflow-runtime-timeouttoerror/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow-runtime/asyncflow-runtime-timeouttook/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow-runtime/taskflow-runtime-timeouttook/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow-runtime/asyncflow-runtime-timeoutwith/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow-runtime/taskflow-runtime-timeoutwith/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow/asyncflow-toasync/</loc>
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/validation/validation-toresult/</loc>
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/diagnostics/diagnostics-tostring/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-totask/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow/asyncflow-traverse/</loc>
-  </url><url>
     <loc>http://localhost:3000/FsFlow/reference/flow/flow-traverse/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-traverse/</loc>
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/validation/validation-traverseindexed/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow-runtime/asyncflow-runtime-usewithacquirerelease/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow-runtime/taskflow-runtime-usewithacquirerelease/</loc>
-  </url><url>
     <loc>http://localhost:3000/FsFlow/reference/validation/builders-validate/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow/asyncflow-value/</loc>
   </url><url>
     <loc>http://localhost:3000/FsFlow/reference/flow/flow-value/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-value/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow-runtime/runtimecontext-withenvironment/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow-runtime/runtimecontext-withruntime/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/asyncflow/asyncflow-zip/</loc>
-  </url><url>
     <loc>http://localhost:3000/FsFlow/reference/flow/flow-zip/</loc>
-  </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/taskflow/taskflow-zip/</loc>
   </url>
 </urlset>

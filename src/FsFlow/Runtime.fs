@@ -10,7 +10,7 @@ open FsFlow
 /// runtime services, application capabilities, and the cancellation token for the current run.
 /// </summary>
 /// <remarks>
-/// This type is the standard environment carrier for <see cref="T:FsFlow.TaskFlow`3" />.
+/// This type is the standard environment carrier for the unified <see cref="T:FsFlow.Flow`3" />.
 /// It separates low-level operational concerns (Runtime) from high-level domain dependencies (Environment).
 /// </remarks>
 /// <typeparam name="runtime">The type that carries runtime concerns, such as logging or metrics.</typeparam>
