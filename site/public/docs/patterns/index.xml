@@ -2,23 +2,23 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Patterns on FsFlow</title>
-    <link>//localhost:3000/docs/patterns/</link>
+    <link>http://localhost:3000/FsFlow/docs/patterns/</link>
     <description>Recent content in Patterns on FsFlow</description>
     <generator>Hugo</generator>
     <language>en-us</language>
-    <atom:link href="//localhost:3000/docs/patterns/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="http://localhost:3000/FsFlow/docs/patterns/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Troubleshooting Types</title>
-      <link>//localhost:3000/docs/patterns/troubleshooting-types/</link>
+      <link>http://localhost:3000/FsFlow/docs/patterns/troubleshooting-types/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>//localhost:3000/docs/patterns/troubleshooting-types/</guid>
+      <guid>http://localhost:3000/FsFlow/docs/patterns/troubleshooting-types/</guid>
       <description>&lt;h1 id=&#34;troubleshooting-types&#34;&gt;Troubleshooting Types&lt;/h1&gt;&#xA;&lt;p&gt;This page shows the compiler errors that usually mean you picked the wrong workflow family or crossed a wrapper boundary in the wrong place.&lt;/p&gt;&#xA;&lt;p&gt;Most FsFlow type errors are not exotic.&#xA;The compiler usually sees one wrapper shape and you intended another.&lt;/p&gt;&#xA;&lt;h2 id=&#34;error-a-unique-overload-for-method-bind-could-not-be-determined&#34;&gt;Error: A Unique Overload For Method &lt;code&gt;Bind&lt;/code&gt; Could Not Be Determined&lt;/h2&gt;&#xA;&lt;p&gt;This usually happens when the compiler cannot tell which wrapper shape a &lt;code&gt;let!&lt;/code&gt; value should use.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Benchmarks</title>
-      <link>//localhost:3000/docs/patterns/benchmarks/</link>
+      <link>http://localhost:3000/FsFlow/docs/patterns/benchmarks/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>//localhost:3000/docs/patterns/benchmarks/</guid>
+      <guid>http://localhost:3000/FsFlow/docs/patterns/benchmarks/</guid>
       <description>&lt;h1 id=&#34;benchmarks&#34;&gt;Benchmarks&lt;/h1&gt;&#xA;&lt;p&gt;This page shows the performance tradeoffs of using FsFlow compared to manual result/async/task composition.&lt;/p&gt;&#xA;&lt;p&gt;The benchmarks are measured with &lt;code&gt;BenchmarkDotNet&lt;/code&gt; and represent the abstraction cost for typical application code.&lt;/p&gt;&#xA;&lt;h2 id=&#34;summary&#34;&gt;Summary&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;abstraction cost is negligible for effectful code&lt;/li&gt;&#xA;&lt;li&gt;cold execution for task-oriented computations adds small allocation overhead compared to hot &lt;code&gt;ValueTask&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;performance is competitive with manual &lt;code&gt;Async&amp;lt;Result&amp;lt;&#39;T, &#39;E&amp;gt;&amp;gt;&lt;/code&gt; composition&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;setup&#34;&gt;Setup&lt;/h2&gt;&#xA;&lt;p&gt;All measurements were taken on:&lt;/p&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;.NET 8.0&lt;/li&gt;&#xA;&lt;li&gt;Ubuntu 22.04&lt;/li&gt;&#xA;&lt;li&gt;AMD Ryzen 9 5950X&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;abstraction-cost&#34;&gt;Abstraction Cost&lt;/h2&gt;&#xA;&lt;p&gt;Measures a 20-step bind sequence where each step is pure.&#xA;This is the &amp;ldquo;worst case&amp;rdquo; for FsFlow because the abstraction cost is not hidden by actual I/O or async work.&lt;/p&gt;</description>
     </item>
   </channel>

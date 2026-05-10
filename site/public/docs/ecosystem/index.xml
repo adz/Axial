@@ -2,51 +2,51 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Ecosystem on FsFlow</title>
-    <link>//localhost:3000/docs/ecosystem/</link>
+    <link>http://localhost:3000/FsFlow/docs/ecosystem/</link>
     <description>Recent content in Ecosystem on FsFlow</description>
     <generator>Hugo</generator>
     <language>en-us</language>
-    <atom:link href="//localhost:3000/docs/ecosystem/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="http://localhost:3000/FsFlow/docs/ecosystem/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>FsToolkit.ErrorHandling</title>
-      <link>//localhost:3000/docs/ecosystem/integrations-fstoolkit/</link>
+      <link>http://localhost:3000/FsFlow/docs/ecosystem/integrations-fstoolkit/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>//localhost:3000/docs/ecosystem/integrations-fstoolkit/</guid>
+      <guid>http://localhost:3000/FsFlow/docs/ecosystem/integrations-fstoolkit/</guid>
       <description>&lt;h1 id=&#34;fstoolkiterrorhandling&#34;&gt;FsToolkit.ErrorHandling&lt;/h1&gt;&#xA;&lt;p&gt;If you are coming from &lt;code&gt;FsToolkit.ErrorHandling&lt;/code&gt;, you will find that FsFlow is orthogonal rather&#xA;than a direct replacement. While both libraries help with result-based programming, FsFlow&#xA;focuses on a unified execution model that carries environments and runtime policies.&lt;/p&gt;&#xA;&lt;h2 id=&#34;the-model-difference&#34;&gt;The Model Difference&lt;/h2&gt;&#xA;&lt;p&gt;&lt;code&gt;FsToolkit.ErrorHandling&lt;/code&gt; provides a broad toolbox of helpers for working with Result,&#xA;&lt;code&gt;AsyncResult&lt;/code&gt;, and &lt;code&gt;TaskResult&lt;/code&gt; as separate, wrapped types.&lt;/p&gt;&#xA;&lt;p&gt;FsFlow provides a single, scalable progression:&lt;/p&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;&#34;&gt;&lt;code class=&#34;language-text&#34; data-lang=&#34;text&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;[Check](/reference/check/) -&amp;gt; [Result](/reference/result/builders-result/) -&amp;gt; [Validation](/reference/validation/) -&amp;gt; [Flow](/reference/flow/) -&amp;gt; [AsyncFlow](/reference/asyncflow/) -&amp;gt; [TaskFlow](/reference/taskflow/)&#xA;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;In FsFlow, the environment and runtime concerns are baked into the computation, allowing you to&#xA;write orchestration logic that remains agnostic of whether the underlying work is sync or async&#xA;until it hits the application boundary.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Validus Integration</title>
-      <link>//localhost:3000/docs/ecosystem/integrations-validus/</link>
+      <link>http://localhost:3000/FsFlow/docs/ecosystem/integrations-validus/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>//localhost:3000/docs/ecosystem/integrations-validus/</guid>
+      <guid>http://localhost:3000/FsFlow/docs/ecosystem/integrations-validus/</guid>
       <description>&lt;h1 id=&#34;validus-integration&#34;&gt;Validus Integration&lt;/h1&gt;&#xA;&lt;p&gt;This page shows how FsFlow can fit beside &lt;code&gt;Validus&lt;/code&gt; validation pipelines.&lt;/p&gt;&#xA;&lt;p&gt;&lt;code&gt;Validus&lt;/code&gt; is a strong choice when the problem is still validation, especially when you want a richer DSL,&#xA;composition, accumulation, or value-object style checks.&lt;/p&gt;&#xA;&lt;p&gt;FsFlow can usually begin after that work is done.&lt;/p&gt;&#xA;&lt;p&gt;&lt;code&gt;Validus&lt;/code&gt; and &lt;code&gt;FsFlow.Check&lt;/code&gt; fit especially well together: &lt;code&gt;Validus&lt;/code&gt; can handle richer validation rules,&#xA;while &lt;code&gt;FsFlow.Check&lt;/code&gt; stays available for smaller pure guards that feed directly into Result,&#xA;Validation, Flow, AsyncFlow, or TaskFlow.&lt;/p&gt;</description>
     </item>
     <item>
       <title>IcedTasks Integration</title>
-      <link>//localhost:3000/docs/ecosystem/integrations-icedtasks/</link>
+      <link>http://localhost:3000/FsFlow/docs/ecosystem/integrations-icedtasks/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>//localhost:3000/docs/ecosystem/integrations-icedtasks/</guid>
+      <guid>http://localhost:3000/FsFlow/docs/ecosystem/integrations-icedtasks/</guid>
       <description>&lt;h1 id=&#34;icedtasks-integration&#34;&gt;IcedTasks Integration&lt;/h1&gt;&#xA;&lt;p&gt;This page shows how FsFlow can fit beside &lt;code&gt;IcedTasks&lt;/code&gt;.&lt;/p&gt;&#xA;&lt;p&gt;&lt;code&gt;IcedTasks&lt;/code&gt; is a natural neighbor when the codebase already uses task computation expressions and cold or cancellable task helpers.&lt;/p&gt;&#xA;&lt;p&gt;FsFlow does not need to replace that layer. It can add typed failure, environment threading, and boundary management where those concerns matter.&lt;/p&gt;&#xA;&lt;p&gt;&lt;code&gt;IcedTasks&lt;/code&gt; is especially interesting when you want task-native ergonomics and performance-sensitive helpers. FsFlow stays in the picture when you want to carry a typed result and an explicit environment together with the runtime shape.&lt;/p&gt;</description>
     </item>
     <item>
       <title>FSharpPlus Integration</title>
-      <link>//localhost:3000/docs/ecosystem/integrations-fsharpplus/</link>
+      <link>http://localhost:3000/FsFlow/docs/ecosystem/integrations-fsharpplus/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>//localhost:3000/docs/ecosystem/integrations-fsharpplus/</guid>
+      <guid>http://localhost:3000/FsFlow/docs/ecosystem/integrations-fsharpplus/</guid>
       <description>&lt;h1 id=&#34;fsharpplus-integration&#34;&gt;FSharpPlus Integration&lt;/h1&gt;&#xA;&lt;p&gt;This page shows how FsFlow can fit beside codebases that already use &lt;code&gt;FSharpPlus&lt;/code&gt;.&lt;/p&gt;&#xA;&lt;p&gt;&lt;code&gt;FSharpPlus&lt;/code&gt; is a broad functional base library. That makes it different from the more targeted integration stories like &lt;code&gt;FsToolkit.ErrorHandling&lt;/code&gt;, &lt;code&gt;Validus&lt;/code&gt;, and &lt;code&gt;IcedTasks&lt;/code&gt;.&lt;/p&gt;&#xA;&lt;p&gt;FsFlow can sit on top of that style where orchestration begins.&lt;/p&gt;&#xA;&lt;p&gt;&lt;code&gt;FSharpPlus&lt;/code&gt; is strongest when the codebase already relies on broad generic operations and monad transformer stacks. That strength comes with a cost: more compiler work, more abstraction to keep in your head, and error surfaces that can be harder to read when you are trying to understand a FsFlow boundary.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Effect-TS Comparison</title>
-      <link>//localhost:3000/docs/ecosystem/effect-ts-comparison/</link>
+      <link>http://localhost:3000/FsFlow/docs/ecosystem/effect-ts-comparison/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>//localhost:3000/docs/ecosystem/effect-ts-comparison/</guid>
+      <guid>http://localhost:3000/FsFlow/docs/ecosystem/effect-ts-comparison/</guid>
       <description>&lt;h1 id=&#34;effect-ts-comparison&#34;&gt;Effect-TS Comparison&lt;/h1&gt;&#xA;&lt;p&gt;This page shows FsFlow in relation to Effect-TS without pretending they solve the same problem at the same scale.&lt;/p&gt;&#xA;&lt;h2 id=&#34;what-carries-over&#34;&gt;What Carries Over&lt;/h2&gt;&#xA;&lt;p&gt;These ideas are shared:&lt;/p&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;typed success and error channels&lt;/li&gt;&#xA;&lt;li&gt;explicit dependency access&lt;/li&gt;&#xA;&lt;li&gt;compositional workflow values&lt;/li&gt;&#xA;&lt;li&gt;runtime helpers for retry, timeout, and cancellation-aware execution&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;what-is-different&#34;&gt;What Is Different&lt;/h2&gt;&#xA;&lt;p&gt;FsFlow is aimed at ordinary F# application code:&lt;/p&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;flow {}&lt;/code&gt;, &lt;code&gt;asyncFlow {}&lt;/code&gt;, and &lt;code&gt;taskFlow {}&lt;/code&gt; instead of generator-based syntax&lt;/li&gt;&#xA;&lt;li&gt;first-class interop with Result, &lt;code&gt;Async&lt;/code&gt;, and &lt;code&gt;.NET Task&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;explicit environment reads such as &lt;code&gt;Flow.read _.Gateway&lt;/code&gt; or &lt;code&gt;TaskFlow.read _.Gateway&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;a much smaller surface focused on application flows rather than a broader runtime platform&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;what-effect-ts-still-has-that-fsflow-does-not&#34;&gt;What Effect-TS Still Has That FsFlow Does Not&lt;/h2&gt;&#xA;&lt;p&gt;Effect-TS is much broader and more mature. FsFlow does not try to match:&lt;/p&gt;</description>
     </item>
     <item>
       <title>Ecosystem Overview</title>
-      <link>//localhost:3000/docs/ecosystem/integrations/</link>
+      <link>http://localhost:3000/FsFlow/docs/ecosystem/integrations/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>//localhost:3000/docs/ecosystem/integrations/</guid>
+      <guid>http://localhost:3000/FsFlow/docs/ecosystem/integrations/</guid>
       <description>&lt;h1 id=&#34;ecosystem-overview&#34;&gt;Ecosystem Overview&lt;/h1&gt;&#xA;&lt;p&gt;This page shows how FsFlow can live alongside the libraries you are most likely to already have in a codebase.&lt;/p&gt;&#xA;&lt;p&gt;The rule of thumb is simple: keep each library on the boundary it already owns, then let FsFlow take over orchestration where the runtime shape becomes explicit.&lt;/p&gt;&#xA;&lt;h2 id=&#34;how-the-libraries-differ&#34;&gt;How The Libraries Differ&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;FsToolkit.ErrorHandling&lt;/code&gt; is the established result-oriented layer: it uses core F# types, a small number of wrappers such as &lt;code&gt;Task&amp;lt;Result&amp;lt;_,_&amp;gt;&amp;gt;&lt;/code&gt;, and a familiar module-and-builder surface. It fits existing code with low overhead.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;Validus&lt;/code&gt; is a richer validation DSL if you already use it. FsFlow now covers the common check/result/validation path itself.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;IcedTasks&lt;/code&gt; is the task-shape layer: it is interesting for performance and task-native ergonomics, but it still lives in the &lt;code&gt;Async&lt;/code&gt; / &lt;code&gt;Task&lt;/code&gt; / Result space rather than in a richer environment model.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;FSharpPlus&lt;/code&gt; is the generic FP layer: it brings broad abstractions and monad-transformer-style composition, but that also means more compiler work and more complex error surfacing when you are trying to follow a FsFlow boundary.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;what-fsflow-adds&#34;&gt;What FsFlow Adds&lt;/h2&gt;&#xA;&lt;p&gt;FsFlow captures the common application boundary needs in one model:&lt;/p&gt;</description>
     </item>
   </channel>

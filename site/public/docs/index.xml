@@ -2,10 +2,10 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Docs on FsFlow</title>
-    <link>//localhost:3000/docs/</link>
+    <link>http://localhost:3000/FsFlow/docs/</link>
     <description>Recent content in Docs on FsFlow</description>
     <generator>Hugo</generator>
     <language>en-us</language>
-    <atom:link href="//localhost:3000/docs/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="http://localhost:3000/FsFlow/docs/index.xml" rel="self" type="application/rss+xml" />
   </channel>
 </rss>

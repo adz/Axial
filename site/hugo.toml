@@ -1,3 +1,5 @@
+baseURL = "https://adz.github.io/FsFlow/"
+canonifyURLs = true
 locale = "en-us"
 title = "FsFlow"
 theme = ["github.com/google/docsy"]
@@ -136,7 +138,7 @@ defaultContentLanguage = "en"
   [[params.versions]]
     version = "next"
     name = "next"
-    url = "/"
+    url = "/FsFlow/"
   
   # Navigation links
   [[params.links.user]]
