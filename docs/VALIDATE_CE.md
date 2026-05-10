@@ -8,23 +8,25 @@ description: Accumulating validation with the validate { } builder.
 
 Use the `validate {}` computation expression when you have multiple independent checks and you want to **collect every failure** into a single report.
 
-This is "accumulating" semantics.
+While the standard `result {}` or `flow {}` blocks "fail fast" (stopping at the first error), `validate {}` continues checking even after a failure occurs. This is often called "accumulating" semantics.
 
 ## Accumulating with `and!`
 
 The key to accumulation is the `and!` keyword. Steps joined by `and!` are evaluated independently, and their errors are merged into a `Diagnostics` graph.
 
 ```fsharp
+open FsFlow.Check
+
 type Registration = { Name: string; Email: string }
 type RegError = NameRequired | EmailRequired
 
 let validateRegistration input =
     validate {
-        let! name = input.Name |> Check.notBlank |> Check.orError NameRequired
-        and! email = input.Email |> Check.notBlank |> Check.orError EmailRequired
+        let! name = input.Name |> notBlank |> orError NameRequired
+        and! email = input.Email |> notBlank |> orError EmailRequired
         return { Name = name; Email = email }
     }
-
+```
 let outcome = validateRegistration { Name = ""; Email = "" }
 // outcome = Validation (Error {
 //   Errors = [NameRequired; EmailRequired]
@@ -41,26 +43,35 @@ Standard `let!` and `do!` inside a `validate {}` block still short-circuit. This
 ```fsharp
 validate {
     // Stop immediately if the whole object is null
-    let! input = input |> Check.notNull |> Check.orError ObjectMissing
+    let! input = input |> notNull |> orError ObjectMissing
     
-    // These run only if input was not null
-    let! name = input.Name |> Check.notBlank |> Check.orError NameRequired
-    and! email = input.Email |> Check.notBlank |> Check.orError EmailRequired
+    // These run only if input was not null, but they run independently of each other
+    let! name = input.Name |> notBlank |> orError NameRequired
+    and! email = input.Email |> notBlank |> orError EmailRequired
     
     return { Name = name; Email = email }
 }
 ```
 
+## Relationship with Result
+
+[`Validation<'value, 'error>`]({{< relref "/reference/validation/t-validation.md" >}}) is structurally similar to `Result<'value, Diagnostics<'error>>`. You can convert between them easily:
+
+- Use [`Validation.toResult`]({{< relref "/reference/validation/m-validationmodule-toresult.md" >}}) to get a standard result back.
+- Use `Result.toValidation` to start an accumulating block from an existing result.
+
+In general, use [`validate {}`]({{< relref "/reference/validation/builders-validate.md" >}}) at the "leaves" of your application (like form parsing) and [`flow {}`]({{< relref "/reference/flow/builders-flow.md" >}}) for the "branches" (the main business logic).
+
 ## Nested Scopes
 
-To build a structured report (e.g., for JSON APIs), use the `validate.key`, `validate.index`, and `validate.name` helpers. These prefix any diagnostics produced inside the block.
+To build a structured report (e.g., for JSON APIs), use the [`validate.key`]({{< relref "/reference/validation/m-validationmodule-key.md" >}}), `validate.index`, and `validate.name` helpers. These prefix any diagnostics produced inside the block.
 
 ```fsharp
 let validateCustomer customer =
     validate.key "customer" {
         let! name = 
             validate.name "Name" {
-                return! customer.Name |> Check.notBlank |> Check.orError "Required"
+                return! customer.Name |> notBlank |> orError "Required"
             }
         return name
     }

@@ -1,0 +1,664 @@
+<!doctype html>
+<html itemscope itemtype="http://schema.org/WebPage" lang="en" class="no-js">
+  <head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=3000&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+<meta name="robots" content="noindex, nofollow">
+
+
+<link rel="shortcut icon" href="http://localhost:3000/favicons/favicon.ico" >
+<link rel="apple-touch-icon" href="http://localhost:3000/favicons/apple-touch-icon-180x180.png" sizes="180x180">
+<link rel="icon" type="image/png" href="http://localhost:3000/favicons/favicon-16x16.png" sizes="16x16">
+<link rel="icon" type="image/png" href="http://localhost:3000/favicons/favicon-32x32.png" sizes="32x32">
+<link rel="icon" type="image/png" href="http://localhost:3000/favicons/android-36x36.png" sizes="36x36">
+<link rel="icon" type="image/png" href="http://localhost:3000/favicons/android-48x48.png" sizes="48x48">
+<link rel="icon" type="image/png" href="http://localhost:3000/favicons/android-72x72.png" sizes="72x72">
+<link rel="icon" type="image/png" href="http://localhost:3000/favicons/android-96x96.png" sizes="96x96">
+<link rel="icon" type="image/png" href="http://localhost:3000/favicons/android-144x144.png" sizes="144x144">
+<link rel="icon" type="image/png" href="http://localhost:3000/favicons/android-192x192.png" sizes="192x192">
+
+<title>FsFlow.ValidationModule.sequence | FsFlow</title>
+<meta name="description" content="Transforms a sequence of validations into a validation of a list.
+Parameters validations: The input sequence. Returns A validation containing the list of values.">
+<meta property="og:url" content="http://localhost:3000/reference/validation/validationmodule-sequence/">
+  <meta property="og:site_name" content="FsFlow">
+  <meta property="og:title" content="FsFlow.ValidationModule.sequence">
+  <meta property="og:description" content="Transforms a sequence of validations into a validation of a list.
+Parameters validations: The input sequence. Returns A validation containing the list of values.">
+  <meta property="og:locale" content="en_us">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="reference">
+
+  <meta itemprop="name" content="FsFlow.ValidationModule.sequence">
+  <meta itemprop="description" content="Transforms a sequence of validations into a validation of a list.
+Parameters validations: The input sequence. Returns A validation containing the list of values.">
+  <meta itemprop="wordCount" content="24">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="FsFlow.ValidationModule.sequence">
+  <meta name="twitter:description" content="Transforms a sequence of validations into a validation of a list.
+Parameters validations: The input sequence. Returns A validation containing the list of values.">
+<link href="http://localhost:3000/scss/main.css" rel="stylesheet">
+<script
+  src="https://code.jquery.com/jquery-3.7.1.min.js"
+  integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g=="
+  crossorigin="anonymous"></script>
+<script defer
+  src="https://unpkg.com/lunr@2.3.9/lunr.min.js"
+  integrity="sha384-203J0SNzyqHby3iU6hzvzltrWi/M41wOP5Gu+BiJMz5nwKykbkUx8Kp7iti0Lpli"
+  crossorigin="anonymous"></script>
+
+  </head>
+  <body class="td-page">
+    <header>
+      <nav class="td-navbar js-navbar-scroll">
+<div class="td-navbar-container container-fluid flex-column flex-md-row">
+  <a class="navbar-brand" href="http://localhost:3000/"><span class="navbar-brand__logo navbar-logo"><svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 500 500" style="enable-background:new 0 0 500 500"><g><path style="fill:#fff" d="M116.8525 421.9722c-5.7041.0-10.3442-4.3127-10.3442-9.6129V88.183c0-5.3002 4.6401-9.6117 10.3442-9.6117H320.858c3.0347.0 9.3959.5498 11.7506 2.6302l.3545.3442 58.905 63.2912c2.3101 2.491 2.9202 8.4928 2.9202 11.3184v256.2039c0 5.3002-4.6407 9.6129-10.3436 9.6129H116.8525z"/><g><g><g><path style="fill:#767676" d="M384.4445 423.2066H116.852c-6.3839.0-11.5786-4.8658-11.5786-10.8474V88.1831c0-5.9804 5.1947-10.8461 11.5786-10.8461h204.0062c.377.0 9.2786.0329 12.568 2.9389l.3947.3833 58.9508 63.337c3.2135 3.4652 3.2514 11.7924 3.2514 12.1593v256.2036C396.0231 418.3408 390.8284 423.2066 384.4445 423.2066zM116.5079 411.9189c.0848.0278.1999.0531.3441.0531h267.5925c.1442.0.2581-.0253.3441-.0531V156.1556c-.0076-.9033-.3593-3.7347-.7034-5.0037l-57.6527-61.9416c-1.4651-.3176-4.4533-.6389-5.5742-.6389H116.852c-.143.0-.2594.024-.3441.0531V411.9189zm267.4533-261.149zM327.0321 89.371v.0013V89.371z"/></g></g></g><g><g><path style="fill:#5b7fc0" d="M189.0874 210.1754l.0012-.0012c7.7751.0012 15.0295 4.1862 18.932 10.9234 1.9177 3.3159 2.9305 7.1011 2.9293 10.9378.0 5.8394-2.2733 11.3304-6.4032 15.4604-4.1288 4.1288-9.6186 6.4032-15.458 6.4032s-11.328-2.2733-15.458-6.4032-6.4032-9.6186-6.4056-15.4628c.0012-6.025 2.454-11.4897 6.4116-15.4473C177.5953 212.627 183.0601 210.1742 189.0874 210.1754zm7.993 21.8576c.0012-1.4042-.3687-2.7868-1.063-3.9887-1.4293-2.4684-4.0833-3.9995-6.9299-4.0019-4.4077.0024-7.993 3.5877-7.993 7.993.0 2.1356.832 4.1431 2.3427 5.6539 1.5083 1.5083 3.5159 2.3403 5.6503 2.3415 2.1356.0 4.1443-.8308 5.6539-2.3403S197.0816 234.1722 197.0804 232.033z"/><path style="opacity:.3;fill:#fff" d="M189.0898 210.176c7.7763.0 15.0283 4.1826 18.926 10.9151 1.9201 3.3136 2.9377 7.0988 2.9353 10.9462.0024 12.0643-9.8065 21.8636-21.8613 21.8613-12.0547.0024-21.8636-9.8066-21.8612-21.8613.0-6.0285 2.4516-11.4921 6.4116-15.452C177.5977 212.6276 183.0612 210.176 189.0898 210.176zm7.9941 21.8612c0-1.4078-.3711-2.7892-1.0702-3.9959-1.4269-2.466-4.0797-3.9983-6.924-3.9983-4.4005-.0048-7.9918 3.5817-7.9942 7.9942.0024 4.4077 3.5865 7.9918 7.9942 7.9942 2.2027.0 4.2018-.8978 5.6479-2.3439C196.1861 236.239 197.0839 234.2399 197.0839 232.0372z"/><g><defs><path id="SVGID_1_" d="M194.7376 237.6875c-1.4461 1.4461-3.4452 2.3439-5.6479 2.3439-4.4077-.0024-7.9918-3.5865-7.9942-7.9942.0024-4.4125 3.5937-7.999 7.9942-7.9942 2.8443.0 5.497 1.5323 6.924 3.9983.6991 1.2067 1.0702 2.5881 1.0702 3.9959C197.0839 234.2399 196.1861 236.239 194.7376 237.6875z"/></defs><clipPath id="SVGID_2_"><use xlink:href="#SVGID_1_" style="overflow:visible"/></clipPath><path style="clip-path:url(#SVGID_2_);fill:#fff" d="M190.0704 225.0237c-4.4005-.0048-7.9918 3.5817-7.9942 7.9942.0011 1.9546.7088 3.7452 1.8782 5.1354-1.7447-1.4674-2.8575-3.663-2.8588-6.116.0024-4.4125 3.5936-7.999 7.9942-7.9942 2.3802-1e-4 4.616 1.0833 6.1218 2.8788C193.7885 225.7247 191.9774 225.0237 190.0704 225.0237z"/><path style="opacity:.13;clip-path:url(#SVGID_2_);fill:#020202" d="M190.0704 225.0237c-4.4005-.0048-7.9918 3.5817-7.9942 7.9942.0011 1.9546.7088 3.7452 1.8782 5.1354-1.7447-1.4674-2.8575-3.663-2.8588-6.116.0024-4.4125 3.5936-7.999 7.9942-7.9942 2.3802-1e-4 4.616 1.0833 6.1218 2.8788C193.7885 225.7247 191.9774 225.0237 190.0704 225.0237z"/></g><g><defs><path id="SVGID_3_" d="M189.0898 210.176c7.7763.0 15.0283 4.1826 18.926 10.9151 1.9201 3.3136 2.9377 7.0988 2.9353 10.9462.0024 12.0643-9.8065 21.8636-21.8613 21.8613-12.0547.0024-21.8636-9.8066-21.8612-21.8613.0-6.0285 2.4516-11.4921 6.4116-15.452C177.5977 212.6276 183.0612 210.176 189.0898 210.176zm7.9941 21.8612c0-1.4078-.3711-2.7892-1.0702-3.9959-1.4269-2.466-4.0797-3.9983-6.924-3.9983-4.4005-.0048-7.9918 3.5817-7.9942 7.9942.0024 4.4077 3.5865 7.9918 7.9942 7.9942 2.2027.0 4.2018-.8978 5.6479-2.3439C196.1861 236.239 197.0839 234.2399 197.0839 232.0372z"/></defs><clipPath id="SVGID_4_"><use xlink:href="#SVGID_3_" style="overflow:visible"/></clipPath><path style="clip-path:url(#SVGID_4_);fill:#5b7fc0" d="M172.6595 215.6045c-3.96 3.96-6.4116 9.4235-6.4116 15.452-.0024 12.0547 9.8066 21.8636 21.8613 21.8612 12.0547.0024 21.8636-9.797 21.8613-21.8612.0024-3.8475-1.0151-7.6326-2.9353-10.9462-3.8977-6.7324-11.1497-10.9151-18.926-10.9151C182.0806 209.1953 176.6171 211.647 172.6595 215.6045z"/></g></g><rect x="198.8952" y="225.1043" style="fill:#5b7fc0" width="122.6266" height="13.8671"/></g><g><path style="fill:#d95140" d="M189.0874 155.7611l.0012-.0012c7.7751.0012 15.0295 4.1862 18.932 10.9234 1.9177 3.3159 2.9305 7.1011 2.9293 10.9378.0 5.8394-2.2733 11.3304-6.4032 15.4604-4.1288 4.1288-9.6186 6.4032-15.458 6.4032s-11.328-2.2733-15.458-6.4032-6.4032-9.6186-6.4056-15.4628c.0012-6.0249 2.454-11.4897 6.4116-15.4473C177.5953 158.2128 183.0601 155.7599 189.0874 155.7611zm7.993 21.8577c.0012-1.4042-.3687-2.7868-1.063-3.9887-1.4293-2.4684-4.0833-3.9995-6.9299-4.0019-4.4077.0024-7.993 3.5877-7.993 7.993.0 2.1356.832 4.1431 2.3427 5.6539 1.5083 1.5083 3.5159 2.3403 5.6503 2.3415 2.1356.0 4.1443-.8308 5.6539-2.3403C196.2508 181.7667 197.0816 179.758 197.0804 177.6188z"/><path style="opacity:.3;fill:#fff" d="M189.0898 155.7617c7.7763.0 15.0283 4.1826 18.926 10.9151 1.9201 3.3135 2.9377 7.0987 2.9353 10.9462.0024 12.0643-9.8065 21.8636-21.8613 21.8613-12.0547.0024-21.8636-9.8066-21.8612-21.8613.0-6.0285 2.4516-11.4921 6.4116-15.452C177.5977 158.2134 183.0612 155.7617 189.0898 155.7617zm7.9941 21.8613c0-1.4078-.3711-2.7892-1.0702-3.9959-1.4269-2.466-4.0797-3.9983-6.924-3.9983-4.4005-.0048-7.9918 3.5817-7.9942 7.9942.0024 4.4077 3.5865 7.9918 7.9942 7.9942 2.2027.0 4.2018-.8978 5.6479-2.3439C196.1861 181.8248 197.0839 179.8256 197.0839 177.623z"/><g><defs><path id="SVGID_5_" d="M194.7376 183.2733c-1.4461 1.4461-3.4452 2.3439-5.6479 2.3439-4.4077-.0024-7.9918-3.5865-7.9942-7.9942.0024-4.4125 3.5937-7.9989 7.9942-7.9942 2.8443.0 5.497 1.5323 6.924 3.9983.6991 1.2067 1.0702 2.5881 1.0702 3.9959C197.0839 179.8256 196.1861 181.8248 194.7376 183.2733z"/></defs><clipPath id="SVGID_6_"><use xlink:href="#SVGID_5_" style="overflow:visible"/></clipPath><path style="clip-path:url(#SVGID_6_);fill:#fff" d="M190.0704 170.6095c-4.4005-.0048-7.9918 3.5817-7.9942 7.9942.0011 1.9546.7088 3.7452 1.8782 5.1354-1.7447-1.4674-2.8575-3.663-2.8588-6.116.0024-4.4125 3.5936-7.999 7.9942-7.9942 2.3802-1e-4 4.616 1.0833 6.1218 2.8788C193.7885 171.3104 191.9774 170.6095 190.0704 170.6095z"/><path style="opacity:.13;clip-path:url(#SVGID_6_);fill:#020202" d="M190.0704 170.6095c-4.4005-.0048-7.9918 3.5817-7.9942 7.9942.0011 1.9546.7088 3.7452 1.8782 5.1354-1.7447-1.4674-2.8575-3.663-2.8588-6.116.0024-4.4125 3.5936-7.999 7.9942-7.9942 2.3802-1e-4 4.616 1.0833 6.1218 2.8788C193.7885 171.3104 191.9774 170.6095 190.0704 170.6095z"/></g><g><defs><path id="SVGID_7_" d="M189.0898 155.7617c7.7763.0 15.0283 4.1826 18.926 10.9151 1.9201 3.3135 2.9377 7.0987 2.9353 10.9462.0024 12.0643-9.8065 21.8636-21.8613 21.8613-12.0547.0024-21.8636-9.8066-21.8612-21.8613.0-6.0285 2.4516-11.4921 6.4116-15.452C177.5977 158.2134 183.0612 155.7617 189.0898 155.7617zm7.9941 21.8613c0-1.4078-.3711-2.7892-1.0702-3.9959-1.4269-2.466-4.0797-3.9983-6.924-3.9983-4.4005-.0048-7.9918 3.5817-7.9942 7.9942.0024 4.4077 3.5865 7.9918 7.9942 7.9942 2.2027.0 4.2018-.8978 5.6479-2.3439C196.1861 181.8248 197.0839 179.8256 197.0839 177.623z"/></defs><clipPath id="SVGID_8_"><use xlink:href="#SVGID_7_" style="overflow:visible"/></clipPath><path style="clip-path:url(#SVGID_8_);fill:#d95140" d="M172.6595 161.1903c-3.96 3.96-6.4116 9.4235-6.4116 15.452-.0024 12.0547 9.8066 21.8636 21.8613 21.8613 12.0547.0024 21.8636-9.797 21.8613-21.8613.0024-3.8474-1.0151-7.6326-2.9353-10.9462-3.8977-6.7324-11.1497-10.9151-18.926-10.9151C182.0806 154.7811 176.6171 157.2327 172.6595 161.1903z"/></g><rect x="198.8952" y="170.69" style="fill:#d95140" width="122.6266" height="13.8671"/></g><g><g><path style="fill:#56a55c" d="M189.5379 264.6147l.0012-.0012c7.7751.0012 15.0294 4.1862 18.932 10.9235 1.9177 3.3159 2.9305 7.1011 2.9293 10.9378.0 5.8394-2.2733 11.3304-6.4032 15.4604-4.1288 4.1288-9.6186 6.4032-15.458 6.4032-5.8394.0-11.3281-2.2733-15.458-6.4032-4.13-4.13-6.4032-9.6186-6.4056-15.4628.0012-6.0249 2.454-11.4897 6.4116-15.4472C178.0458 267.0663 183.5105 264.6135 189.5379 264.6147zm7.993 21.8576c.0012-1.4042-.3687-2.7868-1.063-3.9887-1.4293-2.4684-4.0833-3.9995-6.9299-4.0019-4.4077.0024-7.993 3.5877-7.993 7.993.0 2.1356.832 4.1431 2.3427 5.6538 1.5083 1.5083 3.5159 2.3403 5.6503 2.3415 2.1356.0 4.1443-.8308 5.6539-2.3403C196.7013 290.6202 197.5321 288.6115 197.5309 286.4723z"/><path style="opacity:.3;fill:#fff" d="M189.5403 264.6153c7.7763.0 15.0283 4.1826 18.926 10.9151 1.9201 3.3135 2.9377 7.0987 2.9353 10.9462.0024 12.0643-9.8065 21.8636-21.8613 21.8613-12.0547.0024-21.8636-9.8065-21.8612-21.8613.0-6.0285 2.4516-11.492 6.4116-15.452C178.0482 267.0669 183.5117 264.6153 189.5403 264.6153zm7.9941 21.8612c0-1.4078-.3711-2.7892-1.0702-3.9959-1.4269-2.466-4.0797-3.9983-6.924-3.9983-4.4005-.0048-7.9918 3.5817-7.9942 7.9941.0024 4.4077 3.5865 7.9918 7.9942 7.9942 2.2027.0 4.2018-.8978 5.6479-2.3439C196.6366 290.6783 197.5344 288.6792 197.5344 286.4765z"/><g><defs><path id="SVGID_9_" d="M195.1881 292.1268c-1.4461 1.4461-3.4452 2.3439-5.6479 2.3439-4.4077-.0024-7.9918-3.5865-7.9942-7.9942.0024-4.4125 3.5937-7.9989 7.9942-7.9941 2.8443.0 5.497 1.5323 6.924 3.9983.6991 1.2067 1.0702 2.5881 1.0702 3.9959C197.5344 288.6792 196.6366 290.6783 195.1881 292.1268z"/></defs><clipPath id="SVGID_10_"><use xlink:href="#SVGID_9_" style="overflow:visible"/></clipPath><path style="clip-path:url(#SVGID_10_);fill:#fff" d="M190.5209 279.463c-4.4005-.0048-7.9918 3.5817-7.9942 7.9941.0011 1.9547.7088 3.7452 1.8782 5.1354-1.7446-1.4674-2.8575-3.6631-2.8588-6.1161.0024-4.4125 3.5936-7.999 7.9942-7.9941 2.3802-1e-4 4.616 1.0833 6.1218 2.8788C194.239 280.164 192.4279 279.463 190.5209 279.463z"/><path style="opacity:.13;clip-path:url(#SVGID_10_);fill:#020202" d="M190.5209 279.463c-4.4005-.0048-7.9918 3.5817-7.9942 7.9941.0011 1.9547.7088 3.7452 1.8782 5.1354-1.7446-1.4674-2.8575-3.6631-2.8588-6.1161.0024-4.4125 3.5936-7.999 7.9942-7.9941 2.3802-1e-4 4.616 1.0833 6.1218 2.8788C194.239 280.164 192.4279 279.463 190.5209 279.463z"/></g><g><defs><path id="SVGID_11_" d="M189.5403 264.6153c7.7763.0 15.0283 4.1826 18.926 10.9151 1.9201 3.3135 2.9377 7.0987 2.9353 10.9462.0024 12.0643-9.8065 21.8636-21.8613 21.8613-12.0547.0024-21.8636-9.8065-21.8612-21.8613.0-6.0285 2.4516-11.492 6.4116-15.452C178.0482 267.0669 183.5117 264.6153 189.5403 264.6153zm7.9941 21.8612c0-1.4078-.3711-2.7892-1.0702-3.9959-1.4269-2.466-4.0797-3.9983-6.924-3.9983-4.4005-.0048-7.9918 3.5817-7.9942 7.9941.0024 4.4077 3.5865 7.9918 7.9942 7.9942 2.2027.0 4.2018-.8978 5.6479-2.3439C196.6366 290.6783 197.5344 288.6792 197.5344 286.4765z"/></defs><clipPath id="SVGID_12_"><use xlink:href="#SVGID_11_" style="overflow:visible"/></clipPath><path style="clip-path:url(#SVGID_12_);fill:#56a55c" d="M173.11 270.0439c-3.96 3.96-6.4116 9.4235-6.4116 15.452-.0024 12.0547 9.8066 21.8636 21.8613 21.8613 12.0547.0024 21.8636-9.797 21.8613-21.8613.0024-3.8474-1.0151-7.6326-2.9353-10.9462-3.8977-6.7325-11.1497-10.9151-18.926-10.9151C182.5311 263.6346 177.0676 266.0863 173.11 270.0439z"/></g></g><rect x="199.3456" y="279.5436" style="fill:#56a55c" width="122.6266" height="13.8671"/></g><g><g><path style="fill:#f1bc42" d="M189.0874 318.7208l.0012-.0012c7.7751.0012 15.0295 4.1862 18.932 10.9234 1.9177 3.3159 2.9305 7.1011 2.9293 10.9378.0 5.8394-2.2733 11.3305-6.4032 15.4604-4.1288 4.1288-9.6186 6.4032-15.458 6.4032s-11.328-2.2733-15.458-6.4032-6.4032-9.6186-6.4056-15.4628c.0012-6.025 2.454-11.4897 6.4116-15.4472C177.5953 321.1724 183.0601 318.7196 189.0874 318.7208zm7.993 21.8576c.0012-1.4042-.3687-2.7868-1.063-3.9887-1.4293-2.4684-4.0833-3.9995-6.9299-4.0019-4.4077.0024-7.993 3.5877-7.993 7.993.0 2.1356.832 4.1431 2.3427 5.6539 1.5083 1.5083 3.5159 2.3403 5.6503 2.3415 2.1356.0 4.1443-.8308 5.6539-2.3403S197.0816 342.7176 197.0804 340.5784z"/><path style="opacity:.3;fill:#fff" d="M189.0898 318.7214c7.7763.0 15.0283 4.1826 18.926 10.915 1.9201 3.3136 2.9377 7.0988 2.9353 10.9462.0024 12.0643-9.8065 21.8636-21.8613 21.8612-12.0547.0024-21.8636-9.8065-21.8612-21.8612.0-6.0285 2.4516-11.4921 6.4116-15.452C177.5977 321.173 183.0612 318.7214 189.0898 318.7214zm7.9941 21.8612c0-1.4078-.3711-2.7892-1.0702-3.9959-1.4269-2.466-4.0797-3.9983-6.924-3.9983-4.4005-.0048-7.9918 3.5817-7.9942 7.9942.0024 4.4077 3.5865 7.9918 7.9942 7.9942 2.2027.0 4.2018-.8978 5.6479-2.3439C196.1861 344.7844 197.0839 342.7853 197.0839 340.5826z"/><g><defs><path id="SVGID_13_" d="M194.7376 346.2329c-1.4461 1.4461-3.4452 2.3439-5.6479 2.3439-4.4077-.0024-7.9918-3.5865-7.9942-7.9942.0024-4.4125 3.5937-7.999 7.9942-7.9942 2.8443.0 5.497 1.5323 6.924 3.9983.6991 1.2067 1.0702 2.5881 1.0702 3.9959C197.0839 342.7853 196.1861 344.7844 194.7376 346.2329z"/></defs><clipPath id="SVGID_14_"><use xlink:href="#SVGID_13_" style="overflow:visible"/></clipPath><path style="clip-path:url(#SVGID_14_);fill:#fff" d="M190.0704 333.5691c-4.4005-.0048-7.9918 3.5817-7.9942 7.9942.0011 1.9547.7088 3.7452 1.8782 5.1354-1.7447-1.4674-2.8575-3.6631-2.8588-6.1161.0024-4.4125 3.5936-7.999 7.9942-7.9942 2.3802-1e-4 4.616 1.0834 6.1218 2.8788C193.7885 334.2701 191.9774 333.5691 190.0704 333.5691z"/><path style="opacity:.13;clip-path:url(#SVGID_14_);fill:#020202" d="M190.0704 333.5691c-4.4005-.0048-7.9918 3.5817-7.9942 7.9942.0011 1.9547.7088 3.7452 1.8782 5.1354-1.7447-1.4674-2.8575-3.6631-2.8588-6.1161.0024-4.4125 3.5936-7.999 7.9942-7.9942 2.3802-1e-4 4.616 1.0834 6.1218 2.8788C193.7885 334.2701 191.9774 333.5691 190.0704 333.5691z"/></g><g><defs><path id="SVGID_15_" d="M189.0898 318.7214c7.7763.0 15.0283 4.1826 18.926 10.915 1.9201 3.3136 2.9377 7.0988 2.9353 10.9462.0024 12.0643-9.8065 21.8636-21.8613 21.8612-12.0547.0024-21.8636-9.8065-21.8612-21.8612.0-6.0285 2.4516-11.4921 6.4116-15.452C177.5977 321.173 183.0612 318.7214 189.0898 318.7214zm7.9941 21.8612c0-1.4078-.3711-2.7892-1.0702-3.9959-1.4269-2.466-4.0797-3.9983-6.924-3.9983-4.4005-.0048-7.9918 3.5817-7.9942 7.9942.0024 4.4077 3.5865 7.9918 7.9942 7.9942 2.2027.0 4.2018-.8978 5.6479-2.3439C196.1861 344.7844 197.0839 342.7853 197.0839 340.5826z"/></defs><clipPath id="SVGID_16_"><use xlink:href="#SVGID_15_" style="overflow:visible"/></clipPath><path style="clip-path:url(#SVGID_16_);fill:#f1bc42" d="M172.6595 324.15c-3.96 3.96-6.4116 9.4235-6.4116 15.452-.0024 12.0547 9.8066 21.8636 21.8613 21.8612 12.0547.0024 21.8636-9.797 21.8613-21.8612.0024-3.8474-1.0151-7.6327-2.9353-10.9462-3.8977-6.7324-11.1497-10.9151-18.926-10.9151C182.0806 317.7407 176.6171 320.1924 172.6595 324.15z"/></g></g><rect x="198.8952" y="333.6497" style="fill:#f1bc42" width="122.6266" height="13.8671"/></g></g></svg></span><span class="navbar-brand__name">FsFlow</span></a>
+  <div class="td-navbar__main td-navbar-nav-scroll td-navbar-nav-scroll--indicator" id="main_navbar">
+    <div class="scroll-indicator scroll-left"></div>
+    <ul class="navbar-nav">
+      <li class="nav-item">
+        <a class="nav-link" href="http://localhost:3000/docs/"><span>Docs</span></a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link active" href="http://localhost:3000/reference/"><span>Reference</span></a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="https://github.com/adz/FsFlow" target="_blank" rel="noopener"><span>GitHub</span></a>
+      </li>
+      <li class="nav-item td-navbar__version-menu">
+        <div class="td-version-menu dropdown">
+  <a class="nav-link dropdown-toggle td-version-menu__title" href="#" role="button"
+    data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+    <span class="td-version-menu__title-text">next</span>
+  </a>
+  <ul class="dropdown-menu">
+    <li>
+        <a class="dropdown-item active" aria-current="page" href="http://localhost:3000/FsFlow/reference/validation/validationmodule-sequence/">next</a>
+        
+      </li>
+    
+  </ul>
+</div>
+</li>
+      </ul>
+    <div class="scroll-indicator scroll-right"></div>
+  </div>
+  <div class="td-navbar__search d-none d-lg-block">
+    <div class="td-search td-search--offline">
+  <div class="td-search__icon"></div>
+  <input
+    type="search"
+    name="q"
+    class="td-search__input form-control"
+    placeholder='Search this site…'
+    aria-label='Search this site…'
+    autocomplete="off"
+    
+    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.json"
+    data-offline-search-base-href="http://localhost:3000/"
+    data-offline-search-max-results="10"
+  >
+</div>
+  </div>
+</div>
+</nav>
+
+    </header>
+    <div class="container-fluid td-outer">
+      <div class="td-main" data-bs-spy="scroll" data-bs-target=".td-toc" data-bs-root-margin="0px 0px -10%">
+        <div class="fsflow-pre1-banner" role="status">
+  <p><strong>Pre-1.0 docs.</strong> FsFlow is still on the <code>next</code> documentation line, so APIs and examples may change before 1.0.</p>
+</div>
+
+        <div class="row flex-xl-nowrap">
+          <aside class="col-12 col-md-3 col-xl-2 td-sidebar d-print-none">
+            <div id="td-sidebar-menu" class="td-sidebar__inner">
+  <form class="td-sidebar__search d-flex align-items-center">
+    <div class="td-search td-search--offline">
+  <div class="td-search__icon"></div>
+  <input
+    type="search"
+    name="q"
+    class="td-search__input form-control"
+    placeholder='Search this site…'
+    aria-label='Search this site…'
+    autocomplete="off"
+    
+    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.json"
+    data-offline-search-base-href="http://localhost:3000/"
+    data-offline-search-max-results="10"
+  >
+</div>
+    <button class="btn btn-link td-sidebar__toggle" type="button" data-bs-toggle="collapse" data-bs-target="#td-section-nav" aria-controls="td-section-nav" aria-expanded="false" aria-label="Toggle section navigation">
+    </button>
+  </form>
+  <nav class="td-sidebar-nav collapse" id="td-section-nav">
+    <ul class="td-sidebar-nav__section pe-md-3 ul-0">
+      <li class="td-sidebar-nav__section-title td-sidebar-nav__section with-child active-path" id="m-reference-li">
+    <a href="http://localhost:3000/reference/" class="align-left ps-0 td-sidebar-link td-sidebar-link__section tree-root" id="m-reference"><span class="">Reference</span></a>
+    <ul class="ul-1">
+      <li class="td-sidebar-nav__section-title td-sidebar-nav__section with-child" id="m-referenceflow-li">
+    <a href="http://localhost:3000/reference/flow/" class="align-left ps-0 td-sidebar-link td-sidebar-link__section" id="m-referenceflow"><span class="">Flow</span></a>
+    <ul class="ul-2 foldable">
+      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowflow-apply-li">
+    <a href="http://localhost:3000/reference/flow/flow-apply/" title="FsFlow.Flow.apply" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowflow-apply"><span class="">apply`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowflow-bind-li">
+    <a href="http://localhost:3000/reference/flow/flow-bind/" title="FsFlow.Flow.bind" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowflow-bind"><span class="">bind`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowflow-catch-li">
+    <a href="http://localhost:3000/reference/flow/flow-catch/" title="FsFlow.Flow.catch" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowflow-catch"><span class="">catch`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowflow-delay-li">
+    <a href="http://localhost:3000/reference/flow/flow-delay/" title="FsFlow.Flow.delay" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowflow-delay"><span class="">delay`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowflow-env-li">
+    <a href="http://localhost:3000/reference/flow/flow-env/" title="FsFlow.Flow.env" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowflow-env"><span class="">env`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowflow-error-li">
+    <a href="http://localhost:3000/reference/flow/flow-error/" title="FsFlow.Flow.error" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowflow-error"><span class="">error`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowschedulemodule-exponential-li">
+    <a href="http://localhost:3000/reference/flow/schedulemodule-exponential/" title="FsFlow.ScheduleModule.exponential" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowschedulemodule-exponential"><span class="">exponential`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowflow-fail-li">
+    <a href="http://localhost:3000/reference/flow/flow-fail/" title="FsFlow.Flow.fail" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowflow-fail"><span class="">fail`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowfiber-li">
+    <a href="http://localhost:3000/reference/flow/fiber/" title="FsFlow.Fiber" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowfiber"><span class="">Fiber</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowflow-li">
+    <a href="http://localhost:3000/reference/flow/flow/" title="FsFlow.Flow" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowflow"><span class="">Flow</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowbuilders-flow-li">
+    <a href="http://localhost:3000/reference/flow/builders-flow/" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowbuilders-flow"><span class="">flow { }</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowflow-fork-li">
+    <a href="http://localhost:3000/reference/flow/flow-fork/" title="FsFlow.Flow.fork" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowflow-fork"><span class="">fork`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowflow-fromoption-li">
+    <a href="http://localhost:3000/reference/flow/flow-fromoption/" title="FsFlow.Flow.fromOption" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowflow-fromoption"><span class="">fromOption`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowflow-fromresult-li">
+    <a href="http://localhost:3000/reference/flow/flow-fromresult/" title="FsFlow.Flow.fromResult" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowflow-fromresult"><span class="">fromResult`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowflow-fromvalueoption-li">
+    <a href="http://localhost:3000/reference/flow/flow-fromvalueoption/" title="FsFlow.Flow.fromValueOption" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowflow-fromvalueoption"><span class="">fromValueOption`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowflow-ignore-li">
+    <a href="http://localhost:3000/reference/flow/flow-ignore/" title="FsFlow.Flow.ignore" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowflow-ignore"><span class="">ignore`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowflow-interrupt-li">
+    <a href="http://localhost:3000/reference/flow/flow-interrupt/" title="FsFlow.Flow.interrupt" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowflow-interrupt"><span class="">interrupt`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowschedulemodule-jittered-li">
+    <a href="http://localhost:3000/reference/flow/schedulemodule-jittered/" title="FsFlow.ScheduleModule.jittered" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowschedulemodule-jittered"><span class="">jittered`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowflow-join-li">
+    <a href="http://localhost:3000/reference/flow/flow-join/" title="FsFlow.Flow.join" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowflow-join"><span class="">join`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowflow-localenv-li">
+    <a href="http://localhost:3000/reference/flow/flow-localenv/" title="FsFlow.Flow.localEnv" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowflow-localenv"><span class="">localEnv`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowflow-map-li">
+    <a href="http://localhost:3000/reference/flow/flow-map/" title="FsFlow.Flow.map" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowflow-map"><span class="">map`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowflow-map2-li">
+    <a href="http://localhost:3000/reference/flow/flow-map2/" title="FsFlow.Flow.map2" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowflow-map2"><span class="">map2`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowflow-map3-li">
+    <a href="http://localhost:3000/reference/flow/flow-map3/" title="FsFlow.Flow.map3" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowflow-map3"><span class="">map3`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowflow-maperror-li">
+    <a href="http://localhost:3000/reference/flow/flow-maperror/" title="FsFlow.Flow.mapError" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowflow-maperror"><span class="">mapError`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowflow-ok-li">
+    <a href="http://localhost:3000/reference/flow/flow-ok/" title="FsFlow.Flow.ok" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowflow-ok"><span class="">ok`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowflow-orelse-li">
+    <a href="http://localhost:3000/reference/flow/flow-orelse/" title="FsFlow.Flow.orElse" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowflow-orelse"><span class="">orElse`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowflow-orelseflow-li">
+    <a href="http://localhost:3000/reference/flow/flow-orelseflow/" title="FsFlow.Flow.orElseFlow" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowflow-orelseflow"><span class="">orElseFlow`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowflow-orelsewith-li">
+    <a href="http://localhost:3000/reference/flow/flow-orelsewith/" title="FsFlow.Flow.orElseWith" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowflow-orelsewith"><span class="">orElseWith`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowflow-providelayer-li">
+    <a href="http://localhost:3000/reference/flow/flow-providelayer/" title="FsFlow.Flow.provideLayer" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowflow-providelayer"><span class="">provideLayer`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowflow-race-li">
+    <a href="http://localhost:3000/reference/flow/flow-race/" title="FsFlow.Flow.race" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowflow-race"><span class="">race`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowflow-read-li">
+    <a href="http://localhost:3000/reference/flow/flow-read/" title="FsFlow.Flow.read" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowflow-read"><span class="">read`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowschedulemodule-recurs-li">
+    <a href="http://localhost:3000/reference/flow/schedulemodule-recurs/" title="FsFlow.ScheduleModule.recurs" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowschedulemodule-recurs"><span class="">recurs`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowflow-run-li">
+    <a href="http://localhost:3000/reference/flow/flow-run/" title="FsFlow.Flow.run" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowflow-run"><span class="">run`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowschedule-li">
+    <a href="http://localhost:3000/reference/flow/schedule/" title="FsFlow.Schedule" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowschedule"><span class="">Schedule</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowflow-sequence-li">
+    <a href="http://localhost:3000/reference/flow/flow-sequence/" title="FsFlow.Flow.sequence" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowflow-sequence"><span class="">sequence`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowschedulemodule-spaced-li">
+    <a href="http://localhost:3000/reference/flow/schedulemodule-spaced/" title="FsFlow.ScheduleModule.spaced" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowschedulemodule-spaced"><span class="">spaced`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowflowscheduleextensions-flow-repeat-static-li">
+    <a href="http://localhost:3000/reference/flow/flowscheduleextensions-flow-repeat-static/" title="FsFlow.FlowScheduleExtensions.Flow.Repeat.Static" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowflowscheduleextensions-flow-repeat-static"><span class="">Static`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowflowscheduleextensions-flow-retry-static-li">
+    <a href="http://localhost:3000/reference/flow/flowscheduleextensions-flow-retry-static/" title="FsFlow.FlowScheduleExtensions.Flow.Retry.Static" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowflowscheduleextensions-flow-retry-static"><span class="">Static`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowflow-succeed-li">
+    <a href="http://localhost:3000/reference/flow/flow-succeed/" title="FsFlow.Flow.succeed" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowflow-succeed"><span class="">succeed`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowflow-tap-li">
+    <a href="http://localhost:3000/reference/flow/flow-tap/" title="FsFlow.Flow.tap" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowflow-tap"><span class="">tap`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowflow-taperror-li">
+    <a href="http://localhost:3000/reference/flow/flow-taperror/" title="FsFlow.Flow.tapError" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowflow-taperror"><span class="">tapError`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowflow-traverse-li">
+    <a href="http://localhost:3000/reference/flow/flow-traverse/" title="FsFlow.Flow.traverse" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowflow-traverse"><span class="">traverse`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowflow-value-li">
+    <a href="http://localhost:3000/reference/flow/flow-value/" title="FsFlow.Flow.value" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowflow-value"><span class="">value`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowflow-zip-li">
+    <a href="http://localhost:3000/reference/flow/flow-zip/" title="FsFlow.Flow.zip" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowflow-zip"><span class="">zip`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceflowflow-zippar-li">
+    <a href="http://localhost:3000/reference/flow/flow-zippar/" title="FsFlow.Flow.zipPar" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowflow-zippar"><span class="">zipPar`</span></a>
+  </li>
+    </ul>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section with-child" id="m-referencecheck-li">
+    <a href="http://localhost:3000/reference/check/" class="align-left ps-0 td-sidebar-link td-sidebar-link__section" id="m-referencecheck"><span class="">Check</span></a>
+    <ul class="ul-2 foldable">
+      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-all-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-all/" title="FsFlow.CheckModule.all" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-all"><span class="">all`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-and-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-and/" title="FsFlow.CheckModule.and" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-and"><span class="">and`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-any-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-any/" title="FsFlow.CheckModule.any" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-any"><span class="">any`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-blank-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-blank/" title="FsFlow.CheckModule.blank" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-blank"><span class="">blank</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheck-li">
+    <a href="http://localhost:3000/reference/check/check/" title="FsFlow.Check" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheck"><span class="">Check</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-equal-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-equal/" title="FsFlow.CheckModule.equal" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-equal"><span class="">equal`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-failif-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-failif/" title="FsFlow.CheckModule.failIf" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-failif"><span class="">failIf</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-failifblank-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-failifblank/" title="FsFlow.CheckModule.failIfBlank" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-failifblank"><span class="">failIfBlank</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-failifempty-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-failifempty/" title="FsFlow.CheckModule.failIfEmpty" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-failifempty"><span class="">failIfEmpty`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-failifemptystr-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-failifemptystr/" title="FsFlow.CheckModule.failIfEmptyStr" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-failifemptystr"><span class="">failIfEmptyStr</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-failifequal-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-failifequal/" title="FsFlow.CheckModule.failIfEqual" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-failifequal"><span class="">failIfEqual`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-failifnone-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-failifnone/" title="FsFlow.CheckModule.failIfNone" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-failifnone"><span class="">failIfNone`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-failifnonemptystr-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-failifnonemptystr/" title="FsFlow.CheckModule.failIfNonEmptyStr" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-failifnonemptystr"><span class="">failIfNonEmptyStr</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-failifnotblank-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-failifnotblank/" title="FsFlow.CheckModule.failIfNotBlank" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-failifnotblank"><span class="">failIfNotBlank</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-failifnotempty-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-failifnotempty/" title="FsFlow.CheckModule.failIfNotEmpty" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-failifnotempty"><span class="">failIfNotEmpty`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-failifnotequal-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-failifnotequal/" title="FsFlow.CheckModule.failIfNotEqual" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-failifnotequal"><span class="">failIfNotEqual`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-failifnotnull-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-failifnotnull/" title="FsFlow.CheckModule.failIfNotNull" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-failifnotnull"><span class="">failIfNotNull`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-failifnull-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-failifnull/" title="FsFlow.CheckModule.failIfNull" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-failifnull"><span class="">failIfNull`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-failifsome-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-failifsome/" title="FsFlow.CheckModule.failIfSome" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-failifsome"><span class="">failIfSome`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-failifvaluenone-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-failifvaluenone/" title="FsFlow.CheckModule.failIfValueNone" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-failifvaluenone"><span class="">failIfValueNone`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-failifvaluesome-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-failifvaluesome/" title="FsFlow.CheckModule.failIfValueSome" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-failifvaluesome"><span class="">failIfValueSome`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-frompredicate-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-frompredicate/" title="FsFlow.CheckModule.fromPredicate" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-frompredicate"><span class="">fromPredicate`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-not-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-not/" title="FsFlow.CheckModule.not" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-not"><span class="">not`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-notblank-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-notblank/" title="FsFlow.CheckModule.notBlank" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-notblank"><span class="">notBlank</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-notempty-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-notempty/" title="FsFlow.CheckModule.notEmpty" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-notempty"><span class="">notEmpty`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-notequal-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-notequal/" title="FsFlow.CheckModule.notEqual" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-notequal"><span class="">notEqual`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-notnull-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-notnull/" title="FsFlow.CheckModule.notNull" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-notnull"><span class="">notNull`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-okif-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-okif/" title="FsFlow.CheckModule.okIf" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-okif"><span class="">okIf</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-okifblank-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-okifblank/" title="FsFlow.CheckModule.okIfBlank" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-okifblank"><span class="">okIfBlank</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-okifempty-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-okifempty/" title="FsFlow.CheckModule.okIfEmpty" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-okifempty"><span class="">okIfEmpty`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-okifemptystr-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-okifemptystr/" title="FsFlow.CheckModule.okIfEmptyStr" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-okifemptystr"><span class="">okIfEmptyStr</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-okifequal-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-okifequal/" title="FsFlow.CheckModule.okIfEqual" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-okifequal"><span class="">okIfEqual`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-okifnone-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-okifnone/" title="FsFlow.CheckModule.okIfNone" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-okifnone"><span class="">okIfNone`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-okifnonemptystr-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-okifnonemptystr/" title="FsFlow.CheckModule.okIfNonEmptyStr" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-okifnonemptystr"><span class="">okIfNonEmptyStr</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-okifnotblank-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-okifnotblank/" title="FsFlow.CheckModule.okIfNotBlank" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-okifnotblank"><span class="">okIfNotBlank</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-okifnotempty-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-okifnotempty/" title="FsFlow.CheckModule.okIfNotEmpty" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-okifnotempty"><span class="">okIfNotEmpty`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-okifnotequal-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-okifnotequal/" title="FsFlow.CheckModule.okIfNotEqual" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-okifnotequal"><span class="">okIfNotEqual`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-okifnotnull-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-okifnotnull/" title="FsFlow.CheckModule.okIfNotNull" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-okifnotnull"><span class="">okIfNotNull`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-okifnull-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-okifnull/" title="FsFlow.CheckModule.okIfNull" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-okifnull"><span class="">okIfNull`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-okifsome-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-okifsome/" title="FsFlow.CheckModule.okIfSome" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-okifsome"><span class="">okIfSome`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-okifvaluenone-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-okifvaluenone/" title="FsFlow.CheckModule.okIfValueNone" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-okifvaluenone"><span class="">okIfValueNone`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-okifvaluesome-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-okifvaluesome/" title="FsFlow.CheckModule.okIfValueSome" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-okifvaluesome"><span class="">okIfValueSome`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-or-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-or/" title="FsFlow.CheckModule.or" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-or"><span class="">or`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-orerror-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-orerror/" title="FsFlow.CheckModule.orError" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-orerror"><span class="">orError`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecheckcheckmodule-orerrorwith-li">
+    <a href="http://localhost:3000/reference/check/checkmodule-orerrorwith/" title="FsFlow.CheckModule.orErrorWith" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecheckcheckmodule-orerrorwith"><span class="">orErrorWith`</span></a>
+  </li>
+    </ul>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section with-child active-path" id="m-referencevalidation-li">
+    <a href="http://localhost:3000/reference/validation/" class="align-left ps-0 td-sidebar-link td-sidebar-link__section" id="m-referencevalidation"><span class="">Validation</span></a>
+    <ul class="ul-2 foldable">
+      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referencevalidationvalidationmodule-apply-li">
+    <a href="http://localhost:3000/reference/validation/validationmodule-apply/" title="FsFlow.ValidationModule.apply" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencevalidationvalidationmodule-apply"><span class="">apply`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referencevalidationvalidationmodule-at-li">
+    <a href="http://localhost:3000/reference/validation/validationmodule-at/" title="FsFlow.ValidationModule.at" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencevalidationvalidationmodule-at"><span class="">at`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referencevalidationvalidationmodule-bind-li">
+    <a href="http://localhost:3000/reference/validation/validationmodule-bind/" title="FsFlow.ValidationModule.bind" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencevalidationvalidationmodule-bind"><span class="">bind`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referencevalidationvalidationmodule-collect-li">
+    <a href="http://localhost:3000/reference/validation/validationmodule-collect/" title="FsFlow.ValidationModule.collect" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencevalidationvalidationmodule-collect"><span class="">collect`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referencevalidationvalidationmodule-error-li">
+    <a href="http://localhost:3000/reference/validation/validationmodule-error/" title="FsFlow.ValidationModule.error" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencevalidationvalidationmodule-error"><span class="">error`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referencevalidationvalidationmodule-fail-li">
+    <a href="http://localhost:3000/reference/validation/validationmodule-fail/" title="FsFlow.ValidationModule.fail" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencevalidationvalidationmodule-fail"><span class="">fail`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referencevalidationvalidationmodule-fromresult-li">
+    <a href="http://localhost:3000/reference/validation/validationmodule-fromresult/" title="FsFlow.ValidationModule.fromResult" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencevalidationvalidationmodule-fromresult"><span class="">fromResult`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referencevalidationvalidationmodule-ignore-li">
+    <a href="http://localhost:3000/reference/validation/validationmodule-ignore/" title="FsFlow.ValidationModule.ignore" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencevalidationvalidationmodule-ignore"><span class="">ignore`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referencevalidationvalidationmodule-index-li">
+    <a href="http://localhost:3000/reference/validation/validationmodule-index/" title="FsFlow.ValidationModule.index" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencevalidationvalidationmodule-index"><span class="">index`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referencevalidationvalidationmodule-key-li">
+    <a href="http://localhost:3000/reference/validation/validationmodule-key/" title="FsFlow.ValidationModule.key" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencevalidationvalidationmodule-key"><span class="">key`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referencevalidationvalidationmodule-map-li">
+    <a href="http://localhost:3000/reference/validation/validationmodule-map/" title="FsFlow.ValidationModule.map" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencevalidationvalidationmodule-map"><span class="">map`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referencevalidationvalidationmodule-map2-li">
+    <a href="http://localhost:3000/reference/validation/validationmodule-map2/" title="FsFlow.ValidationModule.map2" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencevalidationvalidationmodule-map2"><span class="">map2`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referencevalidationvalidationmodule-map3-li">
+    <a href="http://localhost:3000/reference/validation/validationmodule-map3/" title="FsFlow.ValidationModule.map3" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencevalidationvalidationmodule-map3"><span class="">map3`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referencevalidationvalidationmodule-maperror-li">
+    <a href="http://localhost:3000/reference/validation/validationmodule-maperror/" title="FsFlow.ValidationModule.mapError" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencevalidationvalidationmodule-maperror"><span class="">mapError`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referencevalidationvalidationmodule-merge-li">
+    <a href="http://localhost:3000/reference/validation/validationmodule-merge/" title="FsFlow.ValidationModule.merge" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencevalidationvalidationmodule-merge"><span class="">merge`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referencevalidationvalidationmodule-name-li">
+    <a href="http://localhost:3000/reference/validation/validationmodule-name/" title="FsFlow.ValidationModule.name" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencevalidationvalidationmodule-name"><span class="">name`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referencevalidationvalidationmodule-ok-li">
+    <a href="http://localhost:3000/reference/validation/validationmodule-ok/" title="FsFlow.ValidationModule.ok" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencevalidationvalidationmodule-ok"><span class="">ok`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referencevalidationvalidationmodule-orelse-li">
+    <a href="http://localhost:3000/reference/validation/validationmodule-orelse/" title="FsFlow.ValidationModule.orElse" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencevalidationvalidationmodule-orelse"><span class="">orElse`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referencevalidationvalidationmodule-orelsewith-li">
+    <a href="http://localhost:3000/reference/validation/validationmodule-orelsewith/" title="FsFlow.ValidationModule.orElseWith" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencevalidationvalidationmodule-orelsewith"><span class="">orElseWith`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child active-path" id="m-referencevalidationvalidationmodule-sequence-li">
+    <a href="http://localhost:3000/reference/validation/validationmodule-sequence/" title="FsFlow.ValidationModule.sequence" class="align-left ps-0 active td-sidebar-link td-sidebar-link__page" id="m-referencevalidationvalidationmodule-sequence"><span class="td-sidebar-nav-active-item">sequence`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referencevalidationvalidationmodule-succeed-li">
+    <a href="http://localhost:3000/reference/validation/validationmodule-succeed/" title="FsFlow.ValidationModule.succeed" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencevalidationvalidationmodule-succeed"><span class="">succeed`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referencevalidationvalidationmodule-toresult-li">
+    <a href="http://localhost:3000/reference/validation/validationmodule-toresult/" title="FsFlow.ValidationModule.toResult" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencevalidationvalidationmodule-toresult"><span class="">toResult`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referencevalidationvalidationmodule-traverseindexed-li">
+    <a href="http://localhost:3000/reference/validation/validationmodule-traverseindexed/" title="FsFlow.ValidationModule.traverseIndexed" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencevalidationvalidationmodule-traverseindexed"><span class="">traverseIndexed`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referencevalidationbuilders-validate-li">
+    <a href="http://localhost:3000/reference/validation/builders-validate/" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencevalidationbuilders-validate"><span class="">validate { }</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referencevalidationvalidation-li">
+    <a href="http://localhost:3000/reference/validation/validation/" title="FsFlow.Validation" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencevalidationvalidation"><span class="">Validation</span></a>
+  </li>
+    </ul>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section with-child" id="m-referenceresult-li">
+    <a href="http://localhost:3000/reference/result/" class="align-left ps-0 td-sidebar-link td-sidebar-link__section" id="m-referenceresult"><span class="">Result Builder</span></a>
+    <ul class="ul-2 foldable">
+      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referenceresultbuilders-result-li">
+    <a href="http://localhost:3000/reference/result/builders-result/" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceresultbuilders-result"><span class="">Result Builder</span></a>
+  </li>
+    </ul>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section with-child" id="m-referencediagnostics-li">
+    <a href="http://localhost:3000/reference/diagnostics/" class="align-left ps-0 td-sidebar-link td-sidebar-link__section" id="m-referencediagnostics"><span class="">Diagnostics</span></a>
+    <ul class="ul-2 foldable">
+      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencediagnosticsdiagnostic-li">
+    <a href="http://localhost:3000/reference/diagnostics/diagnostic/" title="FsFlow.Diagnostic" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencediagnosticsdiagnostic"><span class="">Diagnostic</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencediagnosticsdiagnostics-li">
+    <a href="http://localhost:3000/reference/diagnostics/diagnostics/" title="FsFlow.Diagnostics" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencediagnosticsdiagnostics"><span class="">Diagnostics</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencediagnosticsdiagnosticsmodule-empty-li">
+    <a href="http://localhost:3000/reference/diagnostics/diagnosticsmodule-empty/" title="FsFlow.DiagnosticsModule.empty" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencediagnosticsdiagnosticsmodule-empty"><span class="">empty`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencediagnosticsdiagnosticsmodule-flatten-li">
+    <a href="http://localhost:3000/reference/diagnostics/diagnosticsmodule-flatten/" title="FsFlow.DiagnosticsModule.flatten" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencediagnosticsdiagnosticsmodule-flatten"><span class="">flatten`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencediagnosticsdiagnosticsmodule-merge-li">
+    <a href="http://localhost:3000/reference/diagnostics/diagnosticsmodule-merge/" title="FsFlow.DiagnosticsModule.merge" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencediagnosticsdiagnosticsmodule-merge"><span class="">merge`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencediagnosticspath-li">
+    <a href="http://localhost:3000/reference/diagnostics/path/" title="FsFlow.Path" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencediagnosticspath"><span class="">Path</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencediagnosticspathsegment-li">
+    <a href="http://localhost:3000/reference/diagnostics/pathsegment/" title="FsFlow.PathSegment" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencediagnosticspathsegment"><span class="">PathSegment</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencediagnosticsdiagnosticsmodule-singleton-li">
+    <a href="http://localhost:3000/reference/diagnostics/diagnosticsmodule-singleton/" title="FsFlow.DiagnosticsModule.singleton" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencediagnosticsdiagnosticsmodule-singleton"><span class="">singleton`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencediagnosticsdiagnosticsmodule-tostring-li">
+    <a href="http://localhost:3000/reference/diagnostics/diagnosticsmodule-tostring/" title="FsFlow.DiagnosticsModule.toString" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencediagnosticsdiagnosticsmodule-tostring"><span class="">toString`</span></a>
+  </li>
+    </ul>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section with-child" id="m-referencecapability-li">
+    <a href="http://localhost:3000/reference/capability/" class="align-left ps-0 td-sidebar-link td-sidebar-link__section" id="m-referencecapability"><span class="">Capability</span></a>
+    <ul class="ul-2 foldable">
+      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecapabilityenv-li">
+    <a href="http://localhost:3000/reference/capability/env/" title="FsFlow.Env" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecapabilityenv"><span class="">Env</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecapabilitycapabilitymodule-environment-li">
+    <a href="http://localhost:3000/reference/capability/capabilitymodule-environment/" title="FsFlow.CapabilityModule.environment" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecapabilitycapabilitymodule-environment"><span class="">environment`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecapabilitymissingcapability-li">
+    <a href="http://localhost:3000/reference/capability/missingcapability/" title="FsFlow.MissingCapability" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecapabilitymissingcapability"><span class="">MissingCapability</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecapabilityneeds-li">
+    <a href="http://localhost:3000/reference/capability/needs/" title="FsFlow.Needs" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecapabilityneeds"><span class="">Needs</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecapabilitylayermodule-providelayer-li">
+    <a href="http://localhost:3000/reference/capability/layermodule-providelayer/" title="FsFlow.LayerModule.provideLayer" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecapabilitylayermodule-providelayer"><span class="">provideLayer`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecapabilitycapabilitymodule-runtime-li">
+    <a href="http://localhost:3000/reference/capability/capabilitymodule-runtime/" title="FsFlow.CapabilityModule.runtime" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecapabilitycapabilitymodule-runtime"><span class="">runtime`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecapabilitycapabilitymodule-service-li">
+    <a href="http://localhost:3000/reference/capability/capabilitymodule-service/" title="FsFlow.CapabilityModule.service" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecapabilitycapabilitymodule-service"><span class="">service`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecapabilitycapabilitymodule-servicefromprovider-li">
+    <a href="http://localhost:3000/reference/capability/capabilitymodule-servicefromprovider/" title="FsFlow.CapabilityModule.serviceFromProvider" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecapabilitycapabilitymodule-servicefromprovider"><span class="">serviceFromProvider`</span></a>
+  </li>
+    </ul>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section with-child" id="m-referencecaps-core-li">
+    <a href="http://localhost:3000/reference/caps-core/" class="align-left ps-0 td-sidebar-link td-sidebar-link__section" id="m-referencecaps-core"><span class="">CAPS Core</span></a>
+    <ul class="ul-2 foldable">
+      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-corecore-li">
+    <a href="http://localhost:3000/reference/caps-core/core/" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-corecore"><span class="">CAPS Core</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-corecore-environmentvariableerrors-describe-li">
+    <a href="http://localhost:3000/reference/caps-core/core-environmentvariableerrors-describe/" title="FsFlow.Caps.Core.EnvironmentVariableErrors.describe" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-corecore-environmentvariableerrors-describe"><span class="">describe</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-corecore-environmentvariableerror-li">
+    <a href="http://localhost:3000/reference/caps-core/core-environmentvariableerror/" title="FsFlow.Caps.Core.EnvironmentVariableError" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-corecore-environmentvariableerror"><span class="">EnvironmentVariableError</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-corecore-environmentvariables-frompairs-li">
+    <a href="http://localhost:3000/reference/caps-core/core-environmentvariables-frompairs/" title="FsFlow.Caps.Core.EnvironmentVariables.fromPairs" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-corecore-environmentvariables-frompairs"><span class="">fromPairs</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-corecore-clock-fromvalue-li">
+    <a href="http://localhost:3000/reference/caps-core/core-clock-fromvalue/" title="FsFlow.Caps.Core.Clock.fromValue" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-corecore-clock-fromvalue"><span class="">fromValue</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-corecore-guid-fromvalue-li">
+    <a href="http://localhost:3000/reference/caps-core/core-guid-fromvalue/" title="FsFlow.Caps.Core.Guid.fromValue" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-corecore-guid-fromvalue"><span class="">fromValue</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-corecore-random-fromvalue-li">
+    <a href="http://localhost:3000/reference/caps-core/core-random-fromvalue/" title="FsFlow.Caps.Core.Random.fromValue" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-corecore-random-fromvalue"><span class="">fromValue</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-corecore-environmentvariable-get-li">
+    <a href="http://localhost:3000/reference/caps-core/core-environmentvariable-get/" title="FsFlow.Caps.Core.EnvironmentVariable.get" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-corecore-environmentvariable-get"><span class="">get`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-corecore-environmentvariable-getbool-li">
+    <a href="http://localhost:3000/reference/caps-core/core-environmentvariable-getbool/" title="FsFlow.Caps.Core.EnvironmentVariable.getBool" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-corecore-environmentvariable-getbool"><span class="">getBool`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-corecore-environmentvariable-getguid-li">
+    <a href="http://localhost:3000/reference/caps-core/core-environmentvariable-getguid/" title="FsFlow.Caps.Core.EnvironmentVariable.getGuid" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-corecore-environmentvariable-getguid"><span class="">getGuid`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-corecore-environmentvariable-getint-li">
+    <a href="http://localhost:3000/reference/caps-core/core-environmentvariable-getint/" title="FsFlow.Caps.Core.EnvironmentVariable.getInt" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-corecore-environmentvariable-getint"><span class="">getInt`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-corecore-iclock-li">
+    <a href="http://localhost:3000/reference/caps-core/core-iclock/" title="FsFlow.Caps.Core.IClock" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-corecore-iclock"><span class="">IClock</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-corecore-ienvironmentvariables-li">
+    <a href="http://localhost:3000/reference/caps-core/core-ienvironmentvariables/" title="FsFlow.Caps.Core.IEnvironmentVariables" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-corecore-ienvironmentvariables"><span class="">IEnvironmentVariables</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-corecore-iguid-li">
+    <a href="http://localhost:3000/reference/caps-core/core-iguid/" title="FsFlow.Caps.Core.IGuid" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-corecore-iguid"><span class="">IGuid</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-corecore-irandom-li">
+    <a href="http://localhost:3000/reference/caps-core/core-irandom/" title="FsFlow.Caps.Core.IRandom" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-corecore-irandom"><span class="">IRandom</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-corecore-clock-live-li">
+    <a href="http://localhost:3000/reference/caps-core/core-clock-live/" title="FsFlow.Caps.Core.Clock.live" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-corecore-clock-live"><span class="">live</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-corecore-environmentvariables-live-li">
+    <a href="http://localhost:3000/reference/caps-core/core-environmentvariables-live/" title="FsFlow.Caps.Core.EnvironmentVariables.live" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-corecore-environmentvariables-live"><span class="">live</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-corecore-guid-live-li">
+    <a href="http://localhost:3000/reference/caps-core/core-guid-live/" title="FsFlow.Caps.Core.Guid.live" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-corecore-guid-live"><span class="">live</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-corecore-random-live-li">
+    <a href="http://localhost:3000/reference/caps-core/core-random-live/" title="FsFlow.Caps.Core.Random.live" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-corecore-random-live"><span class="">live</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-corecore-guid-newguid-li">
+    <a href="http://localhost:3000/reference/caps-core/core-guid-newguid/" title="FsFlow.Caps.Core.Guid.newGuid" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-corecore-guid-newguid"><span class="">newGuid`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-corecore-random-nextint-li">
+    <a href="http://localhost:3000/reference/caps-core/core-random-nextint/" title="FsFlow.Caps.Core.Random.nextInt" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-corecore-random-nextint"><span class="">nextInt`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-corecore-clock-now-li">
+    <a href="http://localhost:3000/reference/caps-core/core-clock-now/" title="FsFlow.Caps.Core.Clock.now" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-corecore-clock-now"><span class="">now`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-corecore-environmentvariable-tryget-li">
+    <a href="http://localhost:3000/reference/caps-core/core-environmentvariable-tryget/" title="FsFlow.Caps.Core.EnvironmentVariable.tryGet" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-corecore-environmentvariable-tryget"><span class="">tryGet`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-corecore-environmentvariables-tryget-li">
+    <a href="http://localhost:3000/reference/caps-core/core-environmentvariables-tryget/" title="FsFlow.Caps.Core.EnvironmentVariables.tryGet" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-corecore-environmentvariables-tryget"><span class="">tryGet`</span></a>
+  </li>
+    </ul>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section with-child" id="m-referencecaps-console-li">
+    <a href="http://localhost:3000/reference/caps-console/" class="align-left ps-0 td-sidebar-link td-sidebar-link__section" id="m-referencecaps-console"><span class="">CAPS Console</span></a>
+    <ul class="ul-2 foldable">
+      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-consoleconsole-li">
+    <a href="http://localhost:3000/reference/caps-console/console/" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-consoleconsole"><span class="">CAPS Console</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-consoleconsole-iconsole-li">
+    <a href="http://localhost:3000/reference/caps-console/console-iconsole/" title="FsFlow.Caps.Console.IConsole" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-consoleconsole-iconsole"><span class="">IConsole</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-consoleconsole-consolemodule-live-li">
+    <a href="http://localhost:3000/reference/caps-console/console-consolemodule-live/" title="FsFlow.Caps.Console.ConsoleModule.live" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-consoleconsole-consolemodule-live"><span class="">live</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-consoleconsole-consolemodule-readline-li">
+    <a href="http://localhost:3000/reference/caps-console/console-consolemodule-readline/" title="FsFlow.Caps.Console.ConsoleModule.readLine" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-consoleconsole-consolemodule-readline"><span class="">readLine`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-consoleconsole-consolemodule-writeline-li">
+    <a href="http://localhost:3000/reference/caps-console/console-consolemodule-writeline/" title="FsFlow.Caps.Console.ConsoleModule.writeLine" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-consoleconsole-consolemodule-writeline"><span class="">writeLine`</span></a>
+  </li>
+    </ul>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section with-child" id="m-referencecaps-filesystem-li">
+    <a href="http://localhost:3000/reference/caps-filesystem/" class="align-left ps-0 td-sidebar-link td-sidebar-link__section" id="m-referencecaps-filesystem"><span class="">CAPS FileSystem</span></a>
+    <ul class="ul-2 foldable">
+      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-filesystemfilesystem-li">
+    <a href="http://localhost:3000/reference/caps-filesystem/filesystem/" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-filesystemfilesystem"><span class="">CAPS FileSystem</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-filesystemfilesystem-filesystemmodule-exists-li">
+    <a href="http://localhost:3000/reference/caps-filesystem/filesystem-filesystemmodule-exists/" title="FsFlow.Caps.FileSystem.FileSystemModule.exists" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-filesystemfilesystem-filesystemmodule-exists"><span class="">exists`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-filesystemfilesystem-ifilesystem-li">
+    <a href="http://localhost:3000/reference/caps-filesystem/filesystem-ifilesystem/" title="FsFlow.Caps.FileSystem.IFileSystem" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-filesystemfilesystem-ifilesystem"><span class="">IFileSystem</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-filesystemfilesystem-filesystemmodule-live-li">
+    <a href="http://localhost:3000/reference/caps-filesystem/filesystem-filesystemmodule-live/" title="FsFlow.Caps.FileSystem.FileSystemModule.live" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-filesystemfilesystem-filesystemmodule-live"><span class="">live</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-filesystemfilesystem-filesystemmodule-readalltext-li">
+    <a href="http://localhost:3000/reference/caps-filesystem/filesystem-filesystemmodule-readalltext/" title="FsFlow.Caps.FileSystem.FileSystemModule.readAllText" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-filesystemfilesystem-filesystemmodule-readalltext"><span class="">readAllText`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-filesystemfilesystem-filesystemmodule-writealltext-li">
+    <a href="http://localhost:3000/reference/caps-filesystem/filesystem-filesystemmodule-writealltext/" title="FsFlow.Caps.FileSystem.FileSystemModule.writeAllText" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-filesystemfilesystem-filesystemmodule-writealltext"><span class="">writeAllText`</span></a>
+  </li>
+    </ul>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section with-child" id="m-referencecaps-http-li">
+    <a href="http://localhost:3000/reference/caps-http/" class="align-left ps-0 td-sidebar-link td-sidebar-link__section" id="m-referencecaps-http"><span class="">CAPS Http</span></a>
+    <ul class="ul-2 foldable">
+      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-httphttp-li">
+    <a href="http://localhost:3000/reference/caps-http/http/" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-httphttp"><span class="">CAPS Http</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-httphttp-httpmodule-getstring-li">
+    <a href="http://localhost:3000/reference/caps-http/http-httpmodule-getstring/" title="FsFlow.Caps.Http.HttpModule.getString" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-httphttp-httpmodule-getstring"><span class="">getString`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-httphttp-ihttp-li">
+    <a href="http://localhost:3000/reference/caps-http/http-ihttp/" title="FsFlow.Caps.Http.IHttp" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-httphttp-ihttp"><span class="">IHttp</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-httphttp-httpmodule-live-li">
+    <a href="http://localhost:3000/reference/caps-http/http-httpmodule-live/" title="FsFlow.Caps.Http.HttpModule.live" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-httphttp-httpmodule-live"><span class="">live</span></a>
+  </li>
+    </ul>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section with-child" id="m-referencecaps-process-li">
+    <a href="http://localhost:3000/reference/caps-process/" class="align-left ps-0 td-sidebar-link td-sidebar-link__section" id="m-referencecaps-process"><span class="">CAPS Process</span></a>
+    <ul class="ul-2 foldable">
+      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-processprocess-li">
+    <a href="http://localhost:3000/reference/caps-process/process/" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-processprocess"><span class="">CAPS Process</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-processprocess-processmodule-execute-li">
+    <a href="http://localhost:3000/reference/caps-process/process-processmodule-execute/" title="FsFlow.Caps.Process.ProcessModule.execute" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-processprocess-processmodule-execute"><span class="">execute`</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-processprocess-iprocess-li">
+    <a href="http://localhost:3000/reference/caps-process/process-iprocess/" title="FsFlow.Caps.Process.IProcess" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-processprocess-iprocess"><span class="">IProcess</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-processprocess-processmodule-live-li">
+    <a href="http://localhost:3000/reference/caps-process/process-processmodule-live/" title="FsFlow.Caps.Process.ProcessModule.live" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-processprocess-processmodule-live"><span class="">live</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencecaps-processprocess-processresult-li">
+    <a href="http://localhost:3000/reference/caps-process/process-processresult/" title="FsFlow.Caps.Process.ProcessResult" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencecaps-processprocess-processresult"><span class="">ProcessResult</span></a>
+  </li>
+    </ul>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section with-child" id="m-referencehosting-li">
+    <a href="http://localhost:3000/reference/hosting/" class="align-left ps-0 td-sidebar-link td-sidebar-link__section" id="m-referencehosting"><span class="">Hosting</span></a>
+    <ul class="ul-2 foldable">
+      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencehostinghosting-li">
+    <a href="http://localhost:3000/reference/hosting/hosting/" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencehostinghosting"><span class="">Hosting</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencehostinghosting-startup-validateenvironment-li">
+    <a href="http://localhost:3000/reference/hosting/hosting-startup-validateenvironment/" title="FsFlow.Hosting.Startup.validateEnvironment" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencehostinghosting-startup-validateenvironment"><span class="">validateEnvironment`</span></a>
+  </li>
+    </ul>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section with-child" id="m-referencetelemetry-li">
+    <a href="http://localhost:3000/reference/telemetry/" class="align-left ps-0 td-sidebar-link td-sidebar-link__section" id="m-referencetelemetry"><span class="">Telemetry</span></a>
+    <ul class="ul-2 foldable">
+      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencetelemetrytelemetry-li">
+    <a href="http://localhost:3000/reference/telemetry/telemetry/" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencetelemetrytelemetry"><span class="">Telemetry</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-referencetelemetryruntime-telemetry-activity-trace-li">
+    <a href="http://localhost:3000/reference/telemetry/runtime-telemetry-activity-trace/" title="FsFlow.Runtime.Telemetry.Activity.trace" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referencetelemetryruntime-telemetry-activity-trace"><span class="">trace`</span></a>
+  </li>
+    </ul>
+  </li>
+    </ul>
+  </li>
+    </ul>
+  </nav>
+</div>
+          </aside>
+          <aside class="td-sidebar-toc">
+            <div class="td-page-meta ms-2 pb-1 pt-2 mb-0">
+<a href="https://github.com/adz/FsFlow/tree/main/content/reference/validation/validationmodule-sequence.md" class="td-page-meta--view td-page-meta__view" target="_blank" rel="noopener"><i class="fa-solid fa-file-lines fa-fw"></i> View page source</a>
+  <a href="https://github.com/adz/FsFlow/edit/main/content/reference/validation/validationmodule-sequence.md" class="td-page-meta--edit td-page-meta__edit" target="_blank" rel="noopener"><i class="fa-solid fa-pen-to-square fa-fw"></i> Edit this page</a>
+  <a href="https://github.com/adz/FsFlow/new/main/content/reference/validation?filename=change-me.md&amp;value=---%0Atitle%3A&#43;%22Long&#43;Page&#43;Title%22%0AlinkTitle%3A&#43;%22Short&#43;Nav&#43;Title%22%0Aweight%3A&#43;100%0Adescription%3A&#43;%3E-%0A&#43;&#43;&#43;&#43;&#43;Page&#43;description&#43;for&#43;heading&#43;and&#43;indexes.%0A---%0A%0A%23%23&#43;Heading%0A%0AEdit&#43;this&#43;template&#43;to&#43;create&#43;your&#43;new&#43;page.%0A%0A%2A&#43;Give&#43;it&#43;a&#43;good&#43;name%2C&#43;ending&#43;in&#43;%60.md%60&#43;-&#43;e.g.&#43;%60get-started.md%60%0A%2A&#43;Edit&#43;the&#43;%22front&#43;matter%22&#43;section&#43;at&#43;the&#43;top&#43;of&#43;the&#43;page&#43;%28weight&#43;controls&#43;how&#43;its&#43;ordered&#43;amongst&#43;other&#43;pages&#43;in&#43;the&#43;same&#43;directory%3B&#43;lowest&#43;number&#43;first%29.%0A%2A&#43;Add&#43;a&#43;good&#43;commit&#43;message&#43;at&#43;the&#43;bottom&#43;of&#43;the&#43;page&#43;%28%3C80&#43;characters%3B&#43;use&#43;the&#43;extended&#43;description&#43;field&#43;for&#43;more&#43;detail%29.%0A%2A&#43;Create&#43;a&#43;new&#43;branch&#43;so&#43;you&#43;can&#43;preview&#43;your&#43;new&#43;file&#43;and&#43;request&#43;a&#43;review&#43;via&#43;Pull&#43;Request.%0A" class="td-page-meta--child td-page-meta__child" target="_blank" rel="noopener"><i class="fa-solid fa-pen-to-square fa-fw"></i> Create child page</a>
+  <a href="https://github.com/adz/FsFlow/issues/new?title=FsFlow.ValidationModule.sequence" class="td-page-meta--issue td-page-meta__issue" target="_blank" rel="noopener"><i class="fa-solid fa-list-check fa-fw"></i> Create documentation issue</a>
+  
+</div>
+
+            <div class="td-toc" data-proofer-ignore>
+<div class="td-toc-title">
+      <span class="td-toc-title__text">On this page</span>
+      <a class="td-toc-title__link" title="Top of page" href="#"></a>
+    </div>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#parameters">Parameters</a></li>
+    <li><a href="#returns">Returns</a></li>
+  </ul>
+</nav>
+  </div>
+
+            
+
+          </aside>
+          <main class="col-12 col-md-9 col-xl-8 ps-md-5" role="main">
+            
+            <nav aria-label="breadcrumb" class="td-breadcrumbs">
+  <ol class="breadcrumb">
+  <li class="breadcrumb-item">
+    <a href="http://localhost:3000/reference/">Reference</a></li>
+  <li class="breadcrumb-item">
+    <a href="http://localhost:3000/reference/validation/">Validation</a></li>
+  <li class="breadcrumb-item active" aria-current="page">
+    sequence`</li>
+  </ol>
+</nav>
+<div class="td-content">
+	<h1>FsFlow.ValidationModule.sequence</h1>
+	
+	<header class="article-meta">
+		
+</header>
+	<p>Transforms a sequence of validations into a validation of a list.</p>
+<h2 id="parameters">Parameters</h2>
+<ul>
+<li><code>validations</code>: The input sequence.</li>
+</ul>
+<h2 id="returns">Returns</h2>
+<p>A validation containing the list of values.</p>
+
+	
+</div>
+
+
+          </main>
+        </div>
+      </div>
+      <footer class="td-footer row d-print-none">
+  <div class="container-fluid">
+    <div class="row mx-md-2">
+      <div class="td-footer__left col-6 col-sm-4 order-sm-1">
+        <ul class="td-footer__links-list">
+  
+  <li class="td-footer__links-item" data-bs-toggle="tooltip" title="GitHub" aria-label="GitHub">
+    <a href="https://github.com/adz/FsFlow" aria-label="GitHub" target="_blank" rel="noopener">
+      <i class="fab fa-github"></i>
+    </a>
+  </li>
+  
+</ul>
+
+      </div><div class="td-footer__right col-6 col-sm-4 order-sm-3">
+        
+      </div><div class="td-footer__center col-12 col-sm-4 py-2 order-sm-2">
+        <span class="td-footer__copyright">&copy;
+    2026
+    <span class="td-footer__authors">Adam Davies</span></span><span class="td-footer__all_rights_reserved">All Rights Reserved</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <script src="http://localhost:3000/js/main.js"></script>
+<script defer src="http://localhost:3000/js/click-to-copy.js" crossorigin="anonymous"></script>
+<script src='http://localhost:3000/js/tabpane-persist.js'></script>
+
+  </body>
+</html>

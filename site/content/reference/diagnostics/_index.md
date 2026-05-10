@@ -1,32 +1,23 @@
 ---
 title: "Diagnostics"
-linkTitle: Diagnostics
-type: docs
 weight: 80
+type: docs
 ---
 
-A mergeable validation graph that carries local errors and nested child branches.
+The `Diagnostics` type represents a structured graph of validation failures.
 
+## Graph types
 
-```fsharp
-type Diagnostics<'error>
-```
+- [`FsFlow.PathSegment`](./t-pathsegment.md): Location markers used to describe where a diagnostic belongs in a validation graph.
+- [`FsFlow.Path`](./t-path.md): A path through a validation graph, represented as a list of `PathSegment`.
+- [`FsFlow.Diagnostic`](./t-diagnostic.md): A single failure item attached to a path in a validation graph.
+- [`FsFlow.Diagnostics`](./t-diagnostics.md): A mergeable validation graph that carries local errors and nested child branches.
 
+## Module functions
 
-## Remarks
-
-<para>
-`Errors` holds the application errors attached exactly to the current node, while
-`Children` holds nested branches keyed by `PathSegment`.
-</para>
-<para>
-This structure allows hierarchical validation to stay navigable before flattening.
-Use `flatten` to convert it into a linear list.
-</para>
-
-
-## Information
-
-- **Module**: Global
-- **Source**: [source](https://github.com/adz/FsFlow/blob/main/src/FsFlow/Validate.fs#L40)
+- [`FsFlow.DiagnosticsModule.empty`](./m-diagnosticsmodule-empty.md): Creates an empty diagnostics graph with no errors.
+- [`FsFlow.DiagnosticsModule.singleton`](./m-diagnosticsmodule-singleton.md): Creates a diagnostics graph containing exactly one error at the root.
+- [`FsFlow.DiagnosticsModule.merge`](./m-diagnosticsmodule-merge.md): Recursively merges two diagnostics graphs, combining shared branches and local errors.
+- [`FsFlow.DiagnosticsModule.toString`](./m-diagnosticsmodule-tostring.md): Renders a diagnostics graph in a YAML-like layout for display.
+- [`FsFlow.DiagnosticsModule.flatten`](./m-diagnosticsmodule-flatten.md): Flattens the structured diagnostics graph into a linear list of diagnostics.
 

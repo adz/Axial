@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>CAPS Console on FsFlow</title>
+    <link>http://localhost:3000/reference/caps-console/</link>
+    <description>Recent content in CAPS Console on FsFlow</description>
+    <generator>Hugo</generator>
+    <language>en-us</language>
+    <atom:link href="http://localhost:3000/reference/caps-console/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>FsFlow.Caps.Console.IConsole</title>
+      <link>http://localhost:3000/reference/caps-console/t-console-iconsole/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/caps-console/t-console-iconsole/</guid>
+      <description>&lt;p&gt;Provides synchronous access to standard console I/O.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.Caps.Console.ConsoleModule.live</title>
+      <link>http://localhost:3000/reference/caps-console/p-console-consolemodule-live/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/caps-console/p-console-consolemodule-live/</guid>
+      <description>&lt;p&gt;Creates a live console backed by &lt;code&gt;Console&lt;/code&gt;.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.Caps.Console.ConsoleModule.readLine</title>
+      <link>http://localhost:3000/reference/caps-console/m-console-consolemodule-readline/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/caps-console/m-console-consolemodule-readline/</guid>
+      <description>&lt;p&gt;Reads a line from the console environment.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.Caps.Console.ConsoleModule.writeLine</title>
+      <link>http://localhost:3000/reference/caps-console/m-console-consolemodule-writeline/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/caps-console/m-console-consolemodule-writeline/</guid>
+      <description>&lt;p&gt;Writes a line to the console environment.&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

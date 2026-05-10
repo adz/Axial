@@ -23,14 +23,14 @@ Choose the boundary shape that matches the runtime shape of the code itself:
 Use interop to cross boundaries.
 Avoid keeping a task-oriented boundary in Flow just because a helper can be adapted.
 
-Use Check for reusable predicates, `Check.orError` for pure failure-to-error bridging,
-`Guard.Of` / `Guard.MapError` when the source is already effect-shaped and you want the CE to
+Use [`Check`]({{< relref "/reference/check/" >}}) for reusable predicates, [`Check.orError`]({{< relref "/reference/check/m-checkmodule-orerror.md" >}}) for pure failure-to-error bridging,
+[**Guard**]({{< relref "/docs/guard.md" >}}) when the source is already effect-shaped and you want the CE to
 bind the source while preserving its attached error,
-Result for fail-fast validation, and Validation plus [`validate {}`]({{< relref "/reference/validation/builders-validate.md" >}}) when sibling failures should accumulate.
+`Result` for fail-fast validation, and [`Validation`]({{< relref "/reference/validation/" >}}) plus [`validate {}`]({{< relref "/reference/validation/builders-validate.md" >}}) when multiple independent failures should accumulate.
 
 ## Preferred Style Inside Computation Expressions
 
-Inside `flow {}`, prefer direct binding:
+Inside [`flow {}`]({{< relref "/reference/flow/builders-flow.md" >}}), prefer direct binding:
 
 ```fsharp
 flow {
@@ -94,7 +94,7 @@ let autoLifted : Flow<unit, unit, string> =
     }
 ```
 
-If you want a typed error such as `"name is required"`, use `Flow.fromOption` instead:
+If you want a typed error such as `"name is required"`, use [`Flow.fromOption`]({{< relref "/reference/flow/m-flow-fromoption.md" >}}) instead:
 
 ```fsharp
 let maybeName : string option = None
@@ -142,7 +142,7 @@ Use `Check.orError` when you want to turn a unit failure into a domain error.
 Use Validation and [`validate {}`]({{< relref "/reference/validation/builders-validate.md" >}}) when the checks should accumulate.
 
 The builder binds Result directly, so extra bridge calls are only needed when the error value itself needs a different conversion shape.
-When the source itself should bind directly in `flow`, wrap it with `Guard.Of` or remap the existing error with `Guard.MapError`. The source stays visible to the CE; Guard only packages the failure value.
+When the source itself should bind directly in `flow`, wrap it with [**Guard**]({{< relref "/docs/guard.md" >}}). The source stays visible to the CE; Guard only packages the failure value.
 
 ## `ColdTask<'value>`
 
@@ -227,3 +227,6 @@ Use:
 Read [`docs/GETTING_STARTED.md`](./GETTING_STARTED.md) for the family overview,
 [`docs/TROUBLESHOOTING_TYPES.md`](./TROUBLESHOOTING_TYPES.md) when the compiler complains,
 and [`docs/SEMANTICS.md`](./SEMANTICS.md) for the exact runtime behavior.
+OTING_TYPES.md`](./TROUBLESHOOTING_TYPES.md) when the compiler complains,
+and [`docs/SEMANTICS.md`](./SEMANTICS.md) for the exact runtime behavior.
+md) for the exact runtime behavior.

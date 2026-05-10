@@ -12,15 +12,14 @@ This page shows why FsFlow is best understood as one scalable model for Result-b
 The core progression is:
 
 ```text
-Check -> Result -> Validation -> Flow
+Pure Checks -> Result & Validation -> Flow
 ```
 
 The validation vocabulary stays the same while the execution context grows.
 
-- start with reusable predicate checks, whether they preserve a value on success or act as a gate
-- keep fail-fast logic in plain Result
-- accumulate sibling failures with Validation and [`validate {}`]({{< relref "/reference/validation/builders-validate.md" >}})
-- lift into Flow when you need explicit environment access or when the runtime becomes asynchronous
+- start with **Pure Checks** for reusable predicates
+- move to **Result & Validation** for fail-fast domain logic or accumulating errors
+- lift into **Flow** only when the boundary needs explicit environment access or becomes asynchronous
 
 That matters because many F# codebases end up with separate worlds:
 
@@ -56,7 +55,7 @@ FsFlow unifies Result-based programming across pure logic and effectful executio
 
 - write predicate logic once with Check, using value-preserving checks when you need the input again and gate checks when you only need yes/no
 - keep fail-fast domain logic in Result
-- accumulate sibling validation with Validation
+- accumulate independent validation with Validation
 - lift the same logic directly into flows when you need environment, async, task, cancellation, logging, or resource handling
 - keep the smallest honest runtime shape at each boundary
 
@@ -73,13 +72,13 @@ type RegistrationError =
 
 let validateEmail (email: string) : Result<string, RegistrationError> =
     email
-    |> Check.notBlank
-    |> Check.orError EmailMissing
+    |> notBlank
+    |> orError EmailMissing
 ```
 
 This is already enough for pure code and should stay plain when the surrounding logic is still plain.
 
-If sibling checks should accumulate, move to Validation instead of forcing everything through Result:
+If independent checks should accumulate, move to Validation instead of forcing everything through Result:
 
 ```fsharp
 let validateRegistration (email: string) (name: string) : Validation<string * string, RegistrationError> =
@@ -156,8 +155,8 @@ FsFlow does not try to hide that behavior inside the workflow builders.
 
 The design stays explicit in the places that matter for teams:
 
-- env access is visible through `Flow.read`
-- execution is visible through `Flow.run` or `Flow.runFull`
+- env access is visible through [`Flow.read`]({{< relref "/reference/flow/m-flow-read.md" >}})
+- execution is visible through [`Flow.run`]({{< relref "/reference/flow/m-flow-run.md" >}}) or `Flow.runFull`
 - expected failures stay in the type
 - the computation family tells you whether the use case is sync, `Async`, or `.NET Task`
 
@@ -189,5 +188,8 @@ Stay with plain F# when:
 
 Read [`docs/VALIDATE_AND_RESULT.md`](./VALIDATE_AND_RESULT.md) for the validation-first story,
 [`docs/GETTING_STARTED.md`](./GETTING_STARTED.md) for the computation-family overview,
+[`docs/TASK_ASYNC_INTEROP.md`](./TASK_ASYNC_INTEROP.md) for boundary-shape interop, and
+[`docs/examples/README.md`](./examples/README.md) for reference examples.
+e computation-family overview,
 [`docs/TASK_ASYNC_INTEROP.md`](./TASK_ASYNC_INTEROP.md) for boundary-shape interop, and
 [`docs/examples/README.md`](./examples/README.md) for reference examples.

@@ -25,13 +25,13 @@ let outcome = getUrl |> Flow.run { ApiUrl = "https://api.example.com" }
 // outcome = Exit.Success "https://api.example.com"
 ```
 
-## 2. Combining Sync and Async Work
+## 2. Combining Pure Logic and Async Work
 
-Use `flow {}` to mix pure functions, `Async` blocks, and other flows.
+Use `flow {}` to mix pure `Check` logic, `Async` blocks, and other flows.
 
 ```fsharp
 let validateId id =
-    if id > 0 then Ok id else Error "Invalid ID"
+    id |> okIf (id > 0) |> orError "Invalid ID"
 
 let fetchUser id =
     async { return { Id = id; Name = "Ada" } }
@@ -62,7 +62,7 @@ let resilientWorkflow =
     flakyTask
     |> Flow.retry (Schedule.recurs 3)
 
-// Will retry up to 3 times if the task fails.
+[`Flow.retry`]({{< relref "/reference/flow/m-flowscheduleextensions-flow-retry-static.md" >}}) will retry up to 3 times if the task fails.
 ```
 
 ## 4. Conditional Execution

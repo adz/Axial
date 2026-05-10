@@ -6,11 +6,11 @@ description: Exact execution rules for Flow.
 
 # Execution Semantics
 
-FsFlow 1.0 uses a unified **`Flow<'env, 'error, 'value>`** model that handles synchronous code, F# `Async`, and .NET `Task` interop natively.
+FsFlow uses a unified [**`Flow<'env, 'error, 'value>`**]({{< relref "/reference/flow/t-flow.md" >}}) model that handles synchronous code, F# `Async`, and .NET `Task` interop natively.
 
 ## Success and Typed Failure
 
-Every Flow execution results in an **`Exit<'value, 'error>`**:
+Every Flow execution results in an [**`Exit<'value, 'error>`**]({{< relref "/reference/flow/t-flow.md" >}}):
 
 - `Exit.Success value`: The happy path.
 - `Exit.Failure (Cause.Fail error)`: An expected domain-specific failure.
@@ -21,14 +21,14 @@ All standard combinators (`map`, `bind`, `zip`, `orElse`) are **short-circuiting
 
 ## Short-Circuiting vs. Accumulated Validation
 
-- **`flow {}`** and **`result {}`**: Ordered workflows. They stop on the first failure.
-- **`validate {}`**: Accumulating validation. Joins errors from sibling steps (using `and!`) into a structured `Diagnostics` graph.
+- [**`flow {}`**]({{< relref "/reference/flow/builders-flow.md" >}}) and **`result {}`**: Ordered workflows. They stop on the first failure.
+- [**`validate {}`**]({{< relref "/reference/validation/builders-validate.md" >}}): Accumulating validation. Joins errors from independent steps (using `and!`) into a structured `Diagnostics` graph.
 
 Use the short-circuiting model when later steps depend on earlier values. Use the validation model when independent checks should all run and report back together.
 
 ## Execution Is Explicit
 
-You run a Flow by calling `Flow.run`. This returns an **`Effect<'value, 'error>`**:
+You run a Flow by calling [`Flow.run`]({{< relref "/reference/flow/m-flow-run.md" >}}). This returns an **`Effect<'value, 'error>`**:
 
 - On **.NET**: `ValueTask<Exit<'value, 'error>>`.
 - On **Fable**: `Async<Exit<'value, 'error>>`.

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>CAPS Process on FsFlow</title>
+    <link>http://localhost:3000/reference/caps-process/</link>
+    <description>Recent content in CAPS Process on FsFlow</description>
+    <generator>Hugo</generator>
+    <language>en-us</language>
+    <atom:link href="http://localhost:3000/reference/caps-process/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>FsFlow.Caps.Process.ProcessModule.execute</title>
+      <link>http://localhost:3000/reference/caps-process/m-process-processmodule-execute/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/caps-process/m-process-processmodule-execute/</guid>
+      <description>&lt;p&gt;Executes a process using the process environment and returns the result.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.Caps.Process.IProcess</title>
+      <link>http://localhost:3000/reference/caps-process/t-process-iprocess/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/caps-process/t-process-iprocess/</guid>
+      <description>&lt;p&gt;Provides asynchronous access to external process execution.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.Caps.Process.ProcessModule.live</title>
+      <link>http://localhost:3000/reference/caps-process/p-process-processmodule-live/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/caps-process/p-process-processmodule-live/</guid>
+      <description>&lt;p&gt;Creates a live process runner backed by &lt;code&gt;Process&lt;/code&gt;.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.Caps.Process.ProcessResult</title>
+      <link>http://localhost:3000/reference/caps-process/t-process-processresult/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/caps-process/t-process-processresult/</guid>
+      <description>&lt;p&gt;Represents the outcome of an external process execution.&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

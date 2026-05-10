@@ -13,10 +13,10 @@ The core philosophy is to **check once, lift later**. You write your pure logic 
 
 ## The Progression
 
-1.  **[Pure Checks](./checks/)**: Build reusable predicates with the `Check` module.
-2.  **[Result CE](./result-ce/)**: Use `result {}` for sequential, fail-fast composition.
-3.  **[Validate CE](./validate-ce/)**: Use `validate {}` for independent, accumulating validation.
-4.  **[Diagnostics Graph](./diagnostics/)**: Understand the structured tree used for error reporting.
+1.  **[Pure Checks](./checks/)**: Build reusable predicates with the [`Check`]({{< relref "/reference/check/" >}}) module.
+2.  **[Result & Validation](./result-validation/)**: Domain logic that either fails fast (`result {}`) or accumulates multiple errors ([`validate {}`]({{< relref "/reference/validation/builders-validate.md" >}})).
+3.  **[Guard](./guard/)**: The bridge that allows pure checks and simple sources to fail a flow with a specific domain error.
+4.  **[Flow](../start/getting-started/)**: The application boundary where you need dependencies, async work, or interop.
 
 ## Why use this stack?
 

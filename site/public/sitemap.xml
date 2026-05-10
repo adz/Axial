@@ -2,326 +2,450 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>http://localhost:3000/FsFlow/reference/flow/</loc>
+    <loc>http://localhost:3000/reference/flow/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/docs/ecosystem/integrations-fstoolkit/</loc>
+    <loc>http://localhost:3000/docs/ecosystem/integrations-fstoolkit/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/docs/start/getting-started/</loc>
+    <loc>http://localhost:3000/docs/start/getting-started/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/docs/core-model/managing-dependencies/</loc>
+    <loc>http://localhost:3000/docs/core-model/managing-dependencies/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/docs/validation-results/checks/</loc>
+    <loc>http://localhost:3000/docs/validation-results/checks/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/docs/start/</loc>
+    <loc>http://localhost:3000/docs/start/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/docs/core-model/why-fsflow/</loc>
+    <loc>http://localhost:3000/docs/core-model/why-fsflow/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/docs/validation-results/</loc>
+    <loc>http://localhost:3000/docs/validation-results/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/docs/core-model/</loc>
+    <loc>http://localhost:3000/docs/core-model/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/docs/</loc>
+    <loc>http://localhost:3000/docs/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/docs/core-model/env-slicing/</loc>
+    <loc>http://localhost:3000/docs/core-model/env-slicing/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/docs/core-model/semantics/</loc>
+    <loc>http://localhost:3000/docs/core-model/semantics/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/docs/validation-results/result-ce/</loc>
+    <loc>http://localhost:3000/docs/validation-results/result-ce/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/docs/patterns/troubleshooting-types/</loc>
+    <loc>http://localhost:3000/docs/patterns/troubleshooting-types/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/docs/ecosystem/integrations-validus/</loc>
+    <loc>http://localhost:3000/docs/ecosystem/integrations-validus/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/docs/patterns/benchmarks/</loc>
+    <loc>http://localhost:3000/docs/validation-results/guard/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/docs/core-model/capabilities/</loc>
+    <loc>http://localhost:3000/docs/patterns/benchmarks/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/docs/ecosystem/integrations-icedtasks/</loc>
+    <loc>http://localhost:3000/docs/core-model/capabilities/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/docs/patterns/</loc>
+    <loc>http://localhost:3000/docs/ecosystem/integrations-icedtasks/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/</loc>
+    <loc>http://localhost:3000/docs/patterns/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/docs/start/basic-examples/</loc>
+    <loc>http://localhost:3000/reference/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/docs/core-model/task-async-interop/</loc>
+    <loc>http://localhost:3000/docs/start/basic-examples/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/docs/validation-results/validate-ce/</loc>
+    <loc>http://localhost:3000/docs/core-model/task-async-interop/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/docs/core-model/architectural-styles/</loc>
+    <loc>http://localhost:3000/docs/validation-results/validate-ce/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/</loc>
+    <loc>http://localhost:3000/docs/core-model/architectural-styles/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/docs/validation-results/diagnostics/</loc>
+    <loc>http://localhost:3000/reference/check/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/docs/ecosystem/</loc>
+    <loc>http://localhost:3000/docs/validation-results/diagnostics/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/docs/ecosystem/integrations-fsharpplus/</loc>
+    <loc>http://localhost:3000/docs/ecosystem/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/docs/ecosystem/effect-ts-comparison/</loc>
+    <loc>http://localhost:3000/docs/ecosystem/integrations-fsharpplus/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/guard/</loc>
+    <loc>http://localhost:3000/docs/ecosystem/effect-ts-comparison/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/docs/ecosystem/integrations/</loc>
+    <loc>http://localhost:3000/docs/ecosystem/integrations/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/validation/</loc>
+    <loc>http://localhost:3000/reference/validation/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/result/</loc>
+    <loc>http://localhost:3000/reference/result/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/diagnostics/</loc>
+    <loc>http://localhost:3000/reference/diagnostics/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/caps/</loc>
+    <loc>http://localhost:3000/reference/capability/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/caps-core/</loc>
+    <loc>http://localhost:3000/reference/caps-core/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/caps-context/</loc>
+    <loc>http://localhost:3000/reference/caps-console/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-all/</loc>
+    <loc>http://localhost:3000/reference/caps-filesystem/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-and/</loc>
+    <loc>http://localhost:3000/reference/caps-http/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-any/</loc>
+    <loc>http://localhost:3000/reference/caps-process/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/flow/flow-apply/</loc>
+    <loc>http://localhost:3000/reference/hosting/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/validation/validation-apply/</loc>
+    <loc>http://localhost:3000/reference/telemetry/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/validation/validation-at/</loc>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-all/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/flow/flow-bind/</loc>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-and/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/validation/validation-bind/</loc>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-any/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-blank/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-apply/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/caps-context/context/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validationmodule-apply/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/caps-core/core/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validationmodule-at/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/flow/flow-catch/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-bind/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/categories/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validationmodule-bind/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/validation/validation-collect/</loc>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-blank/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/flow/flow-delay/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-catch/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/diagnostics/diagnostic/</loc>
+    <loc>http://localhost:3000/categories/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/diagnostics/diagnostics-empty/</loc>
+    <loc>http://localhost:3000/reference/check/t-check/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/flow/flow-env/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validationmodule-collect/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/caps/env/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-delay/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/caps/capability-environment/</loc>
+    <loc>http://localhost:3000/reference/caps-core/m-core-environmentvariableerrors-describe/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-equal/</loc>
+    <loc>http://localhost:3000/reference/diagnostics/t-diagnostic/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/flow/flow-error/</loc>
+    <loc>http://localhost:3000/reference/diagnostics/t-diagnostics/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/validation/validation-error/</loc>
+    <loc>http://localhost:3000/reference/diagnostics/m-diagnosticsmodule-empty/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/flow/flow-fail/</loc>
+    <loc>http://localhost:3000/reference/capability/t-env/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/validation/validation-fail/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-env/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-failif/</loc>
+    <loc>http://localhost:3000/reference/capability/m-capabilitymodule-environment/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-failifblank/</loc>
+    <loc>http://localhost:3000/reference/caps-core/t-core-environmentvariableerror/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-failifempty/</loc>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-equal/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-failifemptystr/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-error/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-failifequal/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validationmodule-error/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-failifnone/</loc>
+    <loc>http://localhost:3000/reference/caps-process/m-process-processmodule-execute/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-failifnonemptystr/</loc>
+    <loc>http://localhost:3000/reference/caps-filesystem/m-filesystem-filesystemmodule-exists/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-failifnotblank/</loc>
+    <loc>http://localhost:3000/reference/flow/m-schedulemodule-exponential/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-failifnotempty/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-fail/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-failifnotequal/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validationmodule-fail/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-failifnotnull/</loc>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-failif/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-failifnull/</loc>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-failifblank/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-failifsome/</loc>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-failifempty/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-failifvaluenone/</loc>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-failifemptystr/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-failifvaluesome/</loc>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-failifequal/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/diagnostics/diagnostics-flatten/</loc>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-failifnone/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/flow/builders-flow/</loc>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-failifnonemptystr/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/flow/flow-fromoption/</loc>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-failifnotblank/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-frompredicate/</loc>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-failifnotempty/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/flow/flow-fromresult/</loc>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-failifnotequal/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/validation/validation-fromresult/</loc>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-failifnotnull/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/flow/flow-fromvalueoption/</loc>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-failifnull/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/</loc>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-failifsome/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/flow/flow-ignore/</loc>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-failifvaluenone/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/validation/validation-ignore/</loc>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-failifvaluesome/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/validation/validation-index/</loc>
+    <loc>http://localhost:3000/reference/flow/t-fiber/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/validation/validation-key/</loc>
+    <loc>http://localhost:3000/reference/diagnostics/m-diagnosticsmodule-flatten/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/flow/flow-localenv/</loc>
+    <loc>http://localhost:3000/reference/flow/p-builders-flow/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/flow/flow-map/</loc>
+    <loc>http://localhost:3000/reference/flow/t-flow/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/validation/validation-map/</loc>
+    <loc>http://localhost:3000/reference/flow/builders-flow/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/flow/flow-map2/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-fork/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/validation/validation-map2/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-fromoption/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/flow/flow-map3/</loc>
+    <loc>http://localhost:3000/reference/caps-core/m-core-environmentvariables-frompairs/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/validation/validation-map3/</loc>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-frompredicate/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/flow/flow-maperror/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-fromresult/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/validation/validation-maperror/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validationmodule-fromresult/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/diagnostics/diagnostics-merge/</loc>
+    <loc>http://localhost:3000/reference/caps-core/m-core-clock-fromvalue/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/validation/validation-merge/</loc>
+    <loc>http://localhost:3000/reference/caps-core/m-core-guid-fromvalue/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/caps/missingcapability/</loc>
+    <loc>http://localhost:3000/reference/caps-core/m-core-random-fromvalue/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/validation/validation-name/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-fromvalueoption/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/caps/needs/</loc>
+    <loc>http://localhost:3000/reference/caps-core/m-core-environmentvariable-get/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-not/</loc>
+    <loc>http://localhost:3000/reference/caps-core/m-core-environmentvariable-getbool/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-notblank/</loc>
+    <loc>http://localhost:3000/reference/caps-core/m-core-environmentvariable-getguid/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-notempty/</loc>
+    <loc>http://localhost:3000/reference/caps-core/m-core-environmentvariable-getint/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-notequal/</loc>
+    <loc>http://localhost:3000/reference/caps-http/m-http-httpmodule-getstring/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-notnull/</loc>
+    <loc>http://localhost:3000/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/flow/flow-ok/</loc>
+    <loc>http://localhost:3000/reference/caps-core/t-core-iclock/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/validation/validation-ok/</loc>
+    <loc>http://localhost:3000/reference/caps-console/t-console-iconsole/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-okif/</loc>
+    <loc>http://localhost:3000/reference/caps-core/t-core-ienvironmentvariables/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-okifblank/</loc>
+    <loc>http://localhost:3000/reference/caps-filesystem/t-filesystem-ifilesystem/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-okifempty/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-ignore/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-okifemptystr/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validationmodule-ignore/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-okifequal/</loc>
+    <loc>http://localhost:3000/reference/caps-core/t-core-iguid/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-okifnone/</loc>
+    <loc>http://localhost:3000/reference/caps-http/t-http-ihttp/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-okifnonemptystr/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validationmodule-index/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-okifnotblank/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-interrupt/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-okifnotempty/</loc>
+    <loc>http://localhost:3000/reference/caps-process/t-process-iprocess/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-okifnotequal/</loc>
+    <loc>http://localhost:3000/reference/caps-core/t-core-irandom/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-okifnotnull/</loc>
+    <loc>http://localhost:3000/reference/flow/m-schedulemodule-jittered/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-okifnull/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-join/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-okifsome/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validationmodule-key/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-okifvaluenone/</loc>
+    <loc>http://localhost:3000/reference/caps-console/p-console-consolemodule-live/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-okifvaluesome/</loc>
+    <loc>http://localhost:3000/reference/caps-core/p-core-clock-live/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-or/</loc>
+    <loc>http://localhost:3000/reference/caps-core/p-core-environmentvariables-live/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/flow/flow-orelse/</loc>
+    <loc>http://localhost:3000/reference/caps-core/p-core-guid-live/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/validation/validation-orelse/</loc>
+    <loc>http://localhost:3000/reference/caps-core/p-core-random-live/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/flow/flow-orelseflow/</loc>
+    <loc>http://localhost:3000/reference/caps-filesystem/p-filesystem-filesystemmodule-live/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/flow/flow-orelsewith/</loc>
+    <loc>http://localhost:3000/reference/caps-http/m-http-httpmodule-live/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/validation/validation-orelsewith/</loc>
+    <loc>http://localhost:3000/reference/caps-process/p-process-processmodule-live/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-orerror/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-localenv/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/check/check-orerrorwith/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-map/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/diagnostics/path/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validationmodule-map/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/diagnostics/pathsegment/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-map2/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/caps/layer-providelayer/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validationmodule-map2/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/flow/flow-providelayer/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-map3/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/flow/flow-read/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validationmodule-map3/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/result/builders-result/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-maperror/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/flow/flow-run/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validationmodule-maperror/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/flow/flow-runfull/</loc>
+    <loc>http://localhost:3000/reference/diagnostics/m-diagnosticsmodule-merge/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/docs/patterns/examples/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validationmodule-merge/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/caps/capability-runtime/</loc>
+    <loc>http://localhost:3000/reference/capability/t-missingcapability/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/flow/flow-runwithtoken/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validationmodule-name/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/flow/flow-sequence/</loc>
+    <loc>http://localhost:3000/reference/capability/t-needs/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/validation/validation-sequence/</loc>
+    <loc>http://localhost:3000/reference/caps-core/m-core-guid-newguid/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/caps/capability-service/</loc>
+    <loc>http://localhost:3000/reference/caps-core/m-core-random-nextint/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/caps/capability-servicefromprovider/</loc>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-not/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/diagnostics/diagnostics-singleton/</loc>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-notblank/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/flow/flow-succeed/</loc>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-notempty/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/validation/validation-succeed/</loc>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-notequal/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/tags/</loc>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-notnull/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/flow/flow-tap/</loc>
+    <loc>http://localhost:3000/reference/caps-core/m-core-clock-now/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/flow/flow-taperror/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-ok/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/validation/validation-toresult/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validationmodule-ok/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/diagnostics/diagnostics-tostring/</loc>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-okif/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/flow/flow-traverse/</loc>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-okifblank/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/validation/validation-traverseindexed/</loc>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-okifempty/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/validation/builders-validate/</loc>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-okifemptystr/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/flow/flow-value/</loc>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-okifequal/</loc>
   </url><url>
-    <loc>http://localhost:3000/FsFlow/reference/flow/flow-zip/</loc>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-okifnone/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-okifnonemptystr/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-okifnotblank/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-okifnotempty/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-okifnotequal/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-okifnotnull/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-okifnull/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-okifsome/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-okifvaluenone/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-okifvaluesome/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-or/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/flow/m-flow-orelse/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/validation/m-validationmodule-orelse/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/flow/m-flow-orelseflow/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/flow/m-flow-orelsewith/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/validation/m-validationmodule-orelsewith/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-orerror/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-checkmodule-orerrorwith/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/diagnostics/t-path/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/diagnostics/t-pathsegment/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/caps-process/t-process-processresult/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/capability/m-layermodule-providelayer/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/flow/m-flow-providelayer/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/flow/m-flow-race/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/flow/m-flow-read/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/caps-filesystem/m-filesystem-filesystemmodule-readalltext/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/caps-console/m-console-consolemodule-readline/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/flow/m-schedulemodule-recurs/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/result/p-builders-result/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/result/builders-result/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/flow/m-flow-run/</loc>
+  </url><url>
+    <loc>http://localhost:3000/docs/patterns/examples/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/capability/m-capabilitymodule-runtime/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/flow/t-schedule/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/flow/m-flow-sequence/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/validation/m-validationmodule-sequence/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/capability/m-capabilitymodule-service/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/capability/m-capabilitymodule-servicefromprovider/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/diagnostics/m-diagnosticsmodule-singleton/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/flow/m-schedulemodule-spaced/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/flow/m-flowscheduleextensions-flow-repeat-static/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/flow/m-flowscheduleextensions-flow-retry-static/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/flow/m-flow-succeed/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/validation/m-validationmodule-succeed/</loc>
+  </url><url>
+    <loc>http://localhost:3000/tags/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/flow/m-flow-tap/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/flow/m-flow-taperror/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/validation/m-validationmodule-toresult/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/diagnostics/m-diagnosticsmodule-tostring/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/telemetry/m-runtime-telemetry-activity-trace/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/flow/m-flow-traverse/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/validation/m-validationmodule-traverseindexed/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/caps-core/m-core-environmentvariable-tryget/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/caps-core/m-core-environmentvariables-tryget/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/validation/p-builders-validate/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/validation/builders-validate/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/hosting/m-hosting-startup-validateenvironment/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/validation/t-validation/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/flow/m-flow-value/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/caps-filesystem/m-filesystem-filesystemmodule-writealltext/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/caps-console/m-console-consolemodule-writeline/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/flow/m-flow-zip/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/flow/m-flow-zippar/</loc>
   </url>
 </urlset>

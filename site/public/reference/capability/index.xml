@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Capability on FsFlow</title>
+    <link>http://localhost:3000/reference/capability/</link>
+    <description>Recent content in Capability on FsFlow</description>
+    <generator>Hugo</generator>
+    <language>en-us</language>
+    <atom:link href="http://localhost:3000/reference/capability/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>FsFlow.Env</title>
+      <link>http://localhost:3000/reference/capability/t-env/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/capability/t-env/</guid>
+      <description>&lt;p&gt;Request token for projecting a value from a dependency.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;Builders read the dependency from the environment, apply the projection, and then reuse the&#xA;existing lift/bind behavior for the projected value. If the projection returns a&#xA;&lt;code&gt;Result&lt;/code&gt;, &lt;code&gt;Async&lt;/code&gt;, &lt;code&gt;Task&lt;/code&gt;, &lt;code&gt;ValueTask&lt;/code&gt;, &lt;code&gt;ColdTask&lt;/code&gt;, &lt;code&gt;option&lt;/code&gt;, or&#xA;&lt;code&gt;voption&lt;/code&gt;, the existing workflow rules still apply.&lt;/p&gt;&#xA;&lt;h2 id=&#34;examples&#34;&gt;Examples&lt;/h2&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;&#34;&gt;&lt;code class=&#34;language-fsharp&#34; data-lang=&#34;fsharp&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#204a87;font-weight:bold&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;IClock&lt;/span&gt; &lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;=&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;     &lt;span style=&#34;color:#204a87;font-weight:bold&#34;&gt;abstract&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;UtcNow&lt;/span&gt; &lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;:&lt;/span&gt; &lt;span style=&#34;color:#204a87;font-weight:bold&#34;&gt;unit&lt;/span&gt; &lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;-&amp;amp;&lt;/span&gt;&lt;span style=&#34;color:#000&#34;&gt;gt&lt;/span&gt;&lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;;&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;DateTimeOffset&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#204a87;font-weight:bold&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;ClockCaps&lt;/span&gt; &lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;=&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;     &lt;span style=&#34;color:#204a87;font-weight:bold&#34;&gt;inherit&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;Needs&lt;/span&gt;&lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span style=&#34;color:#000&#34;&gt;lt&lt;/span&gt;&lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;;&lt;/span&gt;&lt;span style=&#34;color:#000&#34;&gt;IClock&lt;/span&gt;&lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span style=&#34;color:#000&#34;&gt;gt&lt;/span&gt;&lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;;&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;     &lt;span style=&#34;color:#204a87;font-weight:bold&#34;&gt;abstract&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;Clock&lt;/span&gt; &lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;:&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;IClock&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#204a87;font-weight:bold&#34;&gt;let&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;readClockNow&lt;/span&gt; &lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;:&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;Flow&lt;/span&gt;&lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span style=&#34;color:#000&#34;&gt;lt&lt;/span&gt;&lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;;#&lt;/span&gt;&lt;span style=&#34;color:#000&#34;&gt;ClockCaps&lt;/span&gt;&lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;,&lt;/span&gt; &lt;span style=&#34;color:#204a87;font-weight:bold&#34;&gt;unit&lt;/span&gt;&lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;,&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;DateTimeOffset&lt;/span&gt;&lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span style=&#34;color:#000&#34;&gt;gt&lt;/span&gt;&lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;;&lt;/span&gt; &lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;=&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;     &lt;span style=&#34;color:#000&#34;&gt;flow&lt;/span&gt; &lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;{&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;         &lt;span style=&#34;color:#204a87;font-weight:bold&#34;&gt;let!&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;now&lt;/span&gt; &lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;Env&lt;/span&gt;&lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span style=&#34;color:#000&#34;&gt;lt&lt;/span&gt;&lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;;&lt;/span&gt;&lt;span style=&#34;color:#000&#34;&gt;IClock&lt;/span&gt;&lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span style=&#34;color:#000&#34;&gt;gt&lt;/span&gt;&lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;;&lt;/span&gt; &lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;_.&lt;/span&gt;&lt;span style=&#34;color:#000&#34;&gt;UtcNow&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;         &lt;span style=&#34;color:#204a87;font-weight:bold&#34;&gt;return&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;now&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;     &lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;}&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.CapabilityModule.environment</title>
+      <link>http://localhost:3000/reference/capability/m-capabilitymodule-environment/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/capability/m-capabilitymodule-environment/</guid>
+      <description>&lt;p&gt;Reads a capability from the application half of a two-context runtime environment.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.MissingCapability</title>
+      <link>http://localhost:3000/reference/capability/t-missingcapability/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/capability/t-missingcapability/</guid>
+      <description>&lt;p&gt;Describes a missing service-provider capability.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.Needs</title>
+      <link>http://localhost:3000/reference/capability/t-needs/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/capability/t-needs/</guid>
+      <description>&lt;p&gt;Describes the capability contract for a single dependency.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;Named cap-set interfaces inherit this contract once and then expose the dependency through a&#xA;member such as &lt;code&gt;Clock&lt;/code&gt; or &lt;code&gt;Logger&lt;/code&gt;. Workflow builders can accept any environment&#xA;that implements &lt;code&gt;Needs&amp;amp;lt;&#39;dep&amp;amp;gt;&lt;/code&gt;, which lets larger runtimes satisfy smaller&#xA;boundaries.&lt;/p&gt;&#xA;&lt;h2 id=&#34;examples&#34;&gt;Examples&lt;/h2&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;&#34;&gt;&lt;code class=&#34;language-fsharp&#34; data-lang=&#34;fsharp&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#204a87;font-weight:bold&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;IClock&lt;/span&gt; &lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;=&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;     &lt;span style=&#34;color:#204a87;font-weight:bold&#34;&gt;abstract&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;UtcNow&lt;/span&gt; &lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;:&lt;/span&gt; &lt;span style=&#34;color:#204a87;font-weight:bold&#34;&gt;unit&lt;/span&gt; &lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;-&amp;amp;&lt;/span&gt;&lt;span style=&#34;color:#000&#34;&gt;gt&lt;/span&gt;&lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;;&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;DateTimeOffset&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#204a87;font-weight:bold&#34;&gt;type&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;ClockCaps&lt;/span&gt; &lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;=&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;     &lt;span style=&#34;color:#204a87;font-weight:bold&#34;&gt;inherit&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;Needs&lt;/span&gt;&lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span style=&#34;color:#000&#34;&gt;lt&lt;/span&gt;&lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;;&lt;/span&gt;&lt;span style=&#34;color:#000&#34;&gt;IClock&lt;/span&gt;&lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span style=&#34;color:#000&#34;&gt;gt&lt;/span&gt;&lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;;&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;     &lt;span style=&#34;color:#204a87;font-weight:bold&#34;&gt;abstract&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;Clock&lt;/span&gt; &lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;:&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;IClock&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.LayerModule.provideLayer</title>
+      <link>http://localhost:3000/reference/capability/m-layermodule-providelayer/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/capability/m-layermodule-providelayer/</guid>
+      <description>&lt;p&gt;Provides a derived environment from a layer flow to a downstream flow.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.CapabilityModule.runtime</title>
+      <link>http://localhost:3000/reference/capability/m-capabilitymodule-runtime/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/capability/m-capabilitymodule-runtime/</guid>
+      <description>&lt;p&gt;Reads a capability from the runtime half of a two-context runtime environment.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.CapabilityModule.service</title>
+      <link>http://localhost:3000/reference/capability/m-capabilitymodule-service/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/capability/m-capabilitymodule-service/</guid>
+      <description>&lt;p&gt;Reads a capability from a record-based environment projection.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;Use this at the edge when a workflow already has a record-shaped environment and only&#xA;needs one field, not a full cap-set boundary.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.CapabilityModule.serviceFromProvider</title>
+      <link>http://localhost:3000/reference/capability/m-capabilitymodule-servicefromprovider/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/capability/m-capabilitymodule-servicefromprovider/</guid>
+      <description>&lt;p&gt;Reads a service from &lt;code&gt;IServiceProvider&lt;/code&gt; and fails when it is not registered.&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

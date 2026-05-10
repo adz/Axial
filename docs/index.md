@@ -7,33 +7,31 @@ description: FsFlow technical guides, semantics, and API reference.
 
 <div class="docs-home-hero">
 
-<div class="docs-home-copy">
+<div class="docs-home-copy"><span class="eyebrow">One model from predicate checks to task execution</span>
 
-<span class="eyebrow">One model from predicate checks to task execution</span>
-
-# A single model for Result-based programs in F#.
+<h1>A single model for Result-based programs in F#.</h1>
 
 <div class="lede">
-Write predicate checks once. Keep fail-fast logic in <code>Result</code>, accumulate sibling failures with <code>Validation</code>, then lift the same logic into <code>Flow</code> when the boundary needs environment access, async work, task interop, cancellation, or runtime policy.
+Write predicate checks once. Keep fail-fast logic in <code>Result</code>, accumulate multiple failures with <a href="{{< relref "/reference/validation/" >}}"><code>Validation</code></a>, then lift the same logic into <a href="{{< relref "/reference/flow/" >}}"><code>Flow</code></a> when the boundary needs environment access, async work, task interop, cancellation, or runtime policy.
 </div>
 
 <div class="docs-home-meta">
-<a class="docs-chip" href="./docs/validation-results/">Check -> Result -> Validation</a>
-<a class="docs-chip" href="./docs/start/getting-started/">Flow family</a>
-<a class="docs-chip" href="./docs/core-model/why-fsflow/">Typed failure</a>
-<a class="docs-chip" href="./docs/core-model/env-slicing/">Explicit environment</a>
-<a class="docs-chip" href="./docs/core-model/task-async-interop/">Runtime context</a>
-<a class="docs-chip" href="./docs/core-model/semantics/">Cold execution semantics</a>
+<a class="docs-chip" href="{{< relref "/docs/validation-results/" >}}">Pure Checks -> Result & Validation</a>
+<a class="docs-chip" href="{{< relref "/docs/start/getting-started.md" >}}">Flow</a>
+<a class="docs-chip" href="{{< relref "/docs/core-model/why-fsflow.md" >}}">Typed failure</a>
+<a class="docs-chip" href="{{< relref "/docs/core-model/env-slicing.md" >}}">Explicit environment</a>
+<a class="docs-chip" href="{{< relref "/docs/core-model/task-async-interop.md" >}}">Runtime context</a>
+<a class="docs-chip" href="{{< relref "/docs/core-model/semantics.md" >}}">Cold execution semantics</a>
 </div>
 
 </div>
 
 <div class="docs-home-visual">
-<a class="docs-home-visual-link" href="./docs/start/getting-started/">
+<a class="docs-home-visual-link" href="{{< relref "/docs/start/getting-started.md" >}}">
 <img src="content/img/flow-graphic.png" alt="FsFlow Model" />
 </a>
 <div class="docs-home-visual-cta">
-<a class="docs-home-cta" href="./docs/start/getting-started/">Get Started &gt;</a>
+<a class="docs-home-cta" href="{{< relref "/docs/start/getting-started.md" >}}">Get Started &gt;</a>
 </div>
 </div>
  
@@ -72,7 +70,7 @@ let readVerifiedEmail userId =
 ```
 
 <div class="docs-home-cta-row">
-<a class="docs-home-cta" href="./docs/patterns/examples/">Examples &gt;</a>
+<a class="docs-home-cta" href="{{< relref "/docs/patterns/examples/" >}}">Examples &gt;</a>
 </div>
 </section>
 

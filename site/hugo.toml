@@ -49,6 +49,9 @@ defaultContentLanguage = "en"
     source = "../docs/VALIDATE_AND_RESULT.md"
     target = "content/docs/validation-results/_index.md"
   [[module.mounts]]
+    source = "../docs/GUARD.md"
+    target = "content/docs/validation-results/guard.md"
+  [[module.mounts]]
     source = "../docs/CHECKS.md"
     target = "content/docs/validation-results/checks.md"
   [[module.mounts]]

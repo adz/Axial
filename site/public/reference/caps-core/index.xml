@@ -2,17 +2,171 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>CAPS Core on FsFlow</title>
-    <link>http://localhost:3000/FsFlow/reference/caps-core/</link>
+    <link>http://localhost:3000/reference/caps-core/</link>
     <description>Recent content in CAPS Core on FsFlow</description>
     <generator>Hugo</generator>
     <language>en-us</language>
-    <atom:link href="http://localhost:3000/FsFlow/reference/caps-core/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="http://localhost:3000/reference/caps-core/index.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title>CAPS Core</title>
-      <link>http://localhost:3000/FsFlow/reference/caps-core/core/</link>
+      <title>FsFlow.Caps.Core.EnvironmentVariableErrors.describe</title>
+      <link>http://localhost:3000/reference/caps-core/m-core-environmentvariableerrors-describe/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/FsFlow/reference/caps-core/core/</guid>
-      <description>&lt;p&gt;This page shows the source-documented &lt;code&gt;FsFlow.Caps.Core&lt;/code&gt; surface: the clock, random, GUID, and environment-variable capabilities, plus the live and deterministic providers used by production and tests.&lt;/p&gt;&#xA;&lt;h2 id=&#34;capability-types&#34;&gt;Capability types&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;type &lt;a href=&#34;./iclock.md&#34; class=&#34;broken-link&#34;&gt;&lt;code&gt;IClock&lt;/code&gt;&lt;/a&gt;: Provides synchronous access to the current UTC clock. &lt;a href=&#34;https://github.com/adz/FsFlow/blob/main/src/FsFlow.Caps.Core/Core.fs#L8&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;source&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;type &lt;a href=&#34;./irandom.md&#34; class=&#34;broken-link&#34;&gt;&lt;code&gt;IRandom&lt;/code&gt;&lt;/a&gt;: Provides synchronous random-number generation. &lt;a href=&#34;https://github.com/adz/FsFlow/blob/main/src/FsFlow.Caps.Core/Core.fs#L13&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;source&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;type &lt;a href=&#34;./iguid.md&#34; class=&#34;broken-link&#34;&gt;&lt;code&gt;IGuid&lt;/code&gt;&lt;/a&gt;: Provides synchronous GUID generation. &lt;a href=&#34;https://github.com/adz/FsFlow/blob/main/src/FsFlow.Caps.Core/Core.fs#L18&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;source&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;type &lt;a href=&#34;./ienvironmentvariables.md&#34; class=&#34;broken-link&#34;&gt;&lt;code&gt;IEnvironmentVariables&lt;/code&gt;&lt;/a&gt;: Provides synchronous environment-variable lookup. &lt;a href=&#34;https://github.com/adz/FsFlow/blob/main/src/FsFlow.Caps.Core/Core.fs#L23&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;source&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;type &lt;a href=&#34;./environmentvariableerror.md&#34; class=&#34;broken-link&#34;&gt;&lt;code&gt;EnvironmentVariableError&lt;/code&gt;&lt;/a&gt;: Describes a meaningful environment-variable failure. &lt;a href=&#34;https://github.com/adz/FsFlow/blob/main/src/FsFlow.Caps.Core/Core.fs#L29&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;source&lt;/a&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h3 id=&#34;constructors&#34;&gt;Constructors&lt;/h3&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;MissingVariable of name: string&lt;/code&gt; &lt;a href=&#34;https://github.com/adz/FsFlow/blob/main/src/FsFlow.Caps.Core/Core.fs#L31&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;source&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;InvalidVariable of name: string * value: string * expected: string&lt;/code&gt; &lt;a href=&#34;https://github.com/adz/FsFlow/blob/main/src/FsFlow.Caps.Core/Core.fs#L34&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;source&lt;/a&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;clock&#34;&gt;Clock&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;module &lt;code&gt;Clock&lt;/code&gt;: Helpers for clock capabilities. &lt;a href=&#34;https://github.com/adz/FsFlow/blob/main/src/FsFlow.Caps.Core/Core.fs#L38&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;source&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;./clock-now.md&#34; class=&#34;broken-link&#34;&gt;&lt;code&gt;Clock.now&lt;/code&gt;&lt;/a&gt;: Reads the current UTC timestamp from a clock capability. &lt;a href=&#34;https://github.com/adz/FsFlow/blob/main/src/FsFlow.Caps.Core/Core.fs#L40&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;source&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;./clock-live.md&#34; class=&#34;broken-link&#34;&gt;&lt;code&gt;Clock.live&lt;/code&gt;&lt;/a&gt;: Creates a live clock backed by &lt;code&gt;UtcNow&lt;/code&gt;. &lt;a href=&#34;https://github.com/adz/FsFlow/blob/main/src/FsFlow.Caps.Core/Core.fs#L43&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;source&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;./clock-fromvalue.md&#34; class=&#34;broken-link&#34;&gt;&lt;code&gt;Clock.fromValue&lt;/code&gt;&lt;/a&gt;: Creates a deterministic clock that always returns the supplied instant. &lt;a href=&#34;https://github.com/adz/FsFlow/blob/main/src/FsFlow.Caps.Core/Core.fs#L48&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;source&lt;/a&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;random&#34;&gt;Random&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;module &lt;code&gt;Random&lt;/code&gt;: Helpers for random-number capabilities. &lt;a href=&#34;https://github.com/adz/FsFlow/blob/main/src/FsFlow.Caps.Core/Core.fs#L54&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;source&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;./random-nextint.md&#34; class=&#34;broken-link&#34;&gt;&lt;code&gt;Random.nextInt&lt;/code&gt;&lt;/a&gt;: Reads a random integer from a random capability. &lt;a href=&#34;https://github.com/adz/FsFlow/blob/main/src/FsFlow.Caps.Core/Core.fs#L56&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;source&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;./random-live.md&#34; class=&#34;broken-link&#34;&gt;&lt;code&gt;Random.live&lt;/code&gt;&lt;/a&gt;: Creates a live random-number generator backed by &lt;code&gt;Random&lt;/code&gt;. &lt;a href=&#34;https://github.com/adz/FsFlow/blob/main/src/FsFlow.Caps.Core/Core.fs#L60&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;source&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;./random-fromvalue.md&#34; class=&#34;broken-link&#34;&gt;&lt;code&gt;Random.fromValue&lt;/code&gt;&lt;/a&gt;: Creates a deterministic random generator that always returns the supplied value. &lt;a href=&#34;https://github.com/adz/FsFlow/blob/main/src/FsFlow.Caps.Core/Core.fs#L69&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;source&lt;/a&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;guid&#34;&gt;GUID&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;module &lt;code&gt;Guid&lt;/code&gt;: Helpers for GUID capabilities. &lt;a href=&#34;https://github.com/adz/FsFlow/blob/main/src/FsFlow.Caps.Core/Core.fs#L75&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;source&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;./guid-newguid.md&#34; class=&#34;broken-link&#34;&gt;&lt;code&gt;Guid.newGuid&lt;/code&gt;&lt;/a&gt;: Reads a GUID from a GUID capability. &lt;a href=&#34;https://github.com/adz/FsFlow/blob/main/src/FsFlow.Caps.Core/Core.fs#L77&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;source&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;./guid-live.md&#34; class=&#34;broken-link&#34;&gt;&lt;code&gt;Guid.live&lt;/code&gt;&lt;/a&gt;: Creates a live GUID generator backed by &lt;code&gt;NewGuid&lt;/code&gt;. &lt;a href=&#34;https://github.com/adz/FsFlow/blob/main/src/FsFlow.Caps.Core/Core.fs#L80&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;source&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;./guid-fromvalue.md&#34; class=&#34;broken-link&#34;&gt;&lt;code&gt;Guid.fromValue&lt;/code&gt;&lt;/a&gt;: Creates a deterministic GUID generator that always returns the supplied value. &lt;a href=&#34;https://github.com/adz/FsFlow/blob/main/src/FsFlow.Caps.Core/Core.fs#L85&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;source&lt;/a&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;environment-variables&#34;&gt;Environment variables&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;module &lt;code&gt;EnvironmentVariables&lt;/code&gt;: Helpers for environment-variable providers. &lt;a href=&#34;https://github.com/adz/FsFlow/blob/main/src/FsFlow.Caps.Core/Core.fs#L91&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;source&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;./environmentvariables-tryget.md&#34; class=&#34;broken-link&#34;&gt;&lt;code&gt;EnvironmentVariables.tryGet&lt;/code&gt;&lt;/a&gt;: Reads a raw environment-variable value from a provider. &lt;a href=&#34;https://github.com/adz/FsFlow/blob/main/src/FsFlow.Caps.Core/Core.fs#L93&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;source&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;./environmentvariables-live.md&#34; class=&#34;broken-link&#34;&gt;&lt;code&gt;EnvironmentVariables.live&lt;/code&gt;&lt;/a&gt;: Creates a live provider backed by the current process environment. &lt;a href=&#34;https://github.com/adz/FsFlow/blob/main/src/FsFlow.Caps.Core/Core.fs#L97&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;source&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;./environmentvariables-frompairs.md&#34; class=&#34;broken-link&#34;&gt;&lt;code&gt;EnvironmentVariables.fromPairs&lt;/code&gt;&lt;/a&gt;: Creates a deterministic provider from a fixed set of name/value pairs. &lt;a href=&#34;https://github.com/adz/FsFlow/blob/main/src/FsFlow.Caps.Core/Core.fs#L105&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;source&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;module &lt;code&gt;EnvironmentVariable&lt;/code&gt;: Helpers for reading and parsing environment variables. &lt;a href=&#34;https://github.com/adz/FsFlow/blob/main/src/FsFlow.Caps.Core/Core.fs#L119&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;source&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;./environmentvariable-tryget.md&#34; class=&#34;broken-link&#34;&gt;&lt;code&gt;EnvironmentVariable.tryGet&lt;/code&gt;&lt;/a&gt;: Reads a raw string environment variable without wrapping it in a result. &lt;a href=&#34;https://github.com/adz/FsFlow/blob/main/src/FsFlow.Caps.Core/Core.fs#L140&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;source&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;./environmentvariable-get.md&#34; class=&#34;broken-link&#34;&gt;&lt;code&gt;EnvironmentVariable.get&lt;/code&gt;&lt;/a&gt;: Reads a raw string environment variable. &lt;a href=&#34;https://github.com/adz/FsFlow/blob/main/src/FsFlow.Caps.Core/Core.fs#L134&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;source&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;./environmentvariable-getint.md&#34; class=&#34;broken-link&#34;&gt;&lt;code&gt;EnvironmentVariable.getInt&lt;/code&gt;&lt;/a&gt;: Reads an integer environment variable. &lt;a href=&#34;https://github.com/adz/FsFlow/blob/main/src/FsFlow.Caps.Core/Core.fs#L144&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;source&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;./environmentvariable-getguid.md&#34; class=&#34;broken-link&#34;&gt;&lt;code&gt;EnvironmentVariable.getGuid&lt;/code&gt;&lt;/a&gt;: Reads a GUID environment variable. &lt;a href=&#34;https://github.com/adz/FsFlow/blob/main/src/FsFlow.Caps.Core/Core.fs#L151&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;source&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;./environmentvariable-getbool.md&#34; class=&#34;broken-link&#34;&gt;&lt;code&gt;EnvironmentVariable.getBool&lt;/code&gt;&lt;/a&gt;: Reads a boolean environment variable. &lt;a href=&#34;https://github.com/adz/FsFlow/blob/main/src/FsFlow.Caps.Core/Core.fs#L158&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;source&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;module &lt;code&gt;EnvironmentVariableErrors&lt;/code&gt;: Helpers for formatting environment-variable errors. &lt;a href=&#34;https://github.com/adz/FsFlow/blob/main/src/FsFlow.Caps.Core/Core.fs#L166&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;source&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;./environmentvariableerrors-describe.md&#34; class=&#34;broken-link&#34;&gt;&lt;code&gt;EnvironmentVariableErrors.describe&lt;/code&gt;&lt;/a&gt;: Formats a human-readable description for an error. &lt;a href=&#34;https://github.com/adz/FsFlow/blob/main/src/FsFlow.Caps.Core/Core.fs#L168&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;source&lt;/a&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
+      <guid>http://localhost:3000/reference/caps-core/m-core-environmentvariableerrors-describe/</guid>
+      <description>&lt;p&gt;Formats a human-readable description for an error.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.Caps.Core.EnvironmentVariableError</title>
+      <link>http://localhost:3000/reference/caps-core/t-core-environmentvariableerror/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/caps-core/t-core-environmentvariableerror/</guid>
+      <description>&lt;p&gt;Describes a meaningful environment-variable failure.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.Caps.Core.EnvironmentVariables.fromPairs</title>
+      <link>http://localhost:3000/reference/caps-core/m-core-environmentvariables-frompairs/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/caps-core/m-core-environmentvariables-frompairs/</guid>
+      <description>&lt;p&gt;Creates a deterministic provider from a fixed set of name/value pairs.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.Caps.Core.Clock.fromValue</title>
+      <link>http://localhost:3000/reference/caps-core/m-core-clock-fromvalue/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/caps-core/m-core-clock-fromvalue/</guid>
+      <description>&lt;p&gt;Creates a deterministic clock that always returns the supplied instant.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.Caps.Core.Guid.fromValue</title>
+      <link>http://localhost:3000/reference/caps-core/m-core-guid-fromvalue/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/caps-core/m-core-guid-fromvalue/</guid>
+      <description>&lt;p&gt;Creates a deterministic GUID generator that always returns the supplied value.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.Caps.Core.Random.fromValue</title>
+      <link>http://localhost:3000/reference/caps-core/m-core-random-fromvalue/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/caps-core/m-core-random-fromvalue/</guid>
+      <description>&lt;p&gt;Creates a deterministic random generator that always returns the supplied value.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.Caps.Core.EnvironmentVariable.get</title>
+      <link>http://localhost:3000/reference/caps-core/m-core-environmentvariable-get/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/caps-core/m-core-environmentvariable-get/</guid>
+      <description>&lt;p&gt;Reads a raw string environment variable from the environment.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.Caps.Core.EnvironmentVariable.getBool</title>
+      <link>http://localhost:3000/reference/caps-core/m-core-environmentvariable-getbool/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/caps-core/m-core-environmentvariable-getbool/</guid>
+      <description>&lt;p&gt;Reads a boolean environment variable from the environment.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.Caps.Core.EnvironmentVariable.getGuid</title>
+      <link>http://localhost:3000/reference/caps-core/m-core-environmentvariable-getguid/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/caps-core/m-core-environmentvariable-getguid/</guid>
+      <description>&lt;p&gt;Reads a GUID environment variable from the environment.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.Caps.Core.EnvironmentVariable.getInt</title>
+      <link>http://localhost:3000/reference/caps-core/m-core-environmentvariable-getint/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/caps-core/m-core-environmentvariable-getint/</guid>
+      <description>&lt;p&gt;Reads an integer environment variable from the environment.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.Caps.Core.IClock</title>
+      <link>http://localhost:3000/reference/caps-core/t-core-iclock/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/caps-core/t-core-iclock/</guid>
+      <description>&lt;p&gt;Provides synchronous access to the current UTC clock.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.Caps.Core.IEnvironmentVariables</title>
+      <link>http://localhost:3000/reference/caps-core/t-core-ienvironmentvariables/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/caps-core/t-core-ienvironmentvariables/</guid>
+      <description>&lt;p&gt;Provides synchronous environment-variable lookup.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.Caps.Core.IGuid</title>
+      <link>http://localhost:3000/reference/caps-core/t-core-iguid/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/caps-core/t-core-iguid/</guid>
+      <description>&lt;p&gt;Provides synchronous GUID generation.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.Caps.Core.IRandom</title>
+      <link>http://localhost:3000/reference/caps-core/t-core-irandom/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/caps-core/t-core-irandom/</guid>
+      <description>&lt;p&gt;Provides synchronous random-number generation.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.Caps.Core.Clock.live</title>
+      <link>http://localhost:3000/reference/caps-core/p-core-clock-live/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/caps-core/p-core-clock-live/</guid>
+      <description>&lt;p&gt;Creates a live clock backed by &lt;code&gt;UtcNow&lt;/code&gt;.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.Caps.Core.EnvironmentVariables.live</title>
+      <link>http://localhost:3000/reference/caps-core/p-core-environmentvariables-live/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/caps-core/p-core-environmentvariables-live/</guid>
+      <description>&lt;p&gt;Creates a live provider backed by the current process environment.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.Caps.Core.Guid.live</title>
+      <link>http://localhost:3000/reference/caps-core/p-core-guid-live/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/caps-core/p-core-guid-live/</guid>
+      <description>&lt;p&gt;Creates a live GUID generator backed by &lt;code&gt;NewGuid&lt;/code&gt;.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.Caps.Core.Random.live</title>
+      <link>http://localhost:3000/reference/caps-core/p-core-random-live/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/caps-core/p-core-random-live/</guid>
+      <description>&lt;p&gt;Creates a live random-number generator backed by &lt;code&gt;Random&lt;/code&gt;.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.Caps.Core.Guid.newGuid</title>
+      <link>http://localhost:3000/reference/caps-core/m-core-guid-newguid/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/caps-core/m-core-guid-newguid/</guid>
+      <description>&lt;p&gt;Reads a GUID from the environment.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.Caps.Core.Random.nextInt</title>
+      <link>http://localhost:3000/reference/caps-core/m-core-random-nextint/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/caps-core/m-core-random-nextint/</guid>
+      <description>&lt;p&gt;Reads a random integer from the environment.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.Caps.Core.Clock.now</title>
+      <link>http://localhost:3000/reference/caps-core/m-core-clock-now/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/caps-core/m-core-clock-now/</guid>
+      <description>&lt;p&gt;Reads the current UTC timestamp from the environment.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.Caps.Core.EnvironmentVariable.tryGet</title>
+      <link>http://localhost:3000/reference/caps-core/m-core-environmentvariable-tryget/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/caps-core/m-core-environmentvariable-tryget/</guid>
+      <description>&lt;p&gt;Reads a raw string environment variable without wrapping it in a result.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.Caps.Core.EnvironmentVariables.tryGet</title>
+      <link>http://localhost:3000/reference/caps-core/m-core-environmentvariables-tryget/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/caps-core/m-core-environmentvariables-tryget/</guid>
+      <description>&lt;p&gt;Reads a raw environment-variable value from the environment.&lt;/p&gt;</description>
     </item>
   </channel>
 </rss>
