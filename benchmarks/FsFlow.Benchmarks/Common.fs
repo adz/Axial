@@ -9,7 +9,7 @@ open IcedTasks
 open FsFlow
 
 [<RequireQualifiedAccess>]
-module Shared =
+module internal Shared =
     [<Literal>]
     let ReaderDepth = 10
 
@@ -29,25 +29,31 @@ module Shared =
         | Ok value -> value
         | Error error -> error.Length
 
+    let consumeExit (exit: Exit<int, string>) =
+        match exit with
+        | Exit.Success value -> value
+        | Exit.Failure (Cause.Fail error) -> error.Length
+        | Exit.Failure _ -> -1
+
     let consumeValueTaskResult (result: Result<int, string>) =
         consumeResult result
 
     let runFlow (flow: Flow<int, string, int>) =
         flow
         |> Flow.run 0
-        |> consumeResult
+        |> consumeExit
 
     let runAsyncFlow (flow: AsyncFlow<int, string, int>) =
         flow
         |> AsyncFlow.run 0
         |> Async.RunSynchronously
-        |> consumeResult
+        |> consumeExit
 
     let runTaskFlow (flow: TaskFlow<int, string, int>) =
         flow
         |> TaskFlow.run 0 noCancellation
         |> fun operation -> operation.GetAwaiter().GetResult()
-        |> consumeResult
+        |> consumeExit
 
     let runTaskResult (workflow: unit -> Task<Result<int, string>>) =
         workflow ()

@@ -29,13 +29,50 @@ type Exit<'value, 'error> =
     /// <summary>The workflow failed due to a specific cause.</summary>
     | Failure of Cause<'error>
 
+[<RequireQualifiedAccess>]
+module Cause =
+    let map (mapper: 'e -> 'f) (cause: Cause<'e>) : Cause<'f> =
+        match cause with
+        | Cause.Fail e -> Cause.Fail (mapper e)
+        | Cause.Die ex -> Cause.Die ex
+        | Cause.Interrupt -> Cause.Interrupt
+
+[<RequireQualifiedAccess>]
+module Exit =
+    let map (mapper: 'v -> 'w) (exit: Exit<'v, 'e>) : Exit<'w, 'e> =
+        match exit with
+        | Exit.Success v -> Exit.Success (mapper v)
+        | Exit.Failure c -> Exit.Failure c
+
+    let bind (binder: 'v -> Exit<'w, 'e>) (exit: Exit<'v, 'e>) : Exit<'w, 'e> =
+        match exit with
+        | Exit.Success v -> binder v
+        | Exit.Failure c -> Exit.Failure c
+
+    let mapError (mapper: 'e -> 'f) (exit: Exit<'v, 'e>) : Exit<'v, 'f> =
+        match exit with
+        | Exit.Success v -> Exit.Success v
+        | Exit.Failure c -> Exit.Failure (Cause.map mapper c)
+
+    let fromResult (result: Result<'v, 'e>) : Exit<'v, 'e> =
+        match result with
+        | Ok v -> Exit.Success v
+        | Error e -> Exit.Failure (Cause.Fail e)
+
+    let toResult (exit: Exit<'v, 'e>) : Result<'v, 'e> =
+        match exit with
+        | Exit.Success v -> Ok v
+        | Exit.Failure (Cause.Fail e) -> Error e
+        | Exit.Failure (Cause.Die ex) -> raise ex
+        | Exit.Failure Cause.Interrupt -> raise (OperationCanceledException("Workflow was interrupted"))
+
 /// <summary>
 /// Represents the portable execution shape used by the unified <see cref="T:FsFlow.Flow`3" />.
 /// </summary>
 #if FABLE_COMPILER
-type Effect<'value, 'error> = JS.Promise<Result<'value, 'error>>
+type Effect<'value, 'error> = JS.Promise<Exit<'value, 'error>>
 #else
-type Effect<'value, 'error> = ValueTask<Result<'value, 'error>>
+type Effect<'value, 'error> = ValueTask<Exit<'value, 'error>>
 #endif
 
 /// <summary>
@@ -58,7 +95,18 @@ type Flow<'env, 'error, 'value> =
 /// <typeparam name="value">The type of the success value.</typeparam>
 type internal AsyncFlow<'env, 'error, 'value> =
     private
-    | AsyncFlow of ('env -> Async<Result<'value, 'error>>)
+    | AsyncFlow of ('env -> Async<Exit<'value, 'error>>)
+
+/// <summary>
+/// Represents a cold task-based workflow that reads an environment, observes a runtime cancellation token,
+/// returns a typed result, and is executed explicitly through <c>TaskFlow.run</c>.
+/// </summary>
+/// <typeparam name="env">The type of the environment dependency.</typeparam>
+/// <typeparam name="error">The type of the failure value.</typeparam>
+/// <typeparam name="value">The type of the success value.</typeparam>
+type internal TaskFlow<'env, 'error, 'value> =
+    private
+    | TaskFlow of ('env -> CancellationToken -> Task<Exit<'value, 'error>>)
 
 /// <summary>
 /// Log levels used by runtime logging helpers and environment-provided logging functions.
@@ -220,38 +268,52 @@ module internal OptionFlow =
         | ValueNone -> Error error
 
 module internal EffectFlow =
-    let ofResult (result: Result<'value, 'error>) : Effect<'value, 'error> =
+    let ofExit (exit: Exit<'value, 'error>) : Effect<'value, 'error> =
 #if FABLE_COMPILER
-        JS.Constructors.Promise.resolve result
+        JS.Constructors.Promise.resolve exit
 #else
-        ValueTask<Result<'value, 'error>>(result)
+        ValueTask<Exit<'value, 'error>>(exit)
 #endif
 
     let ofValue (value: 'value) : Effect<'value, 'error> =
-        ofResult (Ok value)
+        ofExit (Exit.Success value)
+
+    let ofCause (cause: Cause<'error>) : Effect<'value, 'error> =
+        ofExit (Exit.Failure cause)
 
     let ofError (error: 'error) : Effect<'value, 'error> =
-        ofResult (Error error)
+        ofCause (Cause.Fail error)
+
+    let ofDie (exn: exn) : Effect<'value, 'error> =
+        ofCause (Cause.Die exn)
+
+    let ofInterrupt () : Effect<'value, 'error> =
+        ofCause Cause.Interrupt
+
+    let ofResult (result: Result<'value, 'error>) : Effect<'value, 'error> =
+        match result with
+        | Ok value -> ofValue value
+        | Error error -> ofError error
 
     let fold
         (onSuccess: 'value -> Effect<'next, 'nextError>)
-        (onError: 'error -> Effect<'next, 'nextError>)
+        (onFailure: Cause<'error> -> Effect<'next, 'nextError>)
         (effect: Effect<'value, 'error>)
         : Effect<'next, 'nextError> =
 #if FABLE_COMPILER
         Promise.bind
             (function
-             | Ok value -> onSuccess value
-             | Error error -> onError error)
+             | Exit.Success value -> onSuccess value
+             | Exit.Failure cause -> onFailure cause)
             effect
 #else
-        ValueTask<Result<'next, 'nextError>>(
+        ValueTask<Exit<'next, 'nextError>>(
             task {
-                let! result = effect
+                let! exit = effect
 
-                match result with
-                | Ok value -> return! onSuccess value
-                | Error error -> return! onError error
+                match exit with
+                | Exit.Success value -> return! onSuccess value
+                | Exit.Failure cause -> return! onFailure cause
             })
 #endif
 
@@ -259,42 +321,47 @@ module internal EffectFlow =
         (mapper: 'value -> 'next)
         (effect: Effect<'value, 'error>)
         : Effect<'next, 'error> =
-        fold (mapper >> ofValue) ofError effect
+        fold (mapper >> ofValue) ofCause effect
 
     let bind
         (binder: 'value -> Effect<'next, 'error>)
         (effect: Effect<'value, 'error>)
         : Effect<'next, 'error> =
-        fold binder ofError effect
+        fold binder ofCause effect
 
     let mapError
         (mapper: 'error -> 'nextError)
         (effect: Effect<'value, 'error>)
         : Effect<'value, 'nextError> =
-        fold ofValue (mapper >> ofError) effect
+        fold ofValue (fun cause ->
+            match cause with
+            | Cause.Fail error -> ofError (mapper error)
+            | Cause.Die exn -> ofDie exn
+            | Cause.Interrupt -> ofInterrupt ()
+        ) effect
 
 module internal InternalCombinatorCore =
     let mapWith
-        (mapOutcome: (Result<'value, 'error> -> Result<'next, 'error>) -> 'operation -> 'nextOperation)
+        (mapOutcome: (Exit<'value, 'error> -> Exit<'next, 'error>) -> 'operation -> 'nextOperation)
         (mapper: 'value -> 'next)
         (operation: 'context -> 'operation)
         : 'context -> 'nextOperation =
-        fun context -> operation context |> mapOutcome (Result.map mapper)
+        fun context -> operation context |> mapOutcome (Exit.map mapper)
 
     let bindWith
-        (bindOutcome: 'operation -> ('value -> 'nextOperation) -> ('error -> 'nextOperation) -> 'nextOperation)
+        (bindOutcome: 'operation -> ('value -> 'nextOperation) -> (Cause<'error> -> 'nextOperation) -> 'nextOperation)
         (continueWith: 'context -> 'value -> 'nextOperation)
-        (failWith: 'error -> 'nextOperation)
+        (failWith: Cause<'error> -> 'nextOperation)
         (operation: 'context -> 'operation)
         : 'context -> 'nextOperation =
         fun context -> bindOutcome (operation context) (continueWith context) failWith
 
     let mapErrorWith
-        (mapOutcome: (Result<'value, 'error> -> Result<'value, 'nextError>) -> 'operation -> 'nextOperation)
+        (mapOutcome: (Exit<'value, 'error> -> Exit<'value, 'nextError>) -> 'operation -> 'nextOperation)
         (mapper: 'error -> 'nextError)
         (operation: 'context -> 'operation)
         : 'context -> 'nextOperation =
-        fun context -> operation context |> mapOutcome (Result.mapError mapper)
+        fun context -> operation context |> mapOutcome (Exit.mapError mapper)
 
     let localEnvWith
         (run: 'innerEnvironment -> 'flow -> 'operation)
@@ -343,14 +410,14 @@ type Flow<'env, 'error, 'value> with
 
         Flow(fun environment ct ->
             match (layerOperation environment ct).GetAwaiter().GetResult() with
-            | Ok environment -> flowOperation environment ct
-            | Error error -> EffectFlow.ofError error)
+            | Exit.Success environment -> flowOperation environment ct
+            | Exit.Failure cause -> EffectFlow.ofCause cause)
 
 type internal AsyncFlow<'env, 'error, 'value> with
     static member CapabilityService
         (projection: 'env -> 'service)
         : AsyncFlow<'env, 'error, 'service> =
-        AsyncFlow(fun environment -> async.Return(Ok(projection environment)))
+        AsyncFlow(fun environment -> async.Return(Exit.Success(projection environment)))
 
     static member ServiceFromProvider
         ()
@@ -360,11 +427,11 @@ type internal AsyncFlow<'env, 'error, 'value> with
                 match provider.GetService typeof<'service> with
                 | null ->
                     return
-                        Error
+                        Exit.Failure (Cause.Fail
                             {
                                 CapabilityType = typeof<'service>
-                            }
-                | value -> return Ok(unbox<'service> value)
+                            })
+                | value -> return Exit.Success(unbox<'service> value)
             })
 
     static member ProvideLayer
@@ -380,6 +447,6 @@ type internal AsyncFlow<'env, 'error, 'value> with
                 let! outcome = layerOperation environment
 
                 match outcome with
-                | Ok environment -> return! flowOperation environment
-                | Error error -> return Error error
+                | Exit.Success environment -> return! flowOperation environment
+                | Exit.Failure cause -> return Exit.Failure cause
             })

@@ -17,7 +17,7 @@ let flowProbe () =
 
     workflow
     |> Flow.run "Ada"
-    |> Assert.equal (Ok 3)
+    |> Assert.equal (Exit.Success 3)
 
 let asyncProbe () =
     let workflow : Flow<int, string, int> =
@@ -28,7 +28,7 @@ let asyncProbe () =
 
     workflow
     |> Flow.run 21
-    |> Assert.equal (Ok 42)
+    |> Assert.equal (Exit.Success 42)
 
 let taskProbe () =
     let workflow : Flow<unit, string, int> =
@@ -41,7 +41,7 @@ let taskProbe () =
         workflow
         |> Flow.run ()
 
-    Assert.equal (Ok 42) result
+    Assert.equal (Exit.Success 42) result
 
 [<EntryPoint>]
 let main _ =

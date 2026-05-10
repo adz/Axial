@@ -201,8 +201,8 @@ module CapsRuntimePatternTests =
             TaskFlow.run chooseTodoRuntime CancellationToken.None chooseTodoFlowForTest
             |> fun task -> task.GetAwaiter().GetResult()
 
-        test <@ appResult = Ok (Some "beta") @>
-        test <@ testResult = Ok (Some "beta") @>
+        test <@ appResult = Exit.Success (Some "beta") @>
+        test <@ testResult = Exit.Success (Some "beta") @>
 
     [<Fact>]
     let ``flexible type boundaries keep the app runtime story small and explicit`` () =
@@ -235,4 +235,4 @@ module CapsRuntimePatternTests =
             TaskFlow.run appRuntime CancellationToken.None chooseTodoFlow
             |> fun task -> task.GetAwaiter().GetResult()
 
-        test <@ chooseTodoResult = Ok (Some "beta") @>
+        test <@ chooseTodoResult = Exit.Success (Some "beta") @>

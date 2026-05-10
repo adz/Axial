@@ -7,24 +7,24 @@ module private GuardFlow =
         (flow: AsyncFlow<'env, 'error, 'value>)
         : Flow<'env, 'error, 'value> =
         Flow(fun environment cancellationToken ->
-            ValueTask<Result<'value, 'error>>(
+            ValueTask<Exit<'value, 'error>>(
                 task {
-                    let! result =
+                    let! exit =
                         Async.StartAsTask(
                             AsyncFlow.run environment flow,
                             cancellationToken = cancellationToken)
 
-                    return result
+                    return exit
                 }))
 
     let inline fromTaskFlow
         (flow: TaskFlow<'env, 'error, 'value>)
         : Flow<'env, 'error, 'value> =
         Flow(fun environment cancellationToken ->
-            ValueTask<Result<'value, 'error>>(
+            ValueTask<Exit<'value, 'error>>(
                 task {
-                    let! result = TaskFlow.run environment cancellationToken flow
-                    return result
+                    let! exit = TaskFlow.run environment cancellationToken flow
+                    return exit
                 }))
 
 /// <summary>
@@ -130,8 +130,8 @@ type Guard private () =
     static member Of(error: 'error, flow: Flow<'env, unit, 'value>) : Flow<'env, 'error, 'value> =
         Flow(fun environment _ ->
             match Flow.run environment flow with
-            | Ok value -> EffectFlow.ofValue value
-            | Error () -> EffectFlow.ofError error)
+            | Exit.Success value -> EffectFlow.ofValue value
+            | Exit.Failure _ -> EffectFlow.ofError error)
 
     static member internal Of(error: 'error, flow: AsyncFlow<'env, unit, 'value>) : AsyncFlow<'env, 'error, 'value> =
         flow

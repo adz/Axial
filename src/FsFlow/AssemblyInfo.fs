@@ -1,6 +1,7 @@
 namespace FsFlow
 
 [<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("FsFlow.Tests")>]
+[<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("FsFlow.Benchmarks")>]
 [<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("FsFlow.Examples")>]
 [<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("FsFlow.Playground")>]
 [<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("FsFlow.MaintenanceExamples")>]

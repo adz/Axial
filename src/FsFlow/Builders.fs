@@ -13,56 +13,93 @@ module private FlowBuilderRuntime =
 
     let inline fromAsync<'env, 'error, 'value> (operation: Async<'value>) : Flow<'env, 'error, 'value> =
         Flow(fun _ cancellationToken ->
-            ValueTask<Result<'value, 'error>>(
+            #if FABLE_COMPILER
+            Promise.map Exit.Success (Async.StartAsPromise(operation, cancellationToken = cancellationToken))
+            #else
+            ValueTask<Exit<'value, 'error>>(
                 task {
                     let! value = Async.StartAsTask(operation, cancellationToken = cancellationToken)
-                    return Ok value
-                }))
+                    return Exit.Success value
+                })
+            #endif
+        )
 
     let inline fromAsyncResult<'env, 'error, 'value>
         (operation: Async<Result<'value, 'error>>)
         : Flow<'env, 'error, 'value> =
         Flow(fun _ cancellationToken ->
-            ValueTask<Result<'value, 'error>>(
+            #if FABLE_COMPILER
+            Promise.map Exit.fromResult (Async.StartAsPromise(operation, cancellationToken = cancellationToken))
+            #else
+            ValueTask<Exit<'value, 'error>>(
                 task {
                     let! result = Async.StartAsTask(operation, cancellationToken = cancellationToken)
-                    return result
-                }))
+                    return Exit.fromResult result
+                })
+            #endif
+        )
 
     let inline fromTask<'env, 'error, 'value> (operation: Task<'value>) : Flow<'env, 'error, 'value> =
         Flow(fun _ cancellationToken ->
-            ValueTask<Result<'value, 'error>>(
+            #if FABLE_COMPILER
+            Promise.map Exit.Success (JS.Constructors.Promise.Create(fun resolve reject ->
+                operation.ContinueWith(fun (t: Task<'value>) ->
+                    if t.IsCanceled then reject(OperationCanceledException(cancellationToken))
+                    elif t.IsFaulted then reject(t.Exception)
+                    else resolve(t.Result)) |> ignore))
+            #else
+            ValueTask<Exit<'value, 'error>>(
                 task {
                     if cancellationToken.IsCancellationRequested then
-                        return! Task.FromCanceled<Result<'value, 'error>>(cancellationToken)
+                        return Exit.Failure Cause.Interrupt
                     else
                         let! value = operation
-                        return Ok value
-                }))
+                        return Exit.Success value
+                })
+            #endif
+        )
 
     let inline fromTaskResult<'env, 'error, 'value>
         (operation: Task<Result<'value, 'error>>)
         : Flow<'env, 'error, 'value> =
         Flow(fun _ cancellationToken ->
-            ValueTask<Result<'value, 'error>>(
+            #if FABLE_COMPILER
+            Promise.map Exit.fromResult (JS.Constructors.Promise.Create(fun resolve reject ->
+                operation.ContinueWith(fun (t: Task<Result<'value, 'error>>) ->
+                    if t.IsCanceled then reject(OperationCanceledException(cancellationToken))
+                    elif t.IsFaulted then reject(t.Exception)
+                    else resolve(t.Result)) |> ignore))
+            #else
+            ValueTask<Exit<'value, 'error>>(
                 task {
                     if cancellationToken.IsCancellationRequested then
-                        return! Task.FromCanceled<Result<'value, 'error>>(cancellationToken)
+                        return Exit.Failure Cause.Interrupt
                     else
                         let! result = operation
-                        return result
-                }))
+                        return Exit.fromResult result
+                })
+            #endif
+        )
 
     let inline fromTaskUnit<'env, 'error> (operation: Task) : Flow<'env, 'error, unit> =
         Flow(fun _ cancellationToken ->
-            ValueTask<Result<unit, 'error>>(
+            #if FABLE_COMPILER
+            Promise.map (fun () -> Exit.Success ()) (JS.Constructors.Promise.Create(fun resolve reject ->
+                operation.ContinueWith(fun (t: Task) ->
+                    if t.IsCanceled then reject(OperationCanceledException(cancellationToken))
+                    elif t.IsFaulted then reject(t.Exception)
+                    else resolve()) |> ignore))
+            #else
+            ValueTask<Exit<unit, 'error>>(
                 task {
                     if cancellationToken.IsCancellationRequested then
-                        return! Task.FromCanceled<Result<unit, 'error>>(cancellationToken)
+                        return Exit.Failure Cause.Interrupt
                     else
                         do! operation
-                        return Ok ()
-                }))
+                        return Exit.Success ()
+                })
+            #endif
+        )
 
 type FlowBuilder() =
     member _.Return(value: 'value) : Flow<'env, 'error, 'value> =

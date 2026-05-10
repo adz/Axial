@@ -5,7 +5,7 @@ open System.Threading
 open System.Threading.Tasks
 
 module Flow =
-    let inline private invoke
+    let inline internal invoke
         (flow: Flow<'env, 'error, 'value>)
         (environment: 'env)
         (cancellationToken: CancellationToken)
@@ -14,7 +14,7 @@ module Flow =
         operation environment cancellationToken
 
     /// <summary>Executes a flow with an explicit cancellation token.</summary>
-    let runFull (environment: 'env) (cancellationToken: CancellationToken) (flow: Flow<'env, 'error, 'value>) =
+    let runFull (environment: 'env) (cancellationToken: CancellationToken) (flow: Flow<'env, 'error, 'value>) : Exit<'value, 'error> =
         #if FABLE_COMPILER
         invoke flow environment cancellationToken
         #else
@@ -29,10 +29,10 @@ module Flow =
     /// <code>
     /// let flow = Flow.read (fun env -> $"Hello, {env}!")
     /// let result = Flow.run "World" flow
-    /// // result = Promise that resolves to Ok "Hello, World!" on Fable, or Ok "Hello, World!" on .NET
+    /// // result = Promise that resolves to Success "Hello, World!" on Fable, or Success "Hello, World!" on .NET
     /// </code>
     /// </example>
-    let run (environment: 'env) (flow: Flow<'env, 'error, 'value>) =
+    let run (environment: 'env) (flow: Flow<'env, 'error, 'value>) : Exit<'value, 'error> =
         runWithToken environment CancellationToken.None flow
 
     /// <summary>Creates a successful synchronous flow.</summary>
@@ -44,7 +44,7 @@ module Flow =
     /// <code>
     /// let flow = Flow.succeed 42
     /// let result = Flow.run () flow
-    /// // result = Ok 42
+    /// // result = Success 42
     /// </code>
     /// </example>
     let succeed (value: 'value) : Flow<'env, 'error, 'value> =
@@ -68,7 +68,7 @@ module Flow =
     /// <code>
     /// let flow = Flow.fail "error"
     /// let result = Flow.run () flow
-    /// // result = Error "error"
+    /// // result = Failure (Cause.Fail "error")
     /// </code>
     /// </example>
     let fail (failure: 'error) : Flow<'env, 'error, 'value> =
@@ -123,7 +123,7 @@ module Flow =
             | Ok value -> EffectFlow.ofValue value
             | Error () ->
                 invoke errorFlow environment cancellationToken
-                |> EffectFlow.fold EffectFlow.ofError EffectFlow.ofError)
+                |> EffectFlow.fold EffectFlow.ofError EffectFlow.ofCause)
 
     /// <summary>Reads the current environment as the flow value.</summary>
     /// <remarks>
@@ -223,11 +223,14 @@ module Flow =
             invoke flow environment cancellationToken
             |> EffectFlow.fold
                 EffectFlow.ofValue
-                (fun error ->
-                    invoke (binder error) environment cancellationToken
-                    |> EffectFlow.fold
-                        (fun () -> EffectFlow.ofError error)
-                        EffectFlow.ofError))
+                (fun cause ->
+                    match cause with
+                    | Cause.Fail error ->
+                        invoke (binder error) environment cancellationToken
+                        |> EffectFlow.fold
+                            (fun () -> EffectFlow.ofCause cause)
+                            EffectFlow.ofCause
+                    | _ -> EffectFlow.ofCause cause))
 
     /// <summary>Maps the error value of a synchronous flow.</summary>
     /// <remarks>
@@ -258,10 +261,18 @@ module Flow =
         (flow: Flow<'env, 'error, 'value>)
         : Flow<'env, 'error, 'value> =
         Flow(fun environment cancellationToken ->
-            try
-                invoke flow environment cancellationToken
-            with error ->
-                EffectFlow.ofError (handler error))
+            #if FABLE_COMPILER
+            invoke flow environment cancellationToken
+            |> Promise.catch (handler >> Exit.Failure >> Cause.Fail >> EffectFlow.ofExit)
+            #else
+            task {
+                try
+                    return! invoke flow environment cancellationToken
+                with error ->
+                    return Exit.Failure (Cause.Fail (handler error))
+            } |> ValueTask<Exit<'value, 'error>>
+            #endif
+        )
 
     /// <summary>Falls back to another flow when the source flow fails.</summary>
     /// <summary>Computes a fallback flow from the source error when the source flow fails.</summary>
@@ -271,7 +282,12 @@ module Flow =
         : Flow<'env, 'error, 'value> =
         Flow(fun environment cancellationToken ->
             invoke flow environment cancellationToken
-            |> EffectFlow.fold EffectFlow.ofValue (fun error -> invoke (fallback error) environment cancellationToken))
+            |> EffectFlow.fold
+                EffectFlow.ofValue
+                (fun cause ->
+                    match cause with
+                    | Cause.Fail error -> invoke (fallback error) environment cancellationToken
+                    | _ -> EffectFlow.ofCause cause))
 
     /// <summary>Falls back to another flow when the source flow fails.</summary>
     let orElse
@@ -386,16 +402,16 @@ module internal AsyncFlow =
     let run
         (environment: 'env)
         (AsyncFlow operation: AsyncFlow<'env, 'error, 'value>)
-        : Async<Result<'value, 'error>> =
+        : Async<Exit<'value, 'error>> =
         operation environment
 
     /// <summary>Converts an async flow into its raw async result shape.</summary>
-    let toAsync (environment: 'env) (flow: AsyncFlow<'env, 'error, 'value>) : Async<Result<'value, 'error>> =
+    let toAsync (environment: 'env) (flow: AsyncFlow<'env, 'error, 'value>) : Async<Exit<'value, 'error>> =
         run environment flow
 
     /// <summary>Creates a successful async flow.</summary>
     let ok (value: 'value) : AsyncFlow<'env, 'error, 'value> =
-        AsyncFlow(fun _ -> async.Return(Ok value))
+        AsyncFlow(fun _ -> async.Return(Exit.Success value))
 
     /// <summary>Alias for <see cref="ok" /> that reads well in some call sites.</summary>
     let succeed (value: 'value) : AsyncFlow<'env, 'error, 'value> =
@@ -407,7 +423,7 @@ module internal AsyncFlow =
 
     /// <summary>Creates a failing async flow.</summary>
     let error (failure: 'error) : AsyncFlow<'env, 'error, 'value> =
-        AsyncFlow(fun _ -> async.Return(Error failure))
+        AsyncFlow(fun _ -> async.Return(Exit.Failure (Cause.Fail failure)))
 
     /// <summary>Alias for <see cref="error" /> that reads well in some call sites.</summary>
     let fail (failure: 'error) : AsyncFlow<'env, 'error, 'value> =
@@ -415,7 +431,7 @@ module internal AsyncFlow =
 
     /// <summary>Lifts a <see cref="T:System.Result`2" /> into an async flow.</summary>
     let fromResult (result: Result<'value, 'error>) : AsyncFlow<'env, 'error, 'value> =
-        AsyncFlow(fun _ -> async.Return result)
+        AsyncFlow(fun _ -> async.Return (match result with Ok v -> Exit.Success v | Error e -> Exit.Failure (Cause.Fail e)))
 
     /// <summary>Lifts an option into an async flow with the supplied error.</summary>
     let fromOption (error: 'error) (value: 'value option) : AsyncFlow<'env, 'error, 'value> =
@@ -438,10 +454,10 @@ module internal AsyncFlow =
         AsyncFlow(fun _ ->
             async {
                 match result with
-                | Ok value -> return Ok value
+                | Ok value -> return Exit.Success value
                 | Error () ->
                     let! error = errorAsync
-                    return Error error
+                    return Exit.Failure (Cause.Fail error)
             })
 
     /// <summary>Turns a pure validation result into an async flow with synchronous environment-provided failure.</summary>
@@ -452,11 +468,11 @@ module internal AsyncFlow =
         AsyncFlow(fun environment ->
             async {
                 match result with
-                | Ok value -> return Ok value
+                | Ok value -> return Exit.Success value
                 | Error () ->
                     match Flow.run environment errorFlow with
-                    | Ok error -> return Error error
-                    | Error error -> return Error error
+                    | Exit.Success error -> return Exit.Failure (Cause.Fail error)
+                    | Exit.Failure cause -> return Exit.Failure cause
             })
 
     /// <summary>Turns a pure validation result into an async flow whose failure value comes from another async flow.</summary>
@@ -467,38 +483,50 @@ module internal AsyncFlow =
         AsyncFlow(fun environment ->
             async {
                 match result with
-                | Ok value -> return Ok value
+                | Ok value -> return Exit.Success value
                 | Error () ->
                     let! outcome = run environment errorFlow
 
                     match outcome with
-                    | Ok error -> return Error error
-                    | Error error -> return Error error
+                    | Exit.Success error -> return Exit.Failure (Cause.Fail error)
+                    | Exit.Failure cause -> return Exit.Failure cause
             })
 
     /// <summary>Lifts a synchronous flow into an async flow.</summary>
     let fromFlow (flow: Flow<'env, 'error, 'value>) : AsyncFlow<'env, 'error, 'value> =
-        AsyncFlow(fun environment -> async.Return(Flow.run environment flow))
+        AsyncFlow(fun environment -> async {
+            let! exit =
+                #if FABLE_COMPILER
+                Flow.invoke flow environment CancellationToken.None
+                #else
+                Flow.invoke flow environment CancellationToken.None |> _.AsTask() |> Async.AwaitTask
+                #endif
+            return exit
+        })
 
     /// <summary>Lifts an async value into an async flow.</summary>
     let fromAsync (operation: Async<'value>) : AsyncFlow<'env, 'error, 'value> =
         AsyncFlow(fun _ ->
             async {
                 let! value = operation
-                return Ok value
+                return Exit.Success value
             })
 
     /// <summary>Lifts an async result into an async flow.</summary>
     let fromAsyncResult (operation: Async<Result<'value, 'error>>) : AsyncFlow<'env, 'error, 'value> =
-        AsyncFlow(fun _ -> operation)
+        AsyncFlow(fun _ ->
+            async {
+                let! result = operation
+                return match result with Ok v -> Exit.Success v | Error e -> Exit.Failure (Cause.Fail e)
+            })
 
     /// <summary>Reads the current environment as the flow value.</summary>
     let env<'env, 'error> : AsyncFlow<'env, 'error, 'env> =
-        AsyncFlow(fun environment -> async.Return(Ok environment))
+        AsyncFlow(fun environment -> async.Return(Exit.Success environment))
 
     /// <summary>Projects a value from the current environment.</summary>
     let read (projection: 'env -> 'value) : AsyncFlow<'env, 'error, 'value> =
-        AsyncFlow(fun environment -> async.Return(Ok(projection environment)))
+        AsyncFlow(fun environment -> async.Return(Exit.Success(projection environment)))
 
     /// <summary>Maps the successful value of an async flow.</summary>
     let map
@@ -509,8 +537,8 @@ module internal AsyncFlow =
             InternalCombinatorCore.mapWith
                 (fun mapOutcome operation ->
                     async {
-                        let! result = operation
-                        return mapOutcome result
+                        let! exit = operation
+                        return mapOutcome exit
                     })
                 mapper
                 (fun environment -> run environment flow)
@@ -527,16 +555,16 @@ module internal AsyncFlow =
         : AsyncFlow<'env, 'error, 'next> =
         AsyncFlow(
             InternalCombinatorCore.bindWith
-                (fun operation onSuccess onError ->
+                (fun operation onSuccess onFailure ->
                     async {
-                        let! result = operation
+                        let! exit = operation
 
-                        match result with
-                        | Ok value -> return! onSuccess value
-                        | Error error -> return! onError error
+                        match exit with
+                        | Exit.Success value -> return! onSuccess value
+                        | Exit.Failure cause -> return! onFailure cause
                     })
                 (fun environment value -> binder value |> run environment)
-                (Error >> async.Return)
+                (Exit.Failure >> async.Return)
                 (fun environment -> run environment flow)
         )
 
@@ -565,16 +593,19 @@ module internal AsyncFlow =
         : AsyncFlow<'env, 'error, 'value> =
         AsyncFlow(fun environment ->
             async {
-                let! result = run environment flow
+                let! exit = run environment flow
 
-                match result with
-                | Ok value -> return Ok value
-                | Error error ->
-                    let! tapResult = binder error |> run environment
+                match exit with
+                | Exit.Success value -> return Exit.Success value
+                | Exit.Failure cause ->
+                    match cause with
+                    | Cause.Fail error ->
+                        let! tapExit = binder error |> run environment
 
-                    match tapResult with
-                    | Ok () -> return Error error
-                    | Error nextError -> return Error nextError
+                        match tapExit with
+                        | Exit.Success () -> return Exit.Failure cause
+                        | Exit.Failure tapCause -> return Exit.Failure tapCause
+                    | _ -> return Exit.Failure cause
             })
 
     /// <summary>Maps the error value of an async flow.</summary>
@@ -586,8 +617,8 @@ module internal AsyncFlow =
             InternalCombinatorCore.mapErrorWith
                 (fun mapOutcome operation ->
                     async {
-                        let! result = operation
-                        return mapOutcome result
+                        let! exit = operation
+                        return mapOutcome exit
                     })
                 mapper
                 (fun environment -> run environment flow)
@@ -603,7 +634,7 @@ module internal AsyncFlow =
                 try
                     return! run environment flow
                 with error ->
-                    return Error(handler error)
+                    return Exit.Failure (Cause.Fail (handler error))
             })
 
     /// <summary>Falls back to another async flow when the source flow fails.</summary>
@@ -614,11 +645,12 @@ module internal AsyncFlow =
         : AsyncFlow<'env, 'error, 'value> =
         AsyncFlow(fun environment ->
             async {
-                let! result = run environment flow
+                let! exit = run environment flow
 
-                match result with
-                | Ok value -> return Ok value
-                | Error error -> return! run environment (fallback error)
+                match exit with
+                | Exit.Success value -> return Exit.Success value
+                | Exit.Failure (Cause.Fail error) -> return! run environment (fallback error)
+                | Exit.Failure cause -> return Exit.Failure cause
             })
 
     /// <summary>Falls back to another async flow when the source flow fails.</summary>
@@ -697,8 +729,8 @@ module internal AsyncFlow =
                 let! outcome = run environment layer
 
                 match outcome with
-                | Ok environment -> return! run environment flow
-                | Error error -> return Error error
+                | Exit.Success environment -> return! run environment flow
+                | Exit.Failure cause -> return Exit.Failure cause
             })
 
     /// <summary>Defers async flow construction until execution time.</summary>
@@ -713,19 +745,19 @@ module internal AsyncFlow =
         AsyncFlow(fun environment ->
             async {
                 let results = ResizeArray()
-                let mutable currentError = None
+                let mutable currentFailure = None
                 use enumerator = values.GetEnumerator()
 
-                while currentError.IsNone && enumerator.MoveNext() do
+                while currentFailure.IsNone && enumerator.MoveNext() do
                     let! outcome = mapping enumerator.Current |> run environment
 
                     match outcome with
-                    | Ok value -> results.Add value
-                    | Error error -> currentError <- Some error
+                    | Exit.Success value -> results.Add value
+                    | Exit.Failure cause -> currentFailure <- Some cause
 
-                match currentError with
-                | Some error -> return Error error
-                | None -> return Ok(List.ofSeq results)
+                match currentFailure with
+                | Some cause -> return Exit.Failure cause
+                | None -> return Exit.Success(List.ofSeq results)
             })
 
     /// <summary>Transforms a sequence of async flows into an async flow of a sequence and stops at the first failure.</summary>
@@ -748,7 +780,7 @@ module internal AsyncFlow =
             AsyncFlow(fun _environment ->
                 async {
                     let! cancellationToken = Async.CancellationToken
-                    return Ok cancellationToken
+                    return Exit.Success cancellationToken
                 })
 
         /// <summary>
@@ -766,7 +798,7 @@ module internal AsyncFlow =
                     try
                         return! run environment flow
                     with :? OperationCanceledException as error ->
-                        return Error(handler error)
+                        return Exit.Failure (Cause.Fail (handler error))
                 })
 
         /// <summary>
@@ -780,9 +812,9 @@ module internal AsyncFlow =
                     let! cancellationToken = Async.CancellationToken
 
                     if cancellationToken.IsCancellationRequested then
-                        return Error canceledError
+                        return Exit.Failure (Cause.Fail canceledError)
                     else
-                        return Ok ()
+                        return Exit.Success ()
                 })
 
         /// <summary>
@@ -795,7 +827,7 @@ module internal AsyncFlow =
                 async {
                     let! cancellationToken = Async.CancellationToken
                     do! Task.Delay(delay, cancellationToken) |> Async.AwaitTask
-                    return Ok ()
+                    return Exit.Success ()
                 })
 
         /// <summary>
@@ -817,7 +849,7 @@ module internal AsyncFlow =
                           Message = message
                           TimestampUtc = DateTimeOffset.UtcNow }
 
-                    return Ok ()
+                    return Exit.Success ()
                 })
 
         /// <summary>
@@ -839,7 +871,7 @@ module internal AsyncFlow =
                           Message = messageFactory environment
                           TimestampUtc = DateTimeOffset.UtcNow }
 
-                    return Ok ()
+                    return Exit.Success ()
                 })
 
         /// <summary>
@@ -863,8 +895,7 @@ module internal AsyncFlow =
                             do! release resource cancellationToken |> Async.AwaitTask
 
                             match result with
-                            | Choice1Of2 (Ok value) -> return Ok value
-                            | Choice1Of2 (Error error) -> return Error error
+                            | Choice1Of2 exit -> return exit
                             | Choice2Of2 error -> return raise error
                         }))
                 acquire
@@ -892,7 +923,7 @@ module internal AsyncFlow =
                     let! completed = Task.WhenAny([| operation :> Task; timeoutTask |]) |> Async.AwaitTask
 
                     if obj.ReferenceEquals(completed, timeoutTask) then
-                        return Error timeoutError
+                        return Exit.Failure (Cause.Fail timeoutError)
                     else
                         return! operation |> Async.AwaitTask
                 })
@@ -916,7 +947,7 @@ module internal AsyncFlow =
                     let! completed = Task.WhenAny([| operation :> Task; timeoutTask |]) |> Async.AwaitTask
 
                     if obj.ReferenceEquals(completed, timeoutTask) then
-                        return Ok value
+                        return Exit.Success value
                     else
                         return! operation |> Async.AwaitTask
                 })
@@ -970,11 +1001,11 @@ module internal AsyncFlow =
             let rec loop attempt =
                 AsyncFlow(fun environment ->
                     async {
-                        let! result = run environment flow
+                        let! exit = run environment flow
 
-                        match result with
-                        | Ok value -> return Ok value
-                        | Error error when attempt < policy.MaxAttempts && policy.ShouldRetry error ->
+                        match exit with
+                        | Exit.Success value -> return Exit.Success value
+                        | Exit.Failure (Cause.Fail error) when attempt < policy.MaxAttempts && policy.ShouldRetry error ->
                             let delay = policy.Delay attempt
                             let! cancellationToken = Async.CancellationToken
 
@@ -982,8 +1013,8 @@ module internal AsyncFlow =
                                 do! Task.Delay(delay, cancellationToken) |> Async.AwaitTask
 
                             return! run environment (loop (attempt + 1))
-                        | Error error ->
-                            return Error error
+                        | _ ->
+                            return exit
                     })
 
             loop 1
@@ -998,58 +1029,48 @@ open System.Threading.Tasks
 open FsFlow
 
 /// <summary>
-/// Represents a cold task-based workflow that reads an environment, observes a runtime cancellation token,
-/// returns a typed result, and is executed explicitly through <c>TaskFlow.run</c>.
-/// </summary>
-/// <typeparam name="env">The type of the environment dependency.</typeparam>
-/// <typeparam name="error">The type of the failure value.</typeparam>
-/// <typeparam name="value">The type of the success value.</typeparam>
-type internal TaskFlow<'env, 'error, 'value> =
-    private
-    | TaskFlow of ('env -> CancellationToken -> Task<Result<'value, 'error>>)
-
-/// <summary>
 /// Represents delayed task work that can observe a runtime cancellation token when it is started.
 /// </summary>
 /// <typeparam name="value">The type of the produced task value.</typeparam>
 type internal ColdTask<'value> =
     | ColdTask of (CancellationToken -> Task<'value>)
 
-type internal TaskFlow<'env, 'error, 'value> with
-    static member CapabilityService
-        (projection: 'env -> 'service)
-        : TaskFlow<'env, 'error, 'service> =
-        TaskFlow(fun environment _ -> Task.FromResult(Ok(projection environment)))
+module internal TaskFlowExtensions =
+    type TaskFlow<'env, 'error, 'value> with
+        static member CapabilityService
+            (projection: 'env -> 'service)
+            : TaskFlow<'env, 'error, 'service> =
+            TaskFlow(fun environment _ -> Task.FromResult(Exit.Success(projection environment)))
 
-    static member ServiceFromProvider
-        ()
-        : TaskFlow<IServiceProvider, MissingCapability, 'service> =
-        TaskFlow(fun provider _ ->
-            match provider.GetService typeof<'service> with
-            | null ->
-                Task.FromResult(
-                    Error
-                        {
-                            CapabilityType = typeof<'service>
-                        })
-            | value -> Task.FromResult(Ok(unbox<'service> value)))
+        static member ServiceFromProvider
+            ()
+            : TaskFlow<IServiceProvider, MissingCapability, 'service> =
+            TaskFlow(fun provider _ ->
+                match provider.GetService typeof<'service> with
+                | null ->
+                    Task.FromResult(
+                        Exit.Failure (Cause.Fail
+                            {
+                                CapabilityType = typeof<'service>
+                            }))
+                | value -> Task.FromResult(Exit.Success(unbox<'service> value)))
 
-    static member ProvideLayer
-        (
-            layer: TaskFlow<'input, 'error, 'environment>,
-            flow: TaskFlow<'environment, 'error, 'value>
-        ) : TaskFlow<'input, 'error, 'value> =
-        let (TaskFlow layerOperation) = layer
-        let (TaskFlow flowOperation) = flow
+        static member ProvideLayer
+            (
+                layer: TaskFlow<'input, 'error, 'environment>,
+                flow: TaskFlow<'environment, 'error, 'value>
+            ) : TaskFlow<'input, 'error, 'value> =
+            let (TaskFlow layerOperation) = layer
+            let (TaskFlow flowOperation) = flow
 
-        TaskFlow(fun environment cancellationToken ->
-            task {
-                let! outcome = layerOperation environment cancellationToken
+            TaskFlow(fun environment cancellationToken ->
+                task {
+                    let! outcome = layerOperation environment cancellationToken
 
-                match outcome with
-                | Ok environment -> return! flowOperation environment cancellationToken
-                | Error error -> return Error error
-            })
+                    match outcome with
+                    | Exit.Success environment -> return! flowOperation environment cancellationToken
+                    | Exit.Failure cause -> return Exit.Failure cause
+                })
 
 /// <summary>
 /// Core functions for creating and executing cold tasks.
@@ -1093,22 +1114,22 @@ module internal TaskFlow =
     /// <param name="environment">The environment of type <c>'env</c>.</param>
     /// <param name="cancellationToken">The <see cref="T:System.Threading.CancellationToken" />.</param>
     /// <param name="flow">The <see cref="T:FsFlow.TaskFlow`3" /> to execute.</param>
-    /// <returns>A <see cref="T:System.Threading.Tasks.Task`1" /> containing the <see cref="T:System.Result`2" />.</returns>
+    /// <returns>A <see cref="T:System.Threading.Tasks.Task`1" /> containing the <see cref="T:FsFlow.Exit`2" />.</returns>
     let run
         (environment: 'env)
         (cancellationToken: CancellationToken)
         (TaskFlow operation: TaskFlow<'env, 'error, 'value>)
-        : Task<Result<'value, 'error>> =
+        : Task<Exit<'value, 'error>> =
         operation environment cancellationToken
 
     /// <summary>Runs a task flow against a <see cref="T:FsFlow.RuntimeContext`2" /> and its internal cancellation token.</summary>
     /// <param name="context">The <see cref="T:FsFlow.RuntimeContext`2" /> providing services and cancellation.</param>
     /// <param name="flow">The task flow to run.</param>
-    /// <returns>A <see cref="T:System.Threading.Tasks.Task`1" /> with the final result.</returns>
+    /// <returns>A <see cref="T:System.Threading.Tasks.Task`1" /> with the final exit value.</returns>
     let runContext
         (context: RuntimeContext<'runtime, 'env>)
         (flow: TaskFlow<RuntimeContext<'runtime, 'env>, 'error, 'value>)
-        : Task<Result<'value, 'error>> =
+        : Task<Exit<'value, 'error>> =
         run context context.CancellationToken flow
 
     /// <summary>Converts a task flow into a hot <see cref="T:System.Threading.Tasks.Task`1" />.</summary>
@@ -1123,14 +1144,14 @@ module internal TaskFlow =
         (environment: 'env)
         (cancellationToken: CancellationToken)
         (flow: TaskFlow<'env, 'error, 'value>)
-        : Task<Result<'value, 'error>> =
+        : Task<Exit<'value, 'error>> =
         run environment cancellationToken flow
 
     /// <summary>Creates a successful task flow.</summary>
     /// <param name="value">The success value of type <c>'value</c>.</param>
     /// <returns>A <see cref="T:FsFlow.TaskFlow`3" /> that always succeeds.</returns>
     let ok (value: 'value) : TaskFlow<'env, 'error, 'value> =
-        TaskFlow(fun _ _ -> Task.FromResult(Ok value))
+        TaskFlow(fun _ _ -> Task.FromResult(Exit.Success value))
 
     /// <summary>Alias for <see cref="ok" /> that reads well in some call sites.</summary>
     let succeed (value: 'value) : TaskFlow<'env, 'error, 'value> =
@@ -1144,7 +1165,7 @@ module internal TaskFlow =
     /// <param name="error">The failure value of type <c>'error</c>.</param>
     /// <returns>A <see cref="T:FsFlow.TaskFlow`3" /> that always fails.</returns>
     let error (failure: 'error) : TaskFlow<'env, 'error, 'value> =
-        TaskFlow(fun _ _ -> Task.FromResult(Error failure))
+        TaskFlow(fun _ _ -> Task.FromResult(Exit.Failure (Cause.Fail failure)))
 
     /// <summary>Alias for <see cref="error" /> that reads well in some call sites.</summary>
     let fail (failure: 'error) : TaskFlow<'env, 'error, 'value> =
@@ -1154,7 +1175,7 @@ module internal TaskFlow =
     /// <param name="result">The result to lift.</param>
     /// <returns>A task flow mirroring the result.</returns>
     let fromResult (result: Result<'value, 'error>) : TaskFlow<'env, 'error, 'value> =
-        TaskFlow(fun _ _ -> Task.FromResult result)
+        TaskFlow(fun _ _ -> Task.FromResult (match result with Ok v -> Exit.Success v | Error e -> Exit.Failure (Cause.Fail e)))
 
     /// <summary>Lifts an option into a task flow with the supplied error.</summary>
     /// <param name="error">The error to return if the option is <see cref="T:Microsoft.FSharp.Core.FSharpOption`1.None" />.</param>
@@ -1181,10 +1202,10 @@ module internal TaskFlow =
         TaskFlow(fun _ _ ->
             task {
                 match result with
-                | Ok value -> return Ok value
+                | Ok value -> return Exit.Success value
                 | Error () ->
                     let! error = errorTask
-                    return Error error
+                    return Exit.Failure (Cause.Fail error)
             })
 
     /// <summary>Turns a pure validation result into a task flow with task-provided failure.</summary>
@@ -1196,10 +1217,10 @@ module internal TaskFlow =
         TaskFlow(fun _ _ ->
             task {
                 match result with
-                | Ok value -> return Ok value
+                | Ok value -> return Exit.Success value
                 | Error () ->
                     let! error = errorAsync |> Async.StartAsTask
-                    return Error error
+                    return Exit.Failure (Cause.Fail error)
             })
 
     let orElseFlow
@@ -1209,11 +1230,11 @@ module internal TaskFlow =
         TaskFlow(fun environment cancellationToken ->
             task {
                 match result with
-                | Ok value -> return Ok value
+                | Ok value -> return Exit.Success value
                 | Error () ->
                     match Flow.run environment errorFlow with
-                    | Ok error -> return Error error
-                    | Error error -> return Error error
+                    | Exit.Success error -> return Exit.Failure (Cause.Fail error)
+                    | Exit.Failure cause -> return Exit.Failure cause
             })
 
     let orElseAsyncFlow
@@ -1223,15 +1244,15 @@ module internal TaskFlow =
         TaskFlow(fun environment cancellationToken ->
             task {
                 match result with
-                | Ok value -> return Ok value
+                | Ok value -> return Exit.Success value
                 | Error () ->
                     let! outcome =
                         AsyncFlow.run environment errorFlow
                         |> fun operation -> Async.StartAsTask(operation, cancellationToken = cancellationToken)
 
                     match outcome with
-                    | Ok error -> return Error error
-                    | Error error -> return Error error
+                    | Exit.Success error -> return Exit.Failure (Cause.Fail error)
+                    | Exit.Failure cause -> return Exit.Failure cause
             })
 
     let orElseTaskFlow
@@ -1241,13 +1262,13 @@ module internal TaskFlow =
         TaskFlow(fun environment cancellationToken ->
             task {
                 match result with
-                | Ok value -> return Ok value
+                | Ok value -> return Exit.Success value
                 | Error () ->
                     let! outcome = run environment cancellationToken errorFlow
 
                     match outcome with
-                    | Ok error -> return Error error
-                    | Error error -> return Error error
+                    | Exit.Success error -> return Exit.Failure (Cause.Fail error)
+                    | Exit.Failure cause -> return Exit.Failure cause
             })
 
     let fromFlow (flow: Flow<'env, 'error, 'value>) : TaskFlow<'env, 'error, 'value> =
@@ -1262,19 +1283,23 @@ module internal TaskFlow =
         TaskFlow(fun _ cancellationToken ->
             task {
                 let! value = ColdTask.run cancellationToken coldTask
-                return Ok value
+                return Exit.Success value
             })
 
     let fromTaskResult
         (coldTask: ColdTask<Result<'value, 'error>>)
         : TaskFlow<'env, 'error, 'value> =
-        TaskFlow(fun _ cancellationToken -> ColdTask.run cancellationToken coldTask)
+        TaskFlow(fun _ cancellationToken ->
+            task {
+                let! result = ColdTask.run cancellationToken coldTask
+                return match result with Ok v -> Exit.Success v | Error e -> Exit.Failure (Cause.Fail e)
+            })
 
     let env<'env, 'error> : TaskFlow<'env, 'error, 'env> =
-        TaskFlow(fun environment _ -> Task.FromResult(Ok environment))
+        TaskFlow(fun environment _ -> Task.FromResult(Exit.Success environment))
 
     let read (projection: 'env -> 'value) : TaskFlow<'env, 'error, 'value> =
-        TaskFlow(fun environment _ -> Task.FromResult(Ok(projection environment)))
+        TaskFlow(fun environment _ -> Task.FromResult(Exit.Success(projection environment)))
 
     /// <summary>Reads the runtime half of a runtime-context environment.</summary>
     let readRuntime
@@ -1316,7 +1341,7 @@ module internal TaskFlow =
     /// This is the "flatmap" operation for <see cref="T:FsFlow.TaskFlow`3" />. It allows for dependent
     /// asynchronous steps where the second flow depends on the value produced by the first.
     /// </remarks>
-    /// <param name="binder">A function of type <c>'value -> TaskFlow&lt;'env, 'error, 'next&gt;</c>.</param>
+    /// <param name="binder">A function that takes the successful value and returns a new task flow.</param>
     /// <param name="flow">The source task flow.</param>
     /// <returns>A new task flow representing the combined workflow.</returns>
     let bind
@@ -1325,16 +1350,16 @@ module internal TaskFlow =
         : TaskFlow<'env, 'error, 'next> =
         TaskFlow(fun environment cancellationToken ->
             InternalCombinatorCore.bindWith
-                (fun operation onSuccess onError ->
+                (fun operation onSuccess onFailure ->
                     task {
-                        let! result = operation
+                        let! exit = operation
 
-                        match result with
-                        | Ok value -> return! onSuccess value
-                        | Error error -> return! onError error
+                        match exit with
+                        | Exit.Success value -> return! onSuccess value
+                        | Exit.Failure cause -> return! onFailure cause
                     })
                 (fun (environment, cancellationToken) value -> binder value |> run environment cancellationToken)
-                (Error >> Task.FromResult)
+                (Exit.Failure >> Task.FromResult)
                 (fun (environment, cancellationToken) -> run environment cancellationToken flow)
                 (environment, cancellationToken))
 
@@ -1369,16 +1394,19 @@ module internal TaskFlow =
         : TaskFlow<'env, 'error, 'value> =
         TaskFlow(fun environment cancellationToken ->
             task {
-                let! result = run environment cancellationToken flow
+                let! exit = run environment cancellationToken flow
 
-                match result with
-                | Ok value -> return Ok value
-                | Error error ->
-                    let! tapResult = binder error |> run environment cancellationToken
+                match exit with
+                | Exit.Success value -> return Exit.Success value
+                | Exit.Failure cause ->
+                    match cause with
+                    | Cause.Fail error ->
+                        let! tapExit = binder error |> run environment cancellationToken
 
-                    match tapResult with
-                    | Ok () -> return Error error
-                    | Error nextError -> return Error nextError
+                        match tapExit with
+                        | Exit.Success () -> return Exit.Failure cause
+                        | Exit.Failure tapCause -> return Exit.Failure tapCause
+                    | _ -> return Exit.Failure cause
             })
 
     /// <summary>Maps the error value of a task flow.</summary>
@@ -1393,8 +1421,8 @@ module internal TaskFlow =
             InternalCombinatorCore.mapErrorWith
                 (fun mapOutcome operation ->
                     task {
-                        let! result = operation
-                        return mapOutcome result
+                        let! exit = operation
+                        return mapOutcome exit
                     })
                 mapper
                 (fun (environment, cancellationToken) -> run environment cancellationToken flow)
@@ -1413,7 +1441,7 @@ module internal TaskFlow =
                 try
                     return! run environment cancellationToken flow
                 with error ->
-                    return Error(handler error)
+                    return Exit.Failure (Cause.Fail (handler error))
             })
 
     /// <summary>Falls back to another task flow when the source flow fails.</summary>
@@ -1427,11 +1455,12 @@ module internal TaskFlow =
         : TaskFlow<'env, 'error, 'value> =
         TaskFlow(fun environment cancellationToken ->
             task {
-                let! result = run environment cancellationToken flow
+                let! exit = run environment cancellationToken flow
 
-                match result with
-                | Ok value -> return Ok value
-                | Error error -> return! run environment cancellationToken (fallback error)
+                match exit with
+                | Exit.Success value -> return Exit.Success value
+                | Exit.Failure (Cause.Fail error) -> return! run environment cancellationToken (fallback error)
+                | Exit.Failure cause -> return Exit.Failure cause
             })
 
     /// <summary>Falls back to another task flow when the source flow fails.</summary>
@@ -1536,19 +1565,19 @@ module internal TaskFlow =
         TaskFlow(fun environment cancellationToken ->
             task {
                 let results = ResizeArray()
-                let mutable currentError = None
+                let mutable currentFailure = None
                 use enumerator = values.GetEnumerator()
 
-                while currentError.IsNone && enumerator.MoveNext() do
+                while currentFailure.IsNone && enumerator.MoveNext() do
                     let! outcome = mapping enumerator.Current |> run environment cancellationToken
 
                     match outcome with
-                    | Ok value -> results.Add value
-                    | Error error -> currentError <- Some error
+                    | Exit.Success value -> results.Add value
+                    | Exit.Failure cause -> currentFailure <- Some cause
 
-                match currentError with
-                | Some error -> return Error error
-                | None -> return Ok(List.ofSeq results)
+                match currentFailure with
+                | Some cause -> return Exit.Failure cause
+                | None -> return Exit.Success(List.ofSeq results)
             })
 
     /// <summary>Transforms a sequence of task flows into a task flow of a sequence and stops at the first failure.</summary>
@@ -1567,8 +1596,8 @@ module internal TaskFlow =
                 let! outcome = run environment cancellationToken layer
 
                 match outcome with
-                | Ok environment -> return! run environment cancellationToken (flow |> localEnv (fun _ -> environment))
-                | Error error -> return Error error
+                | Exit.Success environment -> return! run environment cancellationToken (flow |> localEnv (fun _ -> environment))
+                | Exit.Failure cause -> return Exit.Failure cause
             })
 
     /// <summary>
@@ -1578,7 +1607,7 @@ module internal TaskFlow =
     module Runtime =
         /// <summary>Reads the current runtime cancellation token.</summary>
         let cancellationToken<'env, 'error> : TaskFlow<'env, 'error, CancellationToken> =
-            TaskFlow(fun _environment cancellationToken -> Task.FromResult(Ok cancellationToken))
+            TaskFlow(fun _environment cancellationToken -> Task.FromResult(Exit.Success cancellationToken))
 
         /// <summary>Converts an <see cref="OperationCanceledException" /> into a typed error.</summary>
         let catchCancellation
@@ -1590,23 +1619,23 @@ module internal TaskFlow =
                     try
                         return! run environment cancellationToken flow
                     with :? OperationCanceledException as error ->
-                        return Error(handler error)
+                        return Exit.Failure (Cause.Fail (handler error))
                 })
 
         /// <summary>Returns a typed error immediately when the runtime token is already canceled.</summary>
         let ensureNotCanceled<'env, 'error> (canceledError: 'error) : TaskFlow<'env, 'error, unit> =
             TaskFlow(fun _environment cancellationToken ->
                 if cancellationToken.IsCancellationRequested then
-                    Task.FromResult(Error canceledError)
+                    Task.FromResult(Exit.Failure (Cause.Fail canceledError))
                 else
-                    Task.FromResult(Ok ()))
+                    Task.FromResult(Exit.Success ()))
 
         /// <summary>Suspends the flow for the specified duration while observing cancellation.</summary>
         let sleep<'env, 'error> (delay: TimeSpan) : TaskFlow<'env, 'error, unit> =
             TaskFlow(fun _environment cancellationToken ->
                 task {
                     do! Task.Delay(delay, cancellationToken)
-                    return Ok ()
+                    return Exit.Success ()
                 })
 
         /// <summary>Writes a fixed log message through the environment-provided logger.</summary>
@@ -1622,7 +1651,7 @@ module internal TaskFlow =
                       Message = message
                       TimestampUtc = DateTimeOffset.UtcNow }
 
-                Task.FromResult(Ok ()))
+                Task.FromResult(Exit.Success ()))
 
         /// <summary>Writes a log message computed from the current environment.</summary>
         let logWith
@@ -1637,7 +1666,7 @@ module internal TaskFlow =
                       Message = messageFactory environment
                       TimestampUtc = DateTimeOffset.UtcNow }
 
-                Task.FromResult(Ok ()))
+                Task.FromResult(Exit.Success ()))
 
         /// <summary>Acquires a resource, uses it, and always runs the release action.</summary>
         let useWithAcquireRelease
@@ -1657,8 +1686,7 @@ module internal TaskFlow =
                             do! release resource cancellationToken |> Async.AwaitTask
 
                             match result with
-                            | Choice1Of2 (Ok value) -> return Ok value
-                            | Choice1Of2 (Error error) -> return Error error
+                            | Choice1Of2 exit -> return exit
                             | Choice2Of2 error -> return raise error
                         }
                         |> fun computation -> Async.StartAsTask(computation, cancellationToken = cancellationToken)))
@@ -1677,7 +1705,7 @@ module internal TaskFlow =
                     let! completed = Task.WhenAny([| operation :> Task; timeoutTask |])
 
                     if obj.ReferenceEquals(completed, timeoutTask) then
-                        return Error timeoutError
+                        return Exit.Failure (Cause.Fail timeoutError)
                     else
                         return! operation
                 })
@@ -1695,7 +1723,7 @@ module internal TaskFlow =
                     let! completed = Task.WhenAny([| operation :> Task; timeoutTask |])
 
                     if obj.ReferenceEquals(completed, timeoutTask) then
-                        return Ok value
+                        return Exit.Success value
                     else
                         return! operation
                 })
@@ -1737,23 +1765,22 @@ module internal TaskFlow =
             let rec loop attempt =
                 TaskFlow(fun environment cancellationToken ->
                     task {
-                        let! result = run environment cancellationToken flow
+                        let! exit = run environment cancellationToken flow
 
-                        match result with
-                        | Ok value -> return Ok value
-                        | Error error when attempt < policy.MaxAttempts && policy.ShouldRetry error ->
+                        match exit with
+                        | Exit.Success value -> return Exit.Success value
+                        | Exit.Failure (Cause.Fail error) when attempt < policy.MaxAttempts && policy.ShouldRetry error ->
                             let delay = policy.Delay attempt
 
                             if delay > TimeSpan.Zero then
                                 do! Task.Delay(delay, cancellationToken)
 
                             return! run environment cancellationToken (loop (attempt + 1))
-                        | Error error ->
-                            return Error error
+                        | _ ->
+                            return exit
                     })
 
             loop 1
-
 /// <summary>
 /// Describes a task-flow program that is built against a runtime context and later executed with a cancellation token.
 /// </summary>
@@ -1793,7 +1820,7 @@ module internal TaskFlowSpec =
     let run
         (cancellationToken: CancellationToken)
         (spec: TaskFlowSpec<'runtime, 'env, 'error, 'value>)
-        : Task<Result<'value, 'error>> =
+        : Task<Exit<'value, 'error>> =
         let context = RuntimeContext.create spec.Runtime spec.Environment cancellationToken
 
         spec.Build ()
@@ -1868,10 +1895,10 @@ type internal TaskFlowBuilder() =
         |> TaskFlow.fromAsyncFlow
 
     member _.ReturnFrom(operation: Task<Result<'value, 'error>>) : TaskFlow<'env, 'error, 'value> =
-        TaskFlow(fun _ _ -> operation)
+        TaskFlow.fromTaskResult (ColdTask.fromTask operation)
 
     member _.ReturnFrom(operation: ValueTask<Result<'value, 'error>>) : TaskFlow<'env, 'error, 'value> =
-        TaskFlow(fun _ _ -> operation.AsTask())
+        TaskFlow.fromTaskResult (ColdTask.fromValueTask operation)
 
     member _.ReturnFrom(operation: ColdTask<Result<'value, 'error>>) : TaskFlow<'env, 'error, 'value> =
         TaskFlow.fromTaskResult operation
@@ -1961,7 +1988,7 @@ type internal TaskFlowBuilder() =
                 let dependency = (environment :> Needs<'dep>).Dep
                 let (Env project) = request
 
-                return! TaskFlow.run environment cancellationToken (TaskFlow(fun _ _ -> Task.FromResult(project dependency)) |> TaskFlow.bind binder)
+                return! TaskFlow.run environment cancellationToken (TaskFlow.fromResult (project dependency) |> TaskFlow.bind binder)
             })
 
     member _.Bind
@@ -2083,7 +2110,7 @@ type internal TaskFlowBuilder() =
                 let dependency = (environment :> Needs<'dep>).Dep
                 let (Env project) = request
 
-                return! TaskFlow.run environment cancellationToken (TaskFlow(fun _ _ -> project dependency) |> TaskFlow.bind binder)
+                return! TaskFlow.run environment cancellationToken (TaskFlow.fromTaskResult (ColdTask.fromTask (project dependency)) |> TaskFlow.bind binder)
             })
 
     member _.Bind
@@ -2097,7 +2124,7 @@ type internal TaskFlowBuilder() =
                 let dependency = (environment :> Needs<'dep>).Dep
                 let (Env project) = request
 
-                return! TaskFlow.run environment cancellationToken (TaskFlow(fun _ _ -> (project dependency).AsTask()) |> TaskFlow.bind binder)
+                return! TaskFlow.run environment cancellationToken (TaskFlow.fromTaskResult (ColdTask.fromValueTask (project dependency)) |> TaskFlow.bind binder)
             })
 
     member _.Bind
@@ -2148,7 +2175,7 @@ type internal TaskFlowBuilder() =
             operation: Task<Result<'value, 'error>>,
             binder: 'value -> TaskFlow<'env, 'error, 'next>
         ) : TaskFlow<'env, 'error, 'next> =
-        TaskFlow(fun _ _ -> operation)
+        TaskFlow.fromTaskResult (ColdTask.fromTask operation)
         |> TaskFlow.bind binder
 
     member _.Bind
@@ -2156,7 +2183,7 @@ type internal TaskFlowBuilder() =
             operation: ValueTask<Result<'value, 'error>>,
             binder: 'value -> TaskFlow<'env, 'error, 'next>
         ) : TaskFlow<'env, 'error, 'next> =
-        TaskFlow(fun _ _ -> operation.AsTask())
+        TaskFlow.fromTaskResult (ColdTask.fromValueTask operation)
         |> TaskFlow.bind binder
 
     member _.Bind
@@ -2292,14 +2319,14 @@ module internal TaskFlowBuilderExtensions =
             TaskFlow(fun _ _ ->
                 task {
                     do! operation
-                    return Ok()
+                    return Exit.Success ()
                 })
 
         member _.ReturnFrom(operation: Task<'value>) : TaskFlow<'env, 'error, 'value> =
             TaskFlow(fun _ _ ->
                 task {
                     let! value = operation
-                    return Ok value
+                    return Exit.Success value
                 })
 
         member this.Bind
@@ -2429,7 +2456,6 @@ module internal TaskFlowBuilderExtensions =
                         TaskFlow.run environment cancellationToken (
                             this.Bind(project dependency, binder))
                 })
-
 [<AutoOpen>]
 module internal TaskBuilders =
     /// <summary>

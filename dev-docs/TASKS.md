@@ -25,10 +25,10 @@ Keep live product and architecture direction in `dev-docs/PLAN.md`.
 See [EXIT_CAUSE_PLAN.md](EXIT_CAUSE_PLAN.md) for the design.
 
 10. [x] Define `Cause<'e>` (Fail, Die, Interrupt) and `Exit<'v, 'e>` types in `FsFlow/Core.fs`.
-11. [ ] Refactor the unified `Flow` signature to return `ValueTask<Exit<'v, 'e>>` (or `JS.Promise` on Fable).
-12. [ ] Update the `flow { }` builder to handle the `Exit` channels; ensure `try...finally` and `use` blocks respect interruption signals.
-13. [ ] Update core `Flow` primitives (`map`, `bind`, `catch`, `run`) to operate on the `Exit` model.
-14. [ ] Implement `Flow.toResult` and `Flow.fromResult` interop helpers to maintain compatibility with standard F# results.
+11. [x] Refactor the unified `Flow` signature to return `ValueTask<Exit<'v, 'e>>` (or `JS.Promise` on Fable).
+12. [x] Update the `flow { }` builder to handle the `Exit` channels; ensure `try...finally` and `use` blocks respect interruption signals.
+13. [x] Update core `Flow` primitives (`map`, `bind`, `catch`, `run`) to operate on the `Exit` model.
+14. [x] Implement `Flow.toResult` and `Flow.fromResult` interop helpers to maintain compatibility with standard F# results.
 
 ## Phase 3: ZIO Core Features (The Runtime)
 

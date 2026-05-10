@@ -20,7 +20,7 @@ type ReaderOverheadBenchmarks() =
         taskFlowLocalEnv
         |> TaskFlow.run 0 Shared.noCancellation
         |> fun operation -> operation.GetAwaiter().GetResult()
-        |> Shared.consumeResult
+        |> Shared.consumeExit
 
     [<Benchmark(Description = "Manual env passing x10")>]
     member _.ManualEnvPassingX10() =
@@ -201,7 +201,7 @@ type SynchronousCompletionBenchmarks() =
         taskFlow
         |> TaskFlow.run 0 CancellationToken.None
         |> fun operation -> operation.GetAwaiter().GetResult()
-        |> Shared.consumeResult
+        |> Shared.consumeExit
 
     [<Benchmark(Description = "Candidate ValueTaskFlow")>]
     member _.CandidateValueTaskFlow() =

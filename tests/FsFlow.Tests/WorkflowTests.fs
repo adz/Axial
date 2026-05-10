@@ -112,14 +112,14 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
 
             let taskRun2 = Flow.run taskCaps taskWorkflow
 
-            test <@ flowRun1 = Ok "dep-2" @>
-            test <@ flowRun2 = Ok "dep-4" @>
+            test <@ flowRun1 = Exit.Success "dep-2" @>
+            test <@ flowRun2 = Exit.Success "dep-4" @>
             test <@ flowCaps.AccessCount = 4 @>
-            test <@ asyncRun1 = Ok "dep-2" @>
-            test <@ asyncRun2 = Ok "dep-4" @>
+            test <@ asyncRun1 = Exit.Success "dep-2" @>
+            test <@ asyncRun2 = Exit.Success "dep-4" @>
             test <@ asyncCaps.AccessCount = 4 @>
-            test <@ taskRun1 = Ok "dep-2" @>
-            test <@ taskRun2 = Ok "dep-4" @>
+            test <@ taskRun1 = Exit.Success "dep-2" @>
+            test <@ taskRun2 = Exit.Success "dep-4" @>
             test <@ taskCaps.AccessCount = 4 @>
 
         [<Fact>]
@@ -151,7 +151,7 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                     return plain + resultValue + maybeValue + maybeValueOption
                 }
 
-            test <@ Flow.run environment flowWorkflow = Ok 84 @>
+            test <@ Flow.run environment flowWorkflow = Exit.Success 84 @>
 
         [<Fact>]
         let ``projected Env requests bind async result shapes`` () =
@@ -165,7 +165,7 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                     return asyncResultValue
                 }
 
-            test <@ Flow.run environment asyncWorkflow = Ok 21 @>
+            test <@ Flow.run environment asyncWorkflow = Exit.Success 21 @>
 
         [<Fact>]
         let ``projected Env requests bind task surfaces across flow`` () =
@@ -212,8 +212,8 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
             let asyncResult = Flow.run environment asyncWorkflow
             let taskResult = Flow.run environment taskWorkflow
 
-            test <@ asyncResult = Ok 42 @>
-            test <@ taskResult = Ok 63 @>
+            test <@ asyncResult = Exit.Success 42 @>
+            test <@ taskResult = Exit.Success 63 @>
 
         [<Fact>]
         let ``Flow is sync result only`` () =
@@ -221,7 +221,7 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                 Flow.env
                 |> Flow.bind (fun value -> Flow.succeed(value * 2))
 
-            test <@ Flow.run 21 workflow = Ok 42 @>
+            test <@ Flow.run 21 workflow = Exit.Success 42 @>
 
         [<Fact>]
         let ``Flow runFull and runWithToken mirror run for the default token`` () =
@@ -229,9 +229,9 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                 Flow.env
                 |> Flow.map (fun value -> value * 2)
 
-            test <@ Flow.run 21 workflow = Ok 42 @>
-            test <@ Flow.runFull 21 CancellationToken.None workflow = Ok 42 @>
-            test <@ Flow.runWithToken 21 CancellationToken.None workflow = Ok 42 @>
+            test <@ Flow.run 21 workflow = Exit.Success 42 @>
+            test <@ Flow.runFull 21 CancellationToken.None workflow = Exit.Success 42 @>
+            test <@ Flow.runWithToken 21 CancellationToken.None workflow = Exit.Success 42 @>
 
         [<Fact>]
         let ``Flow delay reruns from scratch`` () =
@@ -242,8 +242,8 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                     runs.Value <- runs.Value + 1
                     Flow.succeed runs.Value)
 
-            test <@ Flow.run () workflow = Ok 1 @>
-            test <@ Flow.run () workflow = Ok 2 @>
+            test <@ Flow.run () workflow = Exit.Success 1 @>
+            test <@ Flow.run () workflow = Exit.Success 2 @>
 
         [<Fact>]
         let ``AsyncFlow runs as Async result`` () =
@@ -257,7 +257,7 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                 |> AsyncFlow.run 21
                 |> Async.RunSynchronously
 
-            test <@ result = Ok 42 @>
+            test <@ result = Exit.Success 42 @>
 
         [<Fact>]
         let ``AsyncFlow can lift Flow`` () =
@@ -274,7 +274,7 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                 |> AsyncFlow.toAsync "effect"
                 |> Async.RunSynchronously
 
-            test <@ result = Ok 7 @>
+            test <@ result = Exit.Success 7 @>
 
         [<Fact>]
         let ``shared combinators preserve sync and async environment semantics`` () =
@@ -303,8 +303,8 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                 |> AsyncFlow.run "flowkit"
                 |> Async.RunSynchronously
 
-            test <@ syncResult = Ok 19 @>
-            test <@ asyncResult = Ok 19 @>
+            test <@ syncResult = Exit.Success 19 @>
+            test <@ asyncResult = Exit.Success 19 @>
 
         [<Fact>]
         let ``flow families expose normalized constructors operators and fallback helpers`` () =
@@ -414,28 +414,28 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
 
             test <@ Flow.run () syncOk = Flow.run () syncAlias @>
             test <@ Flow.run () syncError = Flow.run () syncErrorAlias @>
-            test <@ syncMapped = Ok 42 @>
-            test <@ syncApplied = Ok 42 @>
-            test <@ syncMapped3 = Ok 6 @>
-            test <@ syncIgnored = Ok () @>
-            test <@ syncBound = Ok 42 @>
-            test <@ syncRecovered = Ok 7 @>
+            test <@ syncMapped = Exit.Success 42 @>
+            test <@ syncApplied = Exit.Success 42 @>
+            test <@ syncMapped3 = Exit.Success 6 @>
+            test <@ syncIgnored = Exit.Success () @>
+            test <@ syncBound = Exit.Success 42 @>
+            test <@ syncRecovered = Exit.Success 7 @>
             test <@ asyncOkResult = asyncAliasResult @>
             test <@ asyncErrorResult = asyncErrorAliasResult @>
-            test <@ asyncMapped = Ok 42 @>
-            test <@ asyncApplied = Ok 42 @>
-            test <@ asyncMapped3 = Ok 6 @>
-            test <@ asyncIgnored = Ok () @>
-            test <@ asyncBound = Ok 42 @>
-            test <@ asyncRecovered = Ok 7 @>
+            test <@ asyncMapped = Exit.Success 42 @>
+            test <@ asyncApplied = Exit.Success 42 @>
+            test <@ asyncMapped3 = Exit.Success 6 @>
+            test <@ asyncIgnored = Exit.Success () @>
+            test <@ asyncBound = Exit.Success 42 @>
+            test <@ asyncRecovered = Exit.Success 7 @>
             test <@ (TaskFlow.run () CancellationToken.None taskOk |> fun task -> task.GetAwaiter().GetResult()) = (TaskFlow.run () CancellationToken.None taskAlias |> fun task -> task.GetAwaiter().GetResult()) @>
             test <@ (TaskFlow.run () CancellationToken.None taskError |> fun task -> task.GetAwaiter().GetResult()) = (TaskFlow.run () CancellationToken.None taskErrorAlias |> fun task -> task.GetAwaiter().GetResult()) @>
-            test <@ taskMapped = Ok 42 @>
-            test <@ taskApplied = Ok 42 @>
-            test <@ taskMapped3 = Ok 6 @>
-            test <@ taskIgnored = Ok () @>
-            test <@ taskBound = Ok 42 @>
-            test <@ taskRecovered = Ok 7 @>
+            test <@ taskMapped = Exit.Success 42 @>
+            test <@ taskApplied = Exit.Success 42 @>
+            test <@ taskMapped3 = Exit.Success 6 @>
+            test <@ taskIgnored = Exit.Success () @>
+            test <@ taskBound = Exit.Success 42 @>
+            test <@ taskRecovered = Exit.Success 7 @>
 
         [<Fact>]
         let ``Flow composition helpers cover error tapping fallback and pairing`` () =
@@ -473,13 +473,13 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                 Flow.map2 (+) (Flow.read (fun env -> env + 1)) (Flow.read (fun env -> env * 2))
                 |> Flow.run 5
 
-            test <@ tapPreservesOriginalError = Error "primary" @>
-            test <@ tapSkipsSuccess = Ok 42 @>
+            test <@ tapPreservesOriginalError = Exit.Failure (Cause.Fail "primary") @>
+            test <@ tapSkipsSuccess = Exit.Success 42 @>
             test <@ List.ofSeq tappedErrors = [ "primary" ] @>
-            test <@ recovered = Ok 42 @>
-            test <@ bypassesFallback = Ok 10 @>
-            test <@ zipped = Ok(6, 10) @>
-            test <@ mapped = Ok 16 @>
+            test <@ recovered = Exit.Success 42 @>
+            test <@ bypassesFallback = Exit.Success 10 @>
+            test <@ zipped = Exit.Success(6, 10) @>
+            test <@ mapped = Exit.Success 16 @>
 
         [<Fact>]
         let ``AsyncFlow composition helpers cover error tapping fallback and pairing`` () =
@@ -523,13 +523,13 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                 |> AsyncFlow.run 5
                 |> Async.RunSynchronously
 
-            test <@ tapPreservesOriginalError = Error "primary" @>
-            test <@ tapSkipsSuccess = Ok 42 @>
+            test <@ tapPreservesOriginalError = Exit.Failure (Cause.Fail "primary") @>
+            test <@ tapSkipsSuccess = Exit.Success 42 @>
             test <@ List.ofSeq tappedErrors = [ "primary" ] @>
-            test <@ recovered = Ok 42 @>
-            test <@ bypassesFallback = Ok 10 @>
-            test <@ zipped = Ok(6, 10) @>
-            test <@ mapped = Ok 16 @>
+            test <@ recovered = Exit.Success 42 @>
+            test <@ bypassesFallback = Exit.Success 10 @>
+            test <@ zipped = Exit.Success(6, 10) @>
+            test <@ mapped = Exit.Success 16 @>
 
         [<Fact>]
         let ``ColdTask carries the runtime cancellation token into TaskFlow`` () =
@@ -548,7 +548,7 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                 |> TaskFlow.run () cts.Token
                 |> fun task -> task.GetAwaiter().GetResult()
 
-            test <@ result = Ok 42 @>
+            test <@ result = Exit.Success 42 @>
             test <@ seen.Value = cts.Token @>
 
         [<Fact>]
@@ -647,7 +647,7 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                 |> TaskFlow.run () cts.Token
                 |> fun task -> task.GetAwaiter().GetResult()
 
-            test <@ result = Ok 42 @>
+            test <@ result = Exit.Success 42 @>
             test <@ seen.Value = cts.Token @>
 
         [<Fact>]
@@ -685,7 +685,7 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                 |> TaskFlow.toTask 4 CancellationToken.None
                 |> fun task -> task.GetAwaiter().GetResult()
 
-            test <@ result = Ok 60 @>
+            test <@ result = Exit.Success 60 @>
 
         [<Fact>]
         let ``TaskFlow delay reruns from scratch`` () =
@@ -701,8 +701,8 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                 |> TaskFlow.run () CancellationToken.None
                 |> fun task -> task.GetAwaiter().GetResult()
 
-            test <@ runOnce () = Ok 1 @>
-            test <@ runOnce () = Ok 2 @>
+            test <@ runOnce () = Exit.Success 1 @>
+            test <@ runOnce () = Exit.Success 2 @>
 
         [<Fact>]
         let ``shared combinators preserve task environment and error semantics`` () =
@@ -720,7 +720,7 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                 |> TaskFlow.run "flowkit" CancellationToken.None
                 |> fun task -> task.GetAwaiter().GetResult()
 
-            test <@ result = Ok 19 @>
+            test <@ result = Exit.Success 19 @>
 
         [<Fact>]
         let ``TaskFlow composition helpers cover error tapping fallback and pairing`` () =
@@ -764,13 +764,13 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                 |> TaskFlow.run 5 CancellationToken.None
                 |> fun task -> task.GetAwaiter().GetResult()
 
-            test <@ tapPreservesOriginalError = Error "primary" @>
-            test <@ tapSkipsSuccess = Ok 42 @>
+            test <@ tapPreservesOriginalError = Exit.Failure (Cause.Fail "primary") @>
+            test <@ tapSkipsSuccess = Exit.Success 42 @>
             test <@ List.ofSeq tappedErrors = [ "primary" ] @>
-            test <@ recovered = Ok 42 @>
-            test <@ bypassesFallback = Ok 10 @>
-            test <@ zipped = Ok(6, 10) @>
-            test <@ mapped = Ok 16 @>
+            test <@ recovered = Exit.Success 42 @>
+            test <@ bypassesFallback = Exit.Success 10 @>
+            test <@ zipped = Exit.Success(6, 10) @>
+            test <@ mapped = Exit.Success 16 @>
 
         [<Fact>]
         let ``Check bridges into flow, async, and task shapes`` () =
@@ -828,17 +828,17 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                 |> TaskFlow.run () CancellationToken.None
                 |> fun task -> task.GetAwaiter().GetResult()
 
-            test <@ flowBridge = Error "flow:env" @>
-            test <@ asyncBridge = Error "async" @>
-            test <@ asyncFlowBridgeFromFlow = Error "async-flow:env" @>
-            test <@ asyncFlowBridge = Error "async-flow:env" @>
-            test <@ taskBridge = Error "task" @>
-            test <@ taskAsyncBridge = Error "task-async" @>
-            test <@ taskFlowBridge = Error "task-flow:env" @>
-            test <@ taskAsyncFlowBridge = Error "task-async-flow:env" @>
-            test <@ flowValue = Ok "flow-value" @>
-            test <@ asyncValue = Ok "async-value" @>
-            test <@ taskValue = Ok "task-value" @>
+            test <@ flowBridge = Exit.Failure (Cause.Fail "flow:env") @>
+            test <@ asyncBridge = Exit.Failure (Cause.Fail "async") @>
+            test <@ asyncFlowBridgeFromFlow = Exit.Failure (Cause.Fail "async-flow:env") @>
+            test <@ asyncFlowBridge = Exit.Failure (Cause.Fail "async-flow:env") @>
+            test <@ taskBridge = Exit.Failure (Cause.Fail "task") @>
+            test <@ taskAsyncBridge = Exit.Failure (Cause.Fail "task-async") @>
+            test <@ taskFlowBridge = Exit.Failure (Cause.Fail "task-flow:env") @>
+            test <@ taskAsyncFlowBridge = Exit.Failure (Cause.Fail "task-async-flow:env") @>
+            test <@ flowValue = Exit.Success "flow-value" @>
+            test <@ asyncValue = Exit.Success "async-value" @>
+            test <@ taskValue = Exit.Success "task-value" @>
 
         [<Fact>]
         let ``AsyncFlow runtime helpers cover timeout retry and release`` () =
@@ -882,10 +882,10 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                 |> AsyncFlow.run ()
                 |> Async.RunSynchronously
 
-            test <@ timeoutResult = Error "timed out" @>
-            test <@ retryResult = Ok 42 @>
+            test <@ timeoutResult = Exit.Failure (Cause.Fail "timed out") @>
+            test <@ retryResult = Exit.Success 42 @>
             test <@ retryRuns.Value = 2 @>
-            test <@ acquireReleaseResult = Error "boom" @>
+            test <@ acquireReleaseResult = Exit.Failure (Cause.Fail "boom") @>
             test <@ releaseCount.Value = 1 @>
 
         [<Fact>]
@@ -930,10 +930,10 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                 |> TaskFlow.run () CancellationToken.None
                 |> fun task -> task.GetAwaiter().GetResult()
 
-            test <@ timeoutResult = Error "timed out" @>
-            test <@ retryResult = Ok 42 @>
+            test <@ timeoutResult = Exit.Failure (Cause.Fail "timed out") @>
+            test <@ retryResult = Exit.Success 42 @>
             test <@ retryRuns.Value = 2 @>
-            test <@ acquireReleaseResult = Error "boom" @>
+            test <@ acquireReleaseResult = Exit.Failure (Cause.Fail "boom") @>
             test <@ releaseCount.Value = 1 @>
 
         [<Fact>]
@@ -963,7 +963,7 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                 |> TaskFlow.runContext context
                 |> fun task -> task.GetAwaiter().GetResult()
 
-            test <@ result = Ok "rt:41" @>
+            test <@ result = Exit.Success "rt:41" @>
             test <@ List.ofSeq runtime.Seen = [ "value=41" ] @>
 
         [<Fact>]
@@ -989,7 +989,7 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                 |> TaskFlowSpec.run CancellationToken.None
                 |> fun task -> task.GetAwaiter().GetResult()
 
-            test <@ result = Ok "spec:7" @>
+            test <@ result = Exit.Success "spec:7" @>
 
         [<Fact>]
         let ``TaskFlow layers and capability helpers compose`` () =
@@ -1052,47 +1052,47 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                 |> Flow.provideLayer (Flow.succeed app)
                 |> Flow.run ()
 
-            test <@ composedResult = Ok "provider-client:10" @>
-            test <@ providerResult = Ok app.DeviceClient @>
-            test <@ missingProviderResult = Error { CapabilityType = typeof<IDeviceClient> } @>
-            test <@ flowCapabilityResult = Ok app.DeviceClient @>
-            test <@ flowLayerResult = Ok "provider-client:10" @>
+            test <@ composedResult = Exit.Success "provider-client:10" @>
+            test <@ providerResult = Exit.Success app.DeviceClient @>
+            test <@ missingProviderResult = Exit.Failure (Cause.Fail { CapabilityType = typeof<IDeviceClient> }) @>
+            test <@ flowCapabilityResult = Exit.Success app.DeviceClient @>
+            test <@ flowLayerResult = Exit.Success "provider-client:10" @>
 
         [<Fact>]
         let ``Flow traverse and sequence work as expected`` () =
             let values = [ 1; 2; 3 ]
             let workflow = values |> Flow.traverse (fun v -> Flow.succeed (v * 2))
             let result = Flow.run () workflow
-            test <@ result = Ok [ 2; 4; 6 ] @>
+            test <@ result = Exit.Success [ 2; 4; 6 ] @>
 
             let flows = [ Flow.succeed 1; Flow.succeed 2 ]
             let sequenceResult = Flow.run () (Flow.sequence flows)
-            test <@ sequenceResult = Ok [ 1; 2 ] @>
+            test <@ sequenceResult = Exit.Success [ 1; 2 ] @>
 
             let failWorkflow = [ 1; 2 ] |> Flow.traverse (fun v -> if v = 1 then Flow.fail "error" else Flow.succeed v)
-            test <@ Flow.run () failWorkflow = Error "error" @>
+            test <@ Flow.run () failWorkflow = Exit.Failure (Cause.Fail "error") @>
 
         [<Fact>]
         let ``AsyncFlow traverse and sequence work as expected`` () =
             let values = [ 1; 2; 3 ]
             let workflow = values |> AsyncFlow.traverse (fun v -> AsyncFlow.succeed (v * 2))
             let result = AsyncFlow.run () workflow |> Async.RunSynchronously
-            test <@ result = Ok [ 2; 4; 6 ] @>
+            test <@ result = Exit.Success [ 2; 4; 6 ] @>
 
             let flows = [ AsyncFlow.succeed 1; AsyncFlow.succeed 2 ]
             let sequenceResult = AsyncFlow.run () (AsyncFlow.sequence flows) |> Async.RunSynchronously
-            test <@ sequenceResult = Ok [ 1; 2 ] @>
+            test <@ sequenceResult = Exit.Success [ 1; 2 ] @>
 
         [<Fact>]
         let ``TaskFlow traverse and sequence work as expected`` () =
             let values = [ 1; 2; 3 ]
             let workflow = values |> TaskFlow.traverse (fun v -> TaskFlow.succeed (v * 2))
             let result = TaskFlow.run () CancellationToken.None workflow |> fun t -> t.GetAwaiter().GetResult()
-            test <@ result = Ok [ 2; 4; 6 ] @>
+            test <@ result = Exit.Success [ 2; 4; 6 ] @>
 
             let flows = [ TaskFlow.succeed 1; TaskFlow.succeed 2 ]
             let sequenceResult = TaskFlow.run () CancellationToken.None (TaskFlow.sequence flows) |> fun t -> t.GetAwaiter().GetResult()
-            test <@ sequenceResult = Ok [ 1; 2 ] @>
+            test <@ sequenceResult = Exit.Success [ 1; 2 ] @>
 
         [<Fact>]
         let ``AsyncFlow timeout helpers work as expected`` () =
@@ -1101,21 +1101,21 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                 |> AsyncFlow.Runtime.timeoutToOk (TimeSpan.FromMilliseconds 1.0) ()
                 |> AsyncFlow.run ()
                 |> Async.RunSynchronously
-            test <@ okResult = Ok () @>
+            test <@ okResult = Exit.Success () @>
 
             let errorResult =
                 AsyncFlow.Runtime.sleep (TimeSpan.FromMilliseconds 50.0)
                 |> AsyncFlow.Runtime.timeoutToError (TimeSpan.FromMilliseconds 1.0) "timed out"
                 |> AsyncFlow.run ()
                 |> Async.RunSynchronously
-            test <@ errorResult = Error "timed out" @>
+            test <@ errorResult = Exit.Failure (Cause.Fail "timed out") @>
 
             let withResult =
                 AsyncFlow.Runtime.sleep (TimeSpan.FromMilliseconds 50.0)
                 |> AsyncFlow.Runtime.timeoutWith (TimeSpan.FromMilliseconds 1.0) (fun () -> AsyncFlow.succeed ())
                 |> AsyncFlow.run ()
                 |> Async.RunSynchronously
-            test <@ withResult = Ok () @>
+            test <@ withResult = Exit.Success () @>
 
         [<Fact>]
         let ``TaskFlow timeout helpers work as expected`` () =
@@ -1124,21 +1124,21 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                 |> TaskFlow.Runtime.timeoutToOk (TimeSpan.FromMilliseconds 1.0) ()
                 |> TaskFlow.run () CancellationToken.None
                 |> fun t -> t.GetAwaiter().GetResult()
-            test <@ okResult = Ok () @>
+            test <@ okResult = Exit.Success () @>
 
             let errorResult =
                 TaskFlow.Runtime.sleep (TimeSpan.FromMilliseconds 50.0)
                 |> TaskFlow.Runtime.timeoutToError (TimeSpan.FromMilliseconds 1.0) "timed out"
                 |> TaskFlow.run () CancellationToken.None
                 |> fun t -> t.GetAwaiter().GetResult()
-            test <@ errorResult = Error "timed out" @>
+            test <@ errorResult = Exit.Failure (Cause.Fail "timed out") @>
 
             let withResult =
                 TaskFlow.Runtime.sleep (TimeSpan.FromMilliseconds 50.0)
                 |> TaskFlow.Runtime.timeoutWith (TimeSpan.FromMilliseconds 1.0) (fun () -> TaskFlow.succeed ())
                 |> TaskFlow.run () CancellationToken.None
                 |> fun t -> t.GetAwaiter().GetResult()
-            test <@ withResult = Ok () @>
+            test <@ withResult = Exit.Success () @>
 
         [<Fact>]
         let ``flow computation expression mixes sync, async, task, result, and env requests`` () =
@@ -1179,7 +1179,7 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
             let publicMethods = publicInstanceMethodNames typeof<FlowBuilder>
             let argumentTypeNames = flowBuilderBindAndReturnFromArgumentNames ()
 
-            test <@ Flow.run (ProjectionCaps()) workflow = Ok (service.Number * 8) @>
+            test <@ Flow.run (ProjectionCaps()) workflow = Exit.Success (service.Number * 8) @>
             test <@ publicMethods |> Array.contains "Bind" @>
             test <@ publicMethods |> Array.contains "Yield" @>
             test <@ publicMethods |> Array.contains "YieldFrom" @>
@@ -1212,9 +1212,9 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                     return doubled
                 }
 
-            test <@ Flow.run 21 syncWorkflow = Ok 42 @>
-            test <@ Flow.run 21 asyncWorkflow = Ok 42 @>
-            test <@ Flow.run 21 taskWorkflow = Ok 42 @>
+            test <@ Flow.run 21 syncWorkflow = Exit.Success 42 @>
+            test <@ Flow.run 21 asyncWorkflow = Exit.Success 42 @>
+            test <@ Flow.run 21 taskWorkflow = Exit.Success 42 @>
 
         [<Fact>]
         let ``flow computation expression mixes sync async task and result effects in one workflow`` () =
@@ -1228,7 +1228,7 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                     return prefix + asyncSuffix + taskSuffix + resultSuffix
                 }
 
-            test <@ Flow.run "flow" workflow = Ok "flow-async-task-result" @>
+            test <@ Flow.run "flow" workflow = Exit.Success "flow-async-task-result" @>
 
         [<Fact>]
         let ``flow builder overloads stay aligned with the Fable 5 mapping`` () =
@@ -1283,13 +1283,13 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                     yield! Flow.read _.Prefix
                 }
 
-            test <@ Flow.run environment syncValue = Ok 42 @>
-            test <@ Flow.run environment syncProjection = Ok "flow" @>
-            test <@ Flow.run environment syncYieldFrom = Ok "flow" @>
-            test <@ Flow.run environment asyncProjection = Ok "flow" @>
-            test <@ Flow.run environment asyncYieldFrom = Ok "flow" @>
-            test <@ Flow.run environment taskProjection = Ok "flow" @>
-            test <@ Flow.run environment taskYieldFrom = Ok "flow" @>
+            test <@ Flow.run environment syncValue = Exit.Success 42 @>
+            test <@ Flow.run environment syncProjection = Exit.Success "flow" @>
+            test <@ Flow.run environment syncYieldFrom = Exit.Success "flow" @>
+            test <@ Flow.run environment asyncProjection = Exit.Success "flow" @>
+            test <@ Flow.run environment asyncYieldFrom = Exit.Success "flow" @>
+            test <@ Flow.run environment taskProjection = Exit.Success "flow" @>
+            test <@ Flow.run environment taskYieldFrom = Exit.Success "flow" @>
 
         [<Fact>]
         let ``option and valueoption inputs short-circuit with unit errors across builders`` () =
@@ -1345,14 +1345,14 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
 
             let flowArgumentTypeNames = flowBuilderBindAndReturnFromArgumentNames ()
 
-            test <@ Flow.run 20 syncSome = Ok 42 @>
-            test <@ Flow.run 20 syncNone = Error() @>
-            test <@ Flow.run 20 syncValueSome = Ok 42 @>
-            test <@ Flow.run 20 syncValueNone = Error() @>
-            test <@ Flow.run 19 asyncWorkflow = Ok 42 @>
-            test <@ Flow.run () asyncReturnFromNone = Error() @>
-            test <@ Flow.run 19 taskWorkflow = Ok 42 @>
-            test <@ Flow.run () taskReturnFromValueNone = Error() @>
+            test <@ Flow.run 20 syncSome = Exit.Success 42 @>
+            test <@ Flow.run 20 syncNone = Exit.Failure (Cause.Fail ()) @>
+            test <@ Flow.run 20 syncValueSome = Exit.Success 42 @>
+            test <@ Flow.run 20 syncValueNone = Exit.Failure (Cause.Fail ()) @>
+            test <@ Flow.run 19 asyncWorkflow = Exit.Success 42 @>
+            test <@ Flow.run () asyncReturnFromNone = Exit.Failure (Cause.Fail ()) @>
+            test <@ Flow.run 19 taskWorkflow = Exit.Success 42 @>
+            test <@ Flow.run () taskReturnFromValueNone = Exit.Failure (Cause.Fail ()) @>
             test <@ flowArgumentTypeNames |> Array.contains "FSharpOption`1" @>
             test <@ flowArgumentTypeNames |> Array.contains "FSharpResult`2" @>
             test <@ flowArgumentTypeNames |> Array.contains "FSharpValueOption`1" @>
@@ -1487,18 +1487,18 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                 |> TaskFlow.run () CancellationToken.None
                 |> fun task -> task.GetAwaiter().GetResult()
 
-            test <@ syncSome = Ok 42 @>
-            test <@ syncNone = Error "missing value" @>
-            test <@ syncValueSome = Ok 42 @>
-            test <@ syncValueNone = Error "missing value" @>
-            test <@ asyncSome = Ok 42 @>
-            test <@ asyncNone = Error "missing value" @>
-            test <@ asyncValueSome = Ok 42 @>
-            test <@ asyncValueNone = Error "missing value" @>
-            test <@ taskSome = Ok 42 @>
-            test <@ taskNone = Error "missing value" @>
-            test <@ taskValueSome = Ok 42 @>
-            test <@ taskValueNone = Error "missing value" @>
+            test <@ syncSome = Exit.Success 42 @>
+            test <@ syncNone = Exit.Failure (Cause.Fail "missing value") @>
+            test <@ syncValueSome = Exit.Success 42 @>
+            test <@ syncValueNone = Exit.Failure (Cause.Fail "missing value") @>
+            test <@ asyncSome = Exit.Success 42 @>
+            test <@ asyncNone = Exit.Failure (Cause.Fail "missing value") @>
+            test <@ asyncValueSome = Exit.Success 42 @>
+            test <@ asyncValueNone = Exit.Failure (Cause.Fail "missing value") @>
+            test <@ taskSome = Exit.Success 42 @>
+            test <@ taskNone = Exit.Failure (Cause.Fail "missing value") @>
+            test <@ taskValueSome = Exit.Success 42 @>
+            test <@ taskValueNone = Exit.Failure (Cause.Fail "missing value") @>
 
         [<Fact>]
         let ``flow lives in FsFlow and composes sync flows`` () =
@@ -1514,7 +1514,7 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                 |> Flow.run 20
 
             test <@ typeof<FlowBuilder>.Namespace = "FsFlow" @>
-            test <@ result = Ok 42 @>
+            test <@ result = Exit.Success 42 @>
 
         [<Fact>]
         let ``flow directly binds and returns Async and Async Result values`` () =
@@ -1537,8 +1537,8 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                 asyncReturnFrom
                 |> Flow.run ()
 
-            test <@ workflowResult = Ok 42 @>
-            test <@ asyncReturnFromResult = Ok 42 @>
+            test <@ workflowResult = Exit.Success 42 @>
+            test <@ asyncReturnFromResult = Exit.Success 42 @>
             test <@ hasAsyncResultReturnFromOverload typeof<FlowBuilder> @>
 
         [<Fact>]
@@ -1555,7 +1555,7 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                 |> Flow.run 20
 
             test <@ typeof<FlowBuilder>.Namespace = "FsFlow" @>
-            test <@ result = Ok 42 @>
+            test <@ result = Exit.Success 42 @>
 
         [<Fact>]
         let ``flow directly binds and returns Async, Task, and result-bearing values`` () =
@@ -1600,11 +1600,11 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
             let taskReturnFromUnitResult = run taskReturnFrom ()
             let taskReturnFromResultResult = run taskReturnFromResult ()
 
-            test <@ workflowResult = Ok 42 @>
-            test <@ asyncReturnFromResult = Ok 42 @>
-            test <@ taskWorkflowResult = Ok 42 @>
-            test <@ taskReturnFromUnitResult = Ok() @>
-            test <@ taskReturnFromResultResult = Ok 42 @>
+            test <@ workflowResult = Exit.Success 42 @>
+            test <@ asyncReturnFromResult = Exit.Success 42 @>
+            test <@ taskWorkflowResult = Exit.Success 42 @>
+            test <@ taskReturnFromUnitResult = Exit.Success() @>
+            test <@ taskReturnFromResultResult = Exit.Success 42 @>
             test <@ hasAsyncResultReturnFromOverload typeof<FlowBuilder> @>
 
         [<Fact>]
@@ -1639,10 +1639,10 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
             let valueTaskReturnFromValueResult = run valueTaskReturnFromValue ()
             let valueTaskReturnFromResultResult = run valueTaskReturnFromResult ()
 
-            test <@ workflowResult = Ok 42 @>
-            test <@ valueTaskReturnFromUnitResult = Ok() @>
-            test <@ valueTaskReturnFromValueResult = Ok 42 @>
-            test <@ valueTaskReturnFromResultResult = Ok 42 @>
+            test <@ workflowResult = Exit.Success 42 @>
+            test <@ valueTaskReturnFromUnitResult = Exit.Success() @>
+            test <@ valueTaskReturnFromValueResult = Exit.Success 42 @>
+            test <@ valueTaskReturnFromResultResult = Exit.Success 42 @>
 
         [<Fact>]
         let ``TaskFlow keeps a Task-backed execution backbone even when lifting ValueTask inputs`` () =
@@ -1656,8 +1656,8 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
             let runningTask = TaskFlow.run 20 CancellationToken.None workflow
             let result = runningTask.GetAwaiter().GetResult()
 
-            test <@ runningTask.GetType() = typeof<Task<Result<int, string>>> @>
-            test <@ result = Ok 42 @>
+            test <@ runningTask.GetType() = typeof<Task<Exit<int, string>>> @>
+            test <@ result = Exit.Success 42 @>
 
         [<Fact>]
         let ``taskFlow directly binds and returns ColdTask values`` () =
@@ -1696,9 +1696,9 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
             let coldTaskReturnFromValueResult = run coldTaskReturnFromValue () cts.Token
             let coldTaskReturnFromResultResult = run coldTaskReturnFromResult () cts.Token
 
-            test <@ workflowResult = Ok 42 @>
-            test <@ coldTaskReturnFromValueResult = Ok 42 @>
-            test <@ coldTaskReturnFromResultResult = Ok 42 @>
+            test <@ workflowResult = Exit.Success 42 @>
+            test <@ coldTaskReturnFromValueResult = Exit.Success 42 @>
+            test <@ coldTaskReturnFromResultResult = Exit.Success 42 @>
             test <@ seen.Value = cts.Token @>
 
         [<Fact>]
@@ -1738,9 +1738,9 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                 |> AsyncFlow.run ()
                 |> Async.RunSynchronously
 
-            test <@ workflowResult = Ok 42 @>
-            test <@ taskReturnFromUnitResult = Ok() @>
-            test <@ taskReturnFromResultResult = Ok 42 @>
+            test <@ workflowResult = Exit.Success 42 @>
+            test <@ taskReturnFromUnitResult = Exit.Success() @>
+            test <@ taskReturnFromResultResult = Exit.Success 42 @>
 
         [<Fact>]
         let ``taskFlow directly binds and returns ValueTask values when task helpers are imported`` () =
@@ -1772,10 +1772,10 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
             let valueTaskReturnFromValueResult = TaskFlow.run () CancellationToken.None valueTaskReturnFromValue |> fun task -> task.GetAwaiter().GetResult()
             let valueTaskReturnFromResultResult = TaskFlow.run () CancellationToken.None valueTaskReturnFromResult |> fun task -> task.GetAwaiter().GetResult()
 
-            test <@ workflowResult = Ok 42 @>
-            test <@ valueTaskReturnFromUnitResult = Ok() @>
-            test <@ valueTaskReturnFromValueResult = Ok 42 @>
-            test <@ valueTaskReturnFromResultResult = Ok 42 @>
+            test <@ workflowResult = Exit.Success 42 @>
+            test <@ valueTaskReturnFromUnitResult = Exit.Success() @>
+            test <@ valueTaskReturnFromValueResult = Exit.Success 42 @>
+            test <@ valueTaskReturnFromResultResult = Exit.Success 42 @>
 
         [<Fact>]
         let ``asyncFlow directly binds async values when task helpers are imported`` () =
@@ -1789,7 +1789,7 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
 
             let workflowResult = Flow.run 19 workflow
 
-            test <@ workflowResult = Ok 42 @>
+            test <@ workflowResult = Exit.Success 42 @>
 
         [<Fact>]
         let ``Guard constructors work in all flow families`` () =
@@ -1839,9 +1839,9 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
             let asyncFlowResult = Flow.run () asyncFlowTest
             let taskFlowResult = TaskFlow.run () CancellationToken.None taskFlowTest |> fun t -> t.GetAwaiter().GetResult()
 
-            test <@ flowResult = Ok 52 @>
-            test <@ asyncFlowResult = Ok 52 @>
-            test <@ taskFlowResult = Ok 60 @>
+            test <@ flowResult = Exit.Success 52 @>
+            test <@ asyncFlowResult = Exit.Success 52 @>
+            test <@ taskFlowResult = Exit.Success 60 @>
 
         [<Fact>]
         let ``AsyncFlow login syntax uses Guard constructors and error mapping`` () =
@@ -1869,9 +1869,9 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
             let authFailure = Flow.run () (login "blocked" "blocked-pwd")
             let tokenFailure = Flow.run () (login "expired" "expired-pwd")
 
-            test <@ success = Ok "token-alice" @>
-            test <@ authFailure = Error (Unauthorized "denied") @>
-            test <@ tokenFailure = Error (TokenErr "token-expired") @>
+            test <@ success = Exit.Success "token-alice" @>
+            test <@ authFailure = Exit.Failure (Cause.Fail (Unauthorized "denied")) @>
+            test <@ tokenFailure = Exit.Failure (Cause.Fail (TokenErr "token-expired")) @>
 
         [<Fact>]
         let ``Guard mapError stays symmetric across flow families`` () =
@@ -1901,8 +1901,8 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                     return asyncValue + taskValue
                 }
 
-            test <@ Flow.run () asyncMapped = Error "mapped-async-source" @>
-            test <@ Flow.run () taskMapped = Error "mapped-task-source" @>
+            test <@ Flow.run () asyncMapped = Exit.Failure (Cause.Fail "mapped-async-source") @>
+            test <@ Flow.run () taskMapped = Exit.Failure (Cause.Fail "mapped-task-source") @>
 
         [<Fact>]
         let ``Guard.of fails correctly for check-like sources`` () =
@@ -1924,6 +1924,6 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                 return value
             }
 
-            test <@ Flow.run () flowFail = Error "failed" @>
-            test <@ Flow.run () asyncFlowFail = Error "failed" @>
-            test <@ Flow.run () taskFlowFail = Error "failed" @>
+            test <@ Flow.run () flowFail = Exit.Failure (Cause.Fail "failed") @>
+            test <@ Flow.run () asyncFlowFail = Exit.Failure (Cause.Fail "failed") @>
+            test <@ Flow.run () taskFlowFail = Exit.Failure (Cause.Fail "failed") @>
