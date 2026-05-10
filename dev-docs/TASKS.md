@@ -39,9 +39,12 @@ See [EXIT_CAUSE_PLAN.md](EXIT_CAUSE_PLAN.md) for the design.
 19. [ ] Implement the Scheduling API: provide fluent retry and repeat logic (e.g., `Schedule.exponential`, `Schedule.jittered`, `Schedule.recur`).
 
 
-## Phase 4: Post-Unification CAPS
+## Phase 4: Host & Runtime Integration (The Pivot)
 
-15. [ ] Refactor `FsFlow.Caps.Core` and `FsFlow.Caps.Context` to use the unified `Flow` type; remove `Async` suffixes from capability methods and ensure they are Fable-compatible.
-16. [ ] Implement `FsFlow.Caps.Observability` on the unified model: provide integrated tracing and metrics that auto-capture context from the `Flow` environment.
-17. [ ] Implement the remaining CAPS packages (Console, FileSystem, Http, Process) as unified-only effects.
-18. [ ] Perform a full project-wide validation: run all tests, verify Fable 5 transpilation for all packages, and update all documentation for the FsFlow 1.0 release.
+20. [ ] Deprecate and remove `FsFlow.Caps.Context`; pivot to a trait-based metadata model.
+21. [ ] Implement core metadata traits in `FsFlow.Runtime` (e.g., `IHasRequestId`, `IHasCorrelationId`, `IHasUser`).
+22. [ ] Refactor `FsFlow.Caps.Core` to use the unified `Flow` type and ensure Fable 5 compatibility.
+23. [ ] Implement `FsFlow.Hosting`: provide `IServiceProvider` adapters for `Flow.Runtime` (Logging, Clock) and automatic startup validation helpers.
+24. [ ] Implement `FsFlow.Runtime.Telemetry`: provide automatic mapping of metadata traits to `System.Diagnostics.Activity` tags.
+25. [ ] Implement remaining unified effect packages: `FsFlow.Caps.Console`, `FileSystem`, `Http`, and `Process`.
+26. [ ] Perform a full project-wide validation: run all tests, verify Fable 5 transpilation for all packages, and update all documentation for the FsFlow 1.0 release.
