@@ -5,6 +5,31 @@ open System.Threading
 open System.Threading.Tasks
 
 /// <summary>
+/// Represents the cause of a failed workflow.
+/// </summary>
+/// <typeparam name="error">The type of the domain-specific failure value.</typeparam>
+[<RequireQualifiedAccess>]
+type Cause<'error> =
+    /// <summary>An expected domain-specific failure.</summary>
+    | Fail of 'error
+    /// <summary>An unexpected defect or panic (e.g., an exception).</summary>
+    | Die of exn
+    /// <summary>An administrative signal to stop the workflow (e.g., cancellation).</summary>
+    | Interrupt
+
+/// <summary>
+/// Represents the final outcome of a workflow execution.
+/// </summary>
+/// <typeparam name="value">The type of the success value.</typeparam>
+/// <typeparam name="error">The type of the domain-specific failure value.</typeparam>
+[<RequireQualifiedAccess>]
+type Exit<'value, 'error> =
+    /// <summary>The workflow completed successfully.</summary>
+    | Success of 'value
+    /// <summary>The workflow failed due to a specific cause.</summary>
+    | Failure of Cause<'error>
+
+/// <summary>
 /// Represents the portable execution shape used by the unified <see cref="T:FsFlow.Flow`3" />.
 /// </summary>
 #if FABLE_COMPILER
