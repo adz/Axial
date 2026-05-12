@@ -30,8 +30,8 @@ Use the short-circuiting model when later steps depend on earlier values. Use th
 
 You run a Flow by calling [`Flow.run`]({{< relref "/reference/flow/m-flow-run.md" >}}). 
 
-- On **.NET**: `Flow.run` is synchronous and returns an **`Exit<'value, 'error>`**. It executes the flow and blocks until completion.
-- On **Fable**: `Flow.run` returns an **`Effect<'value, 'error>`** (which is `Async<Exit<'value, 'error>>`).
+- On **.NET**: `Flow.run` returns an **`Effect<'value, 'error>`** (a `ValueTask<Exit<'value, 'error>>`).
+- On **Fable**: `Flow.run` returns an **`Effect<'value, 'error>`** (an `Async<Exit<'value, 'error>>`).
 
 This design allows FsFlow to remain portable while respecting the execution models of different platforms. The `Effect` type is the cross-platform execution handle.
 

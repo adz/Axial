@@ -68,8 +68,8 @@ When you call `Flow.run`, you provide the required **environment** (which can be
 
 Because a `Flow` is just a description, you must explicitly **run** it. FsFlow handles the platform differences for you:
 
-- On **.NET**: `Flow.run` is synchronous and returns an **`Exit<'value, 'error>`**. It executes the flow immediately and waits for the result.
-- On **Fable**: `Flow.run` returns an **`Effect<'value, 'error>`** (which is `Async<Exit<'value, 'error>>`).
+- On **.NET**: `Flow.run` returns an **`Effect<'value, 'error>`** (a `ValueTask<Exit<'value, 'error>>`).
+- On **Fable**: `Flow.run` returns an **`Effect<'value, 'error>`** (an `Async<Exit<'value, 'error>>`).
 
 ### The `Exit` Outcome
 

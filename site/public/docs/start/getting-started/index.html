@@ -30,7 +30,7 @@
 
   <meta itemprop="name" content="Getting Started">
   <meta itemprop="description" content="The fastest path from Check and Result into Flow.">
-  <meta itemprop="wordCount" content="649">
+  <meta itemprop="wordCount" content="638">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Getting Started">
   <meta name="twitter:description" content="The fastest path from Check and Result into Flow.">
@@ -57,7 +57,7 @@
         <a class="nav-link active" href="http://localhost:3000/docs/"><span>Docs</span></a>
       </li>
       <li class="nav-item">
-        <a class="nav-link" href="http://localhost:3000/reference/"><span>Reference</span></a>
+        <a class="nav-link" href="http://localhost:3000/"><span>Reference</span></a>
       </li>
       <li class="nav-item">
         <a class="nav-link" href="https://github.com/adz/FsFlow" target="_blank" rel="noopener"><span>GitHub</span></a>
@@ -320,8 +320,8 @@
 <h3 id="execution-handle-vs-outcome">Execution Handle vs. Outcome</h3>
 <p>Because a <code>Flow</code> is just a description, you must explicitly <strong>run</strong> it. FsFlow handles the platform differences for you:</p>
 <ul>
-<li>On <strong>.NET</strong>: <code>Flow.run</code> is synchronous and returns an <strong><code>Exit&lt;'value, 'error&gt;</code></strong>. It executes the flow immediately and waits for the result.</li>
-<li>On <strong>Fable</strong>: <code>Flow.run</code> returns an <strong><code>Effect&lt;'value, 'error&gt;</code></strong> (which is <code>Async&lt;Exit&lt;'value, 'error&gt;&gt;</code>).</li>
+<li>On <strong>.NET</strong>: <code>Flow.run</code> returns an <strong><code>Effect&lt;'value, 'error&gt;</code></strong> (a <code>ValueTask&lt;Exit&lt;'value, 'error&gt;&gt;</code>).</li>
+<li>On <strong>Fable</strong>: <code>Flow.run</code> returns an <strong><code>Effect&lt;'value, 'error&gt;</code></strong> (an <code>Async&lt;Exit&lt;'value, 'error&gt;&gt;</code>).</li>
 </ul>
 <h3 id="the-exit-outcome">The <code>Exit</code> Outcome</h3>
 <p>The final result of any flow is an <strong><code>Exit&lt;'value, 'error&gt;</code></strong>. This type represents every possible outcome:</p>

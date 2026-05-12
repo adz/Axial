@@ -16,9 +16,27 @@ Welcome to the FsFlow guides. Choose a section from the sidebar or start with [G
 </section>
 
 <section class="docs-card">
+<span class="label">Validation & Results</span>
+<h2><a href="./validation-results/">Pure Checks and Results</a></h2>
+<p>Overview of the FsFlow validation stack, from pure checks to structured diagnostics.</p>
+</section>
+
+<section class="docs-card">
 <span class="label">Core Model</span>
 <h2><a href="./core-model/">How FsFlow fits together</a></h2>
-<p>Read the semantics, environment model, CAPS boundaries, and task or async interop rules.</p>
+<p>Read the semantics, task or async interop rules, and architectural styles.</p>
+</section>
+
+<section class="docs-card">
+<span class="label">Managing Dependencies</span>
+<h2><a href="./managing-dependencies/">Environment handling</a></h2>
+<p>Learn how to manage dependencies using the Record Pattern or CAPS pattern.</p>
+</section>
+
+<section class="docs-card">
+<span class="label">State and Concurrency</span>
+<h2><a href="./state-concurrency/">Concurrent workflows</a></h2>
+<p>Manage shared state, coordination, retries, and streaming.</p>
 </section>
 
 <section class="docs-card">

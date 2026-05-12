@@ -251,6 +251,7 @@ function parseXmlDocs() {
   };
 
   walk(path.join(repoRoot, 'artifacts', 'bin'));
+  xmlFiles.sort();
 
   for (const xmlFile of xmlFiles) {
     const content = fs.readFileSync(xmlFile, 'utf8');

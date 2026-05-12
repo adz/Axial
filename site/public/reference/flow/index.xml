@@ -50,13 +50,6 @@
       <description>&lt;p&gt;Creates a failing synchronous flow.&lt;/p&gt;</description>
     </item>
     <item>
-      <title>FsFlow.ScheduleModule.exponential</title>
-      <link>http://localhost:3000/reference/flow/m-schedulemodule-exponential/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-schedulemodule-exponential/</guid>
-      <description>&lt;p&gt;Creates a schedule that recurs with exponential backoff.&lt;/p&gt;</description>
-    </item>
-    <item>
       <title>FsFlow.Flow.fail</title>
       <link>http://localhost:3000/reference/flow/m-flow-fail/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -132,13 +125,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>http://localhost:3000/reference/flow/m-flow-interrupt/</guid>
       <description>&lt;p&gt;Signals a fiber to stop and waits for it to finish its cleanup.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;fiber&lt;/code&gt;: The fiber to interrupt.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A flow that completes with the fiber&amp;rsquo;s final outcome after interruption.&lt;/p&gt;</description>
-    </item>
-    <item>
-      <title>FsFlow.ScheduleModule.jittered</title>
-      <link>http://localhost:3000/reference/flow/m-schedulemodule-jittered/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-schedulemodule-jittered/</guid>
-      <description>&lt;p&gt;Adds random jitter to a schedule&amp;rsquo;s delay.&lt;/p&gt;</description>
     </item>
     <item>
       <title>FsFlow.Flow.join</title>
@@ -232,25 +218,11 @@
       <description>&lt;p&gt;Projects a value from the current environment.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;This is the primary way to access dependencies or configuration stored in the environment.&#xA;The &lt;code&gt;projection&lt;/code&gt; function is applied to the environment at execution time.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;projection&lt;/code&gt;: A function that extracts a value from the environment.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;code&gt;Flow&lt;/code&gt; containing the projected value.&lt;/p&gt;</description>
     </item>
     <item>
-      <title>FsFlow.ScheduleModule.recurs</title>
-      <link>http://localhost:3000/reference/flow/m-schedulemodule-recurs/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-schedulemodule-recurs/</guid>
-      <description>&lt;p&gt;Creates a schedule that recurs a fixed number of times.&lt;/p&gt;</description>
-    </item>
-    <item>
       <title>FsFlow.Flow.run</title>
       <link>http://localhost:3000/reference/flow/m-flow-run/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>http://localhost:3000/reference/flow/m-flow-run/</guid>
-      <description>&lt;p&gt;Executes a flow with the provided environment and the default cancellation token.&lt;/p&gt;&#xA;&lt;h2 id=&#34;examples&#34;&gt;Examples&lt;/h2&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;&#34;&gt;&lt;code class=&#34;language-fsharp&#34; data-lang=&#34;fsharp&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#204a87;font-weight:bold&#34;&gt;let&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;flow&lt;/span&gt; &lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;Flow&lt;/span&gt;&lt;span style=&#34;color:#000;font-weight:bold&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#000&#34;&gt;read&lt;/span&gt; &lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;(&lt;/span&gt;&lt;span style=&#34;color:#204a87;font-weight:bold&#34;&gt;fun&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;env&lt;/span&gt; &lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;-&amp;gt;&lt;/span&gt; &lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;$&lt;/span&gt;&lt;span style=&#34;color:#4e9a06&#34;&gt;&amp;#34;Hello, {env}!&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;)&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#204a87;font-weight:bold&#34;&gt;let&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;result&lt;/span&gt; &lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;Flow&lt;/span&gt;&lt;span style=&#34;color:#000;font-weight:bold&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#000&#34;&gt;run&lt;/span&gt; &lt;span style=&#34;color:#4e9a06&#34;&gt;&amp;#34;World&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;flow&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#8f5902;font-style:italic&#34;&gt;// result = Promise that resolves to Success &amp;#34;Hello, World!&amp;#34; on Fable, or Success &amp;#34;Hello, World!&amp;#34; on .NET&#xA;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;</description>
-    </item>
-    <item>
-      <title>FsFlow.Schedule</title>
-      <link>http://localhost:3000/reference/flow/t-schedule/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/t-schedule/</guid>
-      <description>&lt;p&gt;Represents a stateful schedule that can decide whether to continue and how long to delay.&lt;/p&gt;</description>
+      <description>&lt;p&gt;Executes a flow with the provided environment and the default cancellation token.&lt;/p&gt;&#xA;&lt;h2 id=&#34;examples&#34;&gt;Examples&lt;/h2&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;&#34;&gt;&lt;code class=&#34;language-fsharp&#34; data-lang=&#34;fsharp&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#204a87;font-weight:bold&#34;&gt;let&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;flow&lt;/span&gt; &lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;Flow&lt;/span&gt;&lt;span style=&#34;color:#000;font-weight:bold&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#000&#34;&gt;read&lt;/span&gt; &lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;(&lt;/span&gt;&lt;span style=&#34;color:#204a87;font-weight:bold&#34;&gt;fun&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;env&lt;/span&gt; &lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;-&amp;gt;&lt;/span&gt; &lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;$&lt;/span&gt;&lt;span style=&#34;color:#4e9a06&#34;&gt;&amp;#34;Hello, {env}!&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;)&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#204a87;font-weight:bold&#34;&gt;let&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;result&lt;/span&gt; &lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;Flow&lt;/span&gt;&lt;span style=&#34;color:#000;font-weight:bold&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#000&#34;&gt;run&lt;/span&gt; &lt;span style=&#34;color:#4e9a06&#34;&gt;&amp;#34;World&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;flow&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#8f5902;font-style:italic&#34;&gt;// result = Effect that resolves to Success &amp;#34;Hello, World!&amp;#34; on both .NET and Fable&#xA;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;</description>
     </item>
     <item>
       <title>FsFlow.Flow.sequence</title>
@@ -258,27 +230,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>http://localhost:3000/reference/flow/m-flow-sequence/</guid>
       <description>&lt;p&gt;Transforms a sequence of flows into a flow of a sequence and stops at the first failure.&lt;/p&gt;</description>
-    </item>
-    <item>
-      <title>FsFlow.ScheduleModule.spaced</title>
-      <link>http://localhost:3000/reference/flow/m-schedulemodule-spaced/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-schedulemodule-spaced/</guid>
-      <description>&lt;p&gt;Creates a schedule that recurs with a fixed delay between attempts.&lt;/p&gt;</description>
-    </item>
-    <item>
-      <title>FsFlow.FlowScheduleExtensions.Flow.Repeat.Static</title>
-      <link>http://localhost:3000/reference/flow/m-flowscheduleextensions-flow-repeat-static/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-flowscheduleextensions-flow-repeat-static/</guid>
-      <description>&lt;p&gt;Repeats a successful flow according to the supplied schedule.&lt;/p&gt;</description>
-    </item>
-    <item>
-      <title>FsFlow.FlowScheduleExtensions.Flow.Retry.Static</title>
-      <link>http://localhost:3000/reference/flow/m-flowscheduleextensions-flow-retry-static/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-flowscheduleextensions-flow-retry-static/</guid>
-      <description>&lt;p&gt;Retries a failing flow according to the supplied schedule.&lt;/p&gt;</description>
     </item>
     <item>
       <title>FsFlow.Flow.succeed</title>

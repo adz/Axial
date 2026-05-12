@@ -21,23 +21,23 @@
 
 <title>Flow | FsFlow</title>
 <meta name="description" content="This page shows the source-documented Flow surface: the core type and module functions.
-Core type FsFlow.Flow: Represents a cold workflow that reads an environment, returns a typed result, and is executed explicitly through Flow.run. Module functions FsFlow.Flow.run: Executes a flow with the provided environment and the default cancellation token. FsFlow.Flow.ok: Creates a successful synchronous flow. FsFlow.Flow.error: Creates a failing synchronous flow. FsFlow.Flow.succeed: Alias for ok that reads well in some call sites. FsFlow.Flow.value: Alias for ok that reads well in some call sites. FsFlow.Flow.fail: Alias for error that reads well in some call sites. FsFlow.Flow.fromResult: Lifts a Result into a synchronous flow. FsFlow.Flow.fromOption: Lifts an option into a synchronous flow with the supplied error. FsFlow.Flow.fromValueOption: Lifts a value option into a synchronous flow with the supplied error. FsFlow.Flow.orElseFlow: Turns a pure validation result into a synchronous flow with environment-provided failure. FsFlow.Flow.env: Reads the current environment as the flow value. FsFlow.Flow.read: Projects a value from the current environment. FsFlow.Flow.map: Maps the successful value of a synchronous flow. FsFlow.Flow.bind: Sequences a synchronous continuation after a successful value. FsFlow.Flow.tap: Runs a synchronous side effect on success and preserves the original value. FsFlow.Flow.tapError: Runs a synchronous side effect on failure and preserves the original error. FsFlow.Flow.mapError: Maps the error value of a synchronous flow. FsFlow.Flow.catch: Catches exceptions raised during execution and maps them to a typed error. FsFlow.Flow.orElseWith: Falls back to another flow when the source flow fails. FsFlow.Flow.orElse: Falls back to another flow when the source flow fails. FsFlow.Flow.zip: Combines two flows into a tuple of their values. FsFlow.Flow.map2: Combines two flows with a mapping function. FsFlow.Flow.map3: Combines three flows with a mapping function. FsFlow.Flow.apply: Applies a flow-wrapped function to a flow-wrapped value. FsFlow.Flow.ignore: Maps the successful value of a synchronous flow to unit. FsFlow.Flow.localEnv: Transforms the environment before running the flow. FsFlow.Flow.provideLayer: Provides a derived environment from a layer flow to a downstream flow. FsFlow.Flow.delay: Defers flow construction until execution time. FsFlow.Flow.traverse: Transforms a sequence of values into a flow and stops at the first failure. FsFlow.Flow.sequence: Transforms a sequence of flows into a flow of a sequence and stops at the first failure. Concurrency FsFlow.Fiber: Represents a handle to a running workflow. FsFlow.Flow.fork: Starts a flow in a new fiber without waiting for it to complete. FsFlow.Flow.join: Waits for a fiber to complete and returns its final outcome. FsFlow.Flow.interrupt: Signals a fiber to stop and waits for it to finish its cleanup. Parallel orchestration FsFlow.Flow.zipPar: Combines two flows into a tuple of their values, running them concurrently. FsFlow.Flow.race: Runs two flows concurrently and returns the result of the first one to complete. Scheduling FsFlow.Schedule: Represents a stateful schedule that can decide whether to continue and how long to delay. FsFlow.ScheduleModule.recurs: Creates a schedule that recurs a fixed number of times. FsFlow.ScheduleModule.spaced: Creates a schedule that recurs with a fixed delay between attempts. FsFlow.ScheduleModule.exponential: Creates a schedule that recurs with exponential backoff. FsFlow.ScheduleModule.jittered: Adds random jitter to a schedule’s delay. FsFlow.FlowScheduleExtensions.Flow.Retry.Static: Retries a failing flow according to the supplied schedule. FsFlow.FlowScheduleExtensions.Flow.Repeat.Static: Repeats a successful flow according to the supplied schedule.">
+Core type FsFlow.Flow: Represents a cold workflow that reads an environment, returns a typed result, and is executed explicitly through Flow.run. Module functions FsFlow.Flow.run: Executes a flow with the provided environment and the default cancellation token. FsFlow.Flow.ok: Creates a successful synchronous flow. FsFlow.Flow.error: Creates a failing synchronous flow. FsFlow.Flow.succeed: Alias for ok that reads well in some call sites. FsFlow.Flow.value: Alias for ok that reads well in some call sites. FsFlow.Flow.fail: Alias for error that reads well in some call sites. FsFlow.Flow.fromResult: Lifts a Result into a synchronous flow. FsFlow.Flow.fromOption: Lifts an option into a synchronous flow with the supplied error. FsFlow.Flow.fromValueOption: Lifts a value option into a synchronous flow with the supplied error. FsFlow.Flow.orElseFlow: Turns a pure validation result into a synchronous flow with environment-provided failure. FsFlow.Flow.env: Reads the current environment as the flow value. FsFlow.Flow.read: Projects a value from the current environment. FsFlow.Flow.map: Maps the successful value of a synchronous flow. FsFlow.Flow.bind: Sequences a synchronous continuation after a successful value. FsFlow.Flow.tap: Runs a synchronous side effect on success and preserves the original value. FsFlow.Flow.tapError: Runs a synchronous side effect on failure and preserves the original error. FsFlow.Flow.mapError: Maps the error value of a synchronous flow. FsFlow.Flow.catch: Catches exceptions raised during execution and maps them to a typed error. FsFlow.Flow.orElseWith: Falls back to another flow when the source flow fails. FsFlow.Flow.orElse: Falls back to another flow when the source flow fails. FsFlow.Flow.zip: Combines two flows into a tuple of their values. FsFlow.Flow.map2: Combines two flows with a mapping function. FsFlow.Flow.map3: Combines three flows with a mapping function. FsFlow.Flow.apply: Applies a flow-wrapped function to a flow-wrapped value. FsFlow.Flow.ignore: Maps the successful value of a synchronous flow to unit. FsFlow.Flow.localEnv: Transforms the environment before running the flow. FsFlow.Flow.provideLayer: Provides a derived environment from a layer flow to a downstream flow. FsFlow.Flow.delay: Defers flow construction until execution time. FsFlow.Flow.traverse: Transforms a sequence of values into a flow and stops at the first failure. FsFlow.Flow.sequence: Transforms a sequence of flows into a flow of a sequence and stops at the first failure. Concurrency FsFlow.Fiber: Represents a handle to a running workflow. FsFlow.Flow.fork: Starts a flow in a new fiber without waiting for it to complete. FsFlow.Flow.join: Waits for a fiber to complete and returns its final outcome. FsFlow.Flow.interrupt: Signals a fiber to stop and waits for it to finish its cleanup. Parallel orchestration FsFlow.Flow.zipPar: Combines two flows into a tuple of their values, running them concurrently. FsFlow.Flow.race: Runs two flows concurrently and returns the result of the first one to complete.">
 <meta property="og:url" content="http://localhost:3000/reference/flow/">
   <meta property="og:site_name" content="FsFlow">
   <meta property="og:title" content="Flow">
   <meta property="og:description" content="This page shows the source-documented Flow surface: the core type and module functions.
-Core type FsFlow.Flow: Represents a cold workflow that reads an environment, returns a typed result, and is executed explicitly through Flow.run. Module functions FsFlow.Flow.run: Executes a flow with the provided environment and the default cancellation token. FsFlow.Flow.ok: Creates a successful synchronous flow. FsFlow.Flow.error: Creates a failing synchronous flow. FsFlow.Flow.succeed: Alias for ok that reads well in some call sites. FsFlow.Flow.value: Alias for ok that reads well in some call sites. FsFlow.Flow.fail: Alias for error that reads well in some call sites. FsFlow.Flow.fromResult: Lifts a Result into a synchronous flow. FsFlow.Flow.fromOption: Lifts an option into a synchronous flow with the supplied error. FsFlow.Flow.fromValueOption: Lifts a value option into a synchronous flow with the supplied error. FsFlow.Flow.orElseFlow: Turns a pure validation result into a synchronous flow with environment-provided failure. FsFlow.Flow.env: Reads the current environment as the flow value. FsFlow.Flow.read: Projects a value from the current environment. FsFlow.Flow.map: Maps the successful value of a synchronous flow. FsFlow.Flow.bind: Sequences a synchronous continuation after a successful value. FsFlow.Flow.tap: Runs a synchronous side effect on success and preserves the original value. FsFlow.Flow.tapError: Runs a synchronous side effect on failure and preserves the original error. FsFlow.Flow.mapError: Maps the error value of a synchronous flow. FsFlow.Flow.catch: Catches exceptions raised during execution and maps them to a typed error. FsFlow.Flow.orElseWith: Falls back to another flow when the source flow fails. FsFlow.Flow.orElse: Falls back to another flow when the source flow fails. FsFlow.Flow.zip: Combines two flows into a tuple of their values. FsFlow.Flow.map2: Combines two flows with a mapping function. FsFlow.Flow.map3: Combines three flows with a mapping function. FsFlow.Flow.apply: Applies a flow-wrapped function to a flow-wrapped value. FsFlow.Flow.ignore: Maps the successful value of a synchronous flow to unit. FsFlow.Flow.localEnv: Transforms the environment before running the flow. FsFlow.Flow.provideLayer: Provides a derived environment from a layer flow to a downstream flow. FsFlow.Flow.delay: Defers flow construction until execution time. FsFlow.Flow.traverse: Transforms a sequence of values into a flow and stops at the first failure. FsFlow.Flow.sequence: Transforms a sequence of flows into a flow of a sequence and stops at the first failure. Concurrency FsFlow.Fiber: Represents a handle to a running workflow. FsFlow.Flow.fork: Starts a flow in a new fiber without waiting for it to complete. FsFlow.Flow.join: Waits for a fiber to complete and returns its final outcome. FsFlow.Flow.interrupt: Signals a fiber to stop and waits for it to finish its cleanup. Parallel orchestration FsFlow.Flow.zipPar: Combines two flows into a tuple of their values, running them concurrently. FsFlow.Flow.race: Runs two flows concurrently and returns the result of the first one to complete. Scheduling FsFlow.Schedule: Represents a stateful schedule that can decide whether to continue and how long to delay. FsFlow.ScheduleModule.recurs: Creates a schedule that recurs a fixed number of times. FsFlow.ScheduleModule.spaced: Creates a schedule that recurs with a fixed delay between attempts. FsFlow.ScheduleModule.exponential: Creates a schedule that recurs with exponential backoff. FsFlow.ScheduleModule.jittered: Adds random jitter to a schedule’s delay. FsFlow.FlowScheduleExtensions.Flow.Retry.Static: Retries a failing flow according to the supplied schedule. FsFlow.FlowScheduleExtensions.Flow.Repeat.Static: Repeats a successful flow according to the supplied schedule.">
+Core type FsFlow.Flow: Represents a cold workflow that reads an environment, returns a typed result, and is executed explicitly through Flow.run. Module functions FsFlow.Flow.run: Executes a flow with the provided environment and the default cancellation token. FsFlow.Flow.ok: Creates a successful synchronous flow. FsFlow.Flow.error: Creates a failing synchronous flow. FsFlow.Flow.succeed: Alias for ok that reads well in some call sites. FsFlow.Flow.value: Alias for ok that reads well in some call sites. FsFlow.Flow.fail: Alias for error that reads well in some call sites. FsFlow.Flow.fromResult: Lifts a Result into a synchronous flow. FsFlow.Flow.fromOption: Lifts an option into a synchronous flow with the supplied error. FsFlow.Flow.fromValueOption: Lifts a value option into a synchronous flow with the supplied error. FsFlow.Flow.orElseFlow: Turns a pure validation result into a synchronous flow with environment-provided failure. FsFlow.Flow.env: Reads the current environment as the flow value. FsFlow.Flow.read: Projects a value from the current environment. FsFlow.Flow.map: Maps the successful value of a synchronous flow. FsFlow.Flow.bind: Sequences a synchronous continuation after a successful value. FsFlow.Flow.tap: Runs a synchronous side effect on success and preserves the original value. FsFlow.Flow.tapError: Runs a synchronous side effect on failure and preserves the original error. FsFlow.Flow.mapError: Maps the error value of a synchronous flow. FsFlow.Flow.catch: Catches exceptions raised during execution and maps them to a typed error. FsFlow.Flow.orElseWith: Falls back to another flow when the source flow fails. FsFlow.Flow.orElse: Falls back to another flow when the source flow fails. FsFlow.Flow.zip: Combines two flows into a tuple of their values. FsFlow.Flow.map2: Combines two flows with a mapping function. FsFlow.Flow.map3: Combines three flows with a mapping function. FsFlow.Flow.apply: Applies a flow-wrapped function to a flow-wrapped value. FsFlow.Flow.ignore: Maps the successful value of a synchronous flow to unit. FsFlow.Flow.localEnv: Transforms the environment before running the flow. FsFlow.Flow.provideLayer: Provides a derived environment from a layer flow to a downstream flow. FsFlow.Flow.delay: Defers flow construction until execution time. FsFlow.Flow.traverse: Transforms a sequence of values into a flow and stops at the first failure. FsFlow.Flow.sequence: Transforms a sequence of flows into a flow of a sequence and stops at the first failure. Concurrency FsFlow.Fiber: Represents a handle to a running workflow. FsFlow.Flow.fork: Starts a flow in a new fiber without waiting for it to complete. FsFlow.Flow.join: Waits for a fiber to complete and returns its final outcome. FsFlow.Flow.interrupt: Signals a fiber to stop and waits for it to finish its cleanup. Parallel orchestration FsFlow.Flow.zipPar: Combines two flows into a tuple of their values, running them concurrently. FsFlow.Flow.race: Runs two flows concurrently and returns the result of the first one to complete.">
   <meta property="og:locale" content="en_us">
   <meta property="og:type" content="website">
 
   <meta itemprop="name" content="Flow">
   <meta itemprop="description" content="This page shows the source-documented Flow surface: the core type and module functions.
-Core type FsFlow.Flow: Represents a cold workflow that reads an environment, returns a typed result, and is executed explicitly through Flow.run. Module functions FsFlow.Flow.run: Executes a flow with the provided environment and the default cancellation token. FsFlow.Flow.ok: Creates a successful synchronous flow. FsFlow.Flow.error: Creates a failing synchronous flow. FsFlow.Flow.succeed: Alias for ok that reads well in some call sites. FsFlow.Flow.value: Alias for ok that reads well in some call sites. FsFlow.Flow.fail: Alias for error that reads well in some call sites. FsFlow.Flow.fromResult: Lifts a Result into a synchronous flow. FsFlow.Flow.fromOption: Lifts an option into a synchronous flow with the supplied error. FsFlow.Flow.fromValueOption: Lifts a value option into a synchronous flow with the supplied error. FsFlow.Flow.orElseFlow: Turns a pure validation result into a synchronous flow with environment-provided failure. FsFlow.Flow.env: Reads the current environment as the flow value. FsFlow.Flow.read: Projects a value from the current environment. FsFlow.Flow.map: Maps the successful value of a synchronous flow. FsFlow.Flow.bind: Sequences a synchronous continuation after a successful value. FsFlow.Flow.tap: Runs a synchronous side effect on success and preserves the original value. FsFlow.Flow.tapError: Runs a synchronous side effect on failure and preserves the original error. FsFlow.Flow.mapError: Maps the error value of a synchronous flow. FsFlow.Flow.catch: Catches exceptions raised during execution and maps them to a typed error. FsFlow.Flow.orElseWith: Falls back to another flow when the source flow fails. FsFlow.Flow.orElse: Falls back to another flow when the source flow fails. FsFlow.Flow.zip: Combines two flows into a tuple of their values. FsFlow.Flow.map2: Combines two flows with a mapping function. FsFlow.Flow.map3: Combines three flows with a mapping function. FsFlow.Flow.apply: Applies a flow-wrapped function to a flow-wrapped value. FsFlow.Flow.ignore: Maps the successful value of a synchronous flow to unit. FsFlow.Flow.localEnv: Transforms the environment before running the flow. FsFlow.Flow.provideLayer: Provides a derived environment from a layer flow to a downstream flow. FsFlow.Flow.delay: Defers flow construction until execution time. FsFlow.Flow.traverse: Transforms a sequence of values into a flow and stops at the first failure. FsFlow.Flow.sequence: Transforms a sequence of flows into a flow of a sequence and stops at the first failure. Concurrency FsFlow.Fiber: Represents a handle to a running workflow. FsFlow.Flow.fork: Starts a flow in a new fiber without waiting for it to complete. FsFlow.Flow.join: Waits for a fiber to complete and returns its final outcome. FsFlow.Flow.interrupt: Signals a fiber to stop and waits for it to finish its cleanup. Parallel orchestration FsFlow.Flow.zipPar: Combines two flows into a tuple of their values, running them concurrently. FsFlow.Flow.race: Runs two flows concurrently and returns the result of the first one to complete. Scheduling FsFlow.Schedule: Represents a stateful schedule that can decide whether to continue and how long to delay. FsFlow.ScheduleModule.recurs: Creates a schedule that recurs a fixed number of times. FsFlow.ScheduleModule.spaced: Creates a schedule that recurs with a fixed delay between attempts. FsFlow.ScheduleModule.exponential: Creates a schedule that recurs with exponential backoff. FsFlow.ScheduleModule.jittered: Adds random jitter to a schedule’s delay. FsFlow.FlowScheduleExtensions.Flow.Retry.Static: Retries a failing flow according to the supplied schedule. FsFlow.FlowScheduleExtensions.Flow.Repeat.Static: Repeats a successful flow according to the supplied schedule.">
-  <meta itemprop="wordCount" content="508">
+Core type FsFlow.Flow: Represents a cold workflow that reads an environment, returns a typed result, and is executed explicitly through Flow.run. Module functions FsFlow.Flow.run: Executes a flow with the provided environment and the default cancellation token. FsFlow.Flow.ok: Creates a successful synchronous flow. FsFlow.Flow.error: Creates a failing synchronous flow. FsFlow.Flow.succeed: Alias for ok that reads well in some call sites. FsFlow.Flow.value: Alias for ok that reads well in some call sites. FsFlow.Flow.fail: Alias for error that reads well in some call sites. FsFlow.Flow.fromResult: Lifts a Result into a synchronous flow. FsFlow.Flow.fromOption: Lifts an option into a synchronous flow with the supplied error. FsFlow.Flow.fromValueOption: Lifts a value option into a synchronous flow with the supplied error. FsFlow.Flow.orElseFlow: Turns a pure validation result into a synchronous flow with environment-provided failure. FsFlow.Flow.env: Reads the current environment as the flow value. FsFlow.Flow.read: Projects a value from the current environment. FsFlow.Flow.map: Maps the successful value of a synchronous flow. FsFlow.Flow.bind: Sequences a synchronous continuation after a successful value. FsFlow.Flow.tap: Runs a synchronous side effect on success and preserves the original value. FsFlow.Flow.tapError: Runs a synchronous side effect on failure and preserves the original error. FsFlow.Flow.mapError: Maps the error value of a synchronous flow. FsFlow.Flow.catch: Catches exceptions raised during execution and maps them to a typed error. FsFlow.Flow.orElseWith: Falls back to another flow when the source flow fails. FsFlow.Flow.orElse: Falls back to another flow when the source flow fails. FsFlow.Flow.zip: Combines two flows into a tuple of their values. FsFlow.Flow.map2: Combines two flows with a mapping function. FsFlow.Flow.map3: Combines three flows with a mapping function. FsFlow.Flow.apply: Applies a flow-wrapped function to a flow-wrapped value. FsFlow.Flow.ignore: Maps the successful value of a synchronous flow to unit. FsFlow.Flow.localEnv: Transforms the environment before running the flow. FsFlow.Flow.provideLayer: Provides a derived environment from a layer flow to a downstream flow. FsFlow.Flow.delay: Defers flow construction until execution time. FsFlow.Flow.traverse: Transforms a sequence of values into a flow and stops at the first failure. FsFlow.Flow.sequence: Transforms a sequence of flows into a flow of a sequence and stops at the first failure. Concurrency FsFlow.Fiber: Represents a handle to a running workflow. FsFlow.Flow.fork: Starts a flow in a new fiber without waiting for it to complete. FsFlow.Flow.join: Waits for a fiber to complete and returns its final outcome. FsFlow.Flow.interrupt: Signals a fiber to stop and waits for it to finish its cleanup. Parallel orchestration FsFlow.Flow.zipPar: Combines two flows into a tuple of their values, running them concurrently. FsFlow.Flow.race: Runs two flows concurrently and returns the result of the first one to complete.">
+  <meta itemprop="wordCount" content="431">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Flow">
   <meta name="twitter:description" content="This page shows the source-documented Flow surface: the core type and module functions.
-Core type FsFlow.Flow: Represents a cold workflow that reads an environment, returns a typed result, and is executed explicitly through Flow.run. Module functions FsFlow.Flow.run: Executes a flow with the provided environment and the default cancellation token. FsFlow.Flow.ok: Creates a successful synchronous flow. FsFlow.Flow.error: Creates a failing synchronous flow. FsFlow.Flow.succeed: Alias for ok that reads well in some call sites. FsFlow.Flow.value: Alias for ok that reads well in some call sites. FsFlow.Flow.fail: Alias for error that reads well in some call sites. FsFlow.Flow.fromResult: Lifts a Result into a synchronous flow. FsFlow.Flow.fromOption: Lifts an option into a synchronous flow with the supplied error. FsFlow.Flow.fromValueOption: Lifts a value option into a synchronous flow with the supplied error. FsFlow.Flow.orElseFlow: Turns a pure validation result into a synchronous flow with environment-provided failure. FsFlow.Flow.env: Reads the current environment as the flow value. FsFlow.Flow.read: Projects a value from the current environment. FsFlow.Flow.map: Maps the successful value of a synchronous flow. FsFlow.Flow.bind: Sequences a synchronous continuation after a successful value. FsFlow.Flow.tap: Runs a synchronous side effect on success and preserves the original value. FsFlow.Flow.tapError: Runs a synchronous side effect on failure and preserves the original error. FsFlow.Flow.mapError: Maps the error value of a synchronous flow. FsFlow.Flow.catch: Catches exceptions raised during execution and maps them to a typed error. FsFlow.Flow.orElseWith: Falls back to another flow when the source flow fails. FsFlow.Flow.orElse: Falls back to another flow when the source flow fails. FsFlow.Flow.zip: Combines two flows into a tuple of their values. FsFlow.Flow.map2: Combines two flows with a mapping function. FsFlow.Flow.map3: Combines three flows with a mapping function. FsFlow.Flow.apply: Applies a flow-wrapped function to a flow-wrapped value. FsFlow.Flow.ignore: Maps the successful value of a synchronous flow to unit. FsFlow.Flow.localEnv: Transforms the environment before running the flow. FsFlow.Flow.provideLayer: Provides a derived environment from a layer flow to a downstream flow. FsFlow.Flow.delay: Defers flow construction until execution time. FsFlow.Flow.traverse: Transforms a sequence of values into a flow and stops at the first failure. FsFlow.Flow.sequence: Transforms a sequence of flows into a flow of a sequence and stops at the first failure. Concurrency FsFlow.Fiber: Represents a handle to a running workflow. FsFlow.Flow.fork: Starts a flow in a new fiber without waiting for it to complete. FsFlow.Flow.join: Waits for a fiber to complete and returns its final outcome. FsFlow.Flow.interrupt: Signals a fiber to stop and waits for it to finish its cleanup. Parallel orchestration FsFlow.Flow.zipPar: Combines two flows into a tuple of their values, running them concurrently. FsFlow.Flow.race: Runs two flows concurrently and returns the result of the first one to complete. Scheduling FsFlow.Schedule: Represents a stateful schedule that can decide whether to continue and how long to delay. FsFlow.ScheduleModule.recurs: Creates a schedule that recurs a fixed number of times. FsFlow.ScheduleModule.spaced: Creates a schedule that recurs with a fixed delay between attempts. FsFlow.ScheduleModule.exponential: Creates a schedule that recurs with exponential backoff. FsFlow.ScheduleModule.jittered: Adds random jitter to a schedule’s delay. FsFlow.FlowScheduleExtensions.Flow.Retry.Static: Retries a failing flow according to the supplied schedule. FsFlow.FlowScheduleExtensions.Flow.Repeat.Static: Repeats a successful flow according to the supplied schedule.">
+Core type FsFlow.Flow: Represents a cold workflow that reads an environment, returns a typed result, and is executed explicitly through Flow.run. Module functions FsFlow.Flow.run: Executes a flow with the provided environment and the default cancellation token. FsFlow.Flow.ok: Creates a successful synchronous flow. FsFlow.Flow.error: Creates a failing synchronous flow. FsFlow.Flow.succeed: Alias for ok that reads well in some call sites. FsFlow.Flow.value: Alias for ok that reads well in some call sites. FsFlow.Flow.fail: Alias for error that reads well in some call sites. FsFlow.Flow.fromResult: Lifts a Result into a synchronous flow. FsFlow.Flow.fromOption: Lifts an option into a synchronous flow with the supplied error. FsFlow.Flow.fromValueOption: Lifts a value option into a synchronous flow with the supplied error. FsFlow.Flow.orElseFlow: Turns a pure validation result into a synchronous flow with environment-provided failure. FsFlow.Flow.env: Reads the current environment as the flow value. FsFlow.Flow.read: Projects a value from the current environment. FsFlow.Flow.map: Maps the successful value of a synchronous flow. FsFlow.Flow.bind: Sequences a synchronous continuation after a successful value. FsFlow.Flow.tap: Runs a synchronous side effect on success and preserves the original value. FsFlow.Flow.tapError: Runs a synchronous side effect on failure and preserves the original error. FsFlow.Flow.mapError: Maps the error value of a synchronous flow. FsFlow.Flow.catch: Catches exceptions raised during execution and maps them to a typed error. FsFlow.Flow.orElseWith: Falls back to another flow when the source flow fails. FsFlow.Flow.orElse: Falls back to another flow when the source flow fails. FsFlow.Flow.zip: Combines two flows into a tuple of their values. FsFlow.Flow.map2: Combines two flows with a mapping function. FsFlow.Flow.map3: Combines three flows with a mapping function. FsFlow.Flow.apply: Applies a flow-wrapped function to a flow-wrapped value. FsFlow.Flow.ignore: Maps the successful value of a synchronous flow to unit. FsFlow.Flow.localEnv: Transforms the environment before running the flow. FsFlow.Flow.provideLayer: Provides a derived environment from a layer flow to a downstream flow. FsFlow.Flow.delay: Defers flow construction until execution time. FsFlow.Flow.traverse: Transforms a sequence of values into a flow and stops at the first failure. FsFlow.Flow.sequence: Transforms a sequence of flows into a flow of a sequence and stops at the first failure. Concurrency FsFlow.Fiber: Represents a handle to a running workflow. FsFlow.Flow.fork: Starts a flow in a new fiber without waiting for it to complete. FsFlow.Flow.join: Waits for a fiber to complete and returns its final outcome. FsFlow.Flow.interrupt: Signals a fiber to stop and waits for it to finish its cleanup. Parallel orchestration FsFlow.Flow.zipPar: Combines two flows into a tuple of their values, running them concurrently. FsFlow.Flow.race: Runs two flows concurrently and returns the result of the first one to complete.">
 <link href="http://localhost:3000/scss/main.css" rel="stylesheet">
 <script
   src="https://code.jquery.com/jquery-3.7.1.min.js"
@@ -61,7 +61,7 @@ Core type FsFlow.Flow: Represents a cold workflow that reads an environment, ret
         <a class="nav-link" href="http://localhost:3000/docs/"><span>Docs</span></a>
       </li>
       <li class="nav-item">
-        <a class="nav-link active" href="http://localhost:3000/reference/"><span>Reference</span></a>
+        <a class="nav-link" href="http://localhost:3000/"><span>Reference</span></a>
       </li>
       <li class="nav-item">
         <a class="nav-link" href="https://github.com/adz/FsFlow" target="_blank" rel="noopener"><span>GitHub</span></a>
@@ -153,8 +153,6 @@ Core type FsFlow.Flow: Represents a cold workflow that reads an environment, ret
     <a href="http://localhost:3000/reference/flow/m-flow-env/" title="FsFlow.Flow.env" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-flow-env"><span class="">env`</span></a>
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowm-flow-error-li">
     <a href="http://localhost:3000/reference/flow/m-flow-error/" title="FsFlow.Flow.error" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-flow-error"><span class="">error`</span></a>
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowm-schedulemodule-exponential-li">
-    <a href="http://localhost:3000/reference/flow/m-schedulemodule-exponential/" title="FsFlow.ScheduleModule.exponential" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-schedulemodule-exponential"><span class="">exponential`</span></a>
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowm-flow-fail-li">
     <a href="http://localhost:3000/reference/flow/m-flow-fail/" title="FsFlow.Flow.fail" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-flow-fail"><span class="">fail`</span></a>
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowt-fiber-li">
@@ -177,8 +175,6 @@ Core type FsFlow.Flow: Represents a cold workflow that reads an environment, ret
     <a href="http://localhost:3000/reference/flow/m-flow-ignore/" title="FsFlow.Flow.ignore" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-flow-ignore"><span class="">ignore`</span></a>
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowm-flow-interrupt-li">
     <a href="http://localhost:3000/reference/flow/m-flow-interrupt/" title="FsFlow.Flow.interrupt" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-flow-interrupt"><span class="">interrupt`</span></a>
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowm-schedulemodule-jittered-li">
-    <a href="http://localhost:3000/reference/flow/m-schedulemodule-jittered/" title="FsFlow.ScheduleModule.jittered" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-schedulemodule-jittered"><span class="">jittered`</span></a>
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowm-flow-join-li">
     <a href="http://localhost:3000/reference/flow/m-flow-join/" title="FsFlow.Flow.join" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-flow-join"><span class="">join`</span></a>
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowm-flow-localenv-li">
@@ -205,20 +201,10 @@ Core type FsFlow.Flow: Represents a cold workflow that reads an environment, ret
     <a href="http://localhost:3000/reference/flow/m-flow-race/" title="FsFlow.Flow.race" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-flow-race"><span class="">race`</span></a>
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowm-flow-read-li">
     <a href="http://localhost:3000/reference/flow/m-flow-read/" title="FsFlow.Flow.read" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-flow-read"><span class="">read`</span></a>
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowm-schedulemodule-recurs-li">
-    <a href="http://localhost:3000/reference/flow/m-schedulemodule-recurs/" title="FsFlow.ScheduleModule.recurs" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-schedulemodule-recurs"><span class="">recurs`</span></a>
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowm-flow-run-li">
     <a href="http://localhost:3000/reference/flow/m-flow-run/" title="FsFlow.Flow.run" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-flow-run"><span class="">run`</span></a>
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowt-schedule-li">
-    <a href="http://localhost:3000/reference/flow/t-schedule/" title="FsFlow.Schedule" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowt-schedule"><span class="">Schedule</span></a>
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowm-flow-sequence-li">
     <a href="http://localhost:3000/reference/flow/m-flow-sequence/" title="FsFlow.Flow.sequence" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-flow-sequence"><span class="">sequence`</span></a>
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowm-schedulemodule-spaced-li">
-    <a href="http://localhost:3000/reference/flow/m-schedulemodule-spaced/" title="FsFlow.ScheduleModule.spaced" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-schedulemodule-spaced"><span class="">spaced`</span></a>
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowm-flowscheduleextensions-flow-repeat-static-li">
-    <a href="http://localhost:3000/reference/flow/m-flowscheduleextensions-flow-repeat-static/" title="FsFlow.FlowScheduleExtensions.Flow.Repeat.Static" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-flowscheduleextensions-flow-repeat-static"><span class="">Static`</span></a>
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowm-flowscheduleextensions-flow-retry-static-li">
-    <a href="http://localhost:3000/reference/flow/m-flowscheduleextensions-flow-retry-static/" title="FsFlow.FlowScheduleExtensions.Flow.Retry.Static" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-flowscheduleextensions-flow-retry-static"><span class="">Static`</span></a>
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowm-flow-succeed-li">
     <a href="http://localhost:3000/reference/flow/m-flow-succeed/" title="FsFlow.Flow.succeed" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-flow-succeed"><span class="">succeed`</span></a>
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowm-flow-tap-li">
@@ -654,7 +640,6 @@ Core type FsFlow.Flow: Represents a cold workflow that reads an environment, ret
     <li><a href="#module-functions">Module functions</a></li>
     <li><a href="#concurrency">Concurrency</a></li>
     <li><a href="#parallel-orchestration">Parallel orchestration</a></li>
-    <li><a href="#scheduling">Scheduling</a></li>
   </ul>
 </nav>
   </div>
@@ -729,298 +714,11 @@ explicitly through <code>Flow.run</code>.</li>
 <li><a href="http://localhost:3000/reference/flow/m-flow-zippar/"><code>FsFlow.Flow.zipPar</code></a>: Combines two flows into a tuple of their values, running them concurrently.</li>
 <li><a href="http://localhost:3000/reference/flow/m-flow-race/"><code>FsFlow.Flow.race</code></a>: Runs two flows concurrently and returns the result of the first one to complete.</li>
 </ul>
-<h2 id="scheduling">Scheduling</h2>
-<ul>
-<li><a href="http://localhost:3000/reference/flow/t-schedule/"><code>FsFlow.Schedule</code></a>: Represents a stateful schedule that can decide whether to continue and how long to delay.</li>
-<li><a href="http://localhost:3000/reference/flow/m-schedulemodule-recurs/"><code>FsFlow.ScheduleModule.recurs</code></a>: Creates a schedule that recurs a fixed number of times.</li>
-<li><a href="http://localhost:3000/reference/flow/m-schedulemodule-spaced/"><code>FsFlow.ScheduleModule.spaced</code></a>: Creates a schedule that recurs with a fixed delay between attempts.</li>
-<li><a href="http://localhost:3000/reference/flow/m-schedulemodule-exponential/"><code>FsFlow.ScheduleModule.exponential</code></a>: Creates a schedule that recurs with exponential backoff.</li>
-<li><a href="http://localhost:3000/reference/flow/m-schedulemodule-jittered/"><code>FsFlow.ScheduleModule.jittered</code></a>: Adds random jitter to a schedule&rsquo;s delay.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flowscheduleextensions-flow-retry-static/"><code>FsFlow.FlowScheduleExtensions.Flow.Retry.Static</code></a>: Retries a failing flow according to the supplied schedule.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flowscheduleextensions-flow-repeat-static/"><code>FsFlow.FlowScheduleExtensions.Flow.Repeat.Static</code></a>: Repeats a successful flow according to the supplied schedule.</li>
-</ul>
 
 	<div class="section-index">
     
     
-    <hr class="panel-line">
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-apply/">FsFlow.Flow.apply</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-bind/">FsFlow.Flow.bind</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-catch/">FsFlow.Flow.catch</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-delay/">FsFlow.Flow.delay</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-env/">FsFlow.Flow.env</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-error/">FsFlow.Flow.error</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-schedulemodule-exponential/">FsFlow.ScheduleModule.exponential</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-fail/">FsFlow.Flow.fail</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/t-fiber/">FsFlow.Fiber</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/p-builders-flow/">FsFlow.Builders.flow</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/t-flow/">FsFlow.Flow</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/builders-flow/">flow { }</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-fork/">FsFlow.Flow.fork</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-fromoption/">FsFlow.Flow.fromOption</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-fromresult/">FsFlow.Flow.fromResult</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-fromvalueoption/">FsFlow.Flow.fromValueOption</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-ignore/">FsFlow.Flow.ignore</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-interrupt/">FsFlow.Flow.interrupt</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-schedulemodule-jittered/">FsFlow.ScheduleModule.jittered</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-join/">FsFlow.Flow.join</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-localenv/">FsFlow.Flow.localEnv</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-map/">FsFlow.Flow.map</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-map2/">FsFlow.Flow.map2</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-map3/">FsFlow.Flow.map3</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-maperror/">FsFlow.Flow.mapError</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-ok/">FsFlow.Flow.ok</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-orelse/">FsFlow.Flow.orElse</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-orelseflow/">FsFlow.Flow.orElseFlow</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-orelsewith/">FsFlow.Flow.orElseWith</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-providelayer/">FsFlow.Flow.provideLayer</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-race/">FsFlow.Flow.race</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-read/">FsFlow.Flow.read</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-schedulemodule-recurs/">FsFlow.ScheduleModule.recurs</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-run/">FsFlow.Flow.run</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/t-schedule/">FsFlow.Schedule</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-sequence/">FsFlow.Flow.sequence</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-schedulemodule-spaced/">FsFlow.ScheduleModule.spaced</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flowscheduleextensions-flow-repeat-static/">FsFlow.FlowScheduleExtensions.Flow.Repeat.Static</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flowscheduleextensions-flow-retry-static/">FsFlow.FlowScheduleExtensions.Flow.Retry.Static</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-succeed/">FsFlow.Flow.succeed</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-tap/">FsFlow.Flow.tap</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-taperror/">FsFlow.Flow.tapError</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-traverse/">FsFlow.Flow.traverse</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-value/">FsFlow.Flow.value</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-zip/">FsFlow.Flow.zip</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-zippar/">FsFlow.Flow.zipPar</a>
-                </h5>
-                <p></p>
-            </div>
-        </div>
+    </div>
 </div>
 
           </main>

@@ -12,6 +12,6 @@ Executes a flow with the provided environment and the default cancellation token
 ```fsharp
 let flow = Flow.read (fun env -> $"Hello, {env}!")
  let result = Flow.run "World" flow
- // result = Promise that resolves to Success "Hello, World!" on Fable, or Success "Hello, World!" on .NET
+ // result = Effect that resolves to Success "Hello, World!" on both .NET and Fable
 ```
 

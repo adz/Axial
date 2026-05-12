@@ -16,6 +16,10 @@ The FsFlow ecosystem groups the main public surfaces:
 - [`Check`](/reference/check/) for pure `Result<'value, unit>` predicates
 - [`Validation`](/reference/validation/) for accumulated diagnostics
 - [`Diagnostics`](/reference/diagnostics/) for the structured validation graph
+- [`Ref`](/reference/ref/) for atomic mutable references
+- [`Schedule`](/reference/schedule/) for retry and repeat policies
+- [`STM`](/reference/stm/) for software transactional memory
+- [`Stream`](/reference/stream/) for effectful pull-based streams
 - the [`flow {}`](/reference/flow/builders-flow.md) and [`validate {}`](/reference/validation/builders-validate.md) entry points
 - the CAPS request tokens [`Needs<'dep>`](/reference/caps/) and [`Env<'dep>`](/reference/caps/) / `Env<'dep, 'value>` for explicit capability boundaries
 - the shared primitives [`FsFlow.Caps.Core`](/reference/caps-core/)
@@ -57,6 +61,30 @@ The builder types themselves stay below the surface. The modules are the public 
 <span class="label">Diagnostics</span>
 <h3><a href="/reference/diagnostics/">Structured diagnostics</a></h3>
 <p>The validation graph and the helpers that render and flatten it.</p>
+</section>
+
+<section class="docs-card">
+<span class="label">Ref</span>
+<h3><a href="/reference/ref/">Atomic references</a></h3>
+<p>Thread-safe mutable state handles for concurrent workflows.</p>
+</section>
+
+<section class="docs-card">
+<span class="label">Schedule</span>
+<h3><a href="/reference/schedule/">Execution policies</a></h3>
+<p>DSL for describing retry and repetition strategies.</p>
+</section>
+
+<section class="docs-card">
+<span class="label">STM</span>
+<h3><a href="/reference/stm/">Transactional memory</a></h3>
+<p>Composable atomic transactions across multiple state variables.</p>
+</section>
+
+<section class="docs-card">
+<span class="label">Stream</span>
+<h3><a href="/reference/stream/">Effectful streams</a></h3>
+<p>Asynchronous, pull-based streams with environment and error support.</p>
 </section>
 
 <section class="docs-card">

@@ -69,7 +69,7 @@ Three related workflow families. Three valid architectural styles. Choose based 
         <a class="nav-link active" href="http://localhost:3000/docs/"><span>Docs</span></a>
       </li>
       <li class="nav-item">
-        <a class="nav-link" href="http://localhost:3000/reference/"><span>Reference</span></a>
+        <a class="nav-link" href="http://localhost:3000/"><span>Reference</span></a>
       </li>
       <li class="nav-item">
         <a class="nav-link" href="https://github.com/adz/FsFlow" target="_blank" rel="noopener"><span>GitHub</span></a>
@@ -289,7 +289,7 @@ Three related workflow families. Three valid architectural styles. Choose based 
 </blockquote>
 <h2 id="1-booted-app-environment">1. Booted App Environment</h2>
 <p>Use this when your application already has a conventional booted runtime and passing one explicit application environment keeps composition simple.</p>
-<p>This is the most direct use of the <a href="http://localhost:3000/docs/managing-dependencies/env-slicing/">Record Pattern</a>. The environment is the full booted application runtime and config:</p>
+<p>This is the most direct use of the Record Pattern. The environment is the full booted application runtime and config:</p>
 <ul>
 <li>DB</li>
 <li>logging</li>
@@ -351,7 +351,7 @@ for request or execution context only.</p>
 </span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">}</span>
 </span></span></code></pre></div><p>The shape is:</p>
 <div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#000">deps</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#000">input</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#000">Flow</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#204a87;font-weight:bold">&#39;</span><span style="color:#000">ctx</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#204a87;font-weight:bold">&#39;</span><span style="color:#000">err</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#204a87;font-weight:bold">&#39;</span><span style="color:#000">a</span><span style="color:#ce5c00;font-weight:bold">&gt;</span>
-</span></span></code></pre></div><p>Here, the <a href="http://localhost:3000/docs/managing-dependencies/env-slicing/">Record Pattern</a> is used only for the thin <code>'ctx</code> (request or execution context). Typical examples:</p>
+</span></span></code></pre></div><p>Here, the Record Pattern is used only for the thin <code>'ctx</code> (request or execution context). Typical examples:</p>
 <ul>
 <li>trace id</li>
 <li>request id</li>
@@ -401,7 +401,7 @@ injection, and FsFlow should only appear inside workflow code.</p>
 </span></span><span style="display:flex;"><span>            <span style="color:#204a87;font-weight:bold">let!</span> <span style="color:#000">shipmentId</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">gateway</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">CreateShipment</span><span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">input</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">OrderId</span><span style="color:#ce5c00;font-weight:bold">)</span>
 </span></span><span style="display:flex;"><span>            <span style="color:#204a87;font-weight:bold">return</span> <span style="color:#000">shipmentId</span>
 </span></span><span style="display:flex;"><span>        <span style="color:#ce5c00;font-weight:bold">}</span>
-</span></span></code></pre></div><p>This style often utilizes the <a href="http://localhost:3000/docs/managing-dependencies/capabilities/">CAPS Pattern</a> to bridge existing .NET services into a decoupled FsFlow contract.</p>
+</span></span></code></pre></div><p>This style often utilizes the CAPS Pattern to bridge existing .NET services into a decoupled FsFlow contract.</p>
 <p>Use this style for:</p>
 <ul>
 <li>mixed C# and F# teams</li>
@@ -423,7 +423,7 @@ forcing everything into one record.</p>
 The important constraint is that the chosen workflow family stays explicit at the workflow boundary and at execution time.</p>
 <h2 id="next">Next</h2>
 <p>Read <a href="http://localhost:3000/docs/start/getting-started/"><code>docs/GETTING_STARTED.md</code></a> for the core workflow model,
-<a href="http://localhost:3000/docs/managing-dependencies/env-slicing/"><code>docs/ENV_SLICING.md</code></a> for smaller environment projections, and
+<code>docs/ENV_SLICING.md</code> for smaller environment projections, and
 <code>docs/WHY_FSFLOW.md</code> for the trade-offs against manual
 threading and wrapper-based shapes.</p>
 

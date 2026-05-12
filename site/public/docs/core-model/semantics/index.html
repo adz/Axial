@@ -30,7 +30,7 @@
 
   <meta itemprop="name" content="Execution Semantics">
   <meta itemprop="description" content="Exact execution rules for Flow.">
-  <meta itemprop="wordCount" content="362">
+  <meta itemprop="wordCount" content="353">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Execution Semantics">
   <meta name="twitter:description" content="Exact execution rules for Flow.">
@@ -57,7 +57,7 @@
         <a class="nav-link active" href="http://localhost:3000/docs/"><span>Docs</span></a>
       </li>
       <li class="nav-item">
-        <a class="nav-link" href="http://localhost:3000/reference/"><span>Reference</span></a>
+        <a class="nav-link" href="http://localhost:3000/"><span>Reference</span></a>
       </li>
       <li class="nav-item">
         <a class="nav-link" href="https://github.com/adz/FsFlow" target="_blank" rel="noopener"><span>GitHub</span></a>
@@ -292,8 +292,8 @@
 <h2 id="execution-is-explicit">Execution Is Explicit</h2>
 <p>You run a Flow by calling <code>Flow.run</code>.</p>
 <ul>
-<li>On <strong>.NET</strong>: <code>Flow.run</code> is synchronous and returns an <strong><code>Exit&lt;'value, 'error&gt;</code></strong>. It executes the flow and blocks until completion.</li>
-<li>On <strong>Fable</strong>: <code>Flow.run</code> returns an <strong><code>Effect&lt;'value, 'error&gt;</code></strong> (which is <code>Async&lt;Exit&lt;'value, 'error&gt;&gt;</code>).</li>
+<li>On <strong>.NET</strong>: <code>Flow.run</code> returns an <strong><code>Effect&lt;'value, 'error&gt;</code></strong> (a <code>ValueTask&lt;Exit&lt;'value, 'error&gt;&gt;</code>).</li>
+<li>On <strong>Fable</strong>: <code>Flow.run</code> returns an <strong><code>Effect&lt;'value, 'error&gt;</code></strong> (an <code>Async&lt;Exit&lt;'value, 'error&gt;&gt;</code>).</li>
 </ul>
 <p>This design allows FsFlow to remain portable while respecting the execution models of different platforms. The <code>Effect</code> type is the cross-platform execution handle.</p>
 <p>A flow is <strong>cold</strong>: building a flow does not run it. Each call to <code>run</code> executes the logic from scratch.</p>

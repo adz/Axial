@@ -31,7 +31,7 @@ module Flow =
     /// <code>
     /// let flow = Flow.read (fun env -> $"Hello, {env}!")
     /// let result = Flow.run "World" flow
-    /// // result = Promise that resolves to Success "Hello, World!" on Fable, or Success "Hello, World!" on .NET
+    /// // result = Effect that resolves to Success "Hello, World!" on both .NET and Fable
     /// </code>
     /// </example>
     let run (environment: 'env) (flow: Flow<'env, 'error, 'value>) : Effect<'value, 'error> =

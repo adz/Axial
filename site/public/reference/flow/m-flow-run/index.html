@@ -20,24 +20,24 @@
 
 <title>FsFlow.Flow.run | FsFlow</title>
 <meta name="description" content="Executes a flow with the provided environment and the default cancellation token.
-Examples let flow = Flow.read (fun env -&gt; $&#34;Hello, {env}!&#34;) let result = Flow.run &#34;World&#34; flow // result = Promise that resolves to Success &#34;Hello, World!&#34; on Fable, or Success &#34;Hello, World!&#34; on .NET">
+Examples let flow = Flow.read (fun env -&gt; $&#34;Hello, {env}!&#34;) let result = Flow.run &#34;World&#34; flow // result = Effect that resolves to Success &#34;Hello, World!&#34; on both .NET and Fable">
 <meta property="og:url" content="http://localhost:3000/reference/flow/m-flow-run/">
   <meta property="og:site_name" content="FsFlow">
   <meta property="og:title" content="FsFlow.Flow.run">
   <meta property="og:description" content="Executes a flow with the provided environment and the default cancellation token.
-Examples let flow = Flow.read (fun env -&gt; $&#34;Hello, {env}!&#34;) let result = Flow.run &#34;World&#34; flow // result = Promise that resolves to Success &#34;Hello, World!&#34; on Fable, or Success &#34;Hello, World!&#34; on .NET">
+Examples let flow = Flow.read (fun env -&gt; $&#34;Hello, {env}!&#34;) let result = Flow.run &#34;World&#34; flow // result = Effect that resolves to Success &#34;Hello, World!&#34; on both .NET and Fable">
   <meta property="og:locale" content="en_us">
   <meta property="og:type" content="article">
     <meta property="article:section" content="reference">
 
   <meta itemprop="name" content="FsFlow.Flow.run">
   <meta itemprop="description" content="Executes a flow with the provided environment and the default cancellation token.
-Examples let flow = Flow.read (fun env -&gt; $&#34;Hello, {env}!&#34;) let result = Flow.run &#34;World&#34; flow // result = Promise that resolves to Success &#34;Hello, World!&#34; on Fable, or Success &#34;Hello, World!&#34; on .NET">
-  <meta itemprop="wordCount" content="46">
+Examples let flow = Flow.read (fun env -&gt; $&#34;Hello, {env}!&#34;) let result = Flow.run &#34;World&#34; flow // result = Effect that resolves to Success &#34;Hello, World!&#34; on both .NET and Fable">
+  <meta itemprop="wordCount" content="43">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="FsFlow.Flow.run">
   <meta name="twitter:description" content="Executes a flow with the provided environment and the default cancellation token.
-Examples let flow = Flow.read (fun env -&gt; $&#34;Hello, {env}!&#34;) let result = Flow.run &#34;World&#34; flow // result = Promise that resolves to Success &#34;Hello, World!&#34; on Fable, or Success &#34;Hello, World!&#34; on .NET">
+Examples let flow = Flow.read (fun env -&gt; $&#34;Hello, {env}!&#34;) let result = Flow.run &#34;World&#34; flow // result = Effect that resolves to Success &#34;Hello, World!&#34; on both .NET and Fable">
 <link href="http://localhost:3000/scss/main.css" rel="stylesheet">
 <script
   src="https://code.jquery.com/jquery-3.7.1.min.js"
@@ -61,7 +61,7 @@ Examples let flow = Flow.read (fun env -&gt; $&#34;Hello, {env}!&#34;) let resul
         <a class="nav-link" href="http://localhost:3000/docs/"><span>Docs</span></a>
       </li>
       <li class="nav-item">
-        <a class="nav-link active" href="http://localhost:3000/reference/"><span>Reference</span></a>
+        <a class="nav-link" href="http://localhost:3000/"><span>Reference</span></a>
       </li>
       <li class="nav-item">
         <a class="nav-link" href="https://github.com/adz/FsFlow" target="_blank" rel="noopener"><span>GitHub</span></a>
@@ -153,8 +153,6 @@ Examples let flow = Flow.read (fun env -&gt; $&#34;Hello, {env}!&#34;) let resul
     <a href="http://localhost:3000/reference/flow/m-flow-env/" title="FsFlow.Flow.env" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-flow-env"><span class="">env`</span></a>
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowm-flow-error-li">
     <a href="http://localhost:3000/reference/flow/m-flow-error/" title="FsFlow.Flow.error" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-flow-error"><span class="">error`</span></a>
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowm-schedulemodule-exponential-li">
-    <a href="http://localhost:3000/reference/flow/m-schedulemodule-exponential/" title="FsFlow.ScheduleModule.exponential" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-schedulemodule-exponential"><span class="">exponential`</span></a>
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowm-flow-fail-li">
     <a href="http://localhost:3000/reference/flow/m-flow-fail/" title="FsFlow.Flow.fail" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-flow-fail"><span class="">fail`</span></a>
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowt-fiber-li">
@@ -177,8 +175,6 @@ Examples let flow = Flow.read (fun env -&gt; $&#34;Hello, {env}!&#34;) let resul
     <a href="http://localhost:3000/reference/flow/m-flow-ignore/" title="FsFlow.Flow.ignore" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-flow-ignore"><span class="">ignore`</span></a>
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowm-flow-interrupt-li">
     <a href="http://localhost:3000/reference/flow/m-flow-interrupt/" title="FsFlow.Flow.interrupt" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-flow-interrupt"><span class="">interrupt`</span></a>
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowm-schedulemodule-jittered-li">
-    <a href="http://localhost:3000/reference/flow/m-schedulemodule-jittered/" title="FsFlow.ScheduleModule.jittered" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-schedulemodule-jittered"><span class="">jittered`</span></a>
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowm-flow-join-li">
     <a href="http://localhost:3000/reference/flow/m-flow-join/" title="FsFlow.Flow.join" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-flow-join"><span class="">join`</span></a>
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowm-flow-localenv-li">
@@ -205,20 +201,10 @@ Examples let flow = Flow.read (fun env -&gt; $&#34;Hello, {env}!&#34;) let resul
     <a href="http://localhost:3000/reference/flow/m-flow-race/" title="FsFlow.Flow.race" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-flow-race"><span class="">race`</span></a>
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowm-flow-read-li">
     <a href="http://localhost:3000/reference/flow/m-flow-read/" title="FsFlow.Flow.read" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-flow-read"><span class="">read`</span></a>
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowm-schedulemodule-recurs-li">
-    <a href="http://localhost:3000/reference/flow/m-schedulemodule-recurs/" title="FsFlow.ScheduleModule.recurs" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-schedulemodule-recurs"><span class="">recurs`</span></a>
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child active-path" id="m-referenceflowm-flow-run-li">
     <a href="http://localhost:3000/reference/flow/m-flow-run/" title="FsFlow.Flow.run" class="align-left ps-0 active td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-flow-run"><span class="td-sidebar-nav-active-item">run`</span></a>
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowt-schedule-li">
-    <a href="http://localhost:3000/reference/flow/t-schedule/" title="FsFlow.Schedule" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowt-schedule"><span class="">Schedule</span></a>
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowm-flow-sequence-li">
     <a href="http://localhost:3000/reference/flow/m-flow-sequence/" title="FsFlow.Flow.sequence" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-flow-sequence"><span class="">sequence`</span></a>
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowm-schedulemodule-spaced-li">
-    <a href="http://localhost:3000/reference/flow/m-schedulemodule-spaced/" title="FsFlow.ScheduleModule.spaced" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-schedulemodule-spaced"><span class="">spaced`</span></a>
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowm-flowscheduleextensions-flow-repeat-static-li">
-    <a href="http://localhost:3000/reference/flow/m-flowscheduleextensions-flow-repeat-static/" title="FsFlow.FlowScheduleExtensions.Flow.Repeat.Static" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-flowscheduleextensions-flow-repeat-static"><span class="">Static`</span></a>
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowm-flowscheduleextensions-flow-retry-static-li">
-    <a href="http://localhost:3000/reference/flow/m-flowscheduleextensions-flow-retry-static/" title="FsFlow.FlowScheduleExtensions.Flow.Retry.Static" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-flowscheduleextensions-flow-retry-static"><span class="">Static`</span></a>
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowm-flow-succeed-li">
     <a href="http://localhost:3000/reference/flow/m-flow-succeed/" title="FsFlow.Flow.succeed" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-flow-succeed"><span class="">succeed`</span></a>
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowm-flow-tap-li">
@@ -680,7 +666,7 @@ Examples let flow = Flow.read (fun env -&gt; $&#34;Hello, {env}!&#34;) let resul
 <h2 id="examples">Examples</h2>
 <div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">flow</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">read</span> <span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#204a87;font-weight:bold">fun</span> <span style="color:#000">env</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#ce5c00;font-weight:bold">$</span><span style="color:#4e9a06">&#34;Hello, {env}!&#34;</span><span style="color:#ce5c00;font-weight:bold">)</span>
 </span></span><span style="display:flex;"><span> <span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">result</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">run</span> <span style="color:#4e9a06">&#34;World&#34;</span> <span style="color:#000">flow</span>
-</span></span><span style="display:flex;"><span> <span style="color:#8f5902;font-style:italic">// result = Promise that resolves to Success &#34;Hello, World!&#34; on Fable, or Success &#34;Hello, World!&#34; on .NET
+</span></span><span style="display:flex;"><span> <span style="color:#8f5902;font-style:italic">// result = Effect that resolves to Success &#34;Hello, World!&#34; on both .NET and Fable
 </span></span></span></code></pre></div>
 	
 </div>
