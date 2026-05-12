@@ -103,12 +103,12 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                 return client.Name
             }
 
-        let flowRun1 = Flow.run flowCaps flowWorkflow
-        let flowRun2 = Flow.run flowCaps flowWorkflow
-        let asyncRun1 = Flow.run asyncCaps asyncWorkflow
-        let asyncRun2 = Flow.run asyncCaps asyncWorkflow
-        let taskRun1 = Flow.run taskCaps taskWorkflow
-        let taskRun2 = Flow.run taskCaps taskWorkflow
+        let flowRun1 = Flow.runSync flowCaps flowWorkflow
+        let flowRun2 = Flow.runSync flowCaps flowWorkflow
+        let asyncRun1 = Flow.runSync asyncCaps asyncWorkflow
+        let asyncRun2 = Flow.runSync asyncCaps asyncWorkflow
+        let taskRun1 = Flow.runSync taskCaps taskWorkflow
+        let taskRun2 = Flow.runSync taskCaps taskWorkflow
 
         test <@ flowRun1 = Exit.Success "dep-2" @>
         test <@ flowRun2 = Exit.Success "dep-4" @>
@@ -141,7 +141,7 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                 return plain + resultValue + maybeValue + maybeValueOption
             }
 
-        test <@ Flow.run environment flowWorkflow = Exit.Success 84 @>
+        test <@ Flow.runSync environment flowWorkflow = Exit.Success 84 @>
 
     [<Fact>]
     let ``projected Env requests bind async result shapes`` () =
@@ -155,7 +155,7 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                 return asyncResultValue
             }
 
-        test <@ Flow.run environment asyncWorkflow = Exit.Success 21 @>
+        test <@ Flow.runSync environment asyncWorkflow = Exit.Success 21 @>
 
     [<Fact>]
     let ``projected Env requests bind task surfaces across flow`` () =
@@ -199,8 +199,8 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                     + taskResultValue
             }
 
-        let asyncResult = Flow.run environment asyncWorkflow
-        let taskResult = Flow.run environment taskWorkflow
+        let asyncResult = Flow.runSync environment asyncWorkflow
+        let taskResult = Flow.runSync environment taskWorkflow
 
         test <@ asyncResult = Exit.Success 42 @>
         test <@ taskResult = Exit.Success 63 @>
@@ -409,7 +409,7 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                     + requestResultValue
             }
 
-        test <@ Flow.run (ProjectionCaps()) workflow = Exit.Success (service.Number * 8) @>
+        test <@ Flow.runSync (ProjectionCaps()) workflow = Exit.Success (service.Number * 8) @>
 
     [<Fact>]
     let ``flow builders directly bind Result and Result unit values`` () =
@@ -421,7 +421,7 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                 return doubled
             }
 
-        test <@ Flow.run 21 syncWorkflow = Exit.Success 42 @>
+        test <@ Flow.runSync 21 syncWorkflow = Exit.Success 42 @>
 
     [<Fact>]
     let ``flow computation expression mixes sync async task and result effects in one workflow`` () =
@@ -435,7 +435,7 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                 return prefix + asyncSuffix + taskSuffix + resultSuffix
             }
 
-        test <@ Flow.run "flow" workflow = Exit.Success "flow-async-task-result" @>
+        test <@ Flow.runSync "flow" workflow = Exit.Success "flow-async-task-result" @>
 
     [<Fact>]
     let ``reader-style yield projects from the environment across builders`` () =
@@ -458,9 +458,9 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                 yield! Flow.read _.Prefix
             }
 
-        test <@ Flow.run environment syncValue = Exit.Success 42 @>
-        test <@ Flow.run environment syncProjection = Exit.Success "flow" @>
-        test <@ Flow.run environment syncYieldFrom = Exit.Success "flow" @>
+        test <@ Flow.runSync environment syncValue = Exit.Success 42 @>
+        test <@ Flow.runSync environment syncProjection = Exit.Success "flow" @>
+        test <@ Flow.runSync environment syncYieldFrom = Exit.Success "flow" @>
 
     [<Fact>]
     let ``flow directly binds and returns Async and Async Result values`` () =
@@ -477,11 +477,11 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
 
         let workflowResult =
             workflow
-            |> Flow.run 19
+            |> Flow.runSync 19
 
         let asyncReturnFromResult =
             asyncReturnFrom
-            |> Flow.run ()
+            |> Flow.runSync ()
 
         test <@ workflowResult = Exit.Success 42 @>
         test <@ asyncReturnFromResult = Exit.Success 42 @>
@@ -522,7 +522,7 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
             }
 
         let run flow environment =
-            Flow.run environment flow
+            Flow.runSync environment flow
 
         let workflowResult = run workflow 19
         let asyncReturnFromResult = run asyncReturnFrom ()
@@ -547,6 +547,6 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
                 return adjustedValue + 2
             }
 
-        let workflowResult = Flow.run 19 workflow
+        let workflowResult = Flow.runSync 19 workflow
 
         test <@ workflowResult = Exit.Success 42 @>

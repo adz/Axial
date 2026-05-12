@@ -35,7 +35,7 @@ module TelemetryTests =
         let workflow = 
             Activity.trace "test-op" (flow { return 42 })
 
-        let result = Flow.run env workflow
+        let result = Flow.runSync env workflow
         
         test <@ result = Exit.Success 42 @>
         test <@ capturedTags.ContainsKey("fsflow.request_id") @>

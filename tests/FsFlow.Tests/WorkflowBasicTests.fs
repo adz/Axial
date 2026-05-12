@@ -16,7 +16,7 @@ module WorkflowBasicTests =
             Flow.env
             |> Flow.bind (fun value -> Flow.succeed(value * 2))
 
-        test <@ Flow.run 21 workflow = Exit.Success 42 @>
+        test <@ Flow.runSync 21 workflow = Exit.Success 42 @>
 
     [<Fact>]
     let ``Flow runFull and runWithToken mirror run for the default token`` () =
@@ -24,9 +24,9 @@ module WorkflowBasicTests =
             Flow.env
             |> Flow.map (fun value -> value * 2)
 
-        test <@ Flow.run 21 workflow = Exit.Success 42 @>
-        test <@ Flow.runFull 21 CancellationToken.None workflow = Exit.Success 42 @>
-        test <@ Flow.runWithToken 21 CancellationToken.None workflow = Exit.Success 42 @>
+        test <@ Flow.runSync 21 workflow = Exit.Success 42 @>
+        test <@ Flow.runFull 21 CancellationToken.None workflow |> fun t -> t.AsTask().GetAwaiter().GetResult() = Exit.Success 42 @>
+        test <@ Flow.runWithToken 21 CancellationToken.None workflow |> fun t -> t.AsTask().GetAwaiter().GetResult() = Exit.Success 42 @>
 
     [<Fact>]
     let ``Flow delay reruns from scratch`` () =
@@ -37,8 +37,8 @@ module WorkflowBasicTests =
                 runs.Value <- runs.Value + 1
                 Flow.succeed runs.Value)
 
-        test <@ Flow.run () workflow = Exit.Success 1 @>
-        test <@ Flow.run () workflow = Exit.Success 2 @>
+        test <@ Flow.runSync () workflow = Exit.Success 1 @>
+        test <@ Flow.runSync () workflow = Exit.Success 2 @>
 
     [<Fact>]
     let ``shared combinators preserve sync and async environment semantics`` () =
@@ -51,7 +51,7 @@ module WorkflowBasicTests =
         let syncWorkflow : Flow<string, int, int> =
             Flow.localEnv String.length syncBase
 
-        let syncResult = Flow.run "flowkit" syncWorkflow
+        let syncResult = Flow.runSync "flowkit" syncWorkflow
 
         test <@ syncResult = Exit.Success 19 @>
 
@@ -64,30 +64,30 @@ module WorkflowBasicTests =
 
         let syncMapped =
             Flow.(<!>) ((+) 1) syncOk
-            |> Flow.run ()
+            |> Flow.runSync ()
 
         let syncApplied =
             Flow.(<*>) (Flow.ok ((+) 1)) syncOk
-            |> Flow.run ()
+            |> Flow.runSync ()
 
         let syncMapped3 =
             Flow.map3 (fun left middle right -> left + middle + right) (Flow.ok 1) (Flow.ok 2) (Flow.ok 3)
-            |> Flow.run ()
+            |> Flow.runSync ()
 
         let syncIgnored =
             Flow.ignore syncOk
-            |> Flow.run ()
+            |> Flow.runSync ()
 
         let syncBound =
             Flow.(>>=) syncOk (fun value -> Flow.ok (value + 1))
-            |> Flow.run ()
+            |> Flow.runSync ()
 
         let syncRecovered =
             Flow.orElseWith (fun (error: string) -> Flow.ok error.Length) syncError
-            |> Flow.run ()
+            |> Flow.runSync ()
 
-        test <@ Flow.run () syncOk = Flow.run () syncAlias @>
-        test <@ Flow.run () syncError = Flow.run () syncErrorAlias @>
+        test <@ Flow.runSync () syncOk = Flow.runSync () syncAlias @>
+        test <@ Flow.runSync () syncError = Flow.runSync () syncErrorAlias @>
         test <@ syncMapped = Exit.Success 42 @>
         test <@ syncApplied = Exit.Success 42 @>
         test <@ syncMapped3 = Exit.Success 6 @>
@@ -98,7 +98,7 @@ module WorkflowBasicTests =
     [<Fact>]
     let ``Runnable example docs are generated from executable example projects`` () =
         let repoRoot = Path.GetFullPath(Path.Combine(__SOURCE_DIRECTORY__, "..", ".."))
-        let docsExamplesPath = Path.Combine(repoRoot, "docs", "examples", "README.md")
+        let docsExamplesPath = Path.Combine(repoRoot, "docs", "patterns", "examples", "_index.md")
         let generatorPath = Path.Combine(repoRoot, "scripts", "generate-example-docs.sh")
         let generatedPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.md")
 
@@ -125,7 +125,7 @@ module WorkflowBasicTests =
 
         let runOnce () =
             workflow
-            |> Flow.run ()
+            |> Flow.runSync ()
 
         test <@ runOnce () = Exit.Success 1 @>
         test <@ runOnce () = Exit.Success 2 @>
@@ -143,7 +143,7 @@ module WorkflowBasicTests =
 
         let result =
             workflow
-            |> Flow.run "flowkit"
+            |> Flow.runSync "flowkit"
 
         test <@ result = Exit.Success 19 @>
 
@@ -170,7 +170,7 @@ module WorkflowBasicTests =
 
         let result =
             workflow
-            |> Flow.run context
+            |> Flow.runSync context
 
         test <@ result = Exit.Success "rt:41" @>
         test <@ List.ofSeq runtime.Seen = [ "value=41" ] @>
@@ -205,24 +205,24 @@ module WorkflowBasicTests =
 
         let composedResult =
             composed
-            |> Flow.run outerContext
+            |> Flow.runSync outerContext
 
         let provider = RecordingServiceProvider(typeof<IDeviceClient>, app.DeviceClient :> obj) :> IServiceProvider
 
         let providerResult =
             Capability.serviceFromProvider<IDeviceClient>
-            |> Flow.run provider
+            |> Flow.runSync provider
 
         let missingProviderResult =
             Capability.serviceFromProvider<IDeviceClient>
-            |> Flow.run (RecordingServiceProvider(typeof<string>, "nope") :> IServiceProvider)
+            |> Flow.runSync (RecordingServiceProvider(typeof<string>, "nope") :> IServiceProvider)
 
         let flowCapability : Flow<RuntimeContext<RuntimeServices, AppDependencies>, string, IDeviceClient> =
             Capability.service _.DeviceClient
 
         let flowCapabilityResult =
             flowCapability
-            |> Flow.run (RuntimeContext.create runtime app CancellationToken.None)
+            |> Flow.runSync (RuntimeContext.create runtime app CancellationToken.None)
 
         let flowLayerWorkflow : Flow<AppDependencies, string, string> =
             flow {
@@ -234,7 +234,7 @@ module WorkflowBasicTests =
         let flowLayerResult =
             flowLayerWorkflow
             |> Flow.provideLayer (Flow.succeed app)
-            |> Flow.run ()
+            |> Flow.runSync ()
 
         test <@ composedResult = Exit.Success "provider-client:10" @>
         test <@ providerResult = Exit.Success app.DeviceClient @>
@@ -246,15 +246,15 @@ module WorkflowBasicTests =
     let ``Flow traverse and sequence work as expected`` () =
         let values = [ 1; 2; 3 ]
         let workflow = values |> Flow.traverse (fun v -> Flow.succeed (v * 2))
-        let result = Flow.run () workflow
+        let result = Flow.runSync () workflow
         test <@ result = Exit.Success [ 2; 4; 6 ] @>
 
         let flows = [ Flow.succeed 1; Flow.succeed 2 ]
-        let sequenceResult = Flow.run () (Flow.sequence flows)
+        let sequenceResult = Flow.runSync () (Flow.sequence flows)
         test <@ sequenceResult = Exit.Success [ 1; 2 ] @>
 
         let failWorkflow = [ 1; 2 ] |> Flow.traverse (fun v -> if v = 1 then Flow.fail "error" else Flow.succeed v)
-        test <@ Flow.run () failWorkflow = Exit.Failure (Cause.Fail "error") @>
+        test <@ Flow.runSync () failWorkflow = Exit.Failure (Cause.Fail "error") @>
 
     [<Fact>]
     let ``flow builder overloads stay aligned with the Fable 5 mapping`` () =
@@ -279,7 +279,7 @@ module WorkflowBasicTests =
 
         let result =
             workflow
-            |> Flow.run 20
+            |> Flow.runSync 20
 
         test <@ typeof<FlowBuilder>.Namespace = "FsFlow" @>
         test <@ result = Exit.Success 42 @>

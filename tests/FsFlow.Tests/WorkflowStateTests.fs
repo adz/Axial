@@ -22,7 +22,7 @@ module WorkflowStateTests =
                 return v1, v2, v3
             }
 
-        test <@ Flow.run () workflow = Exit.Success (11, "result", 22) @>
+        test <@ Flow.runSync () workflow = Exit.Success (11, "result", 22) @>
 
     [<Fact>]
     let ``STM: atomic transactional updates`` () =
@@ -45,4 +45,4 @@ module WorkflowStateTests =
                 return v1, v2
             }
 
-        test <@ Flow.run () workflow = Exit.Success (15, 15) @>
+        test <@ Flow.runSync () workflow = Exit.Success (15, 15) @>

@@ -8,6 +8,15 @@ open System.Threading.Tasks
 open System.Threading.Tasks.Sources
 open FsFlow
 
+[<AutoOpen>]
+module TestExtensions =
+    module Flow =
+        let runSync (environment: 'env) (flow: Flow<'env, 'error, 'value>) : Exit<'value, 'error> =
+            Flow.run environment flow |> fun t -> t.AsTask().GetAwaiter().GetResult()
+        
+        let runFullSync (environment: 'env) (cancellationToken: CancellationToken) (flow: Flow<'env, 'error, 'value>) : Exit<'value, 'error> =
+            Flow.runFull environment cancellationToken flow |> fun t -> t.AsTask().GetAwaiter().GetResult()
+
 module TestSupport =
     type Address =
         { City: string }

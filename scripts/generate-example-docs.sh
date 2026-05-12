@@ -3,7 +3,7 @@
 set -euo pipefail
 
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-output_file="${DOCS_EXAMPLES_OUTPUT:-$root_dir/docs/examples/README.md}"
+output_file="${DOCS_EXAMPLES_OUTPUT:-$root_dir/docs/patterns/examples/_index.md}"
 
 mkdir -p "$(dirname "$output_file")"
 

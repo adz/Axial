@@ -19,6 +19,6 @@ module WorkflowStreamTests =
             |> FlowStream.map (fun v -> v * 2)
             |> FlowStream.runForEach () (fun v -> sum <- sum + v)
 
-        let result = Flow.run () workflow
+        let result = Flow.runSync () workflow
         test <@ result = Exit.Success () @>
         test <@ sum = 30 @>

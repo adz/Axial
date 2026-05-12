@@ -39,7 +39,7 @@ module CapsUnifiedTests =
             return input
         }
         
-        test <@ Flow.run caps workflow = Exit.Success "input" @>
+        test <@ Flow.runSync caps workflow = Exit.Success "input" @>
         test <@ lastMsg = "input" @>
 
     [<Fact>]
@@ -59,7 +59,7 @@ module CapsUnifiedTests =
             return exists, text
         }
         
-        test <@ Flow.run caps workflow = Exit.Success (true, "content") @>
+        test <@ Flow.runSync caps workflow = Exit.Success (true, "content") @>
 
     [<Fact>]
     let ``Http: getString`` () =
@@ -68,7 +68,7 @@ module CapsUnifiedTests =
             Console = Unchecked.defaultof<_>; FS = Unchecked.defaultof<_>; Process = Unchecked.defaultof<_>
         }
         
-        test <@ Flow.run caps (Http.getString "http://example.com") = Exit.Success "html" @>
+        test <@ Flow.runSync caps (Http.getString "http://example.com") = Exit.Success "html" @>
 
     [<Fact>]
     let ``Process: execute`` () =
@@ -79,4 +79,4 @@ module CapsUnifiedTests =
             Console = Unchecked.defaultof<_>; FS = Unchecked.defaultof<_>; Http = Unchecked.defaultof<_>
         }
         
-        test <@ Flow.run caps (Process.execute "echo" "hi") = Exit.Success { ExitCode = 0; StdOut = "out"; StdErr = "" } @>
+        test <@ Flow.runSync caps (Process.execute "echo" "hi") = Exit.Success { ExitCode = 0; StdOut = "out"; StdErr = "" } @>

@@ -19,7 +19,7 @@ module WorkflowConcurrencyTests =
                 return result
             }
 
-        test <@ Flow.run () workflow = Exit.Success 42 @>
+        test <@ Flow.runSync () workflow = Exit.Success 42 @>
 
     [<Fact>]
     let ``Fiber: fork and join failure`` () =
@@ -30,7 +30,7 @@ module WorkflowConcurrencyTests =
                 return result
             }
 
-        test <@ Flow.run () workflow = Exit.Failure (Cause.Fail "boom") @>
+        test <@ Flow.runSync () workflow = Exit.Failure (Cause.Fail "boom") @>
 
     [<Fact>]
     let ``Fiber: interrupt stops execution`` () =
@@ -50,7 +50,7 @@ module WorkflowConcurrencyTests =
                 return exit
             }
 
-        let outcome = Flow.run () workflow
+        let outcome = Flow.runSync () workflow
         
         match outcome with
         | Exit.Success (Exit.Failure Cause.Interrupt) -> 

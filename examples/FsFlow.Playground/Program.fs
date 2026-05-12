@@ -35,14 +35,17 @@ let main _ =
     let syncResult =
         greetingFlow
         |> Flow.run env
+        |> fun t -> t.AsTask().GetAwaiter().GetResult()
 
     let asyncResult =
         greetingAsync
         |> Flow.run env
+        |> fun t -> t.AsTask().GetAwaiter().GetResult()
 
     let taskResult =
         greetingTask
         |> Flow.run env
+        |> fun t -> t.AsTask().GetAwaiter().GetResult()
 
     printfn "Flow: %A" syncResult
     printfn "Async: %A" asyncResult

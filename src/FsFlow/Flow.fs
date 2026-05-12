@@ -20,13 +20,8 @@ module Flow =
     let internal runFullInternal = invoke
 
     /// <summary>Executes a flow with an explicit cancellation token.</summary>
-    #if FABLE_COMPILER
     let runFull (environment: 'env) (cancellationToken: CancellationToken) (flow: Flow<'env, 'error, 'value>) : Effect<'value, 'error> =
         invoke flow environment cancellationToken
-    #else
-    let runFull (environment: 'env) (cancellationToken: CancellationToken) (flow: Flow<'env, 'error, 'value>) : Exit<'value, 'error> =
-        (invoke flow environment cancellationToken).GetAwaiter().GetResult()
-    #endif
 
     /// <summary>Executes a flow with an explicit cancellation token.</summary>
     let runWithToken = runFull
@@ -39,13 +34,8 @@ module Flow =
     /// // result = Promise that resolves to Success "Hello, World!" on Fable, or Success "Hello, World!" on .NET
     /// </code>
     /// </example>
-    #if FABLE_COMPILER
     let run (environment: 'env) (flow: Flow<'env, 'error, 'value>) : Effect<'value, 'error> =
-        FlowInternal.run environment flow
-    #else
-    let run (environment: 'env) (flow: Flow<'env, 'error, 'value>) : Exit<'value, 'error> =
-        FlowInternal.run environment flow
-    #endif
+        invoke flow environment CancellationToken.None
 
     /// <summary>Creates a successful synchronous flow.</summary>
     let ok (value: 'value) : Flow<'env, 'error, 'value> =
@@ -172,7 +162,8 @@ module Flow =
     /// Interruption signals and defects are raised as exceptions in the caller's context.
     /// </remarks>
     let toResult (environment: 'env) (flow: Flow<'env, 'error, 'value>) : Result<'value, 'error> =
-        run environment flow
+        let effect = run environment flow
+        effect.AsTask().GetAwaiter().GetResult()
         |> Exit.toResult
     #endif
 

@@ -23,7 +23,7 @@ module WorkflowSchedulingTests =
             }
 
         let retried = Flow.Retry(workflow, Schedule.recurs 5)
-        let result = Flow.run () retried
+        let result = Flow.runSync () retried
         
         test <@ result = Exit.Success "success" @>
         test <@ attempts = 3 @>
@@ -38,7 +38,7 @@ module WorkflowSchedulingTests =
             }
 
         let repeated = Flow.Repeat(workflow, Schedule.recurs 3)
-        let result = Flow.run () repeated
+        let result = Flow.runSync () repeated
         
         test <@ result = Exit.Success 4 @>
         test <@ count = 4 @>

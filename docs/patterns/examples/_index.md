@@ -90,14 +90,17 @@ let run () =
     let syncResult =
         loadUser
         |> Flow.run environment
+        |> fun t -> t.AsTask().GetAwaiter().GetResult()
 
     let asyncResult =
         renderTrace
         |> Flow.run environment
+        |> fun t -> t.AsTask().GetAwaiter().GetResult()
 
     let taskResult =
         publishResponse
         |> Flow.run environment
+        |> fun t -> t.AsTask().GetAwaiter().GetResult()
 
     printfn "Flow result: %A" syncResult
     printfn "Flow result: %A" asyncResult
@@ -342,14 +345,16 @@ module CoreCapabilitiesExample =
                           "FSFLOW_CAPS_PORT_TEXT", "abc" ]
             }
 
-        printfn "clock=%O" (Flow.run caps Clock.now)
-        printfn "random=%d" (Flow.run caps (Random.nextInt 0 10) |> function Exit.Success v -> v | _ -> -1)
-        printfn "guid=%O" (Flow.run caps Guid.newGuid)
-        printfn "port=%s" (renderExit string (Flow.run caps (EnvironmentVariable.getInt "FSFLOW_CAPS_PORT")))
-        printfn "enabled=%s" (renderExit string (Flow.run caps (EnvironmentVariable.getBool "FSFLOW_CAPS_ENABLED")))
-        printfn "session=%s" (renderExit string (Flow.run caps (EnvironmentVariable.getGuid "FSFLOW_CAPS_SESSION")))
-        printfn "missing=%s" (renderExit string (Flow.run caps (EnvironmentVariable.get "FSFLOW_CAPS_MISSING")))
-        printfn "invalid=%s" (renderExit string (Flow.run caps (EnvironmentVariable.getInt "FSFLOW_CAPS_PORT_TEXT")))
+        let run flow = Flow.run caps flow |> fun t -> t.AsTask().GetAwaiter().GetResult()
+
+        printfn "clock=%O" (run Clock.now)
+        printfn "random=%d" (run (Random.nextInt 0 10) |> function Exit.Success v -> v | _ -> -1)
+        printfn "guid=%O" (run Guid.newGuid)
+        printfn "port=%s" (renderExit string (run (EnvironmentVariable.getInt "FSFLOW_CAPS_PORT")))
+        printfn "enabled=%s" (renderExit string (run (EnvironmentVariable.getBool "FSFLOW_CAPS_ENABLED")))
+        printfn "session=%s" (renderExit string (run (EnvironmentVariable.getGuid "FSFLOW_CAPS_SESSION")))
+        printfn "missing=%s" (renderExit string (run (EnvironmentVariable.get "FSFLOW_CAPS_MISSING")))
+        printfn "invalid=%s" (renderExit string (run (EnvironmentVariable.getInt "FSFLOW_CAPS_PORT_TEXT")))
 
 ```
 
@@ -407,14 +412,17 @@ let main _ =
     let syncResult =
         greetingFlow
         |> Flow.run env
+        |> fun t -> t.AsTask().GetAwaiter().GetResult()
 
     let asyncResult =
         greetingAsync
         |> Flow.run env
+        |> fun t -> t.AsTask().GetAwaiter().GetResult()
 
     let taskResult =
         greetingTask
         |> Flow.run env
+        |> fun t -> t.AsTask().GetAwaiter().GetResult()
 
     printfn "Flow: %A" syncResult
     printfn "Async: %A" asyncResult
@@ -449,13 +457,14 @@ open System.Threading.Tasks
 open FsFlow
 
 let runFlow label env workflow =
-    let result = Flow.run env workflow
+    let result = Flow.run env workflow |> fun t -> t.AsTask().GetAwaiter().GetResult()
     printfn "%s: %A" label result
 
 let runAsyncExample label env workflow =
     let result =
         workflow
         |> Flow.run env
+        |> fun t -> t.AsTask().GetAwaiter().GetResult()
 
     printfn "%s: %A" label result
 
@@ -463,6 +472,7 @@ let runTaskExample label env workflow =
     let result =
         workflow
         |> Flow.run env
+        |> fun t -> t.AsTask().GetAwaiter().GetResult()
 
     printfn "%s: %A" label result
 

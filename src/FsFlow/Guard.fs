@@ -134,18 +134,10 @@ type Guard private () =
     static member Of(error: 'error, flow: Flow<'env, unit, 'value>) : Flow<'env, 'error, 'value> =
         let (Flow operation) = flow
         Flow(fun environment cancellationToken ->
-            #if FABLE_COMPILER
-            async {
-                let! outcome = operation environment cancellationToken
-                match outcome with
-                | Exit.Success value -> return Exit.Success value
-                | Exit.Failure _ -> return Exit.Failure (Cause.Fail error)
-            }
-            #else
-            match Flow.runFull environment cancellationToken flow with
-            | Exit.Success value -> EffectFlow.ofValue value
-            | Exit.Failure _ -> EffectFlow.ofError error
-            #endif
+            operation environment cancellationToken
+            |> EffectFlow.fold
+                EffectFlow.ofValue
+                (fun _ -> EffectFlow.ofError error)
         )
 
 #if !FABLE_COMPILER

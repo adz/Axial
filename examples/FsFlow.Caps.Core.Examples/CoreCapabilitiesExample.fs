@@ -37,11 +37,13 @@ module CoreCapabilitiesExample =
                           "FSFLOW_CAPS_PORT_TEXT", "abc" ]
             }
 
-        printfn "clock=%O" (Flow.run caps Clock.now)
-        printfn "random=%d" (Flow.run caps (Random.nextInt 0 10) |> function Exit.Success v -> v | _ -> -1)
-        printfn "guid=%O" (Flow.run caps Guid.newGuid)
-        printfn "port=%s" (renderExit string (Flow.run caps (EnvironmentVariable.getInt "FSFLOW_CAPS_PORT")))
-        printfn "enabled=%s" (renderExit string (Flow.run caps (EnvironmentVariable.getBool "FSFLOW_CAPS_ENABLED")))
-        printfn "session=%s" (renderExit string (Flow.run caps (EnvironmentVariable.getGuid "FSFLOW_CAPS_SESSION")))
-        printfn "missing=%s" (renderExit string (Flow.run caps (EnvironmentVariable.get "FSFLOW_CAPS_MISSING")))
-        printfn "invalid=%s" (renderExit string (Flow.run caps (EnvironmentVariable.getInt "FSFLOW_CAPS_PORT_TEXT")))
+        let run flow = Flow.run caps flow |> fun t -> t.AsTask().GetAwaiter().GetResult()
+
+        printfn "clock=%O" (run Clock.now)
+        printfn "random=%d" (run (Random.nextInt 0 10) |> function Exit.Success v -> v | _ -> -1)
+        printfn "guid=%O" (run Guid.newGuid)
+        printfn "port=%s" (renderExit string (run (EnvironmentVariable.getInt "FSFLOW_CAPS_PORT")))
+        printfn "enabled=%s" (renderExit string (run (EnvironmentVariable.getBool "FSFLOW_CAPS_ENABLED")))
+        printfn "session=%s" (renderExit string (run (EnvironmentVariable.getGuid "FSFLOW_CAPS_SESSION")))
+        printfn "missing=%s" (renderExit string (run (EnvironmentVariable.get "FSFLOW_CAPS_MISSING")))
+        printfn "invalid=%s" (renderExit string (run (EnvironmentVariable.getInt "FSFLOW_CAPS_PORT_TEXT")))

@@ -54,7 +54,7 @@ module Hosting =
         }
 
     /// <summary>Executes a flow using services from the provided <see cref="T:System.IServiceProvider" />.</summary>
-    let run (sp: IServiceProvider) (env: 'env) (flow: Flow<RuntimeContext<DefaultRuntime, 'env>, 'error, 'value>) : Exit<'value, 'error> =
+    let run (sp: IServiceProvider) (env: 'env) (flow: Flow<RuntimeContext<DefaultRuntime, 'env>, 'error, 'value>) : Effect<'value, 'error> =
         let runtime = createRuntime sp
         let context = RuntimeContext.create runtime env CancellationToken.None
         Flow.runFull context CancellationToken.None flow
@@ -65,7 +65,7 @@ module Startup =
     let validateEnvironment (flow: Flow<#Needs<IEnvironmentVariables>, EnvironmentVariableError, 'v>) : Result<'v, string list> =
         let envVars = EnvironmentVariables.live
         let adapter = { new Needs<IEnvironmentVariables> with member _.Dep = envVars }
-        match Flow.run adapter flow with
+        match (Flow.run adapter flow).AsTask().GetAwaiter().GetResult() with
         | Exit.Success v -> Ok v
         | Exit.Failure (Cause.Fail e) -> Error [ EnvironmentVariableErrors.describe e ]
         | Exit.Failure Cause.Interrupt -> Error [ "Validation was interrupted" ]

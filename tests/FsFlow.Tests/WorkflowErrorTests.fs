@@ -19,32 +19,32 @@ module WorkflowErrorTests =
             |> Flow.tapError (fun error ->
                 tappedErrors.Add error
                 Flow.succeed ())
-            |> Flow.run ()
+            |> Flow.runSync ()
 
         let tapSkipsSuccess =
             Flow.succeed 42
             |> Flow.tapError (fun error ->
                 tappedErrors.Add $"unexpected:{error}"
                 Flow.succeed ())
-            |> Flow.run ()
+            |> Flow.runSync ()
 
         let recovered =
             Flow.fail "missing"
             |> Flow.orElse (Flow.read (fun env -> env + 1))
-            |> Flow.run 41
+            |> Flow.runSync 41
 
         let bypassesFallback =
             Flow.succeed 10
             |> Flow.orElse (Flow.succeed 99)
-            |> Flow.run ()
+            |> Flow.runSync ()
 
         let zipped =
             Flow.zip (Flow.read (fun env -> env + 1)) (Flow.read (fun env -> env * 2))
-            |> Flow.run 5
+            |> Flow.runSync 5
 
         let mapped =
             Flow.map2 (+) (Flow.read (fun env -> env + 1)) (Flow.read (fun env -> env * 2))
-            |> Flow.run 5
+            |> Flow.runSync 5
 
         test <@ tapPreservesOriginalError = Exit.Failure (Cause.Fail "primary") @>
         test <@ tapSkipsSuccess = Exit.Success 42 @>
@@ -59,9 +59,9 @@ module WorkflowErrorTests =
         let flowBridge =
             Check.okIf false
             |> Flow.orElseFlow (Flow.read (fun env -> $"flow:{env}"))
-            |> Flow.run "env"
+            |> Flow.runSync "env"
 
-        let flowValue = Flow.value "flow-value" |> Flow.run ()
+        let flowValue = Flow.value "flow-value" |> Flow.runSync ()
 
         test <@ flowBridge = Exit.Failure (Cause.Fail "flow:env") @>
         test <@ flowValue = Exit.Success "flow-value" @>
@@ -120,14 +120,14 @@ module WorkflowErrorTests =
 
         let flowArgumentTypeNames = flowBuilderBindAndReturnFromArgumentNames ()
 
-        test <@ Flow.run 20 syncSome = Exit.Success 42 @>
-        test <@ Flow.run 20 syncNone = Exit.Failure (Cause.Fail ()) @>
-        test <@ Flow.run 20 syncValueSome = Exit.Success 42 @>
-        test <@ Flow.run 20 syncValueNone = Exit.Failure (Cause.Fail ()) @>
-        test <@ Flow.run 19 asyncWorkflow = Exit.Success 42 @>
-        test <@ Flow.run () asyncReturnFromNone = Exit.Failure (Cause.Fail ()) @>
-        test <@ Flow.run 19 taskWorkflow = Exit.Success 42 @>
-        test <@ Flow.run () taskReturnFromValueNone = Exit.Failure (Cause.Fail ()) @>
+        test <@ Flow.runSync 20 syncSome = Exit.Success 42 @>
+        test <@ Flow.runSync 20 syncNone = Exit.Failure (Cause.Fail ()) @>
+        test <@ Flow.runSync 20 syncValueSome = Exit.Success 42 @>
+        test <@ Flow.runSync 20 syncValueNone = Exit.Failure (Cause.Fail ()) @>
+        test <@ Flow.runSync 19 asyncWorkflow = Exit.Success 42 @>
+        test <@ Flow.runSync () asyncReturnFromNone = Exit.Failure (Cause.Fail ()) @>
+        test <@ Flow.runSync 19 taskWorkflow = Exit.Success 42 @>
+        test <@ Flow.runSync () taskReturnFromValueNone = Exit.Failure (Cause.Fail ()) @>
         test <@ flowArgumentTypeNames |> Array.contains "FSharpOption`1" @>
         test <@ flowArgumentTypeNames |> Array.contains "FSharpResult`2" @>
         test <@ flowArgumentTypeNames |> Array.contains "FSharpValueOption`1" @>
@@ -174,23 +174,23 @@ let probe : Flow<unit, string, int> =
             Some 21
             |> Flow.fromOption "missing value"
             |> Flow.map ((*) 2)
-            |> Flow.run ()
+            |> Flow.runSync ()
 
         let syncNone =
             None
             |> Flow.fromOption "missing value"
-            |> Flow.run ()
+            |> Flow.runSync ()
 
         let syncValueSome =
             ValueSome 21
             |> Flow.fromValueOption "missing value"
             |> Flow.map ((*) 2)
-            |> Flow.run ()
+            |> Flow.runSync ()
 
         let syncValueNone =
             ValueNone
             |> Flow.fromValueOption "missing value"
-            |> Flow.run ()
+            |> Flow.runSync ()
 
         test <@ syncSome = Exit.Success 42 @>
         test <@ syncNone = Exit.Failure (Cause.Fail "missing value") @>
@@ -241,9 +241,9 @@ let probe : Flow<unit, string, int> =
                 return x + y + z + w
             }
 
-        let flowResult = Flow.run () flowTest
-        let asyncFlowResult = Flow.run () asyncFlowTest
-        let taskFlowResult = Flow.run () taskFlowTest
+        let flowResult = Flow.runSync () flowTest
+        let asyncFlowResult = Flow.runSync () asyncFlowTest
+        let taskFlowResult = Flow.runSync () taskFlowTest
 
         test <@ flowResult = Exit.Success 52 @>
         test <@ asyncFlowResult = Exit.Success 52 @>
@@ -271,9 +271,9 @@ let probe : Flow<unit, string, int> =
                 return! tokenResult
             }
 
-        let success = Flow.run () (login "alice" "alice-pwd")
-        let authFailure = Flow.run () (login "blocked" "blocked-pwd")
-        let tokenFailure = Flow.run () (login "expired" "expired-pwd")
+        let success = Flow.runSync () (login "alice" "alice-pwd")
+        let authFailure = Flow.runSync () (login "blocked" "blocked-pwd")
+        let tokenFailure = Flow.runSync () (login "expired" "expired-pwd")
 
         test <@ success = Exit.Success "token-alice" @>
         test <@ authFailure = Exit.Failure (Cause.Fail (Unauthorized "denied")) @>
@@ -307,8 +307,8 @@ let probe : Flow<unit, string, int> =
                 return asyncValue + taskValue
             }
 
-        test <@ Flow.run () asyncMapped = Exit.Failure (Cause.Fail "mapped-async-source") @>
-        test <@ Flow.run () taskMapped = Exit.Failure (Cause.Fail "mapped-task-source") @>
+        test <@ Flow.runSync () asyncMapped = Exit.Failure (Cause.Fail "mapped-async-source") @>
+        test <@ Flow.runSync () taskMapped = Exit.Failure (Cause.Fail "mapped-task-source") @>
 
     [<Fact>]
     let ``Guard.of fails correctly for check-like sources`` () =
@@ -330,6 +330,6 @@ let probe : Flow<unit, string, int> =
             return value
         }
 
-        test <@ Flow.run () flowFail = Exit.Failure (Cause.Fail "failed") @>
-        test <@ Flow.run () asyncFlowFail = Exit.Failure (Cause.Fail "failed") @>
-        test <@ Flow.run () taskFlowFail = Exit.Failure (Cause.Fail "failed") @>
+        test <@ Flow.runSync () flowFail = Exit.Failure (Cause.Fail "failed") @>
+        test <@ Flow.runSync () asyncFlowFail = Exit.Failure (Cause.Fail "failed") @>
+        test <@ Flow.runSync () taskFlowFail = Exit.Failure (Cause.Fail "failed") @>

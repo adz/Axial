@@ -23,7 +23,7 @@ module WorkflowParallelTests =
                     return 2 
                 })
 
-        test <@ Flow.run () workflow = Exit.Success (1, 2) @>
+        test <@ Flow.runSync () workflow = Exit.Success (1, 2) @>
 
     [<Fact>]
     let ``Flow: zipPar interrupts on failure`` () =
@@ -37,7 +37,7 @@ module WorkflowParallelTests =
                 })
                 (Flow.fail "boom")
 
-        let outcome = Flow.run () workflow
+        let outcome = Flow.runSync () workflow
         test <@ outcome = Exit.Failure (Cause.Fail "boom") @>
         test <@ executed = false @>
 
@@ -56,7 +56,7 @@ module WorkflowParallelTests =
                     return 2 
                 })
 
-        test <@ Flow.run () workflow = Exit.Success 1 @>
+        test <@ Flow.runSync () workflow = Exit.Success 1 @>
         // Give it a bit more time to potentially execute (though it shouldn't)
         Thread.Sleep(500)
         test <@ loserExecuted = false @>
