@@ -15,6 +15,13 @@
       <description>&lt;h1 id=&#34;execution-semantics&#34;&gt;Execution Semantics&lt;/h1&gt;&#xA;&lt;p&gt;This page shows the exact execution rules for &lt;code&gt;Flow&lt;/code&gt;, including how a cold program becomes an &lt;code&gt;Effect&lt;/code&gt; and resolves to an &lt;code&gt;Exit&lt;/code&gt;.&lt;/p&gt;&#xA;&lt;p&gt;FsFlow uses a unified &lt;strong&gt;&lt;code&gt;Flow&amp;lt;&#39;env, &#39;error, &#39;value&amp;gt;&lt;/code&gt;&lt;/strong&gt; model that handles synchronous code, F# &lt;code&gt;Async&lt;/code&gt;, and .NET &lt;code&gt;Task&lt;/code&gt; interop natively.&lt;/p&gt;&#xA;&lt;h2 id=&#34;execution-shape&#34;&gt;Execution Shape&lt;/h2&gt;&#xA;&lt;p&gt;Conceptually, execution is:&lt;/p&gt;&#xA;&lt;p&gt;&lt;code&gt;Flow -&amp;gt; Effect -&amp;gt; Exit&lt;/code&gt;&lt;/p&gt;&#xA;&lt;p&gt;More precisely:&lt;/p&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;Flow&lt;/code&gt; is the cold program you define.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;Effect&lt;/code&gt; is the deferred runnable carrier.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;Exit&lt;/code&gt; is the terminal outcome after execution.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;success-and-typed-failure&#34;&gt;Success and Typed Failure&lt;/h2&gt;&#xA;&lt;p&gt;Every Flow execution results in an &lt;strong&gt;&lt;code&gt;Exit&amp;lt;&#39;value, &#39;error&amp;gt;&lt;/code&gt;&lt;/strong&gt;:&lt;/p&gt;</description>
     </item>
     <item>
+      <title>Defects and Exceptions</title>
+      <link>http://localhost:3000/docs/core-model/defects/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/docs/core-model/defects/</guid>
+      <description>&lt;h1 id=&#34;defects-and-exceptions&#34;&gt;Defects and Exceptions&lt;/h1&gt;&#xA;&lt;p&gt;This page shows why FsFlow keeps &lt;code&gt;Cause.Die&lt;/code&gt; as a first-class outcome and how it differs from typed failures and cancellation.&lt;/p&gt;&#xA;&lt;p&gt;FsFlow has three distinct failure kinds:&lt;/p&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;Cause.Fail error&lt;/code&gt;: an expected domain failure&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;Cause.Interrupt&lt;/code&gt;: a cancellation or interruption signal&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;Cause.Die exn&lt;/code&gt;: an unexpected defect or bug&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;p&gt;Keeping those cases separate is not about adding ceremony. It is about keeping the failure story lossless inside the same execution model.&lt;/p&gt;</description>
+    </item>
+    <item>
       <title>Task and Async Interop</title>
       <link>http://localhost:3000/docs/core-model/task-async-interop/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
