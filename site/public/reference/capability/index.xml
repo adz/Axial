@@ -19,7 +19,7 @@
       <link>http://localhost:3000/reference/capability/m-capabilitymodule-environment/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>http://localhost:3000/reference/capability/m-capabilitymodule-environment/</guid>
-      <description>&lt;p&gt;Reads a capability from the application half of a two-context runtime environment.&lt;/p&gt;</description>
+      <description>&lt;p&gt;Reads the application environment from the environment.&lt;/p&gt;</description>
     </item>
     <item>
       <title>FsFlow.MissingCapability</title>
@@ -47,14 +47,14 @@
       <link>http://localhost:3000/reference/capability/m-capabilitymodule-runtime/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>http://localhost:3000/reference/capability/m-capabilitymodule-runtime/</guid>
-      <description>&lt;p&gt;Reads a capability from the runtime half of a two-context runtime environment.&lt;/p&gt;</description>
+      <description>&lt;p&gt;Reads the current runtime from the environment.&lt;/p&gt;</description>
     </item>
     <item>
       <title>FsFlow.CapabilityModule.service</title>
       <link>http://localhost:3000/reference/capability/m-capabilitymodule-service/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>http://localhost:3000/reference/capability/m-capabilitymodule-service/</guid>
-      <description>&lt;p&gt;Reads a capability from a record-based environment projection.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;Use this at the edge when a workflow already has a record-shaped environment and only&#xA;needs one field, not a full cap-set boundary.&lt;/p&gt;</description>
+      <description>&lt;p&gt;Reads a service from the environment using the provided projection.&lt;/p&gt;</description>
     </item>
     <item>
       <title>FsFlow.CapabilityModule.serviceFromProvider</title>

@@ -60,9 +60,9 @@ let flakyTask =
 
 let resilientWorkflow =
     flakyTask
-    |> Flow.retry (Schedule.recurs 3)
+    |> Flow.Retry (Schedule.recurs 3)
 
-[`Flow.retry`]({{< relref "/reference/flow/m-flowscheduleextensions-flow-retry-static.md" >}}) will retry up to 3 times if the task fails.
+[`Flow.Retry`]({{< relref "/reference/schedule/m-flowscheduleextensions-flow-retry-static.md" >}}) will retry up to 3 times if the task fails.
 ```
 
 ## 4. Conditional Execution

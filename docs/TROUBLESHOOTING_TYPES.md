@@ -5,7 +5,7 @@ title: Troubleshooting Types
 
 # Troubleshooting Types
 
-This page shows the compiler errors that usually mean you picked the wrong workflow family or crossed a wrapper boundary in the wrong place.
+This page shows the compiler errors that usually mean you crossed a wrapper boundary in the wrong place.
 
 Most FsFlow type errors are not exotic.
 The compiler usually sees one wrapper shape and you intended another.
@@ -43,36 +43,6 @@ let workflow : Flow<unit, string, int> =
     }
 ```
 
-## Error: This Expression Was Expected To Have Type `Flow<...>` But Here Has Type `Async<...>` Or `Task<...>`
-
-That usually means the workflow family is too small for the runtime shape you are binding.
-
-Example:
-
-```fsharp
-flow {
-    let! value = async { return 42 }
-    return value
-}
-```
-
-[`flow {}`]({{< relref "/reference/flow/builders-flow.md" >}}) is sync-only.
-
-Fix it by moving to the honest boundary:
-
-- use `flow {}` for `Async`
-- use `flow {}` for `.NET Task`
-
-Example:
-
-```fsharp
-let workflow : Flow<unit, string, int> =
-    flow {
-        let! value = async { return 42 }
-        return value
-    }
-```
-
 ## Error: The Flow Requires A Different Environment Type
 
 This usually means you wrote a smaller workflow against one env type and are trying to run it inside a larger env.
@@ -97,8 +67,6 @@ let greetInBigEnv : Flow<BigEnv, string, string> =
     greet |> Flow.localEnv _.App
 ```
 
-The same rule applies to `Flow.localEnv` and `Flow.localEnv`.
-
 ## Error: `Option` Or `ValueOption` Does Not Match Your Error Type
 
 Implicit option binding only works when the workflow error type is `unit`.
@@ -120,8 +88,6 @@ let workflow : Flow<unit, string, int> =
     Some 42
     |> Flow.fromOption "missing value"
 ```
-
-The same pattern exists for all workflow types.
 
 ## Error: ColdTask Does Not Match `Task`
 
@@ -155,14 +121,14 @@ If the compiler error mentions one of these shapes, check the boundary first:
 
 Most fixes are one of:
 
-- ensure the appropriate `flow {}` or `taskFlow {}` builder is used
 - add a type annotation to disambiguate `let!` overloads
 - derive a smaller local environment with `localEnv`
+- use `Guard.Of` or `Guard.MapError` to bridge existing error-bearing sources
 - move back to plain Result until the real workflow boundary appears
 
 ## Next
 
-Read [`docs/GETTING_STARTED.md`](./GETTING_STARTED.md) for the workflow-family overview,
-[`docs/TASK_ASYNC_INTEROP.md`](./TASK_ASYNC_INTEROP.md) for the binding surface,
+Read [`docs/GETTING_STARTED.md`](../start/getting-started/) for the workflow overview,
+[`docs/TASK_ASYNC_INTEROP.md`](../core-model/task-async-interop.md) for the binding surface,
 and [`examples/FsFlow.MaintenanceExamples/Program.fs`](https://github.com/adz/FsFlow/blob/main/examples/FsFlow.MaintenanceExamples/Program.fs)
 for runnable versions of these shapes.

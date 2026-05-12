@@ -15,9 +15,9 @@ This page shows the source-documented capability and layer surface, including CA
 ## Capabilities
 
 - [`FsFlow.MissingCapability`](./t-missingcapability.md): Describes a missing service-provider capability.
-- [`FsFlow.CapabilityModule.service`](./m-capabilitymodule-service.md): Reads a capability from a record-based environment projection.
-- [`FsFlow.CapabilityModule.runtime`](./m-capabilitymodule-runtime.md): Reads a capability from the runtime half of a two-context runtime environment.
-- [`FsFlow.CapabilityModule.environment`](./m-capabilitymodule-environment.md): Reads a capability from the application half of a two-context runtime environment.
+- [`FsFlow.CapabilityModule.service`](./m-capabilitymodule-service.md): Reads a service from the environment using the provided projection.
+- [`FsFlow.CapabilityModule.runtime`](./m-capabilitymodule-runtime.md): Reads the current runtime from the environment.
+- [`FsFlow.CapabilityModule.environment`](./m-capabilitymodule-environment.md): Reads the application environment from the environment.
 - [`FsFlow.CapabilityModule.serviceFromProvider`](./m-capabilitymodule-servicefromprovider.md): Reads a service from `IServiceProvider` and fails when it is not registered.
 
 ## Layers

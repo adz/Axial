@@ -19,29 +19,37 @@
 <link rel="icon" type="image/png" href="http://localhost:3000/favicons/android-192x192.png" sizes="192x192">
 
 <title>Troubleshooting Types | FsFlow</title>
-<meta name="description" content="Troubleshooting Types This page shows the compiler errors that usually mean you picked the wrong workflow family or crossed a wrapper boundary in the wrong place.
+<meta name="description" content="Troubleshooting Types This page shows the compiler errors that usually mean you crossed a wrapper boundary in the wrong place.
 Most FsFlow type errors are not exotic. The compiler usually sees one wrapper shape and you intended another.
-Error: A Unique Overload For Method Bind Could Not Be Determined This usually happens when the compiler cannot tell which wrapper shape a let! value should use.">
+Error: A Unique Overload For Method Bind Could Not Be Determined This usually happens when the compiler cannot tell which wrapper shape a let! value should use.
+Example:
+let nested : Async&lt;Async&lt;Result&lt;int, string&gt;&gt;&gt; = async { return async { return Ok 42 } } let workflow : Flow&lt;unit, string, int&gt; = flow { let! next = nested let! value = next return value } The second let! is ambiguous.">
 <meta property="og:url" content="http://localhost:3000/docs/patterns/troubleshooting-types/">
   <meta property="og:site_name" content="FsFlow">
   <meta property="og:title" content="Troubleshooting Types">
-  <meta property="og:description" content="Troubleshooting Types This page shows the compiler errors that usually mean you picked the wrong workflow family or crossed a wrapper boundary in the wrong place.
+  <meta property="og:description" content="Troubleshooting Types This page shows the compiler errors that usually mean you crossed a wrapper boundary in the wrong place.
 Most FsFlow type errors are not exotic. The compiler usually sees one wrapper shape and you intended another.
-Error: A Unique Overload For Method Bind Could Not Be Determined This usually happens when the compiler cannot tell which wrapper shape a let! value should use.">
+Error: A Unique Overload For Method Bind Could Not Be Determined This usually happens when the compiler cannot tell which wrapper shape a let! value should use.
+Example:
+let nested : Async&lt;Async&lt;Result&lt;int, string&gt;&gt;&gt; = async { return async { return Ok 42 } } let workflow : Flow&lt;unit, string, int&gt; = flow { let! next = nested let! value = next return value } The second let! is ambiguous.">
   <meta property="og:locale" content="en_us">
   <meta property="og:type" content="article">
     <meta property="article:section" content="docs">
 
   <meta itemprop="name" content="Troubleshooting Types">
-  <meta itemprop="description" content="Troubleshooting Types This page shows the compiler errors that usually mean you picked the wrong workflow family or crossed a wrapper boundary in the wrong place.
+  <meta itemprop="description" content="Troubleshooting Types This page shows the compiler errors that usually mean you crossed a wrapper boundary in the wrong place.
 Most FsFlow type errors are not exotic. The compiler usually sees one wrapper shape and you intended another.
-Error: A Unique Overload For Method Bind Could Not Be Determined This usually happens when the compiler cannot tell which wrapper shape a let! value should use.">
-  <meta itemprop="wordCount" content="545">
+Error: A Unique Overload For Method Bind Could Not Be Determined This usually happens when the compiler cannot tell which wrapper shape a let! value should use.
+Example:
+let nested : Async&lt;Async&lt;Result&lt;int, string&gt;&gt;&gt; = async { return async { return Ok 42 } } let workflow : Flow&lt;unit, string, int&gt; = flow { let! next = nested let! value = next return value } The second let! is ambiguous.">
+  <meta itemprop="wordCount" content="431">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Troubleshooting Types">
-  <meta name="twitter:description" content="Troubleshooting Types This page shows the compiler errors that usually mean you picked the wrong workflow family or crossed a wrapper boundary in the wrong place.
+  <meta name="twitter:description" content="Troubleshooting Types This page shows the compiler errors that usually mean you crossed a wrapper boundary in the wrong place.
 Most FsFlow type errors are not exotic. The compiler usually sees one wrapper shape and you intended another.
-Error: A Unique Overload For Method Bind Could Not Be Determined This usually happens when the compiler cannot tell which wrapper shape a let! value should use.">
+Error: A Unique Overload For Method Bind Could Not Be Determined This usually happens when the compiler cannot tell which wrapper shape a let! value should use.
+Example:
+let nested : Async&lt;Async&lt;Result&lt;int, string&gt;&gt;&gt; = async { return async { return Ok 42 } } let workflow : Flow&lt;unit, string, int&gt; = flow { let! next = nested let! value = next return value } The second let! is ambiguous.">
 <link href="http://localhost:3000/scss/main.css" rel="stylesheet">
 <script
   src="https://code.jquery.com/jquery-3.7.1.min.js"
@@ -142,7 +150,16 @@ Error: A Unique Overload For Method Bind Could Not Be Determined This usually ha
       <li class="td-sidebar-nav__section-title td-sidebar-nav__section with-child active-path" id="m-docs-li">
     <a href="http://localhost:3000/docs/" class="align-left ps-0 td-sidebar-link td-sidebar-link__section tree-root" id="m-docs"><span class="">Docs</span></a>
     <ul class="ul-1">
-      <li class="td-sidebar-nav__section-title td-sidebar-nav__section with-child" id="m-docsstart-li">
+      <li class="td-sidebar-nav__section-title td-sidebar-nav__section with-child" id="m-docsmanaging-dependencies-li">
+    <a href="http://localhost:3000/docs/managing-dependencies/" class="align-left ps-0 td-sidebar-link td-sidebar-link__section" id="m-docsmanaging-dependencies"><span class="">Managing Dependencies</span></a>
+    <ul class="ul-2 foldable">
+      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-docsmanaging-dependenciesenv-slicing-li">
+    <a href="http://localhost:3000/docs/managing-dependencies/env-slicing/" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesenv-slicing"><span class="">Environment Slicing</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-docsmanaging-dependenciescapabilities-li">
+    <a href="http://localhost:3000/docs/managing-dependencies/capabilities/" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciescapabilities"><span class="">Capabilities (CAPS)</span></a>
+  </li>
+    </ul>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section with-child" id="m-docsstart-li">
     <a href="http://localhost:3000/docs/start/" class="align-left ps-0 td-sidebar-link td-sidebar-link__section" id="m-docsstart"><span class="">Start</span></a>
     <ul class="ul-2 foldable">
       <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-docsstartgetting-started-li">
@@ -169,16 +186,8 @@ Error: A Unique Overload For Method Bind Could Not Be Determined This usually ha
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section with-child" id="m-docscore-model-li">
     <a href="http://localhost:3000/docs/core-model/" class="align-left ps-0 td-sidebar-link td-sidebar-link__section" id="m-docscore-model"><span class="">Core Model</span></a>
     <ul class="ul-2 foldable">
-      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-docscore-modelmanaging-dependencies-li">
-    <a href="http://localhost:3000/docs/core-model/managing-dependencies/" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-docscore-modelmanaging-dependencies"><span class="">Managing Dependencies</span></a>
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-docscore-modelwhy-fsflow-li">
-    <a href="http://localhost:3000/docs/core-model/why-fsflow/" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-docscore-modelwhy-fsflow"><span class="">The FsFlow Model</span></a>
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-docscore-modelenv-slicing-li">
-    <a href="http://localhost:3000/docs/core-model/env-slicing/" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-docscore-modelenv-slicing"><span class="">Environment Slicing</span></a>
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-docscore-modelsemantics-li">
+      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-docscore-modelsemantics-li">
     <a href="http://localhost:3000/docs/core-model/semantics/" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-docscore-modelsemantics"><span class="">Execution Semantics</span></a>
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-docscore-modelcapabilities-li">
-    <a href="http://localhost:3000/docs/core-model/capabilities/" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-docscore-modelcapabilities"><span class="">Capabilities (CAPS)</span></a>
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-docscore-modeltask-async-interop-li">
     <a href="http://localhost:3000/docs/core-model/task-async-interop/" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-docscore-modeltask-async-interop"><span class="">Task and Async Interop</span></a>
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-docscore-modelarchitectural-styles-li">
@@ -194,6 +203,19 @@ Error: A Unique Overload For Method Bind Could Not Be Determined This usually ha
     <a href="http://localhost:3000/docs/patterns/benchmarks/" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-docspatternsbenchmarks"><span class="">Benchmarks</span></a>
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docspatternsexamples-li">
     <a href="http://localhost:3000/docs/patterns/examples/" class="align-left ps-0 td-sidebar-link td-sidebar-link__section" id="m-docspatternsexamples"><span class="">Runnable Examples</span></a>
+  </li>
+    </ul>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section with-child" id="m-docsstate-concurrency-li">
+    <a href="http://localhost:3000/docs/state-concurrency/" class="align-left ps-0 td-sidebar-link td-sidebar-link__section" id="m-docsstate-concurrency"><span class="">State and Concurrency</span></a>
+    <ul class="ul-2 foldable">
+      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-docsstate-concurrencyref-li">
+    <a href="http://localhost:3000/docs/state-concurrency/ref/" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-docsstate-concurrencyref"><span class="">Ref (Atomic References)</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-docsstate-concurrencyschedule-li">
+    <a href="http://localhost:3000/docs/state-concurrency/schedule/" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-docsstate-concurrencyschedule"><span class="">Schedule (Retry &amp; Repeat)</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-docsstate-concurrencystm-li">
+    <a href="http://localhost:3000/docs/state-concurrency/stm/" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-docsstate-concurrencystm"><span class="">STM (Software Transactional Memory)</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-docsstate-concurrencystream-li">
+    <a href="http://localhost:3000/docs/state-concurrency/stream/" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-docsstate-concurrencystream"><span class="">Stream (FlowStream)</span></a>
   </li>
     </ul>
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section with-child" id="m-docsecosystem-li">
@@ -237,7 +259,6 @@ Error: A Unique Overload For Method Bind Could Not Be Determined This usually ha
     <nav id="TableOfContents">
   <ul>
     <li><a href="#error-a-unique-overload-for-method-bind-could-not-be-determined">Error: A Unique Overload For Method <code>Bind</code> Could Not Be Determined</a></li>
-    <li><a href="#error-this-expression-was-expected-to-have-type-flow-but-here-has-type-async-or-task">Error: This Expression Was Expected To Have Type <code>Flow&lt;...&gt;</code> But Here Has Type <code>Async&lt;...&gt;</code> Or <code>Task&lt;...&gt;</code></a></li>
     <li><a href="#error-the-flow-requires-a-different-environment-type">Error: The Flow Requires A Different Environment Type</a></li>
     <li><a href="#error-option-or-valueoption-does-not-match-your-error-type">Error: <code>Option</code> Or <code>ValueOption</code> Does Not Match Your Error Type</a></li>
     <li><a href="#error-coldtask-does-not-match-task">Error: ColdTask Does Not Match <code>Task</code></a></li>
@@ -268,7 +289,7 @@ Error: A Unique Overload For Method Bind Could Not Be Determined This usually ha
 		
 </header>
 	<h1 id="troubleshooting-types">Troubleshooting Types</h1>
-<p>This page shows the compiler errors that usually mean you picked the wrong workflow family or crossed a wrapper boundary in the wrong place.</p>
+<p>This page shows the compiler errors that usually mean you crossed a wrapper boundary in the wrong place.</p>
 <p>Most FsFlow type errors are not exotic.
 The compiler usually sees one wrapper shape and you intended another.</p>
 <h2 id="error-a-unique-overload-for-method-bind-could-not-be-determined">Error: A Unique Overload For Method <code>Bind</code> Could Not Be Determined</h2>
@@ -293,25 +314,6 @@ The compiler usually sees one wrapper shape and you intended another.</p>
 </span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">let</span><span style="color:#ce5c00;font-weight:bold">!</span> <span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">value</span><span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">int</span><span style="color:#ce5c00;font-weight:bold">)</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">next</span>
 </span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">return</span> <span style="color:#000">value</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">}</span>
-</span></span></code></pre></div><h2 id="error-this-expression-was-expected-to-have-type-flow-but-here-has-type-async-or-task">Error: This Expression Was Expected To Have Type <code>Flow&lt;...&gt;</code> But Here Has Type <code>Async&lt;...&gt;</code> Or <code>Task&lt;...&gt;</code></h2>
-<p>That usually means the workflow family is too small for the runtime shape you are binding.</p>
-<p>Example:</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#000">flow</span> <span style="color:#ce5c00;font-weight:bold">{</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">let!</span> <span style="color:#000">value</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">async</span> <span style="color:#ce5c00;font-weight:bold">{</span> <span style="color:#204a87;font-weight:bold">return</span> <span style="color:#000">42</span> <span style="color:#ce5c00;font-weight:bold">}</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">return</span> <span style="color:#000">value</span>
-</span></span><span style="display:flex;"><span><span style="color:#ce5c00;font-weight:bold">}</span>
-</span></span></code></pre></div><p><code>flow {}</code> is sync-only.</p>
-<p>Fix it by moving to the honest boundary:</p>
-<ul>
-<li>use <code>flow {}</code> for <code>Async</code></li>
-<li>use <code>flow {}</code> for <code>.NET Task</code></li>
-</ul>
-<p>Example:</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">workflow</span> <span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">Flow</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#204a87;font-weight:bold">unit</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#204a87;font-weight:bold">string</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#000">int</span><span style="color:#ce5c00;font-weight:bold">&gt;</span> <span style="color:#ce5c00;font-weight:bold">=</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#000">flow</span> <span style="color:#ce5c00;font-weight:bold">{</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">let!</span> <span style="color:#000">value</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">async</span> <span style="color:#ce5c00;font-weight:bold">{</span> <span style="color:#204a87;font-weight:bold">return</span> <span style="color:#000">42</span> <span style="color:#ce5c00;font-weight:bold">}</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">return</span> <span style="color:#000">value</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">}</span>
 </span></span></code></pre></div><h2 id="error-the-flow-requires-a-different-environment-type">Error: The Flow Requires A Different Environment Type</h2>
 <p>This usually means you wrote a smaller workflow against one env type and are trying to run it inside a larger env.</p>
 <p>Example:</p>
@@ -326,8 +328,7 @@ The compiler usually sees one wrapper shape and you intended another.</p>
 </span></span></code></pre></div><p>If you want to run it in <code>BigEnv</code>, derive the smaller local env from the outer one:</p>
 <div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">greetInBigEnv</span> <span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">Flow</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#000">BigEnv</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#204a87;font-weight:bold">string</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#204a87;font-weight:bold">string</span><span style="color:#ce5c00;font-weight:bold">&gt;</span> <span style="color:#ce5c00;font-weight:bold">=</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#000">greet</span> <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">localEnv</span> <span style="color:#ce5c00;font-weight:bold">_.</span><span style="color:#000">App</span>
-</span></span></code></pre></div><p>The same rule applies to <code>Flow.localEnv</code> and <code>Flow.localEnv</code>.</p>
-<h2 id="error-option-or-valueoption-does-not-match-your-error-type">Error: <code>Option</code> Or <code>ValueOption</code> Does Not Match Your Error Type</h2>
+</span></span></code></pre></div><h2 id="error-option-or-valueoption-does-not-match-your-error-type">Error: <code>Option</code> Or <code>ValueOption</code> Does Not Match Your Error Type</h2>
 <p>Implicit option binding only works when the workflow error type is <code>unit</code>.</p>
 <p>This fails:</p>
 <div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">workflow</span> <span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">Flow</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#204a87;font-weight:bold">unit</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#204a87;font-weight:bold">string</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#000">int</span><span style="color:#ce5c00;font-weight:bold">&gt;</span> <span style="color:#ce5c00;font-weight:bold">=</span>
@@ -339,8 +340,7 @@ The compiler usually sees one wrapper shape and you intended another.</p>
 <div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">workflow</span> <span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">Flow</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#204a87;font-weight:bold">unit</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#204a87;font-weight:bold">string</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#000">int</span><span style="color:#ce5c00;font-weight:bold">&gt;</span> <span style="color:#ce5c00;font-weight:bold">=</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#000">Some</span> <span style="color:#000">42</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">fromOption</span> <span style="color:#4e9a06">&#34;missing value&#34;</span>
-</span></span></code></pre></div><p>The same pattern exists for all workflow types.</p>
-<h2 id="error-coldtask-does-not-match-task">Error: ColdTask Does Not Match <code>Task</code></h2>
+</span></span></code></pre></div><h2 id="error-coldtask-does-not-match-task">Error: ColdTask Does Not Match <code>Task</code></h2>
 <p><code>Flow.fromTask</code> and direct <code>flow { let! ... }</code> support <code>ColdTask&lt;'value&gt;</code> for delayed task work.</p>
 <p><code>ColdTask&lt;'value&gt;</code> means:</p>
 <div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#000">CancellationToken</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#000">Task</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#204a87;font-weight:bold">&#39;</span><span style="color:#000">value</span><span style="color:#ce5c00;font-weight:bold">&gt;</span>
@@ -360,13 +360,13 @@ The compiler usually sees one wrapper shape and you intended another.</p>
 </ul>
 <p>Most fixes are one of:</p>
 <ul>
-<li>ensure the appropriate <code>flow {}</code> or <code>taskFlow {}</code> builder is used</li>
 <li>add a type annotation to disambiguate <code>let!</code> overloads</li>
 <li>derive a smaller local environment with <code>localEnv</code></li>
+<li>use <code>Guard.Of</code> or <code>Guard.MapError</code> to bridge existing error-bearing sources</li>
 <li>move back to plain Result until the real workflow boundary appears</li>
 </ul>
 <h2 id="next">Next</h2>
-<p>Read <a href="http://localhost:3000/docs/start/getting-started/"><code>docs/GETTING_STARTED.md</code></a> for the workflow-family overview,
+<p>Read <a href="http://localhost:3000/docs/start/getting-started/"><code>docs/GETTING_STARTED.md</code></a> for the workflow overview,
 <a href="http://localhost:3000/docs/core-model/task-async-interop/"><code>docs/TASK_ASYNC_INTEROP.md</code></a> for the binding surface,
 and <a href="https://github.com/adz/FsFlow/blob/main/examples/FsFlow.MaintenanceExamples/Program.fs" target="_blank" rel="noopener"><code>examples/FsFlow.MaintenanceExamples/Program.fs</code></a>
 for runnable versions of these shapes.</p>

@@ -4,7 +4,7 @@ linkTitle: "runtime`"
 type: docs
 ---
 
-Reads a capability from the runtime half of a two-context runtime environment.
+Reads the current runtime from the environment.
 
 
 

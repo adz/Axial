@@ -8,13 +8,13 @@
   </url><url>
     <loc>http://localhost:3000/docs/start/getting-started/</loc>
   </url><url>
-    <loc>http://localhost:3000/docs/core-model/managing-dependencies/</loc>
+    <loc>http://localhost:3000/docs/managing-dependencies/</loc>
   </url><url>
     <loc>http://localhost:3000/docs/validation-results/checks/</loc>
   </url><url>
-    <loc>http://localhost:3000/docs/start/</loc>
+    <loc>http://localhost:3000/docs/state-concurrency/ref/</loc>
   </url><url>
-    <loc>http://localhost:3000/docs/core-model/why-fsflow/</loc>
+    <loc>http://localhost:3000/docs/start/</loc>
   </url><url>
     <loc>http://localhost:3000/docs/validation-results/</loc>
   </url><url>
@@ -22,11 +22,13 @@
   </url><url>
     <loc>http://localhost:3000/docs/</loc>
   </url><url>
-    <loc>http://localhost:3000/docs/core-model/env-slicing/</loc>
+    <loc>http://localhost:3000/docs/managing-dependencies/env-slicing/</loc>
   </url><url>
     <loc>http://localhost:3000/docs/core-model/semantics/</loc>
   </url><url>
     <loc>http://localhost:3000/docs/validation-results/result-ce/</loc>
+  </url><url>
+    <loc>http://localhost:3000/docs/state-concurrency/schedule/</loc>
   </url><url>
     <loc>http://localhost:3000/docs/patterns/troubleshooting-types/</loc>
   </url><url>
@@ -36,13 +38,17 @@
   </url><url>
     <loc>http://localhost:3000/docs/patterns/benchmarks/</loc>
   </url><url>
-    <loc>http://localhost:3000/docs/core-model/capabilities/</loc>
+    <loc>http://localhost:3000/docs/managing-dependencies/capabilities/</loc>
   </url><url>
     <loc>http://localhost:3000/docs/ecosystem/integrations-icedtasks/</loc>
   </url><url>
     <loc>http://localhost:3000/docs/patterns/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/</loc>
+  </url><url>
+    <loc>http://localhost:3000/docs/state-concurrency/</loc>
+  </url><url>
+    <loc>http://localhost:3000/docs/state-concurrency/stm/</loc>
   </url><url>
     <loc>http://localhost:3000/docs/start/basic-examples/</loc>
   </url><url>
@@ -59,6 +65,8 @@
     <loc>http://localhost:3000/docs/ecosystem/</loc>
   </url><url>
     <loc>http://localhost:3000/docs/ecosystem/integrations-fsharpplus/</loc>
+  </url><url>
+    <loc>http://localhost:3000/docs/state-concurrency/stream/</loc>
   </url><url>
     <loc>http://localhost:3000/docs/ecosystem/effect-ts-comparison/</loc>
   </url><url>

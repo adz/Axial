@@ -64,18 +64,16 @@ Because a `Flow` is just a description, you must explicitly **run** it. This is 
 
 When you call `Flow.run`, you provide the required **environment** (which can be `()` if none is needed) and a cancellation token is handled for you (defaulting to `CancellationToken.None`).
 
-### The `Effect` Handle
+### Execution Handle vs. Outcome
 
-`Flow.run` returns an **`Effect<'value, 'error>`**. Think of an `Effect` as the platform-specific execution handle:
+Because a `Flow` is just a description, you must explicitly **run** it. FsFlow handles the platform differences for you:
 
-- On **.NET**: An `Effect` is a `ValueTask<Exit<'value, 'error>>`.
-- On **Fable (JS)**: An `Effect` is an `Async<Exit<'value, 'error>>`.
-
-This means on .NET you can `await` it, and on Fable you can `let!` it inside an `async` block.
+- On **.NET**: `Flow.run` is synchronous and returns an **`Exit<'value, 'error>`**. It executes the flow immediately and waits for the result.
+- On **Fable**: `Flow.run` returns an **`Effect<'value, 'error>`** (which is `Async<Exit<'value, 'error>>`).
 
 ### The `Exit` Outcome
 
-When the `Effect` completes, it yields an **`Exit<'value, 'error>`**. This type represents every possible outcome of a workflow:
+The final result of any flow is an **`Exit<'value, 'error>`**. This type represents every possible outcome:
 
 ```fsharp
 match exitValue with
@@ -99,13 +97,8 @@ Here is how you actually execute a flow in a real application:
 ```fsharp
 let myFlow = Flow.succeed "Hello World"
 
-// On .NET (in an async context):
-let runOnDotNet () = task {
-    let! exit = Flow.run () myFlow
-    match exit with
-    | Exit.Success s -> printfn "%s" s
-    | _ -> ()
-}
+// On .NET:
+let exit = Flow.run () myFlow
 
 // On Fable:
 let runOnFable () = async {
