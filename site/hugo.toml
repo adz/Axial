@@ -39,98 +39,31 @@ defaultContentLanguage = "en"
   
   # Guides Sections
   [[module.mounts]]
-    source = "../docs/GETTING_STARTED.md"
-    target = "content/docs/start/getting-started.md"
+    source = "../docs/start"
+    target = "content/docs/start"
   [[module.mounts]]
-    source = "../docs/BASIC_EXAMPLES.md"
-    target = "content/docs/start/basic-examples.md"
+    source = "../docs/validation-results"
+    target = "content/docs/validation-results"
+  [[module.mounts]]
+    source = "../docs/core-model"
+    target = "content/docs/core-model"
+  [[module.mounts]]
+    source = "../docs/managing-dependencies"
+    target = "content/docs/managing-dependencies"
+  [[module.mounts]]
+    source = "../docs/state-concurrency"
+    target = "content/docs/state-concurrency"
+  [[module.mounts]]
+    source = "../docs/patterns"
+    target = "content/docs/patterns"
+  [[module.mounts]]
+    source = "../docs/ecosystem"
+    target = "content/docs/ecosystem"
 
+  # API Reference
   [[module.mounts]]
-    source = "../docs/VALIDATE_AND_RESULT.md"
-    target = "content/docs/validation-results/_index.md"
-  [[module.mounts]]
-    source = "../docs/GUARD.md"
-    target = "content/docs/validation-results/guard.md"
-  [[module.mounts]]
-    source = "../docs/CHECKS.md"
-    target = "content/docs/validation-results/checks.md"
-  [[module.mounts]]
-    source = "../docs/RESULT_CE.md"
-    target = "content/docs/validation-results/result-ce.md"
-  [[module.mounts]]
-    source = "../docs/VALIDATE_CE.md"
-    target = "content/docs/validation-results/validate-ce.md"
-  [[module.mounts]]
-    source = "../docs/DIAGNOSTICS.md"
-    target = "content/docs/validation-results/diagnostics.md"
-
-  [[module.mounts]]
-    source = "../docs/WHY_FSFLOW.md"
-    target = "content/docs/core-model/_index.md"
-  [[module.mounts]]
-    source = "../docs/SEMANTICS.md"
-    target = "content/docs/core-model/semantics.md"
-  [[module.mounts]]
-    source = "../docs/TASK_ASYNC_INTEROP.md"
-    target = "content/docs/core-model/task-async-interop.md"
-  [[module.mounts]]
-    source = "../docs/ARCHITECTURAL_STYLES.md"
-    target = "content/docs/core-model/architectural-styles.md"
-
-  [[module.mounts]]
-    source = "../docs/CAPS.md"
-    target = "content/docs/managing-dependencies/_index.md"
-  [[module.mounts]]
-    source = "../docs/ENV_SLICING.md"
-    target = "content/docs/managing-dependencies/env-slicing.md"
-  [[module.mounts]]
-    source = "../docs/CAPABILITIES.md"
-    target = "content/docs/managing-dependencies/capabilities.md"
-
-  [[module.mounts]]
-    source = "../docs/STATE_CONCURRENCY.md"
-    target = "content/docs/state-concurrency/_index.md"
-  [[module.mounts]]
-    source = "../docs/REF.md"
-    target = "content/docs/state-concurrency/ref.md"
-  [[module.mounts]]
-    source = "../docs/SCHEDULE.md"
-    target = "content/docs/state-concurrency/schedule.md"
-  [[module.mounts]]
-    source = "../docs/STM.md"
-    target = "content/docs/state-concurrency/stm.md"
-  [[module.mounts]]
-    source = "../docs/STREAM.md"
-    target = "content/docs/state-concurrency/stream.md"
-
-  [[module.mounts]]
-    source = "../docs/examples/README.md"
-    target = "content/docs/patterns/examples/_index.md"
-  [[module.mounts]]
-    source = "../docs/TROUBLESHOOTING_TYPES.md"
-    target = "content/docs/patterns/troubleshooting-types.md"
-  [[module.mounts]]
-    source = "../docs/BENCHMARKS.md"
-    target = "content/docs/patterns/benchmarks.md"
-
-  [[module.mounts]]
-    source = "../docs/INTEGRATIONS_FSTOOLKIT.md"
-    target = "content/docs/ecosystem/integrations-fstoolkit.md"
-  [[module.mounts]]
-    source = "../docs/INTEGRATIONS_VALIDUS.md"
-    target = "content/docs/ecosystem/integrations-validus.md"
-  [[module.mounts]]
-    source = "../docs/INTEGRATIONS_ICEDTASKS.md"
-    target = "content/docs/ecosystem/integrations-icedtasks.md"
-  [[module.mounts]]
-    source = "../docs/INTEGRATIONS_FSHARPPLUS.md"
-    target = "content/docs/ecosystem/integrations-fsharpplus.md"
-  [[module.mounts]]
-    source = "../docs/EFFECT_TS_COMPARISON.md"
-    target = "content/docs/ecosystem/effect-ts-comparison.md"
-  [[module.mounts]]
-    source = "../docs/INTEGRATIONS.md"
-    target = "content/docs/ecosystem/integrations.md"
+    source = "../docs/reference"
+    target = "content/reference"
 
   # Images and content assets
   [[module.mounts]]

@@ -1,5 +1,5 @@
 ---
-weight: 15
+weight: 20
 title: Validation & Results
 type: docs
 description: Overview of the FsFlow validation stack, from pure checks to structured diagnostics.

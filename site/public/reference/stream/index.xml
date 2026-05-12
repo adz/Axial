@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Stream on FsFlow</title>
+    <link>http://localhost:3000/reference/stream/</link>
+    <description>Recent content in Stream on FsFlow</description>
+    <generator>Hugo</generator>
+    <language>en-us</language>
+    <atom:link href="http://localhost:3000/reference/stream/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>FsFlow.FlowStream</title>
+      <link>http://localhost:3000/reference/stream/t-flowstream/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/stream/t-flowstream/</guid>
+      <description>&lt;p&gt;Represents a cold stream of values that requires an environment, can fail with a typed error,&#xA;and supports backpressure.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.FlowStreamModule.fromSeq</title>
+      <link>http://localhost:3000/reference/stream/m-flowstreammodule-fromseq/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/stream/m-flowstreammodule-fromseq/</guid>
+      <description>&lt;p&gt;Creates a stream from a sequence of values.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.FlowStreamModule.map</title>
+      <link>http://localhost:3000/reference/stream/m-flowstreammodule-map/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/stream/m-flowstreammodule-map/</guid>
+      <description>&lt;p&gt;Maps the successful values of a stream.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.FlowStreamModule.runForEach</title>
+      <link>http://localhost:3000/reference/stream/m-flowstreammodule-runforeach/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/stream/m-flowstreammodule-runforeach/</guid>
+      <description>&lt;p&gt;Executes the stream and performs an action for each value.&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>STM on FsFlow</title>
+    <link>http://localhost:3000/reference/stm/</link>
+    <description>Recent content in STM on FsFlow</description>
+    <generator>Hugo</generator>
+    <language>en-us</language>
+    <atom:link href="http://localhost:3000/reference/stm/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>FsFlow.STM.atomically</title>
+      <link>http://localhost:3000/reference/stm/m-stm-atomically/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/stm/m-stm-atomically/</guid>
+      <description>&lt;p&gt;Executes an STM transaction atomically within a flow.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;transaction&lt;/code&gt;: The STM transaction to execute.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A flow that performs the transaction and returns its result.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.TRefModule.get</title>
+      <link>http://localhost:3000/reference/stm/m-trefmodule-get/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/stm/m-trefmodule-get/</guid>
+      <description>&lt;p&gt;Reads the current value of the transactional reference within a transaction.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.TRefModule.make</title>
+      <link>http://localhost:3000/reference/stm/m-trefmodule-make/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/stm/m-trefmodule-make/</guid>
+      <description>&lt;p&gt;Creates a new &lt;code&gt;TRef&lt;/code&gt; with the initial value.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.TRefModule.set</title>
+      <link>http://localhost:3000/reference/stm/m-trefmodule-set/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/stm/m-trefmodule-set/</guid>
+      <description>&lt;p&gt;Sets the value of the transactional reference within a transaction.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.StmBuilders.stm</title>
+      <link>http://localhost:3000/reference/stm/p-stmbuilders-stm/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/stm/p-stmbuilders-stm/</guid>
+      <description>&lt;p&gt;The &lt;code&gt;stm { }&lt;/code&gt; computation expression for building atomic transactions.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.STM</title>
+      <link>http://localhost:3000/reference/stm/t-stm/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/stm/t-stm/</guid>
+      <description>&lt;p&gt;Represents a transactional operation that can be composed and executed atomically.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.TRef</title>
+      <link>http://localhost:3000/reference/stm/t-tref/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/stm/t-tref/</guid>
+      <description>&lt;p&gt;Represents a transactional reference that can be updated atomically within an &lt;code&gt;STM&lt;/code&gt; transaction.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.TRefModule.update</title>
+      <link>http://localhost:3000/reference/stm/m-trefmodule-update/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/stm/m-trefmodule-update/</guid>
+      <description>&lt;p&gt;Updates the value of the transactional reference within a transaction using the supplied function.&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

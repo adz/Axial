@@ -169,13 +169,6 @@
       <description>&lt;h1 id=&#34;effect-ts-comparison&#34;&gt;Effect-TS Comparison&lt;/h1&gt;&#xA;&lt;p&gt;This page shows FsFlow in relation to Effect-TS without pretending they solve the same problem at the same scale.&lt;/p&gt;&#xA;&lt;h2 id=&#34;what-carries-over&#34;&gt;What Carries Over&lt;/h2&gt;&#xA;&lt;p&gt;These ideas are shared:&lt;/p&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;typed success and error channels&lt;/li&gt;&#xA;&lt;li&gt;explicit dependency access&lt;/li&gt;&#xA;&lt;li&gt;compositional workflow values&lt;/li&gt;&#xA;&lt;li&gt;runtime helpers for retry, timeout, and cancellation-aware execution&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;what-is-different&#34;&gt;What Is Different&lt;/h2&gt;&#xA;&lt;p&gt;FsFlow is aimed at ordinary F# application code:&lt;/p&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;flow {}&lt;/code&gt; instead of generator-based syntax, with direct binding for &lt;code&gt;Async&lt;/code&gt;, &lt;code&gt;Task&lt;/code&gt;, &lt;code&gt;ValueTask&lt;/code&gt;, and &lt;code&gt;ColdTask&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;first-class interop with Result, &lt;code&gt;Async&lt;/code&gt;, and &lt;code&gt;.NET Task&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;explicit environment reads such as &lt;code&gt;Flow.read _.Gateway&lt;/code&gt; or &lt;code&gt;Flow.read _.Gateway&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;a much smaller surface focused on application flows rather than a broader runtime platform&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;what-effect-ts-still-has-that-fsflow-does-not&#34;&gt;What Effect-TS Still Has That FsFlow Does Not&lt;/h2&gt;&#xA;&lt;p&gt;Effect-TS is much broader and more mature. FsFlow does not try to match:&lt;/p&gt;</description>
     </item>
     <item>
-      <title>Ecosystem Overview</title>
-      <link>http://localhost:3000/docs/ecosystem/integrations/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/docs/ecosystem/integrations/</guid>
-      <description>&lt;h1 id=&#34;ecosystem-overview&#34;&gt;Ecosystem Overview&lt;/h1&gt;&#xA;&lt;p&gt;This page shows how FsFlow can live alongside the libraries you are most likely to already have in a codebase.&lt;/p&gt;&#xA;&lt;p&gt;The rule of thumb is simple: keep each library on the boundary it already owns, then let FsFlow take over orchestration where the runtime shape becomes explicit.&lt;/p&gt;&#xA;&lt;h2 id=&#34;how-the-libraries-differ&#34;&gt;How The Libraries Differ&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;FsToolkit.ErrorHandling&lt;/code&gt; is the established result-oriented layer: it uses core F# types, a small number of wrappers such as &lt;code&gt;Task&amp;lt;Result&amp;lt;_,_&amp;gt;&amp;gt;&lt;/code&gt;, and a familiar module-and-builder surface. It fits existing code with low overhead.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;Validus&lt;/code&gt; is a richer validation DSL if you already use it. FsFlow now covers the common check/result/validation path itself.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;IcedTasks&lt;/code&gt; is the task-shape layer: it is interesting for performance and task-native ergonomics, but it still lives in the &lt;code&gt;Async&lt;/code&gt; / &lt;code&gt;Task&lt;/code&gt; / Result space rather than in a richer environment model.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;FSharpPlus&lt;/code&gt; is the generic FP layer: it brings broad abstractions and monad-transformer-style composition, but that also means more compiler work and more complex error surfacing when you are trying to follow a FsFlow boundary.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;what-fsflow-adds&#34;&gt;What FsFlow Adds&lt;/h2&gt;&#xA;&lt;p&gt;FsFlow captures the common application boundary needs in one model:&lt;/p&gt;</description>
-    </item>
-    <item>
       <title>FsFlow.CheckModule.all</title>
       <link>http://localhost:3000/reference/check/m-checkmodule-all/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -216,6 +209,13 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>http://localhost:3000/reference/validation/m-validationmodule-at/</guid>
       <description>&lt;p&gt;Scopes a validation under the supplied path segments.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;path&lt;/code&gt;: The path segments to apply to the validation.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;validation&lt;/code&gt;: The validation to scope.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A validation nested under the given path.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.STM.atomically</title>
+      <link>http://localhost:3000/reference/stm/m-stm-atomically/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/stm/m-stm-atomically/</guid>
+      <description>&lt;p&gt;Executes an STM transaction atomically within a flow.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;transaction&lt;/code&gt;: The STM transaction to execute.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A flow that performs the transaction and returns its result.&lt;/p&gt;</description>
     </item>
     <item>
       <title>FsFlow.Flow.bind</title>
@@ -362,6 +362,13 @@
       <link>http://localhost:3000/reference/flow/m-schedulemodule-exponential/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>http://localhost:3000/reference/flow/m-schedulemodule-exponential/</guid>
+      <description>&lt;p&gt;Creates a schedule that recurs with exponential backoff.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.ScheduleModule.exponential</title>
+      <link>http://localhost:3000/reference/schedule/m-schedulemodule-exponential/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/schedule/m-schedulemodule-exponential/</guid>
       <description>&lt;p&gt;Creates a schedule that recurs with exponential backoff.&lt;/p&gt;</description>
     </item>
     <item>
@@ -519,6 +526,13 @@
       <description>&lt;p&gt;The &lt;code&gt;flow { }&lt;/code&gt; builder is the primary entry point for orchestrating synchronous, async, and task-based work.&lt;/p&gt;&#xA;&lt;h2 id=&#34;builder&#34;&gt;Builder&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;a href=&#34;http://localhost:3000/reference/flow/p-builders-flow/&#34;&gt;&lt;code&gt;FsFlow.Builders.flow&lt;/code&gt;&lt;/a&gt;: The universal &lt;code&gt;flow { }&lt;/code&gt; computation expression.&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
     <item>
+      <title>FsFlow.FlowStream</title>
+      <link>http://localhost:3000/reference/stream/t-flowstream/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/stream/t-flowstream/</guid>
+      <description>&lt;p&gt;Represents a cold stream of values that requires an environment, can fail with a typed error,&#xA;and supports backpressure.&lt;/p&gt;</description>
+    </item>
+    <item>
       <title>FsFlow.Flow.fork</title>
       <link>http://localhost:3000/reference/flow/m-flow-fork/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -561,6 +575,13 @@
       <description>&lt;p&gt;Lifts a standard &lt;code&gt;Result&lt;/code&gt; into the &lt;code&gt;Validation&lt;/code&gt; context.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;If the result is an error, it is wrapped in a root-level &lt;code&gt;Diagnostics&lt;/code&gt; graph.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;result&lt;/code&gt;: The result to lift.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;code&gt;Validation&lt;/code&gt; mirroring the result.&lt;/p&gt;</description>
     </item>
     <item>
+      <title>FsFlow.FlowStreamModule.fromSeq</title>
+      <link>http://localhost:3000/reference/stream/m-flowstreammodule-fromseq/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/stream/m-flowstreammodule-fromseq/</guid>
+      <description>&lt;p&gt;Creates a stream from a sequence of values.&lt;/p&gt;</description>
+    </item>
+    <item>
       <title>FsFlow.Caps.Core.Clock.fromValue</title>
       <link>http://localhost:3000/reference/caps-core/m-core-clock-fromvalue/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -594,6 +615,20 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>http://localhost:3000/reference/caps-core/m-core-environmentvariable-get/</guid>
       <description>&lt;p&gt;Reads a raw string environment variable from the environment.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.RefModule.get</title>
+      <link>http://localhost:3000/reference/ref/m-refmodule-get/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/ref/m-refmodule-get/</guid>
+      <description>&lt;p&gt;Reads the current value of the reference.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.TRefModule.get</title>
+      <link>http://localhost:3000/reference/stm/m-trefmodule-get/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/stm/m-trefmodule-get/</guid>
+      <description>&lt;p&gt;Reads the current value of the transactional reference within a transaction.&lt;/p&gt;</description>
     </item>
     <item>
       <title>FsFlow.Caps.Core.EnvironmentVariable.getBool</title>
@@ -715,6 +750,13 @@
       <description>&lt;p&gt;Adds random jitter to a schedule&amp;rsquo;s delay.&lt;/p&gt;</description>
     </item>
     <item>
+      <title>FsFlow.ScheduleModule.jittered</title>
+      <link>http://localhost:3000/reference/schedule/m-schedulemodule-jittered/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/schedule/m-schedulemodule-jittered/</guid>
+      <description>&lt;p&gt;Adds random jitter to a schedule&amp;rsquo;s delay.&lt;/p&gt;</description>
+    </item>
+    <item>
       <title>FsFlow.Flow.join</title>
       <link>http://localhost:3000/reference/flow/m-flow-join/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -792,11 +834,32 @@
       <description>&lt;p&gt;Transforms the environment before running the flow.&lt;/p&gt;</description>
     </item>
     <item>
+      <title>FsFlow.RefModule.make</title>
+      <link>http://localhost:3000/reference/ref/m-refmodule-make/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/ref/m-refmodule-make/</guid>
+      <description>&lt;p&gt;Creates a new &lt;code&gt;Ref&lt;/code&gt; with the initial value.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.TRefModule.make</title>
+      <link>http://localhost:3000/reference/stm/m-trefmodule-make/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/stm/m-trefmodule-make/</guid>
+      <description>&lt;p&gt;Creates a new &lt;code&gt;TRef&lt;/code&gt; with the initial value.&lt;/p&gt;</description>
+    </item>
+    <item>
       <title>FsFlow.Flow.map</title>
       <link>http://localhost:3000/reference/flow/m-flow-map/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>http://localhost:3000/reference/flow/m-flow-map/</guid>
       <description>&lt;p&gt;Maps the successful value of a synchronous flow.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;If the source &lt;code&gt;flow&lt;/code&gt; fails, the &lt;code&gt;mapper&lt;/code&gt; is not executed,&#xA;and the error is preserved. This allows for safe transformation of data within the flow.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;mapper&lt;/code&gt;: A function of type &lt;code&gt;&#39;value -&amp;gt; &#39;next&lt;/code&gt; to transform the successful value.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;flow&lt;/code&gt;: The source flow of type &lt;code&gt;Flow&lt;/code&gt; to transform.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A new &lt;code&gt;Flow&lt;/code&gt; with the transformed success value of type &lt;code&gt;&#39;next&lt;/code&gt;.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.FlowStreamModule.map</title>
+      <link>http://localhost:3000/reference/stream/m-flowstreammodule-map/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/stream/m-flowstreammodule-map/</guid>
+      <description>&lt;p&gt;Maps the successful values of a stream.&lt;/p&gt;</description>
     </item>
     <item>
       <title>FsFlow.ValidationModule.map</title>
@@ -867,6 +930,13 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>http://localhost:3000/reference/capability/t-missingcapability/</guid>
       <description>&lt;p&gt;Describes a missing service-provider capability.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.RefModule.modify</title>
+      <link>http://localhost:3000/reference/ref/m-refmodule-modify/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/ref/m-refmodule-modify/</guid>
+      <description>&lt;p&gt;Updates the value of the reference using the supplied function and returns a derived value.&lt;/p&gt;</description>
     </item>
     <item>
       <title>FsFlow.ValidationModule.name</title>
@@ -1184,6 +1254,20 @@
       <description>&lt;p&gt;Creates a schedule that recurs a fixed number of times.&lt;/p&gt;</description>
     </item>
     <item>
+      <title>FsFlow.ScheduleModule.recurs</title>
+      <link>http://localhost:3000/reference/schedule/m-schedulemodule-recurs/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/schedule/m-schedulemodule-recurs/</guid>
+      <description>&lt;p&gt;Creates a schedule that recurs a fixed number of times.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.Ref</title>
+      <link>http://localhost:3000/reference/ref/t-ref/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/ref/t-ref/</guid>
+      <description>&lt;p&gt;Represents a handle to a mutable reference that can be updated atomically.&lt;/p&gt;</description>
+    </item>
+    <item>
       <title>FsFlow.Builders.result</title>
       <link>http://localhost:3000/reference/result/p-builders-result/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -1205,6 +1289,13 @@
       <description>&lt;p&gt;Executes a flow with the provided environment and the default cancellation token.&lt;/p&gt;&#xA;&lt;h2 id=&#34;examples&#34;&gt;Examples&lt;/h2&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;&#34;&gt;&lt;code class=&#34;language-fsharp&#34; data-lang=&#34;fsharp&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#204a87;font-weight:bold&#34;&gt;let&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;flow&lt;/span&gt; &lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;Flow&lt;/span&gt;&lt;span style=&#34;color:#000;font-weight:bold&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#000&#34;&gt;read&lt;/span&gt; &lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;(&lt;/span&gt;&lt;span style=&#34;color:#204a87;font-weight:bold&#34;&gt;fun&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;env&lt;/span&gt; &lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;-&amp;gt;&lt;/span&gt; &lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;$&lt;/span&gt;&lt;span style=&#34;color:#4e9a06&#34;&gt;&amp;#34;Hello, {env}!&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;)&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#204a87;font-weight:bold&#34;&gt;let&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;result&lt;/span&gt; &lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;Flow&lt;/span&gt;&lt;span style=&#34;color:#000;font-weight:bold&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#000&#34;&gt;run&lt;/span&gt; &lt;span style=&#34;color:#4e9a06&#34;&gt;&amp;#34;World&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;flow&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#8f5902;font-style:italic&#34;&gt;// result = Promise that resolves to Success &amp;#34;Hello, World!&amp;#34; on Fable, or Success &amp;#34;Hello, World!&amp;#34; on .NET&#xA;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;</description>
     </item>
     <item>
+      <title>FsFlow.FlowStreamModule.runForEach</title>
+      <link>http://localhost:3000/reference/stream/m-flowstreammodule-runforeach/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/stream/m-flowstreammodule-runforeach/</guid>
+      <description>&lt;p&gt;Executes the stream and performs an action for each value.&lt;/p&gt;</description>
+    </item>
+    <item>
       <title>FsFlow.CapabilityModule.runtime</title>
       <link>http://localhost:3000/reference/capability/m-capabilitymodule-runtime/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -1216,6 +1307,13 @@
       <link>http://localhost:3000/reference/flow/t-schedule/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>http://localhost:3000/reference/flow/t-schedule/</guid>
+      <description>&lt;p&gt;Represents a stateful schedule that can decide whether to continue and how long to delay.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.Schedule</title>
+      <link>http://localhost:3000/reference/schedule/t-schedule/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/schedule/t-schedule/</guid>
       <description>&lt;p&gt;Represents a stateful schedule that can decide whether to continue and how long to delay.&lt;/p&gt;</description>
     </item>
     <item>
@@ -1247,6 +1345,20 @@
       <description>&lt;p&gt;Reads a service from &lt;code&gt;IServiceProvider&lt;/code&gt; and fails when it is not registered.&lt;/p&gt;</description>
     </item>
     <item>
+      <title>FsFlow.RefModule.set</title>
+      <link>http://localhost:3000/reference/ref/m-refmodule-set/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/ref/m-refmodule-set/</guid>
+      <description>&lt;p&gt;Sets the value of the reference to the specified value.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.TRefModule.set</title>
+      <link>http://localhost:3000/reference/stm/m-trefmodule-set/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/stm/m-trefmodule-set/</guid>
+      <description>&lt;p&gt;Sets the value of the transactional reference within a transaction.&lt;/p&gt;</description>
+    </item>
+    <item>
       <title>FsFlow.DiagnosticsModule.singleton</title>
       <link>http://localhost:3000/reference/diagnostics/m-diagnosticsmodule-singleton/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -1258,6 +1370,13 @@
       <link>http://localhost:3000/reference/flow/m-schedulemodule-spaced/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>http://localhost:3000/reference/flow/m-schedulemodule-spaced/</guid>
+      <description>&lt;p&gt;Creates a schedule that recurs with a fixed delay between attempts.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.ScheduleModule.spaced</title>
+      <link>http://localhost:3000/reference/schedule/m-schedulemodule-spaced/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/schedule/m-schedulemodule-spaced/</guid>
       <description>&lt;p&gt;Creates a schedule that recurs with a fixed delay between attempts.&lt;/p&gt;</description>
     </item>
     <item>
@@ -1273,6 +1392,34 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>http://localhost:3000/reference/flow/m-flowscheduleextensions-flow-retry-static/</guid>
       <description>&lt;p&gt;Retries a failing flow according to the supplied schedule.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.FlowScheduleExtensions.Flow.Repeat.Static</title>
+      <link>http://localhost:3000/reference/schedule/m-flowscheduleextensions-flow-repeat-static/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/schedule/m-flowscheduleextensions-flow-repeat-static/</guid>
+      <description>&lt;p&gt;Repeats a successful flow according to the supplied schedule.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.FlowScheduleExtensions.Flow.Retry.Static</title>
+      <link>http://localhost:3000/reference/schedule/m-flowscheduleextensions-flow-retry-static/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/schedule/m-flowscheduleextensions-flow-retry-static/</guid>
+      <description>&lt;p&gt;Retries a failing flow according to the supplied schedule.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.StmBuilders.stm</title>
+      <link>http://localhost:3000/reference/stm/p-stmbuilders-stm/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/stm/p-stmbuilders-stm/</guid>
+      <description>&lt;p&gt;The &lt;code&gt;stm { }&lt;/code&gt; computation expression for building atomic transactions.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.STM</title>
+      <link>http://localhost:3000/reference/stm/t-stm/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/stm/t-stm/</guid>
+      <description>&lt;p&gt;Represents a transactional operation that can be composed and executed atomically.&lt;/p&gt;</description>
     </item>
     <item>
       <title>FsFlow.Flow.succeed</title>
@@ -1338,6 +1485,13 @@
       <description>&lt;p&gt;Maps a sequence into validations while prefixing each item with its index.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;This is the indexed version of &lt;code&gt;sequence&lt;/code&gt;. It is useful for list and array&#xA;validation because each item can keep its own &lt;code&gt;Index&lt;/code&gt;&#xA;branch without the caller manually wrapping every item.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;binder&lt;/code&gt;: A function of type &lt;code&gt;int -&amp;gt; &#39;source -&amp;gt; Validation&amp;amp;lt;&#39;value, &#39;error&amp;amp;gt;&lt;/code&gt;.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;values&lt;/code&gt;: The input sequence.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A validation containing the list of values or accumulated diagnostics.&lt;/p&gt;</description>
     </item>
     <item>
+      <title>FsFlow.TRef</title>
+      <link>http://localhost:3000/reference/stm/t-tref/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/stm/t-tref/</guid>
+      <description>&lt;p&gt;Represents a transactional reference that can be updated atomically within an &lt;code&gt;STM&lt;/code&gt; transaction.&lt;/p&gt;</description>
+    </item>
+    <item>
       <title>FsFlow.Caps.Core.EnvironmentVariable.tryGet</title>
       <link>http://localhost:3000/reference/caps-core/m-core-environmentvariable-tryget/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -1350,6 +1504,20 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>http://localhost:3000/reference/caps-core/m-core-environmentvariables-tryget/</guid>
       <description>&lt;p&gt;Reads a raw environment-variable value from the environment.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.RefModule.update</title>
+      <link>http://localhost:3000/reference/ref/m-refmodule-update/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/ref/m-refmodule-update/</guid>
+      <description>&lt;p&gt;Updates the value of the reference using the supplied function.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.TRefModule.update</title>
+      <link>http://localhost:3000/reference/stm/m-trefmodule-update/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/stm/m-trefmodule-update/</guid>
+      <description>&lt;p&gt;Updates the value of the transactional reference within a transaction using the supplied function.&lt;/p&gt;</description>
     </item>
     <item>
       <title>FsFlow.Builders.validate</title>

@@ -1,5 +1,5 @@
 ---
-weight: 10
+weight: 40
 title: Managing Dependencies
 description: Introduction to dependency management in FsFlow.
 ---

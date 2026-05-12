@@ -1,5 +1,5 @@
 ---
-weight: 10
+weight: 30
 title: The FsFlow Model
 description: The core FsFlow progression from Check and Result into Validation and Flow.
 ---

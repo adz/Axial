@@ -1,5 +1,5 @@
 ---
-weight: 60
+weight: 70
 title: Ecosystem Overview
 description: How FsFlow fits beside FsToolkit, Validus, IcedTasks, and FSharpPlus.
 ---

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Ref on FsFlow</title>
+    <link>http://localhost:3000/reference/ref/</link>
+    <description>Recent content in Ref on FsFlow</description>
+    <generator>Hugo</generator>
+    <language>en-us</language>
+    <atom:link href="http://localhost:3000/reference/ref/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>FsFlow.RefModule.get</title>
+      <link>http://localhost:3000/reference/ref/m-refmodule-get/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/ref/m-refmodule-get/</guid>
+      <description>&lt;p&gt;Reads the current value of the reference.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.RefModule.make</title>
+      <link>http://localhost:3000/reference/ref/m-refmodule-make/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/ref/m-refmodule-make/</guid>
+      <description>&lt;p&gt;Creates a new &lt;code&gt;Ref&lt;/code&gt; with the initial value.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.RefModule.modify</title>
+      <link>http://localhost:3000/reference/ref/m-refmodule-modify/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/ref/m-refmodule-modify/</guid>
+      <description>&lt;p&gt;Updates the value of the reference using the supplied function and returns a derived value.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.Ref</title>
+      <link>http://localhost:3000/reference/ref/t-ref/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/ref/t-ref/</guid>
+      <description>&lt;p&gt;Represents a handle to a mutable reference that can be updated atomically.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.RefModule.set</title>
+      <link>http://localhost:3000/reference/ref/m-refmodule-set/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/ref/m-refmodule-set/</guid>
+      <description>&lt;p&gt;Sets the value of the reference to the specified value.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>FsFlow.RefModule.update</title>
+      <link>http://localhost:3000/reference/ref/m-refmodule-update/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/ref/m-refmodule-update/</guid>
+      <description>&lt;p&gt;Updates the value of the reference using the supplied function.&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

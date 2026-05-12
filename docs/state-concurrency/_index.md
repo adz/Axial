@@ -1,5 +1,5 @@
 ---
-weight: 30
+weight: 50
 title: State and Concurrency
 description: Shared state, coordination, and streaming in FsFlow.
 ---

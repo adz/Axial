@@ -8,15 +8,11 @@
   </url><url>
     <loc>http://localhost:3000/docs/start/getting-started/</loc>
   </url><url>
-    <loc>http://localhost:3000/docs/managing-dependencies/</loc>
-  </url><url>
     <loc>http://localhost:3000/docs/validation-results/checks/</loc>
   </url><url>
     <loc>http://localhost:3000/docs/state-concurrency/ref/</loc>
   </url><url>
     <loc>http://localhost:3000/docs/start/</loc>
-  </url><url>
-    <loc>http://localhost:3000/docs/validation-results/</loc>
   </url><url>
     <loc>http://localhost:3000/docs/core-model/</loc>
   </url><url>
@@ -32,6 +28,8 @@
   </url><url>
     <loc>http://localhost:3000/docs/patterns/troubleshooting-types/</loc>
   </url><url>
+    <loc>http://localhost:3000/docs/validation-results/</loc>
+  </url><url>
     <loc>http://localhost:3000/docs/ecosystem/integrations-validus/</loc>
   </url><url>
     <loc>http://localhost:3000/docs/validation-results/guard/</loc>
@@ -45,8 +43,6 @@
     <loc>http://localhost:3000/docs/patterns/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/</loc>
-  </url><url>
-    <loc>http://localhost:3000/docs/state-concurrency/</loc>
   </url><url>
     <loc>http://localhost:3000/docs/state-concurrency/stm/</loc>
   </url><url>
@@ -66,11 +62,13 @@
   </url><url>
     <loc>http://localhost:3000/docs/ecosystem/integrations-fsharpplus/</loc>
   </url><url>
+    <loc>http://localhost:3000/docs/managing-dependencies/</loc>
+  </url><url>
     <loc>http://localhost:3000/docs/state-concurrency/stream/</loc>
   </url><url>
     <loc>http://localhost:3000/docs/ecosystem/effect-ts-comparison/</loc>
   </url><url>
-    <loc>http://localhost:3000/docs/ecosystem/integrations/</loc>
+    <loc>http://localhost:3000/docs/state-concurrency/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/validation/</loc>
   </url><url>
@@ -105,6 +103,8 @@
     <loc>http://localhost:3000/reference/validation/m-validationmodule-apply/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/validation/m-validationmodule-at/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/stm/m-stm-atomically/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-bind/</loc>
   </url><url>
@@ -150,6 +150,8 @@
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-schedulemodule-exponential/</loc>
   </url><url>
+    <loc>http://localhost:3000/reference/schedule/m-schedulemodule-exponential/</loc>
+  </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-fail/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/validation/m-validationmodule-fail/</loc>
@@ -194,6 +196,8 @@
   </url><url>
     <loc>http://localhost:3000/reference/flow/builders-flow/</loc>
   </url><url>
+    <loc>http://localhost:3000/reference/stream/t-flowstream/</loc>
+  </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-fork/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-fromoption/</loc>
@@ -206,6 +210,8 @@
   </url><url>
     <loc>http://localhost:3000/reference/validation/m-validationmodule-fromresult/</loc>
   </url><url>
+    <loc>http://localhost:3000/reference/stream/m-flowstreammodule-fromseq/</loc>
+  </url><url>
     <loc>http://localhost:3000/reference/caps-core/m-core-clock-fromvalue/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/caps-core/m-core-guid-fromvalue/</loc>
@@ -215,6 +221,10 @@
     <loc>http://localhost:3000/reference/flow/m-flow-fromvalueoption/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/caps-core/m-core-environmentvariable-get/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/ref/m-refmodule-get/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/stm/m-trefmodule-get/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/caps-core/m-core-environmentvariable-getbool/</loc>
   </url><url>
@@ -252,6 +262,8 @@
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-schedulemodule-jittered/</loc>
   </url><url>
+    <loc>http://localhost:3000/reference/schedule/m-schedulemodule-jittered/</loc>
+  </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-join/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/validation/m-validationmodule-key/</loc>
@@ -274,7 +286,13 @@
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-localenv/</loc>
   </url><url>
+    <loc>http://localhost:3000/reference/ref/m-refmodule-make/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/stm/m-trefmodule-make/</loc>
+  </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-map/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/stream/m-flowstreammodule-map/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/validation/m-validationmodule-map/</loc>
   </url><url>
@@ -295,6 +313,8 @@
     <loc>http://localhost:3000/reference/validation/m-validationmodule-merge/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/capability/t-missingcapability/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/ref/m-refmodule-modify/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/validation/m-validationmodule-name/</loc>
   </url><url>
@@ -386,17 +406,29 @@
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-schedulemodule-recurs/</loc>
   </url><url>
+    <loc>http://localhost:3000/reference/schedule/m-schedulemodule-recurs/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/ref/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/ref/t-ref/</loc>
+  </url><url>
     <loc>http://localhost:3000/reference/result/p-builders-result/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/result/builders-result/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-run/</loc>
   </url><url>
+    <loc>http://localhost:3000/reference/stream/m-flowstreammodule-runforeach/</loc>
+  </url><url>
     <loc>http://localhost:3000/docs/patterns/examples/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/capability/m-capabilitymodule-runtime/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/t-schedule/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/schedule/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/schedule/t-schedule/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-sequence/</loc>
   </url><url>
@@ -406,13 +438,31 @@
   </url><url>
     <loc>http://localhost:3000/reference/capability/m-capabilitymodule-servicefromprovider/</loc>
   </url><url>
+    <loc>http://localhost:3000/reference/ref/m-refmodule-set/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/stm/m-trefmodule-set/</loc>
+  </url><url>
     <loc>http://localhost:3000/reference/diagnostics/m-diagnosticsmodule-singleton/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-schedulemodule-spaced/</loc>
   </url><url>
+    <loc>http://localhost:3000/reference/schedule/m-schedulemodule-spaced/</loc>
+  </url><url>
     <loc>http://localhost:3000/reference/flow/m-flowscheduleextensions-flow-repeat-static/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-flowscheduleextensions-flow-retry-static/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/schedule/m-flowscheduleextensions-flow-repeat-static/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/schedule/m-flowscheduleextensions-flow-retry-static/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/stm/p-stmbuilders-stm/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/stm/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/stm/t-stm/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/stream/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-succeed/</loc>
   </url><url>
@@ -434,9 +484,15 @@
   </url><url>
     <loc>http://localhost:3000/reference/validation/m-validationmodule-traverseindexed/</loc>
   </url><url>
+    <loc>http://localhost:3000/reference/stm/t-tref/</loc>
+  </url><url>
     <loc>http://localhost:3000/reference/caps-core/m-core-environmentvariable-tryget/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/caps-core/m-core-environmentvariables-tryget/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/ref/m-refmodule-update/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/stm/m-trefmodule-update/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/validation/p-builders-validate/</loc>
   </url><url>
