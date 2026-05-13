@@ -1,6 +1,6 @@
 # Reader-Env Yield
 
-Status: accepted direction.
+Status: withdrawn.
 Recorded: 2026-04-29.
 
 ## Extracted From
@@ -14,26 +14,24 @@ Recorded: 2026-04-29.
 
 ## Decision
 
-Allow `yield` inside reader-style computation expressions to project from the environment.
+This direction was superseded by the explicit `Flow.read` API and the `Env` request token.
 
 ## Shape
 
-- `Yield(value)` keeps plain-value yielding.
-- `Yield(project: 'env -> 'value)` maps to `Flow.read project`.
-- `YieldFrom(flow)` remains the normal flow passthrough.
+- `Flow.read project` remains the canonical reader projection.
+- `Env<'dep>` and `Env<'dep, 'value>` remain the request tokens for capability-style reads.
 
 ## Why
 
-- `yield _.Field` is a compact shorthand for reader projection.
-- It improves ergonomics inside CE blocks without replacing `Flow.read`.
+- The `yield` shorthand duplicated `Flow.read` without adding enough clarity.
+- `Env` already covers the capability-request story with less ambiguity.
 
 ## Caveats
 
-- Functions are values, so `yield` of a function can be ambiguous.
-- This is nonstandard F# CE style and needs explicit documentation.
-- It is an ergonomic shorthand, not a replacement for the explicit API.
+- The removed shorthand made the CE surface larger without improving the core model.
+- `yield` also conflicted with the usual reader/sequence intuition.
 
 ## Consequences
 
-- Mirror the same pattern in `AsyncFlowBuilder` and `TaskFlowBuilder`.
+- Keep the builder surface centered on `return`, `return!`, `let!`, and `Env`.
 - Keep `Flow.read` as the canonical explicit entry point.

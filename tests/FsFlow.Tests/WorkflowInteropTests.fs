@@ -438,29 +438,27 @@ let probe : {workflowTypeName}<WrongEnv, string, string> =
         test <@ Flow.runSync "flow" workflow = Exit.Success "flow-async-task-result" @>
 
     [<Fact>]
-    let ``reader-style yield projects from the environment across builders`` () =
+    let ``reader-style projection uses Flow.read and return! passthrough`` () =
         let environment : ReaderEnv =
             { Prefix = "flow"
               Count = 21 }
 
         let syncValue : Flow<ReaderEnv, string, int> =
             flow {
-                yield 42
+                return 42
             }
 
         let syncProjection : Flow<ReaderEnv, string, string> =
-            flow {
-                yield _.Prefix
-            }
+            Flow.read _.Prefix
 
-        let syncYieldFrom : Flow<ReaderEnv, string, string> =
+        let syncReturnFrom : Flow<ReaderEnv, string, string> =
             flow {
-                yield! Flow.read _.Prefix
+                return! Flow.read _.Prefix
             }
 
         test <@ Flow.runSync environment syncValue = Exit.Success 42 @>
         test <@ Flow.runSync environment syncProjection = Exit.Success "flow" @>
-        test <@ Flow.runSync environment syncYieldFrom = Exit.Success "flow" @>
+        test <@ Flow.runSync environment syncReturnFrom = Exit.Success "flow" @>
 
     [<Fact>]
     let ``flow directly binds and returns Async and Async Result values`` () =

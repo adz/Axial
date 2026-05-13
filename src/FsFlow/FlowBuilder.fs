@@ -127,41 +127,6 @@ type FlowBuilder() =
     member _.Return(value: 'value) : Flow<'env, 'error, 'value> =
         Flow.ok value
 
-    member _.Yield(value: obj) : Flow<'env, 'error, 'value> =
-        Flow.ok (unbox<'value> value)
-
-    member _.Yield(project: 'env -> 'value) : Flow<'env, 'error, 'value> =
-        Flow.read project
-
-    member _.YieldFrom(flow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
-        flow
-
-    member _.YieldFrom(operation: Async<'value>) : Flow<'env, 'error, 'value> =
-        FlowBuilderRuntime.fromAsync operation
-
-    member _.YieldFrom(operation: Async<Result<'value, 'error>>) : Flow<'env, 'error, 'value> =
-        FlowBuilderRuntime.fromAsyncResult operation
-
-#if !FABLE_COMPILER
-    member _.YieldFrom(operation: Task<'value>) : Flow<'env, 'error, 'value> =
-        FlowBuilderRuntime.fromTask operation
-
-    member _.YieldFrom(operation: Task<Result<'value, 'error>>) : Flow<'env, 'error, 'value> =
-        FlowBuilderRuntime.fromTaskResult operation
-
-    member _.YieldFrom(operation: Task) : Flow<'env, 'error, unit> =
-        FlowBuilderRuntime.fromTaskUnit operation
-
-    member _.YieldFrom(operation: ValueTask<'value>) : Flow<'env, 'error, 'value> =
-        FlowBuilderRuntime.fromValueTask operation
-
-    member _.YieldFrom(operation: ValueTask<Result<'value, 'error>>) : Flow<'env, 'error, 'value> =
-        FlowBuilderRuntime.fromValueTaskResult operation
-
-    member _.YieldFrom(operation: ValueTask) : Flow<'env, 'error, unit> =
-        FlowBuilderRuntime.fromValueTaskUnit operation
-#endif
-
     member _.ReturnFrom(flow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
         flow
 
@@ -609,15 +574,6 @@ type FlowBuilder() =
 type internal AsyncFlowBuilder() =
     member _.Return(value: 'value) : AsyncFlow<'env, 'error, 'value> =
         AsyncFlow.ok value
-
-    member _.Yield(value: obj) : AsyncFlow<'env, 'error, 'value> =
-        AsyncFlow.ok (unbox<'value> value)
-
-    member _.Yield(project: 'env -> 'value) : AsyncFlow<'env, 'error, 'value> =
-        AsyncFlow.read project
-
-    member _.YieldFrom(flow: AsyncFlow<'env, 'error, 'value>) : AsyncFlow<'env, 'error, 'value> =
-        flow
 
     member _.ReturnFrom(flow: AsyncFlow<'env, 'error, 'value>) : AsyncFlow<'env, 'error, 'value> =
         flow
