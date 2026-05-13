@@ -14,6 +14,8 @@ FsFlow has three distinct failure kinds:
 - `Cause.Interrupt`: a cancellation or interruption signal
 - `Cause.Die exn`: an unexpected defect or bug
 
+You can produce `Cause.Die` explicitly with `Flow.die`, or let the runtime preserve it when an uncaught exception escapes a `Flow`, `AsyncFlow`, or `TaskFlow` boundary.
+
 Keeping those cases separate is not about adding ceremony. It is about keeping the failure story lossless inside the same execution model.
 
 ## Why Not Just Throw Exceptions?
@@ -79,6 +81,8 @@ That gives the library two important properties:
 
 - explicit defects remain explicit
 - unexpected exceptions become visible inside the workflow outcome instead of disappearing as ambient control flow
+
+Retry helpers and fallback combinators should continue to treat `Cause.Die` and `Cause.Interrupt` as terminal. Only `Cause.Fail` should participate in retry or domain fallback decisions.
 
 ## Why This Page Exists
 

@@ -8,6 +8,7 @@ open System.Threading.Tasks
 
 module internal AsyncFlow =
     /// <summary>Executes an async flow with the provided environment.</summary>
+    /// <remarks>Uncaught exceptions become <c>Cause.Die</c>; cancellation becomes <c>Cause.Interrupt</c>.</remarks>
     let run
         (environment: 'env)
         (AsyncFlow operation: AsyncFlow<'env, 'error, 'value>)

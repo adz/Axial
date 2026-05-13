@@ -30,7 +30,7 @@
 
   <meta itemprop="name" content="Execution Semantics">
   <meta itemprop="description" content="Exact execution rules for Flow.">
-  <meta itemprop="wordCount" content="772">
+  <meta itemprop="wordCount" content="804">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Execution Semantics">
   <meta name="twitter:description" content="Exact execution rules for Flow.">
@@ -300,7 +300,7 @@
 <li><code>Exit.Success value</code>: The happy path.</li>
 <li><code>Exit.Failure (Cause.Fail error)</code>: An expected domain-specific failure.</li>
 <li><code>Exit.Failure Cause.Interrupt</code>: The workflow was signaled to stop (e.g., cancellation).</li>
-<li><code>Exit.Failure (Cause.Die exception)</code>: An unexpected defect or crash.</li>
+<li><code>Exit.Failure (Cause.Die exception)</code>: An unexpected defect or crash. <code>Flow.run</code>, <code>AsyncFlow.run</code>, and <code>TaskFlow.run</code> preserve uncaught exceptions in this branch.</li>
 </ul>
 <p>All standard combinators (<code>map</code>, <code>bind</code>, <code>zip</code>, <code>orElse</code>) are <strong>short-circuiting</strong>. The first <code>Exit.Failure</code> stops the workflow unless explicitly caught.</p>
 <h2 id="short-circuiting-vs-accumulated-validation">Short-Circuiting vs. Accumulated Validation</h2>
@@ -323,7 +323,7 @@
 <ul>
 <li><code>Cause.Fail error</code>: An expected domain failure. This is the normal typed error path.</li>
 <li><code>Cause.Interrupt</code>: A cancellation or interruption signal. The runtime uses this when a workflow stops because it was asked to stop.</li>
-<li><code>Cause.Die exception</code>: An unexpected defect or crash. This is for bugs, panic-like failures, and exceptions that were not intentionally translated into a typed error.</li>
+<li><code>Cause.Die exception</code>: An unexpected defect or crash. This is for bugs, panic-like failures, and exceptions that were not intentionally translated into a typed error or explicitly constructed with <code>Flow.die</code>.</li>
 </ul>
 <p>This split matters because one generic failure type cannot answer three different questions:</p>
 <ul>
@@ -343,14 +343,16 @@
 <ul>
 <li><code>Cause.Fail</code> is produced by explicit domain failures such as <code>Flow.error</code>, <code>Flow.fail</code>, <code>Flow.fromResult</code>, and validation branches that intentionally turn a rejected condition into a typed error.</li>
 <li><code>Cause.Interrupt</code> is produced when the runtime observes cancellation or interruption, such as <code>Flow.interrupt</code> or a cancellation-aware helper like <code>Flow.Runtime.sleep</code>.</li>
-<li><code>Cause.Die</code> is produced by defects that escape normal typed handling, such as unexpected exceptions. The runtime generally does not invent this value for you; it preserves the defect unless you intentionally catch and translate it.</li>
+<li><code>Cause.Die</code> is produced by defects that escape normal typed handling, such as unexpected exceptions, or by an explicit <code>Flow.die</code> constructor. The runtime preserves the defect unless you intentionally catch and translate it.</li>
 </ul>
 <h3 id="where-the-runtime-helps">Where The Runtime Helps</h3>
 <p>The runtime already does some of the translation work:</p>
 <ul>
+<li>runtime boundaries classify uncaught <code>OperationCanceledException</code> values as <code>Cause.Interrupt</code></li>
 <li>cancellation-aware helpers convert <code>OperationCanceledException</code> into <code>Cause.Interrupt</code></li>
 <li>exception-catching helpers like <code>Flow.catch</code> translate exceptions into <code>Cause.Fail</code> when you want them treated as domain errors</li>
 <li><code>Exit.toResult</code> re-raises <code>Cause.Die</code> and <code>Cause.Interrupt</code> when you collapse back into a plain <code>Result</code>, because those are not normal success-path errors</li>
+<li><code>Schedule</code>-based retry helpers retry only <code>Cause.Fail</code>; defects and interruptions pass through unchanged</li>
 </ul>
 <h2 id="interruption-and-cancellation">Interruption and Cancellation</h2>
 <p>FsFlow supports algebraic interruption. When a fiber is interrupted (e.g., via <code>Flow.interrupt</code> or a <code>CancellationToken</code> trigger), the flow stops executing and returns <code>Exit.Failure Cause.Interrupt</code>.</p>

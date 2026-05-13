@@ -30,7 +30,7 @@
 
   <meta itemprop="name" content="Schedule (Retry & Repeat)">
   <meta itemprop="description" content="Declarative policies for retrying failures and repeating successes in FsFlow.">
-  <meta itemprop="wordCount" content="386">
+  <meta itemprop="wordCount" content="378">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Schedule (Retry & Repeat)">
   <meta name="twitter:description" content="Declarative policies for retrying failures and repeating successes in FsFlow.">
@@ -305,7 +305,7 @@
 </span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Schedule</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">jittered</span>
 </span></span></code></pre></div><h2 id="retrying-failures">Retrying Failures</h2>
 <p>Use <code>Flow.Retry</code> to apply a schedule to a flow that might fail with an expected domain error (<code>Cause.Fail</code>).</p>
-<p><strong>Important:</strong> If the flow fails with a defect (<code>Cause.Die</code>) or is interrupted (<code>Cause.Interrupt</code>), it will <strong>not</strong> be retried. This ensures that logic errors and cancellation signals are respected immediately.</p>
+<p><strong>Important:</strong> <code>Flow.Retry</code> retries only <code>Cause.Fail</code>. <code>Cause.Die</code> and <code>Cause.Interrupt</code> pass through unchanged, so defects and cancellation are not translated into retries.</p>
 <div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">unstableCall</span> <span style="color:#ce5c00;font-weight:bold">=</span> 
 </span></span><span style="display:flex;"><span>    <span style="color:#000">flow</span> <span style="color:#ce5c00;font-weight:bold">{</span>
 </span></span><span style="display:flex;"><span>        <span style="color:#000">printfn</span> <span style="color:#4e9a06">&#34;Attempting call...&#34;</span>
@@ -371,7 +371,7 @@
       <tr>
           <td style="text-align: left"><code>Flow.Retry</code></td>
           <td style="text-align: left"><code>Flow&lt;'e, 'err, 'v&gt; * Schedule&lt;'e, 'err, 'o&gt; -&gt; Flow&lt;'e, 'err, 'v&gt;</code></td>
-          <td style="text-align: left">Retries the flow on <code>Cause.Fail</code>.</td>
+          <td style="text-align: left">Retries the flow on <code>Cause.Fail</code> only.</td>
       </tr>
       <tr>
           <td style="text-align: left"><code>Flow.Repeat</code></td>

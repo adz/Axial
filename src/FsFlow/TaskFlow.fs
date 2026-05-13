@@ -13,6 +13,7 @@ open System.Threading.Tasks
 [<RequireQualifiedAccess>]
 module internal TaskFlow =
     /// <summary>Executes a task flow with the provided environment and cancellation token.</summary>
+    /// <remarks>Uncaught exceptions become <c>Cause.Die</c>; cancellation becomes <c>Cause.Interrupt</c>.</remarks>
     /// <param name="environment">The environment of type <c>'env</c>.</param>
     /// <param name="cancellationToken">The <see cref="T:System.Threading.CancellationToken" />.</param>
     /// <param name="flow">The <see cref="T:FsFlow.TaskFlow`3" /> to execute.</param>

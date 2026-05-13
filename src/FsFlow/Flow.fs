@@ -43,6 +43,7 @@ module Flow =
     let internal runFullInternal = invoke
 
     /// <summary>Executes a flow with an explicit cancellation token.</summary>
+    /// <remarks>Uncaught exceptions become <c>Cause.Die</c>; cancellation becomes <c>Cause.Interrupt</c>.</remarks>
     let runFull (environment: 'env) (cancellationToken: CancellationToken) (flow: Flow<'env, 'error, 'value>) : Effect<'value, 'error> =
         runEffect environment cancellationToken flow
 
@@ -50,6 +51,7 @@ module Flow =
     let runWithToken = runFull
 
     /// <summary>Executes a flow with the provided environment and the default cancellation token.</summary>
+    /// <remarks>Uncaught exceptions become <c>Cause.Die</c>; cancellation becomes <c>Cause.Interrupt</c>.</remarks>
     /// <example>
     /// <code>
     /// let flow = Flow.read (fun env -> $"Hello, {env}!")

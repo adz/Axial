@@ -29,7 +29,7 @@ Every Flow execution results in an [**`Exit<'value, 'error>`**]({{< relref "/ref
 - `Exit.Success value`: The happy path.
 - `Exit.Failure (Cause.Fail error)`: An expected domain-specific failure.
 - `Exit.Failure Cause.Interrupt`: The workflow was signaled to stop (e.g., cancellation).
-- `Exit.Failure (Cause.Die exception)`: An unexpected defect or crash.
+- `Exit.Failure (Cause.Die exception)`: An unexpected defect or crash. `Flow.run`, `AsyncFlow.run`, and `TaskFlow.run` preserve uncaught exceptions in this branch.
 
 All standard combinators (`map`, `bind`, `zip`, `orElse`) are **short-circuiting**. The first `Exit.Failure` stops the workflow unless explicitly caught.
 
@@ -59,7 +59,7 @@ A flow is **cold**: building a flow does not run it. Each call to `run` executes
 
 - `Cause.Fail error`: An expected domain failure. This is the normal typed error path.
 - `Cause.Interrupt`: A cancellation or interruption signal. The runtime uses this when a workflow stops because it was asked to stop.
-- `Cause.Die exception`: An unexpected defect or crash. This is for bugs, panic-like failures, and exceptions that were not intentionally translated into a typed error.
+- `Cause.Die exception`: An unexpected defect or crash. This is for bugs, panic-like failures, and exceptions that were not intentionally translated into a typed error or explicitly constructed with `Flow.die`.
 
 This split matters because one generic failure type cannot answer three different questions:
 
@@ -81,15 +81,17 @@ FsFlow still uses `CancellationToken` internally and for interoperability, but i
 
 - `Cause.Fail` is produced by explicit domain failures such as `Flow.error`, `Flow.fail`, `Flow.fromResult`, and validation branches that intentionally turn a rejected condition into a typed error.
 - `Cause.Interrupt` is produced when the runtime observes cancellation or interruption, such as `Flow.interrupt` or a cancellation-aware helper like `Flow.Runtime.sleep`.
-- `Cause.Die` is produced by defects that escape normal typed handling, such as unexpected exceptions. The runtime generally does not invent this value for you; it preserves the defect unless you intentionally catch and translate it.
+- `Cause.Die` is produced by defects that escape normal typed handling, such as unexpected exceptions, or by an explicit `Flow.die` constructor. The runtime preserves the defect unless you intentionally catch and translate it.
 
 ### Where The Runtime Helps
 
 The runtime already does some of the translation work:
 
+- runtime boundaries classify uncaught `OperationCanceledException` values as `Cause.Interrupt`
 - cancellation-aware helpers convert `OperationCanceledException` into `Cause.Interrupt`
 - exception-catching helpers like `Flow.catch` translate exceptions into `Cause.Fail` when you want them treated as domain errors
 - `Exit.toResult` re-raises `Cause.Die` and `Cause.Interrupt` when you collapse back into a plain `Result`, because those are not normal success-path errors
+- `Schedule`-based retry helpers retry only `Cause.Fail`; defects and interruptions pass through unchanged
 
 ## Interruption and Cancellation
 

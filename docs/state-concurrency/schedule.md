@@ -44,9 +44,9 @@ let policy =
 
 ## Retrying Failures
 
-Use `Flow.Retry` to apply a schedule to a flow that might fail with an expected domain error (`Cause.Fail`). 
+Use `Flow.Retry` to apply a schedule to a flow that might fail with an expected domain error (`Cause.Fail`).
 
-**Important:** If the flow fails with a defect (`Cause.Die`) or is interrupted (`Cause.Interrupt`), it will **not** be retried. This ensures that logic errors and cancellation signals are respected immediately.
+**Important:** `Flow.Retry` retries only `Cause.Fail`. `Cause.Die` and `Cause.Interrupt` pass through unchanged, so defects and cancellation are not translated into retries.
 
 ```fsharp
 let unstableCall = 
@@ -89,5 +89,5 @@ let recurringPoll =
 
 | Function | Signature | Description |
 | :--- | :--- | :--- |
-| `Flow.Retry` | `Flow<'e, 'err, 'v> * Schedule<'e, 'err, 'o> -> Flow<'e, 'err, 'v>` | Retries the flow on `Cause.Fail`. |
+| `Flow.Retry` | `Flow<'e, 'err, 'v> * Schedule<'e, 'err, 'o> -> Flow<'e, 'err, 'v>` | Retries the flow on `Cause.Fail` only. |
 | `Flow.Repeat` | `Flow<'e, 'err, 'v> * Schedule<'e, 'v, 'o> -> Flow<'e, 'err, 'v>` | Repeats the flow on success. |

@@ -30,7 +30,7 @@
 
   <meta itemprop="name" content="Defects and Exceptions">
   <meta itemprop="description" content="Why FsFlow keeps a first-class defect branch alongside typed failures and interruption.">
-  <meta itemprop="wordCount" content="498">
+  <meta itemprop="wordCount" content="546">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Defects and Exceptions">
   <meta name="twitter:description" content="Why FsFlow keeps a first-class defect branch alongside typed failures and interruption.">
@@ -281,6 +281,7 @@
 <li><code>Cause.Interrupt</code>: a cancellation or interruption signal</li>
 <li><code>Cause.Die exn</code>: an unexpected defect or bug</li>
 </ul>
+<p>You can produce <code>Cause.Die</code> explicitly with <code>Flow.die</code>, or let the runtime preserve it when an uncaught exception escapes a <code>Flow</code>, <code>AsyncFlow</code>, or <code>TaskFlow</code> boundary.</p>
 <p>Keeping those cases separate is not about adding ceremony. It is about keeping the failure story lossless inside the same execution model.</p>
 <h2 id="why-not-just-throw-exceptions">Why Not Just Throw Exceptions?</h2>
 <p>Thrown exceptions are useful, but they are not the same as a typed defect channel.</p>
@@ -332,6 +333,7 @@
 <li>explicit defects remain explicit</li>
 <li>unexpected exceptions become visible inside the workflow outcome instead of disappearing as ambient control flow</li>
 </ul>
+<p>Retry helpers and fallback combinators should continue to treat <code>Cause.Die</code> and <code>Cause.Interrupt</code> as terminal. Only <code>Cause.Fail</code> should participate in retry or domain fallback decisions.</p>
 <h2 id="why-this-page-exists">Why This Page Exists</h2>
 <p>This is the reason <code>Die</code> stays in the model:</p>
 <ul>

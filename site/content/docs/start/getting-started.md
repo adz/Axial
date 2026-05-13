@@ -63,6 +63,7 @@ let greetUser (id: int) : Flow<unit, UserError, string> =
 Because a `Flow` is just a description, you must explicitly **run** it. This is the boundary where your platform-independent logic meets the real world.
 
 When you call `Flow.run`, you provide the required **environment** (which can be `()` if none is needed) and a cancellation token is handled for you (defaulting to `CancellationToken.None`).
+If the flow throws an uncaught exception, the runtime records it as `Cause.Die` in the returned `Exit`.
 
 ### Execution Handle vs. Outcome
 
@@ -91,6 +92,8 @@ match exitValue with
 | Exit.Failure Cause.Interrupt -> 
     printfn "The workflow was cancelled."
 ```
+
+Use `Flow.fail` or `Flow.error` for expected domain failures, `Flow.die` for explicit defects, and `Flow.catch` only when you intentionally want to translate an exception into a typed error.
 
 ## 5. Running Your First Flow
 

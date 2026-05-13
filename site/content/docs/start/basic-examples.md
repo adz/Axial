@@ -52,17 +52,23 @@ let effect = workflow 42 |> Flow.run ()
 Use the `Schedule` module to add operational policies like retries.
 
 ```fsharp
+let mutable attempts = 0
+
 let flakyTask =
     flow {
-        // Imagine this calls a flaky API
-        return! Task.FromResult (Ok "Success")
+        attempts <- attempts + 1
+
+        if attempts < 2 then
+            return! Flow.fail "temporary-error"
+        else
+            return "Success"
     }
 
 let resilientWorkflow =
     flakyTask
     |> Flow.Retry (Schedule.recurs 3)
 
-[`Flow.Retry`]({{< relref "/reference/schedule/m-flowschedule-retry.md" >}}) will retry up to 3 times if the task fails.
+[`Flow.Retry`]({{< relref "/reference/schedule/m-flowschedule-retry.md" >}}) will retry up to 3 times if the task fails with `Cause.Fail`. Defects and interruptions pass through unchanged.
 ```
 
 ## 4. Conditional Execution
