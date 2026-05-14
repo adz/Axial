@@ -2,72 +2,72 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>RuntimeContext on FsFlow</title>
-    <link>http://localhost:3000/reference/runtime/</link>
+    <link>https://adz.github.io/FsFlow/reference/runtime/</link>
     <description>Recent content in RuntimeContext on FsFlow</description>
     <generator>Hugo</generator>
     <language>en-us</language>
-    <atom:link href="http://localhost:3000/reference/runtime/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="https://adz.github.io/FsFlow/reference/runtime/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>RuntimeContext.cancellationToken</title>
-      <link>http://localhost:3000/reference/runtime/m-runtimecontext-cancellationtoken/</link>
+      <link>https://adz.github.io/FsFlow/reference/runtime/m-runtimecontext-cancellationtoken/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/runtime/m-runtimecontext-cancellationtoken/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/runtime/m-runtimecontext-cancellationtoken/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;RuntimeContext.cancellationToken&amp;#32;&lt;span&gt;context&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Reads the cancellation token stored in a runtime context.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;context&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-runtimecontext-2.html&#34;&gt;RuntimeContext&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;runtime, &amp;rsquo;env&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-runtimecontext-2.html&#34;&gt;RuntimeContext&lt;/a&gt; to read.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;The &lt;a href=&#34;https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken&#34;&gt;CancellationToken&lt;/a&gt;.&lt;/p&gt;</description>
     </item>
     <item>
       <title>RuntimeContext.create</title>
-      <link>http://localhost:3000/reference/runtime/m-runtimecontext-create/</link>
+      <link>https://adz.github.io/FsFlow/reference/runtime/m-runtimecontext-create/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/runtime/m-runtimecontext-create/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/runtime/m-runtimecontext-create/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;RuntimeContext.create&amp;#32;&lt;span&gt;runtime&amp;#32;environment&amp;#32;cancellationToken&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Creates a runtime context from the supplied runtime services, environment, and cancellation token.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;runtime&lt;/code&gt;: &lt;code&gt;&amp;lsquo;runtime&lt;/code&gt;&#xA;The runtime services of type &lt;code&gt;&#39;runtime&lt;/code&gt;.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;environment&lt;/code&gt;: &lt;code&gt;&amp;lsquo;env&lt;/code&gt;&#xA;The application environment of type &lt;code&gt;&#39;env&lt;/code&gt;.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;cancellationToken&lt;/code&gt;: &lt;code&gt;&lt;a href=&#34;https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken&#34;&gt;CancellationToken&lt;/a&gt;&lt;/code&gt;&#xA;The &lt;a href=&#34;https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken&#34;&gt;CancellationToken&lt;/a&gt;.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A new &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-runtimecontext-2.html&#34;&gt;RuntimeContext&lt;/a&gt;.&lt;/p&gt;</description>
     </item>
     <item>
       <title>RuntimeContext.environment</title>
-      <link>http://localhost:3000/reference/runtime/m-runtimecontext-environment/</link>
+      <link>https://adz.github.io/FsFlow/reference/runtime/m-runtimecontext-environment/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/runtime/m-runtimecontext-environment/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/runtime/m-runtimecontext-environment/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;RuntimeContext.environment&amp;#32;&lt;span&gt;context&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Reads the application environment half of a runtime context.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;context&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-runtimecontext-2.html&#34;&gt;RuntimeContext&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;runtime, &amp;rsquo;env&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-runtimecontext-2.html&#34;&gt;RuntimeContext&lt;/a&gt; to read.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;The application environment of type &lt;code&gt;&#39;env&lt;/code&gt;.&lt;/p&gt;</description>
     </item>
     <item>
       <title>RuntimeContext.mapEnvironment</title>
-      <link>http://localhost:3000/reference/runtime/m-runtimecontext-mapenvironment/</link>
+      <link>https://adz.github.io/FsFlow/reference/runtime/m-runtimecontext-mapenvironment/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/runtime/m-runtimecontext-mapenvironment/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/runtime/m-runtimecontext-mapenvironment/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;RuntimeContext.mapEnvironment&amp;#32;&lt;span&gt;mapper&amp;#32;context&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Maps the application environment half of a runtime context.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;mapper&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;env -&amp;gt; &amp;rsquo;nextEnv&lt;/span&gt;&lt;/code&gt;&#xA;A function of type &lt;code&gt;&#39;env -&amp;gt; &#39;nextEnv&lt;/code&gt;.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;context&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-runtimecontext-2.html&#34;&gt;RuntimeContext&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;runtime, &amp;rsquo;env&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The source context.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A new context with the mapped environment.&lt;/p&gt;</description>
     </item>
     <item>
       <title>RuntimeContext.mapRuntime</title>
-      <link>http://localhost:3000/reference/runtime/m-runtimecontext-mapruntime/</link>
+      <link>https://adz.github.io/FsFlow/reference/runtime/m-runtimecontext-mapruntime/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/runtime/m-runtimecontext-mapruntime/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/runtime/m-runtimecontext-mapruntime/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;RuntimeContext.mapRuntime&amp;#32;&lt;span&gt;mapper&amp;#32;context&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Maps the runtime half of a runtime context.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;mapper&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;runtime -&amp;gt; &amp;rsquo;nextRuntime&lt;/span&gt;&lt;/code&gt;&#xA;A function of type &lt;code&gt;&#39;runtime -&amp;gt; &#39;nextRuntime&lt;/code&gt;.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;context&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-runtimecontext-2.html&#34;&gt;RuntimeContext&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;runtime, &amp;rsquo;env&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The source context.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A new context with the mapped runtime services.&lt;/p&gt;</description>
     </item>
     <item>
       <title>RuntimeContext.runtime</title>
-      <link>http://localhost:3000/reference/runtime/m-runtimecontext-runtime/</link>
+      <link>https://adz.github.io/FsFlow/reference/runtime/m-runtimecontext-runtime/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/runtime/m-runtimecontext-runtime/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/runtime/m-runtimecontext-runtime/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;RuntimeContext.runtime&amp;#32;&lt;span&gt;context&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Reads the runtime half of a runtime context.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;context&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-runtimecontext-2.html&#34;&gt;RuntimeContext&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;runtime, &amp;rsquo;env&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-runtimecontext-2.html&#34;&gt;RuntimeContext&lt;/a&gt; to read.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;The runtime services of type &lt;code&gt;&#39;runtime&lt;/code&gt;.&lt;/p&gt;</description>
     </item>
     <item>
       <title>RuntimeContext</title>
-      <link>http://localhost:3000/reference/runtime/t-runtimecontext-2/</link>
+      <link>https://adz.github.io/FsFlow/reference/runtime/t-runtimecontext-2/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/runtime/t-runtimecontext-2/</guid>
-      <description>&lt;p&gt;Captures the two-context shape of a task workflow execution:&#xA;runtime services, application capabilities, and the cancellation token for the current run.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;This type is the standard environment carrier for the unified &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;.&#xA;It separates low-level operational concerns (Runtime) from high-level domain dependencies (Environment).&lt;/p&gt;</description>
+      <guid>https://adz.github.io/FsFlow/reference/runtime/t-runtimecontext-2/</guid>
+      <description>&lt;p&gt;Captures the two-context shape of a task workflow execution:&#xA;runtime services, application capabilities, and the cancellation token for the current run.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;This type is the execution carrier above the adapter layer for the unified&#xA;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;.&#xA;It separates low-level operational concerns (Runtime) from high-level domain dependencies&#xA;(Environment).&lt;/p&gt;</description>
     </item>
     <item>
       <title>RuntimeContext.withEnvironment</title>
-      <link>http://localhost:3000/reference/runtime/m-runtimecontext-withenvironment/</link>
+      <link>https://adz.github.io/FsFlow/reference/runtime/m-runtimecontext-withenvironment/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/runtime/m-runtimecontext-withenvironment/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/runtime/m-runtimecontext-withenvironment/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;RuntimeContext.withEnvironment&amp;#32;&lt;span&gt;environment&amp;#32;context&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Replaces the environment half of a runtime context.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;environment&lt;/code&gt;: &lt;code&gt;&amp;lsquo;nextEnv&lt;/code&gt;&#xA;The new application environment.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;context&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-runtimecontext-2.html&#34;&gt;RuntimeContext&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;runtime, &amp;rsquo;env&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The source context.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A new context with the replaced environment.&lt;/p&gt;</description>
     </item>
     <item>
       <title>RuntimeContext.withRuntime</title>
-      <link>http://localhost:3000/reference/runtime/m-runtimecontext-withruntime/</link>
+      <link>https://adz.github.io/FsFlow/reference/runtime/m-runtimecontext-withruntime/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/runtime/m-runtimecontext-withruntime/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/runtime/m-runtimecontext-withruntime/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;RuntimeContext.withRuntime&amp;#32;&lt;span&gt;runtime&amp;#32;context&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Replaces the runtime half of a runtime context.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;runtime&lt;/code&gt;: &lt;code&gt;&amp;lsquo;nextRuntime&lt;/code&gt;&#xA;The new runtime services.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;context&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-runtimecontext-2.html&#34;&gt;RuntimeContext&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;runtime, &amp;rsquo;env&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The source context.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A new context with the replaced runtime services.&lt;/p&gt;</description>
     </item>
   </channel>

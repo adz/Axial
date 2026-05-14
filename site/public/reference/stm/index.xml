@@ -2,65 +2,65 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>STM on FsFlow</title>
-    <link>http://localhost:3000/reference/stm/</link>
+    <link>https://adz.github.io/FsFlow/reference/stm/</link>
     <description>Recent content in STM on FsFlow</description>
     <generator>Hugo</generator>
     <language>en-us</language>
-    <atom:link href="http://localhost:3000/reference/stm/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="https://adz.github.io/FsFlow/reference/stm/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>STM.atomically</title>
-      <link>http://localhost:3000/reference/stm/m-stm-atomically/</link>
+      <link>https://adz.github.io/FsFlow/reference/stm/m-stm-atomically/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/stm/m-stm-atomically/</guid>
-      <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;STM.atomically&amp;#32;&lt;span&gt;transaction&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Executes an STM transaction atomically within a flow.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;transaction&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-stm-1.html&#34;&gt;STM&lt;/a&gt;&amp;lt;&amp;lsquo;T&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The STM transaction to execute.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A flow that performs the transaction and returns its result.&lt;/p&gt;</description>
+      <guid>https://adz.github.io/FsFlow/reference/stm/m-stm-atomically/</guid>
+      <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;STM.atomically&amp;#32;&lt;span&gt;transaction&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Executes an STM transaction atomically within a flow while preserving retry/orElse coordination.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;transaction&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-stm-1.html&#34;&gt;STM&lt;/a&gt;&amp;lt;&amp;lsquo;T&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The STM transaction to execute.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A flow that performs the transaction and returns its result.&lt;/p&gt;</description>
     </item>
     <item>
       <title>TRef.get</title>
-      <link>http://localhost:3000/reference/stm/m-tref-get/</link>
+      <link>https://adz.github.io/FsFlow/reference/stm/m-tref-get/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/stm/m-tref-get/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/stm/m-tref-get/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;TRef.get&amp;#32;&lt;span&gt;tref&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Reads the current value of the transactional reference within a transaction.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;tref&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-tref-1.html&#34;&gt;TRef&lt;/a&gt;&amp;lt;&amp;lsquo;T&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
     <item>
       <title>TRef.make</title>
-      <link>http://localhost:3000/reference/stm/m-tref-make/</link>
+      <link>https://adz.github.io/FsFlow/reference/stm/m-tref-make/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/stm/m-tref-make/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/stm/m-tref-make/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;TRef.make&amp;#32;&lt;span&gt;value&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Creates a new &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-tref-1.html&#34;&gt;TRef&lt;/a&gt; with the initial value.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;value&lt;/code&gt;: &lt;code&gt;&amp;lsquo;T&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
     <item>
       <title>TRef.set</title>
-      <link>http://localhost:3000/reference/stm/m-tref-set/</link>
+      <link>https://adz.github.io/FsFlow/reference/stm/m-tref-set/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/stm/m-tref-set/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/stm/m-tref-set/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;TRef.set&amp;#32;&lt;span&gt;value&amp;#32;tref&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Sets the value of the transactional reference within a transaction.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;value&lt;/code&gt;: &lt;code&gt;&amp;lsquo;T&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;tref&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-tref-1.html&#34;&gt;TRef&lt;/a&gt;&amp;lt;&amp;lsquo;T&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
     <item>
       <title>Stm.stm</title>
-      <link>http://localhost:3000/reference/stm/p-stm-stm/</link>
+      <link>https://adz.github.io/FsFlow/reference/stm/p-stm-stm/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/stm/p-stm-stm/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/stm/p-stm-stm/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;stm&amp;#32;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;The &lt;code&gt;stm { }&lt;/code&gt; computation expression for building atomic transactions.&lt;/p&gt;</description>
     </item>
     <item>
       <title>STM</title>
-      <link>http://localhost:3000/reference/stm/t-stm-1/</link>
+      <link>https://adz.github.io/FsFlow/reference/stm/t-stm-1/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/stm/t-stm-1/</guid>
-      <description>&lt;p&gt;Represents a transactional operation that can be composed and executed atomically.&lt;/p&gt;</description>
+      <guid>https://adz.github.io/FsFlow/reference/stm/t-stm-1/</guid>
+      <description>&lt;p&gt;Represents a transactional operation that can be composed, retried, and executed atomically.&lt;/p&gt;</description>
     </item>
     <item>
       <title>TRef</title>
-      <link>http://localhost:3000/reference/stm/t-tref-1/</link>
+      <link>https://adz.github.io/FsFlow/reference/stm/t-tref-1/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/stm/t-tref-1/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/stm/t-tref-1/</guid>
       <description>&lt;p&gt;Represents a transactional reference that can be updated atomically within an &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-stm-1.html&#34;&gt;STM&lt;/a&gt; transaction.&lt;/p&gt;</description>
     </item>
     <item>
       <title>TRef.update</title>
-      <link>http://localhost:3000/reference/stm/m-tref-update/</link>
+      <link>https://adz.github.io/FsFlow/reference/stm/m-tref-update/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/stm/m-tref-update/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/stm/m-tref-update/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;TRef.update&amp;#32;&lt;span&gt;f&amp;#32;tref&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Updates the value of the transactional reference within a transaction using the supplied function.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;f&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;T -&amp;gt; &amp;lsquo;T&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;tref&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-tref-1.html&#34;&gt;TRef&lt;/a&gt;&amp;lt;&amp;lsquo;T&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
   </channel>

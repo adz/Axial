@@ -9,6 +9,10 @@ linkTitle: "provideLayer"
 
 Provides a derived environment from a layer flow to a downstream flow.
 
+## Remarks
+
+Boundary primitive for composition roots, not the default workflow shape.
+
 ## Parameters
 
 - `layer`: <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html">Flow</a>&lt;<span>'input,&#32;'error,&#32;'environment</span>&gt;</span></code>

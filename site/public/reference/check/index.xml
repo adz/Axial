@@ -2,324 +2,324 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Check on FsFlow</title>
-    <link>http://localhost:3000/reference/check/</link>
+    <link>https://adz.github.io/FsFlow/reference/check/</link>
     <description>Recent content in Check on FsFlow</description>
     <generator>Hugo</generator>
     <language>en-us</language>
-    <atom:link href="http://localhost:3000/reference/check/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="https://adz.github.io/FsFlow/reference/check/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Check.</title>
-      <link>http://localhost:3000/reference/check/m-check-and/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-and/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-and/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-and/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;``and``&amp;#32;&lt;span&gt;left&amp;#32;right&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns success when both checks succeed.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;This is a logical &amp;ldquo;and&amp;rdquo; operation. It short-circuits: if &lt;span class=&#34;fsdocs-param-name&#34;&gt;left&lt;/span&gt; fails,&#xA;&lt;span class=&#34;fsdocs-param-name&#34;&gt;right&lt;/span&gt; is not evaluated.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;left&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt;&amp;lt;&amp;rsquo;left&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The first check.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;right&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt;&amp;lt;&amp;lsquo;right&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The second check.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; that succeeds only if both inputs succeed.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.</title>
-      <link>http://localhost:3000/reference/check/m-check-not/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-not/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-not/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-not/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;``not``&amp;#32;&lt;span&gt;check&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns success when the supplied check fails.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;This is a logical &amp;ldquo;not&amp;rdquo; operation for checks. Note that it discards the success value&#xA;and returns &lt;a href=&#34;https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-unit&#34;&gt;Unit&lt;/a&gt; on success.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;check&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt;&amp;lt;&amp;lsquo;value&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The source &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; to invert.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; that succeeds if the input fails.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.</title>
-      <link>http://localhost:3000/reference/check/m-check-or/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-or/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-or/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-or/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;``or``&amp;#32;&lt;span&gt;left&amp;#32;right&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns success when either check succeeds.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;This is a logical &amp;ldquo;or&amp;rdquo; operation. It short-circuits: if &lt;span class=&#34;fsdocs-param-name&#34;&gt;left&lt;/span&gt; succeeds,&#xA;&lt;span class=&#34;fsdocs-param-name&#34;&gt;right&lt;/span&gt; is not evaluated.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;left&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt;&amp;lt;&amp;rsquo;left&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The first check.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;right&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt;&amp;lt;&amp;lsquo;right&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The second check.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; that succeeds if either input succeeds.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.all</title>
-      <link>http://localhost:3000/reference/check/m-check-all/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-all/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-all/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-all/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;all&amp;#32;&lt;span&gt;checks&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns success when every check in the sequence succeeds.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;Sequentially evaluates each check in the &lt;span class=&#34;fsdocs-param-name&#34;&gt;checks&lt;/span&gt; sequence.&#xA;Stops at the first failure.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;checks&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt;&amp;lt;&amp;lsquo;value&amp;gt;&lt;/span&gt; seq&lt;/span&gt;&lt;/code&gt;&#xA;A sequence of checks.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; that succeeds only if all inputs succeed.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.any</title>
-      <link>http://localhost:3000/reference/check/m-check-any/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-any/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-any/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-any/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;any&amp;#32;&lt;span&gt;checks&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns success when at least one check in the sequence succeeds.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;Sequentially evaluates each check in the &lt;span class=&#34;fsdocs-param-name&#34;&gt;checks&lt;/span&gt; sequence.&#xA;Stops at the first success.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;checks&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt;&amp;lt;&amp;lsquo;value&amp;gt;&lt;/span&gt; seq&lt;/span&gt;&lt;/code&gt;&#xA;A sequence of checks.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; that succeeds if any input succeeds.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.blank</title>
-      <link>http://localhost:3000/reference/check/m-check-blank/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-blank/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-blank/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-blank/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;blank&amp;#32;&lt;span&gt;str&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns success when the string is blank.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;str&lt;/code&gt;: &lt;code&gt;string&lt;/code&gt;&#xA;The string to check.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; that succeeds if the string is blank.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check</title>
-      <link>http://localhost:3000/reference/check/t-check/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/t-check/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/t-check/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/t-check/</guid>
       <description>&lt;p&gt;Predicate helpers that return &lt;a href=&#34;https://learn.microsoft.com/dotnet/api/system.result-2&#34;&gt;Result&lt;/a&gt; values with a unit error,&#xA;plus the bridge functions that turn those checks into application errors. Some helpers preserve&#xA;the source value; others are gates and return &lt;code&gt;unit&lt;/code&gt; on success.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.equal</title>
-      <link>http://localhost:3000/reference/check/m-check-equal/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-equal/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-equal/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-equal/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;equal&amp;#32;&lt;span&gt;expected&amp;#32;actual&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns success when the values are equal.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;expected&lt;/code&gt;: &lt;code&gt;&amp;lsquo;a&lt;/code&gt;&#xA;The expected value.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;actual&lt;/code&gt;: &lt;code&gt;&amp;lsquo;a&lt;/code&gt;&#xA;The actual value.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; that succeeds if the values are equal.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.failIf</title>
-      <link>http://localhost:3000/reference/check/m-check-failif/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-failif/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-failif/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-failif/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;failIf&amp;#32;&lt;span&gt;cond&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns success when the condition is false.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;cond&lt;/code&gt;: &lt;code&gt;bool&lt;/code&gt;&#xA;The boolean condition to check.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; that succeeds if &lt;span class=&#34;fsdocs-param-name&#34;&gt;cond&lt;/span&gt; is false.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.failIfBlank</title>
-      <link>http://localhost:3000/reference/check/m-check-failifblank/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-failifblank/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-failifblank/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-failifblank/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;failIfBlank&amp;#32;&lt;span&gt;str&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns the string when it is blank.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;str&lt;/code&gt;: &lt;code&gt;string&lt;/code&gt;&#xA;The string to check.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; containing the blank string.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.failIfEmpty</title>
-      <link>http://localhost:3000/reference/check/m-check-failifempty/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-failifempty/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-failifempty/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-failifempty/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;failIfEmpty&amp;#32;&lt;span&gt;coll&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns the sequence when it is not empty.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;coll&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;a seq&lt;/span&gt;&lt;/code&gt;&#xA;The sequence to check.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; containing the non-empty sequence.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.failIfEmptyStr</title>
-      <link>http://localhost:3000/reference/check/m-check-failifemptystr/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-failifemptystr/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-failifemptystr/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-failifemptystr/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;failIfEmptyStr&amp;#32;&lt;span&gt;str&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns the string when it is null or empty.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;str&lt;/code&gt;: &lt;code&gt;string&lt;/code&gt;&#xA;The string to check.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; containing the empty or null string.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.failIfEqual</title>
-      <link>http://localhost:3000/reference/check/m-check-failifequal/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-failifequal/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-failifequal/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-failifequal/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;failIfEqual&amp;#32;&lt;span&gt;expected&amp;#32;actual&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns success when the values are equal.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;expected&lt;/code&gt;: &lt;code&gt;&amp;lsquo;a&lt;/code&gt;&#xA;The expected value.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;actual&lt;/code&gt;: &lt;code&gt;&amp;lsquo;a&lt;/code&gt;&#xA;The actual value.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; that succeeds if the values are equal.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.failIfNone</title>
-      <link>http://localhost:3000/reference/check/m-check-failifnone/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-failifnone/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-failifnone/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-failifnone/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;failIfNone&amp;#32;&lt;span&gt;opt&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns the value when the option is &lt;code&gt;Some&lt;/code&gt;.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;opt&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;a option&lt;/span&gt;&lt;/code&gt;&#xA;The option to check.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; containing the value if present.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.failIfNonEmptyStr</title>
-      <link>http://localhost:3000/reference/check/m-check-failifnonemptystr/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-failifnonemptystr/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-failifnonemptystr/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-failifnonemptystr/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;failIfNonEmptyStr&amp;#32;&lt;span&gt;str&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns success when the string is null or empty.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;str&lt;/code&gt;: &lt;code&gt;string&lt;/code&gt;&#xA;The string to check.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; that succeeds if the string is null or empty.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.failIfNotBlank</title>
-      <link>http://localhost:3000/reference/check/m-check-failifnotblank/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-failifnotblank/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-failifnotblank/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-failifnotblank/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;failIfNotBlank&amp;#32;&lt;span&gt;str&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns success when the string is blank.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;str&lt;/code&gt;: &lt;code&gt;string&lt;/code&gt;&#xA;The string to check.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; that succeeds if the string is blank.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.failIfNotEmpty</title>
-      <link>http://localhost:3000/reference/check/m-check-failifnotempty/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-failifnotempty/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-failifnotempty/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-failifnotempty/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;failIfNotEmpty&amp;#32;&lt;span&gt;coll&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns success when the sequence is empty.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;coll&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;a seq&lt;/span&gt;&lt;/code&gt;&#xA;The sequence to check.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; that succeeds if the sequence is empty.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.failIfNotEqual</title>
-      <link>http://localhost:3000/reference/check/m-check-failifnotequal/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-failifnotequal/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-failifnotequal/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-failifnotequal/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;failIfNotEqual&amp;#32;&lt;span&gt;expected&amp;#32;actual&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns success when the values are not equal.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;expected&lt;/code&gt;: &lt;code&gt;&amp;lsquo;a&lt;/code&gt;&#xA;The expected value.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;actual&lt;/code&gt;: &lt;code&gt;&amp;lsquo;a&lt;/code&gt;&#xA;The actual value.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; that succeeds if the values differ.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.failIfNotNull</title>
-      <link>http://localhost:3000/reference/check/m-check-failifnotnull/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-failifnotnull/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-failifnotnull/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-failifnotnull/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;failIfNotNull&amp;#32;&lt;span&gt;value&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns success when the value is null.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;value&lt;/code&gt;: &lt;code&gt;&amp;lsquo;a&lt;/code&gt;&#xA;The value to check.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; that succeeds if the value is null.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.failIfNull</title>
-      <link>http://localhost:3000/reference/check/m-check-failifnull/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-failifnull/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-failifnull/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-failifnull/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;failIfNull&amp;#32;&lt;span&gt;value&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns the value when it is null.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;value&lt;/code&gt;: &lt;code&gt;&amp;lsquo;a&lt;/code&gt;&#xA;The value to check.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; containing the null value.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.failIfSome</title>
-      <link>http://localhost:3000/reference/check/m-check-failifsome/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-failifsome/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-failifsome/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-failifsome/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;failIfSome&amp;#32;&lt;span&gt;opt&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns success when the option is &lt;code&gt;None&lt;/code&gt;.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;opt&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;a option&lt;/span&gt;&lt;/code&gt;&#xA;The option to check.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; that succeeds if the option is &lt;a href=&#34;https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpoption-1-none&#34;&gt;None&lt;/a&gt;.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.failIfValueNone</title>
-      <link>http://localhost:3000/reference/check/m-check-failifvaluenone/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-failifvaluenone/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-failifvaluenone/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-failifvaluenone/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;failIfValueNone&amp;#32;&lt;span&gt;opt&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns the value when the value option is &lt;code&gt;ValueSome&lt;/code&gt;.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;opt&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;a voption&lt;/span&gt;&lt;/code&gt;&#xA;The value option to check.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; containing the value if present.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.failIfValueSome</title>
-      <link>http://localhost:3000/reference/check/m-check-failifvaluesome/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-failifvaluesome/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-failifvaluesome/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-failifvaluesome/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;failIfValueSome&amp;#32;&lt;span&gt;opt&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns success when the value option is &lt;code&gt;ValueNone&lt;/code&gt;.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;opt&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;a voption&lt;/span&gt;&lt;/code&gt;&#xA;The value option to check.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; that succeeds if the value option is &lt;a href=&#34;https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpvalueoption-1-valuenone&#34;&gt;ValueNone&lt;/a&gt;.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.fromPredicate</title>
-      <link>http://localhost:3000/reference/check/m-check-frompredicate/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-frompredicate/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-frompredicate/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-frompredicate/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;fromPredicate&amp;#32;&lt;span&gt;predicate&amp;#32;value&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Builds a check from a predicate while preserving the successful value.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;predicate&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;value -&amp;gt; bool&lt;/span&gt;&lt;/code&gt;&#xA;A function of type &lt;code&gt;&#39;value -&amp;gt; bool&lt;/code&gt; to test the value.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;value&lt;/code&gt;: &lt;code&gt;&amp;lsquo;value&lt;/code&gt;&#xA;The value of type &lt;code&gt;&#39;value&lt;/code&gt; to check.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; containing the value if the predicate succeeds.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.notBlank</title>
-      <link>http://localhost:3000/reference/check/m-check-notblank/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-notblank/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-notblank/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-notblank/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;notBlank&amp;#32;&lt;span&gt;str&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns the string when it is not blank.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;str&lt;/code&gt;: &lt;code&gt;string&lt;/code&gt;&#xA;The string to check.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; containing the non-blank string.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.notEmpty</title>
-      <link>http://localhost:3000/reference/check/m-check-notempty/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-notempty/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-notempty/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-notempty/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;notEmpty&amp;#32;&lt;span&gt;coll&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns the sequence when it is not empty.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;coll&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;a seq&lt;/span&gt;&lt;/code&gt;&#xA;The sequence to check.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; containing the non-empty sequence.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.notEqual</title>
-      <link>http://localhost:3000/reference/check/m-check-notequal/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-notequal/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-notequal/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-notequal/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;notEqual&amp;#32;&lt;span&gt;expected&amp;#32;actual&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns success when the values are not equal.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;expected&lt;/code&gt;: &lt;code&gt;&amp;lsquo;a&lt;/code&gt;&#xA;The expected value.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;actual&lt;/code&gt;: &lt;code&gt;&amp;lsquo;a&lt;/code&gt;&#xA;The actual value.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; that succeeds if the values differ.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.notNull</title>
-      <link>http://localhost:3000/reference/check/m-check-notnull/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-notnull/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-notnull/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-notnull/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;notNull&amp;#32;&lt;span&gt;value&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns the value when it is not null.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;value&lt;/code&gt;: &lt;code&gt;&amp;lsquo;a&lt;/code&gt;&#xA;The value to check.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; containing the non-null value.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.okIf</title>
-      <link>http://localhost:3000/reference/check/m-check-okif/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-okif/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-okif/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-okif/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;okIf&amp;#32;&lt;span&gt;cond&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns success when the condition is true.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;cond&lt;/code&gt;: &lt;code&gt;bool&lt;/code&gt;&#xA;The boolean condition to check.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; that succeeds if &lt;span class=&#34;fsdocs-param-name&#34;&gt;cond&lt;/span&gt; is true.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.okIfBlank</title>
-      <link>http://localhost:3000/reference/check/m-check-okifblank/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-okifblank/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-okifblank/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-okifblank/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;okIfBlank&amp;#32;&lt;span&gt;str&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns success when the string is blank.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;str&lt;/code&gt;: &lt;code&gt;string&lt;/code&gt;&#xA;The string to check.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; that succeeds if the string is null, empty, or whitespace.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.okIfEmpty</title>
-      <link>http://localhost:3000/reference/check/m-check-okifempty/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-okifempty/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-okifempty/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-okifempty/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;okIfEmpty&amp;#32;&lt;span&gt;coll&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns success when the sequence is empty.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;coll&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;a seq&lt;/span&gt;&lt;/code&gt;&#xA;The sequence to check.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; that succeeds if the sequence is empty.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.okIfEmptyStr</title>
-      <link>http://localhost:3000/reference/check/m-check-okifemptystr/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-okifemptystr/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-okifemptystr/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-okifemptystr/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;okIfEmptyStr&amp;#32;&lt;span&gt;str&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns success when the string is null or empty.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;str&lt;/code&gt;: &lt;code&gt;string&lt;/code&gt;&#xA;The string to check.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; that succeeds if the string is null or empty.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.okIfEqual</title>
-      <link>http://localhost:3000/reference/check/m-check-okifequal/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-okifequal/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-okifequal/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-okifequal/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;okIfEqual&amp;#32;&lt;span&gt;expected&amp;#32;actual&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns success when the values are equal.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;expected&lt;/code&gt;: &lt;code&gt;&amp;lsquo;a&lt;/code&gt;&#xA;The expected value.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;actual&lt;/code&gt;: &lt;code&gt;&amp;lsquo;a&lt;/code&gt;&#xA;The actual value.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; that succeeds if the values are equal.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.okIfNone</title>
-      <link>http://localhost:3000/reference/check/m-check-okifnone/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-okifnone/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-okifnone/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-okifnone/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;okIfNone&amp;#32;&lt;span&gt;opt&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns success when the option is &lt;code&gt;None&lt;/code&gt;.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;opt&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;a option&lt;/span&gt;&lt;/code&gt;&#xA;The option to check.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; that succeeds if the option is &lt;a href=&#34;https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpoption-1-none&#34;&gt;None&lt;/a&gt;.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.okIfNonEmptyStr</title>
-      <link>http://localhost:3000/reference/check/m-check-okifnonemptystr/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-okifnonemptystr/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-okifnonemptystr/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-okifnonemptystr/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;okIfNonEmptyStr&amp;#32;&lt;span&gt;str&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns the string when it is not null or empty.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;str&lt;/code&gt;: &lt;code&gt;string&lt;/code&gt;&#xA;The string to check.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; containing the non-empty string.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.okIfNotBlank</title>
-      <link>http://localhost:3000/reference/check/m-check-okifnotblank/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-okifnotblank/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-okifnotblank/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-okifnotblank/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;okIfNotBlank&amp;#32;&lt;span&gt;str&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns the string when it is not blank.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;str&lt;/code&gt;: &lt;code&gt;string&lt;/code&gt;&#xA;The string to check.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; containing the non-blank string.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.okIfNotEmpty</title>
-      <link>http://localhost:3000/reference/check/m-check-okifnotempty/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-okifnotempty/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-okifnotempty/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-okifnotempty/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;okIfNotEmpty&amp;#32;&lt;span&gt;coll&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns the sequence when it is not empty.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;coll&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;a seq&lt;/span&gt;&lt;/code&gt;&#xA;The sequence of type &lt;code&gt;seq&amp;lt;&#39;a&amp;gt;&lt;/code&gt; to check.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; containing the non-empty sequence.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.okIfNotEqual</title>
-      <link>http://localhost:3000/reference/check/m-check-okifnotequal/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-okifnotequal/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-okifnotequal/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-okifnotequal/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;okIfNotEqual&amp;#32;&lt;span&gt;expected&amp;#32;actual&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns success when the values are not equal.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;expected&lt;/code&gt;: &lt;code&gt;&amp;lsquo;a&lt;/code&gt;&#xA;The expected value.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;actual&lt;/code&gt;: &lt;code&gt;&amp;lsquo;a&lt;/code&gt;&#xA;The actual value.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; that succeeds if the values differ.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.okIfNotNull</title>
-      <link>http://localhost:3000/reference/check/m-check-okifnotnull/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-okifnotnull/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-okifnotnull/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-okifnotnull/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;okIfNotNull&amp;#32;&lt;span&gt;value&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns the value when it is not null.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;value&lt;/code&gt;: &lt;code&gt;&amp;lsquo;a&lt;/code&gt;&#xA;The value of type &lt;code&gt;&#39;a&lt;/code&gt; to check for null.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; containing the non-null value.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.okIfNull</title>
-      <link>http://localhost:3000/reference/check/m-check-okifnull/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-okifnull/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-okifnull/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-okifnull/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;okIfNull&amp;#32;&lt;span&gt;value&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns success when the value is null.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;value&lt;/code&gt;: &lt;code&gt;&amp;lsquo;a&lt;/code&gt;&#xA;The value to check.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; that succeeds if the value is null.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.okIfSome</title>
-      <link>http://localhost:3000/reference/check/m-check-okifsome/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-okifsome/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-okifsome/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-okifsome/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;okIfSome&amp;#32;&lt;span&gt;opt&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns the value when the option is &lt;code&gt;Some&lt;/code&gt;.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;opt&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;a option&lt;/span&gt;&lt;/code&gt;&#xA;The &lt;a href=&#34;https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpoption-1&#34;&gt;option&lt;/a&gt; to check.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; containing the value if present.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.okIfValueNone</title>
-      <link>http://localhost:3000/reference/check/m-check-okifvaluenone/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-okifvaluenone/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-okifvaluenone/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-okifvaluenone/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;okIfValueNone&amp;#32;&lt;span&gt;opt&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns success when the value option is &lt;code&gt;ValueNone&lt;/code&gt;.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;opt&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;a voption&lt;/span&gt;&lt;/code&gt;&#xA;The value option to check.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; that succeeds if the value option is &lt;a href=&#34;https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpvalueoption-1-valuenone&#34;&gt;ValueNone&lt;/a&gt;.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.okIfValueSome</title>
-      <link>http://localhost:3000/reference/check/m-check-okifvaluesome/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-okifvaluesome/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-okifvaluesome/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-okifvaluesome/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;okIfValueSome&amp;#32;&lt;span&gt;opt&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Returns the value when the value option is &lt;code&gt;ValueSome&lt;/code&gt;.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;opt&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;a voption&lt;/span&gt;&lt;/code&gt;&#xA;The &lt;a href=&#34;https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpvalueoption-1&#34;&gt;voption&lt;/a&gt; to check.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt; containing the value if present.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.orError</title>
-      <link>http://localhost:3000/reference/check/m-check-orerror/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-orerror/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-orerror/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-orerror/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;orError&amp;#32;&lt;span&gt;error&amp;#32;result&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Maps a unit error into the supplied application error value.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;This is the primary bridge from checks to domain-specific results.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;error&lt;/code&gt;: &lt;code&gt;&amp;lsquo;error&lt;/code&gt;&#xA;The domain error of type &lt;code&gt;&#39;error&lt;/code&gt; to return on failure.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;result&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt;&amp;lt;&amp;lsquo;value&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The source &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt;.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://learn.microsoft.com/dotnet/api/system.result-2&#34;&gt;Result&lt;/a&gt; with the provided error value.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Check.orErrorWith</title>
-      <link>http://localhost:3000/reference/check/m-check-orerrorwith/</link>
+      <link>https://adz.github.io/FsFlow/reference/check/m-check-orerrorwith/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/check/m-check-orerrorwith/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/check/m-check-orerrorwith/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;orErrorWith&amp;#32;&lt;span&gt;errorFn&amp;#32;result&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Maps a unit error into an application error produced on demand.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;errorFn&lt;/code&gt;: &lt;code&gt;&lt;span&gt;unit -&amp;gt; &amp;rsquo;error&lt;/span&gt;&lt;/code&gt;&#xA;A function of type &lt;code&gt;unit -&amp;gt; &#39;error&lt;/code&gt; to produce the error.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;result&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt;&amp;lt;&amp;lsquo;value&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The source &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt;.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://learn.microsoft.com/dotnet/api/system.result-2&#34;&gt;Result&lt;/a&gt; with the produced error value.&lt;/p&gt;</description>
     </item>
   </channel>

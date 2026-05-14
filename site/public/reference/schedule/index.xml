@@ -2,58 +2,58 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Schedule on FsFlow</title>
-    <link>http://localhost:3000/reference/schedule/</link>
+    <link>https://adz.github.io/FsFlow/reference/schedule/</link>
     <description>Recent content in Schedule on FsFlow</description>
     <generator>Hugo</generator>
     <language>en-us</language>
-    <atom:link href="http://localhost:3000/reference/schedule/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="https://adz.github.io/FsFlow/reference/schedule/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Schedule.exponential</title>
-      <link>http://localhost:3000/reference/schedule/m-schedule-exponential/</link>
+      <link>https://adz.github.io/FsFlow/reference/schedule/m-schedule-exponential/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/schedule/m-schedule-exponential/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/schedule/m-schedule-exponential/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Schedule.exponential&amp;#32;&lt;span&gt;baseDelay&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Creates a schedule that recurs with exponential backoff.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;baseDelay&lt;/code&gt;: &lt;code&gt;&lt;a href=&#34;https://learn.microsoft.com/dotnet/api/system.timespan&#34;&gt;TimeSpan&lt;/a&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
     <item>
       <title>Schedule.jittered</title>
-      <link>http://localhost:3000/reference/schedule/m-schedule-jittered/</link>
+      <link>https://adz.github.io/FsFlow/reference/schedule/m-schedule-jittered/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/schedule/m-schedule-jittered/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/schedule/m-schedule-jittered/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Schedule.jittered&amp;#32;&lt;span&gt;arg1&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Adds random jitter to a schedule&amp;rsquo;s delay.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;arg0&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-schedule-3.html&#34;&gt;Schedule&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;lsquo;input, &amp;lsquo;output&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
     <item>
       <title>Schedule.recurs</title>
-      <link>http://localhost:3000/reference/schedule/m-schedule-recurs/</link>
+      <link>https://adz.github.io/FsFlow/reference/schedule/m-schedule-recurs/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/schedule/m-schedule-recurs/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/schedule/m-schedule-recurs/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Schedule.recurs&amp;#32;&lt;span&gt;n&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Creates a schedule that recurs a fixed number of times.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;n&lt;/code&gt;: &lt;code&gt;int&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
     <item>
       <title>FlowSchedule.Repeat</title>
-      <link>http://localhost:3000/reference/schedule/m-flowschedule-repeat/</link>
+      <link>https://adz.github.io/FsFlow/reference/schedule/m-flowschedule-repeat/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/schedule/m-flowschedule-repeat/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/schedule/m-flowschedule-repeat/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Flow.Repeat&lt;span&gt;&lt;span&gt;(&lt;span&gt;flow,&amp;#32;schedule&lt;/span&gt;)&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Repeats a successful flow according to the supplied schedule.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;flow&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, &amp;lsquo;value&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;schedule&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-schedule-3.html&#34;&gt;Schedule&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;lsquo;value, &amp;lsquo;output&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
     <item>
       <title>FlowSchedule.Retry</title>
-      <link>http://localhost:3000/reference/schedule/m-flowschedule-retry/</link>
+      <link>https://adz.github.io/FsFlow/reference/schedule/m-flowschedule-retry/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/schedule/m-flowschedule-retry/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/schedule/m-flowschedule-retry/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Flow.Retry&lt;span&gt;&lt;span&gt;(&lt;span&gt;flow,&amp;#32;schedule&lt;/span&gt;)&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Retries a failing flow according to the supplied schedule.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;flow&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, &amp;lsquo;value&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;schedule&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-schedule-3.html&#34;&gt;Schedule&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, &amp;lsquo;output&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
     <item>
       <title>Schedule</title>
-      <link>http://localhost:3000/reference/schedule/t-schedule-3/</link>
+      <link>https://adz.github.io/FsFlow/reference/schedule/t-schedule-3/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/schedule/t-schedule-3/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/schedule/t-schedule-3/</guid>
       <description>&lt;p&gt;Represents a stateful schedule that can decide whether to continue and how long to delay.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Schedule.spaced</title>
-      <link>http://localhost:3000/reference/schedule/m-schedule-spaced/</link>
+      <link>https://adz.github.io/FsFlow/reference/schedule/m-schedule-spaced/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/schedule/m-schedule-spaced/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/schedule/m-schedule-spaced/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Schedule.spaced&amp;#32;&lt;span&gt;delay&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Creates a schedule that recurs with a fixed delay between attempts.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;delay&lt;/code&gt;: &lt;code&gt;&lt;a href=&#34;https://learn.microsoft.com/dotnet/api/system.timespan&#34;&gt;TimeSpan&lt;/a&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
   </channel>

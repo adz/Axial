@@ -2,37 +2,37 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Stream on FsFlow</title>
-    <link>http://localhost:3000/reference/stream/</link>
+    <link>https://adz.github.io/FsFlow/reference/stream/</link>
     <description>Recent content in Stream on FsFlow</description>
     <generator>Hugo</generator>
     <language>en-us</language>
-    <atom:link href="http://localhost:3000/reference/stream/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="https://adz.github.io/FsFlow/reference/stream/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>FlowStream</title>
-      <link>http://localhost:3000/reference/stream/t-flowstream-3/</link>
+      <link>https://adz.github.io/FsFlow/reference/stream/t-flowstream-3/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/stream/t-flowstream-3/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/stream/t-flowstream-3/</guid>
       <description>&lt;p&gt;Represents a cold stream of values that requires an environment, can fail with a typed error,&#xA;and supports backpressure.&lt;/p&gt;</description>
     </item>
     <item>
       <title>FlowStream.fromSeq</title>
-      <link>http://localhost:3000/reference/stream/m-flowstream-fromseq/</link>
+      <link>https://adz.github.io/FsFlow/reference/stream/m-flowstream-fromseq/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/stream/m-flowstream-fromseq/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/stream/m-flowstream-fromseq/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;FlowStream.fromSeq&amp;#32;&lt;span&gt;values&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Creates a stream from a sequence of values.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;values&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;value seq&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
     <item>
       <title>FlowStream.map</title>
-      <link>http://localhost:3000/reference/stream/m-flowstream-map/</link>
+      <link>https://adz.github.io/FsFlow/reference/stream/m-flowstream-map/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/stream/m-flowstream-map/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/stream/m-flowstream-map/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;FlowStream.map&amp;#32;&lt;span&gt;f&amp;#32;arg2&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Maps the successful values of a stream.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;f&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;v -&amp;gt; &amp;lsquo;w&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;arg1&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flowstream-3.html&#34;&gt;FlowStream&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, &amp;lsquo;v&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
     <item>
       <title>FlowStream.runForEach</title>
-      <link>http://localhost:3000/reference/stream/m-flowstream-runforeach/</link>
+      <link>https://adz.github.io/FsFlow/reference/stream/m-flowstream-runforeach/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/stream/m-flowstream-runforeach/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/stream/m-flowstream-runforeach/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;FlowStream.runForEach&amp;#32;&lt;span&gt;environment&amp;#32;action&amp;#32;arg3&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Executes the stream and performs an action for each value.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;environment&lt;/code&gt;: &lt;code&gt;&amp;lsquo;env&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;action&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;value -&amp;gt; unit&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;arg2&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flowstream-3.html&#34;&gt;FlowStream&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, &amp;lsquo;value&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
   </channel>

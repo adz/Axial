@@ -61,8 +61,6 @@ upsert_frontmatter "$ref_dir/validation/_index.md" "weight" "60"
 upsert_frontmatter "$ref_dir/result/_index.md" "weight" "70"
 upsert_frontmatter "$ref_dir/diagnostics/_index.md" "weight" "80"
 upsert_frontmatter "$ref_dir/capability/_index.md" "weight" "130"
-upsert_frontmatter "$ref_dir/hosting/_index.md" "weight" "140"
-upsert_frontmatter "$ref_dir/telemetry/_index.md" "weight" "150"
 
 # Ensure all reference pages are marked as docs type
 find "$ref_dir" -type f -name "*.md" -print0 |
@@ -153,9 +151,9 @@ Welcome to the FsFlow guides. Choose a section from the sidebar or start with [G
 </section>
 
 <section class=\"docs-card\">
-<span class=\"label\">Ecosystem</span>
-<h2><a href=\"./ecosystem/\">Integrations</a></h2>
-<p>Map FsFlow alongside Validus, FsToolkit.ErrorHandling, FSharpPlus, and Effect-TS.</p>
+<span class=\"label\">Comparisons</span>
+<h2><a href=\"./ecosystem/\">Comparisons and Integrations</a></h2>
+<p>Compare FsFlow with Validus, FsToolkit.ErrorHandling, FSharpPlus, and Effect-TS, and see where they fit together.</p>
 </section>
 
 </div>

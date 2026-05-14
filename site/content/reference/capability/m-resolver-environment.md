@@ -10,6 +10,10 @@ type: docs
 
 Reads the application environment from the environment.
 
+## Remarks
+
+Compatibility alias for the environment half of <a href="https://learn.microsoft.com/dotnet/api/runtimecontext{runtime, env}">RuntimeContext{runtime, env}</a>.
+
 ## Parameters
 
 - `()`: <code>unit</code>

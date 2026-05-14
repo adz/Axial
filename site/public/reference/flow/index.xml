@@ -2,282 +2,282 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Flow on FsFlow</title>
-    <link>http://localhost:3000/reference/flow/</link>
+    <link>https://adz.github.io/FsFlow/reference/flow/</link>
     <description>Recent content in Flow on FsFlow</description>
     <generator>Hugo</generator>
     <language>en-us</language>
-    <atom:link href="http://localhost:3000/reference/flow/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="https://adz.github.io/FsFlow/reference/flow/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Flow.apply</title>
-      <link>http://localhost:3000/reference/flow/m-flow-apply/</link>
+      <link>https://adz.github.io/FsFlow/reference/flow/m-flow-apply/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-flow-apply/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/flow/m-flow-apply/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;apply&amp;#32;&lt;span&gt;flow&amp;#32;value&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Applies a flow-wrapped function to a flow-wrapped value.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;flow&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, &lt;span&gt;(&lt;span&gt;&amp;lsquo;value -&amp;gt; &amp;rsquo;next&lt;/span&gt;)&lt;/span&gt;&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;value&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, &amp;lsquo;value&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
     <item>
       <title>Flow.bind</title>
-      <link>http://localhost:3000/reference/flow/m-flow-bind/</link>
+      <link>https://adz.github.io/FsFlow/reference/flow/m-flow-bind/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-flow-bind/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/flow/m-flow-bind/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;bind&amp;#32;&lt;span&gt;binder&amp;#32;flow&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Sequences a synchronous continuation after a successful value.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;This is the &amp;ldquo;flatmap&amp;rdquo; operation for &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;. It allows for dependent&#xA;steps where the second flow depends on the value produced by the first.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;binder&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;value -&amp;gt; &lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, &amp;rsquo;next&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;A function that takes the successful value and returns a new flow.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;flow&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, &amp;lsquo;value&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The source flow to sequence.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt; representing the combined workflow.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Flow.catch</title>
-      <link>http://localhost:3000/reference/flow/m-flow-catch/</link>
+      <link>https://adz.github.io/FsFlow/reference/flow/m-flow-catch/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-flow-catch/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/flow/m-flow-catch/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;catch&amp;#32;&lt;span&gt;handler&amp;#32;flow&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Catches exceptions raised during execution and maps them to a typed error.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;Exceptions that are not caught by this helper will bubble up to the caller of &lt;a href=&#34;https://learn.microsoft.com/dotnet/api/run&#34;&gt;run&lt;/a&gt;.&#xA;This ensures that known exceptions can be handled within the flow context.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;handler&lt;/code&gt;: &lt;code&gt;&lt;span&gt;exn -&amp;gt; &amp;rsquo;error&lt;/span&gt;&lt;/code&gt;&#xA;A function of type &lt;code&gt;exn -&amp;gt; &#39;error&lt;/code&gt; to map the exception.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;flow&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, &amp;lsquo;value&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The source flow of type &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt; to monitor.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt; that converts exceptions into success-path errors.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Flow.delay</title>
-      <link>http://localhost:3000/reference/flow/m-flow-delay/</link>
+      <link>https://adz.github.io/FsFlow/reference/flow/m-flow-delay/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-flow-delay/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/flow/m-flow-delay/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;delay&amp;#32;&lt;span&gt;factory&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Defers flow construction until execution time.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;factory&lt;/code&gt;: &lt;code&gt;&lt;span&gt;unit -&amp;gt; &lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, &amp;lsquo;value&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
     <item>
       <title>Flow.env</title>
-      <link>http://localhost:3000/reference/flow/m-flow-env/</link>
+      <link>https://adz.github.io/FsFlow/reference/flow/m-flow-env/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-flow-env/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/flow/m-flow-env/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;env&amp;#32;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Reads the current environment as the flow value.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;Use this when the entire environment object is needed for the next step of the workflow.&#xA;For projecting specific properties, &lt;a href=&#34;https://learn.microsoft.com/dotnet/api/read&#34;&gt;read&lt;/a&gt; is generally more ergonomic.&lt;/p&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt; whose successful value is the current environment.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Flow.error</title>
-      <link>http://localhost:3000/reference/flow/m-flow-error/</link>
+      <link>https://adz.github.io/FsFlow/reference/flow/m-flow-error/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-flow-error/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/flow/m-flow-error/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;error&amp;#32;&lt;span&gt;failure&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Creates a failing synchronous flow.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;failure&lt;/code&gt;: &lt;code&gt;&amp;lsquo;error&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
     <item>
       <title>Flow.fail</title>
-      <link>http://localhost:3000/reference/flow/m-flow-fail/</link>
+      <link>https://adz.github.io/FsFlow/reference/flow/m-flow-fail/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-flow-fail/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/flow/m-flow-fail/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;fail&amp;#32;&lt;span&gt;failure&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Alias for &lt;a href=&#34;https://learn.microsoft.com/dotnet/api/error&#34;&gt;error&lt;/a&gt; that reads well in some call sites.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;failure&lt;/code&gt;: &lt;code&gt;&amp;lsquo;error&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;examples&#34;&gt;Examples&lt;/h2&gt;&#xA;&lt;pre class=&#34;fssnip highlighted&#34;&gt;&lt;code lang=&#34;fsharp&#34;&gt; &lt;span class=&#34;k&#34;&gt;let&lt;/span&gt; &lt;span onmouseout=&#34;hideTip(event, &#39;fs1&#39;, 1)&#34; onmouseover=&#34;showTip(event, &#39;fs1&#39;, 1)&#34; class=&#34;id&#34;&gt;flow&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;id&#34;&gt;Flow&lt;/span&gt;&lt;span class=&#34;pn&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;id&#34;&gt;fail&lt;/span&gt; &lt;span class=&#34;s&#34;&gt;&amp;quot;error&amp;quot;&lt;/span&gt;&#xA; &lt;span class=&#34;k&#34;&gt;let&lt;/span&gt; &lt;span onmouseout=&#34;hideTip(event, &#39;fs2&#39;, 2)&#34; onmouseover=&#34;showTip(event, &#39;fs2&#39;, 2)&#34; class=&#34;id&#34;&gt;result&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;id&#34;&gt;Flow&lt;/span&gt;&lt;span class=&#34;pn&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;id&#34;&gt;run&lt;/span&gt; &lt;span class=&#34;pn&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;pn&#34;&gt;)&lt;/span&gt; &lt;span onmouseout=&#34;hideTip(event, &#39;fs1&#39;, 3)&#34; onmouseover=&#34;showTip(event, &#39;fs1&#39;, 3)&#34; class=&#34;id&#34;&gt;flow&lt;/span&gt;&#xA; &lt;span class=&#34;c&#34;&gt;// result = Failure (Cause.Fail &amp;quot;error&amp;quot;)&lt;/span&gt;&#xA;&lt;/code&gt;&lt;/pre&gt;&#xA;&lt;div class=&#34;fsdocs-tip&#34; id=&#34;fs1&#34;&gt;val flow: obj&lt;/div&gt;&#xA;&lt;div class=&#34;fsdocs-tip&#34; id=&#34;fs2&#34;&gt;val result: obj&lt;/div&gt;</description>
     </item>
     <item>
       <title>Fiber</title>
-      <link>http://localhost:3000/reference/flow/t-fiber-2/</link>
+      <link>https://adz.github.io/FsFlow/reference/flow/t-fiber-2/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/t-fiber-2/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/flow/t-fiber-2/</guid>
       <description>&lt;p&gt;Represents a handle to a running workflow.&lt;/p&gt;</description>
     </item>
     <item>
       <title>flow { }</title>
-      <link>http://localhost:3000/reference/flow/builders-flow/</link>
+      <link>https://adz.github.io/FsFlow/reference/flow/builders-flow/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/builders-flow/</guid>
-      <description>&lt;p&gt;The &lt;code&gt;flow { }&lt;/code&gt; builder is the primary entry point for orchestrating synchronous, async, and task-based work.&lt;/p&gt;&#xA;&lt;h2 id=&#34;builder&#34;&gt;Builder&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;a href=&#34;http://localhost:3000/reference/flow/p-flow/&#34;&gt;&lt;code&gt;flow&lt;/code&gt;&lt;/a&gt;:&#xA;The universal &lt;code&gt;flow { }&lt;/code&gt; computation expression.&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
+      <guid>https://adz.github.io/FsFlow/reference/flow/builders-flow/</guid>
+      <description>&lt;p&gt;The &lt;code&gt;flow { }&lt;/code&gt; builder is the primary entry point for orchestrating synchronous, async, and task-based work.&lt;/p&gt;&#xA;&lt;h2 id=&#34;builder&#34;&gt;Builder&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/flow/p-flow/&#34;&gt;&lt;code&gt;flow&lt;/code&gt;&lt;/a&gt;:&#xA;The universal &lt;code&gt;flow { }&lt;/code&gt; computation expression.&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
     <item>
       <title>flow</title>
-      <link>http://localhost:3000/reference/flow/p-flow/</link>
+      <link>https://adz.github.io/FsFlow/reference/flow/p-flow/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/p-flow/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/flow/p-flow/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;flow&amp;#32;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;The universal &lt;code&gt;flow { }&lt;/code&gt; computation expression.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p class=&#39;fsdocs-para&#39;&gt;&#xA; Use this builder when the boundary can mix synchronous values, &lt;code&gt;Async&lt;/code&gt;, &lt;code&gt;Task&lt;/code&gt;,&#xA; &lt;code&gt;Result&lt;/code&gt;, and environment requests while keeping typed failures and explicit&#xA; dependency access.&#xA; &lt;/p&gt;&lt;p class=&#39;fsdocs-para&#39;&gt;&#xA; It preserves the current environment model while allowing the workflow to compose&#xA; task-oriented inputs directly, so callers do not need to switch builders just to cross&#xA; an async boundary.&#xA; &lt;/p&gt;&#xA;&lt;h2 id=&#34;examples&#34;&gt;Examples&lt;/h2&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;&#34;&gt;&lt;code class=&#34;language-fsharp&#34; data-lang=&#34;fsharp&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#204a87;font-weight:bold&#34;&gt;let&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;greeting&lt;/span&gt; &lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;=&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#000&#34;&gt;flow&lt;/span&gt; &lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;{&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        &lt;span style=&#34;color:#204a87;font-weight:bold&#34;&gt;let!&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;name&lt;/span&gt; &lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;Flow&lt;/span&gt;&lt;span style=&#34;color:#000;font-weight:bold&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#000&#34;&gt;env&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        &lt;span style=&#34;color:#204a87;font-weight:bold&#34;&gt;let!&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;suffix&lt;/span&gt; &lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#000&#34;&gt;async&lt;/span&gt; &lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;{&lt;/span&gt; &lt;span style=&#34;color:#204a87;font-weight:bold&#34;&gt;return&lt;/span&gt; &lt;span style=&#34;color:#4e9a06&#34;&gt;&amp;#34;!&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;}&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        &lt;span style=&#34;color:#204a87;font-weight:bold&#34;&gt;return&lt;/span&gt; &lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;$&lt;/span&gt;&lt;span style=&#34;color:#4e9a06&#34;&gt;&amp;#34;Hello, {name}{suffix}&amp;#34;&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#ce5c00;font-weight:bold&#34;&gt;}&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;</description>
     </item>
     <item>
       <title>Flow</title>
-      <link>http://localhost:3000/reference/flow/t-flow-3/</link>
+      <link>https://adz.github.io/FsFlow/reference/flow/t-flow-3/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/t-flow-3/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/flow/t-flow-3/</guid>
       <description>&lt;p&gt;Represents a cold workflow that reads an environment, returns a typed result, and is executed&#xA;explicitly through &lt;code&gt;Flow.run&lt;/code&gt;.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Flow.fork</title>
-      <link>http://localhost:3000/reference/flow/m-flow-fork/</link>
+      <link>https://adz.github.io/FsFlow/reference/flow/m-flow-fork/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-flow-fork/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/flow/m-flow-fork/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;fork&amp;#32;&lt;span&gt;flow&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Starts a flow in a new fiber without waiting for it to complete.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;flow&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, &amp;lsquo;value&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The flow to fork.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A flow that produces a &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-fiber-2.html&#34;&gt;Fiber&lt;/a&gt; handle.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Flow.fromOption</title>
-      <link>http://localhost:3000/reference/flow/m-flow-fromoption/</link>
+      <link>https://adz.github.io/FsFlow/reference/flow/m-flow-fromoption/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-flow-fromoption/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/flow/m-flow-fromoption/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;fromOption&amp;#32;&lt;span&gt;error&amp;#32;value&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Lifts an option into a synchronous flow with the supplied error.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;error&lt;/code&gt;: &lt;code&gt;&amp;lsquo;error&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;value&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;value option&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;examples&#34;&gt;Examples&lt;/h2&gt;&#xA;&lt;pre class=&#34;fssnip highlighted&#34;&gt;&lt;code lang=&#34;fsharp&#34;&gt; &lt;span class=&#34;k&#34;&gt;let&lt;/span&gt; &lt;span onmouseout=&#34;hideTip(event, &#39;fs1&#39;, 1)&#34; onmouseover=&#34;showTip(event, &#39;fs1&#39;, 1)&#34; class=&#34;id&#34;&gt;opt&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span onmouseout=&#34;hideTip(event, &#39;fs2&#39;, 2)&#34; onmouseover=&#34;showTip(event, &#39;fs2&#39;, 2)&#34; class=&#34;uc&#34;&gt;Some&lt;/span&gt; &lt;span class=&#34;s&#34;&gt;&amp;quot;value&amp;quot;&lt;/span&gt;&#xA; &lt;span class=&#34;k&#34;&gt;let&lt;/span&gt; &lt;span onmouseout=&#34;hideTip(event, &#39;fs3&#39;, 3)&#34; onmouseover=&#34;showTip(event, &#39;fs3&#39;, 3)&#34; class=&#34;id&#34;&gt;flow&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;id&#34;&gt;Flow&lt;/span&gt;&lt;span class=&#34;pn&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;id&#34;&gt;fromOption&lt;/span&gt; &lt;span class=&#34;s&#34;&gt;&amp;quot;missing&amp;quot;&lt;/span&gt; &lt;span onmouseout=&#34;hideTip(event, &#39;fs1&#39;, 4)&#34; onmouseover=&#34;showTip(event, &#39;fs1&#39;, 4)&#34; class=&#34;id&#34;&gt;opt&lt;/span&gt;&#xA;&lt;/code&gt;&lt;/pre&gt;&#xA;&lt;div class=&#34;fsdocs-tip&#34; id=&#34;fs1&#34;&gt;val opt: string option&lt;/div&gt;&#xA;&lt;div class=&#34;fsdocs-tip&#34; id=&#34;fs2&#34;&gt;union case Option.Some: Value: &amp;#39;T -&amp;gt; Option&amp;lt;&amp;#39;T&amp;gt;&lt;/div&gt;&#xA;&lt;div class=&#34;fsdocs-tip&#34; id=&#34;fs3&#34;&gt;val flow: obj&lt;/div&gt;</description>
     </item>
     <item>
       <title>Flow.fromResult</title>
-      <link>http://localhost:3000/reference/flow/m-flow-fromresult/</link>
+      <link>https://adz.github.io/FsFlow/reference/flow/m-flow-fromresult/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-flow-fromresult/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/flow/m-flow-fromresult/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;fromResult&amp;#32;&lt;span&gt;result&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Lifts a &lt;a href=&#34;https://learn.microsoft.com/dotnet/api/system.result-2&#34;&gt;Result&lt;/a&gt; into a synchronous flow.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;result&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2&#34;&gt;Result&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;value, &amp;rsquo;error&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;examples&#34;&gt;Examples&lt;/h2&gt;&#xA;&lt;pre class=&#34;fssnip highlighted&#34;&gt;&lt;code lang=&#34;fsharp&#34;&gt; &lt;span class=&#34;k&#34;&gt;let&lt;/span&gt; &lt;span onmouseout=&#34;hideTip(event, &#39;fs1&#39;, 1)&#34; onmouseover=&#34;showTip(event, &#39;fs1&#39;, 1)&#34; class=&#34;id&#34;&gt;res&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span onmouseout=&#34;hideTip(event, &#39;fs2&#39;, 2)&#34; onmouseover=&#34;showTip(event, &#39;fs2&#39;, 2)&#34; class=&#34;uc&#34;&gt;Ok&lt;/span&gt; &lt;span class=&#34;s&#34;&gt;&amp;quot;success&amp;quot;&lt;/span&gt;&#xA; &lt;span class=&#34;k&#34;&gt;let&lt;/span&gt; &lt;span onmouseout=&#34;hideTip(event, &#39;fs3&#39;, 3)&#34; onmouseover=&#34;showTip(event, &#39;fs3&#39;, 3)&#34; class=&#34;id&#34;&gt;flow&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;id&#34;&gt;Flow&lt;/span&gt;&lt;span class=&#34;pn&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;id&#34;&gt;fromResult&lt;/span&gt; &lt;span onmouseout=&#34;hideTip(event, &#39;fs1&#39;, 4)&#34; onmouseover=&#34;showTip(event, &#39;fs1&#39;, 4)&#34; class=&#34;id&#34;&gt;res&lt;/span&gt;&#xA;&lt;/code&gt;&lt;/pre&gt;&#xA;&lt;div class=&#34;fsdocs-tip&#34; id=&#34;fs1&#34;&gt;val res: Result&amp;lt;string,&amp;#39;a&amp;gt;&lt;/div&gt;&#xA;&lt;div class=&#34;fsdocs-tip&#34; id=&#34;fs2&#34;&gt;union case Result.Ok: ResultValue: &amp;#39;T -&amp;gt; Result&amp;lt;&amp;#39;T,&amp;#39;TError&amp;gt;&lt;/div&gt;&#xA;&lt;div class=&#34;fsdocs-tip&#34; id=&#34;fs3&#34;&gt;val flow: obj&lt;/div&gt;</description>
     </item>
     <item>
       <title>Flow.fromValueOption</title>
-      <link>http://localhost:3000/reference/flow/m-flow-fromvalueoption/</link>
+      <link>https://adz.github.io/FsFlow/reference/flow/m-flow-fromvalueoption/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-flow-fromvalueoption/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/flow/m-flow-fromvalueoption/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;fromValueOption&amp;#32;&lt;span&gt;error&amp;#32;value&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Lifts a value option into a synchronous flow with the supplied error.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;error&lt;/code&gt;: &lt;code&gt;&amp;lsquo;error&lt;/code&gt;&#xA;The error to return if the value option is &lt;a href=&#34;https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpvalueoption-1-valuenone&#34;&gt;ValueNone&lt;/a&gt;.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;value&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;value voption&lt;/span&gt;&lt;/code&gt;&#xA;The value option to lift.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt; that succeeds with the option&amp;rsquo;s value or fails with the provided error.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Flow.ignore</title>
-      <link>http://localhost:3000/reference/flow/m-flow-ignore/</link>
+      <link>https://adz.github.io/FsFlow/reference/flow/m-flow-ignore/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-flow-ignore/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/flow/m-flow-ignore/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;ignore&amp;#32;&lt;span&gt;flow&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Maps the successful value of a synchronous flow to &lt;code&gt;unit&lt;/code&gt;.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;flow&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, &amp;lsquo;value&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
     <item>
       <title>Flow.interrupt</title>
-      <link>http://localhost:3000/reference/flow/m-flow-interrupt/</link>
+      <link>https://adz.github.io/FsFlow/reference/flow/m-flow-interrupt/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-flow-interrupt/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/flow/m-flow-interrupt/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;interrupt&amp;#32;&lt;span&gt;fiber&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Signals a fiber to stop and waits for it to finish its cleanup.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;fiber&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-fiber-2.html&#34;&gt;Fiber&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;error, &amp;lsquo;value&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The fiber to interrupt.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A flow that completes with the fiber&amp;rsquo;s final outcome after interruption.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Flow.join</title>
-      <link>http://localhost:3000/reference/flow/m-flow-join/</link>
+      <link>https://adz.github.io/FsFlow/reference/flow/m-flow-join/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-flow-join/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/flow/m-flow-join/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;join&amp;#32;&lt;span&gt;fiber&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Waits for a fiber to complete and returns its final outcome.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;fiber&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-fiber-2.html&#34;&gt;Fiber&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;error, &amp;lsquo;value&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The fiber to join.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A flow that completes with the fiber&amp;rsquo;s outcome.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Flow.localEnv</title>
-      <link>http://localhost:3000/reference/flow/m-flow-localenv/</link>
+      <link>https://adz.github.io/FsFlow/reference/flow/m-flow-localenv/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-flow-localenv/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/flow/m-flow-localenv/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;localEnv&amp;#32;&lt;span&gt;mapping&amp;#32;flow&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Transforms the environment before running the flow.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;mapping&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;outerEnvironment -&amp;gt; &amp;lsquo;innerEnvironment&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;flow&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;innerEnvironment, &amp;rsquo;error, &amp;lsquo;value&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
     <item>
       <title>Flow.map</title>
-      <link>http://localhost:3000/reference/flow/m-flow-map/</link>
+      <link>https://adz.github.io/FsFlow/reference/flow/m-flow-map/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-flow-map/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/flow/m-flow-map/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;map&amp;#32;&lt;span&gt;mapper&amp;#32;flow&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Maps the successful value of a synchronous flow.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;If the source &lt;span class=&#34;fsdocs-param-name&#34;&gt;flow&lt;/span&gt; fails, the &lt;span class=&#34;fsdocs-param-name&#34;&gt;mapper&lt;/span&gt; is not executed,&#xA;and the error is preserved. This allows for safe transformation of data within the flow.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;mapper&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;value -&amp;gt; &amp;rsquo;next&lt;/span&gt;&lt;/code&gt;&#xA;A function of type &lt;code&gt;&#39;value -&amp;gt; &#39;next&lt;/code&gt; to transform the successful value.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;flow&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, &amp;lsquo;value&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The source flow of type &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt; to transform.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A new &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt; with the transformed success value of type &lt;code&gt;&#39;next&lt;/code&gt;.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Flow.map2</title>
-      <link>http://localhost:3000/reference/flow/m-flow-map2/</link>
+      <link>https://adz.github.io/FsFlow/reference/flow/m-flow-map2/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-flow-map2/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/flow/m-flow-map2/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;map2&amp;#32;&lt;span&gt;mapper&amp;#32;left&amp;#32;right&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Combines two flows with a mapping function.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;mapper&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;left -&amp;gt; &amp;lsquo;right -&amp;gt; &amp;lsquo;value&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;left&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, &amp;rsquo;left&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;right&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, &amp;lsquo;right&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
     <item>
       <title>Flow.map3</title>
-      <link>http://localhost:3000/reference/flow/m-flow-map3/</link>
+      <link>https://adz.github.io/FsFlow/reference/flow/m-flow-map3/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-flow-map3/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/flow/m-flow-map3/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;map3&amp;#32;&lt;span&gt;mapper&amp;#32;left&amp;#32;middle&amp;#32;right&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Combines three flows with a mapping function.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;mapper&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;left -&amp;gt; &amp;lsquo;middle -&amp;gt; &amp;lsquo;right -&amp;gt; &amp;lsquo;value&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;left&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, &amp;rsquo;left&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;middle&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, &amp;lsquo;middle&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;right&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, &amp;lsquo;right&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
     <item>
       <title>Flow.mapError</title>
-      <link>http://localhost:3000/reference/flow/m-flow-maperror/</link>
+      <link>https://adz.github.io/FsFlow/reference/flow/m-flow-maperror/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-flow-maperror/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/flow/m-flow-maperror/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;mapError&amp;#32;&lt;span&gt;mapper&amp;#32;flow&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Maps the error value of a synchronous flow.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;Transforms the error type of the flow while leaving successful values untouched.&#xA;Useful for mapping internal errors into public-facing domain errors.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;mapper&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;error -&amp;gt; &amp;rsquo;nextError&lt;/span&gt;&lt;/code&gt;&#xA;The function to transform the error value.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;flow&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, &amp;lsquo;value&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The source flow.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt; with the transformed error type.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Flow.ok</title>
-      <link>http://localhost:3000/reference/flow/m-flow-ok/</link>
+      <link>https://adz.github.io/FsFlow/reference/flow/m-flow-ok/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-flow-ok/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/flow/m-flow-ok/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;ok&amp;#32;&lt;span&gt;value&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Creates a successful synchronous flow.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;value&lt;/code&gt;: &lt;code&gt;&amp;lsquo;value&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
     <item>
       <title>Flow.orElse</title>
-      <link>http://localhost:3000/reference/flow/m-flow-orelse/</link>
+      <link>https://adz.github.io/FsFlow/reference/flow/m-flow-orelse/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-flow-orelse/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/flow/m-flow-orelse/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;orElse&amp;#32;&lt;span&gt;fallback&amp;#32;flow&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Falls back to another flow when the source flow fails.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;fallback&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, &amp;lsquo;value&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;flow&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, &amp;lsquo;value&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
     <item>
       <title>Flow.orElseFlow</title>
-      <link>http://localhost:3000/reference/flow/m-flow-orelseflow/</link>
+      <link>https://adz.github.io/FsFlow/reference/flow/m-flow-orelseflow/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-flow-orelseflow/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/flow/m-flow-orelseflow/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;orElseFlow&amp;#32;&lt;span&gt;errorFlow&amp;#32;result&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Turns a pure validation result into a synchronous flow with environment-provided failure.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;This helper bridges the gap between pure validation (which often uses &lt;a href=&#34;https://learn.microsoft.com/dotnet/api/system.result-2&#34;&gt;Result&lt;/a&gt; or &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html&#34;&gt;Check&lt;/a&gt;)&#xA;and the &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt; environment model. If the result is an error, the provided &lt;span class=&#34;fsdocs-param-name&#34;&gt;errorFlow&lt;/span&gt;&#xA;is executed to produce the final application error.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;errorFlow&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, &amp;rsquo;error&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;A flow that reads the environment to produce an error value.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;result&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2&#34;&gt;Result&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;value, unit&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The pure result to bridge.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt; that mirrors the success of the result or fails with the outcome of the error flow.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Flow.orElseWith</title>
-      <link>http://localhost:3000/reference/flow/m-flow-orelsewith/</link>
+      <link>https://adz.github.io/FsFlow/reference/flow/m-flow-orelsewith/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-flow-orelsewith/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/flow/m-flow-orelsewith/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;orElseWith&amp;#32;&lt;span&gt;fallback&amp;#32;flow&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Falls back to another flow when the source flow fails.Computes a fallback flow from the source error when the source flow fails.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;fallback&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;error -&amp;gt; &lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, &amp;lsquo;value&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;flow&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, &amp;lsquo;value&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
     <item>
       <title>Flow.provideLayer</title>
-      <link>http://localhost:3000/reference/flow/m-flow-providelayer/</link>
+      <link>https://adz.github.io/FsFlow/reference/flow/m-flow-providelayer/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-flow-providelayer/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/flow/m-flow-providelayer/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;provideLayer&amp;#32;&lt;span&gt;layer&amp;#32;flow&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Provides a derived environment from a layer flow to a downstream flow.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;layer&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;input, &amp;rsquo;error, &amp;rsquo;environment&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;flow&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;environment, &amp;rsquo;error, &amp;lsquo;value&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
     <item>
       <title>Flow.race</title>
-      <link>http://localhost:3000/reference/flow/m-flow-race/</link>
+      <link>https://adz.github.io/FsFlow/reference/flow/m-flow-race/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-flow-race/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/flow/m-flow-race/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;race&amp;#32;&lt;span&gt;left&amp;#32;right&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Runs two flows concurrently and returns the result of the first one to complete.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;The &amp;ldquo;loser&amp;rdquo; flow is interrupted immediately.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;left&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, &amp;lsquo;value&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;right&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, &amp;lsquo;value&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
     <item>
       <title>Flow.read</title>
-      <link>http://localhost:3000/reference/flow/m-flow-read/</link>
+      <link>https://adz.github.io/FsFlow/reference/flow/m-flow-read/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-flow-read/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/flow/m-flow-read/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;read&amp;#32;&lt;span&gt;projection&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Projects a value from the current environment.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;This is the primary way to access dependencies or configuration stored in the environment.&#xA;The &lt;span class=&#34;fsdocs-param-name&#34;&gt;projection&lt;/span&gt; function is applied to the environment at execution time.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;projection&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;env -&amp;gt; &amp;lsquo;value&lt;/span&gt;&lt;/code&gt;&#xA;A function that extracts a value from the environment.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt; containing the projected value.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Flow.run</title>
-      <link>http://localhost:3000/reference/flow/m-flow-run/</link>
+      <link>https://adz.github.io/FsFlow/reference/flow/m-flow-run/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-flow-run/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/flow/m-flow-run/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;run&amp;#32;&lt;span&gt;environment&amp;#32;flow&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Executes a flow with the provided environment and the default cancellation token.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;Uncaught exceptions become &lt;code&gt;Cause.Die&lt;/code&gt;; cancellation becomes &lt;code&gt;Cause.Interrupt&lt;/code&gt;.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;environment&lt;/code&gt;: &lt;code&gt;&amp;lsquo;env&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;flow&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, &amp;lsquo;value&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;examples&#34;&gt;Examples&lt;/h2&gt;&#xA;&lt;pre class=&#34;fssnip highlighted&#34;&gt;&lt;code lang=&#34;fsharp&#34;&gt; &lt;span class=&#34;k&#34;&gt;let&lt;/span&gt; &lt;span onmouseout=&#34;hideTip(event, &#39;fs1&#39;, 1)&#34; onmouseover=&#34;showTip(event, &#39;fs1&#39;, 1)&#34; class=&#34;id&#34;&gt;flow&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;id&#34;&gt;Flow&lt;/span&gt;&lt;span class=&#34;pn&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;id&#34;&gt;read&lt;/span&gt; &lt;span class=&#34;pn&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;fun&lt;/span&gt; &lt;span class=&#34;id&#34;&gt;env&lt;/span&gt; &lt;span class=&#34;k&#34;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&#34;s&#34;&gt;$&amp;quot;Hello, {&lt;/span&gt;&lt;span class=&#34;id&#34;&gt;env&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;}!&amp;quot;&lt;/span&gt;&lt;span class=&#34;pn&#34;&gt;)&lt;/span&gt;&#xA; &lt;span class=&#34;k&#34;&gt;let&lt;/span&gt; &lt;span onmouseout=&#34;hideTip(event, &#39;fs2&#39;, 2)&#34; onmouseover=&#34;showTip(event, &#39;fs2&#39;, 2)&#34; class=&#34;id&#34;&gt;result&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;id&#34;&gt;Flow&lt;/span&gt;&lt;span class=&#34;pn&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;id&#34;&gt;run&lt;/span&gt; &lt;span class=&#34;s&#34;&gt;&amp;quot;World&amp;quot;&lt;/span&gt; &lt;span onmouseout=&#34;hideTip(event, &#39;fs1&#39;, 3)&#34; onmouseover=&#34;showTip(event, &#39;fs1&#39;, 3)&#34; class=&#34;id&#34;&gt;flow&lt;/span&gt;&#xA; &lt;span class=&#34;c&#34;&gt;// result = Effect that resolves to Success &amp;quot;Hello, World!&amp;quot; on both .NET and Fable&lt;/span&gt;&#xA;&lt;/code&gt;&lt;/pre&gt;&#xA;&lt;div class=&#34;fsdocs-tip&#34; id=&#34;fs1&#34;&gt;val flow: obj&lt;/div&gt;&#xA;&lt;div class=&#34;fsdocs-tip&#34; id=&#34;fs2&#34;&gt;val result: obj&lt;/div&gt;</description>
     </item>
     <item>
       <title>Flow.sequence</title>
-      <link>http://localhost:3000/reference/flow/m-flow-sequence/</link>
+      <link>https://adz.github.io/FsFlow/reference/flow/m-flow-sequence/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-flow-sequence/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/flow/m-flow-sequence/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;sequence&amp;#32;&lt;span&gt;flows&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Transforms a sequence of flows into a flow of a sequence and stops at the first failure.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;flows&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, &amp;lsquo;value&lt;/span&gt;&amp;gt;&lt;/span&gt; seq&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
     <item>
       <title>Flow.succeed</title>
-      <link>http://localhost:3000/reference/flow/m-flow-succeed/</link>
+      <link>https://adz.github.io/FsFlow/reference/flow/m-flow-succeed/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-flow-succeed/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/flow/m-flow-succeed/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;succeed&amp;#32;&lt;span&gt;value&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Alias for &lt;a href=&#34;https://learn.microsoft.com/dotnet/api/ok&#34;&gt;ok&lt;/a&gt; that reads well in some call sites.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;value&lt;/code&gt;: &lt;code&gt;&amp;lsquo;value&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;examples&#34;&gt;Examples&lt;/h2&gt;&#xA;&lt;pre class=&#34;fssnip highlighted&#34;&gt;&lt;code lang=&#34;fsharp&#34;&gt; &lt;span class=&#34;k&#34;&gt;let&lt;/span&gt; &lt;span onmouseout=&#34;hideTip(event, &#39;fs1&#39;, 1)&#34; onmouseover=&#34;showTip(event, &#39;fs1&#39;, 1)&#34; class=&#34;id&#34;&gt;flow&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;id&#34;&gt;Flow&lt;/span&gt;&lt;span class=&#34;pn&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;id&#34;&gt;succeed&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;42&lt;/span&gt;&#xA; &lt;span class=&#34;k&#34;&gt;let&lt;/span&gt; &lt;span onmouseout=&#34;hideTip(event, &#39;fs2&#39;, 2)&#34; onmouseover=&#34;showTip(event, &#39;fs2&#39;, 2)&#34; class=&#34;id&#34;&gt;result&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;id&#34;&gt;Flow&lt;/span&gt;&lt;span class=&#34;pn&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;id&#34;&gt;run&lt;/span&gt; &lt;span class=&#34;pn&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;pn&#34;&gt;)&lt;/span&gt; &lt;span onmouseout=&#34;hideTip(event, &#39;fs1&#39;, 3)&#34; onmouseover=&#34;showTip(event, &#39;fs1&#39;, 3)&#34; class=&#34;id&#34;&gt;flow&lt;/span&gt;&#xA; &lt;span class=&#34;c&#34;&gt;// result = Success 42&lt;/span&gt;&#xA;&lt;/code&gt;&lt;/pre&gt;&#xA;&lt;div class=&#34;fsdocs-tip&#34; id=&#34;fs1&#34;&gt;val flow: obj&lt;/div&gt;&#xA;&lt;div class=&#34;fsdocs-tip&#34; id=&#34;fs2&#34;&gt;val result: obj&lt;/div&gt;</description>
     </item>
     <item>
       <title>Flow.tap</title>
-      <link>http://localhost:3000/reference/flow/m-flow-tap/</link>
+      <link>https://adz.github.io/FsFlow/reference/flow/m-flow-tap/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-flow-tap/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/flow/m-flow-tap/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;tap&amp;#32;&lt;span&gt;binder&amp;#32;flow&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Runs a synchronous side effect on success and preserves the original value.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;Use this for logging, telemetry, or other &amp;ldquo;fire and forget&amp;rdquo; operations that should not&#xA;alter the primary value path. If the &lt;span class=&#34;fsdocs-param-name&#34;&gt;binder&lt;/span&gt; flow fails, the entire&#xA;flow fails with that error.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;binder&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;value -&amp;gt; &lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, unit&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;A function that produces a side-effect flow from the successful value.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;flow&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, &amp;lsquo;value&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The source flow.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt; that preserves the original success value after the side effect.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Flow.tapError</title>
-      <link>http://localhost:3000/reference/flow/m-flow-taperror/</link>
+      <link>https://adz.github.io/FsFlow/reference/flow/m-flow-taperror/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-flow-taperror/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/flow/m-flow-taperror/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;tapError&amp;#32;&lt;span&gt;binder&amp;#32;flow&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Runs a synchronous side effect on failure and preserves the original error.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;Use this for error logging or cleanup actions that depend on the environment.&#xA;If the &lt;span class=&#34;fsdocs-param-name&#34;&gt;binder&lt;/span&gt; side-effect flow itself fails, its error will&#xA;overwrite the original error.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;binder&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;error -&amp;gt; &lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, unit&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;A function that produces a side-effect flow from the error value.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;flow&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, &amp;lsquo;value&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The source flow.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt; that preserves the original error after the side effect.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Flow.traverse</title>
-      <link>http://localhost:3000/reference/flow/m-flow-traverse/</link>
+      <link>https://adz.github.io/FsFlow/reference/flow/m-flow-traverse/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-flow-traverse/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/flow/m-flow-traverse/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;traverse&amp;#32;&lt;span&gt;mapping&amp;#32;values&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Transforms a sequence of values into a flow and stops at the first failure.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;mapping&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;value -&amp;gt; &lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, &amp;rsquo;next&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;values&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;value seq&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
     <item>
       <title>Flow.value</title>
-      <link>http://localhost:3000/reference/flow/m-flow-value/</link>
+      <link>https://adz.github.io/FsFlow/reference/flow/m-flow-value/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-flow-value/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/flow/m-flow-value/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;value&amp;#32;&lt;span&gt;item&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Alias for &lt;a href=&#34;https://learn.microsoft.com/dotnet/api/ok&#34;&gt;ok&lt;/a&gt; that reads well in some call sites.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;item&lt;/code&gt;: &lt;code&gt;&amp;lsquo;value&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;examples&#34;&gt;Examples&lt;/h2&gt;&#xA;&lt;pre class=&#34;fssnip highlighted&#34;&gt;&lt;code lang=&#34;fsharp&#34;&gt; &lt;span class=&#34;k&#34;&gt;let&lt;/span&gt; &lt;span onmouseout=&#34;hideTip(event, &#39;fs1&#39;, 1)&#34; onmouseover=&#34;showTip(event, &#39;fs1&#39;, 1)&#34; class=&#34;id&#34;&gt;flow&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;id&#34;&gt;Flow&lt;/span&gt;&lt;span class=&#34;pn&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;id&#34;&gt;value&lt;/span&gt; &lt;span class=&#34;s&#34;&gt;&amp;quot;constant&amp;quot;&lt;/span&gt;&#xA;&lt;/code&gt;&lt;/pre&gt;&#xA;&lt;div class=&#34;fsdocs-tip&#34; id=&#34;fs1&#34;&gt;val flow: obj&lt;/div&gt;</description>
     </item>
     <item>
       <title>Flow.zip</title>
-      <link>http://localhost:3000/reference/flow/m-flow-zip/</link>
+      <link>https://adz.github.io/FsFlow/reference/flow/m-flow-zip/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-flow-zip/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/flow/m-flow-zip/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;zip&amp;#32;&lt;span&gt;left&amp;#32;right&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Combines two flows into a tuple of their values.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;left&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, &amp;rsquo;left&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;right&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, &amp;lsquo;right&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
     <item>
       <title>Flow.zipPar</title>
-      <link>http://localhost:3000/reference/flow/m-flow-zippar/</link>
+      <link>https://adz.github.io/FsFlow/reference/flow/m-flow-zippar/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/flow/m-flow-zippar/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/flow/m-flow-zippar/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;zipPar&amp;#32;&lt;span&gt;left&amp;#32;right&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Combines two flows into a tuple of their values, running them concurrently.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;If either flow fails, the other is interrupted immediately.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;left&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, &amp;lsquo;right&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;right&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, &amp;lsquo;right&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
   </channel>

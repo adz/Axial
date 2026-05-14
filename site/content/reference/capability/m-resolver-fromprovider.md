@@ -10,3 +10,7 @@ type: docs
 
 Reads a dependency from <a href="https://learn.microsoft.com/dotnet/api/iserviceprovider">IServiceProvider</a> and fails when it is not registered.
 
+## Remarks
+
+Edge helper only. Prefer a record or nominal contract once the host boundary has been crossed.
+

@@ -11,6 +11,8 @@ linkTitle: "RuntimeContext<runtime, env>"
 ## Remarks
 
 
- This type is the standard environment carrier for the unified <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html">Flow</a>.
- It separates low-level operational concerns (Runtime) from high-level domain dependencies (Environment).
+ This type is the execution carrier above the adapter layer for the unified
+ <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html">Flow</a>.
+ It separates low-level operational concerns (Runtime) from high-level domain dependencies
+ (Environment).
  

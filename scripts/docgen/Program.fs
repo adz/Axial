@@ -307,26 +307,6 @@ let pageSpecs = [
         ]
         Alias = None
     }
-    {
-        OutPath = ["hosting"; "_index.md"]
-        Title = "Hosting"
-        Description = "Source-documented .NET host integration for FsFlow.Hosting."
-        Intro = "This page shows the source-documented `FsFlow.Hosting` surface: the host adapters, runtime composition, and startup validation helpers."
-        SymbolIds = [
-            "Startup", ["M:FsFlow.Hosting.Startup.validateEnvironment"]
-        ]
-        Alias = None
-    }
-    {
-        OutPath = ["telemetry"; "_index.md"]
-        Title = "Telemetry"
-        Description = "Source-documented observability integration for FsFlow.Runtime.Telemetry."
-        Intro = "This page shows the source-documented `FsFlow.Runtime.Telemetry` surface: Activity.trace integration."
-        SymbolIds = [
-            "Tracing", ["M:FsFlow.Runtime.Telemetry.Activity.trace"]
-        ]
-        Alias = None
-    }
 ]
 
 let rec collectAllEntities (e: ApiDocEntity) =
@@ -355,8 +335,6 @@ let main argv =
     let dllPaths = [
         Path.Combine(artifactsDir, "FsFlow/debug_netstandard2.1/FsFlow.dll")
         Path.Combine(artifactsDir, "FsFlow.Capabilities.Core/debug_netstandard2.1/FsFlow.Capabilities.Core.dll")
-        Path.Combine(artifactsDir, "FsFlow.Hosting/debug_netstandard2.1/FsFlow.Hosting.dll")
-        Path.Combine(artifactsDir, "FsFlow.Runtime.Telemetry/debug_netstandard2.1/FsFlow.Runtime.Telemetry.dll")
         Path.Combine(artifactsDir, "FsFlow.Capabilities.Console/debug_netstandard2.1/FsFlow.Capabilities.Console.dll")
         Path.Combine(artifactsDir, "FsFlow.Capabilities.FileSystem/debug_netstandard2.1/FsFlow.Capabilities.FileSystem.dll")
         Path.Combine(artifactsDir, "FsFlow.Capabilities.Http/debug_netstandard2.1/FsFlow.Capabilities.Http.dll")

@@ -7,7 +7,9 @@ linkTitle: "atomically"
 <code><span>STM.atomically&#32;<span>transaction</span></span></code>
 </div>
 
-Executes an STM transaction atomically within a flow.
+
+ Executes an STM transaction atomically within a flow while preserving retry/orElse coordination.
+ 
 
 ## Parameters
 

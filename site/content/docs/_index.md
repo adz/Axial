@@ -46,9 +46,9 @@ Welcome to the FsFlow guides. Choose a section from the sidebar or start with [G
 </section>
 
 <section class="docs-card">
-<span class="label">Ecosystem</span>
-<h2><a href="./ecosystem/">Integrations</a></h2>
-<p>Map FsFlow alongside Validus, FsToolkit.ErrorHandling, FSharpPlus, and Effect-TS.</p>
+<span class="label">Comparisons</span>
+<h2><a href="./ecosystem/">Comparisons and Integrations</a></h2>
+<p>Compare FsFlow with Validus, FsToolkit.ErrorHandling, FSharpPlus, and Effect-TS, and see where they fit together.</p>
 </section>
 
 </div>

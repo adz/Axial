@@ -5,6 +5,7 @@ description: Why FsFlow separates domain failures, interruptions, and defects.
 type: docs
 ---
 
+
 FsFlow distinguishes between expected failures, administrative signals (interruption), and unexpected defects. This separation ensures that your domain logic remains clean while the runtime provides robust, leak-proof resource management.
 
 ## Quick Start: Usage Patterns

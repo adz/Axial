@@ -2,51 +2,51 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Ref on FsFlow</title>
-    <link>http://localhost:3000/reference/ref/</link>
+    <link>https://adz.github.io/FsFlow/reference/ref/</link>
     <description>Recent content in Ref on FsFlow</description>
     <generator>Hugo</generator>
     <language>en-us</language>
-    <atom:link href="http://localhost:3000/reference/ref/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="https://adz.github.io/FsFlow/reference/ref/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Ref.get</title>
-      <link>http://localhost:3000/reference/ref/m-ref-get/</link>
+      <link>https://adz.github.io/FsFlow/reference/ref/m-ref-get/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/ref/m-ref-get/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/ref/m-ref-get/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Ref.get&amp;#32;&lt;span&gt;arg1&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Reads the current value of the reference.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;arg0&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-ref-1.html&#34;&gt;Ref&lt;/a&gt;&amp;lt;&amp;lsquo;T&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
     <item>
       <title>Ref.make</title>
-      <link>http://localhost:3000/reference/ref/m-ref-make/</link>
+      <link>https://adz.github.io/FsFlow/reference/ref/m-ref-make/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/ref/m-ref-make/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/ref/m-ref-make/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Ref.make&amp;#32;&lt;span&gt;value&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Creates a new &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-ref-1.html&#34;&gt;Ref&lt;/a&gt; with the initial value.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;value&lt;/code&gt;: &lt;code&gt;&amp;lsquo;T&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
     <item>
       <title>Ref.modify</title>
-      <link>http://localhost:3000/reference/ref/m-ref-modify/</link>
+      <link>https://adz.github.io/FsFlow/reference/ref/m-ref-modify/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/ref/m-ref-modify/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/ref/m-ref-modify/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Ref.modify&amp;#32;&lt;span&gt;f&amp;#32;arg2&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Updates the value of the reference using the supplied function and returns a derived value.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;f&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;T -&amp;gt; &lt;span&gt;&amp;lsquo;T * &amp;lsquo;v&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;arg1&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-ref-1.html&#34;&gt;Ref&lt;/a&gt;&amp;lt;&amp;lsquo;T&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
     <item>
       <title>Ref</title>
-      <link>http://localhost:3000/reference/ref/t-ref-1/</link>
+      <link>https://adz.github.io/FsFlow/reference/ref/t-ref-1/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/ref/t-ref-1/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/ref/t-ref-1/</guid>
       <description>&lt;p&gt;Represents a handle to a mutable reference that can be updated atomically.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Ref.set</title>
-      <link>http://localhost:3000/reference/ref/m-ref-set/</link>
+      <link>https://adz.github.io/FsFlow/reference/ref/m-ref-set/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/ref/m-ref-set/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/ref/m-ref-set/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Ref.set&amp;#32;&lt;span&gt;value&amp;#32;arg2&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Sets the value of the reference to the specified value.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;value&lt;/code&gt;: &lt;code&gt;&amp;lsquo;T&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;arg1&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-ref-1.html&#34;&gt;Ref&lt;/a&gt;&amp;lt;&amp;lsquo;T&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
     <item>
       <title>Ref.update</title>
-      <link>http://localhost:3000/reference/ref/m-ref-update/</link>
+      <link>https://adz.github.io/FsFlow/reference/ref/m-ref-update/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/ref/m-ref-update/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/ref/m-ref-update/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Ref.update&amp;#32;&lt;span&gt;f&amp;#32;arg2&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Updates the value of the reference using the supplied function.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;f&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;T -&amp;gt; &amp;lsquo;T&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;arg1&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-ref-1.html&#34;&gt;Ref&lt;/a&gt;&amp;lt;&amp;lsquo;T&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
   </channel>
