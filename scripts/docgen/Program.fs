@@ -143,7 +143,7 @@ let pageSpecs = [
         OutPath = ["stm"; "_index.md"]
         Title = "STM"
         Description = "Source-documented Software Transactional Memory for FsFlow."
-        Intro = "The `STM` module provides composable atomic transactions."
+        Intro = "The `STM` module provides composable atomic transactions with `retry` / `orElse` coordination."
         SymbolIds = [
             "Core types", ["T:FsFlow.TRef`1"; "T:FsFlow.STM`1"]
             "Module functions", ["M:FsFlow.TRef.make"; "M:FsFlow.TRef.get"; "M:FsFlow.TRef.set"; "M:FsFlow.TRef.update"; "M:FsFlow.STM.atomically"]
@@ -228,12 +228,12 @@ let pageSpecs = [
     }
     {
         OutPath = ["capability"; "_index.md"]
-        Title = "Resolver"
+        Title = "Capability"
         Description = "Source-documented dependency resolution and layers for FsFlow."
-        Intro = "This page shows the source-documented resolver and layer surface, including Resolve request tokens, environment management helpers, and the runtime/application split used by RuntimeContext."
+        Intro = "In FsFlow, a capability is a named interface that describes what a flow needs from env. A capability contract puts that interface in the environment surface type. Using an interface through a capability contract makes the dependency visible in the type, so the compiler can check it, refactoring can move safely, and reusable helpers can advertise what they need. This page shows the source-documented capability and layer surface, with `Requires` and `Resolve` as the binding surface."
         SymbolIds = [
-            "Resolve tokens", ["T:FsFlow.Requires`1"; "T:FsFlow.Resolve`1"; "T:FsFlow.Resolve`2"]
-            "Dependencies", ["T:FsFlow.MissingCapability"; "M:FsFlow.Resolver.resolve"; "M:FsFlow.Resolver.runtime"; "M:FsFlow.Resolver.environment"; "M:FsFlow.Resolver.fromProvider"]
+            "Binding tokens", ["T:FsFlow.Requires`1"; "T:FsFlow.Resolve`1"; "T:FsFlow.Resolve`2"]
+            "Edge helpers", ["T:FsFlow.MissingCapability"; "M:FsFlow.Resolver.resolve"; "M:FsFlow.Resolver.runtime"; "M:FsFlow.Resolver.environment"; "M:FsFlow.Resolver.fromProvider"]
             "Layers", ["M:FsFlow.Layer.provideLayer"]
         ]
         Alias = None
@@ -242,7 +242,7 @@ let pageSpecs = [
         OutPath = ["runtime"; "_index.md"]
         Title = "RuntimeContext"
         Description = "Source-documented runtime/application split for FsFlow."
-        Intro = "The `RuntimeContext` type and module split host services from application dependencies and carry the cancellation token for task-based execution."
+        Intro = "The `RuntimeContext` type and module split host services from application dependencies and carry the cancellation token for task-based execution. In the current foundation it is the execution carrier above the adapter layer, not the runtime storage engine."
         SymbolIds = [
             "Core type", ["T:FsFlow.RuntimeContext`2"]
             "Module functions", ["M:FsFlow.RuntimeContext.create"; "M:FsFlow.RuntimeContext.runtime"; "M:FsFlow.RuntimeContext.environment"; "M:FsFlow.RuntimeContext.cancellationToken"; "M:FsFlow.RuntimeContext.mapRuntime"; "M:FsFlow.RuntimeContext.mapEnvironment"; "M:FsFlow.RuntimeContext.withRuntime"; "M:FsFlow.RuntimeContext.withEnvironment"]
@@ -311,7 +311,7 @@ let pageSpecs = [
         OutPath = ["hosting"; "_index.md"]
         Title = "Hosting"
         Description = "Source-documented .NET host integration for FsFlow.Hosting."
-        Intro = "This page shows the source-documented `FsFlow.Hosting` surface: the IServiceProvider adapters and startup validation."
+        Intro = "This page shows the source-documented `FsFlow.Hosting` surface: the host adapters, runtime composition, and startup validation helpers."
         SymbolIds = [
             "Startup", ["M:FsFlow.Hosting.Startup.validateEnvironment"]
         ]
