@@ -100,7 +100,6 @@ cp -r "$root_dir/docs/content/"* "$root_dir/site/static/content/" 2>/dev/null ||
 
 # Copy root homepage
 cp "$root_dir/docs/index.md" "$root_dir/site/content/_index.md"
-upsert_frontmatter "$root_dir/site/content/_index.md" "type" "docs"
 
 # Fixed 'Docs' landing page - avoid flat list
 mkdir -p "$docs_dir"

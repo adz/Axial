@@ -1,7 +1,6 @@
 ---
 title: Home
 description: FsFlow technical guides, semantics, and API reference.
-type: docs
 ---
 
 <div class="docs-home-container">
