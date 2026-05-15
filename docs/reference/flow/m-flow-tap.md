@@ -7,14 +7,14 @@ linkTitle: "tap"
 <code><span>tap&#32;<span>binder&#32;flow</span></span></code>
 </div>
 
-Runs a synchronous side effect on success and preserves the original value.
+Runs an effect on success and preserves the original value.
 
 ## Remarks
 
 
- Use this for logging, telemetry, or other &quot;fire and forget&quot; operations that should not
- alter the primary value path. If the <span class="fsdocs-param-name">binder</span> flow fails, the entire
- flow fails with that error.
+ Use this for logging, telemetry, metrics, or audit steps that should observe a successful
+ value without replacing it. If the <span class="fsdocs-param-name">binder</span> flow fails, that failure becomes
+ the result of the whole flow, because the tap effect is still part of the workflow.
  
 
 ## Parameters

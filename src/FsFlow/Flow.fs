@@ -429,29 +429,33 @@ module Flow =
                 invoke errorFlow environment cancellationToken
                 |> EffectFlow.fold EffectFlow.ofError EffectFlow.ofCause)
 
-    /// <summary>Reads the current environment as the flow value.</summary>
+    /// <summary>Reads the current environment as the successful flow value.</summary>
     /// <remarks>
-    /// Use this when the entire environment object is needed for the next step of the workflow.
-    /// For projecting specific properties, <see cref="read" /> is generally more ergonomic.
+    /// Use this when the next step genuinely needs the whole environment value, for example when
+    /// passing a request context to another helper. For a single dependency or configuration value,
+    /// prefer <c>Flow.read</c>; it keeps the dependency local and makes the workflow easier to scan.
     /// </remarks>
     /// <returns>A <see cref="T:FsFlow.Flow`3" /> whose successful value is the current environment.</returns>
     let env<'env, 'error> : Flow<'env, 'error, 'env> =
         Flow(fun environment _ -> EffectFlow.ofValue environment)
 
-    /// <summary>Projects a value from the current environment.</summary>
+    /// <summary>Projects one value from the current environment.</summary>
     /// <remarks>
-    /// This is the primary way to access dependencies or configuration stored in the environment.
-    /// The <paramref name="projection" /> function is applied to the environment at execution time.
+    /// This is the primary way to access app dependencies, configuration, or request metadata stored
+    /// in <c>env</c>. The projection runs only when the flow is executed, so constructing the flow is
+    /// still pure and side-effect free. Prefer small projections over passing a large environment
+    /// deeper into reusable helpers.
     /// </remarks>
     /// <param name="projection">A function that extracts a value from the environment.</param>
     /// <returns>A <see cref="T:FsFlow.Flow`3" /> containing the projected value.</returns>
     let read (projection: 'env -> 'value) : Flow<'env, 'error, 'value> =
         Flow(fun environment _ -> EffectFlow.ofValue (projection environment))
 
-    /// <summary>Maps the successful value of a synchronous flow.</summary>
+    /// <summary>Transforms the successful value of a flow.</summary>
     /// <remarks>
-    /// If the source <paramref name="flow" /> fails, the <paramref name="mapper" /> is not executed,
-    /// and the error is preserved. This allows for safe transformation of data within the flow.
+    /// If the source <paramref name="flow" /> fails, the <paramref name="mapper" /> is not executed.
+    /// The original failure cause is preserved, including typed failures, interruption, and defects.
+    /// Use <c>map</c> for pure value transformations after an effect has succeeded.
     /// </remarks>
     /// <param name="mapper">A function of type <c>'value -> 'next</c> to transform the successful value.</param>
     /// <param name="flow">The source flow of type <see cref="T:FsFlow.Flow`3" /> to transform.</param>
@@ -468,10 +472,11 @@ module Flow =
     let ignore (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, unit> =
         map (fun _ -> ()) flow
 
-    /// <summary>Sequences a synchronous continuation after a successful value.</summary>
+    /// <summary>Sequences a dependent flow after a successful value.</summary>
     /// <remarks>
-    /// This is the "flatmap" operation for <see cref="T:FsFlow.Flow`3" />. It allows for dependent
-    /// steps where the second flow depends on the value produced by the first.
+    /// This is the flatmap operation for <see cref="T:FsFlow.Flow`3" />. The continuation only runs
+    /// when the source flow succeeds, and it receives the successful value. Use <c>bind</c> when the
+    /// next effect depends on the previous result; use <c>map</c> when the next step is pure.
     /// </remarks>
     /// <param name="binder">A function that takes the successful value and returns a new flow.</param>
     /// <param name="flow">The source flow to sequence.</param>
@@ -491,11 +496,11 @@ module Flow =
         : Flow<'env, 'error, 'next> =
         bind binder flow
 
-    /// <summary>Runs a synchronous side effect on success and preserves the original value.</summary>
+    /// <summary>Runs an effect on success and preserves the original value.</summary>
     /// <remarks>
-    /// Use this for logging, telemetry, or other "fire and forget" operations that should not
-    /// alter the primary value path. If the <paramref name="binder" /> flow fails, the entire
-    /// flow fails with that error.
+    /// Use this for logging, telemetry, metrics, or audit steps that should observe a successful
+    /// value without replacing it. If the <paramref name="binder" /> flow fails, that failure becomes
+    /// the result of the whole flow, because the tap effect is still part of the workflow.
     /// </remarks>
     /// <param name="binder">A function that produces a side-effect flow from the successful value.</param>
     /// <param name="flow">The source flow.</param>
@@ -616,8 +621,12 @@ module Flow =
             #endif
         )
 
-    /// <summary>Falls back to another flow when the source flow fails.</summary>
-    /// <summary>Computes a fallback flow from the source error when the source flow fails.</summary>
+    /// <summary>Computes a fallback flow from the typed error when the source flow fails.</summary>
+    /// <remarks>
+    /// The fallback runs only for expected typed failures represented by <c>Cause.Fail</c>. It does
+    /// not catch interruption or defects. Use this for domain-level recovery, not for swallowing
+    /// cancellation or unexpected exceptions.
+    /// </remarks>
     let orElseWith
         (fallback: 'error -> Flow<'env, 'error, 'value>)
         (flow: Flow<'env, 'error, 'value>)
@@ -638,7 +647,7 @@ module Flow =
         : Flow<'env, 'error, 'value> =
         orElseWith (fun _ -> fallback) flow
 
-    /// <summary>Combines two flows into a tuple of their values.</summary>
+    /// <summary>Runs two flows sequentially and combines their successful values into a tuple.</summary>
     let zip
         (left: Flow<'env, 'error, 'left>)
         (right: Flow<'env, 'error, 'right>)
@@ -690,7 +699,12 @@ module Flow =
         : Flow<'env, 'error, 'next> =
         apply flow value
 
-    /// <summary>Transforms the environment before running the flow.</summary>
+    /// <summary>Runs a flow against an environment derived from the outer environment.</summary>
+    /// <remarks>
+    /// Use this to embed a smaller workflow inside a larger application environment without changing
+    /// the smaller workflow's type. The mapping is applied at execution time. This is useful for
+    /// preserving narrow helper signatures while still running everything from one app boundary.
+    /// </remarks>
     let localEnv
         (mapping: 'outerEnvironment -> 'innerEnvironment)
         (flow: Flow<'innerEnvironment, 'error, 'value>)
@@ -699,7 +713,13 @@ module Flow =
             let innerEnvironment = mapping environment
             invoke flow innerEnvironment ct)
 
-    /// <summary>Provides a derived environment from a layer flow to a downstream flow.</summary>
+    /// <summary>Runs a layer flow first, then runs a downstream flow with the layer's output as its environment.</summary>
+    /// <remarks>
+    /// Use this at composition boundaries where one flow builds the environment needed by another
+    /// flow. Ordinary workflow code should usually consume an environment directly with
+    /// <c>Flow.read</c>; <c>provideLayer</c> is for deriving or provisioning an environment before a
+    /// downstream workflow starts.
+    /// </remarks>
     let provideLayer
         (layer: Flow<'input, 'error, 'environment>)
         (flow: Flow<'environment, 'error, 'value>)

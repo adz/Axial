@@ -4,7 +4,7 @@ weight: 70
 type: docs
 ---
 
-The `result { }` builder provides a fail-fast computation expression for standard F# Result values.
+This page shows the `result { }` computation expression for ordinary fail-fast `Result` workflows. It is the smallest effect in FsFlow's stack: no environment, no async boundary, and no runtime services. Use it for pure domain transformations where the first error should stop the computation. If the same logic later needs dependency access, async work, cancellation, logging, or typed execution outcomes, lift it into `Flow` without changing the underlying error model.
 
 ## Builder
 

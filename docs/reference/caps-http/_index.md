@@ -2,7 +2,7 @@
 title: "Capabilities Http"
 ---
 
-This page shows the source-documented `FsFlow.Capabilities.Http` surface: the HTTP interface and its helpers.
+This page shows the HTTP capability package. `IHttp` is intentionally narrow: it models a workflow that needs to fetch a string from a URL without binding the workflow to a concrete `HttpClient` setup. Use it for small integrations and examples where a single `getString` operation is enough. For production clients with richer behavior, define an app-specific interface and keep FsFlow responsible for orchestration, typed failure, and environment threading.
 
 ## Capability
 

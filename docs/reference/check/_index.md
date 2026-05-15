@@ -2,7 +2,7 @@
 title: "Check"
 ---
 
-This page shows the source-documented `Check` surface: the unit-failure result type and reusable predicate helpers.
+This page shows the `Check` surface for reusable, pure predicates. A check is a `Result<unit, unit>`-style decision: it says whether a condition passed, without deciding the final domain error yet. This makes checks easy to compose, negate, reuse, and convert into typed failures with `orError` or `orErrorWith`. Use `Check` for local facts such as non-empty strings, equality, null checks, and option presence. When you need to collect several named failures, move to `Validation`; when you need environment or async work, lift the result into `Flow`.
 
 ## Core type
 

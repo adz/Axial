@@ -20,32 +20,20 @@
 <link rel="icon" type="image/png" href="http://localhost:3000/favicons/android-192x192.png" sizes="192x192">
 
 <title>STM | FsFlow</title>
-<meta name="description" content="The STM module provides composable atomic transactions with retry / orElse coordination.
-Core types TRef: Represents a transactional reference that can be updated atomically within an STM transaction.
-STM: Represents a transactional operation that can be composed, retried, and executed atomically.
-Module functions TRef.make: Creates a new TRef with the initial value. TRef.get: Reads the current value of the transactional reference within a transaction. TRef.set: Sets the value of the transactional reference within a transaction. TRef.update: Updates the value of the transactional reference within a transaction using the supplied function. STM.atomically: Executes an STM transaction atomically within a flow while preserving retry/orElse coordination. Builder Stm.stm: The stm { } computation expression for building atomic transactions.">
+<meta name="description" content="This page shows the STM surface for composable atomic state transitions. STM is for cases where several transactional references must be read and updated as one operation, or where a workflow should wait until state satisfies a condition. Build transactions with TRef reads and writes, compose them before execution, then cross back into Flow with STM.atomically. Use Ref for one independent mutable value; use STM when correctness depends on a group of values changing together.">
 <meta property="og:url" content="http://localhost:3000/reference/stm/">
   <meta property="og:site_name" content="FsFlow">
   <meta property="og:title" content="STM">
-  <meta property="og:description" content="The STM module provides composable atomic transactions with retry / orElse coordination.
-Core types TRef: Represents a transactional reference that can be updated atomically within an STM transaction.
-STM: Represents a transactional operation that can be composed, retried, and executed atomically.
-Module functions TRef.make: Creates a new TRef with the initial value. TRef.get: Reads the current value of the transactional reference within a transaction. TRef.set: Sets the value of the transactional reference within a transaction. TRef.update: Updates the value of the transactional reference within a transaction using the supplied function. STM.atomically: Executes an STM transaction atomically within a flow while preserving retry/orElse coordination. Builder Stm.stm: The stm { } computation expression for building atomic transactions.">
+  <meta property="og:description" content="This page shows the STM surface for composable atomic state transitions. STM is for cases where several transactional references must be read and updated as one operation, or where a workflow should wait until state satisfies a condition. Build transactions with TRef reads and writes, compose them before execution, then cross back into Flow with STM.atomically. Use Ref for one independent mutable value; use STM when correctness depends on a group of values changing together.">
   <meta property="og:locale" content="en_us">
   <meta property="og:type" content="website">
 
   <meta itemprop="name" content="STM">
-  <meta itemprop="description" content="The STM module provides composable atomic transactions with retry / orElse coordination.
-Core types TRef: Represents a transactional reference that can be updated atomically within an STM transaction.
-STM: Represents a transactional operation that can be composed, retried, and executed atomically.
-Module functions TRef.make: Creates a new TRef with the initial value. TRef.get: Reads the current value of the transactional reference within a transaction. TRef.set: Sets the value of the transactional reference within a transaction. TRef.update: Updates the value of the transactional reference within a transaction using the supplied function. STM.atomically: Executes an STM transaction atomically within a flow while preserving retry/orElse coordination. Builder Stm.stm: The stm { } computation expression for building atomic transactions.">
-  <meta itemprop="wordCount" content="115">
+  <meta itemprop="description" content="This page shows the STM surface for composable atomic state transitions. STM is for cases where several transactional references must be read and updated as one operation, or where a workflow should wait until state satisfies a condition. Build transactions with TRef reads and writes, compose them before execution, then cross back into Flow with STM.atomically. Use Ref for one independent mutable value; use STM when correctness depends on a group of values changing together.">
+  <meta itemprop="wordCount" content="178">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="STM">
-  <meta name="twitter:description" content="The STM module provides composable atomic transactions with retry / orElse coordination.
-Core types TRef: Represents a transactional reference that can be updated atomically within an STM transaction.
-STM: Represents a transactional operation that can be composed, retried, and executed atomically.
-Module functions TRef.make: Creates a new TRef with the initial value. TRef.get: Reads the current value of the transactional reference within a transaction. TRef.set: Sets the value of the transactional reference within a transaction. TRef.update: Updates the value of the transactional reference within a transaction using the supplied function. STM.atomically: Executes an STM transaction atomically within a flow while preserving retry/orElse coordination. Builder Stm.stm: The stm { } computation expression for building atomic transactions.">
+  <meta name="twitter:description" content="This page shows the STM surface for composable atomic state transitions. STM is for cases where several transactional references must be read and updated as one operation, or where a workflow should wait until state satisfies a condition. Build transactions with TRef reads and writes, compose them before execution, then cross back into Flow with STM.atomically. Use Ref for one independent mutable value; use STM when correctness depends on a group of values changing together.">
 <link href="http://localhost:3000/scss/main.css" rel="stylesheet">
 <script
   src="https://code.jquery.com/jquery-3.7.1.min.js"
@@ -551,7 +539,7 @@ Module functions TRef.make: Creates a new TRef with the initial value. TRef.get:
 	<header class="article-meta">
 		
 </header>
-	<p>The <code>STM</code> module provides composable atomic transactions with <code>retry</code> / <code>orElse</code> coordination.</p>
+	<p>This page shows the STM surface for composable atomic state transitions. STM is for cases where several transactional references must be read and updated as one operation, or where a workflow should wait until state satisfies a condition. Build transactions with <code>TRef</code> reads and writes, compose them before execution, then cross back into <code>Flow</code> with <code>STM.atomically</code>. Use <code>Ref</code> for one independent mutable value; use STM when correctness depends on a group of values changing together.</p>
 <h2 id="core-types">Core types</h2>
 <ul>
 <li>

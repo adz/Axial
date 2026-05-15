@@ -20,24 +20,20 @@
 <link rel="icon" type="image/png" href="http://localhost:3000/favicons/android-192x192.png" sizes="192x192">
 
 <title>Schedule | FsFlow</title>
-<meta name="description" content="The Schedule module provides a DSL for describing execution policies.
-Core type Schedule: Represents a stateful schedule that can decide whether to continue and how long to delay. Module functions Schedule.recurs: Creates a schedule that recurs a fixed number of times. Schedule.spaced: Creates a schedule that recurs with a fixed delay between attempts. Schedule.exponential: Creates a schedule that recurs with exponential backoff. Schedule.jittered: Adds random jitter to a schedule’s delay. Flow extensions FlowSchedule.Retry: Retries a failing flow according to the supplied schedule. FlowSchedule.Repeat: Repeats a successful flow according to the supplied schedule.">
+<meta name="description" content="This page shows the Schedule surface for describing retry and repeat policies as values. A schedule decides when a workflow should run again, what delay should be used, and what output should be accumulated for each step. Use schedules when retry behavior is part of the workflow boundary and must stay explicit, testable, and separate from the domain operation being retried. The common entry points are recurs for bounded repetition, spaced for fixed delays, exponential for backoff, and jittered when several callers should not retry in lockstep.">
 <meta property="og:url" content="http://localhost:3000/reference/schedule/">
   <meta property="og:site_name" content="FsFlow">
   <meta property="og:title" content="Schedule">
-  <meta property="og:description" content="The Schedule module provides a DSL for describing execution policies.
-Core type Schedule: Represents a stateful schedule that can decide whether to continue and how long to delay. Module functions Schedule.recurs: Creates a schedule that recurs a fixed number of times. Schedule.spaced: Creates a schedule that recurs with a fixed delay between attempts. Schedule.exponential: Creates a schedule that recurs with exponential backoff. Schedule.jittered: Adds random jitter to a schedule’s delay. Flow extensions FlowSchedule.Retry: Retries a failing flow according to the supplied schedule. FlowSchedule.Repeat: Repeats a successful flow according to the supplied schedule.">
+  <meta property="og:description" content="This page shows the Schedule surface for describing retry and repeat policies as values. A schedule decides when a workflow should run again, what delay should be used, and what output should be accumulated for each step. Use schedules when retry behavior is part of the workflow boundary and must stay explicit, testable, and separate from the domain operation being retried. The common entry points are recurs for bounded repetition, spaced for fixed delays, exponential for backoff, and jittered when several callers should not retry in lockstep.">
   <meta property="og:locale" content="en_us">
   <meta property="og:type" content="website">
 
   <meta itemprop="name" content="Schedule">
-  <meta itemprop="description" content="The Schedule module provides a DSL for describing execution policies.
-Core type Schedule: Represents a stateful schedule that can decide whether to continue and how long to delay. Module functions Schedule.recurs: Creates a schedule that recurs a fixed number of times. Schedule.spaced: Creates a schedule that recurs with a fixed delay between attempts. Schedule.exponential: Creates a schedule that recurs with exponential backoff. Schedule.jittered: Adds random jitter to a schedule’s delay. Flow extensions FlowSchedule.Retry: Retries a failing flow according to the supplied schedule. FlowSchedule.Repeat: Repeats a successful flow according to the supplied schedule.">
-  <meta itemprop="wordCount" content="92">
+  <meta itemprop="description" content="This page shows the Schedule surface for describing retry and repeat policies as values. A schedule decides when a workflow should run again, what delay should be used, and what output should be accumulated for each step. Use schedules when retry behavior is part of the workflow boundary and must stay explicit, testable, and separate from the domain operation being retried. The common entry points are recurs for bounded repetition, spaced for fixed delays, exponential for backoff, and jittered when several callers should not retry in lockstep.">
+  <meta itemprop="wordCount" content="169">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Schedule">
-  <meta name="twitter:description" content="The Schedule module provides a DSL for describing execution policies.
-Core type Schedule: Represents a stateful schedule that can decide whether to continue and how long to delay. Module functions Schedule.recurs: Creates a schedule that recurs a fixed number of times. Schedule.spaced: Creates a schedule that recurs with a fixed delay between attempts. Schedule.exponential: Creates a schedule that recurs with exponential backoff. Schedule.jittered: Adds random jitter to a schedule’s delay. Flow extensions FlowSchedule.Retry: Retries a failing flow according to the supplied schedule. FlowSchedule.Repeat: Repeats a successful flow according to the supplied schedule.">
+  <meta name="twitter:description" content="This page shows the Schedule surface for describing retry and repeat policies as values. A schedule decides when a workflow should run again, what delay should be used, and what output should be accumulated for each step. Use schedules when retry behavior is part of the workflow boundary and must stay explicit, testable, and separate from the domain operation being retried. The common entry points are recurs for bounded repetition, spaced for fixed delays, exponential for backoff, and jittered when several callers should not retry in lockstep.">
 <link href="http://localhost:3000/scss/main.css" rel="stylesheet">
 <script
   src="https://code.jquery.com/jquery-3.7.1.min.js"
@@ -543,7 +539,7 @@ Core type Schedule: Represents a stateful schedule that can decide whether to co
 	<header class="article-meta">
 		
 </header>
-	<p>The <code>Schedule</code> module provides a DSL for describing execution policies.</p>
+	<p>This page shows the <code>Schedule</code> surface for describing retry and repeat policies as values. A schedule decides when a workflow should run again, what delay should be used, and what output should be accumulated for each step. Use schedules when retry behavior is part of the workflow boundary and must stay explicit, testable, and separate from the domain operation being retried. The common entry points are <code>recurs</code> for bounded repetition, <code>spaced</code> for fixed delays, <code>exponential</code> for backoff, and <code>jittered</code> when several callers should not retry in lockstep.</p>
 <h2 id="core-type">Core type</h2>
 <ul>
 <li><a href="http://localhost:3000/reference/schedule/t-schedule-3/"><code>Schedule</code></a>:  Represents a stateful schedule that can decide whether to continue and how long to delay.</li>

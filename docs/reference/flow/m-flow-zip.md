@@ -7,7 +7,7 @@ linkTitle: "zip"
 <code><span>zip&#32;<span>left&#32;right</span></span></code>
 </div>
 
-Combines two flows into a tuple of their values.
+Runs two flows sequentially and combines their successful values into a tuple.
 
 ## Parameters
 

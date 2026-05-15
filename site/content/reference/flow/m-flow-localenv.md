@@ -8,7 +8,15 @@ type: docs
 <code><span>localEnv&#32;<span>mapping&#32;flow</span></span></code>
 </div>
 
-Transforms the environment before running the flow.
+Runs a flow against an environment derived from the outer environment.
+
+## Remarks
+
+
+ Use this to embed a smaller workflow inside a larger application environment without changing
+ the smaller workflow&#39;s type. The mapping is applied at execution time. This is useful for
+ preserving narrow helper signatures while still running everything from one app boundary.
+ 
 
 ## Parameters
 

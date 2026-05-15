@@ -7,7 +7,15 @@ linkTitle: "orElseWith"
 <code><span>orElseWith&#32;<span>fallback&#32;flow</span></span></code>
 </div>
 
-Falls back to another flow when the source flow fails.Computes a fallback flow from the source error when the source flow fails.
+Computes a fallback flow from the typed error when the source flow fails.
+
+## Remarks
+
+
+ The fallback runs only for expected typed failures represented by <code>Cause.Fail</code>. It does
+ not catch interruption or defects. Use this for domain-level recovery, not for swallowing
+ cancellation or unexpected exceptions.
+ 
 
 ## Parameters
 

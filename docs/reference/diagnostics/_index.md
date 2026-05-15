@@ -2,7 +2,7 @@
 title: "Diagnostics"
 ---
 
-The `Diagnostics` type represents a structured graph of validation failures.
+This page shows the diagnostics graph used by `Validation`. A `Diagnostics<'error>` value stores errors at the current node and at named, keyed, or indexed child paths, so validation can report both what failed and where it failed. Use `Diagnostics.singleton` for one error, `merge` to combine sibling reports, `flatten` when callers need path-bearing diagnostics, and `toString` for compact human-readable output. Keep diagnostics at the validation boundary; convert them to domain responses or UI messages at the edge.
 
 ## Graph types
 

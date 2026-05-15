@@ -2,7 +2,7 @@
 title: "Capability"
 ---
 
-In FsFlow, a capability is a named interface that describes what a flow needs from `env`. A capability contract puts that interface in the environment surface type. Using an interface through a capability contract makes the dependency visible in the type, so the compiler can check it, refactoring can move safely, and reusable helpers can advertise what they need. For ordinary workflow code, prefer small app contracts plus `Flow.read`. Runtime-owned services such as clock, logging, random, GUID generation, and environment variables are read through `FsFlow.Capabilities.Core` helpers and overridden with `Flow.withClock`, `Flow.withLog`, `Flow.withRandom`, `Flow.withGuid`, and `Flow.withEnvironmentVariables`. This page shows the source-documented compatibility binding tokens, host-edge helpers, and layer helper.
+This page shows the capability and layer helpers around FsFlow's environment model. In FsFlow, a capability is a named interface that describes what a flow needs from `env`; the workflow still receives an explicit environment, but the interface gives that dependency surface a stable name. Prefer small app contracts plus `Flow.read` for reusable workflow code. Keep runtime-owned services such as clock, logging, random, GUID generation, and environment-variable lookup in `FsFlow.Capabilities.Core`, where they can be read through runtime helpers and overridden with `Flow.withClock`, `Flow.withLog`, `Flow.withRandom`, `Flow.withGuid`, and `Flow.withEnvironmentVariables`. The `Resolver` helpers are edge and compatibility tools, not the default application model.
 
 ## Binding tokens
 

@@ -8,13 +8,14 @@ type: docs
 <code><span>map&#32;<span>mapper&#32;flow</span></span></code>
 </div>
 
-Maps the successful value of a synchronous flow.
+Transforms the successful value of a flow.
 
 ## Remarks
 
 
- If the source <span class="fsdocs-param-name">flow</span> fails, the <span class="fsdocs-param-name">mapper</span> is not executed,
- and the error is preserved. This allows for safe transformation of data within the flow.
+ If the source <span class="fsdocs-param-name">flow</span> fails, the <span class="fsdocs-param-name">mapper</span> is not executed.
+ The original failure cause is preserved, including typed failures, interruption, and defects.
+ Use <code>map</code> for pure value transformations after an effect has succeeded.
  
 
 ## Parameters

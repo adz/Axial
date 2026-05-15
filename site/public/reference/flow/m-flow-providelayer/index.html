@@ -19,24 +19,28 @@
 <link rel="icon" type="image/png" href="http://localhost:3000/favicons/android-192x192.png" sizes="192x192">
 
 <title>Flow.provideLayer | FsFlow</title>
-<meta name="description" content="provideLayer layer flow Provides a derived environment from a layer flow to a downstream flow.
+<meta name="description" content="provideLayer layer flow Runs a layer flow first, then runs a downstream flow with the layer&#39;s output as its environment.
+Remarks Use this at composition boundaries where one flow builds the environment needed by another flow. Ordinary workflow code should usually consume an environment directly with Flow.read; provideLayer is for deriving or provisioning an environment before a downstream workflow starts.
 Parameters layer: Flow&lt;‘input, ’error, ’environment&gt; flow: Flow&lt;‘environment, ’error, ‘value&gt;">
 <meta property="og:url" content="http://localhost:3000/reference/flow/m-flow-providelayer/">
   <meta property="og:site_name" content="FsFlow">
   <meta property="og:title" content="Flow.provideLayer">
-  <meta property="og:description" content="provideLayer layer flow Provides a derived environment from a layer flow to a downstream flow.
+  <meta property="og:description" content="provideLayer layer flow Runs a layer flow first, then runs a downstream flow with the layer&#39;s output as its environment.
+Remarks Use this at composition boundaries where one flow builds the environment needed by another flow. Ordinary workflow code should usually consume an environment directly with Flow.read; provideLayer is for deriving or provisioning an environment before a downstream workflow starts.
 Parameters layer: Flow&lt;‘input, ’error, ’environment&gt; flow: Flow&lt;‘environment, ’error, ‘value&gt;">
   <meta property="og:locale" content="en_us">
   <meta property="og:type" content="article">
     <meta property="article:section" content="reference">
 
   <meta itemprop="name" content="Flow.provideLayer">
-  <meta itemprop="description" content="provideLayer layer flow Provides a derived environment from a layer flow to a downstream flow.
+  <meta itemprop="description" content="provideLayer layer flow Runs a layer flow first, then runs a downstream flow with the layer&#39;s output as its environment.
+Remarks Use this at composition boundaries where one flow builds the environment needed by another flow. Ordinary workflow code should usually consume an environment directly with Flow.read; provideLayer is for deriving or provisioning an environment before a downstream workflow starts.
 Parameters layer: Flow&lt;‘input, ’error, ’environment&gt; flow: Flow&lt;‘environment, ’error, ‘value&gt;">
-  <meta itemprop="wordCount" content="22">
+  <meta itemprop="wordCount" content="67">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Flow.provideLayer">
-  <meta name="twitter:description" content="provideLayer layer flow Provides a derived environment from a layer flow to a downstream flow.
+  <meta name="twitter:description" content="provideLayer layer flow Runs a layer flow first, then runs a downstream flow with the layer&#39;s output as its environment.
+Remarks Use this at composition boundaries where one flow builds the environment needed by another flow. Ordinary workflow code should usually consume an environment directly with Flow.read; provideLayer is for deriving or provisioning an environment before a downstream workflow starts.
 Parameters layer: Flow&lt;‘input, ’error, ’environment&gt; flow: Flow&lt;‘environment, ’error, ‘value&gt;">
 <link href="http://localhost:3000/scss/main.css" rel="stylesheet">
 <script
@@ -517,6 +521,7 @@ Parameters layer: Flow&lt;‘input, ’error, ’environment&gt; flow: Flow&lt;�
     </div>
     <nav id="TableOfContents">
   <ul>
+    <li><a href="#remarks">Remarks</a></li>
     <li><a href="#parameters">Parameters</a></li>
   </ul>
 </nav>
@@ -546,7 +551,12 @@ Parameters layer: Flow&lt;‘input, ’error, ’environment&gt; flow: Flow&lt;�
 	<div class="fsdocs-usage">
 <code><span>provideLayer&#32;<span>layer&#32;flow</span></span></code>
 </div>
-<p>Provides a derived environment from a layer flow to a downstream flow.</p>
+<p>Runs a layer flow first, then runs a downstream flow with the layer's output as its environment.</p>
+<h2 id="remarks">Remarks</h2>
+<p>Use this at composition boundaries where one flow builds the environment needed by another
+flow. Ordinary workflow code should usually consume an environment directly with
+<code>Flow.read</code>; <code>provideLayer</code> is for deriving or provisioning an environment before a
+downstream workflow starts.</p>
 <h2 id="parameters">Parameters</h2>
 <ul>
 <li><code>layer</code>: <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html">Flow</a>&lt;<span>&lsquo;input, &rsquo;error, &rsquo;environment</span>&gt;</span></code></li>

@@ -19,28 +19,28 @@
 <link rel="icon" type="image/png" href="http://localhost:3000/favicons/android-192x192.png" sizes="192x192">
 
 <title>Flow.read | FsFlow</title>
-<meta name="description" content="read projection Projects a value from the current environment.
-Remarks This is the primary way to access dependencies or configuration stored in the environment. The projection function is applied to the environment at execution time.
+<meta name="description" content="read projection Projects one value from the current environment.
+Remarks This is the primary way to access app dependencies, configuration, or request metadata stored in env. The projection runs only when the flow is executed, so constructing the flow is still pure and side-effect free. Prefer small projections over passing a large environment deeper into reusable helpers.
 Parameters projection: ‘env -&gt; ‘value A function that extracts a value from the environment. Returns A Flow containing the projected value.">
 <meta property="og:url" content="http://localhost:3000/reference/flow/m-flow-read/">
   <meta property="og:site_name" content="FsFlow">
   <meta property="og:title" content="Flow.read">
-  <meta property="og:description" content="read projection Projects a value from the current environment.
-Remarks This is the primary way to access dependencies or configuration stored in the environment. The projection function is applied to the environment at execution time.
+  <meta property="og:description" content="read projection Projects one value from the current environment.
+Remarks This is the primary way to access app dependencies, configuration, or request metadata stored in env. The projection runs only when the flow is executed, so constructing the flow is still pure and side-effect free. Prefer small projections over passing a large environment deeper into reusable helpers.
 Parameters projection: ‘env -&gt; ‘value A function that extracts a value from the environment. Returns A Flow containing the projected value.">
   <meta property="og:locale" content="en_us">
   <meta property="og:type" content="article">
     <meta property="article:section" content="reference">
 
   <meta itemprop="name" content="Flow.read">
-  <meta itemprop="description" content="read projection Projects a value from the current environment.
-Remarks This is the primary way to access dependencies or configuration stored in the environment. The projection function is applied to the environment at execution time.
+  <meta itemprop="description" content="read projection Projects one value from the current environment.
+Remarks This is the primary way to access app dependencies, configuration, or request metadata stored in env. The projection runs only when the flow is executed, so constructing the flow is still pure and side-effect free. Prefer small projections over passing a large environment deeper into reusable helpers.
 Parameters projection: ‘env -&gt; ‘value A function that extracts a value from the environment. Returns A Flow containing the projected value.">
-  <meta itemprop="wordCount" content="55">
+  <meta itemprop="wordCount" content="77">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Flow.read">
-  <meta name="twitter:description" content="read projection Projects a value from the current environment.
-Remarks This is the primary way to access dependencies or configuration stored in the environment. The projection function is applied to the environment at execution time.
+  <meta name="twitter:description" content="read projection Projects one value from the current environment.
+Remarks This is the primary way to access app dependencies, configuration, or request metadata stored in env. The projection runs only when the flow is executed, so constructing the flow is still pure and side-effect free. Prefer small projections over passing a large environment deeper into reusable helpers.
 Parameters projection: ‘env -&gt; ‘value A function that extracts a value from the environment. Returns A Flow containing the projected value.">
 <link href="http://localhost:3000/scss/main.css" rel="stylesheet">
 <script
@@ -552,10 +552,12 @@ Parameters projection: ‘env -&gt; ‘value A function that extracts a value fr
 	<div class="fsdocs-usage">
 <code><span>read&#32;<span>projection</span></span></code>
 </div>
-<p>Projects a value from the current environment.</p>
+<p>Projects one value from the current environment.</p>
 <h2 id="remarks">Remarks</h2>
-<p>This is the primary way to access dependencies or configuration stored in the environment.
-The <span class="fsdocs-param-name">projection</span> function is applied to the environment at execution time.</p>
+<p>This is the primary way to access app dependencies, configuration, or request metadata stored
+in <code>env</code>. The projection runs only when the flow is executed, so constructing the flow is
+still pure and side-effect free. Prefer small projections over passing a large environment
+deeper into reusable helpers.</p>
 <h2 id="parameters">Parameters</h2>
 <ul>
 <li><code>projection</code>: <code><span>&lsquo;env -&gt; &lsquo;value</span></code>

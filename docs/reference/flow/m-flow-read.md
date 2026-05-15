@@ -7,13 +7,15 @@ linkTitle: "read"
 <code><span>read&#32;<span>projection</span></span></code>
 </div>
 
-Projects a value from the current environment.
+Projects one value from the current environment.
 
 ## Remarks
 
 
- This is the primary way to access dependencies or configuration stored in the environment.
- The <span class="fsdocs-param-name">projection</span> function is applied to the environment at execution time.
+ This is the primary way to access app dependencies, configuration, or request metadata stored
+ in <code>env</code>. The projection runs only when the flow is executed, so constructing the flow is
+ still pure and side-effect free. Prefer small projections over passing a large environment
+ deeper into reusable helpers.
  
 
 ## Parameters

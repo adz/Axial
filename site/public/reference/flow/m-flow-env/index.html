@@ -19,28 +19,28 @@
 <link rel="icon" type="image/png" href="http://localhost:3000/favicons/android-192x192.png" sizes="192x192">
 
 <title>Flow.env | FsFlow</title>
-<meta name="description" content="env  Reads the current environment as the flow value.
-Remarks Use this when the entire environment object is needed for the next step of the workflow. For projecting specific properties, read is generally more ergonomic.
+<meta name="description" content="env  Reads the current environment as the successful flow value.
+Remarks Use this when the next step genuinely needs the whole environment value, for example when passing a request context to another helper. For a single dependency or configuration value, prefer Flow.read; it keeps the dependency local and makes the workflow easier to scan.
 Returns A Flow whose successful value is the current environment.">
 <meta property="og:url" content="http://localhost:3000/reference/flow/m-flow-env/">
   <meta property="og:site_name" content="FsFlow">
   <meta property="og:title" content="Flow.env">
-  <meta property="og:description" content="env  Reads the current environment as the flow value.
-Remarks Use this when the entire environment object is needed for the next step of the workflow. For projecting specific properties, read is generally more ergonomic.
+  <meta property="og:description" content="env  Reads the current environment as the successful flow value.
+Remarks Use this when the next step genuinely needs the whole environment value, for example when passing a request context to another helper. For a single dependency or configuration value, prefer Flow.read; it keeps the dependency local and makes the workflow easier to scan.
 Returns A Flow whose successful value is the current environment.">
   <meta property="og:locale" content="en_us">
   <meta property="og:type" content="article">
     <meta property="article:section" content="reference">
 
   <meta itemprop="name" content="Flow.env">
-  <meta itemprop="description" content="env  Reads the current environment as the flow value.
-Remarks Use this when the entire environment object is needed for the next step of the workflow. For projecting specific properties, read is generally more ergonomic.
+  <meta itemprop="description" content="env  Reads the current environment as the successful flow value.
+Remarks Use this when the next step genuinely needs the whole environment value, for example when passing a request context to another helper. For a single dependency or configuration value, prefer Flow.read; it keeps the dependency local and makes the workflow easier to scan.
 Returns A Flow whose successful value is the current environment.">
-  <meta itemprop="wordCount" content="45">
+  <meta itemprop="wordCount" content="64">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Flow.env">
-  <meta name="twitter:description" content="env  Reads the current environment as the flow value.
-Remarks Use this when the entire environment object is needed for the next step of the workflow. For projecting specific properties, read is generally more ergonomic.
+  <meta name="twitter:description" content="env  Reads the current environment as the successful flow value.
+Remarks Use this when the next step genuinely needs the whole environment value, for example when passing a request context to another helper. For a single dependency or configuration value, prefer Flow.read; it keeps the dependency local and makes the workflow easier to scan.
 Returns A Flow whose successful value is the current environment.">
 <link href="http://localhost:3000/scss/main.css" rel="stylesheet">
 <script
@@ -551,10 +551,11 @@ Returns A Flow whose successful value is the current environment.">
 	<div class="fsdocs-usage">
 <code><span>env&#32;<span></span></span></code>
 </div>
-<p>Reads the current environment as the flow value.</p>
+<p>Reads the current environment as the successful flow value.</p>
 <h2 id="remarks">Remarks</h2>
-<p>Use this when the entire environment object is needed for the next step of the workflow.
-For projecting specific properties, <a href="https://learn.microsoft.com/dotnet/api/read">read</a> is generally more ergonomic.</p>
+<p>Use this when the next step genuinely needs the whole environment value, for example when
+passing a request context to another helper. For a single dependency or configuration value,
+prefer <code>Flow.read</code>; it keeps the dependency local and makes the workflow easier to scan.</p>
 <h2 id="returns">Returns</h2>
 <p>A <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html">Flow</a> whose successful value is the current environment.</p>
 

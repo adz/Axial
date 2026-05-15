@@ -2,7 +2,7 @@
 title: "Capabilities Core"
 ---
 
-`FsFlow.Capabilities.Core` is the smallest shared capability package in the FsFlow capabilities story. It keeps the surface synchronous and explicit: clock, random, GUID, and environment-variable capabilities.
+This page shows the core runtime capability package: clock, logging, random numbers, GUID generation, and environment-variable lookup. These services are operational concerns, so ordinary application workflows should usually read them through helpers such as `Clock.now`, `Log.info`, `Random.nextInt`, `Guid.newGuid`, and `EnvironmentVariable.get` instead of adding them to every app environment record. Tests and scoped workflows can replace them with deterministic providers via `Flow.withClock`, `Flow.withLog`, `Flow.withRandom`, `Flow.withGuid`, and `Flow.withEnvironmentVariables`.
 
 ## Capability types
 

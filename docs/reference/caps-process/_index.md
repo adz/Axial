@@ -2,7 +2,7 @@
 title: "Capabilities Process"
 ---
 
-This page shows the source-documented `FsFlow.Capabilities.Process` surface: the process runner interface and its helpers.
+This page shows the external-process capability package. `IProcess` models command execution as an asynchronous workflow dependency and returns a `ProcessResult` with exit code, standard output, and standard error. Use it for tooling, build automation, and integration boundaries where spawning a process is part of the application behavior. Keep process execution behind this interface so tests can return deterministic results without shelling out.
 
 ## Capability
 

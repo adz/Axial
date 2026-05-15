@@ -173,7 +173,7 @@
       <link>http://localhost:3000/reference/validation/builders-validate/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>http://localhost:3000/reference/validation/builders-validate/</guid>
-      <description>&lt;p&gt;The &lt;code&gt;validate { }&lt;/code&gt; builder is used for accumulating sibling failures into a structured diagnostics graph.&lt;/p&gt;&#xA;&lt;h2 id=&#34;builder&#34;&gt;Builder&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;a href=&#34;http://localhost:3000/reference/validation/p-validate/&#34;&gt;&lt;code&gt;validate&lt;/code&gt;&lt;/a&gt;:&#xA;The accumulating &lt;code&gt;validate { }&lt;/code&gt; computation expression.&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
+      <description>&lt;p&gt;This page shows the &lt;code&gt;validate { }&lt;/code&gt; computation expression for writing validation logic with direct, sequential syntax. The builder is best for validation steps that read clearly as a block while still returning &lt;code&gt;Validation&amp;lt;&#39;value, &#39;error&amp;gt;&lt;/code&gt;. Use it when each bound step depends on earlier successful values. For independent sibling fields where you want maximum error accumulation, prefer &lt;code&gt;Validation.map2&lt;/code&gt;, &lt;code&gt;map3&lt;/code&gt;, &lt;code&gt;apply&lt;/code&gt;, &lt;code&gt;collect&lt;/code&gt;, or &lt;code&gt;traverseIndexed&lt;/code&gt; so all branches are evaluated and all diagnostics are retained.&lt;/p&gt;</description>
     </item>
     <item>
       <title>validate</title>

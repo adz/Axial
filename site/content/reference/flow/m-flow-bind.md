@@ -8,13 +8,14 @@ type: docs
 <code><span>bind&#32;<span>binder&#32;flow</span></span></code>
 </div>
 
-Sequences a synchronous continuation after a successful value.
+Sequences a dependent flow after a successful value.
 
 ## Remarks
 
 
- This is the &quot;flatmap&quot; operation for <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html">Flow</a>. It allows for dependent
- steps where the second flow depends on the value produced by the first.
+ This is the flatmap operation for <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html">Flow</a>. The continuation only runs
+ when the source flow succeeds, and it receives the successful value. Use <code>bind</code> when the
+ next effect depends on the previous result; use <code>map</code> when the next step is pure.
  
 
 ## Parameters

@@ -20,20 +20,28 @@
 <link rel="icon" type="image/png" href="http://localhost:3000/favicons/android-192x192.png" sizes="192x192">
 
 <title>Reference | FsFlow</title>
-<meta name="description" content="Technical documentation for FsFlow core and capability packages.">
+<meta name="description" content="This page shows the generated API reference for FsFlow core and the standard capability packages.
+Start with Flow if you are writing application workflows. It is the central execution type: a cold computation that reads env, returns a typed failure or success value, and preserves interruption and defects. Use flow { } for normal orchestration syntax.
+Use Check and Validation before reaching for Flow when the code is still pure. Check is for reusable boolean-like predicates; Validation is for accumulating field-level diagnostics. Use Diagnostics when you need to inspect, merge, or render those validation failures.">
 <meta property="og:url" content="http://localhost:3000/reference/">
   <meta property="og:site_name" content="FsFlow">
   <meta property="og:title" content="Reference">
-  <meta property="og:description" content="Technical documentation for FsFlow core and capability packages.">
+  <meta property="og:description" content="This page shows the generated API reference for FsFlow core and the standard capability packages.
+Start with Flow if you are writing application workflows. It is the central execution type: a cold computation that reads env, returns a typed failure or success value, and preserves interruption and defects. Use flow { } for normal orchestration syntax.
+Use Check and Validation before reaching for Flow when the code is still pure. Check is for reusable boolean-like predicates; Validation is for accumulating field-level diagnostics. Use Diagnostics when you need to inspect, merge, or render those validation failures.">
   <meta property="og:locale" content="en_us">
   <meta property="og:type" content="website">
 
   <meta itemprop="name" content="Reference">
-  <meta itemprop="description" content="Technical documentation for FsFlow core and capability packages.">
-  <meta itemprop="wordCount" content="8">
+  <meta itemprop="description" content="This page shows the generated API reference for FsFlow core and the standard capability packages.
+Start with Flow if you are writing application workflows. It is the central execution type: a cold computation that reads env, returns a typed failure or success value, and preserves interruption and defects. Use flow { } for normal orchestration syntax.
+Use Check and Validation before reaching for Flow when the code is still pure. Check is for reusable boolean-like predicates; Validation is for accumulating field-level diagnostics. Use Diagnostics when you need to inspect, merge, or render those validation failures.">
+  <meta itemprop="wordCount" content="181">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Reference">
-  <meta name="twitter:description" content="Technical documentation for FsFlow core and capability packages.">
+  <meta name="twitter:description" content="This page shows the generated API reference for FsFlow core and the standard capability packages.
+Start with Flow if you are writing application workflows. It is the central execution type: a cold computation that reads env, returns a typed failure or success value, and preserves interruption and defects. Use flow { } for normal orchestration syntax.
+Use Check and Validation before reaching for Flow when the code is still pure. Check is for reusable boolean-like predicates; Validation is for accumulating field-level diagnostics. Use Diagnostics when you need to inspect, merge, or render those validation failures.">
 <link href="http://localhost:3000/scss/main.css" rel="stylesheet">
 <script
   src="https://code.jquery.com/jquery-3.7.1.min.js"
@@ -526,7 +534,23 @@
 	<header class="article-meta">
 		
 </header>
-	<p>Technical documentation for FsFlow core and capability packages.</p>
+	<p>This page shows the generated API reference for FsFlow core and the standard capability packages.</p>
+<p>Start with <a href="http://localhost:3000/reference/flow/"><code>Flow</code></a> if you are writing application workflows. It is the central execution
+type: a cold computation that reads <code>env</code>, returns a typed failure or success value, and preserves
+interruption and defects. Use <a href="http://localhost:3000/reference/flow/builders-flow/"><code>flow { }</code></a> for normal orchestration syntax.</p>
+<p>Use <a href="http://localhost:3000/reference/check/"><code>Check</code></a> and <a href="http://localhost:3000/reference/validation/"><code>Validation</code></a> before reaching for <code>Flow</code> when the code is
+still pure. <code>Check</code> is for reusable boolean-like predicates; <code>Validation</code> is for accumulating
+field-level diagnostics. Use <a href="http://localhost:3000/reference/diagnostics/"><code>Diagnostics</code></a> when you need to inspect, merge, or
+render those validation failures.</p>
+<p>Use the capability references when a workflow needs named dependencies. <a href="http://localhost:3000/reference/capability/"><code>Capability</code></a>
+documents the edge helpers and compatibility tokens around <code>env</code>; the <code>caps-*</code> sections document the
+standard capability packages. Keep application dependencies in <code>env</code> and keep runtime-owned services
+such as clock, logging, random, GUID generation, and environment-variable lookup behind runtime
+helpers and overrides.</p>
+<p>Use <a href="http://localhost:3000/reference/ref/"><code>Ref</code></a>, <a href="http://localhost:3000/reference/stm/"><code>STM</code></a>, <a href="http://localhost:3000/reference/schedule/"><code>Schedule</code></a>, and <a href="http://localhost:3000/reference/stream/"><code>Stream</code></a> for focused
+runtime concerns: mutable references, transactional state, retry/repeat policy, and pull-based
+streams. These modules are useful, but they are not the starting point for ordinary application
+code.</p>
 
 	<div class="section-index">
     

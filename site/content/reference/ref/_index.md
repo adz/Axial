@@ -3,7 +3,7 @@ title: "Ref"
 type: docs
 ---
 
-The `Ref` module provides thread-safe mutable state handles.
+This page shows the `Ref` surface for small pieces of shared mutable state inside flows. A `Ref<'T>` is an atomic handle that can be created, read, set, updated, or modified from workflow code without turning the whole environment into a mutable object. Use `Ref` for counters, flags, request-local caches, and coordination points where a single value is enough. For multi-value invariants that must change together, use STM instead.
 
 ## Core type
 

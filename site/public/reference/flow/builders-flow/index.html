@@ -19,25 +19,21 @@
 <link rel="icon" type="image/png" href="http://localhost:3000/favicons/android-192x192.png" sizes="192x192">
 
 <title>flow { } | FsFlow</title>
-<meta name="description" content="The flow { } builder is the primary entry point for orchestrating synchronous, async, and task-based work.
-Builder flow: The universal flow { } computation expression.">
+<meta name="description" content="This page shows the flow { } computation expression, the primary syntax for writing FsFlow workflows. Inside the builder, ordinary values, Result, Async, Task, Flow, and guarded sources can be sequenced without manually unwrapping each layer. The builder preserves the important boundaries: expected errors stay typed, defects become Cause.Die, cancellation becomes interruption, and environment access remains explicit through Flow.env or Flow.read. Prefer flow { } for application orchestration; keep pure validation and simple predicates in Check, Validation, or Result until the code needs environment or effects.">
 <meta property="og:url" content="http://localhost:3000/reference/flow/builders-flow/">
   <meta property="og:site_name" content="FsFlow">
   <meta property="og:title" content="flow { }">
-  <meta property="og:description" content="The flow { } builder is the primary entry point for orchestrating synchronous, async, and task-based work.
-Builder flow: The universal flow { } computation expression.">
+  <meta property="og:description" content="This page shows the flow { } computation expression, the primary syntax for writing FsFlow workflows. Inside the builder, ordinary values, Result, Async, Task, Flow, and guarded sources can be sequenced without manually unwrapping each layer. The builder preserves the important boundaries: expected errors stay typed, defects become Cause.Die, cancellation becomes interruption, and environment access remains explicit through Flow.env or Flow.read. Prefer flow { } for application orchestration; keep pure validation and simple predicates in Check, Validation, or Result until the code needs environment or effects.">
   <meta property="og:locale" content="en_us">
   <meta property="og:type" content="article">
     <meta property="article:section" content="reference">
 
   <meta itemprop="name" content="flow { }">
-  <meta itemprop="description" content="The flow { } builder is the primary entry point for orchestrating synchronous, async, and task-based work.
-Builder flow: The universal flow { } computation expression.">
-  <meta itemprop="wordCount" content="26">
+  <meta itemprop="description" content="This page shows the flow { } computation expression, the primary syntax for writing FsFlow workflows. Inside the builder, ordinary values, Result, Async, Task, Flow, and guarded sources can be sequenced without manually unwrapping each layer. The builder preserves the important boundaries: expected errors stay typed, defects become Cause.Die, cancellation becomes interruption, and environment access remains explicit through Flow.env or Flow.read. Prefer flow { } for application orchestration; keep pure validation and simple predicates in Check, Validation, or Result until the code needs environment or effects.">
+  <meta itemprop="wordCount" content="95">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="flow { }">
-  <meta name="twitter:description" content="The flow { } builder is the primary entry point for orchestrating synchronous, async, and task-based work.
-Builder flow: The universal flow { } computation expression.">
+  <meta name="twitter:description" content="This page shows the flow { } computation expression, the primary syntax for writing FsFlow workflows. Inside the builder, ordinary values, Result, Async, Task, Flow, and guarded sources can be sequenced without manually unwrapping each layer. The builder preserves the important boundaries: expected errors stay typed, defects become Cause.Die, cancellation becomes interruption, and environment access remains explicit through Flow.env or Flow.read. Prefer flow { } for application orchestration; keep pure validation and simple predicates in Check, Validation, or Result until the code needs environment or effects.">
 <link href="http://localhost:3000/scss/main.css" rel="stylesheet">
 <script
   src="https://code.jquery.com/jquery-3.7.1.min.js"
@@ -543,7 +539,7 @@ Builder flow: The universal flow { } computation expression.">
 	<header class="article-meta">
 		
 </header>
-	<p>The <code>flow { }</code> builder is the primary entry point for orchestrating synchronous, async, and task-based work.</p>
+	<p>This page shows the <code>flow { }</code> computation expression, the primary syntax for writing FsFlow workflows. Inside the builder, ordinary values, <code>Result</code>, <code>Async</code>, <code>Task</code>, <code>Flow</code>, and guarded sources can be sequenced without manually unwrapping each layer. The builder preserves the important boundaries: expected errors stay typed, defects become <code>Cause.Die</code>, cancellation becomes interruption, and environment access remains explicit through <code>Flow.env</code> or <code>Flow.read</code>. Prefer <code>flow { }</code> for application orchestration; keep pure validation and simple predicates in <code>Check</code>, <code>Validation</code>, or <code>Result</code> until the code needs environment or effects.</p>
 <h2 id="builder">Builder</h2>
 <ul>
 <li><a href="http://localhost:3000/reference/flow/p-flow/"><code>flow</code></a>:

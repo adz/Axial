@@ -19,24 +19,28 @@
 <link rel="icon" type="image/png" href="http://localhost:3000/favicons/android-192x192.png" sizes="192x192">
 
 <title>Flow.orElseWith | FsFlow</title>
-<meta name="description" content="orElseWith fallback flow Falls back to another flow when the source flow fails.Computes a fallback flow from the source error when the source flow fails.
+<meta name="description" content="orElseWith fallback flow Computes a fallback flow from the typed error when the source flow fails.
+Remarks The fallback runs only for expected typed failures represented by Cause.Fail. It does not catch interruption or defects. Use this for domain-level recovery, not for swallowing cancellation or unexpected exceptions.
 Parameters fallback: ‘error -&gt; Flow&lt;‘env, ’error, ‘value&gt; flow: Flow&lt;‘env, ’error, ‘value&gt;">
 <meta property="og:url" content="http://localhost:3000/reference/flow/m-flow-orelsewith/">
   <meta property="og:site_name" content="FsFlow">
   <meta property="og:title" content="Flow.orElseWith">
-  <meta property="og:description" content="orElseWith fallback flow Falls back to another flow when the source flow fails.Computes a fallback flow from the source error when the source flow fails.
+  <meta property="og:description" content="orElseWith fallback flow Computes a fallback flow from the typed error when the source flow fails.
+Remarks The fallback runs only for expected typed failures represented by Cause.Fail. It does not catch interruption or defects. Use this for domain-level recovery, not for swallowing cancellation or unexpected exceptions.
 Parameters fallback: ‘error -&gt; Flow&lt;‘env, ’error, ‘value&gt; flow: Flow&lt;‘env, ’error, ‘value&gt;">
   <meta property="og:locale" content="en_us">
   <meta property="og:type" content="article">
     <meta property="article:section" content="reference">
 
   <meta itemprop="name" content="Flow.orElseWith">
-  <meta itemprop="description" content="orElseWith fallback flow Falls back to another flow when the source flow fails.Computes a fallback flow from the source error when the source flow fails.
+  <meta itemprop="description" content="orElseWith fallback flow Computes a fallback flow from the typed error when the source flow fails.
+Remarks The fallback runs only for expected typed failures represented by Cause.Fail. It does not catch interruption or defects. Use this for domain-level recovery, not for swallowing cancellation or unexpected exceptions.
 Parameters fallback: ‘error -&gt; Flow&lt;‘env, ’error, ‘value&gt; flow: Flow&lt;‘env, ’error, ‘value&gt;">
-  <meta itemprop="wordCount" content="34">
+  <meta itemprop="wordCount" content="56">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Flow.orElseWith">
-  <meta name="twitter:description" content="orElseWith fallback flow Falls back to another flow when the source flow fails.Computes a fallback flow from the source error when the source flow fails.
+  <meta name="twitter:description" content="orElseWith fallback flow Computes a fallback flow from the typed error when the source flow fails.
+Remarks The fallback runs only for expected typed failures represented by Cause.Fail. It does not catch interruption or defects. Use this for domain-level recovery, not for swallowing cancellation or unexpected exceptions.
 Parameters fallback: ‘error -&gt; Flow&lt;‘env, ’error, ‘value&gt; flow: Flow&lt;‘env, ’error, ‘value&gt;">
 <link href="http://localhost:3000/scss/main.css" rel="stylesheet">
 <script
@@ -517,6 +521,7 @@ Parameters fallback: ‘error -&gt; Flow&lt;‘env, ’error, ‘value&gt; flow:
     </div>
     <nav id="TableOfContents">
   <ul>
+    <li><a href="#remarks">Remarks</a></li>
     <li><a href="#parameters">Parameters</a></li>
   </ul>
 </nav>
@@ -546,7 +551,11 @@ Parameters fallback: ‘error -&gt; Flow&lt;‘env, ’error, ‘value&gt; flow:
 	<div class="fsdocs-usage">
 <code><span>orElseWith&#32;<span>fallback&#32;flow</span></span></code>
 </div>
-<p>Falls back to another flow when the source flow fails.Computes a fallback flow from the source error when the source flow fails.</p>
+<p>Computes a fallback flow from the typed error when the source flow fails.</p>
+<h2 id="remarks">Remarks</h2>
+<p>The fallback runs only for expected typed failures represented by <code>Cause.Fail</code>. It does
+not catch interruption or defects. Use this for domain-level recovery, not for swallowing
+cancellation or unexpected exceptions.</p>
 <h2 id="parameters">Parameters</h2>
 <ul>
 <li><code>fallback</code>: <code><span>&lsquo;error -&gt; <span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html">Flow</a>&lt;<span>&lsquo;env, &rsquo;error, &lsquo;value</span>&gt;</span></span></code></li>

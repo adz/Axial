@@ -20,23 +20,23 @@
 <link rel="icon" type="image/png" href="http://localhost:3000/favicons/android-192x192.png" sizes="192x192">
 
 <title>Ref | FsFlow</title>
-<meta name="description" content="The Ref module provides thread-safe mutable state handles.
+<meta name="description" content="This page shows the Ref surface for small pieces of shared mutable state inside flows. A Ref&lt;&#39;T&gt; is an atomic handle that can be created, read, set, updated, or modified from workflow code without turning the whole environment into a mutable object. Use Ref for counters, flags, request-local caches, and coordination points where a single value is enough. For multi-value invariants that must change together, use STM instead.
 Core type Ref: Represents a handle to a mutable reference that can be updated atomically. Module functions Ref.make: Creates a new Ref with the initial value. Ref.get: Reads the current value of the reference. Ref.set: Sets the value of the reference to the specified value. Ref.update: Updates the value of the reference using the supplied function. Ref.modify: Updates the value of the reference using the supplied function and returns a derived value.">
 <meta property="og:url" content="http://localhost:3000/reference/ref/">
   <meta property="og:site_name" content="FsFlow">
   <meta property="og:title" content="Ref">
-  <meta property="og:description" content="The Ref module provides thread-safe mutable state handles.
+  <meta property="og:description" content="This page shows the Ref surface for small pieces of shared mutable state inside flows. A Ref&lt;&#39;T&gt; is an atomic handle that can be created, read, set, updated, or modified from workflow code without turning the whole environment into a mutable object. Use Ref for counters, flags, request-local caches, and coordination points where a single value is enough. For multi-value invariants that must change together, use STM instead.
 Core type Ref: Represents a handle to a mutable reference that can be updated atomically. Module functions Ref.make: Creates a new Ref with the initial value. Ref.get: Reads the current value of the reference. Ref.set: Sets the value of the reference to the specified value. Ref.update: Updates the value of the reference using the supplied function. Ref.modify: Updates the value of the reference using the supplied function and returns a derived value.">
   <meta property="og:locale" content="en_us">
   <meta property="og:type" content="website">
 
   <meta itemprop="name" content="Ref">
-  <meta itemprop="description" content="The Ref module provides thread-safe mutable state handles.
+  <meta itemprop="description" content="This page shows the Ref surface for small pieces of shared mutable state inside flows. A Ref&lt;&#39;T&gt; is an atomic handle that can be created, read, set, updated, or modified from workflow code without turning the whole environment into a mutable object. Use Ref for counters, flags, request-local caches, and coordination points where a single value is enough. For multi-value invariants that must change together, use STM instead.
 Core type Ref: Represents a handle to a mutable reference that can be updated atomically. Module functions Ref.make: Creates a new Ref with the initial value. Ref.get: Reads the current value of the reference. Ref.set: Sets the value of the reference to the specified value. Ref.update: Updates the value of the reference using the supplied function. Ref.modify: Updates the value of the reference using the supplied function and returns a derived value.">
-  <meta itemprop="wordCount" content="80">
+  <meta itemprop="wordCount" content="140">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Ref">
-  <meta name="twitter:description" content="The Ref module provides thread-safe mutable state handles.
+  <meta name="twitter:description" content="This page shows the Ref surface for small pieces of shared mutable state inside flows. A Ref&lt;&#39;T&gt; is an atomic handle that can be created, read, set, updated, or modified from workflow code without turning the whole environment into a mutable object. Use Ref for counters, flags, request-local caches, and coordination points where a single value is enough. For multi-value invariants that must change together, use STM instead.
 Core type Ref: Represents a handle to a mutable reference that can be updated atomically. Module functions Ref.make: Creates a new Ref with the initial value. Ref.get: Reads the current value of the reference. Ref.set: Sets the value of the reference to the specified value. Ref.update: Updates the value of the reference using the supplied function. Ref.modify: Updates the value of the reference using the supplied function and returns a derived value.">
 <link href="http://localhost:3000/scss/main.css" rel="stylesheet">
 <script
@@ -542,7 +542,7 @@ Core type Ref: Represents a handle to a mutable reference that can be updated at
 	<header class="article-meta">
 		
 </header>
-	<p>The <code>Ref</code> module provides thread-safe mutable state handles.</p>
+	<p>This page shows the <code>Ref</code> surface for small pieces of shared mutable state inside flows. A <code>Ref&lt;'T&gt;</code> is an atomic handle that can be created, read, set, updated, or modified from workflow code without turning the whole environment into a mutable object. Use <code>Ref</code> for counters, flags, request-local caches, and coordination points where a single value is enough. For multi-value invariants that must change together, use STM instead.</p>
 <h2 id="core-type">Core type</h2>
 <ul>
 <li><a href="http://localhost:3000/reference/ref/t-ref-1/"><code>Ref</code></a>:

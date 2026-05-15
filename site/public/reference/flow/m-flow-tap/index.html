@@ -19,28 +19,28 @@
 <link rel="icon" type="image/png" href="http://localhost:3000/favicons/android-192x192.png" sizes="192x192">
 
 <title>Flow.tap | FsFlow</title>
-<meta name="description" content="tap binder flow Runs a synchronous side effect on success and preserves the original value.
-Remarks Use this for logging, telemetry, or other &#34;fire and forget&#34; operations that should not alter the primary value path. If the binder flow fails, the entire flow fails with that error.
+<meta name="description" content="tap binder flow Runs an effect on success and preserves the original value.
+Remarks Use this for logging, telemetry, metrics, or audit steps that should observe a successful value without replacing it. If the binder flow fails, that failure becomes the result of the whole flow, because the tap effect is still part of the workflow.
 Parameters binder: ‘value -&gt; Flow&lt;‘env, ’error, unit&gt; A function that produces a side-effect flow from the successful value. flow: Flow&lt;‘env, ’error, ‘value&gt; The source flow. Returns A Flow that preserves the original success value after the side effect.">
 <meta property="og:url" content="http://localhost:3000/reference/flow/m-flow-tap/">
   <meta property="og:site_name" content="FsFlow">
   <meta property="og:title" content="Flow.tap">
-  <meta property="og:description" content="tap binder flow Runs a synchronous side effect on success and preserves the original value.
-Remarks Use this for logging, telemetry, or other &#34;fire and forget&#34; operations that should not alter the primary value path. If the binder flow fails, the entire flow fails with that error.
+  <meta property="og:description" content="tap binder flow Runs an effect on success and preserves the original value.
+Remarks Use this for logging, telemetry, metrics, or audit steps that should observe a successful value without replacing it. If the binder flow fails, that failure becomes the result of the whole flow, because the tap effect is still part of the workflow.
 Parameters binder: ‘value -&gt; Flow&lt;‘env, ’error, unit&gt; A function that produces a side-effect flow from the successful value. flow: Flow&lt;‘env, ’error, ‘value&gt; The source flow. Returns A Flow that preserves the original success value after the side effect.">
   <meta property="og:locale" content="en_us">
   <meta property="og:type" content="article">
     <meta property="article:section" content="reference">
 
   <meta itemprop="name" content="Flow.tap">
-  <meta itemprop="description" content="tap binder flow Runs a synchronous side effect on success and preserves the original value.
-Remarks Use this for logging, telemetry, or other &#34;fire and forget&#34; operations that should not alter the primary value path. If the binder flow fails, the entire flow fails with that error.
+  <meta itemprop="description" content="tap binder flow Runs an effect on success and preserves the original value.
+Remarks Use this for logging, telemetry, metrics, or audit steps that should observe a successful value without replacing it. If the binder flow fails, that failure becomes the result of the whole flow, because the tap effect is still part of the workflow.
 Parameters binder: ‘value -&gt; Flow&lt;‘env, ’error, unit&gt; A function that produces a side-effect flow from the successful value. flow: Flow&lt;‘env, ’error, ‘value&gt; The source flow. Returns A Flow that preserves the original success value after the side effect.">
-  <meta itemprop="wordCount" content="83">
+  <meta itemprop="wordCount" content="92">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Flow.tap">
-  <meta name="twitter:description" content="tap binder flow Runs a synchronous side effect on success and preserves the original value.
-Remarks Use this for logging, telemetry, or other &#34;fire and forget&#34; operations that should not alter the primary value path. If the binder flow fails, the entire flow fails with that error.
+  <meta name="twitter:description" content="tap binder flow Runs an effect on success and preserves the original value.
+Remarks Use this for logging, telemetry, metrics, or audit steps that should observe a successful value without replacing it. If the binder flow fails, that failure becomes the result of the whole flow, because the tap effect is still part of the workflow.
 Parameters binder: ‘value -&gt; Flow&lt;‘env, ’error, unit&gt; A function that produces a side-effect flow from the successful value. flow: Flow&lt;‘env, ’error, ‘value&gt; The source flow. Returns A Flow that preserves the original success value after the side effect.">
 <link href="http://localhost:3000/scss/main.css" rel="stylesheet">
 <script
@@ -552,11 +552,11 @@ Parameters binder: ‘value -&gt; Flow&lt;‘env, ’error, unit&gt; A function 
 	<div class="fsdocs-usage">
 <code><span>tap&#32;<span>binder&#32;flow</span></span></code>
 </div>
-<p>Runs a synchronous side effect on success and preserves the original value.</p>
+<p>Runs an effect on success and preserves the original value.</p>
 <h2 id="remarks">Remarks</h2>
-<p>Use this for logging, telemetry, or other &quot;fire and forget&quot; operations that should not
-alter the primary value path. If the <span class="fsdocs-param-name">binder</span> flow fails, the entire
-flow fails with that error.</p>
+<p>Use this for logging, telemetry, metrics, or audit steps that should observe a successful
+value without replacing it. If the <span class="fsdocs-param-name">binder</span> flow fails, that failure becomes
+the result of the whole flow, because the tap effect is still part of the workflow.</p>
 <h2 id="parameters">Parameters</h2>
 <ul>
 <li><code>binder</code>: <code><span>&lsquo;value -&gt; <span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html">Flow</a>&lt;<span>&lsquo;env, &rsquo;error, unit</span>&gt;</span></span></code>

@@ -19,24 +19,28 @@
 <link rel="icon" type="image/png" href="http://localhost:3000/favicons/android-192x192.png" sizes="192x192">
 
 <title>Flow.localEnv | FsFlow</title>
-<meta name="description" content="localEnv mapping flow Transforms the environment before running the flow.
+<meta name="description" content="localEnv mapping flow Runs a flow against an environment derived from the outer environment.
+Remarks Use this to embed a smaller workflow inside a larger application environment without changing the smaller workflow&#39;s type. The mapping is applied at execution time. This is useful for preserving narrow helper signatures while still running everything from one app boundary.
 Parameters mapping: ‘outerEnvironment -&gt; ‘innerEnvironment flow: Flow&lt;‘innerEnvironment, ’error, ‘value&gt;">
 <meta property="og:url" content="http://localhost:3000/reference/flow/m-flow-localenv/">
   <meta property="og:site_name" content="FsFlow">
   <meta property="og:title" content="Flow.localEnv">
-  <meta property="og:description" content="localEnv mapping flow Transforms the environment before running the flow.
+  <meta property="og:description" content="localEnv mapping flow Runs a flow against an environment derived from the outer environment.
+Remarks Use this to embed a smaller workflow inside a larger application environment without changing the smaller workflow&#39;s type. The mapping is applied at execution time. This is useful for preserving narrow helper signatures while still running everything from one app boundary.
 Parameters mapping: ‘outerEnvironment -&gt; ‘innerEnvironment flow: Flow&lt;‘innerEnvironment, ’error, ‘value&gt;">
   <meta property="og:locale" content="en_us">
   <meta property="og:type" content="article">
     <meta property="article:section" content="reference">
 
   <meta itemprop="name" content="Flow.localEnv">
-  <meta itemprop="description" content="localEnv mapping flow Transforms the environment before running the flow.
+  <meta itemprop="description" content="localEnv mapping flow Runs a flow against an environment derived from the outer environment.
+Remarks Use this to embed a smaller workflow inside a larger application environment without changing the smaller workflow&#39;s type. The mapping is applied at execution time. This is useful for preserving narrow helper signatures while still running everything from one app boundary.
 Parameters mapping: ‘outerEnvironment -&gt; ‘innerEnvironment flow: Flow&lt;‘innerEnvironment, ’error, ‘value&gt;">
-  <meta itemprop="wordCount" content="17">
+  <meta itemprop="wordCount" content="63">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Flow.localEnv">
-  <meta name="twitter:description" content="localEnv mapping flow Transforms the environment before running the flow.
+  <meta name="twitter:description" content="localEnv mapping flow Runs a flow against an environment derived from the outer environment.
+Remarks Use this to embed a smaller workflow inside a larger application environment without changing the smaller workflow&#39;s type. The mapping is applied at execution time. This is useful for preserving narrow helper signatures while still running everything from one app boundary.
 Parameters mapping: ‘outerEnvironment -&gt; ‘innerEnvironment flow: Flow&lt;‘innerEnvironment, ’error, ‘value&gt;">
 <link href="http://localhost:3000/scss/main.css" rel="stylesheet">
 <script
@@ -517,6 +521,7 @@ Parameters mapping: ‘outerEnvironment -&gt; ‘innerEnvironment flow: Flow&lt;
     </div>
     <nav id="TableOfContents">
   <ul>
+    <li><a href="#remarks">Remarks</a></li>
     <li><a href="#parameters">Parameters</a></li>
   </ul>
 </nav>
@@ -546,7 +551,11 @@ Parameters mapping: ‘outerEnvironment -&gt; ‘innerEnvironment flow: Flow&lt;
 	<div class="fsdocs-usage">
 <code><span>localEnv&#32;<span>mapping&#32;flow</span></span></code>
 </div>
-<p>Transforms the environment before running the flow.</p>
+<p>Runs a flow against an environment derived from the outer environment.</p>
+<h2 id="remarks">Remarks</h2>
+<p>Use this to embed a smaller workflow inside a larger application environment without changing
+the smaller workflow's type. The mapping is applied at execution time. This is useful for
+preserving narrow helper signatures while still running everything from one app boundary.</p>
 <h2 id="parameters">Parameters</h2>
 <ul>
 <li><code>mapping</code>: <code><span>&lsquo;outerEnvironment -&gt; &lsquo;innerEnvironment</span></code></li>

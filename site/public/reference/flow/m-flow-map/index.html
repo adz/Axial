@@ -19,28 +19,28 @@
 <link rel="icon" type="image/png" href="http://localhost:3000/favicons/android-192x192.png" sizes="192x192">
 
 <title>Flow.map | FsFlow</title>
-<meta name="description" content="map mapper flow Maps the successful value of a synchronous flow.
-Remarks If the source flow fails, the mapper is not executed, and the error is preserved. This allows for safe transformation of data within the flow.
+<meta name="description" content="map mapper flow Transforms the successful value of a flow.
+Remarks If the source flow fails, the mapper is not executed. The original failure cause is preserved, including typed failures, interruption, and defects. Use map for pure value transformations after an effect has succeeded.
 Parameters mapper: ‘value -&gt; ’next A function of type &#39;value -&gt; &#39;next to transform the successful value. flow: Flow&lt;‘env, ’error, ‘value&gt; The source flow of type Flow to transform. Returns A new Flow with the transformed success value of type &#39;next.">
 <meta property="og:url" content="http://localhost:3000/reference/flow/m-flow-map/">
   <meta property="og:site_name" content="FsFlow">
   <meta property="og:title" content="Flow.map">
-  <meta property="og:description" content="map mapper flow Maps the successful value of a synchronous flow.
-Remarks If the source flow fails, the mapper is not executed, and the error is preserved. This allows for safe transformation of data within the flow.
+  <meta property="og:description" content="map mapper flow Transforms the successful value of a flow.
+Remarks If the source flow fails, the mapper is not executed. The original failure cause is preserved, including typed failures, interruption, and defects. Use map for pure value transformations after an effect has succeeded.
 Parameters mapper: ‘value -&gt; ’next A function of type &#39;value -&gt; &#39;next to transform the successful value. flow: Flow&lt;‘env, ’error, ‘value&gt; The source flow of type Flow to transform. Returns A new Flow with the transformed success value of type &#39;next.">
   <meta property="og:locale" content="en_us">
   <meta property="og:type" content="article">
     <meta property="article:section" content="reference">
 
   <meta itemprop="name" content="Flow.map">
-  <meta itemprop="description" content="map mapper flow Maps the successful value of a synchronous flow.
-Remarks If the source flow fails, the mapper is not executed, and the error is preserved. This allows for safe transformation of data within the flow.
+  <meta itemprop="description" content="map mapper flow Transforms the successful value of a flow.
+Remarks If the source flow fails, the mapper is not executed. The original failure cause is preserved, including typed failures, interruption, and defects. Use map for pure value transformations after an effect has succeeded.
 Parameters mapper: ‘value -&gt; ’next A function of type &#39;value -&gt; &#39;next to transform the successful value. flow: Flow&lt;‘env, ’error, ‘value&gt; The source flow of type Flow to transform. Returns A new Flow with the transformed success value of type &#39;next.">
-  <meta itemprop="wordCount" content="76">
+  <meta itemprop="wordCount" content="83">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Flow.map">
-  <meta name="twitter:description" content="map mapper flow Maps the successful value of a synchronous flow.
-Remarks If the source flow fails, the mapper is not executed, and the error is preserved. This allows for safe transformation of data within the flow.
+  <meta name="twitter:description" content="map mapper flow Transforms the successful value of a flow.
+Remarks If the source flow fails, the mapper is not executed. The original failure cause is preserved, including typed failures, interruption, and defects. Use map for pure value transformations after an effect has succeeded.
 Parameters mapper: ‘value -&gt; ’next A function of type &#39;value -&gt; &#39;next to transform the successful value. flow: Flow&lt;‘env, ’error, ‘value&gt; The source flow of type Flow to transform. Returns A new Flow with the transformed success value of type &#39;next.">
 <link href="http://localhost:3000/scss/main.css" rel="stylesheet">
 <script
@@ -552,10 +552,11 @@ Parameters mapper: ‘value -&gt; ’next A function of type &#39;value -&gt; &#
 	<div class="fsdocs-usage">
 <code><span>map&#32;<span>mapper&#32;flow</span></span></code>
 </div>
-<p>Maps the successful value of a synchronous flow.</p>
+<p>Transforms the successful value of a flow.</p>
 <h2 id="remarks">Remarks</h2>
-<p>If the source <span class="fsdocs-param-name">flow</span> fails, the <span class="fsdocs-param-name">mapper</span> is not executed,
-and the error is preserved. This allows for safe transformation of data within the flow.</p>
+<p>If the source <span class="fsdocs-param-name">flow</span> fails, the <span class="fsdocs-param-name">mapper</span> is not executed.
+The original failure cause is preserved, including typed failures, interruption, and defects.
+Use <code>map</code> for pure value transformations after an effect has succeeded.</p>
 <h2 id="parameters">Parameters</h2>
 <ul>
 <li><code>mapper</code>: <code><span>&lsquo;value -&gt; &rsquo;next</span></code>

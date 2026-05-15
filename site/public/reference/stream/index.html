@@ -20,24 +20,20 @@
 <link rel="icon" type="image/png" href="http://localhost:3000/favicons/android-192x192.png" sizes="192x192">
 
 <title>Stream | FsFlow</title>
-<meta name="description" content="The FlowStream module provides asynchronous, pull-based streams.
-Core type FlowStream: Represents a cold stream of values that requires an environment, can fail with a typed error, and supports backpressure. Module functions FlowStream.fromSeq: Creates a stream from a sequence of values. FlowStream.map: Maps the successful values of a stream. FlowStream.runForEach: Executes the stream and performs an action for each value.">
+<meta name="description" content="This page shows the FlowStream surface for cold, pull-based streams that still participate in FsFlow’s environment and typed-error model. A stream can require env, emit values incrementally, and fail with the same error discipline as Flow. Use it when the boundary produces many values over time, such as file records, network messages, or paged API results. Keep per-item logic small and push final side effects through runForEach so cancellation and failure stay visible.">
 <meta property="og:url" content="http://localhost:3000/reference/stream/">
   <meta property="og:site_name" content="FsFlow">
   <meta property="og:title" content="Stream">
-  <meta property="og:description" content="The FlowStream module provides asynchronous, pull-based streams.
-Core type FlowStream: Represents a cold stream of values that requires an environment, can fail with a typed error, and supports backpressure. Module functions FlowStream.fromSeq: Creates a stream from a sequence of values. FlowStream.map: Maps the successful values of a stream. FlowStream.runForEach: Executes the stream and performs an action for each value.">
+  <meta property="og:description" content="This page shows the FlowStream surface for cold, pull-based streams that still participate in FsFlow’s environment and typed-error model. A stream can require env, emit values incrementally, and fail with the same error discipline as Flow. Use it when the boundary produces many values over time, such as file records, network messages, or paged API results. Keep per-item logic small and push final side effects through runForEach so cancellation and failure stay visible.">
   <meta property="og:locale" content="en_us">
   <meta property="og:type" content="website">
 
   <meta itemprop="name" content="Stream">
-  <meta itemprop="description" content="The FlowStream module provides asynchronous, pull-based streams.
-Core type FlowStream: Represents a cold stream of values that requires an environment, can fail with a typed error, and supports backpressure. Module functions FlowStream.fromSeq: Creates a stream from a sequence of values. FlowStream.map: Maps the successful values of a stream. FlowStream.runForEach: Executes the stream and performs an action for each value.">
-  <meta itemprop="wordCount" content="59">
+  <meta itemprop="description" content="This page shows the FlowStream surface for cold, pull-based streams that still participate in FsFlow’s environment and typed-error model. A stream can require env, emit values incrementally, and fail with the same error discipline as Flow. Use it when the boundary produces many values over time, such as file records, network messages, or paged API results. Keep per-item logic small and push final side effects through runForEach so cancellation and failure stay visible.">
+  <meta itemprop="wordCount" content="125">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Stream">
-  <meta name="twitter:description" content="The FlowStream module provides asynchronous, pull-based streams.
-Core type FlowStream: Represents a cold stream of values that requires an environment, can fail with a typed error, and supports backpressure. Module functions FlowStream.fromSeq: Creates a stream from a sequence of values. FlowStream.map: Maps the successful values of a stream. FlowStream.runForEach: Executes the stream and performs an action for each value.">
+  <meta name="twitter:description" content="This page shows the FlowStream surface for cold, pull-based streams that still participate in FsFlow’s environment and typed-error model. A stream can require env, emit values incrementally, and fail with the same error discipline as Flow. Use it when the boundary produces many values over time, such as file records, network messages, or paged API results. Keep per-item logic small and push final side effects through runForEach so cancellation and failure stay visible.">
 <link href="http://localhost:3000/scss/main.css" rel="stylesheet">
 <script
   src="https://code.jquery.com/jquery-3.7.1.min.js"
@@ -542,7 +538,7 @@ Core type FlowStream: Represents a cold stream of values that requires an enviro
 	<header class="article-meta">
 		
 </header>
-	<p>The <code>FlowStream</code> module provides asynchronous, pull-based streams.</p>
+	<p>This page shows the <code>FlowStream</code> surface for cold, pull-based streams that still participate in FsFlow&rsquo;s environment and typed-error model. A stream can require <code>env</code>, emit values incrementally, and fail with the same error discipline as <code>Flow</code>. Use it when the boundary produces many values over time, such as file records, network messages, or paged API results. Keep per-item logic small and push final side effects through <code>runForEach</code> so cancellation and failure stay visible.</p>
 <h2 id="core-type">Core type</h2>
 <ul>
 <li><a href="http://localhost:3000/reference/stream/t-flowstream-3/"><code>FlowStream</code></a>:

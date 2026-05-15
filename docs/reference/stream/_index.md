@@ -2,7 +2,7 @@
 title: "Stream"
 ---
 
-The `FlowStream` module provides asynchronous, pull-based streams.
+This page shows the `FlowStream` surface for cold, pull-based streams that still participate in FsFlow's environment and typed-error model. A stream can require `env`, emit values incrementally, and fail with the same error discipline as `Flow`. Use it when the boundary produces many values over time, such as file records, network messages, or paged API results. Keep per-item logic small and push final side effects through `runForEach` so cancellation and failure stay visible.
 
 ## Core type
 
