@@ -20,7 +20,7 @@ Write predicate checks once. Keep fail-fast logic in <code>Result</code>, accumu
 <a class="docs-chip" href="{{< relref "/docs/tutorials/" >}}">Tutorials</a>
 <a class="docs-chip" href="{{< relref "/docs/validation-results/" >}}">Pure Checks -> Result & Validation</a>
 <a class="docs-chip" href="{{< relref "/docs/core-model/" >}}">Typed failure</a>
-<a class="docs-chip" href="{{< relref "/docs/core-model/task-async-interop.md" >}}">Runtime context</a>
+<a class="docs-chip" href="{{< relref "/docs/core-model/task-async-interop.md" >}}">Host context</a>
 <a class="docs-chip" href="{{< relref "/docs/managing-dependencies/" >}}">Dependency models</a>
 <a class="docs-chip" href="{{< relref "/reference/capability/" >}}">Capability contracts</a>
 <a class="docs-chip" href="{{< relref "/docs/core-model/semantics.md" >}}">Cold execution semantics</a>

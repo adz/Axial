@@ -31,9 +31,9 @@ type LiveClock() =
         member _.UtcNow() = DateTimeOffset.UtcNow
 
 /// <summary>
-/// A standard runtime that carries common operational services.
+/// A standard host that carries common operational services.
 /// </summary>
-type DefaultRuntime =
+type DefaultHost =
     {
         Clock: IClock
         Logger: LogEntry -> unit
@@ -41,8 +41,8 @@ type DefaultRuntime =
 
 [<RequireQualifiedAccess>]
 module Hosting =
-    /// <summary>Creates a default runtime from an <see cref="T:System.IServiceProvider" />.</summary>
-    let createRuntime (sp: IServiceProvider) : DefaultRuntime =
+    /// <summary>Creates a default host from an <see cref="T:System.IServiceProvider" />.</summary>
+    let createHost (sp: IServiceProvider) : DefaultHost =
         let loggerFactory = sp.GetRequiredService<ILoggerFactory>()
         let logger = loggerFactory.CreateLogger("FsFlow")
         let fsLogger = FsFlowLogger(logger)
@@ -53,9 +53,9 @@ module Hosting =
         }
 
     /// <summary>Executes a flow using services from the provided <see cref="T:System.IServiceProvider" />.</summary>
-    let run (sp: IServiceProvider) (env: 'env) (flow: Flow<RuntimeContext<DefaultRuntime, 'env>, 'error, 'value>) : Effect<'value, 'error> =
-        let runtime = createRuntime sp
-        let context = RuntimeContext.create runtime env CancellationToken.None
+    let run (sp: IServiceProvider) (appEnv: 'appEnv) (flow: Flow<HostContext<DefaultHost, 'appEnv>, 'error, 'value>) : Effect<'value, 'error> =
+        let host = createHost sp
+        let context = HostContext.create host appEnv CancellationToken.None
         Flow.runFull context CancellationToken.None flow
 
 [<RequireQualifiedAccess>]

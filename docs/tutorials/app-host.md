@@ -49,20 +49,18 @@ let placeOrder order : Flow<IServiceProvider, MissingCapability, Guid> =
 
 ## 3. Use Hosting Helpers
 
-The `FsFlow.Hosting` package provides a `Hosting.run` helper that automatically creates a `DefaultRuntime` (containing logging and clock) from the service provider and combines it with your custom environment.
+The `FsFlow.Hosting` package provides a `Hosting.run` helper that automatically creates a `DefaultHost` (containing logging and clock) from the service provider and combines it with your custom app environment.
 
 ```fsharp
+open FsFlow
 open FsFlow.Hosting
 
 type AppEnv = { TraceId: string }
 
 let placeOrderWithLog order =
     flow {
-        // We now have access to Runtime (from DI) and Env (our record)
-        let! logger = Flow.readRuntime _.Logger
-        let! env = Flow.readEnvironment id
-        
-        logger (sprintf "[%s] Placing order %A" env.TraceId order.Id)
+        // We now have access to the host slice and the app environment as one context
+        do! Logger.logWith (fun ctx -> sprintf "[%s] Placing order %A" ctx.AppEnv.TraceId order.Id)
 
         let! orders = Resolver.fromProvider<IOrderRepository>
         do! orders.Save order
@@ -111,7 +109,7 @@ type OrderHandler(sp: IServiceProvider) =
 
 You've now seen the full progression of dependency management in FsFlow:
 1. **[AppRecord](./app-record/)**: Simple records for direct access.
-2. **[RuntimeContext](./runtime-context/)**: Splitting ops from domain logic.
+2. **[HostContext](./runtime-context/)**: Splitting host services from app logic.
 3. **[Capabilities](./capabilities/)**: Type-checked interface contracts.
 4. **[AppHost](./app-host/)**: Integration with standard .NET containers.
 

@@ -1,31 +1,34 @@
 ---
 weight: 30
-title: "RuntimeContext"
-description: Splitting runtime services from application dependencies.
+title: "HostContext"
+description: Splitting host services from application dependencies.
 type: docs
 ---
 
 
-`RuntimeContext<'runtime, 'env>` gives your app services a separate lane from the host runtime.
+`HostContext<'host, 'appEnv>` gives your app services a separate lane from the host.
 
 This gives you:
 
-- logging, metrics, tracing, or clocking belong to the host runtime
+- logging, metrics, tracing, or clocking belong to the host
 - your app services belong to a feature module or boundary record
-- the same runtime services should be shared across multiple areas
+- the same host services should be shared across multiple areas
 - the cancellation token should travel with the execution model
 
-`RuntimeContext` is the execution carrier above the adapter layer. It is not the runtime storage
-engine and it is not the only way to model a dependency boundary.
+`HostContext` is the execution carrier above the adapter layer. It is not the host storage engine
+and it is not the only way to model a dependency boundary.
 
 ## What Goes Where
 
-- `Runtime` holds host runtime services such as logging, metrics, tracing, and clocks.
-- `Environment` holds your app services.
+- `Host` holds host services such as logging, metrics, tracing, and clocks.
+- `AppEnv` holds your app services.
 - `CancellationToken` belongs to the active run.
 
 ```fsharp
-type RuntimeServices =
+open FsFlow
+open FsFlow.Capabilities.Core
+
+type HostServices =
     { Log : LogEntry -> unit
       Clock : IClock }
 
@@ -33,32 +36,40 @@ type ApiDeps =
     { Orders : IOrderRepository
       Email : IEmailSender }
 
+let host =
+    { Log = printfn "%A"
+      Clock = Clock.fromValue (DateTimeOffset.UtcNow) }
+
+let apiDeps =
+    { Orders = InMemoryOrders()
+      Email = ConsoleEmail() }
+
 let context =
-    RuntimeContext.create runtime apiDeps cancellationToken
+    HostContext.create host apiDeps cancellationToken
 ```
 
 ## Reading The Split
 
-`Flow.readRuntime` and `Flow.readEnvironment` read the two halves.
-`Resolver.runtime` and `Resolver.environment` read the same split at the host edge.
+`Flow.readHost` and `Flow.readAppEnv` read the two halves.
+`Resolver.host` and `Resolver.appEnv` read the same split at the host edge.
 
 ```fsharp
-let workflow : Flow<RuntimeContext<RuntimeServices, ApiDeps>, string, Guid> =
+let workflow : Flow<HostContext<HostServices, ApiDeps>, string, Guid> =
     flow {
-        let! runtime = Flow.readRuntime id
-        let! app = Flow.readEnvironment id
+        let! host = Flow.readHost id
+        let! appEnv = Flow.readAppEnv id
 
-        runtime.Log { Level = LogLevel.Information; Message = "starting"; TimestampUtc = runtime.Clock.UtcNow() }
+        host.Log { Level = LogLevel.Information; Message = "starting"; TimestampUtc = host.Clock.UtcNow() }
 
-        let! order = app.Orders.Create()
-        do! app.Email.SendConfirmation order
+        let! order = appEnv.Orders.Create()
+        do! appEnv.Email.SendConfirmation order
         return order.Id
     }
 ```
 
-Here, `runtime` is the host runtime and `app` is the app service set the workflow actually uses.
+Here, `host` is the host and `appEnv` is the app service set the workflow actually uses.
 
-## What Works With RuntimeContext
+## What Works With HostContext
 
 Works with any environment:
 
@@ -68,33 +79,33 @@ Works with any environment:
 - `Flow.provideLayer`
 - `Resolver.resolve`
 - `Resolver.fromProvider`
-- `Flow.readRuntime`
-- `Flow.readEnvironment`
+- `Flow.readHost`
+- `Flow.readAppEnv`
 
-RuntimeContext-specific:
+HostContext-specific:
 
-- `RuntimeContext.create`
-- `RuntimeContext.runtime`
-- `RuntimeContext.environment`
-- `RuntimeContext.cancellationToken`
-- `Flow.readRuntime`
-- `Flow.readEnvironment`
-- `Resolver.runtime`
-- `Resolver.environment`
+- `HostContext.create`
+- `HostContext.host`
+- `HostContext.appEnv`
+- `HostContext.cancellationToken`
+- `Flow.readHost`
+- `Flow.readAppEnv`
+- `Resolver.host`
+- `Resolver.appEnv`
 
-The general helpers work on any environment, while the runtime split helpers only make sense when
-the environment is actually a `RuntimeContext`.
+The general helpers work on any environment, while the host split helpers only make sense when the
+environment is actually a `HostContext`.
 
 ## When To Stop
 
 If the split only exists because it sounds cleaner, stop and use a concrete record.
 
-`RuntimeContext` is worth using when your app services need a separate lane from the host runtime
-and you want to read them through `Flow.readRuntime` and `Flow.readEnvironment`.
+`HostContext` is worth using when your app services need a separate lane from the host and you want
+to read them through `Flow.readHost` and `Flow.readAppEnv`.
 
-Keep the adapter layer at the boundary that creates the `RuntimeContext`; do not thread it through
+Keep the adapter layer at the boundary that creates the `HostContext`; do not thread it through
 every helper just because it is available.
 
-See the [RuntimeContext reference](../../reference/runtime/) for the constructors and mapping
-helpers, and the [Capability reference](../../reference/capability/) for the `runtime`,
-`environment`, and `resolve` readers.
+See the [HostContext reference](../../reference/runtime/) for the constructors and mapping
+helpers, and the [Capability reference](../../reference/capability/) for the `host`,
+`appEnv`, and `resolve` readers.

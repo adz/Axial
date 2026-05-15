@@ -221,3 +221,113 @@ module EnvironmentVariableErrors =
             $"Environment variable '{name}' was not set."
         | EnvironmentVariableError.InvalidVariable(name, value, expected) ->
             $"Environment variable '{name}' had value '{value}' but expected {expected}."
+
+/// <summary>Helpers that operate directly on a host context.</summary>
+[<RequireQualifiedAccess>]
+module Logger =
+    /// <summary>Writes an informational log message through the host half of the context.</summary>
+    let log
+        (message: string)
+        : Flow<HostContext<'host, 'appEnv>, 'error, unit>
+        when 'host :> IRuntimeCaps =
+        flow {
+            let! (context: HostContext<'host, 'appEnv>) = Flow.env
+            context.Host.Log.Info message
+        }
+
+    /// <summary>Writes an informational log message computed from the current host context.</summary>
+    let logWith
+        (messageFactory: HostContext<'host, 'appEnv> -> string)
+        : Flow<HostContext<'host, 'appEnv>, 'error, unit>
+        when 'host :> IRuntimeCaps =
+        flow {
+            let! (context: HostContext<'host, 'appEnv>) = Flow.env
+            context.Host.Log.Info (messageFactory context)
+        }
+
+/// <summary>Helpers that operate directly on the host carrier.</summary>
+[<RequireQualifiedAccess>]
+module Host =
+    /// <summary>Reads the current UTC timestamp from the host half of the context.</summary>
+    let clockNow<'host, 'appEnv, 'error when 'host :> IRuntimeCaps>
+        : Flow<HostContext<'host, 'appEnv>, 'error, DateTimeOffset> =
+        Flow.read (fun (context: HostContext<'host, 'appEnv>) -> context.Host.Clock.UtcNow())
+
+    /// <summary>Writes an informational log message through the host half of the context.</summary>
+    let log
+        (message: string)
+        : Flow<HostContext<'host, 'appEnv>, 'error, unit>
+        when 'host :> IRuntimeCaps =
+        Logger.log message
+
+    /// <summary>Writes an informational log message computed from the current host context.</summary>
+    let logWith
+        (messageFactory: HostContext<'host, 'appEnv> -> string)
+        : Flow<HostContext<'host, 'appEnv>, 'error, unit>
+        when 'host :> IRuntimeCaps =
+        Logger.logWith messageFactory
+
+/// <summary>Helpers that operate directly on the app environment half of a host context.</summary>
+[<RequireQualifiedAccess>]
+module AppEnv =
+    let private readParsed
+        (expected: string)
+        (parser: string -> 'value option)
+        (name: string)
+        : Flow<HostContext<'host, 'appEnv>, EnvironmentVariableError, 'value>
+        when 'appEnv :> IAppCaps =
+        flow {
+            let! (context: HostContext<'host, 'appEnv>) = Flow.env
+            match context.AppEnv.EnvironmentVariables.TryGet name with
+            | None -> return! Flow.fail (EnvironmentVariableError.MissingVariable name)
+            | Some value ->
+                match parser value with
+                | Some parsed -> return parsed
+                | None -> return! Flow.fail (EnvironmentVariableError.InvalidVariable(name, value, expected))
+        }
+
+    /// <summary>Reads a raw string environment variable from the app environment.</summary>
+    let tryGet (name: string) : Flow<HostContext<'host, 'appEnv>, 'error, string option> when 'appEnv :> IAppCaps =
+        Flow.read (fun (context: HostContext<'host, 'appEnv>) -> context.AppEnv.EnvironmentVariables.TryGet name)
+
+    /// <summary>Reads a raw string environment variable from the app environment.</summary>
+    let get
+        (name: string)
+        : Flow<HostContext<'host, 'appEnv>, EnvironmentVariableError, string>
+        when 'appEnv :> IAppCaps =
+        flow {
+            let! (context: HostContext<'host, 'appEnv>) = Flow.env
+            match context.AppEnv.EnvironmentVariables.TryGet name with
+            | Some value -> return value
+            | None -> return! Flow.fail (EnvironmentVariableError.MissingVariable name)
+        }
+
+    /// <summary>Reads an integer environment variable from the app environment.</summary>
+    let getInt
+        (name: string)
+        : Flow<HostContext<'host, 'appEnv>, EnvironmentVariableError, int>
+        when 'appEnv :> IAppCaps =
+        readParsed "an integer" (fun value ->
+            match Int32.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture) with
+            | true, parsed -> Some parsed
+            | false, _ -> None) name
+
+    /// <summary>Reads a GUID environment variable from the app environment.</summary>
+    let getGuid
+        (name: string)
+        : Flow<HostContext<'host, 'appEnv>, EnvironmentVariableError, Guid>
+        when 'appEnv :> IAppCaps =
+        readParsed "a GUID" (fun value ->
+            match Guid.TryParse value with
+            | true, parsed -> Some parsed
+            | false, _ -> None) name
+
+    /// <summary>Reads a boolean environment variable from the app environment.</summary>
+    let getBool
+        (name: string)
+        : Flow<HostContext<'host, 'appEnv>, EnvironmentVariableError, bool>
+        when 'appEnv :> IAppCaps =
+        readParsed "a boolean" (fun value ->
+            match Boolean.TryParse value with
+            | true, parsed -> Some parsed
+            | false, _ -> None) name

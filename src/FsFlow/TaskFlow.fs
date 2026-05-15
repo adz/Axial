@@ -31,13 +31,13 @@ module internal TaskFlow =
                 return Exit.Failure (EffectFlow.causeOfException error)
         }
 
-    /// <summary>Runs a task flow against a <see cref="T:FsFlow.RuntimeContext`2" /> and its internal cancellation token.</summary>
-    /// <param name="context">The <see cref="T:FsFlow.RuntimeContext`2" /> providing services and cancellation.</param>
+    /// <summary>Runs a task flow against a <see cref="T:FsFlow.HostContext`2" /> and its internal cancellation token.</summary>
+    /// <param name="context">The <see cref="T:FsFlow.HostContext`2" /> providing services and cancellation.</param>
     /// <param name="flow">The task flow to run.</param>
     /// <returns>A <see cref="T:System.Threading.Tasks.Task`1" /> with the final exit value.</returns>
     let runContext
-        (context: RuntimeContext<'runtime, 'env>)
-        (flow: TaskFlow<RuntimeContext<'runtime, 'env>, 'error, 'value>)
+        (context: HostContext<'host, 'appEnv>)
+        (flow: TaskFlow<HostContext<'host, 'appEnv>, 'error, 'value>)
         : Task<Exit<'value, 'error>> =
         run context context.CancellationToken flow
 

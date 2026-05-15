@@ -80,18 +80,18 @@ module Resolver =
     /// <remarks>Use this as a compatibility helper or at the boundary where a projection is still the cleanest shape.</remarks>
     let resolve
         (projection: 'env -> 'resolve)
-        : Flow<RuntimeContext<'runtime, 'env>, 'error, 'resolve> =
-        Flow.readEnvironment projection
+        : Flow<HostContext<'host, 'appEnv>, 'error, 'resolve> =
+        Flow.readAppEnv projection
 
-    /// <summary>Reads the current runtime from the environment.</summary>
-    /// <remarks>Compatibility alias for the runtime half of <see cref="RuntimeContext{runtime, env}" />.</remarks>
-    let runtime<'runtime, 'env, 'error> () : Flow<RuntimeContext<'runtime, 'env>, 'error, 'runtime> =
-        Flow.readRuntime id
+    /// <summary>Reads the current host from the environment.</summary>
+    /// <remarks>Compatibility alias for the host half of <see cref="HostContext{host, appEnv}" />.</remarks>
+    let host<'host, 'appEnv, 'error> () : Flow<HostContext<'host, 'appEnv>, 'error, 'host> =
+        Flow.readHost id
 
     /// <summary>Reads the application environment from the environment.</summary>
-    /// <remarks>Compatibility alias for the environment half of <see cref="RuntimeContext{runtime, env}" />.</remarks>
-    let environment<'runtime, 'env, 'error> () : Flow<RuntimeContext<'runtime, 'env>, 'error, 'env> =
-        Flow.readEnvironment id
+    /// <remarks>Compatibility alias for the app environment half of <see cref="HostContext{host, appEnv}" />.</remarks>
+    let appEnv<'host, 'appEnv, 'error> () : Flow<HostContext<'host, 'appEnv>, 'error, 'appEnv> =
+        Flow.readAppEnv id
 
     /// <summary>Reads a dependency from <see cref="IServiceProvider" /> and fails when it is not registered.</summary>
     /// <remarks>Edge helper only. Prefer a record or nominal contract once the host boundary has been crossed.</remarks>

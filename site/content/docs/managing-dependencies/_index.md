@@ -18,7 +18,7 @@ and easy to understand at the boundary of an application.
 
 FsFlow also supports these shapes:
 
-- `RuntimeContext<'runtime, 'env>` gives your app services a separate lane from the host runtime
+- `HostContext<'host, 'appEnv>` gives your app services a separate lane from the host
 - a nominal capability puts a name on the dependency surface so the compiler can check it and
   helper signatures can advertise it
 - standard `.NET` AppHost plus DI adapts the host container into a boundary record or nominal
@@ -33,7 +33,7 @@ the others.
 | :--- | :--- | :--- | :--- | :--- |
 | 1 | Environment + record | One record gives you an explicit boundary, direct field access, and easy construction | **[AppRecord](../../tutorials/app-record/)** | `Flow.env`, `Flow.read`, `Flow.localEnv` |
 | 2 | [Nominal capability contracts](./capability-contracts/) | An interface through a capability contract puts the dependency surface in the type, so the compiler checks it and helpers advertise it | **[Capabilities](../../tutorials/capabilities/)** | interfaces, `Flow.read` |
-| 3 | [RuntimeContext<'runtime, 'env>](./runtime-context/) | Two readers separate the host runtime from app services, so each side stays named and explicit | **[RuntimeContext](../../tutorials/runtime-context/)** | `RuntimeContext.create`, `Flow.readRuntime`, `Flow.readEnvironment` |
+| 3 | [HostContext<'host, 'appEnv>](./runtime-context/) | Two readers separate the host from app services, so each side stays named and explicit | **[HostContext](../../tutorials/runtime-context/)** | `HostContext.create`, `Flow.readHost`, `Flow.readAppEnv` |
 | 4 | [Standard .NET AppHost Plus DI](./provider-edge/) | Host registrations become a boundary record or nominal contract once, and workflow code stays on typed values | **[AppHost](../../tutorials/app-host/)** | `Resolver.fromProvider`, `MissingCapability` |
 
 ## Start With A Record
@@ -115,7 +115,7 @@ type ApiDeps =
       Clock : IClock }
 ```
 
-`RuntimeContext` gives your app services a separate lane from the host runtime.
+`HostContext` gives your app services a separate lane from the host.
 
 Standard `.NET` AppHost plus DI adapts the container into a boundary record or nominal contract
 once, then workflow code stays on typed values.
@@ -217,9 +217,9 @@ type AppEnv =
     { Gateway : IShippingGateway }
 
 type ShipOrderWorkflow() =
-    member _.Run(input : ShipOrderInput) : Flow<RuntimeContext<RuntimeServices, AppEnv>, AppError, ShipmentId> =
-        flow {
-            let! logger = Flow.readRuntime _.Logger
+    member _.Run(input : ShipOrderInput) : Flow<HostContext<RuntimeServices, AppEnv>, AppError, ShipmentId> =
+    flow {
+            let! logger = Flow.readHost _.Logger
             let! gateway = Flow.read _.Gateway
 
             logger.LogInformation("shipping order {OrderId}", input.OrderId)
@@ -235,10 +235,10 @@ This style gives you:
 - incremental adoption
 
 The benefit is that the host remains familiar while workflow code can still use explicit contracts
-and `RuntimeContext` where they fit.
+and `HostContext` where they fit.
 
 If the task boundary needs your app services separate from the host runtime, use
-`RuntimeContext<'runtime, 'env>` and the `Flow.readRuntime` / `Flow.read` split instead of forcing
+`HostContext<'host, 'appEnv>` and the `Flow.readHost` / `Flow.read` split instead of forcing
 everything into one record.
 
 This style maps directly onto standard `.NET` AppHost Plus DI because the host container can be
@@ -252,7 +252,7 @@ The dependency story is:
 - host registrations become runtime state at the edge
 - runtime state is adapted into public contracts
 - public workflows consume contracts, not lookup machinery
-- `RuntimeContext` is the carrier for the host/runtime split
+- `HostContext` is the carrier for the host split
 - `Resolver` is the host-edge binding surface, not the main application shape
 
 That is the shape the rest of the dependency docs follow.

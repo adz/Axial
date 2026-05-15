@@ -8,11 +8,11 @@
     <language>en-us</language>
     <atom:link href="http://localhost:3000/docs/managing-dependencies/index.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title>RuntimeContext</title>
+      <title>HostContext</title>
       <link>http://localhost:3000/docs/managing-dependencies/runtime-context/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>http://localhost:3000/docs/managing-dependencies/runtime-context/</guid>
-      <description>&lt;p&gt;&lt;code&gt;RuntimeContext&amp;lt;&#39;runtime, &#39;env&amp;gt;&lt;/code&gt; gives your app services a separate lane from the host runtime.&lt;/p&gt;&#xA;&lt;p&gt;This gives you:&lt;/p&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;logging, metrics, tracing, or clocking belong to the host runtime&lt;/li&gt;&#xA;&lt;li&gt;your app services belong to a feature module or boundary record&lt;/li&gt;&#xA;&lt;li&gt;the same runtime services should be shared across multiple areas&lt;/li&gt;&#xA;&lt;li&gt;the cancellation token should travel with the execution model&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;p&gt;&lt;code&gt;RuntimeContext&lt;/code&gt; is the execution carrier above the adapter layer. It is not the runtime storage&#xA;engine and it is not the only way to model a dependency boundary.&lt;/p&gt;</description>
+      <description>&lt;p&gt;&lt;code&gt;HostContext&amp;lt;&#39;host, &#39;appEnv&amp;gt;&lt;/code&gt; gives your app services a separate lane from the host.&lt;/p&gt;&#xA;&lt;p&gt;This gives you:&lt;/p&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;logging, metrics, tracing, or clocking belong to the host&lt;/li&gt;&#xA;&lt;li&gt;your app services belong to a feature module or boundary record&lt;/li&gt;&#xA;&lt;li&gt;the same host services should be shared across multiple areas&lt;/li&gt;&#xA;&lt;li&gt;the cancellation token should travel with the execution model&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;p&gt;&lt;code&gt;HostContext&lt;/code&gt; is the execution carrier above the adapter layer. It is not the host storage engine&#xA;and it is not the only way to model a dependency boundary.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Standard .NET AppHost Plus DI</title>

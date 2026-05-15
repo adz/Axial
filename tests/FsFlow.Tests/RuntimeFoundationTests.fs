@@ -194,13 +194,13 @@ module RuntimeFoundationTests =
                   { new IEnvironmentVariables with
                       member _.TryGet name = if name = "FSFLOW_CTX_TEST" then Some "ctx" else None } }
 
-        let context = RuntimeContext.create runtime app CancellationToken.None
+        let context = HostContext.create runtime app CancellationToken.None
 
-        let workflow : Flow<RuntimeContext<RuntimeServices, AppServices>, string, string> =
+        let workflow : Flow<HostContext<RuntimeServices, AppServices>, string, string> =
             flow {
-                let! now = Flow.readRuntime (fun (runtime: RuntimeServices) -> runtime.Clock.UtcNow())
+                let! now = Flow.readHost (fun (runtime: RuntimeServices) -> runtime.Clock.UtcNow())
                 let! value =
-                    Flow.readEnvironment (fun (app: AppServices) -> app.EnvironmentVariables.TryGet "FSFLOW_CTX_TEST")
+                    Flow.readAppEnv (fun (app: AppServices) -> app.EnvironmentVariables.TryGet "FSFLOW_CTX_TEST")
                 match value with
                 | Some value ->
                     let formattedNow = now.ToString("HH:mm")

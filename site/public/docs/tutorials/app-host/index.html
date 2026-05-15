@@ -30,7 +30,7 @@
 
   <meta itemprop="name" content="Tutorial: AppHost">
   <meta itemprop="description" content="Integration with .NET Generic Host and Dependency Injection.">
-  <meta itemprop="wordCount" content="445">
+  <meta itemprop="wordCount" content="446">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Tutorial: AppHost">
   <meta name="twitter:description" content="Integration with .NET Generic Host and Dependency Injection.">
@@ -151,7 +151,7 @@
       <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialsapp-record-li">
     <a href="http://localhost:3000/docs/tutorials/app-record/" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-docstutorialsapp-record"><span class="">Tutorial: AppRecord</span></a>
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialsruntime-context-li">
-    <a href="http://localhost:3000/docs/tutorials/runtime-context/" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-docstutorialsruntime-context"><span class="">Tutorial: RuntimeContext</span></a>
+    <a href="http://localhost:3000/docs/tutorials/runtime-context/" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-docstutorialsruntime-context"><span class="">Tutorial: HostContext</span></a>
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialscapabilities-li">
     <a href="http://localhost:3000/docs/tutorials/capabilities/" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-docstutorialscapabilities"><span class="">Tutorial: Capabilities</span></a>
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child active-path" id="m-docstutorialsapp-host-li">
@@ -188,7 +188,7 @@
     <a href="http://localhost:3000/docs/managing-dependencies/" class="align-left ps-0 td-sidebar-link td-sidebar-link__section" id="m-docsmanaging-dependencies"><span class="">Managing Dependencies</span></a>
     <ul class="ul-2 foldable">
       <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-docsmanaging-dependenciesruntime-context-li">
-    <a href="http://localhost:3000/docs/managing-dependencies/runtime-context/" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesruntime-context"><span class="">RuntimeContext</span></a>
+    <a href="http://localhost:3000/docs/managing-dependencies/runtime-context/" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesruntime-context"><span class="">HostContext</span></a>
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-docsmanaging-dependenciesprovider-edge-li">
     <a href="http://localhost:3000/docs/managing-dependencies/provider-edge/" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesprovider-edge"><span class="">Standard .NET AppHost Plus DI</span></a>
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-docsmanaging-dependenciescapability-contracts-li">
@@ -316,18 +316,16 @@
 </span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">return</span> <span style="color:#000">order</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">Id</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">}</span>
 </span></span></code></pre></div><h2 id="3-use-hosting-helpers">3. Use Hosting Helpers</h2>
-<p>The <code>FsFlow.Hosting</code> package provides a <code>Hosting.run</code> helper that automatically creates a <code>DefaultRuntime</code> (containing logging and clock) from the service provider and combines it with your custom environment.</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">open</span> <span style="color:#000">FsFlow.Hosting</span>
+<p>The <code>FsFlow.Hosting</code> package provides a <code>Hosting.run</code> helper that automatically creates a <code>DefaultHost</code> (containing logging and clock) from the service provider and combines it with your custom app environment.</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">open</span> <span style="color:#000">FsFlow</span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">open</span> <span style="color:#000">FsFlow.Hosting</span>
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">type</span> <span style="color:#000">AppEnv</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#ce5c00;font-weight:bold">{</span> <span style="color:#000">TraceId</span><span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#204a87;font-weight:bold">string</span> <span style="color:#ce5c00;font-weight:bold">}</span>
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">placeOrderWithLog</span> <span style="color:#000">order</span> <span style="color:#ce5c00;font-weight:bold">=</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#000">flow</span> <span style="color:#ce5c00;font-weight:bold">{</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#8f5902;font-style:italic">// We now have access to Runtime (from DI) and Env (our record)
-</span></span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">let!</span> <span style="color:#000">logger</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">readRuntime</span> <span style="color:#ce5c00;font-weight:bold">_.</span><span style="color:#000">Logger</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">let!</span> <span style="color:#000">env</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">readEnvironment</span> <span style="color:#000">id</span>
-</span></span><span style="display:flex;"><span>        
-</span></span><span style="display:flex;"><span>        <span style="color:#000">logger</span> <span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">sprintf</span> <span style="color:#4e9a06">&#34;[%s] Placing order %A&#34;</span> <span style="color:#000">env</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">TraceId</span> <span style="color:#000">order</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">Id</span><span style="color:#ce5c00;font-weight:bold">)</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#8f5902;font-style:italic">// We now have access to the host slice and the app environment as one context
+</span></span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">do</span><span style="color:#ce5c00;font-weight:bold">!</span> <span style="color:#000">Logger</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">logWith</span> <span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#204a87;font-weight:bold">fun</span> <span style="color:#000">ctx</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#000">sprintf</span> <span style="color:#4e9a06">&#34;[%s] Placing order %A&#34;</span> <span style="color:#000">ctx</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">AppEnv</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">TraceId</span> <span style="color:#000">order</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">Id</span><span style="color:#ce5c00;font-weight:bold">)</span>
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">let!</span> <span style="color:#000">orders</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">Resolver</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">fromProvider</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#000">IOrderRepository</span><span style="color:#ce5c00;font-weight:bold">&gt;</span>
 </span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">do</span><span style="color:#ce5c00;font-weight:bold">!</span> <span style="color:#000">orders</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">Save</span> <span style="color:#000">order</span>
@@ -369,7 +367,7 @@
 <p>You&rsquo;ve now seen the full progression of dependency management in FsFlow:</p>
 <ol>
 <li><strong><a href="http://localhost:3000/docs/tutorials/app-record/">AppRecord</a></strong>: Simple records for direct access.</li>
-<li><strong><a href="http://localhost:3000/docs/tutorials/runtime-context/">RuntimeContext</a></strong>: Splitting ops from domain logic.</li>
+<li><strong><a href="http://localhost:3000/docs/tutorials/runtime-context/">HostContext</a></strong>: Splitting host services from app logic.</li>
 <li><strong><a href="http://localhost:3000/docs/tutorials/capabilities/">Capabilities</a></strong>: Type-checked interface contracts.</li>
 <li><strong><a href="http://localhost:3000/docs/tutorials/app-host/">AppHost</a></strong>: Integration with standard .NET containers.</li>
 </ol>

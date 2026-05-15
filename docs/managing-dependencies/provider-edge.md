@@ -63,7 +63,7 @@ let mapApiDeps (sp: IServiceProvider) =
 ```
 
 Once you have the record, the rest of the workflow should usually stay on a named contract or on
-the `RuntimeContext` split.
+the `HostContext` split.
 
 ## When Not To Use It
 
@@ -72,7 +72,7 @@ Do not use `IServiceProvider` as the default shape for reusable helpers.
 If a helper is reusable, use:
 
 - a boundary record
-- `RuntimeContext`
+- `HostContext`
 - or a small nominal interface contract
 
 The host boundary is the edge, not the center. Keep it at the host boundary, adapt once, and then

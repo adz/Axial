@@ -157,13 +157,13 @@ module WorkflowBasicTests =
                       member _.Name = "client" }
               Value = 41 }
 
-        let context = RuntimeContext.create runtime app CancellationToken.None
+        let context = HostContext.create runtime app CancellationToken.None
 
-        let workflow : Flow<RuntimeContext<RuntimeServices, AppDependencies>, string, string> =
+        let workflow : Flow<HostContext<RuntimeServices, AppDependencies>, string, string> =
             flow {
                 let! context = Flow.env
-                let prefix = context.Runtime.RuntimePrefix
-                let value = context.Environment.Value
+                let prefix = context.Host.RuntimePrefix
+                let value = context.AppEnv.Value
                 runtime.Seen.Add $"value={value}"
                 return $"{prefix}{value}"
             }
@@ -187,9 +187,9 @@ module WorkflowBasicTests =
                       member _.Name = "provider-client" }
               Value = 10 }
 
-        let outerContext = RuntimeContext.create runtime () CancellationToken.None
+        let outerContext = HostContext.create runtime () CancellationToken.None
 
-        let appLayer : Flow<RuntimeContext<RuntimeServices, unit>, string, AppDependencies> =
+        let appLayer : Flow<HostContext<RuntimeServices, unit>, string, AppDependencies> =
             Flow.succeed app
 
         let workflow : Flow<AppDependencies, string, string> =
@@ -217,12 +217,12 @@ module WorkflowBasicTests =
             Resolver.fromProvider<IDeviceClient>
             |> Flow.runSync (RecordingServiceProvider(typeof<string>, "nope") :> IServiceProvider)
 
-        let flowCapability : Flow<RuntimeContext<RuntimeServices, AppDependencies>, string, IDeviceClient> =
+        let flowCapability : Flow<HostContext<RuntimeServices, AppDependencies>, string, IDeviceClient> =
             Resolver.resolve _.DeviceClient
 
         let flowCapabilityResult =
             flowCapability
-            |> Flow.runSync (RuntimeContext.create runtime app CancellationToken.None)
+            |> Flow.runSync (HostContext.create runtime app CancellationToken.None)
 
         let flowLayerWorkflow : Flow<AppDependencies, string, string> =
             flow {

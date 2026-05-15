@@ -151,7 +151,7 @@
       <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-docstutorialsapp-record-li">
     <a href="http://localhost:3000/docs/tutorials/app-record/" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-docstutorialsapp-record"><span class="">Tutorial: AppRecord</span></a>
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-docstutorialsruntime-context-li">
-    <a href="http://localhost:3000/docs/tutorials/runtime-context/" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-docstutorialsruntime-context"><span class="">Tutorial: RuntimeContext</span></a>
+    <a href="http://localhost:3000/docs/tutorials/runtime-context/" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-docstutorialsruntime-context"><span class="">Tutorial: HostContext</span></a>
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-docstutorialscapabilities-li">
     <a href="http://localhost:3000/docs/tutorials/capabilities/" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-docstutorialscapabilities"><span class="">Tutorial: Capabilities</span></a>
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child collapse" id="m-docstutorialsapp-host-li">
@@ -188,7 +188,7 @@
     <a href="http://localhost:3000/docs/managing-dependencies/" class="align-left ps-0 td-sidebar-link td-sidebar-link__section" id="m-docsmanaging-dependencies"><span class="">Managing Dependencies</span></a>
     <ul class="ul-2 foldable">
       <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciesruntime-context-li">
-    <a href="http://localhost:3000/docs/managing-dependencies/runtime-context/" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesruntime-context"><span class="">RuntimeContext</span></a>
+    <a href="http://localhost:3000/docs/managing-dependencies/runtime-context/" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesruntime-context"><span class="">HostContext</span></a>
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child active-path" id="m-docsmanaging-dependenciesprovider-edge-li">
     <a href="http://localhost:3000/docs/managing-dependencies/provider-edge/" class="align-left ps-0 active td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesprovider-edge"><span class="td-sidebar-nav-active-item">Standard .NET AppHost Plus DI</span></a>
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciescapability-contracts-li">
@@ -326,13 +326,13 @@ and stop there.</p>
 </span></span><span style="display:flex;"><span>      <span style="color:#000">Email</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">sp</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">GetRequiredService</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#000">IEmailSender</span><span style="color:#ce5c00;font-weight:bold">&gt;</span><span style="color:#3465a4">()</span>
 </span></span><span style="display:flex;"><span>      <span style="color:#000">Clock</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">sp</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">GetRequiredService</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#000">IClock</span><span style="color:#ce5c00;font-weight:bold">&gt;</span><span style="color:#3465a4">()</span> <span style="color:#ce5c00;font-weight:bold">}</span>
 </span></span></code></pre></div><p>Once you have the record, the rest of the workflow should usually stay on a named contract or on
-the <code>RuntimeContext</code> split.</p>
+the <code>HostContext</code> split.</p>
 <h2 id="when-not-to-use-it">When Not To Use It</h2>
 <p>Do not use <code>IServiceProvider</code> as the default shape for reusable helpers.</p>
 <p>If a helper is reusable, use:</p>
 <ul>
 <li>a boundary record</li>
-<li><code>RuntimeContext</code></li>
+<li><code>HostContext</code></li>
 <li>or a small nominal interface contract</li>
 </ul>
 <p>The host boundary is the edge, not the center. Keep it at the host boundary, adapt once, and then
@@ -340,7 +340,7 @@ stop reaching back into the container from workflow code.</p>
 <p>See the <a href="http://localhost:3000/reference/capability/">Capability reference</a> for <code>Resolver.fromProvider</code> and
 <code>MissingCapability</code>.</p>
 
-	<nav class="docs-page-nav"><a class="docs-home-cta docs-page-nav__link docs-page-nav__prev" href="http://localhost:3000/docs/managing-dependencies/runtime-context/" aria-label="Previous - RuntimeContext">
+	<nav class="docs-page-nav"><a class="docs-home-cta docs-page-nav__link docs-page-nav__prev" href="http://localhost:3000/docs/managing-dependencies/runtime-context/" aria-label="Previous - HostContext">
     <span class="docs-page-nav__arrow" aria-hidden="true">←</span>
     <span>Previous</span>
   </a><a class="docs-home-cta docs-page-nav__link docs-page-nav__next" href="http://localhost:3000/docs/managing-dependencies/capability-contracts/" aria-label="Next - Nominal Capability Contracts">

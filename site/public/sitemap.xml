@@ -42,9 +42,9 @@
   </url><url>
     <loc>http://localhost:3000/docs/patterns/benchmarks/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/</loc>
-  </url><url>
     <loc>http://localhost:3000/docs/managing-dependencies/runtime-context/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/</loc>
   </url><url>
     <loc>http://localhost:3000/docs/state-concurrency/stm/</loc>
   </url><url>

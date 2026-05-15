@@ -36,107 +36,107 @@ type IHasUser<'user> =
 
 /// <summary>
 /// Captures the two-context shape of a task workflow execution:
-/// runtime services, application capabilities, and the cancellation token for the current run.
+/// host services, application capabilities, and the cancellation token for the current run.
 /// </summary>
 /// <remarks>
 /// This type is the execution carrier above the adapter layer for the unified
 /// <see cref="T:FsFlow.Flow`3" />.
-/// It separates low-level operational concerns (Runtime) from high-level domain dependencies
-/// (Environment).
+/// It separates low-level operational concerns (Host) from high-level domain dependencies
+/// (AppEnv).
 /// </remarks>
-/// <typeparam name="runtime">The type that carries runtime concerns, such as logging or metrics.</typeparam>
-/// <typeparam name="env">The type that carries application capabilities, such as repositories.</typeparam>
-type RuntimeContext<'runtime, 'env> =
+/// <typeparam name="host">The type that carries host concerns, such as logging or metrics.</typeparam>
+/// <typeparam name="appEnv">The type that carries application capabilities, such as repositories.</typeparam>
+type HostContext<'host, 'appEnv> =
     {
-        /// <summary>Runtime services for logging, metrics, tracing, or other operational concerns.</summary>
-        Runtime: 'runtime
+        /// <summary>Host services for logging, metrics, tracing, or other operational concerns.</summary>
+        Host: 'host
 
         /// <summary>Application dependencies and capabilities for the workflow.</summary>
-        Environment: 'env
+        AppEnv: 'appEnv
 
         /// <summary>The cancellation token for the current task execution.</summary>
         CancellationToken: CancellationToken
     }
 
-/// <summary>Helpers for building and reshaping <see cref="RuntimeContext{runtime, env}" /> values.</summary>
+/// <summary>Helpers for building and reshaping <see cref="HostContext{host, appEnv}" /> values.</summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
-module RuntimeContext =
-    /// <summary>Creates a runtime context from the supplied runtime services, environment, and cancellation token.</summary>
-    /// <param name="runtime">The runtime services of type <c>'runtime</c>.</param>
-    /// <param name="environment">The application environment of type <c>'env</c>.</param>
+module HostContext =
+    /// <summary>Creates a host context from the supplied host services, app environment, and cancellation token.</summary>
+    /// <param name="host">The host services of type <c>'host</c>.</param>
+    /// <param name="appEnv">The application environment of type <c>'appEnv</c>.</param>
     /// <param name="cancellationToken">The <see cref="T:System.Threading.CancellationToken" />.</param>
-    /// <returns>A new <see cref="T:FsFlow.RuntimeContext`2" />.</returns>
+    /// <returns>A new <see cref="T:FsFlow.HostContext`2" />.</returns>
     let create
-        (runtime: 'runtime)
-        (environment: 'env)
+        (host: 'host)
+        (appEnv: 'appEnv)
         (cancellationToken: CancellationToken)
-        : RuntimeContext<'runtime, 'env> =
+        : HostContext<'host, 'appEnv> =
         {
-            Runtime = runtime
-            Environment = environment
+            Host = host
+            AppEnv = appEnv
             CancellationToken = cancellationToken
         }
 
-    /// <summary>Reads the runtime half of a runtime context.</summary>
-    /// <param name="context">The <see cref="T:FsFlow.RuntimeContext`2" /> to read.</param>
-    /// <returns>The runtime services of type <c>'runtime</c>.</returns>
-    let runtime (context: RuntimeContext<'runtime, 'env>) : 'runtime = context.Runtime
+    /// <summary>Reads the host half of a host context.</summary>
+    /// <param name="context">The <see cref="T:FsFlow.HostContext`2" /> to read.</param>
+    /// <returns>The host services of type <c>'host</c>.</returns>
+    let host (context: HostContext<'host, 'appEnv>) : 'host = context.Host
 
-    /// <summary>Reads the application environment half of a runtime context.</summary>
-    /// <param name="context">The <see cref="T:FsFlow.RuntimeContext`2" /> to read.</param>
-    /// <returns>The application environment of type <c>'env</c>.</returns>
-    let environment (context: RuntimeContext<'runtime, 'env>) : 'env = context.Environment
+    /// <summary>Reads the application environment half of a host context.</summary>
+    /// <param name="context">The <see cref="T:FsFlow.HostContext`2" /> to read.</param>
+    /// <returns>The application environment of type <c>'appEnv</c>.</returns>
+    let appEnv (context: HostContext<'host, 'appEnv>) : 'appEnv = context.AppEnv
 
-    /// <summary>Reads the cancellation token stored in a runtime context.</summary>
-    /// <param name="context">The <see cref="T:FsFlow.RuntimeContext`2" /> to read.</param>
+    /// <summary>Reads the cancellation token stored in a host context.</summary>
+    /// <param name="context">The <see cref="T:FsFlow.HostContext`2" /> to read.</param>
     /// <returns>The <see cref="T:System.Threading.CancellationToken" />.</returns>
-    let cancellationToken (context: RuntimeContext<'runtime, 'env>) : CancellationToken = context.CancellationToken
+    let cancellationToken (context: HostContext<'host, 'appEnv>) : CancellationToken = context.CancellationToken
 
-    /// <summary>Maps the runtime half of a runtime context.</summary>
-    /// <param name="mapper">A function of type <c>'runtime -> 'nextRuntime</c>.</param>
+    /// <summary>Maps the host half of a host context.</summary>
+    /// <param name="mapper">A function of type <c>'host -> 'nextHost</c>.</param>
     /// <param name="context">The source context.</param>
-    /// <returns>A new context with the mapped runtime services.</returns>
-    let mapRuntime
-        (mapper: 'runtime -> 'nextRuntime)
-        (context: RuntimeContext<'runtime, 'env>)
-        : RuntimeContext<'nextRuntime, 'env> =
+    /// <returns>A new context with the mapped host services.</returns>
+    let mapHost
+        (mapper: 'host -> 'nextHost)
+        (context: HostContext<'host, 'appEnv>)
+        : HostContext<'nextHost, 'appEnv> =
         {
-            Runtime = mapper context.Runtime
-            Environment = context.Environment
+            Host = mapper context.Host
+            AppEnv = context.AppEnv
             CancellationToken = context.CancellationToken
         }
 
-    /// <summary>Maps the application environment half of a runtime context.</summary>
-    /// <param name="mapper">A function of type <c>'env -> 'nextEnv</c>.</param>
+    /// <summary>Maps the application environment half of a host context.</summary>
+    /// <param name="mapper">A function of type <c>'appEnv -> 'nextAppEnv</c>.</param>
     /// <param name="context">The source context.</param>
-    /// <returns>A new context with the mapped environment.</returns>
-    let mapEnvironment
-        (mapper: 'env -> 'nextEnv)
-        (context: RuntimeContext<'runtime, 'env>)
-        : RuntimeContext<'runtime, 'nextEnv> =
+    /// <returns>A new context with the mapped app environment.</returns>
+    let mapAppEnv
+        (mapper: 'appEnv -> 'nextAppEnv)
+        (context: HostContext<'host, 'appEnv>)
+        : HostContext<'host, 'nextAppEnv> =
         {
-            Runtime = context.Runtime
-            Environment = mapper context.Environment
+            Host = context.Host
+            AppEnv = mapper context.AppEnv
             CancellationToken = context.CancellationToken
         }
 
-    /// <summary>Replaces the runtime half of a runtime context.</summary>
-    /// <param name="runtime">The new runtime services.</param>
+    /// <summary>Replaces the host half of a host context.</summary>
+    /// <param name="host">The new host services.</param>
     /// <param name="context">The source context.</param>
-    /// <returns>A new context with the replaced runtime services.</returns>
-    let withRuntime
-        (runtime: 'nextRuntime)
-        (context: RuntimeContext<'runtime, 'env>)
-        : RuntimeContext<'nextRuntime, 'env> =
-        mapRuntime (fun _ -> runtime) context
+    /// <returns>A new context with the replaced host services.</returns>
+    let withHost
+        (host: 'nextHost)
+        (context: HostContext<'host, 'appEnv>)
+        : HostContext<'nextHost, 'appEnv> =
+        mapHost (fun _ -> host) context
 
-    /// <summary>Replaces the environment half of a runtime context.</summary>
-    /// <param name="environment">The new application environment.</param>
+    /// <summary>Replaces the application environment half of a host context.</summary>
+    /// <param name="appEnv">The new application environment.</param>
     /// <param name="context">The source context.</param>
-    /// <returns>A new context with the replaced environment.</returns>
-    let withEnvironment
-        (environment: 'nextEnv)
-        (context: RuntimeContext<'runtime, 'env>)
-        : RuntimeContext<'runtime, 'nextEnv> =
-        mapEnvironment (fun _ -> environment) context
+    /// <returns>A new context with the replaced app environment.</returns>
+    let withAppEnv
+        (appEnv: 'nextAppEnv)
+        (context: HostContext<'host, 'appEnv>)
+        : HostContext<'host, 'nextAppEnv> =
+        mapAppEnv (fun _ -> appEnv) context

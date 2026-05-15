@@ -20,8 +20,8 @@ This page is for readers who want the dependency surface to be part of the type:
 - you want the compiler to notice when a refactor changes what an effect needs
 - you want the effect signature to read like a dependency statement, not a plumbing report
 
-The contract should be small, named, and stable. When it grows, split the bundle into runtime and
-app slices or move the boundary back to a concrete record.
+The contract should be small, named, and stable. When it grows, split the bundle into host and app
+slices or move the boundary back to a concrete record.
 
 ## The Contract
 
@@ -113,7 +113,7 @@ A named contract gives you:
 Do not add a named contract just to make the code look more abstract.
 
 A record keeps a concrete boundary direct.
-`RuntimeContext` separates your app services from the host runtime.
+`HostContext` separates your app services from the host.
 Standard `.NET` AppHost plus DI adapts the container once at the host edge.
 
 ## What This Replaces
@@ -122,8 +122,8 @@ The current shape is simple:
 
 - a concrete record boundary
 - a small nominal interface
-- `RuntimeContext<'runtime, 'env>` for separating your app services from the host runtime
-- `Flow.read` or `Flow.readRuntime` / `Flow.readEnvironment` to project values from the contract
+- `HostContext<'host, 'appEnv>` for separating your app services from the host
+- `Flow.read` or `Flow.readHost` / `Flow.readAppEnv` to project values from the contract
 
 See the [Capability reference](../../reference/capability/) for the binding tokens, the
-runtime/app readers, and the layer surface.
+host/app readers, and the layer surface.
