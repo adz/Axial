@@ -97,13 +97,18 @@ Use `Flow.fail` or `Flow.error` for expected domain failures, `Flow.die` for exp
 
 ## 5. Running Your First Flow
 
-Here is how you actually execute a flow in a real application:
+Because `Flow.run` returns a deferred execution handle (`Effect`), you must await it to get the final `Exit` outcome.
 
 ```fsharp
 let myFlow = Flow.succeed "Hello World"
 
 // On .NET:
-let exit = Flow.run () myFlow
+let runOnDotNet () = task {
+    let! exit = Flow.run () myFlow
+    match exit with
+    | Exit.Success s -> printfn "%s" s
+    | _ -> ()
+}
 
 // On Fable:
 let runOnFable () = async {
@@ -113,6 +118,8 @@ let runOnFable () = async {
     | _ -> ()
 }
 ```
+
+For a deeper dive into handling outcomes, cancellation, and combining multiple flows, see **[Execution and Outcomes](./execution-and-outcomes/)**.
 
 ## 6. Reading from the Environment
 
@@ -130,7 +137,11 @@ let fetchFromApi : Flow<AppConfig, unit, string> =
 
 // Running with an environment
 let config = { ApiUrl = "https://api.example.com" }
-let effect = Flow.run config fetchFromApi
+
+let runExample () = task {
+    let! result = Flow.run config fetchFromApi
+    printfn "Result: %A" result
+}
 ```
 
 ## Summary: The Flow Lifecycle

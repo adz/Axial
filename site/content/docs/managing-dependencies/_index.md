@@ -11,6 +11,8 @@ environment value, and `Flow.read` projects the piece you need from it. That is 
 dependency handling in FsFlow: keep the environment explicit, and read only what the flow actually
 needs.
 
+> **Tutorials Available:** For step-by-step guides on setting up these patterns, see the [Tutorials section](../../tutorials/).
+
 In practice, that `env` often becomes a record. Records are easy to construct, easy to pass around,
 and easy to understand at the boundary of an application.
 
@@ -27,12 +29,12 @@ the others.
 
 ## Read In Order
 
-| Step | Shape | When to use | Main APIs |
-| :--- | :--- | :--- | :--- |
-| 1 | Environment + record | One record gives you an explicit boundary, direct field access, and easy construction | `Flow.env`, `Flow.read`, `Flow.localEnv` |
-| 2 | [Nominal capability contracts](./capability-contracts/) | An interface through a capability contract puts the dependency surface in the type, so the compiler checks it and helpers advertise it | interfaces, `Flow.read` |
-| 3 | [RuntimeContext<'runtime, 'env>](./runtime-context/) | Two readers separate the host runtime from app services, so each side stays named and explicit | `RuntimeContext.create`, `Flow.readRuntime`, `Flow.readEnvironment` |
-| 4 | [Standard .NET AppHost Plus DI](./provider-edge/) | Host registrations become a boundary record or nominal contract once, and workflow code stays on typed values | `Resolver.fromProvider`, `MissingCapability` |
+| Step | Shape | When to use | Tutorial | Main APIs |
+| :--- | :--- | :--- | :--- | :--- |
+| 1 | Environment + record | One record gives you an explicit boundary, direct field access, and easy construction | **[AppRecord](../../tutorials/app-record/)** | `Flow.env`, `Flow.read`, `Flow.localEnv` |
+| 2 | [Nominal capability contracts](./capability-contracts/) | An interface through a capability contract puts the dependency surface in the type, so the compiler checks it and helpers advertise it | **[Capabilities](../../tutorials/capabilities/)** | interfaces, `Flow.read` |
+| 3 | [RuntimeContext<'runtime, 'env>](./runtime-context/) | Two readers separate the host runtime from app services, so each side stays named and explicit | **[RuntimeContext](../../tutorials/runtime-context/)** | `RuntimeContext.create`, `Flow.readRuntime`, `Flow.readEnvironment` |
+| 4 | [Standard .NET AppHost Plus DI](./provider-edge/) | Host registrations become a boundary record or nominal contract once, and workflow code stays on typed values | **[AppHost](../../tutorials/app-host/)** | `Resolver.fromProvider`, `MissingCapability` |
 
 ## Start With A Record
 

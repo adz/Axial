@@ -2,191 +2,191 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Validation on FsFlow</title>
-    <link>https://adz.github.io/FsFlow/reference/validation/</link>
+    <link>http://localhost:3000/reference/validation/</link>
     <description>Recent content in Validation on FsFlow</description>
     <generator>Hugo</generator>
     <language>en-us</language>
-    <atom:link href="https://adz.github.io/FsFlow/reference/validation/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="http://localhost:3000/reference/validation/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Validation.apply</title>
-      <link>https://adz.github.io/FsFlow/reference/validation/m-validation-apply/</link>
+      <link>http://localhost:3000/reference/validation/m-validation-apply/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/validation/m-validation-apply/</guid>
+      <guid>http://localhost:3000/reference/validation/m-validation-apply/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Validation.apply&amp;#32;&lt;span&gt;validation&amp;#32;value&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Applies a validation-wrapped function to a validation-wrapped value.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;validation&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html&#34;&gt;Validation&lt;/a&gt;&amp;lt;&lt;span&gt;&lt;span&gt;(&lt;span&gt;&amp;lsquo;value -&amp;gt; &amp;rsquo;next&lt;/span&gt;)&lt;/span&gt;, &amp;rsquo;error&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The validation containing the function.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;value&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html&#34;&gt;Validation&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;value, &amp;rsquo;error&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The validation containing the value.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;The result of applying the function to the value, with accumulated errors.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Validation.at</title>
-      <link>https://adz.github.io/FsFlow/reference/validation/m-validation-at/</link>
+      <link>http://localhost:3000/reference/validation/m-validation-at/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/validation/m-validation-at/</guid>
+      <guid>http://localhost:3000/reference/validation/m-validation-at/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Validation.at&amp;#32;&lt;span&gt;path&amp;#32;validation&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Scopes a validation under the supplied path segments.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;path&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-pathsegment.html&#34;&gt;PathSegment&lt;/a&gt; list&lt;/span&gt;&lt;/code&gt;&#xA;The path segments to apply to the validation.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;validation&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html&#34;&gt;Validation&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;value, &amp;rsquo;error&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The validation to scope.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A validation nested under the given path.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Validation.bind</title>
-      <link>https://adz.github.io/FsFlow/reference/validation/m-validation-bind/</link>
+      <link>http://localhost:3000/reference/validation/m-validation-bind/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/validation/m-validation-bind/</guid>
+      <guid>http://localhost:3000/reference/validation/m-validation-bind/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Validation.bind&amp;#32;&lt;span&gt;binder&amp;#32;validation&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Sequences a validation-producing continuation.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;This is the monadic &amp;ldquo;bind&amp;rdquo; for validation. Note that this operation short-circuits&#xA;and does not accumulate errors from the binder if the source has already failed.&#xA;For accumulation, use &lt;a href=&#34;https://learn.microsoft.com/dotnet/api/map2&#34;&gt;map2&lt;/a&gt; or the applicative &lt;code&gt;and!&lt;/code&gt; syntax.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;binder&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;value -&amp;gt; &lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html&#34;&gt;Validation&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;next, &amp;rsquo;error&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;A function of type &lt;code&gt;&#39;value -&amp;gt; Validation&amp;lt;&#39;next, &#39;error&amp;gt;&lt;/code&gt;.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;validation&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html&#34;&gt;Validation&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;value, &amp;rsquo;error&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The source validation.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;The result of the binder or the original diagnostics.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Validation.collect</title>
-      <link>https://adz.github.io/FsFlow/reference/validation/m-validation-collect/</link>
+      <link>http://localhost:3000/reference/validation/m-validation-collect/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/validation/m-validation-collect/</guid>
+      <guid>http://localhost:3000/reference/validation/m-validation-collect/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Validation.collect&amp;#32;&lt;span&gt;validations&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Collects a sequence of validations into a single validation of a list.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;This operation is applicative: it will collect errors from ALL items in the sequence.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;validations&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html&#34;&gt;Validation&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;value, &amp;rsquo;error&lt;/span&gt;&amp;gt;&lt;/span&gt; seq&lt;/span&gt;&lt;/code&gt;&#xA;A sequence of type &lt;code&gt;seq&amp;lt;Validation&amp;lt;&#39;value, &#39;error&amp;gt;&amp;gt;&lt;/code&gt;.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A validation containing the list of values or accumulated diagnostics.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Validation.error</title>
-      <link>https://adz.github.io/FsFlow/reference/validation/m-validation-error/</link>
+      <link>http://localhost:3000/reference/validation/m-validation-error/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/validation/m-validation-error/</guid>
+      <guid>http://localhost:3000/reference/validation/m-validation-error/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Validation.error&amp;#32;&lt;span&gt;diagnostics&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Creates a failing validation result with the provided diagnostics.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;diagnostics&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-diagnostics-1.html&#34;&gt;Diagnostics&lt;/a&gt;&amp;lt;&amp;rsquo;error&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-diagnostics-1.html&#34;&gt;Diagnostics&lt;/a&gt; graph.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A failing &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html&#34;&gt;Validation&lt;/a&gt;.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Validation.fail</title>
-      <link>https://adz.github.io/FsFlow/reference/validation/m-validation-fail/</link>
+      <link>http://localhost:3000/reference/validation/m-validation-fail/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/validation/m-validation-fail/</guid>
+      <guid>http://localhost:3000/reference/validation/m-validation-fail/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Validation.fail&amp;#32;&lt;span&gt;diagnostics&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Alias for &lt;a href=&#34;https://learn.microsoft.com/dotnet/api/error&#34;&gt;error&lt;/a&gt;.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;diagnostics&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-diagnostics-1.html&#34;&gt;Diagnostics&lt;/a&gt;&amp;lt;&amp;rsquo;error&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-diagnostics-1.html&#34;&gt;Diagnostics&lt;/a&gt; graph.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A failing &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html&#34;&gt;Validation&lt;/a&gt;.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Validation.fromResult</title>
-      <link>https://adz.github.io/FsFlow/reference/validation/m-validation-fromresult/</link>
+      <link>http://localhost:3000/reference/validation/m-validation-fromresult/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/validation/m-validation-fromresult/</guid>
+      <guid>http://localhost:3000/reference/validation/m-validation-fromresult/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Validation.fromResult&amp;#32;&lt;span&gt;result&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Lifts a standard &lt;a href=&#34;https://learn.microsoft.com/dotnet/api/system.result-2&#34;&gt;Result&lt;/a&gt; into the &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html&#34;&gt;Validation&lt;/a&gt; context.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;If the result is an error, it is wrapped in a root-level &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-diagnostics-1.html&#34;&gt;Diagnostics&lt;/a&gt; graph.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;result&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2&#34;&gt;Result&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;value, &amp;rsquo;error&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The result to lift.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html&#34;&gt;Validation&lt;/a&gt; mirroring the result.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Validation.ignore</title>
-      <link>https://adz.github.io/FsFlow/reference/validation/m-validation-ignore/</link>
+      <link>http://localhost:3000/reference/validation/m-validation-ignore/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/validation/m-validation-ignore/</guid>
+      <guid>http://localhost:3000/reference/validation/m-validation-ignore/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Validation.ignore&amp;#32;&lt;span&gt;validation&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Maps a successful validation value to &lt;code&gt;unit&lt;/code&gt; while preserving the diagnostics.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;validation&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html&#34;&gt;Validation&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;value, &amp;rsquo;error&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The source validation.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A validation that keeps the original diagnostics and discards the success value.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Validation.index</title>
-      <link>https://adz.github.io/FsFlow/reference/validation/m-validation-index/</link>
+      <link>http://localhost:3000/reference/validation/m-validation-index/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/validation/m-validation-index/</guid>
+      <guid>http://localhost:3000/reference/validation/m-validation-index/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Validation.index&amp;#32;&lt;span&gt;index&amp;#32;validation&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Prefixes a validation with an indexed branch.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;index&lt;/code&gt;: &lt;code&gt;int&lt;/code&gt;&#xA;The branch index.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;validation&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html&#34;&gt;Validation&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;value, &amp;rsquo;error&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The validation to scope.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A validation whose diagnostics are prefixed with &lt;code&gt;Index index&lt;/code&gt;.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Validation.key</title>
-      <link>https://adz.github.io/FsFlow/reference/validation/m-validation-key/</link>
+      <link>http://localhost:3000/reference/validation/m-validation-key/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/validation/m-validation-key/</guid>
+      <guid>http://localhost:3000/reference/validation/m-validation-key/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Validation.key&amp;#32;&lt;span&gt;key&amp;#32;validation&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Prefixes a validation with a keyed branch.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;key&lt;/code&gt;: &lt;code&gt;string&lt;/code&gt;&#xA;The branch key.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;validation&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html&#34;&gt;Validation&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;value, &amp;rsquo;error&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The validation to scope.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A validation whose diagnostics are prefixed with &lt;code&gt;Key key&lt;/code&gt;.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Validation.map</title>
-      <link>https://adz.github.io/FsFlow/reference/validation/m-validation-map/</link>
+      <link>http://localhost:3000/reference/validation/m-validation-map/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/validation/m-validation-map/</guid>
+      <guid>http://localhost:3000/reference/validation/m-validation-map/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Validation.map&amp;#32;&lt;span&gt;mapper&amp;#32;validation&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Maps the successful value of a validation.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;mapper&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;value -&amp;gt; &amp;rsquo;next&lt;/span&gt;&lt;/code&gt;&#xA;A function of type &lt;code&gt;&#39;value -&amp;gt; &#39;next&lt;/code&gt;.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;validation&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html&#34;&gt;Validation&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;value, &amp;rsquo;error&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The source &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html&#34;&gt;Validation&lt;/a&gt;.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A validation with the transformed success value.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Validation.map2</title>
-      <link>https://adz.github.io/FsFlow/reference/validation/m-validation-map2/</link>
+      <link>http://localhost:3000/reference/validation/m-validation-map2/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/validation/m-validation-map2/</guid>
+      <guid>http://localhost:3000/reference/validation/m-validation-map2/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Validation.map2&amp;#32;&lt;span&gt;mapper&amp;#32;left&amp;#32;right&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Combines two validations, accumulating errors if both fail.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;This is the core applicative operation. If both &lt;span class=&#34;fsdocs-param-name&#34;&gt;left&lt;/span&gt; and&#xA;&lt;span class=&#34;fsdocs-param-name&#34;&gt;right&lt;/span&gt; fail, their diagnostics graphs are merged.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;mapper&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;left -&amp;gt; &amp;lsquo;right -&amp;gt; &amp;lsquo;value&lt;/span&gt;&lt;/code&gt;&#xA;A function of type &lt;code&gt;&#39;left -&amp;gt; &#39;right -&amp;gt; &#39;value&lt;/code&gt;.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;left&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html&#34;&gt;Validation&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;left, &amp;rsquo;error&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The first validation.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;right&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html&#34;&gt;Validation&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;right, &amp;rsquo;error&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The second validation.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A validation with the combined result.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Validation.map3</title>
-      <link>https://adz.github.io/FsFlow/reference/validation/m-validation-map3/</link>
+      <link>http://localhost:3000/reference/validation/m-validation-map3/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/validation/m-validation-map3/</guid>
+      <guid>http://localhost:3000/reference/validation/m-validation-map3/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Validation.map3&amp;#32;&lt;span&gt;mapper&amp;#32;left&amp;#32;middle&amp;#32;right&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Combines three validations, accumulating errors when any input fails.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;mapper&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;left -&amp;gt; &amp;lsquo;middle -&amp;gt; &amp;lsquo;right -&amp;gt; &amp;lsquo;value&lt;/span&gt;&lt;/code&gt;&#xA;A function of type &lt;code&gt;&#39;left -&amp;gt; &#39;middle -&amp;gt; &#39;right -&amp;gt; &#39;value&lt;/code&gt;.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;left&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html&#34;&gt;Validation&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;left, &amp;rsquo;error&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The first validation.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;middle&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html&#34;&gt;Validation&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;middle, &amp;rsquo;error&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The second validation.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;right&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html&#34;&gt;Validation&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;right, &amp;rsquo;error&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The third validation.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A validation with the combined result.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Validation.mapError</title>
-      <link>https://adz.github.io/FsFlow/reference/validation/m-validation-maperror/</link>
+      <link>http://localhost:3000/reference/validation/m-validation-maperror/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/validation/m-validation-maperror/</guid>
+      <guid>http://localhost:3000/reference/validation/m-validation-maperror/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Validation.mapError&amp;#32;&lt;span&gt;mapper&amp;#32;validation&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Maps the error type of a validation graph.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;mapper&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;error -&amp;gt; &amp;rsquo;nextError&lt;/span&gt;&lt;/code&gt;&#xA;A function of type &lt;code&gt;&#39;error -&amp;gt; &#39;nextError&lt;/code&gt;.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;validation&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html&#34;&gt;Validation&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;value, &amp;rsquo;error&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The source &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html&#34;&gt;Validation&lt;/a&gt;.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A validation with transformed error values.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Validation.merge</title>
-      <link>https://adz.github.io/FsFlow/reference/validation/m-validation-merge/</link>
+      <link>http://localhost:3000/reference/validation/m-validation-merge/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/validation/m-validation-merge/</guid>
+      <guid>http://localhost:3000/reference/validation/m-validation-merge/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Validation.merge&amp;#32;&lt;span&gt;left&amp;#32;right&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Merges two validations into a validation of a tuple.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;left&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html&#34;&gt;Validation&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;value, &amp;rsquo;error&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The first validation.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;right&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html&#34;&gt;Validation&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;next, &amp;rsquo;error&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The second validation.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A validation containing a tuple of the results.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Validation.name</title>
-      <link>https://adz.github.io/FsFlow/reference/validation/m-validation-name/</link>
+      <link>http://localhost:3000/reference/validation/m-validation-name/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/validation/m-validation-name/</guid>
+      <guid>http://localhost:3000/reference/validation/m-validation-name/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Validation.name&amp;#32;&lt;span&gt;name&amp;#32;validation&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Prefixes a validation with a named branch.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;name&lt;/code&gt;: &lt;code&gt;string&lt;/code&gt;&#xA;The branch name.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;validation&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html&#34;&gt;Validation&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;value, &amp;rsquo;error&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The validation to scope.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A validation whose diagnostics are prefixed with &lt;code&gt;Name name&lt;/code&gt;.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Validation.ok</title>
-      <link>https://adz.github.io/FsFlow/reference/validation/m-validation-ok/</link>
+      <link>http://localhost:3000/reference/validation/m-validation-ok/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/validation/m-validation-ok/</guid>
+      <guid>http://localhost:3000/reference/validation/m-validation-ok/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Validation.ok&amp;#32;&lt;span&gt;value&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Creates a successful validation result.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;value&lt;/code&gt;: &lt;code&gt;&amp;lsquo;value&lt;/code&gt;&#xA;The success value of type &lt;code&gt;&#39;value&lt;/code&gt;.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A successful &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html&#34;&gt;Validation&lt;/a&gt;.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Validation.orElse</title>
-      <link>https://adz.github.io/FsFlow/reference/validation/m-validation-orelse/</link>
+      <link>http://localhost:3000/reference/validation/m-validation-orelse/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/validation/m-validation-orelse/</guid>
+      <guid>http://localhost:3000/reference/validation/m-validation-orelse/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Validation.orElse&amp;#32;&lt;span&gt;fallback&amp;#32;validation&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Falls back to another validation when the source validation fails.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;This is a left-biased choice operator. If the source succeeds, the fallback is not used.&#xA;If the source fails, the fallback validation is returned as-is.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;fallback&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html&#34;&gt;Validation&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;value, &amp;rsquo;error&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The validation to use when the source fails.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;validation&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html&#34;&gt;Validation&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;value, &amp;rsquo;error&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The source validation.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;The source validation when it succeeds, otherwise the fallback validation.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Validation.orElseWith</title>
-      <link>https://adz.github.io/FsFlow/reference/validation/m-validation-orelsewith/</link>
+      <link>http://localhost:3000/reference/validation/m-validation-orelsewith/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/validation/m-validation-orelsewith/</guid>
+      <guid>http://localhost:3000/reference/validation/m-validation-orelsewith/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Validation.orElseWith&amp;#32;&lt;span&gt;fallback&amp;#32;validation&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Computes a fallback validation from the source diagnostics when validation fails.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;This is the lazy counterpart to &lt;a href=&#34;https://learn.microsoft.com/dotnet/api/orelse&#34;&gt;orElse&lt;/a&gt; and is useful when the alternate&#xA;branch depends on the accumulated diagnostics.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;fallback&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-diagnostics-1.html&#34;&gt;Diagnostics&lt;/a&gt;&amp;lt;&amp;rsquo;error&amp;gt;&lt;/span&gt; -&amp;gt; &lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html&#34;&gt;Validation&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;value, &amp;rsquo;error&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;A function that turns the diagnostics into an alternate validation.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;validation&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html&#34;&gt;Validation&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;value, &amp;rsquo;error&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The source validation.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;The source validation when it succeeds, otherwise the computed fallback validation.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Validation.sequence</title>
-      <link>https://adz.github.io/FsFlow/reference/validation/m-validation-sequence/</link>
+      <link>http://localhost:3000/reference/validation/m-validation-sequence/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/validation/m-validation-sequence/</guid>
+      <guid>http://localhost:3000/reference/validation/m-validation-sequence/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Validation.sequence&amp;#32;&lt;span&gt;validations&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Transforms a sequence of validations into a validation of a list.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;validations&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html&#34;&gt;Validation&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;value, &amp;rsquo;error&lt;/span&gt;&amp;gt;&lt;/span&gt; seq&lt;/span&gt;&lt;/code&gt;&#xA;The input sequence.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A validation containing the list of values.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Validation.succeed</title>
-      <link>https://adz.github.io/FsFlow/reference/validation/m-validation-succeed/</link>
+      <link>http://localhost:3000/reference/validation/m-validation-succeed/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/validation/m-validation-succeed/</guid>
+      <guid>http://localhost:3000/reference/validation/m-validation-succeed/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Validation.succeed&amp;#32;&lt;span&gt;value&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Alias for &lt;a href=&#34;https://learn.microsoft.com/dotnet/api/ok&#34;&gt;ok&lt;/a&gt;.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;value&lt;/code&gt;: &lt;code&gt;&amp;lsquo;value&lt;/code&gt;&#xA;The success value of type &lt;code&gt;&#39;value&lt;/code&gt;.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A successful &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html&#34;&gt;Validation&lt;/a&gt;.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Validation.toResult</title>
-      <link>https://adz.github.io/FsFlow/reference/validation/m-validation-toresult/</link>
+      <link>http://localhost:3000/reference/validation/m-validation-toresult/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/validation/m-validation-toresult/</guid>
+      <guid>http://localhost:3000/reference/validation/m-validation-toresult/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Validation.toResult&amp;#32;&lt;span&gt;validation&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Converts a &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html&#34;&gt;Validation&lt;/a&gt; into a standard &lt;a href=&#34;https://learn.microsoft.com/dotnet/api/system.result-2&#34;&gt;Result&lt;/a&gt;.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;validation&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html&#34;&gt;Validation&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;value, &amp;rsquo;error&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The validation to convert.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A result containing either the success value or the full diagnostics graph.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Validation.traverseIndexed</title>
-      <link>https://adz.github.io/FsFlow/reference/validation/m-validation-traverseindexed/</link>
+      <link>http://localhost:3000/reference/validation/m-validation-traverseindexed/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/validation/m-validation-traverseindexed/</guid>
+      <guid>http://localhost:3000/reference/validation/m-validation-traverseindexed/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Validation.traverseIndexed&amp;#32;&lt;span&gt;binder&amp;#32;values&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Maps a sequence into validations while prefixing each item with its index.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;This is the indexed version of &lt;a href=&#34;https://learn.microsoft.com/dotnet/api/sequence&#34;&gt;sequence&lt;/a&gt;. It is useful for list and array&#xA;validation because each item can keep its own &lt;a href=&#34;https://learn.microsoft.com/dotnet/api/fsflow.pathsegment.index&#34;&gt;Index&lt;/a&gt;&#xA;branch without the caller manually wrapping every item.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;binder&lt;/code&gt;: &lt;code&gt;&lt;span&gt;int -&amp;gt; &amp;lsquo;source -&amp;gt; &lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html&#34;&gt;Validation&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;value, &amp;rsquo;error&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;A function of type &lt;code&gt;int -&amp;gt; &#39;source -&amp;gt; Validation&amp;lt;&#39;value, &#39;error&amp;gt;&lt;/code&gt;.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;values&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;source seq&lt;/span&gt;&lt;/code&gt;&#xA;The input sequence.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A validation containing the list of values or accumulated diagnostics.&lt;/p&gt;</description>
     </item>
     <item>
       <title>validate { }</title>
-      <link>https://adz.github.io/FsFlow/reference/validation/builders-validate/</link>
+      <link>http://localhost:3000/reference/validation/builders-validate/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/validation/builders-validate/</guid>
-      <description>&lt;p&gt;The &lt;code&gt;validate { }&lt;/code&gt; builder is used for accumulating sibling failures into a structured diagnostics graph.&lt;/p&gt;&#xA;&lt;h2 id=&#34;builder&#34;&gt;Builder&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/validation/p-validate/&#34;&gt;&lt;code&gt;validate&lt;/code&gt;&lt;/a&gt;:&#xA;The accumulating &lt;code&gt;validate { }&lt;/code&gt; computation expression.&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
+      <guid>http://localhost:3000/reference/validation/builders-validate/</guid>
+      <description>&lt;p&gt;The &lt;code&gt;validate { }&lt;/code&gt; builder is used for accumulating sibling failures into a structured diagnostics graph.&lt;/p&gt;&#xA;&lt;h2 id=&#34;builder&#34;&gt;Builder&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;a href=&#34;http://localhost:3000/reference/validation/p-validate/&#34;&gt;&lt;code&gt;validate&lt;/code&gt;&lt;/a&gt;:&#xA;The accumulating &lt;code&gt;validate { }&lt;/code&gt; computation expression.&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
     <item>
       <title>validate</title>
-      <link>https://adz.github.io/FsFlow/reference/validation/p-validate/</link>
+      <link>http://localhost:3000/reference/validation/p-validate/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/validation/p-validate/</guid>
+      <guid>http://localhost:3000/reference/validation/p-validate/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;validate&amp;#32;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;The accumulating &lt;code&gt;validate { }&lt;/code&gt; computation expression.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p class=&#39;fsdocs-para&#39;&gt;&#xA; Use this builder when you want to collect all validation failures instead of stopping&#xA; at the first one.&#xA; &lt;/p&gt;&lt;p class=&#39;fsdocs-para&#39;&gt;&#xA; Use &lt;code&gt;and!&lt;/code&gt; when sibling validations should accumulate into the same diagnostics graph.&#xA; Plain &lt;code&gt;let!&lt;/code&gt; and &lt;code&gt;do!&lt;/code&gt; are sequential: if the left side fails, the later step is&#xA; not evaluated.&#xA; &lt;/p&gt;&lt;p class=&#39;fsdocs-para&#39;&gt;&lt;code&gt;Check&amp;lt;&amp;#39;value&amp;gt;&lt;/code&gt; covers both value-preserving checks and gate checks.&#xA; Use &lt;code&gt;Check.orError&lt;/code&gt; to attach an application error, and &lt;code&gt;Guard.Of&lt;/code&gt; /&#xA; &lt;code&gt;Guard.MapError&lt;/code&gt; when you want the same error-bound source shape to participate&#xA; directly in validation.&#xA; &lt;/p&gt;</description>
     </item>
     <item>
       <title>Validation</title>
-      <link>https://adz.github.io/FsFlow/reference/validation/t-validation-2/</link>
+      <link>http://localhost:3000/reference/validation/t-validation-2/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/validation/t-validation-2/</guid>
+      <guid>http://localhost:3000/reference/validation/t-validation-2/</guid>
       <description>&lt;p&gt;An accumulating validation result that keeps the structured diagnostics graph visible.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;Unlike &lt;a href=&#34;https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2&#34;&gt;FSharpResult&lt;/a&gt;, this type is designed for applicative&#xA;composition using &lt;code&gt;and!&lt;/code&gt; in the &lt;code&gt;validate { }&lt;/code&gt; builder, which merges errors instead of&#xA;short-circuiting.&lt;/p&gt;</description>
     </item>
   </channel>

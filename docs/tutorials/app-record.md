@@ -83,15 +83,18 @@ let main _ =
     let order = { Id = Guid.NewGuid(); Total = 99.99m }
     
     // Run the flow and handle the result
-    let result = Flow.run env (placeOrder order)
-    
-    match result.Wait() with
-    | Exit.Success id -> 
-        printfn "Successfully placed order: %A" id
-        0
-    | Exit.Failure cause -> 
-        printfn "Failed: %A" cause
-        1
+    let run () = task {
+        let! result = Flow.run env (placeOrder order)
+        
+        match result with
+        | Exit.Success id -> 
+            printfn "Successfully placed order: %A" id
+        | Exit.Failure cause -> 
+            printfn "Failed: %A" cause
+    }
+
+    run().GetAwaiter().GetResult()
+    0
 ```
 
 ## Why use AppRecord?

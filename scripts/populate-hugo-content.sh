@@ -75,7 +75,7 @@ upsert_frontmatter "$ref_dir/_index.md" "weight" "30"
 
 # Sync guide directories from docs/ to site/content/docs/
 # We exclude reference, content, and the root AGENT.md/index.md for now
-for dir in core-model ecosystem managing-dependencies patterns start state-concurrency validation-results; do
+for dir in core-model ecosystem managing-dependencies patterns start state-concurrency tutorials validation-results; do
   if [ -d "$root_dir/docs/$dir" ]; then
     mkdir -p "$docs_dir/$dir"
     cp -r "$root_dir/docs/$dir/"* "$docs_dir/$dir/"

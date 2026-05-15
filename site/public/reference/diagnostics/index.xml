@@ -2,72 +2,72 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Diagnostics on FsFlow</title>
-    <link>https://adz.github.io/FsFlow/reference/diagnostics/</link>
+    <link>http://localhost:3000/reference/diagnostics/</link>
     <description>Recent content in Diagnostics on FsFlow</description>
     <generator>Hugo</generator>
     <language>en-us</language>
-    <atom:link href="https://adz.github.io/FsFlow/reference/diagnostics/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="http://localhost:3000/reference/diagnostics/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Diagnostic</title>
-      <link>https://adz.github.io/FsFlow/reference/diagnostics/t-diagnostic-1/</link>
+      <link>http://localhost:3000/reference/diagnostics/t-diagnostic-1/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/diagnostics/t-diagnostic-1/</guid>
+      <guid>http://localhost:3000/reference/diagnostics/t-diagnostic-1/</guid>
       <description>&lt;p&gt;A single failure item attached to a path in a validation graph.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Diagnostics</title>
-      <link>https://adz.github.io/FsFlow/reference/diagnostics/t-diagnostics-1/</link>
+      <link>http://localhost:3000/reference/diagnostics/t-diagnostics-1/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/diagnostics/t-diagnostics-1/</guid>
+      <guid>http://localhost:3000/reference/diagnostics/t-diagnostics-1/</guid>
       <description>&lt;p&gt;A mergeable validation graph that carries local errors and nested child branches.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p class=&#39;fsdocs-para&#39;&gt;&lt;code&gt;Errors&lt;/code&gt; holds the application errors attached exactly to the current node, while&#xA; &lt;code&gt;Children&lt;/code&gt; holds nested branches keyed by &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-pathsegment.html&#34;&gt;PathSegment&lt;/a&gt;.&#xA; &lt;/p&gt;&lt;p class=&#39;fsdocs-para&#39;&gt;&#xA; This structure allows hierarchical validation to stay navigable before flattening.&#xA; Use &lt;a href=&#34;https://learn.microsoft.com/dotnet/api/fsflow.diagnostics.flatten&#34;&gt;flatten&lt;/a&gt; to convert it into a linear list.&#xA; &lt;/p&gt;</description>
     </item>
     <item>
       <title>Diagnostics.empty</title>
-      <link>https://adz.github.io/FsFlow/reference/diagnostics/m-diagnostics-empty/</link>
+      <link>http://localhost:3000/reference/diagnostics/m-diagnostics-empty/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/diagnostics/m-diagnostics-empty/</guid>
+      <guid>http://localhost:3000/reference/diagnostics/m-diagnostics-empty/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Diagnostics.empty&amp;#32;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Creates an empty diagnostics graph with no errors.&lt;/p&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;An empty &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-diagnostics-1.html&#34;&gt;Diagnostics&lt;/a&gt;.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Diagnostics.flatten</title>
-      <link>https://adz.github.io/FsFlow/reference/diagnostics/m-diagnostics-flatten/</link>
+      <link>http://localhost:3000/reference/diagnostics/m-diagnostics-flatten/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/diagnostics/m-diagnostics-flatten/</guid>
+      <guid>http://localhost:3000/reference/diagnostics/m-diagnostics-flatten/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Diagnostics.flatten&amp;#32;&lt;span&gt;graph&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Flattens the structured diagnostics graph into a linear list of diagnostics.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;During flattening, child paths are accumulated from the root down into each emitted diagnostic.&#xA;The tree itself stores only local errors and child branches, while &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-diagnostic-1.html&#34;&gt;Diagnostic&lt;/a&gt;&#xA;is reserved for reporting output.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;graph&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-diagnostics-1.html&#34;&gt;Diagnostics&lt;/a&gt;&amp;lt;&amp;rsquo;error&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-diagnostics-1.html&#34;&gt;Diagnostics&lt;/a&gt; to flatten.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A list of type &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-diagnostic-1.html&#34;&gt;Diagnostic&lt;/a&gt; list.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Diagnostics.merge</title>
-      <link>https://adz.github.io/FsFlow/reference/diagnostics/m-diagnostics-merge/</link>
+      <link>http://localhost:3000/reference/diagnostics/m-diagnostics-merge/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/diagnostics/m-diagnostics-merge/</guid>
+      <guid>http://localhost:3000/reference/diagnostics/m-diagnostics-merge/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Diagnostics.merge&amp;#32;&lt;span&gt;left&amp;#32;right&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Recursively merges two diagnostics graphs, combining shared branches and local errors.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;This is the core operation for applicative validation. It ensures that errors from sibling&#xA;fields are collected together into a single structured graph.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;left&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-diagnostics-1.html&#34;&gt;Diagnostics&lt;/a&gt;&amp;lt;&amp;rsquo;error&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The first graph of type &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-diagnostics-1.html&#34;&gt;Diagnostics&lt;/a&gt;.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;right&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-diagnostics-1.html&#34;&gt;Diagnostics&lt;/a&gt;&amp;lt;&amp;rsquo;error&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The second graph of type &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-diagnostics-1.html&#34;&gt;Diagnostics&lt;/a&gt;.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A new &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-diagnostics-1.html&#34;&gt;Diagnostics&lt;/a&gt; containing the union of both inputs.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Diagnostic&lt;_&gt;.Path</title>
-      <link>https://adz.github.io/FsFlow/reference/diagnostics/t-path/</link>
+      <link>http://localhost:3000/reference/diagnostics/t-path/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/diagnostics/t-path/</guid>
+      <guid>http://localhost:3000/reference/diagnostics/t-path/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;Path&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;The path to the source of the error.&lt;/p&gt;</description>
     </item>
     <item>
       <title>PathSegment</title>
-      <link>https://adz.github.io/FsFlow/reference/diagnostics/t-pathsegment/</link>
+      <link>http://localhost:3000/reference/diagnostics/t-pathsegment/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/diagnostics/t-pathsegment/</guid>
+      <guid>http://localhost:3000/reference/diagnostics/t-pathsegment/</guid>
       <description>&lt;p&gt;Location markers used to describe where a diagnostic belongs in a validation graph.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Diagnostics.singleton</title>
-      <link>https://adz.github.io/FsFlow/reference/diagnostics/m-diagnostics-singleton/</link>
+      <link>http://localhost:3000/reference/diagnostics/m-diagnostics-singleton/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/diagnostics/m-diagnostics-singleton/</guid>
+      <guid>http://localhost:3000/reference/diagnostics/m-diagnostics-singleton/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Diagnostics.singleton&amp;#32;&lt;span&gt;error&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Creates a diagnostics graph containing exactly one error at the root.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;error&lt;/code&gt;: &lt;code&gt;&amp;lsquo;error&lt;/code&gt;&#xA;The application error to store at the root.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-diagnostics-1.html&#34;&gt;Diagnostics&lt;/a&gt; with a single error.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Diagnostics.toString</title>
-      <link>https://adz.github.io/FsFlow/reference/diagnostics/m-diagnostics-tostring/</link>
+      <link>http://localhost:3000/reference/diagnostics/m-diagnostics-tostring/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/diagnostics/m-diagnostics-tostring/</guid>
+      <guid>http://localhost:3000/reference/diagnostics/m-diagnostics-tostring/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Diagnostics.toString&amp;#32;&lt;span&gt;graph&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Renders a diagnostics graph in a YAML-like layout for display.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;This is intended for human-readable output. Empty sections are omitted, and children are&#xA;shown directly under their branch labels at the same indentation level as errors. Errors&#xA;render as YAML-style bullet items without an &lt;code&gt;Errors:&lt;/code&gt; key. Use&#xA;&lt;a href=&#34;https://learn.microsoft.com/dotnet/api/fsflow.diagnostics.flatten&#34;&gt;flatten&lt;/a&gt; when you need path-bearing diagnostics for&#xA;reporting or assertions.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;graph&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-diagnostics-1.html&#34;&gt;Diagnostics&lt;/a&gt;&amp;lt;&amp;rsquo;error&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The diagnostics graph to render.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A formatted string representation of the graph.&lt;/p&gt;</description>
     </item>
   </channel>

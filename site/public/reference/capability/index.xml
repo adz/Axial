@@ -2,72 +2,72 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Capability on FsFlow</title>
-    <link>https://adz.github.io/FsFlow/reference/capability/</link>
+    <link>http://localhost:3000/reference/capability/</link>
     <description>Recent content in Capability on FsFlow</description>
     <generator>Hugo</generator>
     <language>en-us</language>
-    <atom:link href="https://adz.github.io/FsFlow/reference/capability/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="http://localhost:3000/reference/capability/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Resolver.environment</title>
-      <link>https://adz.github.io/FsFlow/reference/capability/m-resolver-environment/</link>
+      <link>http://localhost:3000/reference/capability/m-resolver-environment/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/capability/m-resolver-environment/</guid>
+      <guid>http://localhost:3000/reference/capability/m-resolver-environment/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Resolver.environment&amp;#32;&lt;span&gt;()&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Reads the application environment from the environment.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;Compatibility alias for the environment half of &lt;a href=&#34;https://learn.microsoft.com/dotnet/api/runtimecontext{runtime, env}&#34;&gt;RuntimeContext{runtime, env}&lt;/a&gt;.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;()&lt;/code&gt;: &lt;code&gt;unit&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
     <item>
       <title>Resolver.fromProvider</title>
-      <link>https://adz.github.io/FsFlow/reference/capability/m-resolver-fromprovider/</link>
+      <link>http://localhost:3000/reference/capability/m-resolver-fromprovider/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/capability/m-resolver-fromprovider/</guid>
+      <guid>http://localhost:3000/reference/capability/m-resolver-fromprovider/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Resolver.fromProvider&amp;#32;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Reads a dependency from &lt;a href=&#34;https://learn.microsoft.com/dotnet/api/iserviceprovider&#34;&gt;IServiceProvider&lt;/a&gt; and fails when it is not registered.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;Edge helper only. Prefer a record or nominal contract once the host boundary has been crossed.&lt;/p&gt;</description>
     </item>
     <item>
       <title>MissingCapability</title>
-      <link>https://adz.github.io/FsFlow/reference/capability/t-missingcapability/</link>
+      <link>http://localhost:3000/reference/capability/t-missingcapability/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/capability/t-missingcapability/</guid>
+      <guid>http://localhost:3000/reference/capability/t-missingcapability/</guid>
       <description>&lt;p&gt;Describes a missing service-provider capability.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Layer.provideLayer</title>
-      <link>https://adz.github.io/FsFlow/reference/capability/m-layer-providelayer/</link>
+      <link>http://localhost:3000/reference/capability/m-layer-providelayer/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/capability/m-layer-providelayer/</guid>
+      <guid>http://localhost:3000/reference/capability/m-layer-providelayer/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Layer.provideLayer&amp;#32;&lt;span&gt;layer&amp;#32;flow&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Provides a derived environment from a layer flow to a downstream flow.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;Boundary primitive for composition roots, not the default workflow shape.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;layer&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;input, &amp;rsquo;error, &amp;rsquo;environment&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;flow&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;environment, &amp;rsquo;error, &amp;lsquo;value&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
     <item>
       <title>Requires</title>
-      <link>https://adz.github.io/FsFlow/reference/capability/t-requires-1/</link>
+      <link>http://localhost:3000/reference/capability/t-requires-1/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/capability/t-requires-1/</guid>
+      <guid>http://localhost:3000/reference/capability/t-requires-1/</guid>
       <description>&lt;p&gt;Compatibility contract for a single dependency.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;Prefer nominal capability interfaces for public workflows. This helper remains for lower-level&#xA;binding machinery that still needs to work with a single dependency directly.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Resolver.resolve</title>
-      <link>https://adz.github.io/FsFlow/reference/capability/m-resolver-resolve/</link>
+      <link>http://localhost:3000/reference/capability/m-resolver-resolve/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/capability/m-resolver-resolve/</guid>
+      <guid>http://localhost:3000/reference/capability/m-resolver-resolve/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Resolver.resolve&amp;#32;&lt;span&gt;projection&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Reads a dependency from the environment using the provided projection.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;Use this as a compatibility helper or at the boundary where a projection is still the cleanest shape.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;projection&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;env -&amp;gt; &amp;lsquo;resolve&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
     <item>
       <title>Resolve</title>
-      <link>https://adz.github.io/FsFlow/reference/capability/t-resolve-2/</link>
+      <link>http://localhost:3000/reference/capability/t-resolve-2/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/capability/t-resolve-2/</guid>
+      <guid>http://localhost:3000/reference/capability/t-resolve-2/</guid>
       <description>&lt;p&gt;Request token for projecting a value from a dependency.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;Builders read the dependency from the environment, apply the projection, and then reuse the&#xA;existing lift/bind behavior for the projected value. If the projection returns a&#xA;&lt;code&gt;Result&lt;/code&gt;, &lt;code&gt;Async&lt;/code&gt;, &lt;code&gt;Task&lt;/code&gt;, &lt;code&gt;ValueTask&lt;/code&gt;, &lt;code&gt;ColdTask&lt;/code&gt;, &lt;code&gt;option&lt;/code&gt;, or&#xA;&lt;code&gt;voption&lt;/code&gt;, the existing workflow rules still apply.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Resolve</title>
-      <link>https://adz.github.io/FsFlow/reference/capability/t-resolve-1/</link>
+      <link>http://localhost:3000/reference/capability/t-resolve-1/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/capability/t-resolve-1/</guid>
+      <guid>http://localhost:3000/reference/capability/t-resolve-1/</guid>
       <description>&lt;p&gt;Request token for binding a whole dependency inside a workflow.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;Use this token when a workflow needs the dependency itself rather than a value projected from&#xA;that dependency. The &lt;code&gt;flow {}&lt;/code&gt; builder and its compatibility helpers read it from any&#xA;environment that exposes the dependency directly or through a nominal capability contract.&lt;/p&gt;</description>
     </item>
     <item>
       <title>Resolver.runtime</title>
-      <link>https://adz.github.io/FsFlow/reference/capability/m-resolver-runtime/</link>
+      <link>http://localhost:3000/reference/capability/m-resolver-runtime/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/capability/m-resolver-runtime/</guid>
+      <guid>http://localhost:3000/reference/capability/m-resolver-runtime/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Resolver.runtime&amp;#32;&lt;span&gt;()&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Reads the current runtime from the environment.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;Compatibility alias for the runtime half of &lt;a href=&#34;https://learn.microsoft.com/dotnet/api/runtimecontext{runtime, env}&#34;&gt;RuntimeContext{runtime, env}&lt;/a&gt;.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;()&lt;/code&gt;: &lt;code&gt;unit&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
   </channel>

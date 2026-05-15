@@ -65,11 +65,15 @@ let main _ =
     let order = { Id = Guid.NewGuid(); Total = 99.99m }
     
     // Run the flow against the RuntimeContext
-    let result = Flow.run context (placeOrder order)
-    
-    match result.Wait() with
-    | Exit.Success id -> 0
-    | Exit.Failure _ -> 1
+    let run () = task {
+        let! result = Flow.run context (placeOrder order)
+        
+        match result with
+        | Exit.Success id -> return 0
+        | Exit.Failure _ -> return 1
+    }
+
+    run().GetAwaiter().GetResult()
 ```
 
 ## Why use RuntimeContext?

@@ -21,8 +21,10 @@ let getUrl =
         return url
     }
 
-let outcome = getUrl |> Flow.run { ApiUrl = "https://api.example.com" }
-// outcome = Exit.Success "https://api.example.com"
+let run () = task {
+    let! outcome = getUrl |> Flow.run { ApiUrl = "https://api.example.com" }
+    // outcome = Exit.Success "https://api.example.com"
+}
 ```
 
 ## 2. Combining Pure Logic and Async Work
@@ -43,8 +45,10 @@ let workflow id =
         return user.Name
     }
 
-let effect = workflow 42 |> Flow.run ()
-// effect = Effect<string, string> (ValueTask or Async)
+let runWorkflow () = task {
+    let! exit = workflow 42 |> Flow.run ()
+    // exit = Exit.Success "Ada"
+}
 ```
 
 ## 3. Retrying a Flow

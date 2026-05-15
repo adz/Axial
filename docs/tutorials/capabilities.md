@@ -80,8 +80,12 @@ let main _ =
           Email = ConsoleEmail() }
 
     // env matches both #IHasOrders and #IHasEmail
-    let result = Flow.run env (placeOrder order)
-    // ...
+    let run () = task {
+        let! result = Flow.run env (placeOrder order)
+        printfn "Result: %A" result
+    }
+
+    run().GetAwaiter().GetResult()
 ```
 
 ## Why use Capabilities?

@@ -74,7 +74,12 @@ let sp = host.Services
 let env = { TraceId = "abc-123" }
 
 // Hosting.run bridges the provider into the flow
-let result = Hosting.run sp env (placeOrderWithLog order)
+let run () = task {
+    let! result = Hosting.run sp env (placeOrderWithLog order)
+    printfn "Result: %A" result
+}
+
+run().GetAwaiter().GetResult()
 ```
 
 ## 4. The Preferred Pattern: Adapting at the Boundary
@@ -90,7 +95,10 @@ type OrderHandler(sp: IServiceProvider) =
               Email = sp.GetRequiredService<IEmailSender>() }
         
         // Now use the simpler AppRecord or Capabilities pattern
-        Flow.run env (placeOrder order)
+        task {
+            let! exit = Flow.run env (placeOrder order)
+            return exit
+        }
 ```
 
 ## Why use AppHost integration?

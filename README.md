@@ -152,6 +152,8 @@ It reads `Root` from `'env`, performs two file reads in one `flow {}`, and keeps
 ## Getting Started
 
 - [Docs site](https://adz.github.io/FsFlow) for guides and API reference
-- [`docs/VALIDATE_AND_RESULT.md`](docs/VALIDATE_AND_RESULT.md) for the validation-first story
+- [Validation & Results](https://adz.github.io/FsFlow/validation-results/) for the validation-first story
+- [Getting Started](https://adz.github.io/FsFlow/start/getting-started/) for the core workflow guide
+- [Straightforward Examples](https://adz.github.io/FsFlow/start/basic-examples/) for small runnable snippets
+- [Execution and Outcomes](https://adz.github.io/FsFlow/start/execution-and-outcomes/) for running and combining flows
 - [`examples/`](examples/) for runnable repo examples
-- [`docs/TINY_EXAMPLES.md`](docs/TINY_EXAMPLES.md) for the smallest runnable snippets
