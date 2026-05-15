@@ -8,11 +8,11 @@
     <language>en-us</language>
     <atom:link href="http://localhost:3000/reference/capability/index.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title>Resolver.environment</title>
-      <link>http://localhost:3000/reference/capability/m-resolver-environment/</link>
+      <title>Resolver.appEnv</title>
+      <link>http://localhost:3000/reference/capability/m-resolver-appenv/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/capability/m-resolver-environment/</guid>
-      <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Resolver.environment&amp;#32;&lt;span&gt;()&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Reads the application environment from the environment.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;Compatibility alias for the environment half of &lt;a href=&#34;https://learn.microsoft.com/dotnet/api/runtimecontext{runtime, env}&#34;&gt;RuntimeContext{runtime, env}&lt;/a&gt;.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;()&lt;/code&gt;: &lt;code&gt;unit&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
+      <guid>http://localhost:3000/reference/capability/m-resolver-appenv/</guid>
+      <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Resolver.appEnv&amp;#32;&lt;span&gt;()&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Reads the application environment from the environment.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;Compatibility alias for the app environment half of &lt;a href=&#34;https://learn.microsoft.com/dotnet/api/hostcontext{host, appenv}&#34;&gt;HostContext{host, appEnv}&lt;/a&gt;.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;()&lt;/code&gt;: &lt;code&gt;unit&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
     <item>
       <title>Resolver.fromProvider</title>
@@ -20,6 +20,13 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>http://localhost:3000/reference/capability/m-resolver-fromprovider/</guid>
       <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Resolver.fromProvider&amp;#32;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Reads a dependency from &lt;a href=&#34;https://learn.microsoft.com/dotnet/api/iserviceprovider&#34;&gt;IServiceProvider&lt;/a&gt; and fails when it is not registered.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;Edge helper only. Prefer a record or nominal contract once the host boundary has been crossed.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>Resolver.host</title>
+      <link>http://localhost:3000/reference/capability/m-resolver-host/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/capability/m-resolver-host/</guid>
+      <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Resolver.host&amp;#32;&lt;span&gt;()&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Reads the current host from the environment.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;Compatibility alias for the host half of &lt;a href=&#34;https://learn.microsoft.com/dotnet/api/hostcontext{host, appenv}&#34;&gt;HostContext{host, appEnv}&lt;/a&gt;.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;()&lt;/code&gt;: &lt;code&gt;unit&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
     <item>
       <title>MissingCapability</title>
@@ -47,7 +54,7 @@
       <link>http://localhost:3000/reference/capability/m-resolver-resolve/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>http://localhost:3000/reference/capability/m-resolver-resolve/</guid>
-      <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Resolver.resolve&amp;#32;&lt;span&gt;projection&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Reads a dependency from the environment using the provided projection.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;Use this as a compatibility helper or at the boundary where a projection is still the cleanest shape.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;projection&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;env -&amp;gt; &amp;lsquo;resolve&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
+      <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Resolver.resolve&amp;#32;&lt;span&gt;projection&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Reads a dependency from the environment using the provided projection.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;Use this as a compatibility helper or at the boundary where a projection is still the cleanest shape.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;projection&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;appEnv -&amp;gt; &amp;lsquo;resolve&lt;/span&gt;&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
     <item>
       <title>Resolve</title>
@@ -62,13 +69,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>http://localhost:3000/reference/capability/t-resolve-1/</guid>
       <description>&lt;p&gt;Request token for binding a whole dependency inside a workflow.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;Use this token when a workflow needs the dependency itself rather than a value projected from&#xA;that dependency. The &lt;code&gt;flow {}&lt;/code&gt; builder and its compatibility helpers read it from any&#xA;environment that exposes the dependency directly or through a nominal capability contract.&lt;/p&gt;</description>
-    </item>
-    <item>
-      <title>Resolver.runtime</title>
-      <link>http://localhost:3000/reference/capability/m-resolver-runtime/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/capability/m-resolver-runtime/</guid>
-      <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Resolver.runtime&amp;#32;&lt;span&gt;()&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Reads the current runtime from the environment.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;Compatibility alias for the runtime half of &lt;a href=&#34;https://learn.microsoft.com/dotnet/api/runtimecontext{runtime, env}&#34;&gt;RuntimeContext{runtime, env}&lt;/a&gt;.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;()&lt;/code&gt;: &lt;code&gt;unit&lt;/code&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
   </channel>
 </rss>

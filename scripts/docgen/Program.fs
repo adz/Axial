@@ -233,19 +233,19 @@ let pageSpecs = [
         Intro = "In FsFlow, a capability is a named interface that describes what a flow needs from env. A capability contract puts that interface in the environment surface type. Using an interface through a capability contract makes the dependency visible in the type, so the compiler can check it, refactoring can move safely, and reusable helpers can advertise what they need. This page shows the source-documented capability and layer surface, with `Requires` and `Resolve` as the binding surface."
         SymbolIds = [
             "Binding tokens", ["T:FsFlow.Requires`1"; "T:FsFlow.Resolve`1"; "T:FsFlow.Resolve`2"]
-            "Edge helpers", ["T:FsFlow.MissingCapability"; "M:FsFlow.Resolver.resolve"; "M:FsFlow.Resolver.runtime"; "M:FsFlow.Resolver.environment"; "M:FsFlow.Resolver.fromProvider"]
+            "Edge helpers", ["T:FsFlow.MissingCapability"; "M:FsFlow.Resolver.resolve"; "M:FsFlow.Resolver.host"; "M:FsFlow.Resolver.appEnv"; "M:FsFlow.Resolver.fromProvider"]
             "Layers", ["M:FsFlow.Layer.provideLayer"]
         ]
         Alias = None
     }
     {
-        OutPath = ["runtime"; "_index.md"]
-        Title = "RuntimeContext"
-        Description = "Source-documented runtime/application split for FsFlow."
-        Intro = "The `RuntimeContext` type and module split host services from application dependencies and carry the cancellation token for task-based execution. In the current foundation it is the execution carrier above the adapter layer, not the runtime storage engine."
+        OutPath = ["host"; "_index.md"]
+        Title = "HostContext"
+        Description = "Source-documented host/application split for FsFlow."
+        Intro = "The `HostContext` type and module split host services from application dependencies and carry the cancellation token for task-based execution. In the current foundation it is the execution carrier above the adapter layer, not the host storage engine."
         SymbolIds = [
-            "Core type", ["T:FsFlow.RuntimeContext`2"]
-            "Module functions", ["M:FsFlow.RuntimeContext.create"; "M:FsFlow.RuntimeContext.runtime"; "M:FsFlow.RuntimeContext.environment"; "M:FsFlow.RuntimeContext.cancellationToken"; "M:FsFlow.RuntimeContext.mapRuntime"; "M:FsFlow.RuntimeContext.mapEnvironment"; "M:FsFlow.RuntimeContext.withRuntime"; "M:FsFlow.RuntimeContext.withEnvironment"]
+            "Core type", ["T:FsFlow.HostContext`2"]
+            "Module functions", ["M:FsFlow.HostContext.create"; "M:FsFlow.HostContext.host"; "M:FsFlow.HostContext.appEnv"; "M:FsFlow.HostContext.cancellationToken"; "M:FsFlow.HostContext.mapHost"; "M:FsFlow.HostContext.mapAppEnv"; "M:FsFlow.HostContext.withHost"; "M:FsFlow.HostContext.withAppEnv"]
         ]
         Alias = None
     }

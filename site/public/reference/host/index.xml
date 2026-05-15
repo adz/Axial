@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>HostContext on FsFlow</title>
+    <link>http://localhost:3000/reference/host/</link>
+    <description>Recent content in HostContext on FsFlow</description>
+    <generator>Hugo</generator>
+    <language>en-us</language>
+    <atom:link href="http://localhost:3000/reference/host/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>HostContext.appEnv</title>
+      <link>http://localhost:3000/reference/host/m-hostcontext-appenv/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/host/m-hostcontext-appenv/</guid>
+      <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;HostContext.appEnv&amp;#32;&lt;span&gt;context&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Reads the application environment half of a host context.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;context&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-hostcontext-2.html&#34;&gt;HostContext&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;host, &amp;lsquo;appEnv&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-hostcontext-2.html&#34;&gt;HostContext&lt;/a&gt; to read.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;The application environment of type &lt;code&gt;&#39;appEnv&lt;/code&gt;.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>HostContext.cancellationToken</title>
+      <link>http://localhost:3000/reference/host/m-hostcontext-cancellationtoken/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/host/m-hostcontext-cancellationtoken/</guid>
+      <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;HostContext.cancellationToken&amp;#32;&lt;span&gt;context&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Reads the cancellation token stored in a host context.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;context&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-hostcontext-2.html&#34;&gt;HostContext&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;host, &amp;lsquo;appEnv&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-hostcontext-2.html&#34;&gt;HostContext&lt;/a&gt; to read.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;The &lt;a href=&#34;https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken&#34;&gt;CancellationToken&lt;/a&gt;.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>HostContext.create</title>
+      <link>http://localhost:3000/reference/host/m-hostcontext-create/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/host/m-hostcontext-create/</guid>
+      <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;HostContext.create&amp;#32;&lt;span&gt;host&amp;#32;appEnv&amp;#32;cancellationToken&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Creates a host context from the supplied host services, app environment, and cancellation token.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;host&lt;/code&gt;: &lt;code&gt;&amp;lsquo;host&lt;/code&gt;&#xA;The host services of type &lt;code&gt;&#39;host&lt;/code&gt;.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;appEnv&lt;/code&gt;: &lt;code&gt;&amp;lsquo;appEnv&lt;/code&gt;&#xA;The application environment of type &lt;code&gt;&#39;appEnv&lt;/code&gt;.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;cancellationToken&lt;/code&gt;: &lt;code&gt;&lt;a href=&#34;https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken&#34;&gt;CancellationToken&lt;/a&gt;&lt;/code&gt;&#xA;The &lt;a href=&#34;https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken&#34;&gt;CancellationToken&lt;/a&gt;.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A new &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-hostcontext-2.html&#34;&gt;HostContext&lt;/a&gt;.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>HostContext.host</title>
+      <link>http://localhost:3000/reference/host/m-hostcontext-host/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/host/m-hostcontext-host/</guid>
+      <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;HostContext.host&amp;#32;&lt;span&gt;context&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Reads the host half of a host context.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;context&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-hostcontext-2.html&#34;&gt;HostContext&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;host, &amp;lsquo;appEnv&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-hostcontext-2.html&#34;&gt;HostContext&lt;/a&gt; to read.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;The host services of type &lt;code&gt;&#39;host&lt;/code&gt;.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>HostContext</title>
+      <link>http://localhost:3000/reference/host/t-hostcontext-2/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/host/t-hostcontext-2/</guid>
+      <description>&lt;p&gt;Captures the two-context shape of a task workflow execution:&#xA;host services, application capabilities, and the cancellation token for the current run.&lt;/p&gt;&#xA;&lt;h2 id=&#34;remarks&#34;&gt;Remarks&lt;/h2&gt;&#xA;&lt;p&gt;This type is the execution carrier above the adapter layer for the unified&#xA;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;.&#xA;It separates low-level operational concerns (Host) from high-level domain dependencies&#xA;(AppEnv).&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>HostContext.mapAppEnv</title>
+      <link>http://localhost:3000/reference/host/m-hostcontext-mapappenv/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/host/m-hostcontext-mapappenv/</guid>
+      <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;HostContext.mapAppEnv&amp;#32;&lt;span&gt;mapper&amp;#32;context&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Maps the application environment half of a host context.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;mapper&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;appEnv -&amp;gt; &amp;rsquo;nextAppEnv&lt;/span&gt;&lt;/code&gt;&#xA;A function of type &lt;code&gt;&#39;appEnv -&amp;gt; &#39;nextAppEnv&lt;/code&gt;.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;context&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-hostcontext-2.html&#34;&gt;HostContext&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;host, &amp;lsquo;appEnv&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The source context.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A new context with the mapped app environment.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>HostContext.mapHost</title>
+      <link>http://localhost:3000/reference/host/m-hostcontext-maphost/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/host/m-hostcontext-maphost/</guid>
+      <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;HostContext.mapHost&amp;#32;&lt;span&gt;mapper&amp;#32;context&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Maps the host half of a host context.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;mapper&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&amp;lsquo;host -&amp;gt; &amp;rsquo;nextHost&lt;/span&gt;&lt;/code&gt;&#xA;A function of type &lt;code&gt;&#39;host -&amp;gt; &#39;nextHost&lt;/code&gt;.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;context&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-hostcontext-2.html&#34;&gt;HostContext&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;host, &amp;lsquo;appEnv&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The source context.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A new context with the mapped host services.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>HostContext.withAppEnv</title>
+      <link>http://localhost:3000/reference/host/m-hostcontext-withappenv/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/host/m-hostcontext-withappenv/</guid>
+      <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;HostContext.withAppEnv&amp;#32;&lt;span&gt;appEnv&amp;#32;context&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Replaces the application environment half of a host context.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;appEnv&lt;/code&gt;: &lt;code&gt;&amp;lsquo;nextAppEnv&lt;/code&gt;&#xA;The new application environment.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;context&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-hostcontext-2.html&#34;&gt;HostContext&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;host, &amp;lsquo;appEnv&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The source context.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A new context with the replaced app environment.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>HostContext.withHost</title>
+      <link>http://localhost:3000/reference/host/m-hostcontext-withhost/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/host/m-hostcontext-withhost/</guid>
+      <description>&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;HostContext.withHost&amp;#32;&lt;span&gt;host&amp;#32;context&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;p&gt;Replaces the host half of a host context.&lt;/p&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;host&lt;/code&gt;: &lt;code&gt;&amp;lsquo;nextHost&lt;/code&gt;&#xA;The new host services.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;context&lt;/code&gt;: &lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-hostcontext-2.html&#34;&gt;HostContext&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;host, &amp;lsquo;appEnv&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&#xA;The source context.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;p&gt;A new context with the replaced host services.&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

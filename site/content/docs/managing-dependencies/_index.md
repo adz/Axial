@@ -33,7 +33,7 @@ the others.
 | :--- | :--- | :--- | :--- | :--- |
 | 1 | Environment + record | One record gives you an explicit boundary, direct field access, and easy construction | **[AppRecord](../../tutorials/app-record/)** | `Flow.env`, `Flow.read`, `Flow.localEnv` |
 | 2 | [Nominal capability contracts](./capability-contracts/) | An interface through a capability contract puts the dependency surface in the type, so the compiler checks it and helpers advertise it | **[Capabilities](../../tutorials/capabilities/)** | interfaces, `Flow.read` |
-| 3 | [HostContext<'host, 'appEnv>](./runtime-context/) | Two readers separate the host from app services, so each side stays named and explicit | **[HostContext](../../tutorials/runtime-context/)** | `HostContext.create`, `Flow.readHost`, `Flow.readAppEnv` |
+| 3 | [HostContext<'host, 'appEnv>](./host-context/) | Two readers separate the host from app services, so each side stays named and explicit | **[HostContext](../../tutorials/host-context/)** | `HostContext.create`, `Flow.readHost`, `Flow.readAppEnv` |
 | 4 | [Standard .NET AppHost Plus DI](./provider-edge/) | Host registrations become a boundary record or nominal contract once, and workflow code stays on typed values | **[AppHost](../../tutorials/app-host/)** | `Resolver.fromProvider`, `MissingCapability` |
 
 ## Start With A Record

@@ -14,8 +14,8 @@ In FsFlow, a capability is a named interface that describes what a flow needs fr
 
 - [`MissingCapability`](./t-missingcapability.md): Describes a missing service-provider capability.
 - [`Resolver.resolve`](./m-resolver-resolve.md): Reads a dependency from the environment using the provided projection.
-- [`Resolver.runtime`](./m-resolver-runtime.md): Reads the current runtime from the environment.
-- [`Resolver.environment`](./m-resolver-environment.md): Reads the application environment from the environment.
+- [`Resolver.host`](./m-resolver-host.md): Reads the current host from the environment.
+- [`Resolver.appEnv`](./m-resolver-appenv.md): Reads the application environment from the environment.
 - [`Resolver.fromProvider`](./m-resolver-fromprovider.md): Reads a dependency from <a href="https://learn.microsoft.com/dotnet/api/iserviceprovider">IServiceProvider</a> and fails when it is not registered.
 
 ## Layers

@@ -30,7 +30,7 @@ Welcome to the FsFlow guides. Choose a section from the sidebar or start with [G
 <section class="docs-card">
 <span class="label">Managing Dependencies</span>
 <h2><a href="./managing-dependencies/">Environment handling</a></h2>
-<p>Learn how to manage dependencies using the Record Pattern and RuntimeContext.</p>
+<p>Learn how to manage dependencies using the Record Pattern and HostContext.</p>
 </section>
 
 <section class="docs-card">

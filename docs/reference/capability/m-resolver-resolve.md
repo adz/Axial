@@ -15,5 +15,5 @@ Use this as a compatibility helper or at the boundary where a projection is stil
 
 ## Parameters
 
-- `projection`: <code><span>'env&#32;->&#32;'resolve</span></code>
+- `projection`: <code><span>'appEnv&#32;->&#32;'resolve</span></code>
 

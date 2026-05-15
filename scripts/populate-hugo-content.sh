@@ -75,6 +75,7 @@ upsert_frontmatter "$ref_dir/_index.md" "weight" "30"
 
 # Sync guide directories from docs/ to site/content/docs/
 # We exclude reference, content, and the root AGENT.md/index.md for now
+rm -rf "$docs_dir"
 for dir in core-model ecosystem managing-dependencies patterns start state-concurrency tutorials validation-results; do
   if [ -d "$root_dir/docs/$dir" ]; then
     mkdir -p "$docs_dir/$dir"
@@ -135,7 +136,7 @@ Welcome to the FsFlow guides. Choose a section from the sidebar or start with [G
 <section class=\"docs-card\">
 <span class=\"label\">Managing Dependencies</span>
 <h2><a href=\"./managing-dependencies/\">Environment handling</a></h2>
-<p>Learn how to manage dependencies using the Record Pattern and RuntimeContext.</p>
+<p>Learn how to manage dependencies using the Record Pattern and HostContext.</p>
 </section>
 
 <section class=\"docs-card\">

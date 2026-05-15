@@ -109,7 +109,7 @@ type OrderHandler(sp: IServiceProvider) =
 
 You've now seen the full progression of dependency management in FsFlow:
 1. **[AppRecord](./app-record/)**: Simple records for direct access.
-2. **[HostContext](./runtime-context/)**: Splitting host services from app logic.
+2. **[HostContext](./host-context/)**: Splitting host services from app logic.
 3. **[Capabilities](./capabilities/)**: Type-checked interface contracts.
 4. **[AppHost](./app-host/)**: Integration with standard .NET containers.
 

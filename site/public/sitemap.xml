@@ -30,7 +30,7 @@
   </url><url>
     <loc>http://localhost:3000/docs/patterns/troubleshooting-types/</loc>
   </url><url>
-    <loc>http://localhost:3000/docs/tutorials/runtime-context/</loc>
+    <loc>http://localhost:3000/docs/tutorials/host-context/</loc>
   </url><url>
     <loc>http://localhost:3000/docs/validation-results/</loc>
   </url><url>
@@ -42,7 +42,7 @@
   </url><url>
     <loc>http://localhost:3000/docs/patterns/benchmarks/</loc>
   </url><url>
-    <loc>http://localhost:3000/docs/managing-dependencies/runtime-context/</loc>
+    <loc>http://localhost:3000/docs/managing-dependencies/host-context/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/</loc>
   </url><url>
@@ -100,6 +100,10 @@
   </url><url>
     <loc>http://localhost:3000/reference/check/m-check-any/</loc>
   </url><url>
+    <loc>http://localhost:3000/reference/capability/m-resolver-appenv/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/host/m-hostcontext-appenv/</loc>
+  </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-apply/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/validation/m-validation-apply/</loc>
@@ -114,7 +118,7 @@
   </url><url>
     <loc>http://localhost:3000/reference/check/m-check-blank/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/runtime/m-runtimecontext-cancellationtoken/</loc>
+    <loc>http://localhost:3000/reference/host/m-hostcontext-cancellationtoken/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-catch/</loc>
   </url><url>
@@ -124,7 +128,7 @@
   </url><url>
     <loc>http://localhost:3000/reference/validation/m-validation-collect/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/runtime/m-runtimecontext-create/</loc>
+    <loc>http://localhost:3000/reference/host/m-hostcontext-create/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-delay/</loc>
   </url><url>
@@ -135,10 +139,6 @@
     <loc>http://localhost:3000/reference/diagnostics/m-diagnostics-empty/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-env/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/capability/m-resolver-environment/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/runtime/m-runtimecontext-environment/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/check/m-check-equal/</loc>
   </url><url>
@@ -216,6 +216,14 @@
   </url><url>
     <loc>http://localhost:3000/</loc>
   </url><url>
+    <loc>http://localhost:3000/reference/capability/m-resolver-host/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/host/m-hostcontext-host/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/host/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/host/t-hostcontext-2/</loc>
+  </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-ignore/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/validation/m-validation-ignore/</loc>
@@ -250,13 +258,13 @@
   </url><url>
     <loc>http://localhost:3000/reference/validation/m-validation-map3/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/runtime/m-runtimecontext-mapenvironment/</loc>
+    <loc>http://localhost:3000/reference/host/m-hostcontext-mapappenv/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-maperror/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/validation/m-validation-maperror/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/runtime/m-runtimecontext-mapruntime/</loc>
+    <loc>http://localhost:3000/reference/host/m-hostcontext-maphost/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/diagnostics/m-diagnostics-merge/</loc>
   </url><url>
@@ -364,14 +372,6 @@
   </url><url>
     <loc>http://localhost:3000/docs/patterns/examples/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/capability/m-resolver-runtime/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/runtime/m-runtimecontext-runtime/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/runtime/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/runtime/t-runtimecontext-2/</loc>
-  </url><url>
     <loc>http://localhost:3000/reference/schedule/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/schedule/t-schedule-3/</loc>
@@ -428,9 +428,9 @@
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-value/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/runtime/m-runtimecontext-withenvironment/</loc>
+    <loc>http://localhost:3000/reference/host/m-hostcontext-withappenv/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/runtime/m-runtimecontext-withruntime/</loc>
+    <loc>http://localhost:3000/reference/host/m-hostcontext-withhost/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-zip/</loc>
   </url><url>

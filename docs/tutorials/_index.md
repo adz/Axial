@@ -13,7 +13,7 @@ These tutorials provide step-by-step setups for common FsFlow dependency managem
 | Tutorial | Focus | Best For |
 | :--- | :--- | :--- |
 | **[AppRecord](./app-record/)** | Simple concrete records | Smaller apps, direct field access, and low boilerplate. |
-| **[HostContext](./runtime-context/)** | Explicit host/app split | Separating operational concerns (logging, metrics) from business logic. |
+| **[HostContext](./host-context/)** | Explicit host/app split | Separating operational concerns (logging, metrics) from business logic. |
 | **[Capabilities](./capabilities/)** | Nominal interface contracts | Reusable helpers, large-scale apps, and type-checked dependency surfaces. |
 | **[AppHost](./app-host/)** | .NET Generic Host / DI | Integration with ASP.NET Core, Worker Services, and existing DI containers. |
 
