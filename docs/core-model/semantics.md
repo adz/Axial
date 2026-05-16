@@ -29,7 +29,7 @@ Every Flow execution results in an [**`Exit<'value, 'error>`**]({{< relref "/ref
 - `Exit.Success value`: The happy path.
 - `Exit.Failure (Cause.Fail error)`: An expected domain-specific failure.
 - `Exit.Failure Cause.Interrupt`: The workflow was signaled to stop (e.g., cancellation).
-- `Exit.Failure (Cause.Die exception)`: An unexpected defect or crash. `Flow.run`, `AsyncFlow.run`, and `TaskFlow.run` preserve uncaught exceptions in this branch.
+- `Exit.Failure (Cause.Die exception)`: An unexpected defect or crash. `Flow.run`, `Flow.runFull`, and `Flow.runSync` preserve uncaught exceptions in this branch.
 
 All standard combinators (`map`, `bind`, `zip`, `orElse`) are **short-circuiting**. The first `Exit.Failure` stops the workflow unless explicitly caught.
 

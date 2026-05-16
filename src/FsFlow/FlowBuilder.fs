@@ -352,167 +352,167 @@ type FlowBuilder() =
 /// Computation expression builder for internal async compatibility helpers.
 /// </summary>
 /// <exclude/>
-type internal AsyncFlowBuilder() =
-    member _.Return(value: 'value) : AsyncFlow<'env, 'error, 'value> =
-        AsyncFlow.ok value
+type internal AsyncAdapterBuilder() =
+    member _.Return(value: 'value) : AsyncAdapterFlow<'env, 'error, 'value> =
+        AsyncAdapter.ok value
 
-    member _.ReturnFrom(flow: AsyncFlow<'env, 'error, 'value>) : AsyncFlow<'env, 'error, 'value> =
+    member _.ReturnFrom(flow: AsyncAdapterFlow<'env, 'error, 'value>) : AsyncAdapterFlow<'env, 'error, 'value> =
         flow
 
-    member _.ReturnFrom(operation: Async<'value>) : AsyncFlow<'env, 'error, 'value> =
-        AsyncFlow.fromAsync operation
+    member _.ReturnFrom(operation: Async<'value>) : AsyncAdapterFlow<'env, 'error, 'value> =
+        AsyncAdapter.fromAsync operation
 
-    member _.ReturnFrom(operation: Async<Result<'value, 'error>>) : AsyncFlow<'env, 'error, 'value> =
-        AsyncFlow.fromAsyncResult operation
+    member _.ReturnFrom(operation: Async<Result<'value, 'error>>) : AsyncAdapterFlow<'env, 'error, 'value> =
+        AsyncAdapter.fromAsyncResult operation
 
-    member _.ReturnFrom(operation: Task<Result<'value, 'error>>) : AsyncFlow<'env, 'error, 'value> =
+    member _.ReturnFrom(operation: Task<Result<'value, 'error>>) : AsyncAdapterFlow<'env, 'error, 'value> =
         operation
         |> Async.AwaitTask
-        |> AsyncFlow.fromAsyncResult
+        |> AsyncAdapter.fromAsyncResult
 
-    member _.ReturnFrom(operation: ValueTask<Result<'value, 'error>>) : AsyncFlow<'env, 'error, 'value> =
+    member _.ReturnFrom(operation: ValueTask<Result<'value, 'error>>) : AsyncAdapterFlow<'env, 'error, 'value> =
         operation.AsTask()
         |> Async.AwaitTask
-        |> AsyncFlow.fromAsyncResult
+        |> AsyncAdapter.fromAsyncResult
 
-    member _.ReturnFrom(flow: Flow<'env, 'error, 'value>) : AsyncFlow<'env, 'error, 'value> =
-        AsyncFlow.fromFlow flow
+    member _.ReturnFrom(flow: Flow<'env, 'error, 'value>) : AsyncAdapterFlow<'env, 'error, 'value> =
+        AsyncAdapter.fromFlow flow
 
-    member _.ReturnFrom(result: Result<'value, 'error>) : AsyncFlow<'env, 'error, 'value> =
-        AsyncFlow.fromResult result
+    member _.ReturnFrom(result: Result<'value, 'error>) : AsyncAdapterFlow<'env, 'error, 'value> =
+        AsyncAdapter.fromResult result
 
-    member _.ReturnFrom(option: 'value option) : AsyncFlow<'env, unit, 'value> =
+    member _.ReturnFrom(option: 'value option) : AsyncAdapterFlow<'env, unit, 'value> =
         option
         |> OptionFlow.toUnitResult
-        |> AsyncFlow.fromResult
+        |> AsyncAdapter.fromResult
 
-    member _.ReturnFrom(option: 'value voption) : AsyncFlow<'env, unit, 'value> =
+    member _.ReturnFrom(option: 'value voption) : AsyncAdapterFlow<'env, unit, 'value> =
         option
         |> OptionFlow.toUnitResultValueOption
-        |> AsyncFlow.fromResult
+        |> AsyncAdapter.fromResult
 
-    member _.Zero() : AsyncFlow<'env, 'error, unit> =
-        AsyncFlow.ok ()
+    member _.Zero() : AsyncAdapterFlow<'env, 'error, unit> =
+        AsyncAdapter.ok ()
 
     member _.Bind
         (
-            flow: AsyncFlow<'env, 'error, 'value>,
-            binder: 'value -> AsyncFlow<'env, 'error, 'next>
-        ) : AsyncFlow<'env, 'error, 'next> =
-        AsyncFlow.bind binder flow
+            flow: AsyncAdapterFlow<'env, 'error, 'value>,
+            binder: 'value -> AsyncAdapterFlow<'env, 'error, 'next>
+        ) : AsyncAdapterFlow<'env, 'error, 'next> =
+        AsyncAdapter.bind binder flow
 
     member _.Bind
         (
             flow: Flow<'env, 'error, 'value>,
-            binder: 'value -> AsyncFlow<'env, 'error, 'next>
-        ) : AsyncFlow<'env, 'error, 'next> =
+            binder: 'value -> AsyncAdapterFlow<'env, 'error, 'next>
+        ) : AsyncAdapterFlow<'env, 'error, 'next> =
         flow
-        |> AsyncFlow.fromFlow
-        |> AsyncFlow.bind binder
+        |> AsyncAdapter.fromFlow
+        |> AsyncAdapter.bind binder
 
     member _.Bind
         (
             operation: Async<'value>,
-            binder: 'value -> AsyncFlow<'env, 'error, 'next>
-        ) : AsyncFlow<'env, 'error, 'next> =
+            binder: 'value -> AsyncAdapterFlow<'env, 'error, 'next>
+        ) : AsyncAdapterFlow<'env, 'error, 'next> =
         operation
-        |> AsyncFlow.fromAsync
-        |> AsyncFlow.bind binder
+        |> AsyncAdapter.fromAsync
+        |> AsyncAdapter.bind binder
 
     member _.Bind
         (
             operation: Async<Result<'value, 'error>>,
-            binder: 'value -> AsyncFlow<'env, 'error, 'next>
-        ) : AsyncFlow<'env, 'error, 'next> =
+            binder: 'value -> AsyncAdapterFlow<'env, 'error, 'next>
+        ) : AsyncAdapterFlow<'env, 'error, 'next> =
         operation
-        |> AsyncFlow.fromAsyncResult
-        |> AsyncFlow.bind binder
+        |> AsyncAdapter.fromAsyncResult
+        |> AsyncAdapter.bind binder
 
     member _.Bind
         (
             operation: Task<Result<'value, 'error>>,
-            binder: 'value -> AsyncFlow<'env, 'error, 'next>
-        ) : AsyncFlow<'env, 'error, 'next> =
+            binder: 'value -> AsyncAdapterFlow<'env, 'error, 'next>
+        ) : AsyncAdapterFlow<'env, 'error, 'next> =
         operation
         |> Async.AwaitTask
-        |> AsyncFlow.fromAsyncResult
-        |> AsyncFlow.bind binder
+        |> AsyncAdapter.fromAsyncResult
+        |> AsyncAdapter.bind binder
 
     member _.Bind
         (
             operation: ValueTask<Result<'value, 'error>>,
-            binder: 'value -> AsyncFlow<'env, 'error, 'next>
-        ) : AsyncFlow<'env, 'error, 'next> =
+            binder: 'value -> AsyncAdapterFlow<'env, 'error, 'next>
+        ) : AsyncAdapterFlow<'env, 'error, 'next> =
         operation.AsTask()
         |> Async.AwaitTask
-        |> AsyncFlow.fromAsyncResult
-        |> AsyncFlow.bind binder
+        |> AsyncAdapter.fromAsyncResult
+        |> AsyncAdapter.bind binder
 
     member _.Bind
         (
             result: Result<'value, 'error>,
-            binder: 'value -> AsyncFlow<'env, 'error, 'next>
-        ) : AsyncFlow<'env, 'error, 'next> =
+            binder: 'value -> AsyncAdapterFlow<'env, 'error, 'next>
+        ) : AsyncAdapterFlow<'env, 'error, 'next> =
         result
-        |> AsyncFlow.fromResult
-        |> AsyncFlow.bind binder
+        |> AsyncAdapter.fromResult
+        |> AsyncAdapter.bind binder
 
     member _.Bind
         (
             option: 'value option,
-            binder: 'value -> AsyncFlow<'env, unit, 'next>
-        ) : AsyncFlow<'env, unit, 'next> =
+            binder: 'value -> AsyncAdapterFlow<'env, unit, 'next>
+        ) : AsyncAdapterFlow<'env, unit, 'next> =
         option
         |> OptionFlow.toUnitResult
-        |> AsyncFlow.fromResult
-        |> AsyncFlow.bind binder
+        |> AsyncAdapter.fromResult
+        |> AsyncAdapter.bind binder
 
     member _.Bind
         (
             option: 'value voption,
-            binder: 'value -> AsyncFlow<'env, unit, 'next>
-        ) : AsyncFlow<'env, unit, 'next> =
+            binder: 'value -> AsyncAdapterFlow<'env, unit, 'next>
+        ) : AsyncAdapterFlow<'env, unit, 'next> =
         option
         |> OptionFlow.toUnitResultValueOption
-        |> AsyncFlow.fromResult
-        |> AsyncFlow.bind binder
+        |> AsyncAdapter.fromResult
+        |> AsyncAdapter.bind binder
 
-    member _.Delay(factory: unit -> AsyncFlow<'env, 'error, 'value>) : AsyncFlow<'env, 'error, 'value> =
-        AsyncFlow.delay factory
+    member _.Delay(factory: unit -> AsyncAdapterFlow<'env, 'error, 'value>) : AsyncAdapterFlow<'env, 'error, 'value> =
+        AsyncAdapter.delay factory
 
-    member _.Run(flow: AsyncFlow<'env, 'error, 'value>) : AsyncFlow<'env, 'error, 'value> =
+    member _.Run(flow: AsyncAdapterFlow<'env, 'error, 'value>) : AsyncAdapterFlow<'env, 'error, 'value> =
         flow
 
     member _.Combine
         (
-            first: AsyncFlow<'env, 'error, unit>,
-            second: AsyncFlow<'env, 'error, 'value>
-        ) : AsyncFlow<'env, 'error, 'value> =
+            first: AsyncAdapterFlow<'env, 'error, unit>,
+            second: AsyncAdapterFlow<'env, 'error, 'value>
+        ) : AsyncAdapterFlow<'env, 'error, 'value> =
         first
-        |> AsyncFlow.bind (fun () -> second)
+        |> AsyncAdapter.bind (fun () -> second)
 
     member _.TryWith
         (
-            flow: AsyncFlow<'env, 'error, 'value>,
-            handler: exn -> AsyncFlow<'env, 'error, 'value>
-        ) : AsyncFlow<'env, 'error, 'value> =
-        AsyncFlow(fun environment ->
+            flow: AsyncAdapterFlow<'env, 'error, 'value>,
+            handler: exn -> AsyncAdapterFlow<'env, 'error, 'value>
+        ) : AsyncAdapterFlow<'env, 'error, 'value> =
+        AsyncAdapterFlow(fun environment ->
             async {
                 try
-                    return! AsyncFlow.run environment flow
+                    return! AsyncAdapter.run environment flow
                 with error ->
-                    return! AsyncFlow.run environment (handler error)
+                    return! AsyncAdapter.run environment (handler error)
             })
 
     member _.TryFinally
         (
-            flow: AsyncFlow<'env, 'error, 'value>,
+            flow: AsyncAdapterFlow<'env, 'error, 'value>,
             compensation: unit -> unit
-        ) : AsyncFlow<'env, 'error, 'value> =
-        AsyncFlow(fun environment ->
+        ) : AsyncAdapterFlow<'env, 'error, 'value> =
+        AsyncAdapterFlow(fun environment ->
             async {
                 try
-                    return! AsyncFlow.run environment flow
+                    return! AsyncAdapter.run environment flow
                 finally
                     compensation ()
             })
@@ -520,8 +520,8 @@ type internal AsyncFlowBuilder() =
     member this.Using
         (
             resource: 'resource,
-            binder: 'resource -> AsyncFlow<'env, 'error, 'value>
-        ) : AsyncFlow<'env, 'error, 'value>
+            binder: 'resource -> AsyncAdapterFlow<'env, 'error, 'value>
+        ) : AsyncAdapterFlow<'env, 'error, 'value>
         when 'resource :> IDisposable =
         this.TryFinally(
             binder resource,
@@ -533,8 +533,8 @@ type internal AsyncFlowBuilder() =
     member this.While
         (
             guard: unit -> bool,
-            body: AsyncFlow<'env, 'error, unit>
-        ) : AsyncFlow<'env, 'error, unit> =
+            body: AsyncAdapterFlow<'env, 'error, unit>
+        ) : AsyncAdapterFlow<'env, 'error, unit> =
         if guard () then
             this.Bind(body, fun () -> this.While(guard, body))
         else
@@ -543,8 +543,8 @@ type internal AsyncFlowBuilder() =
     member this.For
         (
             sequence: seq<'value>,
-            binder: 'value -> AsyncFlow<'env, 'error, unit>
-        ) : AsyncFlow<'env, 'error, unit> =
+            binder: 'value -> AsyncAdapterFlow<'env, 'error, unit>
+        ) : AsyncAdapterFlow<'env, 'error, unit> =
         this.Using(
             sequence.GetEnumerator(),
             fun enumerator -> this.While(enumerator.MoveNext, this.Delay(fun () -> binder enumerator.Current))

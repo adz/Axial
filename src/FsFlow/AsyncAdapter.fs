@@ -6,12 +6,12 @@ open System
 open System.Threading
 open System.Threading.Tasks
 
-module internal AsyncFlow =
-    /// <summary>Executes an async flow with the provided environment.</summary>
+module internal AsyncAdapter =
+    /// <summary>Executes an async adapter flow with the provided environment.</summary>
     /// <remarks>Uncaught exceptions become <c>Cause.Die</c>; cancellation becomes <c>Cause.Interrupt</c>.</remarks>
     let run
         (environment: 'env)
-        (AsyncFlow operation: AsyncFlow<'env, 'error, 'value>)
+        (AsyncAdapterFlow operation: AsyncAdapterFlow<'env, 'error, 'value>)
         : Async<Exit<'value, 'error>> =
         async {
             try
@@ -21,63 +21,63 @@ module internal AsyncFlow =
                 return Exit.Failure (EffectFlow.causeOfException error)
         }
 
-    /// <summary>Converts an async flow into its raw async result shape.</summary>
-    let toAsync (environment: 'env) (flow: AsyncFlow<'env, 'error, 'value>) : Async<Exit<'value, 'error>> =
+    /// <summary>Converts an async adapter flow into its raw async result shape.</summary>
+    let toAsync (environment: 'env) (flow: AsyncAdapterFlow<'env, 'error, 'value>) : Async<Exit<'value, 'error>> =
         run environment flow
 
-    /// <summary>Creates a successful async flow.</summary>
-    let ok (value: 'value) : AsyncFlow<'env, 'error, 'value> =
-        AsyncFlow(fun _ -> async.Return(Exit.Success value))
+    /// <summary>Creates a successful async adapter flow.</summary>
+    let ok (value: 'value) : AsyncAdapterFlow<'env, 'error, 'value> =
+        AsyncAdapterFlow(fun _ -> async.Return(Exit.Success value))
 
     /// <summary>Alias for <c>ok</c> that reads well in some call sites.</summary>
-    let succeed (value: 'value) : AsyncFlow<'env, 'error, 'value> =
+    let succeed (value: 'value) : AsyncAdapterFlow<'env, 'error, 'value> =
         ok value
 
     /// <summary>Alias for <c>ok</c> that reads well in some call sites.</summary>
-    let value (item: 'value) : AsyncFlow<'env, 'error, 'value> =
+    let value (item: 'value) : AsyncAdapterFlow<'env, 'error, 'value> =
         succeed item
 
-    /// <summary>Creates a failing async flow.</summary>
-    let error (failure: 'error) : AsyncFlow<'env, 'error, 'value> =
-        AsyncFlow(fun _ -> async.Return(Exit.Failure (Cause.Fail failure)))
+    /// <summary>Creates a failing async adapter flow.</summary>
+    let error (failure: 'error) : AsyncAdapterFlow<'env, 'error, 'value> =
+        AsyncAdapterFlow(fun _ -> async.Return(Exit.Failure (Cause.Fail failure)))
 
     /// <summary>Alias for <c>error</c> that reads well in some call sites.</summary>
-    let fail (failure: 'error) : AsyncFlow<'env, 'error, 'value> =
+    let fail (failure: 'error) : AsyncAdapterFlow<'env, 'error, 'value> =
         error failure
 
-    /// <summary>Lifts a <see cref="T:System.Result`2" /> into an async flow.</summary>
-    let fromResult (result: Result<'value, 'error>) : AsyncFlow<'env, 'error, 'value> =
-        AsyncFlow(fun _ -> async.Return (Exit.fromResult result))
+    /// <summary>Lifts a <see cref="T:System.Result`2" /> into an async adapter flow.</summary>
+    let fromResult (result: Result<'value, 'error>) : AsyncAdapterFlow<'env, 'error, 'value> =
+        AsyncAdapterFlow(fun _ -> async.Return (Exit.fromResult result))
 
-    /// <summary>Executes an async flow and converts the final <see cref="T:FsFlow.Exit`2" /> into a standard <see cref="T:System.Result`2" />.</summary>
+    /// <summary>Executes an async adapter flow and converts the final <see cref="T:FsFlow.Exit`2" /> into a standard <see cref="T:System.Result`2" />.</summary>
     /// <remarks>
     /// Interruption signals and defects are raised as exceptions in the caller's context.
     /// </remarks>
-    let toResult (environment: 'env) (flow: AsyncFlow<'env, 'error, 'value>) : Async<Result<'value, 'error>> =
+    let toResult (environment: 'env) (flow: AsyncAdapterFlow<'env, 'error, 'value>) : Async<Result<'value, 'error>> =
         async {
             let! exit = run environment flow
             return Exit.toResult exit
         }
 
-    /// <summary>Lifts an option into an async flow with the supplied error.</summary>
-    let fromOption (error: 'error) (value: 'value option) : AsyncFlow<'env, 'error, 'value> =
+    /// <summary>Lifts an option into an async adapter flow with the supplied error.</summary>
+    let fromOption (error: 'error) (value: 'value option) : AsyncAdapterFlow<'env, 'error, 'value> =
         value
         |> OptionFlow.toResult error
         |> fromResult
 
-    /// <summary>Lifts a value option into an async flow with the supplied error.</summary>
-    let fromValueOption (error: 'error) (value: 'value voption) : AsyncFlow<'env, 'error, 'value> =
+    /// <summary>Lifts a value option into an async adapter flow with the supplied error.</summary>
+    let fromValueOption (error: 'error) (value: 'value voption) : AsyncAdapterFlow<'env, 'error, 'value> =
         value
         |> OptionFlow.toResultValueOption error
         |> fromResult
 
-    /// <summary>Turns a pure validation result into an async flow with async-provided failure.</summary>
-    /// <returns>An <see cref="T:FsFlow.AsyncFlow`3" /> that mirrors the result or produces the async error.</returns>
+    /// <summary>Turns a pure validation result into an async adapter flow with async-provided failure.</summary>
+    /// <returns>An <see cref="T:FsFlow.AsyncAdapterFlow`3" /> that mirrors the result or produces the async error.</returns>
     let orElseAsync
         (errorAsync: Async<'error>)
         (result: Result<'value, unit>)
-        : AsyncFlow<'env, 'error, 'value> =
-        AsyncFlow(fun _ ->
+        : AsyncAdapterFlow<'env, 'error, 'value> =
+        AsyncAdapterFlow(fun _ ->
             async {
                 match result with
                 | Ok value -> return Exit.Success value
@@ -86,12 +86,12 @@ module internal AsyncFlow =
                     return Exit.Failure (Cause.Fail error)
             })
 
-    /// <summary>Turns a pure validation result into an async flow with synchronous environment-provided failure.</summary>
+    /// <summary>Turns a pure validation result into an async adapter flow with synchronous environment-provided failure.</summary>
     let orElseFlow
         (errorFlow: Flow<'env, 'error, 'error>)
         (result: Result<'value, unit>)
-        : AsyncFlow<'env, 'error, 'value> =
-        AsyncFlow(fun environment ->
+        : AsyncAdapterFlow<'env, 'error, 'value> =
+        AsyncAdapterFlow(fun environment ->
             async {
                 match result with
                 | Ok value -> return Exit.Success value
@@ -101,12 +101,12 @@ module internal AsyncFlow =
                     | Exit.Failure cause -> return Exit.Failure cause
             })
 
-    /// <summary>Turns a pure validation result into an async flow whose failure value comes from another async flow.</summary>
+    /// <summary>Turns a pure validation result into an async adapter flow whose failure value comes from another async adapter flow.</summary>
     let orElseAsyncFlow
-        (errorFlow: AsyncFlow<'env, 'error, 'error>)
+        (errorFlow: AsyncAdapterFlow<'env, 'error, 'error>)
         (result: Result<'value, unit>)
-        : AsyncFlow<'env, 'error, 'value> =
-        AsyncFlow(fun environment ->
+        : AsyncAdapterFlow<'env, 'error, 'value> =
+        AsyncAdapterFlow(fun environment ->
             async {
                 match result with
                 | Ok value -> return Exit.Success value
@@ -118,9 +118,9 @@ module internal AsyncFlow =
                     | Exit.Failure cause -> return Exit.Failure cause
             })
 
-    /// <summary>Lifts a synchronous flow into an async flow.</summary>
-    let fromFlow (flow: Flow<'env, 'error, 'value>) : AsyncFlow<'env, 'error, 'value> =
-        AsyncFlow(fun environment -> async {
+    /// <summary>Lifts a synchronous flow into an async adapter flow.</summary>
+    let fromFlow (flow: Flow<'env, 'error, 'value>) : AsyncAdapterFlow<'env, 'error, 'value> =
+        AsyncAdapterFlow(fun environment -> async {
             let! exit =
                 #if FABLE_COMPILER
                 FlowInternal.invoke flow environment CancellationToken.None
@@ -130,36 +130,36 @@ module internal AsyncFlow =
             return exit
         })
 
-    /// <summary>Lifts an async value into an async flow.</summary>
-    let fromAsync (operation: Async<'value>) : AsyncFlow<'env, 'error, 'value> =
-        AsyncFlow(fun _ ->
+    /// <summary>Lifts an async value into an async adapter flow.</summary>
+    let fromAsync (operation: Async<'value>) : AsyncAdapterFlow<'env, 'error, 'value> =
+        AsyncAdapterFlow(fun _ ->
             async {
                 let! value = operation
                 return Exit.Success value
             })
 
-    /// <summary>Lifts an async result into an async flow.</summary>
-    let fromAsyncResult (operation: Async<Result<'value, 'error>>) : AsyncFlow<'env, 'error, 'value> =
-        AsyncFlow(fun _ ->
+    /// <summary>Lifts an async result into an async adapter flow.</summary>
+    let fromAsyncResult (operation: Async<Result<'value, 'error>>) : AsyncAdapterFlow<'env, 'error, 'value> =
+        AsyncAdapterFlow(fun _ ->
             async {
                 let! result = operation
                 return match result with Ok v -> Exit.Success v | Error e -> Exit.Failure (Cause.Fail e)
             })
 
     /// <summary>Reads the current environment as the flow value.</summary>
-    let env<'env, 'error> : AsyncFlow<'env, 'error, 'env> =
-        AsyncFlow(fun environment -> async.Return(Exit.Success environment))
+    let env<'env, 'error> : AsyncAdapterFlow<'env, 'error, 'env> =
+        AsyncAdapterFlow(fun environment -> async.Return(Exit.Success environment))
 
     /// <summary>Projects a value from the current environment.</summary>
-    let read (projection: 'env -> 'value) : AsyncFlow<'env, 'error, 'value> =
-        AsyncFlow(fun environment -> async.Return(Exit.Success(projection environment)))
+    let read (projection: 'env -> 'value) : AsyncAdapterFlow<'env, 'error, 'value> =
+        AsyncAdapterFlow(fun environment -> async.Return(Exit.Success(projection environment)))
 
     /// <summary>Extracts a specific service from an environment that implements <c>IHas&lt;'service&gt;</c>.</summary>
-    let inline service<'service, 'env, 'error when 'env :> IHas<'service>> () : AsyncFlow<'env, 'error, 'service> =
+    let inline service<'service, 'env, 'error when 'env :> IHas<'service>> () : AsyncAdapterFlow<'env, 'error, 'service> =
         read (fun (env: 'env) -> env.Service)
 
     /// <summary>Injects a service from a dynamic IServiceProvider environment.</summary>
-    let inline inject<'service, 'env, 'error when 'env :> IServiceProvider> () : AsyncFlow<'env, 'error, 'service> =
+    let inline inject<'service, 'env, 'error when 'env :> IServiceProvider> () : AsyncAdapterFlow<'env, 'error, 'service> =
         read (fun (env: 'env) ->
             let svc = env.GetService(typeof<'service>)
             if isNull (box svc) then
@@ -168,12 +168,12 @@ module internal AsyncFlow =
                 unbox<'service> svc
         )
 
-    /// <summary>Maps the successful value of an async flow.</summary>
+    /// <summary>Maps the successful value of an async adapter flow.</summary>
     let map
         (mapper: 'value -> 'next)
-        (flow: AsyncFlow<'env, 'error, 'value>)
-        : AsyncFlow<'env, 'error, 'next> =
-        AsyncFlow(
+        (flow: AsyncAdapterFlow<'env, 'error, 'value>)
+        : AsyncAdapterFlow<'env, 'error, 'next> =
+        AsyncAdapterFlow(
             InternalCombinatorCore.mapWith
                 (fun mapOutcome operation ->
                     async {
@@ -184,16 +184,16 @@ module internal AsyncFlow =
                 (fun environment -> run environment flow)
         )
 
-    /// <summary>Maps the successful value of an async flow to <c>unit</c>.</summary>
-    let ignore (flow: AsyncFlow<'env, 'error, 'value>) : AsyncFlow<'env, 'error, unit> =
+    /// <summary>Maps the successful value of an async adapter flow to <c>unit</c>.</summary>
+    let ignore (flow: AsyncAdapterFlow<'env, 'error, 'value>) : AsyncAdapterFlow<'env, 'error, unit> =
         map (fun _ -> ()) flow
 
     /// <summary>Sequences an async continuation after a successful value.</summary>
     let bind
-        (binder: 'value -> AsyncFlow<'env, 'error, 'next>)
-        (flow: AsyncFlow<'env, 'error, 'value>)
-        : AsyncFlow<'env, 'error, 'next> =
-        AsyncFlow(
+        (binder: 'value -> AsyncAdapterFlow<'env, 'error, 'next>)
+        (flow: AsyncAdapterFlow<'env, 'error, 'value>)
+        : AsyncAdapterFlow<'env, 'error, 'next> =
+        AsyncAdapterFlow(
             InternalCombinatorCore.bindWith
                 (fun operation onSuccess onFailure ->
                     async {
@@ -210,16 +210,16 @@ module internal AsyncFlow =
 
     /// <summary>Sequences an async continuation after a successful value.</summary>
     let (>>=)
-        (flow: AsyncFlow<'env, 'error, 'value>)
-        (binder: 'value -> AsyncFlow<'env, 'error, 'next>)
-        : AsyncFlow<'env, 'error, 'next> =
+        (flow: AsyncAdapterFlow<'env, 'error, 'value>)
+        (binder: 'value -> AsyncAdapterFlow<'env, 'error, 'next>)
+        : AsyncAdapterFlow<'env, 'error, 'next> =
         bind binder flow
 
     /// <summary>Runs an async side effect on success and preserves the original value.</summary>
     let tap
-        (binder: 'value -> AsyncFlow<'env, 'error, unit>)
-        (flow: AsyncFlow<'env, 'error, 'value>)
-        : AsyncFlow<'env, 'error, 'value> =
+        (binder: 'value -> AsyncAdapterFlow<'env, 'error, unit>)
+        (flow: AsyncAdapterFlow<'env, 'error, 'value>)
+        : AsyncAdapterFlow<'env, 'error, 'value> =
         bind
             (fun value ->
                 binder value
@@ -228,10 +228,10 @@ module internal AsyncFlow =
 
     /// <summary>Runs an async side effect on failure and preserves the original error.</summary>
     let tapError
-        (binder: 'error -> AsyncFlow<'env, 'error, unit>)
-        (flow: AsyncFlow<'env, 'error, 'value>)
-        : AsyncFlow<'env, 'error, 'value> =
-        AsyncFlow(fun environment ->
+        (binder: 'error -> AsyncAdapterFlow<'env, 'error, unit>)
+        (flow: AsyncAdapterFlow<'env, 'error, 'value>)
+        : AsyncAdapterFlow<'env, 'error, 'value> =
+        AsyncAdapterFlow(fun environment ->
             async {
                 let! exit = run environment flow
 
@@ -248,12 +248,12 @@ module internal AsyncFlow =
                     | _ -> return Exit.Failure cause
             })
 
-    /// <summary>Maps the error value of an async flow.</summary>
+    /// <summary>Maps the error value of an async adapter flow.</summary>
     let mapError
         (mapper: 'error -> 'nextError)
-        (flow: AsyncFlow<'env, 'error, 'value>)
-        : AsyncFlow<'env, 'nextError, 'value> =
-        AsyncFlow(
+        (flow: AsyncAdapterFlow<'env, 'error, 'value>)
+        : AsyncAdapterFlow<'env, 'nextError, 'value> =
+        AsyncAdapterFlow(
             InternalCombinatorCore.mapErrorWith
                 (fun mapOutcome operation ->
                     async {
@@ -267,9 +267,9 @@ module internal AsyncFlow =
     /// <summary>Catches exceptions raised during execution and maps them to a typed error.</summary>
     let catch
         (handler: exn -> 'error)
-        (flow: AsyncFlow<'env, 'error, 'value>)
-        : AsyncFlow<'env, 'error, 'value> =
-        AsyncFlow(fun environment ->
+        (flow: AsyncAdapterFlow<'env, 'error, 'value>)
+        : AsyncAdapterFlow<'env, 'error, 'value> =
+        AsyncAdapterFlow(fun environment ->
             async {
                 try
                     return! run environment flow
@@ -277,13 +277,13 @@ module internal AsyncFlow =
                     return Exit.Failure (Cause.Fail (handler error))
             })
 
-    /// <summary>Falls back to another async flow when the source flow fails.</summary>
-    /// <summary>Computes a fallback async flow from the source error when the source flow fails.</summary>
+    /// <summary>Falls back to another async adapter flow when the source flow fails.</summary>
+    /// <summary>Computes a fallback async adapter flow from the source error when the source flow fails.</summary>
     let orElseWith
-        (fallback: 'error -> AsyncFlow<'env, 'error, 'value>)
-        (flow: AsyncFlow<'env, 'error, 'value>)
-        : AsyncFlow<'env, 'error, 'value> =
-        AsyncFlow(fun environment ->
+        (fallback: 'error -> AsyncAdapterFlow<'env, 'error, 'value>)
+        (flow: AsyncAdapterFlow<'env, 'error, 'value>)
+        : AsyncAdapterFlow<'env, 'error, 'value> =
+        AsyncAdapterFlow(fun environment ->
             async {
                 let! exit = run environment flow
 
@@ -293,78 +293,78 @@ module internal AsyncFlow =
                 | Exit.Failure cause -> return Exit.Failure cause
             })
 
-    /// <summary>Falls back to another async flow when the source flow fails.</summary>
+    /// <summary>Falls back to another async adapter flow when the source flow fails.</summary>
     let orElse
-        (fallback: AsyncFlow<'env, 'error, 'value>)
-        (flow: AsyncFlow<'env, 'error, 'value>)
-        : AsyncFlow<'env, 'error, 'value> =
+        (fallback: AsyncAdapterFlow<'env, 'error, 'value>)
+        (flow: AsyncAdapterFlow<'env, 'error, 'value>)
+        : AsyncAdapterFlow<'env, 'error, 'value> =
         orElseWith (fun _ -> fallback) flow
 
-    /// <summary>Combines two async flows into a tuple of their values.</summary>
+    /// <summary>Combines two async adapter flows into a tuple of their values.</summary>
     let zip
-        (left: AsyncFlow<'env, 'error, 'left>)
-        (right: AsyncFlow<'env, 'error, 'right>)
-        : AsyncFlow<'env, 'error, 'left * 'right> =
+        (left: AsyncAdapterFlow<'env, 'error, 'left>)
+        (right: AsyncAdapterFlow<'env, 'error, 'right>)
+        : AsyncAdapterFlow<'env, 'error, 'left * 'right> =
         bind
             (fun leftValue ->
                 right
                 |> map (fun rightValue -> leftValue, rightValue))
             left
 
-    /// <summary>Combines two async flows with a mapping function.</summary>
+    /// <summary>Combines two async adapter flows with a mapping function.</summary>
     let map2
         (mapper: 'left -> 'right -> 'value)
-        (left: AsyncFlow<'env, 'error, 'left>)
-        (right: AsyncFlow<'env, 'error, 'right>)
-        : AsyncFlow<'env, 'error, 'value> =
+        (left: AsyncAdapterFlow<'env, 'error, 'left>)
+        (right: AsyncAdapterFlow<'env, 'error, 'right>)
+        : AsyncAdapterFlow<'env, 'error, 'value> =
         zip left right
         |> map (fun (leftValue, rightValue) -> mapper leftValue rightValue)
 
     /// <summary>Applies an async-flow-wrapped function to an async-flow-wrapped value.</summary>
     let apply
-        (flow: AsyncFlow<'env, 'error, 'value -> 'next>)
-        (value: AsyncFlow<'env, 'error, 'value>)
-        : AsyncFlow<'env, 'error, 'next> =
+        (flow: AsyncAdapterFlow<'env, 'error, 'value -> 'next>)
+        (value: AsyncAdapterFlow<'env, 'error, 'value>)
+        : AsyncAdapterFlow<'env, 'error, 'next> =
         map2 (fun mapper input -> mapper input) flow value
 
-    /// <summary>Combines three async flows with a mapping function.</summary>
+    /// <summary>Combines three async adapter flows with a mapping function.</summary>
     let map3
         (mapper: 'left -> 'middle -> 'right -> 'value)
-        (left: AsyncFlow<'env, 'error, 'left>)
-        (middle: AsyncFlow<'env, 'error, 'middle>)
-        (right: AsyncFlow<'env, 'error, 'right>)
-        : AsyncFlow<'env, 'error, 'value> =
+        (left: AsyncAdapterFlow<'env, 'error, 'left>)
+        (middle: AsyncAdapterFlow<'env, 'error, 'middle>)
+        (right: AsyncAdapterFlow<'env, 'error, 'right>)
+        : AsyncAdapterFlow<'env, 'error, 'value> =
         apply
             (map2 (fun leftValue middleValue -> fun rightValue -> mapper leftValue middleValue rightValue) left middle)
             right
 
-    /// <summary>Maps the successful value of an async flow.</summary>
+    /// <summary>Maps the successful value of an async adapter flow.</summary>
     let (<!>)
         (mapper: 'value -> 'next)
-        (flow: AsyncFlow<'env, 'error, 'value>)
-        : AsyncFlow<'env, 'error, 'next> =
+        (flow: AsyncAdapterFlow<'env, 'error, 'value>)
+        : AsyncAdapterFlow<'env, 'error, 'next> =
         map mapper flow
 
     /// <summary>Applies an async-flow-wrapped function to an async-flow-wrapped value.</summary>
     let (<*>)
-        (flow: AsyncFlow<'env, 'error, 'value -> 'next>)
-        (value: AsyncFlow<'env, 'error, 'value>)
-        : AsyncFlow<'env, 'error, 'next> =
+        (flow: AsyncAdapterFlow<'env, 'error, 'value -> 'next>)
+        (value: AsyncAdapterFlow<'env, 'error, 'value>)
+        : AsyncAdapterFlow<'env, 'error, 'next> =
         apply flow value
 
-    /// <summary>Transforms the environment before running the async flow.</summary>
+    /// <summary>Transforms the environment before running the async adapter flow.</summary>
     let localEnv
         (mapping: 'outerEnvironment -> 'innerEnvironment)
-        (flow: AsyncFlow<'innerEnvironment, 'error, 'value>)
-        : AsyncFlow<'outerEnvironment, 'error, 'value> =
-        AsyncFlow(InternalCombinatorCore.localEnvWith run mapping flow)
+        (flow: AsyncAdapterFlow<'innerEnvironment, 'error, 'value>)
+        : AsyncAdapterFlow<'outerEnvironment, 'error, 'value> =
+        AsyncAdapterFlow(InternalCombinatorCore.localEnvWith run mapping flow)
 
     /// <summary>Provides a derived environment from a layer flow to a downstream flow.</summary>
     let provideLayer
-        (layer: AsyncFlow<'input, 'error, 'environment>)
-        (flow: AsyncFlow<'environment, 'error, 'value>)
-        : AsyncFlow<'input, 'error, 'value> =
-        AsyncFlow(fun environment ->
+        (layer: AsyncAdapterFlow<'input, 'error, 'environment>)
+        (flow: AsyncAdapterFlow<'environment, 'error, 'value>)
+        : AsyncAdapterFlow<'input, 'error, 'value> =
+        AsyncAdapterFlow(fun environment ->
             async {
                 let! outcome = run environment layer
 
@@ -373,16 +373,16 @@ module internal AsyncFlow =
                 | Exit.Failure cause -> return Exit.Failure cause
             })
 
-    /// <summary>Defers async flow construction until execution time.</summary>
-    let delay (factory: unit -> AsyncFlow<'env, 'error, 'value>) : AsyncFlow<'env, 'error, 'value> =
-        AsyncFlow(InternalCombinatorCore.delayWith run factory)
+    /// <summary>Defers async adapter flow construction until execution time.</summary>
+    let delay (factory: unit -> AsyncAdapterFlow<'env, 'error, 'value>) : AsyncAdapterFlow<'env, 'error, 'value> =
+        AsyncAdapterFlow(InternalCombinatorCore.delayWith run factory)
 
-    /// <summary>Transforms a sequence of values into an async flow and stops at the first failure.</summary>
+    /// <summary>Transforms a sequence of values into an async adapter flow and stops at the first failure.</summary>
     let traverse
-        (mapping: 'value -> AsyncFlow<'env, 'error, 'next>)
+        (mapping: 'value -> AsyncAdapterFlow<'env, 'error, 'next>)
         (values: seq<'value>)
-        : AsyncFlow<'env, 'error, 'next list> =
-        AsyncFlow(fun environment ->
+        : AsyncAdapterFlow<'env, 'error, 'next list> =
+        AsyncAdapterFlow(fun environment ->
             async {
                 let results = ResizeArray()
                 let mutable currentFailure = None
@@ -400,8 +400,8 @@ module internal AsyncFlow =
                 | None -> return Exit.Success(List.ofSeq results)
             })
 
-    /// <summary>Transforms a sequence of async flows into an async flow of a sequence and stops at the first failure.</summary>
-    let sequence (flows: seq<AsyncFlow<'env, 'error, 'value>>) : AsyncFlow<'env, 'error, 'value list> =
+    /// <summary>Transforms a sequence of async adapter flows into an async adapter flow of a sequence and stops at the first failure.</summary>
+    let sequence (flows: seq<AsyncAdapterFlow<'env, 'error, 'value>>) : AsyncAdapterFlow<'env, 'error, 'value list> =
         traverse id flows
 
     /// <summary>
@@ -416,8 +416,8 @@ module internal AsyncFlow =
         /// Reads the current cancellation token from the flow.
         /// </summary>
         /// <remarks>This observes the runtime token; it does not translate cancellation into a typed error by itself.</remarks>
-        let cancellationToken<'env, 'error> : AsyncFlow<'env, 'error, CancellationToken> =
-            AsyncFlow(fun _environment ->
+        let cancellationToken<'env, 'error> : AsyncAdapterFlow<'env, 'error, CancellationToken> =
+            AsyncAdapterFlow(fun _environment ->
                 async {
                     let! cancellationToken = Async.CancellationToken
                     return Exit.Success cancellationToken
@@ -431,9 +431,9 @@ module internal AsyncFlow =
         /// <remarks>This translates cancellation exceptions raised during execution. It does not pre-check the token.</remarks>
         let catchCancellation
             (handler: OperationCanceledException -> 'error)
-            (flow: AsyncFlow<'env, 'error, 'value>)
-            : AsyncFlow<'env, 'error, 'value> =
-            AsyncFlow(fun environment ->
+            (flow: AsyncAdapterFlow<'env, 'error, 'value>)
+            : AsyncAdapterFlow<'env, 'error, 'value> =
+            AsyncAdapterFlow(fun environment ->
                 async {
                     try
                         return! run environment flow
@@ -446,8 +446,8 @@ module internal AsyncFlow =
         /// </summary>
         /// <param name="canceledError">The error to return if canceled.</param>
         /// <remarks>This observes the current token state and returns a typed error immediately instead of waiting for an exception.</remarks>
-        let ensureNotCanceled<'env, 'error> (canceledError: 'error) : AsyncFlow<'env, 'error, unit> =
-            AsyncFlow(fun _environment ->
+        let ensureNotCanceled<'env, 'error> (canceledError: 'error) : AsyncAdapterFlow<'env, 'error, unit> =
+            AsyncAdapterFlow(fun _environment ->
                 async {
                     let! cancellationToken = Async.CancellationToken
 
@@ -462,8 +462,8 @@ module internal AsyncFlow =
         /// </summary>
         /// <param name="delay">The duration to sleep.</param>
         /// <remarks>If the runtime token is canceled, the underlying task raises cancellation which can be translated with <see cref="catchCancellation"/>.</remarks>
-        let sleep<'env, 'error> (delay: TimeSpan) : AsyncFlow<'env, 'error, unit> =
-            AsyncFlow(fun _environment ->
+        let sleep<'env, 'error> (delay: TimeSpan) : AsyncAdapterFlow<'env, 'error, unit> =
+            AsyncAdapterFlow(fun _environment ->
                 async {
                     let! cancellationToken = Async.CancellationToken
                     do! Task.Delay(delay, cancellationToken) |> Async.AwaitTask
@@ -480,8 +480,8 @@ module internal AsyncFlow =
             (writer: 'env -> LogEntry -> unit)
             (level: LogLevel)
             (message: string)
-            : AsyncFlow<'env, 'error, unit> =
-            AsyncFlow(fun environment ->
+            : AsyncAdapterFlow<'env, 'error, unit> =
+            AsyncAdapterFlow(fun environment ->
                 async {
                     writer
                         environment
@@ -502,8 +502,8 @@ module internal AsyncFlow =
             (writer: 'env -> LogEntry -> unit)
             (level: LogLevel)
             (messageFactory: 'env -> string)
-            : AsyncFlow<'env, 'error, unit> =
-            AsyncFlow(fun environment ->
+            : AsyncAdapterFlow<'env, 'error, unit> =
+            AsyncAdapterFlow(fun environment ->
                 async {
                     writer
                         environment
@@ -521,13 +521,13 @@ module internal AsyncFlow =
         /// <param name="release">The function that releases the resource.</param>
         /// <param name="useResource">The flow that uses the resource.</param>
         let useWithAcquireRelease
-            (acquire: AsyncFlow<'env, 'error, 'resource>)
+            (acquire: AsyncAdapterFlow<'env, 'error, 'resource>)
             (release: 'resource -> CancellationToken -> Task)
-            (useResource: 'resource -> AsyncFlow<'env, 'error, 'value>)
-            : AsyncFlow<'env, 'error, 'value> =
+            (useResource: 'resource -> AsyncAdapterFlow<'env, 'error, 'value>)
+            : AsyncAdapterFlow<'env, 'error, 'value> =
             bind
                 (fun resource ->
-                    AsyncFlow(fun environment ->
+                    AsyncAdapterFlow(fun environment ->
                         async {
                             let! cancellationToken = Async.CancellationToken
                             let! result = run environment (useResource resource) |> Async.Catch
@@ -550,9 +550,9 @@ module internal AsyncFlow =
         let timeout
             (after: TimeSpan)
             (timeoutError: 'error)
-            (flow: AsyncFlow<'env, 'error, 'value>)
-            : AsyncFlow<'env, 'error, 'value> =
-            AsyncFlow(fun environment ->
+            (flow: AsyncAdapterFlow<'env, 'error, 'value>)
+            : AsyncAdapterFlow<'env, 'error, 'value> =
+            AsyncAdapterFlow(fun environment ->
                 async {
                     let! cancellationToken = Async.CancellationToken
                     let operation =
@@ -574,9 +574,9 @@ module internal AsyncFlow =
         let timeoutToOk
             (after: TimeSpan)
             (value: 'value)
-            (flow: AsyncFlow<'env, 'error, 'value>)
-            : AsyncFlow<'env, 'error, 'value> =
-            AsyncFlow(fun environment ->
+            (flow: AsyncAdapterFlow<'env, 'error, 'value>)
+            : AsyncAdapterFlow<'env, 'error, 'value> =
+            AsyncAdapterFlow(fun environment ->
                 async {
                     let! cancellationToken = Async.CancellationToken
                     let operation =
@@ -598,8 +598,8 @@ module internal AsyncFlow =
         let timeoutToError
             (after: TimeSpan)
             (error: 'error)
-            (flow: AsyncFlow<'env, 'error, 'value>)
-            : AsyncFlow<'env, 'error, 'value> =
+            (flow: AsyncAdapterFlow<'env, 'error, 'value>)
+            : AsyncAdapterFlow<'env, 'error, 'value> =
             timeout after error flow
 
         /// <summary>
@@ -607,10 +607,10 @@ module internal AsyncFlow =
         /// </summary>
         let timeoutWith
             (after: TimeSpan)
-            (fallback: unit -> AsyncFlow<'env, 'error, 'value>)
-            (flow: AsyncFlow<'env, 'error, 'value>)
-            : AsyncFlow<'env, 'error, 'value> =
-            AsyncFlow(fun environment ->
+            (fallback: unit -> AsyncAdapterFlow<'env, 'error, 'value>)
+            (flow: AsyncAdapterFlow<'env, 'error, 'value>)
+            : AsyncAdapterFlow<'env, 'error, 'value> =
+            AsyncAdapterFlow(fun environment ->
                 async {
                     let! cancellationToken = Async.CancellationToken
                     let operation =
@@ -633,13 +633,13 @@ module internal AsyncFlow =
         /// <param name="flow">The flow to retry.</param>
         let retry
             (policy: RetryPolicy<'error>)
-            (flow: AsyncFlow<'env, 'error, 'value>)
-            : AsyncFlow<'env, 'error, 'value> =
+            (flow: AsyncAdapterFlow<'env, 'error, 'value>)
+            : AsyncAdapterFlow<'env, 'error, 'value> =
             if policy.MaxAttempts < 1 then
                 invalidArg (nameof policy.MaxAttempts) "RetryPolicy.MaxAttempts must be at least 1."
 
             let rec loop attempt =
-                AsyncFlow(fun environment ->
+                AsyncAdapterFlow(fun environment ->
                     async {
                         let! exit = run environment flow
 

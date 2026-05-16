@@ -2,7 +2,7 @@
 > This file is optimized for AI agents (Claude, Gemini, Codex).
 
 ## Overview
-FsFlow is a cold, environment-aware effect system for F# that unifies `Result`, `Flow`, `AsyncFlow`, and `TaskFlow`.
+FsFlow is a cold, environment-aware effect system for F# centered on the unified `Flow<'env, 'error, 'value>` type.
 
 ## Documentation Version Policy
 FsFlow is pre-1.0. The public documentation intentionally tracks the current Next API only. Ignore older
@@ -11,14 +11,14 @@ they match this file and the current docs at `https://adz.github.io/FsFlow/`.
 
 ## The Flow Hierarchy
 Data flows from left to right. Later stages can bind earlier stages directly.
-`Check` (unit error) -> `Result` (typed error) -> `Flow` (sync + env) -> `AsyncFlow` (async + env) -> `TaskFlow` (task + env)
+`Check` (unit error) -> `Result` (typed error) -> `Flow` (sync/async/task + env)
 
 ## Capability Boundaries
 - Use `IHas<'T>` to name a capability contract for a single dependency.
 - Use `Flow.service<'T>()` to extract a nominal capability from an environment implementing `IHas<'T>`.
 - Use `Flow.inject<'T>()` to pull a dependency from a .NET `IServiceProvider` environment (Pragmatic/DI).
 - Use `Flow.read (env -> 'v)` for direct projection from plain environment records.
-- Prefer named capability sets such as `TaskFlow<#IAppCapabilities, 'error, 'value>` when a larger runtime should satisfy a smaller workflow boundary.
+- Prefer named capability sets such as `Flow<#IAppCapabilities, 'error, 'value>` when a larger runtime should satisfy a smaller workflow boundary.
 - Keep `IServiceProvider` interop and runtime adapters at the edge; do not make them the primary public API.
 
 ## Core Patterns (Idiomatic Way)
@@ -44,9 +44,8 @@ Use `Guard.MapError` when the source already carries a meaningful error:
 - `Result<'T, 'E1>` -> `let! x = result |> Guard.MapError mapper`
 - `Validation<'T, 'E1>` -> `let! x = validation |> Guard.MapError mapper`
 - `Flow<'Env, 'E1, 'T>` -> `let! x = flow |> Guard.MapError mapper`
-- `AsyncFlow<'Env, 'E1, 'T>` -> `let! x = asyncFlow |> Guard.MapError mapper`
 - `Async<Result<'T, 'E1>>` -> `let! x = aResult |> Guard.MapError mapper`
-- `TaskFlow<'Env, 'E1, 'T>` -> `let! x = taskFlow |> Guard.MapError mapper`
+- `Task<Result<'T, 'E1>>` -> `let! x = taskResult |> Guard.MapError mapper`
 
 ## Rosetta Stone (Mappings)
 - **FsToolkit**: `AsyncResult.requireSome e` -> `let! x = opt |> Guard.Of e`
@@ -64,12 +63,12 @@ equivalent, FsFlow usually expects a different boundary shape rather than a 1:1 
 - For predicate checks, use `Check.orError` or `Check.orErrorWith` to attach a typed error to `Result<'T, unit>` values
 
 ### AsyncResult<'T, 'E>
-- Closest FsFlow shape: `AsyncFlow<'env, 'error, 'value>`
-- Direct equivalents: `AsyncResult.map` -> `AsyncFlow.map`, `AsyncResult.bind` -> `AsyncFlow.bind`, `AsyncResult.mapError` -> `AsyncFlow.mapError`, `AsyncResult.map2` -> `AsyncFlow.map2`, `AsyncResult.sequence` -> `AsyncFlow.sequence`, `AsyncResult.traverse` -> `AsyncFlow.traverse`
-- Boundary lifts: `AsyncResult.fromResult` -> `AsyncFlow.fromResult`, `AsyncResult.fromOption` -> `AsyncFlow.fromOption`, `AsyncResult.fromValueOption` -> `AsyncFlow.fromValueOption`, `AsyncResult.fromAsync` -> `AsyncFlow.fromAsync`, `AsyncResult.fromAsyncResult` -> `AsyncFlow.fromAsyncResult`
-- Async fallback helpers: `orElse` -> `AsyncFlow.orElse`, `orElseAsync` -> `AsyncFlow.orElseAsync`, `orElseFlow` -> `AsyncFlow.orElseFlow`, `orElseAsyncFlow` -> `AsyncFlow.orElseAsyncFlow`
+- Closest FsFlow shape: `Flow<'env, 'error, 'value>`
+- Direct equivalents: `AsyncResult.map` -> `Flow.map`, `AsyncResult.bind` -> `Flow.bind`, `AsyncResult.mapError` -> `Flow.mapError`, `AsyncResult.map2` -> `Flow.map2`, `AsyncResult.sequence` -> `Flow.sequence`, `AsyncResult.traverse` -> `Flow.traverse`
+- Boundary lifts: use `flow { let! value = asyncResult; return value }`, or `Flow.fromResult`, `Flow.fromOption`, and `Flow.fromValueOption` for synchronous values.
+- Async fallback helpers: `orElse` -> `Flow.orElse`, `orElseFlow` -> `Flow.orElseFlow`, `orElseWith` -> `Flow.orElseWith`
 - Missing as dedicated helpers: `fold`, `ignore`, `defaultValue`, `defaultError`, `defaultWith`, `valueOr`, `setError`, `withError`, `require*`
-- Important difference: FsFlow folds `AsyncResult` into a larger environment-aware model. If you only need `Async<Result<'T, 'E>>`, `AsyncFlow.toAsync` is the nearest execution shape
+- Important difference: FsFlow folds `Async<Result<'T, 'E>>` into a larger environment-aware model. Execute at the edge with `Flow.run`, `Flow.runFull`, or `Flow.runSync`.
 
 ### Validation
 - FsFlow equivalent type: `Validation<'value, 'error>` is not `Result<'value, 'error list>`; it stores a structured `Diagnostics<'error>` graph

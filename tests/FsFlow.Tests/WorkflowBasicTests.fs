@@ -171,7 +171,7 @@ module WorkflowBasicTests =
         test <@ List.ofSeq runtime.Seen = [ "value=41" ] @>
 
     [<Fact>]
-    let ``TaskFlow layers and capability helpers compose`` () =
+    let ``Flow layers and capability helpers compose`` () =
         let app =
             { DeviceClient =
                   { new IDeviceClient with

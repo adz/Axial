@@ -61,7 +61,7 @@ module Builders =
     let flow = FlowBuilder()
 
 #if !FABLE_COMPILER
-    let internal asyncFlow = AsyncFlowBuilder()
+    let internal asyncAdapter = AsyncAdapterBuilder()
 #endif
 
     /// <summary>

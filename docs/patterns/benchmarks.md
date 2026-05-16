@@ -65,7 +65,7 @@ The tables below are taken from the joined BenchmarkDotNet report for the curren
 | Method | Mean | Allocated |
 | --- | --- | --- |
 | `Manual env passing x10` | 74.02 ns | 80 B |
-| `TaskFlow localEnv x10` | 256.06 ns | 560 B |
+| `Flow task adapter localEnv x10` | 256.06 ns | 560 B |
 | `AsyncLocal updates x10` | 819.32 ns | 2,000 B |
 
 ### Task Railway
@@ -73,10 +73,10 @@ The tables below are taken from the joined BenchmarkDotNet report for the curren
 | Method | FailAt | Mean | Allocated |
 | --- | --- | --- | --- |
 | `Direct Task<Result>` | 1 | 179.20 ns | 256 B |
-| `TaskFlow` | 1 | 2.718 us | 5,944 B |
+| `Flow task adapter` | 1 | 2.718 us | 5,944 B |
 | `FsToolkit taskResult` | 1 | 167.47 ns | 336 B |
 | `Direct Task<Result>` | 20 | 1.749 us | 3,392 B |
-| `TaskFlow` | 20 | 3.865 us | 7,320 B |
+| `Flow task adapter` | 20 | 3.865 us | 7,320 B |
 | `FsToolkit taskResult` | 20 | 2.742 us | 6,512 B |
 
 ### Async Railway
@@ -84,9 +84,9 @@ The tables below are taken from the joined BenchmarkDotNet report for the curren
 | Method | FailAt | Mean | Allocated |
 | --- | --- | --- | --- |
 | `Direct Async<Result>` | 1 | 7.048 us | 1,000 B |
-| `AsyncFlow` | 1 | 8.907 us | 7,977 B |
+| `Flow async adapter` | 1 | 8.907 us | 7,977 B |
 | `Direct Async<Result>` | 20 | 8.653 us | 7,393 B |
-| `AsyncFlow` | 20 | 11.378 us | 9,353 B |
+| `Flow async adapter` | 20 | 11.378 us | 9,353 B |
 | `FsToolkit asyncResult` | 20 | 9.226 us | 12,561 B |
 
 ### Cancellation
@@ -96,7 +96,7 @@ The tables below are taken from the joined BenchmarkDotNet report for the curren
 | `Manual token Task` | 229.87 ns | 624 B |
 | `CancellableTask` | 290.42 ns | 504 B |
 | `Explicit token Task<Result>` | 367.77 ns | 672 B |
-| `TaskFlow` | 1.079 us | 3,136 B |
+| `Flow task adapter` | 1.079 us | 3,136 B |
 
 ### Composition Chain
 
@@ -104,10 +104,10 @@ The tables below are taken from the joined BenchmarkDotNet report for the curren
 | --- | --- | --- |
 | `Flow map x100` | 8.342 us | 12.024 KB |
 | `Flow bind x100` | 11.090 us | 18.424 KB |
-| `TaskFlow bind x100` | 11.450 us | 28.096 KB |
+| `Flow task adapter bind x100` | 11.450 us | 28.096 KB |
 | `Direct Task<Result> bind x100` | 11.762 us | 21.504 KB |
 | `Direct Async<Result> bind x100` | 18.083 us | 34.443 KB |
-| `AsyncFlow bind x100` | 26.710 us | 44.739 KB |
+| `Flow async adapter bind x100` | 26.710 us | 44.739 KB |
 | `Raw Task bind x100` | 7.804 us | 17.488 KB |
 
 ### Synchronous Completion
@@ -115,7 +115,7 @@ The tables below are taken from the joined BenchmarkDotNet report for the curren
 | Method | Mean | Allocated |
 | --- | --- | --- |
 | `Candidate ValueTaskFlow` | 68.36 ns | 96 B |
-| `TaskFlow` | 258.24 ns | 752 B |
+| `Flow task adapter` | 258.24 ns | 752 B |
 | `Ply vtask` | 209.37 ns | 128 B |
 
 The practical read is unchanged: `Flow` stays competitive with the direct baselines, and the extra cost is a fixed orchestration cost rather than a function of the actual business logic.
@@ -187,11 +187,11 @@ Measured with Fable 5.0.0, Erlang 27.2.2, and rebar 3.24.0.
 The actual benchmark suites and the method pairs they compare are:
 
 - `ReaderOverheadBenchmarks`: `ManualEnvPassingX10` vs `TaskFlowLocalEnvX10`
-- `AsyncRailwayBenchmarks`: `DirectAsyncResult` vs `AsyncFlow`
-- `TaskRailwayBenchmarks`: `DirectTaskResult` vs `TaskFlow`
+- `AsyncRailwayBenchmarks`: `DirectAsyncResult` vs `Flow async adapter`
+- `TaskRailwayBenchmarks`: `DirectTaskResult` vs `Flow task adapter`
 - `CompositionChainBenchmarks`: `FlowMapX100`, `FlowBindX100`, `AsyncFlowBindX100`, `TaskFlowBindX100`, `DirectAsyncResultBindX100`, `DirectTaskResultBindX100`, `RawTaskBindX100`
-- `CancellationFlowBenchmarks`: `ExplicitTokenTaskResult` vs `TaskFlow`
+- `CancellationFlowBenchmarks`: `ExplicitTokenTaskResult` vs `Flow task adapter`
 - `CancellableTaskBenchmarks`: `ManualTokenTask` vs `CancellableTask`
-- `SynchronousCompletionBenchmarks`: `CandidateValueTaskFlow` vs `TaskFlow`
+- `SynchronousCompletionBenchmarks`: `CandidateValueTaskFlow` vs `Flow task adapter`
 
 The .NET benchmark report is generated from `FsFlow.Benchmarks`; the Fable runner is separate and uses the same comparison vocabulary without pretending the runtime shape is the same.

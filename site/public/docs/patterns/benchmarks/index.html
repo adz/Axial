@@ -33,7 +33,7 @@ The benchmark harness lives in benchmarks/FsFlow.Benchmarks/Suites.fs and the sh
   <meta itemprop="name" content="Benchmarks">
   <meta itemprop="description" content="This page shows the performance tradeoffs of using FsFlow compared to manual composition across the runtime shapes it supports.
 The benchmark harness lives in benchmarks/FsFlow.Benchmarks/Suites.fs and the shared helpers live in benchmarks/FsFlow.Benchmarks/Common.fs. The Fable runner lives in benchmarks/FsFlow.Benchmarks.Fable/Program.fs and shares its workload definitions from benchmarks/FsFlow.Benchmarks.Fable/Shared.fs. The Fable benchmark project is self-contained by source inclusion, so it can be compiled directly with Fable against the library code in src/FsFlow. Its local tool manifest lives in benchmarks/FsFlow.Benchmarks.Fable/mise.toml, with benchmarks/FsFlow.Benchmarks.Fable/package.json for Node ESM execution and scripts/run-fable-benchmarks.sh for the target-specific runner.">
-  <meta itemprop="wordCount" content="886">
+  <meta itemprop="wordCount" content="912">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Benchmarks">
   <meta name="twitter:description" content="This page shows the performance tradeoffs of using FsFlow compared to manual composition across the runtime shapes it supports.
@@ -392,7 +392,7 @@ The Fable benchmark project is self-contained by source inclusion, so it can be 
           <td>80 B</td>
       </tr>
       <tr>
-          <td><code>TaskFlow localEnv x10</code></td>
+          <td><code>Flow task adapter localEnv x10</code></td>
           <td>256.06 ns</td>
           <td>560 B</td>
       </tr>
@@ -421,7 +421,7 @@ The Fable benchmark project is self-contained by source inclusion, so it can be 
           <td>256 B</td>
       </tr>
       <tr>
-          <td><code>TaskFlow</code></td>
+          <td><code>Flow task adapter</code></td>
           <td>1</td>
           <td>2.718 us</td>
           <td>5,944 B</td>
@@ -439,7 +439,7 @@ The Fable benchmark project is self-contained by source inclusion, so it can be 
           <td>3,392 B</td>
       </tr>
       <tr>
-          <td><code>TaskFlow</code></td>
+          <td><code>Flow task adapter</code></td>
           <td>20</td>
           <td>3.865 us</td>
           <td>7,320 B</td>
@@ -470,7 +470,7 @@ The Fable benchmark project is self-contained by source inclusion, so it can be 
           <td>1,000 B</td>
       </tr>
       <tr>
-          <td><code>AsyncFlow</code></td>
+          <td><code>Flow async adapter</code></td>
           <td>1</td>
           <td>8.907 us</td>
           <td>7,977 B</td>
@@ -482,7 +482,7 @@ The Fable benchmark project is self-contained by source inclusion, so it can be 
           <td>7,393 B</td>
       </tr>
       <tr>
-          <td><code>AsyncFlow</code></td>
+          <td><code>Flow async adapter</code></td>
           <td>20</td>
           <td>11.378 us</td>
           <td>9,353 B</td>
@@ -521,7 +521,7 @@ The Fable benchmark project is self-contained by source inclusion, so it can be 
           <td>672 B</td>
       </tr>
       <tr>
-          <td><code>TaskFlow</code></td>
+          <td><code>Flow task adapter</code></td>
           <td>1.079 us</td>
           <td>3,136 B</td>
       </tr>
@@ -548,7 +548,7 @@ The Fable benchmark project is self-contained by source inclusion, so it can be 
           <td>18.424 KB</td>
       </tr>
       <tr>
-          <td><code>TaskFlow bind x100</code></td>
+          <td><code>Flow task adapter bind x100</code></td>
           <td>11.450 us</td>
           <td>28.096 KB</td>
       </tr>
@@ -563,7 +563,7 @@ The Fable benchmark project is self-contained by source inclusion, so it can be 
           <td>34.443 KB</td>
       </tr>
       <tr>
-          <td><code>AsyncFlow bind x100</code></td>
+          <td><code>Flow async adapter bind x100</code></td>
           <td>26.710 us</td>
           <td>44.739 KB</td>
       </tr>
@@ -590,7 +590,7 @@ The Fable benchmark project is self-contained by source inclusion, so it can be 
           <td>96 B</td>
       </tr>
       <tr>
-          <td><code>TaskFlow</code></td>
+          <td><code>Flow task adapter</code></td>
           <td>258.24 ns</td>
           <td>752 B</td>
       </tr>
@@ -734,12 +734,12 @@ The Fable benchmark project is self-contained by source inclusion, so it can be 
 <p>The actual benchmark suites and the method pairs they compare are:</p>
 <ul>
 <li><code>ReaderOverheadBenchmarks</code>: <code>ManualEnvPassingX10</code> vs <code>TaskFlowLocalEnvX10</code></li>
-<li><code>AsyncRailwayBenchmarks</code>: <code>DirectAsyncResult</code> vs <code>AsyncFlow</code></li>
-<li><code>TaskRailwayBenchmarks</code>: <code>DirectTaskResult</code> vs <code>TaskFlow</code></li>
+<li><code>AsyncRailwayBenchmarks</code>: <code>DirectAsyncResult</code> vs <code>Flow async adapter</code></li>
+<li><code>TaskRailwayBenchmarks</code>: <code>DirectTaskResult</code> vs <code>Flow task adapter</code></li>
 <li><code>CompositionChainBenchmarks</code>: <code>FlowMapX100</code>, <code>FlowBindX100</code>, <code>AsyncFlowBindX100</code>, <code>TaskFlowBindX100</code>, <code>DirectAsyncResultBindX100</code>, <code>DirectTaskResultBindX100</code>, <code>RawTaskBindX100</code></li>
-<li><code>CancellationFlowBenchmarks</code>: <code>ExplicitTokenTaskResult</code> vs <code>TaskFlow</code></li>
+<li><code>CancellationFlowBenchmarks</code>: <code>ExplicitTokenTaskResult</code> vs <code>Flow task adapter</code></li>
 <li><code>CancellableTaskBenchmarks</code>: <code>ManualTokenTask</code> vs <code>CancellableTask</code></li>
-<li><code>SynchronousCompletionBenchmarks</code>: <code>CandidateValueTaskFlow</code> vs <code>TaskFlow</code></li>
+<li><code>SynchronousCompletionBenchmarks</code>: <code>CandidateValueTaskFlow</code> vs <code>Flow task adapter</code></li>
 </ul>
 <p>The .NET benchmark report is generated from <code>FsFlow.Benchmarks</code>; the Fable runner is separate and uses the same comparison vocabulary without pretending the runtime shape is the same.</p>
 

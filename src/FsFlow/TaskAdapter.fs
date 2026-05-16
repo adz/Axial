@@ -7,21 +7,21 @@ open System.Threading
 open System.Threading.Tasks
 
 /// <summary>
-/// Core functions for creating, composing, executing, and adapting task flows.
+/// Core functions for creating, composing, executing, and adapting task adapter flows.
 /// </summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
-module internal TaskFlow =
-    /// <summary>Executes a task flow with the provided environment and cancellation token.</summary>
+module internal TaskAdapter =
+    /// <summary>Executes a task adapter flow with the provided environment and cancellation token.</summary>
     /// <remarks>Uncaught exceptions become <c>Cause.Die</c>; cancellation becomes <c>Cause.Interrupt</c>.</remarks>
     /// <param name="environment">The environment of type <c>'env</c>.</param>
     /// <param name="cancellationToken">The <see cref="T:System.Threading.CancellationToken" />.</param>
-    /// <param name="flow">The <see cref="T:FsFlow.TaskFlow`3" /> to execute.</param>
+    /// <param name="flow">The <see cref="T:FsFlow.TaskAdapterFlow`3" /> to execute.</param>
     /// <returns>A <see cref="T:System.Threading.Tasks.Task`1" /> containing the <see cref="T:FsFlow.Exit`2" />.</returns>
     let run
         (environment: 'env)
         (cancellationToken: CancellationToken)
-        (TaskFlow operation: TaskFlow<'env, 'error, 'value>)
+        (TaskAdapterFlow operation: TaskAdapterFlow<'env, 'error, 'value>)
         : Task<Exit<'value, 'error>> =
         task {
             try
@@ -31,75 +31,75 @@ module internal TaskFlow =
                 return Exit.Failure (EffectFlow.causeOfException error)
         }
 
-    /// <summary>Converts a task flow into a hot <see cref="T:System.Threading.Tasks.Task`1" />.</summary>
+    /// <summary>Converts a task adapter flow into a hot <see cref="T:System.Threading.Tasks.Task`1" />.</summary>
     /// <remarks>
     /// This is an alias for <see cref="run" /> that emphasizes the conversion to a standard .NET Task.
     /// </remarks>
     /// <param name="environment">The environment of type <c>'env</c>.</param>
     /// <param name="cancellationToken">The <see cref="T:System.Threading.CancellationToken" />.</param>
-    /// <param name="flow">The task flow to convert.</param>
+    /// <param name="flow">The task adapter flow to convert.</param>
     /// <returns>A started task.</returns>
     let toTask
         (environment: 'env)
         (cancellationToken: CancellationToken)
-        (flow: TaskFlow<'env, 'error, 'value>)
+        (flow: TaskAdapterFlow<'env, 'error, 'value>)
         : Task<Exit<'value, 'error>> =
         run environment cancellationToken flow
 
-    /// <summary>Creates a successful task flow.</summary>
+    /// <summary>Creates a successful task adapter flow.</summary>
     /// <param name="value">The success value of type <c>'value</c>.</param>
-    /// <returns>A <see cref="T:FsFlow.TaskFlow`3" /> that always succeeds.</returns>
-    let ok (value: 'value) : TaskFlow<'env, 'error, 'value> =
-        TaskFlow(fun _ _ -> Task.FromResult(Exit.Success value))
+    /// <returns>A <see cref="T:FsFlow.TaskAdapterFlow`3" /> that always succeeds.</returns>
+    let ok (value: 'value) : TaskAdapterFlow<'env, 'error, 'value> =
+        TaskAdapterFlow(fun _ _ -> Task.FromResult(Exit.Success value))
 
     /// <summary>Alias for <c>ok</c> that reads well in some call sites.</summary>
-    let succeed (value: 'value) : TaskFlow<'env, 'error, 'value> =
+    let succeed (value: 'value) : TaskAdapterFlow<'env, 'error, 'value> =
         ok value
 
     /// <summary>Alias for <c>ok</c> that reads well in some call sites.</summary>
-    let value (item: 'value) : TaskFlow<'env, 'error, 'value> =
+    let value (item: 'value) : TaskAdapterFlow<'env, 'error, 'value> =
         succeed item
 
-    /// <summary>Creates a failing task flow.</summary>
+    /// <summary>Creates a failing task adapter flow.</summary>
     /// <param name="error">The failure value of type <c>'error</c>.</param>
-    /// <returns>A <see cref="T:FsFlow.TaskFlow`3" /> that always fails.</returns>
-    let error (failure: 'error) : TaskFlow<'env, 'error, 'value> =
-        TaskFlow(fun _ _ -> Task.FromResult(Exit.Failure (Cause.Fail failure)))
+    /// <returns>A <see cref="T:FsFlow.TaskAdapterFlow`3" /> that always fails.</returns>
+    let error (failure: 'error) : TaskAdapterFlow<'env, 'error, 'value> =
+        TaskAdapterFlow(fun _ _ -> Task.FromResult(Exit.Failure (Cause.Fail failure)))
 
     /// <summary>Alias for <c>error</c> that reads well in some call sites.</summary>
-    let fail (failure: 'error) : TaskFlow<'env, 'error, 'value> =
+    let fail (failure: 'error) : TaskAdapterFlow<'env, 'error, 'value> =
         error failure
 
-    /// <summary>Lifts a standard <see cref="T:System.Result`2" /> into a task flow.</summary>
+    /// <summary>Lifts a standard <see cref="T:System.Result`2" /> into a task adapter flow.</summary>
     /// <param name="result">The result to lift.</param>
-    /// <returns>A task flow mirroring the result.</returns>
-    let fromResult (result: Result<'value, 'error>) : TaskFlow<'env, 'error, 'value> =
-        TaskFlow(fun _ _ -> Task.FromResult (Exit.fromResult result))
+    /// <returns>A task adapter flow mirroring the result.</returns>
+    let fromResult (result: Result<'value, 'error>) : TaskAdapterFlow<'env, 'error, 'value> =
+        TaskAdapterFlow(fun _ _ -> Task.FromResult (Exit.fromResult result))
 
-    /// <summary>Executes a task flow and converts the final <see cref="T:FsFlow.Exit`2" /> into a standard <see cref="T:System.Result`2" />.</summary>
+    /// <summary>Executes a task adapter flow and converts the final <see cref="T:FsFlow.Exit`2" /> into a standard <see cref="T:System.Result`2" />.</summary>
     /// <remarks>
     /// Interruption signals and defects are raised as exceptions in the caller's context.
     /// </remarks>
-    let toResult (environment: 'env) (cancellationToken: CancellationToken) (flow: TaskFlow<'env, 'error, 'value>) : Task<Result<'value, 'error>> =
+    let toResult (environment: 'env) (cancellationToken: CancellationToken) (flow: TaskAdapterFlow<'env, 'error, 'value>) : Task<Result<'value, 'error>> =
         task {
             let! exit = run environment cancellationToken flow
             return Exit.toResult exit
         }
 
-    /// <summary>Lifts an option into a task flow with the supplied error.</summary>
+    /// <summary>Lifts an option into a task adapter flow with the supplied error.</summary>
     /// <param name="error">The error to return if the option is <see cref="T:Microsoft.FSharp.Core.FSharpOption`1.None" />.</param>
     /// <param name="value">The option to lift.</param>
-    /// <returns>A task flow succeeding with the option's value or failing.</returns>
-    let fromOption (error: 'error) (value: 'value option) : TaskFlow<'env, 'error, 'value> =
+    /// <returns>A task adapter flow succeeding with the option's value or failing.</returns>
+    let fromOption (error: 'error) (value: 'value option) : TaskAdapterFlow<'env, 'error, 'value> =
         value
         |> OptionFlow.toResult error
         |> fromResult
 
-    /// <summary>Lifts a value option into a task flow with the supplied error.</summary>
+    /// <summary>Lifts a value option into a task adapter flow with the supplied error.</summary>
     /// <param name="error">The error of type <c>'error</c> to return if the value option is <see cref="T:Microsoft.FSharp.Core.FSharpValueOption`1.ValueNone" />.</param>
     /// <param name="value">The value option to lift.</param>
-    /// <returns>A task flow succeeding with the option's value or failing.</returns>
-    let fromValueOption (error: 'error) (value: 'value voption) : TaskFlow<'env, 'error, 'value> =
+    /// <returns>A task adapter flow succeeding with the option's value or failing.</returns>
+    let fromValueOption (error: 'error) (value: 'value voption) : TaskAdapterFlow<'env, 'error, 'value> =
         value
         |> OptionFlow.toResultValueOption error
         |> fromResult
@@ -107,8 +107,8 @@ module internal TaskFlow =
     let orElseTask
         (errorTask: Task<'error>)
         (result: Result<'value, unit>)
-        : TaskFlow<'env, 'error, 'value> =
-        TaskFlow(fun _ _ ->
+        : TaskAdapterFlow<'env, 'error, 'value> =
+        TaskAdapterFlow(fun _ _ ->
             task {
                 match result with
                 | Ok value -> return Exit.Success value
@@ -117,13 +117,13 @@ module internal TaskFlow =
                     return Exit.Failure (Cause.Fail error)
             })
 
-    /// <summary>Turns a pure validation result into a task flow with task-provided failure.</summary>
-    /// <returns>A <see cref="T:FsFlow.TaskFlow`3" /> that mirrors the result or produces the task error.</returns>
+    /// <summary>Turns a pure validation result into a task adapter flow with task-provided failure.</summary>
+    /// <returns>A <see cref="T:FsFlow.TaskAdapterFlow`3" /> that mirrors the result or produces the task error.</returns>
     let orElseAsync
         (errorAsync: Async<'error>)
         (result: Result<'value, unit>)
-        : TaskFlow<'env, 'error, 'value> =
-        TaskFlow(fun _ _ ->
+        : TaskAdapterFlow<'env, 'error, 'value> =
+        TaskAdapterFlow(fun _ _ ->
             task {
                 match result with
                 | Ok value -> return Exit.Success value
@@ -135,8 +135,8 @@ module internal TaskFlow =
     let orElseFlow
         (errorFlow: Flow<'env, 'error, 'error>)
         (result: Result<'value, unit>)
-        : TaskFlow<'env, 'error, 'value> =
-        TaskFlow(fun environment cancellationToken ->
+        : TaskAdapterFlow<'env, 'error, 'value> =
+        TaskAdapterFlow(fun environment cancellationToken ->
             task {
                 match result with
                 | Ok value -> return Exit.Success value
@@ -147,16 +147,16 @@ module internal TaskFlow =
             })
 
     let orElseAsyncFlow
-        (errorFlow: AsyncFlow<'env, 'error, 'error>)
+        (errorFlow: AsyncAdapterFlow<'env, 'error, 'error>)
         (result: Result<'value, unit>)
-        : TaskFlow<'env, 'error, 'value> =
-        TaskFlow(fun environment cancellationToken ->
+        : TaskAdapterFlow<'env, 'error, 'value> =
+        TaskAdapterFlow(fun environment cancellationToken ->
             task {
                 match result with
                 | Ok value -> return Exit.Success value
                 | Error () ->
                     let! outcome =
-                        AsyncFlow.run environment errorFlow
+                        AsyncAdapter.run environment errorFlow
                         |> fun operation -> Async.StartAsTask(operation, cancellationToken = cancellationToken)
 
                     match outcome with
@@ -165,10 +165,10 @@ module internal TaskFlow =
             })
 
     let orElseTaskFlow
-        (errorFlow: TaskFlow<'env, 'error, 'error>)
+        (errorFlow: TaskAdapterFlow<'env, 'error, 'error>)
         (result: Result<'value, unit>)
-        : TaskFlow<'env, 'error, 'value> =
-        TaskFlow(fun environment cancellationToken ->
+        : TaskAdapterFlow<'env, 'error, 'value> =
+        TaskAdapterFlow(fun environment cancellationToken ->
             task {
                 match result with
                 | Ok value -> return Exit.Success value
@@ -180,16 +180,16 @@ module internal TaskFlow =
                     | Exit.Failure cause -> return Exit.Failure cause
             })
 
-    let fromFlow (flow: Flow<'env, 'error, 'value>) : TaskFlow<'env, 'error, 'value> =
-        TaskFlow(fun environment _ -> Task.FromResult(FlowInternal.run environment flow))
+    let fromFlow (flow: Flow<'env, 'error, 'value>) : TaskAdapterFlow<'env, 'error, 'value> =
+        TaskAdapterFlow(fun environment _ -> Task.FromResult(FlowInternal.run environment flow))
 
-    let fromAsyncFlow (flow: AsyncFlow<'env, 'error, 'value>) : TaskFlow<'env, 'error, 'value> =
-        TaskFlow(fun environment cancellationToken ->
-            AsyncFlow.run environment flow
+    let fromAsyncAdapter (flow: AsyncAdapterFlow<'env, 'error, 'value>) : TaskAdapterFlow<'env, 'error, 'value> =
+        TaskAdapterFlow(fun environment cancellationToken ->
+            AsyncAdapter.run environment flow
             |> fun operation -> Async.StartAsTask(operation, cancellationToken = cancellationToken))
 
-    let fromTask (coldTask: ColdTask<'value>) : TaskFlow<'env, 'error, 'value> =
-        TaskFlow(fun _ cancellationToken ->
+    let fromTask (coldTask: ColdTask<'value>) : TaskAdapterFlow<'env, 'error, 'value> =
+        TaskAdapterFlow(fun _ cancellationToken ->
             task {
                 let! value = ColdTask.run cancellationToken coldTask
                 return Exit.Success value
@@ -197,25 +197,25 @@ module internal TaskFlow =
 
     let fromTaskResult
         (coldTask: ColdTask<Result<'value, 'error>>)
-        : TaskFlow<'env, 'error, 'value> =
-        TaskFlow(fun _ cancellationToken ->
+        : TaskAdapterFlow<'env, 'error, 'value> =
+        TaskAdapterFlow(fun _ cancellationToken ->
             task {
                 let! result = ColdTask.run cancellationToken coldTask
                 return match result with Ok v -> Exit.Success v | Error e -> Exit.Failure (Cause.Fail e)
             })
 
-    let env<'env, 'error> : TaskFlow<'env, 'error, 'env> =
-        TaskFlow(fun environment _ -> Task.FromResult(Exit.Success environment))
+    let env<'env, 'error> : TaskAdapterFlow<'env, 'error, 'env> =
+        TaskAdapterFlow(fun environment _ -> Task.FromResult(Exit.Success environment))
 
-    let read (projection: 'env -> 'value) : TaskFlow<'env, 'error, 'value> =
-        TaskFlow(fun environment _ -> Task.FromResult(Exit.Success(projection environment)))
+    let read (projection: 'env -> 'value) : TaskAdapterFlow<'env, 'error, 'value> =
+        TaskAdapterFlow(fun environment _ -> Task.FromResult(Exit.Success(projection environment)))
 
     /// <summary>Extracts a specific service from an environment that implements <c>IHas&lt;'service&gt;</c>.</summary>
-    let inline service<'service, 'env, 'error when 'env :> IHas<'service>> () : TaskFlow<'env, 'error, 'service> =
+    let inline service<'service, 'env, 'error when 'env :> IHas<'service>> () : TaskAdapterFlow<'env, 'error, 'service> =
         read (fun (env: 'env) -> env.Service)
 
     /// <summary>Injects a service from a dynamic IServiceProvider environment.</summary>
-    let inline inject<'service, 'env, 'error when 'env :> IServiceProvider> () : TaskFlow<'env, 'error, 'service> =
+    let inline inject<'service, 'env, 'error when 'env :> IServiceProvider> () : TaskAdapterFlow<'env, 'error, 'service> =
         read (fun (env: 'env) ->
             let svc = env.GetService(typeof<'service>)
             if isNull (box svc) then
@@ -224,15 +224,15 @@ module internal TaskFlow =
                 unbox<'service> svc
         )
 
-    /// <summary>Maps the successful value of a task flow.</summary>
+    /// <summary>Maps the successful value of a task adapter flow.</summary>
     /// <param name="mapper">A function of type <c>'value -> 'next</c> to transform the success value.</param>
-    /// <param name="flow">The source task flow of type <see cref="T:FsFlow.TaskFlow`3" />.</param>
-    /// <returns>A new <see cref="T:FsFlow.TaskFlow`3" /> with the transformed success value.</returns>
+    /// <param name="flow">The source task adapter flow of type <see cref="T:FsFlow.TaskAdapterFlow`3" />.</param>
+    /// <returns>A new <see cref="T:FsFlow.TaskAdapterFlow`3" /> with the transformed success value.</returns>
     let map
         (mapper: 'value -> 'next)
-        (flow: TaskFlow<'env, 'error, 'value>)
-        : TaskFlow<'env, 'error, 'next> =
-        TaskFlow(fun environment cancellationToken ->
+        (flow: TaskAdapterFlow<'env, 'error, 'value>)
+        : TaskAdapterFlow<'env, 'error, 'next> =
+        TaskAdapterFlow(fun environment cancellationToken ->
             InternalCombinatorCore.mapWith
                 (fun mapOutcome operation ->
                     task {
@@ -243,23 +243,23 @@ module internal TaskFlow =
                 (fun (environment, cancellationToken) -> run environment cancellationToken flow)
                 (environment, cancellationToken))
 
-    /// <summary>Maps the successful value of a task flow to <c>unit</c>.</summary>
-    let ignore (flow: TaskFlow<'env, 'error, 'value>) : TaskFlow<'env, 'error, unit> =
+    /// <summary>Maps the successful value of a task adapter flow to <c>unit</c>.</summary>
+    let ignore (flow: TaskAdapterFlow<'env, 'error, 'value>) : TaskAdapterFlow<'env, 'error, unit> =
         map (fun _ -> ()) flow
 
     /// <summary>Sequences a task-flow-producing continuation after a successful value.</summary>
     /// <remarks>
-    /// This is the "flatmap" operation for <see cref="T:FsFlow.TaskFlow`3" />. It allows for dependent
+    /// This is the "flatmap" operation for <see cref="T:FsFlow.TaskAdapterFlow`3" />. It allows for dependent
     /// asynchronous steps where the second flow depends on the value produced by the first.
     /// </remarks>
-    /// <param name="binder">A function that takes the successful value and returns a new task flow.</param>
-    /// <param name="flow">The source task flow.</param>
-    /// <returns>A new task flow representing the combined workflow.</returns>
+    /// <param name="binder">A function that takes the successful value and returns a new task adapter flow.</param>
+    /// <param name="flow">The source task adapter flow.</param>
+    /// <returns>A new task adapter flow representing the combined workflow.</returns>
     let bind
-        (binder: 'value -> TaskFlow<'env, 'error, 'next>)
-        (flow: TaskFlow<'env, 'error, 'value>)
-        : TaskFlow<'env, 'error, 'next> =
-        TaskFlow(fun environment cancellationToken ->
+        (binder: 'value -> TaskAdapterFlow<'env, 'error, 'next>)
+        (flow: TaskAdapterFlow<'env, 'error, 'value>)
+        : TaskAdapterFlow<'env, 'error, 'next> =
+        TaskAdapterFlow(fun environment cancellationToken ->
             InternalCombinatorCore.bindWith
                 (fun operation onSuccess onFailure ->
                     task {
@@ -276,19 +276,19 @@ module internal TaskFlow =
 
     /// <summary>Sequences a task-flow-producing continuation after a successful value.</summary>
     let (>>=)
-        (flow: TaskFlow<'env, 'error, 'value>)
-        (binder: 'value -> TaskFlow<'env, 'error, 'next>)
-        : TaskFlow<'env, 'error, 'next> =
+        (flow: TaskAdapterFlow<'env, 'error, 'value>)
+        (binder: 'value -> TaskAdapterFlow<'env, 'error, 'next>)
+        : TaskAdapterFlow<'env, 'error, 'next> =
         bind binder flow
 
     /// <summary>Runs a task-based side effect on success and preserves the original value.</summary>
-    /// <param name="binder">A function that produces a side-effect task flow from the successful value.</param>
-    /// <param name="flow">The source task flow.</param>
-    /// <returns>A task flow that preserves the original success value after the side effect.</returns>
+    /// <param name="binder">A function that produces a side-effect task adapter flow from the successful value.</param>
+    /// <param name="flow">The source task adapter flow.</param>
+    /// <returns>A task adapter flow that preserves the original success value after the side effect.</returns>
     let tap
-        (binder: 'value -> TaskFlow<'env, 'error, unit>)
-        (flow: TaskFlow<'env, 'error, 'value>)
-        : TaskFlow<'env, 'error, 'value> =
+        (binder: 'value -> TaskAdapterFlow<'env, 'error, unit>)
+        (flow: TaskAdapterFlow<'env, 'error, 'value>)
+        : TaskAdapterFlow<'env, 'error, 'value> =
         bind
             (fun value ->
                 binder value
@@ -296,14 +296,14 @@ module internal TaskFlow =
             flow
 
     /// <summary>Runs a task-based side effect on failure and preserves the original error.</summary>
-    /// <param name="binder">A function that produces a side-effect task flow from the error value.</param>
-    /// <param name="flow">The source task flow.</param>
-    /// <returns>A task flow that preserves the original error after the side effect.</returns>
+    /// <param name="binder">A function that produces a side-effect task adapter flow from the error value.</param>
+    /// <param name="flow">The source task adapter flow.</param>
+    /// <returns>A task adapter flow that preserves the original error after the side effect.</returns>
     let tapError
-        (binder: 'error -> TaskFlow<'env, 'error, unit>)
-        (flow: TaskFlow<'env, 'error, 'value>)
-        : TaskFlow<'env, 'error, 'value> =
-        TaskFlow(fun environment cancellationToken ->
+        (binder: 'error -> TaskAdapterFlow<'env, 'error, unit>)
+        (flow: TaskAdapterFlow<'env, 'error, 'value>)
+        : TaskAdapterFlow<'env, 'error, 'value> =
+        TaskAdapterFlow(fun environment cancellationToken ->
             task {
                 let! exit = run environment cancellationToken flow
 
@@ -320,15 +320,15 @@ module internal TaskFlow =
                     | _ -> return Exit.Failure cause
             })
 
-    /// <summary>Maps the error value of a task flow.</summary>
+    /// <summary>Maps the error value of a task adapter flow.</summary>
     /// <param name="mapper">A function of type <c>'error -> 'nextError</c>.</param>
-    /// <param name="flow">The source task flow.</param>
-    /// <returns> a new <see cref="T:FsFlow.TaskFlow`3" /> with the transformed error type.</returns>
+    /// <param name="flow">The source task adapter flow.</param>
+    /// <returns> a new <see cref="T:FsFlow.TaskAdapterFlow`3" /> with the transformed error type.</returns>
     let mapError
         (mapper: 'error -> 'nextError)
-        (flow: TaskFlow<'env, 'error, 'value>)
-        : TaskFlow<'env, 'nextError, 'value> =
-        TaskFlow(fun environment cancellationToken ->
+        (flow: TaskAdapterFlow<'env, 'error, 'value>)
+        : TaskAdapterFlow<'env, 'nextError, 'value> =
+        TaskAdapterFlow(fun environment cancellationToken ->
             InternalCombinatorCore.mapErrorWith
                 (fun mapOutcome operation ->
                     task {
@@ -341,13 +341,13 @@ module internal TaskFlow =
 
     /// <summary>Catches exceptions raised during execution and maps them to a typed error.</summary>
     /// <param name="handler">A function of type <c>exn -> 'error</c> to map the exception.</param>
-    /// <param name="flow">The source task flow.</param>
-    /// <returns>A task flow that converts exceptions into success-path errors.</returns>
+    /// <param name="flow">The source task adapter flow.</param>
+    /// <returns>A task adapter flow that converts exceptions into success-path errors.</returns>
     let catch
         (handler: exn -> 'error)
-        (flow: TaskFlow<'env, 'error, 'value>)
-        : TaskFlow<'env, 'error, 'value> =
-        TaskFlow(fun environment cancellationToken ->
+        (flow: TaskAdapterFlow<'env, 'error, 'value>)
+        : TaskAdapterFlow<'env, 'error, 'value> =
+        TaskAdapterFlow(fun environment cancellationToken ->
             task {
                 try
                     return! run environment cancellationToken flow
@@ -355,16 +355,16 @@ module internal TaskFlow =
                     return Exit.Failure (Cause.Fail (handler error))
             })
 
-    /// <summary>Falls back to another task flow when the source flow fails.</summary>
-    /// <param name="fallback">The fallback flow of type <see cref="T:FsFlow.TaskFlow`3" />.</param>
-    /// <param name="flow">The primary task flow.</param>
-    /// <returns>A task flow that tries the primary first, then the fallback.</returns>
-    /// <summary>Computes a fallback task flow from the source error when the source flow fails.</summary>
+    /// <summary>Falls back to another task adapter flow when the source flow fails.</summary>
+    /// <param name="fallback">The fallback flow of type <see cref="T:FsFlow.TaskAdapterFlow`3" />.</param>
+    /// <param name="flow">The primary task adapter flow.</param>
+    /// <returns>A task adapter flow that tries the primary first, then the fallback.</returns>
+    /// <summary>Computes a fallback task adapter flow from the source error when the source flow fails.</summary>
     let orElseWith
-        (fallback: 'error -> TaskFlow<'env, 'error, 'value>)
-        (flow: TaskFlow<'env, 'error, 'value>)
-        : TaskFlow<'env, 'error, 'value> =
-        TaskFlow(fun environment cancellationToken ->
+        (fallback: 'error -> TaskAdapterFlow<'env, 'error, 'value>)
+        (flow: TaskAdapterFlow<'env, 'error, 'value>)
+        : TaskAdapterFlow<'env, 'error, 'value> =
+        TaskAdapterFlow(fun environment cancellationToken ->
             task {
                 let! exit = run environment cancellationToken flow
 
@@ -374,106 +374,106 @@ module internal TaskFlow =
                 | Exit.Failure cause -> return Exit.Failure cause
             })
 
-    /// <summary>Falls back to another task flow when the source flow fails.</summary>
+    /// <summary>Falls back to another task adapter flow when the source flow fails.</summary>
     let orElse
-        (fallback: TaskFlow<'env, 'error, 'value>)
-        (flow: TaskFlow<'env, 'error, 'value>)
-        : TaskFlow<'env, 'error, 'value> =
+        (fallback: TaskAdapterFlow<'env, 'error, 'value>)
+        (flow: TaskAdapterFlow<'env, 'error, 'value>)
+        : TaskAdapterFlow<'env, 'error, 'value> =
         orElseWith (fun _ -> fallback) flow
 
-    /// <summary>Combines two task flows into a tuple of their values.</summary>
-    /// <param name="left">The first task flow.</param>
-    /// <param name="right">The second task flow.</param>
-    /// <returns>A task flow containing a tuple of results.</returns>
+    /// <summary>Combines two task adapter flows into a tuple of their values.</summary>
+    /// <param name="left">The first task adapter flow.</param>
+    /// <param name="right">The second task adapter flow.</param>
+    /// <returns>A task adapter flow containing a tuple of results.</returns>
     let zip
-        (left: TaskFlow<'env, 'error, 'left>)
-        (right: TaskFlow<'env, 'error, 'right>)
-        : TaskFlow<'env, 'error, 'left * 'right> =
+        (left: TaskAdapterFlow<'env, 'error, 'left>)
+        (right: TaskAdapterFlow<'env, 'error, 'right>)
+        : TaskAdapterFlow<'env, 'error, 'left * 'right> =
         bind
             (fun leftValue ->
                 right
                 |> map (fun rightValue -> leftValue, rightValue))
             left
 
-    /// <summary>Combines two task flows with a mapping function.</summary>
+    /// <summary>Combines two task adapter flows with a mapping function.</summary>
     /// <param name="mapper">A function of type <c>'left -> 'right -> 'value</c>.</param>
-    /// <param name="left">The first task flow.</param>
-    /// <param name="right">The second task flow.</param>
-    /// <returns>A task flow with the combined value.</returns>
+    /// <param name="left">The first task adapter flow.</param>
+    /// <param name="right">The second task adapter flow.</param>
+    /// <returns>A task adapter flow with the combined value.</returns>
     let map2
         (mapper: 'left -> 'right -> 'value)
-        (left: TaskFlow<'env, 'error, 'left>)
-        (right: TaskFlow<'env, 'error, 'right>)
-        : TaskFlow<'env, 'error, 'value> =
+        (left: TaskAdapterFlow<'env, 'error, 'left>)
+        (right: TaskAdapterFlow<'env, 'error, 'right>)
+        : TaskAdapterFlow<'env, 'error, 'value> =
         zip left right
         |> map (fun (leftValue, rightValue) -> mapper leftValue rightValue)
 
     /// <summary>Applies a task-flow-wrapped function to a task-flow-wrapped value.</summary>
     let apply
-        (flow: TaskFlow<'env, 'error, 'value -> 'next>)
-        (value: TaskFlow<'env, 'error, 'value>)
-        : TaskFlow<'env, 'error, 'next> =
+        (flow: TaskAdapterFlow<'env, 'error, 'value -> 'next>)
+        (value: TaskAdapterFlow<'env, 'error, 'value>)
+        : TaskAdapterFlow<'env, 'error, 'next> =
         map2 (fun mapper input -> mapper input) flow value
 
-    /// <summary>Combines three task flows with a mapping function.</summary>
+    /// <summary>Combines three task adapter flows with a mapping function.</summary>
     let map3
         (mapper: 'left -> 'middle -> 'right -> 'value)
-        (left: TaskFlow<'env, 'error, 'left>)
-        (middle: TaskFlow<'env, 'error, 'middle>)
-        (right: TaskFlow<'env, 'error, 'right>)
-        : TaskFlow<'env, 'error, 'value> =
+        (left: TaskAdapterFlow<'env, 'error, 'left>)
+        (middle: TaskAdapterFlow<'env, 'error, 'middle>)
+        (right: TaskAdapterFlow<'env, 'error, 'right>)
+        : TaskAdapterFlow<'env, 'error, 'value> =
         apply
             (map2 (fun leftValue middleValue -> fun rightValue -> mapper leftValue middleValue rightValue) left middle)
             right
 
-    /// <summary>Maps the successful value of a task flow.</summary>
+    /// <summary>Maps the successful value of a task adapter flow.</summary>
     let (<!>)
         (mapper: 'value -> 'next)
-        (flow: TaskFlow<'env, 'error, 'value>)
-        : TaskFlow<'env, 'error, 'next> =
+        (flow: TaskAdapterFlow<'env, 'error, 'value>)
+        : TaskAdapterFlow<'env, 'error, 'next> =
         map mapper flow
 
     /// <summary>Applies a task-flow-wrapped function to a task-flow-wrapped value.</summary>
     let (<*>)
-        (flow: TaskFlow<'env, 'error, 'value -> 'next>)
-        (value: TaskFlow<'env, 'error, 'value>)
-        : TaskFlow<'env, 'error, 'next> =
+        (flow: TaskAdapterFlow<'env, 'error, 'value -> 'next>)
+        (value: TaskAdapterFlow<'env, 'error, 'value>)
+        : TaskAdapterFlow<'env, 'error, 'next> =
         apply flow value
 
-    /// <summary>Transforms the environment before running a task flow.</summary>
+    /// <summary>Transforms the environment before running a task adapter flow.</summary>
     /// <param name="mapping">A function of type <c>'outerEnvironment -> 'innerEnvironment</c>.</param>
-    /// <param name="flow">The task flow expecting <c>'innerEnvironment</c>.</param>
-    /// <returns>A task flow that accepts <c>'outerEnvironment</c>.</returns>
+    /// <param name="flow">The task adapter flow expecting <c>'innerEnvironment</c>.</param>
+    /// <returns>A task adapter flow that accepts <c>'outerEnvironment</c>.</returns>
     let localEnv
         (mapping: 'outerEnvironment -> 'innerEnvironment)
-        (flow: TaskFlow<'innerEnvironment, 'error, 'value>)
-        : TaskFlow<'outerEnvironment, 'error, 'value> =
-        TaskFlow(fun environment cancellationToken ->
+        (flow: TaskAdapterFlow<'innerEnvironment, 'error, 'value>)
+        : TaskAdapterFlow<'outerEnvironment, 'error, 'value> =
+        TaskAdapterFlow(fun environment cancellationToken ->
             InternalCombinatorCore.localEnvWith
                 (fun (environment, cancellationToken) innerFlow -> run environment cancellationToken innerFlow)
                 (fun (environment, cancellationToken) -> mapping environment, cancellationToken)
                 flow
                 (environment, cancellationToken))
 
-    /// <summary>Defers task flow construction until execution time.</summary>
-    /// <param name="factory">A function of type <c>unit -> TaskFlow&lt;'env, 'error, 'value&gt;</c>.</param>
-    /// <returns>A task flow that evaluates the factory only when executed.</returns>
-    let delay (factory: unit -> TaskFlow<'env, 'error, 'value>) : TaskFlow<'env, 'error, 'value> =
-        TaskFlow(fun environment cancellationToken ->
+    /// <summary>Defers task adapter flow construction until execution time.</summary>
+    /// <param name="factory">A function of type <c>unit -> TaskAdapterFlow&lt;'env, 'error, 'value&gt;</c>.</param>
+    /// <returns>A task adapter flow that evaluates the factory only when executed.</returns>
+    let delay (factory: unit -> TaskAdapterFlow<'env, 'error, 'value>) : TaskAdapterFlow<'env, 'error, 'value> =
+        TaskAdapterFlow(fun environment cancellationToken ->
             InternalCombinatorCore.delayWith
                 (fun (environment, cancellationToken) delayedFlow -> run environment cancellationToken delayedFlow)
                 factory
                 (environment, cancellationToken))
 
-    /// <summary>Transforms a sequence of values into a task flow and stops at the first failure.</summary>
-    /// <param name="mapping">A function of type <c>'value -> TaskFlow&lt;'env, 'error, 'next&gt;</c>.</param>
+    /// <summary>Transforms a sequence of values into a task adapter flow and stops at the first failure.</summary>
+    /// <param name="mapping">A function of type <c>'value -> TaskAdapterFlow&lt;'env, 'error, 'next&gt;</c>.</param>
     /// <param name="values">The input sequence.</param>
-    /// <returns>A task flow containing the list of successful results.</returns>
+    /// <returns>A task adapter flow containing the list of successful results.</returns>
     let traverse
-        (mapping: 'value -> TaskFlow<'env, 'error, 'next>)
+        (mapping: 'value -> TaskAdapterFlow<'env, 'error, 'next>)
         (values: seq<'value>)
-        : TaskFlow<'env, 'error, 'next list> =
-        TaskFlow(fun environment cancellationToken ->
+        : TaskAdapterFlow<'env, 'error, 'next list> =
+        TaskAdapterFlow(fun environment cancellationToken ->
             task {
                 let results = ResizeArray()
                 let mutable currentFailure = None
@@ -491,18 +491,18 @@ module internal TaskFlow =
                 | None -> return Exit.Success(List.ofSeq results)
             })
 
-    /// <summary>Transforms a sequence of task flows into a task flow of a sequence and stops at the first failure.</summary>
-    /// <param name="flows">A sequence of task flows.</param>
-    /// <returns>A task flow containing the list of successful results.</returns>
-    let sequence (flows: seq<TaskFlow<'env, 'error, 'value>>) : TaskFlow<'env, 'error, 'value list> =
+    /// <summary>Transforms a sequence of task adapter flows into a task adapter flow of a sequence and stops at the first failure.</summary>
+    /// <param name="flows">A sequence of task adapter flows.</param>
+    /// <returns>A task adapter flow containing the list of successful results.</returns>
+    let sequence (flows: seq<TaskAdapterFlow<'env, 'error, 'value>>) : TaskAdapterFlow<'env, 'error, 'value list> =
         traverse id flows
 
-    /// <summary>Provides a derived environment from a layer flow to a downstream task flow.</summary>
+    /// <summary>Provides a derived environment from a layer flow to a downstream task adapter flow.</summary>
     let provideLayer
-        (layer: TaskFlow<'input, 'error, 'environment>)
-        (flow: TaskFlow<'environment, 'error, 'value>)
-        : TaskFlow<'input, 'error, 'value> =
-        TaskFlow(fun environment cancellationToken ->
+        (layer: TaskAdapterFlow<'input, 'error, 'environment>)
+        (flow: TaskAdapterFlow<'environment, 'error, 'value>)
+        : TaskAdapterFlow<'input, 'error, 'value> =
+        TaskAdapterFlow(fun environment cancellationToken ->
             task {
                 let! outcome = run environment cancellationToken layer
 
@@ -517,15 +517,15 @@ module internal TaskFlow =
     [<RequireQualifiedAccess>]
     module Runtime =
         /// <summary>Reads the current runtime cancellation token.</summary>
-        let cancellationToken<'env, 'error> : TaskFlow<'env, 'error, CancellationToken> =
-            TaskFlow(fun _environment cancellationToken -> Task.FromResult(Exit.Success cancellationToken))
+        let cancellationToken<'env, 'error> : TaskAdapterFlow<'env, 'error, CancellationToken> =
+            TaskAdapterFlow(fun _environment cancellationToken -> Task.FromResult(Exit.Success cancellationToken))
 
         /// <summary>Converts an <see cref="OperationCanceledException" /> into a typed error.</summary>
         let catchCancellation
             (handler: OperationCanceledException -> 'error)
-            (flow: TaskFlow<'env, 'error, 'value>)
-            : TaskFlow<'env, 'error, 'value> =
-            TaskFlow(fun environment cancellationToken ->
+            (flow: TaskAdapterFlow<'env, 'error, 'value>)
+            : TaskAdapterFlow<'env, 'error, 'value> =
+            TaskAdapterFlow(fun environment cancellationToken ->
                 task {
                     try
                         return! run environment cancellationToken flow
@@ -534,16 +534,16 @@ module internal TaskFlow =
                 })
 
         /// <summary>Returns a typed error immediately when the runtime token is already canceled.</summary>
-        let ensureNotCanceled<'env, 'error> (canceledError: 'error) : TaskFlow<'env, 'error, unit> =
-            TaskFlow(fun _environment cancellationToken ->
+        let ensureNotCanceled<'env, 'error> (canceledError: 'error) : TaskAdapterFlow<'env, 'error, unit> =
+            TaskAdapterFlow(fun _environment cancellationToken ->
                 if cancellationToken.IsCancellationRequested then
                     Task.FromResult(Exit.Failure (Cause.Fail canceledError))
                 else
                     Task.FromResult(Exit.Success ()))
 
         /// <summary>Suspends the flow for the specified duration while observing cancellation.</summary>
-        let sleep<'env, 'error> (delay: TimeSpan) : TaskFlow<'env, 'error, unit> =
-            TaskFlow(fun _environment cancellationToken ->
+        let sleep<'env, 'error> (delay: TimeSpan) : TaskAdapterFlow<'env, 'error, unit> =
+            TaskAdapterFlow(fun _environment cancellationToken ->
                 task {
                     do! Task.Delay(delay, cancellationToken)
                     return Exit.Success ()
@@ -554,8 +554,8 @@ module internal TaskFlow =
             (writer: 'env -> LogEntry -> unit)
             (level: LogLevel)
             (message: string)
-            : TaskFlow<'env, 'error, unit> =
-            TaskFlow(fun environment _ ->
+            : TaskAdapterFlow<'env, 'error, unit> =
+            TaskAdapterFlow(fun environment _ ->
                 writer
                     environment
                     { Level = level
@@ -569,8 +569,8 @@ module internal TaskFlow =
             (writer: 'env -> LogEntry -> unit)
             (level: LogLevel)
             (messageFactory: 'env -> string)
-            : TaskFlow<'env, 'error, unit> =
-            TaskFlow(fun environment _ ->
+            : TaskAdapterFlow<'env, 'error, unit> =
+            TaskAdapterFlow(fun environment _ ->
                 writer
                     environment
                     { Level = level
@@ -581,13 +581,13 @@ module internal TaskFlow =
 
         /// <summary>Acquires a resource, uses it, and always runs the release action.</summary>
         let useWithAcquireRelease
-            (acquire: TaskFlow<'env, 'error, 'resource>)
+            (acquire: TaskAdapterFlow<'env, 'error, 'resource>)
             (release: 'resource -> CancellationToken -> Task)
-            (useResource: 'resource -> TaskFlow<'env, 'error, 'value>)
-            : TaskFlow<'env, 'error, 'value> =
+            (useResource: 'resource -> TaskAdapterFlow<'env, 'error, 'value>)
+            : TaskAdapterFlow<'env, 'error, 'value> =
             bind
                 (fun resource ->
-                    TaskFlow(fun environment cancellationToken ->
+                    TaskAdapterFlow(fun environment cancellationToken ->
                         async {
                             let! result =
                                 run environment cancellationToken (useResource resource)
@@ -607,9 +607,9 @@ module internal TaskFlow =
         let timeout
             (after: TimeSpan)
             (timeoutError: 'error)
-            (flow: TaskFlow<'env, 'error, 'value>)
-            : TaskFlow<'env, 'error, 'value> =
-            TaskFlow(fun environment cancellationToken ->
+            (flow: TaskAdapterFlow<'env, 'error, 'value>)
+            : TaskAdapterFlow<'env, 'error, 'value> =
+            TaskAdapterFlow(fun environment cancellationToken ->
                 task {
                     let operation = run environment cancellationToken flow
                     let timeoutTask = Task.Delay after
@@ -625,9 +625,9 @@ module internal TaskFlow =
         let timeoutToOk
             (after: TimeSpan)
             (value: 'value)
-            (flow: TaskFlow<'env, 'error, 'value>)
-            : TaskFlow<'env, 'error, 'value> =
-            TaskFlow(fun environment cancellationToken ->
+            (flow: TaskAdapterFlow<'env, 'error, 'value>)
+            : TaskAdapterFlow<'env, 'error, 'value> =
+            TaskAdapterFlow(fun environment cancellationToken ->
                 task {
                     let operation = run environment cancellationToken flow
                     let timeoutTask = Task.Delay after
@@ -643,17 +643,17 @@ module internal TaskFlow =
         let timeoutToError
             (after: TimeSpan)
             (error: 'error)
-            (flow: TaskFlow<'env, 'error, 'value>)
-            : TaskFlow<'env, 'error, 'value> =
+            (flow: TaskAdapterFlow<'env, 'error, 'value>)
+            : TaskAdapterFlow<'env, 'error, 'value> =
             timeout after error flow
 
         /// <summary>Runs a fallback flow when the original flow times out.</summary>
         let timeoutWith
             (after: TimeSpan)
-            (fallback: unit -> TaskFlow<'env, 'error, 'value>)
-            (flow: TaskFlow<'env, 'error, 'value>)
-            : TaskFlow<'env, 'error, 'value> =
-            TaskFlow(fun environment cancellationToken ->
+            (fallback: unit -> TaskAdapterFlow<'env, 'error, 'value>)
+            (flow: TaskAdapterFlow<'env, 'error, 'value>)
+            : TaskAdapterFlow<'env, 'error, 'value> =
+            TaskAdapterFlow(fun environment cancellationToken ->
                 task {
                     let operation = run environment cancellationToken flow
                     let timeoutTask = Task.Delay after
@@ -668,13 +668,13 @@ module internal TaskFlow =
         /// <summary>Retries a flow according to the specified policy.</summary>
         let retry
             (policy: RetryPolicy<'error>)
-            (flow: TaskFlow<'env, 'error, 'value>)
-            : TaskFlow<'env, 'error, 'value> =
+            (flow: TaskAdapterFlow<'env, 'error, 'value>)
+            : TaskAdapterFlow<'env, 'error, 'value> =
             if policy.MaxAttempts < 1 then
                 invalidArg (nameof policy.MaxAttempts) "RetryPolicy.MaxAttempts must be at least 1."
 
             let rec loop attempt =
-                TaskFlow(fun environment cancellationToken ->
+                TaskAdapterFlow(fun environment cancellationToken ->
                     task {
                         let! exit = run environment cancellationToken flow
 

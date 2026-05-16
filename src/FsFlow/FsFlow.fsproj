@@ -55,8 +55,8 @@
     <Compile Include="RuntimeRegistry.fs" />
     <Compile Include="RuntimeAdapter.fs" />
     <Compile Include="RuntimeLayer.fs" />
-    <Compile Include="AsyncFlow.fs" />
-    <Compile Include="TaskFlow.fs" />
+    <Compile Include="AsyncAdapter.fs" />
+    <Compile Include="TaskAdapter.fs" />
     <Compile Include="Flow.fs" />
     <Compile Include="Ref.fs" />
     <Compile Include="Stm.fs" />

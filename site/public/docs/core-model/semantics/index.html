@@ -302,7 +302,7 @@
 <li><code>Exit.Success value</code>: The happy path.</li>
 <li><code>Exit.Failure (Cause.Fail error)</code>: An expected domain-specific failure.</li>
 <li><code>Exit.Failure Cause.Interrupt</code>: The workflow was signaled to stop (e.g., cancellation).</li>
-<li><code>Exit.Failure (Cause.Die exception)</code>: An unexpected defect or crash. <code>Flow.run</code>, <code>AsyncFlow.run</code>, and <code>TaskFlow.run</code> preserve uncaught exceptions in this branch.</li>
+<li><code>Exit.Failure (Cause.Die exception)</code>: An unexpected defect or crash. <code>Flow.run</code>, <code>Flow.runFull</code>, and <code>Flow.runSync</code> preserve uncaught exceptions in this branch.</li>
 </ul>
 <p>All standard combinators (<code>map</code>, <code>bind</code>, <code>zip</code>, <code>orElse</code>) are <strong>short-circuiting</strong>. The first <code>Exit.Failure</code> stops the workflow unless explicitly caught.</p>
 <h2 id="short-circuiting-vs-accumulated-validation">Short-Circuiting vs. Accumulated Validation</h2>

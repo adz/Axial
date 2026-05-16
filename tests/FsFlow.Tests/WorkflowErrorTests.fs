@@ -80,24 +80,32 @@ module WorkflowErrorTests =
             |> Flow.runSync ()
 
         let asyncDefect =
-            AsyncFlow.delay (fun () -> raise defect)
-            |> AsyncFlow.run ()
-            |> Async.RunSynchronously
+            flow {
+                let! value = async { return raise defect }
+                return value
+            }
+            |> Flow.runSync ()
 
         let asyncCanceled =
-            AsyncFlow.delay (fun () -> raise canceled)
-            |> AsyncFlow.run ()
-            |> Async.RunSynchronously
+            flow {
+                let! value = async { return raise canceled }
+                return value
+            }
+            |> Flow.runSync ()
 
         let taskDefect =
-            TaskFlow.delay (fun () -> raise defect)
-            |> TaskFlow.run () CancellationToken.None
-            |> fun task -> task.GetAwaiter().GetResult()
+            flow {
+                let! value = Task.FromException<int>(defect)
+                return value
+            }
+            |> Flow.runSync ()
 
         let taskCanceled =
-            TaskFlow.delay (fun () -> raise canceled)
-            |> TaskFlow.run () CancellationToken.None
-            |> fun task -> task.GetAwaiter().GetResult()
+            flow {
+                let! value = Task.FromCanceled<int>(CancellationToken(true))
+                return value
+            }
+            |> Flow.runSync ()
 
         match flowDefect with
         | Exit.Failure (Cause.Die ex) -> test <@ obj.ReferenceEquals(ex, defect) @>
@@ -118,7 +126,7 @@ module WorkflowErrorTests =
         test <@ taskCanceled = Exit.Failure Cause.Interrupt @>
 
     [<Fact>]
-    let ``Defects survive combinators adapters and retry`` () =
+    let ``Defects survive combinators boundaries and retry`` () =
         let defect = InvalidOperationException "boom"
 
         let mapErrorResult =
@@ -135,17 +143,19 @@ module WorkflowErrorTests =
             Flow.zip (Flow.die defect) (Flow.succeed 42)
             |> Flow.runSync ()
 
-        let asyncAdapterResult =
-            Flow.die defect
-            |> AsyncFlow.fromFlow
-            |> AsyncFlow.run ()
-            |> Async.RunSynchronously
+        let asyncBoundaryResult =
+            flow {
+                let! value = async { return raise defect }
+                return value
+            }
+            |> Flow.runSync ()
 
-        let taskAdapterResult =
-            Flow.die defect
-            |> TaskFlow.fromFlow
-            |> TaskFlow.run () CancellationToken.None
-            |> fun task -> task.GetAwaiter().GetResult()
+        let taskBoundaryResult =
+            flow {
+                let! value = Task.FromException<int>(defect)
+                return value
+            }
+            |> Flow.runSync ()
 
         let retryAttempts = ref 0
 
@@ -169,11 +179,11 @@ module WorkflowErrorTests =
         | Exit.Failure (Cause.Die ex) -> test <@ obj.ReferenceEquals(ex, defect) @>
         | other -> failwithf "Expected defect cause, got %A" other
 
-        match asyncAdapterResult with
+        match asyncBoundaryResult with
         | Exit.Failure (Cause.Die ex) -> test <@ obj.ReferenceEquals(ex, defect) @>
         | other -> failwithf "Expected defect cause, got %A" other
 
-        match taskAdapterResult with
+        match taskBoundaryResult with
         | Exit.Failure (Cause.Die ex) -> test <@ obj.ReferenceEquals(ex, defect) @>
         | other -> failwithf "Expected defect cause, got %A" other
 
@@ -379,7 +389,7 @@ let probe : Flow<unit, string, int> =
         test <@ taskFlowResult = Exit.Success 60 @>
 
     [<Fact>]
-    let ``AsyncFlow login syntax uses Guard constructors and error mapping`` () =
+    let ``Flow async syntax uses Guard constructors and error mapping`` () =
         let tryGetUser username = async { return if username = "missing" then None else Some username }
         let isPwdValid password user = password = $"{user}-pwd"
         let authorize user = async { return if user = "blocked" then Error "denied" else Ok () }

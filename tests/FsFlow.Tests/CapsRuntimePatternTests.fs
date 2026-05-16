@@ -171,8 +171,8 @@ module CapsRuntimePatternTests =
             { RandomService = random :> IRandom
               TodoStoreService = todoStore :> ITodoStore }
 
-        let chooseTodoFlowForApp : TaskFlow<AppRuntime, TodoError, string option> =
-            (flow {
+        let chooseTodoFlowForApp : Flow<AppRuntime, TodoError, string option> =
+            flow {
                 let! todoStore = Flow.service<ITodoStore, AppRuntime, TodoError> ()
                 let! random = Flow.service<IRandom, AppRuntime, TodoError> ()
                 let todos = todoStore.Todos
@@ -182,11 +182,10 @@ module CapsRuntimePatternTests =
                 | _ ->
                     let index = random.NextInt 0 todos.Length
                     return Some todos[index]
-            })
-            |> TaskFlow.fromFlow
+            }
 
-        let chooseTodoFlowForTest : TaskFlow<ChooseTodoTestRuntime, TodoError, string option> =
-            (flow {
+        let chooseTodoFlowForTest : Flow<ChooseTodoTestRuntime, TodoError, string option> =
+            flow {
                 let! todoStore = Flow.service<ITodoStore, ChooseTodoTestRuntime, TodoError> ()
                 let! random = Flow.service<IRandom, ChooseTodoTestRuntime, TodoError> ()
                 let todos = todoStore.Todos
@@ -196,16 +195,13 @@ module CapsRuntimePatternTests =
                 | _ ->
                     let index = random.NextInt 0 todos.Length
                     return Some todos[index]
-            })
-            |> TaskFlow.fromFlow
+            }
 
         let appResult =
-            TaskFlow.run appRuntime CancellationToken.None chooseTodoFlowForApp
-            |> fun task -> task.GetAwaiter().GetResult()
+            Flow.runSync appRuntime chooseTodoFlowForApp
 
         let testResult =
-            TaskFlow.run chooseTodoRuntime CancellationToken.None chooseTodoFlowForTest
-            |> fun task -> task.GetAwaiter().GetResult()
+            Flow.runSync chooseTodoRuntime chooseTodoFlowForTest
 
         test <@ appResult = Exit.Success (Some "beta") @>
         test <@ testResult = Exit.Success (Some "beta") @>
@@ -223,8 +219,8 @@ module CapsRuntimePatternTests =
               RandomService = random :> IRandom
               TodoStoreService = todoStore :> ITodoStore }
 
-        let chooseTodoFlow : TaskFlow<AppRuntime, TodoError, string option> =
-            (flow {
+        let chooseTodoFlow : Flow<AppRuntime, TodoError, string option> =
+            flow {
                 let! todoStore = Flow.service<ITodoStore, AppRuntime, TodoError> ()
                 let! random = Flow.service<IRandom, AppRuntime, TodoError> ()
                 let todos = todoStore.Todos
@@ -234,11 +230,9 @@ module CapsRuntimePatternTests =
                 | _ ->
                     let index = random.NextInt 0 todos.Length
                     return Some todos[index]
-            })
-            |> TaskFlow.fromFlow
+            }
 
         let chooseTodoResult =
-            TaskFlow.run appRuntime CancellationToken.None chooseTodoFlow
-            |> fun task -> task.GetAwaiter().GetResult()
+            Flow.runSync appRuntime chooseTodoFlow
 
         test <@ chooseTodoResult = Exit.Success (Some "beta") @>
