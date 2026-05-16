@@ -195,6 +195,52 @@ module Flow =
     /// <summary>Runtime helpers for operational concerns like logging, timeout, retry, and cleanup.</summary>
     [<RequireQualifiedAccess>]
     module Runtime =
+        /// <summary>Reads the current runtime cancellation token.</summary>
+        /// <returns>A flow that succeeds with the token supplied to <see cref="runFull" /> or <see cref="runWithToken" />.</returns>
+        let cancellationToken<'env, 'error> : Flow<'env, 'error, CancellationToken> =
+            Flow(fun _ cancellationToken -> EffectFlow.ofValue cancellationToken)
+
+        /// <summary>Catches <see cref="OperationCanceledException" /> raised by a flow and converts it into a typed error.</summary>
+        /// <param name="handler">Maps the cancellation exception into the workflow error type.</param>
+        /// <param name="flow">The source flow.</param>
+        /// <returns>A flow that turns thrown cancellation into <c>Cause.Fail</c>.</returns>
+        /// <remarks>
+        /// This handles cancellation exceptions thrown during execution. A flow that has already returned
+        /// <c>Cause.Interrupt</c> remains interrupted.
+        /// </remarks>
+        let catchCancellation
+            (handler: OperationCanceledException -> 'error)
+            (flow: Flow<'env, 'error, 'value>)
+            : Flow<'env, 'error, 'value> =
+            Flow(fun environment cancellationToken ->
+                #if FABLE_COMPILER
+                async {
+                    try
+                        return! invoke flow environment cancellationToken
+                    with :? OperationCanceledException as error ->
+                        return Exit.Failure (Cause.Fail (handler error))
+                }
+                #else
+                ValueTask<Exit<'value, 'error>>(
+                    task {
+                        try
+                            return! invoke flow environment cancellationToken
+                        with :? OperationCanceledException as error ->
+                            return Exit.Failure (Cause.Fail (handler error))
+                    })
+                #endif
+            )
+
+        /// <summary>Returns a typed error immediately when the runtime token is already canceled.</summary>
+        /// <param name="canceledError">The error to return when cancellation has been requested.</param>
+        /// <returns>A flow that succeeds with unit when cancellation has not been requested.</returns>
+        let ensureNotCanceled<'env, 'error> (canceledError: 'error) : Flow<'env, 'error, unit> =
+            Flow(fun _ cancellationToken ->
+                if cancellationToken.IsCancellationRequested then
+                    EffectFlow.ofError canceledError
+                else
+                    EffectFlow.ofValue ())
+
         /// <summary>Suspends the flow for the specified duration, observing cancellation.</summary>
         /// <param name="delay">The duration to sleep.</param>
         /// <returns>A flow that completes after the specified delay.</returns>
@@ -251,6 +297,203 @@ module Flow =
         /// <returns>A flow that returns the variable value if it exists, or None.</returns>
         let tryGetEnvironmentVariable (name: string) : Flow<'env, 'error, string option> =
             Flow(fun _ _ -> EffectFlow.ofValue (RuntimeState.current().EnvironmentVariables.TryGet name))
+
+#if !FABLE_COMPILER
+        /// <summary>Acquires a resource, uses it, and always runs the release action.</summary>
+        /// <param name="acquire">The flow that acquires the resource.</param>
+        /// <param name="release">The task-based release action.</param>
+        /// <param name="useResource">The flow that uses the acquired resource.</param>
+        /// <returns>A flow that releases the resource after use, including failure paths.</returns>
+        let useWithAcquireRelease
+            (acquire: Flow<'env, 'error, 'resource>)
+            (release: 'resource -> CancellationToken -> Task)
+            (useResource: 'resource -> Flow<'env, 'error, 'value>)
+            : Flow<'env, 'error, 'value> =
+            Flow(fun environment cancellationToken ->
+                ValueTask<Exit<'value, 'error>>(
+                    task {
+                        let! acquireExit = invoke acquire environment cancellationToken
+
+                        match acquireExit with
+                        | Exit.Failure cause ->
+                            return Exit.Failure cause
+                        | Exit.Success resource ->
+                            try
+                                let! exit = invoke (useResource resource) environment cancellationToken
+                                do! release resource cancellationToken
+                                return exit
+                            with error ->
+                                do! release resource cancellationToken
+                                return Exit.Failure (EffectFlow.causeOfException error)
+                    }))
+#endif
+
+        /// <summary>Fails with the supplied typed error when the flow does not complete before the timeout.</summary>
+        /// <param name="after">The timeout duration.</param>
+        /// <param name="timeoutError">The typed error returned when the timeout wins.</param>
+        /// <param name="flow">The source flow.</param>
+        /// <returns>A flow that returns the source outcome or the timeout error.</returns>
+        let timeout
+            (after: TimeSpan)
+            (timeoutError: 'error)
+            (flow: Flow<'env, 'error, 'value>)
+            : Flow<'env, 'error, 'value> =
+            Flow(fun environment cancellationToken ->
+                #if FABLE_COMPILER
+                async {
+                    try
+                        let! child =
+                            Async.StartChild(
+                                invoke flow environment cancellationToken,
+                                millisecondsTimeout = int after.TotalMilliseconds
+                            )
+
+                        return! child
+                    with :? TimeoutException ->
+                        return Exit.Failure (Cause.Fail timeoutError)
+                }
+                #else
+                ValueTask<Exit<'value, 'error>>(
+                    task {
+                        let operation = invoke flow environment cancellationToken |> _.AsTask()
+                        let timeoutTask = Task.Delay after
+                        let! completed = Task.WhenAny([| operation :> Task; timeoutTask |])
+
+                        if obj.ReferenceEquals(completed, timeoutTask) then
+                            return Exit.Failure (Cause.Fail timeoutError)
+                        else
+                            return! operation
+                    })
+                #endif
+            )
+
+        /// <summary>Returns the supplied success value when the flow does not complete before the timeout.</summary>
+        /// <param name="after">The timeout duration.</param>
+        /// <param name="value">The success value returned when the timeout wins.</param>
+        /// <param name="flow">The source flow.</param>
+        /// <returns>A flow that returns the source outcome or the supplied success value.</returns>
+        let timeoutToOk
+            (after: TimeSpan)
+            (value: 'value)
+            (flow: Flow<'env, 'error, 'value>)
+            : Flow<'env, 'error, 'value> =
+            Flow(fun environment cancellationToken ->
+                #if FABLE_COMPILER
+                async {
+                    try
+                        let! child =
+                            Async.StartChild(
+                                invoke flow environment cancellationToken,
+                                millisecondsTimeout = int after.TotalMilliseconds
+                            )
+
+                        return! child
+                    with :? TimeoutException ->
+                        return Exit.Success value
+                }
+                #else
+                ValueTask<Exit<'value, 'error>>(
+                    task {
+                        let operation = invoke flow environment cancellationToken |> _.AsTask()
+                        let timeoutTask = Task.Delay after
+                        let! completed = Task.WhenAny([| operation :> Task; timeoutTask |])
+
+                        if obj.ReferenceEquals(completed, timeoutTask) then
+                            return Exit.Success value
+                        else
+                            return! operation
+                    })
+                #endif
+            )
+
+        /// <summary>Alias for <c>timeout</c> that emphasizes typed failure on timeout.</summary>
+        let timeoutToError
+            (after: TimeSpan)
+            (error: 'error)
+            (flow: Flow<'env, 'error, 'value>)
+            : Flow<'env, 'error, 'value> =
+            timeout after error flow
+
+        /// <summary>Runs a fallback flow when the source flow does not complete before the timeout.</summary>
+        /// <param name="after">The timeout duration.</param>
+        /// <param name="fallback">Creates the fallback flow when the timeout wins.</param>
+        /// <param name="flow">The source flow.</param>
+        /// <returns>A flow that returns the source outcome or the fallback outcome.</returns>
+        let timeoutWith
+            (after: TimeSpan)
+            (fallback: unit -> Flow<'env, 'error, 'value>)
+            (flow: Flow<'env, 'error, 'value>)
+            : Flow<'env, 'error, 'value> =
+            Flow(fun environment cancellationToken ->
+                #if FABLE_COMPILER
+                async {
+                    try
+                        let! child =
+                            Async.StartChild(
+                                invoke flow environment cancellationToken,
+                                millisecondsTimeout = int after.TotalMilliseconds
+                            )
+
+                        return! child
+                    with :? TimeoutException ->
+                        return! invoke (fallback ()) environment cancellationToken
+                }
+                #else
+                ValueTask<Exit<'value, 'error>>(
+                    task {
+                        let operation = invoke flow environment cancellationToken |> _.AsTask()
+                        let timeoutTask = Task.Delay after
+                        let! completed = Task.WhenAny([| operation :> Task; timeoutTask |])
+
+                        if obj.ReferenceEquals(completed, timeoutTask) then
+                            return! invoke (fallback ()) environment cancellationToken
+                        else
+                            return! operation
+                    })
+                #endif
+            )
+
+        /// <summary>Retries typed failures according to the specified policy.</summary>
+        /// <param name="policy">The retry policy.</param>
+        /// <param name="flow">The source flow.</param>
+        /// <returns>A flow that retries <c>Cause.Fail</c> outcomes when the policy allows it.</returns>
+        /// <remarks>Defects and interruptions are not retried.</remarks>
+        let retry
+            (policy: RetryPolicy<'error>)
+            (flow: Flow<'env, 'error, 'value>)
+            : Flow<'env, 'error, 'value> =
+            if policy.MaxAttempts < 1 then
+                invalidArg (nameof policy.MaxAttempts) "RetryPolicy.MaxAttempts must be at least 1."
+
+            let rec loop attempt =
+                Flow(fun environment cancellationToken ->
+                    invoke flow environment cancellationToken
+                    |> EffectFlow.fold
+                        EffectFlow.ofValue
+                        (fun cause ->
+                            match cause with
+                            | Cause.Fail error when attempt < policy.MaxAttempts && policy.ShouldRetry error ->
+                                let delay = policy.Delay attempt
+                                #if FABLE_COMPILER
+                                async {
+                                    if delay > TimeSpan.Zero then
+                                        do! Async.Sleep(int delay.TotalMilliseconds)
+
+                                    return! invoke (loop (attempt + 1)) environment cancellationToken
+                                }
+                                #else
+                                ValueTask<Exit<'value, 'error>>(
+                                    task {
+                                        if delay > TimeSpan.Zero then
+                                            do! Task.Delay(delay, cancellationToken)
+
+                                        return! invoke (loop (attempt + 1)) environment cancellationToken
+                                    })
+                                #endif
+                            | _ ->
+                                EffectFlow.ofCause cause))
+
+            loop 1
 
     /// <summary>Starts a flow in a new fiber without waiting for it to complete.</summary>
     /// <param name="flow">The flow to fork.</param>

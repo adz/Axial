@@ -17,7 +17,7 @@ Choose the function that matches your intent:
 | :--- | :--- | :--- |
 | **Domain Error** (Expected) | `Flow.fail "Not found"` | `Cause.Fail "Not found"` |
 | **Defect/Panic** (Bug) | `Flow.die (exn "Database down")` | `Cause.Die exn` |
-| **Interruption** | `Flow.Runtime.interrupt` | `Cause.Interrupt` |
+| **Interruption** | `Flow.interrupt` or runtime cancellation | `Cause.Interrupt` |
 
 ### Bridging Exceptions
 Use `Flow.catch` to convert specific exceptions into domain errors. Exceptions not caught by the handler will remain as `Cause.Die`.

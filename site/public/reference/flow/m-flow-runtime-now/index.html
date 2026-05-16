@@ -4,7 +4,6 @@
     <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-<link rel="alternate" type="application/rss&#43;xml" href="http://localhost:3000/reference/flow/index.xml">
 <meta name="robots" content="noindex, nofollow">
 
 
@@ -19,21 +18,26 @@
 <link rel="icon" type="image/png" href="http://localhost:3000/favicons/android-144x144.png" sizes="144x144">
 <link rel="icon" type="image/png" href="http://localhost:3000/favicons/android-192x192.png" sizes="192x192">
 
-<title>Flow | FsFlow</title>
-<meta name="description" content="This page shows the Flow&lt;&#39;env, &#39;error, &#39;value&gt; surface, the central workflow type in FsFlow. A flow is a cold description of work that reads an explicit environment, can fail with a typed error, and only runs when you call an execution function such as Flow.run. Use this page as the API map for building fail-fast workflows, reading dependencies from env, reshaping environments with localEnv, composing typed failures, and introducing concurrency with fibers, zipPar, or race. Start with flow { }, Flow.read, Flow.bind, and Flow.map; reach for runtime helpers and parallel orchestration only at the boundary where the workflow actually needs them.">
-<meta property="og:url" content="http://localhost:3000/reference/flow/">
+<title>Flow.Runtime.now | FsFlow</title>
+<meta name="description" content="Reads the ambient UTC clock owned by the runtime.
+Signature Runtime.now  Returns Type Description Flow&lt;‘env, ’error, DateTimeOffset&gt; A flow that returns the current UTC time.">
+<meta property="og:url" content="http://localhost:3000/reference/flow/m-flow-runtime-now/">
   <meta property="og:site_name" content="FsFlow">
-  <meta property="og:title" content="Flow">
-  <meta property="og:description" content="This page shows the Flow&lt;&#39;env, &#39;error, &#39;value&gt; surface, the central workflow type in FsFlow. A flow is a cold description of work that reads an explicit environment, can fail with a typed error, and only runs when you call an execution function such as Flow.run. Use this page as the API map for building fail-fast workflows, reading dependencies from env, reshaping environments with localEnv, composing typed failures, and introducing concurrency with fibers, zipPar, or race. Start with flow { }, Flow.read, Flow.bind, and Flow.map; reach for runtime helpers and parallel orchestration only at the boundary where the workflow actually needs them.">
+  <meta property="og:title" content="Flow.Runtime.now">
+  <meta property="og:description" content="Reads the ambient UTC clock owned by the runtime.
+Signature Runtime.now  Returns Type Description Flow&lt;‘env, ’error, DateTimeOffset&gt; A flow that returns the current UTC time.">
   <meta property="og:locale" content="en_us">
-  <meta property="og:type" content="website">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="reference">
 
-  <meta itemprop="name" content="Flow">
-  <meta itemprop="description" content="This page shows the Flow&lt;&#39;env, &#39;error, &#39;value&gt; surface, the central workflow type in FsFlow. A flow is a cold description of work that reads an explicit environment, can fail with a typed error, and only runs when you call an execution function such as Flow.run. Use this page as the API map for building fail-fast workflows, reading dependencies from env, reshaping environments with localEnv, composing typed failures, and introducing concurrency with fibers, zipPar, or race. Start with flow { }, Flow.read, Flow.bind, and Flow.map; reach for runtime helpers and parallel orchestration only at the boundary where the workflow actually needs them.">
-  <meta itemprop="wordCount" content="727">
+  <meta itemprop="name" content="Flow.Runtime.now">
+  <meta itemprop="description" content="Reads the ambient UTC clock owned by the runtime.
+Signature Runtime.now  Returns Type Description Flow&lt;‘env, ’error, DateTimeOffset&gt; A flow that returns the current UTC time.">
+  <meta itemprop="wordCount" content="25">
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Flow">
-  <meta name="twitter:description" content="This page shows the Flow&lt;&#39;env, &#39;error, &#39;value&gt; surface, the central workflow type in FsFlow. A flow is a cold description of work that reads an explicit environment, can fail with a typed error, and only runs when you call an execution function such as Flow.run. Use this page as the API map for building fail-fast workflows, reading dependencies from env, reshaping environments with localEnv, composing typed failures, and introducing concurrency with fibers, zipPar, or race. Start with flow { }, Flow.read, Flow.bind, and Flow.map; reach for runtime helpers and parallel orchestration only at the boundary where the workflow actually needs them.">
+  <meta name="twitter:title" content="Flow.Runtime.now">
+  <meta name="twitter:description" content="Reads the ambient UTC clock owned by the runtime.
+Signature Runtime.now  Returns Type Description Flow&lt;‘env, ’error, DateTimeOffset&gt; A flow that returns the current UTC time.">
 <link href="http://localhost:3000/scss/main.css" rel="stylesheet">
 <script
   src="https://code.jquery.com/jquery-3.7.1.min.js"
@@ -45,7 +49,7 @@
   crossorigin="anonymous"></script>
 
   </head>
-  <body class="td-section">
+  <body class="td-page">
     <header>
       <nav class="td-navbar js-navbar-scroll">
 <div class="td-navbar-container container-fluid flex-column flex-md-row">
@@ -70,7 +74,7 @@
   </a>
   <ul class="dropdown-menu">
     <li>
-        <a class="dropdown-item active" aria-current="page" href="http://localhost:3000/FsFlow/reference/flow/">next</a>
+        <a class="dropdown-item active" aria-current="page" href="http://localhost:3000/FsFlow/reference/flow/m-flow-runtime-now/">next</a>
         
       </li>
     
@@ -135,7 +139,7 @@
     <a href="http://localhost:3000/reference/" class="align-left ps-0 td-sidebar-link td-sidebar-link__section tree-root" id="m-reference"><span class="">Reference</span></a>
     <ul class="ul-1">
       <li class="td-sidebar-nav__section-title td-sidebar-nav__section with-child active-path" id="m-referenceflow-li">
-    <a href="http://localhost:3000/reference/flow/" class="align-left ps-0 active td-sidebar-link td-sidebar-link__section" id="m-referenceflow"><span class="td-sidebar-nav-active-item">Flow</span></a>
+    <a href="http://localhost:3000/reference/flow/" class="align-left ps-0 td-sidebar-link td-sidebar-link__section" id="m-referenceflow"><span class="">Flow</span></a>
     <ul class="ul-2 foldable">
       <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowm-flow-apply-li">
     <a href="http://localhost:3000/reference/flow/m-flow-apply/" title="Flow.apply" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-flow-apply"><span class="">apply</span></a>
@@ -197,8 +201,8 @@
     <a href="http://localhost:3000/reference/flow/m-flow-runtime-newguid/" title="Flow.Runtime.newGuid" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-flow-runtime-newguid"><span class="">newGuid</span></a>
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowm-flow-runtime-nextint-li">
     <a href="http://localhost:3000/reference/flow/m-flow-runtime-nextint/" title="Flow.Runtime.nextInt" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-flow-runtime-nextint"><span class="">nextInt</span></a>
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowm-flow-runtime-now-li">
-    <a href="http://localhost:3000/reference/flow/m-flow-runtime-now/" title="Flow.Runtime.now" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-flow-runtime-now"><span class="">now</span></a>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child active-path" id="m-referenceflowm-flow-runtime-now-li">
+    <a href="http://localhost:3000/reference/flow/m-flow-runtime-now/" title="Flow.Runtime.now" class="align-left ps-0 active td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-flow-runtime-now"><span class="td-sidebar-nav-active-item">now</span></a>
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowm-flow-ok-li">
     <a href="http://localhost:3000/reference/flow/m-flow-ok/" title="Flow.ok" class="align-left ps-0 td-sidebar-link td-sidebar-link__page" id="m-referenceflowm-flow-ok"><span class="">ok</span></a>
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referenceflowm-flow-orelse-li">
@@ -529,10 +533,10 @@
           </aside>
           <aside class="td-sidebar-toc">
             <div class="td-page-meta ms-2 pb-1 pt-2 mb-0">
-<a href="https://github.com/adz/FsFlow/tree/main/content/reference/flow/_index.md" class="td-page-meta--view td-page-meta__view" target="_blank" rel="noopener"><i class="fa-solid fa-file-lines fa-fw"></i> View page source</a>
-  <a href="https://github.com/adz/FsFlow/edit/main/content/reference/flow/_index.md" class="td-page-meta--edit td-page-meta__edit" target="_blank" rel="noopener"><i class="fa-solid fa-pen-to-square fa-fw"></i> Edit this page</a>
+<a href="https://github.com/adz/FsFlow/tree/main/content/reference/flow/m-flow-runtime-now.md" class="td-page-meta--view td-page-meta__view" target="_blank" rel="noopener"><i class="fa-solid fa-file-lines fa-fw"></i> View page source</a>
+  <a href="https://github.com/adz/FsFlow/edit/main/content/reference/flow/m-flow-runtime-now.md" class="td-page-meta--edit td-page-meta__edit" target="_blank" rel="noopener"><i class="fa-solid fa-pen-to-square fa-fw"></i> Edit this page</a>
   <a href="https://github.com/adz/FsFlow/new/main/content/reference/flow?filename=change-me.md&amp;value=---%0Atitle%3A&#43;%22Long&#43;Page&#43;Title%22%0AlinkTitle%3A&#43;%22Short&#43;Nav&#43;Title%22%0Aweight%3A&#43;100%0Adescription%3A&#43;%3E-%0A&#43;&#43;&#43;&#43;&#43;Page&#43;description&#43;for&#43;heading&#43;and&#43;indexes.%0A---%0A%0A%23%23&#43;Heading%0A%0AEdit&#43;this&#43;template&#43;to&#43;create&#43;your&#43;new&#43;page.%0A%0A%2A&#43;Give&#43;it&#43;a&#43;good&#43;name%2C&#43;ending&#43;in&#43;%60.md%60&#43;-&#43;e.g.&#43;%60get-started.md%60%0A%2A&#43;Edit&#43;the&#43;%22front&#43;matter%22&#43;section&#43;at&#43;the&#43;top&#43;of&#43;the&#43;page&#43;%28weight&#43;controls&#43;how&#43;its&#43;ordered&#43;amongst&#43;other&#43;pages&#43;in&#43;the&#43;same&#43;directory%3B&#43;lowest&#43;number&#43;first%29.%0A%2A&#43;Add&#43;a&#43;good&#43;commit&#43;message&#43;at&#43;the&#43;bottom&#43;of&#43;the&#43;page&#43;%28%3C80&#43;characters%3B&#43;use&#43;the&#43;extended&#43;description&#43;field&#43;for&#43;more&#43;detail%29.%0A%2A&#43;Create&#43;a&#43;new&#43;branch&#43;so&#43;you&#43;can&#43;preview&#43;your&#43;new&#43;file&#43;and&#43;request&#43;a&#43;review&#43;via&#43;Pull&#43;Request.%0A" class="td-page-meta--child td-page-meta__child" target="_blank" rel="noopener"><i class="fa-solid fa-pen-to-square fa-fw"></i> Create child page</a>
-  <a href="https://github.com/adz/FsFlow/issues/new?title=Flow" class="td-page-meta--issue td-page-meta__issue" target="_blank" rel="noopener"><i class="fa-solid fa-list-check fa-fw"></i> Create documentation issue</a>
+  <a href="https://github.com/adz/FsFlow/issues/new?title=Flow.Runtime.now" class="td-page-meta--issue td-page-meta__issue" target="_blank" rel="noopener"><i class="fa-solid fa-list-check fa-fw"></i> Create documentation issue</a>
   
 </div>
 
@@ -543,11 +547,8 @@
     </div>
     <nav id="TableOfContents">
   <ul>
-    <li><a href="#core-type">Core type</a></li>
-    <li><a href="#module-functions">Module functions</a></li>
-    <li><a href="#runtime-helpers">Runtime helpers</a></li>
-    <li><a href="#concurrency">Concurrency</a></li>
-    <li><a href="#parallel-orchestration">Parallel orchestration</a></li>
+    <li><a href="#signature">Signature</a></li>
+    <li><a href="#returns">Returns</a></li>
   </ul>
 </nav>
   </div>
@@ -561,440 +562,49 @@
   <ol class="breadcrumb">
   <li class="breadcrumb-item">
     <a href="http://localhost:3000/reference/">Reference</a></li>
+  <li class="breadcrumb-item">
+    <a href="http://localhost:3000/reference/flow/">Flow</a></li>
   <li class="breadcrumb-item active" aria-current="page">
-    Flow</li>
+    now</li>
   </ol>
 </nav>
 <div class="td-content">
-	<h1>Flow</h1>
-  
+	<h1>Flow.Runtime.now</h1>
+	
 	<header class="article-meta">
 		
 </header>
-	<p>This page shows the <code>Flow&lt;'env, 'error, 'value&gt;</code> surface, the central workflow type in FsFlow. A flow is a cold description of work that reads an explicit environment, can fail with a typed error, and only runs when you call an execution function such as <code>Flow.run</code>. Use this page as the API map for building fail-fast workflows, reading dependencies from <code>env</code>, reshaping environments with <code>localEnv</code>, composing typed failures, and introducing concurrency with fibers, <code>zipPar</code>, or <code>race</code>. Start with <code>flow { }</code>, <code>Flow.read</code>, <code>Flow.bind</code>, and <code>Flow.map</code>; reach for runtime helpers and parallel orchestration only at the boundary where the workflow actually needs them.</p>
-<h2 id="core-type">Core type</h2>
-<ul>
-<li><a href="http://localhost:3000/reference/flow/t-flow-3/"><code>Flow</code></a>:
-Represents a cold workflow that reads an environment, returns a typed result, and is executed
-explicitly through <code>Flow.run</code>.</li>
-</ul>
-<h2 id="module-functions">Module functions</h2>
-<ul>
-<li><a href="http://localhost:3000/reference/flow/m-flow-run/"><code>Flow.run</code></a>: Executes a flow with the provided environment and the default cancellation token.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-ok/"><code>Flow.ok</code></a>: Creates a successful synchronous flow.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-error/"><code>Flow.error</code></a>: Creates a failing synchronous flow.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-succeed/"><code>Flow.succeed</code></a>: Alias for <code>ok</code> that reads well in some call sites.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-value/"><code>Flow.value</code></a>: Alias for <code>ok</code> that reads well in some call sites.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-fail/"><code>Flow.fail</code></a>: Alias for <code>error</code> that reads well in some call sites.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-fromresult/"><code>Flow.fromResult</code></a>: Lifts a <a href="https://learn.microsoft.com/dotnet/api/system.result-2">Result</a> into a synchronous flow.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-fromoption/"><code>Flow.fromOption</code></a>: Lifts an option into a synchronous flow with the supplied error.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-fromvalueoption/"><code>Flow.fromValueOption</code></a>: Lifts a value option into a synchronous flow with the supplied error.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-orelseflow/"><code>Flow.orElseFlow</code></a>: Turns a pure validation result into a synchronous flow with environment-provided failure.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-env/"><code>Flow.env</code></a>: Reads the current environment as the successful flow value.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-read/"><code>Flow.read</code></a>: Projects one value from the current environment.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-service/"><code>Flow.service</code></a>: Extracts a specific service from an environment that implements <code>IHas&lt;'service&gt;</code>.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-inject/"><code>Flow.inject</code></a>: Injects a service from a dynamic IServiceProvider environment.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-map/"><code>Flow.map</code></a>: Transforms the successful value of a flow.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-bind/"><code>Flow.bind</code></a>: Sequences a dependent flow after a successful value.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-tap/"><code>Flow.tap</code></a>: Runs an effect on success and preserves the original value.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-taperror/"><code>Flow.tapError</code></a>: Runs a synchronous side effect on failure and preserves the original error.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-maperror/"><code>Flow.mapError</code></a>: Maps the error value of a synchronous flow.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-catch/"><code>Flow.catch</code></a>: Catches exceptions raised during execution and maps them to a typed error.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-orelsewith/"><code>Flow.orElseWith</code></a>: Computes a fallback flow from the typed error when the source flow fails.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-orelse/"><code>Flow.orElse</code></a>: Falls back to another flow when the source flow fails.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-zip/"><code>Flow.zip</code></a>: Runs two flows sequentially and combines their successful values into a tuple.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-map2/"><code>Flow.map2</code></a>: Combines two flows with a mapping function.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-map3/"><code>Flow.map3</code></a>: Combines three flows with a mapping function.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-apply/"><code>Flow.apply</code></a>: Applies a flow-wrapped function to a flow-wrapped value.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-ignore/"><code>Flow.ignore</code></a>: Maps the successful value of a synchronous flow to <code>unit</code>.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-localenv/"><code>Flow.localEnv</code></a>: Runs a flow against an environment derived from the outer environment.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-providelayer/"><code>Flow.provideLayer</code></a>: Runs a layer flow first, then runs a downstream flow with the layer's output as its environment.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-delay/"><code>Flow.delay</code></a>: Defers flow construction until execution time.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-traverse/"><code>Flow.traverse</code></a>: Transforms a sequence of values into a flow and stops at the first failure.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-sequence/"><code>Flow.sequence</code></a>: Transforms a sequence of flows into a flow of a sequence and stops at the first failure.</li>
-</ul>
-<h2 id="runtime-helpers">Runtime helpers</h2>
-<ul>
-<li><a href="http://localhost:3000/reference/flow/m-flow-runtime-cancellationtoken/"><code>Flow.Runtime.cancellationToken</code></a>: Reads the current runtime cancellation token.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-runtime-catchcancellation/"><code>Flow.Runtime.catchCancellation</code></a>: Catches <a href="https://learn.microsoft.com/dotnet/api/operationcanceledexception">OperationCanceledException</a> raised by a flow and converts it into a typed error.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-runtime-ensurenotcanceled/"><code>Flow.Runtime.ensureNotCanceled</code></a>: Returns a typed error immediately when the runtime token is already canceled.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-runtime-sleep/"><code>Flow.Runtime.sleep</code></a>: Suspends the flow for the specified duration, observing cancellation.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-runtime-now/"><code>Flow.Runtime.now</code></a>: Reads the ambient UTC clock owned by the runtime.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-runtime-log/"><code>Flow.Runtime.log</code></a>: Writes a message through the ambient runtime logger.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-runtime-newguid/"><code>Flow.Runtime.newGuid</code></a>: Creates a new GUID through the ambient runtime GUID generator.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-runtime-nextint/"><code>Flow.Runtime.nextInt</code></a>: Creates a random integer through the ambient runtime random generator.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-runtime-trygetenvironmentvariable/"><code>Flow.Runtime.tryGetEnvironmentVariable</code></a>: Reads an environment variable from the ambient runtime environment provider.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-runtime-usewithacquirerelease/"><code>Flow.Runtime.useWithAcquireRelease</code></a>: Acquires a resource, uses it, and always runs the release action.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-runtime-timeout/"><code>Flow.Runtime.timeout</code></a>: Fails with the supplied typed error when the flow does not complete before the timeout.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-runtime-timeouttook/"><code>Flow.Runtime.timeoutToOk</code></a>: Returns the supplied success value when the flow does not complete before the timeout.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-runtime-timeouttoerror/"><code>Flow.Runtime.timeoutToError</code></a>: Alias for <code>timeout</code> that emphasizes typed failure on timeout.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-runtime-timeoutwith/"><code>Flow.Runtime.timeoutWith</code></a>: Runs a fallback flow when the source flow does not complete before the timeout.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-runtime-retry/"><code>Flow.Runtime.retry</code></a>: Retries typed failures according to the specified policy.</li>
-</ul>
-<h2 id="concurrency">Concurrency</h2>
-<ul>
-<li>
-<p><a href="http://localhost:3000/reference/flow/t-fiber-2/"><code>Fiber</code></a>:
-Represents a handle to a running workflow.</p>
-</li>
-<li>
-<p><a href="http://localhost:3000/reference/flow/m-flow-fork/"><code>Flow.fork</code></a>: Starts a flow in a new fiber without waiting for it to complete.</p>
-</li>
-<li>
-<p><a href="http://localhost:3000/reference/flow/m-flow-join/"><code>Flow.join</code></a>: Waits for a fiber to complete and returns its final outcome.</p>
-</li>
-<li>
-<p><a href="http://localhost:3000/reference/flow/m-flow-interrupt/"><code>Flow.interrupt</code></a>: Signals a fiber to stop and waits for it to finish its cleanup.</p>
-</li>
-</ul>
-<h2 id="parallel-orchestration">Parallel orchestration</h2>
-<ul>
-<li><a href="http://localhost:3000/reference/flow/m-flow-zippar/"><code>Flow.zipPar</code></a>: Combines two flows into a tuple of their values, running them concurrently.</li>
-<li><a href="http://localhost:3000/reference/flow/m-flow-race/"><code>Flow.race</code></a>: Runs two flows concurrently and returns the result of the first one to complete.</li>
-</ul>
-
-	<div class="section-index">
-    
-    
-    <hr class="panel-line">
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-apply/">Flow.apply</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-bind/">Flow.bind</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-runtime-cancellationtoken/">Flow.Runtime.cancellationToken</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-catch/">Flow.catch</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-runtime-catchcancellation/">Flow.Runtime.catchCancellation</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-delay/">Flow.delay</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-runtime-ensurenotcanceled/">Flow.Runtime.ensureNotCanceled</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-env/">Flow.env</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-error/">Flow.error</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-fail/">Flow.fail</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/t-fiber-2/">Fiber</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/builders-flow/">flow { }</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/p-flow/">flow</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/t-flow-3/">Flow</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-fork/">Flow.fork</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-fromoption/">Flow.fromOption</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-fromresult/">Flow.fromResult</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-fromvalueoption/">Flow.fromValueOption</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-ignore/">Flow.ignore</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-inject/">Flow.inject</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-interrupt/">Flow.interrupt</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-join/">Flow.join</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-localenv/">Flow.localEnv</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-runtime-log/">Flow.Runtime.log</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-map/">Flow.map</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-map2/">Flow.map2</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-map3/">Flow.map3</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-maperror/">Flow.mapError</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-runtime-newguid/">Flow.Runtime.newGuid</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-runtime-nextint/">Flow.Runtime.nextInt</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-runtime-now/">Flow.Runtime.now</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-ok/">Flow.ok</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-orelse/">Flow.orElse</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-orelseflow/">Flow.orElseFlow</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-orelsewith/">Flow.orElseWith</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-providelayer/">Flow.provideLayer</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-race/">Flow.race</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-read/">Flow.read</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-runtime-retry/">Flow.Runtime.retry</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-run/">Flow.run</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-sequence/">Flow.sequence</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-service/">Flow.service</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-runtime-sleep/">Flow.Runtime.sleep</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-succeed/">Flow.succeed</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-tap/">Flow.tap</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-taperror/">Flow.tapError</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-runtime-timeout/">Flow.Runtime.timeout</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-runtime-timeouttoerror/">Flow.Runtime.timeoutToError</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-runtime-timeouttook/">Flow.Runtime.timeoutToOk</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-runtime-timeoutwith/">Flow.Runtime.timeoutWith</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-traverse/">Flow.traverse</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-runtime-trygetenvironmentvariable/">Flow.Runtime.tryGetEnvironmentVariable</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-runtime-usewithacquirerelease/">Flow.Runtime.useWithAcquireRelease</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-value/">Flow.value</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-zip/">Flow.zip</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
-                    <a href="http://localhost:3000/reference/flow/m-flow-zippar/">Flow.zipPar</a>
-                </h5>
-                <p></p>
-            </div>
-        </div>
+	<p>Reads the ambient UTC clock owned by the runtime.</p>
+<h2 id="signature">Signature</h2>
+<div class="fsdocs-usage">
+<code><span>Runtime.now&#32;<span></span></span></code>
 </div>
+<h2 id="returns">Returns</h2>
+<table>
+  <thead>
+      <tr>
+          <th>Type</th>
+          <th>Description</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html">Flow</a>&lt;<span>&lsquo;env, &rsquo;error, <a href="https://learn.microsoft.com/dotnet/api/system.datetimeoffset">DateTimeOffset</a></span>&gt;</span></code></td>
+          <td>A flow that returns the current UTC time.</td>
+      </tr>
+  </tbody>
+</table>
+
+	<nav class="docs-page-nav"><a class="docs-home-cta docs-page-nav__link docs-page-nav__prev" href="http://localhost:3000/reference/flow/m-flow-runtime-nextint/" aria-label="Previous - Flow.Runtime.nextInt">
+    <span class="docs-page-nav__arrow" aria-hidden="true">←</span>
+    <span>Previous</span>
+  </a><a class="docs-home-cta docs-page-nav__link docs-page-nav__next" href="http://localhost:3000/reference/flow/m-flow-ok/" aria-label="Next - Flow.ok">
+    <span>Next</span>
+    <span class="docs-page-nav__arrow" aria-hidden="true">→</span>
+  </a></nav>
+	
+</div>
+
 
           </main>
         </div>

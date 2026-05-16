@@ -44,12 +44,11 @@ module WorkflowSchedulingTests =
         test <@ count = 4 @>
 
     [<Fact>]
-    let ``AsyncFlow runtime helpers cover timeout and retry`` () =
+    let ``Flow runtime helpers cover timeout and retry`` () =
         let timeoutResult =
-            AsyncFlow.Runtime.sleep (TimeSpan.FromMilliseconds 20.0)
-            |> AsyncFlow.Runtime.timeout (TimeSpan.FromMilliseconds 1.0) "timed out"
-            |> AsyncFlow.run ()
-            |> Async.RunSynchronously
+            Flow.Runtime.sleep (TimeSpan.FromMilliseconds 20.0)
+            |> Flow.Runtime.timeout (TimeSpan.FromMilliseconds 1.0) "timed out"
+            |> Flow.runSync ()
 
         let retryRuns = ref 0
 
@@ -59,100 +58,77 @@ module WorkflowSchedulingTests =
                   Delay = fun _ -> TimeSpan.Zero
                   ShouldRetry = fun error -> error = "transient" }
 
-            AsyncFlow.delay(fun () ->
+            Flow.delay(fun () ->
                 retryRuns.Value <- retryRuns.Value + 1
 
                 if retryRuns.Value < 2 then
-                    AsyncFlow.fail "transient"
+                    Flow.fail "transient"
                 else
-                    AsyncFlow.succeed 42)
-            |> AsyncFlow.Runtime.retry policy
+                    Flow.succeed 42)
+            |> Flow.Runtime.retry policy
 
         let retryResult =
             retryWorkflow
-            |> AsyncFlow.run ()
-            |> Async.RunSynchronously
+            |> Flow.runSync ()
 
         test <@ timeoutResult = Exit.Failure (Cause.Fail "timed out") @>
         test <@ retryResult = Exit.Success 42 @>
         test <@ retryRuns.Value = 2 @>
 
     [<Fact>]
-    let ``TaskFlow runtime helpers cover timeout and retry`` () =
-        let timeoutResult =
-            TaskFlow.Runtime.sleep (TimeSpan.FromMilliseconds 20.0)
-            |> TaskFlow.Runtime.timeout (TimeSpan.FromMilliseconds 1.0) "timed out"
-            |> TaskFlow.run () CancellationToken.None
-            |> fun task -> task.GetAwaiter().GetResult()
-
+    let ``Flow retry does not retry defects or interruptions`` () =
         let retryRuns = ref 0
 
-        let retryWorkflow =
-            let policy : RetryPolicy<string> =
-                { MaxAttempts = 3
-                  Delay = fun _ -> TimeSpan.Zero
-                  ShouldRetry = fun error -> error = "transient" }
+        let policy : RetryPolicy<string> =
+            { MaxAttempts = 3
+              Delay = fun _ -> TimeSpan.Zero
+              ShouldRetry = fun _ -> true }
 
-            TaskFlow.delay(fun () ->
+        let defectResult =
+            Flow.delay(fun () ->
                 retryRuns.Value <- retryRuns.Value + 1
+                Flow.die (InvalidOperationException "boom"))
+            |> Flow.Runtime.retry policy
+            |> Flow.runSync ()
 
-                if retryRuns.Value < 2 then
-                    TaskFlow.fail "transient"
-                else
-                    TaskFlow.succeed 42)
-            |> TaskFlow.Runtime.retry policy
-
-        let retryResult =
-            retryWorkflow
-            |> TaskFlow.run () CancellationToken.None
-            |> fun task -> task.GetAwaiter().GetResult()
-
-        test <@ timeoutResult = Exit.Failure (Cause.Fail "timed out") @>
-        test <@ retryResult = Exit.Success 42 @>
-        test <@ retryRuns.Value = 2 @>
+        test <@ retryRuns.Value = 1 @>
+        match defectResult with
+        | Exit.Failure (Cause.Die error) -> test <@ error.Message = "boom" @>
+        | other -> failwithf "Expected defect, got %A" other
 
     [<Fact>]
-    let ``AsyncFlow timeout helpers work as expected`` () =
+    let ``Flow timeout helpers work as expected`` () =
         let okResult = 
-            AsyncFlow.Runtime.sleep (TimeSpan.FromMilliseconds 50.0)
-            |> AsyncFlow.Runtime.timeoutToOk (TimeSpan.FromMilliseconds 1.0) ()
-            |> AsyncFlow.run ()
-            |> Async.RunSynchronously
+            Flow.Runtime.sleep (TimeSpan.FromMilliseconds 50.0)
+            |> Flow.Runtime.timeoutToOk (TimeSpan.FromMilliseconds 1.0) ()
+            |> Flow.runSync ()
         test <@ okResult = Exit.Success () @>
 
         let errorResult =
-            AsyncFlow.Runtime.sleep (TimeSpan.FromMilliseconds 50.0)
-            |> AsyncFlow.Runtime.timeoutToError (TimeSpan.FromMilliseconds 1.0) "timed out"
-            |> AsyncFlow.run ()
-            |> Async.RunSynchronously
+            Flow.Runtime.sleep (TimeSpan.FromMilliseconds 50.0)
+            |> Flow.Runtime.timeoutToError (TimeSpan.FromMilliseconds 1.0) "timed out"
+            |> Flow.runSync ()
         test <@ errorResult = Exit.Failure (Cause.Fail "timed out") @>
 
         let withResult =
-            AsyncFlow.Runtime.sleep (TimeSpan.FromMilliseconds 50.0)
-            |> AsyncFlow.Runtime.timeoutWith (TimeSpan.FromMilliseconds 1.0) (fun () -> AsyncFlow.succeed ())
-            |> AsyncFlow.run ()
-            |> Async.RunSynchronously
+            Flow.Runtime.sleep (TimeSpan.FromMilliseconds 50.0)
+            |> Flow.Runtime.timeoutWith (TimeSpan.FromMilliseconds 1.0) (fun () -> Flow.succeed ())
+            |> Flow.runSync ()
         test <@ withResult = Exit.Success () @>
 
     [<Fact>]
-    let ``TaskFlow timeout helpers work as expected`` () =
-        let okResult = 
-            TaskFlow.Runtime.sleep (TimeSpan.FromMilliseconds 50.0)
-            |> TaskFlow.Runtime.timeoutToOk (TimeSpan.FromMilliseconds 1.0) ()
-            |> TaskFlow.run () CancellationToken.None
-            |> fun t -> t.GetAwaiter().GetResult()
-        test <@ okResult = Exit.Success () @>
+    let ``Flow cancellation helpers expose and check runtime token`` () =
+        use cts = new CancellationTokenSource()
+        cts.Cancel()
 
-        let errorResult =
-            TaskFlow.Runtime.sleep (TimeSpan.FromMilliseconds 50.0)
-            |> TaskFlow.Runtime.timeoutToError (TimeSpan.FromMilliseconds 1.0) "timed out"
-            |> TaskFlow.run () CancellationToken.None
-            |> fun t -> t.GetAwaiter().GetResult()
-        test <@ errorResult = Exit.Failure (Cause.Fail "timed out") @>
+        let tokenResult =
+            Flow.Runtime.cancellationToken
+            |> Flow.map (fun token -> token.IsCancellationRequested)
+            |> Flow.runFullSync () cts.Token
 
-        let withResult =
-            TaskFlow.Runtime.sleep (TimeSpan.FromMilliseconds 50.0)
-            |> TaskFlow.Runtime.timeoutWith (TimeSpan.FromMilliseconds 1.0) (fun () -> TaskFlow.succeed ())
-            |> TaskFlow.run () CancellationToken.None
-            |> fun t -> t.GetAwaiter().GetResult()
-        test <@ withResult = Exit.Success () @>
+        let ensureResult =
+            Flow.Runtime.ensureNotCanceled "canceled"
+            |> Flow.runFullSync () cts.Token
+
+        test <@ tokenResult = Exit.Success true @>
+        test <@ ensureResult = Exit.Failure (Cause.Fail "canceled") @>

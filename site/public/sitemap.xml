@@ -118,7 +118,11 @@
   </url><url>
     <loc>http://localhost:3000/reference/check/m-check-blank/</loc>
   </url><url>
+    <loc>http://localhost:3000/reference/flow/m-flow-runtime-cancellationtoken/</loc>
+  </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-catch/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/flow/m-flow-runtime-catchcancellation/</loc>
   </url><url>
     <loc>http://localhost:3000/categories/</loc>
   </url><url>
@@ -133,6 +137,8 @@
     <loc>http://localhost:3000/reference/diagnostics/t-diagnostics-1/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/diagnostics/m-diagnostics-empty/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/flow/m-flow-runtime-ensurenotcanceled/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-env/</loc>
   </url><url>
@@ -232,6 +238,8 @@
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-localenv/</loc>
   </url><url>
+    <loc>http://localhost:3000/reference/flow/m-flow-runtime-log/</loc>
+  </url><url>
     <loc>http://localhost:3000/reference/ref/m-ref-make/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/stm/m-tref-make/</loc>
@@ -264,6 +272,10 @@
   </url><url>
     <loc>http://localhost:3000/reference/validation/m-validation-name/</loc>
   </url><url>
+    <loc>http://localhost:3000/reference/flow/m-flow-runtime-newguid/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/flow/m-flow-runtime-nextint/</loc>
+  </url><url>
     <loc>http://localhost:3000/reference/check/m-check-notblank/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/check/m-check-notempty/</loc>
@@ -271,6 +283,8 @@
     <loc>http://localhost:3000/reference/check/m-check-notequal/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/check/m-check-notnull/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/flow/m-flow-runtime-now/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-ok/</loc>
   </url><url>
@@ -342,6 +356,8 @@
   </url><url>
     <loc>http://localhost:3000/reference/result/p-result/</loc>
   </url><url>
+    <loc>http://localhost:3000/reference/flow/m-flow-runtime-retry/</loc>
+  </url><url>
     <loc>http://localhost:3000/reference/schedule/m-flowschedule-retry/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-run/</loc>
@@ -366,6 +382,8 @@
   </url><url>
     <loc>http://localhost:3000/reference/diagnostics/m-diagnostics-singleton/</loc>
   </url><url>
+    <loc>http://localhost:3000/reference/flow/m-flow-runtime-sleep/</loc>
+  </url><url>
     <loc>http://localhost:3000/reference/schedule/m-schedule-spaced/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/stm/p-stm-stm/</loc>
@@ -382,6 +400,14 @@
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-taperror/</loc>
   </url><url>
+    <loc>http://localhost:3000/reference/flow/m-flow-runtime-timeout/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/flow/m-flow-runtime-timeouttoerror/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/flow/m-flow-runtime-timeouttook/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/flow/m-flow-runtime-timeoutwith/</loc>
+  </url><url>
     <loc>http://localhost:3000/reference/validation/m-validation-toresult/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/diagnostics/m-diagnostics-tostring/</loc>
@@ -392,9 +418,13 @@
   </url><url>
     <loc>http://localhost:3000/reference/stm/t-tref-1/</loc>
   </url><url>
+    <loc>http://localhost:3000/reference/flow/m-flow-runtime-trygetenvironmentvariable/</loc>
+  </url><url>
     <loc>http://localhost:3000/reference/ref/m-ref-update/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/stm/m-tref-update/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/flow/m-flow-runtime-usewithacquirerelease/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/validation/builders-validate/</loc>
   </url><url>

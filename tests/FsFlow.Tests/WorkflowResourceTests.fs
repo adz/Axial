@@ -11,35 +11,35 @@ open Xunit
 
 module WorkflowResourceTests =
     [<Fact>]
-    let ``AsyncFlow runtime helpers cover release`` () =
+    let ``Flow runtime helpers cover release`` () =
         let releaseCount = ref 0
 
         let acquireReleaseResult =
-            AsyncFlow.Runtime.useWithAcquireRelease
-                (AsyncFlow.succeed 7)
+            Flow.Runtime.useWithAcquireRelease
+                (Flow.succeed 7)
                 (fun _ _ ->
                     releaseCount.Value <- releaseCount.Value + 1
                     Task.CompletedTask)
-                (fun _ -> AsyncFlow.fail "boom")
-            |> AsyncFlow.run ()
-            |> Async.RunSynchronously
+                (fun _ -> Flow.fail "boom")
+            |> Flow.runSync ()
 
         test <@ acquireReleaseResult = Exit.Failure (Cause.Fail "boom") @>
         test <@ releaseCount.Value = 1 @>
 
     [<Fact>]
-    let ``TaskFlow runtime helpers cover release`` () =
+    let ``Flow runtime helpers release after defects`` () =
         let releaseCount = ref 0
 
         let acquireReleaseResult =
-            TaskFlow.Runtime.useWithAcquireRelease
-                (TaskFlow.succeed 7)
+            Flow.Runtime.useWithAcquireRelease
+                (Flow.succeed 7)
                 (fun _ _ ->
                     releaseCount.Value <- releaseCount.Value + 1
                     Task.CompletedTask)
-                (fun _ -> TaskFlow.fail "boom")
-            |> TaskFlow.run () CancellationToken.None
-            |> fun task -> task.GetAwaiter().GetResult()
+                (fun _ -> Flow.die (InvalidOperationException "boom"))
+            |> Flow.runSync ()
 
-        test <@ acquireReleaseResult = Exit.Failure (Cause.Fail "boom") @>
+        match acquireReleaseResult with
+        | Exit.Failure (Cause.Die error) -> test <@ error.Message = "boom" @>
+        | other -> failwithf "Expected defect, got %A" other
         test <@ releaseCount.Value = 1 @>
