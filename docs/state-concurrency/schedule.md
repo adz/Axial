@@ -51,7 +51,7 @@ Use `Flow.Retry` to apply a schedule to a flow that might fail with an expected 
 ```fsharp
 let unstableCall = 
     flow {
-        printfn "Attempting call..."
+        do! Log.info "Attempting call..."
         return! Flow.fail "temporary-error"
     }
 
@@ -67,7 +67,7 @@ Use `Flow.Repeat` to execute a successful flow again. This is useful for polling
 ```fsharp
 let pollStatus = 
     flow {
-        printfn "Polling status..."
+        do! Log.info "Polling status..."
         return "Still working"
     }
 

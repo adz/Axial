@@ -9,7 +9,8 @@
   <img alt="FsFlow" src="docs/content/img/fsflow-readme-light.svg" width="160">
 </picture>
 
-FsFlow is a single model for Result-based programs in F#.
+FsFlow provides **structured composition over normal F#/.NET code**. It is a coherent application architecture model for F# on .NET, centered on a unified effect system.
+
 Write small predicate checks with `Check`, keep fail-fast logic in standard `Result`, accumulate sibling
 validation with `Validation` and `validate {}`, then lift the same logic into `Flow`
 when the boundary needs environment access, async work, task interop, or runtime policy.
@@ -18,7 +19,7 @@ when the boundary needs environment access, async work, task interop, or runtime
 [![NuGet](https://img.shields.io/nuget/v/FsFlow.svg)](https://www.nuget.org/packages/FsFlow)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
-## Core Model
+## Coherent Application Architecture
 
 FsFlow is built around one progression:
 
@@ -26,17 +27,12 @@ FsFlow is built around one progression:
 Check -> Result -> Validation -> Flow
 ```
 
-The same validation vocabulary stays the same while the execution context grows.
+The same vocabulary stays the same while the execution context grows.
 
-- Start with `Check` for reusable predicates.
-- Use standard `Result` values and `result {}` for fail-fast pure code.
-- Use `Validation` and `validate {}` when sibling failures should accumulate.
-- Use `flow {}` when the boundary needs typed failure plus environment access, async work, or task interop.
-- The same `flow {}` builder also binds `Async`, `Task`, `ValueTask`, and `ColdTask` directly.
-- Keep expected failures typed all the way through instead of switching helper families at each runtime shape.
-
-This is the key difference from split models like `Result`, `Async<Result<_,_>>`, and `Task<Result<_,_>>`
-that need separate helper modules, separate builders, and repeated adaptation at the boundary.
+- **Structured Composition**: A single `flow {}` builder that binds `Result`, `Option`, `Async`, `Task`, and `ColdTask` directly, eliminating the "adapter tax" of switching helper families at every boundary.
+- **Architectural Honesty**: Distinguishes between your **Explicit Environment** (business dependencies like repositories) and the **Ambient Runtime** (operational services like clock and logging).
+- **ZIO-Style Execution**: Preserves the critical distinction between typed domain failures, cancellations, and unhandled defects.
+- **Composable State**: Built-in Software Transactional Memory (STM) for atomic coordination across multiple variables without manual lock management.
 
 ## Install
 

@@ -66,12 +66,12 @@ let greetInBigEnv : Flow<BigEnv, string, string> =
 
 Example 2: Capabilities
 
-If a helper requires `IHas<IClock>` but you are running it in an environment that doesn't implement it, the compiler will error.
+If a helper requires `IHas<IDatabase>` but you are running it in an environment that doesn't implement it, the compiler will error.
 
 ```fsharp
-let helper : Flow<#IHas<IClock>, _, _> = ...
+let helper : Flow<#IHas<IDatabase>, _, _> = ...
 
-// This fails if AppEnv doesn't implement IHas<IClock>
+// This fails if AppEnv doesn't implement IHas<IDatabase>
 let run (env: AppEnv) = Flow.run env helper
 ```
 

@@ -7,12 +7,12 @@ description: FsFlow technical guides, semantics, and API reference.
 
 <div class="docs-home-hero">
 
-<div class="docs-home-copy"><span class="eyebrow">One model from predicate checks to task execution</span>
+<div class="docs-home-copy"><span class="eyebrow">Structured composition over normal F#/.NET code</span>
 
-<h1>A single model for Result-based programs in F#.</h1>
+<h1>A coherent application architecture model for F# on .NET.</h1>
 
 <div class="lede">
-Write predicate checks once. Keep fail-fast logic in <code>Result</code>, accumulate multiple failures with <a href="{{< relref "/reference/validation/" >}}"><code>Validation</code></a>, then lift the same logic into <a href="{{< relref "/reference/flow/" >}}"><code>Flow</code></a> when the boundary needs environment access, async work, task interop, cancellation, runtime policy, or adapter-driven dependency handling.
+FsFlow is a unified model for building robust, Result-based programs. Write predicate checks once, keep fail-fast logic in <code>Result</code>, accumulate sibling failures with <a href="{{< relref "/reference/validation/" >}}"><code>Validation</code></a>, then lift the same logic into <a href="{{< relref "/reference/flow/" >}}"><code>Flow</code></a> when the boundary needs environment access, async work, task interop, cancellation, or runtime policy.
 </div>
 
 <div class="docs-home-meta">
@@ -58,14 +58,13 @@ type User =
 type Api =
     { LoadUser: int -> Task<Result<User, RegistrationError>> }
 
-type Clock =
-    { UtcNow: DateTimeOffset }
-
 let readVerifiedEmail userId =
     flow {
         let! user = Flow.read (fun api -> api.LoadUser userId)
-        let! checkedAt = Flow.read (fun clock -> clock.UtcNow)
         let! email = validateEmail user.Email
+        
+        // Operational services like Clock live in the Ambient Runtime
+        let! checkedAt = Flow.Runtime.now
 
         return email, checkedAt
     }

@@ -44,16 +44,16 @@ module internal Shared =
         |> fun t -> t.AsTask().GetAwaiter().GetResult()
         |> consumeExit
 
-    let runAsyncFlow (flow: AsyncFlow<int, string, int>) =
+    let runFlowAsync (flow: Flow<int, string, int>) =
         flow
-        |> AsyncFlow.run 0
-        |> Async.RunSynchronously
+        |> Flow.run 0
+        |> fun t -> t.AsTask().GetAwaiter().GetResult()
         |> consumeExit
 
-    let runTaskFlow (flow: TaskFlow<int, string, int>) =
+    let runFlowTask (flow: Flow<int, string, int>) =
         flow
-        |> TaskFlow.run 0 noCancellation
-        |> fun operation -> operation.GetAwaiter().GetResult()
+        |> Flow.run 0
+        |> fun t -> t.AsTask().GetAwaiter().GetResult()
         |> consumeExit
 
     let runTaskResult (workflow: unit -> Task<Result<int, string>>) =
@@ -106,31 +106,31 @@ module internal Shared =
 
         flow
 
-    let buildAsyncFlowBindChain (depth: int) (failAt: int option) =
-        let mutable flow = AsyncFlow.succeed 0
+    let buildFlowBindChainAsync (depth: int) (failAt: int option) =
+        let mutable flow = Flow.succeed 0
 
         for index in 1 .. depth do
             flow <-
                 flow
-                |> AsyncFlow.bind (fun value ->
+                |> Flow.bind (fun value ->
                     if failAt = Some index then
-                        AsyncFlow.fail $"fail-{index}"
+                        Flow.fail $"fail-{index}"
                     else
-                        AsyncFlow.succeed(value + index))
+                        Flow.succeed(value + index))
 
         flow
 
-    let buildTaskFlowBindChain (depth: int) (failAt: int option) =
-        let mutable flow = TaskFlow.succeed 0
+    let buildFlowBindChainTask (depth: int) (failAt: int option) =
+        let mutable flow = Flow.succeed 0
 
         for index in 1 .. depth do
             flow <-
                 flow
-                |> TaskFlow.bind (fun value ->
+                |> Flow.bind (fun value ->
                     if failAt = Some index then
-                        TaskFlow.fail $"fail-{index}"
+                        Flow.fail $"fail-{index}"
                     else
-                        TaskFlow.succeed(value + index))
+                        Flow.succeed(value + index))
 
         flow
 
@@ -214,15 +214,15 @@ module internal Shared =
 
         loop 1 0
 
-    let buildTaskFlowLocalEnvChain () =
+    let buildFlowLocalEnvChain () =
         let baseFlow =
-            TaskFlow.read id
-            |> TaskFlow.map (fun value -> value * 2)
+            Flow.read id
+            |> Flow.map (fun value -> value * 2)
 
         let mutable flow = baseFlow
 
         for _ in 1 .. ReaderDepth do
-            flow <- flow |> TaskFlow.localEnv ((+) 1)
+            flow <- flow |> Flow.localEnv ((+) 1)
 
         flow
 
@@ -256,22 +256,23 @@ module internal Shared =
 
             Task.FromResult(Ok result)
 
-    let buildTaskFlowCancellationChain () =
+    let buildFlowCancellationChain () =
         let checkpoint index =
-            TaskFlow.fromTaskResult(
-                ColdTask(fun cancellationToken ->
-                    cancellationToken.ThrowIfCancellationRequested()
-                    Task.FromResult(Ok index))
-            )
+            flow {
+                let! cancellationToken = Flow.Runtime.cancellationToken
+                cancellationToken.ThrowIfCancellationRequested()
+                let (task: Task<int>) = Task.FromResult index
+                return! task
+            }
 
-        let mutable flow = TaskFlow.succeed 0
+        let mutable flow = Flow.succeed 0
 
         for index in 1 .. CancellationCheckpoints do
             flow <-
                 flow
-                |> TaskFlow.bind (fun value ->
+                |> Flow.bind (fun value ->
                     checkpoint index
-                    |> TaskFlow.map (fun checkpointValue -> value + checkpointValue))
+                    |> Flow.map (fun checkpointValue -> value + checkpointValue))
 
         flow
 

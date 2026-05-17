@@ -8,6 +8,8 @@ description: How FsFlow models dependency boundaries with records, nominal contr
 
 In FsFlow, the environment (`'env`) represents the "world" your effects need to run. Keeping the environment explicit is the foundation of **Effect Discipline**, allowing you to write testable, refactor-safe, and honest code.
 
+> **Key Architecture Concept:** Before diving into the technical details below, we highly recommend reading [Runtime vs Environment](./runtime-vs-environment/) to understand FsFlow's philosophy of separating operational services from business dependencies.
+
 > **Tutorials Available:** For step-by-step guides on setting up these patterns, see the [Tutorials section](../../tutorials/).
 
 FsFlow provides three primary ways to model and access dependencies, ranging from direct pragmatism to strict architectural honesty.

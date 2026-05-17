@@ -254,16 +254,16 @@ module RetryPolicy =
 /// <typeparam name="service">The dependency type exposed by the environment.</typeparam>
 /// <example>
 /// <code>
-/// type IClock =
-///     abstract UtcNow : unit -&gt; DateTimeOffset
+/// type IDb =
+///     abstract Query : string -> string
 ///
-/// type Runtime =
-///     { Clock : IClock }
+/// type AppEnv =
+///     { Database : IDb }
 ///
-/// let readClock : Flow&lt;Runtime, unit, IClock&gt; =
+/// let readDb : Flow&lt;AppEnv, unit, IDb&gt; =
 ///     flow {
-///         let! clock = Flow.read _.Clock
-///         return clock
+///         let! db = Flow.read _.Database
+///         return db
 ///     }
 /// </code>
 /// </example>

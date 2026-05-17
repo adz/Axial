@@ -25,6 +25,14 @@ linkTitle: "atomically"
 | --- | --- |
 | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'none,&#32;'T</span>&gt;</span></code> | A flow that performs the transaction and returns its result. |
 
+## Remarks
+
+
+ FsFlow&#39;s STM uses a global synchronizing lock to ensure atomicity and coordinate retries.
+ While this avoids complex optimistic concurrency control, it means that transactions
+ are mutually exclusive and high contention can impact throughput.
+ 
+
 ## Examples
 
 <pre class="fssnip highlighted"><code lang="fsharp"> <span class="k">let</span> <span data-fsdocs-tip="fs1" data-fsdocs-tip-unique="1" class="fn">transfer</span> <span class="pn">(</span><span data-fsdocs-tip="fs2" data-fsdocs-tip-unique="2" class="fn">fromAcc</span><span class="pn">:</span> <span class="id">TRef</span><span class="pn">&lt;</span><span data-fsdocs-tip="fs3" data-fsdocs-tip-unique="3" class="id">int</span><span class="pn">&gt;</span><span class="pn">)</span> <span class="pn">(</span><span data-fsdocs-tip="fs4" data-fsdocs-tip-unique="4" class="fn">toAcc</span><span class="pn">:</span> <span class="id">TRef</span><span class="pn">&lt;</span><span data-fsdocs-tip="fs3" data-fsdocs-tip-unique="5" class="id">int</span><span class="pn">&gt;</span><span class="pn">)</span> <span data-fsdocs-tip="fs5" data-fsdocs-tip-unique="6" class="fn">amount</span> <span class="o">=</span>

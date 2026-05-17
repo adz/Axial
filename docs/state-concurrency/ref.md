@@ -36,7 +36,7 @@ Use `Ref.get` to read the current value and `Ref.set` to overwrite it.
 let workWithRef (counter: Ref<int>) =
     flow {
         let! value = Ref.get counter
-        printfn "Current value: %d" value
+        do! Log.info $"Current value: {value}"
         
         do! Ref.set (value + 1) counter
     }
@@ -75,7 +75,7 @@ let trackProgress (total: int) =
         let doStep = 
             flow {
                 let! current = Ref.modify (fun p -> p + 1, p + 1) progress
-                printfn "Progress: %d/%d" current total
+                do! Log.info $"Progress: {current}/{total}"
             }
             
         // Run several steps

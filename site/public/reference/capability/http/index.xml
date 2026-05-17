@@ -2,30 +2,30 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Capabilities Http on FsFlow</title>
-    <link>http://localhost:3000/reference/capability/http/</link>
+    <link>https://adz.github.io/FsFlow/reference/capability/http/</link>
     <description>Recent content in Capabilities Http on FsFlow</description>
     <generator>Hugo</generator>
     <language>en-us</language>
-    <atom:link href="http://localhost:3000/reference/capability/http/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="https://adz.github.io/FsFlow/reference/capability/http/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Capabilities.Http.Http.getString</title>
-      <link>http://localhost:3000/reference/capability/http/m-capabilities-http-http-getstring/</link>
+      <link>https://adz.github.io/FsFlow/reference/capability/http/m-capabilities-http-http-getstring/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/capability/http/m-capabilities-http-http-getstring/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/capability/http/m-capabilities-http-http-getstring/</guid>
       <description>&lt;p&gt;Sends a GET request using the HTTP environment and returns the response body.&lt;/p&gt;&#xA;&lt;h2 id=&#34;signature&#34;&gt;Signature&lt;/h2&gt;&#xA;&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Capabilities.Http.Http.getString&amp;#32;&lt;span&gt;url&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;table&gt;&#xA;  &lt;thead&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;th&gt;Name&lt;/th&gt;&#xA;          &lt;th&gt;Type&lt;/th&gt;&#xA;          &lt;th&gt;Description&lt;/th&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/thead&gt;&#xA;  &lt;tbody&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td&gt;&lt;code&gt;url&lt;/code&gt;&lt;/td&gt;&#xA;          &lt;td&gt;&lt;code&gt;string&lt;/code&gt;&lt;/td&gt;&#xA;          &lt;td&gt;The URL to fetch.&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/tbody&gt;&#xA;&lt;/table&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;table&gt;&#xA;  &lt;thead&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;th&gt;Type&lt;/th&gt;&#xA;          &lt;th&gt;Description&lt;/th&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/thead&gt;&#xA;  &lt;tbody&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td&gt;&lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;e, string&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/td&gt;&#xA;          &lt;td&gt;A flow that returns the response body as a string.&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/tbody&gt;&#xA;&lt;/table&gt;&#xA;&lt;h2 id=&#34;examples&#34;&gt;Examples&lt;/h2&gt;&#xA;&lt;pre class=&#34;fssnip highlighted&#34;&gt;&lt;code lang=&#34;fsharp&#34;&gt; &lt;span class=&#34;k&#34;&gt;let&lt;/span&gt; &lt;span data-fsdocs-tip=&#34;fs1&#34; data-fsdocs-tip-unique=&#34;1&#34; class=&#34;id&#34;&gt;content&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;id&#34;&gt;Http&lt;/span&gt;&lt;span class=&#34;pn&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;id&#34;&gt;getString&lt;/span&gt; &lt;span class=&#34;s&#34;&gt;&amp;quot;https://example.com&amp;quot;&lt;/span&gt;&#xA;&lt;/code&gt;&lt;/pre&gt;&#xA;&lt;div popover class=&#34;fsdocs-tip&#34; id=&#34;fs1&#34;&gt;val content: obj&lt;/div&gt;</description>
     </item>
     <item>
       <title>Capabilities.Http.IHttp</title>
-      <link>http://localhost:3000/reference/capability/http/t-capabilities-http-ihttp/</link>
+      <link>https://adz.github.io/FsFlow/reference/capability/http/t-capabilities-http-ihttp/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/capability/http/t-capabilities-http-ihttp/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/capability/http/t-capabilities-http-ihttp/</guid>
       <description>&lt;p&gt;Provides asynchronous access to HTTP client operations.&lt;/p&gt;&#xA;&lt;h2 id=&#34;signature&#34;&gt;Signature&lt;/h2&gt;&#xA;&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;type IHttp&lt;/code&gt;&#xA;&lt;/div&gt;</description>
     </item>
     <item>
       <title>Capabilities.Http.Http.live</title>
-      <link>http://localhost:3000/reference/capability/http/m-capabilities-http-http-live/</link>
+      <link>https://adz.github.io/FsFlow/reference/capability/http/m-capabilities-http-http-live/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/capability/http/m-capabilities-http-http-live/</guid>
+      <guid>https://adz.github.io/FsFlow/reference/capability/http/m-capabilities-http-http-live/</guid>
       <description>&lt;p&gt;Creates a live HTTP client backed by &lt;a href=&#34;https://learn.microsoft.com/dotnet/api/system.net.http.httpclient&#34;&gt;HttpClient&lt;/a&gt;.&lt;/p&gt;&#xA;&lt;h2 id=&#34;signature&#34;&gt;Signature&lt;/h2&gt;&#xA;&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Capabilities.Http.Http.live&amp;#32;&lt;span&gt;client&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;table&gt;&#xA;  &lt;thead&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;th&gt;Name&lt;/th&gt;&#xA;          &lt;th&gt;Type&lt;/th&gt;&#xA;          &lt;th&gt;Description&lt;/th&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/thead&gt;&#xA;  &lt;tbody&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td&gt;&lt;code&gt;client&lt;/code&gt;&lt;/td&gt;&#xA;          &lt;td&gt;&lt;code&gt;&lt;a href=&#34;https://learn.microsoft.com/dotnet/api/system.net.http.httpclient&#34;&gt;HttpClient&lt;/a&gt;&lt;/code&gt;&lt;/td&gt;&#xA;          &lt;td&gt;The underlying HttpClient to use.&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/tbody&gt;&#xA;&lt;/table&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;table&gt;&#xA;  &lt;thead&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;th&gt;Type&lt;/th&gt;&#xA;          &lt;th&gt;Description&lt;/th&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/thead&gt;&#xA;  &lt;tbody&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td&gt;&lt;code&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-capabilities-http-ihttp.html&#34;&gt;IHttp&lt;/a&gt;&lt;/code&gt;&lt;/td&gt;&#xA;          &lt;td&gt;An implementation of IHttp.&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/tbody&gt;&#xA;&lt;/table&gt;</description>
     </item>
   </channel>

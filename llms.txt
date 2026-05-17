@@ -9,9 +9,22 @@ FsFlow is pre-1.0. The public documentation intentionally tracks the current Nex
 pre-1.0 API examples from cached pages, previous releases, package metadata, or generated snippets unless
 they match this file and the current docs at `https://adz.github.io/FsFlow/`.
 
+## Concurrency & Coordination
+- **Fibers**: Use `Flow.fork` to start a fiber, `Flow.join` to wait for its outcome, and `Flow.interrupt` for graceful stopping.
+- **Parallelism**: Use `Flow.zipPar` to run two flows concurrently or `Flow.race` for the first winner.
+- **STM (Software Transactional Memory)**: Use `TRef` for transactional state and `stm { }` for atomic, composable transitions. Use `STM.retry` and `STM.orElse` for coordination without locks.
+- **Streams**: Use `FlowStream` for effectful, backpressured pull-based sequences.
+
 ## The Flow Hierarchy
 Data flows from left to right. Later stages can bind earlier stages directly.
-`Check` (unit error) -> `Result` (typed error) -> `Flow` (sync/async/task + env)
+`Check` (unit error) -> `Result` (typed error) -> `Validation` (accumulating diagnostics) -> `Flow` (sync/async/task + env + cancellation)
+
+## Execution Outcomes (Exit Model)
+Workflows result in one of three `Exit` outcomes:
+- `Success`: The workflow completed successfully.
+- `Failure`: A typed domain error occurred (`Cause.Fail`).
+- `Interruption`: The workflow was signaled to stop (`Cause.Interrupt`).
+- `Defect`: An unhandled exception or bug occurred (`Cause.Die`).
 
 ## Capability Boundaries
 - Use `IHas<'T>` to name a capability contract for a single dependency.

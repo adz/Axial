@@ -11,15 +11,15 @@ open FsFlow
 [<IterationCount(3)>]
 [<Orderer(SummaryOrderPolicy.FastestToSlowest)>]
 type ReaderOverheadBenchmarks() =
-    let taskFlowLocalEnv = Shared.buildTaskFlowLocalEnvChain ()
+    let flowLocalEnv = Shared.buildFlowLocalEnvChain ()
     let manualLocalEnv = Shared.buildManualTaskLocalEnvChain ()
     let asyncLocalReader = Shared.buildAsyncLocalReaderChain ()
 
-    [<Benchmark(Baseline = true, Description = "TaskFlow localEnv x10")>]
-    member _.TaskFlowLocalEnvX10() =
-        taskFlowLocalEnv
-        |> TaskFlow.run 0 Shared.noCancellation
-        |> fun operation -> operation.GetAwaiter().GetResult()
+    [<Benchmark(Baseline = true, Description = "Flow localEnv x10")>]
+    member _.FlowLocalEnvX10() =
+        flowLocalEnv
+        |> Flow.run 0
+        |> fun operation -> operation.AsTask().GetAwaiter().GetResult()
         |> Shared.consumeExit
 
     [<Benchmark(Description = "Manual env passing x10")>]
@@ -41,7 +41,7 @@ type ReaderOverheadBenchmarks() =
 [<Orderer(SummaryOrderPolicy.FastestToSlowest)>]
 type AsyncRailwayBenchmarks() =
     let mutable failAt = None
-    let mutable asyncFlow = AsyncFlow.succeed 0
+    let mutable flow = Flow.succeed 0
     let mutable fsToolkitAsync = Shared.buildFsToolkitAsyncResultBindChain Shared.RailwayDepth None
     let mutable directAsync = Shared.buildDirectAsyncResultBindChain Shared.RailwayDepth None
 
@@ -51,13 +51,13 @@ type AsyncRailwayBenchmarks() =
     [<GlobalSetup>]
     member this.Setup() =
         failAt <- Some this.FailAt
-        asyncFlow <- Shared.buildAsyncFlowBindChain Shared.RailwayDepth failAt
+        flow <- Shared.buildFlowBindChainAsync Shared.RailwayDepth failAt
         fsToolkitAsync <- Shared.buildFsToolkitAsyncResultBindChain Shared.RailwayDepth failAt
         directAsync <- Shared.buildDirectAsyncResultBindChain Shared.RailwayDepth failAt
 
     [<Benchmark(Baseline = true)>]
-    member _.AsyncFlow() =
-        Shared.runAsyncFlow asyncFlow
+    member _.Flow() =
+        Shared.runFlowAsync flow
 
     [<Benchmark(Description = "FsToolkit asyncResult")>]
     member _.FsToolkitAsyncResult() =
@@ -74,7 +74,7 @@ type AsyncRailwayBenchmarks() =
 [<Orderer(SummaryOrderPolicy.FastestToSlowest)>]
 type TaskRailwayBenchmarks() =
     let mutable failAt = None
-    let mutable taskFlow = TaskFlow.succeed 0
+    let mutable flow = Flow.succeed 0
     let mutable fsToolkitTask = Shared.buildFsToolkitTaskResultBindChain Shared.RailwayDepth None
     let mutable directTask = Shared.buildDirectTaskResultBindChain Shared.RailwayDepth None
 
@@ -84,13 +84,13 @@ type TaskRailwayBenchmarks() =
     [<GlobalSetup>]
     member this.Setup() =
         failAt <- Some this.FailAt
-        taskFlow <- Shared.buildTaskFlowBindChain Shared.RailwayDepth failAt
+        flow <- Shared.buildFlowBindChainTask Shared.RailwayDepth failAt
         fsToolkitTask <- Shared.buildFsToolkitTaskResultBindChain Shared.RailwayDepth failAt
         directTask <- Shared.buildDirectTaskResultBindChain Shared.RailwayDepth failAt
 
     [<Benchmark(Baseline = true)>]
-    member _.TaskFlow() =
-        Shared.runTaskFlow taskFlow
+    member _.Flow() =
+        Shared.runFlowTask flow
 
     [<Benchmark(Description = "FsToolkit taskResult")>]
     member _.FsToolkitTaskResult() =
@@ -108,8 +108,8 @@ type TaskRailwayBenchmarks() =
 type CompositionChainBenchmarks() =
     let flowMap = Shared.buildFlowMapChain Shared.CompositionDepth
     let flowBind = Shared.buildFlowBindChain Shared.CompositionDepth
-    let asyncFlowBind = Shared.buildAsyncFlowBindChain Shared.CompositionDepth None
-    let taskFlowBind = Shared.buildTaskFlowBindChain Shared.CompositionDepth None
+    let flowBindAsync = Shared.buildFlowBindChainAsync Shared.CompositionDepth None
+    let flowBindTask = Shared.buildFlowBindChainTask Shared.CompositionDepth None
     let directAsyncBind = Shared.buildDirectAsyncResultBindChain Shared.CompositionDepth None
     let directTaskBind = Shared.buildDirectTaskResultBindChain Shared.CompositionDepth None
     let rawTaskBind = Shared.buildRawTaskBindChain Shared.CompositionDepth
@@ -122,17 +122,18 @@ type CompositionChainBenchmarks() =
     member _.FlowBindX100() =
         Shared.runFlow flowBind
 
-    [<Benchmark(Description = "AsyncFlow bind x100")>]
-    member _.AsyncFlowBindX100() =
-        Shared.runAsyncFlow asyncFlowBind
+    [<Benchmark(Description = "Flow bind async x100")>]
+    member _.FlowBindAsyncX100() =
+        Shared.runFlowAsync flowBindAsync
 
-    [<Benchmark(Baseline = true, Description = "TaskFlow bind x100")>]
-    member _.TaskFlowBindX100() =
-        Shared.runTaskFlow taskFlowBind
+    [<Benchmark(Baseline = true, Description = "Flow bind task x100")>]
+    member _.FlowBindTaskX100() =
+        Shared.runFlowTask flowBindTask
 
     [<Benchmark(Description = "Direct Async<Result> bind x100")>]
     member _.DirectAsyncResultBindX100() =
         Shared.runAsyncResult directAsyncBind
+
 
     [<Benchmark(Description = "Direct Task<Result> bind x100")>]
     member _.DirectTaskResultBindX100() =
@@ -148,12 +149,12 @@ type CompositionChainBenchmarks() =
 [<IterationCount(3)>]
 [<Orderer(SummaryOrderPolicy.FastestToSlowest)>]
 type CancellationFlowBenchmarks() =
-    let taskFlow = Shared.buildTaskFlowCancellationChain ()
+    let flow = Shared.buildFlowCancellationChain ()
     let directTask = Shared.buildDirectCancellableTaskChain ()
 
     [<Benchmark(Baseline = true)>]
-    member _.TaskFlow() =
-        Shared.runTaskFlow taskFlow
+    member _.Flow() =
+        Shared.runFlow flow
 
     [<Benchmark(Description = "Explicit token Task<Result>")>]
     member _.ExplicitTokenTaskResult() =
@@ -182,11 +183,11 @@ type CancellableTaskBenchmarks() =
 [<IterationCount(3)>]
 [<Orderer(SummaryOrderPolicy.FastestToSlowest)>]
 type SynchronousCompletionBenchmarks() =
-    let taskFlow =
-        TaskFlow.succeed 1
-        |> TaskFlow.bind (fun value -> TaskFlow.succeed(value + 1))
-        |> TaskFlow.bind (fun value -> TaskFlow.succeed(value * 2))
-        |> TaskFlow.map (fun value -> value + 3)
+    let flow =
+        Flow.succeed 1
+        |> Flow.bind (fun value -> Flow.succeed(value + 1))
+        |> Flow.bind (fun value -> Flow.succeed(value * 2))
+        |> Flow.map (fun value -> value + 3)
 
     let valueTaskFlow =
         CandidateValueTaskFlow.succeed 1
@@ -197,10 +198,10 @@ type SynchronousCompletionBenchmarks() =
     let plyValueTask = Shared.buildPlyValueTaskChain 3
 
     [<Benchmark(Baseline = true)>]
-    member _.TaskFlow() =
-        taskFlow
-        |> TaskFlow.run 0 CancellationToken.None
-        |> fun operation -> operation.GetAwaiter().GetResult()
+    member _.Flow() =
+        flow
+        |> Flow.run 0
+        |> fun operation -> operation.AsTask().GetAwaiter().GetResult()
         |> Shared.consumeExit
 
     [<Benchmark(Description = "Candidate ValueTaskFlow")>]

@@ -49,7 +49,7 @@ let processTransfer fromAcc toAcc amount =
     flow {
         // Run the transaction atomically
         do! STM.atomically (transferFunds fromAcc toAcc amount)
-        printfn "Transfer complete!"
+        do! Log.info "Transfer complete!"
     }
 ```
 
@@ -78,7 +78,17 @@ FsFlow's `STM` keeps commit atomicity inside the engine and adds `retry` / `orEl
 so a transaction can wait for a relevant state change or fall back to another branch without
 exposing lock management in user code.
 
-## Composition
+## Implementation Details
+
+It is important to note that FsFlow's current STM implementation is based on a **global synchronizing lock** 
+rather than an optimistic or lock-free model.
+
+- **Atomicity**: The entire `stm {}` block is executed while holding a global lock, ensuring no other transaction can interfere.
+- **Blocking Retry**: When `STM.retry` is called, the calling thread is suspended using `Monitor.Wait` until another transaction successfully commits a change.
+- **Performance**: Because of the global lock, transactions are mutually exclusive. This is suitable for coordinating low-frequency state changes but may become a bottleneck under high contention.
+
+This design prioritizes correctness and simplicity for the initial release while providing the standard 
+STM programming model found in languages like Haskell or ZIO.
 ## API Reference: Module `TRef`
 
 | Function | Signature | Description |

@@ -196,6 +196,10 @@ module STM =
 
     /// <summary>Signals that the current branch should retry once observed state changes.</summary>
     /// <returns>An STM operation that triggers a retry.</returns>
+    /// <remarks>
+    /// In FsFlow's current implementation, this blocks the calling thread using a synchronizing lock 
+    /// until another transaction commits a change.
+    /// </remarks>
     let retry<'T> : STM<'T> =
         STM(fun _ -> Retry)
 
@@ -217,6 +221,11 @@ module STM =
     /// </summary>
     /// <param name="transaction">The STM transaction to execute.</param>
     /// <returns>A flow that performs the transaction and returns its result.</returns>
+    /// <remarks>
+    /// FsFlow's STM uses a global synchronizing lock to ensure atomicity and coordinate retries.
+    /// While this avoids complex optimistic concurrency control, it means that transactions
+    /// are mutually exclusive and high contention can impact throughput.
+    /// </remarks>
     /// <example>
     /// <code>
     /// let transfer (fromAcc: TRef&lt;int&gt;) (toAcc: TRef&lt;int&gt;) amount =
