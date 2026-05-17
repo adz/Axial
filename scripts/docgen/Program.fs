@@ -28,8 +28,8 @@ let cleanName (name: string) =
         name.Replace("FsFlow.", "").Replace("Caps.", "").Replace("Module", "").Replace("Extensions", "").Replace("Builders", "")
         |> (fun s -> s.Trim('.'))
         |> (fun s -> 
-            let idx = s.IndexOf('`')
-            if idx > 0 then s.Substring(0, idx) else s
+            // Surgical removal of generic backticks like `1, `2, etc.
+            System.Text.RegularExpressions.Regex.Replace(s, @"`[0-9]+", "")
         )
         |> (fun s -> s.Replace("'", ""))
         |> (fun s -> if s.EndsWith(".Static") then s.Substring(0, s.Length - 7) else s)
@@ -43,7 +43,8 @@ let getPageName (id: string) =
     let namePart = id.Substring(2).Split('(').[0]
     let clean = 
         namePart.Replace("FsFlow.", "").Replace("Caps.", "").Replace("Module", "").Replace("Extensions", "").Replace("Builders", "")
-        |> (fun s -> s.Replace("`", "-").Replace("'", "").Trim('.'))
+        |> (fun s -> System.Text.RegularExpressions.Regex.Replace(s, @"`[0-9]+", ""))
+        |> (fun s -> s.Replace("'", "").Trim('.'))
         
     let finalName = sanitizeFilename clean
     $"{kind}-{finalName}.md"
@@ -54,6 +55,16 @@ let safeFullName (sym: FSharp.Compiler.Symbols.FSharpSymbol) =
         try e.FullName with _ -> e.DisplayName
     | _ -> 
         try sym.FullName with _ -> sym.DisplayName
+
+let logicalName (sym: FSharp.Compiler.Symbols.FSharpSymbol) =
+    match sym with
+    | :? FSharpMemberOrFunctionOrValue as mfv when mfv.IsExtensionMember ->
+        try 
+            match mfv.ApparentEnclosingEntity with
+            | Some ent -> $"{ent.FullName}.{mfv.DisplayName}"
+            | None -> safeFullName sym
+        with _ -> safeFullName sym
+    | _ -> safeFullName sym
 
 let hasAttribute named (attrs: seq<FSharpAttribute>) =
     attrs
@@ -67,34 +78,63 @@ let enclosingEntity (sym: FSharp.Compiler.Symbols.FSharpSymbol) =
     | :? FSharpField as field -> field.DeclaringEntity
     | _ -> None
 
-let memberUsageName (m: ApiDocMember) =
-    match enclosingEntity m.Symbol with
-    | Some ent ->
-        let moduleName = cleanName ent.FullName
-        let isAutoOpen = hasAttribute "AutoOpenAttribute" ent.Attributes
-        let isRequireQualifiedAccess = hasAttribute "RequireQualifiedAccessAttribute" ent.Attributes
+let memberQualifier (m: ApiDocMember) =
+    match m.Symbol with
+    | :? FSharpMemberOrFunctionOrValue as mfv when mfv.IsExtensionMember ->
+        try 
+            match mfv.ApparentEnclosingEntity with
+            | Some ent -> cleanName ent.FullName
+            | None -> ""
+        with _ -> ""
+    | _ ->
+        match enclosingEntity m.Symbol with
+        | Some ent ->
+            let moduleName = cleanName ent.FullName
+            let isAutoOpen = hasAttribute "AutoOpenAttribute" ent.Attributes
+            let isRequireQualifiedAccess = hasAttribute "RequireQualifiedAccessAttribute" ent.Attributes
 
-        if isAutoOpen && not isRequireQualifiedAccess then m.Name
-        else $"{moduleName}.{m.Name}"
-    | None -> cleanName (safeFullName m.Symbol)
+            if isAutoOpen && not isRequireQualifiedAccess then ""
+            else moduleName
+        | None -> ""
 
 let qualifyUsageHtml usageName (html: string) =
     let encodedUsageName = WebUtility.HtmlEncode usageName
-    let encodedShortName = WebUtility.HtmlEncode(usageName.Split('.').[usageName.Split('.').Length - 1])
+    let parts = usageName.Split('.')
+    let shortName = parts.[parts.Length - 1]
+    let encodedShortName = WebUtility.HtmlEncode shortName
 
-    if encodedUsageName = encodedShortName then html
-    else
-        let withArgs = $"<span>{encodedShortName}&#32;"
-        let qualifiedWithArgs = $"<span>{encodedUsageName}&#32;"
-        let withoutArgs = $"<span>{encodedShortName}</span>"
-        let qualifiedWithoutArgs = $"<span>{encodedUsageName}</span>"
+    // We look for patterns like <span>log&#32; or <span>Runtime.log&#32;
+    // or without trailing space for property-like access.
+    
+    let patterns = [
+        $"<span>{encodedShortName}&#32;", $"<span>{encodedUsageName}&#32;"
+        $"<span>{encodedShortName}</span>", $"<span>{encodedUsageName}</span>"
+    ]
 
-        if html.Contains withArgs then html.Replace(withArgs, qualifiedWithArgs)
-        elif html.Contains withoutArgs then html.Replace(withoutArgs, qualifiedWithoutArgs)
-        else html
+    let mutable result = html
+    let mutable replaced = false
+
+    for pat, rep in patterns do
+        if not replaced && result.Contains pat then
+            result <- result.Replace(pat, rep)
+            replaced <- true
+    
+    if not replaced && parts.Length > 1 then
+        let midName = parts.[parts.Length - 2] + "." + shortName
+        let encodedMidName = WebUtility.HtmlEncode midName
+        let midPatterns = [
+            $"<span>{encodedMidName}&#32;", $"<span>{encodedUsageName}&#32;"
+            $"<span>{encodedMidName}</span>", $"<span>{encodedUsageName}</span>"
+        ]
+        for pat, rep in midPatterns do
+            if not replaced && result.Contains pat then
+                result <- result.Replace(pat, rep)
+                replaced <- true
+                
+    result
 
 let renderMemberPage (m: ApiDocMember) =
-    let fullName = safeFullName m.Symbol
+    let fullName = logicalName m.Symbol
     let qualifiedName = cleanName fullName
     let shortName = cleanName m.Name
     
@@ -113,9 +153,11 @@ let renderMemberPage (m: ApiDocMember) =
     content <- content + m.Comment.Summary.HtmlText + "\n\n"
 
     // Signature
+    let qualifier = memberQualifier m
+    let usageName = if String.IsNullOrEmpty qualifier then m.Name else qualifier + "." + m.Name
     let usageHtml =
         m.UsageHtml.HtmlText
-        |> qualifyUsageHtml (memberUsageName m)
+        |> qualifyUsageHtml usageName
 
     content <- content + "## Signature\n\n"
     content <- content + "<div class=\"fsdocs-usage\">\n" + usageHtml + "\n</div>\n\n"
@@ -216,13 +258,23 @@ let pageSpecs = [
         OutPath = ["flow"; "_index.md"]
         Title = "Flow"
         Description = "Source-documented workflow surface in FsFlow."
-        Intro = "This page shows the `Flow<'env, 'error, 'value>` surface, the central workflow type in FsFlow. A flow is a cold description of work that reads an explicit environment, can fail with a typed error, and only runs when you call an execution function such as `Flow.run`. Use this page as the API map for building fail-fast workflows, reading dependencies from `env`, reshaping environments with `localEnv`, composing typed failures, and introducing concurrency with fibers, `zipPar`, or `race`. Start with `flow { }`, `Flow.read`, `Flow.bind`, and `Flow.map`; reach for runtime helpers and parallel orchestration only at the boundary where the workflow actually needs them."
+        Intro = "This page shows the `Flow<'env, 'error, 'value>` surface, the central workflow type in FsFlow. A flow is a cold description of work that reads an explicit environment, can fail with a typed error, and only runs when you call an execution function such as `Flow.run`. Use this page as the API map for building fail-fast workflows, reading dependencies from `env`, reshaping environments with `localEnv`, composing typed failures, and introducing concurrency with fibers, `zipPar`, or `race`. Start with `flow { }`, `Flow.read`, `Flow.bind`, and `Flow.map`; reach for [runtime helpers](./runtime/) and parallel orchestration only at the boundary where the workflow actually needs them. \n\nNote that common extensions such as `Flow.Retry` and `Flow.Repeat` are available as soon as you `open FsFlow` because their modules are marked with `[<AutoOpen>]`."
         SymbolIds = [
             "Core type", ["T:FsFlow.Flow`3"]
             "Module functions", ["M:FsFlow.Flow.run"; "M:FsFlow.Flow.ok"; "M:FsFlow.Flow.error"; "M:FsFlow.Flow.succeed"; "M:FsFlow.Flow.value"; "M:FsFlow.Flow.fail"; "M:FsFlow.Flow.fromResult"; "M:FsFlow.Flow.fromOption"; "M:FsFlow.Flow.fromValueOption"; "M:FsFlow.Flow.orElseFlow"; "M:FsFlow.Flow.env"; "M:FsFlow.Flow.read"; "M:FsFlow.Flow.service"; "M:FsFlow.Flow.inject"; "M:FsFlow.Flow.map"; "M:FsFlow.Flow.bind"; "M:FsFlow.Flow.tap"; "M:FsFlow.Flow.tapError"; "M:FsFlow.Flow.mapError"; "M:FsFlow.Flow.catch"; "M:FsFlow.Flow.orElseWith"; "M:FsFlow.Flow.orElse"; "M:FsFlow.Flow.zip"; "M:FsFlow.Flow.map2"; "M:FsFlow.Flow.map3"; "M:FsFlow.Flow.apply"; "M:FsFlow.Flow.ignore"; "M:FsFlow.Flow.localEnv"; "M:FsFlow.Flow.provideLayer"; "M:FsFlow.Flow.delay"; "M:FsFlow.Flow.traverse"; "M:FsFlow.Flow.sequence"]
-            "Runtime helpers", ["M:FsFlow.Flow.Runtime.cancellationToken"; "M:FsFlow.Flow.Runtime.catchCancellation"; "M:FsFlow.Flow.Runtime.ensureNotCanceled"; "M:FsFlow.Flow.Runtime.sleep"; "M:FsFlow.Flow.Runtime.now"; "M:FsFlow.Flow.Runtime.log"; "M:FsFlow.Flow.Runtime.newGuid"; "M:FsFlow.Flow.Runtime.nextInt"; "M:FsFlow.Flow.Runtime.tryGetEnvironmentVariable"; "M:FsFlow.Flow.Runtime.useWithAcquireRelease"; "M:FsFlow.Flow.Runtime.timeout"; "M:FsFlow.Flow.Runtime.timeoutToOk"; "M:FsFlow.Flow.Runtime.timeoutToError"; "M:FsFlow.Flow.Runtime.timeoutWith"; "M:FsFlow.Flow.Runtime.retry"]
             "Concurrency", ["T:FsFlow.Fiber`2"; "M:FsFlow.Flow.fork"; "M:FsFlow.Flow.join"; "M:FsFlow.Flow.interrupt"]
             "Parallel orchestration", ["M:FsFlow.Flow.zipPar"; "M:FsFlow.Flow.race"]
+            "Scheduling", ["M:FsFlow.FlowScheduleExtensions.Retry"; "M:FsFlow.FlowScheduleExtensions.Repeat"]
+        ]
+        Alias = None
+    }
+    {
+        OutPath = ["flow"; "runtime"; "_index.md"]
+        Title = "Flow.Runtime"
+        Description = "Runtime helpers for operational concerns like logging, timeout, retry, and cleanup."
+        Intro = "This page shows the `Flow.Runtime` helpers for operational concerns. These functions allow workflows to interact with the ambient execution environment for things like logging, time, random numbers, and resource management. They are designed to be used at the boundaries of your application workflows."
+        SymbolIds = [
+            "Runtime helpers", ["M:FsFlow.Flow.Runtime.cancellationToken"; "M:FsFlow.Flow.Runtime.catchCancellation"; "M:FsFlow.Flow.Runtime.ensureNotCanceled"; "M:FsFlow.Flow.Runtime.sleep"; "M:FsFlow.Flow.Runtime.now"; "M:FsFlow.Flow.Runtime.log"; "M:FsFlow.Flow.Runtime.newGuid"; "M:FsFlow.Flow.Runtime.nextInt"; "M:FsFlow.Flow.Runtime.tryGetEnvironmentVariable"; "M:FsFlow.Flow.Runtime.useWithAcquireRelease"; "M:FsFlow.Flow.Runtime.timeout"; "M:FsFlow.Flow.Runtime.timeoutToOk"; "M:FsFlow.Flow.Runtime.timeoutToError"; "M:FsFlow.Flow.Runtime.timeoutWith"; "M:FsFlow.Flow.Runtime.retry"]
         ]
         Alias = None
     }
@@ -234,7 +286,6 @@ let pageSpecs = [
         SymbolIds = [
             "Core type", ["T:FsFlow.Schedule`3"]
             "Module functions", ["M:FsFlow.Schedule.recurs"; "M:FsFlow.Schedule.spaced"; "M:FsFlow.Schedule.exponential"; "M:FsFlow.Schedule.jittered"]
-            "Flow extensions", ["M:FsFlow.FlowScheduleExtensions.Retry"; "M:FsFlow.FlowScheduleExtensions.Repeat"]
         ]
         Alias = None
     }
@@ -340,7 +391,7 @@ let pageSpecs = [
         OutPath = ["capability"; "_index.md"]
         Title = "Capability"
         Description = "Source-documented capability contracts and dependency access helpers for FsFlow."
-        Intro = "This page shows the capability helpers around FsFlow's environment model. In FsFlow, a capability is a named interface that describes what a flow needs from `env`; the workflow still receives an explicit environment, but the interface gives that dependency surface a stable name. Prefer plain records plus `Flow.read` for local workflow code, use `IHas<'T>` plus `Flow.service` when reusable helpers need statically checked dependency contracts, and keep `Flow.inject` at .NET host boundaries where `IServiceProvider` interop is useful. Runtime-owned services such as clock, logging, random, GUID generation, and environment-variable lookup stay in `FsFlow.Capabilities.Core`, where they can be read through runtime helpers and overridden with `Flow.withClock`, `Flow.withLog`, `Flow.withRandom`, `Flow.withGuid`, and `Flow.withEnvironmentVariables`."
+        Intro = "This page shows the capability helpers around FsFlow's environment model. In FsFlow, a capability is a named interface that describes what a flow needs from `env`; the workflow still receives an explicit environment, but the interface gives that dependency surface a stable name. Prefer plain records plus `Flow.read` for local workflow code, use `IHas<'T>` plus `Flow.service` when reusable helpers need statically checked dependency contracts, and keep `Flow.inject` at .NET host boundaries where `IServiceProvider` interop is useful. Runtime-owned services such as clock, logging, random, GUID generation, and environment-variable lookup stay in `FsFlow.Capabilities.Core`, where they can be read through runtime helpers and overridden with `Flow.withClock`, `Flow.withLog`, `Flow.withRandom`, `Flow.withGuid`, and `Flow.withEnvironmentVariables`. \n\nSee the standard capability packages: [Core](./core/), [Console](./console/), [FileSystem](./filesystem/), [Http](./http/), and [Process](./process/)."
         SymbolIds = [
             "Capability contracts", ["T:FsFlow.IHas`1"]
             "Flow accessors", ["M:FsFlow.Flow.read"; "M:FsFlow.Flow.service"; "M:FsFlow.Flow.inject"]
@@ -349,7 +400,7 @@ let pageSpecs = [
         Alias = None
     }
     {
-        OutPath = ["caps-core"; "_index.md"]
+        OutPath = ["capability"; "core"; "_index.md"]
         Title = "Capabilities Core"
         Description = "Source-documented synchronous capability primitives for FsFlow.Capabilities.Core."
         Intro = "This page shows the core runtime capability package: clock, logging, random numbers, GUID generation, and environment-variable lookup. These services are operational concerns, so ordinary application workflows should usually read them through helpers such as `Clock.now`, `Log.info`, `Random.nextInt`, `Guid.newGuid`, and `EnvironmentVariable.get` instead of adding them to every app environment record. Tests and scoped workflows can replace them with deterministic providers via `Flow.withClock`, `Flow.withLog`, `Flow.withRandom`, `Flow.withGuid`, and `Flow.withEnvironmentVariables`."
@@ -363,7 +414,7 @@ let pageSpecs = [
         Alias = None
     }
     {
-        OutPath = ["caps-console"; "_index.md"]
+        OutPath = ["capability"; "console"; "_index.md"]
         Title = "Capabilities Console"
         Description = "Source-documented console I/O capability for FsFlow.Capabilities.Console."
         Intro = "This page shows the console capability package. `IConsole` is a small app capability for workflows that need standard input or output without depending directly on `System.Console`. Use it at command-line boundaries, examples, and simple interactive tools. Keep business logic typed against the interface, provide `Console.live` only at the edge, and replace it with a test implementation when you need deterministic input or captured output."
@@ -374,7 +425,7 @@ let pageSpecs = [
         Alias = None
     }
     {
-        OutPath = ["caps-filesystem"; "_index.md"]
+        OutPath = ["capability"; "filesystem"; "_index.md"]
         Title = "Capabilities FileSystem"
         Description = "Source-documented file system capability for FsFlow.Capabilities.FileSystem."
         Intro = "This page shows the file-system capability package. `IFileSystem` names the small set of file operations currently supported by FsFlow examples and app workflows: reading text, writing text, and existence checks. Use it when file access is part of a workflow boundary but you still want tests to provide an in-memory or fake implementation. The live provider belongs at the composition root; reusable workflow code should depend on the interface."
@@ -385,7 +436,7 @@ let pageSpecs = [
         Alias = None
     }
     {
-        OutPath = ["caps-http"; "_index.md"]
+        OutPath = ["capability"; "http"; "_index.md"]
         Title = "Capabilities Http"
         Description = "Source-documented HTTP client capability for FsFlow.Capabilities.Http."
         Intro = "This page shows the HTTP capability package. `IHttp` is intentionally narrow: it models a workflow that needs to fetch a string from a URL without binding the workflow to a concrete `HttpClient` setup. Use it for small integrations and examples where a single `getString` operation is enough. For production clients with richer behavior, define an app-specific interface and keep FsFlow responsible for orchestration, typed failure, and environment threading."
@@ -396,7 +447,7 @@ let pageSpecs = [
         Alias = None
     }
     {
-        OutPath = ["caps-process"; "_index.md"]
+        OutPath = ["capability"; "process"; "_index.md"]
         Title = "Capabilities Process"
         Description = "Source-documented external process capability for FsFlow.Capabilities.Process."
         Intro = "This page shows the external-process capability package. `IProcess` models command execution as an asynchronous workflow dependency and returns a `ProcessResult` with exit code, standard output, and standard error. Use it for tooling, build automation, and integration boundaries where spawning a process is part of the application behavior. Keep process execution behind this interface so tests can return deterministic results without shelling out."
@@ -485,8 +536,8 @@ let main argv =
                 match foundFinal with
                 | Some (:? ApiDocMember as m) ->
                     let pageName = getPageName id
-                    let mFullName = safeFullName m.Symbol
-                    let linkText = cleanName mFullName
+                    let qualifier = memberQualifier m
+                    let linkText = if String.IsNullOrEmpty qualifier then m.Name else qualifier + "." + m.Name
                     indexContent <- indexContent + $"- [`{linkText}`](./{pageName}): {m.Comment.Summary.HtmlText}\n"
                     let memberPageContent = renderMemberPage m
                     File.WriteAllText(Path.Combine(Path.GetDirectoryName(outPath), pageName), memberPageContent)

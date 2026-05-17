@@ -2,6 +2,8 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
+    <loc>http://localhost:3000/reference/capability/core/</loc>
+  </url><url>
     <loc>http://localhost:3000/reference/flow/</loc>
   </url><url>
     <loc>http://localhost:3000/docs/ecosystem/integrations-fstoolkit/</loc>
@@ -17,6 +19,8 @@
     <loc>http://localhost:3000/docs/tutorials/app-record/</loc>
   </url><url>
     <loc>http://localhost:3000/docs/tutorials/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/capability/console/</loc>
   </url><url>
     <loc>http://localhost:3000/docs/</loc>
   </url><url>
@@ -40,6 +44,8 @@
   </url><url>
     <loc>http://localhost:3000/docs/patterns/benchmarks/</loc>
   </url><url>
+    <loc>http://localhost:3000/reference/capability/filesystem/</loc>
+  </url><url>
     <loc>http://localhost:3000/reference/</loc>
   </url><url>
     <loc>http://localhost:3000/docs/state-concurrency/stm/</loc>
@@ -54,6 +60,8 @@
   </url><url>
     <loc>http://localhost:3000/docs/validation-results/validate-ce/</loc>
   </url><url>
+    <loc>http://localhost:3000/reference/capability/http/</loc>
+  </url><url>
     <loc>http://localhost:3000/reference/check/</loc>
   </url><url>
     <loc>http://localhost:3000/docs/validation-results/diagnostics/</loc>
@@ -65,6 +73,8 @@
     <loc>http://localhost:3000/docs/state-concurrency/stream/</loc>
   </url><url>
     <loc>http://localhost:3000/docs/tutorials/app-host/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/capability/process/</loc>
   </url><url>
     <loc>http://localhost:3000/docs/ecosystem/effect-ts-comparison/</loc>
   </url><url>
@@ -83,6 +93,8 @@
     <loc>http://localhost:3000/reference/diagnostics/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/ref/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/flow/runtime/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/stm/</loc>
   </url><url>
@@ -118,11 +130,11 @@
   </url><url>
     <loc>http://localhost:3000/reference/check/m-check-blank/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/flow/m-flow-runtime-cancellationtoken/</loc>
+    <loc>http://localhost:3000/reference/flow/runtime/m-flow-runtime-cancellationtoken/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-catch/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/flow/m-flow-runtime-catchcancellation/</loc>
+    <loc>http://localhost:3000/reference/flow/runtime/m-flow-runtime-catchcancellation/</loc>
   </url><url>
     <loc>http://localhost:3000/categories/</loc>
   </url><url>
@@ -132,21 +144,29 @@
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-delay/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/diagnostics/t-diagnostic-1/</loc>
+    <loc>http://localhost:3000/reference/capability/core/m-capabilities-core-environmentvariableerrors-describe/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/diagnostics/t-diagnostics-1/</loc>
+    <loc>http://localhost:3000/reference/diagnostics/t-diagnostic/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/diagnostics/t-diagnostics/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/diagnostics/m-diagnostics-empty/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/flow/m-flow-runtime-ensurenotcanceled/</loc>
+    <loc>http://localhost:3000/reference/flow/runtime/m-flow-runtime-ensurenotcanceled/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-env/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/capability/core/t-capabilities-core-environmentvariableerror/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/check/m-check-equal/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-error/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/validation/m-validation-error/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/capability/process/m-capabilities-process-process-execute/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/capability/filesystem/m-capabilities-filesystem-filesystem-exists/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/schedule/m-schedule-exponential/</loc>
   </url><url>
@@ -184,7 +204,7 @@
   </url><url>
     <loc>http://localhost:3000/reference/check/m-check-failifvaluesome/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/flow/t-fiber-2/</loc>
+    <loc>http://localhost:3000/reference/flow/t-fiber/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/diagnostics/m-diagnostics-flatten/</loc>
   </url><url>
@@ -192,13 +212,15 @@
   </url><url>
     <loc>http://localhost:3000/reference/flow/p-flow/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/flow/t-flow-3/</loc>
+    <loc>http://localhost:3000/reference/flow/t-flow/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/stream/t-flowstream-3/</loc>
+    <loc>http://localhost:3000/reference/stream/t-flowstream/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-fork/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-fromoption/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/capability/core/m-capabilities-core-environmentvariables-frompairs/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/check/m-check-frompredicate/</loc>
   </url><url>
@@ -208,19 +230,47 @@
   </url><url>
     <loc>http://localhost:3000/reference/stream/m-flowstream-fromseq/</loc>
   </url><url>
+    <loc>http://localhost:3000/reference/capability/core/m-capabilities-core-clock-fromvalue/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/capability/core/m-capabilities-core-guid-fromvalue/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/capability/core/m-capabilities-core-random-fromvalue/</loc>
+  </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-fromvalueoption/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/capability/core/m-capabilities-core-environmentvariable-get/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/ref/m-ref-get/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/stm/m-tref-get/</loc>
   </url><url>
+    <loc>http://localhost:3000/reference/capability/core/m-capabilities-core-environmentvariable-getbool/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/capability/core/m-capabilities-core-environmentvariable-getguid/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/capability/core/m-capabilities-core-environmentvariable-getint/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/capability/http/m-capabilities-http-http-getstring/</loc>
+  </url><url>
     <loc>http://localhost:3000/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/capability/core/t-capabilities-core-iclock/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/capability/console/t-capabilities-console-iconsole/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/capability/core/t-capabilities-core-ienvironmentvariables/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/capability/filesystem/t-capabilities-filesystem-ifilesystem/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-ignore/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/validation/m-validation-ignore/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/capability/t-ihas-1/</loc>
+    <loc>http://localhost:3000/reference/capability/core/t-capabilities-core-iguid/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/capability/t-ihas/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/capability/http/t-capabilities-http-ihttp/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/validation/m-validation-index/</loc>
   </url><url>
@@ -230,15 +280,35 @@
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-interrupt/</loc>
   </url><url>
+    <loc>http://localhost:3000/reference/capability/process/t-capabilities-process-iprocess/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/capability/core/t-capabilities-core-irandom/</loc>
+  </url><url>
     <loc>http://localhost:3000/reference/schedule/m-schedule-jittered/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-join/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/validation/m-validation-key/</loc>
   </url><url>
+    <loc>http://localhost:3000/reference/capability/console/m-capabilities-console-console-live/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/capability/core/m-capabilities-core-clock-live/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/capability/core/m-capabilities-core-environmentvariables-live/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/capability/core/m-capabilities-core-guid-live/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/capability/core/m-capabilities-core-random-live/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/capability/filesystem/m-capabilities-filesystem-filesystem-live/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/capability/http/m-capabilities-http-http-live/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/capability/process/m-capabilities-process-process-live/</loc>
+  </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-localenv/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/flow/m-flow-runtime-log/</loc>
+    <loc>http://localhost:3000/reference/flow/runtime/m-flow-runtime-log/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/ref/m-ref-make/</loc>
   </url><url>
@@ -272,9 +342,13 @@
   </url><url>
     <loc>http://localhost:3000/reference/validation/m-validation-name/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/flow/m-flow-runtime-newguid/</loc>
+    <loc>http://localhost:3000/reference/capability/core/m-capabilities-core-guid-newguid/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/flow/m-flow-runtime-nextint/</loc>
+    <loc>http://localhost:3000/reference/flow/runtime/m-flow-runtime-newguid/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/capability/core/m-capabilities-core-random-nextint/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/flow/runtime/m-flow-runtime-nextint/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/check/m-check-notblank/</loc>
   </url><url>
@@ -284,7 +358,9 @@
   </url><url>
     <loc>http://localhost:3000/reference/check/m-check-notnull/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/flow/m-flow-runtime-now/</loc>
+    <loc>http://localhost:3000/reference/capability/core/m-capabilities-core-clock-now/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/flow/runtime/m-flow-runtime-now/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-ok/</loc>
   </url><url>
@@ -338,6 +414,8 @@
   </url><url>
     <loc>http://localhost:3000/reference/diagnostics/t-pathsegment/</loc>
   </url><url>
+    <loc>http://localhost:3000/reference/capability/process/t-capabilities-process-processresult/</loc>
+  </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-providelayer/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-race/</loc>
@@ -346,19 +424,23 @@
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-read/</loc>
   </url><url>
+    <loc>http://localhost:3000/reference/capability/filesystem/m-capabilities-filesystem-filesystem-readalltext/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/capability/console/m-capabilities-console-console-readline/</loc>
+  </url><url>
     <loc>http://localhost:3000/reference/schedule/m-schedule-recurs/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/ref/t-ref-1/</loc>
+    <loc>http://localhost:3000/reference/ref/t-ref/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/schedule/m-flowschedule-repeat/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flowschedule-repeat/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/result/builders-result/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/result/p-result/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/flow/m-flow-runtime-retry/</loc>
+    <loc>http://localhost:3000/reference/flow/runtime/m-flow-runtime-retry/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/schedule/m-flowschedule-retry/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flowschedule-retry/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-run/</loc>
   </url><url>
@@ -366,7 +448,7 @@
   </url><url>
     <loc>http://localhost:3000/docs/patterns/examples/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/schedule/t-schedule-3/</loc>
+    <loc>http://localhost:3000/reference/schedule/t-schedule/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-sequence/</loc>
   </url><url>
@@ -382,13 +464,13 @@
   </url><url>
     <loc>http://localhost:3000/reference/diagnostics/m-diagnostics-singleton/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/flow/m-flow-runtime-sleep/</loc>
+    <loc>http://localhost:3000/reference/flow/runtime/m-flow-runtime-sleep/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/schedule/m-schedule-spaced/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/stm/p-stm-stm/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/stm/t-stm-1/</loc>
+    <loc>http://localhost:3000/reference/stm/t-stm/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-succeed/</loc>
   </url><url>
@@ -400,13 +482,13 @@
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-taperror/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/flow/m-flow-runtime-timeout/</loc>
+    <loc>http://localhost:3000/reference/flow/runtime/m-flow-runtime-timeout/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/flow/m-flow-runtime-timeouttoerror/</loc>
+    <loc>http://localhost:3000/reference/flow/runtime/m-flow-runtime-timeouttoerror/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/flow/m-flow-runtime-timeouttook/</loc>
+    <loc>http://localhost:3000/reference/flow/runtime/m-flow-runtime-timeouttook/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/flow/m-flow-runtime-timeoutwith/</loc>
+    <loc>http://localhost:3000/reference/flow/runtime/m-flow-runtime-timeoutwith/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/validation/m-validation-toresult/</loc>
   </url><url>
@@ -416,23 +498,31 @@
   </url><url>
     <loc>http://localhost:3000/reference/validation/m-validation-traverseindexed/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/stm/t-tref-1/</loc>
+    <loc>http://localhost:3000/reference/stm/t-tref/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/flow/m-flow-runtime-trygetenvironmentvariable/</loc>
+    <loc>http://localhost:3000/reference/capability/core/m-capabilities-core-environmentvariable-tryget/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/capability/core/m-capabilities-core-environmentvariables-tryget/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/flow/runtime/m-flow-runtime-trygetenvironmentvariable/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/ref/m-ref-update/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/stm/m-tref-update/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/flow/m-flow-runtime-usewithacquirerelease/</loc>
+    <loc>http://localhost:3000/reference/flow/runtime/m-flow-runtime-usewithacquirerelease/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/validation/builders-validate/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/validation/p-validate/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/validation/t-validation-2/</loc>
+    <loc>http://localhost:3000/reference/validation/t-validation/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-value/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/capability/filesystem/m-capabilities-filesystem-filesystem-writealltext/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/capability/console/m-capabilities-console-console-writeline/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/m-flow-zip/</loc>
   </url><url>

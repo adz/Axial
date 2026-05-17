@@ -6,10 +6,10 @@ This page shows the STM surface for composable atomic state transitions. STM is 
 
 ## Core types
 
-- [`TRef`](./t-tref-1.md): 
+- [`TRef`](./t-tref.md): 
  Represents a transactional reference that can be updated atomically within an <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-stm-1.html">STM</a> transaction.
  
-- [`STM`](./t-stm-1.md): 
+- [`STM`](./t-stm.md): 
  Represents a transactional operation that can be composed, retried, and executed atomically.
  
 
@@ -25,7 +25,7 @@ This page shows the STM surface for composable atomic state transitions. STM is 
 
 ## Builder
 
-- [`Stm.stm`](./p-stm-stm.md): 
+- [`stm`](./p-stm-stm.md): 
  The <code>stm { }</code> computation expression for building atomic transactions.
  
 

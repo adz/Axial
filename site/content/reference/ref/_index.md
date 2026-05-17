@@ -8,7 +8,7 @@ This page shows the `Ref` surface for small pieces of shared mutable state insid
 
 ## Core type
 
-- [`Ref`](./t-ref-1.md): 
+- [`Ref`](./t-ref.md): 
  Represents a handle to a mutable reference that can be updated atomically.
  
 

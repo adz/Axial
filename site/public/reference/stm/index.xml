@@ -44,16 +44,16 @@
     </item>
     <item>
       <title>STM</title>
-      <link>http://localhost:3000/reference/stm/t-stm-1/</link>
+      <link>http://localhost:3000/reference/stm/t-stm/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/stm/t-stm-1/</guid>
+      <guid>http://localhost:3000/reference/stm/t-stm/</guid>
       <description>&lt;p&gt;Represents a transactional operation that can be composed, retried, and executed atomically.&lt;/p&gt;&#xA;&lt;h2 id=&#34;signature&#34;&gt;Signature&lt;/h2&gt;&#xA;&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;type STM&lt;&#39;T&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;h2 id=&#34;type-parameters&#34;&gt;Type Parameters&lt;/h2&gt;&#xA;&lt;table&gt;&#xA;  &lt;thead&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;th&gt;Name&lt;/th&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/thead&gt;&#xA;  &lt;tbody&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td&gt;&lt;code&gt;T&lt;/code&gt;&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/tbody&gt;&#xA;&lt;/table&gt;</description>
     </item>
     <item>
       <title>TRef</title>
-      <link>http://localhost:3000/reference/stm/t-tref-1/</link>
+      <link>http://localhost:3000/reference/stm/t-tref/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:3000/reference/stm/t-tref-1/</guid>
+      <guid>http://localhost:3000/reference/stm/t-tref/</guid>
       <description>&lt;p&gt;Represents a transactional reference that can be updated atomically within an &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-stm-1.html&#34;&gt;STM&lt;/a&gt; transaction.&lt;/p&gt;&#xA;&lt;h2 id=&#34;signature&#34;&gt;Signature&lt;/h2&gt;&#xA;&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;type TRef&lt;&#39;T&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;h2 id=&#34;type-parameters&#34;&gt;Type Parameters&lt;/h2&gt;&#xA;&lt;table&gt;&#xA;  &lt;thead&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;th&gt;Name&lt;/th&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/thead&gt;&#xA;  &lt;tbody&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td&gt;&lt;code&gt;T&lt;/code&gt;&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/tbody&gt;&#xA;&lt;/table&gt;</description>
     </item>
     <item>

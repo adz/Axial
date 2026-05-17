@@ -8,7 +8,7 @@ This page shows the `Validation<'value, 'error>` surface for accumulating severa
 
 ## Core type
 
-- [`Validation`](./t-validation-2.md): 
+- [`Validation`](./t-validation.md): 
  An accumulating validation result that keeps the structured diagnostics graph visible.
  
 

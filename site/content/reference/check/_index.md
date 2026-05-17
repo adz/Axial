@@ -17,9 +17,9 @@ This page shows the `Check` surface for reusable, pure predicates. A check is a 
 ## Module functions
 
 - [`Check.fromPredicate`](./m-check-frompredicate.md): Builds a check from a predicate while preserving the successful value.
-- [`Check.`](./m-check-not.md): Returns success when the supplied check fails.
-- [`Check.`](./m-check-and.md): Returns success when both checks succeed.
-- [`Check.`](./m-check-or.md): Returns success when either check succeeds.
+- [`Check.``not```](./m-check-not.md): Returns success when the supplied check fails.
+- [`Check.``and```](./m-check-and.md): Returns success when both checks succeed.
+- [`Check.``or```](./m-check-or.md): Returns success when either check succeeds.
 - [`Check.all`](./m-check-all.md): Returns success when every check in the sequence succeeds.
 - [`Check.any`](./m-check-any.md): Returns success when at least one check in the sequence succeeds.
 - [`Check.okIf`](./m-check-okif.md): Returns success when the condition is true.

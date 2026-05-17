@@ -1,5 +1,5 @@
 ---
-title: "Check."
+title: "Check.``and``"
 linkTitle: "``and``"
 type: docs
 ---

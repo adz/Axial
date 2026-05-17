@@ -49,13 +49,13 @@ upsert_frontmatter() {
 # matches our desired site structure. We just copy it over.
 
 cp -r "$root_dir/docs/reference/"* "$ref_dir/"
-rm -rf "$ref_dir"/caps-core "$ref_dir"/caps-console "$ref_dir"/caps-filesystem "$ref_dir"/caps-http "$ref_dir"/caps-process
 
 # Fix index files: remove body titles to avoid double headings in Hugo
 find "$ref_dir" -name "_index.md" -type f -exec sed -i '/^# /d' {} \;
 
 # Set weights for main sections
 upsert_frontmatter "$ref_dir/flow/_index.md" "weight" "10"
+upsert_frontmatter "$ref_dir/flow/runtime/_index.md" "weight" "100"
 upsert_frontmatter "$ref_dir/check/_index.md" "weight" "40"
 upsert_frontmatter "$ref_dir/validation/_index.md" "weight" "60"
 upsert_frontmatter "$ref_dir/result/_index.md" "weight" "70"
@@ -65,6 +65,11 @@ upsert_frontmatter "$ref_dir/stm/_index.md" "weight" "100"
 upsert_frontmatter "$ref_dir/schedule/_index.md" "weight" "110"
 upsert_frontmatter "$ref_dir/stream/_index.md" "weight" "120"
 upsert_frontmatter "$ref_dir/capability/_index.md" "weight" "130"
+upsert_frontmatter "$ref_dir/capability/core/_index.md" "weight" "10"
+upsert_frontmatter "$ref_dir/capability/console/_index.md" "weight" "20"
+upsert_frontmatter "$ref_dir/capability/filesystem/_index.md" "weight" "30"
+upsert_frontmatter "$ref_dir/capability/http/_index.md" "weight" "40"
+upsert_frontmatter "$ref_dir/capability/process/_index.md" "weight" "50"
 
 # Ensure all reference pages are marked as docs type
 find "$ref_dir" -type f -name "*.md" -print0 |

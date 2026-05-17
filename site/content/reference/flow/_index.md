@@ -4,11 +4,13 @@ weight: 10
 type: docs
 ---
 
-This page shows the `Flow<'env, 'error, 'value>` surface, the central workflow type in FsFlow. A flow is a cold description of work that reads an explicit environment, can fail with a typed error, and only runs when you call an execution function such as `Flow.run`. Use this page as the API map for building fail-fast workflows, reading dependencies from `env`, reshaping environments with `localEnv`, composing typed failures, and introducing concurrency with fibers, `zipPar`, or `race`. Start with `flow { }`, `Flow.read`, `Flow.bind`, and `Flow.map`; reach for runtime helpers and parallel orchestration only at the boundary where the workflow actually needs them.
+This page shows the `Flow<'env, 'error, 'value>` surface, the central workflow type in FsFlow. A flow is a cold description of work that reads an explicit environment, can fail with a typed error, and only runs when you call an execution function such as `Flow.run`. Use this page as the API map for building fail-fast workflows, reading dependencies from `env`, reshaping environments with `localEnv`, composing typed failures, and introducing concurrency with fibers, `zipPar`, or `race`. Start with `flow { }`, `Flow.read`, `Flow.bind`, and `Flow.map`; reach for [runtime helpers](./runtime/) and parallel orchestration only at the boundary where the workflow actually needs them. 
+
+Note that common extensions such as `Flow.Retry` and `Flow.Repeat` are available as soon as you `open FsFlow` because their modules are marked with `[<AutoOpen>]`.
 
 ## Core type
 
-- [`Flow`](./t-flow-3.md): 
+- [`Flow`](./t-flow.md): 
  Represents a cold workflow that reads an environment, returns a typed result, and is executed
  explicitly through <code>Flow.run</code>.
  
@@ -48,27 +50,9 @@ This page shows the `Flow<'env, 'error, 'value>` surface, the central workflow t
 - [`Flow.traverse`](./m-flow-traverse.md): Transforms a sequence of values into a flow and stops at the first failure.
 - [`Flow.sequence`](./m-flow-sequence.md): Transforms a sequence of flows into a flow of a sequence and stops at the first failure.
 
-## Runtime helpers
-
-- [`Flow.Runtime.cancellationToken`](./m-flow-runtime-cancellationtoken.md): Reads the current runtime cancellation token.
-- [`Flow.Runtime.catchCancellation`](./m-flow-runtime-catchcancellation.md): Catches <a href="https://learn.microsoft.com/dotnet/api/operationcanceledexception">OperationCanceledException</a> raised by a flow and converts it into a typed error.
-- [`Flow.Runtime.ensureNotCanceled`](./m-flow-runtime-ensurenotcanceled.md): Returns a typed error immediately when the runtime token is already canceled.
-- [`Flow.Runtime.sleep`](./m-flow-runtime-sleep.md): Suspends the flow for the specified duration, observing cancellation.
-- [`Flow.Runtime.now`](./m-flow-runtime-now.md): Reads the ambient UTC clock owned by the runtime.
-- [`Flow.Runtime.log`](./m-flow-runtime-log.md): Writes a message through the ambient runtime logger.
-- [`Flow.Runtime.newGuid`](./m-flow-runtime-newguid.md): Creates a new GUID through the ambient runtime GUID generator.
-- [`Flow.Runtime.nextInt`](./m-flow-runtime-nextint.md): Creates a random integer through the ambient runtime random generator.
-- [`Flow.Runtime.tryGetEnvironmentVariable`](./m-flow-runtime-trygetenvironmentvariable.md): Reads an environment variable from the ambient runtime environment provider.
-- [`Flow.Runtime.useWithAcquireRelease`](./m-flow-runtime-usewithacquirerelease.md): Acquires a resource, uses it, and always runs the release action.
-- [`Flow.Runtime.timeout`](./m-flow-runtime-timeout.md): Fails with the supplied typed error when the flow does not complete before the timeout.
-- [`Flow.Runtime.timeoutToOk`](./m-flow-runtime-timeouttook.md): Returns the supplied success value when the flow does not complete before the timeout.
-- [`Flow.Runtime.timeoutToError`](./m-flow-runtime-timeouttoerror.md): Alias for <code>timeout</code> that emphasizes typed failure on timeout.
-- [`Flow.Runtime.timeoutWith`](./m-flow-runtime-timeoutwith.md): Runs a fallback flow when the source flow does not complete before the timeout.
-- [`Flow.Runtime.retry`](./m-flow-runtime-retry.md): Retries typed failures according to the specified policy.
-
 ## Concurrency
 
-- [`Fiber`](./t-fiber-2.md): 
+- [`Fiber`](./t-fiber.md): 
  Represents a handle to a running workflow.
  
 - [`Flow.fork`](./m-flow-fork.md): Starts a flow in a new fiber without waiting for it to complete.
@@ -79,4 +63,9 @@ This page shows the `Flow<'env, 'error, 'value>` surface, the central workflow t
 
 - [`Flow.zipPar`](./m-flow-zippar.md): Combines two flows into a tuple of their values, running them concurrently.
 - [`Flow.race`](./m-flow-race.md): Runs two flows concurrently and returns the result of the first one to complete.
+
+## Scheduling
+
+- [`Flow.Retry`](./m-flowschedule-retry.md): Retries a failing flow according to the supplied schedule.
+- [`Flow.Repeat`](./m-flowschedule-repeat.md): Repeats a successful flow according to the supplied schedule.
 

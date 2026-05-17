@@ -8,7 +8,7 @@ This page shows the `FlowStream` surface for cold, pull-based streams that still
 
 ## Core type
 
-- [`FlowStream`](./t-flowstream-3.md): 
+- [`FlowStream`](./t-flowstream.md): 
  Represents a cold stream of values that requires an environment, can fail with a typed error,
  and supports backpressure.
  
