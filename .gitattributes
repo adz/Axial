@@ -1,0 +1,7 @@
+site/public/** linguist-generated=true
+site/public/** linguist-vendored=true
+*.html linguist-generated=true
+*.xml linguist-generated=true
+*.json linguist-generated=true
+site/resources/** linguist-generated=true
+docs/reference/** linguist-generated=true

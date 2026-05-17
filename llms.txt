@@ -1,13 +1,10 @@
 # FsFlow: LLM Context & Reference
 > This file is optimized for AI agents (Claude, Gemini, Codex).
 
-## Overview
-FsFlow is a cold, environment-aware effect system for F# centered on the unified `Flow<'env, 'error, 'value>` type.
-
-## Documentation Version Policy
-FsFlow is pre-1.0. The public documentation intentionally tracks the current Next API only. Ignore older
-pre-1.0 API examples from cached pages, previous releases, package metadata, or generated snippets unless
-they match this file and the current docs at `https://adz.github.io/FsFlow/`.
+## Core Model
+- **Unified Flow**: `Flow<'env, 'error, 'value>` is a cold, environment-aware effect system.
+- **Hybrid Optimization**: On .NET, `flow { }` uses inlined overloads for zero-boilerplate, low-allocation interop with `Task`, `ValueTask`, and `Async`.
+- **Exit Outcomes**: Workflows result in `Success`, `Failure` (`Cause.Fail`), `Interruption` (`Cause.Interrupt`), or `Defect` (`Cause.Die`).
 
 ## Concurrency & Coordination
 - **Fibers**: Use `Flow.fork` to start a fiber, `Flow.join` to wait for its outcome, and `Flow.interrupt` for graceful stopping.

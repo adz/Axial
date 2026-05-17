@@ -2,532 +2,534 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/core/</loc>
+    <loc>http://localhost:3000/reference/capability/core/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/</loc>
+    <loc>http://localhost:3000/reference/flow/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/docs/ecosystem/integrations-fstoolkit/</loc>
+    <loc>http://localhost:3000/docs/ecosystem/integrations-fstoolkit/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/docs/start/getting-started/</loc>
+    <loc>http://localhost:3000/docs/start/getting-started/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/docs/validation-results/checks/</loc>
+    <loc>http://localhost:3000/docs/validation-results/checks/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/docs/state-concurrency/ref/</loc>
+    <loc>http://localhost:3000/docs/state-concurrency/ref/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/docs/managing-dependencies/runtime-vs-environment/</loc>
+    <loc>http://localhost:3000/docs/managing-dependencies/runtime-vs-environment/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/docs/start/</loc>
+    <loc>http://localhost:3000/docs/start/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/docs/tutorials/app-record/</loc>
+    <loc>http://localhost:3000/docs/tutorials/app-record/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/docs/tutorials/</loc>
+    <loc>http://localhost:3000/docs/tutorials/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/console/</loc>
+    <loc>http://localhost:3000/reference/capability/console/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/docs/</loc>
+    <loc>http://localhost:3000/docs/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/docs/start/execution-and-outcomes/</loc>
+    <loc>http://localhost:3000/docs/start/execution-and-outcomes/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/docs/core-model/semantics/</loc>
+    <loc>http://localhost:3000/docs/core-model/semantics/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/docs/validation-results/result-ce/</loc>
+    <loc>http://localhost:3000/docs/validation-results/result-ce/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/docs/state-concurrency/schedule/</loc>
+    <loc>http://localhost:3000/docs/state-concurrency/schedule/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/docs/patterns/troubleshooting-types/</loc>
+    <loc>http://localhost:3000/docs/patterns/troubleshooting-types/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/docs/validation-results/</loc>
+    <loc>http://localhost:3000/docs/validation-results/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/docs/ecosystem/integrations-validus/</loc>
+    <loc>http://localhost:3000/docs/ecosystem/integrations-validus/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/docs/core-model/defects/</loc>
+    <loc>http://localhost:3000/docs/core-model/fibers/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/docs/validation-results/guard/</loc>
+    <loc>http://localhost:3000/docs/core-model/defects/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/docs/patterns/benchmarks/</loc>
+    <loc>http://localhost:3000/docs/validation-results/guard/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/filesystem/</loc>
+    <loc>http://localhost:3000/docs/patterns/benchmarks/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/</loc>
+    <loc>http://localhost:3000/reference/capability/filesystem/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/docs/state-concurrency/stm/</loc>
+    <loc>http://localhost:3000/reference/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/docs/start/basic-examples/</loc>
+    <loc>http://localhost:3000/docs/state-concurrency/stm/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/docs/core-model/task-async-interop/</loc>
+    <loc>http://localhost:3000/docs/start/basic-examples/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/docs/core-model/</loc>
+    <loc>http://localhost:3000/docs/core-model/task-async-interop/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/docs/tutorials/capabilities/</loc>
+    <loc>http://localhost:3000/docs/core-model/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/docs/validation-results/validate-ce/</loc>
+    <loc>http://localhost:3000/docs/tutorials/capabilities/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/http/</loc>
+    <loc>http://localhost:3000/docs/validation-results/validate-ce/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/</loc>
+    <loc>http://localhost:3000/reference/capability/http/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/docs/validation-results/diagnostics/</loc>
+    <loc>http://localhost:3000/reference/check/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/docs/ecosystem/integrations-fsharpplus/</loc>
+    <loc>http://localhost:3000/docs/validation-results/diagnostics/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/docs/managing-dependencies/</loc>
+    <loc>http://localhost:3000/docs/ecosystem/integrations-fsharpplus/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/docs/state-concurrency/stream/</loc>
+    <loc>http://localhost:3000/docs/managing-dependencies/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/docs/tutorials/app-host/</loc>
+    <loc>http://localhost:3000/docs/state-concurrency/stream/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/process/</loc>
+    <loc>http://localhost:3000/docs/tutorials/app-host/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/docs/ecosystem/effect-ts-comparison/</loc>
+    <loc>http://localhost:3000/reference/capability/process/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/docs/managing-dependencies/capability-contracts/</loc>
+    <loc>http://localhost:3000/docs/ecosystem/effect-ts-comparison/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/docs/state-concurrency/</loc>
+    <loc>http://localhost:3000/docs/managing-dependencies/capability-contracts/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/docs/patterns/</loc>
+    <loc>http://localhost:3000/docs/state-concurrency/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/validation/</loc>
+    <loc>http://localhost:3000/docs/patterns/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/docs/ecosystem/</loc>
+    <loc>http://localhost:3000/reference/validation/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/result/</loc>
+    <loc>http://localhost:3000/docs/ecosystem/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/diagnostics/</loc>
+    <loc>http://localhost:3000/reference/result/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/ref/</loc>
+    <loc>http://localhost:3000/reference/diagnostics/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/runtime/</loc>
+    <loc>http://localhost:3000/reference/ref/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/stm/</loc>
+    <loc>http://localhost:3000/reference/flow/runtime/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/schedule/</loc>
+    <loc>http://localhost:3000/reference/stm/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/stream/</loc>
+    <loc>http://localhost:3000/reference/schedule/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/</loc>
+    <loc>http://localhost:3000/reference/stream/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/docs/managing-dependencies/provider-edge/</loc>
+    <loc>http://localhost:3000/reference/capability/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-and/</loc>
+    <loc>http://localhost:3000/docs/managing-dependencies/provider-edge/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-not/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-and/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-or/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-not/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-all/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-or/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-any/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-all/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/m-flow-apply/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-any/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/validation/m-validation-apply/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-apply/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/validation/m-validation-at/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validation-apply/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/stm/m-stm-atomically/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validation-at/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/m-flow-bind/</loc>
+    <loc>http://localhost:3000/reference/stm/m-stm-atomically/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/validation/m-validation-bind/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-bind/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-blank/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validation-bind/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/runtime/m-flow-runtime-cancellationtoken/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-blank/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/m-flow-catch/</loc>
+    <loc>http://localhost:3000/reference/flow/runtime/m-flow-runtime-cancellationtoken/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/runtime/m-flow-runtime-catchcancellation/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-catch/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/categories/</loc>
+    <loc>http://localhost:3000/reference/flow/runtime/m-flow-runtime-catchcancellation/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/t-check/</loc>
+    <loc>http://localhost:3000/categories/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/validation/m-validation-collect/</loc>
+    <loc>http://localhost:3000/reference/check/t-check/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/m-flow-delay/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validation-collect/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/core/m-capabilities-core-environmentvariableerrors-describe/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-delay/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/diagnostics/t-diagnostic/</loc>
+    <loc>http://localhost:3000/reference/capability/core/m-capabilities-core-environmentvariableerrors-describe/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/diagnostics/t-diagnostics/</loc>
+    <loc>http://localhost:3000/reference/diagnostics/t-diagnostic/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/diagnostics/m-diagnostics-empty/</loc>
+    <loc>http://localhost:3000/reference/diagnostics/t-diagnostics/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/runtime/m-flow-runtime-ensurenotcanceled/</loc>
+    <loc>http://localhost:3000/reference/diagnostics/m-diagnostics-empty/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/m-flow-env/</loc>
+    <loc>http://localhost:3000/reference/flow/runtime/m-flow-runtime-ensurenotcanceled/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/core/t-capabilities-core-environmentvariableerror/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-env/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-equal/</loc>
+    <loc>http://localhost:3000/reference/capability/core/t-capabilities-core-environmentvariableerror/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/m-flow-error/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-equal/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/validation/m-validation-error/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-error/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/process/m-capabilities-process-process-execute/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validation-error/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/filesystem/m-capabilities-filesystem-filesystem-exists/</loc>
+    <loc>http://localhost:3000/reference/capability/process/m-capabilities-process-process-execute/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/schedule/m-schedule-exponential/</loc>
+    <loc>http://localhost:3000/reference/capability/filesystem/m-capabilities-filesystem-filesystem-exists/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/m-flow-fail/</loc>
+    <loc>http://localhost:3000/reference/schedule/m-schedule-exponential/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/validation/m-validation-fail/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-fail/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-failif/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validation-fail/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-failifblank/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-failif/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-failifempty/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-failifblank/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-failifemptystr/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-failifempty/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-failifequal/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-failifemptystr/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-failifnone/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-failifequal/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-failifnonemptystr/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-failifnone/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-failifnotblank/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-failifnonemptystr/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-failifnotempty/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-failifnotblank/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-failifnotequal/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-failifnotempty/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-failifnotnull/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-failifnotequal/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-failifnull/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-failifnotnull/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-failifsome/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-failifnull/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-failifvaluenone/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-failifsome/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-failifvaluesome/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-failifvaluenone/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/t-fiber/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-failifvaluesome/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/diagnostics/m-diagnostics-flatten/</loc>
+    <loc>http://localhost:3000/reference/flow/t-fiber/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/builders-flow/</loc>
+    <loc>http://localhost:3000/reference/diagnostics/m-diagnostics-flatten/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/p-flow/</loc>
+    <loc>http://localhost:3000/reference/flow/builders-flow/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/t-flow/</loc>
+    <loc>http://localhost:3000/reference/flow/p-flow/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/stream/t-flowstream/</loc>
+    <loc>http://localhost:3000/reference/flow/t-flow/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/m-flow-fork/</loc>
+    <loc>http://localhost:3000/reference/stream/t-flowstream/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/m-flow-fromoption/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-fork/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/core/m-capabilities-core-environmentvariables-frompairs/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-fromoption/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-frompredicate/</loc>
+    <loc>http://localhost:3000/reference/capability/core/m-capabilities-core-environmentvariables-frompairs/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/m-flow-fromresult/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-frompredicate/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/validation/m-validation-fromresult/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-fromresult/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/stream/m-flowstream-fromseq/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validation-fromresult/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/core/m-capabilities-core-clock-fromvalue/</loc>
+    <loc>http://localhost:3000/reference/stream/m-flowstream-fromseq/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/core/m-capabilities-core-guid-fromvalue/</loc>
+    <loc>http://localhost:3000/reference/capability/core/m-capabilities-core-clock-fromvalue/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/core/m-capabilities-core-random-fromvalue/</loc>
+    <loc>http://localhost:3000/reference/capability/core/m-capabilities-core-guid-fromvalue/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/m-flow-fromvalueoption/</loc>
+    <loc>http://localhost:3000/reference/capability/core/m-capabilities-core-random-fromvalue/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/core/m-capabilities-core-environmentvariable-get/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-fromvalueoption/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/ref/m-ref-get/</loc>
+    <loc>http://localhost:3000/reference/capability/core/m-capabilities-core-environmentvariable-get/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/stm/m-tref-get/</loc>
+    <loc>http://localhost:3000/reference/ref/m-ref-get/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/core/m-capabilities-core-environmentvariable-getbool/</loc>
+    <loc>http://localhost:3000/reference/stm/m-tref-get/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/core/m-capabilities-core-environmentvariable-getguid/</loc>
+    <loc>http://localhost:3000/reference/capability/core/m-capabilities-core-environmentvariable-getbool/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/core/m-capabilities-core-environmentvariable-getint/</loc>
+    <loc>http://localhost:3000/reference/capability/core/m-capabilities-core-environmentvariable-getguid/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/http/m-capabilities-http-http-getstring/</loc>
+    <loc>http://localhost:3000/reference/capability/core/m-capabilities-core-environmentvariable-getint/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/</loc>
+    <loc>http://localhost:3000/reference/capability/http/m-capabilities-http-http-getstring/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/core/t-capabilities-core-iclock/</loc>
+    <loc>http://localhost:3000/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/console/t-capabilities-console-iconsole/</loc>
+    <loc>http://localhost:3000/reference/capability/core/t-capabilities-core-iclock/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/core/t-capabilities-core-ienvironmentvariables/</loc>
+    <loc>http://localhost:3000/reference/capability/console/t-capabilities-console-iconsole/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/filesystem/t-capabilities-filesystem-ifilesystem/</loc>
+    <loc>http://localhost:3000/reference/capability/core/t-capabilities-core-ienvironmentvariables/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/m-flow-ignore/</loc>
+    <loc>http://localhost:3000/reference/capability/filesystem/t-capabilities-filesystem-ifilesystem/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/validation/m-validation-ignore/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-ignore/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/core/t-capabilities-core-iguid/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validation-ignore/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/t-ihas/</loc>
+    <loc>http://localhost:3000/reference/capability/core/t-capabilities-core-iguid/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/http/t-capabilities-http-ihttp/</loc>
+    <loc>http://localhost:3000/reference/capability/t-ihas/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/validation/m-validation-index/</loc>
+    <loc>http://localhost:3000/reference/capability/http/t-capabilities-http-ihttp/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/m-flow-inject/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validation-index/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/m-flow-inject/</loc>
+    <loc>http://localhost:3000/reference/capability/m-flow-inject/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/m-flow-interrupt/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-inject/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/process/t-capabilities-process-iprocess/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-interrupt/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/core/t-capabilities-core-irandom/</loc>
+    <loc>http://localhost:3000/reference/capability/process/t-capabilities-process-iprocess/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/schedule/m-schedule-jittered/</loc>
+    <loc>http://localhost:3000/reference/capability/core/t-capabilities-core-irandom/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/m-flow-join/</loc>
+    <loc>http://localhost:3000/reference/schedule/m-schedule-jittered/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/validation/m-validation-key/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-join/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/console/m-capabilities-console-console-live/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validation-key/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/core/m-capabilities-core-clock-live/</loc>
+    <loc>http://localhost:3000/reference/capability/console/m-capabilities-console-console-live/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/core/m-capabilities-core-environmentvariables-live/</loc>
+    <loc>http://localhost:3000/reference/capability/core/m-capabilities-core-clock-live/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/core/m-capabilities-core-guid-live/</loc>
+    <loc>http://localhost:3000/reference/capability/core/m-capabilities-core-environmentvariables-live/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/core/m-capabilities-core-random-live/</loc>
+    <loc>http://localhost:3000/reference/capability/core/m-capabilities-core-guid-live/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/filesystem/m-capabilities-filesystem-filesystem-live/</loc>
+    <loc>http://localhost:3000/reference/capability/core/m-capabilities-core-random-live/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/http/m-capabilities-http-http-live/</loc>
+    <loc>http://localhost:3000/reference/capability/filesystem/m-capabilities-filesystem-filesystem-live/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/process/m-capabilities-process-process-live/</loc>
+    <loc>http://localhost:3000/reference/capability/http/m-capabilities-http-http-live/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/m-flow-localenv/</loc>
+    <loc>http://localhost:3000/reference/capability/process/m-capabilities-process-process-live/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/runtime/m-flow-runtime-log/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-localenv/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/ref/m-ref-make/</loc>
+    <loc>http://localhost:3000/reference/flow/runtime/m-flow-runtime-log/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/stm/m-tref-make/</loc>
+    <loc>http://localhost:3000/reference/ref/m-ref-make/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/m-flow-map/</loc>
+    <loc>http://localhost:3000/reference/stm/m-tref-make/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/stream/m-flowstream-map/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-map/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/validation/m-validation-map/</loc>
+    <loc>http://localhost:3000/reference/stream/m-flowstream-map/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/m-flow-map2/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validation-map/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/validation/m-validation-map2/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-map2/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/m-flow-map3/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validation-map2/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/validation/m-validation-map3/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-map3/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/m-flow-maperror/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validation-map3/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/validation/m-validation-maperror/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-maperror/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/diagnostics/m-diagnostics-merge/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validation-maperror/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/validation/m-validation-merge/</loc>
+    <loc>http://localhost:3000/reference/diagnostics/m-diagnostics-merge/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/t-missingcapability/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validation-merge/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/ref/m-ref-modify/</loc>
+    <loc>http://localhost:3000/reference/capability/t-missingcapability/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/validation/m-validation-name/</loc>
+    <loc>http://localhost:3000/reference/ref/m-ref-modify/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/core/m-capabilities-core-guid-newguid/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validation-name/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/runtime/m-flow-runtime-newguid/</loc>
+    <loc>http://localhost:3000/reference/capability/core/m-capabilities-core-guid-newguid/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/core/m-capabilities-core-random-nextint/</loc>
+    <loc>http://localhost:3000/reference/flow/runtime/m-flow-runtime-newguid/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/runtime/m-flow-runtime-nextint/</loc>
+    <loc>http://localhost:3000/reference/capability/core/m-capabilities-core-random-nextint/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-notblank/</loc>
+    <loc>http://localhost:3000/reference/flow/runtime/m-flow-runtime-nextint/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-notempty/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-notblank/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-notequal/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-notempty/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-notnull/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-notequal/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/core/m-capabilities-core-clock-now/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-notnull/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/runtime/m-flow-runtime-now/</loc>
+    <loc>http://localhost:3000/reference/capability/core/m-capabilities-core-clock-now/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/m-flow-ok/</loc>
+    <loc>http://localhost:3000/reference/flow/runtime/m-flow-runtime-now/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/validation/m-validation-ok/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-ok/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-okif/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validation-ok/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-okifblank/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-okif/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-okifempty/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-okifblank/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-okifemptystr/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-okifempty/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-okifequal/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-okifemptystr/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-okifnone/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-okifequal/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-okifnonemptystr/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-okifnone/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-okifnotblank/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-okifnonemptystr/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-okifnotempty/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-okifnotblank/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-okifnotequal/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-okifnotempty/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-okifnotnull/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-okifnotequal/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-okifnull/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-okifnotnull/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-okifsome/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-okifnull/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-okifvaluenone/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-okifsome/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-okifvaluesome/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-okifvaluenone/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/m-flow-orelse/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-okifvaluesome/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/validation/m-validation-orelse/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-orelse/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/m-flow-orelseflow/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validation-orelse/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/m-flow-orelsewith/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-orelseflow/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/validation/m-validation-orelsewith/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-orelsewith/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-orerror/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validation-orelsewith/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/check/m-check-orerrorwith/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-orerror/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/diagnostics/t-path/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-orerrorwith/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/diagnostics/t-pathsegment/</loc>
+    <loc>http://localhost:3000/reference/diagnostics/t-path/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/process/t-capabilities-process-processresult/</loc>
+    <loc>http://localhost:3000/reference/diagnostics/t-pathsegment/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/m-flow-providelayer/</loc>
+    <loc>http://localhost:3000/reference/capability/process/t-capabilities-process-processresult/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/m-flow-race/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-providelayer/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/m-flow-read/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-race/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/m-flow-read/</loc>
+    <loc>http://localhost:3000/reference/capability/m-flow-read/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/filesystem/m-capabilities-filesystem-filesystem-readalltext/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-read/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/console/m-capabilities-console-console-readline/</loc>
+    <loc>http://localhost:3000/reference/capability/filesystem/m-capabilities-filesystem-filesystem-readalltext/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/schedule/m-schedule-recurs/</loc>
+    <loc>http://localhost:3000/reference/capability/console/m-capabilities-console-console-readline/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/ref/t-ref/</loc>
+    <loc>http://localhost:3000/reference/schedule/m-schedule-recurs/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/m-flowschedule-repeat/</loc>
+    <loc>http://localhost:3000/reference/ref/t-ref/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/result/builders-result/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flowschedule-repeat/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/result/p-result/</loc>
+    <loc>http://localhost:3000/reference/result/builders-result/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/runtime/m-flow-runtime-retry/</loc>
+    <loc>http://localhost:3000/reference/result/p-result/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/m-flowschedule-retry/</loc>
+    <loc>http://localhost:3000/reference/flow/runtime/m-flow-runtime-retry/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/m-flow-run/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flowschedule-retry/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/stream/m-flowstream-runforeach/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-run/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/docs/patterns/examples/</loc>
+    <loc>http://localhost:3000/reference/stream/m-flowstream-runforeach/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/schedule/t-schedule/</loc>
+    <loc>http://localhost:3000/docs/patterns/examples/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/m-flow-sequence/</loc>
+    <loc>http://localhost:3000/reference/schedule/t-schedule/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/validation/m-validation-sequence/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-sequence/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/m-flow-service/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validation-sequence/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/m-flow-service/</loc>
+    <loc>http://localhost:3000/reference/capability/m-flow-service/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/ref/m-ref-set/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-service/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/stm/m-tref-set/</loc>
+    <loc>http://localhost:3000/reference/ref/m-ref-set/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/diagnostics/m-diagnostics-singleton/</loc>
+    <loc>http://localhost:3000/reference/stm/m-tref-set/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/runtime/m-flow-runtime-sleep/</loc>
+    <loc>http://localhost:3000/reference/diagnostics/m-diagnostics-singleton/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/schedule/m-schedule-spaced/</loc>
+    <loc>http://localhost:3000/reference/flow/runtime/m-flow-runtime-sleep/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/stm/p-stm-stm/</loc>
+    <loc>http://localhost:3000/reference/schedule/m-schedule-spaced/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/stm/t-stm/</loc>
+    <loc>http://localhost:3000/reference/stm/p-stm-stm/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/m-flow-succeed/</loc>
+    <loc>http://localhost:3000/reference/stm/t-stm/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/validation/m-validation-succeed/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-succeed/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/tags/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validation-succeed/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/m-flow-tap/</loc>
+    <loc>http://localhost:3000/tags/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/m-flow-taperror/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-tap/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/runtime/m-flow-runtime-timeout/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-taperror/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/runtime/m-flow-runtime-timeouttoerror/</loc>
+    <loc>http://localhost:3000/reference/flow/runtime/m-flow-runtime-timeout/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/runtime/m-flow-runtime-timeouttook/</loc>
+    <loc>http://localhost:3000/reference/flow/runtime/m-flow-runtime-timeouttoerror/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/runtime/m-flow-runtime-timeoutwith/</loc>
+    <loc>http://localhost:3000/reference/flow/runtime/m-flow-runtime-timeouttook/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/validation/m-validation-toresult/</loc>
+    <loc>http://localhost:3000/reference/flow/runtime/m-flow-runtime-timeoutwith/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/diagnostics/m-diagnostics-tostring/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validation-toresult/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/m-flow-traverse/</loc>
+    <loc>http://localhost:3000/reference/diagnostics/m-diagnostics-tostring/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/validation/m-validation-traverseindexed/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-traverse/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/stm/t-tref/</loc>
+    <loc>http://localhost:3000/reference/validation/m-validation-traverseindexed/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/core/m-capabilities-core-environmentvariable-tryget/</loc>
+    <loc>http://localhost:3000/reference/stm/t-tref/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/core/m-capabilities-core-environmentvariables-tryget/</loc>
+    <loc>http://localhost:3000/reference/capability/core/m-capabilities-core-environmentvariable-tryget/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/runtime/m-flow-runtime-trygetenvironmentvariable/</loc>
+    <loc>http://localhost:3000/reference/capability/core/m-capabilities-core-environmentvariables-tryget/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/ref/m-ref-update/</loc>
+    <loc>http://localhost:3000/reference/flow/runtime/m-flow-runtime-trygetenvironmentvariable/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/stm/m-tref-update/</loc>
+    <loc>http://localhost:3000/reference/ref/m-ref-update/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/runtime/m-flow-runtime-usewithacquirerelease/</loc>
+    <loc>http://localhost:3000/reference/stm/m-tref-update/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/validation/builders-validate/</loc>
+    <loc>http://localhost:3000/reference/flow/runtime/m-flow-runtime-usewithacquirerelease/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/validation/p-validate/</loc>
+    <loc>http://localhost:3000/reference/validation/builders-validate/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/validation/t-validation/</loc>
+    <loc>http://localhost:3000/reference/validation/p-validate/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/m-flow-value/</loc>
+    <loc>http://localhost:3000/reference/validation/t-validation/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/filesystem/m-capabilities-filesystem-filesystem-writealltext/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-value/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/capability/console/m-capabilities-console-console-writeline/</loc>
+    <loc>http://localhost:3000/reference/capability/filesystem/m-capabilities-filesystem-filesystem-writealltext/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/m-flow-zip/</loc>
+    <loc>http://localhost:3000/reference/capability/console/m-capabilities-console-console-writeline/</loc>
   </url><url>
-    <loc>https://adz.github.io/FsFlow/reference/flow/m-flow-zippar/</loc>
+    <loc>http://localhost:3000/reference/flow/m-flow-zip/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/flow/m-flow-zippar/</loc>
   </url>
 </urlset>

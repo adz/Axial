@@ -2,44 +2,44 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Capabilities FileSystem on FsFlow</title>
-    <link>https://adz.github.io/FsFlow/reference/capability/filesystem/</link>
+    <link>http://localhost:3000/reference/capability/filesystem/</link>
     <description>Recent content in Capabilities FileSystem on FsFlow</description>
     <generator>Hugo</generator>
     <language>en-us</language>
-    <atom:link href="https://adz.github.io/FsFlow/reference/capability/filesystem/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="http://localhost:3000/reference/capability/filesystem/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Capabilities.FileSystem.FileSystem.exists</title>
-      <link>https://adz.github.io/FsFlow/reference/capability/filesystem/m-capabilities-filesystem-filesystem-exists/</link>
+      <link>http://localhost:3000/reference/capability/filesystem/m-capabilities-filesystem-filesystem-exists/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/capability/filesystem/m-capabilities-filesystem-filesystem-exists/</guid>
+      <guid>http://localhost:3000/reference/capability/filesystem/m-capabilities-filesystem-filesystem-exists/</guid>
       <description>&lt;p&gt;Checks if a file exists using the file system environment.&lt;/p&gt;&#xA;&lt;h2 id=&#34;signature&#34;&gt;Signature&lt;/h2&gt;&#xA;&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Capabilities.FileSystem.FileSystem.exists&amp;#32;&lt;span&gt;path&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;table&gt;&#xA;  &lt;thead&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;th&gt;Name&lt;/th&gt;&#xA;          &lt;th&gt;Type&lt;/th&gt;&#xA;          &lt;th&gt;Description&lt;/th&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/thead&gt;&#xA;  &lt;tbody&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td&gt;&lt;code&gt;path&lt;/code&gt;&lt;/td&gt;&#xA;          &lt;td&gt;&lt;code&gt;string&lt;/code&gt;&lt;/td&gt;&#xA;          &lt;td&gt;The path of the file to check.&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/tbody&gt;&#xA;&lt;/table&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;table&gt;&#xA;  &lt;thead&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;th&gt;Type&lt;/th&gt;&#xA;          &lt;th&gt;Description&lt;/th&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/thead&gt;&#xA;  &lt;tbody&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td&gt;&lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;e, bool&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/td&gt;&#xA;          &lt;td&gt;A flow that produces true if the file exists, false otherwise.&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/tbody&gt;&#xA;&lt;/table&gt;</description>
     </item>
     <item>
       <title>Capabilities.FileSystem.IFileSystem</title>
-      <link>https://adz.github.io/FsFlow/reference/capability/filesystem/t-capabilities-filesystem-ifilesystem/</link>
+      <link>http://localhost:3000/reference/capability/filesystem/t-capabilities-filesystem-ifilesystem/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/capability/filesystem/t-capabilities-filesystem-ifilesystem/</guid>
+      <guid>http://localhost:3000/reference/capability/filesystem/t-capabilities-filesystem-ifilesystem/</guid>
       <description>&lt;p&gt;Provides synchronous access to file system operations.&lt;/p&gt;&#xA;&lt;h2 id=&#34;signature&#34;&gt;Signature&lt;/h2&gt;&#xA;&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;type IFileSystem&lt;/code&gt;&#xA;&lt;/div&gt;</description>
     </item>
     <item>
       <title>Capabilities.FileSystem.FileSystem.live</title>
-      <link>https://adz.github.io/FsFlow/reference/capability/filesystem/m-capabilities-filesystem-filesystem-live/</link>
+      <link>http://localhost:3000/reference/capability/filesystem/m-capabilities-filesystem-filesystem-live/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/capability/filesystem/m-capabilities-filesystem-filesystem-live/</guid>
+      <guid>http://localhost:3000/reference/capability/filesystem/m-capabilities-filesystem-filesystem-live/</guid>
       <description>&lt;p&gt;Creates a live file system backed by &lt;a href=&#34;https://learn.microsoft.com/dotnet/api/system.io.file&#34;&gt;File&lt;/a&gt;.&lt;/p&gt;&#xA;&lt;h2 id=&#34;signature&#34;&gt;Signature&lt;/h2&gt;&#xA;&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Capabilities.FileSystem.FileSystem.live&amp;#32;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;table&gt;&#xA;  &lt;thead&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;th&gt;Type&lt;/th&gt;&#xA;          &lt;th&gt;Description&lt;/th&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/thead&gt;&#xA;  &lt;tbody&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td&gt;&lt;code&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-capabilities-filesystem-ifilesystem.html&#34;&gt;IFileSystem&lt;/a&gt;&lt;/code&gt;&lt;/td&gt;&#xA;          &lt;td&gt;A live &lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-capabilities-filesystem-ifilesystem.html&#34;&gt;IFileSystem&lt;/a&gt; implementation.&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/tbody&gt;&#xA;&lt;/table&gt;</description>
     </item>
     <item>
       <title>Capabilities.FileSystem.FileSystem.readAllText</title>
-      <link>https://adz.github.io/FsFlow/reference/capability/filesystem/m-capabilities-filesystem-filesystem-readalltext/</link>
+      <link>http://localhost:3000/reference/capability/filesystem/m-capabilities-filesystem-filesystem-readalltext/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/capability/filesystem/m-capabilities-filesystem-filesystem-readalltext/</guid>
+      <guid>http://localhost:3000/reference/capability/filesystem/m-capabilities-filesystem-filesystem-readalltext/</guid>
       <description>&lt;p&gt;Reads all text from a file using the file system environment.&lt;/p&gt;&#xA;&lt;h2 id=&#34;signature&#34;&gt;Signature&lt;/h2&gt;&#xA;&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Capabilities.FileSystem.FileSystem.readAllText&amp;#32;&lt;span&gt;path&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;table&gt;&#xA;  &lt;thead&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;th&gt;Name&lt;/th&gt;&#xA;          &lt;th&gt;Type&lt;/th&gt;&#xA;          &lt;th&gt;Description&lt;/th&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/thead&gt;&#xA;  &lt;tbody&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td&gt;&lt;code&gt;path&lt;/code&gt;&lt;/td&gt;&#xA;          &lt;td&gt;&lt;code&gt;string&lt;/code&gt;&lt;/td&gt;&#xA;          &lt;td&gt;The path of the file to read.&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/tbody&gt;&#xA;&lt;/table&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;table&gt;&#xA;  &lt;thead&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;th&gt;Type&lt;/th&gt;&#xA;          &lt;th&gt;Description&lt;/th&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/thead&gt;&#xA;  &lt;tbody&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td&gt;&lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;e, string&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/td&gt;&#xA;          &lt;td&gt;A flow that produces the contents of the file.&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/tbody&gt;&#xA;&lt;/table&gt;</description>
     </item>
     <item>
       <title>Capabilities.FileSystem.FileSystem.writeAllText</title>
-      <link>https://adz.github.io/FsFlow/reference/capability/filesystem/m-capabilities-filesystem-filesystem-writealltext/</link>
+      <link>http://localhost:3000/reference/capability/filesystem/m-capabilities-filesystem-filesystem-writealltext/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://adz.github.io/FsFlow/reference/capability/filesystem/m-capabilities-filesystem-filesystem-writealltext/</guid>
+      <guid>http://localhost:3000/reference/capability/filesystem/m-capabilities-filesystem-filesystem-writealltext/</guid>
       <description>&lt;p&gt;Writes all text to a file using the file system environment.&lt;/p&gt;&#xA;&lt;h2 id=&#34;signature&#34;&gt;Signature&lt;/h2&gt;&#xA;&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Capabilities.FileSystem.FileSystem.writeAllText&amp;#32;&lt;span&gt;path&amp;#32;contents&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;table&gt;&#xA;  &lt;thead&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;th&gt;Name&lt;/th&gt;&#xA;          &lt;th&gt;Type&lt;/th&gt;&#xA;          &lt;th&gt;Description&lt;/th&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/thead&gt;&#xA;  &lt;tbody&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td&gt;&lt;code&gt;path&lt;/code&gt;&lt;/td&gt;&#xA;          &lt;td&gt;&lt;code&gt;string&lt;/code&gt;&lt;/td&gt;&#xA;          &lt;td&gt;The path of the file to write to.&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td&gt;&lt;code&gt;contents&lt;/code&gt;&lt;/td&gt;&#xA;          &lt;td&gt;&lt;code&gt;string&lt;/code&gt;&lt;/td&gt;&#xA;          &lt;td&gt;The string contents to write.&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/tbody&gt;&#xA;&lt;/table&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;table&gt;&#xA;  &lt;thead&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;th&gt;Type&lt;/th&gt;&#xA;          &lt;th&gt;Description&lt;/th&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/thead&gt;&#xA;  &lt;tbody&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td&gt;&lt;code&gt;&lt;span&gt;&lt;a href=&#34;https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;e, unit&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/td&gt;&#xA;          &lt;td&gt;A flow that performs the file write operation.&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/tbody&gt;&#xA;&lt;/table&gt;</description>
     </item>
   </channel>
