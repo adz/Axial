@@ -188,27 +188,6 @@ type Flow<'env, 'error, 'value> =
     | Flow of ('env -> CancellationToken -> Effect<'value, 'error>)
 
 /// <summary>
-/// Represents a cold async workflow that reads an environment, returns a typed result,
-/// and is used internally to implement the unified <c>Flow</c> surface.
-/// </summary>
-/// <typeparam name="env">The type of the environment dependency.</typeparam>
-/// <typeparam name="error">The type of the failure value.</typeparam>
-/// <typeparam name="value">The type of the success value.</typeparam>
-type internal AsyncAdapterFlow<'env, 'error, 'value> =
-    | AsyncAdapterFlow of ('env -> Async<Exit<'value, 'error>>)
-
-/// <summary>
-/// Represents a cold task-based workflow that reads an environment, observes a runtime cancellation token,
-/// returns a typed result, and is executed explicitly through <c>TaskAdapter.run</c>.
-/// </summary>
-/// <typeparam name="env">The type of the environment dependency.</typeparam>
-/// <typeparam name="error">The type of the failure value.</typeparam>
-/// <typeparam name="value">The type of the success value.</typeparam>
-type internal TaskAdapterFlow<'env, 'error, 'value> =
-    private
-    | TaskAdapterFlow of ('env -> CancellationToken -> Task<Exit<'value, 'error>>)
-
-/// <summary>
 /// Log levels used by runtime logging helpers and environment-provided logging functions.
 /// </summary>
 [<RequireQualifiedAccess>]

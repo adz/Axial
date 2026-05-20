@@ -60,10 +60,6 @@ module Builders =
     /// </example>
     let flow = FlowBuilder()
 
-#if !FABLE_COMPILER
-    let internal asyncAdapter = AsyncAdapterBuilder()
-#endif
-
     /// <summary>
     /// The accumulating <c>validate { }</c> computation expression.
     /// </summary>

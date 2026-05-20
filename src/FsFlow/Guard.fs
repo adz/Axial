@@ -2,33 +2,6 @@ namespace FsFlow
 
 open System.Threading.Tasks
 
-#if !FABLE_COMPILER
-module private GuardFlow =
-    let inline fromAsyncAdapter
-        (flow: AsyncAdapterFlow<'env, 'error, 'value>)
-        : Flow<'env, 'error, 'value> =
-        Flow(fun environment cancellationToken ->
-            ValueTask<Exit<'value, 'error>>(
-                task {
-                    let! exit =
-                        Async.StartAsTask(
-                            AsyncAdapter.run environment flow,
-                            cancellationToken = cancellationToken)
-
-                    return exit
-                }))
-
-    let inline fromTaskAdapter
-        (flow: TaskAdapterFlow<'env, 'error, 'value>)
-        : Flow<'env, 'error, 'value> =
-        Flow(fun environment cancellationToken ->
-            ValueTask<Exit<'value, 'error>>(
-                task {
-                    let! exit = TaskAdapter.run environment cancellationToken flow
-                    return exit
-                }))
-#endif
-
 /// <summary>
 /// Constructors for turning predicate-like and error-bearing sources into bindable results,
 /// validations, and flows.
@@ -139,20 +112,6 @@ type Guard private () =
                 (fun _ -> EffectFlow.ofError error)
         )
 
-#if !FABLE_COMPILER
-    static member internal Of(error: 'error, flow: AsyncAdapterFlow<'env, unit, 'value>) : AsyncAdapterFlow<'env, 'error, 'value> =
-        flow
-        |> GuardFlow.fromAsyncAdapter
-        |> Flow.mapError (fun () -> error)
-        |> AsyncAdapter.fromFlow
-
-    static member internal Of(error: 'error, flow: TaskAdapterFlow<'env, unit, 'value>) : TaskAdapterFlow<'env, 'error, 'value> =
-        flow
-        |> GuardFlow.fromTaskAdapter
-        |> Flow.mapError (fun () -> error)
-        |> TaskAdapter.fromFlow
-#endif
-
     static member MapError(mapper: 'error1 -> 'error2, result: Result<'value, 'error1>) : Result<'value, 'error2> =
         Result.mapError mapper result
 
@@ -181,93 +140,4 @@ type Guard private () =
         )
     static member MapError(mapper: 'error1 -> 'error2, flow: Flow<'env, 'error1, 'value>) : Flow<'env, 'error2, 'value> =
         Flow.mapError mapper flow
-#endif
-
-#if !FABLE_COMPILER
-    static member internal MapError(mapper: 'error1 -> 'error2, flow: AsyncAdapterFlow<'env, 'error1, 'value>) : AsyncAdapterFlow<'env, 'error2, 'value> =
-        flow
-        |> GuardFlow.fromAsyncAdapter
-        |> Flow.mapError mapper
-        |> AsyncAdapter.fromFlow
-
-    static member internal MapError(mapper: 'error1 -> 'error2, flow: TaskAdapterFlow<'env, 'error1, 'value>) : TaskAdapterFlow<'env, 'error2, 'value> =
-        flow
-        |> GuardFlow.fromTaskAdapter
-        |> Flow.mapError mapper
-        |> TaskAdapter.fromFlow
-#endif
-
-#if !FABLE_COMPILER
-[<AutoOpen>]
-module internal AsyncAdapterBuilderExtensions =
-    type AsyncAdapterBuilder with
-        member this.ReturnFrom(operation: ValueTask) : AsyncAdapterFlow<'env, 'error, unit> =
-            operation.AsTask()
-            |> this.ReturnFrom
-
-        member this.ReturnFrom(operation: ValueTask<'value>) : AsyncAdapterFlow<'env, 'error, 'value> =
-            operation.AsTask()
-            |> this.ReturnFrom
-
-        member _.ReturnFrom(operation: Task) : AsyncAdapterFlow<'env, 'error, unit> =
-            operation
-            |> Async.AwaitTask
-            |> AsyncAdapter.fromAsync
-
-        member _.ReturnFrom(operation: Task<'value>) : AsyncAdapterFlow<'env, 'error, 'value> =
-            operation
-            |> Async.AwaitTask
-            |> AsyncAdapter.fromAsync
-
-        member _.ReturnFrom(operation: ColdTask<Result<'value, 'error>>) : AsyncAdapterFlow<'env, 'error, 'value> =
-            async {
-                let! cancellationToken = Async.CancellationToken
-                return! ColdTask.run cancellationToken operation |> Async.AwaitTask
-            }
-            |> AsyncAdapter.fromAsyncResult
-
-        member this.Bind
-            (
-                operation: Task,
-                binder: unit -> AsyncAdapterFlow<'env, 'error, 'next>
-            ) : AsyncAdapterFlow<'env, 'error, 'next> =
-            operation
-            |> this.ReturnFrom
-            |> AsyncAdapter.bind binder
-
-        member this.Bind
-            (
-                operation: Task<'value>,
-                binder: 'value -> AsyncAdapterFlow<'env, 'error, 'next>
-            ) : AsyncAdapterFlow<'env, 'error, 'next> =
-            operation
-            |> this.ReturnFrom
-            |> AsyncAdapter.bind binder
-
-        member this.Bind
-            (
-                operation: ValueTask,
-                binder: unit -> AsyncAdapterFlow<'env, 'error, 'next>
-            ) : AsyncAdapterFlow<'env, 'error, 'next> =
-            operation
-            |> this.ReturnFrom
-            |> AsyncAdapter.bind binder
-
-        member this.Bind
-            (
-                operation: ValueTask<'value>,
-                binder: 'value -> AsyncAdapterFlow<'env, 'error, 'next>
-            ) : AsyncAdapterFlow<'env, 'error, 'next> =
-            operation
-            |> this.ReturnFrom
-            |> AsyncAdapter.bind binder
-
-        member this.Bind
-            (
-                operation: ColdTask<Result<'value, 'error>>,
-                binder: 'value -> AsyncAdapterFlow<'env, 'error, 'next>
-            ) : AsyncAdapterFlow<'env, 'error, 'next> =
-            operation
-            |> this.ReturnFrom
-            |> AsyncAdapter.bind binder
 #endif

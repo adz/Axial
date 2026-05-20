@@ -21,8 +21,6 @@
     <Compile Include="..\..\src\FsFlow\RuntimeRegistry.fs" />
     <Compile Include="..\..\src\FsFlow\RuntimeAdapter.fs" />
     <Compile Include="..\..\src\FsFlow\RuntimeLayer.fs" />
-    <Compile Include="..\..\src\FsFlow\AsyncAdapter.fs" />
-    <Compile Include="..\..\src\FsFlow\TaskAdapter.fs" />
     <Compile Include="..\..\src\FsFlow\Flow.fs" />
     <Compile Include="..\..\src\FsFlow\Ref.fs" />
     <Compile Include="..\..\src\FsFlow\Stm.fs" />

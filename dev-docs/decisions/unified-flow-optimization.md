@@ -52,7 +52,7 @@ We landed on a **Hybrid Approach** that maximizes performance on .NET while main
 
 ### Maintenance
 -   The library now requires two builder implementations (using `#if FABLE_COMPILER`) to ensure optimal performance on .NET while keeping Fable compatibility.
--   The `Flow` constructor and `AsyncAdapterFlow` are now internal-but-accessible to support the inlining strategy.
+-   The `Flow` constructor is internal-but-accessible to support the inlining strategy.
 
 ## Future Directions
 
