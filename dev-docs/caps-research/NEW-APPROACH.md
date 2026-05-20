@@ -1,7 +1,11 @@
 # New Capability Approach
 
-This document is the current proposed direction after the research in `CAPS_SUMMARY.md` and the older
-structural-accessor plan.
+Status: research context. The live source of truth is `../PLAN.md`.
+
+This document is the closest research ancestor of the current direction after the research in `CAPS_SUMMARY.md` and
+the older structural-accessor plan. Its central idea still applies: do not make user domain dependencies the main
+capability story. Some examples below still mention `RuntimeContext<'runtime, 'context, 'env>` or capability-family
+requirements in `'env`; those are research sketches, not the implemented public model.
 
 Short version:
 
@@ -9,6 +13,7 @@ Short version:
 Do not make user domain dependencies the main capability story.
 Make FsFlow's capability story about explicit, typed, testable .NET/system effects.
 Keep user dependencies boring by default: records, RuntimeContext env, or IServiceProvider.
+In the implemented model, runtime/system services are ambient and do not appear in end-user `'env` signatures.
 Offer fine-grained caps primarily through opt-in cap packages.
 ```
 
@@ -16,7 +21,7 @@ Offer fine-grained caps primarily through opt-in cap packages.
 
 FsFlow should have one workflow model and many optional capability families.
 
-The workflow model stays:
+The researched workflow model was:
 
 ```text
 TaskFlow<'env, 'error, 'value>
@@ -28,6 +33,14 @@ or, if keeping the current two-parameter shape:
 ```text
 RuntimeContext<'runtime, AppEnv<'context, 'domainEnv>>
 ```
+
+The implemented model keeps:
+
+```text
+Flow<'env, 'error, 'value>
+```
+
+with runtime/system services carried by the ambient runtime.
 
 The conceptual split is:
 

@@ -1,570 +1,183 @@
 # FsFlow Plan
 
-This file tracks unresolved product direction only.
-`dev-docs/decisions/README.md` indexes settled decisions that no longer belong here.
+This file tracks current product and architecture direction.
+Settled historical decisions live in `dev-docs/decisions/`.
+Capability research lives in `dev-docs/caps-research/`, but this file is the live direction.
 
-## Current Priority
+## Current Direction
 
-The top priority is the FsFlow Foundation:
-
-- Runtime Registry for tagged service storage, scope ownership, and local overrides
-- Nominal Contracts for the public capability surface
-- Adapter Layer for bridging runtime storage to public contracts
-- Resource Scope for deterministic acquire/release lifecycle management
-
-Everything else must fit around that foundation.
-
-## Foundation Goals
-
-The foundation is complete only when all of the following are true:
-
-1. Public workflow signatures are readable without exposing runtime internals.
-2. Runtime storage can hold multiple services, including tagged services of the same CLR type.
-3. Scopes dispose resources deterministically and in the correct order.
-4. Local overrides can replace a service for a subtree or nested workflow without rebuilding the entire app.
-5. Public contracts remain nominal, stable, and easy to understand in diagnostics.
-6. Boilerplate between runtime storage and public contracts is generated or mechanically derived.
-7. The existing `Exit` / `Cause` execution semantics remain intact.
-8. The docs and generated reference describe the foundation, not an old placeholder model.
-
-If any one of these fails, the foundation is incomplete.
-
-## Architecture
-
-### Proposed File Layout
-
-This is the target layout for the foundation. The exact names can still move, but the responsibilities should not.
-
-```text
-src/FsFlow/
-  Core.fs                 // Flow, Exit, Cause, Effect, contracts used by core workflows
-  Runtime.fs              // RuntimeContext and runtime/app carrier helpers
-  RuntimeRegistry.fs      // internal registry, tags, scope, add/get/replace
-  RuntimeScope.fs         // scope lifecycle and finalizer handling
-  RuntimeAdapter.fs       // registry -> nominal contract bridge
-  RuntimeLayer.fs         // layer/provisioning helpers
-
-src/FsFlow.Capabilities.*
-  *.fs                    // public capability interfaces and helper functions
-
-src/FsFlow.Generators/    // source generators or codegen inputs, if added
-  ...
-```
-
-Implementation rule:
-
-- if code is about service lookup, tagging, or lifecycle, it belongs in runtime registry/scope modules
-- if code is about what a workflow needs, it belongs in capability modules
-- if code is about converting runtime state into public contracts, it belongs in the adapter layer
-- if code is about building runtime state, it belongs in layer/provisioner modules
-
-### 1. Runtime Registry
-
-The runtime registry is internal machinery.
-
-Responsibilities:
-
-- store concrete service instances
-- distinguish services by type and optional tag
-- support replacement and override operations
-- own the current scope
-- act as the bridge target for adapters
-
-Design rules:
-
-- the registry is not the public API
-- the registry is not the thing user workflows program against
-- the registry must not leak into ordinary workflow signatures
-- the registry must remain capable of hosting multiple values of the same CLR type when tagged
-
-Suggested core shape:
+FsFlow keeps the public workflow type simple:
 
 ```fsharp
-type ServiceKey = { Type: Type; Tag: string option }
-type Registry = { Services: Map<ServiceKey, obj>; Scope: Scope }
+Flow<'env, 'error, 'value>
 ```
 
-The exact internal representation can change, but the behavior above cannot.
+The active design splits dependencies into two groups:
 
-Concrete shape to aim for:
+- app/domain dependencies live in the explicit user environment, `'env`
+- runtime/system services are ambient runtime services and do not appear in `'env`
+
+This means ordinary workflow signatures should advertise business requirements, not every operational service used
+for logging, time, random values, GUID generation, environment variables, timeout, retry, cancellation, or cleanup.
+
+## Active Architecture
+
+### Explicit Environment
+
+`'env` is for app and domain dependencies:
+
+- repositories
+- gateways
+- domain services
+- feature dependencies
+- request or user context when it is part of business logic
+
+The default access pattern is:
 
 ```fsharp
-type ServiceKey =
-    { Type: Type
-      Tag: string option }
-
-type Scope() =
-    member _.AddFinalizer : (unit -> unit) -> unit
-
-type Registry =
-    { Services: Map<ServiceKey, obj>
-      Scope: Scope }
-
-module Registry =
-    val empty : Scope -> Registry
-    val add<'T> : ?tag:string -> 'T -> Registry -> Registry
-    val tryGet<'T> : ?tag:string -> Registry -> 'T option
-    val get<'T> : ?tag:string -> Registry -> 'T
-    val replace<'T> : ?tag:string -> 'T -> Registry -> Registry
+Flow.read (fun env -> env.Orders)
 ```
 
-Expected runtime behavior:
+Plain records are the default recommendation for local app code. They are simple, legible, easy to test, and avoid
+unnecessary capability boilerplate.
 
-- `add` inserts a value under `typeof<'T>` and optional tag
-- `tryGet` reads without throwing
-- `get` throws or fails in a controlled, intentional way when missing
-- `replace` overwrites the matching key
-- `Scope` owns finalizers and runs them exactly once
+### Nominal App Contracts
 
-The registry must support multiple services of the same CLR type via `Tag`.
+`IHas<'service>` and `Flow.service<'service>()` are available for reusable helpers that benefit from a named,
+compile-time checked app dependency contract.
 
-### 2. Nominal Contracts
-
-The public API should use standard F# interfaces as named capability contracts.
-
-Responsibilities:
-
-- describe what a workflow needs
-- provide readable names in signatures and errors
-- group related services into bundles
-- support interface inheritance for composition
-
-Design rules:
-
-- the user should see named contracts, not SRTP machinery
-- contracts should be ordinary interfaces or interface groups
-- contracts should work well with generated adapters
-- contracts should support runtime/app separation when needed
-
-Examples:
-
-- `IDbCap`
-- `ILogCap`
-- `IRuntimeCaps`
-- `IAppCaps`
-
-The public API should favor the shape:
+Use this when the static contract is worth the ceremony:
 
 ```fsharp
-type WorkflowEnv = inherit IRuntimeCaps inherit IAppCaps
-```
+type IHasOrders = inherit IHas<IOrderRepository>
 
-or a concrete env type that implements those contracts.
-
-Concrete contract examples:
-
-```fsharp
-type ILog =
-    abstract Info : string -> unit
-
-type IClock =
-    abstract UtcNow : unit -> DateTimeOffset
-
-type IDb =
-    abstract Query : string -> string
-
-type IRuntimeCaps =
-    abstract Log : ILog
-    abstract Clock : IClock
-
-type IAppCaps =
-    abstract Db : IDb
-```
-
-The important rule is that the contract names are the public requirement story.
-Users should read signatures and immediately understand what the workflow needs.
-
-Concrete carrier example:
-
-```fsharp
-type AppEnv =
-    { Db: IDb
-      Log: ILog
-      Clock: IClock }
-    interface IRuntimeCaps with
-        member x.Log = x.Log
-        member x.Clock = x.Clock
-    interface IAppCaps with
-        member x.Db = x.Db
-```
-
-### 3. Adapter Layer
-
-The adapter layer is the missing link.
-
-Responsibilities:
-
-- project a runtime registry into a public contract
-- hide the runtime storage details from user code
-- remove repetitive forwarding code
-- centralize tag lookup and service selection
-
-Design rules:
-
-- adapters should be generated when possible
-- adapters should be small and obvious when handwritten
-- adapters should be the only place that knows how registry entries become public contract members
-- adapters should be the boundary where tagging policy is resolved
-
-The adapter layer is what makes the library feel like a product instead of a demo.
-
-Concrete adapter example:
-
-```fsharp
-module AppEnvAdapter =
-    let fromRegistry (reg: Registry) : AppEnv =
-        { Db = Registry.get<IDb> reg
-          Log = Registry.get<ILog>(tag = Some "Main") reg
-          Clock = Registry.get<IClock> reg }
-```
-
-If the final implementation uses generated code, the generator should emit the equivalent of the above
-for every declared public contract member.
-
-The adapter should ideally be generated from a declaration like:
-
-```fsharp
-[<CapabilityHost>]
-type AppEnv =
-    { Db: IDb
-      Log: ILog
-      Clock: IClock }
-```
-
-The generator then emits:
-
-```fsharp
-module AppEnv =
-    val fromRegistry : Registry -> AppEnv
-    val toRuntimeCaps : AppEnv -> IRuntimeCaps
-    val toAppCaps : AppEnv -> IAppCaps
-```
-
-The adapter must be the only place that:
-
-- knows how tags are resolved
-- knows which registry key maps to which contract member
-- can combine multiple named services into a single object
-- can vary by host, runtime, or build target
-
-### 4. Resource Scope
-
-Scope is a first-class runtime primitive.
-
-Responsibilities:
-
-- track acquired resources
-- register finalizers
-- ensure release occurs exactly once
-- preserve acquisition order and teardown semantics
-
-Design rules:
-
-- scope must be usable by layers and resource-producing services
-- scope must be owned by the runtime, not by user workflow code
-- scope cleanup must be deterministic
-- scope semantics must work for local overrides and nested compositions
-
-The scope is not optional. If FsFlow claims production-grade composition, lifecycle must be explicit.
-
-Concrete lifecycle example:
-
-```fsharp
-let openDb (connectionString: string) (scope: Scope) : IDb =
-    let conn = openConnection connectionString
-    scope.AddFinalizer(fun () -> conn.Dispose())
-    conn
-```
-
-If a service needs asynchronous acquisition, the layer should own the asynchronous boundary and only
-publish the fully acquired service after the resource is ready.
-
-Scope semantics to preserve:
-
-- finalizers run when the outer run completes
-- finalizers run even if the workflow fails
-- finalizers run even if the workflow is interrupted
-- finalizers should run in reverse acquisition order where possible
-- finalizers must not run twice
-
-## Public Workflow Shape
-
-The workflow surface must stay simple.
-
-The preferred public model is:
-
-- `Flow<'env, 'error, 'value>` remains the core workflow type
-- `'env` is usually a nominal contract or a concrete environment implementing one or more contracts
-- runtime/app separation is represented explicitly when needed, not hidden
-
-Proposed execution shape:
-
-```fsharp
-type Flow<'env, 'error, 'value> =
-    'env -> CancellationToken -> Effect<'value, 'error>
-```
-
-The public builder must preserve the current `Exit` / `Cause` model, so the underlying effect type
-must not collapse defects or interruptions into plain `Result`.
-
-The runtime/app split should follow this rule:
-
-- runtime concerns: logging, tracing, metrics, clocks, cancellation, host integration
-- app concerns: repositories, domain services, feature-specific dependencies
-
-The split may be encoded as:
-
-- `RuntimeContext<'runtime, 'env>` or an equivalent two-part carrier
-- `RuntimeCaps` and `AppCaps` interfaces
-- a concrete `AppEnv` / `RuntimeEnv` type that implements the contracts
-
-What must not happen:
-
-- tuple-SRTP becoming the public contract story
-- registry lookup surfacing directly in normal workflows
-- hidden runtime semantics changing the user-visible workflow model
-
-Example workflow against the public contract:
-
-```fsharp
-let fetchAndLog (id: int) : Flow<IAppEnv, AppError, string> =
+let saveOrder order : Flow<#IHasOrders, OrderError, unit> =
     flow {
-        let! env = Flow.env
-        let data = env.Db.Query (string id)
-        do! Flow.read (fun (r: IRuntimeCaps) -> r.Log.Info $"Fetched {data}")
-        return data
+        let! orders = Flow.service<IOrderRepository, _, _>()
+        return! orders.Save order
     }
 ```
 
-The exact helper names can change, but the intended shape is:
+Do not make `IHasX` the default story for all domain dependencies. For most feature-local code, records are better.
 
-- workflows read from named contracts
-- runtime and app concerns remain distinct
-- the caller supplies a concrete environment implementing the needed interfaces
+### Provider Edge
 
-The preferred runtime/app carrier is:
+`Flow.inject<'service>()` exists for pragmatic .NET host integration when `'env :> IServiceProvider`.
 
-```fsharp
-type RuntimeContext<'runtime, 'env> =
-    { Runtime: 'runtime
-      Environment: 'env
-      CancellationToken: CancellationToken }
-```
+Use it at host edges, glue code, prototypes, and boundary adapters. Prefer mapping provider registrations into a typed
+record or nominal contract before entering core domain workflows.
 
-When both halves are used in the same workflow, the runtime-side operations should constrain `'runtime`
-and the app-side operations should constrain `'env`.
+Missing provider registrations are configuration defects, not domain errors.
 
-## Layering Direction
+### Ambient Runtime
 
-FsFlow needs a `Layer` concept, but the layer should serve the foundation rather than define it.
+Runtime services are stored internally in a fixed runtime context and carried by the execution engine with ambient
+state. These services do not appear in `Flow<'env, 'error, 'value>` signatures.
 
-Layer responsibilities:
+Current runtime services:
 
-- build runtime values
-- acquire resources under scope
-- register services with tags
-- compose upstream and downstream dependencies
-- support local overrides
+- `IClock`
+- `ILog`
+- `IRandom`
+- `IGuid`
+- `IEnvironmentVariables`
+- cancellation token access
+- scheduling helpers such as sleep, retry, and timeout
+- resource helpers such as acquire/use/release
 
-Layer rules:
-
-- a layer may create or transform registry state
-- a layer may produce a nominal contract adapter
-- a layer must cooperate with scope cleanup
-- a layer must not force users into runtime registry code
-
-The long-term goal is to let users express:
-
-- what they need
-- what they provide
-- how those providers are composed
-
-without exposing the storage mechanics.
-
-Concrete layer example:
+Public access goes through `Flow.Runtime` or capability-family helpers:
 
 ```fsharp
-type Layer<'input, 'error, 'output> =
-    Registry -> CancellationToken -> Effect<'output, 'error>
+open FsFlow.Capabilities.Core
 
-module Layer =
-    val provide : Layer<'input, 'error, 'output> -> ('output -> 'workflow) -> 'workflow
-```
-
-Layer responsibilities in practice:
-
-```fsharp
-// create a Db under scope
-let dbLayer (connString: string) : Layer<Registry, AppError, IDb> =
-    fun reg ct -> task {
-        let conn = openConnection connString
-        reg.Scope.AddFinalizer(fun () -> conn.Dispose())
-        return Ok (conn :> IDb)
-    }
-
-// register a tag
-let taggedLogLayer : Layer<Registry, AppError, unit> =
-    fun reg ct -> task {
-        let log = createLogger()
-        let reg = Registry.add<ILog> ~tag:"Main" log reg
-        return Ok ()
-    }
-
-// chain layers
-let composed =
-    dbLayer "..."
-    |> Layer.bind (fun db ->
-        taggedLogLayer |> Layer.map (fun () -> db))
-```
-
-The final shape can differ, but the layer must be able to:
-
-- create services
-- register them into a registry
-- add finalizers into scope
-- return a value or contract that later adapters can consume
-
-## What Success Looks Like
-
-The foundation is successful when a user can:
-
-1. Define a few ordinary interfaces for runtime or app dependencies.
-2. Define one concrete environment type that implements the required contracts.
-3. Add tagged services when the same CLR type appears multiple times.
-4. Build services under scope and know they will be disposed correctly.
-5. Override a service for a subtree or branch without rewriting the entire composition root.
-6. Write workflows whose signatures are readable and stable.
-7. Use generated bridging code instead of hand-written adapter boilerplate.
-
-Example success path:
-
-```fsharp
-let runtime =
-    Runtime.build
-        |> Runtime.addLog liveLog
-        |> Runtime.addClock liveClock
-
-let app =
-    AppEnv.create
-        |> AppEnv.addDb liveDb
-        |> AppEnv.addEmail liveEmail
-
-let result =
-    Flow.run
-        (RuntimeContext.create runtime app CancellationToken.None)
-        workflow
-```
-
-That is the shape the docs, generators, and runtime implementation should converge on.
-
-### End-to-End Example
-
-This is the expected user-facing flow, end to end:
-
-```fsharp
-// 1. declare contracts
-type ILog = abstract Info : string -> unit
-type IClock = abstract UtcNow : unit -> DateTimeOffset
-type IDb = abstract Query : string -> string
-
-type IRuntimeCaps =
-    abstract Log : ILog
-    abstract Clock : IClock
-
-type IAppCaps =
-    abstract Db : IDb
-
-// 2. declare a concrete env
-type AppEnv =
-    { Db: IDb
-      Log: ILog
-      Clock: IClock }
-    interface IRuntimeCaps with
-        member x.Log = x.Log
-        member x.Clock = x.Clock
-    interface IAppCaps with
-        member x.Db = x.Db
-
-// 3. write workflow code
-let workflow (id: int) : Flow<IAppCaps, AppError, string> =
+let workflow =
     flow {
-        let! env = Flow.env
-        let data = env.Db.Query (string id)
-        return data
+        let! now = Clock.now
+        do! Log.info $"Started at {now}"
+        let! id = Guid.newGuid
+        return id
     }
-
-// 4. build runtime storage
-let reg =
-    Scope()
-    |> Registry.empty
-    |> Registry.add<IDb> fakeDb
-    |> Registry.add<ILog> ~tag:"Main" fakeLog
-    |> Registry.add<IClock> fakeClock
-
-// 5. adapt runtime storage to the contract
-let env = AppEnvAdapter.fromRegistry reg
-
-// 6. run the workflow
-let result = workflow 42 env
 ```
 
-The real implementation may use `Flow.run`, `TaskFlow.run`, or `RuntimeContext`, but the shape above
-is the target user experience.
+Overrides are local to a flow subtree:
 
-## What Should Not Reappear
+```fsharp
+workflow
+|> Flow.withClock fakeClock
+|> Flow.withLog testLog
+```
 
-Do not reintroduce:
+This is the active model. Runtime services are ambient but overridable, not part of the end-user app environment.
 
-- tuple-soup as the public environment shape
-- SRTP-heavy public APIs
-- reflection as the runtime access path
-- untyped service-provider lookup in ordinary workflows
-- hidden environment conventions that require source spelunking
+## Deferred Registry / Scope / Layer Work
 
-## Remaining Direction
+The repository currently contains internal `Registry`, `Scope`, `RuntimeAdapter`, and `RuntimeLayer` modules with
+tests. They are not the active runtime storage engine for normal workflow execution.
 
-After the foundation lands, the next unresolved directions are still:
+Treat them as deferred foundation pieces for a more complete scope/layer system, not as the current architecture.
 
-- preserve `Cause.Fail`, `Cause.Interrupt`, and `Cause.Die` as distinct runtime outcomes
-- make defect handling explicit enough to support a ZIO-like lossless failure story
-- evolve STM from a pessimistic lock model to a ZIO-like coordination engine with `retry` and `orElse`
-- keep docs, examples, and generated reference aligned with the source of truth
+Do not write user-facing docs that claim FsFlow uses a registry-backed runtime today.
+Do not make registry adoption a prerequisite for the current capability model.
 
-These are still important, but they must not distract from the foundation work.
+Registry/scope/layer work becomes active only if we decide to implement richer behavior such as:
 
-## Done Means
+- dynamically extensible runtime service families
+- tagged runtime services
+- deterministic scope ownership across composed layers
+- resource-producing layers with teardown guarantees
+- registry-backed host provisioning
 
-The foundation is not done until:
+Until then, the fixed ambient runtime is the source of truth.
 
-- user-facing contracts are nominal and readable
-- runtime storage is internal and tagged
-- scope cleanup is deterministic
-- adapters are generated or mechanically derived
-- runtime/app separation is explicit where needed
-- `Exit` / `Cause` semantics remain intact
-- docs and reference pages describe the real API rather than the design discussion
+## Capability Families
 
-## Implementation Notes For Future Work
+Capability packages should focus on explicit, typed, testable system effects:
 
-When implementing or revising the foundation, keep these rules explicit:
+- Core: clock, log, random, GUID, environment variables
+- Console
+- FileSystem
+- Http
+- Process
+- future context or telemetry packages
 
-1. Prefer ordinary F# code in user-facing signatures.
-2. Keep registry mechanics out of workflow examples.
-3. Use code generation to remove repetitive adapter forwarding.
-4. Preserve the current failure semantics instead of flattening everything into `Result`.
-5. Make runtime/app separation visible in names, not just in comments.
-6. Add tests for tagging, overrides, and scope cleanup before expanding layer composition.
+Capability-family operations should normally read ambient runtime services or use their own package-specific runtime
+bridge. They should not force every operation into user `'env` unless the dependency is genuinely app/domain owned.
 
-## Acceptance Checklist For The Foundation
+## Documentation Direction
 
-Use this checklist during implementation reviews:
+Public docs should teach this order:
 
-- [ ] registry can store multiple services of the same type under different tags
-- [ ] registry lookup is not exposed as normal workflow API
-- [ ] scope finalizers run deterministically and exactly once
-- [ ] adapters can project the same registry into multiple nominal contracts
-- [ ] a concrete env can implement grouped interfaces cleanly
-- [ ] runtime/app split is visible in types and examples
-- [ ] local overrides can be expressed without rebuilding the entire app
-- [ ] docs include a complete build/adapt/run example
-- [ ] generated reference can be derived from the same source of truth
+1. Use plain records plus `Flow.read` for most app dependencies.
+2. Use ambient runtime helpers for operational services.
+3. Use `IHas<'T>` plus `Flow.service` for reusable strict app contracts.
+4. Use `Flow.inject` at .NET host edges.
+5. Treat registry/scope/layer internals as implementation or future architecture, not current user guidance.
+
+Docs must avoid:
+
+- presenting registry-backed runtime as implemented public behavior
+- presenting `RuntimeContext<'runtime, 'env>` as the public model
+- teaching `IHasX` as the default for every repository or domain service
+- mixing runtime/system effects into ordinary app environment signatures
+
+## Implementation Snapshot
+
+As of this plan:
+
+- `Flow<'env, 'error, 'value>` is the public workflow type.
+- `Flow.run` installs `RuntimeContext.live` into ambient runtime state.
+- `Flow.withClock`, `Flow.withLog`, `Flow.withRandom`, `Flow.withGuid`, and `Flow.withEnvironmentVariables` override runtime state for a flow subtree.
+- `Flow.Runtime.now`, `Flow.Runtime.log`, `Flow.Runtime.newGuid`, `Flow.Runtime.nextInt`, and `Flow.Runtime.tryGetEnvironmentVariable` read ambient runtime state.
+- `FsFlow.Capabilities.Core` aliases the core runtime service interfaces and exposes helpers over `Flow.Runtime`.
+- `Flow.read`, `Flow.service`, and `Flow.inject` are the active app dependency accessors.
+- `Registry`, `Scope`, `RuntimeAdapter`, and `RuntimeLayer` are internal and currently exercised by foundation tests only.
+
+## Open Product Questions
+
+- Should registry/scope/layer remain in `src/FsFlow` as dormant internal infrastructure, or move behind a clearer
+  experimental boundary until it is connected to public behavior?
+- Should `Flow.inject` return a typed missing-capability error instead of defecting, or is missing DI registration
+  correctly treated as a configuration defect?
+- Should capability packages beyond Core use the ambient runtime directly, or should each package expose explicit
+  override helpers like `Flow.withFileSystem` when they mature?
+- How much of `IHas<'T>` should be emphasized in public docs now that records are the default app dependency model?

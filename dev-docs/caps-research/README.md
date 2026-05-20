@@ -2,16 +2,21 @@
 
 This bundle contains capability-design research documents for FsFlow.
 
-Start with `NEW-APPROACH.md`. It is the current proposed direction: optional capability families for
-explicit, typed, testable .NET/system effects, while user domain dependencies stay plain by default.
-`CAPS_SUMMARY.md`, `CAPS_RECOMMENDED_MODEL.md`, and `CAPS_RECOMMENDED_WALKTHROUGH.md` keep the
-research path that led here.
+Start with `../PLAN.md` for current architecture.
+
+Within this research bundle, `NEW-APPROACH.md` is the closest match to the active direction: optional capability
+families for explicit, typed, testable .NET/system effects, while user domain dependencies stay plain by default.
+`CAPS_SUMMARY.md`, `CAPS_RECOMMENDED_MODEL.md`, and `CAPS_RECOMMENDED_WALKTHROUGH.md` keep the research path that
+led here. Some of those files still discuss `RuntimeContext<'runtime, 'env>` or registry-backed provisioning; treat
+that as research context, not current implementation.
 
 ## Files
 
-- `NEW-APPROACH.md` — current proposed direction.
-- `CAPS_RECOMMENDED_MODEL.md` — compressed description of the chosen model and how the parts fit.
-- `CAPS_RECOMMENDED_WALKTHROUGH.md` — step-by-step explanation for a new user.
+- `NEW-APPROACH.md` — closest research document to the current direction.
+- `CAPS_RECOMMENDED_MODEL.md` — compressed description of the leveled model; contains historical `RuntimeContext`
+  examples.
+- `CAPS_RECOMMENDED_WALKTHROUGH.md` — step-by-step research walkthrough; contains historical `RuntimeContext`
+  examples.
 - `CAPS_SUMMARY.md` — comparison, recommendation, and 1.0 advice.
 - Earlier capability-plan draft based on structural accessors; now historical.
 - `CAPS-BOILERPLATE.md` — explicit record/slice baseline.
@@ -24,13 +29,14 @@ research path that led here.
 
 ## Current Recommendation
 
-The recommended 1.0 direction is:
+The active direction is:
 
 ```text
-Make FsFlow-provided runtime/system effects explicit and typed.
+Make FsFlow-provided runtime/system effects explicit, typed, ambient, and locally overridable.
+Keep runtime/system services out of end-user 'env signatures.
 Keep user domain dependencies as records/provider/env by default.
-Ship optional capability-family NuGets for Core, Context, Observability, FileSystem, Console, Http, Process, ServiceProvider.
-Preserve fine-grained requirements for FsFlow-provided operations.
+Ship optional capability-family NuGets for Core, Context, Observability, FileSystem, Console, Http, and Process.
+Use IHas<'T> only where reusable strict app dependency contracts pay for themselves.
 ```
 
 The older structural-accessor documents remain useful research, especially for understanding why SRTP member

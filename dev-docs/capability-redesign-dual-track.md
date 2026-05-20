@@ -1,15 +1,22 @@
 # Capability Redesign: The LLM-Friendly "Dual-Track" Model
 
+Status: implemented historical plan.
+
+This document records the redesign that replaced `Resolve`/`Requires`-style CE machinery with the current
+`Flow.read`, `Flow.service`, and `Flow.inject` accessors. It is not a live task list. For current architecture,
+see `dev-docs/PLAN.md`.
+
 ## The Goal
 To build **FsFlow** as an LLM-friendly (Agent-Legible) effect boundary library that bridges the gap between ZIO's strict effect discipline and .NET's pragmatism. The library must provide clear compiler guarantees ("Static Honesty") without fighting the .NET `IServiceProvider` ecosystem.
 
-## The Problem with the Current Approach
-Currently, FsFlow uses a `Resolve<'T>` token that is intercepted by heavily overloaded `Bind` methods in the computation expression (CE) builder.
+## The Problem This Addressed
+Earlier FsFlow drafts used a `Resolve<'T>` token that was intercepted by heavily overloaded `Bind` methods in the computation expression (CE) builder.
 1. **Agent Noise**: `Resolve<'T>` is a phantom token, not a real `Flow`. It requires "magic" CE overloads, making it hard for LLMs to compose outside of a `flow { }` block.
 2. **Naming Ambiguity**: "Service" and "Resolve" are overloaded terms. In ZIO, `service` means a strict capability. In .NET, `service` often means an untyped bag of DI registrations.
 
 ## The Solution: The "Three Pillars" of Access
-We will delete the `Resolve<'T>` CE machinery and replace it with standard, explicit generic F# functions. We will standardize on ecosystem-familiar names so LLMs can instantly recognize the intent.
+The implemented change deleted the `Resolve<'T>` CE machinery and replaced it with standard, explicit generic F#
+functions. The active accessors are `Flow.read`, `Flow.service`, and `Flow.inject`.
 
 ### 1. `Flow.read` (Record Access)
 * **Signal**: Haskell / F# Reader Monad.

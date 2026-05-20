@@ -1,10 +1,13 @@
 # FsFlow Capability Approaches: Comparative Summary
 
+Status: research context. The live source of truth is `../PLAN.md`.
+
 This document compares the capability designs explored for FsFlow and adds four approaches that are
 meaningfully different from the earlier SRTP / `IServiceProvider` / explicit-interface variants.
 
-See `NEW-APPROACH.md` for the current proposed direction after this comparison: optional cap families for
-explicit, typed, testable .NET/system effects, with user domain dependencies kept plain by default.
+See `NEW-APPROACH.md` for the closest research ancestor of the active direction. The implemented public model keeps
+`Flow<'env, 'error, 'value>` and carries runtime/system services through ambient runtime state, outside end-user
+`'env` signatures.
 
 The important pre-1.0 constraint is simple: compatibility does not matter yet. Pick the shape that should
 survive 1.0, then delete or demote everything that points users at a weaker model.

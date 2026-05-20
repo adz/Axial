@@ -1,11 +1,17 @@
 # Recommended Capability Model
 
-This is the compressed recommendation for FsFlow capabilities without generators.
+Status: research context. The live source of truth is `../PLAN.md`.
+
+This was the compressed recommendation for FsFlow capabilities without generators. It still helps explain records,
+provider edges, and nominal helper tradeoffs, but its `RuntimeContext<'runtime, 'env>` examples are not the current
+implemented public model. The active model keeps runtime/system services ambient and outside end-user `'env`
+signatures.
 
 ## One Sentence
 
-Use FsFlow levels: explicit records for local clarity, `IServiceProvider`-backed runtime for host ergonomics,
-nominal helpers for reusable strict effects, and adapters between those shapes.
+Use FsFlow levels: explicit records for local clarity, ambient runtime helpers for system services,
+`IServiceProvider` at host edges, nominal helpers for reusable strict app dependencies, and adapters between those
+shapes.
 
 ## The Levels
 

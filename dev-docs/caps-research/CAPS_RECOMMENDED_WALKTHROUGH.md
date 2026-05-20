@@ -1,6 +1,10 @@
 # Recommended Capability Walkthrough
 
-This walkthrough shows the recommended no-generator capability levels from a new user's point of view.
+Status: research context. The live source of truth is `../PLAN.md`.
+
+This walkthrough shows an older no-generator capability-level model from a new user's point of view. It contains
+useful tradeoff examples, but its `RuntimeContext<'runtime, 'env>` sections are not the implemented public model.
+Current FsFlow keeps runtime/system services ambient and outside end-user `'env` signatures.
 
 The example is an order workflow. It logs a message, saves an order, sends an email, and returns the new order id.
 
