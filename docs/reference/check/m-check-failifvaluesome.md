@@ -1,7 +1,7 @@
 ---
 title: "Check.failIfValueSome"
 linkTitle: "failIfValueSome"
-weight: 2114
+weight: 2217
 ---
 
 Returns success when the value option is <code>ValueNone</code>.

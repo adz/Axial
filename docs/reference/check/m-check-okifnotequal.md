@@ -1,7 +1,7 @@
 ---
 title: "Check.okIfNotEqual"
 linkTitle: "okIfNotEqual"
-weight: 2125
+weight: 2239
 ---
 
 Returns success when the values are not equal.

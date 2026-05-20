@@ -10,6 +10,22 @@ namespace FsFlow
 /// </remarks>
 type Check<'value> = Result<'value, unit>
 
+/// <summary>Structured errors returned by error-rich check helpers.</summary>
+type CheckError =
+    /// <summary>The supplied value was null or missing.</summary>
+    | Null
+
+/// <summary>Structured errors returned by sequence cardinality checks.</summary>
+type CardinalityFailure =
+    /// <summary>The sequence was expected to contain exactly one item.</summary>
+    | ExpectedExactlyOne of actualCount: int
+    /// <summary>The sequence was expected to contain zero items or more than one item.</summary>
+    | ExpectedNotExactlyOne
+    /// <summary>The sequence was expected to contain at most one item.</summary>
+    | ExpectedAtMostOne of actualCount: int
+    /// <summary>The sequence was expected to contain more than one item.</summary>
+    | ExpectedMoreThanOne of actualCount: int
+
 /// <summary>
 /// Predicate helpers that return <see cref="T:System.Result`2" /> values with a unit error,
 /// plus the bridge functions that turn those checks into application errors. Some helpers preserve
@@ -32,6 +48,46 @@ module Check =
             Ok value
         else
             Error ()
+
+    /// <summary>Converts a .NET <c>Try*</c> tuple into a check result.</summary>
+    /// <param name="tryResult">A tuple containing the boolean success flag and parsed value.</param>
+    /// <returns>A <see cref="T:FsFlow.Check`1" /> containing the value when the flag is true; otherwise, an Error with unit.</returns>
+    /// <example>
+    /// <code>
+    /// System.Int32.TryParse "42" |> Check.fromTry // Ok 42
+    /// System.Int32.TryParse "x" |> Check.fromTry // Error ()
+    /// </code>
+    /// </example>
+    let fromTry (tryResult: bool * 'value) : Check<'value> =
+        match tryResult with
+        | true, value -> Ok value
+        | false, _ -> Error ()
+
+    /// <summary>Converts an F# <c>Choice</c> into a <c>Result</c>.</summary>
+    /// <param name="choice">The choice value to convert.</param>
+    /// <returns><c>Ok</c> for <c>Choice1Of2</c>; <c>Error</c> for <c>Choice2Of2</c>.</returns>
+    /// <example>
+    /// <code>
+    /// Choice1Of2 42 |> Check.fromChoice // Ok 42
+    /// Choice2Of2 "missing" |> Check.fromChoice // Error "missing"
+    /// </code>
+    /// </example>
+    let fromChoice (choice: Choice<'value, 'error>) : Result<'value, 'error> =
+        match choice with
+        | Choice1Of2 value -> Ok value
+        | Choice2Of2 error -> Error error
+
+    /// <summary>Alias for <see cref="M:FsFlow.CheckModule.fromTry``1" /> when tuple-form intent should be explicit.</summary>
+    /// <param name="tryResult">A tuple containing the boolean success flag and parsed value.</param>
+    /// <returns>A <see cref="T:FsFlow.Check`1" /> containing the value when the flag is true; otherwise, an Error with unit.</returns>
+    /// <example>
+    /// <code>
+    /// (true, "value") |> Check.okIfTrueTuple // Ok "value"
+    /// (false, "value") |> Check.okIfTrueTuple // Error ()
+    /// </code>
+    /// </example>
+    let okIfTrueTuple (tryResult: bool * 'value) : Check<'value> =
+        fromTry tryResult
 
     /// <summary>Returns success when the supplied check fails.</summary>
     /// <remarks>
@@ -287,6 +343,66 @@ module Check =
         | ValueNone -> Error ()
         | ValueSome value -> Ok value
 
+    /// <summary>Returns the value when the nullable has a value.</summary>
+    /// <param name="value">The nullable value to check.</param>
+    /// <returns>A <see cref="T:FsFlow.Check`1" /> containing the value when present; otherwise, an Error with unit.</returns>
+    /// <example>
+    /// <code>
+    /// System.Nullable 5 |> Check.okIfNotNullable // Ok 5
+    /// System.Nullable&lt;int&gt;() |> Check.okIfNotNullable // Error ()
+    /// </code>
+    /// </example>
+    let okIfNotNullable (value: System.Nullable<'value>) : Check<'value> =
+        if value.HasValue then Ok value.Value else Error ()
+
+    /// <summary>Returns success when the nullable has no value.</summary>
+    /// <param name="value">The nullable value to check.</param>
+    /// <returns>A <see cref="T:FsFlow.Check`1" /> that succeeds when the nullable has no value.</returns>
+    /// <example>
+    /// <code>
+    /// System.Nullable&lt;int&gt;() |> Check.okIfNullable // Ok ()
+    /// System.Nullable 5 |> Check.okIfNullable // Error ()
+    /// </code>
+    /// </example>
+    let okIfNullable (value: System.Nullable<'value>) : Check<unit> =
+        if value.HasValue then Error () else Ok ()
+
+    /// <summary>Returns success when the nullable has no value.</summary>
+    /// <param name="value">The nullable value to check.</param>
+    /// <returns>A <see cref="T:FsFlow.Check`1" /> that succeeds when the nullable has no value.</returns>
+    /// <example>
+    /// <code>
+    /// System.Nullable&lt;int&gt;() |> Check.failIfNotNullable // Ok ()
+    /// System.Nullable 5 |> Check.failIfNotNullable // Error ()
+    /// </code>
+    /// </example>
+    let failIfNotNullable (value: System.Nullable<'value>) : Check<unit> =
+        if value.HasValue then Error () else Ok ()
+
+    /// <summary>Returns the value when the nullable has a value.</summary>
+    /// <param name="value">The nullable value to check.</param>
+    /// <returns>A <see cref="T:FsFlow.Check`1" /> containing the value when present; otherwise, an Error with unit.</returns>
+    /// <example>
+    /// <code>
+    /// System.Nullable 5 |> Check.failIfNullable // Ok 5
+    /// System.Nullable&lt;int&gt;() |> Check.failIfNullable // Error ()
+    /// </code>
+    /// </example>
+    let failIfNullable (value: System.Nullable<'value>) : Check<'value> =
+        if value.HasValue then Ok value.Value else Error ()
+
+    /// <summary>Returns the value when the nullable has a value, or a structured null error when it does not.</summary>
+    /// <param name="value">The nullable value to check.</param>
+    /// <returns>A <see cref="T:System.Result`2" /> containing the value when present; otherwise, <see cref="F:FsFlow.CheckError.Null" />.</returns>
+    /// <example>
+    /// <code>
+    /// System.Nullable 5 |> Check.notNullable // Ok 5
+    /// System.Nullable&lt;int&gt;() |> Check.notNullable // Error CheckError.Null
+    /// </code>
+    /// </example>
+    let notNullable (value: System.Nullable<'value>) : Result<'value, CheckError> =
+        if value.HasValue then Ok value.Value else Error CheckError.Null
+
     /// <summary>Returns the value when it is not null.</summary>
     /// <param name="value">The value of type <c>'a</c> to check for null.</param>
     /// <returns>A <see cref="T:FsFlow.Check`1" /> containing the non-null value; otherwise, an Error with unit.</returns>
@@ -382,6 +498,106 @@ module Check =
     /// </example>
     let failIfEmpty (coll: seq<'a>) : Check<seq<'a>> =
         if Seq.isEmpty coll then Error () else Ok coll
+
+    let private cardinalityAtMostTwo (coll: seq<'value>) =
+        use enumerator = coll.GetEnumerator()
+        let mutable count = 0
+        let mutable first = Unchecked.defaultof<'value>
+
+        if enumerator.MoveNext() then
+            count <- 1
+            first <- enumerator.Current
+
+            if enumerator.MoveNext() then
+                count <- 2
+
+        count, first
+
+    /// <summary>Returns the single element when the sequence contains exactly one item.</summary>
+    /// <param name="coll">The sequence to check.</param>
+    /// <returns>A result containing the single element, or a cardinality failure.</returns>
+    /// <example>
+    /// <code>
+    /// [ 5 ] |> Check.okIfExactlyOne // Ok 5
+    /// [ 1; 2 ] |> Check.okIfExactlyOne // Error (ExpectedExactlyOne 2)
+    /// </code>
+    /// </example>
+    let okIfExactlyOne (coll: seq<'value>) : Result<'value, CardinalityFailure> =
+        match cardinalityAtMostTwo coll with
+        | 1, value -> Ok value
+        | 0, _ -> Error(ExpectedExactlyOne 0)
+        | count, _ -> Error(ExpectedExactlyOne count)
+
+    /// <summary>Returns the sequence when it does not contain exactly one item.</summary>
+    /// <param name="coll">The sequence to check.</param>
+    /// <returns>A result containing the source sequence, or a cardinality failure when it contains exactly one item.</returns>
+    /// <example>
+    /// <code>
+    /// [] |> Check.failIfExactlyOne // Ok []
+    /// [ 5 ] |> Check.failIfExactlyOne // Error ExpectedNotExactlyOne
+    /// </code>
+    /// </example>
+    let failIfExactlyOne (coll: seq<'value>) : Result<seq<'value>, CardinalityFailure> =
+        match cardinalityAtMostTwo coll with
+        | 1, _ -> Error ExpectedNotExactlyOne
+        | _ -> Ok coll
+
+    /// <summary>Returns an optional single element when the sequence contains at most one item.</summary>
+    /// <param name="coll">The sequence to check.</param>
+    /// <returns>A result containing <c>Some</c> single element or <c>None</c> for an empty sequence, or a cardinality failure.</returns>
+    /// <example>
+    /// <code>
+    /// [ 5 ] |> Check.okIfAtMostOne // Ok (Some 5)
+    /// [] |> Check.okIfAtMostOne // Ok None
+    /// [ 1; 2 ] |> Check.okIfAtMostOne // Error (ExpectedAtMostOne 2)
+    /// </code>
+    /// </example>
+    let okIfAtMostOne (coll: seq<'value>) : Result<'value option, CardinalityFailure> =
+        match cardinalityAtMostTwo coll with
+        | 0, _ -> Ok None
+        | 1, value -> Ok(Some value)
+        | count, _ -> Error(ExpectedAtMostOne count)
+
+    /// <summary>Returns the sequence when it contains more than one item.</summary>
+    /// <param name="coll">The sequence to check.</param>
+    /// <returns>A result containing the source sequence, or a cardinality failure when it contains at most one item.</returns>
+    /// <example>
+    /// <code>
+    /// [ 1; 2 ] |> Check.failIfAtMostOne // Ok [1; 2]
+    /// [ 5 ] |> Check.failIfAtMostOne // Error (ExpectedMoreThanOne 1)
+    /// </code>
+    /// </example>
+    let failIfAtMostOne (coll: seq<'value>) : Result<seq<'value>, CardinalityFailure> =
+        match cardinalityAtMostTwo coll with
+        | 0, _ -> Error(ExpectedMoreThanOne 0)
+        | 1, _ -> Error(ExpectedMoreThanOne 1)
+        | _ -> Ok coll
+
+    /// <summary>Returns success when the sequence count matches the expected count.</summary>
+    /// <param name="expected">The expected item count.</param>
+    /// <param name="coll">The sequence to check.</param>
+    /// <returns>A <see cref="T:FsFlow.Check`1" /> that succeeds when the count matches; otherwise, an Error with unit.</returns>
+    /// <example>
+    /// <code>
+    /// [ 1; 2 ] |> Check.okIfCountIs 2 // Ok ()
+    /// [ 1 ] |> Check.okIfCountIs 2 // Error ()
+    /// </code>
+    /// </example>
+    let okIfCountIs (expected: int) (coll: seq<'value>) : Check<unit> =
+        if Seq.length coll = expected then Ok () else Error ()
+
+    /// <summary>Returns success when the sequence contains the expected value.</summary>
+    /// <param name="expected">The value to search for.</param>
+    /// <param name="coll">The sequence to check.</param>
+    /// <returns>A <see cref="T:FsFlow.Check`1" /> that succeeds when the value is present; otherwise, an Error with unit.</returns>
+    /// <example>
+    /// <code>
+    /// [ 1; 2 ] |> Check.okIfContains 2 // Ok ()
+    /// [ 1; 2 ] |> Check.okIfContains 3 // Error ()
+    /// </code>
+    /// </example>
+    let okIfContains (expected: 'value) (coll: seq<'value>) : Check<unit> =
+        if Seq.contains expected coll then Ok () else Error ()
 
     /// <summary>Returns success when the values are equal.</summary>
     /// <param name="expected">The expected value.</param>

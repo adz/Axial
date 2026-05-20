@@ -1,7 +1,7 @@
 ---
 title: "Check.okIfEmpty"
 linkTitle: "okIfEmpty"
-weight: 2121
+weight: 2229
 ---
 
 Returns success when the sequence is empty.

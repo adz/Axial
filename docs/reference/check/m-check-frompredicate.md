@@ -1,7 +1,7 @@
 ---
 title: "Check.fromPredicate"
 linkTitle: "fromPredicate"
-weight: 2100
+weight: 2200
 ---
 
 Builds a check from a predicate while preserving the successful value.

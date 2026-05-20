@@ -1,7 +1,7 @@
 ---
 title: "Check.okIfValueNone"
 linkTitle: "okIfValueNone"
-weight: 2113
+weight: 2216
 type: docs
 ---
 

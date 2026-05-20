@@ -1,7 +1,7 @@
 ---
 title: "Check.failIfNone"
 linkTitle: "failIfNone"
-weight: 2111
+weight: 2214
 type: docs
 ---
 

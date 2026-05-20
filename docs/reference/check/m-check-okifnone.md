@@ -1,7 +1,7 @@
 ---
 title: "Check.okIfNone"
 linkTitle: "okIfNone"
-weight: 2109
+weight: 2212
 ---
 
 Returns success when the option is <code>None</code>.

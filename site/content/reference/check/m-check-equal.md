@@ -1,7 +1,7 @@
 ---
 title: "Check.equal"
 linkTitle: "equal"
-weight: 2142
+weight: 2256
 type: docs
 ---
 

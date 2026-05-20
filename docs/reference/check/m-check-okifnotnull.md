@@ -1,7 +1,7 @@
 ---
 title: "Check.okIfNotNull"
 linkTitle: "okIfNotNull"
-weight: 2116
+weight: 2224
 ---
 
 Returns the value when it is not null.

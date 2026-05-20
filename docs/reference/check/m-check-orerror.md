@@ -1,7 +1,7 @@
 ---
 title: "Check.orError"
 linkTitle: "orError"
-weight: 2138
+weight: 2252
 ---
 
 Maps a unit error into the supplied application error value.
