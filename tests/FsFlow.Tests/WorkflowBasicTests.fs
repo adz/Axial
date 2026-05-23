@@ -131,6 +131,43 @@ module WorkflowBasicTests =
         test <@ runOnce () = Exit.Success 2 @>
 
     [<Fact>]
+    let ``flow binds ColdTask with runtime cancellation and rerun semantics`` () =
+        let runs = ref 0
+        let observedCancellation = ResizeArray<bool>()
+
+        let load =
+            ColdTask(fun cancellationToken ->
+                task {
+                    runs.Value <- runs.Value + 1
+                    observedCancellation.Add cancellationToken.CanBeCanceled
+                    return runs.Value
+                })
+
+        let workflow : Flow<unit, string, int> =
+            flow {
+                let! value = load
+                return value * 2
+            }
+
+        use cts = new CancellationTokenSource()
+
+        let first = Flow.runFullSync () cts.Token workflow
+        let second = Flow.runFullSync () cts.Token workflow
+
+        test <@ first = Exit.Success 2 @>
+        test <@ second = Exit.Success 4 @>
+        test <@ List.ofSeq observedCancellation = [ true; true ] @>
+
+    [<Fact>]
+    let ``flow binds ColdTask Result as a plain value`` () =
+        let workflow : Flow<unit, string, Result<int, string>> =
+            flow {
+                return! ColdTask(fun _ -> Task.FromResult(Ok 42))
+            }
+
+        test <@ Flow.runSync () workflow = Exit.Success(Ok 42) @>
+
+    [<Fact>]
     let ``shared combinators preserve environment and error semantics`` () =
         let baseWorkflow : Flow<int, int, int> =
             Flow.read (fun env -> env + 1)
@@ -258,7 +295,7 @@ module WorkflowBasicTests =
         test <@ publicMethods |> Array.contains "ReturnFrom" @>
         test <@ publicMethods |> Array.exists (fun name -> name.StartsWith("Yield")) |> not @>
         test <@ publicMethods |> Array.contains "Run" @>
-        test <@ argumentTypeNames = [| "FSharpAsync`1"; "FSharpFunc`2"; "FSharpOption`1"; "FSharpResult`2"; "FSharpValueOption`1"; "Flow`3"; "Task"; "Task`1"; "ValueTask"; "ValueTask`1" |] @>
+        test <@ argumentTypeNames = [| "ColdTask`1"; "FSharpAsync`1"; "FSharpFunc`2"; "FSharpOption`1"; "FSharpResult`2"; "FSharpValueOption`1"; "Flow`3"; "Task"; "Task`1"; "ValueTask"; "ValueTask`1" |] @>
 
     [<Fact>]
     let ``flow lives in FsFlow and composes sync flows`` () =

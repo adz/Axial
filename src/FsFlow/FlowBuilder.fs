@@ -49,6 +49,18 @@ module FlowBuilderRuntime =
         )
 
 #if !FABLE_COMPILER
+    let inline fromColdTask<'env, 'error, 'value> (ColdTask operation: ColdTask<'value>) : Flow<'env, 'error, 'value> =
+        Flow(fun _ cancellationToken ->
+            ValueTask<Exit<'value, 'error>>(
+                task {
+                    if cancellationToken.IsCancellationRequested then
+                        return Exit.Failure Cause.Interrupt
+                    else
+                        let! value = operation cancellationToken
+                        return Exit.Success value
+                })
+        )
+
     let inline fromTask<'env, 'error, 'value> (operation: Task<'value>) : Flow<'env, 'error, 'value> =
         Flow(fun _ cancellationToken ->
             ValueTask<Exit<'value, 'error>>(
@@ -153,6 +165,9 @@ type FlowBuilder() =
         |> FlowBuilderRuntime.fromResult
 
 #if !FABLE_COMPILER
+    member inline _.ReturnFrom(operation: ColdTask<'value>) : Flow<'env, 'error, 'value> =
+        FlowBuilderRuntime.fromColdTask operation
+
     member inline _.ReturnFrom(operation: Task<'value>) : Flow<'env, 'error, 'value> =
         FlowBuilderRuntime.fromTask operation
 
@@ -230,6 +245,15 @@ type FlowBuilder() =
         |> Flow.bind binder
 
 #if !FABLE_COMPILER
+    member inline _.Bind
+        (
+            operation: ColdTask<'value>,
+            binder: 'value -> Flow<'env, 'error, 'next>
+        ) : Flow<'env, 'error, 'next> =
+        operation
+        |> FlowBuilderRuntime.fromColdTask
+        |> Flow.bind binder
+
     member inline _.Bind
         (
             operation: Task<'value>,

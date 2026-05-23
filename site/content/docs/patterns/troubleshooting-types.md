@@ -102,7 +102,7 @@ let workflow : Flow<unit, string, int> =
 
 ## Error: ColdTask Does Not Match `Task`
 
-`Flow.fromTask` and direct `flow { let! ... }` support `ColdTask<'value>` for delayed task work.
+Direct `flow { let! ... }` binding supports `ColdTask<'value>` for delayed task work.
 
 `ColdTask<'value>` means:
 

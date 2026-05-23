@@ -16,6 +16,7 @@
     <Compile Include="RuntimeFoundationTests.fs" />
     <Compile Include="TelemetryTests.fs" />
     <Compile Include="CapsRuntimePatternTests.fs" />
+    <Compile Include="ApiShapeTests.fs" />
     <Compile Include="WorkflowBasicTests.fs" />
     <Compile Include="ExecutionTests.fs" />
     <Compile Include="WorkflowConcurrencyTests.fs" />

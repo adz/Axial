@@ -1,5 +1,7 @@
 namespace FsFlow
 
+#if !FABLE_COMPILER
+
 open System
 open System.Threading
 open System.Threading.Tasks
@@ -105,3 +107,5 @@ module internal RuntimeLayer =
                     | Exit.Failure cause -> return Exit.Failure cause
                 })
             #endif
+
+#endif

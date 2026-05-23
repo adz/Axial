@@ -1,5 +1,7 @@
 namespace FsFlow
 
+#if !FABLE_COMPILER
+
 open System
 open System.Collections.Generic
 
@@ -84,3 +86,5 @@ module internal Registry =
             raise (
                 KeyNotFoundException(
                     $"Service of type '{typeof<'T>.FullName}' with {tagText} was not found in the runtime registry."))
+
+#endif

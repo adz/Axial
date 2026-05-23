@@ -132,7 +132,7 @@ type Fiber<'error, 'value> =
 /// Represents delayed task work that can observe a runtime cancellation token when it is started.
 /// </summary>
 /// <typeparam name="value">The type of the produced task value.</typeparam>
-type internal ColdTask<'value> =
+type ColdTask<'value> =
     | ColdTask of (CancellationToken -> Task<'value>)
 
 /// <summary>

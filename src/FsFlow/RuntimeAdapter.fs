@@ -1,5 +1,7 @@
 namespace FsFlow
 
+#if !FABLE_COMPILER
+
 open System
 open System.Threading
 
@@ -26,3 +28,5 @@ module internal RuntimeAdapter =
         : Effect<'value, 'error> =
         let env = adapter registry
         FlowInternal.invoke flow env CancellationToken.None
+
+#endif

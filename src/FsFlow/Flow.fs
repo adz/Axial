@@ -100,16 +100,13 @@ module Flow =
             return Exit.toResult exit
         }
 
+    #if !FABLE_COMPILER
     /// <summary>Executes a flow and returns a task that resolves to the final exit outcome.</summary>
     /// <param name="environment">The environment required by the flow.</param>
     /// <param name="flow">The workflow to execute.</param>
     /// <returns>A task that completes with the fiber's final outcome.</returns>
     let toTask (environment: 'env) (flow: Flow<'env, 'error, 'value>) : Task<Exit<'value, 'error>> =
-        #if FABLE_COMPILER
-        Async.StartAsTask (run environment flow)
-        #else
         (run environment flow).AsTask()
-        #endif
 
     /// <summary>Executes a flow and returns a task that resolves to the final exit outcome with an explicit cancellation token.</summary>
     /// <param name="environment">The environment required by the flow.</param>
@@ -117,11 +114,7 @@ module Flow =
     /// <param name="flow">The workflow to execute.</param>
     /// <returns>A task that completes with the fiber's final outcome.</returns>
     let toTaskWithToken (environment: 'env) (cancellationToken: CancellationToken) (flow: Flow<'env, 'error, 'value>) : Task<Exit<'value, 'error>> =
-        #if FABLE_COMPILER
-        Async.StartAsTask (runFull environment cancellationToken flow, cancellationToken = cancellationToken)
-        #else
         (runFull environment cancellationToken flow).AsTask()
-        #endif
 
     /// <summary>Executes a flow and returns a task that resolves to a standard result.</summary>
     /// <param name="environment">The environment required by the flow.</param>
@@ -146,7 +139,6 @@ module Flow =
             return Exit.toResult exit
         }
 
-    #if !FABLE_COMPILER
     /// <summary>Executes a flow and returns a value task that resolves to a standard result.</summary>
     /// <param name="environment">The environment required by the flow.</param>
     /// <param name="flow">The workflow to execute.</param>

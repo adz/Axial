@@ -39,8 +39,14 @@ jobs:
       - name: Restore
         run: dotnet restore
 
+      - name: Check source inventory
+        run: bash scripts/check-source-inventory.sh
+
       - name: Run test harness
         run: dotnet run --project tests/FsFlow.Tests/FsFlow.Tests.fsproj --nologo
+
+      - name: Compile Fable JavaScript surface
+        run: bash scripts/check-fable-js-surface.sh
 
       - name: Run main example
         run: dotnet run --project examples/FsFlow.Examples/FsFlow.Examples.fsproj --nologo
