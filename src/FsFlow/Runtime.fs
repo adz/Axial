@@ -67,6 +67,8 @@ type internal RuntimeContext =
         Random: IRandom
         Guid: IGuid
         EnvironmentVariables: IEnvironmentVariables
+        Annotations: Map<string, string>
+        AnnotationSink: string -> string -> unit
     }
 
 /// <summary>Helpers for creating and overriding runtime-owned services.</summary>
@@ -107,6 +109,8 @@ module internal RuntimeContext =
                         | value -> Some value
                         #endif
                 }
+            Annotations = Map.empty
+            AnnotationSink = fun _ _ -> ()
         }
 
     let withClock (clock: IClock) (runtime: RuntimeContext) : RuntimeContext =
@@ -123,6 +127,12 @@ module internal RuntimeContext =
 
     let withEnvironmentVariables (environmentVariables: IEnvironmentVariables) (runtime: RuntimeContext) : RuntimeContext =
         { runtime with EnvironmentVariables = environmentVariables }
+
+    let withAnnotation (name: string) (value: string) (runtime: RuntimeContext) : RuntimeContext =
+        { runtime with Annotations = runtime.Annotations |> Map.add name value }
+
+    let withAnnotationSink (sink: string -> string -> unit) (runtime: RuntimeContext) : RuntimeContext =
+        { runtime with AnnotationSink = sink }
 
 /// <summary>Stores the ambient runtime context for the current execution.</summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]

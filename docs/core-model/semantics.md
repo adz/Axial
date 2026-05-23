@@ -80,4 +80,18 @@ Use Cold inputs when you want the effect to observe the runtime `CancellationTok
 
 ## Runtime Helpers
 
-Operational helpers for logging, timeout, retry, and resource handling are grouped into the `Flow.Runtime` and `Schedule` modules.
+Operational helpers for logging, timeout, retry, annotations, and resource handling are grouped into the `Flow.Runtime` and `Schedule` modules.
+
+Use `Flow.annotate` and `Flow.traceId` to add runtime metadata around a flow:
+
+```fsharp
+let workflow =
+    flow {
+        let! traceId = Flow.Runtime.traceId
+        return traceId
+    }
+    |> Flow.annotate "deviceId" "device-1"
+    |> Flow.traceId "trace-123"
+```
+
+Annotations are scoped to the wrapped flow. Nested annotations with the same key override the outer value only while the nested flow runs.

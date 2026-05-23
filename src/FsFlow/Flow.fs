@@ -282,6 +282,59 @@ module Flow =
         : Flow<'env, 'error, 'value> =
         withRuntime (RuntimeContext.withEnvironmentVariables environmentVariables) flow
 
+    /// <summary>Installs a runtime annotation sink for integration packages.</summary>
+    [<System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>]
+    let withAnnotationSink
+        (sink: string -> string -> unit)
+        (flow: Flow<'env, 'error, 'value>)
+        : Flow<'env, 'error, 'value> =
+        withRuntime (RuntimeContext.withAnnotationSink sink) flow
+
+    /// <summary>Adds a runtime annotation for the duration of the supplied flow.</summary>
+    /// <remarks>
+    /// Annotations are runtime metadata for diagnostics, logging, metrics, and tracing. Nested annotations
+    /// with the same key override the outer value for the nested flow only.
+    /// </remarks>
+    /// <param name="name">The annotation key.</param>
+    /// <param name="value">The annotation value.</param>
+    /// <param name="flow">The source flow.</param>
+    /// <returns>A flow that runs with the supplied annotation in the ambient runtime context.</returns>
+    let annotate
+        (name: string)
+        (value: string)
+        (flow: Flow<'env, 'error, 'value>)
+        : Flow<'env, 'error, 'value> =
+        Flow(fun environment cancellationToken ->
+            let currentRuntime = RuntimeState.current()
+            currentRuntime.AnnotationSink name value
+            let runtime = currentRuntime |> RuntimeContext.withAnnotation name value
+
+            #if FABLE_COMPILER
+            async {
+                return!
+                    RuntimeState.withRuntime runtime (fun () ->
+                        invoke flow environment cancellationToken)
+            }
+            #else
+            ValueTask<Exit<'value, 'error>>(
+                task {
+                    return!
+                        RuntimeState.withRuntime runtime (fun () ->
+                            invoke flow environment cancellationToken |> _.AsTask())
+                })
+            #endif
+        )
+
+    /// <summary>Adds the standard <c>trace_id</c> runtime annotation for the duration of the supplied flow.</summary>
+    /// <param name="traceId">The trace identifier.</param>
+    /// <param name="flow">The source flow.</param>
+    /// <returns>A flow that runs with the supplied trace id in the ambient runtime context.</returns>
+    let traceId
+        (traceId: string)
+        (flow: Flow<'env, 'error, 'value>)
+        : Flow<'env, 'error, 'value> =
+        annotate "trace_id" traceId flow
+
     /// <summary>Runtime helpers for operational concerns like logging, timeout, retry, and cleanup.</summary>
     [<RequireQualifiedAccess>]
     module Runtime =
@@ -387,6 +440,16 @@ module Flow =
         /// <returns>A flow that returns the variable value if it exists, or None.</returns>
         let tryGetEnvironmentVariable (name: string) : Flow<'env, 'error, string option> =
             Flow(fun _ _ -> EffectFlow.ofValue (RuntimeState.current().EnvironmentVariables.TryGet name))
+
+        /// <summary>Reads the current runtime annotations.</summary>
+        /// <returns>A flow that succeeds with the ambient annotation map.</returns>
+        let annotations<'env, 'error> : Flow<'env, 'error, Map<string, string>> =
+            Flow(fun _ _ -> EffectFlow.ofValue (RuntimeState.current().Annotations))
+
+        /// <summary>Reads the current runtime trace id annotation if one is present.</summary>
+        /// <returns>A flow that succeeds with the ambient <c>trace_id</c> value, if present.</returns>
+        let traceId<'env, 'error> : Flow<'env, 'error, string option> =
+            Flow(fun _ _ -> EffectFlow.ofValue (RuntimeState.current().Annotations |> Map.tryFind "trace_id"))
 
 #if !FABLE_COMPILER
         /// <summary>Acquires a resource, uses it, and always runs the release action.</summary>

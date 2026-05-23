@@ -32,8 +32,11 @@ module TelemetryTests =
 
         ActivitySource.AddActivityListener(listener)
 
-        let workflow = 
-            Activity.trace "test-op" (flow { return 42 })
+        let workflow =
+            flow { return 42 }
+            |> Flow.annotate "deviceId" "device-1"
+            |> Flow.traceId "trace-1"
+            |> Activity.trace "test-op"
 
         let result = Flow.runSync env workflow
         
@@ -42,5 +45,9 @@ module TelemetryTests =
         test <@ capturedTags["fsflow.request_id"] = "req-123" @>
         test <@ capturedTags.ContainsKey("fsflow.correlation_id") @>
         test <@ capturedTags["fsflow.correlation_id"] = "corr-456" @>
+        test <@ capturedTags.ContainsKey("fsflow.annotation.deviceId") @>
+        test <@ capturedTags["fsflow.annotation.deviceId"] = "device-1" @>
+        test <@ capturedTags.ContainsKey("fsflow.annotation.trace_id") @>
+        test <@ capturedTags["fsflow.annotation.trace_id"] = "trace-1" @>
         
         listener.Dispose()
