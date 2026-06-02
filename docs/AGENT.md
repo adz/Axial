@@ -8,7 +8,7 @@ description: This page shows how to optimize FsFlow usage for AI assistants like
 This page is designed for both human developers and their AI assistants. It provides a high-signal reference for idiomatic FsFlow patterns.
 
 {{% alert title="For AI Agents" color="info" %}}
-If you are an AI assistant, prioritize the patterns in the **Capability Boundaries** and **Rosetta Stone** sections below.
+If you are an AI assistant, prioritize the patterns in the **Dependency Guidance** and **Rosetta Stone** sections below.
 {{% /alert %}}
 
 ## The Golden Path
@@ -56,21 +56,19 @@ Use `Guard.MapError` when the source already carries a meaningful error value.
 ### 4. Same-Family Fallbacks
 Use `orElse` and `orElseWith` for alternate computations in the same flow family.
 
-### 5. Capability Boundaries
+### 5. Dependency Guidance
 
-Use capability boundaries when workflow code should name app dependencies instead of exposing a
-large concrete record. Keep runtime-owned services out of app contracts unless they are true
-domain dependencies.
+Keep application dependencies explicit in `'env`.
 
-| Boundary Shape | Idiomatic Pattern |
+| Need | Idiomatic Pattern |
 | :--- | :--- |
-| **Honest** | `let! db = Flow.service<IDb, _, _>()` |
-| **Direct** | `let! port = Flow.read _.Port` |
-| **Pragmatic** | `let! svc = Flow.inject<IMyService, _, _>()` |
-| **Runtime clock** | `let! now = Clock.now` |
-| **Flexible API** | `let login : Flow<#IHasUsers, _, _> = ...` |
+| **Direct field access** | `let! port = Flow.read _.Port` |
+| **Dependency function** | `let! loadUser = Flow.read _.LoadUser` |
+| **Whole environment** | `let! env = Flow.env` |
+| **Host boundary** | Build the environment once, then call `Flow.run env flow` |
 
-Prefer these over exact app runtime types when callers may provide a larger app environment.
+Prefer plain records for most application workflows. Keep `IServiceProvider` interop at the host
+boundary instead of making container lookup the default model inside business logic.
 
 ### 6. Rosetta Stone
 Translate common patterns from other libraries into idiomatic FsFlow.
@@ -79,8 +77,8 @@ Translate common patterns from other libraries into idiomatic FsFlow.
 | :--- | :--- |
 | `requireSome` | `let! x = opt |> Guard.Of e` |
 | `requireTrue` | `Check.okIf cond |> Check.orError e` |
-| `ZIO.service` | `let! s = Flow.service<T, _, _>()` |
-| `inject(T)` | `let! s = Flow.inject<T, _, _>()` |
+| `Reader.ask` | `let! env = Flow.env` |
+| `Reader.asks` | `let! value = Flow.read projector` |
 | `match x with Some...` | `let! v = x |> Guard.Of e` |
 | `Result.mapError` | `let! x = result |> Guard.MapError mapper` |
 

@@ -2,6 +2,9 @@
 
 Status: research context. The live source of truth is `../PLAN.md`.
 
+> Superseded research note: this summary predates the explicit-services-and-layers redesign. In particular, its
+> ambient-core guidance is no longer the target v1 architecture.
+
 This document compares the capability designs explored for FsFlow and adds four approaches that are
 meaningfully different from the earlier SRTP / `IServiceProvider` / explicit-interface variants.
 

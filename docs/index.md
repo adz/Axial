@@ -25,8 +25,7 @@ FsFlow is a unified model for building robust, Result-based programs. Write pred
 <a class="docs-chip" href="{{< relref "/docs/validation-results/" >}}">Pure Checks -> Result & Validation</a>
 <a class="docs-chip" href="{{< relref "/docs/core-model/" >}}">Typed failure</a>
 <a class="docs-chip" href="{{< relref "/docs/core-model/task-async-interop.md" >}}">Host context</a>
-<a class="docs-chip" href="{{< relref "/docs/managing-dependencies/" >}}">Dependency models</a>
-<a class="docs-chip" href="{{< relref "/reference/capability/" >}}">Capability contracts</a>
+<a class="docs-chip" href="{{< relref "/docs/managing-dependencies/" >}}">Managing dependencies</a>
 <a class="docs-chip" href="{{< relref "/docs/core-model/semantics.md" >}}">Cold execution semantics</a>
 </div>
 
@@ -64,13 +63,9 @@ type Api =
 
 let readVerifiedEmail userId =
     flow {
-        let! user = Flow.read (fun api -> api.LoadUser userId)
-        let! email = validateEmail user.Email
-        
-        // Operational services like Clock live in the Ambient Runtime
-        let! checkedAt = Flow.Runtime.now
-
-        return email, checkedAt
+        let! loadUser = Flow.read _.LoadUser
+        let! user = loadUser userId
+        return! validateEmail user.Email |> Flow.fromResult
     }
 ```
 

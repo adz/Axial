@@ -2,6 +2,9 @@
 
 Status: research context. The live source of truth is `../PLAN.md`.
 
+> Superseded research note: this walkthrough reflects an older leveled capability story and should not be used as the
+> current dependency-model guide.
+
 This walkthrough shows an older no-generator capability-level model from a new user's point of view. It contains
 useful tradeoff examples, but its `RuntimeContext<'runtime, 'env>` sections are not the implemented public model.
 Current FsFlow keeps runtime/system services ambient and outside end-user `'env` signatures.

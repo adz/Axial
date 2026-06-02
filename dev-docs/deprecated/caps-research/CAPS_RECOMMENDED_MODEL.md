@@ -2,6 +2,9 @@
 
 Status: research context. The live source of truth is `../PLAN.md`.
 
+> Superseded research note: this model still explains some tradeoffs well, but its ambient-core and
+> `RuntimeContext<'runtime, 'env>` direction is no longer the target v1 architecture.
+
 This was the compressed recommendation for FsFlow capabilities without generators. It still helps explain records,
 provider edges, and nominal helper tradeoffs, but its `RuntimeContext<'runtime, 'env>` examples are not the current
 implemented public model. The active model keeps runtime/system services ambient and outside end-user `'env`

@@ -1,5 +1,8 @@
 Yes — your concern is right.
 
+> Superseded research note: this file argues for extensible ambient runtime capabilities. That is no longer the target
+> v1 architecture after the explicit-services-and-layers redesign.
+
 The design is strongest if FsFlow keeps **three layers**:
 
 1. **Core runtime capabilities**: logging, metrics, tracing, clock, cancellation, annotations.
@@ -77,4 +80,3 @@ Policies        = block decorators over flows
 ```
 
 That keeps your ZIO-style ergonomics while avoiding a closed world. The current plan is good; the main change is: **do not make RuntimeContext the extensibility point. Make typed capability slices the extensibility point, and let RuntimeContext/CoreRuntime stay tiny.**
-

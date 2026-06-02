@@ -3,6 +3,10 @@
 Status: withdrawn.
 Recorded: 2026-04-29.
 
+> Historical note: this withdrawn direction predates both the old `Flow.service` / `Flow.inject` phase and the newer
+> `Service<'service>.get()` / `Service<'service>.resolve()` redesign. Treat all `Resolve` references below as fully
+> historical.
+
 ## Extracted From
 
 - `dev-docs/TASKS.md`:

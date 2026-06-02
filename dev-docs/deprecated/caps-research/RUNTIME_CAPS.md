@@ -1,5 +1,8 @@
 Here’s a **clean, complete design brief** you can drop into a fresh LLM session.
 
+> Superseded research note: this brief reflects an older `RuntimeContext`-centric design and is no longer the target
+> v1 architecture.
+
 ---
 
 # FsFlow Design: RuntimeContext + Env + Policy-based CE

@@ -23,13 +23,11 @@ Workflows result in one of three `Exit` outcomes:
 - `Interruption`: The workflow was signaled to stop (`Cause.Interrupt`).
 - `Defect`: An unhandled exception or bug occurred (`Cause.Die`).
 
-## Capability Boundaries
-- Use `IHas<'T>` to name a capability contract for a single dependency.
-- Use `Flow.service<'T>()` to extract a nominal capability from an environment implementing `IHas<'T>`.
-- Use `Flow.inject<'T>()` to pull a dependency from a .NET `IServiceProvider` environment (Pragmatic/DI).
-- Use `Flow.read (env -> 'v)` for direct projection from plain environment records.
-- Prefer named capability sets such as `Flow<#IAppCapabilities, 'error, 'value>` when a larger runtime should satisfy a smaller workflow boundary.
-- Keep `IServiceProvider` interop and runtime adapters at the edge; do not make them the primary public API.
+## Dependency Guidance
+- Use `Flow.read (env -> 'v)` for direct projection from an explicit environment.
+- Prefer plain records for application dependencies unless a named abstraction clearly pays for itself.
+- Keep business and capability requirements visible in `'env`.
+- Keep `IServiceProvider` interop and host-specific adapters at the outer boundary.
 
 ## Core Patterns (Idiomatic Way)
 Use `Check` for reusable predicates and `Check.orError` for pure bridge-to-error cases:

@@ -2,65 +2,60 @@
 
 This file is the active development queue. Keep completed work out of this file.
 Keep live architecture direction in `dev-docs/PLAN.md`.
-Keep historical research in `dev-docs/caps-research/` and settled decisions in `dev-docs/decisions/`.
+Keep historical research in `dev-docs/deprecated/caps-research/` and settled decisions in `dev-docs/decisions/`.
 
 ## Priority Order
 
 Work this queue from top to bottom.
 
-1. [ ] Reconcile dormant registry/scope/layer internals with the active ambient-runtime model.
-   - Confirm whether `RuntimeRegistry.fs`, `RuntimeScope.fs`, `RuntimeAdapter.fs`, and `RuntimeLayer.fs` should stay
-     compiled into core while they are not used by normal workflow execution.
-   - If they stay, document them in dev-docs as deferred internal infrastructure only.
-   - If they move, place them behind a clearer experimental or future-facing boundary.
-   - Do not claim registry-backed runtime behavior in public docs until it is actually wired into `Flow.run` or runtime
-     provisioning.
+1. [ ] Replace `Flow.service` and `Flow.inject` with `Service<'service>.get()` and `Service<'service>.resolve()`.
+   - Add the new accessor type.
+   - Migrate internal usage, tests, examples, and reference docs.
+   - Remove the old accessors from the target public surface.
 
-2. [ ] Keep public docs centered on ambient runtime plus explicit app environment.
-   - `docs/managing-dependencies/runtime-vs-environment.md` is the main architecture guide.
-   - Runtime services must stay out of end-user `'env` signatures in examples unless they are deliberately modeled as
-     app/domain dependencies.
-   - Teach records plus `Flow.read` first.
-   - Teach `IHas<'T>` plus `Flow.service` as an opt-in strict app contract.
-   - Teach `Flow.inject` as host-edge interop.
-   - Avoid `RuntimeContext<'runtime, 'env>` and registry-backed runtime claims in user-facing docs.
+2. [ ] Shrink ambient runtime to executor mechanics only.
+   - Keep cancellation, scope, annotations, interruption, and scheduling helpers.
+   - Remove ambient `IClock`, `ILog`, `IRandom`, `IGuid`, and `IEnvironmentVariables` access.
+   - Remove `Flow.withClock`, `Flow.withLog`, `Flow.withRandom`, `Flow.withGuid`, and `Flow.withEnvironmentVariables`.
 
-3. [ ] Audit capability examples for old runtime-as-env patterns.
-   - Review `examples/FsFlow.Capabilities.Core.Examples/CoreCapabilitiesExample.fs`.
-   - Review `examples/FsFlow.Examples/CapabilityExamples.fs`.
-   - Keep examples that demonstrate `IHas<'T>` for app dependencies.
-   - Avoid suggesting that Core runtime services such as `IClock`, `IRandom`, or `IGuid` should normally be carried by
-     app environments.
+3. [ ] Make `Scope` and `Layer` first-class public architecture.
+   - Public `Scope` needs async-capable finalizers and deterministic teardown semantics.
+   - Public `Layer` needs a minimal provisioning surface plus `Flow.provide`.
+   - Replace the current flow-based `provideLayer` with the new layer-based API.
 
-4. [ ] Decide the long-term `Flow.inject` failure surface.
-   - Current implementation throws when an `IServiceProvider` registration is missing, which becomes `Cause.Die`.
-   - Decide whether to keep that behavior as a configuration defect or introduce an explicit typed helper for callers
-     who want `MissingCapability` in the error channel.
-   - Update source comments and reference docs after the decision.
+4. [ ] Delete registry-backed runtime infrastructure.
+   - Remove `RuntimeRegistry.fs`.
+   - Remove `RuntimeAdapter.fs`.
+   - Remove registry-based assumptions from `RuntimeLayer.fs`.
+   - Keep no internal "future second DI system" alive after the redesign lands.
 
-5. [ ] Clarify capability package maturity.
-   - Core is active and used by docs/tests.
-   - Console, FileSystem, Http, and Process exist but remain experimental capability packages.
-   - Decide whether each package needs its own ambient override helper before being promoted.
-   - Keep package release status aligned with `dev-docs/MAINTENANCE.md`.
+5. [ ] Rebuild former ambient core services as explicit service capabilities.
+   - `Clock`, `Log`, `Random`, `Guid`, and `EnvironmentVariables` should become wrappers over explicit services.
+   - Provide a standard `BaseRuntime` bundle and layer story for live/test environments.
+   - Decide which package owns the live base-runtime layer helpers.
 
-6. [ ] Revisit richer scope/layer support only after the current docs are stable.
-   - Scope/layer work may need the registry.
-   - Candidate features:
-     - tagged runtime services
-     - resource-producing layers
-     - deterministic teardown across composed layers
-     - host provisioning into runtime services
-   - This is not required for the current ambient runtime capability story.
+6. [ ] Align first-party capability packages to the same service-plus-layer model.
+   - Console
+   - FileSystem
+   - Http
+   - Process
+   - future Network
+   - telemetry-related packages
+
+7. [ ] Rewrite public docs around explicit services and layers.
+   - Replace the old dependency-model guides with a new services-and-layers narrative.
+   - Add guides for service contracts, provider boundaries, layers, scopes/resources, and base runtime construction.
+   - Update `llms.txt` and `docs/AGENT.md`.
 
 ## Acceptance Checks
 
 The current architecture is coherent when the following are true:
 
-- public docs describe runtime services as ambient and locally overridable
-- user-facing workflow signatures keep operational services out of `'env`
+- public docs describe services as explicit and the runtime as executor-only
+- user-facing workflow signatures show real service requirements in `'env`
 - app/domain dependency examples start with records and `Flow.read`
-- `IHas<'T>` is documented as useful but optional
-- `Flow.inject` is documented as host-edge interop
-- dev-docs no longer present registry-backed runtime as the completed foundation
+- reusable capability examples use `Service<'service>.get()`
+- host-edge examples use `Service<'service>.resolve()` or provider-backed layers
+- `Layer` is the documented provisioning mechanism
+- registry-backed runtime is gone from both code and docs
 - generated reference docs match source comments

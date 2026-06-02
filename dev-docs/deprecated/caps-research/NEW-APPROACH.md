@@ -2,6 +2,9 @@
 
 Status: research context. The live source of truth is `../PLAN.md`.
 
+> Superseded research note: this file is still useful for explicit-capability thinking, but its `RuntimeContext` and
+> ambient-core ideas are no longer the target v1 architecture.
+
 This document is the closest research ancestor of the current direction after the research in `CAPS_SUMMARY.md` and
 the older structural-accessor plan. Its central idea still applies: do not make user domain dependencies the main
 capability story. Some examples below still mention `RuntimeContext<'runtime, 'context, 'env>` or capability-family

@@ -1,6 +1,10 @@
 # Capability Redesign: The LLM-Friendly "Dual-Track" Model
 
-Status: implemented historical plan.
+Status: superseded historical plan.
+
+> Superseded: this document records the pre-2026-06-02 `Flow.read` / `Flow.service` / `Flow.inject` direction.
+> The active redesign is explicit services plus layers. Use `dev-docs/scope-layer-redesign.md` and `dev-docs/PLAN.md`
+> for current direction.
 
 This document records the redesign that replaced `Resolve`/`Requires`-style CE machinery with the current
 `Flow.read`, `Flow.service`, and `Flow.inject` accessors. It is not a live task list. For current architecture,

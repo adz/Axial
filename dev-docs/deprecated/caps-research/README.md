@@ -4,6 +4,11 @@ This bundle contains capability-design research documents for FsFlow.
 
 Start with `../PLAN.md` for current architecture.
 
+> Historical research notice: this folder predates the 2026-06-02 explicit-services-and-layers redesign. Use
+> `../scope-layer-redesign.md` and `../PLAN.md` for current direction. Treat any `RuntimeContext`, registry-backed,
+> ambient-core, or `Flow.service` / `Flow.inject` guidance here as research history unless explicitly restated in the
+> current plan.
+
 Within this research bundle, `NEW-APPROACH.md` is the closest match to the active direction: optional capability
 families for explicit, typed, testable .NET/system effects, while user domain dependencies stay plain by default.
 `CAPS_SUMMARY.md`, `CAPS_RECOMMENDED_MODEL.md`, and `CAPS_RECOMMENDED_WALKTHROUGH.md` keep the research path that
@@ -27,7 +32,7 @@ that as research context, not current implementation.
 - `CAPS-EXPLICIT-HYBRID.md` — explicit interface/record hybrid baseline.
 - `probe.fsx` — minimal compiler probe showing the invalid trait-alias idea.
 
-## Current Recommendation
+## Historical Recommendation
 
 The active direction is:
 
