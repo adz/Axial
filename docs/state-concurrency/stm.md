@@ -49,7 +49,7 @@ let processTransfer fromAcc toAcc amount =
     flow {
         // Run the transaction atomically
         do! STM.atomically (transferFunds fromAcc toAcc amount)
-        do! Log.info "Transfer complete!"
+        return "Transfer complete"
     }
 ```
 

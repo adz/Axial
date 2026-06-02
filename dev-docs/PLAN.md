@@ -2,7 +2,7 @@
 
 This file tracks current product and architecture direction.
 Settled historical decisions live in `dev-docs/decisions/`.
-Historical capability research lives in `dev-docs/deprecated/caps-research/`, but this file is the live direction.
+Historical dependency-model research lives in `dev-docs/deprecated/caps-research/`, but this file is the live direction.
 
 ## Current Direction
 
@@ -17,7 +17,7 @@ The active direction now splits concerns like this:
 - explicit services and app/domain dependencies live in `'env`
 - executor mechanics live in a closed ambient runtime
 
-This is a stricter model than the earlier ambient-capabilities plan. First-party service packages and former
+This is a stricter model than the earlier ambient-services plan. First-party service packages and former
 ambient operational services should be expressed as explicit services, not runtime slots.
 
 ## Active Architecture
@@ -91,9 +91,9 @@ explicit services and provisioned through environments and layers.
 
 - `Scope` owns deterministic teardown
 - `Layer` provisions explicit environments and service bundles
-- `Flow.provide` should become the main way to run flows with a built environment
+- `Flow.provide` is the main way to run flows with a built environment
 
-The internal registry should be removed rather than promoted.
+The internal registry has been removed rather than promoted.
 
 ## Service Packages
 
@@ -121,19 +121,19 @@ Public docs should teach this order:
 
 Docs must avoid:
 
-- presenting first-party capabilities as magical ambient runtime slots
+- presenting first-party services as magical ambient runtime slots
 - presenting registry-backed runtime as the architecture
 - teaching `IHasX` as the default for every dependency
 - centering `IServiceProvider` as the main app model
 
-## Transition Snapshot
+## Implementation Snapshot
 
-As of this plan, the repository still contains code and docs from the earlier ambient-core and `Flow.service` /
-`Flow.inject` direction. Those are migration targets, not the desired v1 endpoint.
+As of 2026-06-03, core code, service packages, tests, examples, and generated reference docs use the explicit
+service/layer model. Remaining work should improve public guide coverage and future service packages, not preserve the
+old ambient-core or `Flow.service` / `Flow.inject` direction.
 
 ## Open Product Questions
 
-- What is the final minimal public `Layer` surface?
-- Do we ship a standard `BaseRuntime` bundle in core, hosting, or a dedicated package?
-- Which scope helpers should be public beyond raw finalizer registration?
-- What is the best public naming for `Flow.provide` versus any narrower helpers derived from layers?
+- Should `Layer` grow error-widening or environment-merging helpers after the minimal v1 surface settles?
+- Should future telemetry services live under `FsFlow.Services.Telemetry` or stay as runtime instrumentation adapters?
+- Should process support add scoped long-running process helpers beyond one-shot `Process.execute`?

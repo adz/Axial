@@ -281,7 +281,7 @@ let pageSpecs = [
             "Execution", ["M:FsFlow.Flow.run"; "M:FsFlow.Flow.runFull"; "M:FsFlow.Flow.toAsync"; "M:FsFlow.Flow.toAsyncResult"; "M:FsFlow.Flow.toTask"; "M:FsFlow.Flow.toTaskResult"; "M:FsFlow.Flow.toTaskWithToken"; "M:FsFlow.Flow.toTaskResultWithToken"; "M:FsFlow.Flow.toValueTaskResult"; "M:FsFlow.Flow.toValueTaskResultWithToken"; "M:FsFlow.Flow.toResult"]
             "Module functions", ["M:FsFlow.Flow.ok"; "M:FsFlow.Flow.error"; "M:FsFlow.Flow.succeed"; "M:FsFlow.Flow.value"; "M:FsFlow.Flow.fail"; "M:FsFlow.Flow.fromResult"; "M:FsFlow.Flow.fromOption"; "M:FsFlow.Flow.fromValueOption"; "M:FsFlow.Flow.orElseFlow"; "M:FsFlow.Flow.env"; "M:FsFlow.Flow.read"; "M:FsFlow.Flow.map"; "M:FsFlow.Flow.bind"; "M:FsFlow.Flow.tap"; "M:FsFlow.Flow.tapError"; "M:FsFlow.Flow.mapError"; "M:FsFlow.Flow.catch"; "M:FsFlow.Flow.orElseWith"; "M:FsFlow.Flow.orElse"; "M:FsFlow.Flow.zip"; "M:FsFlow.Flow.map2"; "M:FsFlow.Flow.map3"; "M:FsFlow.Flow.apply"; "M:FsFlow.Flow.ignore"; "M:FsFlow.Flow.localEnv"; "M:FsFlow.Flow.provide"; "M:FsFlow.Flow.delay"; "M:FsFlow.Flow.traverse"; "M:FsFlow.Flow.sequence"]
             "Parallel orchestration", ["M:FsFlow.Flow.zipPar"; "M:FsFlow.Flow.race"]
-            "Scheduling", ["M:FsFlow.FlowScheduleExtensions.Retry"; "M:FsFlow.FlowScheduleExtensions.Repeat"]
+            "Scheduling", ["M:FsFlow.Flow`3.Retry"; "M:FsFlow.Flow`3.Repeat"]
         ]
         Alias = None
     }

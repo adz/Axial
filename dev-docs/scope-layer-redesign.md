@@ -1,6 +1,6 @@
 # Scope, Services, and Layers Redesign
 
-Status: proposed / active implementation target.
+Status: implemented in core and active documentation target.
 Recorded: 2026-06-02.
 
 ## Decision Summary
@@ -10,7 +10,7 @@ FsFlow should move to a single, explicit dependency story:
 1. Delete the internal registry completely.
 2. Keep `Flow<'env, 'error, 'value>` as the public workflow type.
 3. Keep ambient runtime state only for closed executor mechanics.
-4. Move former ambient operational services into explicit service capabilities.
+4. Move former ambient operational services into explicit services.
 5. Replace `Flow.service` and `Flow.inject` with `Service<'service>.get()` and `Service<'service>.resolve()`.
 6. Make `Layer` the public provisioning abstraction.
 7. Use layers to build a base runtime bundle for the former ambient services.
@@ -28,7 +28,7 @@ The current codebase contains two competing stories:
 
 That split is not coherent enough for v1.
 
-Keeping the registry would preserve extensible ambient capabilities, but it would also keep a second dependency container
+Keeping the registry would preserve extensible ambient services, but it would also keep a second dependency container
 inside FsFlow alongside `IServiceProvider`. That creates hidden requirements, weakens type visibility, and makes the
 mental model harder for both humans and LLMs:
 
@@ -88,7 +88,7 @@ This is the key split:
 - **Services are explicit**
 - **execution mechanics are ambient**
 
-The runtime is no longer a place to stash first-party or third-party capabilities.
+The runtime is no longer a place to stash first-party or third-party services.
 
 ---
 
@@ -732,7 +732,7 @@ The generated reference docs must reflect the new surface:
 
 The public message should be:
 
-- FsFlow does not hide first-party capabilities in a magical ambient bag
+- FsFlow does not hide first-party services in a magical ambient bag
 - explicit services are the normal model
 - layers provision services and own teardown
 - `IServiceProvider` is an edge, not the center
@@ -745,7 +745,7 @@ That should be consistent across guides, examples, reference docs, and `llms.txt
 
 The v1 architecture should be stated plainly:
 
-- FsFlow has explicit services, not extensible ambient capabilities.
+- FsFlow has explicit services, not extensible ambient service slots.
 - The runtime is closed and executor-owned.
 - Layers build environments.
 - Scope owns cleanup.

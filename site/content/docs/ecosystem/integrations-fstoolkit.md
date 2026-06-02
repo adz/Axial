@@ -38,7 +38,7 @@ If you use these FsToolkit patterns, here is how they correspond to FsFlow:
 
 ## New Things You Get
 
-By using FsFlow for your orchestration layer, you gain several capabilities not present in 
+By using FsFlow for your orchestration layer, you gain several benefits not present in
 standard result wrappers:
 
 1.  **Unified Environment**: Every flow has access to an explicit `'env`, removing the need

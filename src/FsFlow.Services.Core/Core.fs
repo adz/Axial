@@ -9,7 +9,7 @@ open FsFlow
 /// <summary>Provides synchronous access to the current UTC clock.</summary>
 type IClock = FsFlow.IClock
 
-/// <summary>Provides synchronous access to runtime logging.</summary>
+/// <summary>Provides synchronous access to workflow logging as an explicit service.</summary>
 type ILog = FsFlow.ILog
 
 /// <summary>Provides synchronous random-number generation.</summary>

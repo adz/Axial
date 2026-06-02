@@ -25,6 +25,9 @@ Workflows result in one of three `Exit` outcomes:
 
 ## Dependency Guidance
 - Use `Flow.read (env -> 'v)` for direct projection from an explicit environment.
+- Use `Service<'service>.get()` when reusable helpers need a named service contract and `'env :> IHas<'service>`.
+- Use `Layer` plus `Flow.provide` to build environments and own scoped cleanup.
+- Use `Service<'service>.resolve()` only for deliberate `IServiceProvider` edge lookup.
 - Prefer plain records for application dependencies unless a named abstraction clearly pays for itself.
 - Keep business and service requirements visible in `'env`.
 - Keep `IServiceProvider` interop and host-specific adapters at the outer boundary.
@@ -58,6 +61,7 @@ Use `Guard.MapError` when the source already carries a meaningful error:
 ## Rosetta Stone (Mappings)
 - **FsToolkit**: `AsyncResult.requireSome e` -> `let! x = opt |> Guard.Of e`
 - **ZIO**: `option.getOrFail(e)` -> `let! x = opt |> Guard.Of e`
+- **ZIO**: `ZIO.service<T>` -> `Service<T>.get()` when the environment implements `IHas<T>`
 - **Manual**: `match x with Some v -> Ok v | None -> Error e` -> `let! v = x |> Guard.Of e`
 - **Manual**: `Result.mapError mapper` -> `let! x = result |> Guard.MapError mapper`
 
@@ -90,6 +94,10 @@ equivalent, FsFlow usually expects a different boundary shape rather than a 1:1 
 - `run env flow`: Execute a flow.
 - `env`: Get the full environment.
 - `read (env -> 'v)`: Project value from env.
+- `Service<'service>.get()`: Read a named service from an `IHas<'service>` environment.
+- `Service<'service>.resolve()`: Resolve a service from an `IServiceProvider` boundary.
+- `Layer.succeed`, `Layer.effect`, `Layer.zip`: Build explicit service environments.
+- `provide layer flow`: Run a flow with an environment built by a layer.
 - `map`, `mapError`, `bind`, `tap`, `tapError`: Core combinators.
 - `catch`: Handle exceptions.
 

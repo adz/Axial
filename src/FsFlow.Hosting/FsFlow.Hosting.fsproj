@@ -7,7 +7,7 @@
     <PackageId>FsFlow.Hosting</PackageId>
     <Version>0.1.0</Version>
     <Authors>Adam Davies</Authors>
-    <Description>Host integration and IServiceProvider adapters for FsFlow runtimes and capabilities.</Description>
+    <Description>Host integration and IServiceProvider adapters for FsFlow runtimes and services.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/adz/FsFlow</RepositoryUrl>
     <RepositoryType>git</RepositoryType>

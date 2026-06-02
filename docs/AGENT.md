@@ -64,11 +64,14 @@ Keep application dependencies explicit in `'env`.
 | :--- | :--- |
 | **Direct field access** | `let! port = Flow.read _.Port` |
 | **Dependency function** | `let! loadUser = Flow.read _.LoadUser` |
+| **Named service** | `let! clock = Service<IClock>.get()` |
 | **Whole environment** | `let! env = Flow.env` |
-| **Host boundary** | Build the environment once, then call `Flow.run env flow` |
+| **Provisioned environment** | `flow |> Flow.provide appLayer` |
+| **Host boundary** | Build the environment once, or use `Service<'T>.resolve()` only in edge glue |
 
 Prefer plain records for most application workflows. Keep `IServiceProvider` interop at the host
-boundary instead of making container lookup the default model inside business logic.
+boundary instead of making container lookup the default model inside business logic. Use layers to
+validate provider-backed services and build reusable explicit environments.
 
 ### 6. Rosetta Stone
 Translate common patterns from other libraries into idiomatic FsFlow.
@@ -79,6 +82,8 @@ Translate common patterns from other libraries into idiomatic FsFlow.
 | `requireTrue` | `Check.okIf cond |> Check.orError e` |
 | `Reader.ask` | `let! env = Flow.env` |
 | `Reader.asks` | `let! value = Flow.read projector` |
+| `ZIO.service` | `let! service = Service<IService>.get()` |
+| `.NET IServiceProvider.GetRequiredService` | `let! service = Service<IService>.resolve()` at the edge |
 | `match x with Some...` | `let! v = x |> Guard.Of e` |
 | `Result.mapError` | `let! x = result |> Guard.MapError mapper` |
 

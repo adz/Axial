@@ -1,19 +1,20 @@
 ---
 weight: 40
 title: Managing Dependencies
-description: How FsFlow models dependency boundaries with explicit environments and boundary-only host integration.
+description: How FsFlow models records, services, layers, scopes, and host-provider boundaries.
 type: docs
 ---
 
 
-Keep dependencies explicit.
+Keep dependencies explicit. FsFlow has one dependency model for v1: workflows read an explicit environment, reusable
+helpers name service contracts, and layers build the environment at the boundary.
 
-In FsFlow, the environment (`'env`) is the part of the world your workflow actually needs. The least surprising model is
-also the preferred one:
+Use this order:
 
-- put application services and request-specific data in an explicit environment value
-- read from that environment with `Flow.read`
-- keep `IServiceProvider` at the outer boundary where the host already owns it
+1. Use records plus `Flow.read` for most application code.
+2. Use `IHas<'service>` plus `Service<'service>.get()` for reusable named services.
+3. Use `Layer` and `Flow.provide` to build environments and own resource cleanup.
+4. Use `Service<'service>.resolve()` only at .NET host edges where direct `IServiceProvider` lookup is intentional.
 
 ## Default Shape
 
@@ -31,11 +32,42 @@ let workflow : Flow<ApiDeps, string, unit> =
 
 Keep the boundary concrete unless a named abstraction clearly pays for itself.
 
-## Host Boundaries
+## Service Contracts
 
-`IServiceProvider` still belongs at the edge. Use it to construct the explicit environment that your core workflow
-receives, rather than letting container lookup become the default model inside business logic.
+Reusable helpers can ask for a named service without forcing every application to use the same record shape:
+
+```fsharp
+type IHasOrders =
+    inherit IHas<IOrderRepo>
+
+let save order : Flow<#IHasOrders, OrderError, unit> =
+    flow {
+        let! orders = Service<IOrderRepo>.get()
+        do! orders.Save order
+    }
+```
+
+## Layers
+
+Layers build explicit environments and own cleanup through `Scope`.
+
+```fsharp
+let app =
+    placeOrder order
+    |> Flow.provide appLayer
+```
+
+Use layers when construction can fail, when resources need cleanup, or when a host container should be validated once at
+startup.
 
 ## Tutorials
 
-For a concrete starting point, use the [AppRecord tutorial](../tutorials/app-record/).
+For concrete starting points, use [AppRecord](../tutorials/app-record/) and [Layers](../tutorials/layers/).
+
+## More Detail
+
+- [Explicit Services](./explicit-services/)
+- [Layers](./layers/)
+- [Scopes and Resources](./scopes-and-resources/)
+- [Building a Base Runtime](./building-a-base-runtime/)
+- [Service Provider Boundaries](./service-provider-boundaries/)

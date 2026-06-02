@@ -47,6 +47,53 @@ module RuntimeFoundationTests =
         test <@ aggregate.InnerExceptions[1].Message = "first" @>
 
     [<Fact>]
+    let ``scope rejects finalizers after closure`` () =
+        let scope = new Scope()
+        scope.Close(CancellationToken.None).GetAwaiter().GetResult()
+
+        raises<ObjectDisposedException> <@ scope.AddFinalizer(fun _ -> Task.CompletedTask) @>
+
+    [<Fact>]
+    let ``provided layer finalizes acquired resources when provisioning fails`` () =
+        let calls = ResizeArray<string>()
+
+        let layer : Layer<unit, string, unit> =
+            Layer.effect (fun (_, scope) _ ->
+                scope.AddFinalizer(fun _ ->
+                    calls.Add "cleanup"
+                    Task.CompletedTask)
+
+                EffectFlow.ofError "startup failed")
+
+        let result =
+            Flow.succeed "unreachable"
+            |> Flow.provide layer
+            |> Flow.runSync ()
+
+        test <@ result = Exit.Failure (Cause.Fail "startup failed") @>
+        test <@ List.ofSeq calls = [ "cleanup" ] @>
+
+    [<Fact>]
+    let ``provided layer finalizes acquired resources when downstream flow fails`` () =
+        let calls = ResizeArray<string>()
+
+        let layer : Layer<unit, string, string> =
+            Layer.effect (fun (_, scope) _ ->
+                scope.AddFinalizer(fun _ ->
+                    calls.Add "cleanup"
+                    Task.CompletedTask)
+
+                EffectFlow.ofValue "resource")
+
+        let result =
+            Flow.fail "workflow failed"
+            |> Flow.provide layer
+            |> Flow.runSync ()
+
+        test <@ result = Exit.Failure (Cause.Fail "workflow failed") @>
+        test <@ List.ofSeq calls = [ "cleanup" ] @>
+
+    [<Fact>]
     let ``base runtime layer provisions explicit services from IServiceProvider`` () =
         let clock = Clock.fromValue (DateTimeOffset(2026, 5, 15, 10, 0, 0, TimeSpan.Zero))
         let logMessages = ResizeArray<string>()
