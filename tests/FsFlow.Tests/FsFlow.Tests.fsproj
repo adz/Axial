@@ -44,11 +44,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\FsFlow\FsFlow.fsproj" />
-    <ProjectReference Include="..\..\src\FsFlow.Capabilities.Core\FsFlow.Capabilities.Core.fsproj" />
-    <ProjectReference Include="..\..\src\FsFlow.Capabilities.Console\FsFlow.Capabilities.Console.fsproj" />
-    <ProjectReference Include="..\..\src\FsFlow.Capabilities.FileSystem\FsFlow.Capabilities.FileSystem.fsproj" />
-    <ProjectReference Include="..\..\src\FsFlow.Capabilities.Http\FsFlow.Capabilities.Http.fsproj" />
-    <ProjectReference Include="..\..\src\FsFlow.Capabilities.Process\FsFlow.Capabilities.Process.fsproj" />
+    <ProjectReference Include="..\..\src\FsFlow.Services.Core\FsFlow.Services.Core.fsproj" />
+    <ProjectReference Include="..\..\src\FsFlow.Services.Console\FsFlow.Services.Console.fsproj" />
+    <ProjectReference Include="..\..\src\FsFlow.Services.FileSystem\FsFlow.Services.FileSystem.fsproj" />
+    <ProjectReference Include="..\..\src\FsFlow.Services.Http\FsFlow.Services.Http.fsproj" />
+    <ProjectReference Include="..\..\src\FsFlow.Services.Process\FsFlow.Services.Process.fsproj" />
     <ProjectReference Include="..\..\src\FsFlow.Hosting\FsFlow.Hosting.fsproj" />
     <ProjectReference Include="..\..\src\FsFlow.Runtime.Telemetry\FsFlow.Runtime.Telemetry.fsproj" />
   </ItemGroup>

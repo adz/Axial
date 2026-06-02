@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="CapabilityExamples.fs" />
+    <Compile Include="ServiceExamples.fs" />
     <Compile Include="RequestBoundaryExample.fs" />
     <Compile Include="DiagnosticsExample.fs" />
     <Compile Include="Program.fs" />

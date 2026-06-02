@@ -40,7 +40,7 @@ This redesign removes that split.
 
 The new model is:
 
-- explicit services for application and capability dependencies
+- explicit services for application and service dependencies
 - a closed ambient executor runtime for execution mechanics only
 - layers for provisioning and teardown
 - `IServiceProvider` only at host boundaries
@@ -79,7 +79,7 @@ FsFlow should teach and implement four distinct concepts.
 | Concern | Mechanism | Visibility | Intended Use |
 | --- | --- | --- | --- |
 | Local app data or dependencies | `Flow.read` | explicit in `'env` | records and feature-local environments |
-| Reusable named service contracts | `Service<'service>.get()` | explicit in `'env` via `IHas<'service>` | capability modules and reusable helpers |
+| Reusable named service contracts | `Service<'service>.get()` | explicit in `'env` via `IHas<'service>` | service modules and reusable helpers |
 | Host container lookup | `Service<'service>.resolve()` | dynamic `IServiceProvider` boundary | glue code and app-host edges |
 | Execution mechanics | closed ambient runtime | not part of `'env` | cancellation, scope, annotations, scheduling |
 
@@ -112,7 +112,7 @@ Examples of helpers that can remain on `Flow.Runtime`:
 - `Flow.annotate`
 - `Flow.traceId`
 
-These are execution concerns, not capability dependencies.
+These are execution concerns, not service dependencies.
 
 The following should no longer be ambient:
 
@@ -194,7 +194,7 @@ type Service<'service> =
 
 Use it for:
 
-- first-party capability modules
+- first-party service modules
 - reusable helpers that should advertise a named service requirement
 - package APIs where the dependency contract should be obvious in the type
 
@@ -254,9 +254,9 @@ more honestly.
 
 ---
 
-## 8. Former Ambient Services Become Explicit Capability Families
+## 8. Former Ambient Services Become Explicit Service Packages
 
-The former ambient core services should move to the same model as the capability packages.
+The former ambient core services should move to the same model as the service packages.
 
 This means:
 
@@ -283,13 +283,13 @@ module Clock =
 
 This same pattern should be used for:
 
-- `FsFlow.Capabilities.Core`
-- `FsFlow.Capabilities.Console`
-- `FsFlow.Capabilities.FileSystem`
-- `FsFlow.Capabilities.Http`
-- `FsFlow.Capabilities.Process`
+- `FsFlow.Services.Core`
+- `FsFlow.Services.Console`
+- `FsFlow.Services.FileSystem`
+- `FsFlow.Services.Http`
+- `FsFlow.Services.Process`
 - future `Network`
-- telemetry-related capability families
+- telemetry-related service packages
 
 The library should stop treating "core" services as a special dependency mechanism.
 
@@ -334,8 +334,8 @@ type Scope =
     member AddAsyncDisposable : IAsyncDisposable -> unit
 ```
 
-Synchronous-only finalizers are too limiting for process cleanup, telemetry flush, and future richer capability
-families.
+Synchronous-only finalizers are too limiting for process cleanup, telemetry flush, and future richer service
+packages.
 
 ### 9.4 What Scope Is Not
 
@@ -598,13 +598,13 @@ This keeps overrides visible in normal F# values instead of hiding them in execu
 
 ---
 
-## 13. Capability Package Guidance
+## 13. Service Package Guidance
 
 This redesign should drive the first-party packages toward a consistent shape.
 
 ### 13.1 Package contract shape
 
-Each capability package should expose:
+Each service package should expose:
 
 - one or more service interfaces
 - helper modules that call `Service<'service>.get()`
@@ -658,11 +658,11 @@ mechanics are genuinely involved.
 The clean implementation order is:
 
 1. Add `Service<'service>.get()` and `Service<'service>.resolve()`.
-2. Migrate first-party capability helpers to the new accessor type.
+2. Migrate first-party service helpers to the new accessor type.
 3. Introduce public `Scope` with async finalizers.
 4. Introduce public `Layer`.
 5. Replace the current flow-based `provideLayer` with `Flow.provide`.
-6. Migrate former ambient core capability modules to explicit services.
+6. Migrate former ambient core service modules to explicit services.
 7. Delete `Flow.service`, `Flow.inject`, and ambient operational overrides.
 8. Delete `Registry` and `RuntimeAdapter`.
 9. Update examples and docs in the same implementation wave.
@@ -692,7 +692,7 @@ The recommended teaching order is:
 5. `Layer`
 6. `Scope`
 7. building a base runtime from layers
-8. capability packages as explicit services
+8. service packages as explicit services
 
 ### 15.2 Active doc entry points to replace
 

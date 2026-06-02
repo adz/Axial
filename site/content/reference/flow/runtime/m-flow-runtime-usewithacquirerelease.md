@@ -1,7 +1,7 @@
 ---
 title: "Flow.Runtime.useWithAcquireRelease"
 linkTitle: "useWithAcquireRelease"
-weight: 2009
+weight: 2007
 type: docs
 ---
 

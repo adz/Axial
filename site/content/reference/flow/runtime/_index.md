@@ -4,7 +4,7 @@ weight: 10
 type: docs
 ---
 
-This page shows the `Flow.Runtime` helpers for operational concerns. These functions allow workflows to interact with the ambient execution environment for things like logging, time, random numbers, and resource management. They are designed to be used at the boundaries of your application workflows.
+This page shows the `Flow.Runtime` helpers for closed executor mechanics. These functions expose cancellation, scope ownership, runtime annotations, timeout handling, retry, and resource cleanup. They are intentionally separate from explicit application services such as clock, logging, HTTP, or file-system access.
 
 ## Runtime helpers
 
@@ -12,11 +12,9 @@ This page shows the `Flow.Runtime` helpers for operational concerns. These funct
 - [`Flow.Runtime.catchCancellation`](./m-flow-runtime-catchcancellation.md): Catches <a href="https://learn.microsoft.com/dotnet/api/operationcanceledexception">OperationCanceledException</a> raised by a flow and converts it into a typed error.
 - [`Flow.Runtime.ensureNotCanceled`](./m-flow-runtime-ensurenotcanceled.md): Returns a typed error immediately when the runtime token is already canceled.
 - [`Flow.Runtime.sleep`](./m-flow-runtime-sleep.md): Suspends the flow for the specified duration, observing cancellation.
-- [`Flow.Runtime.now`](./m-flow-runtime-now.md): Reads the ambient UTC clock owned by the runtime.
-- [`Flow.Runtime.log`](./m-flow-runtime-log.md): Writes a message through the ambient runtime logger.
-- [`Flow.Runtime.newGuid`](./m-flow-runtime-newguid.md): Creates a new GUID through the ambient runtime GUID generator.
-- [`Flow.Runtime.nextInt`](./m-flow-runtime-nextint.md): Creates a random integer through the ambient runtime random generator.
-- [`Flow.Runtime.tryGetEnvironmentVariable`](./m-flow-runtime-trygetenvironmentvariable.md): Reads an environment variable from the ambient runtime environment provider.
+- [`Flow.Runtime.scope`](./m-flow-runtime-scope.md): Reads the current runtime scope.
+- [`Flow.Runtime.annotations`](./m-flow-runtime-annotations.md): Reads the current runtime annotations.
+- [`Flow.Runtime.traceId`](./m-flow-runtime-traceid.md): Reads the current runtime trace id annotation if one is present.
 - [`Flow.Runtime.useWithAcquireRelease`](./m-flow-runtime-usewithacquirerelease.md): Acquires a resource, uses it, and always runs the release action.
 - [`Flow.Runtime.timeout`](./m-flow-runtime-timeout.md): Fails with the supplied typed error when the flow does not complete before the timeout.
 - [`Flow.Runtime.timeoutToOk`](./m-flow-runtime-timeouttook.md): Returns the supplied success value when the flow does not complete before the timeout.

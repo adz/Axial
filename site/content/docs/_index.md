@@ -18,7 +18,7 @@ Welcome to the FsFlow guides. Choose a section from the sidebar or start with [G
 <section class="docs-card">
 <span class="label">Tutorials</span>
 <h2><a href="./tutorials/">Step-by-step guides</a></h2>
-<p>Learn common setups for records, capabilities, and .NET host integration.</p>
+<p>Learn common setups for records, explicit services, layers, and .NET host integration.</p>
 </section>
 
 <section class="docs-card">
@@ -36,7 +36,7 @@ Welcome to the FsFlow guides. Choose a section from the sidebar or start with [G
 <section class="docs-card">
 <span class="label">Managing Dependencies</span>
 <h2><a href="./managing-dependencies/">Environment handling</a></h2>
-<p>Learn how to manage dependencies using records, capability contracts, and runtime-owned services.</p>
+<p>Learn how to manage dependencies using records, service contracts, layers, and runtime mechanics.</p>
 </section>
 
 <section class="docs-card">

@@ -1,7 +1,7 @@
 ---
 title: "Flow.catch"
 linkTitle: "catch"
-weight: 2318
+weight: 2316
 ---
 
 Catches exceptions raised during execution and maps them to a typed error.

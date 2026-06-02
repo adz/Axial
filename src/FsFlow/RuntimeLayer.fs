@@ -1,111 +1,68 @@
 namespace FsFlow
 
-#if !FABLE_COMPILER
-
-open System
 open System.Threading
-open System.Threading.Tasks
 
 /// <summary>
-/// Represents a runtime provisioning step that consumes a registry and produces a value or contract.
+/// Represents a provisioning step that builds an explicit environment inside a scope.
 /// </summary>
-/// <remarks>
-/// Layers are the composition unit for resource acquisition, tagging, and local overrides.
-/// </remarks>
-type internal Layer<'error, 'output> =
-    Registry -> CancellationToken -> Effect<'output, 'error>
+/// <typeparam name="input">The input environment required to build the layer.</typeparam>
+/// <typeparam name="error">The typed failure produced during provisioning.</typeparam>
+/// <typeparam name="output">The environment or service bundle produced by the layer.</typeparam>
+type Layer<'input, 'error, 'output> =
+    | Layer of (('input * Scope) -> CancellationToken -> Effect<'output, 'error>)
 
-/// <summary>Layer helpers for composition and registry-driven provisioning.</summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
-module internal RuntimeLayer =
-    let local
-        (mapping: Registry -> Registry)
-        (layer: Layer<'error, 'output>)
-        : Layer<'error, 'output> =
-        fun registry cancellationToken ->
-            layer (mapping registry) cancellationToken
-
-    let run
-        (layer: Layer<'error, 'output>)
-        (registry: Registry)
+module Layer =
+    let inline internal invoke
+        (layer: Layer<'input, 'error, 'output>)
+        (input: 'input)
+        (scope: Scope)
         (cancellationToken: CancellationToken)
         : Effect<'output, 'error> =
-        #if FABLE_COMPILER
-        async {
-            try
-                return! layer registry cancellationToken
-            finally
-                (registry.Scope :> IDisposable).Dispose()
-        }
-        #else
-        ValueTask<Exit<'output, 'error>>(
-            task {
-                try
-                    let! exit = layer registry cancellationToken
-                    return exit
-                finally
-                    (registry.Scope :> IDisposable).Dispose()
-            })
-        #endif
+        let (Layer operation) = layer
+        operation (input, scope) cancellationToken
 
+    /// <summary>Creates a layer from a raw effectful provisioning function.</summary>
+    let effect
+        (operation: ('input * Scope) -> CancellationToken -> Effect<'output, 'error>)
+        : Layer<'input, 'error, 'output> =
+        Layer operation
+
+    /// <summary>Creates a layer that succeeds with a fixed output value.</summary>
+    let succeed (value: 'output) : Layer<'input, 'error, 'output> =
+        Layer(fun _ _ -> EffectFlow.ofValue value)
+
+    /// <summary>Projects part of the input environment into the layer output.</summary>
+    let read (projection: 'input -> 'output) : Layer<'input, 'error, 'output> =
+        Layer(fun (input, _) _ -> EffectFlow.ofValue (projection input))
+
+    /// <summary>Maps the successful output of a layer.</summary>
     let map
         (mapper: 'output -> 'next)
-        (layer: Layer<'error, 'output>)
-        : Layer<'error, 'next> =
-        fun registry cancellationToken ->
-            layer registry cancellationToken
-            |> EffectFlow.map mapper
+        (layer: Layer<'input, 'error, 'output>)
+        : Layer<'input, 'error, 'next> =
+        Layer(fun (input, scope) cancellationToken ->
+            invoke layer input scope cancellationToken
+            |> EffectFlow.map mapper)
 
+    /// <summary>Sequences layer provisioning with a dependent follow-up layer.</summary>
     let bind
-        (binder: 'output -> Layer<'error, 'next>)
-        (layer: Layer<'error, 'output>)
-        : Layer<'error, 'next> =
-        fun registry cancellationToken ->
-            #if FABLE_COMPILER
-            async {
-                let! exit = layer registry cancellationToken
+        (binder: 'output -> Layer<'input, 'error, 'next>)
+        (layer: Layer<'input, 'error, 'output>)
+        : Layer<'input, 'error, 'next> =
+        Layer(fun (input, scope) cancellationToken ->
+            invoke layer input scope cancellationToken
+            |> EffectFlow.bind (fun value ->
+                invoke (binder value) input scope cancellationToken))
 
-                match exit with
-                | Exit.Success value ->
-                    return! binder value registry cancellationToken
-                | Exit.Failure cause ->
-                    return Exit.Failure cause
-            }
-            #else
-            ValueTask<Exit<'next, 'error>>(
-                task {
-                    let! exit = layer registry cancellationToken
-
-                    match exit with
-                    | Exit.Success value ->
-                        let! nextExit = binder value registry cancellationToken
-                        return nextExit
-                    | Exit.Failure cause ->
-                        return Exit.Failure cause
-                })
-            #endif
-
-    let provide
-        (layer: Layer<'error, 'output>)
-        (flow: 'output -> 'workflow)
-        : Layer<'error, 'workflow> =
-        fun registry cancellationToken ->
-            #if FABLE_COMPILER
-            async {
-                let! exit = layer registry cancellationToken
-                match exit with
-                | Exit.Success value -> return Exit.Success (flow value)
-                | Exit.Failure cause -> return Exit.Failure cause
-            }
-            #else
-            ValueTask<Exit<'workflow, 'error>>(
-                task {
-                    let! exit = layer registry cancellationToken
-                    match exit with
-                    | Exit.Success value -> return Exit.Success (flow value)
-                    | Exit.Failure cause -> return Exit.Failure cause
-                })
-            #endif
-
-#endif
+    /// <summary>Builds two layers from the same input and scope and returns both outputs.</summary>
+    let zip
+        (left: Layer<'input, 'error, 'left>)
+        (right: Layer<'input, 'error, 'right>)
+        : Layer<'input, 'error, 'left * 'right> =
+        Layer(fun (input, scope) cancellationToken ->
+            invoke left input scope cancellationToken
+            |> EffectFlow.bind (fun leftValue ->
+                invoke right input scope cancellationToken
+                |> EffectFlow.map (fun rightValue -> leftValue, rightValue)))

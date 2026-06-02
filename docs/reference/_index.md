@@ -5,7 +5,7 @@ weight: 30
 
 # API Reference
 
-This page shows the generated API reference for FsFlow core and the standard capability packages.
+This page shows the generated API reference for FsFlow core and the standard service packages.
 
 Start with [`Flow`](./flow/) if you are writing application workflows. It is the central execution
 type: a cold computation that reads `env`, returns a typed failure or success value, and preserves
@@ -18,11 +18,10 @@ still pure. `Check` is for reusable boolean-like predicates; `Validation` is for
 field-level diagnostics. Use [`Diagnostics`](./diagnostics/) when you need to inspect, merge, or
 render those validation failures.
 
-Use the capability references when a workflow needs named dependencies. [`Capability`](./capability/)
-documents the edge helpers and compatibility tokens around `env`; the `caps-*` sections document the
-standard capability packages. Keep application dependencies in `env` and keep runtime-owned services
-such as clock, logging, random, GUID generation, and environment-variable lookup behind runtime
-helpers and overrides.
+Use the service references when a workflow needs named dependencies. [`Service`](./service/)
+documents nominal service contracts and provider-edge lookup, [`Layer`](./layer/) documents
+provisioning, and [`Scope`](./scope/) documents cleanup ownership. Keep application dependencies
+explicit in `env` and reserve [`Flow.Runtime`](./flow/runtime/) for closed executor mechanics.
 
 Use [`Ref`](./ref/), [`STM`](./stm/), [`Schedule`](./schedule/), and [`Stream`](./stream/) for focused
 runtime concerns: mutable references, transactional state, retry/repeat policy, and pull-based

@@ -31,3 +31,6 @@ Returns an optional single element when the sequence contains at most one item.
  <span class="pn">[</span><span class="pn">]</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">okIfAtMostOne</span> <span class="c">// Ok None</span>
  <span class="pn">[</span> <span class="n">1</span><span class="pn">;</span> <span class="n">2</span> <span class="pn">]</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">okIfAtMostOne</span> <span class="c">// Error (ExpectedAtMostOne 2)</span>
 </code></pre>
+
+
+

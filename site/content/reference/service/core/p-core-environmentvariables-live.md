@@ -1,0 +1,21 @@
+---
+title: "Core.EnvironmentVariables.live"
+linkTitle: "live"
+weight: 2601
+type: docs
+---
+
+Creates a live provider backed by the current process environment.
+
+## Signature
+
+<div class="fsdocs-usage">
+<code><span>Core.EnvironmentVariables.live&#32;<span></span></span></code>
+</div>
+
+## Returns
+
+| Type | Description |
+| --- | --- |
+| <code><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-services-core-ienvironmentvariables.html">IEnvironmentVariables</a></code> |  |
+

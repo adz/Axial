@@ -46,6 +46,8 @@ module TestSupport =
     type AppDependencies =
         { DeviceClient: IDeviceClient
           Value: int }
+        interface IHas<IDeviceClient> with
+            member this.Service = this.DeviceClient
 
     type RecordingServiceProvider(serviceType: Type, service: obj) =
         interface IServiceProvider with

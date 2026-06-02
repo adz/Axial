@@ -19,13 +19,13 @@ type PageSpec = {
 let normalize (name: string) =
     if String.IsNullOrEmpty name then ""
     else
-        name.Replace("FsFlow.", "").Replace("Caps.", "").Replace("Module", "").Replace("Extensions", "").Replace("Builders", "")
+        name.Replace("FsFlow.", "").Replace("Services.", "").Replace("Caps.", "").Replace("Module", "").Replace("Extensions", "").Replace("Builders", "")
         |> (fun s -> s.Replace("`", "").Replace("'", "").Split('(').[0].Trim('.'))
 
 let cleanName (name: string) =
     if String.IsNullOrEmpty name then ""
     else
-        name.Replace("FsFlow.", "").Replace("Caps.", "").Replace("Module", "").Replace("Extensions", "").Replace("Builders", "")
+        name.Replace("FsFlow.", "").Replace("Services.", "").Replace("Caps.", "").Replace("Module", "").Replace("Extensions", "").Replace("Builders", "")
         |> (fun s -> s.Trim('.'))
         |> (fun s -> 
             // Surgical removal of generic backticks like `1, `2, etc.
@@ -42,7 +42,7 @@ let getPageName (id: string) =
     let kind = id.[0].ToString().ToLower()
     let namePart = id.Substring(2).Split('(').[0]
     let clean = 
-        namePart.Replace("FsFlow.", "").Replace("Caps.", "").Replace("Module", "").Replace("Extensions", "").Replace("Builders", "")
+        namePart.Replace("FsFlow.", "").Replace("Services.", "").Replace("Caps.", "").Replace("Module", "").Replace("Extensions", "").Replace("Builders", "")
         |> (fun s -> System.Text.RegularExpressions.Regex.Replace(s, @"`[0-9]+", ""))
         |> (fun s -> s.Replace("'", "").Trim('.'))
         
@@ -279,7 +279,7 @@ let pageSpecs = [
             "Core type", ["T:FsFlow.Flow`3"]
             "Fiber operations", ["M:FsFlow.Flow.fork"; "M:FsFlow.Flow.join"; "M:FsFlow.Flow.interrupt"]
             "Execution", ["M:FsFlow.Flow.run"; "M:FsFlow.Flow.runFull"; "M:FsFlow.Flow.toAsync"; "M:FsFlow.Flow.toAsyncResult"; "M:FsFlow.Flow.toTask"; "M:FsFlow.Flow.toTaskResult"; "M:FsFlow.Flow.toTaskWithToken"; "M:FsFlow.Flow.toTaskResultWithToken"; "M:FsFlow.Flow.toValueTaskResult"; "M:FsFlow.Flow.toValueTaskResultWithToken"; "M:FsFlow.Flow.toResult"]
-            "Module functions", ["M:FsFlow.Flow.ok"; "M:FsFlow.Flow.error"; "M:FsFlow.Flow.succeed"; "M:FsFlow.Flow.value"; "M:FsFlow.Flow.fail"; "M:FsFlow.Flow.fromResult"; "M:FsFlow.Flow.fromOption"; "M:FsFlow.Flow.fromValueOption"; "M:FsFlow.Flow.orElseFlow"; "M:FsFlow.Flow.env"; "M:FsFlow.Flow.read"; "M:FsFlow.Flow.service"; "M:FsFlow.Flow.inject"; "M:FsFlow.Flow.map"; "M:FsFlow.Flow.bind"; "M:FsFlow.Flow.tap"; "M:FsFlow.Flow.tapError"; "M:FsFlow.Flow.mapError"; "M:FsFlow.Flow.catch"; "M:FsFlow.Flow.orElseWith"; "M:FsFlow.Flow.orElse"; "M:FsFlow.Flow.zip"; "M:FsFlow.Flow.map2"; "M:FsFlow.Flow.map3"; "M:FsFlow.Flow.apply"; "M:FsFlow.Flow.ignore"; "M:FsFlow.Flow.localEnv"; "M:FsFlow.Flow.provideLayer"; "M:FsFlow.Flow.delay"; "M:FsFlow.Flow.traverse"; "M:FsFlow.Flow.sequence"]
+            "Module functions", ["M:FsFlow.Flow.ok"; "M:FsFlow.Flow.error"; "M:FsFlow.Flow.succeed"; "M:FsFlow.Flow.value"; "M:FsFlow.Flow.fail"; "M:FsFlow.Flow.fromResult"; "M:FsFlow.Flow.fromOption"; "M:FsFlow.Flow.fromValueOption"; "M:FsFlow.Flow.orElseFlow"; "M:FsFlow.Flow.env"; "M:FsFlow.Flow.read"; "M:FsFlow.Flow.map"; "M:FsFlow.Flow.bind"; "M:FsFlow.Flow.tap"; "M:FsFlow.Flow.tapError"; "M:FsFlow.Flow.mapError"; "M:FsFlow.Flow.catch"; "M:FsFlow.Flow.orElseWith"; "M:FsFlow.Flow.orElse"; "M:FsFlow.Flow.zip"; "M:FsFlow.Flow.map2"; "M:FsFlow.Flow.map3"; "M:FsFlow.Flow.apply"; "M:FsFlow.Flow.ignore"; "M:FsFlow.Flow.localEnv"; "M:FsFlow.Flow.provide"; "M:FsFlow.Flow.delay"; "M:FsFlow.Flow.traverse"; "M:FsFlow.Flow.sequence"]
             "Parallel orchestration", ["M:FsFlow.Flow.zipPar"; "M:FsFlow.Flow.race"]
             "Scheduling", ["M:FsFlow.FlowScheduleExtensions.Retry"; "M:FsFlow.FlowScheduleExtensions.Repeat"]
         ]
@@ -332,9 +332,9 @@ let pageSpecs = [
         OutPath = ["flow"; "runtime"; "_index.md"]
         Title = "Flow.Runtime"
         Description = "Runtime helpers for operational concerns like logging, timeout, retry, and cleanup."
-        Intro = "This page shows the `Flow.Runtime` helpers for operational concerns. These functions allow workflows to interact with the ambient execution environment for things like logging, time, random numbers, and resource management. They are designed to be used at the boundaries of your application workflows."
+        Intro = "This page shows the `Flow.Runtime` helpers for closed executor mechanics. These functions expose cancellation, scope ownership, runtime annotations, timeout handling, retry, and resource cleanup. They are intentionally separate from explicit application services such as clock, logging, HTTP, or file-system access."
         SymbolIds = [
-            "Runtime helpers", ["M:FsFlow.Flow.Runtime.cancellationToken"; "M:FsFlow.Flow.Runtime.catchCancellation"; "M:FsFlow.Flow.Runtime.ensureNotCanceled"; "M:FsFlow.Flow.Runtime.sleep"; "M:FsFlow.Flow.Runtime.now"; "M:FsFlow.Flow.Runtime.log"; "M:FsFlow.Flow.Runtime.newGuid"; "M:FsFlow.Flow.Runtime.nextInt"; "M:FsFlow.Flow.Runtime.tryGetEnvironmentVariable"; "M:FsFlow.Flow.Runtime.useWithAcquireRelease"; "M:FsFlow.Flow.Runtime.timeout"; "M:FsFlow.Flow.Runtime.timeoutToOk"; "M:FsFlow.Flow.Runtime.timeoutToError"; "M:FsFlow.Flow.Runtime.timeoutWith"; "M:FsFlow.Flow.Runtime.retry"]
+            "Runtime helpers", ["M:FsFlow.Flow.Runtime.cancellationToken"; "M:FsFlow.Flow.Runtime.catchCancellation"; "M:FsFlow.Flow.Runtime.ensureNotCanceled"; "M:FsFlow.Flow.Runtime.sleep"; "M:FsFlow.Flow.Runtime.scope"; "M:FsFlow.Flow.Runtime.annotations"; "M:FsFlow.Flow.Runtime.traceId"; "M:FsFlow.Flow.Runtime.useWithAcquireRelease"; "M:FsFlow.Flow.Runtime.timeout"; "M:FsFlow.Flow.Runtime.timeoutToOk"; "M:FsFlow.Flow.Runtime.timeoutToError"; "M:FsFlow.Flow.Runtime.timeoutWith"; "M:FsFlow.Flow.Runtime.retry"]
         ]
         Alias = None
     }
@@ -449,72 +449,97 @@ let pageSpecs = [
         Alias = None
     }
     {
-        OutPath = ["capability"; "_index.md"]
-        Title = "Capability"
-        Description = "Source-documented capability contracts and dependency access helpers for FsFlow."
-        Intro = "This page shows the capability helpers around FsFlow's environment model. In FsFlow, a capability is a named interface that describes what a flow needs from `env`; the workflow still receives an explicit environment, but the interface gives that dependency surface a stable name. Prefer plain records plus `Flow.read` for local workflow code, use `IHas<'T>` plus `Flow.service` when reusable helpers need statically checked dependency contracts, and keep `Flow.inject` at .NET host boundaries where `IServiceProvider` interop is useful. Runtime-owned services such as clock, logging, random, GUID generation, and environment-variable lookup stay in `FsFlow.Capabilities.Core`, where they can be read through runtime helpers and overridden with `Flow.withClock`, `Flow.withLog`, `Flow.withRandom`, `Flow.withGuid`, and `Flow.withEnvironmentVariables`. \n\nSee the standard capability packages: [Core](./core/), [Console](./console/), [FileSystem](./filesystem/), [Http](./http/), and [Process](./process/)."
+        OutPath = ["service"; "_index.md"]
+        Title = "Service"
+        Description = "Source-documented service contracts and dependency access helpers for FsFlow."
+        Intro = "This page shows the service helpers around FsFlow's explicit environment model. In FsFlow, a service is a named dependency contract such as `IClock`, `IConsole`, or `IHttp`. Prefer plain records plus `Flow.read` for local workflow code, use `IHas<'T>` plus `Service<'service>.get()` when reusable helpers need a nominal service contract, and keep `Service<'service>.resolve()` at .NET host boundaries where `IServiceProvider` interop is useful. Layers provision explicit services, while the ambient runtime is reserved for closed executor mechanics only.\n\nSee the standard service packages: [Core](./core/), [Console](./console/), [FileSystem](./filesystem/), [Http](./http/), and [Process](./process/)."
         SymbolIds = [
-            "Capability contracts", ["T:FsFlow.IHas`1"]
-            "Flow accessors", ["M:FsFlow.Flow.read"; "M:FsFlow.Flow.service"; "M:FsFlow.Flow.inject"]
-            "Edge helpers", ["T:FsFlow.MissingCapability"]
+            "Service contracts", ["T:FsFlow.IHas`1"; "T:FsFlow.Service`1"]
+            "Service accessors", ["M:FsFlow.Service.get"; "M:FsFlow.Service.resolve"]
+            "Environment helpers", ["M:FsFlow.Flow.read"]
         ]
         Alias = None
     }
     {
-        OutPath = ["capability"; "core"; "_index.md"]
-        Title = "Capabilities Core"
-        Description = "Source-documented synchronous capability primitives for FsFlow.Capabilities.Core."
-        Intro = "This page shows the core runtime capability package: clock, logging, random numbers, GUID generation, and environment-variable lookup. These services are operational concerns, so ordinary application workflows should usually read them through helpers such as `Clock.now`, `Log.info`, `Random.nextInt`, `Guid.newGuid`, and `EnvironmentVariable.get` instead of adding them to every app environment record. Tests and scoped workflows can replace them with deterministic providers via `Flow.withClock`, `Flow.withLog`, `Flow.withRandom`, `Flow.withGuid`, and `Flow.withEnvironmentVariables`."
+        OutPath = ["layer"; "_index.md"]
+        Title = "Layer"
+        Description = "Source-documented service provisioning surface for FsFlow."
+        Intro = "This page shows the `Layer<'input, 'error, 'output>` surface used to provision explicit services and environments. Layers build service values inside a `Scope`, can fail during provisioning, and are consumed through `Flow.provide`."
         SymbolIds = [
-            "Capability types", ["T:FsFlow.Capabilities.Core.IClock"; "T:FsFlow.Capabilities.Core.IRandom"; "T:FsFlow.Capabilities.Core.IGuid"; "T:FsFlow.Capabilities.Core.IEnvironmentVariables"; "T:FsFlow.Capabilities.Core.EnvironmentVariableError"]
-            "Clock", ["M:FsFlow.Capabilities.Core.Clock.now"; "M:FsFlow.Capabilities.Core.Clock.live"; "M:FsFlow.Capabilities.Core.Clock.fromValue"]
-            "Random", ["M:FsFlow.Capabilities.Core.Random.nextInt"; "M:FsFlow.Capabilities.Core.Random.live"; "M:FsFlow.Capabilities.Core.Random.fromValue"]
-            "GUID", ["M:FsFlow.Capabilities.Core.Guid.newGuid"; "M:FsFlow.Capabilities.Core.Guid.live"; "M:FsFlow.Capabilities.Core.Guid.fromValue"]
-            "Environment variables", ["M:FsFlow.Capabilities.Core.EnvironmentVariables.tryGet"; "M:FsFlow.Capabilities.Core.EnvironmentVariables.live"; "M:FsFlow.Capabilities.Core.EnvironmentVariables.fromPairs"; "M:FsFlow.Capabilities.Core.EnvironmentVariable.tryGet"; "M:FsFlow.Capabilities.Core.EnvironmentVariable.get"; "M:FsFlow.Capabilities.Core.EnvironmentVariable.getInt"; "M:FsFlow.Capabilities.Core.EnvironmentVariable.getGuid"; "M:FsFlow.Capabilities.Core.EnvironmentVariable.getBool"; "M:FsFlow.Capabilities.Core.EnvironmentVariableErrors.describe"]
+            "Core type", ["T:FsFlow.Layer`3"]
+            "Module functions", ["M:FsFlow.Layer.effect"; "M:FsFlow.Layer.succeed"; "M:FsFlow.Layer.read"; "M:FsFlow.Layer.map"; "M:FsFlow.Layer.bind"; "M:FsFlow.Layer.zip"]
+            "Flow integration", ["M:FsFlow.Flow.provide"]
         ]
         Alias = None
     }
     {
-        OutPath = ["capability"; "console"; "_index.md"]
-        Title = "Capabilities Console"
-        Description = "Source-documented console I/O capability for FsFlow.Capabilities.Console."
-        Intro = "This page shows the console capability package. `IConsole` is a small app capability for workflows that need standard input or output without depending directly on `System.Console`. Use it at command-line boundaries, examples, and simple interactive tools. Keep business logic typed against the interface, provide `Console.live` only at the edge, and replace it with a test implementation when you need deterministic input or captured output."
+        OutPath = ["scope"; "_index.md"]
+        Title = "Scope"
+        Description = "Source-documented resource scope for FsFlow."
+        Intro = "This page shows the `Scope` surface used to own cleanup for resources acquired during provisioning and execution. Scopes register finalizers, disposables, and async disposables, and they close in reverse registration order."
         SymbolIds = [
-            "Capability", ["T:FsFlow.Capabilities.Console.IConsole"]
-            "Helpers", ["M:FsFlow.Capabilities.Console.Console.readLine"; "M:FsFlow.Capabilities.Console.Console.writeLine"; "M:FsFlow.Capabilities.Console.Console.live"]
+            "Core type", ["T:FsFlow.Scope"]
+            "Methods", ["M:FsFlow.Scope.AddFinalizer(Microsoft.FSharp.Core.FSharpFunc{System.Threading.CancellationToken,System.Threading.Tasks.Task})"; "M:FsFlow.Scope.AddDisposable(System.IDisposable)"; "M:FsFlow.Scope.AddAsyncDisposable(System.IAsyncDisposable)"; "M:FsFlow.Scope.Close(System.Threading.CancellationToken)"]
         ]
         Alias = None
     }
     {
-        OutPath = ["capability"; "filesystem"; "_index.md"]
-        Title = "Capabilities FileSystem"
-        Description = "Source-documented file system capability for FsFlow.Capabilities.FileSystem."
-        Intro = "This page shows the file-system capability package. `IFileSystem` names the small set of file operations currently supported by FsFlow examples and app workflows: reading text, writing text, and existence checks. Use it when file access is part of a workflow boundary but you still want tests to provide an in-memory or fake implementation. The live provider belongs at the composition root; reusable workflow code should depend on the interface."
+        OutPath = ["service"; "core"; "_index.md"]
+        Title = "Services Core"
+        Description = "Source-documented synchronous service primitives for FsFlow.Services.Core."
+        Intro = "This page shows the core service package: clock, logging, random numbers, GUID generation, and environment-variable lookup. These are explicit services, not ambient runtime slots. Use the helper modules when a workflow needs one of these services, and use `BaseRuntime` or custom environments to supply deterministic or live implementations."
         SymbolIds = [
-            "Capability", ["T:FsFlow.Capabilities.FileSystem.IFileSystem"]
-            "Helpers", ["M:FsFlow.Capabilities.FileSystem.FileSystem.readAllText"; "M:FsFlow.Capabilities.FileSystem.FileSystem.writeAllText"; "M:FsFlow.Capabilities.FileSystem.FileSystem.exists"; "M:FsFlow.Capabilities.FileSystem.FileSystem.live"]
+            "Service types", ["T:FsFlow.Services.Core.IClock"; "T:FsFlow.Services.Core.ILog"; "T:FsFlow.Services.Core.IRandom"; "T:FsFlow.Services.Core.IGuid"; "T:FsFlow.Services.Core.IEnvironmentVariables"; "T:FsFlow.Services.Core.EnvironmentVariableError"; "T:FsFlow.Services.Core.BaseRuntimeError"; "T:FsFlow.Services.Core.BaseRuntime"]
+            "Base runtime", ["P:FsFlow.Services.Core.BaseRuntimeModule.liveValue"; "P:FsFlow.Services.Core.BaseRuntimeModule.live"; "P:FsFlow.Services.Core.BaseRuntimeModule.fromServiceProvider"]
+            "Clock", ["M:FsFlow.Services.Core.Clock.now"; "P:FsFlow.Services.Core.Clock.live"; "P:FsFlow.Services.Core.Clock.layer"; "M:FsFlow.Services.Core.Clock.fromValue"]
+            "Logging", ["M:FsFlow.Services.Core.Log.info"; "P:FsFlow.Services.Core.Log.live"; "P:FsFlow.Services.Core.Log.layer"]
+            "Random", ["M:FsFlow.Services.Core.Random.nextInt"; "P:FsFlow.Services.Core.Random.live"; "P:FsFlow.Services.Core.Random.layer"; "M:FsFlow.Services.Core.Random.fromValue"]
+            "GUID", ["M:FsFlow.Services.Core.Guid.newGuid"; "P:FsFlow.Services.Core.Guid.live"; "P:FsFlow.Services.Core.Guid.layer"; "M:FsFlow.Services.Core.Guid.fromValue"]
+            "Environment variables", ["M:FsFlow.Services.Core.EnvironmentVariables.tryGet"; "P:FsFlow.Services.Core.EnvironmentVariables.live"; "P:FsFlow.Services.Core.EnvironmentVariables.layer"; "M:FsFlow.Services.Core.EnvironmentVariables.fromPairs"; "M:FsFlow.Services.Core.EnvironmentVariable.tryGet"; "M:FsFlow.Services.Core.EnvironmentVariable.get"; "M:FsFlow.Services.Core.EnvironmentVariable.getInt"; "M:FsFlow.Services.Core.EnvironmentVariable.getGuid"; "M:FsFlow.Services.Core.EnvironmentVariable.getBool"; "M:FsFlow.Services.Core.EnvironmentVariableErrors.describe"]
         ]
         Alias = None
     }
     {
-        OutPath = ["capability"; "http"; "_index.md"]
-        Title = "Capabilities Http"
-        Description = "Source-documented HTTP client capability for FsFlow.Capabilities.Http."
-        Intro = "This page shows the HTTP capability package. `IHttp` is intentionally narrow: it models a workflow that needs to fetch a string from a URL without binding the workflow to a concrete `HttpClient` setup. Use it for small integrations and examples where a single `getString` operation is enough. For production clients with richer behavior, define an app-specific interface and keep FsFlow responsible for orchestration, typed failure, and environment threading."
+        OutPath = ["service"; "console"; "_index.md"]
+        Title = "Services Console"
+        Description = "Source-documented console I/O service for FsFlow.Services.Console."
+        Intro = "This page shows the console service package. `IConsole` models standard input and output as an explicit workflow service. Keep business logic typed against the service contract, provide `Console.live` only at the edge, and replace it with a test implementation when you need deterministic input or captured output."
         SymbolIds = [
-            "Capability", ["T:FsFlow.Capabilities.Http.IHttp"]
-            "Helpers", ["M:FsFlow.Capabilities.Http.Http.getString"; "M:FsFlow.Capabilities.Http.Http.live"]
+            "Service", ["T:FsFlow.Services.Console.IConsole"]
+            "Helpers", ["M:FsFlow.Services.Console.Console.readLine"; "M:FsFlow.Services.Console.Console.writeLine"; "P:FsFlow.Services.Console.Console.live"; "P:FsFlow.Services.Console.Console.layer"]
         ]
         Alias = None
     }
     {
-        OutPath = ["capability"; "process"; "_index.md"]
-        Title = "Capabilities Process"
-        Description = "Source-documented external process capability for FsFlow.Capabilities.Process."
-        Intro = "This page shows the external-process capability package. `IProcess` models command execution as an asynchronous workflow dependency and returns a `ProcessResult` with exit code, standard output, and standard error. Use it for tooling, build automation, and integration boundaries where spawning a process is part of the application behavior. Keep process execution behind this interface so tests can return deterministic results without shelling out."
+        OutPath = ["service"; "filesystem"; "_index.md"]
+        Title = "Services FileSystem"
+        Description = "Source-documented file-system service for FsFlow.Services.FileSystem."
+        Intro = "This page shows the file-system service package. `IFileSystem` names the small set of file operations currently supported by FsFlow examples and workflows: reading text, writing text, and existence checks. Keep workflow code typed against the service contract and choose the live or test implementation at provisioning time."
         SymbolIds = [
-            "Capability", ["T:FsFlow.Capabilities.Process.IProcess"; "T:FsFlow.Capabilities.Process.ProcessResult"]
-            "Helpers", ["M:FsFlow.Capabilities.Process.Process.execute"; "M:FsFlow.Capabilities.Process.Process.live"]
+            "Service", ["T:FsFlow.Services.FileSystem.IFileSystem"]
+            "Helpers", ["M:FsFlow.Services.FileSystem.FileSystem.readAllText"; "M:FsFlow.Services.FileSystem.FileSystem.writeAllText"; "M:FsFlow.Services.FileSystem.FileSystem.exists"; "P:FsFlow.Services.FileSystem.FileSystem.live"; "P:FsFlow.Services.FileSystem.FileSystem.layer"]
+        ]
+        Alias = None
+    }
+    {
+        OutPath = ["service"; "http"; "_index.md"]
+        Title = "Services Http"
+        Description = "Source-documented HTTP client service for FsFlow.Services.Http."
+        Intro = "This page shows the HTTP service package. `IHttp` is intentionally narrow: it models a workflow that needs to fetch a string from a URL without binding the workflow to a concrete `HttpClient` setup. For richer clients, define an app-specific service and keep FsFlow responsible for orchestration and failure handling."
+        SymbolIds = [
+            "Service", ["T:FsFlow.Services.Http.IHttp"]
+            "Helpers", ["M:FsFlow.Services.Http.Http.getString"; "M:FsFlow.Services.Http.Http.live"; "M:FsFlow.Services.Http.Http.layer"]
+        ]
+        Alias = None
+    }
+    {
+        OutPath = ["service"; "process"; "_index.md"]
+        Title = "Services Process"
+        Description = "Source-documented external process service for FsFlow.Services.Process."
+        Intro = "This page shows the external-process service package. `IProcess` models command execution as an asynchronous workflow service and returns a `ProcessResult` with exit code, standard output, and standard error. Keep process execution behind this service contract so tests can return deterministic results without shelling out."
+        SymbolIds = [
+            "Service", ["T:FsFlow.Services.Process.IProcess"; "T:FsFlow.Services.Process.ProcessResult"]
+            "Helpers", ["M:FsFlow.Services.Process.Process.execute"; "P:FsFlow.Services.Process.Process.live"; "P:FsFlow.Services.Process.Process.layer"]
         ]
         Alias = None
     }
@@ -544,14 +569,16 @@ let pageWeight (spec: PageSpec) =
     | ["ref"; "_index.md"] -> 110
     | ["stm"; "_index.md"] -> 120
     | ["stream"; "_index.md"] -> 130
-    | ["capability"; "_index.md"] -> 140
+    | ["service"; "_index.md"] -> 140
+    | ["layer"; "_index.md"] -> 150
+    | ["scope"; "_index.md"] -> 160
     | ["validation"; "builders-validate.md"] -> 2000
     | ["result"; "builders-result.md"] -> 2000
-    | ["capability"; "core"; "_index.md"] -> 10
-    | ["capability"; "console"; "_index.md"] -> 20
-    | ["capability"; "filesystem"; "_index.md"] -> 30
-    | ["capability"; "http"; "_index.md"] -> 40
-    | ["capability"; "process"; "_index.md"] -> 50
+    | ["service"; "core"; "_index.md"] -> 10
+    | ["service"; "console"; "_index.md"] -> 20
+    | ["service"; "filesystem"; "_index.md"] -> 30
+    | ["service"; "http"; "_index.md"] -> 40
+    | ["service"; "process"; "_index.md"] -> 50
     | _ -> 500
 
 let childPageWeight (id: string) (sectionOrdinal: int) (itemOrdinal: int) =
@@ -578,11 +605,11 @@ let main argv =
 
     let dllPaths = [
         Path.Combine(artifactsDir, "FsFlow/debug_netstandard2.1/FsFlow.dll")
-        Path.Combine(artifactsDir, "FsFlow.Capabilities.Core/debug_netstandard2.1/FsFlow.Capabilities.Core.dll")
-        Path.Combine(artifactsDir, "FsFlow.Capabilities.Console/debug_netstandard2.1/FsFlow.Capabilities.Console.dll")
-        Path.Combine(artifactsDir, "FsFlow.Capabilities.FileSystem/debug_netstandard2.1/FsFlow.Capabilities.FileSystem.dll")
-        Path.Combine(artifactsDir, "FsFlow.Capabilities.Http/debug_netstandard2.1/FsFlow.Capabilities.Http.dll")
-        Path.Combine(artifactsDir, "FsFlow.Capabilities.Process/debug_netstandard2.1/FsFlow.Capabilities.Process.dll")
+        Path.Combine(artifactsDir, "FsFlow.Services.Core/debug_netstandard2.1/FsFlow.Services.Core.dll")
+        Path.Combine(artifactsDir, "FsFlow.Services.Console/debug_netstandard2.1/FsFlow.Services.Console.dll")
+        Path.Combine(artifactsDir, "FsFlow.Services.FileSystem/debug_netstandard2.1/FsFlow.Services.FileSystem.dll")
+        Path.Combine(artifactsDir, "FsFlow.Services.Http/debug_netstandard2.1/FsFlow.Services.Http.dll")
+        Path.Combine(artifactsDir, "FsFlow.Services.Process/debug_netstandard2.1/FsFlow.Services.Process.dll")
     ]
 
     let apiDocInputs = [
@@ -623,7 +650,7 @@ let main argv =
                             Some (e :> obj)
                         else
                             e.AllMembers |> Seq.tryPick (fun m ->
-                                let mNorm = normalize (safeFullName m.Symbol)
+                                let mNorm = normalize (logicalName m.Symbol)
                                 if mNorm = idNorm || mNorm.EndsWith("." + idNorm) || idNorm.EndsWith("." + mNorm) then
                                     Some (m :> obj)
                                 else None

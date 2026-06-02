@@ -48,8 +48,6 @@ Note that common extensions such as `Flow.Retry` and `Flow.Repeat` are available
 - [`Flow.orElseFlow`](./m-flow-orelseflow.md): Turns a pure validation result into a synchronous flow with environment-provided failure.
 - [`Flow.env`](./m-flow-env.md): Reads the current environment as the successful flow value.
 - [`Flow.read`](./m-flow-read.md): Projects one value from the current environment.
-- [`Flow.service`](./m-flow-service.md): Extracts a specific service from an environment that implements <code>IHas&lt;&#39;service&gt;</code>.
-- [`Flow.inject`](./m-flow-inject.md): Injects a service from a dynamic IServiceProvider environment.
 - [`Flow.map`](./m-flow-map.md): Transforms the successful value of a flow.
 - [`Flow.bind`](./m-flow-bind.md): Sequences a dependent flow after a successful value.
 - [`Flow.tap`](./m-flow-tap.md): Runs an effect on success and preserves the original value.
@@ -64,7 +62,7 @@ Note that common extensions such as `Flow.Retry` and `Flow.Repeat` are available
 - [`Flow.apply`](./m-flow-apply.md): Applies a flow-wrapped function to a flow-wrapped value.
 - [`Flow.ignore`](./m-flow-ignore.md): Maps the successful value of a synchronous flow to <code>unit</code>.
 - [`Flow.localEnv`](./m-flow-localenv.md): Runs a flow against an environment derived from the outer environment.
-- [`Flow.provideLayer`](./m-flow-providelayer.md): Runs a layer flow first, then runs a downstream flow with the layer&#39;s output as its environment.
+- [`Flow.provide`](./m-flow-provide.md): Builds an environment with a layer, runs a downstream flow, and always closes the layer scope.
 - [`Flow.delay`](./m-flow-delay.md): Defers flow construction until execution time.
 - [`Flow.traverse`](./m-flow-traverse.md): Transforms a sequence of values into a flow and stops at the first failure.
 - [`Flow.sequence`](./m-flow-sequence.md): Transforms a sequence of flows into a flow of a sequence and stops at the first failure.
@@ -76,6 +74,4 @@ Note that common extensions such as `Flow.Retry` and `Flow.Repeat` are available
 
 ## Scheduling
 
-- [`Flow.Retry`](./m-flowschedule-retry.md): Retries a failing flow according to the supplied schedule.
-- [`Flow.Repeat`](./m-flowschedule-repeat.md): Repeats a successful flow according to the supplied schedule.
 

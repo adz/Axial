@@ -7,4 +7,4 @@
 3. Tag the release with `git tag v0.x.y && git push origin v0.x.y`.
 4. `release.yml` builds NuGet packages and creates a GitHub Release.
 
-> **Note on Capability Packages**: The `FsFlow.Capabilities.*` packages (Console, FileSystem, etc.) are currently considered experimental and are **not** part of the public NuGet release cycle. Their versioning relationship to core `FsFlow` is TBD. For now, only pack and release the core `FsFlow` package.
+> **Note on Service Packages**: The `FsFlow.Services.*` packages (Console, FileSystem, etc.) are currently considered experimental and are **not** part of the public NuGet release cycle. Their versioning relationship to core `FsFlow` is TBD. For now, only pack and release the core `FsFlow` package.

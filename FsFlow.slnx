@@ -10,7 +10,7 @@
     <Project Path="examples/FsFlow.ReadmeExample/FsFlow.ReadmeExample.fsproj" />
     <Project Path="examples/FsFlow.MaintenanceExamples/FsFlow.MaintenanceExamples.fsproj" />
     <Project Path="examples/FsFlow.Playground/FsFlow.Playground.fsproj" />
-    <Project Path="examples/FsFlow.Capabilities.Core.Examples/FsFlow.Capabilities.Core.Examples.fsproj" />
+    <Project Path="examples/FsFlow.Services.Core.Examples/FsFlow.Services.Core.Examples.fsproj" />
   </Folder>
   <Folder Name="/benchmarks/">
     <Project Path="benchmarks/FsFlow.Benchmarks/FsFlow.Benchmarks.fsproj" />
@@ -18,11 +18,11 @@
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/FsFlow/FsFlow.fsproj" />
-    <Project Path="src/FsFlow.Capabilities.Core/FsFlow.Capabilities.Core.fsproj" />
-    <Project Path="src/FsFlow.Capabilities.Console/FsFlow.Capabilities.Console.fsproj" />
-    <Project Path="src/FsFlow.Capabilities.FileSystem/FsFlow.Capabilities.FileSystem.fsproj" />
-    <Project Path="src/FsFlow.Capabilities.Http/FsFlow.Capabilities.Http.fsproj" />
-    <Project Path="src/FsFlow.Capabilities.Process/FsFlow.Capabilities.Process.fsproj" />
+    <Project Path="src/FsFlow.Services.Core/FsFlow.Services.Core.fsproj" />
+    <Project Path="src/FsFlow.Services.Console/FsFlow.Services.Console.fsproj" />
+    <Project Path="src/FsFlow.Services.FileSystem/FsFlow.Services.FileSystem.fsproj" />
+    <Project Path="src/FsFlow.Services.Http/FsFlow.Services.Http.fsproj" />
+    <Project Path="src/FsFlow.Services.Process/FsFlow.Services.Process.fsproj" />
     <Project Path="src/FsFlow.Hosting/FsFlow.Hosting.fsproj" />
     <Project Path="src/FsFlow.Runtime.Telemetry/FsFlow.Runtime.Telemetry.fsproj" />
   </Folder>

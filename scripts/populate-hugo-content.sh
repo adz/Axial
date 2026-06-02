@@ -68,12 +68,14 @@ upsert_frontmatter "$ref_dir/schedule/_index.md" "weight" "100"
 upsert_frontmatter "$ref_dir/ref/_index.md" "weight" "110"
 upsert_frontmatter "$ref_dir/stm/_index.md" "weight" "120"
 upsert_frontmatter "$ref_dir/stream/_index.md" "weight" "130"
-upsert_frontmatter "$ref_dir/capability/_index.md" "weight" "140"
-upsert_frontmatter "$ref_dir/capability/core/_index.md" "weight" "10"
-upsert_frontmatter "$ref_dir/capability/console/_index.md" "weight" "20"
-upsert_frontmatter "$ref_dir/capability/filesystem/_index.md" "weight" "30"
-upsert_frontmatter "$ref_dir/capability/http/_index.md" "weight" "40"
-upsert_frontmatter "$ref_dir/capability/process/_index.md" "weight" "50"
+upsert_frontmatter "$ref_dir/service/_index.md" "weight" "140"
+upsert_frontmatter "$ref_dir/layer/_index.md" "weight" "150"
+upsert_frontmatter "$ref_dir/scope/_index.md" "weight" "160"
+upsert_frontmatter "$ref_dir/service/core/_index.md" "weight" "10"
+upsert_frontmatter "$ref_dir/service/console/_index.md" "weight" "20"
+upsert_frontmatter "$ref_dir/service/filesystem/_index.md" "weight" "30"
+upsert_frontmatter "$ref_dir/service/http/_index.md" "weight" "40"
+upsert_frontmatter "$ref_dir/service/process/_index.md" "weight" "50"
 
 # Ensure all reference pages are marked as docs type
 find "$ref_dir" -type f -name "*.md" -print0 |
@@ -136,7 +138,7 @@ Welcome to the FsFlow guides. Choose a section from the sidebar or start with [G
 <section class=\"docs-card\">
 <span class=\"label\">Tutorials</span>
 <h2><a href=\"./tutorials/\">Step-by-step guides</a></h2>
-<p>Learn common setups for records, capabilities, and .NET host integration.</p>
+<p>Learn common setups for records, explicit services, layers, and .NET host integration.</p>
 </section>
 
 <section class=\"docs-card\">
@@ -154,7 +156,7 @@ Welcome to the FsFlow guides. Choose a section from the sidebar or start with [G
 <section class=\"docs-card\">
 <span class=\"label\">Managing Dependencies</span>
 <h2><a href=\"./managing-dependencies/\">Environment handling</a></h2>
-<p>Learn how to manage dependencies using records, capability contracts, and runtime-owned services.</p>
+<p>Learn how to manage dependencies using records, service contracts, layers, and runtime mechanics.</p>
 </section>
 
 <section class=\"docs-card\">

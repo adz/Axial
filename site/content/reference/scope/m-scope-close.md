@@ -1,0 +1,27 @@
+---
+title: "Scope.Close"
+linkTitle: "Close"
+weight: 2103
+type: docs
+---
+
+Closes the scope and runs all registered finalizers in reverse order.
+
+## Signature
+
+<div class="fsdocs-usage">
+<code><span>this.Close</span></code>
+</div>
+
+## Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `cancellationToken` | <code><a href="https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken">CancellationToken</a></code> | The token passed to registered finalizers. |
+
+## Returns
+
+| Type | Description |
+| --- | --- |
+| <code><a href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.task">Task</a></code> | A task that completes when all finalizers have run. |
+

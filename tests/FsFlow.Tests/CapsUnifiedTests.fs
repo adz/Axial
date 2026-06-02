@@ -2,10 +2,10 @@ namespace FsFlow.Tests
 
 open System.Threading.Tasks
 open FsFlow
-open FsFlow.Capabilities.Console
-open FsFlow.Capabilities.FileSystem
-open FsFlow.Capabilities.Http
-open FsFlow.Capabilities.Process
+open FsFlow.Services.Console
+open FsFlow.Services.FileSystem
+open FsFlow.Services.Http
+open FsFlow.Services.Process
 open Swensen.Unquote
 open Xunit
 
@@ -16,17 +16,14 @@ type UnifiedCaps =
         Http: IHttp
         Process: IProcess
     }
-    interface IConsole with
-        member this.ReadLine() = this.Console.ReadLine()
-        member this.WriteLine(message) = this.Console.WriteLine(message)
-    interface IFileSystem with
-        member this.ReadAllText(path) = this.FS.ReadAllText(path)
-        member this.WriteAllText(path, contents) = this.FS.WriteAllText(path, contents)
-        member this.Exists(path) = this.FS.Exists(path)
-    interface IHttp with
-        member this.GetString(url) = this.Http.GetString(url)
-    interface IProcess with
-        member this.Execute(fileName, arguments) = this.Process.Execute(fileName, arguments)
+    interface IHas<IConsole> with
+        member this.Service = this.Console
+    interface IHas<IFileSystem> with
+        member this.Service = this.FS
+    interface IHas<IHttp> with
+        member this.Service = this.Http
+    interface IHas<IProcess> with
+        member this.Service = this.Process
 
 module CapsUnifiedTests =
     [<Fact>]

@@ -30,3 +30,6 @@ Alias for <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-checkmod
 <pre class="fssnip highlighted"><code lang="fsharp"> <span class="pn">(</span><span class="k">true</span><span class="pn">,</span> <span class="s">&quot;value&quot;</span><span class="pn">)</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">okIfTrueTuple</span> <span class="c">// Ok &quot;value&quot;</span>
  <span class="pn">(</span><span class="k">false</span><span class="pn">,</span> <span class="s">&quot;value&quot;</span><span class="pn">)</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">okIfTrueTuple</span> <span class="c">// Error ()</span>
 </code></pre>
+
+
+

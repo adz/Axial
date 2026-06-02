@@ -208,15 +208,15 @@ module WorkflowBasicTests =
         test <@ List.ofSeq runtime.Seen = [ "value=41" ] @>
 
     [<Fact>]
-    let ``Flow layers and capability helpers compose`` () =
+    let ``Flow layers and service helpers compose`` () =
         let app =
             { DeviceClient =
                   { new IDeviceClient with
                       member _.Name = "provider-client" }
               Value = 10 }
 
-        let appLayer : Flow<unit, string, AppDependencies> =
-            Flow.succeed app
+        let appLayer : Layer<unit, string, AppDependencies> =
+            Layer.succeed app
 
         let workflow : Flow<AppDependencies, string, string> =
             flow {
@@ -227,7 +227,7 @@ module WorkflowBasicTests =
 
         let composed =
             workflow
-            |> Flow.provideLayer appLayer
+            |> Flow.provide appLayer
 
         let composedResult =
             composed
@@ -236,15 +236,15 @@ module WorkflowBasicTests =
         let provider = RecordingServiceProvider(typeof<IDeviceClient>, app.DeviceClient :> obj) :> IServiceProvider
 
         let providerResult =
-            Flow.inject<IDeviceClient, _, _>()
+            Service<IDeviceClient>.resolve()
             |> Flow.runSync provider
 
         let missingProviderResult =
-            Flow.inject<IDeviceClient, _, _>()
+            Service<IDeviceClient>.resolve()
             |> Flow.runSync (RecordingServiceProvider(typeof<string>, "nope") :> IServiceProvider)
 
         let flowCapability : Flow<AppDependencies, string, IDeviceClient> =
-            Flow.read _.DeviceClient
+            Service<IDeviceClient>.get()
 
         let flowCapabilityResult =
             flowCapability
@@ -259,7 +259,7 @@ module WorkflowBasicTests =
 
         let flowLayerResult =
             flowLayerWorkflow
-            |> Flow.provideLayer (Flow.succeed app)
+            |> Flow.provide (Layer.succeed app)
             |> Flow.runSync ()
 
         test <@ composedResult = Exit.Success "provider-client:10" @>

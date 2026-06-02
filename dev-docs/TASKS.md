@@ -29,12 +29,12 @@ Work this queue from top to bottom.
    - Remove registry-based assumptions from `RuntimeLayer.fs`.
    - Keep no internal "future second DI system" alive after the redesign lands.
 
-5. [ ] Rebuild former ambient core services as explicit service capabilities.
+5. [ ] Rebuild former ambient core services as explicit services.
    - `Clock`, `Log`, `Random`, `Guid`, and `EnvironmentVariables` should become wrappers over explicit services.
    - Provide a standard `BaseRuntime` bundle and layer story for live/test environments.
    - Decide which package owns the live base-runtime layer helpers.
 
-6. [ ] Align first-party capability packages to the same service-plus-layer model.
+6. [ ] Align first-party service packages to the same service-plus-layer model.
    - Console
    - FileSystem
    - Http
@@ -54,7 +54,7 @@ The current architecture is coherent when the following are true:
 - public docs describe services as explicit and the runtime as executor-only
 - user-facing workflow signatures show real service requirements in `'env`
 - app/domain dependency examples start with records and `Flow.read`
-- reusable capability examples use `Service<'service>.get()`
+- reusable service examples use `Service<'service>.get()`
 - host-edge examples use `Service<'service>.resolve()` or provider-backed layers
 - `Layer` is the documented provisioning mechanism
 - registry-backed runtime is gone from both code and docs

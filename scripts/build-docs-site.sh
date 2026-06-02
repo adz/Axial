@@ -7,11 +7,11 @@ HUGO_BASEURL="${HUGO_BASEURL:-"https://adz.github.io/FsFlow/"}"
 
 for project in \
   "src/FsFlow/FsFlow.fsproj" \
-  "src/FsFlow.Capabilities.Core/FsFlow.Capabilities.Core.fsproj" \
-  "src/FsFlow.Capabilities.Console/FsFlow.Capabilities.Console.fsproj" \
-  "src/FsFlow.Capabilities.FileSystem/FsFlow.Capabilities.FileSystem.fsproj" \
-  "src/FsFlow.Capabilities.Http/FsFlow.Capabilities.Http.fsproj" \
-  "src/FsFlow.Capabilities.Process/FsFlow.Capabilities.Process.fsproj"
+  "src/FsFlow.Services.Core/FsFlow.Services.Core.fsproj" \
+  "src/FsFlow.Services.Console/FsFlow.Services.Console.fsproj" \
+  "src/FsFlow.Services.FileSystem/FsFlow.Services.FileSystem.fsproj" \
+  "src/FsFlow.Services.Http/FsFlow.Services.Http.fsproj" \
+  "src/FsFlow.Services.Process/FsFlow.Services.Process.fsproj"
 do
   dotnet build "$root_dir/$project" --nologo -v minimal
 done

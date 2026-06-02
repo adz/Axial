@@ -5,7 +5,7 @@ open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Logging
 open FsFlow
 open FsFlow.Hosting
-open FsFlow.Capabilities.Core
+open FsFlow.Services.Core
 open Swensen.Unquote
 open Xunit
 
@@ -25,7 +25,7 @@ type RecordingLoggerFactory(logger: RecordingLogger) =
 
 module HostingTests =
     [<Fact>]
-    let ``Hosting.run forwards runtime services from IServiceProvider`` () =
+    let ``Hosting.run provides the standard base runtime from IServiceProvider`` () =
         let innerLogger = RecordingLogger()
         let loggerFactory = new RecordingLoggerFactory(innerLogger) :> ILoggerFactory
         let sp =
@@ -33,15 +33,15 @@ module HostingTests =
                 member _.GetService(requestedType) =
                     if requestedType = typeof<ILoggerFactory> then loggerFactory :> obj else null }
 
-        let flow : Flow<unit, string, string> =
+        let flow : Flow<BaseRuntime, string, string> =
             flow {
-                let! now = Clock.now
-                do! Log.info "Hello"
+                let! now = Clock.now<BaseRuntime, string>
+                do! Log.info<BaseRuntime, string> "Hello"
                 return now.ToString("HH:mm")
             }
 
         let result =
-            Hosting.run sp () flow
+            Hosting.run sp flow
             |> fun effect -> effect.AsTask().GetAwaiter().GetResult()
 
         match result with
@@ -51,10 +51,10 @@ module HostingTests =
 
     [<Fact>]
     let ``Startup: validateEnvironment detects missing variables`` () =
-        let flow : Flow<unit, EnvironmentVariableError, string> =
+        let flow : Flow<BaseRuntime, EnvironmentVariableError, string> =
             EnvironmentVariable.get "FSFLOW_HOSTING_MISSING"
         let result = Startup.validateEnvironment flow
         
         match result with
-        | Error [ message ] -> test <@ message.Contains("FSFLOW_HOSTING_MISSING") && message.Contains("not set") @>
+        | Error [ message ] -> test <@ message.Contains("FSFLOW_HOSTING_MISSING") && message.Contains("Missing required environment variable") @>
         | _ -> failwithf "Expected missing variable error, got %A" result

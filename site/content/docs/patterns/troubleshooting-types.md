@@ -45,7 +45,7 @@ let workflow : Flow<unit, string, int> =
 
 ## Error: The Flow Requires A Different Environment Type
 
-This usually means you wrote a smaller workflow against one env type (or a specific capability) and are trying to run it inside a larger env.
+This usually means you wrote a smaller workflow against one env type (or a specific service contract) and are trying to run it inside a larger env.
 
 Example 1: Records
 
@@ -64,7 +64,7 @@ let greetInBigEnv : Flow<BigEnv, string, string> =
     greet |> Flow.localEnv _.App
 ```
 
-Example 2: Capabilities
+Example 2: Services
 
 If a helper requires `IHas<IDatabase>` but you are running it in an environment that doesn't implement it, the compiler will error.
 

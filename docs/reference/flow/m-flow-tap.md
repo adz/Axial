@@ -1,7 +1,7 @@
 ---
 title: "Flow.tap"
 linkTitle: "tap"
-weight: 2315
+weight: 2313
 ---
 
 Runs an effect on success and preserves the original value.

@@ -121,27 +121,37 @@ module ApiShapeTests =
         |> assertContainsAll [ "make"; "get"; "set"; "update" ]
 
     [<Fact>]
-    let ``capability modules keep expected public shape`` () =
-        moduleType typeof<FsFlow.Capabilities.Console.IConsole> "FsFlow.Capabilities.Console.Console"
+    let ``service modules keep expected public shape`` () =
+        moduleType typeof<FsFlow.Services.Console.IConsole> "FsFlow.Services.Console.Console"
         |> publicStaticMemberNames
-        |> assertContainsAll [ "readLine"; "writeLine"; "live" ]
+        |> assertContainsAll [ "readLine"; "writeLine"; "layer"; "live" ]
 
-        moduleType typeof<FsFlow.Capabilities.FileSystem.IFileSystem> "FsFlow.Capabilities.FileSystem.FileSystem"
+        moduleType typeof<FsFlow.Services.FileSystem.IFileSystem> "FsFlow.Services.FileSystem.FileSystem"
         |> publicStaticMemberNames
-        |> assertContainsAll [ "readAllText"; "writeAllText"; "exists"; "live" ]
+        |> assertContainsAll [ "readAllText"; "writeAllText"; "exists"; "layer"; "live" ]
 
-        moduleType typeof<FsFlow.Capabilities.Http.IHttp> "FsFlow.Capabilities.Http.Http"
+        moduleType typeof<FsFlow.Services.Http.IHttp> "FsFlow.Services.Http.Http"
         |> publicStaticMemberNames
-        |> assertContainsAll [ "getString"; "live" ]
+        |> assertContainsAll [ "getString"; "layer"; "live" ]
 
-        moduleType typeof<FsFlow.Capabilities.Process.IProcess> "FsFlow.Capabilities.Process.Process"
+        moduleType typeof<FsFlow.Services.Process.IProcess> "FsFlow.Services.Process.Process"
         |> publicStaticMemberNames
-        |> assertContainsAll [ "execute"; "live" ]
+        |> assertContainsAll [ "execute"; "layer"; "live" ]
 
-        moduleType typeof<FsFlow.Capabilities.Core.EnvironmentVariableError> "FsFlow.Capabilities.Core.Clock"
+        moduleType typeof<FsFlow.Services.Core.EnvironmentVariableError> "FsFlow.Services.Core.Clock"
         |> publicStaticMemberNames
-        |> assertContainsAll [ "now"; "live"; "fromValue" ]
+        |> assertContainsAll [ "now"; "layer"; "live"; "fromValue" ]
 
-        moduleType typeof<FsFlow.Capabilities.Core.EnvironmentVariableError> "FsFlow.Capabilities.Core.EnvironmentVariable"
+        moduleType typeof<FsFlow.Services.Core.EnvironmentVariableError> "FsFlow.Services.Core.EnvironmentVariable"
         |> publicStaticMemberNames
         |> assertContainsAll [ "get"; "tryGet"; "getInt"; "getGuid"; "getBool" ]
+
+    [<Fact>]
+    let ``service and layer surfaces keep expected public shape`` () =
+        typeof<Service<int>>
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "get"; "resolve" ]
+
+        moduleType typeof<Layer<unit, unit, int>> "FsFlow.Layer"
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "effect"; "succeed"; "read"; "map"; "bind"; "zip" ]

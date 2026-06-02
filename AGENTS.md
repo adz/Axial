@@ -24,8 +24,8 @@ Refer to [`dev-docs/PLAN.md`](dev-docs/PLAN.md) for architectural direction and 
 
 - **Before 1.0:** Bravely iterate. Remove old APIs and "old ways" immediately when a better alternative is established. Do not maintain compatibility aliases or stale patterns.
 - **Post 1.0:** Standard semantic versioning applies. Maintain compatibility and use deprecation cycles for breaking changes.
-- `FsFlow` core and `FsFlow.Capabilities.*` packages are versioned independently.
-- **Experimental Status:** The `FsFlow.Capabilities.*` packages (Console, FileSystem, etc.) are currently considered experimental and are **not** included in the public NuGet release cycle. Their versioning relationship to core `FsFlow` is TBD.
+- `FsFlow` core and `FsFlow.Services.*` packages are versioned independently.
+- **Experimental Status:** The `FsFlow.Services.*` packages (Console, FileSystem, etc.) are currently considered experimental and are **not** included in the public NuGet release cycle. Their versioning relationship to core `FsFlow` is TBD.
 - Do not force the core release line to wait for the least mature capabilities package.
 - Treat CAPS packages as optional add-ons until each package has its own stable release story.
 

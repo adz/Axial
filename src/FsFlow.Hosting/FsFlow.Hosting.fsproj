@@ -26,7 +26,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FsFlow\FsFlow.fsproj" />
-    <ProjectReference Include="..\FsFlow.Capabilities.Core\FsFlow.Capabilities.Core.fsproj" />
+    <ProjectReference Include="..\FsFlow.Services.Core\FsFlow.Services.Core.fsproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,7 +1,7 @@
 ---
 title: "Flow.bind"
 linkTitle: "bind"
-weight: 2314
+weight: 2312
 ---
 
 Sequences a dependent flow after a successful value.

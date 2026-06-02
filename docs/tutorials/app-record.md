@@ -105,4 +105,4 @@ let main _ =
 
 ## Next Steps
 
-As your application grows, you might find that you want stronger dependency names and reusable helpers. Proceed to the **[Capabilities](./capabilities/)** tutorial to learn how to do that.
+As your application grows, you might find that you want stronger dependency names and reusable helpers. Continue with the **[Service Reference](../../reference/service/)** and the dependency-management guides when you want to move from direct record fields to named service contracts.

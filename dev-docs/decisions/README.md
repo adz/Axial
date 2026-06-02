@@ -2,8 +2,8 @@
 
 This folder captures settled design decisions and supporting rationale that no longer belong in `dev-docs/PLAN.md`.
 
-For capability, runtime, scope, and layer direction, prefer [`../scope-layer-redesign.md`](../scope-layer-redesign.md)
-and the current [`../PLAN.md`](../PLAN.md). Older capability/runtime research under `dev-docs/` and
+For service, runtime, scope, and layer direction, prefer [`../scope-layer-redesign.md`](../scope-layer-redesign.md)
+and the current [`../PLAN.md`](../PLAN.md). Older service/runtime research under `dev-docs/` and
 `dev-docs/deprecated/caps-research/` may be historically useful but should not override the current redesign.
 
 ## Index

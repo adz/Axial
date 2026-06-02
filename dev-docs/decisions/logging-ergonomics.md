@@ -21,12 +21,12 @@ Keep the core logging abstraction generic.
 ## Why
 
 - A generic core keeps `FsFlow` dependency-light and usable outside `Microsoft.Extensions.Logging`.
-- It matches the explicit service-capability direction and keeps logging separate from host-specific adapters.
+- It matches the explicit service direction and keeps logging separate from host-specific adapters.
 - Application code can still adapt existing `ILogger` instances without forcing that dependency on every consumer.
 - Ergonomics belong in the integration layer, not in the core type identity.
 
 ## Consequences
 
-- Core documentation should describe logging as a generic service capability.
+- Core documentation should describe logging as a generic service.
 - .NET integration examples may continue to use `ILogger` as the adapter shape.
 - `ILogger` stays a bridge rather than becoming the core logging abstraction.

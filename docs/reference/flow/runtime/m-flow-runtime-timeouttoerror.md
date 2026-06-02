@@ -1,7 +1,7 @@
 ---
 title: "Flow.Runtime.timeoutToError"
 linkTitle: "timeoutToError"
-weight: 2012
+weight: 2010
 ---
 
 Alias for <code>timeout</code> that emphasizes typed failure on timeout.

@@ -1,75 +1,28 @@
 namespace FsFlow.Tests
 
 open System
-open System.Collections.Generic
+open System.Threading
+open System.Threading.Tasks
 open FsFlow
-open FsFlow.Capabilities.Core
+open FsFlow.Services.Core
 open Swensen.Unquote
 open Xunit
 
 module RuntimeFoundationTests =
-    type private Service =
-        { Name: string }
-
-    type private AppDependencies =
-        { Value: int
-          DeviceClient: TestSupport.IDeviceClient }
-
-    type private RuntimeContract =
-        { Clock: IClock
-          Log: ILog }
-
-    [<Fact>]
-    let ``runtime registry stores tagged services independently`` () =
-        use scope = new Scope()
-
-        let registry =
-            Registry.empty scope
-            |> Registry.add<Service> None { Name = "default" }
-            |> Registry.add<Service> (Some "Main") { Name = "main" }
-            |> Registry.add<Service> (Some "Audit") { Name = "audit" }
-
-        test <@ Registry.get<Service> None registry = { Name = "default" } @>
-        test <@ Registry.get<Service> (Some "Main") registry = { Name = "main" } @>
-        test <@ Registry.get<Service> (Some "Audit") registry = { Name = "audit" } @>
-        test <@ Registry.tryGet<Service> (Some "Missing") registry = None @>
-
-    [<Fact>]
-    let ``runtime registry replace only changes the addressed slot`` () =
-        use scope = new Scope()
-
-        let registry =
-            Registry.empty scope
-            |> Registry.add<Service> None { Name = "default" }
-            |> Registry.add<Service> (Some "Main") { Name = "main" }
-            |> Registry.replace<Service> (Some "Main") { Name = "main-2" }
-
-        test <@ Registry.get<Service> None registry = { Name = "default" } @>
-        test <@ Registry.get<Service> (Some "Main") registry = { Name = "main-2" } @>
-
-    [<Fact>]
-    let ``runtime registry missing lookup fails intentionally`` () =
-        use scope = new Scope()
-
-        let registry = Registry.empty scope
-
-        let failed =
-            try
-                Registry.get<Service> (Some "Missing") registry |> ignore
-                false
-            with :? KeyNotFoundException ->
-                true
-
-        test <@ failed @>
-
     [<Fact>]
     let ``scope finalizers run in reverse order and only once`` () =
         let calls = ResizeArray<string>()
 
         let scope = new Scope()
-        scope.AddFinalizer(fun () -> calls.Add "first")
-        scope.AddFinalizer(fun () -> calls.Add "second")
-        scope.AddFinalizer(fun () -> calls.Add "third")
+        scope.AddFinalizer(fun _ ->
+            calls.Add "first"
+            Task.CompletedTask)
+        scope.AddFinalizer(fun _ ->
+            calls.Add "second"
+            Task.CompletedTask)
+        scope.AddFinalizer(fun _ ->
+            calls.Add "third"
+            Task.CompletedTask)
 
         (scope :> IDisposable).Dispose()
         (scope :> IDisposable).Dispose()
@@ -77,90 +30,89 @@ module RuntimeFoundationTests =
         test <@ List.ofSeq calls = [ "third"; "second"; "first" ] @>
 
     [<Fact>]
-    let ``runtime adapter projects tagged registry services into a nominal contract`` () =
+    let ``scope aggregates cleanup failures`` () =
         let scope = new Scope()
-        let clock = Clock.fromValue (DateTimeOffset(2026, 5, 15, 9, 30, 0, TimeSpan.Zero))
-        let logMessages = ResizeArray<string>()
-        let envVars =
-            { new IEnvironmentVariables with
-                member _.TryGet name = if name = "FSFLOW_APP_TEST" then Some "1" else None }
+        scope.AddFinalizer(fun _ -> Task.FromException(InvalidOperationException("first")))
+        scope.AddFinalizer(fun _ -> Task.FromException(InvalidOperationException("second")))
 
-        let logger =
-            { new ILog with
-                member _.Info message = logMessages.Add message }
+        let aggregate =
+            try
+                scope.Close(CancellationToken.None).GetAwaiter().GetResult()
+                failwith "Expected scope cleanup failure."
+            with :? AggregateException as error ->
+                error
 
-        let registry =
-            Registry.empty scope
-            |> Registry.add<IClock> None clock
-            |> Registry.add<ILog> (Some "Main") logger
-            |> Registry.add<IEnvironmentVariables> None envVars
-
-        let adapter (reg: Registry) =
-            {
-                Clock = Registry.get<IClock> None reg
-                Log = Registry.get<ILog> (Some "Main") reg
-            }
-
-        let env = RuntimeAdapter.provide adapter registry
-
-        test <@ env.Clock.UtcNow() = DateTimeOffset(2026, 5, 15, 9, 30, 0, TimeSpan.Zero) @>
-        env.Log.Info "hello"
-        test <@ List.ofSeq logMessages = [ "hello" ] @>
+        test <@ aggregate.InnerExceptions.Count = 2 @>
+        test <@ aggregate.InnerExceptions[0].Message = "second" @>
+        test <@ aggregate.InnerExceptions[1].Message = "first" @>
 
     [<Fact>]
-    let ``runtime helpers use ambient overrides`` () =
+    let ``base runtime layer provisions explicit services from IServiceProvider`` () =
         let clock = Clock.fromValue (DateTimeOffset(2026, 5, 15, 10, 0, 0, TimeSpan.Zero))
         let logMessages = ResizeArray<string>()
         let logger =
             { new ILog with
                 member _.Info message = logMessages.Add message }
         let random = Random.fromValue 42
-        let guid = Guid.fromValue (System.Guid.Parse "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
-        let envVars =
-            EnvironmentVariables.fromPairs [ "FSFLOW_TEST", "value" ]
+        let guid = Guid.fromValue (Guid.Parse "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+        let envVars = EnvironmentVariables.fromPairs [ "FSFLOW_TEST", "value" ]
 
-        let workflow : Flow<AppDependencies, EnvironmentVariableError, string> =
+        let provider =
+            { new IServiceProvider with
+                member _.GetService(serviceType) =
+                    if serviceType = typeof<IClock> then clock :> obj
+                    elif serviceType = typeof<ILog> then logger :> obj
+                    elif serviceType = typeof<IRandom> then random :> obj
+                    elif serviceType = typeof<IGuid> then guid :> obj
+                    elif serviceType = typeof<IEnvironmentVariables> then envVars :> obj
+                    else null }
+
+        let workflow : Flow<BaseRuntime, BaseRuntimeError, string> =
             flow {
-                let! now = Clock.now
+                let! now = Clock.now<BaseRuntime, BaseRuntimeError>
                 let formattedNow = now.ToString("HH:mm")
-                do! Log.info $"now={formattedNow}"
-                let! next = Random.nextInt 1 10
-                let! id = Guid.newGuid
-                let! value = EnvironmentVariable.get "FSFLOW_TEST"
-                let! app = Flow.env
-                return $"{app.Value}:{next}:{id}:{value}"
+                do! Log.info<BaseRuntime, BaseRuntimeError> $"now={formattedNow}"
+                let! next = Random.nextInt<BaseRuntime, BaseRuntimeError> 1 10
+                let! id = Guid.newGuid<BaseRuntime, BaseRuntimeError>
+                let! value = EnvironmentVariables.tryGet<BaseRuntime, BaseRuntimeError> "FSFLOW_TEST"
+                let envValue = defaultArg value "<missing>"
+                return $"{next}:{id}:{envValue}"
             }
 
         let result =
             workflow
-            |> Flow.withClock clock
-            |> Flow.withLog logger
-            |> Flow.withRandom random
-            |> Flow.withGuid guid
-            |> Flow.withEnvironmentVariables envVars
-            |> Flow.runSync { Value = 7; DeviceClient = { new TestSupport.IDeviceClient with member _.Name = "client" } }
+            |> Flow.provide BaseRuntime.fromServiceProvider
+            |> Flow.runSync provider
 
-        test <@ result = Exit.Success "7:42:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa:value" @>
+        test <@ result = Exit.Success "42:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa:value" @>
         test <@ List.ofSeq logMessages = [ "now=10:00" ] @>
 
     [<Fact>]
-    let ``environment variable helpers validate and parse values`` () =
-        let workflow : Flow<unit, EnvironmentVariableError, int> =
-            EnvironmentVariable.getInt "FSFLOW_INT_TEST"
+    let ``base runtime layer reports missing provider services as typed failures`` () =
+        let provider =
+            { new IServiceProvider with
+                member _.GetService(serviceType) =
+                    if serviceType = typeof<IClock> then Clock.live :> obj else null }
 
         let result =
-            workflow
-            |> Flow.withEnvironmentVariables (EnvironmentVariables.fromPairs [ "FSFLOW_INT_TEST", "123" ])
-            |> Flow.runSync ()
+            Flow.env<BaseRuntime, BaseRuntimeError>
+            |> Flow.provide BaseRuntime.fromServiceProvider
+            |> Flow.runSync provider
 
-        test <@ result = Exit.Success 123 @>
+        test <@ result = Exit.Failure (Cause.Fail (BaseRuntimeError.MissingService "ILog")) @>
 
     [<Fact>]
-    let ``runtime contract can be used as a plain record`` () =
-        let contract =
+    let ``base runtime remains a plain record of explicit services`` () =
+        let runtime =
             {
                 Clock = Clock.fromValue (DateTimeOffset(2026, 5, 15, 11, 0, 0, TimeSpan.Zero))
                 Log = Log.live
+                Random = Random.fromValue 7
+                Guid = Guid.fromValue (Guid.Parse "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
+                EnvironmentVariables = EnvironmentVariables.fromPairs [ "FSFLOW_RUNTIME", "ok" ]
             }
 
-        test <@ contract.Clock.UtcNow() = DateTimeOffset(2026, 5, 15, 11, 0, 0, TimeSpan.Zero) @>
+        test <@ runtime.Clock.UtcNow() = DateTimeOffset(2026, 5, 15, 11, 0, 0, TimeSpan.Zero) @>
+        test <@ runtime.Random.NextInt 0 10 = 7 @>
+        test <@ runtime.Guid.NewGuid() = Guid.Parse "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb" @>
+        test <@ runtime.EnvironmentVariables.TryGet "FSFLOW_RUNTIME" = Some "ok" @>

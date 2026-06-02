@@ -17,7 +17,7 @@ The active direction now splits concerns like this:
 - explicit services and app/domain dependencies live in `'env`
 - executor mechanics live in a closed ambient runtime
 
-This is a stricter model than the earlier ambient-capabilities plan. First-party capability packages and former
+This is a stricter model than the earlier ambient-capabilities plan. First-party service packages and former
 ambient operational services should be expressed as explicit services, not runtime slots.
 
 ## Active Architecture
@@ -31,7 +31,7 @@ ambient operational services should be expressed as explicit services, not runti
 - domain services
 - feature dependencies
 - request or user context when it is part of business logic
-- operational services modeled explicitly as capabilities
+- operational services modeled explicitly as services
 
 The default access pattern is:
 
@@ -40,7 +40,7 @@ Flow.read (fun env -> env.Orders)
 ```
 
 Plain records are still the default recommendation for local app code. They are simple, legible, easy to test, and
-avoid unnecessary capability boilerplate.
+avoid unnecessary service boilerplate.
 
 ### Nominal Service Contracts
 
@@ -73,7 +73,7 @@ Missing provider registrations are configuration defects, not domain errors.
 ### Closed Ambient Runtime
 
 Ambient runtime state is now reserved for executor mechanics only. It is not the dependency model for first-party
-capability families.
+service packages.
 
 Ambient mechanics include:
 
@@ -95,9 +95,9 @@ explicit services and provisioned through environments and layers.
 
 The internal registry should be removed rather than promoted.
 
-## Capability Families
+## Service Packages
 
-Capability packages should focus on explicit, typed, testable system effects:
+Service packages should focus on explicit, typed, testable system effects:
 
 - Core: clock, log, random, GUID, environment variables
 - Console
@@ -106,7 +106,7 @@ Capability packages should focus on explicit, typed, testable system effects:
 - Process
 - future Network and telemetry packages
 
-Capability-family operations should use explicit services. They should normally be thin wrappers over
+Service-package operations should use explicit services. They should normally be thin wrappers over
 `Service<'service>.get()` plus live implementations and layers.
 
 ## Documentation Direction

@@ -26,7 +26,7 @@ Workflows result in one of three `Exit` outcomes:
 ## Dependency Guidance
 - Use `Flow.read (env -> 'v)` for direct projection from an explicit environment.
 - Prefer plain records for application dependencies unless a named abstraction clearly pays for itself.
-- Keep business and capability requirements visible in `'env`.
+- Keep business and service requirements visible in `'env`.
 - Keep `IServiceProvider` interop and host-specific adapters at the outer boundary.
 
 ## Core Patterns (Idiomatic Way)

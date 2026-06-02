@@ -17,25 +17,67 @@ module Flow =
         (cancellationToken: CancellationToken)
         (flow: Flow<'env, 'error, 'value>)
         : Effect<'value, 'error> =
-        RuntimeState.withRuntime RuntimeContext.live (fun () ->
-            #if FABLE_COMPILER
-            async {
+        let scope = Scope()
+        let runtime = RuntimeContext.create scope
+
+        #if FABLE_COMPILER
+        async {
+            let mutable exit: Exit<'value, 'error> option = None
+            let mutable executionError: exn option = None
+
+            try
+                let! result =
+                    RuntimeState.withRuntime runtime (fun () ->
+                        invoke flow environment cancellationToken)
+
+                exit <- Some result
+            with error ->
+                executionError <- Some error
+
+            let mutable cleanupError: exn option = None
+
+            try
+                do! scope.Close(cancellationToken) |> Async.AwaitTask
+            with error ->
+                cleanupError <- Some error
+
+            match cleanupError, executionError, exit with
+            | Some error, _, _ -> return Exit.Failure (EffectFlow.causeOfException error)
+            | None, Some error, _ -> return Exit.Failure (EffectFlow.causeOfException error)
+            | None, None, Some result -> return result
+            | None, None, None ->
+                return Exit.Failure (Cause.Die (InvalidOperationException("Flow execution produced no outcome.")))
+        }
+        #else
+        ValueTask<Exit<'value, 'error>>(
+            task {
+                let mutable exit: Exit<'value, 'error> option = None
+                let mutable executionError: exn option = None
+
                 try
-                    return! invoke flow environment cancellationToken
+                    let! result =
+                        RuntimeState.withRuntime runtime (fun () ->
+                            invoke flow environment cancellationToken |> _.AsTask())
+
+                    exit <- Some result
                 with error ->
-                    return Exit.Failure (EffectFlow.causeOfException error)
-            }
-            #else
-            ValueTask<Exit<'value, 'error>>(
-                task {
-                    try
-                        let! exit = invoke flow environment cancellationToken
-                        return exit
-                    with error ->
-                        return Exit.Failure (EffectFlow.causeOfException error)
-                })
-            #endif
-        )
+                    executionError <- Some error
+
+                let mutable cleanupError: exn option = None
+
+                try
+                    do! scope.Close(cancellationToken)
+                with error ->
+                    cleanupError <- Some error
+
+                match cleanupError, executionError, exit with
+                | Some error, _, _ -> return Exit.Failure (EffectFlow.causeOfException error)
+                | None, Some error, _ -> return Exit.Failure (EffectFlow.causeOfException error)
+                | None, None, Some result -> return result
+                | None, None, None ->
+                    return Exit.Failure (Cause.Die (InvalidOperationException("Flow execution produced no outcome.")))
+            })
+        #endif
 
     /// <summary>Creates a flow from an execution outcome.</summary>
     let ofExit (exit: Exit<'value, 'error>) : Flow<'env, 'error, 'value> =
@@ -259,29 +301,6 @@ module Flow =
             #endif
         )
 
-    /// <summary>Overrides the ambient clock for the duration of the supplied flow.</summary>
-    let withClock (clock: IClock) (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
-        withRuntime (RuntimeContext.withClock clock) flow
-
-    /// <summary>Overrides the ambient logger for the duration of the supplied flow.</summary>
-    let withLog (log: ILog) (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
-        withRuntime (RuntimeContext.withLog log) flow
-
-    /// <summary>Overrides the ambient random-number generator for the duration of the supplied flow.</summary>
-    let withRandom (random: IRandom) (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
-        withRuntime (RuntimeContext.withRandom random) flow
-
-    /// <summary>Overrides the ambient GUID generator for the duration of the supplied flow.</summary>
-    let withGuid (guid: IGuid) (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
-        withRuntime (RuntimeContext.withGuid guid) flow
-
-    /// <summary>Overrides the ambient environment-variable provider for the duration of the supplied flow.</summary>
-    let withEnvironmentVariables
-        (environmentVariables: IEnvironmentVariables)
-        (flow: Flow<'env, 'error, 'value>)
-        : Flow<'env, 'error, 'value> =
-        withRuntime (RuntimeContext.withEnvironmentVariables environmentVariables) flow
-
     /// <summary>Installs a runtime annotation sink for integration packages.</summary>
     [<System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>]
     let withAnnotationSink
@@ -335,7 +354,7 @@ module Flow =
         : Flow<'env, 'error, 'value> =
         annotate "trace_id" traceId flow
 
-    /// <summary>Runtime helpers for operational concerns like logging, timeout, retry, and cleanup.</summary>
+    /// <summary>Runtime helpers for execution-time concerns like cancellation, scope, timeout, retry, and cleanup.</summary>
     [<RequireQualifiedAccess>]
     module Runtime =
         /// <summary>Reads the current runtime cancellation token.</summary>
@@ -409,37 +428,10 @@ module Flow =
                 #endif
             )
 
-        /// <summary>Reads the ambient UTC clock owned by the runtime.</summary>
-        /// <returns>A flow that returns the current UTC time.</returns>
-        let now : Flow<'env, 'error, DateTimeOffset> =
-            Flow(fun _ _ -> EffectFlow.ofValue (RuntimeState.current().Clock.UtcNow()))
-
-        /// <summary>Writes a message through the ambient runtime logger.</summary>
-        /// <param name="message">The message to log.</param>
-        /// <returns>A flow that logs the message and returns unit.</returns>
-        let log (message: string) : Flow<'env, 'error, unit> =
-            Flow(fun _ _ ->
-                RuntimeState.current().Log.Info message
-                EffectFlow.ofValue ())
-
-        /// <summary>Creates a new GUID through the ambient runtime GUID generator.</summary>
-        /// <returns>A flow that returns a fresh GUID.</returns>
-        let newGuid : Flow<'env, 'error, Guid> =
-            Flow(fun _ _ -> EffectFlow.ofValue (RuntimeState.current().Guid.NewGuid()))
-
-        /// <summary>Creates a random integer through the ambient runtime random generator.</summary>
-        /// <param name="minInclusive">The inclusive lower bound.</param>
-        /// <param name="maxExclusive">The exclusive upper bound.</param>
-        /// <returns>A flow that returns a random integer in the specified range.</returns>
-        let nextInt (minInclusive: int) (maxExclusive: int) : Flow<'env, 'error, int> =
-            Flow(fun _ _ ->
-                EffectFlow.ofValue (RuntimeState.current().Random.NextInt minInclusive maxExclusive))
-
-        /// <summary>Reads an environment variable from the ambient runtime environment provider.</summary>
-        /// <param name="name">The name of the environment variable.</param>
-        /// <returns>A flow that returns the variable value if it exists, or None.</returns>
-        let tryGetEnvironmentVariable (name: string) : Flow<'env, 'error, string option> =
-            Flow(fun _ _ -> EffectFlow.ofValue (RuntimeState.current().EnvironmentVariables.TryGet name))
+        /// <summary>Reads the current runtime scope.</summary>
+        /// <returns>A flow that succeeds with the scope owned by the current execution boundary.</returns>
+        let scope<'env, 'error> : Flow<'env, 'error, Scope> =
+            Flow(fun _ _ -> EffectFlow.ofValue (RuntimeState.current().Scope))
 
         /// <summary>Reads the current runtime annotations.</summary>
         /// <returns>A flow that succeeds with the ambient annotation map.</returns>
@@ -933,34 +925,6 @@ module Flow =
     let read (projection: 'env -> 'value) : Flow<'env, 'error, 'value> =
         Flow(fun environment _ -> EffectFlow.ofValue (projection environment))
 
-    /// <summary>Extracts a specific service from an environment that implements <c>IHas&lt;'service&gt;</c>.</summary>
-    /// <remarks>This is the statically honest way to access dependencies.</remarks>
-    /// <returns>A flow containing the requested service.</returns>
-    /// <example>
-    /// <code>
-    /// let flow = Flow.service&lt;IMyService, _, _&gt;()
-    /// </code>
-    /// </example>
-    let inline service<'service, 'env, 'error when 'env :> IHas<'service>> () : Flow<'env, 'error, 'service> =
-        read (fun (env: 'env) -> env.Service)
-
-    /// <summary>Injects a service from a dynamic IServiceProvider environment.</summary>
-    /// <remarks>Trades compile-time safety for pragmatic .NET interop.</remarks>
-    /// <returns>A flow containing the requested service.</returns>
-    /// <example>
-    /// <code>
-    /// let flow = Flow.inject&lt;IMyService, _, _&gt;()
-    /// </code>
-    /// </example>
-    let inline inject<'service, 'env, 'error when 'env :> IServiceProvider> () : Flow<'env, 'error, 'service> =
-        read (fun (env: 'env) ->
-            let svc = env.GetService(typeof<'service>)
-            if isNull (box svc) then
-                failwith $"Service {typeof<'service>.Name} was not registered in the IServiceProvider."
-            else
-                unbox<'service> svc
-        )
-
     /// <summary>Transforms the successful value of a flow.</summary>
     /// <remarks>
     /// If the source <paramref name="flow" /> fails, the <paramref name="mapper" /> is not executed.
@@ -1319,29 +1283,92 @@ module Flow =
             let innerEnvironment = mapping environment
             invoke flow innerEnvironment ct)
 
-    /// <summary>Runs a layer flow first, then runs a downstream flow with the layer's output as its environment.</summary>
+    /// <summary>Builds an environment with a layer, runs a downstream flow, and always closes the layer scope.</summary>
     /// <remarks>
-    /// Use this at composition boundaries where one flow builds the environment needed by another
-    /// flow. Ordinary workflow code should usually consume an environment directly with
-    /// <c>Flow.read</c>; <c>provideLayer</c> is for deriving or provisioning an environment before a
-    /// downstream workflow starts.
+    /// This is the provisioning boundary for explicit services. It creates a fresh scope, builds the
+    /// supplied layer inside that scope, runs the downstream flow with the built environment, and
+    /// finalizes all acquired resources when the downstream flow completes or fails.
     /// </remarks>
-    /// <param name="layer">A flow that provides the environment required by the downstream flow.</param>
+    /// <param name="layer">The layer that builds the downstream environment.</param>
     /// <param name="flow">The flow to run with the provided environment.</param>
     /// <returns>A flow that requires only the input environment of the layer.</returns>
-    /// <example>
-    /// <code>
-    /// let layer = Flow.succeed "test"
-    /// let flow = Flow.env |> Flow.provideLayer layer
-    /// </code>
-    /// </example>
-    let provideLayer
-        (layer: Flow<'input, 'error, 'environment>)
+    let provide
+        (layer: Layer<'input, 'error, 'environment>)
         (flow: Flow<'environment, 'error, 'value>)
         : Flow<'input, 'error, 'value> =
-        Flow(fun environment ct ->
-            invoke layer environment ct
-            |> EffectFlow.bind (fun innerEnvironment -> invoke flow innerEnvironment ct))
+        Flow(fun environment cancellationToken ->
+            let scope = Scope()
+            let runtime = RuntimeState.current() |> RuntimeContext.withScope scope
+
+            #if FABLE_COMPILER
+            async {
+                let mutable exit: Exit<'value, 'error> option = None
+                let mutable executionError: exn option = None
+
+                try
+                    let! result =
+                        RuntimeState.withRuntime runtime (fun () ->
+                            Layer.invoke layer environment scope cancellationToken
+                            |> EffectFlow.bind (fun innerEnvironment ->
+                                invoke flow innerEnvironment cancellationToken))
+
+                    exit <- Some result
+                with error ->
+                    executionError <- Some error
+
+                let mutable cleanupError: exn option = None
+
+                try
+                    do! scope.Close(cancellationToken) |> Async.AwaitTask
+                with error ->
+                    cleanupError <- Some error
+
+                match cleanupError, executionError, exit with
+                | Some error, _, _ -> return Exit.Failure (EffectFlow.causeOfException error)
+                | None, Some error, _ -> return Exit.Failure (EffectFlow.causeOfException error)
+                | None, None, Some result -> return result
+                | None, None, None ->
+                    return Exit.Failure (Cause.Die (InvalidOperationException("Layer provisioning produced no outcome.")))
+            }
+            #else
+            ValueTask<Exit<'value, 'error>>(
+                task {
+                    let mutable exit: Exit<'value, 'error> option = None
+                    let mutable executionError: exn option = None
+
+                    try
+                        let! result =
+                            RuntimeState.withRuntime runtime (fun () ->
+                                Layer.invoke layer environment scope cancellationToken |> _.AsTask())
+
+                        match result with
+                        | Exit.Success innerEnvironment ->
+                            let! next =
+                                RuntimeState.withRuntime runtime (fun () ->
+                                    invoke flow innerEnvironment cancellationToken |> _.AsTask())
+
+                            exit <- Some next
+                        | Exit.Failure cause ->
+                            exit <- Some (Exit.Failure cause)
+                    with error ->
+                        executionError <- Some error
+
+                    let mutable cleanupError: exn option = None
+
+                    try
+                        do! scope.Close(cancellationToken)
+                    with error ->
+                        cleanupError <- Some error
+
+                    match cleanupError, executionError, exit with
+                    | Some error, _, _ -> return Exit.Failure (EffectFlow.causeOfException error)
+                    | None, Some error, _ -> return Exit.Failure (EffectFlow.causeOfException error)
+                    | None, None, Some result -> return result
+                    | None, None, None ->
+                        return Exit.Failure (Cause.Die (InvalidOperationException("Layer provisioning produced no outcome.")))
+                })
+            #endif
+        )
 
     /// <summary>Defers flow construction until execution time.</summary>
     /// <param name="factory">A function that returns the flow to execute.</param>

@@ -41,31 +41,31 @@ module CapsRuntimePatternTests =
         interface ITodoStore with
             member _.Todos = todos
 
-    type ClockCapabilities =
+    type ClockServices =
         interface
             inherit IHas<IClock>
             abstract Clock : IClock
         end
 
-    type LoggerCapabilities =
+    type LoggerServices =
         interface
             inherit IHas<ILogger>
             abstract Logger : ILogger
         end
 
-    type RandomCapabilities =
+    type RandomServices =
         interface
             inherit IHas<IRandom>
             abstract Random : IRandom
         end
 
-    type TodoStoreCapabilities =
+    type TodoStoreServices =
         interface
             inherit IHas<ITodoStore>
             abstract TodoStore : ITodoStore
         end
 
-    type ChooseTodoCapabilities =
+    type ChooseTodoServices =
         interface
             inherit IHas<IRandom>
             inherit IHas<ITodoStore>
@@ -73,9 +73,9 @@ module CapsRuntimePatternTests =
             abstract TodoStore : ITodoStore
         end
 
-    type AppCapabilities =
+    type AppServices =
         interface
-            inherit ChooseTodoCapabilities
+            inherit ChooseTodoServices
             inherit IHas<IClock>
             inherit IHas<ILogger>
             abstract Clock : IClock
@@ -86,7 +86,7 @@ module CapsRuntimePatternTests =
         { RandomService: IRandom
           TodoStoreService: ITodoStore }
         with
-            interface ChooseTodoCapabilities with
+            interface ChooseTodoServices with
                 member x.Random = x.RandomService
                 member x.TodoStore = x.TodoStoreService
 
@@ -102,7 +102,7 @@ module CapsRuntimePatternTests =
           RandomService: IRandom
           TodoStoreService: ITodoStore }
         with
-            interface AppCapabilities with
+            interface AppServices with
                 member x.Clock = x.ClockService
                 member x.Logger = x.LoggerService
                 member x.Random = x.RandomService
@@ -124,7 +124,7 @@ module CapsRuntimePatternTests =
         | EmptyTodoList
 
     [<Fact>]
-    let ``fine-grained capabilities expose their dependencies through IHas`` () =
+    let ``fine-grained services expose their dependencies through IHas`` () =
         let clock = FixedClock(DateTimeOffset(2026, 5, 9, 12, 30, 0, TimeSpan.Zero))
         let logger = RecordingLogger()
         let random = FixedRandom 1
@@ -155,7 +155,7 @@ module CapsRuntimePatternTests =
         test <@ obj.ReferenceEquals(box testTodoStoreNeeds.Service, box todoStore) @>
 
     [<Fact>]
-    let ``named cap-set flows run on both larger app runtimes and smaller test runtimes`` () =
+    let ``named service-set flows run on both larger app runtimes and smaller test runtimes`` () =
         let clock = FixedClock(DateTimeOffset(2026, 5, 9, 12, 30, 0, TimeSpan.Zero))
         let logger = RecordingLogger()
         let random = FixedRandom 1
@@ -173,8 +173,8 @@ module CapsRuntimePatternTests =
 
         let chooseTodoFlowForApp : Flow<AppRuntime, TodoError, string option> =
             flow {
-                let! todoStore = Flow.service<ITodoStore, AppRuntime, TodoError> ()
-                let! random = Flow.service<IRandom, AppRuntime, TodoError> ()
+                let! todoStore = Service<ITodoStore>.get<AppRuntime, TodoError>()
+                let! random = Service<IRandom>.get<AppRuntime, TodoError>()
                 let todos = todoStore.Todos
 
                 match todos with
@@ -186,8 +186,8 @@ module CapsRuntimePatternTests =
 
         let chooseTodoFlowForTest : Flow<ChooseTodoTestRuntime, TodoError, string option> =
             flow {
-                let! todoStore = Flow.service<ITodoStore, ChooseTodoTestRuntime, TodoError> ()
-                let! random = Flow.service<IRandom, ChooseTodoTestRuntime, TodoError> ()
+                let! todoStore = Service<ITodoStore>.get<ChooseTodoTestRuntime, TodoError>()
+                let! random = Service<IRandom>.get<ChooseTodoTestRuntime, TodoError>()
                 let todos = todoStore.Todos
 
                 match todos with
@@ -221,8 +221,8 @@ module CapsRuntimePatternTests =
 
         let chooseTodoFlow : Flow<AppRuntime, TodoError, string option> =
             flow {
-                let! todoStore = Flow.service<ITodoStore, AppRuntime, TodoError> ()
-                let! random = Flow.service<IRandom, AppRuntime, TodoError> ()
+                let! todoStore = Service<ITodoStore>.get<AppRuntime, TodoError>()
+                let! random = Service<IRandom>.get<AppRuntime, TodoError>()
                 let todos = todoStore.Todos
 
                 match todos with

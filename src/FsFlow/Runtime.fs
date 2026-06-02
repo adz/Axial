@@ -2,8 +2,6 @@ namespace FsFlow
 
 open System
 open System.Threading
-open System.Threading.Tasks
-open FsFlow
 
 /// <summary>
 /// Provides a standard way to access a unique request identifier from an environment.
@@ -62,11 +60,7 @@ type IEnvironmentVariables =
 /// <summary>Internal runtime services owned by the flow execution engine.</summary>
 type internal RuntimeContext =
     {
-        Clock: IClock
-        Log: ILog
-        Random: IRandom
-        Guid: IGuid
-        EnvironmentVariables: IEnvironmentVariables
+        Scope: Scope
         Annotations: Map<string, string>
         AnnotationSink: string -> string -> unit
     }
@@ -75,58 +69,18 @@ type internal RuntimeContext =
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
 module internal RuntimeContext =
-    let live : RuntimeContext =
-        let rng = Random()
-        let gate = obj()
-
+    let create (scope: Scope) : RuntimeContext =
         {
-            Clock =
-                { new IClock with
-                    member _.UtcNow() = DateTimeOffset.UtcNow }
-            Log =
-                { new ILog with
-                    member _.Info _ = () }
-            Random =
-                { new IRandom with
-                    member _.NextInt minInclusive maxExclusive =
-                        #if FABLE_COMPILER
-                        rng.Next(minInclusive, maxExclusive)
-                        #else
-                        lock gate (fun () -> rng.Next(minInclusive, maxExclusive))
-                        #endif
-                }
-            Guid =
-                { new IGuid with
-                    member _.NewGuid() = global.System.Guid.NewGuid() }
-            EnvironmentVariables =
-                { new IEnvironmentVariables with
-                    member _.TryGet name =
-                        #if FABLE_COMPILER
-                        None
-                        #else
-                        match Environment.GetEnvironmentVariable name with
-                        | null -> None
-                        | value -> Some value
-                        #endif
-                }
+            Scope = scope
             Annotations = Map.empty
             AnnotationSink = fun _ _ -> ()
         }
 
-    let withClock (clock: IClock) (runtime: RuntimeContext) : RuntimeContext =
-        { runtime with Clock = clock }
+    let detached : RuntimeContext =
+        create (Scope())
 
-    let withLog (log: ILog) (runtime: RuntimeContext) : RuntimeContext =
-        { runtime with Log = log }
-
-    let withRandom (random: IRandom) (runtime: RuntimeContext) : RuntimeContext =
-        { runtime with Random = random }
-
-    let withGuid (guid: IGuid) (runtime: RuntimeContext) : RuntimeContext =
-        { runtime with Guid = guid }
-
-    let withEnvironmentVariables (environmentVariables: IEnvironmentVariables) (runtime: RuntimeContext) : RuntimeContext =
-        { runtime with EnvironmentVariables = environmentVariables }
+    let withScope (scope: Scope) (runtime: RuntimeContext) : RuntimeContext =
+        { runtime with Scope = scope }
 
     let withAnnotation (name: string) (value: string) (runtime: RuntimeContext) : RuntimeContext =
         { runtime with Annotations = runtime.Annotations |> Map.add name value }
@@ -139,7 +93,7 @@ module internal RuntimeContext =
 [<RequireQualifiedAccess>]
 module internal RuntimeState =
 #if FABLE_COMPILER
-    let mutable private currentRuntime = RuntimeContext.live
+    let mutable private currentRuntime = RuntimeContext.detached
 
     let current () : RuntimeContext = currentRuntime
 
@@ -156,7 +110,7 @@ module internal RuntimeState =
 
     let current () : RuntimeContext =
         match box currentRuntime.Value with
-        | null -> RuntimeContext.live
+        | null -> RuntimeContext.detached
         | _ -> currentRuntime.Value
 
     let withRuntime (runtime: RuntimeContext) (operation: unit -> 'value) : 'value =

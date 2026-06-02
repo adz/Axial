@@ -229,10 +229,15 @@ module RetryPolicy =
           Delay = fun _ -> TimeSpan.Zero
           ShouldRetry = fun _ -> true }
 
-/// <summary>Compatibility contract for a single dependency.</summary>
+/// <summary>
+/// Represents an error channel that cannot occur.
+/// </summary>
+type Never = private Never of unit
+
+/// <summary>Nominal contract for an explicit service dependency.</summary>
 /// <remarks>
-/// Prefer nominal capability interfaces for public workflows. This helper remains for lower-level
-/// binding machinery that still needs to work with a single dependency directly.
+/// Environments implement <c>IHas&lt;'service&gt;</c> when they can supply one service value of that type
+/// through <see cref="T:FsFlow.Service`1" />.
 /// </remarks>
 /// <typeparam name="service">The dependency type exposed by the environment.</typeparam>
 /// <example>
@@ -244,14 +249,45 @@ module RetryPolicy =
 ///     { Database : IDb }
 ///     interface IHas&lt;IDb&gt; with member x.Service = x.Database
 ///
-/// let db = Flow.service&lt;IDb, AppEnv, unit&gt;()
+/// let db = Service&lt;IDb&gt;.get&lt;AppEnv, unit&gt;()
 /// </code>
 /// </example>
 type IHas<'service> =
     abstract Service : 'service
 
-/// <summary>Describes a missing service-provider capability.</summary>
-type MissingCapability =
-    {
-        CapabilityType: Type
-    }
+/// <summary>Typed accessors for explicit and provider-resolved services.</summary>
+/// <typeparam name="service">The service type being requested.</typeparam>
+type Service<'service> private () =
+    static member inline private succeed<'error> (value: 'service) : Effect<'service, 'error> =
+        #if FABLE_COMPILER
+        async.Return(Exit.Success value)
+        #else
+        ValueTask<Exit<'service, 'error>>(Exit.Success value)
+        #endif
+
+    /// <summary>Reads a statically declared service from an environment that implements <c>IHas&lt;'service&gt;</c>.</summary>
+    /// <typeparam name="env">The environment type.</typeparam>
+    /// <typeparam name="error">The workflow error type.</typeparam>
+    /// <returns>A flow that succeeds with the requested service instance.</returns>
+    static member inline get<'env, 'error when 'env :> IHas<'service>> () : Flow<'env, 'error, 'service> =
+        Flow(fun environment _ ->
+            let env = environment :> IHas<'service>
+            Service<'service>.succeed env.Service)
+
+    /// <summary>Resolves a service dynamically from an <see cref="T:System.IServiceProvider" /> environment.</summary>
+    /// <typeparam name="env">The environment type.</typeparam>
+    /// <typeparam name="error">The workflow error type.</typeparam>
+    /// <returns>A flow that succeeds with the requested service instance.</returns>
+    /// <remarks>
+    /// Missing registrations are treated as configuration defects and therefore fail through
+    /// <c>Cause.Die</c> rather than the typed error channel.
+    /// </remarks>
+    static member inline resolve<'env, 'error when 'env :> IServiceProvider> () : Flow<'env, 'error, 'service> =
+        Flow(fun environment _ ->
+            let env = environment :> IServiceProvider
+            let service = env.GetService(typeof<'service>)
+
+            if isNull (box service) then
+                failwith $"Service {typeof<'service>.Name} was not registered in the IServiceProvider."
+            else
+                Service<'service>.succeed (unbox<'service> service))

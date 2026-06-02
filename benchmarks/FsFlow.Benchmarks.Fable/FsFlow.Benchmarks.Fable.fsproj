@@ -16,10 +16,8 @@
     <Compile Include="..\..\src\FsFlow\Diagnostics.fs" />
     <Compile Include="..\..\src\FsFlow\Validation.fs" />
     <Compile Include="..\..\src\FsFlow\Check.fs" />
-    <Compile Include="..\..\src\FsFlow\Runtime.fs" />
     <Compile Include="..\..\src\FsFlow\RuntimeScope.fs" />
-    <Compile Include="..\..\src\FsFlow\RuntimeRegistry.fs" />
-    <Compile Include="..\..\src\FsFlow\RuntimeAdapter.fs" />
+    <Compile Include="..\..\src\FsFlow\Runtime.fs" />
     <Compile Include="..\..\src\FsFlow\RuntimeLayer.fs" />
     <Compile Include="..\..\src\FsFlow\Flow.fs" />
     <Compile Include="..\..\src\FsFlow\Ref.fs" />
