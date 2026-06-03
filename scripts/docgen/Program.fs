@@ -19,13 +19,13 @@ type PageSpec = {
 let normalize (name: string) =
     if String.IsNullOrEmpty name then ""
     else
-        name.Replace("FsFlow.", "").Replace("Services.", "").Replace("Caps.", "").Replace("Module", "").Replace("Extensions", "").Replace("Builders", "")
+        name.Replace("FsFlow.", "").Replace("Services.", "").Replace("Module", "").Replace("Extensions", "").Replace("Builders", "")
         |> (fun s -> s.Replace("`", "").Replace("'", "").Split('(').[0].Trim('.'))
 
 let cleanName (name: string) =
     if String.IsNullOrEmpty name then ""
     else
-        name.Replace("FsFlow.", "").Replace("Services.", "").Replace("Caps.", "").Replace("Module", "").Replace("Extensions", "").Replace("Builders", "")
+        name.Replace("FsFlow.", "").Replace("Services.", "").Replace("Module", "").Replace("Extensions", "").Replace("Builders", "")
         |> (fun s -> s.Trim('.'))
         |> (fun s -> 
             // Surgical removal of generic backticks like `1, `2, etc.
@@ -42,7 +42,7 @@ let getPageName (id: string) =
     let kind = id.[0].ToString().ToLower()
     let namePart = id.Substring(2).Split('(').[0]
     let clean = 
-        namePart.Replace("FsFlow.", "").Replace("Services.", "").Replace("Caps.", "").Replace("Module", "").Replace("Extensions", "").Replace("Builders", "")
+        namePart.Replace("FsFlow.", "").Replace("Services.", "").Replace("Module", "").Replace("Extensions", "").Replace("Builders", "")
         |> (fun s -> System.Text.RegularExpressions.Regex.Replace(s, @"`[0-9]+", ""))
         |> (fun s -> s.Replace("'", "").Trim('.'))
         

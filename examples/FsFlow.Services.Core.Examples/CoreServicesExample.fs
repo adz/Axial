@@ -31,10 +31,10 @@ module CoreServicesExample =
                 Guid = FsFlow.Services.Core.Guid.fromValue (global.System.Guid.Parse "11111111-1111-1111-1111-111111111111")
                 EnvVars =
                     EnvironmentVariables.fromPairs
-                        [ "FSFLOW_CAPS_PORT", "8080"
-                          "FSFLOW_CAPS_ENABLED", "true"
-                          "FSFLOW_CAPS_SESSION", "22222222-2222-2222-2222-222222222222"
-                          "FSFLOW_CAPS_PORT_TEXT", "abc" ]
+                        [ "FSFLOW_SERVICES_PORT", "8080"
+                          "FSFLOW_SERVICES_ENABLED", "true"
+                          "FSFLOW_SERVICES_SESSION", "22222222-2222-2222-2222-222222222222"
+                          "FSFLOW_SERVICES_PORT_TEXT", "abc" ]
             }
 
         let run flow = Flow.run services flow |> fun t -> t.AsTask().GetAwaiter().GetResult()
@@ -42,8 +42,8 @@ module CoreServicesExample =
         printfn "clock=%O" (run Clock.now)
         printfn "random=%d" (run (FsFlow.Services.Core.Random.nextInt 0 10) |> function Exit.Success v -> v | _ -> -1)
         printfn "guid=%O" (run FsFlow.Services.Core.Guid.newGuid)
-        printfn "port=%s" (renderExit string (run (EnvironmentVariable.getInt "FSFLOW_CAPS_PORT")))
-        printfn "enabled=%s" (renderExit string (run (EnvironmentVariable.getBool "FSFLOW_CAPS_ENABLED")))
-        printfn "session=%s" (renderExit string (run (EnvironmentVariable.getGuid "FSFLOW_CAPS_SESSION")))
-        printfn "missing=%s" (renderExit string (run (EnvironmentVariable.get "FSFLOW_CAPS_MISSING")))
-        printfn "invalid=%s" (renderExit string (run (EnvironmentVariable.getInt "FSFLOW_CAPS_PORT_TEXT")))
+        printfn "port=%s" (renderExit string (run (EnvironmentVariable.getInt "FSFLOW_SERVICES_PORT")))
+        printfn "enabled=%s" (renderExit string (run (EnvironmentVariable.getBool "FSFLOW_SERVICES_ENABLED")))
+        printfn "session=%s" (renderExit string (run (EnvironmentVariable.getGuid "FSFLOW_SERVICES_SESSION")))
+        printfn "missing=%s" (renderExit string (run (EnvironmentVariable.get "FSFLOW_SERVICES_MISSING")))
+        printfn "invalid=%s" (renderExit string (run (EnvironmentVariable.getInt "FSFLOW_SERVICES_PORT_TEXT")))

@@ -20,7 +20,7 @@ Goal: Validate and deepen FsFlow v1 service integration for Core, FileSystem, an
        - service implementation
        - layer
        - provider edge
-     - Remove or update current “capability” terminology outside historical/deprecated docs.
+     - Remove or update current legacy dependency-package terminology outside historical/deprecated docs.
 
   2. Deepen `FsFlow.Services.Core`.
      - Review current services: clock, log, random, GUID, environment variables.
@@ -55,7 +55,7 @@ Goal: Validate and deepen FsFlow v1 service integration for Core, FileSystem, an
 
   5. Align light service packages.
      - For Console, Http, and Process:
-       - ensure naming says “service”, not “capability”
+       - ensure naming says “service”
        - ensure exposed helpers use `Service<'T>.get()`
        - ensure live implementations and layers follow the same pattern
        - avoid expanding their API surfaces in this goal except for small consistency fixes
@@ -81,7 +81,7 @@ Goal: Validate and deepen FsFlow v1 service integration for Core, FileSystem, an
   - Core and FileSystem have meaningfully deeper, coherent service APIs; FileSystem should cover most operations a .NET developer expects unless deliberately omitted.
   - IServiceProvider edge behavior is validated by tests.
   - Console, Http, and Process remain light but terminology/API shape is aligned.
-  - Current docs/code avoid “capability” terminology outside historical/deprecated material.
+  - Current docs/code avoid legacy dependency-package terminology outside historical/deprecated material.
   - API shape/reference docs reflect any new public APIs.
   - `dotnet test` passes.
   - `dotnet build FsFlow.slnx` passes.

@@ -13,7 +13,7 @@ open FsFlow.Services.Process
 open Swensen.Unquote
 open Xunit
 
-type UnifiedCaps =
+type UnifiedServices =
     {
         Console: IConsole
         FS: IFileSystem
@@ -29,7 +29,7 @@ type UnifiedCaps =
     interface IHas<IProcess> with
         member this.Service = this.Process
 
-module CapsUnifiedTests =
+module UnifiedServiceTests =
     type MinimalFileSystem() =
         interface IFileSystem with
             member _.ReadAllText(_) = "content"
@@ -130,7 +130,7 @@ module CapsUnifiedTests =
     [<Fact>]
     let ``Console: read and write`` () =
         let mutable lastMsg = ""
-        let caps = { 
+        let services = { 
             Console = 
                 { new IConsole with 
                     member _.ReadLine() = "input"
@@ -144,12 +144,12 @@ module CapsUnifiedTests =
             return input
         }
         
-        test <@ Flow.runSync caps workflow = Exit.Success "input" @>
+        test <@ Flow.runSync services workflow = Exit.Success "input" @>
         test <@ lastMsg = "input" @>
 
     [<Fact>]
     let ``FileSystem: exists and read`` () =
-        let caps = { 
+        let services = { 
             FS = MinimalFileSystem()
             Console = Unchecked.defaultof<_>; Http = Unchecked.defaultof<_>; Process = Unchecked.defaultof<_>
         }
@@ -160,24 +160,24 @@ module CapsUnifiedTests =
             return exists, text
         }
         
-        test <@ Flow.runSync caps workflow = Exit.Success (true, "content") @>
+        test <@ Flow.runSync services workflow = Exit.Success (true, "content") @>
 
     [<Fact>]
     let ``Http: getString`` () =
-        let caps = { 
+        let services = { 
             Http = { new IHttp with member _.GetString(_) = Task.FromResult "html" }
             Console = Unchecked.defaultof<_>; FS = Unchecked.defaultof<_>; Process = Unchecked.defaultof<_>
         }
         
-        test <@ Flow.runSync caps (Http.getString "http://example.com") = Exit.Success "html" @>
+        test <@ Flow.runSync services (Http.getString "http://example.com") = Exit.Success "html" @>
 
     [<Fact>]
     let ``Process: execute`` () =
-        let caps = { 
+        let services = { 
             Process = 
                 { new IProcess with 
                     member _.Execute(_, _) = Task.FromResult { ExitCode = 0; StdOut = "out"; StdErr = "" } }
             Console = Unchecked.defaultof<_>; FS = Unchecked.defaultof<_>; Http = Unchecked.defaultof<_>
         }
         
-        test <@ Flow.runSync caps (Process.execute "echo" "hi") = Exit.Success { ExitCode = 0; StdOut = "out"; StdErr = "" } @>
+        test <@ Flow.runSync services (Process.execute "echo" "hi") = Exit.Success { ExitCode = 0; StdOut = "out"; StdErr = "" } @>

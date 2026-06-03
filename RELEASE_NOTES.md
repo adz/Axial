@@ -16,7 +16,7 @@
 - **Software Transactional Memory (STM)**: Implemented a composable STM engine with `TRef`, `retry`, `orElse`, and the `stm {}` computation expression for atomic state transitions.
 - **Effectful Streams**: Introduced `FlowStream` with built-in backpressure and native `IAsyncEnumerable` interop for processing asynchronous data sequences.
 - **Runtime Foundation**: Implemented a new internal `RuntimeRegistry` and `Scope` system for explicit service management and deterministic resource teardown.
-- **Capability Redesign**: Migrated to nominal capability contracts using standard F# interfaces, making workflow signatures more readable and stable.
+- **Service Redesign**: Migrated to nominal service contracts using standard F# interfaces, making workflow signatures more readable and stable.
 - **Fable 5 & Cross-Platform Support**: Full support for Fable 5 with a unified asynchronous strategy that remains performant on both .NET and JS targets.
 - **Telemetry & Hosting**: Added `FsFlow.Hosting` for seamless DI integration and `FsFlow.Runtime.Telemetry` for automatic distributed tracing and activity tagging.
 - **Documentation Reorganization**: Completely restructured the documentation site with a hierarchical sidebar, new tutorials on dependency management, and a comprehensive API reference.

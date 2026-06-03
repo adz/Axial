@@ -10,13 +10,13 @@
 
   <ItemGroup>
     <Compile Include="TestSupport.fs" />
-    <Compile Include="CapsCoreTests.fs" />
-    <Compile Include="CapsUnifiedTests.fs" />
+    <Compile Include="CoreServiceTests.fs" />
+    <Compile Include="UnifiedServiceTests.fs" />
     <Compile Include="FileSystemServiceTests.fs" />
     <Compile Include="HostingTests.fs" />
     <Compile Include="RuntimeFoundationTests.fs" />
     <Compile Include="TelemetryTests.fs" />
-    <Compile Include="CapsRuntimePatternTests.fs" />
+    <Compile Include="ServiceRuntimePatternTests.fs" />
     <Compile Include="ApiShapeTests.fs" />
     <Compile Include="FlowRuntimeMetadataTests.fs" />
     <Compile Include="WorkflowBasicTests.fs" />

@@ -8,7 +8,7 @@ open FsFlow.Tests.TestSupport
 open Swensen.Unquote
 open Xunit
 
-module CapsRuntimePatternTests =
+module ServiceRuntimePatternTests =
     type IClock =
         abstract UtcNow : unit -> DateTimeOffset
 

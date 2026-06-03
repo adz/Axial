@@ -26,8 +26,8 @@ Refer to [`dev-docs/PLAN.md`](dev-docs/PLAN.md) for architectural direction and 
 - **Post 1.0:** Standard semantic versioning applies. Maintain compatibility and use deprecation cycles for breaking changes.
 - `FsFlow` core and `FsFlow.Services.*` packages are versioned independently.
 - **Experimental Status:** The `FsFlow.Services.*` packages (Console, FileSystem, etc.) are currently considered experimental and are **not** included in the public NuGet release cycle. Their versioning relationship to core `FsFlow` is TBD.
-- Do not force the core release line to wait for the least mature capabilities package.
-- Treat CAPS packages as optional add-ons until each package has its own stable release story.
+- Do not force the core release line to wait for the least mature service package.
+- Treat `FsFlow.Services.*` packages as optional add-ons until each package has its own stable release story.
 
 ## Documentation Integrity
 

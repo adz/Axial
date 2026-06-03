@@ -97,7 +97,7 @@ for dir in core-model ecosystem managing-dependencies patterns start state-concu
     cp -r "$root_dir/docs/$dir/"* "$docs_dir/$dir/"
   fi
 done
-rm -f "$docs_dir/managing-dependencies/capabilities.md"
+rm -f "$docs_dir/managing-dependencies/ambient-dependencies.md"
 
 # Fix all files: remove body titles to avoid double headings in Hugo
 find "$ref_dir" "$docs_dir" -name "*.md" -type f -exec sed -i '/^# /d' {} \;

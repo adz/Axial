@@ -35,7 +35,7 @@ module ApiShapeTests =
 
     let private assertContainsAll expected actual =
         let missing = expected |> List.filter (fun name -> not (Set.contains name actual))
-        test <@ missing = [] @>
+        test <@ List.isEmpty missing @>
 
     [<Fact>]
     let ``core Flow module keeps expected public shape`` () =
@@ -232,7 +232,7 @@ module ApiShapeTests =
               "layer"
               "live" ]
 
-        moduleType typeof<FsFlow.Services.FileSystem.IFileSystem> "FsFlow.Services.FileSystem.FileSystemError"
+        moduleType typeof<FsFlow.Services.FileSystem.IFileSystem> "FsFlow.Services.FileSystem.FileSystemErrorModule"
         |> publicStaticMemberNames
         |> assertContainsAll [ "fromException"; "describe" ]
 

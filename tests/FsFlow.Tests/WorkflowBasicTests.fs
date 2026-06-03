@@ -243,11 +243,11 @@ module WorkflowBasicTests =
             Service<IDeviceClient>.resolve()
             |> Flow.runSync (RecordingServiceProvider(typeof<string>, "nope") :> IServiceProvider)
 
-        let flowCapability : Flow<AppDependencies, string, IDeviceClient> =
+        let serviceLookup : Flow<AppDependencies, string, IDeviceClient> =
             Service<IDeviceClient>.get()
 
-        let flowCapabilityResult =
-            flowCapability
+        let serviceLookupResult =
+            serviceLookup
             |> Flow.runSync app
 
         let flowLayerWorkflow : Flow<AppDependencies, string, string> =
@@ -269,7 +269,7 @@ module WorkflowBasicTests =
         | Exit.Failure (Cause.Die ex) when ex.Message.Contains "IDeviceClient" -> ()
         | _ -> failwithf "Expected Die failure for missing service, got %A" missingProviderResult
 
-        test <@ flowCapabilityResult = Exit.Success app.DeviceClient @>
+        test <@ serviceLookupResult = Exit.Success app.DeviceClient @>
         test <@ flowLayerResult = Exit.Success "provider-client:10" @>
 
     [<Fact>]
