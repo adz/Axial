@@ -11,18 +11,18 @@ This TODO is for FsFlow in `/home/adam/projects/FsFlow/main`. It is .NET focused
 
 ## 1. Lock the Current Baseline
 
-- [ ] Run the current FsFlow test suite and record the baseline command/result in this repo.
-- [ ] Record a source/test inventory in CI or docs so future delta reviews can prove every `src/**/*.fs`, `src/**/*.fsproj`, `tests/**/*.fs`, and `tests/**/*.fsproj` file is covered.
-- [ ] Add API-shape tests for the public `Flow`, builder, validation, schedule, stream, STM, and service modules.
-- [ ] Add a Fable compilation gate for the intended JavaScript surface.
-- [ ] Add a .NET trimming/NativeAOT compatibility gate for the `net8.0` target.
+- [x] Run the current FsFlow test suite and record the baseline command/result in this repo.
+- [x] Record a source/test inventory in CI or docs so future delta reviews can prove every `src/**/*.fs`, `src/**/*.fsproj`, `tests/**/*.fs`, and `tests/**/*.fsproj` file is covered.
+- [x] Add API-shape tests for the public `Flow`, builder, validation, schedule, stream, STM, and service modules.
+- [x] Add a Fable compilation gate for the intended JavaScript surface.
+- [x] Add a .NET trimming/NativeAOT compatibility gate for the `net8.0` target.
 - [ ] Keep root docs as `prd.md` and `TODO.md` unless the repository adopts another naming convention.
 
 ## 2. v1.0 Core Scope
 
 - [ ] Freeze the stable v1.0 `Flow<'env,'error,'value>` surface: constructors, execution, map/bind/fold, typed recovery, environment access, and `Result`/`Async`/`Task`/`ValueTask` interop.
 - [ ] Preserve existing builder, guard, validation, check, diagnostics, service, hosting, and telemetry APIs unless a specific breaking change is approved.
-- [ ] Add a v1.0 API baseline and changelog policy.
+- [x] Add a v1.0 API baseline and changelog policy.
 
 ## 3. v1.0 Runtime Semantics
 

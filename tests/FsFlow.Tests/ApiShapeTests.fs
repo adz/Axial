@@ -3,6 +3,8 @@ namespace FsFlow.Tests
 open System
 open System.Reflection
 open FsFlow
+open FsFlow.Hosting
+open FsFlow.Runtime.Telemetry
 open Swensen.Unquote
 open Xunit
 
@@ -27,6 +29,14 @@ module ApiShapeTests =
 
     let private moduleType (assemblyMarker: Type) (fullName: string) =
         let assembly = assemblyMarker.Assembly
+
+        match assembly.GetType(fullName, false), assembly.GetType(fullName + "Module", false) with
+        | null, null -> failwithf "Could not find module type %s in %s." fullName assembly.FullName
+        | found, _ when not (isNull found) -> found
+        | _, found -> found
+
+    let private moduleTypeFromAssembly (assemblyName: string) (fullName: string) =
+        let assembly = Assembly.Load assemblyName
 
         match assembly.GetType(fullName, false), assembly.GetType(fullName + "Module", false) with
         | null, null -> failwithf "Could not find module type %s in %s." fullName assembly.FullName
@@ -87,6 +97,10 @@ module ApiShapeTests =
         |> publicStaticMemberNames
         |> assertContainsAll [ "dump" ]
 
+        typeof<Scope>
+        |> publicInstanceMethodNames
+        |> assertContainsAll [ "AddFinalizer"; "AddDisposable"; "AddAsyncDisposable"; "AddChild"; "Close" ]
+
     [<Fact>]
     let ``flow builder keeps expected computation expression shape`` () =
         typeof<FlowBuilder>
@@ -129,6 +143,84 @@ module ApiShapeTests =
         |> publicInstanceMethodNames
         |> assertContainsAll [ "Return"; "ReturnFrom"; "Bind"; "MergeSources"; "Run"; "at" ]
 
+        typeof<ResultBuilder>
+        |> publicInstanceMethodNames
+        |> assertContainsAll [ "Return"; "ReturnFrom"; "Bind"; "Delay"; "Run"; "Combine"; "TryWith"; "TryFinally"; "Using"; "While"; "For" ]
+
+    [<Fact>]
+    let ``check guard diagnostics and ref helpers keep expected public shape`` () =
+        moduleType typeof<Flow<unit, unit, unit>> "FsFlow.Check"
+        |> publicStaticMemberNames
+        |> assertContainsAll
+            [ "fromPredicate"
+              "fromTry"
+              "fromChoice"
+              "okIfTrueTuple"
+              "not"
+              "all"
+              "any"
+              "okIf"
+              "failIf"
+              "okIfSome"
+              "okIfNone"
+              "failIfSome"
+              "failIfNone"
+              "okIfValueSome"
+              "okIfValueNone"
+              "failIfValueSome"
+              "failIfValueNone"
+              "okIfNotNullable"
+              "okIfNullable"
+              "failIfNotNullable"
+              "failIfNullable"
+              "notNullable"
+              "okIfNotNull"
+              "okIfNull"
+              "failIfNotNull"
+              "failIfNull"
+              "okIfNotEmpty"
+              "okIfEmpty"
+              "failIfNotEmpty"
+              "failIfEmpty"
+              "okIfExactlyOne"
+              "failIfExactlyOne"
+              "okIfAtMostOne"
+              "failIfAtMostOne"
+              "okIfCountIs"
+              "okIfContains"
+              "okIfEqual"
+              "okIfNotEqual"
+              "failIfEqual"
+              "failIfNotEqual"
+              "okIfNonEmptyStr"
+              "okIfEmptyStr"
+              "failIfNonEmptyStr"
+              "failIfEmptyStr"
+              "okIfNotBlank"
+              "notBlank"
+              "okIfBlank"
+              "blank"
+              "failIfNotBlank"
+              "failIfBlank"
+              "notNull"
+              "notEmpty"
+              "equal"
+              "notEqual"
+              "orError"
+              "orErrorWith" ]
+
+        typeof<Guard>
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "Of"; "MapError" ]
+
+        moduleType typeof<Diagnostics<string>> "FsFlow.Diagnostics"
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "empty"; "singleton"; "merge"; "toString"; "flatten" ]
+
+        moduleType typeof<Ref<int>> "FsFlow.Ref"
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "make"; "get"; "set"; "update"; "modify" ]
+
     [<Fact>]
     let ``schedule stream and STM modules keep expected public shape`` () =
         moduleType typeof<Schedule<unit, unit, unit>> "FsFlow.Schedule"
@@ -146,6 +238,20 @@ module ApiShapeTests =
         moduleType typeof<TRef<int>> "FsFlow.TRef"
         |> publicStaticMemberNames
         |> assertContainsAll [ "make"; "get"; "set"; "update" ]
+
+    [<Fact>]
+    let ``hosting and telemetry modules keep expected public shape`` () =
+        moduleType typeof<LiveClock> "FsFlow.Hosting.Hosting"
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "createBaseRuntime"; "run" ]
+
+        moduleType typeof<LiveClock> "FsFlow.Hosting.Startup"
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "validateEnvironment" ]
+
+        moduleTypeFromAssembly "FsFlow.Runtime.Telemetry" "FsFlow.Runtime.Telemetry.Activity"
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "source"; "trace" ]
 
     [<Fact>]
     let ``service modules keep expected public shape`` () =
