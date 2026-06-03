@@ -28,11 +28,13 @@ Workflows result in one of three `Exit` outcomes:
 - Use `Service<'service>.get()` when reusable helpers need a named service contract and `'env :> IHas<'service>`.
 - Use `layer { }` plus `Flow.provide` to build environments and own scoped cleanup.
 - In `layer { }`, plain `let!` is sequential/dependent; sibling `and!` is independent and uses `Layer.merge` / `Layer.zipPar`.
+- `Layer.merge` returns tuple outputs; it does not auto-merge records, interfaces, `IHas<'service>`, or tagged services.
 - Use `use` / `use!` for local lexical resource lifetime.
 - Use `Flow.acquireReleaseWith` for acquire/use/release in one flow expression.
 - Use `Flow.acquireRelease` or `Layer.acquireRelease` when a resource should live until the current runtime or layer scope closes.
 - Use `Service<'service>.resolve()` only for deliberate `IServiceProvider` edge lookup.
 - Prefer plain records for application dependencies unless a named abstraction clearly pays for itself.
+- For multiple services of the same shape, prefer named record fields or distinct nominal contracts over tags.
 - Keep business and service requirements visible in `'env`.
 - Keep `IServiceProvider` interop and host-specific adapters at the outer boundary.
 

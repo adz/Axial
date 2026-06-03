@@ -63,6 +63,21 @@ type AppEnv =
 `Service<'service>.get()` is statically checked. If the environment does not implement `IHas<'service>`, the workflow
 does not type-check.
 
+Layers do not automatically compose `IHas<'service>` implementations for you. Build a named environment record and
+implement the contracts explicitly:
+
+```fsharp
+let appLayer =
+    Layer.merge ordersLayer emailLayer
+    |> Layer.map (fun (orders, email) ->
+        { Orders = orders
+          Email = email })
+```
+
+This is more explicit than a generated or proxy environment, and it keeps compile errors tied to named application
+types. FsFlow v1 does not include tagged services; when you need two values with the same service type, use named record
+fields or distinct service contracts.
+
 ## Keep Resolve At The Edge
 
 `Service<'service>.resolve()` reads from `IServiceProvider`. Use it in host glue or adapters where dynamic container

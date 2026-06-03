@@ -94,11 +94,18 @@ explicit services and provisioned through environments and layers.
 - `Flow.provide` is the main way to run flows with a built environment
 - `layer { }` is the primary app-environment construction style: `let!` is dependent/sequential, while sibling `and!`
   uses `Layer.merge` / `Layer.zipPar` for independent provisioning
+- `Layer.merge` combines layer outputs as tuples; it does not synthesize records, interfaces, or automatic
+  `IHas<'service>` environments
 - `Flow.acquireReleaseWith` is the local acquire/use/release combinator
 - `Flow.acquireRelease` attaches acquired resources to the current runtime scope
 - `Layer.acquireRelease` attaches provisioned service resources to the layer scope
 
 The internal registry has been removed rather than promoted.
+
+FsFlow v1 intentionally does not add tagged services or automatic service-environment merging. Multiple services of the
+same type should be modeled with explicit named record fields or distinct nominal contracts. If boilerplate becomes a
+real problem, prefer a future source generator that emits named environment records and `IHas<'service>` implementations
+over reflection, proxy types, or hidden service maps.
 
 ## Service Packages
 

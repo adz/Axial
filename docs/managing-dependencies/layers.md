@@ -138,6 +138,22 @@ let combined =
     |> Layer.map (fun (runtime, orders) -> { Runtime = runtime; Orders = orders })
 ```
 
+`Layer.merge` does not automatically merge `IHas<'service>` contracts or synthesize a new environment type. It only
+provisions both sides and returns their outputs. Keep the final environment explicit:
+
+```fsharp
+type AppEnv =
+    { Runtime: BaseRuntime
+      Orders: IOrderRepository }
+
+    interface IHas<IClock> with member this.Service = this.Runtime.Clock
+    interface IHas<IOrderRepository> with member this.Service = this.Orders
+```
+
+This keeps service requirements visible to people, the compiler, and LLMs. It also avoids ambiguous cases such as two
+services with the same implementation type. If an application needs multiple instances of the same service shape, give
+them named record fields or distinct nominal contracts rather than relying on tags.
+
 `Layer.map2` and `Layer.map3` are sequential mapping helpers that avoid nested tuple reshaping. In a computation
 expression, sibling `and!` bindings use `merge` instead.
 
