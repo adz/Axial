@@ -46,7 +46,7 @@ This TODO is for FsFlow in `/home/adam/projects/FsFlow/main`. It is .NET focused
 - [x] Add v1 Layer composition ergonomics: child scopes, `mapError`, sequential `zip`, parallel `zipPar` / `merge`, `map2`, `map3`, and `layer { let! / and! }`.
 - [x] Decide not to add tagged services or automatic `IHas<'service>` layer merging for v1; use explicit records and nominal contracts.
 - [x] Add scoped resource helpers for local acquire/use/release, runtime-scope acquisition, layer-scope acquisition, finalizer ordering, and release on success/failure/defect/interruption.
-- [ ] Validate integration with `Microsoft.Extensions.DependencyInjection` and existing service packages.
+- [x] Validate integration with `Microsoft.Extensions.DependencyInjection` and existing service packages.
 - [x] Document intentional limitations in layer error typing, provider-backed startup validation, and scope ownership.
 
 ## 5. v1.0 Concurrency and State

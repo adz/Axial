@@ -12,6 +12,7 @@
     <Compile Include="TestSupport.fs" />
     <Compile Include="CoreServiceTests.fs" />
     <Compile Include="UnifiedServiceTests.fs" />
+    <Compile Include="DependencyInjectionIntegrationTests.fs" />
     <Compile Include="FileSystemServiceTests.fs" />
     <Compile Include="HostingTests.fs" />
     <Compile Include="RuntimeFoundationTests.fs" />

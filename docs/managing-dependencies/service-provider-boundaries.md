@@ -39,6 +39,12 @@ let ordersLayer : Layer<IServiceProvider, StartupError, IOrderRepository> =
 
 Then compose provider-backed layers into the application environment and run the real workflow with `Flow.provide`.
 
+`FsFlow.Services.Core` follows this pattern with `BaseRuntime.fromServiceProvider`. Register `IClock`, `ILog`,
+`IRandom`, `IGuid`, and `IEnvironmentVariables` in a Microsoft DI `ServiceCollection`, build the provider at the host
+edge, and use the layer to convert those dynamic registrations into an explicit `BaseRuntime`. Missing registrations
+fail as typed startup errors through `BaseRuntimeError.MissingService`, while direct `Service<'T>.resolve()` remains a
+defect-oriented escape hatch for host-edge code.
+
 ## Boundary Rule
 
 Use `IServiceProvider` to build the world. Do not make every business workflow depend on it.

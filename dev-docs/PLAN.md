@@ -141,8 +141,10 @@ Docs must avoid:
 ## Implementation Snapshot
 
 As of 2026-06-03, core code, service packages, tests, examples, and generated reference docs use the explicit
-service/layer model. Remaining work should improve public guide coverage and future service packages, not preserve the
-old ambient-core or `Flow.service` / `Flow.inject` direction.
+service/layer model. Integration tests cover `Microsoft.Extensions.DependencyInjection` provider-backed base runtime
+construction, typed missing-registration failures, direct `Service<'T>.resolve()` defects, and composition of the
+current Console, FileSystem, Http, and Process service layers. Remaining work should improve public guide coverage and
+future service packages, not preserve the old ambient-core or `Flow.service` / `Flow.inject` direction.
 
 ## Open Product Questions
 
