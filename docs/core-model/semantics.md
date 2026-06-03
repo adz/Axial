@@ -85,6 +85,18 @@ Important interruption rules:
 - `Flow.race` returns the winner's outcome and interrupts the loser; the loser interruption is not part of the winner's outcome.
 - `Flow.zipPar` interrupts the other branch after the first failure. If the other branch reports only that synthetic interruption, the visible result is the original failure. If both branches independently fail, the visible result is `Cause.Both`.
 - Runtime and layer scopes always try to run finalizers. If the main workflow fails and cleanup also fails, the result is `Cause.Then (workflowCause, cleanupCause)`.
+- Forked fibers are linked to the parent runtime cancellation token on .NET. If the parent execution token is cancelled, child fibers are interrupted and their metadata moves to `FiberStatus.Interrupted`.
+
+## Finalizers and Masking
+
+FsFlow v1 does not expose a ZIO-style masking/unmasking API. The v1 guarantee is narrower and explicit:
+
+- Registered finalizers are invoked when the runtime or layer scope closes.
+- Finalizers run in reverse registration order.
+- Cancellation is passed to finalizers through the `CancellationToken`, but cancellation does not skip later finalizers.
+- If the workflow was interrupted and a finalizer also fails, FsFlow returns `Cause.Then (Cause.Interrupt, cleanupCause)`.
+
+This keeps the .NET/F# model small while preserving the important safety property: scoped resources get a deterministic cleanup attempt, and cleanup failures are not hidden.
 
 ## Environments
 

@@ -169,3 +169,135 @@ module RuntimeSemanticsTests =
             test <@ dump.Status = FiberStatus.Failed @>
         | other ->
             failwithf "Expected child defect and failed metadata, got %A" other
+
+    [<Fact>]
+    let ``Nested fibers record parent child identity`` () =
+        let childWorkflow =
+            flow {
+                let! grandchild =
+                    flow {
+                        return 42
+                    }
+                    |> Flow.fork
+
+                let grandchildDump = Fiber.dump grandchild
+                let! value = Flow.join grandchild
+                return grandchildDump, value
+            }
+
+        let workflow =
+            flow {
+                let! child = Flow.fork childWorkflow
+                let childDump = Fiber.dump child
+                let! grandchildDump, value = Flow.join child
+                return childDump, grandchildDump, value
+            }
+
+        let result = Flow.runSync () workflow
+
+        match result with
+        | Exit.Success(childDump, grandchildDump, value) ->
+            test <@ value = 42 @>
+            test <@ childDump.ParentId.IsSome @>
+            test <@ grandchildDump.ParentId = Some childDump.Id @>
+        | other ->
+            failwithf "Expected nested fiber identity result, got %A" other
+
+    [<Fact>]
+    let ``Joining an interrupted fiber preserves interruption`` () =
+        let workflow =
+            flow {
+                let! fiber =
+                    flow {
+                        do! Flow.Runtime.sleep (TimeSpan.FromSeconds 5.0)
+                        return 42
+                    }
+                    |> Flow.fork
+
+                let! interrupted = Flow.interrupt fiber
+
+                let! joined =
+                    Flow.join fiber
+                    |> Flow.fold
+                        (Exit.Success >> Flow.succeed)
+                        (Exit.Failure >> Flow.succeed)
+
+                return interrupted, joined, Fiber.dump fiber
+            }
+
+        let result = Flow.runSync () workflow
+
+        match result with
+        | Exit.Success(Exit.Failure Cause.Interrupt, Exit.Failure Cause.Interrupt, dump) ->
+            test <@ dump.Status = FiberStatus.Interrupted @>
+        | other ->
+            failwithf "Expected interrupted join to preserve Cause.Interrupt, got %A" other
+
+    [<Fact>]
+    let ``Parent cancellation propagates to forked child`` () =
+        use cts = new CancellationTokenSource()
+        let mutable capturedFiber : Fiber<string, int> option = None
+
+        let workflow : Flow<unit, string, unit> =
+            flow {
+                let! fiber =
+                    flow {
+                        do! Flow.Runtime.sleep (TimeSpan.FromSeconds 5.0)
+                        return 42
+                    }
+                    |> Flow.fork
+
+                capturedFiber <- Some fiber
+                do! Flow.Runtime.sleep (TimeSpan.FromSeconds 5.0)
+            }
+
+        cts.CancelAfter(TimeSpan.FromMilliseconds 50.0)
+        let result = Flow.runFullSync () cts.Token workflow
+
+        match result, capturedFiber with
+        | Exit.Failure Cause.Interrupt, Some fiber ->
+            let childExit = fiber.ExitTask.GetAwaiter().GetResult()
+            test <@ childExit = Exit.Failure Cause.Interrupt @>
+            test <@ (Fiber.dump fiber).Status = FiberStatus.Interrupted @>
+        | other, _ ->
+            failwithf "Expected parent cancellation to interrupt parent and child, got %A" other
+
+    [<Fact>]
+    let ``Runtime finalizers run in reverse order under cancellation`` () =
+        use cts = new CancellationTokenSource()
+        let calls = ResizeArray<string>()
+
+        let workflow : Flow<unit, string, unit> =
+            flow {
+                do! Flow.addFinalizer(fun token ->
+                    calls.Add $"first:{token.IsCancellationRequested}"
+                    Task.CompletedTask)
+
+                do! Flow.addFinalizer(fun token ->
+                    calls.Add $"second:{token.IsCancellationRequested}"
+                    Task.CompletedTask)
+
+                do! Flow.Runtime.sleep (TimeSpan.FromSeconds 5.0)
+            }
+
+        cts.CancelAfter(TimeSpan.FromMilliseconds 50.0)
+        let result = Flow.runFullSync () cts.Token workflow
+
+        test <@ result = Exit.Failure Cause.Interrupt @>
+        test <@ List.ofSeq calls = [ "second:True"; "first:True" ] @>
+
+    [<Fact>]
+    let ``Cancellation failure is sequenced before finalizer defect`` () =
+        use cts = new CancellationTokenSource()
+        let finalizerDefect = InvalidOperationException "cleanup failed"
+
+        let workflow : Flow<unit, string, unit> =
+            flow {
+                do! Flow.addFinalizer(fun _ -> Task.FromException finalizerDefect)
+                do! Flow.Runtime.sleep (TimeSpan.FromSeconds 5.0)
+            }
+
+        cts.CancelAfter(TimeSpan.FromMilliseconds 50.0)
+        let result = Flow.runFullSync () cts.Token workflow
+
+        test <@ result = Exit.Failure(Cause.Then(Cause.Interrupt, Cause.Die finalizerDefect)) @>

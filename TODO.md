@@ -30,8 +30,8 @@ This TODO is for FsFlow in `/home/adam/projects/FsFlow/main`. It is .NET focused
 - [x] Expand `Exit<'value,'error>` helpers to preserve full cause information across conversions.
 - [x] Add fiber identity and metadata: `FiberId`, fiber start time, parent/child relationship, status, and diagnostic dump shape.
 - [x] Document exact outcomes for cancellation token cancellation, `OperationCanceledException`, `Cause.Interrupt`, timeout, failed parallel branches, defects, and finalizer failures.
-- [ ] Decide whether v1 needs masking/unmasking APIs or only scoped finalizer guarantees.
-- [ ] Add tests for nested fibers, parent cancellation propagation, interrupted joins, and finalizer ordering under cancellation.
+- [x] Decide not to add masking/unmasking APIs for v1; rely on scoped finalizer guarantees and cause composition.
+- [x] Add tests for nested fibers, parent cancellation propagation, interrupted joins, and finalizer ordering under cancellation.
 
 ## 4. v1.0 Environment, Layers, and Scope
 
