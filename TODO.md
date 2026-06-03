@@ -51,11 +51,11 @@ This TODO is for FsFlow in `/home/adam/projects/FsFlow/main`. It is .NET focused
 
 ## 5. v1.0 Concurrency and State
 
-- [ ] Add Promise/deferred result primitive.
-- [ ] Add bounded and unbounded queues.
-- [ ] Add semaphore primitive.
+- [x] Add Promise/deferred result primitive.
+- [ ] Design bounded and unbounded queues only when a concrete v1 feature needs FsFlow-owned backpressure, shutdown, and interruption semantics.
+- [x] Add semaphore primitive.
 - [ ] Stabilize `Ref` for v1.0, including atomic modify/get-and-set/update-and-get helpers.
-- [ ] Cover interruption, shutdown, fairness, and resource cleanup in tests.
+- [ ] Cover future queue shutdown/fairness semantics and remaining state/resource cleanup cases in tests.
 
 ## 6. v1.0 Scheduling and Time
 

@@ -298,6 +298,17 @@ let pageSpecs = [
         Alias = None
     }
     {
+        OutPath = ["concurrency"; "_index.md"]
+        Title = "Concurrency"
+        Description = "Source-documented deferred and semaphore primitives for FsFlow."
+        Intro = "This page shows the small Flow-native concurrency primitives added for coordination that needs FsFlow semantics rather than raw .NET behavior. `Deferred<'error, 'value>` is a one-shot typed handoff point backed by a full `Exit<'value, 'error>`. `FlowSemaphore` limits concurrent workflow sections through scoped `Semaphore.withPermit`, releasing permits after success, typed failure, defect, or interruption."
+        SymbolIds = [
+            "Deferred", ["T:FsFlow.Deferred`2"; "M:FsFlow.Deferred.make"; "M:FsFlow.Deferred.await"; "M:FsFlow.Deferred.complete"; "M:FsFlow.Deferred.succeed"; "M:FsFlow.Deferred.fail"; "M:FsFlow.Deferred.die"; "M:FsFlow.Deferred.interrupt"]
+            "Semaphore", ["T:FsFlow.FlowSemaphore"; "M:FsFlow.Semaphore.make"; "M:FsFlow.Semaphore.create"; "M:FsFlow.Semaphore.withPermit"]
+        ]
+        Alias = None
+    }
+    {
         OutPath = ["exit"; "_index.md"]
         Title = "Exit"
         Description = "Documentation for the Exit workflow outcome."

@@ -13,6 +13,9 @@ FsFlow provides several primitives for managing shared state and coordinating co
 ### [Ref (Atomic References)](./ref/)
 `Ref<'T>` provides a thread-safe handle for mutable state. It is perfect for shared counters, flags, or small pieces of state that need to be updated atomically across multiple [**fibers**]({{< relref "/docs/core-model/fibers.md" >}}).
 
+### [Deferred and Semaphore](./deferred-semaphore/)
+`Deferred<'error, 'value>` coordinates one-shot typed results between fibers, while `FlowSemaphore` limits concurrent workflow sections with scoped permit release.
+
 ### [Schedule (Retries & Repetition)](./schedule/)
 The `Schedule` module provides a powerful language for describing how and when a workflow should be retried upon failure or repeated upon success.
 

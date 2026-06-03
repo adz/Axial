@@ -240,6 +240,16 @@ module ApiShapeTests =
         |> assertContainsAll [ "make"; "get"; "set"; "update" ]
 
     [<Fact>]
+    let ``concurrency modules keep expected public shape`` () =
+        moduleType typeof<Deferred<string, int>> "FsFlow.Deferred"
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "make"; "await"; "complete"; "succeed"; "fail"; "die"; "interrupt" ]
+
+        moduleType typeof<FlowSemaphore> "FsFlow.Semaphore"
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "make"; "create"; "withPermit" ]
+
+    [<Fact>]
     let ``hosting and telemetry modules keep expected public shape`` () =
         moduleType typeof<LiveClock> "FsFlow.Hosting.Hosting"
         |> publicStaticMemberNames
