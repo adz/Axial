@@ -26,12 +26,12 @@ This TODO is for FsFlow in `/home/adam/projects/FsFlow/main`. It is .NET focused
 
 ## 3. v1.0 Runtime Semantics
 
-- [ ] Expand `Cause<'error>` beyond `Fail | Die | Interrupt` with sequential/parallel composition, defect accumulation, trace attachment, and pretty printing.
-- [ ] Expand `Exit<'value,'error>` helpers to preserve full cause information across conversions.
-- [ ] Add fiber identity and metadata: `FiberId`, fiber start time, parent/child relationship, status, and diagnostic dump shape.
-- [ ] Rework interruption semantics so cancellation, finalization, masking/unmasking, and interruption causes compose predictably.
-- [ ] Add tests for nested fibers, failed joins, interrupted joins, parent cancellation, and finalizer ordering under cancellation.
-- [ ] Document exact outcomes for cancellation token cancellation, `OperationCanceledException`, `Cause.Interrupt`, timeout, failed parallel branches, defects, and finalizer failures.
+- [x] Expand `Cause<'error>` beyond `Fail | Die | Interrupt` with sequential/parallel composition, defect accumulation, trace attachment, and pretty printing.
+- [x] Expand `Exit<'value,'error>` helpers to preserve full cause information across conversions.
+- [x] Add fiber identity and metadata: `FiberId`, fiber start time, parent/child relationship, status, and diagnostic dump shape.
+- [x] Document exact outcomes for cancellation token cancellation, `OperationCanceledException`, `Cause.Interrupt`, timeout, failed parallel branches, defects, and finalizer failures.
+- [ ] Decide whether v1 needs masking/unmasking APIs or only scoped finalizer guarantees.
+- [ ] Add tests for nested fibers, parent cancellation propagation, interrupted joins, and finalizer ordering under cancellation.
 
 ## 4. v1.0 Environment, Layers, and Scope
 

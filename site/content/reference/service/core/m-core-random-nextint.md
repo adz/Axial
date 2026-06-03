@@ -1,7 +1,7 @@
 ---
 title: "Core.Random.nextInt"
 linkTitle: "nextInt"
-weight: 2400
+weight: 2402
 type: docs
 ---
 

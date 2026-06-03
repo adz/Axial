@@ -37,6 +37,7 @@ The three primary operations for managing fibers are:
 - [**`Flow.fork`**]({{< relref "/reference/flow/m-flow-fork.md" >}}): starts a flow in the background and returns a `Fiber<'error, 'value>` handle.
 - [**`Flow.join`**]({{< relref "/reference/flow/m-flow-join.md" >}}): waits for the fiber and resumes with its successful value or typed failure.
 - [**`Flow.interrupt`**]({{< relref "/reference/flow/m-flow-interrupt.md" >}}): asks the fiber to stop, then waits for the child workflow to report its final `Exit`.
+- `Fiber.dump`: returns a diagnostic snapshot of the fiber id, parent id, start time, and current status.
 
 ## Why Fibers?
 
@@ -54,15 +55,27 @@ A `Fiber<'error, 'value>` remembers the error type and success type of the workf
 
 Fibers make background work visible in the workflow that started it. If the parent needs the result, it joins. If the parent no longer needs the result, it interrupts. That is different from launching an untracked task and hoping some other layer notices when it fails.
 
+### Diagnostics
+
+Every forked fiber carries metadata:
+
+- `FiberId`: A unique runtime id for the child fiber.
+- `ParentId`: The id of the fiber that called `Flow.fork`.
+- `StartedAt`: The UTC time when the fiber started.
+- `Status`: `Running`, `Succeeded`, `Failed`, or `Interrupted`.
+
+Use `Fiber.dump` when logging or debugging fiber behavior. The dump is a snapshot, so a running fiber can report `Running` before `Flow.join` and `Succeeded`, `Failed`, or `Interrupted` afterward.
+
 ## Underlying Implementation
 
-On .NET, a fiber is a small record around a `Task<Exit<'value, 'error>>` and a `CancellationTokenSource`. On Fable, it wraps an `Async<Exit<'value, 'error>>`.
+On .NET, a fiber is a small record around a `Task<Exit<'value, 'error>>`, a `CancellationTokenSource`, and diagnostic metadata. On Fable, it wraps an `Async<Exit<'value, 'error>>` with the same public model.
 
 ```fsharp
 type Fiber<'error, 'value> =
     {
         ExitTask: Task<Exit<'value, 'error>> // The running work
         InterruptSource: CancellationTokenSource // The kill switch
+        Metadata: FiberMetadata // Diagnostic identity and lifecycle state
     }
 ```
 

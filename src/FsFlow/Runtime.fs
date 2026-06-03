@@ -4,6 +4,14 @@ open System
 open System.Collections.Generic
 open System.Threading
 
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+[<RequireQualifiedAccess>]
+module internal FiberId =
+    let mutable private nextValue = 0L
+
+    let next () =
+        FiberId(Interlocked.Increment(&nextValue))
+
 /// <summary>
 /// Provides a standard way to access a unique request identifier from an environment.
 /// </summary>
@@ -85,6 +93,7 @@ type internal RuntimeContext =
         Scope: Scope
         Annotations: Map<string, string>
         AnnotationSink: string -> string -> unit
+        FiberId: FiberId
     }
 
 /// <summary>Helpers for creating and overriding runtime-owned services.</summary>
@@ -96,6 +105,7 @@ module internal RuntimeContext =
             Scope = scope
             Annotations = Map.empty
             AnnotationSink = fun _ _ -> ()
+            FiberId = FiberId.next ()
         }
 
     let detached : RuntimeContext =
@@ -109,6 +119,9 @@ module internal RuntimeContext =
 
     let withAnnotationSink (sink: string -> string -> unit) (runtime: RuntimeContext) : RuntimeContext =
         { runtime with AnnotationSink = sink }
+
+    let withFiberId (fiberId: FiberId) (runtime: RuntimeContext) : RuntimeContext =
+        { runtime with FiberId = fiberId }
 
 /// <summary>Stores the ambient runtime context for the current execution.</summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]

@@ -69,6 +69,9 @@ FsFlow distinguishes between expected domain failures and unexpected technical d
 | `Fail 'error` | An **expected** failure in your domain logic. | `Flow.fail`, `Error` results. |
 | `Die exn` | An **unexpected** defect or "panic". | Uncaught exceptions, `Flow.die`. |
 | `Interrupt` | The workflow was **cancelled** from the outside. | `CancellationToken`. |
+| `Then (first, second)` | Two failures happened **in order**. | Workflow failure followed by finalizer failure. |
+| `Both (left, right)` | Two failures happened **in parallel**. | Parallel flows or layers both failed. |
+| `Traced (cause, trace)` | A failure cause has **diagnostic context** attached. | Runtime or user annotations. |
 
 ## 3. Unwrapping and Transforming
 
@@ -82,6 +85,7 @@ Converts an `Exit` into a standard F# `Result<'value, 'error>`.
 *   `Failure (Fail e)` -> `Error e`
 *   `Failure (Die ex)` -> **re-raises `ex`**
 *   `Failure Interrupt` -> **raises `OperationCanceledException`**
+*   Composite failures -> **raise instead of flattening**
 
 This is useful when you want to bridge back to libraries that only understand `Result`, but it assumes that defects should be treated as fatal exceptions.
 
@@ -113,6 +117,8 @@ let combined = Flow.zip flowA flowB
 ```fsharp
 let parallel = Flow.zipPar flowA flowB
 ```
+
+If both branches fail independently, the result preserves both failures as `Cause.Both`. If one branch fails and the other branch only reports the interruption caused by `zipPar` cancelling it, the visible result is the original failure.
 
 ### Working with Sequences
 

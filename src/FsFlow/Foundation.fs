@@ -143,12 +143,7 @@ module EffectFlow =
         (mapper: 'error -> 'nextError)
         (effect: Effect<'value, 'error>)
         : Effect<'next, 'nextError> =
-        fold ofValue (fun cause ->
-            match cause with
-            | Cause.Fail error -> ofError (mapper error)
-            | Cause.Die exn -> ofDie exn
-            | Cause.Interrupt -> ofInterrupt ()
-        ) effect
+        fold ofValue (Cause.map mapper >> ofCause) effect
 
 module internal InternalCombinatorCore =
     let mapWith

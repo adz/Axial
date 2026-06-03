@@ -19,6 +19,7 @@
     <Compile Include="ServiceRuntimePatternTests.fs" />
     <Compile Include="ApiShapeTests.fs" />
     <Compile Include="FlowRuntimeMetadataTests.fs" />
+    <Compile Include="RuntimeSemanticsTests.fs" />
     <Compile Include="WorkflowBasicTests.fs" />
     <Compile Include="ExecutionTests.fs" />
     <Compile Include="WorkflowConcurrencyTests.fs" />

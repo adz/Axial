@@ -222,7 +222,7 @@ module RuntimeFoundationTests =
         test <@ List.ofSeq calls = [ "success-cleanup" ] @>
 
     [<Fact>]
-    let ``layer zipPar returns deterministic left-biased failure when both branches fail`` () =
+    let ``layer zipPar accumulates both branch failures`` () =
         let left = Layer.effect (fun (_, _) _ -> EffectFlow.ofError "left")
         let right = Layer.effect (fun (_, _) _ -> EffectFlow.ofError "right")
 
@@ -231,7 +231,7 @@ module RuntimeFoundationTests =
             |> Flow.provide (Layer.zipPar left right)
             |> Flow.runSync ()
 
-        test <@ result = Exit.Failure (Cause.Fail "left") @>
+        test <@ result = Exit.Failure (Cause.Both(Cause.Fail "left", Cause.Fail "right")) @>
 
     [<Fact>]
     let ``layer map2 map3 and mapError compose provisioning`` () =

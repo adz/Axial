@@ -20,6 +20,12 @@ type Cause<'error> =
     | Die of exn
     /// <summary>An administrative signal to stop the workflow (e.g., cancellation).</summary>
     | Interrupt
+    /// <summary>Two causes happened sequentially; the left cause happened before the right cause.</summary>
+    | Then of Cause<'error> * Cause<'error>
+    /// <summary>Two causes happened concurrently; neither cause is ordered before the other.</summary>
+    | Both of Cause<'error> * Cause<'error>
+    /// <summary>A cause annotated with diagnostic trace text.</summary>
+    | Traced of Cause<'error> * trace: string
 
 /// <summary>
 /// Represents the final outcome of a workflow execution.
@@ -39,11 +45,74 @@ module Cause =
     /// <param name="mapper">The function to transform the error value.</param>
     /// <param name="cause">The original cause to transform.</param>
     /// <returns>A new cause with the transformed error value, or the original cause if it was not a <c>Fail</c>.</returns>
-    let map (mapper: 'e -> 'f) (cause: Cause<'e>) : Cause<'f> =
+    let rec map (mapper: 'e -> 'f) (cause: Cause<'e>) : Cause<'f> =
         match cause with
         | Cause.Fail e -> Cause.Fail (mapper e)
         | Cause.Die ex -> Cause.Die ex
         | Cause.Interrupt -> Cause.Interrupt
+        | Cause.Then(left, right) -> Cause.Then(map mapper left, map mapper right)
+        | Cause.Both(left, right) -> Cause.Both(map mapper left, map mapper right)
+        | Cause.Traced(inner, trace) -> Cause.Traced(map mapper inner, trace)
+
+    /// <summary>Combines causes that happened sequentially.</summary>
+    let thenCause (left: Cause<'error>) (right: Cause<'error>) : Cause<'error> =
+        Cause.Then(left, right)
+
+    /// <summary>Combines causes that happened concurrently.</summary>
+    let both (left: Cause<'error>) (right: Cause<'error>) : Cause<'error> =
+        Cause.Both(left, right)
+
+    /// <summary>Attaches diagnostic trace text to a cause.</summary>
+    let traced (trace: string) (cause: Cause<'error>) : Cause<'error> =
+        Cause.Traced(cause, trace)
+
+    /// <summary>Returns every typed failure value contained in a cause tree.</summary>
+    let rec failures (cause: Cause<'error>) : 'error list =
+        match cause with
+        | Cause.Fail error -> [ error ]
+        | Cause.Die _ -> []
+        | Cause.Interrupt -> []
+        | Cause.Then(left, right)
+        | Cause.Both(left, right) -> failures left @ failures right
+        | Cause.Traced(inner, _) -> failures inner
+
+    /// <summary>Returns every defect exception contained in a cause tree.</summary>
+    let rec defects (cause: Cause<'error>) : exn list =
+        match cause with
+        | Cause.Fail _ -> []
+        | Cause.Die error -> [ error ]
+        | Cause.Interrupt -> []
+        | Cause.Then(left, right)
+        | Cause.Both(left, right) -> defects left @ defects right
+        | Cause.Traced(inner, _) -> defects inner
+
+    /// <summary>Returns whether the cause tree contains an interruption signal.</summary>
+    let rec isInterrupted (cause: Cause<'error>) : bool =
+        match cause with
+        | Cause.Interrupt -> true
+        | Cause.Then(left, right)
+        | Cause.Both(left, right) -> isInterrupted left || isInterrupted right
+        | Cause.Traced(inner, _) -> isInterrupted inner
+        | Cause.Fail _
+        | Cause.Die _ -> false
+
+    /// <summary>Pretty prints a cause tree for diagnostics.</summary>
+    let prettyPrint (formatError: 'error -> string) (cause: Cause<'error>) : string =
+        let rec loop indent current =
+            let padding = String.replicate indent " "
+
+            match current with
+            | Cause.Fail error -> $"{padding}Fail({formatError error})"
+            | Cause.Die error -> $"{padding}Die({error.GetType().Name}: {error.Message})"
+            | Cause.Interrupt -> $"{padding}Interrupt"
+            | Cause.Then(left, right) ->
+                $"{padding}Then\n{loop (indent + 2) left}\n{loop (indent + 2) right}"
+            | Cause.Both(left, right) ->
+                $"{padding}Both\n{loop (indent + 2) left}\n{loop (indent + 2) right}"
+            | Cause.Traced(inner, trace) ->
+                $"{padding}Traced({trace})\n{loop (indent + 2) inner}"
+
+        loop 0 cause
 
 [<RequireQualifiedAccess>]
 module Exit =
@@ -103,6 +172,64 @@ module Exit =
         | Exit.Failure (Cause.Fail e) -> Error e
         | Exit.Failure (Cause.Die ex) -> raise ex
         | Exit.Failure Cause.Interrupt -> raise (OperationCanceledException("Workflow was interrupted"))
+        | Exit.Failure cause ->
+            let defects = Cause.defects cause
+
+            if not (List.isEmpty defects) then
+                raise (AggregateException("Workflow failed with one or more defects.", defects))
+            elif Cause.isInterrupted cause then
+                raise (OperationCanceledException("Workflow was interrupted"))
+            else
+                let rendered = Cause.prettyPrint (fun error -> string error) cause
+                raise (InvalidOperationException($"Workflow failed with a composite cause that cannot be represented as Result: {rendered}"))
+
+/// <summary>Unique identifier for a running fiber.</summary>
+[<Struct>]
+type FiberId =
+    | FiberId of int64
+
+    /// <summary>The numeric fiber identifier.</summary>
+    member this.Value =
+        let (FiberId value) = this
+        value
+
+/// <summary>Describes the current lifecycle state of a fiber.</summary>
+[<RequireQualifiedAccess>]
+type FiberStatus =
+    /// <summary>The fiber is currently running.</summary>
+    | Running
+    /// <summary>The fiber completed with a successful value.</summary>
+    | Succeeded
+    /// <summary>The fiber completed with a typed failure or defect.</summary>
+    | Failed
+    /// <summary>The fiber completed with an interruption cause.</summary>
+    | Interrupted
+
+/// <summary>Diagnostic metadata for a running fiber.</summary>
+type FiberMetadata =
+    {
+        /// <summary>The unique fiber id.</summary>
+        Id: FiberId
+        /// <summary>The parent fiber id, if the fiber was forked from another fiber.</summary>
+        ParentId: FiberId option
+        /// <summary>The UTC timestamp when the fiber started.</summary>
+        StartedAt: DateTimeOffset
+        /// <summary>The current fiber status.</summary>
+        mutable Status: FiberStatus
+    }
+
+/// <summary>Human-readable diagnostic dump for a fiber.</summary>
+type FiberDump =
+    {
+        /// <summary>The fiber id.</summary>
+        Id: FiberId
+        /// <summary>The parent fiber id, if available.</summary>
+        ParentId: FiberId option
+        /// <summary>The UTC timestamp when the fiber started.</summary>
+        StartedAt: DateTimeOffset
+        /// <summary>The current fiber status.</summary>
+        Status: FiberStatus
+    }
 
 /// <summary>
 /// Represents a handle to a workflow that has already been started.
@@ -117,6 +244,8 @@ module Exit =
 /// <typeparam name="value">The success type of the running workflow.</typeparam>
 type Fiber<'error, 'value> =
     {
+        /// <summary>Diagnostic metadata for the running fiber.</summary>
+        Metadata: FiberMetadata
         /// <summary>The asynchronous operation that completes with the workflow's final exit outcome.</summary>
 #if FABLE_COMPILER
         ExitTask: Async<Exit<'value, 'error>>
@@ -126,6 +255,18 @@ type Fiber<'error, 'value> =
         /// <summary>The cancellation source used by <c>Flow.interrupt</c> to signal interruption.</summary>
         InterruptSource: CancellationTokenSource
     }
+
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+[<RequireQualifiedAccess>]
+module Fiber =
+    /// <summary>Returns a snapshot of the current fiber metadata.</summary>
+    let dump (fiber: Fiber<'error, 'value>) : FiberDump =
+        {
+            Id = fiber.Metadata.Id
+            ParentId = fiber.Metadata.ParentId
+            StartedAt = fiber.Metadata.StartedAt
+            Status = fiber.Metadata.Status
+        }
 
 #if !FABLE_COMPILER
 /// <summary>

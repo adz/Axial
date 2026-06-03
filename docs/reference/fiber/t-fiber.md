@@ -25,6 +25,7 @@ weight: 1000
 
 | Field | Description |
 | --- | --- |
+| `Metadata` | Diagnostic metadata for the running fiber. |
 | `ExitTask` | The asynchronous operation that completes with the workflow's final exit outcome. |
 | `InterruptSource` | The cancellation source used by <code>Flow.interrupt</code> to signal interruption. |
 

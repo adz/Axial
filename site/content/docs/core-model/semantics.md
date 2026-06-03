@@ -30,6 +30,9 @@ Every Flow execution results in an [**`Exit<'value, 'error>`**]({{< relref "/ref
 - `Exit.Failure (Cause.Fail error)`: An expected domain-specific failure.
 - `Exit.Failure Cause.Interrupt`: The workflow was signaled to stop (e.g., cancellation).
 - `Exit.Failure (Cause.Die exception)`: An unexpected defect or crash. `Flow.run`, `Flow.runFull`, and `Flow.runSync` preserve uncaught exceptions in this branch.
+- `Exit.Failure (Cause.Then (first, second))`: Two failures happened in sequence, usually a workflow failure followed by a finalizer failure.
+- `Exit.Failure (Cause.Both (left, right))`: Two failures happened concurrently, usually from parallel branches or parallel layer provisioning.
+- `Exit.Failure (Cause.Traced (cause, trace))`: A failure cause annotated with diagnostic text.
 
 All standard combinators (`map`, `bind`, `zip`, `orElse`) are **short-circuiting**. The first `Exit.Failure` stops the workflow unless explicitly caught.
 
@@ -55,11 +58,33 @@ A flow is **cold**: building a flow does not run it. Each call to `run` executes
 
 ## Success and Failure Causes
 
-FsFlow distinguishes between expected failures, administrative signals, and unexpected defects. For a detailed explanation of the architectural rationale behind this split, see [**Defects and Exceptions**]({{< relref "defects.md" >}}).
+FsFlow distinguishes between expected failures, administrative signals, unexpected defects, sequential composition, parallel composition, and diagnostic traces. For a detailed explanation of the architectural rationale behind this split, see [**Defects and Exceptions**]({{< relref "defects.md" >}}).
+
+`Cause<'error>` is a tree, not only a single leaf:
+
+- `Cause.Fail error`: Expected typed failure.
+- `Cause.Die exn`: Unexpected defect preserved as an exception value.
+- `Cause.Interrupt`: Cooperative cancellation/interruption.
+- `Cause.Then (first, second)`: Ordered failure composition. FsFlow uses this when cleanup fails after the original workflow already failed.
+- `Cause.Both (left, right)`: Parallel failure composition. FsFlow uses this when two independent branches fail before either one can be treated as only the loser of cancellation.
+- `Cause.Traced (cause, trace)`: Diagnostic annotation around another cause.
+
+Use `Cause.failures`, `Cause.defects`, `Cause.isInterrupted`, and `Cause.prettyPrint` at host or logging boundaries when you need a flattened view. Inside FsFlow, prefer preserving the full cause tree.
+
+`Exit.toResult` is intentionally lossy because `Result<'value, 'error>` can represent only success or one typed error. It returns `Error error` only for a simple `Cause.Fail error`. It raises for defects, interruption, and composite causes rather than silently discarding cause structure.
 
 ## Interruption and Cancellation
 
 FsFlow supports algebraic interruption. When a [**Fiber**]({{< relref "fibers.md" >}}) is interrupted (e.g., via `Flow.interrupt` or a `CancellationToken` trigger), the flow stops executing and returns `Exit.Failure Cause.Interrupt`.
+
+Important interruption rules:
+
+- A thrown `OperationCanceledException` normally becomes `Cause.Interrupt`.
+- `Flow.Runtime.timeout` returns the timeout error you supplied as `Cause.Fail error`.
+- `Flow.interrupt fiber` asks the child to stop and returns the child's final `Exit`.
+- `Flow.race` returns the winner's outcome and interrupts the loser; the loser interruption is not part of the winner's outcome.
+- `Flow.zipPar` interrupts the other branch after the first failure. If the other branch reports only that synthetic interruption, the visible result is the original failure. If both branches independently fail, the visible result is `Cause.Both`.
+- Runtime and layer scopes always try to run finalizers. If the main workflow fails and cleanup also fails, the result is `Cause.Then (workflowCause, cleanupCause)`.
 
 ## Environments
 

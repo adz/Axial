@@ -66,6 +66,28 @@ module ApiShapeTests =
               "sequence" ]
 
     [<Fact>]
+    let ``runtime outcome types keep expected public shape`` () =
+        moduleType typeof<Cause<unit>> "FsFlow.Cause"
+        |> publicStaticMemberNames
+        |> assertContainsAll
+            [ "map"
+              "thenCause"
+              "both"
+              "traced"
+              "failures"
+              "defects"
+              "isInterrupted"
+              "prettyPrint" ]
+
+        moduleType typeof<Exit<unit, unit>> "FsFlow.Exit"
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "map"; "bind"; "mapError"; "mapBoth"; "fromResult"; "toResult" ]
+
+        moduleType typeof<Fiber<unit, unit>> "FsFlow.Fiber"
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "dump" ]
+
+    [<Fact>]
     let ``flow builder keeps expected computation expression shape`` () =
         typeof<FlowBuilder>
         |> publicInstanceMethodNames

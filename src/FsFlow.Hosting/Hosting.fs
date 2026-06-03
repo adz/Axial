@@ -55,3 +55,4 @@ module Startup =
         | Exit.Failure (Cause.Fail e) -> Error [ EnvironmentVariableErrors.describe e ]
         | Exit.Failure Cause.Interrupt -> Error [ "Validation was interrupted" ]
         | Exit.Failure (Cause.Die ex) -> Error [ ex.Message ]
+        | Exit.Failure cause -> Error [ Cause.prettyPrint EnvironmentVariableErrors.describe cause ]

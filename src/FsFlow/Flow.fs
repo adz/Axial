@@ -12,6 +12,58 @@ module Flow =
         : Effect<'value, 'error> =
         FlowInternal.invoke flow environment cancellationToken
 
+    let private combineCleanup
+        (cleanupError: exn option)
+        (executionError: exn option)
+        (exit: Exit<'value, 'error> option)
+        (missingOutcomeMessage: string)
+        : Exit<'value, 'error> =
+        let primary =
+            match executionError, exit with
+            | Some error, _ -> Exit.Failure (EffectFlow.causeOfException error)
+            | None, Some result -> result
+            | None, None -> Exit.Failure (Cause.Die (InvalidOperationException missingOutcomeMessage))
+
+        match cleanupError, primary with
+        | Some error, Exit.Failure cause ->
+            Exit.Failure (Cause.thenCause cause (EffectFlow.causeOfException error))
+        | Some error, Exit.Success _ ->
+            Exit.Failure (EffectFlow.causeOfException error)
+        | None, result ->
+            result
+
+    let private statusFromExit (exit: Exit<'value, 'error>) =
+        match exit with
+        | Exit.Success _ -> FiberStatus.Succeeded
+        | Exit.Failure cause when Cause.isInterrupted cause -> FiberStatus.Interrupted
+        | Exit.Failure _ -> FiberStatus.Failed
+
+    let private chooseParallelExit
+        (leftExit: Exit<'left, 'error>)
+        (rightExit: Exit<'right, 'error>)
+        : Exit<'left * 'right, 'error> =
+        match leftExit, rightExit with
+        | Exit.Success leftValue, Exit.Success rightValue ->
+            Exit.Success(leftValue, rightValue)
+        | Exit.Failure leftCause, Exit.Failure rightCause ->
+            Exit.Failure(Cause.both leftCause rightCause)
+        | Exit.Failure cause, Exit.Success _ ->
+            Exit.Failure cause
+        | Exit.Success _, Exit.Failure cause ->
+            Exit.Failure cause
+
+    let private chooseExitAfterCancel
+        (firstCause: Cause<'error>)
+        (otherExit: Exit<'other, 'error>)
+        : Exit<'value, 'error> =
+        match otherExit with
+        | Exit.Failure Cause.Interrupt ->
+            Exit.Failure firstCause
+        | Exit.Failure otherCause ->
+            Exit.Failure(Cause.both firstCause otherCause)
+        | Exit.Success _ ->
+            Exit.Failure firstCause
+
     let inline private runEffect
         (environment: 'env)
         (cancellationToken: CancellationToken)
@@ -41,12 +93,7 @@ module Flow =
             with error ->
                 cleanupError <- Some error
 
-            match cleanupError, executionError, exit with
-            | Some error, _, _ -> return Exit.Failure (EffectFlow.causeOfException error)
-            | None, Some error, _ -> return Exit.Failure (EffectFlow.causeOfException error)
-            | None, None, Some result -> return result
-            | None, None, None ->
-                return Exit.Failure (Cause.Die (InvalidOperationException("Flow execution produced no outcome.")))
+            return combineCleanup cleanupError executionError exit "Flow execution produced no outcome."
         }
         #else
         ValueTask<Exit<'value, 'error>>(
@@ -70,12 +117,7 @@ module Flow =
                 with error ->
                     cleanupError <- Some error
 
-                match cleanupError, executionError, exit with
-                | Some error, _, _ -> return Exit.Failure (EffectFlow.causeOfException error)
-                | None, Some error, _ -> return Exit.Failure (EffectFlow.causeOfException error)
-                | None, None, Some result -> return result
-                | None, None, None ->
-                    return Exit.Failure (Cause.Die (InvalidOperationException("Flow execution produced no outcome.")))
+                return combineCleanup cleanupError executionError exit "Flow execution produced no outcome."
             })
         #endif
 
@@ -191,7 +233,11 @@ module Flow =
                             do! release resource cancellationToken
                             return useExit
                         with error ->
-                            return Exit.Failure (EffectFlow.causeOfException error)
+                            match useExit with
+                            | Exit.Failure cause ->
+                                return Exit.Failure (Cause.thenCause cause (EffectFlow.causeOfException error))
+                            | Exit.Success _ ->
+                                return Exit.Failure (EffectFlow.causeOfException error)
                 }))
 #endif
 
@@ -715,25 +761,71 @@ module Flow =
         Flow(fun environment cancellationToken ->
             #if FABLE_COMPILER
             async {
+                let parentRuntime = RuntimeState.current()
                 let cts = new CancellationTokenSource()
-                let operation = invoke flow environment cts.Token
+                let metadata : FiberMetadata =
+                    {
+                        Id = FiberId.next ()
+                        ParentId = Some parentRuntime.FiberId
+                        StartedAt = DateTimeOffset.UtcNow
+                        Status = FiberStatus.Running
+                    }
+                let childRuntime = parentRuntime |> RuntimeContext.withFiberId metadata.Id
+                let operation =
+                    async {
+                        try
+                            let! exit =
+                                RuntimeState.withRuntime childRuntime (fun () ->
+                                    invoke flow environment cts.Token)
+
+                            metadata.Status <- statusFromExit exit
+                            return exit
+                        with error ->
+                            let exit = Exit.Failure (EffectFlow.causeOfException error)
+                            metadata.Status <- statusFromExit exit
+                            return exit
+                    }
                 
                 let! childToken = Async.StartChild(operation)
                 let fiber =
                     {
+                        Metadata = metadata
                         ExitTask = childToken
                         InterruptSource = cts
                     }
                 return Exit.Success fiber
             }
             #else
-            let cts = new CancellationTokenSource()
+            let parentRuntime = RuntimeState.current()
+            let cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken)
+            let metadata : FiberMetadata =
+                {
+                    Id = FiberId.next ()
+                    ParentId = Some parentRuntime.FiberId
+                    StartedAt = DateTimeOffset.UtcNow
+                    Status = FiberStatus.Running
+                }
+            let childRuntime = parentRuntime |> RuntimeContext.withFiberId metadata.Id
             let (Flow operation) = flow
-            let effect = operation environment cts.Token
+            let exitTask =
+                task {
+                    try
+                        let! exit =
+                            RuntimeState.withRuntime childRuntime (fun () ->
+                                operation environment cts.Token |> _.AsTask())
+
+                        metadata.Status <- statusFromExit exit
+                        return exit
+                    with error ->
+                        let exit = Exit.Failure (EffectFlow.causeOfException error)
+                        metadata.Status <- statusFromExit exit
+                        return exit
+                }
             
             let fiber =
                 {
-                    ExitTask = effect.AsTask()
+                    Metadata = metadata
+                    ExitTask = exitTask
                     InterruptSource = cts
                 }
             EffectFlow.ofValue fiber
@@ -824,10 +916,7 @@ module Flow =
                 let! results = Async.Parallel [| leftOp; rightOp |]
                 let leftRes = unbox<Exit<'left, 'error>> results[0]
                 let rightRes = unbox<Exit<'right, 'error>> results[1]
-                match leftRes, rightRes with
-                | Exit.Success l, Exit.Success r -> return Exit.Success (l, r)
-                | Exit.Failure c, _ -> return Exit.Failure c
-                | _, Exit.Failure c -> return Exit.Failure c
+                return chooseParallelExit leftRes rightRes
             }
             #else
             ValueTask<Exit<'left * 'right, 'error>>(
@@ -846,7 +935,8 @@ module Flow =
                         match leftFiberTask.GetAwaiter().GetResult() with
                         | Exit.Failure cause ->
                             cts.Cancel()
-                            return Exit.Failure cause
+                            let! rightExit = rightFiberTask
+                            return chooseExitAfterCancel cause rightExit
                         | Exit.Success leftValue ->
                             let! rightExit = rightFiberTask
 
@@ -857,7 +947,14 @@ module Flow =
                         match rightFiberTask.GetAwaiter().GetResult() with
                         | Exit.Failure cause ->
                             cts.Cancel()
-                            return Exit.Failure cause
+                            let! leftExit = leftFiberTask
+                            match leftExit with
+                            | Exit.Failure Cause.Interrupt ->
+                                return Exit.Failure cause
+                            | Exit.Failure leftCause ->
+                                return chooseParallelExit (Exit.Failure leftCause) (Exit.Failure cause)
+                            | Exit.Success _ ->
+                                return Exit.Failure cause
                         | Exit.Success rightValue ->
                             let! leftExit = leftFiberTask
 
@@ -1386,12 +1483,7 @@ module Flow =
                 with error ->
                     cleanupError <- Some error
 
-                match cleanupError, executionError, exit with
-                | Some error, _, _ -> return Exit.Failure (EffectFlow.causeOfException error)
-                | None, Some error, _ -> return Exit.Failure (EffectFlow.causeOfException error)
-                | None, None, Some result -> return result
-                | None, None, None ->
-                    return Exit.Failure (Cause.Die (InvalidOperationException("Layer provisioning produced no outcome.")))
+                return combineCleanup cleanupError executionError exit "Layer provisioning produced no outcome."
             }
             #else
             ValueTask<Exit<'value, 'error>>(
@@ -1423,12 +1515,7 @@ module Flow =
                     with error ->
                         cleanupError <- Some error
 
-                    match cleanupError, executionError, exit with
-                    | Some error, _, _ -> return Exit.Failure (EffectFlow.causeOfException error)
-                    | None, Some error, _ -> return Exit.Failure (EffectFlow.causeOfException error)
-                    | None, None, Some result -> return result
-                    | None, None, None ->
-                        return Exit.Failure (Cause.Die (InvalidOperationException("Layer provisioning produced no outcome.")))
+                    return combineCleanup cleanupError executionError exit "Layer provisioning produced no outcome."
                 })
             #endif
         )

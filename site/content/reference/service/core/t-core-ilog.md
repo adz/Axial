@@ -5,7 +5,7 @@ weight: 1001
 type: docs
 ---
 
-Provides synchronous access to runtime logging.
+Provides synchronous access to explicit workflow logging.
 
 ## Signature
 

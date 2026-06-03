@@ -290,9 +290,10 @@ let pageSpecs = [
         OutPath = ["fiber"; "_index.md"]
         Title = "Fiber"
         Description = "Source-documented handle for running workflows."
-        Intro = "This page shows the `Fiber<'error, 'value>` handle used by FsFlow concurrency. A fiber represents a flow that has already been started in the background; it keeps the workflow's typed error and success values attached to the running work. The operations that create and consume fibers are still part of the [`Flow`](../flow/) API: use [`Flow.fork`](../flow/m-flow-fork/), [`Flow.join`](../flow/m-flow-join/), and [`Flow.interrupt`](../flow/m-flow-interrupt/) when a workflow needs explicit child execution. Prefer higher-level helpers such as `Flow.zipPar` or `Flow.race` when the code only needs parallel composition."
+        Intro = "This page shows the `Fiber<'error, 'value>` handle used by FsFlow concurrency. A fiber represents a flow that has already been started in the background; it keeps the workflow's typed error and success values attached to the running work, plus diagnostic metadata such as fiber id, parent id, start time, and lifecycle status. The operations that create and consume fibers are still part of the [`Flow`](../flow/) API: use [`Flow.fork`](../flow/m-flow-fork/), [`Flow.join`](../flow/m-flow-join/), and [`Flow.interrupt`](../flow/m-flow-interrupt/) when a workflow needs explicit child execution. Prefer higher-level helpers such as `Flow.zipPar` or `Flow.race` when the code only needs parallel composition."
         SymbolIds = [
-            "Core type", ["T:FsFlow.Fiber`2"]
+            "Core types", ["T:FsFlow.Fiber`2"; "T:FsFlow.FiberId"; "T:FsFlow.FiberStatus"; "T:FsFlow.FiberMetadata"; "T:FsFlow.FiberDump"]
+            "Module functions", ["M:FsFlow.Fiber.dump"]
         ]
         Alias = None
     }
@@ -311,10 +312,10 @@ let pageSpecs = [
         OutPath = ["cause"; "_index.md"]
         Title = "Cause"
         Description = "Documentation for the Cause of workflow failure."
-        Intro = "This page shows the `Cause<'error>` type, which distinguishes between expected domain failures, unexpected technical defects (exceptions), and administrative interruptions (cancellation). Understanding the cause allows FsFlow's runtime to make smart decisions about retries, cleanup, and observability."
+        Intro = "This page shows the `Cause<'error>` type, which distinguishes expected domain failures, unexpected technical defects, administrative interruptions, sequential failure composition, parallel failure composition, and diagnostic traces. Understanding the cause tree lets FsFlow preserve what happened during retries, cleanup, parallel execution, and observability boundaries without flattening everything into one exception or one typed error."
         SymbolIds = [
             "Core type", ["T:FsFlow.Cause`1"]
-            "Module functions", ["M:FsFlow.Cause.map"]
+            "Module functions", ["M:FsFlow.Cause.map"; "M:FsFlow.Cause.thenCause"; "M:FsFlow.Cause.both"; "M:FsFlow.Cause.traced"; "M:FsFlow.Cause.failures"; "M:FsFlow.Cause.defects"; "M:FsFlow.Cause.isInterrupted"; "M:FsFlow.Cause.prettyPrint"]
         ]
         Alias = None
     }

@@ -5,7 +5,7 @@ weight: 1000
 type: docs
 ---
 
-Provides synchronous access to file system operations.
+Provides access to common file, directory, and path operations.
 
 ## Signature
 

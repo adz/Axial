@@ -1,7 +1,7 @@
 ---
 title: "FileSystem.FileSystem.writeAllText"
 linkTitle: "writeAllText"
-weight: 2101
+weight: 2208
 type: docs
 ---
 
@@ -24,4 +24,4 @@ Writes all text through an explicit file-system service.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;unit</span>&gt;</span></code> |  |
+| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html">Flow</a>&lt;<span>'env,&#32;<a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-services-filesystem-filesystemerror.html">FileSystemError</a>,&#32;unit</span>&gt;</span></code> |  |

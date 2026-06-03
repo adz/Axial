@@ -116,16 +116,18 @@ module Layer =
         match leftExit, rightExit with
         | Exit.Success leftValue, Exit.Success rightValue ->
             Exit.Success (leftValue, rightValue)
-        | Exit.Failure leftCause, _ ->
+        | Exit.Failure leftCause, Exit.Failure rightCause ->
+            Exit.Failure (Cause.both leftCause rightCause)
+        | Exit.Failure leftCause, Exit.Success _ ->
             Exit.Failure leftCause
-        | _, Exit.Failure rightCause ->
+        | Exit.Success _, Exit.Failure rightCause ->
             Exit.Failure rightCause
 
     /// <summary>Builds two independent layers in parallel and returns both outputs.</summary>
     /// <remarks>
     /// Each branch is provisioned in a parent-owned child scope. When the parent scope closes,
     /// child scopes are closed in deterministic left-to-right order. If both branches fail,
-    /// the left failure is returned until richer parallel cause accumulation lands.
+    /// both failures are returned as a parallel cause.
     /// </remarks>
     let zipPar
         (left: Layer<'input, 'error, 'left>)

@@ -30,4 +30,4 @@ Builds two independent layers in parallel and returns both outputs.
 
  Each branch is provisioned in a parent-owned child scope. When the parent scope closes,
  child scopes are closed in deterministic left-to-right order. If both branches fail,
- the left failure is returned until richer parallel cause accumulation lands.
+ both failures are returned as a parallel cause.

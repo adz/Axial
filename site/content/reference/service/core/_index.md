@@ -9,10 +9,10 @@ This page shows the core service package: clock, logging, random numbers, GUID g
 ## Service types
 
 - [`IClock`](./t-core-iclock.md): Provides synchronous access to the current UTC clock.
-- [`ILog`](./t-core-ilog.md): Provides synchronous access to runtime logging.
+- [`ILog`](./t-core-ilog.md): Provides synchronous access to explicit workflow logging.
 - [`IRandom`](./t-core-irandom.md): Provides synchronous random-number generation.
 - [`IGuid`](./t-core-iguid.md): Provides synchronous GUID generation.
-- [`IEnvironmentVariables`](./t-core-ienvironmentvariables.md): Provides synchronous environment-variable lookup.
+- [`IEnvironmentVariables`](./t-core-ienvironmentvariables.md): Provides synchronous environment-variable access.
 - [`Core.EnvironmentVariableError`](./t-core-environmentvariableerror.md): Describes a meaningful environment-variable failure.
 - [`Core.BaseRuntimeError`](./t-core-baseruntimeerror.md): Describes a service-provider bootstrap failure while building the base runtime.
 - [`Core.BaseRuntime`](./t-core-baseruntime.md): Helpers for constructing the standard explicit service bundle used by workflow hosts.
@@ -26,6 +26,9 @@ This page shows the core service package: clock, logging, random numbers, GUID g
 ## Clock
 
 - [`Core.Clock.now`](./m-core-clock-now.md): Reads the current UTC timestamp from an explicit clock service.
+- [`Core.Clock.utcDateTime`](./m-core-clock-utcdatetime.md): Reads the current UTC date/time from an explicit clock service.
+- [`Core.Clock.unixTimeSeconds`](./m-core-clock-unixtimeseconds.md): Reads the current Unix timestamp in seconds from an explicit clock service.
+- [`Core.Clock.unixTimeMilliseconds`](./m-core-clock-unixtimemilliseconds.md): Reads the current Unix timestamp in milliseconds from an explicit clock service.
 - [`Core.Clock.live`](./p-core-clock-live.md): Creates a live clock backed by <a href="https://learn.microsoft.com/dotnet/api/system.datetimeoffset.utcnow">DateTimeOffset.UtcNow</a>.
 - [`layer`](./p-core-clock-layer.md):
  The <code>layer { }</code> computation expression for provisioning explicit service environments.
@@ -34,20 +37,33 @@ This page shows the core service package: clock, logging, random numbers, GUID g
 
 ## Logging
 
+- [`Core.Log.log`](./m-core-log-log.md): Writes a log message at the requested level through an explicit logging service.
+- [`Core.Log.trace`](./m-core-log-trace.md): Writes a trace log message through an explicit logging service.
+- [`Core.Log.debug`](./m-core-log-debug.md): Writes a debug log message through an explicit logging service.
 - [`Core.Log.info`](./m-core-log-info.md): Writes an informational log message through an explicit logging service.
+- [`Core.Log.warning`](./m-core-log-warning.md): Writes a warning log message through an explicit logging service.
+- [`Core.Log.error`](./m-core-log-error.md): Writes an error log message through an explicit logging service.
+- [`Core.Log.critical`](./m-core-log-critical.md): Writes a critical log message through an explicit logging service.
 - [`Core.Log.live`](./p-core-log-live.md): Creates a no-op logger for tests and local service bundles.
 - [`layer`](./p-core-log-layer.md):
  The <code>layer { }</code> computation expression for provisioning explicit service environments.
 
+- [`Core.Log.fromSink`](./m-core-log-fromsink.md): Creates a logger from a synchronous sink function.
 
 ## Random
 
+- [`Core.Random.next`](./m-core-random-next.md): Reads a non-negative random integer from an explicit random-number service.
+- [`Core.Random.nextMax`](./m-core-random-nextmax.md): Reads a random integer less than the supplied maximum from an explicit random-number service.
 - [`Core.Random.nextInt`](./m-core-random-nextint.md): Reads a random integer from an explicit random-number service.
+- [`Core.Random.nextDouble`](./m-core-random-nextdouble.md): Reads a random floating-point value from an explicit random-number service.
+- [`Core.Random.nextBytes`](./m-core-random-nextbytes.md): Fills a byte buffer through an explicit random-number service.
+- [`Core.Random.bytes`](./m-core-random-bytes.md): Creates a byte array filled through an explicit random-number service.
 - [`Core.Random.live`](./p-core-random-live.md): Creates a live random-number generator backed by <a href="https://learn.microsoft.com/dotnet/api/system.random">Random</a>.
 - [`layer`](./p-core-random-layer.md):
  The <code>layer { }</code> computation expression for provisioning explicit service environments.
 
 - [`Core.Random.fromValue`](./m-core-random-fromvalue.md): Creates a deterministic random generator that always returns the supplied value.
+- [`Core.Random.fromFixed`](./m-core-random-fromfixed.md): Creates a deterministic random generator from fixed integer, double, and byte values.
 
 ## GUID
 
@@ -61,6 +77,10 @@ This page shows the core service package: clock, logging, random numbers, GUID g
 ## Environment variables
 
 - [`Core.EnvironmentVariables.tryGet`](./m-core-environmentvariables-tryget.md): Reads a raw environment-variable value from an explicit environment-variable service.
+- [`Core.EnvironmentVariables.getAll`](./m-core-environmentvariables-getall.md): Returns all visible environment variables from an explicit environment-variable service.
+- [`Core.EnvironmentVariables.set`](./m-core-environmentvariables-set.md): Sets or updates an environment variable through an explicit environment-variable service.
+- [`Core.EnvironmentVariables.clear`](./m-core-environmentvariables-clear.md): Clears an environment variable through an explicit environment-variable service.
+- [`Core.EnvironmentVariables.expand`](./m-core-environmentvariables-expand.md): Expands environment-variable references in text through an explicit environment-variable service.
 - [`Core.EnvironmentVariables.live`](./p-core-environmentvariables-live.md): Creates a live provider backed by the current process environment.
 - [`layer`](./p-core-environmentvariables-layer.md):
  The <code>layer { }</code> computation expression for provisioning explicit service environments.
@@ -69,6 +89,11 @@ This page shows the core service package: clock, logging, random numbers, GUID g
 - [`Core.EnvironmentVariable.tryGet`](./m-core-environmentvariable-tryget.md): Reads a raw string environment variable without wrapping it in a result.
 - [`Core.EnvironmentVariable.get`](./m-core-environmentvariable-get.md): Reads a raw string environment variable through an explicit service.
 - [`Core.EnvironmentVariable.getInt`](./m-core-environmentvariable-getint.md): Reads an integer environment variable through an explicit service.
+- [`Core.EnvironmentVariable.getInt64`](./m-core-environmentvariable-getint64.md): Reads a 64-bit integer environment variable through an explicit service.
+- [`Core.EnvironmentVariable.getDouble`](./m-core-environmentvariable-getdouble.md): Reads a floating-point environment variable through an explicit service.
+- [`Core.EnvironmentVariable.getDecimal`](./m-core-environmentvariable-getdecimal.md): Reads a decimal environment variable through an explicit service.
 - [`Core.EnvironmentVariable.getGuid`](./m-core-environmentvariable-getguid.md): Reads a GUID environment variable through an explicit service.
+- [`Core.EnvironmentVariable.getUri`](./m-core-environmentvariable-geturi.md): Reads a URI environment variable through an explicit service.
+- [`Core.EnvironmentVariable.getTimeSpan`](./m-core-environmentvariable-gettimespan.md): Reads a time span environment variable through an explicit service.
 - [`Core.EnvironmentVariable.getBool`](./m-core-environmentvariable-getbool.md): Reads a boolean environment variable through an explicit service.
 - [`Core.EnvironmentVariableErrors.describe`](./m-core-environmentvariableerrors-describe.md): Formats a human-readable description for an error.

@@ -5,7 +5,7 @@ weight: 1004
 type: docs
 ---
 
-Provides synchronous environment-variable lookup.
+Provides synchronous environment-variable access.
 
 ## Signature
 

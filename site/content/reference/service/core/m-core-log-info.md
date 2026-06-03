@@ -1,7 +1,7 @@
 ---
 title: "Core.Log.info"
 linkTitle: "info"
-weight: 2300
+weight: 2303
 type: docs
 ---
 

@@ -18,6 +18,8 @@ Choose the function that matches your intent:
 | **Domain Error** (Expected) | `Flow.fail "Not found"` | `Cause.Fail "Not found"` |
 | **Defect/Panic** (Bug) | `Flow.die (exn "Database down")` | `Cause.Die exn` |
 | **Interruption** | `Flow.interrupt` or runtime cancellation | `Cause.Interrupt` |
+| **Sequential Failures** | Workflow fails, then cleanup fails | `Cause.Then (workflowCause, cleanupCause)` |
+| **Parallel Failures** | Parallel branches both fail | `Cause.Both (leftCause, rightCause)` |
 
 ### Bridging Exceptions
 Use `Flow.catch` to convert specific exceptions into domain errors. Exceptions not caught by the handler will remain as `Cause.Die`.
@@ -48,10 +50,11 @@ In complex orchestration like `Flow.zipPar` (running two flows concurrently), th
 ### 2. Lossless Concurrency Coordination
 When a fiber fails, you often need to perform cleanup (e.g., `ensuring` or `onExit`). 
 
-By reifying defects into `Cause.Die`, FsFlow passes the exact cause—including the original exception and stack trace—to your finalizers as a value. This enables high-fidelity observability: you can log exactly why a background fiber died without crashing the host process, and without needing a `try...with` block inside every finalizer.
+By reifying defects into `Cause.Die`, FsFlow passes the exact cause, including the original exception and stack trace, to your finalizers as a value. This enables high-fidelity observability: you can log exactly why a background fiber died without crashing the host process, and without needing a `try...with` block inside every finalizer.
+
+If cleanup itself fails after the workflow has already failed, FsFlow does not discard either side. It returns `Cause.Then (workflowCause, cleanupCause)` so observability and host boundaries can see the original failure and the cleanup defect in order.
 
 ### 3. Precision in Retries and Fallbacks
 The distinction between `Fail` and `Die` allows for smarter defaults:
 *   **Retries** should usually target `Fail` (e.g., a transient network error), but never `Die` (e.g., a `NullReferenceException`). Retrying a bug is usually a waste of resources.
 *   **Fallbacks** (`orElse`) usually target domain failures. If a workflow has a defect, it usually indicates a corrupted state that fallback logic wasn't designed to handle.
-ndle.
