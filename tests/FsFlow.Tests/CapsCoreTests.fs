@@ -19,23 +19,46 @@ module CapsCoreTests =
     [<Fact>]
     let ``clock random guid and environment-variable services are deterministic when fixed`` () =
         let clock = Clock.fromValue (DateTimeOffset(2026, 5, 10, 12, 0, 0, TimeSpan.Zero))
-        let random = Random.fromValue 4
+        let random = Random.fromFixed 4 0.25 0x2Auy
         let guid = Guid.fromValue (global.System.Guid.Parse "11111111-1111-1111-1111-111111111111")
         let envVars =
             EnvironmentVariables.fromPairs
                 [ "FSFLOW_CAPS_PORT", "8080"
+                  "FSFLOW_CAPS_LONG", "9000000000"
+                  "FSFLOW_CAPS_DOUBLE", "12.5"
+                  "FSFLOW_CAPS_DECIMAL", "99.95"
                   "FSFLOW_CAPS_ENABLED", "true"
-                  "FSFLOW_CAPS_SESSION", "22222222-2222-2222-2222-222222222222" ]
+                  "FSFLOW_CAPS_SESSION", "22222222-2222-2222-2222-222222222222"
+                  "FSFLOW_CAPS_URI", "https://example.com/api"
+                  "FSFLOW_CAPS_TIMEOUT", "00:00:05" ]
         let runtime = makeRuntime clock random guid envVars
 
         test <@ Flow.runSync runtime Clock.now = Exit.Success (DateTimeOffset(2026, 5, 10, 12, 0, 0, TimeSpan.Zero)) @>
+        test <@ Flow.runSync runtime Clock.utcDateTime = Exit.Success (DateTime(2026, 5, 10, 12, 0, 0, DateTimeKind.Utc)) @>
+        test <@ Flow.runSync runtime Clock.unixTimeSeconds = Exit.Success 1778414400L @>
+        test <@ Flow.runSync runtime Random.next = Exit.Success 4 @>
+        test <@ Flow.runSync runtime (Random.nextMax 10) = Exit.Success 4 @>
         test <@ Flow.runSync runtime (Random.nextInt 0 10) = Exit.Success 4 @>
+        test <@ Flow.runSync runtime Random.nextDouble = Exit.Success 0.25 @>
+        test <@ Flow.runSync runtime (Random.bytes 3) = Exit.Success [| 0x2Auy; 0x2Auy; 0x2Auy |] @>
         test <@ Flow.runSync runtime Guid.newGuid = Exit.Success (global.System.Guid.Parse "11111111-1111-1111-1111-111111111111") @>
         test <@ Flow.runSync runtime (EnvironmentVariables.tryGet "FSFLOW_CAPS_PORT") = Exit.Success (Some "8080") @>
+        test <@ Flow.runSync runtime EnvironmentVariables.getAll |> function Exit.Success values -> values["FSFLOW_CAPS_PORT"] = "8080" | _ -> false @>
+        test <@ Flow.runSync runtime (EnvironmentVariables.expand "%FSFLOW_CAPS_PORT%") = Exit.Success "8080" @>
         test <@ Flow.runSync runtime (EnvironmentVariable.get "FSFLOW_CAPS_PORT") = Exit.Success "8080" @>
         test <@ Flow.runSync runtime (EnvironmentVariable.getInt "FSFLOW_CAPS_PORT") = Exit.Success 8080 @>
+        test <@ Flow.runSync runtime (EnvironmentVariable.getInt64 "FSFLOW_CAPS_LONG") = Exit.Success 9000000000L @>
+        test <@ Flow.runSync runtime (EnvironmentVariable.getDouble "FSFLOW_CAPS_DOUBLE") = Exit.Success 12.5 @>
+        test <@ Flow.runSync runtime (EnvironmentVariable.getDecimal "FSFLOW_CAPS_DECIMAL") = Exit.Success 99.95M @>
         test <@ Flow.runSync runtime (EnvironmentVariable.getBool "FSFLOW_CAPS_ENABLED") = Exit.Success true @>
         test <@ Flow.runSync runtime (EnvironmentVariable.getGuid "FSFLOW_CAPS_SESSION") = Exit.Success (global.System.Guid.Parse "22222222-2222-2222-2222-222222222222") @>
+        test <@ Flow.runSync runtime (EnvironmentVariable.getUri "FSFLOW_CAPS_URI") = Exit.Success (Uri "https://example.com/api") @>
+        test <@ Flow.runSync runtime (EnvironmentVariable.getTimeSpan "FSFLOW_CAPS_TIMEOUT") = Exit.Success (TimeSpan.FromSeconds 5.0) @>
+
+        test <@ Flow.runSync runtime (EnvironmentVariables.set "FSFLOW_CAPS_DYNAMIC" "set") = Exit.Success () @>
+        test <@ Flow.runSync runtime (EnvironmentVariable.get "FSFLOW_CAPS_DYNAMIC") = Exit.Success "set" @>
+        test <@ Flow.runSync runtime (EnvironmentVariables.clear "FSFLOW_CAPS_DYNAMIC") = Exit.Success () @>
+        test <@ Flow.runSync runtime (EnvironmentVariables.tryGet "FSFLOW_CAPS_DYNAMIC") = Exit.Success None @>
 
     [<Fact>]
     let ``environment variable helpers return typed errors for missing and invalid values`` () =

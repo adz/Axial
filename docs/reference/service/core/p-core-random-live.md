@@ -1,7 +1,7 @@
 ---
 title: "Core.Random.live"
 linkTitle: "live"
-weight: 2401
+weight: 2406
 ---
 
 Creates a live random-number generator backed by <a href="https://learn.microsoft.com/dotnet/api/system.random">Random</a>.

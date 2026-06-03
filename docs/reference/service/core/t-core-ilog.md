@@ -4,7 +4,7 @@ linkTitle: "ILog"
 weight: 1001
 ---
 
-Provides synchronous access to runtime logging.
+Provides synchronous access to explicit workflow logging.
 
 ## Signature
 

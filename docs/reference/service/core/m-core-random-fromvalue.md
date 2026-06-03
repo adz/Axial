@@ -1,7 +1,7 @@
 ---
 title: "Core.Random.fromValue"
 linkTitle: "fromValue"
-weight: 2403
+weight: 2408
 ---
 
 Creates a deterministic random generator that always returns the supplied value.

@@ -145,11 +145,19 @@ module ApiShapeTests =
 
         moduleType typeof<FsFlow.Services.Core.EnvironmentVariableError> "FsFlow.Services.Core.Clock"
         |> publicStaticMemberNames
-        |> assertContainsAll [ "now"; "layer"; "live"; "fromValue" ]
+        |> assertContainsAll [ "now"; "utcDateTime"; "unixTimeSeconds"; "unixTimeMilliseconds"; "layer"; "live"; "fromValue" ]
+
+        moduleType typeof<FsFlow.Services.Core.EnvironmentVariableError> "FsFlow.Services.Core.Log"
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "log"; "trace"; "debug"; "info"; "warning"; "error"; "critical"; "layer"; "live"; "fromSink" ]
+
+        moduleType typeof<FsFlow.Services.Core.EnvironmentVariableError> "FsFlow.Services.Core.Random"
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "next"; "nextMax"; "nextInt"; "nextDouble"; "nextBytes"; "bytes"; "layer"; "live"; "fromValue"; "fromFixed" ]
 
         moduleType typeof<FsFlow.Services.Core.EnvironmentVariableError> "FsFlow.Services.Core.EnvironmentVariable"
         |> publicStaticMemberNames
-        |> assertContainsAll [ "get"; "tryGet"; "getInt"; "getGuid"; "getBool" ]
+        |> assertContainsAll [ "get"; "tryGet"; "getInt"; "getInt64"; "getDouble"; "getDecimal"; "getGuid"; "getUri"; "getTimeSpan"; "getBool" ]
 
     [<Fact>]
     let ``service and layer surfaces keep expected public shape`` () =

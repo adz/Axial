@@ -1,22 +1,21 @@
 ---
-title: "Core.Random.nextInt"
-linkTitle: "nextInt"
-weight: 2402
+title: "Core.Random.nextMax"
+linkTitle: "nextMax"
+weight: 2401
 ---
 
-Reads a random integer from an explicit random-number service.
+Reads a random integer less than the supplied maximum from an explicit random-number service.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Core.Random.nextInt&#32;<span>minInclusive&#32;maxExclusive</span></span></code>
+<code><span>Core.Random.nextMax&#32;<span>maxExclusive</span></span></code>
 </div>
 
 ## Parameters
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `minInclusive` | <code>int</code> |  |
 | `maxExclusive` | <code>int</code> |  |
 
 ## Returns

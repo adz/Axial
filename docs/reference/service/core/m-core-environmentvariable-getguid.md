@@ -1,7 +1,7 @@
 ---
 title: "Core.EnvironmentVariable.getGuid"
 linkTitle: "getGuid"
-weight: 2607
+weight: 2614
 ---
 
 Reads a GUID environment variable through an explicit service.

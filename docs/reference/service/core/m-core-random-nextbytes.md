@@ -1,22 +1,22 @@
 ---
-title: "Core.Log.info"
-linkTitle: "info"
-weight: 2303
+title: "Core.Random.nextBytes"
+linkTitle: "nextBytes"
+weight: 2404
 ---
 
-Writes an informational log message through an explicit logging service.
+Fills a byte buffer through an explicit random-number service.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Core.Log.info&#32;<span>message</span></span></code>
+<code><span>Core.Random.nextBytes&#32;<span>buffer</span></span></code>
 </div>
 
 ## Parameters
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `message` | <code>string</code> |  |
+| `buffer` | <code><span>byte&#32;array</span></code> |  |
 
 ## Returns
 

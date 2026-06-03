@@ -1,22 +1,23 @@
 ---
-title: "Core.Log.info"
-linkTitle: "info"
-weight: 2303
+title: "Core.EnvironmentVariables.set"
+linkTitle: "set"
+weight: 2602
 ---
 
-Writes an informational log message through an explicit logging service.
+Sets or updates an environment variable through an explicit environment-variable service.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Core.Log.info&#32;<span>message</span></span></code>
+<code><span>Core.EnvironmentVariables.set&#32;<span>name&#32;value</span></span></code>
 </div>
 
 ## Parameters
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `message` | <code>string</code> |  |
+| `name` | <code>string</code> |  |
+| `value` | <code>string</code> |  |
 
 ## Returns
 

@@ -1,7 +1,7 @@
 ---
 title: "Core.EnvironmentVariable.getInt"
 linkTitle: "getInt"
-weight: 2606
+weight: 2610
 ---
 
 Reads an integer environment variable through an explicit service.

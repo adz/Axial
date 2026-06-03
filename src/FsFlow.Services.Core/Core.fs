@@ -1,6 +1,7 @@
 namespace FsFlow.Services.Core
 
 open System
+open System.Collections
 open System.Collections.Generic
 open System.Globalization
 open System.Threading.Tasks
@@ -69,6 +70,18 @@ module Clock =
         Service<IClock>.get()
         |> Flow.map (fun clock -> clock.UtcNow())
 
+    /// <summary>Reads the current UTC date/time from an explicit clock service.</summary>
+    let utcDateTime<'env, 'error when 'env :> IHas<IClock>> : Flow<'env, 'error, DateTime> =
+        now |> Flow.map _.UtcDateTime
+
+    /// <summary>Reads the current Unix timestamp in seconds from an explicit clock service.</summary>
+    let unixTimeSeconds<'env, 'error when 'env :> IHas<IClock>> : Flow<'env, 'error, int64> =
+        now |> Flow.map _.ToUnixTimeSeconds()
+
+    /// <summary>Reads the current Unix timestamp in milliseconds from an explicit clock service.</summary>
+    let unixTimeMilliseconds<'env, 'error when 'env :> IHas<IClock>> : Flow<'env, 'error, int64> =
+        now |> Flow.map _.ToUnixTimeMilliseconds()
+
     /// <summary>Creates a live clock backed by <see cref="P:System.DateTimeOffset.UtcNow" />.</summary>
     let live : IClock =
         { new IClock with
@@ -86,15 +99,47 @@ module Clock =
 /// <summary>Helpers for the logging service.</summary>
 [<RequireQualifiedAccess>]
 module Log =
+    /// <summary>Writes a log message at the requested level through an explicit logging service.</summary>
+    let log<'env, 'error when 'env :> IHas<ILog>>
+        (level: LogLevel)
+        (message: string)
+        : Flow<'env, 'error, unit> =
+        Service<ILog>.get()
+        |> Flow.map (fun log -> log.Log level message)
+
+    /// <summary>Writes a trace log message through an explicit logging service.</summary>
+    let trace<'env, 'error when 'env :> IHas<ILog>> (message: string) : Flow<'env, 'error, unit> =
+        log LogLevel.Trace message
+
+    /// <summary>Writes a debug log message through an explicit logging service.</summary>
+    let debug<'env, 'error when 'env :> IHas<ILog>> (message: string) : Flow<'env, 'error, unit> =
+        log LogLevel.Debug message
+
     /// <summary>Writes an informational log message through an explicit logging service.</summary>
     let info<'env, 'error when 'env :> IHas<ILog>> (message: string) : Flow<'env, 'error, unit> =
-        Service<ILog>.get()
-        |> Flow.map (fun log -> log.Info message)
+        log LogLevel.Information message
+
+    /// <summary>Writes a warning log message through an explicit logging service.</summary>
+    let warning<'env, 'error when 'env :> IHas<ILog>> (message: string) : Flow<'env, 'error, unit> =
+        log LogLevel.Warning message
+
+    /// <summary>Writes an error log message through an explicit logging service.</summary>
+    let error<'env, 'error when 'env :> IHas<ILog>> (message: string) : Flow<'env, 'error, unit> =
+        log LogLevel.Error message
+
+    /// <summary>Writes a critical log message through an explicit logging service.</summary>
+    let critical<'env, 'error when 'env :> IHas<ILog>> (message: string) : Flow<'env, 'error, unit> =
+        log LogLevel.Critical message
 
     /// <summary>Creates a no-op logger for tests and local service bundles.</summary>
     let live : ILog =
         { new ILog with
-            member _.Info _ = () }
+            member _.Log _ _ = () }
+
+    /// <summary>Creates a logger from a synchronous sink function.</summary>
+    let fromSink (sink: LogLevel -> string -> unit) : ILog =
+        { new ILog with
+            member _.Log level message = sink level message }
 
     /// <summary>Builds the live logger as a layer.</summary>
     let layer : Layer<unit, Never, ILog> =
@@ -103,6 +148,18 @@ module Log =
 /// <summary>Helpers for the random-number service.</summary>
 [<RequireQualifiedAccess>]
 module Random =
+    /// <summary>Reads a non-negative random integer from an explicit random-number service.</summary>
+    let next<'env, 'error when 'env :> IHas<IRandom>> : Flow<'env, 'error, int> =
+        Service<IRandom>.get()
+        |> Flow.map (fun random -> random.Next())
+
+    /// <summary>Reads a random integer less than the supplied maximum from an explicit random-number service.</summary>
+    let nextMax<'env, 'error when 'env :> IHas<IRandom>>
+        (maxExclusive: int)
+        : Flow<'env, 'error, int> =
+        Service<IRandom>.get()
+        |> Flow.map (fun random -> random.NextMax maxExclusive)
+
     /// <summary>Reads a random integer from an explicit random-number service.</summary>
     let nextInt<'env, 'error when 'env :> IHas<IRandom>>
         (minInclusive: int)
@@ -111,24 +168,96 @@ module Random =
         Service<IRandom>.get()
         |> Flow.map (fun random -> random.NextInt minInclusive maxExclusive)
 
+    /// <summary>Reads a random floating-point value from an explicit random-number service.</summary>
+    let nextDouble<'env, 'error when 'env :> IHas<IRandom>> : Flow<'env, 'error, float> =
+        Service<IRandom>.get()
+        |> Flow.map (fun random -> random.NextDouble())
+
+    /// <summary>Fills a byte buffer through an explicit random-number service.</summary>
+    let nextBytes<'env, 'error when 'env :> IHas<IRandom>>
+        (buffer: byte array)
+        : Flow<'env, 'error, unit> =
+        Service<IRandom>.get()
+        |> Flow.map (fun random -> random.NextBytes buffer)
+
+    /// <summary>Creates a byte array filled through an explicit random-number service.</summary>
+    let bytes<'env, 'error when 'env :> IHas<IRandom>>
+        (count: int)
+        : Flow<'env, 'error, byte array> =
+        flow {
+            let buffer = Array.zeroCreate<byte> count
+            do! nextBytes buffer
+            return buffer
+        }
+
     /// <summary>Creates a live random-number generator backed by <see cref="T:System.Random" />.</summary>
     let live : IRandom =
         let rng = System.Random()
         let gate = obj()
 
         { new IRandom with
+            member _.Next() =
+                #if FABLE_COMPILER
+                rng.Next()
+                #else
+                lock gate rng.Next
+                #endif
+
+            member _.NextMax maxExclusive =
+                #if FABLE_COMPILER
+                rng.Next(maxExclusive)
+                #else
+                lock gate (fun () -> rng.Next maxExclusive)
+                #endif
+
             member _.NextInt minInclusive maxExclusive =
                 #if FABLE_COMPILER
                 rng.Next(minInclusive, maxExclusive)
                 #else
                 lock gate (fun () -> rng.Next(minInclusive, maxExclusive))
                 #endif
+
+            member _.NextDouble() =
+                #if FABLE_COMPILER
+                rng.NextDouble()
+                #else
+                lock gate rng.NextDouble
+                #endif
+
+            member _.NextBytes buffer =
+                #if FABLE_COMPILER
+                for index in 0 .. buffer.Length - 1 do
+                    buffer[index] <- byte (rng.Next(0, 256))
+                #else
+                lock gate (fun () -> rng.NextBytes buffer)
+                #endif
         }
 
     /// <summary>Creates a deterministic random generator that always returns the supplied value.</summary>
     let fromValue (value: int) : IRandom =
         { new IRandom with
-            member _.NextInt _ _ = value }
+            member _.Next() = value
+            member _.NextMax _ = value
+            member _.NextInt _ _ = value
+            member _.NextDouble() = float value
+            member _.NextBytes buffer =
+                for index in 0 .. buffer.Length - 1 do
+                    buffer[index] <- byte value }
+
+    /// <summary>Creates a deterministic random generator from fixed integer, double, and byte values.</summary>
+    let fromFixed
+        (integer: int)
+        (doubleValue: float)
+        (byteValue: byte)
+        : IRandom =
+        { new IRandom with
+            member _.Next() = integer
+            member _.NextMax _ = integer
+            member _.NextInt _ _ = integer
+            member _.NextDouble() = doubleValue
+            member _.NextBytes buffer =
+                for index in 0 .. buffer.Length - 1 do
+                    buffer[index] <- byteValue }
 
     /// <summary>Builds the live random-number generator as a layer.</summary>
     let layer : Layer<unit, Never, IRandom> =
@@ -166,6 +295,34 @@ module EnvironmentVariables =
         Service<IEnvironmentVariables>.get()
         |> Flow.map (fun environmentVariables -> environmentVariables.TryGet name)
 
+    /// <summary>Returns all visible environment variables from an explicit environment-variable service.</summary>
+    let getAll<'env, 'error when 'env :> IHas<IEnvironmentVariables>>
+        : Flow<'env, 'error, IReadOnlyDictionary<string, string>> =
+        Service<IEnvironmentVariables>.get()
+        |> Flow.map (fun environmentVariables -> environmentVariables.GetAll())
+
+    /// <summary>Sets or updates an environment variable through an explicit environment-variable service.</summary>
+    let set<'env, 'error when 'env :> IHas<IEnvironmentVariables>>
+        (name: string)
+        (value: string)
+        : Flow<'env, 'error, unit> =
+        Service<IEnvironmentVariables>.get()
+        |> Flow.map (fun environmentVariables -> environmentVariables.Set(name, Some value))
+
+    /// <summary>Clears an environment variable through an explicit environment-variable service.</summary>
+    let clear<'env, 'error when 'env :> IHas<IEnvironmentVariables>>
+        (name: string)
+        : Flow<'env, 'error, unit> =
+        Service<IEnvironmentVariables>.get()
+        |> Flow.map (fun environmentVariables -> environmentVariables.Set(name, None))
+
+    /// <summary>Expands environment-variable references in text through an explicit environment-variable service.</summary>
+    let expand<'env, 'error when 'env :> IHas<IEnvironmentVariables>>
+        (text: string)
+        : Flow<'env, 'error, string> =
+        Service<IEnvironmentVariables>.get()
+        |> Flow.map (fun environmentVariables -> environmentVariables.Expand text)
+
     /// <summary>Creates a live provider backed by the current process environment.</summary>
     let live : IEnvironmentVariables =
         { new IEnvironmentVariables with
@@ -176,6 +333,35 @@ module EnvironmentVariables =
                 match Environment.GetEnvironmentVariable name with
                 | null -> None
                 | value -> Some value
+                #endif
+
+            member _.Set(name, value) =
+                #if FABLE_COMPILER
+                ignore name
+                ignore value
+                #else
+                Environment.SetEnvironmentVariable(name, Option.toObj value)
+                #endif
+
+            member _.Expand text =
+                #if FABLE_COMPILER
+                text
+                #else
+                Environment.ExpandEnvironmentVariables text
+                #endif
+
+            member _.GetAll() =
+                #if FABLE_COMPILER
+                Dictionary<string, string>() :> IReadOnlyDictionary<string, string>
+                #else
+                let values = Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                let environmentVariables = Environment.GetEnvironmentVariables()
+
+                for entry in environmentVariables do
+                    let entry = entry :?> DictionaryEntry
+                    values[string entry.Key] <- string entry.Value
+
+                values :> IReadOnlyDictionary<string, string>
                 #endif
         }
 
@@ -191,7 +377,19 @@ module EnvironmentVariables =
             member _.TryGet name =
                 match lookup.TryGetValue(name.ToLowerInvariant()) with
                 | true, value -> Some value
-                | false, _ -> None }
+                | false, _ -> None
+
+            member _.Set(name, value) =
+                match value with
+                | Some value -> lookup[name.ToLowerInvariant()] <- value
+                | None -> lookup.Remove(name.ToLowerInvariant()) |> ignore
+
+            member _.Expand text =
+                lookup
+                |> Seq.fold (fun (expanded: string) pair -> expanded.Replace("%" + pair.Key + "%", pair.Value)) text
+
+            member _.GetAll() =
+                lookup :> IReadOnlyDictionary<string, string> }
         #else
         let lookup = Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
 
@@ -202,7 +400,19 @@ module EnvironmentVariables =
             member _.TryGet name =
                 match lookup.TryGetValue name with
                 | true, value -> Some value
-                | false, _ -> None }
+                | false, _ -> None
+
+            member _.Set(name, value) =
+                match value with
+                | Some value -> lookup[name] <- value
+                | None -> lookup.Remove name |> ignore
+
+            member _.Expand text =
+                lookup
+                |> Seq.fold (fun (expanded: string) pair -> expanded.Replace("%" + pair.Key + "%", pair.Value)) text
+
+            member _.GetAll() =
+                lookup :> IReadOnlyDictionary<string, string> }
         #endif
 
     /// <summary>Builds the live environment-variable service as a layer.</summary>
@@ -256,12 +466,57 @@ module EnvironmentVariable =
             | true, parsed -> Some parsed
             | false, _ -> None) name
 
+    /// <summary>Reads a 64-bit integer environment variable through an explicit service.</summary>
+    let getInt64<'env when 'env :> IHas<IEnvironmentVariables>>
+        (name: string)
+        : Flow<'env, EnvironmentVariableError, int64> =
+        readParsed "a 64-bit integer" (fun value ->
+            match Int64.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture) with
+            | true, parsed -> Some parsed
+            | false, _ -> None) name
+
+    /// <summary>Reads a floating-point environment variable through an explicit service.</summary>
+    let getDouble<'env when 'env :> IHas<IEnvironmentVariables>>
+        (name: string)
+        : Flow<'env, EnvironmentVariableError, float> =
+        readParsed "a floating-point number" (fun value ->
+            match Double.TryParse(value, NumberStyles.Float ||| NumberStyles.AllowThousands, CultureInfo.InvariantCulture) with
+            | true, parsed -> Some parsed
+            | false, _ -> None) name
+
+    /// <summary>Reads a decimal environment variable through an explicit service.</summary>
+    let getDecimal<'env when 'env :> IHas<IEnvironmentVariables>>
+        (name: string)
+        : Flow<'env, EnvironmentVariableError, decimal> =
+        readParsed "a decimal number" (fun value ->
+            match Decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture) with
+            | true, parsed -> Some parsed
+            | false, _ -> None) name
+
     /// <summary>Reads a GUID environment variable through an explicit service.</summary>
     let getGuid<'env when 'env :> IHas<IEnvironmentVariables>>
         (name: string)
         : Flow<'env, EnvironmentVariableError, global.System.Guid> =
         readParsed "a GUID" (fun value ->
             match Guid.TryParse value with
+            | true, parsed -> Some parsed
+            | false, _ -> None) name
+
+    /// <summary>Reads a URI environment variable through an explicit service.</summary>
+    let getUri<'env when 'env :> IHas<IEnvironmentVariables>>
+        (name: string)
+        : Flow<'env, EnvironmentVariableError, Uri> =
+        readParsed "an absolute URI" (fun value ->
+            match Uri.TryCreate(value, UriKind.Absolute) with
+            | true, parsed -> Some parsed
+            | false, _ -> None) name
+
+    /// <summary>Reads a time span environment variable through an explicit service.</summary>
+    let getTimeSpan<'env when 'env :> IHas<IEnvironmentVariables>>
+        (name: string)
+        : Flow<'env, EnvironmentVariableError, TimeSpan> =
+        readParsed "a time span" (fun value ->
+            match TimeSpan.TryParse(value, CultureInfo.InvariantCulture) with
             | true, parsed -> Some parsed
             | false, _ -> None) name
 

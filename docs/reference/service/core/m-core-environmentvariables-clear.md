@@ -1,22 +1,22 @@
 ---
-title: "Core.Log.info"
-linkTitle: "info"
-weight: 2303
+title: "Core.EnvironmentVariables.clear"
+linkTitle: "clear"
+weight: 2603
 ---
 
-Writes an informational log message through an explicit logging service.
+Clears an environment variable through an explicit environment-variable service.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Core.Log.info&#32;<span>message</span></span></code>
+<code><span>Core.EnvironmentVariables.clear&#32;<span>name</span></span></code>
 </div>
 
 ## Parameters
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `message` | <code>string</code> |  |
+| `name` | <code>string</code> |  |
 
 ## Returns
 

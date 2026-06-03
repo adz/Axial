@@ -1,15 +1,15 @@
 ---
-title: "Core.Log.info"
-linkTitle: "info"
-weight: 2303
+title: "Core.Log.warning"
+linkTitle: "warning"
+weight: 2304
 ---
 
-Writes an informational log message through an explicit logging service.
+Writes a warning log message through an explicit logging service.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Core.Log.info&#32;<span>message</span></span></code>
+<code><span>Core.Log.warning&#32;<span>message</span></span></code>
 </div>
 
 ## Parameters

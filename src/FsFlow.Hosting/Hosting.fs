@@ -23,7 +23,14 @@ module Hosting =
                 let inner = loggerFactory.CreateLogger("FsFlow")
 
                 { new ILog with
-                    member _.Info message = inner.LogInformation message }
+                    member _.Log level message =
+                        match level with
+                        | LogLevel.Trace -> inner.LogTrace message
+                        | LogLevel.Debug -> inner.LogDebug message
+                        | LogLevel.Information -> inner.LogInformation message
+                        | LogLevel.Warning -> inner.LogWarning message
+                        | LogLevel.Error -> inner.LogError message
+                        | LogLevel.Critical -> inner.LogCritical message }
             | _ ->
                 Log.live
 

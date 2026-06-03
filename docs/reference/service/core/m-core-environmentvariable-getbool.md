@@ -1,7 +1,7 @@
 ---
 title: "Core.EnvironmentVariable.getBool"
 linkTitle: "getBool"
-weight: 2608
+weight: 2617
 ---
 
 Reads a boolean environment variable through an explicit service.

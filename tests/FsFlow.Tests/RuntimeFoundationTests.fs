@@ -393,10 +393,9 @@ module RuntimeFoundationTests =
     [<Fact>]
     let ``base runtime layer provisions explicit services from IServiceProvider`` () =
         let clock = Clock.fromValue (DateTimeOffset(2026, 5, 15, 10, 0, 0, TimeSpan.Zero))
-        let logMessages = ResizeArray<string>()
+        let logMessages = ResizeArray<LogLevel * string>()
         let logger =
-            { new ILog with
-                member _.Info message = logMessages.Add message }
+            Log.fromSink (fun level message -> logMessages.Add(level, message))
         let random = Random.fromValue 42
         let guid = Guid.fromValue (Guid.Parse "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
         let envVars = EnvironmentVariables.fromPairs [ "FSFLOW_TEST", "value" ]
@@ -429,7 +428,7 @@ module RuntimeFoundationTests =
             |> Flow.runSync provider
 
         test <@ result = Exit.Success "42:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa:value" @>
-        test <@ List.ofSeq logMessages = [ "now=10:00" ] @>
+        test <@ List.ofSeq logMessages = [ LogLevel.Information, "now=10:00" ] @>
 
     [<Fact>]
     let ``base runtime layer reports missing provider services as typed failures`` () =
@@ -457,6 +456,8 @@ module RuntimeFoundationTests =
             }
 
         test <@ runtime.Clock.UtcNow() = DateTimeOffset(2026, 5, 15, 11, 0, 0, TimeSpan.Zero) @>
+        test <@ runtime.Random.Next() = 7 @>
+        test <@ runtime.Random.NextMax 10 = 7 @>
         test <@ runtime.Random.NextInt 0 10 = 7 @>
         test <@ runtime.Guid.NewGuid() = Guid.Parse "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb" @>
         test <@ runtime.EnvironmentVariables.TryGet "FSFLOW_RUNTIME" = Some "ok" @>

@@ -1,21 +1,22 @@
 ---
-title: "Core.Log.info"
-linkTitle: "info"
-weight: 2303
+title: "Core.Log.log"
+linkTitle: "log"
+weight: 2300
 ---
 
-Writes an informational log message through an explicit logging service.
+Writes a log message at the requested level through an explicit logging service.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Core.Log.info&#32;<span>message</span></span></code>
+<code><span>Core.Log.log&#32;<span>level&#32;message</span></span></code>
 </div>
 
 ## Parameters
 
 | Name | Type | Description |
 | --- | --- | --- |
+| `level` | <code><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-loglevel.html">LogLevel</a></code> |  |
 | `message` | <code>string</code> |  |
 
 ## Returns

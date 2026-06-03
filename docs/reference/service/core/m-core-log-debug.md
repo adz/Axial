@@ -1,15 +1,15 @@
 ---
-title: "Core.Log.info"
-linkTitle: "info"
-weight: 2303
+title: "Core.Log.debug"
+linkTitle: "debug"
+weight: 2302
 ---
 
-Writes an informational log message through an explicit logging service.
+Writes a debug log message through an explicit logging service.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Core.Log.info&#32;<span>message</span></span></code>
+<code><span>Core.Log.debug&#32;<span>message</span></span></code>
 </div>
 
 ## Parameters

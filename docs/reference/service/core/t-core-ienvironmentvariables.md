@@ -4,7 +4,7 @@ linkTitle: "IEnvironmentVariables"
 weight: 1004
 ---
 
-Provides synchronous environment-variable lookup.
+Provides synchronous environment-variable access.
 
 ## Signature
 
