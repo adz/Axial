@@ -103,7 +103,12 @@ module Cause =
 
             match current with
             | Cause.Fail error -> $"{padding}Fail({formatError error})"
-            | Cause.Die error -> $"{padding}Die({error.GetType().Name}: {error.Message})"
+            | Cause.Die error ->
+#if FABLE_COMPILER
+                $"{padding}Die(Exception: {error.Message})"
+#else
+                $"{padding}Die({error.GetType().Name}: {error.Message})"
+#endif
             | Cause.Interrupt -> $"{padding}Interrupt"
             | Cause.Then(left, right) ->
                 $"{padding}Then\n{loop (indent + 2) left}\n{loop (indent + 2) right}"

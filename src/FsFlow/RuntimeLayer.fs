@@ -42,7 +42,11 @@ module Layer =
     /// <param name="finalizer">The finalizer to run when the layer scope closes.</param>
     /// <returns>A layer that registers the finalizer.</returns>
     let addFinalizer
+#if FABLE_COMPILER
+        (finalizer: CancellationToken -> Async<unit>)
+#else
         (finalizer: CancellationToken -> Task)
+#endif
         : Layer<'input, 'error, unit> =
         Layer(fun (_, scope) _ ->
             scope.AddFinalizer finalizer
@@ -58,7 +62,11 @@ module Layer =
     /// </remarks>
     let acquireRelease
         (acquire: Layer<'input, 'error, 'resource>)
+#if FABLE_COMPILER
+        (release: 'resource -> CancellationToken -> Async<unit>)
+#else
         (release: 'resource -> CancellationToken -> Task)
+#endif
         : Layer<'input, 'error, 'resource> =
         Layer(fun (input, scope) cancellationToken ->
             invoke acquire input scope cancellationToken

@@ -10,7 +10,12 @@ module internal FiberId =
     let mutable private nextValue = 0L
 
     let next () =
+#if FABLE_COMPILER
+        nextValue <- nextValue + 1L
+        FiberId(nextValue)
+#else
         FiberId(Interlocked.Increment(&nextValue))
+#endif
 
 /// <summary>
 /// Provides a standard way to access a unique request identifier from an environment.

@@ -89,7 +89,7 @@ module Flow =
             let mutable cleanupError: exn option = None
 
             try
-                do! scope.Close(cancellationToken) |> Async.AwaitTask
+                do! scope.Close(cancellationToken)
             with error ->
                 cleanupError <- Some error
 
@@ -1479,7 +1479,7 @@ module Flow =
                 let mutable cleanupError: exn option = None
 
                 try
-                    do! scope.Close(cancellationToken) |> Async.AwaitTask
+                    do! scope.Close(cancellationToken)
                 with error ->
                     cleanupError <- Some error
 

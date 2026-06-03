@@ -1,91 +1,66 @@
-Goal: Validate and deepen FsFlow v1 service integration for Core, FileSystem, and IServiceProvider boundaries.
+Goal: Design and implement the minimal FsFlow v1 concurrency primitives.
 
-  Objective:
-  Prove the explicit service/layer model works consistently in the current service architecture, while starting the “competent .NET dev
-  can find almost everything they expect” service-package effort with Core and FileSystem only.
+Objective:
+Add only the concurrency primitives that materially improve on existing .NET TPL primitives by carrying FsFlow
+semantics: typed `Exit`/`Cause`, structured interruption, scoped release safety, and composition with `Flow.fork`,
+`Flow.join`, `Flow.race`, `Flow.timeout`, and `Flow.provide`.
 
-  Scope:
-  - Deepen `FsFlow.Services.Core`.
-  - Deepen `FsFlow.Services.FileSystem`.
-  - Validate `IServiceProvider` boundaries.
-  - Keep Console, Http, and Process light for now, but align terminology and shape with the service/layer model.
-  - Spin out near-complete Console, Http, Process, Network, Telemetry service expansion as later tasks.
+Recommendation:
+- Add a small one-shot deferred primitive.
+- Add a small Flow-native semaphore API.
+- Defer queues for v1 unless a concrete feature needs FsFlow-owned backpressure and shutdown semantics.
 
-  Work:
+Rationale:
+- .NET already has `TaskCompletionSource`, `SemaphoreSlim`, `Channel<T>`, `ConcurrentQueue<T>`, and related primitives.
+- FsFlow should wrap a primitive only when it adds typed outcomes, cancellation/interruption behavior, scope safety, or
+  better Flow composition.
+- A deferred value and semaphore pass that bar with a small API surface.
+- Queues do not pass that bar yet because a serious FsFlow queue implies a larger design: bounded strategy, fairness,
+  shutdown, blocked taker/offerer cancellation, interruption, resource cleanup, and typed failure behavior.
 
-  1. Audit current service-package architecture.
-     - Inspect Core, FileSystem, Console, Http, Process, Hosting, and docs.
-     - Confirm current terminology uses:
-       - service
-       - service implementation
-       - layer
-       - provider edge
-     - Remove or update current legacy dependency-package terminology outside historical/deprecated docs.
+Scope:
+1. Deferred / Promise.
+   - Choose the public name before implementation. Prefer `Deferred<'error, 'value>` unless comparison with ZIO/Effect
+     strongly favors `Promise`.
+   - Model a one-shot completion with `Exit<'value, 'error>`.
+   - Provide creation inside `Flow`.
+   - Provide await/get as `Flow<_, 'error, 'value>`.
+   - Provide complete/succeed/fail/die/interrupt operations.
+   - Completion must be idempotent or explicitly report already-completed; decide before implementation.
+   - Awaiters must unblock on completion.
+   - Awaiting must respect Flow cancellation/interruption.
 
-  2. Deepen `FsFlow.Services.Core`.
-     - Review current services: clock, log, random, GUID, environment variables.
-     - Add missing obvious .NET-oriented operations where they belong.
-     - Ensure each operation is exposed through `Flow` helpers over `Service<'T>.get()`.
-     - Keep contracts coherent and testable.
-     - Add live implementation coverage and deterministic/fake-friendly coverage where appropriate.
-     - Do not overbuild telemetry here unless it belongs to a later telemetry service/package decision.
+2. Semaphore.
+   - Back with `SemaphoreSlim` on .NET unless tests expose a semantic mismatch.
+   - Provide `make`/`create` and `withPermit`.
+   - Keep raw acquire/release APIs internal or secondary; prefer scoped `withPermit` so permits are always released on
+     success, typed failure, defect, or interruption.
+   - Ensure cancellation while waiting does not leak permits.
+   - Ensure defects inside the protected flow release permits.
 
-  3. Deepen `FsFlow.Services.FileSystem`.
-     - Make FileSystem a near-complete .NET filesystem service, not a token example.
-     - Proxy almost the entire expected `System.IO.File`, `Directory`, `Path`, and stream/text surface where it makes sense from a Flow perspective.
-     - Omit only APIs that are obsolete, legacy-only, unsafe to abstract cleanly, redundant with a better wrapped operation, or a poor fit for typed Flow error handling.
-     - Preserve typed errors rather than throwing where appropriate.
-     - Include sync/async choices intentionally:
-       - prefer async for I/O that has first-class async .NET APIs
-       - keep pure/path operations simple
-       - avoid pretending truly obsolete or redundant `System.IO` methods need wrapping if they do not fit FsFlow
-     - Ensure live implementation is practical.
-     - Ensure fake/test implementation is possible without ambient globals.
+3. Queues.
+   - Do not implement full queues in this goal by default.
+   - Record a TODO for future queue design if the implementation uncovers a concrete need.
+   - If queues are later needed, design them around explicit backpressure and shutdown semantics rather than thinly
+     re-exporting `Channel<T>`.
 
-  4. Validate `IServiceProvider` boundaries.
-     - Confirm `Service<'T>.resolve()` remains edge-only.
-     - Confirm provider-backed layers convert dynamic registrations into explicit services/environments.
-     - Missing provider registrations should be startup/configuration typed errors when using layers, and defects only when using direct resolve
-     at the edge.
-     - Add tests for:
-       - successful provider-backed construction
-       - missing provider registration
-       - mapping provider registrations into explicit record env
-       - replacing live services with fake services in tests
+Non-goals:
+- Do not add hubs/pub-sub.
+- Do not add STM transactional queues.
+- Do not add a broad concurrency package by wrapping every .NET primitive.
+- Do not redesign `Flow`, `Fiber`, or runtime scheduling unless the minimal primitives cannot be correct otherwise.
+- Do not pursue full ZIO parity beyond the selected v1 primitives.
 
-  5. Align light service packages.
-     - For Console, Http, and Process:
-       - ensure naming says “service”
-       - ensure exposed helpers use `Service<'T>.get()`
-       - ensure live implementations and layers follow the same pattern
-       - avoid expanding their API surfaces in this goal except for small consistency fixes
-
-  6. Docs and backlog.
-     - Update dev docs with the service-package depth strategy:
-       - Core and FileSystem are first deep services
-       - Console, Http, Process remain light but aligned
-       - near-complete Console/Http/Process/Network/Telemetry expansion becomes future work
-     - Update root TODO accordingly.
-     - Keep user-facing docs changes targeted; do not rewrite broad docs until APIs stabilize.
-     - Update generated reference docs if public APIs change.
-     - Update `llms.txt` terminology if needed.
-
-  Non-goals:
-  - Do not deeply expand Console, Http, or Process yet.
-  - Do not design Network yet.
-  - Do not decide Telemetry service package shape yet.
-  - Do not add automatic layer env merging, tagged services, or compatibility aliases.
-  - Do not introduce a registry or ambient service runtime.
-
-  Acceptance:
-  - Core and FileSystem have meaningfully deeper, coherent service APIs; FileSystem should cover most operations a .NET developer expects unless deliberately omitted.
-  - IServiceProvider edge behavior is validated by tests.
-  - Console, Http, and Process remain light but terminology/API shape is aligned.
-  - Current docs/code avoid legacy dependency-package terminology outside historical/deprecated material.
-  - API shape/reference docs reflect any new public APIs.
-  - `dotnet test` passes.
-  - `dotnet build FsFlow.slnx` passes.
-  - `bash scripts/generate-api-docs.sh` passes without unresolved-symbol warnings.
-  - `npm run build` in `site` passes.
-  - `timeout 45s bash scripts/preview-docs.sh` reaches Hugo startup.
-  - Commit the completed work.
+Acceptance:
+- Public APIs are small, idiomatic F#, and consistent with existing FsFlow naming.
+- Deferred and semaphore compose with `Flow.fork`, `Flow.join`, `Flow.race`, `Flow.timeout`, and cancellation.
+- Tests cover success, typed failure, defect, interruption/cancellation, blocked waiters, and release/finalizer behavior.
+- Queue work is either explicitly deferred in `TODO.md` or justified by a concrete dependency found during implementation.
+- Docs and API reference are updated only for APIs actually added.
+- `dotnet test` passes.
+- `dotnet build FsFlow.slnx` passes.
+- `bash scripts/check-fable-js-surface.sh` passes or unsupported APIs are correctly guarded from the Fable surface.
+- `bash scripts/generate-api-docs.sh` passes without unresolved-symbol warnings.
+- `npm run build` in `site` passes.
+- `bash scripts/preview-docs.sh` reaches Hugo startup.
+- Commit the completed work.
