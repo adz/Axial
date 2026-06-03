@@ -4,16 +4,16 @@ weight: 10
 type: docs
 ---
 
-This page shows the `Flow<'env, 'error, 'value>` surface, the central workflow type in FsFlow. A flow is a cold description of work that reads an explicit environment, can fail with a typed error, and only runs when you call an execution function such as `Flow.run`. Use this page as the API map for building fail-fast workflows, reading dependencies from `env`, reshaping environments with `localEnv`, composing typed failures, and introducing concurrency with fibers, `zipPar`, or `race`. Start with `flow { }`, `Flow.read`, `Flow.bind`, and `Flow.map`; reach for [runtime helpers](./runtime/) and parallel orchestration only at the boundary where the workflow actually needs them. 
+This page shows the `Flow<'env, 'error, 'value>` surface, the central workflow type in FsFlow. A flow is a cold description of work that reads an explicit environment, can fail with a typed error, and only runs when you call an execution function such as `Flow.run`. Use this page as the API map for building fail-fast workflows, reading dependencies from `env`, reshaping environments with `localEnv`, composing typed failures, and introducing concurrency with fibers, `zipPar`, or `race`. Start with `flow { }`, `Flow.read`, `Flow.bind`, and `Flow.map`; reach for [runtime helpers](./runtime/) and parallel orchestration only at the boundary where the workflow actually needs them.
 
 Note that common extensions such as `Flow.Retry` and `Flow.Repeat` are available as soon as you `open FsFlow` because their modules are marked with `[<AutoOpen>]`.
 
 ## Core type
 
-- [`Flow`](./t-flow.md): 
+- [`Flow`](./t-flow.md):
  Represents a cold workflow that reads an environment, returns a typed result, and is executed
  explicitly through <code>Flow.run</code>.
- 
+
 
 ## Fiber operations
 
@@ -76,4 +76,3 @@ Note that common extensions such as `Flow.Retry` and `Flow.Repeat` are available
 
 - [`Flow.Retry`](./m-flow-retry.md): Retries a failing flow according to the supplied schedule.
 - [`Flow.Repeat`](./m-flow-repeat.md): Repeats a successful flow according to the supplied schedule.
-

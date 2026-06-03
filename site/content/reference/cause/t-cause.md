@@ -7,7 +7,7 @@ type: docs
 
 
  Represents the cause of a failed workflow.
- 
+
 
 ## Signature
 
@@ -28,4 +28,3 @@ type: docs
 | `Fail` | An expected domain-specific failure. |
 | `Die` | An unexpected defect or panic (e.g., an exception). |
 | `Interrupt` | An administrative signal to stop the workflow (e.g., cancellation). |
-

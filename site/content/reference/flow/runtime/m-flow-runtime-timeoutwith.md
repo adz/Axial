@@ -26,4 +26,3 @@ Runs a fallback flow when the source flow does not complete before the timeout.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | A flow that returns the source outcome or the fallback outcome. |
-

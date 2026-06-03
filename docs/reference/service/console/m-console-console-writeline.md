@@ -23,4 +23,3 @@ Writes a line through an explicit console service.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;unit</span>&gt;</span></code> |  |
-

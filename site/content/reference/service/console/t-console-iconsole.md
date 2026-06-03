@@ -12,4 +12,3 @@ Provides synchronous access to standard console I/O.
 <div class="fsdocs-usage">
 <code>type IConsole</code>
 </div>
-

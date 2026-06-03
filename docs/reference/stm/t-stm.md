@@ -6,7 +6,7 @@ weight: 1001
 
 
  Represents a transactional operation that can be composed, retried, and executed atomically.
- 
+
 
 ## Signature
 
@@ -25,4 +25,3 @@ weight: 1001
 | Case | Description |
 | --- | --- |
 | `STM` |  |
-

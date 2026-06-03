@@ -33,6 +33,3 @@ Applies a validation-wrapped function to a validation-wrapped value.
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">val fn: obj</div>
 <div popover class="fsdocs-tip" id="fs2">val v: obj</div>
-
-
-

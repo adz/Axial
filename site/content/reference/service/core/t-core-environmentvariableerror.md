@@ -19,4 +19,3 @@ Describes a meaningful environment-variable failure.
 | --- | --- |
 | `MissingVariable` | The requested variable was not present. |
 | `InvalidVariable` | The requested variable existed but could not be parsed. |
-

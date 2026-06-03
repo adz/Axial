@@ -30,7 +30,7 @@ Catches exceptions raised during execution and maps them to a typed error.
 
  Exceptions that are not caught by this helper will bubble up to the caller of <a href="https://learn.microsoft.com/dotnet/api/run">run</a>.
  This ensures that known exceptions can be handled within the flow context.
- 
+
 
 ## Examples
 
@@ -50,6 +50,3 @@ Catches exceptions raised during execution and maps them to a typed error.
   member HelpLink: string
   member InnerException: exn
   ...<br /><em>&lt;summary&gt;Represents errors that occur during application execution.&lt;/summary&gt;</em><br /><br />--------------------<br />System.Exception() : System.Exception<br />System.Exception(message: string) : System.Exception<br />System.Exception(message: string, innerException: exn) : System.Exception</div>
-
-
-

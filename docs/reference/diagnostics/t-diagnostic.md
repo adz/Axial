@@ -31,6 +31,3 @@ A single failure item attached to a path in a validation graph.
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">val d: &#39;a</div>
 <div popover class="fsdocs-tip" id="fs2">union case Result.Error: ErrorValue: &#39;TError -&gt; Result&lt;&#39;T,&#39;TError&gt;</div>
-
-
-

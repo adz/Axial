@@ -23,4 +23,3 @@ Suspends the flow for the specified duration, observing cancellation.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;unit</span>&gt;</span></code> | A flow that completes after the specified delay. |
-

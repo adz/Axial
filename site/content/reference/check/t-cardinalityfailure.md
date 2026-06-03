@@ -21,4 +21,3 @@ Structured errors returned by sequence cardinality checks.
 | `ExpectedNotExactlyOne` | The sequence was expected to contain zero items or more than one item. |
 | `ExpectedAtMostOne` | The sequence was expected to contain at most one item. |
 | `ExpectedMoreThanOne` | The sequence was expected to contain more than one item. |
-

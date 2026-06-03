@@ -11,4 +11,3 @@ Provides asynchronous access to HTTP client operations.
 <div class="fsdocs-usage">
 <code>type IHttp</code>
 </div>
-

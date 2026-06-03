@@ -12,4 +12,3 @@ Provides synchronous GUID generation.
 <div class="fsdocs-usage">
 <code>type IGuid</code>
 </div>
-

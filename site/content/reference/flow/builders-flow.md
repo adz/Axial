@@ -8,7 +8,5 @@ This page shows the `flow { }` computation expression, the primary syntax for wr
 
 ## Builder
 
-- [`flow`](./p-flow.md): 
+- [`flow`](./p-flow.md):
  The universal <code>flow { }</code> computation expression.
- 
-

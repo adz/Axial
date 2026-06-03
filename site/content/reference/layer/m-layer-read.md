@@ -1,7 +1,7 @@
 ---
 title: "Layer.read"
 linkTitle: "read"
-weight: 2102
+weight: 2202
 type: docs
 ---
 
@@ -24,4 +24,3 @@ Projects part of the input environment into the layer output.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-layer-3.html">Layer</a>&lt;<span>'input,&#32;'error,&#32;'output</span>&gt;</span></code> |  |
-

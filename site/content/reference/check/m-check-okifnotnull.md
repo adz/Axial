@@ -30,6 +30,3 @@ Returns the value when it is not null.
 <pre class="fssnip highlighted"><code lang="fsharp"> <span class="s">&quot;hello&quot;</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">okIfNotNull</span> <span class="c">// Ok &quot;hello&quot;</span>
  <span class="k">null</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">okIfNotNull</span> <span class="c">// Error ()</span>
 </code></pre>
-
-
-

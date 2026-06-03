@@ -6,7 +6,7 @@ weight: 1000
 
 
  Represents the cause of a failed workflow.
- 
+
 
 ## Signature
 
@@ -27,4 +27,3 @@ weight: 1000
 | `Fail` | An expected domain-specific failure. |
 | `Die` | An unexpected defect or panic (e.g., an exception). |
 | `Interrupt` | An administrative signal to stop the workflow (e.g., cancellation). |
-

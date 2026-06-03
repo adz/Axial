@@ -8,7 +8,5 @@ This page shows the `Fiber<'error, 'value>` handle used by FsFlow concurrency. A
 
 ## Core type
 
-- [`Fiber`](./t-fiber.md): 
+- [`Fiber`](./t-fiber.md):
  Represents a handle to a workflow that has already been started.
- 
-

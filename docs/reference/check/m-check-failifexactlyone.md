@@ -29,6 +29,3 @@ Returns the sequence when it does not contain exactly one item.
 <pre class="fssnip highlighted"><code lang="fsharp"> <span class="pn">[</span><span class="pn">]</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">failIfExactlyOne</span> <span class="c">// Ok []</span>
  <span class="pn">[</span> <span class="n">5</span> <span class="pn">]</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">failIfExactlyOne</span> <span class="c">// Error ExpectedNotExactlyOne</span>
 </code></pre>
-
-
-

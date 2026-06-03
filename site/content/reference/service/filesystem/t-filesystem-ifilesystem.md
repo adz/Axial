@@ -12,4 +12,3 @@ Provides synchronous access to file system operations.
 <div class="fsdocs-usage">
 <code>type IFileSystem</code>
 </div>
-

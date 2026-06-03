@@ -6,7 +6,7 @@ weight: 2000
 
 
  The universal <code>flow { }</code> computation expression.
- 
+
 
 ## Signature
 
@@ -43,6 +43,3 @@ weight: 2000
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">val greeting: obj</div>
 <div popover class="fsdocs-tip" id="fs2">val async: AsyncBuilder</div>
-
-
-

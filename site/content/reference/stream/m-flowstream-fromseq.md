@@ -30,6 +30,3 @@ Creates a stream from a synchronous sequence of values.
 <pre class="fssnip highlighted"><code lang="fsharp"> <span class="k">let</span> <span data-fsdocs-tip="fs1" data-fsdocs-tip-unique="1" class="id">stream</span> <span class="o">=</span> <span class="id">FlowStream</span><span class="pn">.</span><span class="id">fromSeq</span> <span class="pn">[</span><span class="n">1..</span><span class="n">10</span><span class="pn">]</span>
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">val stream: obj</div>
-
-
-

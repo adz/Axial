@@ -26,34 +26,44 @@ This page shows the core service package: clock, logging, random numbers, GUID g
 
 - [`Core.Clock.now`](./m-core-clock-now.md): Reads the current UTC timestamp from an explicit clock service.
 - [`Core.Clock.live`](./p-core-clock-live.md): Creates a live clock backed by <a href="https://learn.microsoft.com/dotnet/api/system.datetimeoffset.utcnow">DateTimeOffset.UtcNow</a>.
-- [`Core.Clock.layer`](./p-core-clock-layer.md): Builds the live clock as a layer.
+- [`layer`](./p-core-clock-layer.md):
+ The <code>layer { }</code> computation expression for provisioning explicit service environments.
+
 - [`Core.Clock.fromValue`](./m-core-clock-fromvalue.md): Creates a deterministic clock that always returns the supplied instant.
 
 ## Logging
 
 - [`Core.Log.info`](./m-core-log-info.md): Writes an informational log message through an explicit logging service.
 - [`Core.Log.live`](./p-core-log-live.md): Creates a no-op logger for tests and local service bundles.
-- [`Core.Log.layer`](./p-core-log-layer.md): Builds the live logger as a layer.
+- [`layer`](./p-core-log-layer.md):
+ The <code>layer { }</code> computation expression for provisioning explicit service environments.
+
 
 ## Random
 
 - [`Core.Random.nextInt`](./m-core-random-nextint.md): Reads a random integer from an explicit random-number service.
 - [`Core.Random.live`](./p-core-random-live.md): Creates a live random-number generator backed by <a href="https://learn.microsoft.com/dotnet/api/system.random">Random</a>.
-- [`Core.Random.layer`](./p-core-random-layer.md): Builds the live random-number generator as a layer.
+- [`layer`](./p-core-random-layer.md):
+ The <code>layer { }</code> computation expression for provisioning explicit service environments.
+
 - [`Core.Random.fromValue`](./m-core-random-fromvalue.md): Creates a deterministic random generator that always returns the supplied value.
 
 ## GUID
 
 - [`Core.Guid.newGuid`](./m-core-guid-newguid.md): Reads a GUID from an explicit GUID service.
 - [`Core.Guid.live`](./p-core-guid-live.md): Creates a live GUID service backed by <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-services-core-guid.html">Guid.NewGuid</a>.
-- [`Core.Guid.layer`](./p-core-guid-layer.md): Builds the live GUID service as a layer.
+- [`layer`](./p-core-guid-layer.md):
+ The <code>layer { }</code> computation expression for provisioning explicit service environments.
+
 - [`Core.Guid.fromValue`](./m-core-guid-fromvalue.md): Creates a deterministic GUID service that always returns the supplied value.
 
 ## Environment variables
 
 - [`Core.EnvironmentVariables.tryGet`](./m-core-environmentvariables-tryget.md): Reads a raw environment-variable value from an explicit environment-variable service.
 - [`Core.EnvironmentVariables.live`](./p-core-environmentvariables-live.md): Creates a live provider backed by the current process environment.
-- [`Core.EnvironmentVariables.layer`](./p-core-environmentvariables-layer.md): Builds the live environment-variable service as a layer.
+- [`layer`](./p-core-environmentvariables-layer.md):
+ The <code>layer { }</code> computation expression for provisioning explicit service environments.
+
 - [`Core.EnvironmentVariables.fromPairs`](./m-core-environmentvariables-frompairs.md): Creates a deterministic provider from a fixed set of name/value pairs.
 - [`Core.EnvironmentVariable.tryGet`](./m-core-environmentvariable-tryget.md): Reads a raw string environment variable without wrapping it in a result.
 - [`Core.EnvironmentVariable.get`](./m-core-environmentvariable-get.md): Reads a raw string environment variable through an explicit service.
@@ -61,4 +71,3 @@ This page shows the core service package: clock, logging, random numbers, GUID g
 - [`Core.EnvironmentVariable.getGuid`](./m-core-environmentvariable-getguid.md): Reads a GUID environment variable through an explicit service.
 - [`Core.EnvironmentVariable.getBool`](./m-core-environmentvariable-getbool.md): Reads a boolean environment variable through an explicit service.
 - [`Core.EnvironmentVariableErrors.describe`](./m-core-environmentvariableerrors-describe.md): Formats a human-readable description for an error.
-

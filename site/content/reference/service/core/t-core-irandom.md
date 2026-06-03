@@ -12,4 +12,3 @@ Provides synchronous random-number generation.
 <div class="fsdocs-usage">
 <code>type IRandom</code>
 </div>
-

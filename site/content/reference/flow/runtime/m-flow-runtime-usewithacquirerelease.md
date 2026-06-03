@@ -26,4 +26,3 @@ Acquires a resource, uses it, and always runs the release action.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | A flow that releases the resource after use, including failure paths. |
-

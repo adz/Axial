@@ -30,6 +30,3 @@ Creates a schedule that recurs a fixed number of times.
  <span class="c">// Will run for attempts 0, 1, 2 and then stop.</span>
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">val schedule: obj</div>
-
-
-

@@ -24,5 +24,3 @@ Resolves a service dynamically from an <a href="https://learn.microsoft.com/dotn
 
  Missing registrations are treated as configuration defects and therefore fail through
  <code>Cause.Die</code> rather than the typed error channel.
- 
-

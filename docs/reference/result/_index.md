@@ -7,7 +7,5 @@ This page shows the `result { }` computation expression for ordinary fail-fast `
 
 ## Builder
 
-- [`result`](./p-result.md): 
+- [`result`](./p-result.md):
  The fail-fast <code>result { }</code> computation expression.
- 
-

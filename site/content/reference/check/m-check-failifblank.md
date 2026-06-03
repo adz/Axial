@@ -30,6 +30,3 @@ Returns the string when it is blank.
 <pre class="fssnip highlighted"><code lang="fsharp"> <span class="s">&quot;  &quot;</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">failIfBlank</span> <span class="c">// Ok &quot;  &quot;</span>
  <span class="s">&quot;hello&quot;</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">failIfBlank</span> <span class="c">// Error ()</span>
 </code></pre>
-
-
-

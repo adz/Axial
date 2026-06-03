@@ -1,7 +1,7 @@
 ---
 title: "Layer.bind"
 linkTitle: "bind"
-weight: 2104
+weight: 2205
 type: docs
 ---
 
@@ -25,4 +25,3 @@ Sequences layer provisioning with a dependent follow-up layer.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-layer-3.html">Layer</a>&lt;<span>'input,&#32;'error,&#32;'next</span>&gt;</span></code> |  |
-

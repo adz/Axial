@@ -6,7 +6,7 @@ weight: 2200
 
 
  The <code>stm { }</code> computation expression for building atomic transactions.
- 
+
 
 ## Signature
 
@@ -19,4 +19,3 @@ weight: 2200
 | Type | Description |
 | --- | --- |
 | <code><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-stmbuilder.html">StmBuilder</a></code> |  |
-

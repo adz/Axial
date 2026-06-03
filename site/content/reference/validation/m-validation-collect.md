@@ -29,12 +29,9 @@ Collects a sequence of validations into a single validation of a list.
 
 
  This operation is applicative: it will collect errors from ALL items in the sequence.
- 
+
 
 ## Examples
 
 <pre class="fssnip highlighted"><code lang="fsharp"> <span class="pn">[</span><span class="id">Validation</span><span class="pn">.</span><span class="id">ok</span> <span class="n">1</span><span class="pn">;</span> <span class="id">Validation</span><span class="pn">.</span><span class="id">ok</span> <span class="n">2</span><span class="pn">]</span> <span class="o">|&gt;</span> <span class="id">Validation</span><span class="pn">.</span><span class="id">collect</span> <span class="c">// Validation (Ok [1; 2])</span>
 </code></pre>
-
-
-

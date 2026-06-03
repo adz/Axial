@@ -17,4 +17,3 @@ Creates a no-op logger for tests and local service bundles.
 | Type | Description |
 | --- | --- |
 | <code><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-services-core-ilog.html">ILog</a></code> |  |
-

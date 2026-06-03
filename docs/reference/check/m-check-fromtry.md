@@ -45,6 +45,3 @@ type Int32 =
   static member CopySign: value: int * sign: int -&gt; int
   ...<br /><em>&lt;summary&gt;Represents a 32-bit signed integer.&lt;/summary&gt;</em></div>
 <div popover class="fsdocs-tip" id="fs3">System.Int32.TryParse( s: string, result: byref&lt;int&gt;) : bool<br />System.Int32.TryParse(s: System.ReadOnlySpan&lt;char&gt;, result: byref&lt;int&gt;) : bool<br />System.Int32.TryParse(utf8Text: System.ReadOnlySpan&lt;byte&gt;, result: byref&lt;int&gt;) : bool<br />System.Int32.TryParse( s: string, provider: System.IFormatProvider, result: byref&lt;int&gt;) : bool<br />System.Int32.TryParse(s: System.ReadOnlySpan&lt;char&gt;, provider: System.IFormatProvider, result: byref&lt;int&gt;) : bool<br />System.Int32.TryParse(utf8Text: System.ReadOnlySpan&lt;byte&gt;, provider: System.IFormatProvider, result: byref&lt;int&gt;) : bool<br />System.Int32.TryParse( s: string, style: System.Globalization.NumberStyles, provider: System.IFormatProvider, result: byref&lt;int&gt;) : bool<br />System.Int32.TryParse(s: System.ReadOnlySpan&lt;char&gt;, style: System.Globalization.NumberStyles, provider: System.IFormatProvider, result: byref&lt;int&gt;) : bool<br />System.Int32.TryParse(utf8Text: System.ReadOnlySpan&lt;byte&gt;, style: System.Globalization.NumberStyles, provider: System.IFormatProvider, result: byref&lt;int&gt;) : bool</div>
-
-
-

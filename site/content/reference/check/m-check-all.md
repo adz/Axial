@@ -30,13 +30,10 @@ Returns success when every check in the sequence succeeds.
 
  Sequentially evaluates each check in the <span class="fsdocs-param-name">checks</span> sequence.
  Stops at the first failure.
- 
+
 
 ## Examples
 
 <pre class="fssnip highlighted"><code lang="fsharp"> <span class="pn">[</span> <span class="id">Check</span><span class="pn">.</span><span class="id">okIf</span> <span class="k">true</span><span class="pn">;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">okIf</span> <span class="k">true</span> <span class="pn">]</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">all</span> <span class="c">// Ok ()</span>
  <span class="pn">[</span> <span class="id">Check</span><span class="pn">.</span><span class="id">okIf</span> <span class="k">true</span><span class="pn">;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">okIf</span> <span class="k">false</span> <span class="pn">]</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">all</span> <span class="c">// Error ()</span>
 </code></pre>
-
-
-

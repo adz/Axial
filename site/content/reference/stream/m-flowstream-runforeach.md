@@ -35,6 +35,3 @@ Executes the stream and performs a synchronous action for each successful value.
 <div popover class="fsdocs-tip" id="fs1">val stream: obj</div>
 <div popover class="fsdocs-tip" id="fs2">val flow: obj</div>
 <div popover class="fsdocs-tip" id="fs3">val printfn: format: Printf.TextWriterFormat&lt;&#39;T&gt; -&gt; &#39;T</div>
-
-
-

@@ -1,7 +1,7 @@
 ---
 title: "Layer.zip"
 linkTitle: "zip"
-weight: 2105
+weight: 2206
 ---
 
 Builds two layers from the same input and scope and returns both outputs.
@@ -25,3 +25,7 @@ Builds two layers from the same input and scope and returns both outputs.
 | --- | --- |
 | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-layer-3.html">Layer</a>&lt;<span>'input,&#32;'error,&#32;<span>(<span>'left&#32;*&#32;'right</span>)</span></span>&gt;</span></code> |  |
 
+## Remarks
+
+<code>zip</code> is sequential: the left layer is provisioned before the right layer.
+ Use <code>zipPar</code> or <code>merge</code> for independent parallel provisioning.

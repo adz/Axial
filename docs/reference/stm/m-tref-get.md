@@ -35,6 +35,3 @@ Reads the current value of the transactional reference within a transaction.
 <div popover class="fsdocs-tip" id="fs2">val counter: &#39;a</div>
 <div popover class="fsdocs-tip" id="fs3">Multiple items<br />val int: value: &#39;T -&gt; int (requires member op_Explicit)<br /><br />--------------------<br />type int = int32<br /><br />--------------------<br />type int&lt;&#39;Measure&gt; =
   int</div>
-
-
-

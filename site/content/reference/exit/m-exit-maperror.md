@@ -25,4 +25,3 @@ Transforms the error value of a failed exit outcome using the provided function.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-exit-2.html">Exit</a>&lt;<span>'v,&#32;'f</span>&gt;</span></code> | A new exit outcome with the transformed error value. |
-

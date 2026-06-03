@@ -29,7 +29,7 @@ Lifts a standard <a href="https://learn.microsoft.com/dotnet/api/system.result-2
 
 
  If the result is an error, it is wrapped in a root-level <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-diagnostics-1.html">Diagnostics</a> graph.
- 
+
 
 ## Examples
 
@@ -46,6 +46,3 @@ type Result&lt;&#39;T,&#39;TError&gt; =
 <div popover class="fsdocs-tip" id="fs3">union case Result.Ok: ResultValue: &#39;T -&gt; Result&lt;&#39;T,&#39;TError&gt;</div>
 <div popover class="fsdocs-tip" id="fs4">val v2: obj</div>
 <div popover class="fsdocs-tip" id="fs5">union case Result.Error: ErrorValue: &#39;TError -&gt; Result&lt;&#39;T,&#39;TError&gt;</div>
-
-
-

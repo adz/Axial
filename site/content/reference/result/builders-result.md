@@ -7,7 +7,7 @@ type: docs
 
 
  The fail-fast <code>result { }</code> computation expression.
- 
+
 
 ## Signature
 
@@ -44,6 +44,3 @@ type: docs
      <span class="pn">}</span>
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">val parsedUser: obj</div>
-
-
-

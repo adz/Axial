@@ -31,13 +31,10 @@ Sequences a dependent flow after a successful value.
  This is the flatmap operation for <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html">Flow</a>. The continuation only runs
  when the source flow succeeds, and it receives the successful value. Use <code>bind</code> when the
  next effect depends on the previous result; use <code>map</code> when the next step is pure.
- 
+
 
 ## Examples
 
 <pre class="fssnip highlighted"><code lang="fsharp"> <span class="k">let</span> <span data-fsdocs-tip="fs1" data-fsdocs-tip-unique="1" class="id">flow</span> <span class="o">=</span> <span class="id">Flow</span><span class="pn">.</span><span class="id">succeed</span> <span class="n">1</span> <span class="o">|&gt;</span> <span class="id">Flow</span><span class="pn">.</span><span class="id">bind</span> <span class="pn">(</span><span class="k">fun</span> <span class="id">x</span> <span class="k">-&gt;</span> <span class="id">Flow</span><span class="pn">.</span><span class="id">succeed</span> <span class="pn">(</span><span class="id">x</span> <span class="o">+</span> <span class="n">1</span><span class="pn">)</span><span class="pn">)</span>
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">val flow: obj</div>
-
-
-

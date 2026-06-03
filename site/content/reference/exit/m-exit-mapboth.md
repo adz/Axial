@@ -26,4 +26,3 @@ Transforms both success and failure outcomes of an exit using the provided funct
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-exit-2.html">Exit</a>&lt;<span>'w,&#32;'f</span>&gt;</span></code> | A new exit outcome with transformed values. |
-

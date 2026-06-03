@@ -43,7 +43,7 @@ This TODO is for FsFlow in `/home/adam/projects/FsFlow/main`. It is .NET focused
 - [x] Align Console, FileSystem, Http, and Process packages to the service-plus-layer model.
 - [x] Add public docs for explicit services, provider boundaries, layers, scopes/resources, and base runtime construction.
 - [x] Update `llms.txt`, agent guidance, and generated API reference docs for the service/layer model.
-- [ ] Decide whether `Layer` needs error-widening, environment-merging, or override helpers beyond `map`, `bind`, `zip`, and `provide`.
+- [x] Add v1 Layer composition ergonomics: child scopes, `mapError`, sequential `zip`, parallel `zipPar` / `merge`, `map2`, `map3`, and `layer { let! / and! }`.
 - [ ] Decide whether FsFlow should add tagged services, or whether `IHas<'service>` plus explicit records is sufficient for v1.
 - [ ] Add managed resource helpers for acquire/use/release, finalizer ordering, early release where useful, and release on success/failure/defect/interruption.
 - [ ] Validate integration with `Microsoft.Extensions.DependencyInjection` and existing service packages.

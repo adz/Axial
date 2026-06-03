@@ -32,6 +32,3 @@ Converts an F# <code>Choice</code> into a <code>Result</code>.
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">union case Choice.Choice1Of2: &#39;T1 -&gt; Choice&lt;&#39;T1,&#39;T2&gt;</div>
 <div popover class="fsdocs-tip" id="fs2">union case Choice.Choice2Of2: &#39;T2 -&gt; Choice&lt;&#39;T1,&#39;T2&gt;</div>
-
-
-

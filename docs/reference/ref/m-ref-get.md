@@ -28,6 +28,3 @@ Reads the current value of the reference.
 
 <pre class="fssnip highlighted"><code lang="fsharp"> <span class="id">Ref</span><span class="pn">.</span><span class="id">get</span> <span class="id">myRef</span>
 </code></pre>
-
-
-

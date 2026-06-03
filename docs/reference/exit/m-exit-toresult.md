@@ -23,4 +23,3 @@ Converts an exit outcome to a standard F# <code>Result</code>.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'v,&#32;'e</span>&gt;</span></code> | A <code>Result</code> representing the successful value or the domain failure. |
-

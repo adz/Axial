@@ -24,4 +24,3 @@ Formats a human-readable description for an error.
 | Type | Description |
 | --- | --- |
 | <code>string</code> |  |
-

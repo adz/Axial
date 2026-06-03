@@ -27,9 +27,6 @@ Prefixes a validation with an indexed branch.
 
 ## Examples
 
-<pre class="fssnip highlighted"><code lang="fsharp"> <span class="id">Validation</span><span class="pn">.</span><span class="id">error</span> <span class="pn">(</span><span class="id">Diagnostics</span><span class="pn">.</span><span class="id">singleton</span> <span class="s">&quot;fail&quot;</span><span class="pn">)</span> 
+<pre class="fssnip highlighted"><code lang="fsharp"> <span class="id">Validation</span><span class="pn">.</span><span class="id">error</span> <span class="pn">(</span><span class="id">Diagnostics</span><span class="pn">.</span><span class="id">singleton</span> <span class="s">&quot;fail&quot;</span><span class="pn">)</span>
  <span class="o">|&gt;</span> <span class="id">Validation</span><span class="pn">.</span><span class="id">index</span> <span class="n">0</span>
 </code></pre>
-
-
-

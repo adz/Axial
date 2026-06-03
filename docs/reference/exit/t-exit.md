@@ -6,7 +6,7 @@ weight: 1000
 
 
  Represents the final outcome of a workflow execution.
- 
+
 
 ## Signature
 
@@ -27,4 +27,3 @@ weight: 1000
 | --- | --- |
 | `Success` | The workflow completed successfully. |
 | `Failure` | The workflow failed due to a specific cause. |
-

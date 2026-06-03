@@ -12,4 +12,3 @@ Provides synchronous environment-variable lookup.
 <div class="fsdocs-usage">
 <code>type IEnvironmentVariables</code>
 </div>
-

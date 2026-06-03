@@ -29,4 +29,3 @@ Executes a flow with an explicit cancellation token.
 ## Remarks
 
 Uncaught exceptions become <code>Cause.Die</code>; cancellation becomes <code>Cause.Interrupt</code>.
-

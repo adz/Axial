@@ -29,6 +29,3 @@ Updates the value of the reference using the supplied function.
 
 <pre class="fssnip highlighted"><code lang="fsharp"> <span class="id">Ref</span><span class="pn">.</span><span class="id">update</span> <span class="pn">(</span><span class="k">fun</span> <span class="id">x</span> <span class="k">-&gt;</span> <span class="id">x</span> <span class="o">+</span> <span class="n">1</span><span class="pn">)</span> <span class="id">myRef</span>
 </code></pre>
-
-
-

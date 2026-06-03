@@ -33,6 +33,3 @@ Creates a new <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-tref
  <span class="pn">}</span>
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">val tx: obj</div>
-
-
-

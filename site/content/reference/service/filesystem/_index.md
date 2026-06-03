@@ -16,5 +16,5 @@ This page shows the file-system service package. `IFileSystem` names the small s
 - [`FileSystem.FileSystem.writeAllText`](./m-filesystem-filesystem-writealltext.md): Writes all text through an explicit file-system service.
 - [`FileSystem.FileSystem.exists`](./m-filesystem-filesystem-exists.md): Checks file existence through an explicit file-system service.
 - [`FileSystem.FileSystem.live`](./p-filesystem-filesystem-live.md): Creates a live file-system service backed by <a href="https://learn.microsoft.com/dotnet/api/system.io.file">File</a>.
-- [`FileSystem.FileSystem.layer`](./p-filesystem-filesystem-layer.md): Builds the live file-system service as a layer.
-
+- [`layer`](./p-filesystem-filesystem-layer.md):
+ The <code>layer { }</code> computation expression for provisioning explicit service environments.

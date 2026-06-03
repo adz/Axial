@@ -30,6 +30,3 @@ Creates a diagnostics graph containing exactly one error at the root.
 <pre class="fssnip highlighted"><code lang="fsharp"> <span class="k">let</span> <span data-fsdocs-tip="fs1" data-fsdocs-tip-unique="1" class="id">d</span> <span class="o">=</span> <span class="id">Diagnostics</span><span class="pn">.</span><span class="id">singleton</span> <span class="s">&quot;Something failed&quot;</span>
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">val d: obj</div>
-
-
-

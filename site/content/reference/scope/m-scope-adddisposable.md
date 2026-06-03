@@ -24,4 +24,3 @@ Registers a disposable resource for synchronous cleanup.
 | Type | Description |
 | --- | --- |
 | <code>unit</code> |  |
-

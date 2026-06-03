@@ -7,7 +7,7 @@ weight: 1000
 
  Represents a cold workflow that reads an environment, returns a typed result, and is executed
  explicitly through <code>Flow.run</code>.
- 
+
 
 ## Signature
 
@@ -28,4 +28,3 @@ weight: 1000
 | Case | Description |
 | --- | --- |
 | `Flow` |  |
-

@@ -31,7 +31,7 @@ Falls back to another validation when the source validation fails.
 
  This is a left-biased choice operator. If the source succeeds, the fallback is not used.
  If the source fails, the fallback validation is returned as-is.
- 
+
 
 ## Examples
 
@@ -41,6 +41,3 @@ Falls back to another validation when the source validation fails.
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">val v1: obj</div>
 <div popover class="fsdocs-tip" id="fs2">val v2: obj</div>
-
-
-

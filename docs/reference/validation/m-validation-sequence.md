@@ -28,6 +28,3 @@ Transforms a sequence of validations into a validation of a list.
 
 <pre class="fssnip highlighted"><code lang="fsharp"> <span class="pn">[</span><span class="id">Validation</span><span class="pn">.</span><span class="id">ok</span> <span class="n">1</span><span class="pn">]</span> <span class="o">|&gt;</span> <span class="id">Validation</span><span class="pn">.</span><span class="id">sequence</span> <span class="c">// Validation (Ok [1])</span>
 </code></pre>
-
-
-

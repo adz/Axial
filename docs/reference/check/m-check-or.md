@@ -30,13 +30,10 @@ Returns success when either check succeeds.
 
  This is a logical &quot;or&quot; operation. It short-circuits: if <span class="fsdocs-param-name">left</span> succeeds,
  <span class="fsdocs-param-name">right</span> is not evaluated.
- 
+
 
 ## Examples
 
 <pre class="fssnip highlighted"><code lang="fsharp"> <span class="id">Check</span><span class="pn">.</span><span class="k">or</span> <span class="pn">(</span><span class="id">Check</span><span class="pn">.</span><span class="id">okIf</span> <span class="k">true</span><span class="pn">)</span> <span class="pn">(</span><span class="id">Check</span><span class="pn">.</span><span class="id">okIf</span> <span class="k">false</span><span class="pn">)</span> <span class="c">// Ok ()</span>
  <span class="id">Check</span><span class="pn">.</span><span class="k">or</span> <span class="pn">(</span><span class="id">Check</span><span class="pn">.</span><span class="id">okIf</span> <span class="k">false</span><span class="pn">)</span> <span class="pn">(</span><span class="id">Check</span><span class="pn">.</span><span class="id">okIf</span> <span class="k">false</span><span class="pn">)</span> <span class="c">// Error ()</span>
 </code></pre>
-
-
-

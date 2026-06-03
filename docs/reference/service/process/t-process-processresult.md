@@ -19,4 +19,3 @@ Represents the outcome of an external process execution.
 | `ExitCode` | The exit code returned by the process. |
 | `StdOut` | The standard output stream of the process. |
 | `StdErr` | The standard error stream of the process. |
-

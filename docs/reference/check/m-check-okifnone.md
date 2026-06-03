@@ -31,6 +31,3 @@ Returns success when the option is <code>None</code>.
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">union case Option.None: Option&lt;&#39;T&gt;</div>
 <div popover class="fsdocs-tip" id="fs2">union case Option.Some: Value: &#39;T -&gt; Option&lt;&#39;T&gt;</div>
-
-
-

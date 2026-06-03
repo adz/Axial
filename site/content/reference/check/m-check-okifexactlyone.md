@@ -30,6 +30,3 @@ Returns the single element when the sequence contains exactly one item.
 <pre class="fssnip highlighted"><code lang="fsharp"> <span class="pn">[</span> <span class="n">5</span> <span class="pn">]</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">okIfExactlyOne</span> <span class="c">// Ok 5</span>
  <span class="pn">[</span> <span class="n">1</span><span class="pn">;</span> <span class="n">2</span> <span class="pn">]</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">okIfExactlyOne</span> <span class="c">// Error (ExpectedExactlyOne 2)</span>
 </code></pre>
-
-
-

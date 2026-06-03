@@ -24,4 +24,3 @@ Registers an asynchronous finalizer to run when the scope closes.
 | Type | Description |
 | --- | --- |
 | <code>unit</code> |  |
-

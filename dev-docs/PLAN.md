@@ -92,6 +92,8 @@ explicit services and provisioned through environments and layers.
 - `Scope` owns deterministic teardown
 - `Layer` provisions explicit environments and service bundles
 - `Flow.provide` is the main way to run flows with a built environment
+- `layer { }` is the primary app-environment construction style: `let!` is dependent/sequential, while sibling `and!`
+  uses `Layer.merge` / `Layer.zipPar` for independent provisioning
 
 The internal registry has been removed rather than promoted.
 
@@ -134,6 +136,5 @@ old ambient-core or `Flow.service` / `Flow.inject` direction.
 
 ## Open Product Questions
 
-- Should `Layer` grow error-widening or environment-merging helpers after the minimal v1 surface settles?
 - Should future telemetry services live under `FsFlow.Services.Telemetry` or stay as runtime instrumentation adapters?
 - Should process support add scoped long-running process helpers beyond one-shot `Process.execute`?

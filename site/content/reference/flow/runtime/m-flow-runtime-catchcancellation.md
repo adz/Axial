@@ -31,5 +31,3 @@ Catches <a href="https://learn.microsoft.com/dotnet/api/operationcanceledexcepti
 
  This handles cancellation exceptions thrown during execution. A flow that has already returned
  <code>Cause.Interrupt</code> remains interrupted.
- 
-

@@ -29,9 +29,9 @@ Combines two validations, accumulating errors if both fail.
 ## Remarks
 
 
- This is the core applicative operation. If both <span class="fsdocs-param-name">left</span> and 
+ This is the core applicative operation. If both <span class="fsdocs-param-name">left</span> and
  <span class="fsdocs-param-name">right</span> fail, their diagnostics graphs are merged.
- 
+
 
 ## Examples
 
@@ -41,6 +41,3 @@ Combines two validations, accumulating errors if both fail.
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">val v1: obj</div>
 <div popover class="fsdocs-tip" id="fs2">val v2: obj</div>
-
-
-

@@ -6,7 +6,7 @@ weight: 1000
 
 
  An accumulating validation result that keeps the structured diagnostics graph visible.
- 
+
 
 ## Signature
 
@@ -27,7 +27,7 @@ weight: 1000
  Unlike <a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">FSharpResult</a>, this type is designed for applicative
  composition using <code>and!</code> in the <code>validate { }</code> builder, which merges errors instead of
  short-circuiting.
- 
+
 
 ## Examples
 
@@ -36,6 +36,3 @@ weight: 1000
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">val v1: obj</div>
 <div popover class="fsdocs-tip" id="fs2">val v2: obj</div>
-
-
-

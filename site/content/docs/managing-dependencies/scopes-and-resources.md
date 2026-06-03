@@ -16,6 +16,7 @@ The contract is:
 - registering after closure fails
 - cleanup failures are aggregated
 - cleanup failures are defects, not typed domain errors
+- child scopes are owned by their parent and close deterministically with it
 
 ## Register Cleanup
 
@@ -43,3 +44,12 @@ scope.AddFinalizer(fun cancellationToken ->
 
 The root scope is owned by `Flow.provide`. Most application code should not create a scope directly. Use
 `Flow.Runtime.scope` only for advanced helpers that need to register cleanup while a flow is running.
+
+## Child Scopes
+
+`Scope.AddChild()` creates a parent-owned scope. FsFlow uses this internally for `Layer.zipPar` and `Layer.merge` so each
+parallel provisioning branch can acquire resources independently.
+
+If one parallel branch fails after another branch acquired resources, the successful branch cleanup still runs when
+`Flow.provide` closes the root scope. Parent scopes close child scopes in a deterministic order, and each child still
+applies its own reverse-registration finalizer order.

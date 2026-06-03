@@ -37,6 +37,3 @@ Uncaught exceptions become <code>Cause.Die</code>; cancellation becomes <code>Ca
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">val flow: obj</div>
 <div popover class="fsdocs-tip" id="fs2">val result: obj</div>
-
-
-

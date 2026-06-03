@@ -32,7 +32,7 @@ Turns a pure validation result into a synchronous flow with environment-provided
  This helper bridges the gap between pure validation (which often uses <a href="https://learn.microsoft.com/dotnet/api/system.result-2">Result</a> or <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html">Check</a>)
  and the <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html">Flow</a> environment model. If the result is an error, the provided <span class="fsdocs-param-name">errorFlow</span>
  is executed to produce the final application error.
- 
+
 
 ## Examples
 
@@ -48,6 +48,3 @@ type Result&lt;&#39;T,&#39;TError&gt; =
   | Error of ErrorValue: &#39;TError</div>
 <div popover class="fsdocs-tip" id="fs3">union case Result.Error: ErrorValue: &#39;TError -&gt; Result&lt;&#39;T,&#39;TError&gt;</div>
 <div popover class="fsdocs-tip" id="fs4">val flow: obj</div>
-
-
-

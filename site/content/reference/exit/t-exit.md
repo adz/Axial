@@ -7,7 +7,7 @@ type: docs
 
 
  Represents the final outcome of a workflow execution.
- 
+
 
 ## Signature
 
@@ -28,4 +28,3 @@ type: docs
 | --- | --- |
 | `Success` | The workflow completed successfully. |
 | `Failure` | The workflow failed due to a specific cause. |
-

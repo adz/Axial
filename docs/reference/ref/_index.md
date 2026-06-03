@@ -7,9 +7,9 @@ This page shows the `Ref` surface for small pieces of shared mutable state insid
 
 ## Core type
 
-- [`Ref`](./t-ref.md): 
+- [`Ref`](./t-ref.md):
  Represents a handle to a mutable reference that can be updated atomically.
- 
+
 
 ## Module functions
 
@@ -18,4 +18,3 @@ This page shows the `Ref` surface for small pieces of shared mutable state insid
 - [`Ref.set`](./m-ref-set.md): Sets the value of the reference to the specified value.
 - [`Ref.update`](./m-ref-update.md): Updates the value of the reference using the supplied function.
 - [`Ref.modify`](./m-ref-modify.md): Updates the value of the reference using the supplied function and returns a derived value.
-

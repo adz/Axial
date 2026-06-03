@@ -31,5 +31,3 @@ Signals a fiber to stop and waits for it to finish its cleanup.
  Interruption requests cooperative cancellation through the fiber&#39;s cancellation
  source and then waits for the child operation to report its final
  <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-exit-2.html">Exit</a>.
- 
-

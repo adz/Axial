@@ -30,6 +30,3 @@ Creates a successful validation result.
 <pre class="fssnip highlighted"><code lang="fsharp"> <span class="k">let</span> <span data-fsdocs-tip="fs1" data-fsdocs-tip-unique="1" class="id">v</span> <span class="o">=</span> <span class="id">Validation</span><span class="pn">.</span><span class="id">ok</span> <span class="n">5</span>
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">val v: obj</div>
-
-
-

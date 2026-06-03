@@ -33,6 +33,3 @@ Alias for <code>ok</code> that reads well in some call sites.
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">val flow: obj</div>
 <div popover class="fsdocs-tip" id="fs2">val result: obj</div>
-
-
-

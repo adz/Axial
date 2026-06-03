@@ -29,6 +29,3 @@ Returns the sequence when it contains more than one item.
 <pre class="fssnip highlighted"><code lang="fsharp"> <span class="pn">[</span> <span class="n">1</span><span class="pn">;</span> <span class="n">2</span> <span class="pn">]</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">failIfAtMostOne</span> <span class="c">// Ok [1; 2]</span>
  <span class="pn">[</span> <span class="n">5</span> <span class="pn">]</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">failIfAtMostOne</span> <span class="c">// Error (ExpectedMoreThanOne 1)</span>
 </code></pre>
-
-
-

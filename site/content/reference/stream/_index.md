@@ -8,14 +8,13 @@ This page shows the `FlowStream` surface for cold, pull-based streams that still
 
 ## Core type
 
-- [`FlowStream`](./t-flowstream.md): 
+- [`FlowStream`](./t-flowstream.md):
  Represents a cold stream of values that requires an environment, can fail with a typed error,
  and supports backpressure.
- 
+
 
 ## Module functions
 
 - [`FlowStream.fromSeq`](./m-flowstream-fromseq.md): Creates a stream from a synchronous sequence of values.
 - [`FlowStream.map`](./m-flowstream-map.md): Transforms the successful values of a stream using the provided function.
 - [`FlowStream.runForEach`](./m-flowstream-runforeach.md): Executes the stream and performs a synchronous action for each successful value.
-

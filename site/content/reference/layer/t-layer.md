@@ -7,7 +7,7 @@ type: docs
 
 
  Represents a provisioning step that builds an explicit environment inside a scope.
- 
+
 
 ## Signature
 
@@ -28,4 +28,3 @@ type: docs
 | Case | Description |
 | --- | --- |
 | `Layer` |  |
-

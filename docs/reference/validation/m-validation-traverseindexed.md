@@ -31,12 +31,9 @@ Maps a sequence into validations while prefixing each item with its index.
  This is the indexed version of <a href="https://learn.microsoft.com/dotnet/api/sequence">sequence</a>. It is useful for list and array
  validation because each item can keep its own <a href="https://learn.microsoft.com/dotnet/api/fsflow.pathsegment.index">Index</a>
  branch without the caller manually wrapping every item.
- 
+
 
 ## Examples
 
 <pre class="fssnip highlighted"><code lang="fsharp"> <span class="pn">[</span> <span class="s">&quot;a&quot;</span><span class="pn">;</span> <span class="s">&quot;b&quot;</span> <span class="pn">]</span> <span class="o">|&gt;</span> <span class="id">Validation</span><span class="pn">.</span><span class="id">traverseIndexed</span> <span class="pn">(</span><span class="k">fun</span> <span class="id">i</span> <span class="id">s</span> <span class="k">-&gt;</span> <span class="id">Validation</span><span class="pn">.</span><span class="id">ok</span> <span class="pn">(</span><span class="id">s</span><span class="pn">.</span><span class="id">ToUpper</span><span class="pn">(</span><span class="pn">)</span><span class="pn">)</span><span class="pn">)</span>
 </code></pre>
-
-
-

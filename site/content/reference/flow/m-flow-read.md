@@ -32,13 +32,10 @@ Projects one value from the current environment.
  in <code>env</code>. The projection runs only when the flow is executed, so constructing the flow is
  still pure and side-effect free. Prefer small projections over passing a large environment
  deeper into reusable helpers.
- 
+
 
 ## Examples
 
 <pre class="fssnip highlighted"><code lang="fsharp"> <span class="k">let</span> <span data-fsdocs-tip="fs1" data-fsdocs-tip-unique="1" class="id">myFlow</span> <span class="o">=</span> <span class="id">Flow</span><span class="pn">.</span><span class="id">read</span> <span class="pn">(</span><span class="k">fun</span> <span class="id">env</span> <span class="k">-&gt;</span> <span class="id">env</span><span class="pn">)</span>
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">val myFlow: obj</div>
-
-
-

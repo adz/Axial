@@ -30,6 +30,3 @@ Maps the error type of a validation graph.
 
 <pre class="fssnip highlighted"><code lang="fsharp"> <span class="id">validation</span> <span class="o">|&gt;</span> <span class="id">Validation</span><span class="pn">.</span><span class="id">mapError</span> <span class="pn">(</span><span class="k">fun</span> <span class="id">e</span> <span class="k">-&gt;</span> <span class="id">e</span><span class="pn">.</span><span class="id">ToString</span><span class="pn">(</span><span class="pn">)</span><span class="pn">)</span>
 </code></pre>
-
-
-

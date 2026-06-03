@@ -115,3 +115,27 @@ module Builders =
     /// </code>
     /// </example>
     let validate = ValidateBuilder()
+
+    /// <summary>
+    /// The <c>layer { }</c> computation expression for provisioning explicit service environments.
+    /// </summary>
+    /// <returns>A <see cref="T:FsFlow.LayerBuilder"/> instance.</returns>
+    /// <remarks>
+    /// Use plain <c>let!</c> when a later provisioning step depends on an earlier value.
+    /// Use sibling <c>and!</c> bindings when services are independent and can be provisioned
+    /// through <c>Layer.merge</c> / <c>Layer.zipPar</c>.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// let appLayer =
+    ///     layer {
+    ///         let! config = configLayer
+    ///
+    ///         let! runtime = BaseRuntime.live
+    ///         and! orders = Orders.layer config
+    ///
+    ///         return { Runtime = runtime; Orders = orders }
+    ///     }
+    /// </code>
+    /// </example>
+    let layer = LayerBuilder()

@@ -8,11 +8,10 @@ This page shows the `Cause<'error>` type, which distinguishes between expected d
 
 ## Core type
 
-- [`Cause`](./t-cause.md): 
+- [`Cause`](./t-cause.md):
  Represents the cause of a failed workflow.
- 
+
 
 ## Module functions
 
 - [`Cause.map`](./m-cause-map.md): Transforms the error value of a failure cause using the provided function.
-

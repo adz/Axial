@@ -47,6 +47,3 @@ type Nullable&lt;&#39;T (requires default constructor and value type and &#39;T 
   static member GetValueRefOrDefaultRef&lt;&#39;T (requires default constructor and value type and &#39;T :&gt; ValueType)&gt; : nullable: inref&lt;Nullable&lt;&#39;T&gt;&gt; -&gt; inref&lt;&#39;T&gt;<br /><em>&lt;summary&gt;Supports a value type that can be assigned &lt;see langword=&quot;null&quot; /&gt;. This class cannot be inherited.&lt;/summary&gt;</em><br /><br />--------------------<br />System.Nullable ()<br />System.Nullable(value: &#39;T) : System.Nullable&lt;&#39;T&gt;</div>
 <div popover class="fsdocs-tip" id="fs3">Multiple items<br />val int: value: &#39;T -&gt; int (requires member op_Explicit)<br /><br />--------------------<br />type int = int32<br /><br />--------------------<br />type int&lt;&#39;Measure&gt; =
   int</div>
-
-
-

@@ -6,7 +6,7 @@ weight: 1003
 
 
  A mergeable validation graph that carries local errors and nested child branches.
- 
+
 
 ## Signature
 
@@ -56,6 +56,3 @@ from Microsoft.FSharp.Collections<br /><br />--------------------<br />type Map&
   member Add: key: &#39;Key * value: &#39;Value -&gt; Map&lt;&#39;Key,&#39;Value&gt;
   ...<br /><br />--------------------<br />new: elements: (&#39;Key * &#39;Value) seq -&gt; Map&lt;&#39;Key,&#39;Value&gt;</div>
 <div popover class="fsdocs-tip" id="fs3">val empty&lt;&#39;Key,&#39;T (requires comparison)&gt; : Map&lt;&#39;Key,&#39;T&gt; (requires comparison)</div>
-
-
-

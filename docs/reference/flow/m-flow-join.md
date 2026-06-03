@@ -30,5 +30,3 @@ Waits for a fiber to complete and returns its successful value or typed failure.
  Joining preserves the child workflow&#39;s error channel. If the child failed with
  <code>Cause.Fail</code>, the joined flow fails with the same typed error; interruption
  and defects remain interruption and defects.
- 
-

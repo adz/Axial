@@ -25,4 +25,3 @@ Transforms the error value of a failure cause using the provided function.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-cause-1.html">Cause</a>&lt;'f&gt;</span></code> | A new cause with the transformed error value, or the original cause if it was not a <code>Fail</code>. |
-

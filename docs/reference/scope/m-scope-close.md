@@ -1,7 +1,7 @@
 ---
 title: "Scope.Close"
 linkTitle: "Close"
-weight: 2103
+weight: 2104
 ---
 
 Closes the scope and runs all registered finalizers in reverse order.
@@ -23,4 +23,3 @@ Closes the scope and runs all registered finalizers in reverse order.
 | Type | Description |
 | --- | --- |
 | <code><a href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.task">Task</a></code> | A task that completes when all finalizers have run. |
-

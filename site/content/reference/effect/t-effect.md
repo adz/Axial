@@ -7,7 +7,7 @@ type: docs
 
 
  Represents the portable execution shape used by the unified <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html">Flow</a>.
- 
+
 
 ## Signature
 
@@ -21,4 +21,3 @@ type: docs
 | --- |
 | `value` |
 | `error` |
-

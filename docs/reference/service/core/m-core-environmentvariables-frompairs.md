@@ -23,4 +23,3 @@ Creates a deterministic provider from a fixed set of name/value pairs.
 | Type | Description |
 | --- | --- |
 | <code><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-services-core-ienvironmentvariables.html">IEnvironmentVariables</a></code> |  |
-

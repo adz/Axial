@@ -7,7 +7,7 @@ type: docs
 
 
  Represents a handle to a mutable reference that can be updated atomically.
- 
+
 
 ## Signature
 
@@ -30,6 +30,3 @@ type: docs
      <span class="k">return</span> <span class="id">v</span>
  <span class="pn">}</span>
 </code></pre>
-
-
-

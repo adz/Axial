@@ -8,11 +8,11 @@ This page shows the `Check` surface for reusable, pure predicates. A check is a 
 
 ## Core type
 
-- [`Check`](./t-check.md): 
+- [`Check`](./t-check.md):
  Predicate helpers that return <a href="https://learn.microsoft.com/dotnet/api/system.result-2">Result</a> values with a unit error,
  plus the bridge functions that turn those checks into application errors. Some helpers preserve
  the source value; others are gates and return <code>unit</code> on success.
- 
+
 
 ## Structured errors
 
@@ -79,4 +79,3 @@ This page shows the `Check` surface for reusable, pure predicates. A check is a 
 - [`Check.notEmpty`](./m-check-notempty.md): Returns the sequence when it is not empty.
 - [`Check.equal`](./m-check-equal.md): Returns success when the values are equal.
 - [`Check.notEqual`](./m-check-notequal.md): Returns success when the values are not equal.
-

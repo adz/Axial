@@ -19,7 +19,8 @@ type IOrders =
     abstract Save: string -> Task<unit>
 
 type AppEnv =
-    { Orders: IOrders }
+    { Orders: IOrders
+      ServiceName: string }
 
     interface IHas<IOrders> with
         member this.Service = this.Orders
@@ -44,10 +45,22 @@ let ordersLayer : Layer<unit, string, IOrders> =
             member _.Save orderId =
                 task { printfn "saved %s" orderId } }
 
+let nameLayer : Layer<unit, string, string> =
+    Layer.succeed "orders"
+
 let appLayer : Layer<unit, string, AppEnv> =
-    ordersLayer
-    |> Layer.map (fun orders -> { Orders = orders })
+    layer {
+        let! name = nameLayer
+        and! orders = ordersLayer
+
+        return
+            { Orders = orders
+              ServiceName = name }
+    }
 ```
+
+Plain `let!` is sequential. Sibling `and!` bindings are independent, so the layer builder uses `Layer.merge` and can
+provision those branches in parallel.
 
 ## Run Through Flow.provide
 

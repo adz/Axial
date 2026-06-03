@@ -25,6 +25,7 @@
     <Compile Include="..\..\src\FsFlow\Stream.fs" />
     <Compile Include="..\..\src\FsFlow\Schedule.fs" />
     <Compile Include="..\..\src\FsFlow\FlowBuilder.fs" />
+    <Compile Include="..\..\src\FsFlow\LayerBuilder.fs" />
     <Compile Include="..\..\src\FsFlow\ValidateBuilder.fs" />
     <Compile Include="..\..\src\FsFlow\ResultBuilder.fs" />
     <Compile Include="..\..\src\FsFlow\Builders.fs" />

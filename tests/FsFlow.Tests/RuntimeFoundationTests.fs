@@ -9,6 +9,11 @@ open Swensen.Unquote
 open Xunit
 
 module RuntimeFoundationTests =
+    type LayerCompositionEnv =
+        { A: int
+          B: int
+          C: int }
+
     [<Fact>]
     let ``scope finalizers run in reverse order and only once`` () =
         let calls = ResizeArray<string>()
@@ -54,6 +59,26 @@ module RuntimeFoundationTests =
         raises<ObjectDisposedException> <@ scope.AddFinalizer(fun _ -> Task.CompletedTask) @>
 
     [<Fact>]
+    let ``parent scope closes child scopes in deterministic reverse registration order`` () =
+        let calls = ResizeArray<string>()
+        let parent = new Scope()
+        let firstChild = parent.AddChild()
+        let secondChild = parent.AddChild()
+
+        firstChild.AddFinalizer(fun _ ->
+            calls.Add "first-child"
+            Task.CompletedTask)
+
+        secondChild.AddFinalizer(fun _ ->
+            calls.Add "second-child"
+            Task.CompletedTask)
+
+        parent.Close(CancellationToken.None).GetAwaiter().GetResult()
+        parent.Close(CancellationToken.None).GetAwaiter().GetResult()
+
+        test <@ List.ofSeq calls = [ "second-child"; "first-child" ] @>
+
+    [<Fact>]
     let ``provided layer finalizes acquired resources when provisioning fails`` () =
         let calls = ResizeArray<string>()
 
@@ -92,6 +117,278 @@ module RuntimeFoundationTests =
 
         test <@ result = Exit.Failure (Cause.Fail "workflow failed") @>
         test <@ List.ofSeq calls = [ "cleanup" ] @>
+
+    [<Fact>]
+    let ``layer zip provisions sequentially left then right`` () =
+        let calls = ResizeArray<string>()
+
+        let left =
+            Layer.effect (fun (_, _) _ ->
+                calls.Add "left"
+                EffectFlow.ofValue 1)
+
+        let right =
+            Layer.effect (fun (_, _) _ ->
+                calls.Add "right"
+                EffectFlow.ofValue 2)
+
+        let result =
+            Flow.env<int * int, string>
+            |> Flow.provide (Layer.zip left right)
+            |> Flow.runSync ()
+
+        test <@ result = Exit.Success (1, 2) @>
+        test <@ List.ofSeq calls = [ "left"; "right" ] @>
+
+    [<Fact>]
+    let ``layer zipPar starts independent branches and cleans child scopes left then right`` () =
+        let calls = ResizeArray<string>()
+        let mutable started = 0
+        let bothStarted = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let release = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+
+        let makeLayer name value =
+
+            Layer.effect (fun (_, scope) cancellationToken ->
+                ValueTask<Exit<int, string>>(
+                    task {
+                        calls.Add($"{name}-start")
+
+                        if Interlocked.Increment(&started) = 2 then
+                            bothStarted.TrySetResult() |> ignore
+
+                        use _ = cancellationToken.Register(fun () -> release.TrySetCanceled(cancellationToken) |> ignore)
+                        do! release.Task
+
+                        scope.AddFinalizer(fun _ ->
+                            calls.Add($"{name}-cleanup")
+                            Task.CompletedTask)
+
+                        return Exit.Success value
+                    }))
+
+        let workflow =
+            Flow.env<int * int, string>
+            |> Flow.provide (Layer.zipPar (makeLayer "left" 1) (makeLayer "right" 2))
+
+        let runTask = Task.Run(fun () -> Flow.runSync () workflow)
+
+        try
+            test <@ bothStarted.Task.Wait(TimeSpan.FromSeconds 2.0) @>
+        finally
+            release.TrySetResult() |> ignore
+
+        let result = runTask.GetAwaiter().GetResult()
+        let starts = calls |> Seq.filter (fun call -> call.EndsWith("-start")) |> Set.ofSeq
+        let cleanups = calls |> Seq.filter (fun call -> call.EndsWith("-cleanup")) |> List.ofSeq
+
+        test <@ result = Exit.Success (1, 2) @>
+        test <@ starts = Set.ofList [ "left-start"; "right-start" ] @>
+        test <@ cleanups = [ "left-cleanup"; "right-cleanup" ] @>
+
+    [<Fact>]
+    let ``layer merge has zipPar semantics`` () =
+        let left = Layer.succeed 1
+        let right = Layer.succeed 2
+
+        let result =
+            Flow.env<int * int, string>
+            |> Flow.provide (Layer.merge left right)
+            |> Flow.runSync ()
+
+        test <@ result = Exit.Success (1, 2) @>
+
+    [<Fact>]
+    let ``layer zipPar finalizes successful branch when sibling provisioning fails`` () =
+        let calls = ResizeArray<string>()
+
+        let successful =
+            Layer.effect (fun (_, scope) _ ->
+                scope.AddFinalizer(fun _ ->
+                    calls.Add "success-cleanup"
+                    Task.CompletedTask)
+
+                EffectFlow.ofValue "ok")
+
+        let failed =
+            Layer.effect (fun (_, _) _ -> EffectFlow.ofError "failed")
+
+        let result =
+            Flow.env<string * string, string>
+            |> Flow.provide (Layer.zipPar successful failed)
+            |> Flow.runSync ()
+
+        test <@ result = Exit.Failure (Cause.Fail "failed") @>
+        test <@ List.ofSeq calls = [ "success-cleanup" ] @>
+
+    [<Fact>]
+    let ``layer zipPar returns deterministic left-biased failure when both branches fail`` () =
+        let left = Layer.effect (fun (_, _) _ -> EffectFlow.ofError "left")
+        let right = Layer.effect (fun (_, _) _ -> EffectFlow.ofError "right")
+
+        let result =
+            Flow.env<string * string, string>
+            |> Flow.provide (Layer.zipPar left right)
+            |> Flow.runSync ()
+
+        test <@ result = Exit.Failure (Cause.Fail "left") @>
+
+    [<Fact>]
+    let ``layer map2 map3 and mapError compose provisioning`` () =
+        let mappedError =
+            Layer.effect (fun (_, _) _ -> EffectFlow.ofError "missing")
+            |> Layer.mapError (fun error -> $"layer:{error}")
+
+        let map2Result =
+            Layer.map2 (+) (Layer.succeed 1) (Layer.succeed 2)
+            |> fun layer ->
+                Flow.env<int, string>
+                |> Flow.provide layer
+                |> Flow.runSync ()
+
+        let map3Result =
+            Layer.map3
+                (fun a b c -> { A = a; B = b; C = c })
+                (Layer.succeed 1)
+                (Layer.succeed 2)
+                (Layer.succeed 3)
+            |> fun layer ->
+                Flow.env<LayerCompositionEnv, string>
+                |> Flow.provide layer
+                |> Flow.runSync ()
+
+        let mappedErrorResult =
+            Flow.env<int, string>
+            |> Flow.provide mappedError
+            |> Flow.runSync ()
+
+        test <@ map2Result = Exit.Success 3 @>
+        test <@ map3Result = Exit.Success { A = 1; B = 2; C = 3 } @>
+        test <@ mappedErrorResult = Exit.Failure (Cause.Fail "layer:missing") @>
+
+    [<Fact>]
+    let ``layer computation expression uses let bang sequentially`` () =
+        let calls = ResizeArray<string>()
+
+        let first =
+            Layer.effect (fun (_, _) _ ->
+                calls.Add "first"
+                EffectFlow.ofValue 1)
+
+        let second value =
+            Layer.effect (fun (_, _) _ ->
+                calls.Add $"second:{value}"
+                EffectFlow.ofValue (value + 1))
+
+        let composed =
+            layer {
+                let! firstValue = first
+                let! secondValue = second firstValue
+                return firstValue, secondValue
+            }
+
+        let result =
+            Flow.env<int * int, string>
+            |> Flow.provide composed
+            |> Flow.runSync ()
+
+        test <@ result = Exit.Success (1, 2) @>
+        test <@ List.ofSeq calls = [ "first"; "second:1" ] @>
+
+    [<Fact>]
+    let ``layer computation expression uses and bang for parallel merge`` () =
+        let calls = ResizeArray<string>()
+        let mutable started = 0
+        let bothStarted = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let release = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+
+        let makeLayer name value =
+            Layer.effect (fun (_, _) cancellationToken ->
+                ValueTask<Exit<int, string>>(
+                    task {
+                        calls.Add($"{name}-start")
+
+                        if Interlocked.Increment(&started) = 2 then
+                            bothStarted.TrySetResult() |> ignore
+
+                        use _ = cancellationToken.Register(fun () -> release.TrySetCanceled(cancellationToken) |> ignore)
+                        do! release.Task
+
+                        return Exit.Success value
+                    }))
+
+        let composed =
+            layer {
+                let! left = makeLayer "left" 1
+                and! right = makeLayer "right" 2
+
+                return left + right
+            }
+
+        let workflow =
+            Flow.env<int, string>
+            |> Flow.provide composed
+
+        let runTask = Task.Run(fun () -> Flow.runSync () workflow)
+
+        try
+            test <@ bothStarted.Task.Wait(TimeSpan.FromSeconds 2.0) @>
+        finally
+            release.TrySetResult() |> ignore
+
+        let result = runTask.GetAwaiter().GetResult()
+        let starts = calls |> Seq.filter (fun call -> call.EndsWith("-start")) |> Set.ofSeq
+
+        test <@ result = Exit.Success 3 @>
+        test <@ starts = Set.ofList [ "left-start"; "right-start" ] @>
+
+    [<Fact>]
+    let ``layer computation expression uses and bang for three-way parallel merge`` () =
+        let calls = ResizeArray<string>()
+        let mutable started = 0
+        let allStarted = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let release = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+
+        let makeLayer name value =
+            Layer.effect (fun (_, _) cancellationToken ->
+                ValueTask<Exit<int, string>>(
+                    task {
+                        calls.Add($"{name}-start")
+
+                        if Interlocked.Increment(&started) = 3 then
+                            allStarted.TrySetResult() |> ignore
+
+                        use _ = cancellationToken.Register(fun () -> release.TrySetCanceled(cancellationToken) |> ignore)
+                        do! release.Task
+
+                        return Exit.Success value
+                    }))
+
+        let composed =
+            layer {
+                let! left = makeLayer "left" 1
+                and! middle = makeLayer "middle" 2
+                and! right = makeLayer "right" 3
+
+                return left + middle + right
+            }
+
+        let workflow =
+            Flow.env<int, string>
+            |> Flow.provide composed
+
+        let runTask = Task.Run(fun () -> Flow.runSync () workflow)
+
+        try
+            test <@ allStarted.Task.Wait(TimeSpan.FromSeconds 2.0) @>
+        finally
+            release.TrySetResult() |> ignore
+
+        let result = runTask.GetAwaiter().GetResult()
+        let starts = calls |> Seq.filter (fun call -> call.EndsWith("-start")) |> Set.ofSeq
+
+        test <@ result = Exit.Success 6 @>
+        test <@ starts = Set.ofList [ "left-start"; "middle-start"; "right-start" ] @>
 
     [<Fact>]
     let ``base runtime layer provisions explicit services from IServiceProvider`` () =

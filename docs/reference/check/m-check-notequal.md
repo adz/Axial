@@ -30,6 +30,3 @@ Returns success when the values are not equal.
 <pre class="fssnip highlighted"><code lang="fsharp"> <span class="id">Check</span><span class="pn">.</span><span class="id">notEqual</span> <span class="n">5</span> <span class="n">6</span> <span class="c">// Ok ()</span>
  <span class="id">Check</span><span class="pn">.</span><span class="id">notEqual</span> <span class="n">5</span> <span class="n">5</span> <span class="c">// Error ()</span>
 </code></pre>
-
-
-

@@ -6,7 +6,7 @@ weight: 2000
 
 
  The fail-fast <code>result { }</code> computation expression.
- 
+
 
 ## Signature
 
@@ -43,6 +43,3 @@ weight: 2000
      <span class="pn">}</span>
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">val parsedUser: obj</div>
-
-
-

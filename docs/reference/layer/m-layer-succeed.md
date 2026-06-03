@@ -1,7 +1,7 @@
 ---
 title: "Layer.succeed"
 linkTitle: "succeed"
-weight: 2101
+weight: 2201
 ---
 
 Creates a layer that succeeds with a fixed output value.
@@ -23,4 +23,3 @@ Creates a layer that succeeds with a fixed output value.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-layer-3.html">Layer</a>&lt;<span>'input,&#32;'error,&#32;'output</span>&gt;</span></code> |  |
-

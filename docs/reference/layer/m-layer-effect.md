@@ -1,7 +1,7 @@
 ---
 title: "Layer.effect"
 linkTitle: "effect"
-weight: 2100
+weight: 2200
 ---
 
 Creates a layer from a raw effectful provisioning function.
@@ -23,4 +23,3 @@ Creates a layer from a raw effectful provisioning function.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-layer-3.html">Layer</a>&lt;<span>'input,&#32;'error,&#32;'output</span>&gt;</span></code> |  |
-

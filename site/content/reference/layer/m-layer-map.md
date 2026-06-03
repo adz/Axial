@@ -1,7 +1,7 @@
 ---
 title: "Layer.map"
 linkTitle: "map"
-weight: 2103
+weight: 2203
 type: docs
 ---
 
@@ -25,4 +25,3 @@ Maps the successful output of a layer.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-layer-3.html">Layer</a>&lt;<span>'input,&#32;'error,&#32;'next</span>&gt;</span></code> |  |
-

@@ -47,6 +47,19 @@ type Scope() =
 
         this.AddFinalizer(fun _ -> resource.DisposeAsync().AsTask())
 
+    /// <summary>Creates a child scope whose cleanup is owned by this scope.</summary>
+    /// <returns>A child scope that is closed when this scope closes.</returns>
+    /// <remarks>
+    /// Child scopes make parallel acquisition deterministic: each branch can register its own
+    /// finalizers, while the parent decides the fixed order in which branch scopes are closed.
+    /// </remarks>
+    member this.AddChild() =
+        let child = new Scope()
+
+        this.AddFinalizer(fun cancellationToken -> child.Close(cancellationToken))
+
+        child
+
     /// <summary>Closes the scope and runs all registered finalizers in reverse order.</summary>
     /// <param name="cancellationToken">The token passed to registered finalizers.</param>
     /// <returns>A task that completes when all finalizers have run.</returns>

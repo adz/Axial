@@ -24,4 +24,3 @@ Creates a deterministic clock that always returns the supplied instant.
 | Type | Description |
 | --- | --- |
 | <code><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-services-core-iclock.html">IClock</a></code> |  |
-

@@ -24,4 +24,3 @@ Binds the success value of an exit outcome to a function that returns a new exit
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-exit-2.html">Exit</a>&lt;<span>'w,&#32;'e</span>&gt;</span></code> | The result of the binder function if the exit was successful; otherwise, the original failure. |
-

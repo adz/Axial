@@ -33,6 +33,3 @@ Lifts a <a href="https://learn.microsoft.com/dotnet/api/system.result-2">Result<
 <div popover class="fsdocs-tip" id="fs1">val res: Result&lt;string,&#39;a&gt;</div>
 <div popover class="fsdocs-tip" id="fs2">union case Result.Ok: ResultValue: &#39;T -&gt; Result&lt;&#39;T,&#39;TError&gt;</div>
 <div popover class="fsdocs-tip" id="fs3">val flow: obj</div>
-
-
-

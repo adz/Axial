@@ -24,4 +24,3 @@ Reads a raw environment-variable value from an explicit environment-variable ser
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;<span>string&#32;option</span></span>&gt;</span></code> |  |
-

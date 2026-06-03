@@ -8,9 +8,9 @@ This page shows the `Validation<'value, 'error>` surface for accumulating severa
 
 ## Core type
 
-- [`Validation`](./t-validation.md): 
+- [`Validation`](./t-validation.md):
  An accumulating validation result that keeps the structured diagnostics graph visible.
- 
+
 
 ## Module functions
 
@@ -40,4 +40,3 @@ This page shows the `Validation<'value, 'error>` surface for accumulating severa
 - [`Validation.key`](./m-validation-key.md): Prefixes a validation with a keyed branch.
 - [`Validation.index`](./m-validation-index.md): Prefixes a validation with an indexed branch.
 - [`Validation.name`](./m-validation-name.md): Prefixes a validation with a named branch.
-

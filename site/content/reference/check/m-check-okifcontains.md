@@ -31,6 +31,3 @@ Returns success when the sequence contains the expected value.
 <pre class="fssnip highlighted"><code lang="fsharp"> <span class="pn">[</span> <span class="n">1</span><span class="pn">;</span> <span class="n">2</span> <span class="pn">]</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">okIfContains</span> <span class="n">2</span> <span class="c">// Ok ()</span>
  <span class="pn">[</span> <span class="n">1</span><span class="pn">;</span> <span class="n">2</span> <span class="pn">]</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">okIfContains</span> <span class="n">3</span> <span class="c">// Error ()</span>
 </code></pre>
-
-
-

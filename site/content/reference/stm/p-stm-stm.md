@@ -7,7 +7,7 @@ type: docs
 
 
  The <code>stm { }</code> computation expression for building atomic transactions.
- 
+
 
 ## Signature
 
@@ -20,4 +20,3 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-stmbuilder.html">StmBuilder</a></code> |  |
-

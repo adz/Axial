@@ -32,7 +32,7 @@ Renders a diagnostics graph in a YAML-like layout for display.
  render as YAML-style bullet items without an `Errors:` key. Use
  <a href="https://learn.microsoft.com/dotnet/api/fsflow.diagnostics.flatten">flatten</a> when you need path-bearing diagnostics for
  reporting or assertions.
- 
+
 
 ## Examples
 
@@ -41,6 +41,3 @@ Renders a diagnostics graph in a YAML-like layout for display.
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">val d: obj</div>
 <div popover class="fsdocs-tip" id="fs2">val s: obj</div>
-
-
-

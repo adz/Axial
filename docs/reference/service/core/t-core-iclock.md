@@ -11,4 +11,3 @@ Provides synchronous access to the current UTC clock.
 <div class="fsdocs-usage">
 <code>type IClock</code>
 </div>
-

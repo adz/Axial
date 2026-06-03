@@ -6,7 +6,7 @@ weight: 2104
 
 
  Executes an STM transaction atomically within a flow while preserving retry/orElse coordination.
- 
+
 
 ## Signature
 
@@ -32,7 +32,7 @@ weight: 2104
  FsFlow&#39;s STM uses a global synchronizing lock to ensure atomicity and coordinate retries.
  While this avoids complex optimistic concurrency control, it means that transactions
  are mutually exclusive and high contention can impact throughput.
- 
+
 
 ## Examples
 
@@ -43,7 +43,7 @@ weight: 2104
          <span class="k">do!</span> <span class="id">TRef</span><span class="pn">.</span><span class="id">set</span> <span class="pn">(</span><span class="id">bal</span> <span class="o">-</span> <span data-fsdocs-tip="fs5" data-fsdocs-tip-unique="9" class="id">amount</span><span class="pn">)</span> <span data-fsdocs-tip="fs2" data-fsdocs-tip-unique="10" class="id">fromAcc</span>
          <span class="k">do!</span> <span class="id">TRef</span><span class="pn">.</span><span class="id">update</span> <span class="pn">(</span><span class="k">fun</span> <span class="id">b</span> <span class="k">-&gt;</span> <span class="id">b</span> <span class="o">+</span> <span data-fsdocs-tip="fs5" data-fsdocs-tip-unique="11" class="id">amount</span><span class="pn">)</span> <span data-fsdocs-tip="fs4" data-fsdocs-tip-unique="12" class="id">toAcc</span>
      <span class="pn">}</span>
- 
+
  <span class="k">let</span> <span data-fsdocs-tip="fs6" data-fsdocs-tip-unique="13" class="id">flow</span> <span class="o">=</span> <span class="id">STM</span><span class="pn">.</span><span class="id">atomically</span> <span class="pn">(</span><span data-fsdocs-tip="fs1" data-fsdocs-tip-unique="14" class="id">transfer</span> <span class="id">acc1</span> <span class="id">acc2</span> <span class="n">100</span><span class="pn">)</span>
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">val transfer: fromAcc: &#39;a -&gt; toAcc: &#39;b -&gt; amount: &#39;c -&gt; &#39;d</div>
@@ -53,6 +53,3 @@ weight: 2104
 <div popover class="fsdocs-tip" id="fs4">val toAcc: &#39;b</div>
 <div popover class="fsdocs-tip" id="fs5">val amount: &#39;c</div>
 <div popover class="fsdocs-tip" id="fs6">val flow: obj</div>
-
-
-

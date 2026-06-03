@@ -24,4 +24,3 @@ Creates a deterministic GUID service that always returns the supplied value.
 | Type | Description |
 | --- | --- |
 | <code><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-services-core-iguid.html">IGuid</a></code> |  |
-

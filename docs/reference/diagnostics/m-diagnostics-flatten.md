@@ -30,7 +30,7 @@ Flattens the structured diagnostics graph into a linear list of diagnostics.
  During flattening, child paths are accumulated from the root down into each emitted diagnostic.
  The tree itself stores only local errors and child branches, while <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-diagnostic-1.html">Diagnostic</a>
  is reserved for reporting output.
- 
+
 
 ## Examples
 
@@ -39,6 +39,3 @@ Flattens the structured diagnostics graph into a linear list of diagnostics.
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">val d: obj</div>
 <div popover class="fsdocs-tip" id="fs2">val flat: obj</div>
-
-
-

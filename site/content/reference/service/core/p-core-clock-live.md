@@ -18,4 +18,3 @@ Creates a live clock backed by <a href="https://learn.microsoft.com/dotnet/api/s
 | Type | Description |
 | --- | --- |
 | <code><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-services-core-iclock.html">IClock</a></code> |  |
-

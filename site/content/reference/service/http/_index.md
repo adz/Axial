@@ -14,5 +14,5 @@ This page shows the HTTP service package. `IHttp` is intentionally narrow: it mo
 
 - [`Http.Http.getString`](./m-http-http-getstring.md): Sends a GET request through an explicit HTTP service and returns the response body.
 - [`Http.Http.live`](./m-http-http-live.md): Creates a live HTTP service backed by <a href="https://learn.microsoft.com/dotnet/api/system.net.http.httpclient">HttpClient</a>.
-- [`Http.Http.layer`](./m-http-http-layer.md): Builds a live HTTP service as a layer.
-
+- [`layer`](./m-http-http-layer.md):
+ The <code>layer { }</code> computation expression for provisioning explicit service environments.

@@ -1,6 +1,7 @@
 namespace FsFlow
 
 open System.Threading
+open System.Threading.Tasks
 
 /// <summary>
 /// Represents a provisioning step that builds an explicit environment inside a scope.
@@ -46,6 +47,15 @@ module Layer =
             invoke layer input scope cancellationToken
             |> EffectFlow.map mapper)
 
+    /// <summary>Maps the typed provisioning failure of a layer.</summary>
+    let mapError
+        (mapper: 'error -> 'nextError)
+        (layer: Layer<'input, 'error, 'output>)
+        : Layer<'input, 'nextError, 'output> =
+        Layer(fun (input, scope) cancellationToken ->
+            invoke layer input scope cancellationToken
+            |> EffectFlow.mapError mapper)
+
     /// <summary>Sequences layer provisioning with a dependent follow-up layer.</summary>
     let bind
         (binder: 'output -> Layer<'input, 'error, 'next>)
@@ -57,6 +67,10 @@ module Layer =
                 invoke (binder value) input scope cancellationToken))
 
     /// <summary>Builds two layers from the same input and scope and returns both outputs.</summary>
+    /// <remarks>
+    /// <c>zip</c> is sequential: the left layer is provisioned before the right layer.
+    /// Use <c>zipPar</c> or <c>merge</c> for independent parallel provisioning.
+    /// </remarks>
     let zip
         (left: Layer<'input, 'error, 'left>)
         (right: Layer<'input, 'error, 'right>)
@@ -66,3 +80,114 @@ module Layer =
             |> EffectFlow.bind (fun leftValue ->
                 invoke right input scope cancellationToken
                 |> EffectFlow.map (fun rightValue -> leftValue, rightValue)))
+
+    let private chooseParallelExit
+        (leftExit: Exit<'left, 'error>)
+        (rightExit: Exit<'right, 'error>)
+        : Exit<'left * 'right, 'error> =
+        match leftExit, rightExit with
+        | Exit.Success leftValue, Exit.Success rightValue ->
+            Exit.Success (leftValue, rightValue)
+        | Exit.Failure leftCause, _ ->
+            Exit.Failure leftCause
+        | _, Exit.Failure rightCause ->
+            Exit.Failure rightCause
+
+    /// <summary>Builds two independent layers in parallel and returns both outputs.</summary>
+    /// <remarks>
+    /// Each branch is provisioned in a parent-owned child scope. When the parent scope closes,
+    /// child scopes are closed in deterministic left-to-right order. If both branches fail,
+    /// the left failure is returned until richer parallel cause accumulation lands.
+    /// </remarks>
+    let zipPar
+        (left: Layer<'input, 'error, 'left>)
+        (right: Layer<'input, 'error, 'right>)
+        : Layer<'input, 'error, 'left * 'right> =
+        Layer(fun (input, scope) cancellationToken ->
+            // Register right first because scopes close finalizers in reverse registration order.
+            let rightScope = scope.AddChild()
+            let leftScope = scope.AddChild()
+
+            #if FABLE_COMPILER
+            let runBranch layer branchScope =
+                async {
+                    try
+                        return! invoke layer input branchScope cancellationToken
+                    with error ->
+                        return Exit.Failure (EffectFlow.causeOfException error)
+                }
+
+            async {
+                let! exits =
+                    [| async {
+                           let! exit = runBranch left leftScope
+                           return box exit
+                       }
+                       async {
+                           let! exit = runBranch right rightScope
+                           return box exit
+                       } |]
+                    |> Async.Parallel
+
+                let leftExit = unbox<Exit<'left, 'error>> exits[0]
+                let rightExit = unbox<Exit<'right, 'error>> exits[1]
+                return chooseParallelExit leftExit rightExit
+            }
+            #else
+            ValueTask<Exit<'left * 'right, 'error>>(
+                task {
+                    let runBranch layer branchScope =
+                        task {
+                            try
+                                return! invoke layer input branchScope cancellationToken |> _.AsTask()
+                            with error ->
+                                return Exit.Failure (EffectFlow.causeOfException error)
+                        }
+
+                    let leftTask = runBranch left leftScope
+                    let rightTask = runBranch right rightScope
+
+                    do! Task.WhenAll(leftTask :> Task, rightTask :> Task)
+
+                    return chooseParallelExit leftTask.Result rightTask.Result
+                })
+            #endif
+        )
+
+    /// <summary>Merges two independent service layers in parallel.</summary>
+    /// <remarks>
+    /// <c>merge</c> is the layer-domain name for <c>zipPar</c>. Use it when combining
+    /// service bundles or environment fragments that do not depend on each other.
+    /// </remarks>
+    let merge
+        (left: Layer<'input, 'error, 'left>)
+        (right: Layer<'input, 'error, 'right>)
+        : Layer<'input, 'error, 'left * 'right> =
+        zipPar left right
+
+    /// <summary>Combines two layers with a mapping function.</summary>
+    let map2
+        (mapper: 'left -> 'right -> 'output)
+        (left: Layer<'input, 'error, 'left>)
+        (right: Layer<'input, 'error, 'right>)
+        : Layer<'input, 'error, 'output> =
+        zip left right
+        |> map (fun (leftValue, rightValue) -> mapper leftValue rightValue)
+
+    /// <summary>Applies a layer-wrapped function to a layer-wrapped value.</summary>
+    let apply
+        (layer: Layer<'input, 'error, 'value -> 'next>)
+        (value: Layer<'input, 'error, 'value>)
+        : Layer<'input, 'error, 'next> =
+        map2 (fun mapper input -> mapper input) layer value
+
+    /// <summary>Combines three layers with a mapping function.</summary>
+    let map3
+        (mapper: 'left -> 'middle -> 'right -> 'output)
+        (left: Layer<'input, 'error, 'left>)
+        (middle: Layer<'input, 'error, 'middle>)
+        (right: Layer<'input, 'error, 'right>)
+        : Layer<'input, 'error, 'output> =
+        apply
+            (map2 (fun leftValue middleValue -> fun rightValue -> mapper leftValue middleValue rightValue) left middle)
+            right

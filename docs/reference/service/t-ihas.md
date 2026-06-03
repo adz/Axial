@@ -23,7 +23,7 @@ Nominal contract for an explicit service dependency.
 
  Environments implement <code>IHas&lt;&#39;service&gt;</code> when they can supply one service value of that type
  through <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-service-1.html">Service</a>.
- 
+
 
 ## Examples
 
@@ -47,6 +47,3 @@ Nominal contract for an explicit service dependency.
   interface obj
   override Service: IDb</div>
 <div popover class="fsdocs-tip" id="fs7">type unit = Unit</div>
-
-
-

@@ -29,6 +29,3 @@ Location markers used to describe where a diagnostic belongs in a validation gra
 <div popover class="fsdocs-tip" id="fs1">val s1: obj</div>
 <div popover class="fsdocs-tip" id="fs2">val s2: obj</div>
 <div popover class="fsdocs-tip" id="fs3">val s3: obj</div>
-
-
-

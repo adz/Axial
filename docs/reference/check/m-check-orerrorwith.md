@@ -29,6 +29,3 @@ Maps a unit error into an application error produced on demand.
 
 <pre class="fssnip highlighted"><code lang="fsharp"> <span class="s">&quot;&quot;</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">okIfNonEmptyStr</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">orErrorWith</span> <span class="pn">(</span><span class="k">fun</span> <span class="pn">(</span><span class="pn">)</span> <span class="k">-&gt;</span> <span class="s">&quot;Empty string&quot;</span><span class="pn">)</span> <span class="c">// Error &quot;Empty string&quot;</span>
 </code></pre>
-
-
-

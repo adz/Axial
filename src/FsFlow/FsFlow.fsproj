@@ -59,6 +59,7 @@
     <Compile Include="Stream.fs" />
     <Compile Include="Schedule.fs" />
     <Compile Include="FlowBuilder.fs" />
+    <Compile Include="LayerBuilder.fs" />
     <Compile Include="ValidateBuilder.fs" />
     <Compile Include="ResultBuilder.fs" />
     <Compile Include="Builders.fs" />

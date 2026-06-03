@@ -24,6 +24,3 @@ Creates an empty diagnostics graph with no errors.
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">val d: obj</div>
 <div popover class="fsdocs-tip" id="fs2">Multiple items<br />val string: value: &#39;T -&gt; string<br /><br />--------------------<br />type string = System.String</div>
-
-
-

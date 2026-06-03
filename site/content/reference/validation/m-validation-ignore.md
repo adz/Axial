@@ -29,6 +29,3 @@ Maps a successful validation value to <code>unit</code> while preserving the dia
 
 <pre class="fssnip highlighted"><code lang="fsharp"> <span class="id">Validation</span><span class="pn">.</span><span class="id">ok</span> <span class="n">5</span> <span class="o">|&gt;</span> <span class="id">Validation</span><span class="pn">.</span><span class="id">ignore</span> <span class="c">// Validation (Ok ())</span>
 </code></pre>
-
-
-

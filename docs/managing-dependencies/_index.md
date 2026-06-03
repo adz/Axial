@@ -49,16 +49,21 @@ let save order : Flow<#IHasOrders, OrderError, unit> =
 
 ## Layers
 
-Layers build explicit environments and own cleanup through `Scope`.
+Layers build explicit environments and own cleanup through `Scope`. Use `layer { }` when application startup needs to
+combine several services into one environment.
 
 ```fsharp
-let app =
-    placeOrder order
-    |> Flow.provide appLayer
+let appLayer =
+    layer {
+        let! runtime = BaseRuntime.live
+        and! orders = ordersLayer
+
+        return { Runtime = runtime; Orders = orders }
+    }
 ```
 
 Use layers when construction can fail, when resources need cleanup, or when a host container should be validated once at
-startup.
+startup. Plain `let!` is sequential and dependent; sibling `and!` bindings are independent and use `Layer.merge`.
 
 ## Tutorials
 

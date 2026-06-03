@@ -464,10 +464,11 @@ let pageSpecs = [
         OutPath = ["layer"; "_index.md"]
         Title = "Layer"
         Description = "Source-documented service provisioning surface for FsFlow."
-        Intro = "This page shows the `Layer<'input, 'error, 'output>` surface used to provision explicit services and environments. Layers build service values inside a `Scope`, can fail during provisioning, and are consumed through `Flow.provide`."
+        Intro = "This page shows the `Layer<'input, 'error, 'output>` surface used to provision explicit services and environments. Layers build service values inside a `Scope`, can fail during provisioning, and are consumed through `Flow.provide`. Use `layer { }` for application environment construction: plain `let!` is dependent and sequential, while sibling `and!` bindings use `Layer.merge` / `Layer.zipPar` for independent parallel provisioning."
         SymbolIds = [
             "Core type", ["T:FsFlow.Layer`3"]
-            "Module functions", ["M:FsFlow.Layer.effect"; "M:FsFlow.Layer.succeed"; "M:FsFlow.Layer.read"; "M:FsFlow.Layer.map"; "M:FsFlow.Layer.bind"; "M:FsFlow.Layer.zip"]
+            "Builder", ["P:FsFlow.Builders.layer"]
+            "Module functions", ["M:FsFlow.Layer.effect"; "M:FsFlow.Layer.succeed"; "M:FsFlow.Layer.read"; "M:FsFlow.Layer.map"; "M:FsFlow.Layer.mapError"; "M:FsFlow.Layer.bind"; "M:FsFlow.Layer.zip"; "M:FsFlow.Layer.zipPar"; "M:FsFlow.Layer.merge"; "M:FsFlow.Layer.map2"; "M:FsFlow.Layer.apply"; "M:FsFlow.Layer.map3"]
             "Flow integration", ["M:FsFlow.Flow.provide"]
         ]
         Alias = None
@@ -479,7 +480,7 @@ let pageSpecs = [
         Intro = "This page shows the `Scope` surface used to own cleanup for resources acquired during provisioning and execution. Scopes register finalizers, disposables, and async disposables, and they close in reverse registration order."
         SymbolIds = [
             "Core type", ["T:FsFlow.Scope"]
-            "Methods", ["M:FsFlow.Scope.AddFinalizer(Microsoft.FSharp.Core.FSharpFunc{System.Threading.CancellationToken,System.Threading.Tasks.Task})"; "M:FsFlow.Scope.AddDisposable(System.IDisposable)"; "M:FsFlow.Scope.AddAsyncDisposable(System.IAsyncDisposable)"; "M:FsFlow.Scope.Close(System.Threading.CancellationToken)"]
+            "Methods", ["M:FsFlow.Scope.AddFinalizer(Microsoft.FSharp.Core.FSharpFunc{System.Threading.CancellationToken,System.Threading.Tasks.Task})"; "M:FsFlow.Scope.AddDisposable(System.IDisposable)"; "M:FsFlow.Scope.AddAsyncDisposable(System.IAsyncDisposable)"; "M:FsFlow.Scope.AddChild"; "M:FsFlow.Scope.Close(System.Threading.CancellationToken)"]
         ]
         Alias = None
     }
@@ -587,6 +588,12 @@ let childPageWeight (id: string) (sectionOrdinal: int) (itemOrdinal: int) =
     | 'T' -> 1000 + ordinal
     | _ -> 2000 + ordinal
 
+let normalizeGeneratedMarkdown (content: string) =
+    content.Replace("\r\n", "\n").Split('\n')
+    |> Array.map (fun line -> line.TrimEnd())
+    |> String.concat "\n"
+    |> fun text -> text.TrimEnd() + "\n"
+
 [<EntryPoint>]
 let main argv =
     let root = Path.GetFullPath(Path.Combine(__SOURCE_DIRECTORY__, "../.."))
@@ -664,10 +671,10 @@ let main argv =
                     let linkText = if String.IsNullOrEmpty qualifier then m.Name else qualifier + "." + m.Name
                     indexContent <- indexContent + $"- [`{linkText}`](./{pageName}): {m.Comment.Summary.HtmlText}\n"
                     let memberPageContent = renderMemberPage (childPageWeight id sectionOrdinal itemOrdinal) m
-                    File.WriteAllText(Path.Combine(Path.GetDirectoryName(outPath), pageName), memberPageContent)
+                    File.WriteAllText(Path.Combine(Path.GetDirectoryName(outPath), pageName), normalizeGeneratedMarkdown memberPageContent)
                     
                     match spec.Alias with
-                    | Some a -> File.WriteAllText(Path.Combine(Path.GetDirectoryName(outPath), a), memberPageContent)
+                    | Some a -> File.WriteAllText(Path.Combine(Path.GetDirectoryName(outPath), a), normalizeGeneratedMarkdown memberPageContent)
                     | None -> ()
 
                 | Some (:? ApiDocEntity as e) ->
@@ -676,11 +683,11 @@ let main argv =
                     let linkText = cleanName eFullName
                     indexContent <- indexContent + $"- [`{linkText}`](./{pageName}): {e.Comment.Summary.HtmlText}\n"
                     let entityPageContent = renderEntityPage (childPageWeight id sectionOrdinal itemOrdinal) e
-                    File.WriteAllText(Path.Combine(Path.GetDirectoryName(outPath), pageName), entityPageContent)
+                    File.WriteAllText(Path.Combine(Path.GetDirectoryName(outPath), pageName), normalizeGeneratedMarkdown entityPageContent)
                 | _ -> 
                     printfn "Warning: symbol not found: %s" id
             indexContent <- indexContent + "\n"
             
-        File.WriteAllText(outPath, indexContent)
+        File.WriteAllText(outPath, normalizeGeneratedMarkdown indexContent)
 
     0

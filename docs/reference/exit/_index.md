@@ -7,9 +7,9 @@ This page shows the `Exit<'value, 'error>` type, which represents the final outc
 
 ## Core type
 
-- [`Exit`](./t-exit.md): 
+- [`Exit`](./t-exit.md):
  Represents the final outcome of a workflow execution.
- 
+
 
 ## Module functions
 
@@ -19,4 +19,3 @@ This page shows the `Exit<'value, 'error>` type, which represents the final outc
 - [`Exit.mapBoth`](./m-exit-mapboth.md): Transforms both success and failure outcomes of an exit using the provided functions.
 - [`Exit.fromResult`](./m-exit-fromresult.md): Creates an exit outcome from a standard F# <code>Result</code>.
 - [`Exit.toResult`](./m-exit-toresult.md): Converts an exit outcome to a standard F# <code>Result</code>.
-

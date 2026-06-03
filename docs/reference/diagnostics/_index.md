@@ -10,9 +10,9 @@ This page shows the diagnostics graph used by `Validation`. A `Diagnostics<'erro
 - [`PathSegment`](./t-pathsegment.md): Location markers used to describe where a diagnostic belongs in a validation graph.
 - [`Diagnostic.Path`](./t-path.md): The path to the source of the error.
 - [`Diagnostic`](./t-diagnostic.md): A single failure item attached to a path in a validation graph.
-- [`Diagnostics`](./t-diagnostics.md): 
+- [`Diagnostics`](./t-diagnostics.md):
  A mergeable validation graph that carries local errors and nested child branches.
- 
+
 
 ## Module functions
 
@@ -21,4 +21,3 @@ This page shows the diagnostics graph used by `Validation`. A `Diagnostics<'erro
 - [`Diagnostics.merge`](./m-diagnostics-merge.md): Recursively merges two diagnostics graphs, combining shared branches and local errors.
 - [`Diagnostics.toString`](./m-diagnostics-tostring.md): Renders a diagnostics graph in a YAML-like layout for display.
 - [`Diagnostics.flatten`](./m-diagnostics-flatten.md): Flattens the structured diagnostics graph into a linear list of diagnostics.
-

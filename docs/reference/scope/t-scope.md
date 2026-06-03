@@ -6,7 +6,7 @@ weight: 1000
 
 
  Owns finalizers for resources acquired during provisioning or runtime execution.
- 
+
 
 ## Signature
 
@@ -19,5 +19,3 @@ weight: 1000
 
  Scopes aggregate cleanup in reverse registration order, prevent double-disposal, and surface
  cleanup failures as defects rather than typed business errors.
- 
-

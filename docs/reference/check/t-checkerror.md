@@ -17,4 +17,3 @@ Structured errors returned by error-rich check helpers.
 | Case | Description |
 | --- | --- |
 | `Null` | The supplied value was null or missing. |
-

@@ -37,6 +37,3 @@ Combines three validations, accumulating errors when any input fails.
 <div popover class="fsdocs-tip" id="fs1">val v1: obj</div>
 <div popover class="fsdocs-tip" id="fs2">val v2: obj</div>
 <div popover class="fsdocs-tip" id="fs3">val v3: obj</div>
-
-
-

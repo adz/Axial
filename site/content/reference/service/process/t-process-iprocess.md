@@ -12,4 +12,3 @@ Provides asynchronous access to external process execution.
 <div class="fsdocs-usage">
 <code>type IProcess</code>
 </div>
-

@@ -7,7 +7,7 @@ type: docs
 
 
  The universal <code>flow { }</code> computation expression.
- 
+
 
 ## Signature
 
@@ -44,6 +44,3 @@ type: docs
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">val greeting: obj</div>
 <div popover class="fsdocs-tip" id="fs2">val async: AsyncBuilder</div>
-
-
-

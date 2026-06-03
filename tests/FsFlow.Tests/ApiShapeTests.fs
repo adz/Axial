@@ -154,4 +154,8 @@ module ApiShapeTests =
 
         moduleType typeof<Layer<unit, unit, int>> "FsFlow.Layer"
         |> publicStaticMemberNames
-        |> assertContainsAll [ "effect"; "succeed"; "read"; "map"; "bind"; "zip" ]
+        |> assertContainsAll [ "effect"; "succeed"; "read"; "map"; "mapError"; "bind"; "zip"; "zipPar"; "merge"; "map2"; "map3"; "apply" ]
+
+        typeof<LayerBuilder>
+        |> publicInstanceMethodNames
+        |> assertContainsAll [ "Return"; "ReturnFrom"; "Bind"; "BindReturn"; "Delay"; "Run"; "Combine"; "MergeSources"; "MergeSources3" ]

@@ -29,6 +29,3 @@ Merges two validations into a validation of a tuple.
 
 <pre class="fssnip highlighted"><code lang="fsharp"> <span class="id">Validation</span><span class="pn">.</span><span class="id">merge</span> <span class="pn">(</span><span class="id">Validation</span><span class="pn">.</span><span class="id">ok</span> <span class="n">1</span><span class="pn">)</span> <span class="pn">(</span><span class="id">Validation</span><span class="pn">.</span><span class="id">ok</span> <span class="s">&quot;a&quot;</span><span class="pn">)</span> <span class="c">// Validation (Ok (1, &quot;a&quot;))</span>
 </code></pre>
-
-
-

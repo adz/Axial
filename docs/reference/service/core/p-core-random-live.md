@@ -17,4 +17,3 @@ Creates a live random-number generator backed by <a href="https://learn.microsof
 | Type | Description |
 | --- | --- |
 | <code><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-services-core-irandom.html">IRandom</a></code> |  |
-

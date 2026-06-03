@@ -11,4 +11,3 @@ Provides synchronous access to runtime logging.
 <div class="fsdocs-usage">
 <code>type ILog</code>
 </div>
-

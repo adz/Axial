@@ -30,7 +30,7 @@ Computes a fallback validation from the source diagnostics when validation fails
 
  This is the lazy counterpart to <a href="https://learn.microsoft.com/dotnet/api/orelse">orElse</a> and is useful when the alternate
  branch depends on the accumulated diagnostics.
- 
+
 
 ## Examples
 
@@ -38,6 +38,3 @@ Computes a fallback validation from the source diagnostics when validation fails
  <span data-fsdocs-tip="fs1" data-fsdocs-tip-unique="2" class="id">v1</span> <span class="o">|&gt;</span> <span class="id">Validation</span><span class="pn">.</span><span class="id">orElseWith</span> <span class="pn">(</span><span class="k">fun</span> <span class="id">diag</span> <span class="k">-&gt;</span> <span class="id">Validation</span><span class="pn">.</span><span class="id">ok</span> <span class="n">10</span><span class="pn">)</span> <span class="c">// Validation (Ok 10)</span>
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">val v1: obj</div>
-
-
-

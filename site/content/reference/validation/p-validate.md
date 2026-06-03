@@ -7,7 +7,7 @@ type: docs
 
 
  The accumulating <code>validate { }</code> computation expression.
- 
+
 
 ## Signature
 
@@ -67,6 +67,3 @@ type: docs
      <span class="pn">}</span>
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">val validatedCustomer: obj</div>
-
-
-

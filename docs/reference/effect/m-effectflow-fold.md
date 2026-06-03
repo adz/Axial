@@ -25,4 +25,3 @@ weight: 2107
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-effect-2.html">Effect</a>&lt;<span>'next,&#32;'nextError</span>&gt;</span></code> |  |
-

@@ -17,4 +17,3 @@ Typed accessors for explicit and provider-resolved services.
 | Name |
 | --- |
 | `service` |
-

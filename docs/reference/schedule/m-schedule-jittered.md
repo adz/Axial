@@ -29,6 +29,3 @@ Adds random jitter to a schedule&#39;s delay.
 <pre class="fssnip highlighted"><code lang="fsharp"> <span class="k">let</span> <span data-fsdocs-tip="fs1" data-fsdocs-tip-unique="1" class="id">schedule</span> <span class="o">=</span> <span class="id">Schedule</span><span class="pn">.</span><span class="id">spaced</span> <span class="pn">(</span><span class="id">TimeSpan</span><span class="pn">.</span><span class="id">FromSeconds</span> <span class="n">1.0</span><span class="pn">)</span> <span class="o">|&gt;</span> <span class="id">Schedule</span><span class="pn">.</span><span class="id">jittered</span>
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">val schedule: obj</div>
-
-
-

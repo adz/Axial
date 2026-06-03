@@ -21,4 +21,3 @@ This page shows the `Flow.Runtime` helpers for closed executor mechanics. These 
 - [`Flow.Runtime.timeoutToError`](./m-flow-runtime-timeouttoerror.md): Alias for <code>timeout</code> that emphasizes typed failure on timeout.
 - [`Flow.Runtime.timeoutWith`](./m-flow-runtime-timeoutwith.md): Runs a fallback flow when the source flow does not complete before the timeout.
 - [`Flow.Runtime.retry`](./m-flow-runtime-retry.md): Retries typed failures according to the specified policy.
-

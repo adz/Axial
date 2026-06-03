@@ -7,7 +7,7 @@ type: docs
 
 
  Represents a transactional operation that can be composed, retried, and executed atomically.
- 
+
 
 ## Signature
 
@@ -26,4 +26,3 @@ type: docs
 | Case | Description |
 | --- | --- |
 | `STM` |  |
-

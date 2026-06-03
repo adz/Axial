@@ -7,7 +7,7 @@ type: docs
 
 
  Represents a handle to a workflow that has already been started.
- 
+
 
 ## Signature
 
@@ -36,5 +36,3 @@ type: docs
  work&#39;s typed failure and success channels available through <code>Flow.join</code>,
  and it carries an interruption source so parent workflows can ask the child
  to stop and then wait for cleanup to finish.
- 
-

@@ -16,4 +16,3 @@ This page shows the `Schedule` surface for describing retry and repeat policies 
 - [`Schedule.spaced`](./m-schedule-spaced.md): Creates a schedule that recurs with a fixed delay between attempts.
 - [`Schedule.exponential`](./m-schedule-exponential.md): Creates a schedule that recurs with exponential backoff.
 - [`Schedule.jittered`](./m-schedule-jittered.md): Adds random jitter to a schedule&#39;s delay.
-

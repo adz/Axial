@@ -30,7 +30,7 @@ Recursively merges two diagnostics graphs, combining shared branches and local e
 
  This is the core operation for applicative validation. It ensures that errors from sibling
  fields are collected together into a single structured graph.
- 
+
 
 ## Examples
 
@@ -41,6 +41,3 @@ Recursively merges two diagnostics graphs, combining shared branches and local e
 <div popover class="fsdocs-tip" id="fs1">val d1: obj</div>
 <div popover class="fsdocs-tip" id="fs2">val d2: obj</div>
 <div popover class="fsdocs-tip" id="fs3">val combined: obj</div>
-
-
-
