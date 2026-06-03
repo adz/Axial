@@ -94,6 +94,9 @@ explicit services and provisioned through environments and layers.
 - `Flow.provide` is the main way to run flows with a built environment
 - `layer { }` is the primary app-environment construction style: `let!` is dependent/sequential, while sibling `and!`
   uses `Layer.merge` / `Layer.zipPar` for independent provisioning
+- `Flow.acquireReleaseWith` is the local acquire/use/release combinator
+- `Flow.acquireRelease` attaches acquired resources to the current runtime scope
+- `Layer.acquireRelease` attaches provisioned service resources to the layer scope
 
 The internal registry has been removed rather than promoted.
 

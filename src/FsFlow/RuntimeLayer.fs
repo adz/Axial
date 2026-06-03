@@ -38,6 +38,34 @@ module Layer =
     let read (projection: 'input -> 'output) : Layer<'input, 'error, 'output> =
         Layer(fun (input, _) _ -> EffectFlow.ofValue (projection input))
 
+    /// <summary>Registers an asynchronous finalizer with the layer scope.</summary>
+    /// <param name="finalizer">The finalizer to run when the layer scope closes.</param>
+    /// <returns>A layer that registers the finalizer.</returns>
+    let addFinalizer
+        (finalizer: CancellationToken -> Task)
+        : Layer<'input, 'error, unit> =
+        Layer(fun (_, scope) _ ->
+            scope.AddFinalizer finalizer
+            EffectFlow.ofValue ())
+
+    /// <summary>Acquires a resource and registers its release with the layer scope.</summary>
+    /// <param name="acquire">The layer that acquires the resource.</param>
+    /// <param name="release">The release action to run when the layer scope closes.</param>
+    /// <returns>A layer that succeeds with the acquired resource.</returns>
+    /// <remarks>
+    /// Use this for service implementations or provisioned resources that must live for the
+    /// full <c>Flow.provide</c> boundary rather than only for the construction expression.
+    /// </remarks>
+    let acquireRelease
+        (acquire: Layer<'input, 'error, 'resource>)
+        (release: 'resource -> CancellationToken -> Task)
+        : Layer<'input, 'error, 'resource> =
+        Layer(fun (input, scope) cancellationToken ->
+            invoke acquire input scope cancellationToken
+            |> EffectFlow.bind (fun resource ->
+                scope.AddFinalizer(fun ct -> release resource ct)
+                EffectFlow.ofValue resource))
+
     /// <summary>Maps the successful output of a layer.</summary>
     let map
         (mapper: 'output -> 'next)

@@ -1,7 +1,7 @@
 ---
 title: "Layer.mapError"
 linkTitle: "mapError"
-weight: 2204
+weight: 2206
 type: docs
 ---
 

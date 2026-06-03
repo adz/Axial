@@ -1,7 +1,7 @@
 ---
 title: "Layer.merge"
 linkTitle: "merge"
-weight: 2208
+weight: 2210
 ---
 
 Merges two independent service layers in parallel.

@@ -1,7 +1,7 @@
 ---
 title: "Layer.bind"
 linkTitle: "bind"
-weight: 2205
+weight: 2207
 type: docs
 ---
 

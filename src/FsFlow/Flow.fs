@@ -102,6 +102,99 @@ module Flow =
     /// <returns>An effect that represents the asynchronous execution outcome.</returns>
     let runWithToken = runFull
 
+#if !FABLE_COMPILER
+    /// <summary>Registers an asynchronous finalizer with the current runtime scope.</summary>
+    /// <param name="finalizer">The finalizer to run when the current scope closes.</param>
+    /// <returns>A flow that registers the finalizer.</returns>
+    /// <remarks>
+    /// Use this when a resource acquired by a subflow should live until the surrounding
+    /// runtime or layer scope closes, rather than only until the current expression ends.
+    /// </remarks>
+    let addFinalizer
+        (finalizer: CancellationToken -> Task)
+        : Flow<'env, 'error, unit> =
+        Flow(fun _ _ ->
+            RuntimeState.current().Scope.AddFinalizer finalizer
+            EffectFlow.ofValue ())
+
+    /// <summary>Registers a disposable resource with the current runtime scope.</summary>
+    /// <param name="resource">The disposable resource to close when the current scope closes.</param>
+    /// <returns>A flow that registers the resource.</returns>
+    let addDisposable
+        (resource: IDisposable)
+        : Flow<'env, 'error, unit> =
+        Flow(fun _ _ ->
+            RuntimeState.current().Scope.AddDisposable resource
+            EffectFlow.ofValue ())
+
+    /// <summary>Registers an asynchronously disposable resource with the current runtime scope.</summary>
+    /// <param name="resource">The async disposable resource to close when the current scope closes.</param>
+    /// <returns>A flow that registers the resource.</returns>
+    let addAsyncDisposable
+        (resource: IAsyncDisposable)
+        : Flow<'env, 'error, unit> =
+        Flow(fun _ _ ->
+            RuntimeState.current().Scope.AddAsyncDisposable resource
+            EffectFlow.ofValue ())
+
+    /// <summary>Acquires a resource and registers its release with the current runtime scope.</summary>
+    /// <param name="acquire">The flow that acquires the resource.</param>
+    /// <param name="release">The release action to run when the current scope closes.</param>
+    /// <returns>A flow that succeeds with the acquired resource.</returns>
+    /// <remarks>
+    /// The resource is not released when this expression finishes. It is released when the
+    /// surrounding runtime scope closes, which makes it suitable for resources acquired by
+    /// subflows and then shared by later work in the same execution boundary.
+    /// </remarks>
+    let acquireRelease
+        (acquire: Flow<'env, 'error, 'resource>)
+        (release: 'resource -> CancellationToken -> Task)
+        : Flow<'env, 'error, 'resource> =
+        Flow(fun environment cancellationToken ->
+            invoke acquire environment cancellationToken
+            |> EffectFlow.bind (fun resource ->
+                RuntimeState.current().Scope.AddFinalizer(fun ct -> release resource ct)
+                EffectFlow.ofValue resource))
+
+    /// <summary>Acquires a resource, uses it, and always runs the release action.</summary>
+    /// <param name="acquire">The flow that acquires the resource.</param>
+    /// <param name="release">The release action to run after the resource is used.</param>
+    /// <param name="useResource">The flow that uses the acquired resource.</param>
+    /// <returns>A flow that releases the resource after use, including failure paths.</returns>
+    /// <remarks>
+    /// Use this for lexical acquire/use/release. For resources that should live until the
+    /// surrounding scope closes, use <see cref="M:FsFlow.Flow.acquireRelease" />.
+    /// </remarks>
+    let acquireReleaseWith
+        (acquire: Flow<'env, 'error, 'resource>)
+        (release: 'resource -> CancellationToken -> Task)
+        (useResource: 'resource -> Flow<'env, 'error, 'value>)
+        : Flow<'env, 'error, 'value> =
+        Flow(fun environment cancellationToken ->
+            ValueTask<Exit<'value, 'error>>(
+                task {
+                    let! acquireExit = invoke acquire environment cancellationToken
+
+                    match acquireExit with
+                    | Exit.Failure cause ->
+                        return Exit.Failure cause
+                    | Exit.Success resource ->
+                        let! useExit =
+                            task {
+                                try
+                                    return! invoke (useResource resource) environment cancellationToken |> _.AsTask()
+                                with error ->
+                                    return Exit.Failure (EffectFlow.causeOfException error)
+                            }
+
+                        try
+                            do! release resource cancellationToken
+                            return useExit
+                        with error ->
+                            return Exit.Failure (EffectFlow.causeOfException error)
+                }))
+#endif
+
     /// <summary>Executes a flow with the provided environment and the default cancellation token.</summary>
     /// <param name="environment">The environment required by the flow.</param>
     /// <param name="flow">The workflow to execute.</param>
@@ -442,36 +535,6 @@ module Flow =
         /// <returns>A flow that succeeds with the ambient <c>trace_id</c> value, if present.</returns>
         let traceId<'env, 'error> : Flow<'env, 'error, string option> =
             Flow(fun _ _ -> EffectFlow.ofValue (RuntimeState.current().Annotations |> Map.tryFind "trace_id"))
-
-#if !FABLE_COMPILER
-        /// <summary>Acquires a resource, uses it, and always runs the release action.</summary>
-        /// <param name="acquire">The flow that acquires the resource.</param>
-        /// <param name="release">The task-based release action.</param>
-        /// <param name="useResource">The flow that uses the acquired resource.</param>
-        /// <returns>A flow that releases the resource after use, including failure paths.</returns>
-        let useWithAcquireRelease
-            (acquire: Flow<'env, 'error, 'resource>)
-            (release: 'resource -> CancellationToken -> Task)
-            (useResource: 'resource -> Flow<'env, 'error, 'value>)
-            : Flow<'env, 'error, 'value> =
-            Flow(fun environment cancellationToken ->
-                ValueTask<Exit<'value, 'error>>(
-                    task {
-                        let! acquireExit = invoke acquire environment cancellationToken
-
-                        match acquireExit with
-                        | Exit.Failure cause ->
-                            return Exit.Failure cause
-                        | Exit.Success resource ->
-                            try
-                                let! exit = invoke (useResource resource) environment cancellationToken
-                                do! release resource cancellationToken
-                                return exit
-                            with error ->
-                                do! release resource cancellationToken
-                                return Exit.Failure (EffectFlow.causeOfException error)
-                    }))
-#endif
 
         /// <summary>Fails with the supplied typed error when the flow does not complete before the timeout.</summary>
         /// <param name="after">The timeout duration.</param>

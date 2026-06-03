@@ -51,6 +51,11 @@ module ApiShapeTests =
               "fail"
               "fromResult"
               "fromOption"
+              "acquireRelease"
+              "acquireReleaseWith"
+              "addFinalizer"
+              "addDisposable"
+              "addAsyncDisposable"
               "env"
               "read"
               "map"
@@ -154,7 +159,7 @@ module ApiShapeTests =
 
         moduleType typeof<Layer<unit, unit, int>> "FsFlow.Layer"
         |> publicStaticMemberNames
-        |> assertContainsAll [ "effect"; "succeed"; "read"; "map"; "mapError"; "bind"; "zip"; "zipPar"; "merge"; "map2"; "map3"; "apply" ]
+        |> assertContainsAll [ "effect"; "succeed"; "read"; "addFinalizer"; "acquireRelease"; "map"; "mapError"; "bind"; "zip"; "zipPar"; "merge"; "map2"; "map3"; "apply" ]
 
         typeof<LayerBuilder>
         |> publicInstanceMethodNames

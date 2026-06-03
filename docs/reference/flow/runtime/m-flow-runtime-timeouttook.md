@@ -1,7 +1,7 @@
 ---
 title: "Flow.Runtime.timeoutToOk"
 linkTitle: "timeoutToOk"
-weight: 2009
+weight: 2008
 ---
 
 Returns the supplied success value when the flow does not complete before the timeout.

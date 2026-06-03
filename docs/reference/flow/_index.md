@@ -66,6 +66,14 @@ Note that common extensions such as `Flow.Retry` and `Flow.Repeat` are available
 - [`Flow.traverse`](./m-flow-traverse.md): Transforms a sequence of values into a flow and stops at the first failure.
 - [`Flow.sequence`](./m-flow-sequence.md): Transforms a sequence of flows into a flow of a sequence and stops at the first failure.
 
+## Scoped resources
+
+- [`Flow.addFinalizer`](./m-flow-addfinalizer.md): Registers an asynchronous finalizer with the current runtime scope.
+- [`Flow.addDisposable`](./m-flow-adddisposable.md): Registers a disposable resource with the current runtime scope.
+- [`Flow.addAsyncDisposable`](./m-flow-addasyncdisposable.md): Registers an asynchronously disposable resource with the current runtime scope.
+- [`Flow.acquireRelease`](./m-flow-acquirerelease.md): Acquires a resource and registers its release with the current runtime scope.
+- [`Flow.acquireReleaseWith`](./m-flow-acquirereleasewith.md): Acquires a resource, uses it, and always runs the release action.
+
 ## Parallel orchestration
 
 - [`Flow.zipPar`](./m-flow-zippar.md): Combines two flows into a tuple of their values, running them concurrently.

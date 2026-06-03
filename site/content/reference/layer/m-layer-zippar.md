@@ -1,7 +1,7 @@
 ---
 title: "Layer.zipPar"
 linkTitle: "zipPar"
-weight: 2207
+weight: 2209
 type: docs
 ---
 

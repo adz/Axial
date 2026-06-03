@@ -151,10 +151,24 @@ module TestSupport =
 
         Task.WhenAll(standardOutput, standardError).Wait(TimeSpan.FromSeconds(5.0)) |> ignore
 
+        let readCompletedOutput (streamName: string) (readTask: Task<string>) =
+            if readTask.IsCompletedSuccessfully then
+                readTask.Result
+            elif readTask.IsFaulted then
+                $"{Environment.NewLine}{streamName} read failed: {readTask.Exception.GetBaseException().Message}"
+            elif readTask.IsCanceled then
+                $"{Environment.NewLine}{streamName} read was canceled."
+            else
+                $"{Environment.NewLine}{streamName} read did not complete after the process timeout."
+
+        let output =
+            readCompletedOutput "stdout" standardOutput
+            + readCompletedOutput "stderr" standardError
+
         if completed then
-            childProcess.ExitCode, standardOutput.Result + standardError.Result
+            childProcess.ExitCode, output
         else
-            124, standardOutput.Result + standardError.Result + $"{Environment.NewLine}Timed out waiting for {scriptPath}."
+            124, output + $"{Environment.NewLine}Timed out waiting for {scriptPath}."
 
     type SingleConsumptionValueTaskSource<'value>(value: 'value) as this =
         let consumptionCount = ref 0

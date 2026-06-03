@@ -28,6 +28,9 @@ Workflows result in one of three `Exit` outcomes:
 - Use `Service<'service>.get()` when reusable helpers need a named service contract and `'env :> IHas<'service>`.
 - Use `layer { }` plus `Flow.provide` to build environments and own scoped cleanup.
 - In `layer { }`, plain `let!` is sequential/dependent; sibling `and!` is independent and uses `Layer.merge` / `Layer.zipPar`.
+- Use `use` / `use!` for local lexical resource lifetime.
+- Use `Flow.acquireReleaseWith` for acquire/use/release in one flow expression.
+- Use `Flow.acquireRelease` or `Layer.acquireRelease` when a resource should live until the current runtime or layer scope closes.
 - Use `Service<'service>.resolve()` only for deliberate `IServiceProvider` edge lookup.
 - Prefer plain records for application dependencies unless a named abstraction clearly pays for itself.
 - Keep business and service requirements visible in `'env`.
@@ -98,6 +101,7 @@ equivalent, FsFlow usually expects a different boundary shape rather than a 1:1 
 - `Service<'service>.get()`: Read a named service from an `IHas<'service>` environment.
 - `Service<'service>.resolve()`: Resolve a service from an `IServiceProvider` boundary.
 - `Layer.succeed`, `Layer.effect`, `Layer.zip`, `Layer.zipPar`, `Layer.merge`, `Layer.map2`, `Layer.map3`, `Layer.mapError`: Build explicit service environments.
+- `Flow.acquireReleaseWith`, `Flow.acquireRelease`, `Layer.acquireRelease`: Manage local and scoped resource lifetimes.
 - `provide layer flow`: Run a flow with an environment built by a layer.
 - `map`, `mapError`, `bind`, `tap`, `tapError`: Core combinators.
 - `catch`: Handle exceptions.

@@ -146,6 +146,20 @@ expression, sibling `and!` bindings use `merge` instead.
 `Flow.provide` creates a root scope, builds the layer, runs the downstream flow, and closes the scope. Cleanup runs when
 the layer fails, the downstream flow fails, or the downstream flow succeeds.
 
+Use `Layer.acquireRelease` when a layer provisions a service implementation or resource that must live for the whole
+provided flow:
+
+```fsharp
+let connectionLayer =
+    Layer.acquireRelease
+        (Layer.effect (fun (connectionString, _) _ ->
+            openConnection connectionString
+            |> EffectFlow.ofValue))
+        (fun connection _ ->
+            connection.Dispose()
+            Task.CompletedTask)
+```
+
 Parallel layer composition uses parent-owned child scopes. If one branch fails after another branch acquired resources,
 the acquired branch is finalized when the root scope closes. If both parallel branches fail, FsFlow returns the left
 failure for now; richer parallel cause accumulation is deferred until the `Cause` model grows that shape.

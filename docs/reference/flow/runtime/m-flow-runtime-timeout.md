@@ -1,7 +1,7 @@
 ---
 title: "Flow.Runtime.timeout"
 linkTitle: "timeout"
-weight: 2008
+weight: 2007
 ---
 
 Fails with the supplied typed error when the flow does not complete before the timeout.

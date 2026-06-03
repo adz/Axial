@@ -280,6 +280,7 @@ let pageSpecs = [
             "Fiber operations", ["M:FsFlow.Flow.fork"; "M:FsFlow.Flow.join"; "M:FsFlow.Flow.interrupt"]
             "Execution", ["M:FsFlow.Flow.run"; "M:FsFlow.Flow.runFull"; "M:FsFlow.Flow.toAsync"; "M:FsFlow.Flow.toAsyncResult"; "M:FsFlow.Flow.toTask"; "M:FsFlow.Flow.toTaskResult"; "M:FsFlow.Flow.toTaskWithToken"; "M:FsFlow.Flow.toTaskResultWithToken"; "M:FsFlow.Flow.toValueTaskResult"; "M:FsFlow.Flow.toValueTaskResultWithToken"; "M:FsFlow.Flow.toResult"]
             "Module functions", ["M:FsFlow.Flow.ok"; "M:FsFlow.Flow.error"; "M:FsFlow.Flow.succeed"; "M:FsFlow.Flow.value"; "M:FsFlow.Flow.fail"; "M:FsFlow.Flow.fromResult"; "M:FsFlow.Flow.fromOption"; "M:FsFlow.Flow.fromValueOption"; "M:FsFlow.Flow.orElseFlow"; "M:FsFlow.Flow.env"; "M:FsFlow.Flow.read"; "M:FsFlow.Flow.map"; "M:FsFlow.Flow.bind"; "M:FsFlow.Flow.tap"; "M:FsFlow.Flow.tapError"; "M:FsFlow.Flow.mapError"; "M:FsFlow.Flow.catch"; "M:FsFlow.Flow.orElseWith"; "M:FsFlow.Flow.orElse"; "M:FsFlow.Flow.zip"; "M:FsFlow.Flow.map2"; "M:FsFlow.Flow.map3"; "M:FsFlow.Flow.apply"; "M:FsFlow.Flow.ignore"; "M:FsFlow.Flow.localEnv"; "M:FsFlow.Flow.provide"; "M:FsFlow.Flow.delay"; "M:FsFlow.Flow.traverse"; "M:FsFlow.Flow.sequence"]
+            "Scoped resources", ["M:FsFlow.Flow.addFinalizer"; "M:FsFlow.Flow.addDisposable"; "M:FsFlow.Flow.addAsyncDisposable"; "M:FsFlow.Flow.acquireRelease"; "M:FsFlow.Flow.acquireReleaseWith"]
             "Parallel orchestration", ["M:FsFlow.Flow.zipPar"; "M:FsFlow.Flow.race"]
             "Scheduling", ["M:FsFlow.Flow`3.Retry"; "M:FsFlow.Flow`3.Repeat"]
         ]
@@ -332,9 +333,9 @@ let pageSpecs = [
         OutPath = ["flow"; "runtime"; "_index.md"]
         Title = "Flow.Runtime"
         Description = "Runtime helpers for operational concerns like logging, timeout, retry, and cleanup."
-        Intro = "This page shows the `Flow.Runtime` helpers for closed executor mechanics. These functions expose cancellation, scope ownership, runtime annotations, timeout handling, retry, and resource cleanup. They are intentionally separate from explicit application services such as clock, logging, HTTP, or file-system access."
+        Intro = "This page shows the `Flow.Runtime` helpers for closed executor mechanics. These functions expose cancellation, scope ownership, runtime annotations, timeout handling, and retry. User-facing resource combinators such as `Flow.acquireRelease` live on the main `Flow` module; `Flow.Runtime.scope` remains available for advanced code that needs direct scope access."
         SymbolIds = [
-            "Runtime helpers", ["M:FsFlow.Flow.Runtime.cancellationToken"; "M:FsFlow.Flow.Runtime.catchCancellation"; "M:FsFlow.Flow.Runtime.ensureNotCanceled"; "M:FsFlow.Flow.Runtime.sleep"; "M:FsFlow.Flow.Runtime.scope"; "M:FsFlow.Flow.Runtime.annotations"; "M:FsFlow.Flow.Runtime.traceId"; "M:FsFlow.Flow.Runtime.useWithAcquireRelease"; "M:FsFlow.Flow.Runtime.timeout"; "M:FsFlow.Flow.Runtime.timeoutToOk"; "M:FsFlow.Flow.Runtime.timeoutToError"; "M:FsFlow.Flow.Runtime.timeoutWith"; "M:FsFlow.Flow.Runtime.retry"]
+            "Runtime helpers", ["M:FsFlow.Flow.Runtime.cancellationToken"; "M:FsFlow.Flow.Runtime.catchCancellation"; "M:FsFlow.Flow.Runtime.ensureNotCanceled"; "M:FsFlow.Flow.Runtime.sleep"; "M:FsFlow.Flow.Runtime.scope"; "M:FsFlow.Flow.Runtime.annotations"; "M:FsFlow.Flow.Runtime.traceId"; "M:FsFlow.Flow.Runtime.timeout"; "M:FsFlow.Flow.Runtime.timeoutToOk"; "M:FsFlow.Flow.Runtime.timeoutToError"; "M:FsFlow.Flow.Runtime.timeoutWith"; "M:FsFlow.Flow.Runtime.retry"]
         ]
         Alias = None
     }
@@ -468,7 +469,7 @@ let pageSpecs = [
         SymbolIds = [
             "Core type", ["T:FsFlow.Layer`3"]
             "Builder", ["P:FsFlow.Builders.layer"]
-            "Module functions", ["M:FsFlow.Layer.effect"; "M:FsFlow.Layer.succeed"; "M:FsFlow.Layer.read"; "M:FsFlow.Layer.map"; "M:FsFlow.Layer.mapError"; "M:FsFlow.Layer.bind"; "M:FsFlow.Layer.zip"; "M:FsFlow.Layer.zipPar"; "M:FsFlow.Layer.merge"; "M:FsFlow.Layer.map2"; "M:FsFlow.Layer.apply"; "M:FsFlow.Layer.map3"]
+            "Module functions", ["M:FsFlow.Layer.effect"; "M:FsFlow.Layer.succeed"; "M:FsFlow.Layer.read"; "M:FsFlow.Layer.addFinalizer"; "M:FsFlow.Layer.acquireRelease"; "M:FsFlow.Layer.map"; "M:FsFlow.Layer.mapError"; "M:FsFlow.Layer.bind"; "M:FsFlow.Layer.zip"; "M:FsFlow.Layer.zipPar"; "M:FsFlow.Layer.merge"; "M:FsFlow.Layer.map2"; "M:FsFlow.Layer.apply"; "M:FsFlow.Layer.map3"]
             "Flow integration", ["M:FsFlow.Flow.provide"]
         ]
         Alias = None

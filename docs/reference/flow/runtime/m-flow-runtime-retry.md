@@ -1,7 +1,7 @@
 ---
 title: "Flow.Runtime.retry"
 linkTitle: "retry"
-weight: 2012
+weight: 2011
 ---
 
 Retries typed failures according to the specified policy.

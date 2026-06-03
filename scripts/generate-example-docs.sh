@@ -20,7 +20,7 @@ run_example() {
   local project_path="$1"
   local example_filter="${2:-}"
 
-  dotnet build "$project_path" --nologo --verbosity quiet
+  dotnet build "$project_path" --nologo --verbosity quiet --disable-build-servers -p:UseSharedCompilation=false
   if [[ -n "$example_filter" ]]; then
     FSFLOW_EXAMPLE="$example_filter" dotnet run --project "$project_path" --no-build --no-restore --nologo 2>&1
   else

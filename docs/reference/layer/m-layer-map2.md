@@ -1,7 +1,7 @@
 ---
 title: "Layer.map2"
 linkTitle: "map2"
-weight: 2209
+weight: 2211
 ---
 
 Combines two layers with a mapping function.
