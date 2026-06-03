@@ -4,7 +4,7 @@ linkTitle: "IFileSystem"
 weight: 1000
 ---
 
-Provides synchronous access to file system operations.
+Provides access to common file, directory, and path operations.
 
 ## Signature
 

@@ -1,10 +1,10 @@
 ---
 title: "FileSystem.FileSystem.live"
 linkTitle: "live"
-weight: 2103
+weight: 2800
 ---
 
-Creates a live file-system service backed by <a href="https://learn.microsoft.com/dotnet/api/system.io.file">File</a>.
+Creates a live file-system service backed by <a href="https://learn.microsoft.com/dotnet/api/system.io.file">File</a>, <a href="https://learn.microsoft.com/dotnet/api/system.io.directory">Directory</a>, and <a href="https://learn.microsoft.com/dotnet/api/system.io.path">Path</a>.
 
 ## Signature
 

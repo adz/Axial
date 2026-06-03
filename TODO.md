@@ -72,6 +72,11 @@ This TODO is for FsFlow in `/home/adam/projects/FsFlow/main`. It is .NET focused
 
 ## 7a. Future Service Packages
 
+- [ ] Treat service packages as explicit service contracts over the expected .NET API surface: wrap most operations a competent .NET developer would look for, omitting only obsolete, legacy-only, redundant, unsafe-to-abstract, or poor-FsFlow-fit APIs.
+- [ ] Use `FsFlow.Services.Core` and `FsFlow.Services.FileSystem` as the first examples of near-complete service surfaces with live implementations, typed Flow helpers, fake-friendly contracts, tests, and generated reference docs.
+- [ ] Expand `FsFlow.Services.Console` into a near-complete console/terminal service package rather than only read/write-line helpers.
+- [ ] Expand `FsFlow.Services.Http` into a practical HTTP service package that covers common `HttpClient` request/response, headers, content, timeout, cancellation, and error-classification scenarios without hiding host-owned client configuration.
+- [ ] Expand `FsFlow.Services.Process` into a near-complete process service package covering start-info configuration, environment, working directory, streams, cancellation, timeouts, exit handling, and typed errors.
 - [ ] Design `FsFlow.Services.Network` after the core v1 service/layer surface is stable.
 - [ ] Decide whether telemetry needs explicit service contracts under `FsFlow.Services.Telemetry`, or should remain runtime instrumentation through `FsFlow.Runtime.Telemetry`.
 - [ ] If telemetry services are introduced, define how they compose with annotations, `ActivitySource`, `Microsoft.Extensions.Logging`, layers, and host-provider boundaries.

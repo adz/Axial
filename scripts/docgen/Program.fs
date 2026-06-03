@@ -516,10 +516,112 @@ let pageSpecs = [
         OutPath = ["service"; "filesystem"; "_index.md"]
         Title = "Services FileSystem"
         Description = "Source-documented file-system service for FsFlow.Services.FileSystem."
-        Intro = "This page shows the file-system service package. `IFileSystem` names the small set of file operations currently supported by FsFlow examples and workflows: reading text, writing text, and existence checks. Keep workflow code typed against the service contract and choose the live or test implementation at provisioning time."
+        Intro = "This page shows the file-system service package. `IFileSystem` models common `System.IO.File`, `Directory`, `Path`, text, byte, stream, metadata, and timestamp operations as an explicit workflow service. Keep workflow code typed against the service contract, provide `FileSystem.live` only at the edge, and replace it with a deterministic implementation in tests. File-system helpers classify thrown platform exceptions into `FileSystemError` so workflow errors stay typed instead of escaping as ordinary exceptions."
         SymbolIds = [
-            "Service", ["T:FsFlow.Services.FileSystem.IFileSystem"]
-            "Helpers", ["M:FsFlow.Services.FileSystem.FileSystem.readAllText"; "M:FsFlow.Services.FileSystem.FileSystem.writeAllText"; "M:FsFlow.Services.FileSystem.FileSystem.exists"; "P:FsFlow.Services.FileSystem.FileSystem.live"; "P:FsFlow.Services.FileSystem.FileSystem.layer"]
+            "Service", ["T:FsFlow.Services.FileSystem.IFileSystem"; "T:FsFlow.Services.FileSystem.FileSystemError"]
+            "Errors", ["M:FsFlow.Services.FileSystem.FileSystemError.fromException"; "M:FsFlow.Services.FileSystem.FileSystemError.describe"]
+            "Text and bytes",
+                [ "M:FsFlow.Services.FileSystem.FileSystem.readAllText"
+                  "M:FsFlow.Services.FileSystem.FileSystem.readAllTextWithEncoding"
+                  "M:FsFlow.Services.FileSystem.FileSystem.readAllTextAsync"
+                  "M:FsFlow.Services.FileSystem.FileSystem.readAllLines"
+                  "M:FsFlow.Services.FileSystem.FileSystem.readAllLinesWithEncoding"
+                  "M:FsFlow.Services.FileSystem.FileSystem.readAllLinesAsync"
+                  "M:FsFlow.Services.FileSystem.FileSystem.readAllBytes"
+                  "M:FsFlow.Services.FileSystem.FileSystem.readAllBytesAsync"
+                  "M:FsFlow.Services.FileSystem.FileSystem.writeAllText"
+                  "M:FsFlow.Services.FileSystem.FileSystem.writeAllTextWithEncoding"
+                  "M:FsFlow.Services.FileSystem.FileSystem.writeAllTextAsync"
+                  "M:FsFlow.Services.FileSystem.FileSystem.writeAllLines"
+                  "M:FsFlow.Services.FileSystem.FileSystem.writeAllLinesWithEncoding"
+                  "M:FsFlow.Services.FileSystem.FileSystem.writeAllLinesAsync"
+                  "M:FsFlow.Services.FileSystem.FileSystem.writeAllBytes"
+                  "M:FsFlow.Services.FileSystem.FileSystem.writeAllBytesAsync"
+                  "M:FsFlow.Services.FileSystem.FileSystem.appendAllText"
+                  "M:FsFlow.Services.FileSystem.FileSystem.appendAllTextWithEncoding"
+                  "M:FsFlow.Services.FileSystem.FileSystem.appendAllTextAsync"
+                  "M:FsFlow.Services.FileSystem.FileSystem.appendAllLines"
+                  "M:FsFlow.Services.FileSystem.FileSystem.appendAllLinesWithEncoding" ]
+            "Files and streams",
+                [ "M:FsFlow.Services.FileSystem.FileSystem.fileExists"
+                  "M:FsFlow.Services.FileSystem.FileSystem.exists"
+                  "M:FsFlow.Services.FileSystem.FileSystem.deleteFile"
+                  "M:FsFlow.Services.FileSystem.FileSystem.copyFile"
+                  "M:FsFlow.Services.FileSystem.FileSystem.moveFile"
+                  "M:FsFlow.Services.FileSystem.FileSystem.openFile"
+                  "M:FsFlow.Services.FileSystem.FileSystem.openFileWithAccess"
+                  "M:FsFlow.Services.FileSystem.FileSystem.openFileWithShare"
+                  "M:FsFlow.Services.FileSystem.FileSystem.openRead"
+                  "M:FsFlow.Services.FileSystem.FileSystem.openText"
+                  "M:FsFlow.Services.FileSystem.FileSystem.openWrite"
+                  "M:FsFlow.Services.FileSystem.FileSystem.createFile"
+                  "M:FsFlow.Services.FileSystem.FileSystem.createText"
+                  "M:FsFlow.Services.FileSystem.FileSystem.appendText" ]
+            "File metadata",
+                [ "M:FsFlow.Services.FileSystem.FileSystem.getFileAttributes"
+                  "M:FsFlow.Services.FileSystem.FileSystem.setFileAttributes"
+                  "M:FsFlow.Services.FileSystem.FileSystem.getFileCreationTime"
+                  "M:FsFlow.Services.FileSystem.FileSystem.getFileCreationTimeUtc"
+                  "M:FsFlow.Services.FileSystem.FileSystem.setFileCreationTime"
+                  "M:FsFlow.Services.FileSystem.FileSystem.setFileCreationTimeUtc"
+                  "M:FsFlow.Services.FileSystem.FileSystem.getFileLastAccessTime"
+                  "M:FsFlow.Services.FileSystem.FileSystem.getFileLastAccessTimeUtc"
+                  "M:FsFlow.Services.FileSystem.FileSystem.setFileLastAccessTime"
+                  "M:FsFlow.Services.FileSystem.FileSystem.setFileLastAccessTimeUtc"
+                  "M:FsFlow.Services.FileSystem.FileSystem.getFileLastWriteTime"
+                  "M:FsFlow.Services.FileSystem.FileSystem.getFileLastWriteTimeUtc"
+                  "M:FsFlow.Services.FileSystem.FileSystem.setFileLastWriteTime"
+                  "M:FsFlow.Services.FileSystem.FileSystem.setFileLastWriteTimeUtc" ]
+            "Directories",
+                [ "M:FsFlow.Services.FileSystem.FileSystem.directoryExists"
+                  "M:FsFlow.Services.FileSystem.FileSystem.createDirectory"
+                  "M:FsFlow.Services.FileSystem.FileSystem.deleteDirectory"
+                  "M:FsFlow.Services.FileSystem.FileSystem.moveDirectory"
+                  "M:FsFlow.Services.FileSystem.FileSystem.enumerateFiles"
+                  "M:FsFlow.Services.FileSystem.FileSystem.getFiles"
+                  "M:FsFlow.Services.FileSystem.FileSystem.enumerateDirectories"
+                  "M:FsFlow.Services.FileSystem.FileSystem.getDirectories"
+                  "M:FsFlow.Services.FileSystem.FileSystem.enumerateFileSystemEntries"
+                  "M:FsFlow.Services.FileSystem.FileSystem.getFileSystemEntries"
+                  "M:FsFlow.Services.FileSystem.FileSystem.getLogicalDrives"
+                  "M:FsFlow.Services.FileSystem.FileSystem.getDirectoryRoot"
+                  "M:FsFlow.Services.FileSystem.FileSystem.getParent"
+                  "M:FsFlow.Services.FileSystem.FileSystem.getCurrentDirectory"
+                  "M:FsFlow.Services.FileSystem.FileSystem.setCurrentDirectory" ]
+            "Directory metadata",
+                [ "M:FsFlow.Services.FileSystem.FileSystem.getDirectoryCreationTime"
+                  "M:FsFlow.Services.FileSystem.FileSystem.getDirectoryCreationTimeUtc"
+                  "M:FsFlow.Services.FileSystem.FileSystem.setDirectoryCreationTime"
+                  "M:FsFlow.Services.FileSystem.FileSystem.setDirectoryCreationTimeUtc"
+                  "M:FsFlow.Services.FileSystem.FileSystem.getDirectoryLastAccessTime"
+                  "M:FsFlow.Services.FileSystem.FileSystem.getDirectoryLastAccessTimeUtc"
+                  "M:FsFlow.Services.FileSystem.FileSystem.setDirectoryLastAccessTime"
+                  "M:FsFlow.Services.FileSystem.FileSystem.setDirectoryLastAccessTimeUtc"
+                  "M:FsFlow.Services.FileSystem.FileSystem.getDirectoryLastWriteTime"
+                  "M:FsFlow.Services.FileSystem.FileSystem.getDirectoryLastWriteTimeUtc"
+                  "M:FsFlow.Services.FileSystem.FileSystem.setDirectoryLastWriteTime"
+                  "M:FsFlow.Services.FileSystem.FileSystem.setDirectoryLastWriteTimeUtc" ]
+            "Paths",
+                [ "M:FsFlow.Services.FileSystem.FileSystem.combine"
+                  "M:FsFlow.Services.FileSystem.FileSystem.changeExtension"
+                  "M:FsFlow.Services.FileSystem.FileSystem.getDirectoryName"
+                  "M:FsFlow.Services.FileSystem.FileSystem.getInvalidFileNameChars"
+                  "M:FsFlow.Services.FileSystem.FileSystem.getInvalidPathChars"
+                  "M:FsFlow.Services.FileSystem.FileSystem.getExtension"
+                  "M:FsFlow.Services.FileSystem.FileSystem.getFileName"
+                  "M:FsFlow.Services.FileSystem.FileSystem.getFileNameWithoutExtension"
+                  "M:FsFlow.Services.FileSystem.FileSystem.getFullPath"
+                  "M:FsFlow.Services.FileSystem.FileSystem.getPathRoot"
+                  "M:FsFlow.Services.FileSystem.FileSystem.getRelativePath"
+                  "M:FsFlow.Services.FileSystem.FileSystem.getTempPath"
+                  "M:FsFlow.Services.FileSystem.FileSystem.getTempFileName"
+                  "M:FsFlow.Services.FileSystem.FileSystem.getRandomFileName"
+                  "M:FsFlow.Services.FileSystem.FileSystem.hasExtension"
+                  "M:FsFlow.Services.FileSystem.FileSystem.endsInDirectorySeparator"
+                  "M:FsFlow.Services.FileSystem.FileSystem.trimEndingDirectorySeparator"
+                  "M:FsFlow.Services.FileSystem.FileSystem.isPathFullyQualified"
+                  "M:FsFlow.Services.FileSystem.FileSystem.isPathRooted" ]
+            "Implementations", ["P:FsFlow.Services.FileSystem.FileSystem.live"; "P:FsFlow.Services.FileSystem.FileSystem.layer"]
         ]
         Alias = None
     }
