@@ -1,10 +1,10 @@
 <!doctype html>
 <html itemscope itemtype="http://schema.org/WebPage" lang="en" class="no-js">
-  <head>
+  <head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=3000&amp;path=livereload" data-no-instant defer></script>
     <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-<meta name="robots" content="index, follow">
+<meta name="robots" content="noindex, nofollow">
 
 
 <link rel="shortcut icon" href="http://localhost:3000/favicons/favicon.ico" >
@@ -18,24 +18,23 @@
 <link rel="icon" type="image/png" href="http://localhost:3000/favicons/android-144x144.png" sizes="144x144">
 <link rel="icon" type="image/png" href="http://localhost:3000/favicons/android-192x192.png" sizes="192x192">
 
-<title>Tutorial: AppRecord | FsFlow</title>
-<meta name="description" content="Using a simple record as the application environment.">
+<title>Tutorial: App Record | FsFlow</title>
+<meta name="description" content="Move from explicit dependency parameters to a reusable environment record.">
 <meta property="og:url" content="http://localhost:3000/docs/tutorials/app-record/">
   <meta property="og:site_name" content="FsFlow">
-  <meta property="og:title" content="Tutorial: AppRecord">
-  <meta property="og:description" content="Using a simple record as the application environment.">
+  <meta property="og:title" content="Tutorial: App Record">
+  <meta property="og:description" content="Move from explicit dependency parameters to a reusable environment record.">
   <meta property="og:locale" content="en_us">
   <meta property="og:type" content="article">
     <meta property="article:section" content="docs">
 
-  <meta itemprop="name" content="Tutorial: AppRecord">
-  <meta itemprop="description" content="Using a simple record as the application environment.">
-  <meta itemprop="wordCount" content="369">
+  <meta itemprop="name" content="Tutorial: App Record">
+  <meta itemprop="description" content="Move from explicit dependency parameters to a reusable environment record.">
+  <meta itemprop="wordCount" content="636">
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Tutorial: AppRecord">
-  <meta name="twitter:description" content="Using a simple record as the application environment.">
-<link rel="preload" href="http://localhost:3000/scss/main.min.c2e6489a9d8ef949a0dead85d2b883caca7e8cf3176c0e7ff6ff57d94fff640c.css" as="style" integrity="sha256-wuZImp2O&#43;Umg3q2F0riDysp&#43;jPMXbA5/9v9X2U//ZAw=" crossorigin="anonymous">
-<link href="http://localhost:3000/scss/main.min.c2e6489a9d8ef949a0dead85d2b883caca7e8cf3176c0e7ff6ff57d94fff640c.css" rel="stylesheet" integrity="sha256-wuZImp2O&#43;Umg3q2F0riDysp&#43;jPMXbA5/9v9X2U//ZAw=" crossorigin="anonymous">
+  <meta name="twitter:title" content="Tutorial: App Record">
+  <meta name="twitter:description" content="Move from explicit dependency parameters to a reusable environment record.">
+<link href="http://localhost:3000/scss/main.css" rel="stylesheet">
 <script
   src="https://code.jquery.com/jquery-3.7.1.min.js"
   integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g=="
@@ -92,7 +91,7 @@
     aria-label='Search this site…'
     autocomplete="off"
     
-    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.152d3a8195c3b05e80270a1402841d44.json"
+    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.json"
     data-offline-search-base-href="http://localhost:3000/"
     data-offline-search-max-results="10"
   >
@@ -128,7 +127,7 @@
     aria-label='Search this site…'
     autocomplete="off"
     
-    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.152d3a8195c3b05e80270a1402841d44.json"
+    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.json"
     data-offline-search-base-href="http://localhost:3000/"
     data-offline-search-max-results="10"
   >
@@ -165,17 +164,29 @@
     <label for="m-docstutorials-check"><a href="http://localhost:3000/docs/tutorials/" class="align-left ps-0  td-sidebar-link td-sidebar-link__section" id="m-docstutorials"><span class="">Tutorials</span></a></label>
     
     <ul class="ul-2 foldable">
-      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child active-path" id="m-docstutorialsapp-record-li">
+      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialsexplicit-dependencies-li">
+    <input type="checkbox" id="m-docstutorialsexplicit-dependencies-check"/>
+    <label for="m-docstutorialsexplicit-dependencies-check"><a href="http://localhost:3000/docs/tutorials/explicit-dependencies/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialsexplicit-dependencies"><span class="">Tutorial: Explicit Dependencies First</span></a></label>
+    
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child active-path" id="m-docstutorialsapp-record-li">
     <input type="checkbox" id="m-docstutorialsapp-record-check" checked/>
-    <label for="m-docstutorialsapp-record-check"><a href="http://localhost:3000/docs/tutorials/app-record/" class="align-left ps-0  active td-sidebar-link td-sidebar-link__page" id="m-docstutorialsapp-record"><span class="td-sidebar-nav-active-item">Tutorial: AppRecord</span></a></label>
+    <label for="m-docstutorialsapp-record-check"><a href="http://localhost:3000/docs/tutorials/app-record/" class="align-left ps-0  active td-sidebar-link td-sidebar-link__page" id="m-docstutorialsapp-record"><span class="td-sidebar-nav-active-item">Tutorial: App Record</span></a></label>
     
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialscapabilities-li">
-    <input type="checkbox" id="m-docstutorialscapabilities-check"/>
-    <label for="m-docstutorialscapabilities-check"><a href="http://localhost:3000/docs/tutorials/capabilities/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialscapabilities"><span class="">Tutorial: Capabilities</span></a></label>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialsruntime-operations-li">
+    <input type="checkbox" id="m-docstutorialsruntime-operations-check"/>
+    <label for="m-docstutorialsruntime-operations-check"><a href="http://localhost:3000/docs/tutorials/runtime-operations/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialsruntime-operations"><span class="">Tutorial: Runtime Operations</span></a></label>
     
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialsapp-host-li">
-    <input type="checkbox" id="m-docstutorialsapp-host-check"/>
-    <label for="m-docstutorialsapp-host-check"><a href="http://localhost:3000/docs/tutorials/app-host/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialsapp-host"><span class="">Tutorial: AppHost</span></a></label>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialsexisting-services-li">
+    <input type="checkbox" id="m-docstutorialsexisting-services-check"/>
+    <label for="m-docstutorialsexisting-services-check"><a href="http://localhost:3000/docs/tutorials/existing-services/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialsexisting-services"><span class="">Tutorial: Using Existing Services</span></a></label>
+    
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialscustom-services-li">
+    <input type="checkbox" id="m-docstutorialscustom-services-check"/>
+    <label for="m-docstutorialscustom-services-check"><a href="http://localhost:3000/docs/tutorials/custom-services/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialscustom-services"><span class="">Tutorial: Creating Reusable Services</span></a></label>
+    
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialslayers-li">
+    <input type="checkbox" id="m-docstutorialslayers-check"/>
+    <label for="m-docstutorialslayers-check"><a href="http://localhost:3000/docs/tutorials/layers/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialslayers"><span class="">Tutorial: Layers</span></a></label>
     
   </li>
     </ul>
@@ -234,17 +245,25 @@
     <label for="m-docsmanaging-dependencies-check"><a href="http://localhost:3000/docs/managing-dependencies/" class="align-left ps-0  td-sidebar-link td-sidebar-link__section" id="m-docsmanaging-dependencies"><span class="">Managing Dependencies</span></a></label>
     
     <ul class="ul-2 foldable">
-      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciesruntime-vs-environment-li">
-    <input type="checkbox" id="m-docsmanaging-dependenciesruntime-vs-environment-check"/>
-    <label for="m-docsmanaging-dependenciesruntime-vs-environment-check"><a href="http://localhost:3000/docs/managing-dependencies/runtime-vs-environment/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesruntime-vs-environment"><span class="">Runtime vs Environment</span></a></label>
+      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciesexplicit-services-li">
+    <input type="checkbox" id="m-docsmanaging-dependenciesexplicit-services-check"/>
+    <label for="m-docsmanaging-dependenciesexplicit-services-check"><a href="http://localhost:3000/docs/managing-dependencies/explicit-services/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesexplicit-services"><span class="">Explicit Services</span></a></label>
     
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciescapability-contracts-li">
-    <input type="checkbox" id="m-docsmanaging-dependenciescapability-contracts-check"/>
-    <label for="m-docsmanaging-dependenciescapability-contracts-check"><a href="http://localhost:3000/docs/managing-dependencies/capability-contracts/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciescapability-contracts"><span class="">Nominal Capability Contracts</span></a></label>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependencieslayers-li">
+    <input type="checkbox" id="m-docsmanaging-dependencieslayers-check"/>
+    <label for="m-docsmanaging-dependencieslayers-check"><a href="http://localhost:3000/docs/managing-dependencies/layers/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependencieslayers"><span class="">Layers</span></a></label>
     
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciesprovider-edge-li">
-    <input type="checkbox" id="m-docsmanaging-dependenciesprovider-edge-check"/>
-    <label for="m-docsmanaging-dependenciesprovider-edge-check"><a href="http://localhost:3000/docs/managing-dependencies/provider-edge/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesprovider-edge"><span class="">Standard .NET AppHost Plus DI</span></a></label>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciesscopes-and-resources-li">
+    <input type="checkbox" id="m-docsmanaging-dependenciesscopes-and-resources-check"/>
+    <label for="m-docsmanaging-dependenciesscopes-and-resources-check"><a href="http://localhost:3000/docs/managing-dependencies/scopes-and-resources/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesscopes-and-resources"><span class="">Scopes and Resources</span></a></label>
+    
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciesbuilding-a-base-runtime-li">
+    <input type="checkbox" id="m-docsmanaging-dependenciesbuilding-a-base-runtime-check"/>
+    <label for="m-docsmanaging-dependenciesbuilding-a-base-runtime-check"><a href="http://localhost:3000/docs/managing-dependencies/building-a-base-runtime/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesbuilding-a-base-runtime"><span class="">Building a Base Runtime</span></a></label>
+    
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciesservice-provider-boundaries-li">
+    <input type="checkbox" id="m-docsmanaging-dependenciesservice-provider-boundaries-check"/>
+    <label for="m-docsmanaging-dependenciesservice-provider-boundaries-check"><a href="http://localhost:3000/docs/managing-dependencies/service-provider-boundaries/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesservice-provider-boundaries"><span class="">Service Provider Boundaries</span></a></label>
     
   </li>
     </ul>
@@ -256,6 +275,10 @@
       <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsstate-concurrencyref-li">
     <input type="checkbox" id="m-docsstate-concurrencyref-check"/>
     <label for="m-docsstate-concurrencyref-check"><a href="http://localhost:3000/docs/state-concurrency/ref/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsstate-concurrencyref"><span class="">Ref (Atomic References)</span></a></label>
+    
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsstate-concurrencydeferred-semaphore-li">
+    <input type="checkbox" id="m-docsstate-concurrencydeferred-semaphore-check"/>
+    <label for="m-docsstate-concurrencydeferred-semaphore-check"><a href="http://localhost:3000/docs/state-concurrency/deferred-semaphore/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsstate-concurrencydeferred-semaphore"><span class="">Deferred and Semaphore</span></a></label>
     
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsstate-concurrencyschedule-li">
     <input type="checkbox" id="m-docsstate-concurrencyschedule-check"/>
@@ -326,7 +349,7 @@
 <a href="https://github.com/adz/FsFlow/tree/main/content/docs/tutorials/app-record.md" class="td-page-meta--view td-page-meta__view" target="_blank" rel="noopener"><i class="fa-solid fa-file-lines fa-fw"></i> View page source</a>
   <a href="https://github.com/adz/FsFlow/edit/main/content/docs/tutorials/app-record.md" class="td-page-meta--edit td-page-meta__edit" target="_blank" rel="noopener"><i class="fa-solid fa-pen-to-square fa-fw"></i> Edit this page</a>
   <a href="https://github.com/adz/FsFlow/new/main/content/docs/tutorials?filename=change-me.md&amp;value=---%0Atitle%3A&#43;%22Long&#43;Page&#43;Title%22%0AlinkTitle%3A&#43;%22Short&#43;Nav&#43;Title%22%0Aweight%3A&#43;100%0Adescription%3A&#43;%3E-%0A&#43;&#43;&#43;&#43;&#43;Page&#43;description&#43;for&#43;heading&#43;and&#43;indexes.%0A---%0A%0A%23%23&#43;Heading%0A%0AEdit&#43;this&#43;template&#43;to&#43;create&#43;your&#43;new&#43;page.%0A%0A%2A&#43;Give&#43;it&#43;a&#43;good&#43;name%2C&#43;ending&#43;in&#43;%60.md%60&#43;-&#43;e.g.&#43;%60get-started.md%60%0A%2A&#43;Edit&#43;the&#43;%22front&#43;matter%22&#43;section&#43;at&#43;the&#43;top&#43;of&#43;the&#43;page&#43;%28weight&#43;controls&#43;how&#43;its&#43;ordered&#43;amongst&#43;other&#43;pages&#43;in&#43;the&#43;same&#43;directory%3B&#43;lowest&#43;number&#43;first%29.%0A%2A&#43;Add&#43;a&#43;good&#43;commit&#43;message&#43;at&#43;the&#43;bottom&#43;of&#43;the&#43;page&#43;%28%3C80&#43;characters%3B&#43;use&#43;the&#43;extended&#43;description&#43;field&#43;for&#43;more&#43;detail%29.%0A%2A&#43;Create&#43;a&#43;new&#43;branch&#43;so&#43;you&#43;can&#43;preview&#43;your&#43;new&#43;file&#43;and&#43;request&#43;a&#43;review&#43;via&#43;Pull&#43;Request.%0A" class="td-page-meta--child td-page-meta__child" target="_blank" rel="noopener"><i class="fa-solid fa-pen-to-square fa-fw"></i> Create child page</a>
-  <a href="https://github.com/adz/FsFlow/issues/new?title=Tutorial:%20AppRecord" class="td-page-meta--issue td-page-meta__issue" target="_blank" rel="noopener"><i class="fa-solid fa-list-check fa-fw"></i> Create documentation issue</a>
+  <a href="https://github.com/adz/FsFlow/issues/new?title=Tutorial:%20App%20Record" class="td-page-meta--issue td-page-meta__issue" target="_blank" rel="noopener"><i class="fa-solid fa-list-check fa-fw"></i> Create documentation issue</a>
   
 </div>
 
@@ -337,12 +360,13 @@
     </div>
     <nav id="TableOfContents">
   <ul>
-    <li><a href="#1-define-your-dependencies">1. Define Your Dependencies</a></li>
-    <li><a href="#2-write-the-workflow">2. Write the Workflow</a></li>
-    <li><a href="#3-implement-the-services">3. Implement the Services</a></li>
-    <li><a href="#4-run-the-app">4. Run the App</a></li>
-    <li><a href="#why-use-apprecord">Why use AppRecord?</a></li>
-    <li><a href="#next-steps">Next Steps</a></li>
+    <li><a href="#1-start-with-the-same-interfaces">1. Start With The Same Interfaces</a></li>
+    <li><a href="#2-bundle-them-once">2. Bundle Them Once</a></li>
+    <li><a href="#3-compose-several-flows">3. Compose Several Flows</a></li>
+    <li><a href="#4-real-implementations">4. Real Implementations</a></li>
+    <li><a href="#5-test-implementations">5. Test Implementations</a></li>
+    <li><a href="#6-run-the-workflow">6. Run The Workflow</a></li>
+    <li><a href="#when-to-stop-here">When To Stop Here</a></li>
   </ul>
 </nav>
   </div>
@@ -359,94 +383,184 @@
   <li class="breadcrumb-item">
     <a href="http://localhost:3000/docs/tutorials/">Tutorials</a></li>
   <li class="breadcrumb-item active" aria-current="page">
-    Tutorial: AppRecord</li>
+    Tutorial: App Record</li>
   </ol>
 </nav>
 <div class="td-content">
-	<h1>Tutorial: AppRecord</h1>
-	<div class="lead">Using a simple record as the application environment.</div>
+	<h1>Tutorial: App Record</h1>
+	<div class="lead">Move from explicit dependency parameters to a reusable environment record.</div>
 	<header class="article-meta">
 		
 </header>
-	<p>The simplest way to manage dependencies in FsFlow is using a concrete record as your environment (<code>env</code>). This provides direct field access and minimal boilerplate.</p>
-<p>In this tutorial, we will build a small order placement workflow that uses a record for its dependencies.</p>
-<h2 id="1-define-your-dependencies">1. Define Your Dependencies</h2>
-<p>Start by defining the interfaces for your services and a record that bundles them together.</p>
+	<p>This tutorial starts where <a href="http://localhost:3000/docs/tutorials/explicit-dependencies/">Explicit Dependencies First</a> leaves off.</p>
+<p>The problem is not that explicit parameters are wrong. The problem is repetition:</p>
+<ul>
+<li>every helper has to thread the same dependencies</li>
+<li>adding one more dependency means touching many signatures</li>
+<li>the execution boundary gets noisier as the feature grows</li>
+</ul>
+<p>An app record solves that by bundling dependencies once at the boundary while keeping the workflow code explicit.</p>
+<h2 id="1-start-with-the-same-interfaces">1. Start With The Same Interfaces</h2>
 <div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">open</span> <span style="color:#000">System</span>
 </span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">open</span> <span style="color:#000">System.Threading.Tasks</span>
 </span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">open</span> <span style="color:#000">FsFlow</span>
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">type</span> <span style="color:#000">Order</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#ce5c00;font-weight:bold">{</span> <span style="color:#000">Id</span><span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">Guid</span><span style="color:#ce5c00;font-weight:bold">;</span> <span style="color:#000">Total</span><span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#204a87;font-weight:bold">decimal</span> <span style="color:#ce5c00;font-weight:bold">}</span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">type</span> <span style="color:#000">OrderId</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">OrderId</span> <span style="color:#204a87;font-weight:bold">of</span> <span style="color:#000">Guid</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">type</span> <span style="color:#000">Order</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">{</span> <span style="color:#000">Id</span><span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">OrderId</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#000">Email</span><span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#204a87;font-weight:bold">string</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#000">Total</span><span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#204a87;font-weight:bold">decimal</span> <span style="color:#ce5c00;font-weight:bold">}</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">type</span> <span style="color:#000">PlaceOrderError</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|</span> <span style="color:#000">InvalidEmail</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|</span> <span style="color:#000">OrderRejected</span> <span style="color:#204a87;font-weight:bold">of</span> <span style="color:#204a87;font-weight:bold">string</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|</span> <span style="color:#000">AuditWriteFailed</span>
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">type</span> <span style="color:#000">IOrderRepository</span> <span style="color:#ce5c00;font-weight:bold">=</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">abstract</span> <span style="color:#000">Save</span><span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">Order</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#000">Task</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#204a87;font-weight:bold">unit</span><span style="color:#ce5c00;font-weight:bold">&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">abstract</span> <span style="color:#000">Save</span> <span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">Order</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#000">Task</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#000">Result</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#204a87;font-weight:bold">unit</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#204a87;font-weight:bold">string</span><span style="color:#ce5c00;font-weight:bold">&gt;&gt;</span>
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">type</span> <span style="color:#000">IEmailSender</span> <span style="color:#ce5c00;font-weight:bold">=</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">abstract</span> <span style="color:#000">SendConfirmation</span><span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">Order</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#000">Task</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#204a87;font-weight:bold">unit</span><span style="color:#ce5c00;font-weight:bold">&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">abstract</span> <span style="color:#000">SendConfirmation</span> <span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">Order</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#000">Task</span>
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">type</span> <span style="color:#000">AppEnv</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">type</span> <span style="color:#000">IAuditLog</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">abstract</span> <span style="color:#000">Write</span> <span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#204a87;font-weight:bold">string</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#000">Task</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#000">Result</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#204a87;font-weight:bold">unit</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#204a87;font-weight:bold">unit</span><span style="color:#ce5c00;font-weight:bold">&gt;&gt;</span>
+</span></span></code></pre></div><h2 id="2-bundle-them-once">2. Bundle Them Once</h2>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">type</span> <span style="color:#000">AppEnv</span> <span style="color:#ce5c00;font-weight:bold">=</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">{</span> <span style="color:#000">Orders</span><span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">IOrderRepository</span>
-</span></span><span style="display:flex;"><span>      <span style="color:#000">Email</span><span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">IEmailSender</span> <span style="color:#ce5c00;font-weight:bold">}</span>
-</span></span></code></pre></div><h2 id="2-write-the-workflow">2. Write the Workflow</h2>
-<p>Use the <code>flow {}</code> builder to define your business logic. You can use <code>Flow.read</code> to project specific services from the environment.</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">placeOrder</span> <span style="color:#000">order</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#000">Email</span><span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">IEmailSender</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#000">Audit</span><span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">IAuditLog</span> <span style="color:#ce5c00;font-weight:bold">}</span>
+</span></span></code></pre></div><p>Adding a third dependency is now an additive change to the environment record rather than a rewrite of every helper signature.</p>
+<h2 id="3-compose-several-flows">3. Compose Several Flows</h2>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">validateOrder</span> <span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">order</span><span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">Order</span><span style="color:#ce5c00;font-weight:bold">)</span> <span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">Result</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#000">Order</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#000">PlaceOrderError</span><span style="color:#ce5c00;font-weight:bold">&gt;</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">if</span> <span style="color:#000">String</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">IsNullOrWhiteSpace</span> <span style="color:#000">order</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">Email</span> <span style="color:#204a87;font-weight:bold">then</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#000">Error</span> <span style="color:#000">InvalidEmail</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">else</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#000">Ok</span> <span style="color:#000">order</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">saveOrder</span> <span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">order</span><span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">Order</span><span style="color:#ce5c00;font-weight:bold">)</span> <span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">Flow</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#000">AppEnv</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#000">PlaceOrderError</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#000">Order</span><span style="color:#ce5c00;font-weight:bold">&gt;</span> <span style="color:#ce5c00;font-weight:bold">=</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#000">flow</span> <span style="color:#ce5c00;font-weight:bold">{</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#8f5902;font-style:italic">// Read specific services from the environment
-</span></span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">let!</span> <span style="color:#000">orders</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">read</span> <span style="color:#ce5c00;font-weight:bold">_.</span><span style="color:#000">Orders</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">let!</span> <span style="color:#000">orders</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">read</span> <span style="color:#ce5c00;font-weight:bold">_.</span><span style="color:#000">Orders</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">let!</span> <span style="color:#000">saveResult</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">orders</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">Save</span> <span style="color:#000">order</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">match</span> <span style="color:#000">saveResult</span> <span style="color:#204a87;font-weight:bold">with</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ce5c00;font-weight:bold">|</span> <span style="color:#000">Ok</span> <span style="color:#3465a4">()</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#204a87;font-weight:bold">return</span> <span style="color:#000">order</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ce5c00;font-weight:bold">|</span> <span style="color:#000">Error</span> <span style="color:#000">reason</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#204a87;font-weight:bold">return</span><span style="color:#ce5c00;font-weight:bold">!</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">fail</span> <span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">OrderRejected</span> <span style="color:#000">reason</span><span style="color:#ce5c00;font-weight:bold">)</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">}</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">sendConfirmation</span> <span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">order</span><span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">Order</span><span style="color:#ce5c00;font-weight:bold">)</span> <span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">Flow</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#000">AppEnv</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#000">PlaceOrderError</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#204a87;font-weight:bold">unit</span><span style="color:#ce5c00;font-weight:bold">&gt;</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#000">flow</span> <span style="color:#ce5c00;font-weight:bold">{</span>
 </span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">let!</span> <span style="color:#000">email</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">read</span> <span style="color:#ce5c00;font-weight:bold">_.</span><span style="color:#000">Email</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>        <span style="color:#8f5902;font-style:italic">// Execute service methods (lifting Tasks into Flow)
-</span></span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">do</span><span style="color:#ce5c00;font-weight:bold">!</span> <span style="color:#000">orders</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">Save</span> <span style="color:#000">order</span>
 </span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">do</span><span style="color:#ce5c00;font-weight:bold">!</span> <span style="color:#000">email</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">SendConfirmation</span> <span style="color:#000">order</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">return</span> <span style="color:#000">order</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">Id</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">}</span>
-</span></span></code></pre></div><h2 id="3-implement-the-services">3. Implement the Services</h2>
-<p>Create concrete implementations of your interfaces.</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">type</span> <span style="color:#000">InMemoryOrders</span><span style="color:#3465a4">()</span> <span style="color:#ce5c00;font-weight:bold">=</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">interface</span> <span style="color:#000">IOrderRepository</span> <span style="color:#204a87;font-weight:bold">with</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">member</span> <span style="color:#000">_</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">Save</span><span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">order</span><span style="color:#ce5c00;font-weight:bold">)</span> <span style="color:#ce5c00;font-weight:bold">=</span> 
-</span></span><span style="display:flex;"><span>            <span style="color:#000">printfn</span> <span style="color:#4e9a06">&#34;Order %A saved&#34;</span> <span style="color:#000">order</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">Id</span>
-</span></span><span style="display:flex;"><span>            <span style="color:#000">Task</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">CompletedTask</span>
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">type</span> <span style="color:#000">ConsoleEmail</span><span style="color:#3465a4">()</span> <span style="color:#ce5c00;font-weight:bold">=</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">interface</span> <span style="color:#000">IEmailSender</span> <span style="color:#204a87;font-weight:bold">with</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">member</span> <span style="color:#000">_</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">SendConfirmation</span><span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">order</span><span style="color:#ce5c00;font-weight:bold">)</span> <span style="color:#ce5c00;font-weight:bold">=</span> 
-</span></span><span style="display:flex;"><span>            <span style="color:#000">printfn</span> <span style="color:#4e9a06">&#34;Email sent for order %A&#34;</span> <span style="color:#000">order</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">Id</span>
-</span></span><span style="display:flex;"><span>            <span style="color:#000">Task</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">CompletedTask</span>
-</span></span></code></pre></div><h2 id="4-run-the-app">4. Run the App</h2>
-<p>Construct the <code>AppEnv</code> record and use <code>Flow.run</code> to execute your workflow.</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#ce5c00;font-weight:bold">[&lt;</span><span style="color:#000">EntryPoint</span><span style="color:#ce5c00;font-weight:bold">&gt;]</span>
-</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">main</span> <span style="color:#ce5c00;font-weight:bold">_</span> <span style="color:#ce5c00;font-weight:bold">=</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">env</span> <span style="color:#ce5c00;font-weight:bold">=</span> 
-</span></span><span style="display:flex;"><span>        <span style="color:#ce5c00;font-weight:bold">{</span> <span style="color:#000">Orders</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">InMemoryOrders</span><span style="color:#3465a4">()</span>
-</span></span><span style="display:flex;"><span>          <span style="color:#000">Email</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">ConsoleEmail</span><span style="color:#3465a4">()</span> <span style="color:#ce5c00;font-weight:bold">}</span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">writeAudit</span> <span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">message</span><span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#204a87;font-weight:bold">string</span><span style="color:#ce5c00;font-weight:bold">)</span> <span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">Flow</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#000">AppEnv</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#000">PlaceOrderError</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#204a87;font-weight:bold">unit</span><span style="color:#ce5c00;font-weight:bold">&gt;</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#000">flow</span> <span style="color:#ce5c00;font-weight:bold">{</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">let!</span> <span style="color:#000">audit</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">read</span> <span style="color:#ce5c00;font-weight:bold">_.</span><span style="color:#000">Audit</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">let!</span> <span style="color:#000">result</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">audit</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">Write</span> <span style="color:#000">message</span>
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">order</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#ce5c00;font-weight:bold">{</span> <span style="color:#000">Id</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">Guid</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">NewGuid</span><span style="color:#3465a4">()</span><span style="color:#ce5c00;font-weight:bold">;</span> <span style="color:#000">Total</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">99</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">99m</span> <span style="color:#ce5c00;font-weight:bold">}</span>
-</span></span><span style="display:flex;"><span>    
-</span></span><span style="display:flex;"><span>    <span style="color:#8f5902;font-style:italic">// Run the flow and handle the result
-</span></span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">run</span> <span style="color:#3465a4">()</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">task</span> <span style="color:#ce5c00;font-weight:bold">{</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">let!</span> <span style="color:#000">result</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">run</span> <span style="color:#000">env</span> <span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">placeOrder</span> <span style="color:#000">order</span><span style="color:#ce5c00;font-weight:bold">)</span>
-</span></span><span style="display:flex;"><span>        
 </span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">match</span> <span style="color:#000">result</span> <span style="color:#204a87;font-weight:bold">with</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#ce5c00;font-weight:bold">|</span> <span style="color:#000">Exit</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">Success</span> <span style="color:#000">id</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> 
-</span></span><span style="display:flex;"><span>            <span style="color:#000">printfn</span> <span style="color:#4e9a06">&#34;Successfully placed order: %A&#34;</span> <span style="color:#000">id</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#ce5c00;font-weight:bold">|</span> <span style="color:#000">Exit</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">Failure</span> <span style="color:#000">cause</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> 
-</span></span><span style="display:flex;"><span>            <span style="color:#000">printfn</span> <span style="color:#4e9a06">&#34;Failed: %A&#34;</span> <span style="color:#000">cause</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ce5c00;font-weight:bold">|</span> <span style="color:#000">Ok</span> <span style="color:#3465a4">()</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#204a87;font-weight:bold">return</span> <span style="color:#3465a4">()</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ce5c00;font-weight:bold">|</span> <span style="color:#000">Error</span> <span style="color:#3465a4">()</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#204a87;font-weight:bold">return</span><span style="color:#ce5c00;font-weight:bold">!</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">fail</span> <span style="color:#000">AuditWriteFailed</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">}</span>
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>    <span style="color:#000">run</span><span style="color:#3465a4">()</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">GetAwaiter</span><span style="color:#3465a4">()</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">GetResult</span><span style="color:#3465a4">()</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#000">0</span>
-</span></span></code></pre></div><h2 id="why-use-apprecord">Why use AppRecord?</h2>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">placeOrder</span> <span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">order</span><span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">Order</span><span style="color:#ce5c00;font-weight:bold">)</span> <span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">Flow</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#000">AppEnv</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#000">PlaceOrderError</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#000">OrderId</span><span style="color:#ce5c00;font-weight:bold">&gt;</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#000">flow</span> <span style="color:#ce5c00;font-weight:bold">{</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">let!</span> <span style="color:#000">validOrder</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">validateOrder</span> <span style="color:#000">order</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">let!</span> <span style="color:#000">savedOrder</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">saveOrder</span> <span style="color:#000">validOrder</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">do</span><span style="color:#ce5c00;font-weight:bold">!</span> <span style="color:#000">sendConfirmation</span> <span style="color:#000">savedOrder</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">do</span><span style="color:#ce5c00;font-weight:bold">!</span> <span style="color:#000">writeAudit</span> <span style="color:#ce5c00;font-weight:bold">$</span><span style="color:#4e9a06">&#34;Placed {savedOrder.Email} for {savedOrder.Total}&#34;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">return</span> <span style="color:#000">savedOrder</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">Id</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">}</span>
+</span></span></code></pre></div><p>This is the main win of an app record:</p>
 <ul>
-<li><strong>Directness</strong>: You can see exactly what fields are available in the environment.</li>
-<li><strong>Easy Testing</strong>: You can easily swap out the entire record or individual fields for tests.</li>
-<li><strong>Low Ceremony</strong>: No need for complex DI setup or interface hierarchies when starting out.</li>
+<li>helper functions stop carrying dependency parameters</li>
+<li>helper functions still say exactly which fields they read</li>
+<li>adding another dependency does not force you to redesign the whole feature</li>
 </ul>
-<h2 id="next-steps">Next Steps</h2>
-<p>As your application grows, you might find that you want stronger dependency names and reusable helpers. Proceed to the <strong><a href="http://localhost:3000/docs/tutorials/capabilities/">Capabilities</a></strong> tutorial to learn how to do that.</p>
+<h2 id="4-real-implementations">4. Real Implementations</h2>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">type</span> <span style="color:#000">SqlOrderRepository</span><span style="color:#3465a4">()</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">interface</span> <span style="color:#000">IOrderRepository</span> <span style="color:#204a87;font-weight:bold">with</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">member</span> <span style="color:#000">_</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">Save</span> <span style="color:#000">order</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#000">task</span> <span style="color:#ce5c00;font-weight:bold">{</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#8f5902;font-style:italic">// Imagine the real dependency here: database transaction, ORM, etc.
+</span></span></span><span style="display:flex;"><span>                <span style="color:#204a87;font-weight:bold">return</span> <span style="color:#000">Ok</span> <span style="color:#3465a4">()</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#ce5c00;font-weight:bold">}</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">type</span> <span style="color:#000">SmtpEmailSender</span><span style="color:#3465a4">()</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">interface</span> <span style="color:#000">IEmailSender</span> <span style="color:#204a87;font-weight:bold">with</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">member</span> <span style="color:#000">_</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">SendConfirmation</span> <span style="color:#000">order</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#000">task</span> <span style="color:#ce5c00;font-weight:bold">{</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#8f5902;font-style:italic">// Imagine the real dependency here: SMTP or email API client.
+</span></span></span><span style="display:flex;"><span>            <span style="color:#ce5c00;font-weight:bold">}</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">type</span> <span style="color:#000">FileAuditLog</span><span style="color:#3465a4">()</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">interface</span> <span style="color:#000">IAuditLog</span> <span style="color:#204a87;font-weight:bold">with</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">member</span> <span style="color:#000">_</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">Write</span> <span style="color:#000">message</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#000">task</span> <span style="color:#ce5c00;font-weight:bold">{</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#8f5902;font-style:italic">// Imagine the real dependency here: file append, structured logger, queue, etc.
+</span></span></span><span style="display:flex;"><span>                <span style="color:#204a87;font-weight:bold">return</span> <span style="color:#000">Ok</span> <span style="color:#3465a4">()</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#ce5c00;font-weight:bold">}</span>
+</span></span></code></pre></div><h2 id="5-test-implementations">5. Test Implementations</h2>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">type</span> <span style="color:#000">RecordingOrders</span><span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">saved</span><span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">ResizeArray</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#000">Order</span><span style="color:#ce5c00;font-weight:bold">&gt;)</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">interface</span> <span style="color:#000">IOrderRepository</span> <span style="color:#204a87;font-weight:bold">with</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">member</span> <span style="color:#000">_</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">Save</span> <span style="color:#000">order</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#000">task</span> <span style="color:#ce5c00;font-weight:bold">{</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#000">saved</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">Add</span> <span style="color:#000">order</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#204a87;font-weight:bold">return</span> <span style="color:#000">Ok</span> <span style="color:#3465a4">()</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#ce5c00;font-weight:bold">}</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">type</span> <span style="color:#000">RecordingEmails</span><span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">sent</span><span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">ResizeArray</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#204a87;font-weight:bold">string</span><span style="color:#ce5c00;font-weight:bold">&gt;)</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">interface</span> <span style="color:#000">IEmailSender</span> <span style="color:#204a87;font-weight:bold">with</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">member</span> <span style="color:#000">_</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">SendConfirmation</span> <span style="color:#000">order</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#000">task</span> <span style="color:#ce5c00;font-weight:bold">{</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#000">sent</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">Add</span> <span style="color:#000">order</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">Email</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#ce5c00;font-weight:bold">}</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">type</span> <span style="color:#000">RecordingAudit</span><span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">entries</span><span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">ResizeArray</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#204a87;font-weight:bold">string</span><span style="color:#ce5c00;font-weight:bold">&gt;)</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">interface</span> <span style="color:#000">IAuditLog</span> <span style="color:#204a87;font-weight:bold">with</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">member</span> <span style="color:#000">_</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">Write</span> <span style="color:#000">message</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#000">task</span> <span style="color:#ce5c00;font-weight:bold">{</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#000">entries</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">Add</span> <span style="color:#000">message</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#204a87;font-weight:bold">return</span> <span style="color:#000">Ok</span> <span style="color:#3465a4">()</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#ce5c00;font-weight:bold">}</span>
+</span></span></code></pre></div><h2 id="6-run-the-workflow">6. Run The Workflow</h2>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">run</span> <span style="color:#3465a4">()</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">task</span> <span style="color:#ce5c00;font-weight:bold">{</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">env</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ce5c00;font-weight:bold">{</span> <span style="color:#000">Orders</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">SqlOrderRepository</span><span style="color:#3465a4">()</span> <span style="color:#ce5c00;font-weight:bold">:&gt;</span> <span style="color:#000">IOrderRepository</span>
+</span></span><span style="display:flex;"><span>          <span style="color:#000">Email</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">SmtpEmailSender</span><span style="color:#3465a4">()</span> <span style="color:#ce5c00;font-weight:bold">:&gt;</span> <span style="color:#000">IEmailSender</span>
+</span></span><span style="display:flex;"><span>          <span style="color:#000">Audit</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">FileAuditLog</span><span style="color:#3465a4">()</span> <span style="color:#ce5c00;font-weight:bold">:&gt;</span> <span style="color:#000">IAuditLog</span> <span style="color:#ce5c00;font-weight:bold">}</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">order</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ce5c00;font-weight:bold">{</span> <span style="color:#000">Id</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">OrderId</span><span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">Guid</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">NewGuid</span><span style="color:#3465a4">()</span><span style="color:#ce5c00;font-weight:bold">)</span>
+</span></span><span style="display:flex;"><span>          <span style="color:#000">Email</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#4e9a06">&#34;ada@example.com&#34;</span>
+</span></span><span style="display:flex;"><span>          <span style="color:#000">Total</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">125m</span> <span style="color:#ce5c00;font-weight:bold">}</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">let!</span> <span style="color:#000">exit</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">placeOrder</span> <span style="color:#000">order</span><span style="color:#ce5c00;font-weight:bold">).</span><span style="color:#000">ToTask</span><span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">env</span><span style="color:#ce5c00;font-weight:bold">)</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">match</span> <span style="color:#000">exit</span> <span style="color:#204a87;font-weight:bold">with</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|</span> <span style="color:#000">Exit</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">Success</span> <span style="color:#000">orderId</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#000">printfn</span> <span style="color:#4e9a06">&#34;Placed %A&#34;</span> <span style="color:#000">orderId</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|</span> <span style="color:#000">Exit</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">Failure</span> <span style="color:#000">cause</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#000">printfn</span> <span style="color:#4e9a06">&#34;%s&#34;</span> <span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">Cause</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">prettyPrint</span> <span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#204a87;font-weight:bold">function</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#ce5c00;font-weight:bold">|</span> <span style="color:#000">InvalidEmail</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#4e9a06">&#34;invalid email&#34;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#ce5c00;font-weight:bold">|</span> <span style="color:#000">OrderRejected</span> <span style="color:#000">reason</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#000">reason</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#ce5c00;font-weight:bold">|</span> <span style="color:#000">AuditWriteFailed</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#4e9a06">&#34;audit write failed&#34;</span><span style="color:#ce5c00;font-weight:bold">)</span> <span style="color:#000">cause</span><span style="color:#ce5c00;font-weight:bold">)</span>
+</span></span><span style="display:flex;"><span><span style="color:#ce5c00;font-weight:bold">}</span>
+</span></span></code></pre></div><h2 id="when-to-stop-here">When To Stop Here</h2>
+<p>An app record is enough for a lot of applications.</p>
+<p>Move beyond it when:</p>
+<ul>
+<li>you want reusable helpers to depend on named contracts instead of record field names</li>
+<li>you want startup-time provisioning with failure handling</li>
+<li>you want scope-owned resources and cleanup</li>
+</ul>
+<p>Continue with <a href="http://localhost:3000/docs/tutorials/custom-services/">Tutorial: Creating Reusable Services</a> and then <a href="http://localhost:3000/docs/tutorials/layers/">Tutorial: Layers</a>.</p>
 
-	<nav class="docs-page-nav docs-page-nav--next-only"><a class="docs-home-cta docs-page-nav__link docs-page-nav__next" href="http://localhost:3000/docs/tutorials/capabilities/" aria-label="Next - Tutorial: Capabilities">
+	<nav class="docs-page-nav"><a class="docs-home-cta docs-page-nav__link docs-page-nav__prev" href="http://localhost:3000/docs/tutorials/explicit-dependencies/" aria-label="Previous - Tutorial: Explicit Dependencies First">
+    <span class="docs-page-nav__arrow" aria-hidden="true">←</span>
+    <span>Previous</span>
+  </a><a class="docs-home-cta docs-page-nav__link docs-page-nav__next" href="http://localhost:3000/docs/tutorials/runtime-operations/" aria-label="Next - Tutorial: Runtime Operations">
     <span>Next</span>
     <span class="docs-page-nav__arrow" aria-hidden="true">→</span>
   </a></nav>
@@ -459,8 +573,8 @@
       </div>
       
     </div>
-    <script src="http://localhost:3000/js/main.min.c60de03ed52a34012f330c3e18c526426ec97efa9822bedfadbf14ffe917bc3e.js" integrity="sha256-xg3gPtUqNAEvMww&#43;GMUmQm7JfvqYIr7frb8U/&#43;kXvD4=" crossorigin="anonymous"></script>
-<script defer src="http://localhost:3000/js/click-to-copy.min.24576ff9fe9f85bb1948ecae52ce227cafce53757a3ad52301f2a79260f6b97d.js" integrity="sha256-JFdv&#43;f6fhbsZSOyuUs4ifK/OU3V6OtUjAfKnkmD2uX0=" crossorigin="anonymous"></script>
+    <script src="http://localhost:3000/js/main.js"></script>
+<script defer src="http://localhost:3000/js/click-to-copy.js" crossorigin="anonymous"></script>
 <script src='http://localhost:3000/js/tabpane-persist.js'></script>
 
   </body>

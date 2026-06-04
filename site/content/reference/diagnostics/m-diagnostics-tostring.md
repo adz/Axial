@@ -17,7 +17,7 @@ Renders a diagnostics graph in a YAML-like layout for display.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `graph` | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-diagnostics-1.html">Diagnostics</a>&lt;'error&gt;</span></code> | The diagnostics graph to render. |
+| `graph` | <code><span><a href="t-diagnostics.md">Diagnostics</a>&lt;'error&gt;</span></code> | The diagnostics graph to render. |
 
 ## Returns
 

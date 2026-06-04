@@ -22,7 +22,7 @@ let getUrl =
     }
 
 let run () = task {
-    let! outcome = getUrl |> RunSynchronously or ToTask { ApiUrl = "https://api.example.com" }
+    let! outcome = getUrl.ToTask({ ApiUrl = "https://api.example.com" })
     // outcome = Exit.Success "https://api.example.com"
 }
 ```
@@ -46,7 +46,7 @@ let workflow id =
     }
 
 let runWorkflow () = task {
-    let! exit = workflow 42 |> RunSynchronously or ToTask ()
+    let! exit = (workflow 42).ToTask(())
     // exit = Exit.Success "Ada"
 }
 ```

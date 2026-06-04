@@ -17,13 +17,13 @@ Reads the current value of the transactional reference within a transaction.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `tref` | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-tref-1.html">TRef</a>&lt;'T&gt;</span></code> | The transactional reference to read. |
+| `tref` | <code><span><a href="t-tref.md">TRef</a>&lt;'T&gt;</span></code> | The transactional reference to read. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-stm-1.html">STM</a>&lt;'T&gt;</span></code> | An STM operation that produces the current value of the reference. |
+| <code><span><a href="t-stm.md">STM</a>&lt;'T&gt;</span></code> | An STM operation that produces the current value of the reference. |
 
 ## Examples
 

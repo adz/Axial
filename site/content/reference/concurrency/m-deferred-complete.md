@@ -17,11 +17,11 @@ Attempts to complete the deferred value with a full outcome.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `exit` | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-exit-2.html">Exit</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> |  |
-| `arg1` | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-deferred-2.html">Deferred</a>&lt;<span>'error,&#32;'value</span>&gt;</span></code> |  |
+| `exit` | <code><span><a href="../exit/t-exit.md">Exit</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> |  |
+| `arg1` | <code><span><a href="t-deferred.md">Deferred</a>&lt;<span>'error,&#32;'value</span>&gt;</span></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'workflowError,&#32;bool</span>&gt;</span></code> |  |
+| <code><span><a href="../flow/t-flow.md">Flow</a>&lt;<span>'env,&#32;'workflowError,&#32;bool</span>&gt;</span></code> |  |

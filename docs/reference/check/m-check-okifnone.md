@@ -22,7 +22,7 @@ Returns success when the option is <code>None</code>.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html">Check</a>&lt;unit&gt;</span></code> | A <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html">Check</a> that succeeds if the option is <a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpoption-1-none">None</a>. |
+| <code><span><a href="t-check.md">Check</a>&lt;unit&gt;</span></code> | A <a href="t-check.md">Check</a> that succeeds if the option is <a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpoption-1-none">None</a>. |
 
 ## Examples
 

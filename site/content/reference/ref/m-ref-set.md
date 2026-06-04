@@ -18,13 +18,13 @@ Sets the value of the reference to the specified value.
 | Name | Type | Description |
 | --- | --- | --- |
 | `value` | <code>'T</code> | The new value to set. |
-| `reference` | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-ref-1.html">Ref</a>&lt;'T&gt;</span></code> | The <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-ref-1.html">Ref</a> to update. |
+| `reference` | <code><span><a href="t-ref.md">Ref</a>&lt;'T&gt;</span></code> | The <a href="t-ref.md">Ref</a> to update. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'none,&#32;unit</span>&gt;</span></code> | A flow that sets the value and returns unit. |
+| <code><span><a href="../flow/t-flow.md">Flow</a>&lt;<span>'env,&#32;'none,&#32;unit</span>&gt;</span></code> | A flow that sets the value and returns unit. |
 
 ## Examples
 

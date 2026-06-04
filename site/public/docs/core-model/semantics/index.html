@@ -1,10 +1,10 @@
 <!doctype html>
 <html itemscope itemtype="http://schema.org/WebPage" lang="en" class="no-js">
-  <head>
+  <head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=3000&amp;path=livereload" data-no-instant defer></script>
     <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-<meta name="robots" content="index, follow">
+<meta name="robots" content="noindex, nofollow">
 
 
 <link rel="shortcut icon" href="http://localhost:3000/favicons/favicon.ico" >
@@ -30,12 +30,11 @@
 
   <meta itemprop="name" content="Execution Semantics">
   <meta itemprop="description" content="Exact execution rules for Flow.">
-  <meta itemprop="wordCount" content="435">
+  <meta itemprop="wordCount" content="262">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Execution Semantics">
   <meta name="twitter:description" content="Exact execution rules for Flow.">
-<link rel="preload" href="http://localhost:3000/scss/main.min.c2e6489a9d8ef949a0dead85d2b883caca7e8cf3176c0e7ff6ff57d94fff640c.css" as="style" integrity="sha256-wuZImp2O&#43;Umg3q2F0riDysp&#43;jPMXbA5/9v9X2U//ZAw=" crossorigin="anonymous">
-<link href="http://localhost:3000/scss/main.min.c2e6489a9d8ef949a0dead85d2b883caca7e8cf3176c0e7ff6ff57d94fff640c.css" rel="stylesheet" integrity="sha256-wuZImp2O&#43;Umg3q2F0riDysp&#43;jPMXbA5/9v9X2U//ZAw=" crossorigin="anonymous">
+<link href="http://localhost:3000/scss/main.css" rel="stylesheet">
 <script
   src="https://code.jquery.com/jquery-3.7.1.min.js"
   integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g=="
@@ -92,7 +91,7 @@
     aria-label='Search this site…'
     autocomplete="off"
     
-    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.152d3a8195c3b05e80270a1402841d44.json"
+    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.json"
     data-offline-search-base-href="http://localhost:3000/"
     data-offline-search-max-results="10"
   >
@@ -128,7 +127,7 @@
     aria-label='Search this site…'
     autocomplete="off"
     
-    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.152d3a8195c3b05e80270a1402841d44.json"
+    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.json"
     data-offline-search-base-href="http://localhost:3000/"
     data-offline-search-max-results="10"
   >
@@ -165,17 +164,29 @@
     <label for="m-docstutorials-check"><a href="http://localhost:3000/docs/tutorials/" class="align-left ps-0  td-sidebar-link td-sidebar-link__section" id="m-docstutorials"><span class="">Tutorials</span></a></label>
     
     <ul class="ul-2 foldable">
-      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialsapp-record-li">
+      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialsexplicit-dependencies-li">
+    <input type="checkbox" id="m-docstutorialsexplicit-dependencies-check"/>
+    <label for="m-docstutorialsexplicit-dependencies-check"><a href="http://localhost:3000/docs/tutorials/explicit-dependencies/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialsexplicit-dependencies"><span class="">Tutorial: Explicit Dependencies First</span></a></label>
+    
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialsapp-record-li">
     <input type="checkbox" id="m-docstutorialsapp-record-check"/>
-    <label for="m-docstutorialsapp-record-check"><a href="http://localhost:3000/docs/tutorials/app-record/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialsapp-record"><span class="">Tutorial: AppRecord</span></a></label>
+    <label for="m-docstutorialsapp-record-check"><a href="http://localhost:3000/docs/tutorials/app-record/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialsapp-record"><span class="">Tutorial: App Record</span></a></label>
     
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialscapabilities-li">
-    <input type="checkbox" id="m-docstutorialscapabilities-check"/>
-    <label for="m-docstutorialscapabilities-check"><a href="http://localhost:3000/docs/tutorials/capabilities/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialscapabilities"><span class="">Tutorial: Capabilities</span></a></label>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialsruntime-operations-li">
+    <input type="checkbox" id="m-docstutorialsruntime-operations-check"/>
+    <label for="m-docstutorialsruntime-operations-check"><a href="http://localhost:3000/docs/tutorials/runtime-operations/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialsruntime-operations"><span class="">Tutorial: Runtime Operations</span></a></label>
     
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialsapp-host-li">
-    <input type="checkbox" id="m-docstutorialsapp-host-check"/>
-    <label for="m-docstutorialsapp-host-check"><a href="http://localhost:3000/docs/tutorials/app-host/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialsapp-host"><span class="">Tutorial: AppHost</span></a></label>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialsexisting-services-li">
+    <input type="checkbox" id="m-docstutorialsexisting-services-check"/>
+    <label for="m-docstutorialsexisting-services-check"><a href="http://localhost:3000/docs/tutorials/existing-services/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialsexisting-services"><span class="">Tutorial: Using Existing Services</span></a></label>
+    
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialscustom-services-li">
+    <input type="checkbox" id="m-docstutorialscustom-services-check"/>
+    <label for="m-docstutorialscustom-services-check"><a href="http://localhost:3000/docs/tutorials/custom-services/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialscustom-services"><span class="">Tutorial: Creating Reusable Services</span></a></label>
+    
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialslayers-li">
+    <input type="checkbox" id="m-docstutorialslayers-check"/>
+    <label for="m-docstutorialslayers-check"><a href="http://localhost:3000/docs/tutorials/layers/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialslayers"><span class="">Tutorial: Layers</span></a></label>
     
   </li>
     </ul>
@@ -234,17 +245,25 @@
     <label for="m-docsmanaging-dependencies-check"><a href="http://localhost:3000/docs/managing-dependencies/" class="align-left ps-0  td-sidebar-link td-sidebar-link__section" id="m-docsmanaging-dependencies"><span class="">Managing Dependencies</span></a></label>
     
     <ul class="ul-2 foldable">
-      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciesruntime-vs-environment-li">
-    <input type="checkbox" id="m-docsmanaging-dependenciesruntime-vs-environment-check"/>
-    <label for="m-docsmanaging-dependenciesruntime-vs-environment-check"><a href="http://localhost:3000/docs/managing-dependencies/runtime-vs-environment/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesruntime-vs-environment"><span class="">Runtime vs Environment</span></a></label>
+      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciesexplicit-services-li">
+    <input type="checkbox" id="m-docsmanaging-dependenciesexplicit-services-check"/>
+    <label for="m-docsmanaging-dependenciesexplicit-services-check"><a href="http://localhost:3000/docs/managing-dependencies/explicit-services/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesexplicit-services"><span class="">Explicit Services</span></a></label>
     
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciescapability-contracts-li">
-    <input type="checkbox" id="m-docsmanaging-dependenciescapability-contracts-check"/>
-    <label for="m-docsmanaging-dependenciescapability-contracts-check"><a href="http://localhost:3000/docs/managing-dependencies/capability-contracts/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciescapability-contracts"><span class="">Nominal Capability Contracts</span></a></label>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependencieslayers-li">
+    <input type="checkbox" id="m-docsmanaging-dependencieslayers-check"/>
+    <label for="m-docsmanaging-dependencieslayers-check"><a href="http://localhost:3000/docs/managing-dependencies/layers/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependencieslayers"><span class="">Layers</span></a></label>
     
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciesprovider-edge-li">
-    <input type="checkbox" id="m-docsmanaging-dependenciesprovider-edge-check"/>
-    <label for="m-docsmanaging-dependenciesprovider-edge-check"><a href="http://localhost:3000/docs/managing-dependencies/provider-edge/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesprovider-edge"><span class="">Standard .NET AppHost Plus DI</span></a></label>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciesscopes-and-resources-li">
+    <input type="checkbox" id="m-docsmanaging-dependenciesscopes-and-resources-check"/>
+    <label for="m-docsmanaging-dependenciesscopes-and-resources-check"><a href="http://localhost:3000/docs/managing-dependencies/scopes-and-resources/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesscopes-and-resources"><span class="">Scopes and Resources</span></a></label>
+    
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciesbuilding-a-base-runtime-li">
+    <input type="checkbox" id="m-docsmanaging-dependenciesbuilding-a-base-runtime-check"/>
+    <label for="m-docsmanaging-dependenciesbuilding-a-base-runtime-check"><a href="http://localhost:3000/docs/managing-dependencies/building-a-base-runtime/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesbuilding-a-base-runtime"><span class="">Building a Base Runtime</span></a></label>
+    
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciesservice-provider-boundaries-li">
+    <input type="checkbox" id="m-docsmanaging-dependenciesservice-provider-boundaries-check"/>
+    <label for="m-docsmanaging-dependenciesservice-provider-boundaries-check"><a href="http://localhost:3000/docs/managing-dependencies/service-provider-boundaries/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesservice-provider-boundaries"><span class="">Service Provider Boundaries</span></a></label>
     
   </li>
     </ul>
@@ -256,6 +275,10 @@
       <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsstate-concurrencyref-li">
     <input type="checkbox" id="m-docsstate-concurrencyref-check"/>
     <label for="m-docsstate-concurrencyref-check"><a href="http://localhost:3000/docs/state-concurrency/ref/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsstate-concurrencyref"><span class="">Ref (Atomic References)</span></a></label>
+    
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsstate-concurrencydeferred-semaphore-li">
+    <input type="checkbox" id="m-docsstate-concurrencydeferred-semaphore-check"/>
+    <label for="m-docsstate-concurrencydeferred-semaphore-check"><a href="http://localhost:3000/docs/state-concurrency/deferred-semaphore/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsstate-concurrencydeferred-semaphore"><span class="">Deferred and Semaphore</span></a></label>
     
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsstate-concurrencyschedule-li">
     <input type="checkbox" id="m-docsstate-concurrencyschedule-check"/>
@@ -337,15 +360,10 @@
     </div>
     <nav id="TableOfContents">
   <ul>
-    <li><a href="#execution-shape">Execution Shape</a></li>
-    <li><a href="#success-and-typed-failure">Success and Typed Failure</a></li>
-    <li><a href="#short-circuiting-vs-accumulated-validation">Short-Circuiting vs. Accumulated Validation</a></li>
     <li><a href="#execution-is-explicit">Execution Is Explicit</a></li>
-    <li><a href="#success-and-failure-causes">Success and Failure Causes</a></li>
-    <li><a href="#interruption-and-cancellation">Interruption and Cancellation</a></li>
-    <li><a href="#environments">Environments</a></li>
-    <li><a href="#task-temperature">Task Temperature</a></li>
-    <li><a href="#runtime-helpers">Runtime Helpers</a></li>
+    <li><a href="#success-and-failure">Success and Failure</a></li>
+    <li><a href="#result-conversion">Result Conversion</a></li>
+    <li><a href="#interruption-and-scope">Interruption and Scope</a></li>
   </ul>
 </nav>
   </div>
@@ -371,61 +389,50 @@
 	<header class="article-meta">
 		
 </header>
-	<p>This page shows the exact execution rules for <code>Flow</code>, including how a cold program becomes an <code>Effect</code> and resolves to an <code>Exit</code>.</p>
-<p>FsFlow uses a unified <strong><code>Flow&lt;'env, 'error, 'value&gt;</code></strong> model that handles synchronous code, F# <code>Async</code>, and .NET <code>Task</code> interop natively.</p>
-<h2 id="execution-shape">Execution Shape</h2>
-<p>Conceptually, execution is:</p>
-<p><code>Flow -&gt; Effect -&gt; Exit</code></p>
-<p>More precisely:</p>
+	<p><code>Flow&lt;'env, 'error, 'value&gt;</code> is a cold workflow description. It reads an explicit environment, can fail with typed
+errors, and produces an <code>Exit&lt;'value, 'error&gt;</code> when executed.</p>
+<p>Conceptually:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>Flow -&gt; platform execution handle -&gt; Exit
+</span></span></code></pre></div><p>The platform handle is chosen at the execution boundary:</p>
 <ul>
-<li><code>Flow</code> is the cold program you define.</li>
-<li><code>Effect</code> is the deferred runnable carrier.</li>
-<li><code>Exit</code> is the terminal outcome after execution.</li>
+<li><code>.NET</code>: <code>ToValueTask</code>, <code>ToTask</code>, <code>ToAsync</code>, or <code>RunSynchronously</code>.</li>
+<li><code>Fable</code>: <code>ToAsync</code>.</li>
 </ul>
-<h2 id="success-and-typed-failure">Success and Typed Failure</h2>
-<p>Every Flow execution results in an <strong><code>Exit&lt;'value, 'error&gt;</code></strong>:</p>
-<ul>
-<li><code>Exit.Success value</code>: The happy path.</li>
-<li><code>Exit.Failure (Cause.Fail error)</code>: An expected domain-specific failure.</li>
-<li><code>Exit.Failure Cause.Interrupt</code>: The workflow was signaled to stop (e.g., cancellation).</li>
-<li><code>Exit.Failure (Cause.Die exception)</code>: An unexpected defect or crash. <code>Flow.run</code>, <code>Flow.runFull</code>, and <code>Flow.runSync</code> preserve uncaught exceptions in this branch.</li>
-</ul>
-<p>All standard combinators (<code>map</code>, <code>bind</code>, <code>zip</code>, <code>orElse</code>) are <strong>short-circuiting</strong>. The first <code>Exit.Failure</code> stops the workflow unless explicitly caught.</p>
-<h2 id="short-circuiting-vs-accumulated-validation">Short-Circuiting vs. Accumulated Validation</h2>
-<ul>
-<li><strong><code>flow {}</code></strong> and <strong><code>result {}</code></strong>: Ordered workflows. They stop on the first failure.</li>
-<li><strong><code>validate {}</code></strong>: Accumulating validation. Joins errors from independent steps (using <code>and!</code>) into a structured <code>Diagnostics</code> graph.</li>
-</ul>
-<p>Use the short-circuiting model when later steps depend on earlier values. Use the validation model when independent checks should all run and report back together.</p>
 <h2 id="execution-is-explicit">Execution Is Explicit</h2>
-<p>You run a Flow by calling <code>Flow.run</code>.</p>
-<p><code>Flow.run</code> returns an <strong><code>Effect&lt;'value, 'error&gt;</code></strong>. The platform-specific carrier is defined by the target:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">exit</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">workflow</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">RunSynchronously</span><span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">env</span><span style="color:#ce5c00;font-weight:bold">)</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#000">task</span> <span style="color:#ce5c00;font-weight:bold">{</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">let!</span> <span style="color:#000">exit</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">workflow</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">ToTask</span><span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">env</span><span style="color:#ce5c00;font-weight:bold">)</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">return</span> <span style="color:#000">exit</span>
+</span></span><span style="display:flex;"><span><span style="color:#ce5c00;font-weight:bold">}</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#000">async</span> <span style="color:#ce5c00;font-weight:bold">{</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">let!</span> <span style="color:#000">exit</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">workflow</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">ToAsync</span><span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">env</span><span style="color:#ce5c00;font-weight:bold">)</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">return</span> <span style="color:#000">exit</span>
+</span></span><span style="display:flex;"><span><span style="color:#ce5c00;font-weight:bold">}</span>
+</span></span></code></pre></div><p><code>ToValueTask</code>, <code>ToTask</code>, and <code>ToAsync</code> start the workflow and return a platform handle. Await or run that handle to
+observe the <code>Exit</code>. <code>RunSynchronously</code> starts the workflow and blocks until the <code>Exit</code> is available.</p>
+<p>Each execution starts from scratch with a fresh root scope.</p>
+<h2 id="success-and-failure">Success and Failure</h2>
+<p>Every execution results in:</p>
 <ul>
-<li>On <strong>.NET</strong>: <code>Effect&lt;'value, 'error&gt;</code> is a <code>ValueTask&lt;Exit&lt;'value, 'error&gt;&gt;</code>.</li>
-<li>On <strong>Fable</strong>: <code>Effect&lt;'value, 'error&gt;</code> is an <code>Async&lt;Exit&lt;'value, 'error&gt;&gt;</code>.</li>
+<li><code>Exit.Success value</code>: the workflow completed successfully.</li>
+<li><code>Exit.Failure (Cause.Fail error)</code>: expected domain failure.</li>
+<li><code>Exit.Failure Cause.Interrupt</code>: cooperative interruption or cancellation.</li>
+<li><code>Exit.Failure (Cause.Die exception)</code>: unexpected defect.</li>
+<li><code>Exit.Failure (Cause.Then (first, second))</code>: sequential failure composition.</li>
+<li><code>Exit.Failure (Cause.Both (left, right))</code>: parallel failure composition.</li>
+<li><code>Exit.Failure (Cause.Traced (cause, trace))</code>: diagnostic annotation.</li>
 </ul>
-<p>This design allows FsFlow to remain portable while respecting the execution models of different platforms. <code>Effect</code> is the cross-platform execution handle.</p>
-<p>A flow is <strong>cold</strong>: building a flow does not run it. Each call to <code>run</code> executes the logic from scratch.</p>
-<h2 id="success-and-failure-causes">Success and Failure Causes</h2>
-<p>FsFlow distinguishes between expected failures, administrative signals, and unexpected defects. For a detailed explanation of the architectural rationale behind this split, see <strong>Defects and Exceptions</strong>.</p>
-<h2 id="interruption-and-cancellation">Interruption and Cancellation</h2>
-<p>FsFlow supports algebraic interruption. When a <strong>Fiber</strong> is interrupted (e.g., via <code>Flow.interrupt</code> or a <code>CancellationToken</code> trigger), the flow stops executing and returns <code>Exit.Failure Cause.Interrupt</code>.</p>
-<h2 id="environments">Environments</h2>
-<p>Flow reads dependencies explicitly:</p>
-<ul>
-<li><code>Flow.env</code>: Reads the whole environment.</li>
-<li><code>Flow.read</code>: Projects one dependency.</li>
-<li><code>Flow.localEnv</code>: Runs a smaller computation inside a larger environment.</li>
-</ul>
-<h2 id="task-temperature">Task Temperature</h2>
-<p>Flow distinguishes between:</p>
-<ul>
-<li><strong>Hot Inputs</strong>: Already-started <code>Task&lt;'value&gt;</code> or <code>Async&lt;'value&gt;</code>. Re-running the flow re-awaits the same underlying work.</li>
-<li><strong>Cold Inputs</strong>: Logic defined inside <code>flow {}</code> or helpers like <code>Flow.Runtime.sleep</code>. Re-running the flow repeats the work.</li>
-</ul>
-<p>Use Cold inputs when you want the effect to observe the runtime <code>CancellationToken</code> or repeat its side effects on retry.</p>
-<h2 id="runtime-helpers">Runtime Helpers</h2>
-<p>Operational helpers for logging, timeout, retry, and resource handling are grouped into the <code>Flow.Runtime</code> and <code>Schedule</code> modules.</p>
+<p>All standard flow combinators are short-circuiting unless a specific API says otherwise.</p>
+<h2 id="result-conversion">Result Conversion</h2>
+<p><code>Exit.toResult</code> is intentionally lossy and should be used only at interop boundaries. It returns <code>Error error</code> for a
+simple <code>Cause.Fail error</code>, and raises for defects, interruption, and composite causes.</p>
+<h2 id="interruption-and-scope">Interruption and Scope</h2>
+<p>Cancellation tokens supplied to execution members are visible through <code>Flow.Runtime.cancellationToken</code>. Forked fibers
+and scoped resources are tied to the current runtime scope. When the root execution ends, FsFlow closes the root scope
+and runs registered finalizers.</p>
+<p>If both workflow execution and cleanup fail, FsFlow preserves both causes with <code>Cause.Then</code>.</p>
 
 	<nav class="docs-page-nav docs-page-nav--next-only"><a class="docs-home-cta docs-page-nav__link docs-page-nav__next" href="http://localhost:3000/docs/core-model/fibers/" aria-label="Next - Fibers">
     <span>Next</span>
@@ -440,8 +447,8 @@
       </div>
       
     </div>
-    <script src="http://localhost:3000/js/main.min.c60de03ed52a34012f330c3e18c526426ec97efa9822bedfadbf14ffe917bc3e.js" integrity="sha256-xg3gPtUqNAEvMww&#43;GMUmQm7JfvqYIr7frb8U/&#43;kXvD4=" crossorigin="anonymous"></script>
-<script defer src="http://localhost:3000/js/click-to-copy.min.24576ff9fe9f85bb1948ecae52ce227cafce53757a3ad52301f2a79260f6b97d.js" integrity="sha256-JFdv&#43;f6fhbsZSOyuUs4ifK/OU3V6OtUjAfKnkmD2uX0=" crossorigin="anonymous"></script>
+    <script src="http://localhost:3000/js/main.js"></script>
+<script defer src="http://localhost:3000/js/click-to-copy.js" crossorigin="anonymous"></script>
 <script src='http://localhost:3000/js/tabpane-persist.js'></script>
 
   </body>

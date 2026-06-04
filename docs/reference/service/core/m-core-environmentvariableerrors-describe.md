@@ -16,7 +16,7 @@ Formats a human-readable description for an error.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `_arg1` | <code><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-services-core-environmentvariableerror.html">EnvironmentVariableError</a></code> |  |
+| `_arg1` | <code><a href="t-core-environmentvariableerror.md">EnvironmentVariableError</a></code> |  |
 
 ## Returns
 

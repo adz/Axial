@@ -17,4 +17,4 @@ Builds the base runtime from an <a href="https://learn.microsoft.com/dotnet/api/
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-layer-3.html">Layer</a>&lt;<span><a href="https://learn.microsoft.com/dotnet/api/system.iserviceprovider">IServiceProvider</a>,&#32;<a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-services-core-baseruntimeerror.html">BaseRuntimeError</a>,&#32;<a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-services-core-baseruntime.html">BaseRuntime</a></span>&gt;</span></code> |  |
+| <code><span><a href="../../layer/t-layer.md">Layer</a>&lt;<span><a href="https://learn.microsoft.com/dotnet/api/system.iserviceprovider">IServiceProvider</a>,&#32;<a href="t-core-baseruntimeerror.md">BaseRuntimeError</a>,&#32;<a href="t-core-baseruntime.md">BaseRuntime</a></span>&gt;</span></code> |  |

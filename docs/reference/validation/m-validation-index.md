@@ -17,13 +17,13 @@ Prefixes a validation with an indexed branch.
 | Name | Type | Description |
 | --- | --- | --- |
 | `index` | <code>int</code> | The branch index. |
-| `validation` | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> | The validation to scope. |
+| `validation` | <code><span><a href="t-validation.md">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> | The validation to scope. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> | A validation whose diagnostics are prefixed with <code>Index index</code>. |
+| <code><span><a href="t-validation.md">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> | A validation whose diagnostics are prefixed with <code>Index index</code>. |
 
 ## Examples
 

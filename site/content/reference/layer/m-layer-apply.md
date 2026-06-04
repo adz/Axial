@@ -17,11 +17,11 @@ Applies a layer-wrapped function to a layer-wrapped value.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `layer` | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-layer-3.html">Layer</a>&lt;<span>'input,&#32;'error,&#32;<span>(<span>'value&#32;->&#32;'next</span>)</span></span>&gt;</span></code> |  |
-| `value` | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-layer-3.html">Layer</a>&lt;<span>'input,&#32;'error,&#32;'value</span>&gt;</span></code> |  |
+| `layer` | <code><span><a href="t-layer.md">Layer</a>&lt;<span>'input,&#32;'error,&#32;<span>(<span>'value&#32;->&#32;'next</span>)</span></span>&gt;</span></code> |  |
+| `value` | <code><span><a href="t-layer.md">Layer</a>&lt;<span>'input,&#32;'error,&#32;'value</span>&gt;</span></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-layer-3.html">Layer</a>&lt;<span>'input,&#32;'error,&#32;'next</span>&gt;</span></code> |  |
+| <code><span><a href="t-layer.md">Layer</a>&lt;<span>'input,&#32;'error,&#32;'next</span>&gt;</span></code> |  |

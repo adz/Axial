@@ -23,7 +23,7 @@ Nominal contract for an explicit service dependency.
 
 
  Environments implement <code>IHas&lt;&#39;service&gt;</code> when they can supply one service value of that type
- through <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-service-1.html">Service</a>.
+ through <a href="t-service.md">Service</a>.
 
 
 ## Examples

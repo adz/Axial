@@ -22,7 +22,7 @@ Returns the single element when the sequence contains exactly one item.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'value,&#32;<a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-cardinalityfailure.html">CardinalityFailure</a></span>&gt;</span></code> | A result containing the single element, or a cardinality failure. |
+| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'value,&#32;<a href="t-cardinalityfailure.md">CardinalityFailure</a></span>&gt;</span></code> | A result containing the single element, or a cardinality failure. |
 
 ## Examples
 

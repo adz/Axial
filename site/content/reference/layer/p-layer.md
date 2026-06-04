@@ -19,7 +19,7 @@ type: docs
 
 | Type | Description |
 | --- | --- |
-| <code><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-layerbuilder.html">LayerBuilder</a></code> | A <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-layerbuilder.html">LayerBuilder</a> instance. |
+| <code><a href="p-layer.md">LayerBuilder</a></code> | A <a href="p-layer.md">LayerBuilder</a> instance. |
 
 ## Remarks
 

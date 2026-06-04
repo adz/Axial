@@ -4,7 +4,7 @@ linkTitle: "fromResult"
 weight: 2105
 ---
 
-Lifts a standard <a href="https://learn.microsoft.com/dotnet/api/system.result-2">Result</a> into the <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html">Validation</a> context.
+Lifts a standard <a href="https://learn.microsoft.com/dotnet/api/system.result-2">Result</a> into the <a href="t-validation.md">Validation</a> context.
 
 ## Signature
 
@@ -22,12 +22,12 @@ Lifts a standard <a href="https://learn.microsoft.com/dotnet/api/system.result-2
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> | A <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html">Validation</a> mirroring the result. |
+| <code><span><a href="t-validation.md">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> | A <a href="t-validation.md">Validation</a> mirroring the result. |
 
 ## Remarks
 
 
- If the result is an error, it is wrapped in a root-level <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-diagnostics-1.html">Diagnostics</a> graph.
+ If the result is an error, it is wrapped in a root-level <a href="../diagnostics/t-diagnostics.md">Diagnostics</a> graph.
 
 
 ## Examples

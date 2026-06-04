@@ -18,13 +18,13 @@ weight: 2104
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `transaction` | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-stm-1.html">STM</a>&lt;'T&gt;</span></code> | The STM transaction to execute. |
+| `transaction` | <code><span><a href="t-stm.md">STM</a>&lt;'T&gt;</span></code> | The STM transaction to execute. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'none,&#32;'T</span>&gt;</span></code> | A flow that performs the transaction and returns its result. |
+| <code><span><a href="../flow/t-flow.md">Flow</a>&lt;<span>'env,&#32;'none,&#32;'T</span>&gt;</span></code> | A flow that performs the transaction and returns its result. |
 
 ## Remarks
 

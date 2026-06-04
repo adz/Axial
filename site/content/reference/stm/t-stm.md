@@ -1,28 +1,14 @@
 ---
 title: "STM"
-linkTitle: "STM<T>"
+linkTitle: "STM"
 weight: 1001
 type: docs
 ---
 
 
- Represents a transactional operation that can be composed, retried, and executed atomically.
-
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code>type STM<'T></code>
+<code>type STM</code>
 </div>
-
-## Type Parameters
-
-| Name |
-| --- |
-| `T` |
-
-## Union Cases
-
-| Case | Description |
-| --- | --- |
-| `STM` |  |

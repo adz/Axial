@@ -17,13 +17,13 @@ Catches <a href="https://learn.microsoft.com/dotnet/api/operationcanceledexcepti
 | Name | Type | Description |
 | --- | --- | --- |
 | `handler` | <code><span><a href="https://learn.microsoft.com/dotnet/api/system.operationcanceledexception">OperationCanceledException</a>&#32;->&#32;'error</span></code> | Maps the cancellation exception into the workflow error type. |
-| `flow` | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | The source flow. |
+| `flow` | <code><span><a href="../t-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | The source flow. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | A flow that turns thrown cancellation into <code>Cause.Fail</code>. |
+| <code><span><a href="../t-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | A flow that turns thrown cancellation into <code>Cause.Fail</code>. |
 
 ## Remarks
 

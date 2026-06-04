@@ -1,24 +1,13 @@
 ---
 title: "Flow"
-linkTitle: "Flow<env, error, value>"
+linkTitle: "Flow"
 weight: 1000
 ---
 
-
- Represents a cold workflow that reads an environment, returns a typed result, and is executed
- explicitly through one of its execution members such as <code>ToTask</code>, <code>ToAsync</code>, or <code>RunSynchronously</code>.
 
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code>type Flow<'env, 'error, 'value></code>
+<code>type Flow</code>
 </div>
-
-## Type Parameters
-
-| Name |
-| --- |
-| `env` |
-| `error` |
-| `value` |

@@ -1,11 +1,11 @@
 <!doctype html>
 <html itemscope itemtype="http://schema.org/WebPage" lang="en" class="no-js">
-  <head>
+  <head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=3000&amp;path=livereload" data-no-instant defer></script>
     <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
 <link rel="alternate" type="application/rss&#43;xml" href="http://localhost:3000/docs/managing-dependencies/index.xml">
-<meta name="robots" content="index, follow">
+<meta name="robots" content="noindex, nofollow">
 
 
 <link rel="shortcut icon" href="http://localhost:3000/favicons/favicon.ico" >
@@ -20,22 +20,21 @@
 <link rel="icon" type="image/png" href="http://localhost:3000/favicons/android-192x192.png" sizes="192x192">
 
 <title>Managing Dependencies | FsFlow</title>
-<meta name="description" content="How FsFlow models dependency boundaries with records, nominal contracts, and host DI.">
+<meta name="description" content="How FsFlow models records, services, layers, scopes, and host-provider boundaries.">
 <meta property="og:url" content="http://localhost:3000/docs/managing-dependencies/">
   <meta property="og:site_name" content="FsFlow">
   <meta property="og:title" content="Managing Dependencies">
-  <meta property="og:description" content="How FsFlow models dependency boundaries with records, nominal contracts, and host DI.">
+  <meta property="og:description" content="How FsFlow models records, services, layers, scopes, and host-provider boundaries.">
   <meta property="og:locale" content="en_us">
   <meta property="og:type" content="website">
 
   <meta itemprop="name" content="Managing Dependencies">
-  <meta itemprop="description" content="How FsFlow models dependency boundaries with records, nominal contracts, and host DI.">
-  <meta itemprop="wordCount" content="461">
+  <meta itemprop="description" content="How FsFlow models records, services, layers, scopes, and host-provider boundaries.">
+  <meta itemprop="wordCount" content="281">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Managing Dependencies">
-  <meta name="twitter:description" content="How FsFlow models dependency boundaries with records, nominal contracts, and host DI.">
-<link rel="preload" href="http://localhost:3000/scss/main.min.c2e6489a9d8ef949a0dead85d2b883caca7e8cf3176c0e7ff6ff57d94fff640c.css" as="style" integrity="sha256-wuZImp2O&#43;Umg3q2F0riDysp&#43;jPMXbA5/9v9X2U//ZAw=" crossorigin="anonymous">
-<link href="http://localhost:3000/scss/main.min.c2e6489a9d8ef949a0dead85d2b883caca7e8cf3176c0e7ff6ff57d94fff640c.css" rel="stylesheet" integrity="sha256-wuZImp2O&#43;Umg3q2F0riDysp&#43;jPMXbA5/9v9X2U//ZAw=" crossorigin="anonymous">
+  <meta name="twitter:description" content="How FsFlow models records, services, layers, scopes, and host-provider boundaries.">
+<link href="http://localhost:3000/scss/main.css" rel="stylesheet">
 <script
   src="https://code.jquery.com/jquery-3.7.1.min.js"
   integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g=="
@@ -92,7 +91,7 @@
     aria-label='Search this site…'
     autocomplete="off"
     
-    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.152d3a8195c3b05e80270a1402841d44.json"
+    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.json"
     data-offline-search-base-href="http://localhost:3000/"
     data-offline-search-max-results="10"
   >
@@ -128,7 +127,7 @@
     aria-label='Search this site…'
     autocomplete="off"
     
-    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.152d3a8195c3b05e80270a1402841d44.json"
+    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.json"
     data-offline-search-base-href="http://localhost:3000/"
     data-offline-search-max-results="10"
   >
@@ -165,17 +164,29 @@
     <label for="m-docstutorials-check"><a href="http://localhost:3000/docs/tutorials/" class="align-left ps-0  td-sidebar-link td-sidebar-link__section" id="m-docstutorials"><span class="">Tutorials</span></a></label>
     
     <ul class="ul-2 foldable">
-      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialsapp-record-li">
+      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialsexplicit-dependencies-li">
+    <input type="checkbox" id="m-docstutorialsexplicit-dependencies-check"/>
+    <label for="m-docstutorialsexplicit-dependencies-check"><a href="http://localhost:3000/docs/tutorials/explicit-dependencies/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialsexplicit-dependencies"><span class="">Tutorial: Explicit Dependencies First</span></a></label>
+    
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialsapp-record-li">
     <input type="checkbox" id="m-docstutorialsapp-record-check"/>
-    <label for="m-docstutorialsapp-record-check"><a href="http://localhost:3000/docs/tutorials/app-record/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialsapp-record"><span class="">Tutorial: AppRecord</span></a></label>
+    <label for="m-docstutorialsapp-record-check"><a href="http://localhost:3000/docs/tutorials/app-record/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialsapp-record"><span class="">Tutorial: App Record</span></a></label>
     
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialscapabilities-li">
-    <input type="checkbox" id="m-docstutorialscapabilities-check"/>
-    <label for="m-docstutorialscapabilities-check"><a href="http://localhost:3000/docs/tutorials/capabilities/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialscapabilities"><span class="">Tutorial: Capabilities</span></a></label>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialsruntime-operations-li">
+    <input type="checkbox" id="m-docstutorialsruntime-operations-check"/>
+    <label for="m-docstutorialsruntime-operations-check"><a href="http://localhost:3000/docs/tutorials/runtime-operations/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialsruntime-operations"><span class="">Tutorial: Runtime Operations</span></a></label>
     
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialsapp-host-li">
-    <input type="checkbox" id="m-docstutorialsapp-host-check"/>
-    <label for="m-docstutorialsapp-host-check"><a href="http://localhost:3000/docs/tutorials/app-host/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialsapp-host"><span class="">Tutorial: AppHost</span></a></label>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialsexisting-services-li">
+    <input type="checkbox" id="m-docstutorialsexisting-services-check"/>
+    <label for="m-docstutorialsexisting-services-check"><a href="http://localhost:3000/docs/tutorials/existing-services/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialsexisting-services"><span class="">Tutorial: Using Existing Services</span></a></label>
+    
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialscustom-services-li">
+    <input type="checkbox" id="m-docstutorialscustom-services-check"/>
+    <label for="m-docstutorialscustom-services-check"><a href="http://localhost:3000/docs/tutorials/custom-services/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialscustom-services"><span class="">Tutorial: Creating Reusable Services</span></a></label>
+    
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialslayers-li">
+    <input type="checkbox" id="m-docstutorialslayers-check"/>
+    <label for="m-docstutorialslayers-check"><a href="http://localhost:3000/docs/tutorials/layers/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialslayers"><span class="">Tutorial: Layers</span></a></label>
     
   </li>
     </ul>
@@ -234,17 +245,25 @@
     <label for="m-docsmanaging-dependencies-check"><a href="http://localhost:3000/docs/managing-dependencies/" class="align-left ps-0  active td-sidebar-link td-sidebar-link__section" id="m-docsmanaging-dependencies"><span class="td-sidebar-nav-active-item">Managing Dependencies</span></a></label>
     
     <ul class="ul-2 foldable">
-      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciesruntime-vs-environment-li">
-    <input type="checkbox" id="m-docsmanaging-dependenciesruntime-vs-environment-check"/>
-    <label for="m-docsmanaging-dependenciesruntime-vs-environment-check"><a href="http://localhost:3000/docs/managing-dependencies/runtime-vs-environment/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesruntime-vs-environment"><span class="">Runtime vs Environment</span></a></label>
+      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciesexplicit-services-li">
+    <input type="checkbox" id="m-docsmanaging-dependenciesexplicit-services-check"/>
+    <label for="m-docsmanaging-dependenciesexplicit-services-check"><a href="http://localhost:3000/docs/managing-dependencies/explicit-services/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesexplicit-services"><span class="">Explicit Services</span></a></label>
     
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciescapability-contracts-li">
-    <input type="checkbox" id="m-docsmanaging-dependenciescapability-contracts-check"/>
-    <label for="m-docsmanaging-dependenciescapability-contracts-check"><a href="http://localhost:3000/docs/managing-dependencies/capability-contracts/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciescapability-contracts"><span class="">Nominal Capability Contracts</span></a></label>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependencieslayers-li">
+    <input type="checkbox" id="m-docsmanaging-dependencieslayers-check"/>
+    <label for="m-docsmanaging-dependencieslayers-check"><a href="http://localhost:3000/docs/managing-dependencies/layers/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependencieslayers"><span class="">Layers</span></a></label>
     
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciesprovider-edge-li">
-    <input type="checkbox" id="m-docsmanaging-dependenciesprovider-edge-check"/>
-    <label for="m-docsmanaging-dependenciesprovider-edge-check"><a href="http://localhost:3000/docs/managing-dependencies/provider-edge/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesprovider-edge"><span class="">Standard .NET AppHost Plus DI</span></a></label>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciesscopes-and-resources-li">
+    <input type="checkbox" id="m-docsmanaging-dependenciesscopes-and-resources-check"/>
+    <label for="m-docsmanaging-dependenciesscopes-and-resources-check"><a href="http://localhost:3000/docs/managing-dependencies/scopes-and-resources/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesscopes-and-resources"><span class="">Scopes and Resources</span></a></label>
+    
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciesbuilding-a-base-runtime-li">
+    <input type="checkbox" id="m-docsmanaging-dependenciesbuilding-a-base-runtime-check"/>
+    <label for="m-docsmanaging-dependenciesbuilding-a-base-runtime-check"><a href="http://localhost:3000/docs/managing-dependencies/building-a-base-runtime/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesbuilding-a-base-runtime"><span class="">Building a Base Runtime</span></a></label>
+    
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciesservice-provider-boundaries-li">
+    <input type="checkbox" id="m-docsmanaging-dependenciesservice-provider-boundaries-check"/>
+    <label for="m-docsmanaging-dependenciesservice-provider-boundaries-check"><a href="http://localhost:3000/docs/managing-dependencies/service-provider-boundaries/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesservice-provider-boundaries"><span class="">Service Provider Boundaries</span></a></label>
     
   </li>
     </ul>
@@ -256,6 +275,10 @@
       <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsstate-concurrencyref-li">
     <input type="checkbox" id="m-docsstate-concurrencyref-check"/>
     <label for="m-docsstate-concurrencyref-check"><a href="http://localhost:3000/docs/state-concurrency/ref/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsstate-concurrencyref"><span class="">Ref (Atomic References)</span></a></label>
+    
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsstate-concurrencydeferred-semaphore-li">
+    <input type="checkbox" id="m-docsstate-concurrencydeferred-semaphore-check"/>
+    <label for="m-docsstate-concurrencydeferred-semaphore-check"><a href="http://localhost:3000/docs/state-concurrency/deferred-semaphore/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsstate-concurrencydeferred-semaphore"><span class="">Deferred and Semaphore</span></a></label>
     
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsstate-concurrencyschedule-li">
     <input type="checkbox" id="m-docsstate-concurrencyschedule-check"/>
@@ -337,11 +360,11 @@
     </div>
     <nav id="TableOfContents">
   <ul>
-    <li><a href="#the-three-levels-of-dependency-access">The Three Levels of Dependency Access</a></li>
-    <li><a href="#1-level-1-records-the-pragmatic-way">1. Level 1: Records (The Pragmatic Way)</a></li>
-    <li><a href="#2-level-2-nominal-capabilities-the-honest-way">2. Level 2: Nominal Capabilities (The Honest Way)</a></li>
-    <li><a href="#3-level-3-dependency-injection-the-edge-way">3. Level 3: Dependency Injection (The Edge Way)</a></li>
-    <li><a href="#how-the-pieces-fit-together">How The Pieces Fit Together</a></li>
+    <li><a href="#default-shape">Default Shape</a></li>
+    <li><a href="#service-contracts">Service Contracts</a></li>
+    <li><a href="#layers">Layers</a></li>
+    <li><a href="#tutorials">Tutorials</a></li>
+    <li><a href="#more-detail">More Detail</a></li>
   </ul>
 </nav>
   </div>
@@ -361,56 +384,21 @@
 </nav>
 <div class="td-content">
 	<h1>Managing Dependencies</h1>
-  <div class="lead">How FsFlow models dependency boundaries with records, nominal contracts, and host DI.</div>
+  <div class="lead">How FsFlow models records, services, layers, scopes, and host-provider boundaries.</div>
 	<header class="article-meta">
 		
 </header>
-	<p>In FsFlow, the environment (<code>'env</code>) represents the &ldquo;world&rdquo; your effects need to run. Keeping the environment explicit is the foundation of <strong>Effect Discipline</strong>, allowing you to write testable, refactor-safe, and honest code.</p>
-<blockquote>
-<p><strong>Key Architecture Concept:</strong> Before diving into the technical details below, we highly recommend reading <a href="http://localhost:3000/docs/managing-dependencies/runtime-vs-environment/">Runtime vs Environment</a> to understand FsFlow&rsquo;s philosophy of separating operational services from business dependencies.</p>
-</blockquote>
-<blockquote>
-<p><strong>Tutorials Available:</strong> For step-by-step guides on setting up these patterns, see the Tutorials section.</p>
-</blockquote>
-<p>FsFlow provides three primary ways to model and access dependencies, ranging from direct pragmatism to strict architectural honesty.</p>
-<h2 id="the-three-levels-of-dependency-access">The Three Levels of Dependency Access</h2>
-<table>
-  <thead>
-      <tr>
-          <th style="text-align: left">Level</th>
-          <th style="text-align: left">Name</th>
-          <th style="text-align: left">Best For</th>
-          <th style="text-align: left">Requirement</th>
-          <th style="text-align: left">Main API</th>
-      </tr>
-  </thead>
-  <tbody>
-      <tr>
-          <td style="text-align: left"><strong>1</strong></td>
-          <td style="text-align: left"><strong>Direct</strong></td>
-          <td style="text-align: left">Local logic, small apps</td>
-          <td style="text-align: left">Plain Record</td>
-          <td style="text-align: left"><code>Flow.read</code></td>
-      </tr>
-      <tr>
-          <td style="text-align: left"><strong>2</strong></td>
-          <td style="text-align: left"><strong>Honest</strong></td>
-          <td style="text-align: left">Shared logic, large apps</td>
-          <td style="text-align: left"><code>IHas&lt;'T&gt;</code></td>
-          <td style="text-align: left"><code>Flow.service</code></td>
-      </tr>
-      <tr>
-          <td style="text-align: left"><strong>3</strong></td>
-          <td style="text-align: left"><strong>Pragmatic</strong></td>
-          <td style="text-align: left">Edge integration, Host DI</td>
-          <td style="text-align: left"><code>IServiceProvider</code></td>
-          <td style="text-align: left"><code>Flow.inject</code></td>
-      </tr>
-  </tbody>
-</table>
-<hr>
-<h2 id="1-level-1-records-the-pragmatic-way">1. Level 1: Records (The Pragmatic Way)</h2>
-<p>Plain F# records are the default choice for most logic. They are easy to construct, mock, and understand.</p>
+	<p>Keep dependencies explicit. FsFlow has one dependency model for v1: workflows read an explicit environment, reusable
+helpers name service contracts, and layers build the environment at the boundary.</p>
+<p>Use this order:</p>
+<ol>
+<li>Use records plus <code>Flow.read</code> for most application code.</li>
+<li>Use <code>IHas&lt;'service&gt;</code> plus <code>Service&lt;'service&gt;.get()</code> for reusable named services.</li>
+<li>Use <code>Layer</code> and <code>Flow.provide</code> to build environments and own resource cleanup.</li>
+<li>Use <code>Service&lt;'service&gt;.resolve()</code> only at .NET host edges where direct <code>IServiceProvider</code> lookup is intentional.</li>
+</ol>
+<h2 id="default-shape">Default Shape</h2>
+<p>Plain F# records are the default recommendation because they are legible, easy to fake in tests, and easy to refactor.</p>
 <div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">type</span> <span style="color:#000">ApiDeps</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#ce5c00;font-weight:bold">{</span> <span style="color:#000">Orders</span><span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">IOrderRepo</span><span style="color:#ce5c00;font-weight:bold">;</span> <span style="color:#000">Email</span><span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">IEmailSender</span> <span style="color:#ce5c00;font-weight:bold">}</span>
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">workflow</span> <span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">Flow</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#000">ApiDeps</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#204a87;font-weight:bold">string</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#204a87;font-weight:bold">unit</span><span style="color:#ce5c00;font-weight:bold">&gt;</span> <span style="color:#ce5c00;font-weight:bold">=</span>
@@ -418,37 +406,39 @@
 </span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">let!</span> <span style="color:#000">email</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">read</span> <span style="color:#ce5c00;font-weight:bold">_.</span><span style="color:#000">Email</span>
 </span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">do</span><span style="color:#ce5c00;font-weight:bold">!</span> <span style="color:#000">email</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">SendConfirmation</span><span style="color:#3465a4">()</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">}</span>
-</span></span></code></pre></div><p><strong>Why use it?</strong> It requires zero extra boilerplate (no interfaces needed) and keeps the boundary concrete.</p>
-<hr>
-<h2 id="2-level-2-nominal-capabilities-the-honest-way">2. Level 2: Nominal Capabilities (The Honest Way)</h2>
-<p>As your application grows, you may want function signatures that clearly advertise every service they need. This is the &ldquo;Nominal Capability&rdquo; model.</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">type</span> <span style="color:#000">IOrderRepo</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#204a87;font-weight:bold">abstract</span> <span style="color:#204a87;font-weight:bold">member</span> <span style="color:#000">Save</span> <span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">Order</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#204a87;font-weight:bold">unit</span>
-</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">type</span> <span style="color:#000">IHasOrders</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#204a87;font-weight:bold">inherit</span> <span style="color:#000">IHas</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#000">IOrderRepo</span><span style="color:#ce5c00;font-weight:bold">&gt;</span>
+</span></span></code></pre></div><p>Keep the boundary concrete unless a named abstraction clearly pays for itself.</p>
+<h2 id="service-contracts">Service Contracts</h2>
+<p>Reusable helpers can ask for a named service without forcing every application to use the same record shape:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">type</span> <span style="color:#000">IHasOrders</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">inherit</span> <span style="color:#000">IHas</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#000">IOrderRepo</span><span style="color:#ce5c00;font-weight:bold">&gt;</span>
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">saveOrder</span> <span style="color:#000">order</span> <span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">Flow</span><span style="color:#ce5c00;font-weight:bold">&lt;#</span><span style="color:#000">IHasOrders</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#ce5c00;font-weight:bold">_,</span> <span style="color:#ce5c00;font-weight:bold">_&gt;</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">save</span> <span style="color:#000">order</span> <span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">Flow</span><span style="color:#ce5c00;font-weight:bold">&lt;#</span><span style="color:#000">IHasOrders</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#000">OrderError</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#204a87;font-weight:bold">unit</span><span style="color:#ce5c00;font-weight:bold">&gt;</span> <span style="color:#ce5c00;font-weight:bold">=</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#000">flow</span> <span style="color:#ce5c00;font-weight:bold">{</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">let!</span> <span style="color:#000">repo</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">service</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#000">IOrderRepo</span><span style="color:#ce5c00;font-weight:bold">&gt;</span><span style="color:#3465a4">()</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#000">repo</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">Save</span> <span style="color:#000">order</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">let!</span> <span style="color:#000">orders</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">Service</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#000">IOrderRepo</span><span style="color:#ce5c00;font-weight:bold">&gt;.</span><span style="color:#000">get</span><span style="color:#3465a4">()</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">do</span><span style="color:#ce5c00;font-weight:bold">!</span> <span style="color:#000">orders</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">Save</span> <span style="color:#000">order</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">}</span>
-</span></span></code></pre></div><p><strong>Why use it?</strong> It behavior like &ldquo;programming to interfaces,&rdquo; but for effects. It makes the effect’s requirements visible in the type and gives refactoring a boundary the compiler can check.</p>
-<hr>
-<h2 id="3-level-3-dependency-injection-the-edge-way">3. Level 3: Dependency Injection (The Edge Way)</h2>
-<p>At the application host boundary (e.g., ASP.NET), you can lean into the .NET ecosystem using <code>IServiceProvider</code>.</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">handleRequest</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">flow</span> <span style="color:#ce5c00;font-weight:bold">{</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">let!</span> <span style="color:#000">db</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">inject</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#000">MyDbContext</span><span style="color:#ce5c00;font-weight:bold">&gt;</span><span style="color:#3465a4">()</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#8f5902;font-style:italic">// ...
-</span></span></span><span style="display:flex;"><span><span style="color:#ce5c00;font-weight:bold">}</span>
-</span></span></code></pre></div><p><strong>Why use it?</strong> It allows you to use FsFlow inside existing .NET apps with minimal ceremony.</p>
-<hr>
-<h2 id="how-the-pieces-fit-together">How The Pieces Fit Together</h2>
-<p>The FsFlow dependency story follows these principles:</p>
+</span></span></code></pre></div><h2 id="layers">Layers</h2>
+<p>Layers build explicit environments and own cleanup through <code>Scope</code>. Use <code>layer { }</code> when application startup needs to
+combine several services into one environment.</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">appLayer</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#000">layer</span> <span style="color:#ce5c00;font-weight:bold">{</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">let!</span> <span style="color:#000">runtime</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">BaseRuntime</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">live</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">and</span><span style="color:#ce5c00;font-weight:bold">!</span> <span style="color:#000">orders</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">ordersLayer</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">return</span> <span style="color:#ce5c00;font-weight:bold">{</span> <span style="color:#000">Runtime</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">runtime</span><span style="color:#ce5c00;font-weight:bold">;</span> <span style="color:#000">Orders</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">orders</span> <span style="color:#ce5c00;font-weight:bold">}</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">}</span>
+</span></span></code></pre></div><p>Use layers when construction can fail, when resources need cleanup, or when a host container should be validated once at
+startup. Plain <code>let!</code> is sequential and dependent; sibling <code>and!</code> bindings are independent and use <code>Layer.merge</code>.</p>
+<h2 id="tutorials">Tutorials</h2>
+<p>For concrete starting points, use <a href="http://localhost:3000/docs/tutorials/app-record/">AppRecord</a> and <a href="http://localhost:3000/docs/tutorials/layers/">Layers</a>.</p>
+<h2 id="more-detail">More Detail</h2>
 <ul>
-<li><strong>Implicit Infrastructure</strong>: Operational services like <code>Clock</code>, <code>Log</code>, and <code>Random</code> stay in the ambient runtime to avoid cluttering type signatures. They are overridable via <code>Flow.withClock</code>, etc.</li>
-<li><strong>Explicit Domain</strong>: Business services (DB, API, Email) are kept explicit in the <code>'env</code> type using either records (Level 1) or <code>IHas&lt;'T&gt;</code> (Level 2).</li>
-<li><strong>The Honest Bridge</strong>: Use <code>Flow.inject</code> or manual mapping at the host edge to satisfy strict Level 2 requirements from a Level 3 DI container.</li>
-<li><strong>Progressive Honesty</strong>: Start with <code>Flow.inject</code> for fast prototyping, then refactor to <code>Flow.service</code> for static verification.</li>
+<li><a href="http://localhost:3000/docs/managing-dependencies/explicit-services/">Explicit Services</a></li>
+<li><a href="http://localhost:3000/docs/managing-dependencies/layers/">Layers</a></li>
+<li><a href="http://localhost:3000/docs/managing-dependencies/scopes-and-resources/">Scopes and Resources</a></li>
+<li><a href="http://localhost:3000/docs/managing-dependencies/building-a-base-runtime/">Building a Base Runtime</a></li>
+<li><a href="http://localhost:3000/docs/managing-dependencies/service-provider-boundaries/">Service Provider Boundaries</a></li>
 </ul>
-<p>This architecture provides a flexible path from rapid prototyping to strict architectural honesty, while maintaining compatibility with the broader .NET ecosystem.</p>
 
 	<div class="section-index">
     
@@ -456,21 +446,33 @@
     <hr class="panel-line">
         <div class="entry">
                 <h5>
-                    <a href="http://localhost:3000/docs/managing-dependencies/runtime-vs-environment/">Runtime vs Environment</a>
+                    <a href="http://localhost:3000/docs/managing-dependencies/explicit-services/">Explicit Services</a>
                 </h5>
-                <p>Understanding the architectural split between operational services and business dependencies.</p>
+                <p>Choosing between records, IHas service contracts, and Service accessors.</p>
             </div>
         <div class="entry">
                 <h5>
-                    <a href="http://localhost:3000/docs/managing-dependencies/capability-contracts/">Nominal Capability Contracts</a>
+                    <a href="http://localhost:3000/docs/managing-dependencies/layers/">Layers</a>
                 </h5>
-                <p>Small named interfaces for reusable helpers and public capability boundaries.</p>
+                <p>Provisioning explicit environments with Layer and Flow.provide.</p>
             </div>
         <div class="entry">
                 <h5>
-                    <a href="http://localhost:3000/docs/managing-dependencies/provider-edge/">Standard .NET AppHost Plus DI</a>
+                    <a href="http://localhost:3000/docs/managing-dependencies/scopes-and-resources/">Scopes and Resources</a>
                 </h5>
-                <p>Using IServiceProvider at the application edge while keeping workflows typed.</p>
+                <p>Deterministic cleanup with Scope.</p>
+            </div>
+        <div class="entry">
+                <h5>
+                    <a href="http://localhost:3000/docs/managing-dependencies/building-a-base-runtime/">Building a Base Runtime</a>
+                </h5>
+                <p>Supplying clock, logging, random, GUID, and environment-variable services explicitly.</p>
+            </div>
+        <div class="entry">
+                <h5>
+                    <a href="http://localhost:3000/docs/managing-dependencies/service-provider-boundaries/">Service Provider Boundaries</a>
+                </h5>
+                <p>Keeping IServiceProvider at the host edge.</p>
             </div>
         </div>
 </div>
@@ -480,8 +482,8 @@
       </div>
       
     </div>
-    <script src="http://localhost:3000/js/main.min.c60de03ed52a34012f330c3e18c526426ec97efa9822bedfadbf14ffe917bc3e.js" integrity="sha256-xg3gPtUqNAEvMww&#43;GMUmQm7JfvqYIr7frb8U/&#43;kXvD4=" crossorigin="anonymous"></script>
-<script defer src="http://localhost:3000/js/click-to-copy.min.24576ff9fe9f85bb1948ecae52ce227cafce53757a3ad52301f2a79260f6b97d.js" integrity="sha256-JFdv&#43;f6fhbsZSOyuUs4ifK/OU3V6OtUjAfKnkmD2uX0=" crossorigin="anonymous"></script>
+    <script src="http://localhost:3000/js/main.js"></script>
+<script defer src="http://localhost:3000/js/click-to-copy.js" crossorigin="anonymous"></script>
 <script src='http://localhost:3000/js/tabpane-persist.js'></script>
 
   </body>

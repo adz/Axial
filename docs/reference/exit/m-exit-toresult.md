@@ -16,7 +16,7 @@ Converts an exit outcome to a standard F# <code>Result</code>.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `exit` | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-exit-2.html">Exit</a>&lt;<span>'v,&#32;'e</span>&gt;</span></code> | The exit outcome to convert. |
+| `exit` | <code><span><a href="t-exit.md">Exit</a>&lt;<span>'v,&#32;'e</span>&gt;</span></code> | The exit outcome to convert. |
 
 ## Returns
 

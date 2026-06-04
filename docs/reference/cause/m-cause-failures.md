@@ -16,7 +16,7 @@ Returns every typed failure value contained in a cause tree.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `cause` | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-cause-1.html">Cause</a>&lt;'error&gt;</span></code> |  |
+| `cause` | <code><span><a href="t-cause.md">Cause</a>&lt;'error&gt;</span></code> |  |
 
 ## Returns
 

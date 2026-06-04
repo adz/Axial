@@ -23,7 +23,7 @@ Returns the value when the nullable has a value, or a structured null error when
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'value,&#32;<a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-checkerror.html">CheckError</a></span>&gt;</span></code> | A <a href="https://learn.microsoft.com/dotnet/api/system.result-2">Result</a> containing the value when present; otherwise, <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-checkerror.html">CheckError.Null</a>. |
+| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'value,&#32;<a href="t-checkerror.md">CheckError</a></span>&gt;</span></code> | A <a href="https://learn.microsoft.com/dotnet/api/system.result-2">Result</a> containing the value when present; otherwise, <a href="t-checkerror.md">CheckError.Null</a>. |
 
 ## Examples
 

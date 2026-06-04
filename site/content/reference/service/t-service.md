@@ -1,20 +1,20 @@
 ---
-title: "Service"
-linkTitle: "Service<service>"
+title: "IHas.Service"
+linkTitle: "Service"
 weight: 1001
 type: docs
 ---
 
-Typed accessors for explicit and provider-resolved services.
+
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code>type Service<'service></code>
+<code><span>this.Service</span></code>
 </div>
 
-## Type Parameters
+## Returns
 
-| Name |
-| --- |
-| `service` |
+| Type | Description |
+| --- | --- |
+| <code>'service</code> |  |

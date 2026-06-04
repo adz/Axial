@@ -4,7 +4,7 @@ linkTitle: "make"
 weight: 2100
 ---
 
-Creates a new <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-tref-1.html">TRef</a> with the initial value within an STM transaction.
+Creates a new <a href="t-tref.md">TRef</a> with the initial value within an STM transaction.
 
 ## Signature
 
@@ -22,7 +22,7 @@ Creates a new <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-tref
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-stm-1.html">STM</a>&lt;<span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-tref-1.html">TRef</a>&lt;'T&gt;</span>&gt;</span></code> | An STM operation that, when executed, produces a new transactional reference. |
+| <code><span><a href="t-stm.md">STM</a>&lt;<span><a href="t-tref.md">TRef</a>&lt;'T&gt;</span>&gt;</span></code> | An STM operation that, when executed, produces a new transactional reference. |
 
 ## Examples
 

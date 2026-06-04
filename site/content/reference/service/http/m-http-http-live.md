@@ -23,4 +23,4 @@ Creates a live HTTP service backed by <a href="https://learn.microsoft.com/dotne
 
 | Type | Description |
 | --- | --- |
-| <code><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-services-http-ihttp.html">IHttp</a></code> |  |
+| <code><a href="t-http-ihttp.md">IHttp</a></code> |  |

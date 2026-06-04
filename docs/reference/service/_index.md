@@ -10,7 +10,7 @@ See the standard service packages: [Core](./core/), [Console](./console/), [File
 ## Service contracts
 
 - [`IHas`](./t-ihas.md): Nominal contract for an explicit service dependency.
-- [`Service`](./t-service.md): Typed accessors for explicit and provider-resolved services.
+- [`IHas.Service`](./t-service.md):
 
 ## Service accessors
 

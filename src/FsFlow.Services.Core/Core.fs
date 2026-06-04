@@ -271,7 +271,7 @@ module Guid =
         Service<IGuid>.get()
         |> Flow.map (fun guid -> guid.NewGuid())
 
-    /// <summary>Creates a live GUID service backed by <see cref="M:System.Guid.NewGuid" />.</summary>
+    /// <summary>Creates a live GUID service backed by <c>Guid.NewGuid()</c>.</summary>
     let live : IGuid =
         { new IGuid with
             member _.NewGuid() = global.System.Guid.NewGuid() }

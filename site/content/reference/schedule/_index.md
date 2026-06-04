@@ -8,7 +8,7 @@ This page shows the `Schedule` surface for describing retry and repeat policies 
 
 ## Core type
 
-- [`Schedule`](./t-schedule.md):  Represents a stateful schedule that can decide whether to continue and how long to delay.
+- [`Schedule`](./t-schedule.md):
 
 ## Module functions
 

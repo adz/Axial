@@ -17,4 +17,4 @@ Reads the current runtime annotations.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;<span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-collections-fsharpmap-2">Map</a>&lt;<span>string,&#32;string</span>&gt;</span></span>&gt;</span></code> | A flow that succeeds with the ambient annotation map. |
+| <code><span><a href="../t-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;<span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-collections-fsharpmap-2">Map</a>&lt;<span>string,&#32;string</span>&gt;</span></span>&gt;</span></code> | A flow that succeeds with the ambient annotation map. |

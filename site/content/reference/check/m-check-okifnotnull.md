@@ -23,7 +23,7 @@ Returns the value when it is not null.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html">Check</a>&lt;'a&gt;</span></code> | A <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html">Check</a> containing the non-null value; otherwise, an Error with unit. |
+| <code><span><a href="t-check.md">Check</a>&lt;'a&gt;</span></code> | A <a href="t-check.md">Check</a> containing the non-null value; otherwise, an Error with unit. |
 
 ## Examples
 

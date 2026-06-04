@@ -16,10 +16,10 @@ Creates a logger from a synchronous sink function.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `sink` | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-loglevel.html">LogLevel</a>&#32;->&#32;string&#32;->&#32;unit</span></code> |  |
+| `sink` | <code><span><a href="_index.md">LogLevel</a>&#32;->&#32;string&#32;->&#32;unit</span></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-services-core-ilog.html">ILog</a></code> |  |
+| <code><a href="t-core-ilog.md">ILog</a></code> |  |

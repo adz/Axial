@@ -1,108 +1,201 @@
 ---
 weight: 10
-title: "Tutorial: AppRecord"
-description: Using a simple record as the application environment.
+title: "Tutorial: App Record"
+description: Move from explicit dependency parameters to a reusable environment record.
 ---
 
-# Tutorial: AppRecord
+# Tutorial: App Record
 
-The simplest way to manage dependencies in FsFlow is using a concrete record as your environment (`env`). This provides direct field access and minimal boilerplate.
+This tutorial starts where [Explicit Dependencies First](./explicit-dependencies/) leaves off.
 
-In this tutorial, we will build a small order placement workflow that uses a record for its dependencies.
+The problem is not that explicit parameters are wrong. The problem is repetition:
 
-## 1. Define Your Dependencies
+- every helper has to thread the same dependencies
+- adding one more dependency means touching many signatures
+- the execution boundary gets noisier as the feature grows
 
-Start by defining the interfaces for your services and a record that bundles them together.
+An app record solves that by bundling dependencies once at the boundary while keeping the workflow code explicit.
+
+## 1. Start With The Same Interfaces
 
 ```fsharp
 open System
 open System.Threading.Tasks
 open FsFlow
 
-type Order = { Id: Guid; Total: decimal }
+type OrderId = OrderId of Guid
+
+type Order =
+    { Id: OrderId
+      Email: string
+      Total: decimal }
+
+type PlaceOrderError =
+    | InvalidEmail
+    | OrderRejected of string
+    | AuditWriteFailed
 
 type IOrderRepository =
-    abstract Save: Order -> Task<unit>
+    abstract Save : Order -> Task<Result<unit, string>>
 
 type IEmailSender =
-    abstract SendConfirmation: Order -> Task<unit>
+    abstract SendConfirmation : Order -> Task
 
+type IAuditLog =
+    abstract Write : string -> Task<Result<unit, unit>>
+```
+
+## 2. Bundle Them Once
+
+```fsharp
 type AppEnv =
     { Orders: IOrderRepository
-      Email: IEmailSender }
+      Email: IEmailSender
+      Audit: IAuditLog }
 ```
 
-## 2. Write the Workflow
+Adding a third dependency is now an additive change to the environment record rather than a rewrite of every helper signature.
 
-Use the `flow {}` builder to define your business logic. You can use `Flow.read` to project specific services from the environment.
+## 3. Compose Several Flows
 
 ```fsharp
-let placeOrder order =
+let validateOrder (order: Order) : Result<Order, PlaceOrderError> =
+    if String.IsNullOrWhiteSpace order.Email then
+        Error InvalidEmail
+    else
+        Ok order
+
+let saveOrder (order: Order) : Flow<AppEnv, PlaceOrderError, Order> =
     flow {
-        // Read specific services from the environment
         let! orders = Flow.read _.Orders
+        let! saveResult = orders.Save order
+
+        match saveResult with
+        | Ok () -> return order
+        | Error reason -> return! Flow.fail (OrderRejected reason)
+    }
+
+let sendConfirmation (order: Order) : Flow<AppEnv, PlaceOrderError, unit> =
+    flow {
         let! email = Flow.read _.Email
-
-        // Execute service methods (lifting Tasks into Flow)
-        do! orders.Save order
         do! email.SendConfirmation order
-
-        return order.Id
     }
-```
 
-## 3. Implement the Services
+let writeAudit (message: string) : Flow<AppEnv, PlaceOrderError, unit> =
+    flow {
+        let! audit = Flow.read _.Audit
+        let! result = audit.Write message
 
-Create concrete implementations of your interfaces.
-
-```fsharp
-type InMemoryOrders() =
-    interface IOrderRepository with
-        member _.Save(order) = 
-            printfn "Order %A saved" order.Id
-            Task.CompletedTask
-
-type ConsoleEmail() =
-    interface IEmailSender with
-        member _.SendConfirmation(order) = 
-            printfn "Email sent for order %A" order.Id
-            Task.CompletedTask
-```
-
-## 4. Run the App
-
-Construct the `AppEnv` record and use `RunSynchronously or ToTask` to execute your workflow.
-
-```fsharp
-[<EntryPoint>]
-let main _ =
-    let env = 
-        { Orders = InMemoryOrders()
-          Email = ConsoleEmail() }
-
-    let order = { Id = Guid.NewGuid(); Total = 99.99m }
-    
-    // Run the flow and handle the result
-    let run () = task {
-        let! result = RunSynchronously or ToTask env (placeOrder order)
-        
         match result with
-        | Exit.Success id -> 
-            printfn "Successfully placed order: %A" id
-        | Exit.Failure cause -> 
-            printfn "Failed: %A" cause
+        | Ok () -> return ()
+        | Error () -> return! Flow.fail AuditWriteFailed
     }
 
-    run().GetAwaiter().GetResult()
-    0
+let placeOrder (order: Order) : Flow<AppEnv, PlaceOrderError, OrderId> =
+    flow {
+        let! validOrder = validateOrder order
+        let! savedOrder = saveOrder validOrder
+        do! sendConfirmation savedOrder
+        do! writeAudit $"Placed {savedOrder.Email} for {savedOrder.Total}"
+        return savedOrder.Id
+    }
 ```
 
-## Why use AppRecord?
+This is the main win of an app record:
 
-- **Directness**: You can see exactly what fields are available in the environment.
-- **Easy Testing**: You can easily swap out the entire record or individual fields for tests.
-- **Low Ceremony**: No need for complex DI setup or interface hierarchies when starting out.
+- helper functions stop carrying dependency parameters
+- helper functions still say exactly which fields they read
+- adding another dependency does not force you to redesign the whole feature
 
-## Next Steps
+## 4. Real Implementations
 
-As your application grows, you might find that you want stronger dependency names and reusable helpers. Continue with the **[Service Reference](../../reference/service/)** and the dependency-management guides when you want to move from direct record fields to named service contracts.
+```fsharp
+type SqlOrderRepository() =
+    interface IOrderRepository with
+        member _.Save order =
+            task {
+                // Imagine the real dependency here: database transaction, ORM, etc.
+                return Ok ()
+            }
+
+type SmtpEmailSender() =
+    interface IEmailSender with
+        member _.SendConfirmation order =
+            task {
+                // Imagine the real dependency here: SMTP or email API client.
+            }
+
+type FileAuditLog() =
+    interface IAuditLog with
+        member _.Write message =
+            task {
+                // Imagine the real dependency here: file append, structured logger, queue, etc.
+                return Ok ()
+            }
+```
+
+## 5. Test Implementations
+
+```fsharp
+type RecordingOrders(saved: ResizeArray<Order>) =
+    interface IOrderRepository with
+        member _.Save order =
+            task {
+                saved.Add order
+                return Ok ()
+            }
+
+type RecordingEmails(sent: ResizeArray<string>) =
+    interface IEmailSender with
+        member _.SendConfirmation order =
+            task {
+                sent.Add order.Email
+            }
+
+type RecordingAudit(entries: ResizeArray<string>) =
+    interface IAuditLog with
+        member _.Write message =
+            task {
+                entries.Add message
+                return Ok ()
+            }
+```
+
+## 6. Run The Workflow
+
+```fsharp
+let run () = task {
+    let env =
+        { Orders = SqlOrderRepository() :> IOrderRepository
+          Email = SmtpEmailSender() :> IEmailSender
+          Audit = FileAuditLog() :> IAuditLog }
+
+    let order =
+        { Id = OrderId(Guid.NewGuid())
+          Email = "ada@example.com"
+          Total = 125m }
+
+    let! exit = (placeOrder order).ToTask(env)
+
+    match exit with
+    | Exit.Success orderId ->
+        printfn "Placed %A" orderId
+    | Exit.Failure cause ->
+        printfn "%s" (Cause.prettyPrint (function
+            | InvalidEmail -> "invalid email"
+            | OrderRejected reason -> reason
+            | AuditWriteFailed -> "audit write failed") cause)
+}
+```
+
+## When To Stop Here
+
+An app record is enough for a lot of applications.
+
+Move beyond it when:
+
+- you want reusable helpers to depend on named contracts instead of record field names
+- you want startup-time provisioning with failure handling
+- you want scope-owned resources and cleanup
+
+Continue with [Tutorial: Creating Reusable Services](./custom-services/) and then [Tutorial: Layers](./layers/).

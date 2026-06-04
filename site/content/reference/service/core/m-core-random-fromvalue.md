@@ -23,4 +23,4 @@ Creates a deterministic random generator that always returns the supplied value.
 
 | Type | Description |
 | --- | --- |
-| <code><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-services-core-irandom.html">IRandom</a></code> |  |
+| <code><a href="t-core-irandom.md">IRandom</a></code> |  |

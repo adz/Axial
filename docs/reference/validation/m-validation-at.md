@@ -16,14 +16,14 @@ Scopes a validation under the supplied path segments.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `path` | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-pathsegment.html">PathSegment</a>&#32;list</span></code> | The path segments to apply to the validation. |
-| `validation` | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> | The validation to scope. |
+| `path` | <code><span><a href="../diagnostics/t-pathsegment.md">PathSegment</a>&#32;list</span></code> | The path segments to apply to the validation. |
+| `validation` | <code><span><a href="t-validation.md">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> | The validation to scope. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> | A validation nested under the given path. |
+| <code><span><a href="t-validation.md">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> | A validation nested under the given path. |
 
 ## Examples
 

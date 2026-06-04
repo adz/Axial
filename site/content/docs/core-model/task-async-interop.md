@@ -79,7 +79,7 @@ Types like `Task<'T>` and `ValueTask<'T>` are **Hot**. The work might already be
 - You cannot pass the flow's runtime `CancellationToken` into work that has already started.
 
 ### Cold Work (Flows and ColdTask)
-`Flow` itself and the `ColdTask<'T>` type are **Cold**. The work only starts when the flow is executed by `RunSynchronously or ToTask`.
+`Flow` itself and the `ColdTask<'T>` type are **Cold**. The work only starts when the flow is executed by `ToTask`, `ToAsync`, `ToValueTask`, or `RunSynchronously`.
 - Rerunning the flow repeats the work from scratch.
 - The runtime `CancellationToken` is automatically passed into the work.
 

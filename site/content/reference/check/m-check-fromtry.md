@@ -24,7 +24,7 @@ Converts a .NET <code>Try*</code> tuple into a check result.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html">Check</a>&lt;'value&gt;</span></code> | A <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html">Check</a> containing the value when the flag is true; otherwise, an Error with unit. |
+| <code><span><a href="t-check.md">Check</a>&lt;'value&gt;</span></code> | A <a href="t-check.md">Check</a> containing the value when the flag is true; otherwise, an Error with unit. |
 
 ## Examples
 

@@ -19,7 +19,7 @@ type: docs
 
 | Type | Description |
 | --- | --- |
-| <code><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validatebuilder.html">ValidateBuilder</a></code> | A <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validatebuilder.html">ValidateBuilder</a> instance. |
+| <code><a href="builders-validate.md">ValidateBuilder</a></code> | A <a href="builders-validate.md">ValidateBuilder</a> instance. |
 
 ## Remarks
 

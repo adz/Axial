@@ -17,4 +17,4 @@ Creates a live file-system service backed by <a href="https://learn.microsoft.co
 
 | Type | Description |
 | --- | --- |
-| <code><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-services-filesystem-ifilesystem.html">IFileSystem</a></code> |  |
+| <code><a href="t-filesystem-ifilesystem.md">IFileSystem</a></code> |  |

@@ -16,10 +16,10 @@ Returns a snapshot of the current fiber metadata.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `fiber` | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-fiber-2.html">Fiber</a>&lt;<span>'error,&#32;'value</span>&gt;</span></code> |  |
+| `fiber` | <code><span><a href="t-fiber.md">Fiber</a>&lt;<span>'error,&#32;'value</span>&gt;</span></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-fiberdump.html">FiberDump</a></code> |  |
+| <code><a href="t-fiberdump.md">FiberDump</a></code> |  |

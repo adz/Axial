@@ -24,9 +24,10 @@ provisioning, and [`Scope`](./scope/) documents cleanup ownership. Keep applicat
 explicit in `env` and reserve [`Flow.Runtime`](./flow/runtime/) for closed executor mechanics.
 
 Use [`Ref`](./ref/), [`STM`](./stm/), [`Schedule`](./schedule/), and [`Stream`](./stream/) for focused
-runtime concerns: mutable references, transactional state, retry/repeat policy, and pull-based
+runtime concerns: mutable references, transactional state, retry or repeat policy, and pull-based
 streams. These modules are useful, but they are not the starting point for ordinary application
 code.
 
-Finally, understand the core model outcomes: [`Exit`](./exit/) represents the final result of a flow,
-and [`Cause`](./cause/) explains why a flow failed.
+Finally, understand the core model outcomes: [`Exit`](./exit/) is FsFlow's name for
+`Result<'value, Cause<'error>>`, because it represents a completed workflow execution rather than an
+ordinary domain result, and [`Cause`](./cause/) explains why a flow failed.

@@ -18,7 +18,7 @@ Maps a unit error into an application error produced on demand.
 | Name | Type | Description |
 | --- | --- | --- |
 | `errorFn` | <code><span>unit&#32;->&#32;'error</span></code> | A function of type <code>unit -&gt; &#39;error</code> to produce the error. |
-| `result` | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html">Check</a>&lt;'value&gt;</span></code> | The source <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html">Check</a>. |
+| `result` | <code><span><a href="t-check.md">Check</a>&lt;'value&gt;</span></code> | The source <a href="t-check.md">Check</a>. |
 
 ## Returns
 

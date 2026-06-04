@@ -16,13 +16,13 @@ Reads the current value of the reference.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `reference` | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-ref-1.html">Ref</a>&lt;'T&gt;</span></code> | The <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-ref-1.html">Ref</a> to read from. |
+| `reference` | <code><span><a href="t-ref.md">Ref</a>&lt;'T&gt;</span></code> | The <a href="t-ref.md">Ref</a> to read from. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'none,&#32;'T</span>&gt;</span></code> | A flow that returns the current value. |
+| <code><span><a href="../flow/t-flow.md">Flow</a>&lt;<span>'env,&#32;'none,&#32;'T</span>&gt;</span></code> | A flow that returns the current value. |
 
 ## Examples
 

@@ -23,7 +23,7 @@ Returns success when the condition is false.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html">Check</a>&lt;unit&gt;</span></code> | A <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html">Check</a> that succeeds if <span class="fsdocs-param-name">cond</span> is false. |
+| <code><span><a href="t-check.md">Check</a>&lt;unit&gt;</span></code> | A <a href="t-check.md">Check</a> that succeeds if <span class="fsdocs-param-name">cond</span> is false. |
 
 ## Examples
 

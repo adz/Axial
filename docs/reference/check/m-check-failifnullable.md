@@ -22,7 +22,7 @@ Returns the value when the nullable has a value.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html">Check</a>&lt;'value&gt;</span></code> | A <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html">Check</a> containing the value when present; otherwise, an Error with unit. |
+| <code><span><a href="t-check.md">Check</a>&lt;'value&gt;</span></code> | A <a href="t-check.md">Check</a> containing the value when present; otherwise, an Error with unit. |
 
 ## Examples
 

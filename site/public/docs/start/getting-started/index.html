@@ -1,10 +1,10 @@
 <!doctype html>
 <html itemscope itemtype="http://schema.org/WebPage" lang="en" class="no-js">
-  <head>
+  <head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=3000&amp;path=livereload" data-no-instant defer></script>
     <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-<meta name="robots" content="index, follow">
+<meta name="robots" content="noindex, nofollow">
 
 
 <link rel="shortcut icon" href="http://localhost:3000/favicons/favicon.ico" >
@@ -30,12 +30,11 @@
 
   <meta itemprop="name" content="Getting Started">
   <meta itemprop="description" content="The fastest path from Check and Result into Flow.">
-  <meta itemprop="wordCount" content="705">
+  <meta itemprop="wordCount" content="730">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Getting Started">
   <meta name="twitter:description" content="The fastest path from Check and Result into Flow.">
-<link rel="preload" href="http://localhost:3000/scss/main.min.c2e6489a9d8ef949a0dead85d2b883caca7e8cf3176c0e7ff6ff57d94fff640c.css" as="style" integrity="sha256-wuZImp2O&#43;Umg3q2F0riDysp&#43;jPMXbA5/9v9X2U//ZAw=" crossorigin="anonymous">
-<link href="http://localhost:3000/scss/main.min.c2e6489a9d8ef949a0dead85d2b883caca7e8cf3176c0e7ff6ff57d94fff640c.css" rel="stylesheet" integrity="sha256-wuZImp2O&#43;Umg3q2F0riDysp&#43;jPMXbA5/9v9X2U//ZAw=" crossorigin="anonymous">
+<link href="http://localhost:3000/scss/main.css" rel="stylesheet">
 <script
   src="https://code.jquery.com/jquery-3.7.1.min.js"
   integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g=="
@@ -92,7 +91,7 @@
     aria-label='Search this site…'
     autocomplete="off"
     
-    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.152d3a8195c3b05e80270a1402841d44.json"
+    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.json"
     data-offline-search-base-href="http://localhost:3000/"
     data-offline-search-max-results="10"
   >
@@ -128,7 +127,7 @@
     aria-label='Search this site…'
     autocomplete="off"
     
-    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.152d3a8195c3b05e80270a1402841d44.json"
+    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.json"
     data-offline-search-base-href="http://localhost:3000/"
     data-offline-search-max-results="10"
   >
@@ -165,17 +164,29 @@
     <label for="m-docstutorials-check"><a href="http://localhost:3000/docs/tutorials/" class="align-left ps-0  td-sidebar-link td-sidebar-link__section" id="m-docstutorials"><span class="">Tutorials</span></a></label>
     
     <ul class="ul-2 foldable">
-      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialsapp-record-li">
+      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialsexplicit-dependencies-li">
+    <input type="checkbox" id="m-docstutorialsexplicit-dependencies-check"/>
+    <label for="m-docstutorialsexplicit-dependencies-check"><a href="http://localhost:3000/docs/tutorials/explicit-dependencies/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialsexplicit-dependencies"><span class="">Tutorial: Explicit Dependencies First</span></a></label>
+    
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialsapp-record-li">
     <input type="checkbox" id="m-docstutorialsapp-record-check"/>
-    <label for="m-docstutorialsapp-record-check"><a href="http://localhost:3000/docs/tutorials/app-record/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialsapp-record"><span class="">Tutorial: AppRecord</span></a></label>
+    <label for="m-docstutorialsapp-record-check"><a href="http://localhost:3000/docs/tutorials/app-record/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialsapp-record"><span class="">Tutorial: App Record</span></a></label>
     
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialscapabilities-li">
-    <input type="checkbox" id="m-docstutorialscapabilities-check"/>
-    <label for="m-docstutorialscapabilities-check"><a href="http://localhost:3000/docs/tutorials/capabilities/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialscapabilities"><span class="">Tutorial: Capabilities</span></a></label>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialsruntime-operations-li">
+    <input type="checkbox" id="m-docstutorialsruntime-operations-check"/>
+    <label for="m-docstutorialsruntime-operations-check"><a href="http://localhost:3000/docs/tutorials/runtime-operations/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialsruntime-operations"><span class="">Tutorial: Runtime Operations</span></a></label>
     
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialsapp-host-li">
-    <input type="checkbox" id="m-docstutorialsapp-host-check"/>
-    <label for="m-docstutorialsapp-host-check"><a href="http://localhost:3000/docs/tutorials/app-host/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialsapp-host"><span class="">Tutorial: AppHost</span></a></label>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialsexisting-services-li">
+    <input type="checkbox" id="m-docstutorialsexisting-services-check"/>
+    <label for="m-docstutorialsexisting-services-check"><a href="http://localhost:3000/docs/tutorials/existing-services/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialsexisting-services"><span class="">Tutorial: Using Existing Services</span></a></label>
+    
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialscustom-services-li">
+    <input type="checkbox" id="m-docstutorialscustom-services-check"/>
+    <label for="m-docstutorialscustom-services-check"><a href="http://localhost:3000/docs/tutorials/custom-services/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialscustom-services"><span class="">Tutorial: Creating Reusable Services</span></a></label>
+    
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialslayers-li">
+    <input type="checkbox" id="m-docstutorialslayers-check"/>
+    <label for="m-docstutorialslayers-check"><a href="http://localhost:3000/docs/tutorials/layers/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialslayers"><span class="">Tutorial: Layers</span></a></label>
     
   </li>
     </ul>
@@ -234,17 +245,25 @@
     <label for="m-docsmanaging-dependencies-check"><a href="http://localhost:3000/docs/managing-dependencies/" class="align-left ps-0  td-sidebar-link td-sidebar-link__section" id="m-docsmanaging-dependencies"><span class="">Managing Dependencies</span></a></label>
     
     <ul class="ul-2 foldable">
-      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciesruntime-vs-environment-li">
-    <input type="checkbox" id="m-docsmanaging-dependenciesruntime-vs-environment-check"/>
-    <label for="m-docsmanaging-dependenciesruntime-vs-environment-check"><a href="http://localhost:3000/docs/managing-dependencies/runtime-vs-environment/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesruntime-vs-environment"><span class="">Runtime vs Environment</span></a></label>
+      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciesexplicit-services-li">
+    <input type="checkbox" id="m-docsmanaging-dependenciesexplicit-services-check"/>
+    <label for="m-docsmanaging-dependenciesexplicit-services-check"><a href="http://localhost:3000/docs/managing-dependencies/explicit-services/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesexplicit-services"><span class="">Explicit Services</span></a></label>
     
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciescapability-contracts-li">
-    <input type="checkbox" id="m-docsmanaging-dependenciescapability-contracts-check"/>
-    <label for="m-docsmanaging-dependenciescapability-contracts-check"><a href="http://localhost:3000/docs/managing-dependencies/capability-contracts/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciescapability-contracts"><span class="">Nominal Capability Contracts</span></a></label>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependencieslayers-li">
+    <input type="checkbox" id="m-docsmanaging-dependencieslayers-check"/>
+    <label for="m-docsmanaging-dependencieslayers-check"><a href="http://localhost:3000/docs/managing-dependencies/layers/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependencieslayers"><span class="">Layers</span></a></label>
     
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciesprovider-edge-li">
-    <input type="checkbox" id="m-docsmanaging-dependenciesprovider-edge-check"/>
-    <label for="m-docsmanaging-dependenciesprovider-edge-check"><a href="http://localhost:3000/docs/managing-dependencies/provider-edge/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesprovider-edge"><span class="">Standard .NET AppHost Plus DI</span></a></label>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciesscopes-and-resources-li">
+    <input type="checkbox" id="m-docsmanaging-dependenciesscopes-and-resources-check"/>
+    <label for="m-docsmanaging-dependenciesscopes-and-resources-check"><a href="http://localhost:3000/docs/managing-dependencies/scopes-and-resources/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesscopes-and-resources"><span class="">Scopes and Resources</span></a></label>
+    
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciesbuilding-a-base-runtime-li">
+    <input type="checkbox" id="m-docsmanaging-dependenciesbuilding-a-base-runtime-check"/>
+    <label for="m-docsmanaging-dependenciesbuilding-a-base-runtime-check"><a href="http://localhost:3000/docs/managing-dependencies/building-a-base-runtime/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesbuilding-a-base-runtime"><span class="">Building a Base Runtime</span></a></label>
+    
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciesservice-provider-boundaries-li">
+    <input type="checkbox" id="m-docsmanaging-dependenciesservice-provider-boundaries-check"/>
+    <label for="m-docsmanaging-dependenciesservice-provider-boundaries-check"><a href="http://localhost:3000/docs/managing-dependencies/service-provider-boundaries/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesservice-provider-boundaries"><span class="">Service Provider Boundaries</span></a></label>
     
   </li>
     </ul>
@@ -256,6 +275,10 @@
       <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsstate-concurrencyref-li">
     <input type="checkbox" id="m-docsstate-concurrencyref-check"/>
     <label for="m-docsstate-concurrencyref-check"><a href="http://localhost:3000/docs/state-concurrency/ref/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsstate-concurrencyref"><span class="">Ref (Atomic References)</span></a></label>
+    
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsstate-concurrencydeferred-semaphore-li">
+    <input type="checkbox" id="m-docsstate-concurrencydeferred-semaphore-check"/>
+    <label for="m-docsstate-concurrencydeferred-semaphore-check"><a href="http://localhost:3000/docs/state-concurrency/deferred-semaphore/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsstate-concurrencydeferred-semaphore"><span class="">Deferred and Semaphore</span></a></label>
     
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsstate-concurrencyschedule-li">
     <input type="checkbox" id="m-docsstate-concurrencyschedule-check"/>
@@ -412,17 +435,17 @@
 </span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">}</span>
 </span></span></code></pre></div><h2 id="4-execution-turning-description-into-action">4. Execution: Turning Description into Action</h2>
 <p>Because a <code>Flow</code> is just a description, you must explicitly <strong>run</strong> it. This is the boundary where your platform-independent logic meets the real world.</p>
-<p>When you call <code>Flow.run</code>, you provide the required <strong>environment</strong> (which can be <code>()</code> if none is needed) and a cancellation token is handled for you (defaulting to <code>CancellationToken.None</code>).
+<p>When you call an execution member such as <code>ToTask</code>, <code>ToAsync</code>, <code>ToValueTask</code>, or <code>RunSynchronously</code>, you provide the required <strong>environment</strong> (which can be <code>()</code> if none is needed). On .NET, the default cancellation token is <code>CancellationToken.None</code>.
 If the flow throws an uncaught exception, the runtime records it as <code>Cause.Die</code> in the returned <code>Exit</code>.</p>
 <h3 id="execution-handle-vs-outcome">Execution Handle vs. Outcome</h3>
 <p>Because a <code>Flow</code> is just a description, you must explicitly <strong>run</strong> it. FsFlow handles the platform differences for you:</p>
-<p><code>Flow.run</code> returns an <strong><code>Effect&lt;'value, 'error&gt;</code></strong>. The platform-specific carrier is defined by the target:</p>
+<p>The execution handle is target-specific:</p>
 <ul>
-<li>On <strong>.NET</strong>: <code>Effect&lt;'value, 'error&gt;</code> is a <code>ValueTask&lt;Exit&lt;'value, 'error&gt;&gt;</code>.</li>
-<li>On <strong>Fable</strong>: <code>Effect&lt;'value, 'error&gt;</code> is an <code>Async&lt;Exit&lt;'value, 'error&gt;&gt;</code>.</li>
+<li>On <strong>.NET</strong>: <code>Execution&lt;'value, 'error&gt;</code> is a <code>ValueTask&lt;Exit&lt;'value, 'error&gt;&gt;</code>.</li>
+<li>On <strong>Fable</strong>: <code>Execution&lt;'value, 'error&gt;</code> is an <code>Async&lt;Exit&lt;'value, 'error&gt;&gt;</code>.</li>
 </ul>
 <h3 id="the-exit-outcome">The <code>Exit</code> Outcome</h3>
-<p>The final result of any flow is an <strong><code>Exit&lt;'value, 'error&gt;</code></strong>. This type represents every possible outcome:</p>
+<p>The final result of any flow is an <strong><code>Exit&lt;'value, 'error&gt;</code></strong>. In FsFlow terms, that is <code>Result&lt;'value, Cause&lt;'error&gt;&gt;</code>. We give it its own name because it represents a completed workflow execution, not an ordinary domain result. It covers every possible outcome:</p>
 <div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">match</span> <span style="color:#000">exitValue</span> <span style="color:#204a87;font-weight:bold">with</span>
 </span></span><span style="display:flex;"><span><span style="color:#ce5c00;font-weight:bold">|</span> <span style="color:#000">Exit</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">Success</span> <span style="color:#000">value</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> 
 </span></span><span style="display:flex;"><span>    <span style="color:#000">printfn</span> <span style="color:#4e9a06">&#34;Success: %A&#34;</span> <span style="color:#000">value</span>
@@ -437,12 +460,12 @@ If the flow throws an uncaught exception, the runtime records it as <code>Cause.
 </span></span><span style="display:flex;"><span>    <span style="color:#000">printfn</span> <span style="color:#4e9a06">&#34;The workflow was cancelled.&#34;</span>
 </span></span></code></pre></div><p>Use <code>Flow.fail</code> or <code>Flow.error</code> for expected domain failures, <code>Flow.die</code> for explicit defects, and <code>Flow.catch</code> only when you intentionally want to translate an exception into a typed error.</p>
 <h2 id="5-running-your-first-flow">5. Running Your First Flow</h2>
-<p>Because <code>Flow.run</code> returns a deferred execution handle (<code>Effect</code>), you must await it to get the final <code>Exit</code> outcome.</p>
+<p>Because <code>ToTask</code> and <code>ToAsync</code> return deferred execution handles, you must await them to get the final <code>Exit</code> outcome. On .NET, <code>RunSynchronously</code> is the blocking alternative.</p>
 <div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">myFlow</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">succeed</span> <span style="color:#4e9a06">&#34;Hello World&#34;</span>
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#8f5902;font-style:italic">// On .NET:
 </span></span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">runOnDotNet</span> <span style="color:#3465a4">()</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">task</span> <span style="color:#ce5c00;font-weight:bold">{</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">let!</span> <span style="color:#000">exit</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">run</span> <span style="color:#3465a4">()</span> <span style="color:#000">myFlow</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">let!</span> <span style="color:#000">exit</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">myFlow</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">ToTask</span><span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#3465a4">()</span><span style="color:#ce5c00;font-weight:bold">)</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">match</span> <span style="color:#000">exit</span> <span style="color:#204a87;font-weight:bold">with</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|</span> <span style="color:#000">Exit</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">Success</span> <span style="color:#000">s</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#000">printfn</span> <span style="color:#4e9a06">&#34;%s&#34;</span> <span style="color:#000">s</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|</span> <span style="color:#ce5c00;font-weight:bold">_</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#3465a4">()</span>
@@ -450,7 +473,7 @@ If the flow throws an uncaught exception, the runtime records it as <code>Cause.
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#8f5902;font-style:italic">// On Fable:
 </span></span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">runOnFable</span> <span style="color:#3465a4">()</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">async</span> <span style="color:#ce5c00;font-weight:bold">{</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">let!</span> <span style="color:#000">exit</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">run</span> <span style="color:#3465a4">()</span> <span style="color:#000">myFlow</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">let!</span> <span style="color:#000">exit</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">myFlow</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">ToAsync</span><span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#3465a4">()</span><span style="color:#ce5c00;font-weight:bold">)</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">match</span> <span style="color:#000">exit</span> <span style="color:#204a87;font-weight:bold">with</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|</span> <span style="color:#000">Exit</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">Success</span> <span style="color:#000">s</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#000">printfn</span> <span style="color:#4e9a06">&#34;%s&#34;</span> <span style="color:#000">s</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|</span> <span style="color:#ce5c00;font-weight:bold">_</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#3465a4">()</span>
@@ -471,14 +494,14 @@ If the flow throws an uncaught exception, the runtime records it as <code>Cause.
 </span></span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">config</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#ce5c00;font-weight:bold">{</span> <span style="color:#000">ApiUrl</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#4e9a06">&#34;https://api.example.com&#34;</span> <span style="color:#ce5c00;font-weight:bold">}</span>
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">runExample</span> <span style="color:#3465a4">()</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">task</span> <span style="color:#ce5c00;font-weight:bold">{</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">let!</span> <span style="color:#000">result</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">run</span> <span style="color:#000">config</span> <span style="color:#000">fetchFromApi</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">let!</span> <span style="color:#000">result</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">fetchFromApi</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">ToTask</span><span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">config</span><span style="color:#ce5c00;font-weight:bold">)</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#000">printfn</span> <span style="color:#4e9a06">&#34;Result: %A&#34;</span> <span style="color:#000">result</span>
 </span></span><span style="display:flex;"><span><span style="color:#ce5c00;font-weight:bold">}</span>
 </span></span></code></pre></div><h2 id="summary-the-flow-lifecycle">Summary: The Flow Lifecycle</h2>
 <ol>
 <li><strong>Define</strong>: Use <code>flow {}</code> to describe your logic and its requirements.</li>
 <li><strong>Compose</strong>: Combine smaller flows, Results, Tasks, and Asyncs into larger ones.</li>
-<li><strong>Run</strong>: Call <code>Flow.run env</code> at your application&rsquo;s entry point (e.g., a Controller or Main function).</li>
+<li><strong>Run</strong>: Call <code>RunSynchronously</code>, <code>ToTask</code>, or <code>ToAsync</code> at your application&rsquo;s entry point (e.g., a Controller or Main function).</li>
 <li><strong>Handle</strong>: Match on the <code>Exit</code> value to handle success, failure, or defects.</li>
 </ol>
 
@@ -495,8 +518,8 @@ If the flow throws an uncaught exception, the runtime records it as <code>Cause.
       </div>
       
     </div>
-    <script src="http://localhost:3000/js/main.min.c60de03ed52a34012f330c3e18c526426ec97efa9822bedfadbf14ffe917bc3e.js" integrity="sha256-xg3gPtUqNAEvMww&#43;GMUmQm7JfvqYIr7frb8U/&#43;kXvD4=" crossorigin="anonymous"></script>
-<script defer src="http://localhost:3000/js/click-to-copy.min.24576ff9fe9f85bb1948ecae52ce227cafce53757a3ad52301f2a79260f6b97d.js" integrity="sha256-JFdv&#43;f6fhbsZSOyuUs4ifK/OU3V6OtUjAfKnkmD2uX0=" crossorigin="anonymous"></script>
+    <script src="http://localhost:3000/js/main.js"></script>
+<script defer src="http://localhost:3000/js/click-to-copy.js" crossorigin="anonymous"></script>
 <script src='http://localhost:3000/js/tabpane-persist.js'></script>
 
   </body>

@@ -9,8 +9,6 @@ This page shows the `Layer<'input, 'error, 'output>` surface used to provision e
 ## Core type
 
 - [`Layer`](./t-layer.md):
- Represents a provisioning step that builds an explicit environment inside a scope.
-
 
 ## Builder
 

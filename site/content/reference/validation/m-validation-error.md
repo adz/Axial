@@ -17,13 +17,13 @@ Creates a failing validation result with the provided diagnostics.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `diagnostics` | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-diagnostics-1.html">Diagnostics</a>&lt;'error&gt;</span></code> | The <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-diagnostics-1.html">Diagnostics</a> graph. |
+| `diagnostics` | <code><span><a href="../diagnostics/t-diagnostics.md">Diagnostics</a>&lt;'error&gt;</span></code> | The <a href="../diagnostics/t-diagnostics.md">Diagnostics</a> graph. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> | A failing <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html">Validation</a>. |
+| <code><span><a href="t-validation.md">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> | A failing <a href="t-validation.md">Validation</a>. |
 
 ## Examples
 

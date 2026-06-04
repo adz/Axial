@@ -17,4 +17,4 @@ Builds the standard live base runtime as an explicit service bundle.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-layer-3.html">Layer</a>&lt;<span>unit,&#32;<a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-never.html">Never</a>,&#32;<a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-services-core-baseruntime.html">BaseRuntime</a></span>&gt;</span></code> |  |
+| <code><span><a href="../../layer/t-layer.md">Layer</a>&lt;<span>unit,&#32;<a href="../../layer/_index.md">Never</a>,&#32;<a href="t-core-baseruntime.md">BaseRuntime</a></span>&gt;</span></code> |  |

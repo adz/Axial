@@ -16,4 +16,4 @@ weight: 2103
 
 | Type | Description |
 | --- | --- |
-| <code><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-scope.html">Scope</a></code> |  |
+| <code><a href="t-scope.md">Scope</a></code> |  |

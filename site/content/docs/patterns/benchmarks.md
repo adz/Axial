@@ -14,7 +14,7 @@ The Fable benchmark project is self-contained by source inclusion, so it can be 
 The implementation split matters:
 
 - [src/FsFlow/Core.fs](https://github.com/adz/FsFlow/blob/main/src/FsFlow/Core.fs) defines `Execution<'value, 'error>` and flips its concrete shape by compiler target.
-- [src/FsFlow/Flow.fs](https://github.com/adz/FsFlow/blob/main/src/FsFlow/Flow.fs) exposes `RunSynchronously or ToTask`, which returns that platform execution handle on both .NET and Fable.
+- [src/FsFlow/Flow.fs](https://github.com/adz/FsFlow/blob/main/src/FsFlow/Flow.fs) exposes execution members such as `ToTask`, `ToValueTask`, `ToAsync`, and `RunSynchronously`.
 - [benchmarks/FsFlow.Benchmarks/Suites.fs](https://github.com/adz/FsFlow/blob/main/benchmarks/FsFlow.Benchmarks/Suites.fs) shows the manual baselines beside the `Flow` versions.
 - [scripts/run-benchmarks.sh](https://github.com/adz/FsFlow/blob/main/scripts/run-benchmarks.sh) prompts before starting the .NET benchmark run so you can stop other processes first.
 
@@ -42,10 +42,10 @@ Each runtime should show the same comparison:
 
 | Runtime | Without Flow | With Flow | Notes |
 | --- | --- | --- | --- |
-| .NET | `Result`, `Async<Result<_,_>>`, `Task<Result<_,_>>`, and raw `Task` baselines | `RunSynchronously or ToTask` returning `Execution<'value, 'error>` | Measured with BenchmarkDotNet |
-| Fable on Node | manual `Result` and reader composition | `RunSynchronously or ToTask` returning `Async<Exit<'value, 'error>>` | Run through `scripts/run-fable-benchmarks.sh` |
-| Fable on Erlang | manual `Result` and reader composition | `RunSynchronously or ToTask` returning `Async<Exit<'value, 'error>>` | Run through `scripts/run-fable-benchmarks.sh` |
-| Other supported Fable backend | manual `Result` and reader composition | `RunSynchronously or ToTask` returning `Async<Exit<'value, 'error>>` | Use the same benchmark source whenever a backend is available |
+| .NET | `Result`, `Async<Result<_,_>>`, `Task<Result<_,_>>`, and raw `Task` baselines | `ToTask` / `ToValueTask` returning `Exit<'value, 'error>` asynchronously | Measured with BenchmarkDotNet |
+| Fable on Node | manual `Result` and reader composition | `ToAsync` returning `Async<Exit<'value, 'error>>` | Run through `scripts/run-fable-benchmarks.sh` |
+| Fable on Erlang | manual `Result` and reader composition | `ToAsync` returning `Async<Exit<'value, 'error>>` | Run through `scripts/run-fable-benchmarks.sh` |
+| Other supported Fable backend | manual `Result` and reader composition | `ToAsync` returning `Async<Exit<'value, 'error>>` | Use the same benchmark source whenever a backend is available |
 
 The Fable runner uses the same benchmark source on each backend, with the sync-result and reader-propagation comparisons shown below for Node and Erlang. The other-backend row is the same runner shape, ready for any additional Fable target that becomes available.
 

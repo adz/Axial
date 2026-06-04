@@ -22,7 +22,7 @@ Creates a schedule that recurs with exponential backoff.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-schedule-3.html">Schedule</a>&lt;<span>'env,&#32;'input,&#32;<a href="https://learn.microsoft.com/dotnet/api/system.timespan">TimeSpan</a></span>&gt;</span></code> | A schedule that recurs indefinitely, doubling the delay each time (baseDelay * 2^attempt). |
+| <code><span><a href="t-schedule.md">Schedule</a>&lt;<span>'env,&#32;'input,&#32;<a href="https://learn.microsoft.com/dotnet/api/system.timespan">TimeSpan</a></span>&gt;</span></code> | A schedule that recurs indefinitely, doubling the delay each time (baseDelay * 2^attempt). |
 
 ## Examples
 

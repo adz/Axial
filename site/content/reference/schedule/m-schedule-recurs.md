@@ -23,7 +23,7 @@ Creates a schedule that recurs a fixed number of times.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-schedule-3.html">Schedule</a>&lt;<span>'env,&#32;'input,&#32;int</span>&gt;</span></code> | A schedule that recurs up to <span class="fsdocs-param-name">n</span> times, emitting the current attempt count (0 to n-1). |
+| <code><span><a href="t-schedule.md">Schedule</a>&lt;<span>'env,&#32;'input,&#32;int</span>&gt;</span></code> | A schedule that recurs up to <span class="fsdocs-param-name">n</span> times, emitting the current attempt count (0 to n-1). |
 
 ## Examples
 

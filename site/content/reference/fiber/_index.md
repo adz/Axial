@@ -9,8 +9,6 @@ This page shows the `Fiber<'error, 'value>` handle used by FsFlow concurrency. A
 ## Core types
 
 - [`Fiber`](./t-fiber.md):
- Represents a handle to a workflow that has already been started.
-
 - [`FiberId`](./t-fiberid.md): Unique identifier for a running fiber.
 - [`FiberStatus`](./t-fiberstatus.md): Describes the current lifecycle state of a fiber.
 - [`FiberMetadata`](./t-fibermetadata.md): Diagnostic metadata for a running fiber.

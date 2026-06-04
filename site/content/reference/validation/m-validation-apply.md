@@ -17,14 +17,14 @@ Applies a validation-wrapped function to a validation-wrapped value.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `validation` | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html">Validation</a>&lt;<span><span>(<span>'value&#32;->&#32;'next</span>)</span>,&#32;'error</span>&gt;</span></code> | The validation containing the function. |
-| `value` | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> | The validation containing the value. |
+| `validation` | <code><span><a href="t-validation.md">Validation</a>&lt;<span><span>(<span>'value&#32;->&#32;'next</span>)</span>,&#32;'error</span>&gt;</span></code> | The validation containing the function. |
+| `value` | <code><span><a href="t-validation.md">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> | The validation containing the value. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html">Validation</a>&lt;<span>'next,&#32;'error</span>&gt;</span></code> | The result of applying the function to the value, with accumulated errors. |
+| <code><span><a href="t-validation.md">Validation</a>&lt;<span>'next,&#32;'error</span>&gt;</span></code> | The result of applying the function to the value, with accumulated errors. |
 
 ## Examples
 

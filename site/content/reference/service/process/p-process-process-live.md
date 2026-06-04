@@ -17,4 +17,4 @@ Creates a live process service backed by <a href="https://learn.microsoft.com/do
 
 | Type | Description |
 | --- | --- |
-| <code><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-services-process-iprocess.html">IProcess</a></code> |  |
+| <code><a href="t-process-iprocess.md">IProcess</a></code> |  |

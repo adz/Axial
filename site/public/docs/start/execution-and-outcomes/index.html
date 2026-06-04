@@ -1,10 +1,10 @@
 <!doctype html>
 <html itemscope itemtype="http://schema.org/WebPage" lang="en" class="no-js">
-  <head>
+  <head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=3000&amp;path=livereload" data-no-instant defer></script>
     <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-<meta name="robots" content="index, follow">
+<meta name="robots" content="noindex, nofollow">
 
 
 <link rel="shortcut icon" href="http://localhost:3000/favicons/favicon.ico" >
@@ -19,23 +19,22 @@
 <link rel="icon" type="image/png" href="http://localhost:3000/favicons/android-192x192.png" sizes="192x192">
 
 <title>Execution and Outcomes | FsFlow</title>
-<meta name="description" content="How to run flows, handle their results, and combine them.">
+<meta name="description" content="How to start flows and handle Exit values.">
 <meta property="og:url" content="http://localhost:3000/docs/start/execution-and-outcomes/">
   <meta property="og:site_name" content="FsFlow">
   <meta property="og:title" content="Execution and Outcomes">
-  <meta property="og:description" content="How to run flows, handle their results, and combine them.">
+  <meta property="og:description" content="How to start flows and handle Exit values.">
   <meta property="og:locale" content="en_us">
   <meta property="og:type" content="article">
     <meta property="article:section" content="docs">
 
   <meta itemprop="name" content="Execution and Outcomes">
-  <meta itemprop="description" content="How to run flows, handle their results, and combine them.">
-  <meta itemprop="wordCount" content="617">
+  <meta itemprop="description" content="How to start flows and handle Exit values.">
+  <meta itemprop="wordCount" content="222">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Execution and Outcomes">
-  <meta name="twitter:description" content="How to run flows, handle their results, and combine them.">
-<link rel="preload" href="http://localhost:3000/scss/main.min.c2e6489a9d8ef949a0dead85d2b883caca7e8cf3176c0e7ff6ff57d94fff640c.css" as="style" integrity="sha256-wuZImp2O&#43;Umg3q2F0riDysp&#43;jPMXbA5/9v9X2U//ZAw=" crossorigin="anonymous">
-<link href="http://localhost:3000/scss/main.min.c2e6489a9d8ef949a0dead85d2b883caca7e8cf3176c0e7ff6ff57d94fff640c.css" rel="stylesheet" integrity="sha256-wuZImp2O&#43;Umg3q2F0riDysp&#43;jPMXbA5/9v9X2U//ZAw=" crossorigin="anonymous">
+  <meta name="twitter:description" content="How to start flows and handle Exit values.">
+<link href="http://localhost:3000/scss/main.css" rel="stylesheet">
 <script
   src="https://code.jquery.com/jquery-3.7.1.min.js"
   integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g=="
@@ -92,7 +91,7 @@
     aria-label='Search this site…'
     autocomplete="off"
     
-    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.152d3a8195c3b05e80270a1402841d44.json"
+    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.json"
     data-offline-search-base-href="http://localhost:3000/"
     data-offline-search-max-results="10"
   >
@@ -128,7 +127,7 @@
     aria-label='Search this site…'
     autocomplete="off"
     
-    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.152d3a8195c3b05e80270a1402841d44.json"
+    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.json"
     data-offline-search-base-href="http://localhost:3000/"
     data-offline-search-max-results="10"
   >
@@ -165,17 +164,29 @@
     <label for="m-docstutorials-check"><a href="http://localhost:3000/docs/tutorials/" class="align-left ps-0  td-sidebar-link td-sidebar-link__section" id="m-docstutorials"><span class="">Tutorials</span></a></label>
     
     <ul class="ul-2 foldable">
-      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialsapp-record-li">
+      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialsexplicit-dependencies-li">
+    <input type="checkbox" id="m-docstutorialsexplicit-dependencies-check"/>
+    <label for="m-docstutorialsexplicit-dependencies-check"><a href="http://localhost:3000/docs/tutorials/explicit-dependencies/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialsexplicit-dependencies"><span class="">Tutorial: Explicit Dependencies First</span></a></label>
+    
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialsapp-record-li">
     <input type="checkbox" id="m-docstutorialsapp-record-check"/>
-    <label for="m-docstutorialsapp-record-check"><a href="http://localhost:3000/docs/tutorials/app-record/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialsapp-record"><span class="">Tutorial: AppRecord</span></a></label>
+    <label for="m-docstutorialsapp-record-check"><a href="http://localhost:3000/docs/tutorials/app-record/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialsapp-record"><span class="">Tutorial: App Record</span></a></label>
     
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialscapabilities-li">
-    <input type="checkbox" id="m-docstutorialscapabilities-check"/>
-    <label for="m-docstutorialscapabilities-check"><a href="http://localhost:3000/docs/tutorials/capabilities/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialscapabilities"><span class="">Tutorial: Capabilities</span></a></label>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialsruntime-operations-li">
+    <input type="checkbox" id="m-docstutorialsruntime-operations-check"/>
+    <label for="m-docstutorialsruntime-operations-check"><a href="http://localhost:3000/docs/tutorials/runtime-operations/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialsruntime-operations"><span class="">Tutorial: Runtime Operations</span></a></label>
     
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialsapp-host-li">
-    <input type="checkbox" id="m-docstutorialsapp-host-check"/>
-    <label for="m-docstutorialsapp-host-check"><a href="http://localhost:3000/docs/tutorials/app-host/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialsapp-host"><span class="">Tutorial: AppHost</span></a></label>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialsexisting-services-li">
+    <input type="checkbox" id="m-docstutorialsexisting-services-check"/>
+    <label for="m-docstutorialsexisting-services-check"><a href="http://localhost:3000/docs/tutorials/existing-services/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialsexisting-services"><span class="">Tutorial: Using Existing Services</span></a></label>
+    
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialscustom-services-li">
+    <input type="checkbox" id="m-docstutorialscustom-services-check"/>
+    <label for="m-docstutorialscustom-services-check"><a href="http://localhost:3000/docs/tutorials/custom-services/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialscustom-services"><span class="">Tutorial: Creating Reusable Services</span></a></label>
+    
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialslayers-li">
+    <input type="checkbox" id="m-docstutorialslayers-check"/>
+    <label for="m-docstutorialslayers-check"><a href="http://localhost:3000/docs/tutorials/layers/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialslayers"><span class="">Tutorial: Layers</span></a></label>
     
   </li>
     </ul>
@@ -234,17 +245,25 @@
     <label for="m-docsmanaging-dependencies-check"><a href="http://localhost:3000/docs/managing-dependencies/" class="align-left ps-0  td-sidebar-link td-sidebar-link__section" id="m-docsmanaging-dependencies"><span class="">Managing Dependencies</span></a></label>
     
     <ul class="ul-2 foldable">
-      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciesruntime-vs-environment-li">
-    <input type="checkbox" id="m-docsmanaging-dependenciesruntime-vs-environment-check"/>
-    <label for="m-docsmanaging-dependenciesruntime-vs-environment-check"><a href="http://localhost:3000/docs/managing-dependencies/runtime-vs-environment/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesruntime-vs-environment"><span class="">Runtime vs Environment</span></a></label>
+      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciesexplicit-services-li">
+    <input type="checkbox" id="m-docsmanaging-dependenciesexplicit-services-check"/>
+    <label for="m-docsmanaging-dependenciesexplicit-services-check"><a href="http://localhost:3000/docs/managing-dependencies/explicit-services/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesexplicit-services"><span class="">Explicit Services</span></a></label>
     
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciescapability-contracts-li">
-    <input type="checkbox" id="m-docsmanaging-dependenciescapability-contracts-check"/>
-    <label for="m-docsmanaging-dependenciescapability-contracts-check"><a href="http://localhost:3000/docs/managing-dependencies/capability-contracts/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciescapability-contracts"><span class="">Nominal Capability Contracts</span></a></label>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependencieslayers-li">
+    <input type="checkbox" id="m-docsmanaging-dependencieslayers-check"/>
+    <label for="m-docsmanaging-dependencieslayers-check"><a href="http://localhost:3000/docs/managing-dependencies/layers/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependencieslayers"><span class="">Layers</span></a></label>
     
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciesprovider-edge-li">
-    <input type="checkbox" id="m-docsmanaging-dependenciesprovider-edge-check"/>
-    <label for="m-docsmanaging-dependenciesprovider-edge-check"><a href="http://localhost:3000/docs/managing-dependencies/provider-edge/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesprovider-edge"><span class="">Standard .NET AppHost Plus DI</span></a></label>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciesscopes-and-resources-li">
+    <input type="checkbox" id="m-docsmanaging-dependenciesscopes-and-resources-check"/>
+    <label for="m-docsmanaging-dependenciesscopes-and-resources-check"><a href="http://localhost:3000/docs/managing-dependencies/scopes-and-resources/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesscopes-and-resources"><span class="">Scopes and Resources</span></a></label>
+    
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciesbuilding-a-base-runtime-li">
+    <input type="checkbox" id="m-docsmanaging-dependenciesbuilding-a-base-runtime-check"/>
+    <label for="m-docsmanaging-dependenciesbuilding-a-base-runtime-check"><a href="http://localhost:3000/docs/managing-dependencies/building-a-base-runtime/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesbuilding-a-base-runtime"><span class="">Building a Base Runtime</span></a></label>
+    
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciesservice-provider-boundaries-li">
+    <input type="checkbox" id="m-docsmanaging-dependenciesservice-provider-boundaries-check"/>
+    <label for="m-docsmanaging-dependenciesservice-provider-boundaries-check"><a href="http://localhost:3000/docs/managing-dependencies/service-provider-boundaries/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesservice-provider-boundaries"><span class="">Service Provider Boundaries</span></a></label>
     
   </li>
     </ul>
@@ -256,6 +275,10 @@
       <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsstate-concurrencyref-li">
     <input type="checkbox" id="m-docsstate-concurrencyref-check"/>
     <label for="m-docsstate-concurrencyref-check"><a href="http://localhost:3000/docs/state-concurrency/ref/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsstate-concurrencyref"><span class="">Ref (Atomic References)</span></a></label>
+    
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsstate-concurrencydeferred-semaphore-li">
+    <input type="checkbox" id="m-docsstate-concurrencydeferred-semaphore-check"/>
+    <label for="m-docsstate-concurrencydeferred-semaphore-check"><a href="http://localhost:3000/docs/state-concurrency/deferred-semaphore/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsstate-concurrencydeferred-semaphore"><span class="">Deferred and Semaphore</span></a></label>
     
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsstate-concurrencyschedule-li">
     <input type="checkbox" id="m-docsstate-concurrencyschedule-check"/>
@@ -337,30 +360,8 @@
     </div>
     <nav id="TableOfContents">
   <ul>
-    <li><a href="#1-running-a-flow">1. Running a Flow</a>
-      <ul>
-        <li><a href="#unwrapping-to-result">Unwrapping to Result</a></li>
-      </ul>
-    </li>
-    <li><a href="#2-understanding-the-exit-outcome">2. Understanding the Exit Outcome</a>
-      <ul>
-        <li><a href="#the-cause-of-failure">The Cause of Failure</a></li>
-      </ul>
-    </li>
-    <li><a href="#3-unwrapping-and-transforming">3. Unwrapping and Transforming</a>
-      <ul>
-        <li><a href="#exittoresult">Exit.toResult</a></li>
-        <li><a href="#mapping-values">Mapping Values</a></li>
-      </ul>
-    </li>
-    <li><a href="#4-combining-multiple-flows">4. Combining Multiple Flows</a>
-      <ul>
-        <li><a href="#sequential-pairing-zip">Sequential Pairing (Zip)</a></li>
-        <li><a href="#parallel-pairing-zippar">Parallel Pairing (ZipPar)</a></li>
-        <li><a href="#working-with-sequences">Working with Sequences</a></li>
-        <li><a href="#competitive-execution-race">Competitive Execution (Race)</a></li>
-      </ul>
-    </li>
+    <li><a href="#exit">Exit</a></li>
+    <li><a href="#converting-to-result">Converting to Result</a></li>
   </ul>
 </nav>
   </div>
@@ -382,112 +383,73 @@
 </nav>
 <div class="td-content">
 	<h1>Execution and Outcomes</h1>
-	<div class="lead">How to run flows, handle their results, and combine them.</div>
+	<div class="lead">How to start flows and handle Exit values.</div>
 	<header class="article-meta">
 		
 </header>
-	<p>Once you have defined a <code>Flow</code>, you must execute it to perform its effects and obtain a result. This page covers the mechanics of running flows, handling the different types of outcomes, and combining multiple flows.</p>
-<h2 id="1-running-a-flow">1. Running a Flow</h2>
-<p>The primary entry point for execution is <code>Flow.run</code>. It requires an environment (even if just <code>()</code>) and returns a platform-specific deferred handle called an <code>Effect</code>.</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">myFlow</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">succeed</span> <span style="color:#4e9a06">&#34;Hello&#34;</span>
+	<p><code>Flow&lt;'env, 'error, 'value&gt;</code> is cold. Building a workflow does not run it.</p>
+<p>Execution starts only at an explicit boundary:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">workflow</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">succeed</span> <span style="color:#4e9a06">&#34;Hello&#34;</span>
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#8f5902;font-style:italic">// On .NET: returns ValueTask&lt;Exit&lt;string, &#39;error&gt;&gt;
-</span></span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let!</span> <span style="color:#000">exit</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">run</span> <span style="color:#3465a4">()</span> <span style="color:#000">myFlow</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#8f5902;font-style:italic">// On Fable: returns Async&lt;Exit&lt;string, &#39;error&gt;&gt;
-</span></span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let!</span> <span style="color:#000">exit</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">run</span> <span style="color:#3465a4">()</span> <span style="color:#000">myFlow</span>
-</span></span></code></pre></div><h3 id="unwrapping-to-result">Unwrapping to Result</h3>
-<p>While <code>Exit</code> is the native outcome of a flow, you may want to bridge back to a standard F# <code>Result</code>. The pattern differs by platform because of the underlying threading model.</p>
-<h4 id="on-net-synchronous">On .NET (Synchronous)</h4>
-<p>If you are at a synchronous boundary (like a console app <code>main</code> or a test), you can use the <code>Flow.toResult</code> helper. This blocks the current thread until the flow completes.</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#8f5902;font-style:italic">// returns Result&lt;&#39;value, &#39;error&gt;
-</span></span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">res</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">toResult</span> <span style="color:#000">environment</span> <span style="color:#000">myFlow</span>
-</span></span></code></pre></div><h4 id="on-fable-asynchronous">On Fable (Asynchronous)</h4>
-<p>Because Fable targets (JavaScript, Erlang) are non-blocking, you must explicitly await the result within an <code>async</code> block.</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">getResult</span> <span style="color:#3465a4">()</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">async</span> <span style="color:#ce5c00;font-weight:bold">{</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">let!</span> <span style="color:#000">exit</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">run</span> <span style="color:#000">environment</span> <span style="color:#000">myFlow</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">return</span> <span style="color:#000">Exit</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">toResult</span> <span style="color:#000">exit</span> <span style="color:#8f5902;font-style:italic">// returns Result&lt;&#39;value, &#39;error&gt;
-</span></span></span><span style="display:flex;"><span><span style="color:#ce5c00;font-weight:bold">}</span>
-</span></span></code></pre></div><blockquote>
-<p><strong>Warning</strong>: Both <code>Flow.toResult</code> and <code>Exit.toResult</code> will re-raise exceptions if the flow crashed (<code>Cause.Die</code>) or was interrupted. Only use these when you want to treat non-domain failures as fatal.</p>
-</blockquote>
-<h2 id="2-understanding-the-exit-outcome">2. Understanding the Exit Outcome</h2>
-<p>The result of running a flow is always an <code>Exit&lt;'value, 'error&gt;</code>. This type represents the final state of the workflow.</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">match</span> <span style="color:#000">exitValue</span> <span style="color:#204a87;font-weight:bold">with</span>
-</span></span><span style="display:flex;"><span><span style="color:#ce5c00;font-weight:bold">|</span> <span style="color:#000">Exit</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">Success</span> <span style="color:#000">value</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> 
-</span></span><span style="display:flex;"><span>    <span style="color:#000">printfn</span> <span style="color:#4e9a06">&#34;The workflow succeeded with: %A&#34;</span> <span style="color:#000">value</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#ce5c00;font-weight:bold">|</span> <span style="color:#000">Exit</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">Failure</span> <span style="color:#000">cause</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> 
-</span></span><span style="display:flex;"><span>    <span style="color:#8f5902;font-style:italic">// The workflow failed (see below)
-</span></span></span><span style="display:flex;"><span>    <span style="color:#000">handleFailure</span> <span style="color:#000">cause</span>
-</span></span></code></pre></div><h3 id="the-cause-of-failure">The Cause of Failure</h3>
-<p>FsFlow distinguishes between expected domain failures and unexpected technical defects using the <code>Cause&lt;'error&gt;</code> type:</p>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">exit</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">workflow</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">RunSynchronously</span><span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#3465a4">()</span><span style="color:#ce5c00;font-weight:bold">)</span>
+</span></span></code></pre></div><p>On .NET you can choose the platform handle:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">valueTask</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">workflow</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">ToValueTask</span><span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">env</span><span style="color:#ce5c00;font-weight:bold">)</span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">task</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">workflow</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">ToTask</span><span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">env</span><span style="color:#ce5c00;font-weight:bold">)</span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">asyncWork</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">workflow</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">ToAsync</span><span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">env</span><span style="color:#ce5c00;font-weight:bold">)</span>
+</span></span></code></pre></div><p>On Fable, use:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">asyncWork</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">workflow</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">ToAsync</span><span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">env</span><span style="color:#ce5c00;font-weight:bold">)</span>
+</span></span></code></pre></div><p><code>ToValueTask</code>, <code>ToTask</code>, and <code>ToAsync</code> start the workflow and return a platform handle. They do not synchronously wait
+for completion. Await or run the returned handle to observe the final <code>Exit&lt;'value, 'error&gt;</code>.</p>
+<h2 id="exit">Exit</h2>
+<p>Execution completes with <code>Exit&lt;'value, 'error&gt;</code>, which is FsFlow&rsquo;s name for <code>Result&lt;'value, Cause&lt;'error&gt;&gt;</code>. It has a distinct name because it describes the completed state of a workflow execution, not just an ordinary domain success or failure.</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">match</span> <span style="color:#000">exit</span> <span style="color:#204a87;font-weight:bold">with</span>
+</span></span><span style="display:flex;"><span><span style="color:#ce5c00;font-weight:bold">|</span> <span style="color:#000">Exit</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">Success</span> <span style="color:#000">value</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#000">printfn</span> <span style="color:#4e9a06">&#34;Succeeded: %A&#34;</span> <span style="color:#000">value</span>
+</span></span><span style="display:flex;"><span><span style="color:#ce5c00;font-weight:bold">|</span> <span style="color:#000">Exit</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">Failure</span> <span style="color:#000">cause</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#000">printfn</span> <span style="color:#4e9a06">&#34;Failed: %s&#34;</span> <span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">Cause</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">prettyPrint</span> <span style="color:#204a87;font-weight:bold">string</span> <span style="color:#000">cause</span><span style="color:#ce5c00;font-weight:bold">)</span>
+</span></span></code></pre></div><p><code>Cause&lt;'error&gt;</code> distinguishes typed failures from defects and interruption:</p>
 <table>
   <thead>
       <tr>
           <th style="text-align: left">Cause</th>
-          <th style="text-align: left">Description</th>
-          <th style="text-align: left">Source</th>
+          <th style="text-align: left">Meaning</th>
       </tr>
   </thead>
   <tbody>
       <tr>
-          <td style="text-align: left"><code>Fail 'error</code></td>
-          <td style="text-align: left">An <strong>expected</strong> failure in your domain logic.</td>
-          <td style="text-align: left"><code>Flow.fail</code>, <code>Error</code> results.</td>
+          <td style="text-align: left"><code>Fail error</code></td>
+          <td style="text-align: left">Expected domain failure.</td>
       </tr>
       <tr>
           <td style="text-align: left"><code>Die exn</code></td>
-          <td style="text-align: left">An <strong>unexpected</strong> defect or &ldquo;panic&rdquo;.</td>
-          <td style="text-align: left">Uncaught exceptions, <code>Flow.die</code>.</td>
+          <td style="text-align: left">Unexpected defect.</td>
       </tr>
       <tr>
           <td style="text-align: left"><code>Interrupt</code></td>
-          <td style="text-align: left">The workflow was <strong>cancelled</strong> from the outside.</td>
-          <td style="text-align: left"><code>CancellationToken</code>.</td>
+          <td style="text-align: left">Cooperative cancellation/interruption.</td>
+      </tr>
+      <tr>
+          <td style="text-align: left"><code>Then (first, second)</code></td>
+          <td style="text-align: left">Ordered failure composition.</td>
+      </tr>
+      <tr>
+          <td style="text-align: left"><code>Both (left, right)</code></td>
+          <td style="text-align: left">Parallel failure composition.</td>
+      </tr>
+      <tr>
+          <td style="text-align: left"><code>Traced (cause, trace)</code></td>
+          <td style="text-align: left">Diagnostic annotation.</td>
       </tr>
   </tbody>
 </table>
-<h2 id="3-unwrapping-and-transforming">3. Unwrapping and Transforming</h2>
-<p>While pattern matching is the recommended way to handle outcomes, several helpers exist for quick transformations.</p>
-<h3 id="exittoresult">Exit.toResult</h3>
-<p>Converts an <code>Exit</code> into a standard F# <code>Result&lt;'value, 'error&gt;</code>.</p>
-<ul>
-<li><code>Success v</code> -&gt; <code>Ok v</code></li>
-<li><code>Failure (Fail e)</code> -&gt; <code>Error e</code></li>
-<li><code>Failure (Die ex)</code> -&gt; <strong>re-raises <code>ex</code></strong></li>
-<li><code>Failure Interrupt</code> -&gt; <strong>raises <code>OperationCanceledException</code></strong></li>
-</ul>
-<p>This is useful when you want to bridge back to libraries that only understand <code>Result</code>, but it assumes that defects should be treated as fatal exceptions.</p>
-<h3 id="mapping-values">Mapping Values</h3>
-<p>You can transform the content of an <code>Exit</code> without unwrapping it:</p>
-<ul>
-<li><code>Exit.map</code>: Transform the success value.</li>
-<li><code>Exit.mapError</code>: Transform the domain error.</li>
-<li><code>Exit.mapBoth</code>: Transform both at once.</li>
-</ul>
-<h2 id="4-combining-multiple-flows">4. Combining Multiple Flows</h2>
-<p>FsFlow provides powerful combinators for orchestrating multiple workflows.</p>
-<h3 id="sequential-pairing-zip">Sequential Pairing (Zip)</h3>
-<p><code>Flow.zip</code> runs two flows in sequence. The second flow only runs if the first one succeeds. The result is a tuple of both values.</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">combined</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">zip</span> <span style="color:#000">flowA</span> <span style="color:#000">flowB</span>
-</span></span><span style="display:flex;"><span><span style="color:#8f5902;font-style:italic">// combined: Flow&lt;&#39;env, &#39;error, &#39;a * &#39;b&gt;
-</span></span></span></code></pre></div><h3 id="parallel-pairing-zippar">Parallel Pairing (ZipPar)</h3>
-<p><code>Flow.zipPar</code> runs two flows in parallel. If either flow fails, the other is <strong>immediately interrupted</strong> to save resources.</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">parallel</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">zipPar</span> <span style="color:#000">flowA</span> <span style="color:#000">flowB</span>
-</span></span></code></pre></div><h3 id="working-with-sequences">Working with Sequences</h3>
-<p>When you have a collection of items to process:</p>
-<ul>
-<li><strong><code>Flow.traverse</code></strong>: Maps each item to a flow and runs them sequentially, stopping at the first failure.</li>
-<li><strong><code>Flow.sequence</code></strong>: Takes a list of flows and runs them sequentially.</li>
-</ul>
-<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">processAll</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">items</span> <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">traverse</span> <span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#204a87;font-weight:bold">fun</span> <span style="color:#000">item</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#000">processItem</span> <span style="color:#000">item</span><span style="color:#ce5c00;font-weight:bold">)</span>
-</span></span></code></pre></div><h3 id="competitive-execution-race">Competitive Execution (Race)</h3>
-<p><code>Flow.race</code> runs two flows in parallel and returns the result of the <strong>first one to finish</strong> (success or failure). The &ldquo;loser&rdquo; is interrupted immediately.</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">fastestResult</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">race</span> <span style="color:#000">longTask</span> <span style="color:#000">timeoutTask</span>
-</span></span></code></pre></div><blockquote>
-<p><strong>Note</strong>: <code>Flow.race</code> is currently only supported on .NET.</p>
-</blockquote>
+<h2 id="converting-to-result">Converting to Result</h2>
+<p>Use <code>Exit.toResult</code> only at boundaries that need standard F# <code>Result</code>:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#000">task</span> <span style="color:#ce5c00;font-weight:bold">{</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">let!</span> <span style="color:#000">exit</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">workflow</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">ToTask</span><span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">env</span><span style="color:#ce5c00;font-weight:bold">)</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">return</span> <span style="color:#000">Exit</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">toResult</span> <span style="color:#000">exit</span>
+</span></span><span style="display:flex;"><span><span style="color:#ce5c00;font-weight:bold">}</span>
+</span></span></code></pre></div><p><code>Exit.toResult</code> raises for defects, interruption, and composite causes because <code>Result</code> cannot represent those outcomes
+without losing information.</p>
 
 	<nav class="docs-page-nav"><a class="docs-home-cta docs-page-nav__link docs-page-nav__prev" href="http://localhost:3000/docs/start/getting-started/" aria-label="Previous - Getting Started">
     <span class="docs-page-nav__arrow" aria-hidden="true">←</span>
@@ -505,8 +467,8 @@
       </div>
       
     </div>
-    <script src="http://localhost:3000/js/main.min.c60de03ed52a34012f330c3e18c526426ec97efa9822bedfadbf14ffe917bc3e.js" integrity="sha256-xg3gPtUqNAEvMww&#43;GMUmQm7JfvqYIr7frb8U/&#43;kXvD4=" crossorigin="anonymous"></script>
-<script defer src="http://localhost:3000/js/click-to-copy.min.24576ff9fe9f85bb1948ecae52ce227cafce53757a3ad52301f2a79260f6b97d.js" integrity="sha256-JFdv&#43;f6fhbsZSOyuUs4ifK/OU3V6OtUjAfKnkmD2uX0=" crossorigin="anonymous"></script>
+    <script src="http://localhost:3000/js/main.js"></script>
+<script defer src="http://localhost:3000/js/click-to-copy.js" crossorigin="anonymous"></script>
 <script src='http://localhost:3000/js/tabpane-persist.js'></script>
 
   </body>

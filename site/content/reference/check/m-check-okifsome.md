@@ -23,7 +23,7 @@ Returns the value when the option is <code>Some</code>.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html">Check</a>&lt;'a&gt;</span></code> | A <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html">Check</a> containing the value if present; otherwise, an Error with unit. |
+| <code><span><a href="t-check.md">Check</a>&lt;'a&gt;</span></code> | A <a href="t-check.md">Check</a> containing the value if present; otherwise, an Error with unit. |
 
 ## Examples
 

@@ -18,15 +18,15 @@ Combines three validations, accumulating errors when any input fails.
 | Name | Type | Description |
 | --- | --- | --- |
 | `mapper` | <code><span>'left&#32;->&#32;'middle&#32;->&#32;'right&#32;->&#32;'value</span></code> | A function of type <code>&#39;left -&gt; &#39;middle -&gt; &#39;right -&gt; &#39;value</code>. |
-| `left` | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html">Validation</a>&lt;<span>'left,&#32;'error</span>&gt;</span></code> | The first validation. |
-| `middle` | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html">Validation</a>&lt;<span>'middle,&#32;'error</span>&gt;</span></code> | The second validation. |
-| `right` | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html">Validation</a>&lt;<span>'right,&#32;'error</span>&gt;</span></code> | The third validation. |
+| `left` | <code><span><a href="t-validation.md">Validation</a>&lt;<span>'left,&#32;'error</span>&gt;</span></code> | The first validation. |
+| `middle` | <code><span><a href="t-validation.md">Validation</a>&lt;<span>'middle,&#32;'error</span>&gt;</span></code> | The second validation. |
+| `right` | <code><span><a href="t-validation.md">Validation</a>&lt;<span>'right,&#32;'error</span>&gt;</span></code> | The third validation. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> | A validation with the combined result. |
+| <code><span><a href="t-validation.md">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> | A validation with the combined result. |
 
 ## Examples
 

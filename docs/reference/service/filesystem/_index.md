@@ -131,5 +131,4 @@ This page shows the file-system service package. `IFileSystem` models common `Sy
 ## Implementations
 
 - [`FileSystem.FileSystem.live`](./p-filesystem-filesystem-live.md): Creates a live file-system service backed by <a href="https://learn.microsoft.com/dotnet/api/system.io.file">File</a>, <a href="https://learn.microsoft.com/dotnet/api/system.io.directory">Directory</a>, and <a href="https://learn.microsoft.com/dotnet/api/system.io.path">Path</a>.
-- [`layer`](./p-filesystem-filesystem-layer.md):
- The <code>layer { }</code> computation expression for provisioning explicit service environments.
+- [`FileSystem.FileSystem.layer`](./p-filesystem-filesystem-layer.md): Builds the live file-system service as a layer.

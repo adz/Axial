@@ -17,7 +17,7 @@ Returns whether the cause tree contains an interruption signal.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `cause` | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-cause-1.html">Cause</a>&lt;'error&gt;</span></code> |  |
+| `cause` | <code><span><a href="t-cause.md">Cause</a>&lt;'error&gt;</span></code> |  |
 
 ## Returns
 

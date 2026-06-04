@@ -17,14 +17,14 @@ Recursively merges two diagnostics graphs, combining shared branches and local e
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `left` | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-diagnostics-1.html">Diagnostics</a>&lt;'error&gt;</span></code> | The first graph of type <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-diagnostics-1.html">Diagnostics</a>. |
-| `right` | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-diagnostics-1.html">Diagnostics</a>&lt;'error&gt;</span></code> | The second graph of type <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-diagnostics-1.html">Diagnostics</a>. |
+| `left` | <code><span><a href="t-diagnostics.md">Diagnostics</a>&lt;'error&gt;</span></code> | The first graph of type <a href="t-diagnostics.md">Diagnostics</a>. |
+| `right` | <code><span><a href="t-diagnostics.md">Diagnostics</a>&lt;'error&gt;</span></code> | The second graph of type <a href="t-diagnostics.md">Diagnostics</a>. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-diagnostics-1.html">Diagnostics</a>&lt;'error&gt;</span></code> | A new <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-diagnostics-1.html">Diagnostics</a> containing the union of both inputs. |
+| <code><span><a href="t-diagnostics.md">Diagnostics</a>&lt;'error&gt;</span></code> | A new <a href="t-diagnostics.md">Diagnostics</a> containing the union of both inputs. |
 
 ## Remarks
 

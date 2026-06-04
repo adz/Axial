@@ -4,13 +4,11 @@ weight: 30
 type: docs
 ---
 
-This page shows the `Exit<'value, 'error>` type, which represents the final outcome of an FsFlow execution. Every flow eventually resolves to either a success or a failure cause. Use the `Exit` module functions to transform outcomes without manually pattern matching at every boundary.
+This page shows the `Exit<'value, 'error>` type, which is FsFlow's name for `Result<'value, Cause<'error>>`. We name it `Exit` because it represents a completed workflow execution, not an ordinary domain result. Use the `Exit` module functions to transform completed outcomes without manually pattern matching at every boundary.
 
 ## Core type
 
 - [`Exit`](./t-exit.md):
- Represents the final outcome of a workflow execution.
-
 
 ## Module functions
 

@@ -18,13 +18,13 @@ Executes the stream and performs a synchronous action for each successful value.
 | --- | --- | --- |
 | `environment` | <code>'env</code> | The environment required to execute the stream. |
 | `action` | <code><span>'value&#32;->&#32;unit</span></code> | The function to execute for each value emitted by the stream. |
-| `arg2` | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flowstream-3.html">FlowStream</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> |  |
+| `arg2` | <code><span><a href="t-flowstream.md">FlowStream</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;unit</span>&gt;</span></code> | A flow that represents the execution of the stream. If the stream fails, the flow fails with the same cause. |
+| <code><span><a href="../flow/t-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;unit</span>&gt;</span></code> | A flow that represents the execution of the stream. If the stream fails, the flow fails with the same cause. |
 
 ## Examples
 

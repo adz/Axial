@@ -1,30 +1,14 @@
 ---
 title: "Exit"
-linkTitle: "Exit<value, error>"
+linkTitle: "Exit"
 weight: 1000
 type: docs
 ---
 
 
- Represents the final outcome of a workflow execution.
-
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code>type Exit<'value, 'error></code>
+<code>type Exit</code>
 </div>
-
-## Type Parameters
-
-| Name |
-| --- |
-| `value` |
-| `error` |
-
-## Union Cases
-
-| Case | Description |
-| --- | --- |
-| `Success` | The workflow completed successfully. |
-| `Failure` | The workflow failed due to a specific cause. |

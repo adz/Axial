@@ -18,4 +18,4 @@ weight: 2200
 
 | Type | Description |
 | --- | --- |
-| <code><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-stmbuilder.html">StmBuilder</a></code> |  |
+| <code><a href="p-stm-stm.md">StmBuilder</a></code> |  |

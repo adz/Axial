@@ -5,7 +5,7 @@ weight: 2501
 type: docs
 ---
 
-Creates a live GUID service backed by <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-services-core-guid.html">Guid.NewGuid</a>.
+Creates a live GUID service backed by <code>Guid.NewGuid()</code>.
 
 ## Signature
 
@@ -17,4 +17,4 @@ Creates a live GUID service backed by <a href="https://adz.github.io/FsFlow/refe
 
 | Type | Description |
 | --- | --- |
-| <code><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-services-core-iguid.html">IGuid</a></code> |  |
+| <code><a href="t-core-iguid.md">IGuid</a></code> |  |

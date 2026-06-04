@@ -17,4 +17,4 @@ Creates a live console service backed by <a href="https://learn.microsoft.com/do
 
 | Type | Description |
 | --- | --- |
-| <code><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-services-console-iconsole.html">IConsole</a></code> |  |
+| <code><a href="t-console-iconsole.md">IConsole</a></code> |  |

@@ -22,7 +22,7 @@ Creates a stream from a synchronous sequence of values.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flowstream-3.html">FlowStream</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | A <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flowstream-3.html">FlowStream</a> that yields each value from the sequence. |
+| <code><span><a href="t-flowstream.md">FlowStream</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | A <a href="t-flowstream.md">FlowStream</a> that yields each value from the sequence. |
 
 ## Examples
 

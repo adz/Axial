@@ -1,11 +1,11 @@
 <!doctype html>
 <html itemscope itemtype="http://schema.org/WebPage" lang="en" class="no-js">
-  <head>
+  <head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=3000&amp;path=livereload" data-no-instant defer></script>
     <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
 <link rel="alternate" type="application/rss&#43;xml" href="http://localhost:3000/docs/patterns/examples/index.xml">
-<meta name="robots" content="index, follow">
+<meta name="robots" content="noindex, nofollow">
 
 
 <link rel="shortcut icon" href="http://localhost:3000/favicons/favicon.ico" >
@@ -30,12 +30,11 @@
 
   <meta itemprop="name" content="Runnable Examples">
   <meta itemprop="description" content="Application-shaped examples that are executed during docs generation and mirrored back into the site.">
-  <meta itemprop="wordCount" content="1319">
+  <meta itemprop="wordCount" content="1494">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Runnable Examples">
   <meta name="twitter:description" content="Application-shaped examples that are executed during docs generation and mirrored back into the site.">
-<link rel="preload" href="http://localhost:3000/scss/main.min.c2e6489a9d8ef949a0dead85d2b883caca7e8cf3176c0e7ff6ff57d94fff640c.css" as="style" integrity="sha256-wuZImp2O&#43;Umg3q2F0riDysp&#43;jPMXbA5/9v9X2U//ZAw=" crossorigin="anonymous">
-<link href="http://localhost:3000/scss/main.min.c2e6489a9d8ef949a0dead85d2b883caca7e8cf3176c0e7ff6ff57d94fff640c.css" rel="stylesheet" integrity="sha256-wuZImp2O&#43;Umg3q2F0riDysp&#43;jPMXbA5/9v9X2U//ZAw=" crossorigin="anonymous">
+<link href="http://localhost:3000/scss/main.css" rel="stylesheet">
 <script
   src="https://code.jquery.com/jquery-3.7.1.min.js"
   integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g=="
@@ -92,7 +91,7 @@
     aria-label='Search this site…'
     autocomplete="off"
     
-    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.152d3a8195c3b05e80270a1402841d44.json"
+    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.json"
     data-offline-search-base-href="http://localhost:3000/"
     data-offline-search-max-results="10"
   >
@@ -128,7 +127,7 @@
     aria-label='Search this site…'
     autocomplete="off"
     
-    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.152d3a8195c3b05e80270a1402841d44.json"
+    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.json"
     data-offline-search-base-href="http://localhost:3000/"
     data-offline-search-max-results="10"
   >
@@ -165,17 +164,29 @@
     <label for="m-docstutorials-check"><a href="http://localhost:3000/docs/tutorials/" class="align-left ps-0  td-sidebar-link td-sidebar-link__section" id="m-docstutorials"><span class="">Tutorials</span></a></label>
     
     <ul class="ul-2 foldable">
-      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialsapp-record-li">
+      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialsexplicit-dependencies-li">
+    <input type="checkbox" id="m-docstutorialsexplicit-dependencies-check"/>
+    <label for="m-docstutorialsexplicit-dependencies-check"><a href="http://localhost:3000/docs/tutorials/explicit-dependencies/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialsexplicit-dependencies"><span class="">Tutorial: Explicit Dependencies First</span></a></label>
+    
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialsapp-record-li">
     <input type="checkbox" id="m-docstutorialsapp-record-check"/>
-    <label for="m-docstutorialsapp-record-check"><a href="http://localhost:3000/docs/tutorials/app-record/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialsapp-record"><span class="">Tutorial: AppRecord</span></a></label>
+    <label for="m-docstutorialsapp-record-check"><a href="http://localhost:3000/docs/tutorials/app-record/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialsapp-record"><span class="">Tutorial: App Record</span></a></label>
     
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialscapabilities-li">
-    <input type="checkbox" id="m-docstutorialscapabilities-check"/>
-    <label for="m-docstutorialscapabilities-check"><a href="http://localhost:3000/docs/tutorials/capabilities/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialscapabilities"><span class="">Tutorial: Capabilities</span></a></label>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialsruntime-operations-li">
+    <input type="checkbox" id="m-docstutorialsruntime-operations-check"/>
+    <label for="m-docstutorialsruntime-operations-check"><a href="http://localhost:3000/docs/tutorials/runtime-operations/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialsruntime-operations"><span class="">Tutorial: Runtime Operations</span></a></label>
     
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialsapp-host-li">
-    <input type="checkbox" id="m-docstutorialsapp-host-check"/>
-    <label for="m-docstutorialsapp-host-check"><a href="http://localhost:3000/docs/tutorials/app-host/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialsapp-host"><span class="">Tutorial: AppHost</span></a></label>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialsexisting-services-li">
+    <input type="checkbox" id="m-docstutorialsexisting-services-check"/>
+    <label for="m-docstutorialsexisting-services-check"><a href="http://localhost:3000/docs/tutorials/existing-services/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialsexisting-services"><span class="">Tutorial: Using Existing Services</span></a></label>
+    
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialscustom-services-li">
+    <input type="checkbox" id="m-docstutorialscustom-services-check"/>
+    <label for="m-docstutorialscustom-services-check"><a href="http://localhost:3000/docs/tutorials/custom-services/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialscustom-services"><span class="">Tutorial: Creating Reusable Services</span></a></label>
+    
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docstutorialslayers-li">
+    <input type="checkbox" id="m-docstutorialslayers-check"/>
+    <label for="m-docstutorialslayers-check"><a href="http://localhost:3000/docs/tutorials/layers/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docstutorialslayers"><span class="">Tutorial: Layers</span></a></label>
     
   </li>
     </ul>
@@ -234,17 +245,25 @@
     <label for="m-docsmanaging-dependencies-check"><a href="http://localhost:3000/docs/managing-dependencies/" class="align-left ps-0  td-sidebar-link td-sidebar-link__section" id="m-docsmanaging-dependencies"><span class="">Managing Dependencies</span></a></label>
     
     <ul class="ul-2 foldable">
-      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciesruntime-vs-environment-li">
-    <input type="checkbox" id="m-docsmanaging-dependenciesruntime-vs-environment-check"/>
-    <label for="m-docsmanaging-dependenciesruntime-vs-environment-check"><a href="http://localhost:3000/docs/managing-dependencies/runtime-vs-environment/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesruntime-vs-environment"><span class="">Runtime vs Environment</span></a></label>
+      <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciesexplicit-services-li">
+    <input type="checkbox" id="m-docsmanaging-dependenciesexplicit-services-check"/>
+    <label for="m-docsmanaging-dependenciesexplicit-services-check"><a href="http://localhost:3000/docs/managing-dependencies/explicit-services/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesexplicit-services"><span class="">Explicit Services</span></a></label>
     
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciescapability-contracts-li">
-    <input type="checkbox" id="m-docsmanaging-dependenciescapability-contracts-check"/>
-    <label for="m-docsmanaging-dependenciescapability-contracts-check"><a href="http://localhost:3000/docs/managing-dependencies/capability-contracts/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciescapability-contracts"><span class="">Nominal Capability Contracts</span></a></label>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependencieslayers-li">
+    <input type="checkbox" id="m-docsmanaging-dependencieslayers-check"/>
+    <label for="m-docsmanaging-dependencieslayers-check"><a href="http://localhost:3000/docs/managing-dependencies/layers/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependencieslayers"><span class="">Layers</span></a></label>
     
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciesprovider-edge-li">
-    <input type="checkbox" id="m-docsmanaging-dependenciesprovider-edge-check"/>
-    <label for="m-docsmanaging-dependenciesprovider-edge-check"><a href="http://localhost:3000/docs/managing-dependencies/provider-edge/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesprovider-edge"><span class="">Standard .NET AppHost Plus DI</span></a></label>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciesscopes-and-resources-li">
+    <input type="checkbox" id="m-docsmanaging-dependenciesscopes-and-resources-check"/>
+    <label for="m-docsmanaging-dependenciesscopes-and-resources-check"><a href="http://localhost:3000/docs/managing-dependencies/scopes-and-resources/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesscopes-and-resources"><span class="">Scopes and Resources</span></a></label>
+    
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciesbuilding-a-base-runtime-li">
+    <input type="checkbox" id="m-docsmanaging-dependenciesbuilding-a-base-runtime-check"/>
+    <label for="m-docsmanaging-dependenciesbuilding-a-base-runtime-check"><a href="http://localhost:3000/docs/managing-dependencies/building-a-base-runtime/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesbuilding-a-base-runtime"><span class="">Building a Base Runtime</span></a></label>
+    
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsmanaging-dependenciesservice-provider-boundaries-li">
+    <input type="checkbox" id="m-docsmanaging-dependenciesservice-provider-boundaries-check"/>
+    <label for="m-docsmanaging-dependenciesservice-provider-boundaries-check"><a href="http://localhost:3000/docs/managing-dependencies/service-provider-boundaries/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsmanaging-dependenciesservice-provider-boundaries"><span class="">Service Provider Boundaries</span></a></label>
     
   </li>
     </ul>
@@ -256,6 +275,10 @@
       <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsstate-concurrencyref-li">
     <input type="checkbox" id="m-docsstate-concurrencyref-check"/>
     <label for="m-docsstate-concurrencyref-check"><a href="http://localhost:3000/docs/state-concurrency/ref/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsstate-concurrencyref"><span class="">Ref (Atomic References)</span></a></label>
+    
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsstate-concurrencydeferred-semaphore-li">
+    <input type="checkbox" id="m-docsstate-concurrencydeferred-semaphore-check"/>
+    <label for="m-docsstate-concurrencydeferred-semaphore-check"><a href="http://localhost:3000/docs/state-concurrency/deferred-semaphore/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsstate-concurrencydeferred-semaphore"><span class="">Deferred and Semaphore</span></a></label>
     
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsstate-concurrencyschedule-li">
     <input type="checkbox" id="m-docsstate-concurrencyschedule-check"/>
@@ -337,10 +360,11 @@
     </div>
     <nav id="TableOfContents">
   <ul>
+    <li><a href="#maintenance-example">Maintenance Example</a></li>
     <li><a href="#request-boundary-example">Request Boundary Example</a></li>
     <li><a href="#diagnostics-example">Diagnostics Example</a></li>
     <li><a href="#playground-example">Playground Example</a></li>
-    <li><a href="#maintenance-example">Maintenance Example</a></li>
+    <li><a href="#maintenance-example-1">Maintenance Example</a></li>
   </ul>
 </nav>
   </div>
@@ -370,7 +394,65 @@
 <p>The examples below are built from the repository projects, run with the current source, and then written back into this page.</p>
 <p>The code blocks keep the important API calls on the same lines as the values they bind, with trailing comments where that makes the signature easier to read.
 The examples prefer the normal direct-bind style inside computation expressions, so the docs reflect the recommended day-to-day usage.</p>
-<h2 id="request-boundary-example">Request Boundary Example</h2>
+<h2 id="maintenance-example">Maintenance Example</h2>
+<p>This example shows smaller, focused shapes for maintenance and interop scenarios without switching away from the normal direct-bind style.</p>
+<p>Run it:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>dotnet run --project examples/FsFlow.MaintenanceExamples/FsFlow.MaintenanceExamples.fsproj --nologo
+</span></span></code></pre></div><p>Source:</p>
+<ul>
+<li><a href="https://github.com/adz/FsFlow/blob/main/examples/FsFlow.MaintenanceExamples/Program.fs" target="_blank" rel="noopener">Program.fs</a></li>
+</ul>
+<p>Source code:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">open</span> <span style="color:#000">System</span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">open</span> <span style="color:#000">System.Threading</span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">open</span> <span style="color:#000">System.Threading.Tasks</span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">open</span> <span style="color:#000">FsFlow</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">runFlow</span> <span style="color:#000">label</span> <span style="color:#000">env</span> <span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">workflow</span><span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">Flow</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#204a87;font-weight:bold">&#39;</span><span style="color:#000">env</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#204a87;font-weight:bold">&#39;</span><span style="color:#000">error</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#204a87;font-weight:bold">&#39;</span><span style="color:#000">value</span><span style="color:#ce5c00;font-weight:bold">&gt;)</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">result</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">workflow</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">RunSynchronously</span><span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">env</span><span style="color:#ce5c00;font-weight:bold">)</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#000">printfn</span> <span style="color:#4e9a06">&#34;%s: %A&#34;</span> <span style="color:#000">label</span> <span style="color:#000">result</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">runAsyncExample</span> <span style="color:#000">label</span> <span style="color:#000">env</span> <span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">workflow</span><span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">Flow</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#204a87;font-weight:bold">&#39;</span><span style="color:#000">env</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#204a87;font-weight:bold">&#39;</span><span style="color:#000">error</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#204a87;font-weight:bold">&#39;</span><span style="color:#000">value</span><span style="color:#ce5c00;font-weight:bold">&gt;)</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">result</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#000">workflow</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#204a87;font-weight:bold">fun</span> <span style="color:#000">workflow</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#000">workflow</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">RunSynchronously</span><span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">env</span><span style="color:#ce5c00;font-weight:bold">)</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#000">printfn</span> <span style="color:#4e9a06">&#34;%s: %A&#34;</span> <span style="color:#000">label</span> <span style="color:#000">result</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">runTaskExample</span> <span style="color:#000">label</span> <span style="color:#000">env</span> <span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">workflow</span><span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">Flow</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#204a87;font-weight:bold">&#39;</span><span style="color:#000">env</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#204a87;font-weight:bold">&#39;</span><span style="color:#000">error</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#204a87;font-weight:bold">&#39;</span><span style="color:#000">value</span><span style="color:#ce5c00;font-weight:bold">&gt;)</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">result</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#000">workflow</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#204a87;font-weight:bold">fun</span> <span style="color:#000">workflow</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#000">workflow</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">RunSynchronously</span><span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">env</span><span style="color:#ce5c00;font-weight:bold">)</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#000">printfn</span> <span style="color:#4e9a06">&#34;%s: %A&#34;</span> <span style="color:#000">label</span> <span style="color:#000">result</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">syncExample</span> <span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">Flow</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#000">int</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#204a87;font-weight:bold">string</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#000">int</span><span style="color:#ce5c00;font-weight:bold">&gt;</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">read</span> <span style="color:#000">id</span> <span style="color:#8f5902;font-style:italic">// Flow&lt;int, string, int&gt;
+</span></span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">map</span> <span style="color:#ce5c00;font-weight:bold">((+)</span> <span style="color:#000">1</span><span style="color:#ce5c00;font-weight:bold">)</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">asyncExample</span> <span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">Flow</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#000">int</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#204a87;font-weight:bold">string</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#000">int</span><span style="color:#ce5c00;font-weight:bold">&gt;</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#000">flow</span> <span style="color:#ce5c00;font-weight:bold">{</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">let!</span> <span style="color:#000">value</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">async</span> <span style="color:#ce5c00;font-weight:bold">{</span> <span style="color:#204a87;font-weight:bold">return</span> <span style="color:#000">21</span> <span style="color:#ce5c00;font-weight:bold">}</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">return</span> <span style="color:#000">value</span> <span style="color:#ce5c00;font-weight:bold">*</span> <span style="color:#000">2</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">}</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">taskExample</span> <span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">Flow</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#000">int</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#204a87;font-weight:bold">string</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#000">int</span><span style="color:#ce5c00;font-weight:bold">&gt;</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#000">flow</span> <span style="color:#ce5c00;font-weight:bold">{</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">let!</span> <span style="color:#000">env</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">read</span> <span style="color:#000">id</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">let!</span> <span style="color:#000">suffix</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">Task</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">FromResult</span> <span style="color:#000">5</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">return</span> <span style="color:#000">env</span> <span style="color:#ce5c00;font-weight:bold">+</span> <span style="color:#000">suffix</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">}</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ce5c00;font-weight:bold">[&lt;</span><span style="color:#000">EntryPoint</span><span style="color:#ce5c00;font-weight:bold">&gt;]</span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">main</span> <span style="color:#ce5c00;font-weight:bold">_</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#000">runFlow</span> <span style="color:#4e9a06">&#34;Flow&#34;</span> <span style="color:#000">20</span> <span style="color:#000">syncExample</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#000">runAsyncExample</span> <span style="color:#4e9a06">&#34;Async&#34;</span> <span style="color:#000">20</span> <span style="color:#000">asyncExample</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#000">runTaskExample</span> <span style="color:#4e9a06">&#34;Task&#34;</span> <span style="color:#000">20</span> <span style="color:#000">taskExample</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#8f5902;font-style:italic">// Flow: Ok 21
+</span></span></span><span style="display:flex;"><span>    <span style="color:#8f5902;font-style:italic">// Async: Ok 42
+</span></span></span><span style="display:flex;"><span>    <span style="color:#8f5902;font-style:italic">// Task: Ok 25
+</span></span></span><span style="display:flex;"><span>    <span style="color:#000">0</span>
+</span></span></code></pre></div><h2 id="request-boundary-example">Request Boundary Example</h2>
 <p>This example shows a request boundary that pulls a user from a database-like environment, threads a trace id through the request context, and reuses the same validation shape across Flow.</p>
 <p>Run it:</p>
 <div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#000">FSFLOW_EXAMPLE</span><span style="color:#ce5c00;font-weight:bold">=</span>request-boundary dotnet run --project examples/FsFlow.Examples/FsFlow.Examples.fsproj --nologo
@@ -439,18 +521,15 @@ The examples prefer the normal direct-bind style inside computation expressions,
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">syncResult</span> <span style="color:#ce5c00;font-weight:bold">=</span>
 </span></span><span style="display:flex;"><span>        <span style="color:#000">loadUser</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">run</span> <span style="color:#000">environment</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#204a87;font-weight:bold">fun</span> <span style="color:#000">t</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#000">t</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">AsTask</span><span style="color:#3465a4">()</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">GetAwaiter</span><span style="color:#3465a4">()</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">GetResult</span><span style="color:#3465a4">()</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#204a87;font-weight:bold">fun</span> <span style="color:#000">workflow</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#000">workflow</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">RunSynchronously</span><span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">environment</span><span style="color:#ce5c00;font-weight:bold">)</span>
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">asyncResult</span> <span style="color:#ce5c00;font-weight:bold">=</span>
 </span></span><span style="display:flex;"><span>        <span style="color:#000">renderTrace</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">run</span> <span style="color:#000">environment</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#204a87;font-weight:bold">fun</span> <span style="color:#000">t</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#000">t</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">AsTask</span><span style="color:#3465a4">()</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">GetAwaiter</span><span style="color:#3465a4">()</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">GetResult</span><span style="color:#3465a4">()</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#204a87;font-weight:bold">fun</span> <span style="color:#000">workflow</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#000">workflow</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">RunSynchronously</span><span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">environment</span><span style="color:#ce5c00;font-weight:bold">)</span>
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">taskResult</span> <span style="color:#ce5c00;font-weight:bold">=</span>
 </span></span><span style="display:flex;"><span>        <span style="color:#000">publishResponse</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">run</span> <span style="color:#000">environment</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#204a87;font-weight:bold">fun</span> <span style="color:#000">t</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#000">t</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">AsTask</span><span style="color:#3465a4">()</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">GetAwaiter</span><span style="color:#3465a4">()</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">GetResult</span><span style="color:#3465a4">()</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#204a87;font-weight:bold">fun</span> <span style="color:#000">workflow</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#000">workflow</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">RunSynchronously</span><span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">environment</span><span style="color:#ce5c00;font-weight:bold">)</span>
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>    <span style="color:#000">printfn</span> <span style="color:#4e9a06">&#34;Flow result: %A&#34;</span> <span style="color:#000">syncResult</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#000">printfn</span> <span style="color:#4e9a06">&#34;Flow result: %A&#34;</span> <span style="color:#000">asyncResult</span>
@@ -670,18 +749,15 @@ The examples prefer the normal direct-bind style inside computation expressions,
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">syncResult</span> <span style="color:#ce5c00;font-weight:bold">=</span>
 </span></span><span style="display:flex;"><span>        <span style="color:#000">greetingFlow</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">run</span> <span style="color:#000">env</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#204a87;font-weight:bold">fun</span> <span style="color:#000">t</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#000">t</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">AsTask</span><span style="color:#3465a4">()</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">GetAwaiter</span><span style="color:#3465a4">()</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">GetResult</span><span style="color:#3465a4">()</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#204a87;font-weight:bold">fun</span> <span style="color:#000">workflow</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#000">workflow</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">RunSynchronously</span><span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">env</span><span style="color:#ce5c00;font-weight:bold">)</span>
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">asyncResult</span> <span style="color:#ce5c00;font-weight:bold">=</span>
 </span></span><span style="display:flex;"><span>        <span style="color:#000">greetingAsync</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">run</span> <span style="color:#000">env</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#204a87;font-weight:bold">fun</span> <span style="color:#000">t</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#000">t</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">AsTask</span><span style="color:#3465a4">()</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">GetAwaiter</span><span style="color:#3465a4">()</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">GetResult</span><span style="color:#3465a4">()</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#204a87;font-weight:bold">fun</span> <span style="color:#000">workflow</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#000">workflow</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">RunSynchronously</span><span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">env</span><span style="color:#ce5c00;font-weight:bold">)</span>
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">taskResult</span> <span style="color:#ce5c00;font-weight:bold">=</span>
 </span></span><span style="display:flex;"><span>        <span style="color:#000">greetingTask</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">run</span> <span style="color:#000">env</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#204a87;font-weight:bold">fun</span> <span style="color:#000">t</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#000">t</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">AsTask</span><span style="color:#3465a4">()</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">GetAwaiter</span><span style="color:#3465a4">()</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">GetResult</span><span style="color:#3465a4">()</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#204a87;font-weight:bold">fun</span> <span style="color:#000">workflow</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#000">workflow</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">RunSynchronously</span><span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">env</span><span style="color:#ce5c00;font-weight:bold">)</span>
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>    <span style="color:#000">printfn</span> <span style="color:#4e9a06">&#34;Flow: %A&#34;</span> <span style="color:#000">syncResult</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#000">printfn</span> <span style="color:#4e9a06">&#34;Async: %A&#34;</span> <span style="color:#000">asyncResult</span>
@@ -690,7 +766,7 @@ The examples prefer the normal direct-bind style inside computation expressions,
 </span></span></span><span style="display:flex;"><span>    <span style="color:#8f5902;font-style:italic">// Async: Ok &#34;HELLO ADA&#34;
 </span></span></span><span style="display:flex;"><span>    <span style="color:#8f5902;font-style:italic">// Task: Ok &#34;Hello Ada!&#34;
 </span></span></span><span style="display:flex;"><span>    <span style="color:#000">0</span>
-</span></span></code></pre></div><h2 id="maintenance-example">Maintenance Example</h2>
+</span></span></code></pre></div><h2 id="maintenance-example-1">Maintenance Example</h2>
 <p>This example shows smaller, focused shapes for maintenance and interop scenarios without switching away from the normal direct-bind style.</p>
 <p>Run it:</p>
 <div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>dotnet run --project examples/FsFlow.MaintenanceExamples/FsFlow.MaintenanceExamples.fsproj --nologo
@@ -704,23 +780,21 @@ The examples prefer the normal direct-bind style inside computation expressions,
 </span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">open</span> <span style="color:#000">System.Threading.Tasks</span>
 </span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">open</span> <span style="color:#000">FsFlow</span>
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">runFlow</span> <span style="color:#000">label</span> <span style="color:#000">env</span> <span style="color:#000">workflow</span> <span style="color:#ce5c00;font-weight:bold">=</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">result</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">run</span> <span style="color:#000">env</span> <span style="color:#000">workflow</span> <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#204a87;font-weight:bold">fun</span> <span style="color:#000">t</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#000">t</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">AsTask</span><span style="color:#3465a4">()</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">GetAwaiter</span><span style="color:#3465a4">()</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">GetResult</span><span style="color:#3465a4">()</span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">runFlow</span> <span style="color:#000">label</span> <span style="color:#000">env</span> <span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">workflow</span><span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">Flow</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#204a87;font-weight:bold">&#39;</span><span style="color:#000">env</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#204a87;font-weight:bold">&#39;</span><span style="color:#000">error</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#204a87;font-weight:bold">&#39;</span><span style="color:#000">value</span><span style="color:#ce5c00;font-weight:bold">&gt;)</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">result</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">workflow</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">RunSynchronously</span><span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">env</span><span style="color:#ce5c00;font-weight:bold">)</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#000">printfn</span> <span style="color:#4e9a06">&#34;%s: %A&#34;</span> <span style="color:#000">label</span> <span style="color:#000">result</span>
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">runAsyncExample</span> <span style="color:#000">label</span> <span style="color:#000">env</span> <span style="color:#000">workflow</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">runAsyncExample</span> <span style="color:#000">label</span> <span style="color:#000">env</span> <span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">workflow</span><span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">Flow</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#204a87;font-weight:bold">&#39;</span><span style="color:#000">env</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#204a87;font-weight:bold">&#39;</span><span style="color:#000">error</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#204a87;font-weight:bold">&#39;</span><span style="color:#000">value</span><span style="color:#ce5c00;font-weight:bold">&gt;)</span> <span style="color:#ce5c00;font-weight:bold">=</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">result</span> <span style="color:#ce5c00;font-weight:bold">=</span>
 </span></span><span style="display:flex;"><span>        <span style="color:#000">workflow</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">run</span> <span style="color:#000">env</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#204a87;font-weight:bold">fun</span> <span style="color:#000">t</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#000">t</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">AsTask</span><span style="color:#3465a4">()</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">GetAwaiter</span><span style="color:#3465a4">()</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">GetResult</span><span style="color:#3465a4">()</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#204a87;font-weight:bold">fun</span> <span style="color:#000">workflow</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#000">workflow</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">RunSynchronously</span><span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">env</span><span style="color:#ce5c00;font-weight:bold">)</span>
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>    <span style="color:#000">printfn</span> <span style="color:#4e9a06">&#34;%s: %A&#34;</span> <span style="color:#000">label</span> <span style="color:#000">result</span>
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">runTaskExample</span> <span style="color:#000">label</span> <span style="color:#000">env</span> <span style="color:#000">workflow</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">runTaskExample</span> <span style="color:#000">label</span> <span style="color:#000">env</span> <span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">workflow</span><span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">Flow</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#204a87;font-weight:bold">&#39;</span><span style="color:#000">env</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#204a87;font-weight:bold">&#39;</span><span style="color:#000">error</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#204a87;font-weight:bold">&#39;</span><span style="color:#000">value</span><span style="color:#ce5c00;font-weight:bold">&gt;)</span> <span style="color:#ce5c00;font-weight:bold">=</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">result</span> <span style="color:#ce5c00;font-weight:bold">=</span>
 </span></span><span style="display:flex;"><span>        <span style="color:#000">workflow</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Flow</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">run</span> <span style="color:#000">env</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#204a87;font-weight:bold">fun</span> <span style="color:#000">t</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#000">t</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">AsTask</span><span style="color:#3465a4">()</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">GetAwaiter</span><span style="color:#3465a4">()</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">GetResult</span><span style="color:#3465a4">()</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#204a87;font-weight:bold">fun</span> <span style="color:#000">workflow</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#000">workflow</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">RunSynchronously</span><span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">env</span><span style="color:#ce5c00;font-weight:bold">)</span>
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>    <span style="color:#000">printfn</span> <span style="color:#4e9a06">&#34;%s: %A&#34;</span> <span style="color:#000">label</span> <span style="color:#000">result</span>
 </span></span><span style="display:flex;"><span>
@@ -762,8 +836,8 @@ The examples prefer the normal direct-bind style inside computation expressions,
       </div>
       
     </div>
-    <script src="http://localhost:3000/js/main.min.c60de03ed52a34012f330c3e18c526426ec97efa9822bedfadbf14ffe917bc3e.js" integrity="sha256-xg3gPtUqNAEvMww&#43;GMUmQm7JfvqYIr7frb8U/&#43;kXvD4=" crossorigin="anonymous"></script>
-<script defer src="http://localhost:3000/js/click-to-copy.min.24576ff9fe9f85bb1948ecae52ce227cafce53757a3ad52301f2a79260f6b97d.js" integrity="sha256-JFdv&#43;f6fhbsZSOyuUs4ifK/OU3V6OtUjAfKnkmD2uX0=" crossorigin="anonymous"></script>
+    <script src="http://localhost:3000/js/main.js"></script>
+<script defer src="http://localhost:3000/js/click-to-copy.js" crossorigin="anonymous"></script>
 <script src='http://localhost:3000/js/tabpane-persist.js'></script>
 
   </body>

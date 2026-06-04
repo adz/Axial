@@ -23,7 +23,7 @@ This page shows the `Check` surface for reusable, pure predicates. A check is a 
 - [`Check.fromPredicate`](./m-check-frompredicate.md): Builds a check from a predicate while preserving the successful value.
 - [`Check.fromTry`](./m-check-fromtry.md): Converts a .NET <code>Try*</code> tuple into a check result.
 - [`Check.fromChoice`](./m-check-fromchoice.md): Converts an F# <code>Choice</code> into a <code>Result</code>.
-- [`Check.okIfTrueTuple`](./m-check-okiftruetuple.md): Alias for <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-checkmodule.html">Check.fromTry</a> when tuple-form intent should be explicit.
+- [`Check.okIfTrueTuple`](./m-check-okiftruetuple.md): Alias for <a href="t-check.md">Check.fromTry</a> when tuple-form intent should be explicit.
 - [`Check.``not```](./m-check-not.md): Returns success when the supplied check fails.
 - [`Check.``and```](./m-check-and.md): Returns success when both checks succeed.
 - [`Check.``or```](./m-check-or.md): Returns success when either check succeeds.

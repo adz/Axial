@@ -17,7 +17,7 @@ Creates an empty diagnostics graph with no errors.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-diagnostics-1.html">Diagnostics</a>&lt;'error&gt;</span></code> | An empty <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-diagnostics-1.html">Diagnostics</a>. |
+| <code><span><a href="t-diagnostics.md">Diagnostics</a>&lt;'error&gt;</span></code> | An empty <a href="t-diagnostics.md">Diagnostics</a>. |
 
 ## Examples
 

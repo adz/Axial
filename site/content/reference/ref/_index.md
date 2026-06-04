@@ -9,12 +9,10 @@ This page shows the `Ref` surface for small pieces of shared mutable state insid
 ## Core type
 
 - [`Ref`](./t-ref.md):
- Represents a handle to a mutable reference that can be updated atomically.
-
 
 ## Module functions
 
-- [`Ref.make`](./m-ref-make.md): Creates a new <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-ref-1.html">Ref</a> with the initial value.
+- [`Ref.make`](./m-ref-make.md): Creates a new <a href="t-ref.md">Ref</a> with the initial value.
 - [`Ref.get`](./m-ref-get.md): Reads the current value of the reference.
 - [`Ref.set`](./m-ref-set.md): Sets the value of the reference to the specified value.
 - [`Ref.update`](./m-ref-update.md): Updates the value of the reference using the supplied function.

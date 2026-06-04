@@ -34,9 +34,9 @@ Fibers are the foundation of **Structured Concurrency** in FsFlow. Unlike "fire-
 
 The three primary operations for managing fibers are:
 
-- [**`Flow.fork`**]({{< relref "/reference/flow/m-flow-fork.md" >}}): starts a flow in the background and returns a `Fiber<'error, 'value>` handle.
-- [**`Flow.join`**]({{< relref "/reference/flow/m-flow-join.md" >}}): waits for the fiber and resumes with its successful value or typed failure.
-- [**`Flow.interrupt`**]({{< relref "/reference/flow/m-flow-interrupt.md" >}}): asks the fiber to stop, then waits for the child workflow to report its final `Exit`.
+- [**`Flow.fork`**]({{< relref "/reference/flow/concurrency/m-flow-fork.md" >}}): starts a flow in the background and returns a `Fiber<'error, 'value>` handle.
+- [**`Flow.join`**]({{< relref "/reference/flow/concurrency/m-flow-join.md" >}}): waits for the fiber and resumes with its successful value or typed failure.
+- [**`Flow.interrupt`**]({{< relref "/reference/flow/concurrency/m-flow-interrupt.md" >}}): asks the fiber to stop, then waits for the child workflow to report its final `Exit`.
 - `Fiber.dump`: returns a diagnostic snapshot of the fiber id, parent id, start time, and current status.
 
 ## Why Fibers?

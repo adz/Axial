@@ -17,7 +17,7 @@ Maps a unit error into the supplied application error value.
 | Name | Type | Description |
 | --- | --- | --- |
 | `error` | <code>'error</code> | The domain error of type <code>&#39;error</code> to return on failure. |
-| `result` | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html">Check</a>&lt;'value&gt;</span></code> | The source <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html">Check</a>. |
+| `result` | <code><span><a href="t-check.md">Check</a>&lt;'value&gt;</span></code> | The source <a href="t-check.md">Check</a>. |
 
 ## Returns
 

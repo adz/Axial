@@ -59,7 +59,7 @@ let acquireRequestCache =
 ```
 
 The returned resource can be passed to later subflows. It is not released when the acquiring expression ends; it is
-released when the surrounding `RunSynchronously or ToTask` or `Flow.provide` scope closes.
+released when the surrounding execution scope or `Flow.provide` scope closes.
 
 ## Layer Resources
 
@@ -86,7 +86,7 @@ Flow.addFinalizer(fun cancellationToken ->
 
 ## Root Scope
 
-The root scope is owned by `RunSynchronously or ToTask` or `Flow.provide`. Most application code should not create a scope directly. Use
+The root scope is owned by the execution boundary or `Flow.provide`. Most application code should not create a scope directly. Use
 `Flow.acquireRelease`, `Layer.acquireRelease`, and the finalizer helpers first. Use `Flow.Runtime.scope` only for advanced
 helpers that need direct access to the scope object.
 

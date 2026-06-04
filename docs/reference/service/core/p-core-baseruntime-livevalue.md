@@ -16,4 +16,4 @@ Creates the standard live base runtime as an explicit service bundle.
 
 | Type | Description |
 | --- | --- |
-| <code><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-services-core-baseruntime.html">BaseRuntime</a></code> |  |
+| <code><a href="t-core-baseruntime.md">BaseRuntime</a></code> |  |

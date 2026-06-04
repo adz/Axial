@@ -4,7 +4,7 @@ linkTitle: "okIfTrueTuple"
 weight: 2203
 ---
 
-Alias for <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-checkmodule.html">Check.fromTry</a> when tuple-form intent should be explicit.
+Alias for <a href="t-check.md">Check.fromTry</a> when tuple-form intent should be explicit.
 
 ## Signature
 
@@ -23,7 +23,7 @@ Alias for <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-checkmod
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html">Check</a>&lt;'value&gt;</span></code> | A <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html">Check</a> containing the value when the flag is true; otherwise, an Error with unit. |
+| <code><span><a href="t-check.md">Check</a>&lt;'value&gt;</span></code> | A <a href="t-check.md">Check</a> containing the value when the flag is true; otherwise, an Error with unit. |
 
 ## Examples
 

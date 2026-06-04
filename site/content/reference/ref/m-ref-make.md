@@ -5,7 +5,7 @@ weight: 2100
 type: docs
 ---
 
-Creates a new <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-ref-1.html">Ref</a> with the initial value.
+Creates a new <a href="t-ref.md">Ref</a> with the initial value.
 
 ## Signature
 
@@ -23,7 +23,7 @@ Creates a new <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-ref-
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'none,&#32;<span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-ref-1.html">Ref</a>&lt;'T&gt;</span></span>&gt;</span></code> | A flow that creates and returns the reference. |
+| <code><span><a href="../flow/t-flow.md">Flow</a>&lt;<span>'env,&#32;'none,&#32;<span><a href="t-ref.md">Ref</a>&lt;'T&gt;</span></span>&gt;</span></code> | A flow that creates and returns the reference. |
 
 ## Examples
 

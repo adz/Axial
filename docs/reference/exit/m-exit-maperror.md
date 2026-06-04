@@ -17,10 +17,10 @@ Transforms the error value of a failed exit outcome using the provided function.
 | Name | Type | Description |
 | --- | --- | --- |
 | `mapper` | <code><span>'e&#32;->&#32;'f</span></code> | The function to transform the error value. |
-| `exit` | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-exit-2.html">Exit</a>&lt;<span>'v,&#32;'e</span>&gt;</span></code> | The exit outcome to transform. |
+| `exit` | <code><span><a href="t-exit.md">Exit</a>&lt;<span>'v,&#32;'e</span>&gt;</span></code> | The exit outcome to transform. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-exit-2.html">Exit</a>&lt;<span>'v,&#32;'f</span>&gt;</span></code> | A new exit outcome with the transformed error value. |
+| <code><span><a href="t-exit.md">Exit</a>&lt;<span>'v,&#32;'f</span>&gt;</span></code> | A new exit outcome with the transformed error value. |

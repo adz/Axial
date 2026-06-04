@@ -17,14 +17,14 @@ Returns success when both checks succeed.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `left` | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html">Check</a>&lt;'left&gt;</span></code> | The first check. |
-| `right` | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html">Check</a>&lt;'right&gt;</span></code> | The second check. |
+| `left` | <code><span><a href="t-check.md">Check</a>&lt;'left&gt;</span></code> | The first check. |
+| `right` | <code><span><a href="t-check.md">Check</a>&lt;'right&gt;</span></code> | The second check. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html">Check</a>&lt;unit&gt;</span></code> | A <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html">Check</a> that succeeds only if both inputs succeed. |
+| <code><span><a href="t-check.md">Check</a>&lt;unit&gt;</span></code> | A <a href="t-check.md">Check</a> that succeeds only if both inputs succeed. |
 
 ## Remarks
 

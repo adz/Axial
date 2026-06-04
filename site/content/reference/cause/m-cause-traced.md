@@ -18,10 +18,10 @@ Attaches diagnostic trace text to a cause.
 | Name | Type | Description |
 | --- | --- | --- |
 | `trace` | <code>string</code> |  |
-| `cause` | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-cause-1.html">Cause</a>&lt;'error&gt;</span></code> |  |
+| `cause` | <code><span><a href="t-cause.md">Cause</a>&lt;'error&gt;</span></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-cause-1.html">Cause</a>&lt;'error&gt;</span></code> |  |
+| <code><span><a href="t-cause.md">Cause</a>&lt;'error&gt;</span></code> |  |

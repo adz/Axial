@@ -22,7 +22,7 @@ Returns the sequence when it is not empty.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html">Check</a>&lt;<span>'a&#32;seq</span>&gt;</span></code> | A <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html">Check</a> containing the non-empty sequence; otherwise, an Error with unit. |
+| <code><span><a href="t-check.md">Check</a>&lt;<span>'a&#32;seq</span>&gt;</span></code> | A <a href="t-check.md">Check</a> containing the non-empty sequence; otherwise, an Error with unit. |
 
 ## Examples
 

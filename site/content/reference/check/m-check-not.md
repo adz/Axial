@@ -17,13 +17,13 @@ Returns success when the supplied check fails.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `check` | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html">Check</a>&lt;'value&gt;</span></code> | The source <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html">Check</a> to invert. |
+| `check` | <code><span><a href="t-check.md">Check</a>&lt;'value&gt;</span></code> | The source <a href="t-check.md">Check</a> to invert. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html">Check</a>&lt;unit&gt;</span></code> | A <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-check-1.html">Check</a> that succeeds if the input fails; otherwise, an Error with unit. |
+| <code><span><a href="t-check.md">Check</a>&lt;unit&gt;</span></code> | A <a href="t-check.md">Check</a> that succeeds if the input fails; otherwise, an Error with unit. |
 
 ## Remarks
 

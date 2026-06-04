@@ -17,13 +17,13 @@ Maps the successful value of a validation.
 | Name | Type | Description |
 | --- | --- | --- |
 | `mapper` | <code><span>'value&#32;->&#32;'next</span></code> | A function of type <code>&#39;value -&gt; &#39;next</code>. |
-| `validation` | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> | The source <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html">Validation</a>. |
+| `validation` | <code><span><a href="t-validation.md">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> | The source <a href="t-validation.md">Validation</a>. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html">Validation</a>&lt;<span>'next,&#32;'error</span>&gt;</span></code> | A validation with the transformed success value. |
+| <code><span><a href="t-validation.md">Validation</a>&lt;<span>'next,&#32;'error</span>&gt;</span></code> | A validation with the transformed success value. |
 
 ## Examples
 

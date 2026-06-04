@@ -9,8 +9,6 @@ This page shows the `Cause<'error>` type, which distinguishes expected domain fa
 ## Core type
 
 - [`Cause`](./t-cause.md):
- Represents the cause of a failed workflow.
-
 
 ## Module functions
 

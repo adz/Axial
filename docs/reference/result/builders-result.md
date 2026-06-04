@@ -18,7 +18,7 @@ weight: 2000
 
 | Type | Description |
 | --- | --- |
-| <code><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-resultbuilder.html">ResultBuilder</a></code> | A <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-resultbuilder.html">ResultBuilder</a> instance. |
+| <code><a href="builders-result.md">ResultBuilder</a></code> | A <a href="builders-result.md">ResultBuilder</a> instance. |
 
 ## Remarks
 

@@ -8,18 +8,16 @@ This page shows the `Validation<'value, 'error>` surface for accumulating severa
 
 ## Core type
 
-- [`Validation`](./t-validation.md):
- An accumulating validation result that keeps the structured diagnostics graph visible.
-
+- [`Validation`](./t-validation.md):  Helpers for accumulating validation results with mergeable diagnostics.
 
 ## Module functions
 
-- [`Validation.toResult`](./m-validation-toresult.md): Converts a <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html">Validation</a> into a standard <a href="https://learn.microsoft.com/dotnet/api/system.result-2">Result</a>.
+- [`Validation.toResult`](./m-validation-toresult.md): Converts a <a href="t-validation.md">Validation</a> into a standard <a href="https://learn.microsoft.com/dotnet/api/system.result-2">Result</a>.
 - [`Validation.ok`](./m-validation-ok.md): Creates a successful validation result.
 - [`Validation.error`](./m-validation-error.md): Creates a failing validation result with the provided diagnostics.
 - [`Validation.succeed`](./m-validation-succeed.md): Alias for <code>ok</code>.
 - [`Validation.fail`](./m-validation-fail.md): Alias for <code>error</code>.
-- [`Validation.fromResult`](./m-validation-fromresult.md): Lifts a standard <a href="https://learn.microsoft.com/dotnet/api/system.result-2">Result</a> into the <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-validation-2.html">Validation</a> context.
+- [`Validation.fromResult`](./m-validation-fromresult.md): Lifts a standard <a href="https://learn.microsoft.com/dotnet/api/system.result-2">Result</a> into the <a href="t-validation.md">Validation</a> context.
 - [`Validation.map`](./m-validation-map.md): Maps the successful value of a validation.
 - [`Validation.bind`](./m-validation-bind.md): Sequences a validation-producing continuation.
 - [`Validation.mapError`](./m-validation-maperror.md): Maps the error type of a validation graph.

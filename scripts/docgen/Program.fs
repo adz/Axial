@@ -6,6 +6,7 @@ open System.IO
 open System.Reflection
 open System.Collections.Generic
 open System.Net
+open System.Text.RegularExpressions
 
 type PageSpec = {
     OutPath: string list
@@ -37,6 +38,9 @@ let cleanName (name: string) =
 let sanitizeFilename (name: string) =
     name.Replace("`", "-").Replace("'", "-").Replace(" ", "-").Replace(".", "-").ToLower()
     |> (fun s -> s.Trim('-'))
+
+let formatterApiSlug (name: string) =
+    name.Replace("`", "-").Replace("'", "").Replace(".", "-").Replace("+", "-").ToLowerInvariant()
 
 let getPageName (id: string) =
     let kind = id.[0].ToString().ToLower()
@@ -147,7 +151,7 @@ let platformLabel (qualifiedName: string) =
     else
         None
 
-let renderMemberPage (weight: int) (m: ApiDocMember) =
+let renderMemberPage (rewriteHtml: string -> string) (weight: int) (m: ApiDocMember) =
     let fullName = logicalName m.Symbol
     let qualifiedName = cleanName fullName
     let shortName = cleanName m.Name
@@ -164,7 +168,7 @@ let renderMemberPage (weight: int) (m: ApiDocMember) =
         $"---\ntitle: \"{qualifiedName}\"\nlinkTitle: \"{linkTitle}\"\nweight: {weight}\n---\n\n"
     
     // Description
-    content <- content + m.Comment.Summary.HtmlText + "\n\n"
+    content <- content + rewriteHtml m.Comment.Summary.HtmlText + "\n\n"
 
     match platformLabel qualifiedName with
     | Some label ->
@@ -177,6 +181,7 @@ let renderMemberPage (weight: int) (m: ApiDocMember) =
     let usageHtml =
         m.UsageHtml.HtmlText
         |> qualifyUsageHtml usageName
+        |> rewriteHtml
 
     content <- content + "## Signature\n\n"
     content <- content + "<div class=\"fsdocs-usage\">\n" + usageHtml + "\n</div>\n\n"
@@ -188,10 +193,10 @@ let renderMemberPage (weight: int) (m: ApiDocMember) =
         for p in m.Parameters do
             let docs =
                 match p.ParameterDocs with
-                | Some html -> html.HtmlText
+                | Some html -> rewriteHtml html.HtmlText
                 | None -> ""
 
-            content <- content + $"| `{p.ParameterNameText}` | {p.ParameterType.HtmlText} | {docs} |\n"
+            content <- content + $"| `{p.ParameterNameText}` | {rewriteHtml p.ParameterType.HtmlText} | {docs} |\n"
         content <- content + "\n"
 
     content <- content + "## Returns\n\n"
@@ -199,24 +204,24 @@ let renderMemberPage (weight: int) (m: ApiDocMember) =
     content <- content + "| --- | --- |\n"
     let returnDocs =
         match m.ReturnInfo.ReturnDocs with
-        | Some html -> html.HtmlText
+        | Some html -> rewriteHtml html.HtmlText
         | None -> ""
 
     let returnType =
         match m.ReturnInfo.ReturnType with
-        | Some (_, html) -> html.HtmlText
+        | Some (_, html) -> rewriteHtml html.HtmlText
         | None -> "<code>unit</code>"
 
     content <- content + $"| {returnType} | {returnDocs} |\n\n"
 
     match m.Comment.Remarks with
-    | Some r -> content <- content + "## Remarks\n\n" + r.HtmlText + "\n\n"
+    | Some r -> content <- content + "## Remarks\n\n" + rewriteHtml r.HtmlText + "\n\n"
     | None -> ()
 
     if not m.Comment.Examples.IsEmpty then
         content <- content + "## Examples\n\n"
         for e in m.Comment.Examples do
-            content <- content + e.HtmlText + "\n\n"
+            content <- content + rewriteHtml e.HtmlText + "\n\n"
 
     match m.SourceLocation with
     | Some url -> content <- content + $"\n[Source]({url})\n\n"
@@ -224,7 +229,7 @@ let renderMemberPage (weight: int) (m: ApiDocMember) =
 
     content
 
-let renderEntityPage (weight: int) (e: ApiDocEntity) =
+let renderEntityPage (rewriteHtml: string -> string) (weight: int) (e: ApiDocEntity) =
     let fullName = safeFullName e.Symbol
     let qualifiedName = cleanName fullName
     let shortName = cleanName e.Name
@@ -243,7 +248,7 @@ let renderEntityPage (weight: int) (e: ApiDocEntity) =
             $"type {ent.DisplayName}{generics}"
         | _ -> $"type {shortName}"
 
-    content <- content + e.Comment.Summary.HtmlText + "\n\n"
+    content <- content + rewriteHtml e.Comment.Summary.HtmlText + "\n\n"
 
     content <- content + "## Signature\n\n"
     content <- content + "<div class=\"fsdocs-usage\">\n" + $"<code>{signature}</code>" + "\n</div>\n\n"
@@ -263,7 +268,7 @@ let renderEntityPage (weight: int) (e: ApiDocEntity) =
             content <- content + "| Case | Description |\n"
             content <- content + "| --- | --- |\n"
             for c in e.UnionCases do
-                let summary = c.Comment.Summary.HtmlText
+                let summary = rewriteHtml c.Comment.Summary.HtmlText
                 content <- content + $"| `{c.Name}` | {summary} |\n"
             content <- content + "\n"
 
@@ -272,19 +277,19 @@ let renderEntityPage (weight: int) (e: ApiDocEntity) =
             content <- content + "| Field | Description |\n"
             content <- content + "| --- | --- |\n"
             for f in e.RecordFields do
-                let summary = f.Comment.Summary.HtmlText
+                let summary = rewriteHtml f.Comment.Summary.HtmlText
                 content <- content + $"| `{f.Name}` | {summary} |\n"
             content <- content + "\n"
     | _ -> ()
 
     match e.Comment.Remarks with
-    | Some r -> content <- content + "## Remarks\n\n" + r.HtmlText + "\n\n"
+    | Some r -> content <- content + "## Remarks\n\n" + rewriteHtml r.HtmlText + "\n\n"
     | None -> ()
 
     if not e.Comment.Examples.IsEmpty then
         content <- content + "## Examples\n\n"
         for ex in e.Comment.Examples do
-            content <- content + ex.HtmlText + "\n\n"
+            content <- content + rewriteHtml ex.HtmlText + "\n\n"
     
     content
 
@@ -309,7 +314,7 @@ let pageSpecs = [
         OutPath = ["fiber"; "_index.md"]
         Title = "Fiber"
         Description = "Source-documented handle for running workflows."
-        Intro = "This page shows the `Fiber<'error, 'value>` handle used by FsFlow concurrency. A fiber represents a flow that has already been started in the background; it keeps the workflow's typed error and success values attached to the running work, plus diagnostic metadata such as fiber id, parent id, start time, and lifecycle status. The operations that create and consume fibers are still part of the [`Flow`](../flow/) API: use [`Flow.fork`](../flow/m-flow-fork/), [`Flow.join`](../flow/m-flow-join/), and [`Flow.interrupt`](../flow/m-flow-interrupt/) when a workflow needs explicit child execution. Prefer higher-level helpers such as `Flow.zipPar` or `Flow.race` when the code only needs parallel composition."
+        Intro = "This page shows the `Fiber<'error, 'value>` handle used by FsFlow concurrency. A fiber represents a flow that has already been started in the background; it keeps the workflow's typed error and success values attached to the running work, plus diagnostic metadata such as fiber id, parent id, start time, and lifecycle status. The operations that create and consume fibers are still part of the [`Flow`](../flow/) API: use [`Flow.fork`](../flow/concurrency/m-flow-fork.md), [`Flow.join`](../flow/concurrency/m-flow-join.md), and [`Flow.interrupt`](../flow/concurrency/m-flow-interrupt.md) when a workflow needs explicit child execution. Prefer higher-level helpers such as `Flow.zipPar` or `Flow.race` when the code only needs parallel composition."
         SymbolIds = [
             "Core types", ["T:FsFlow.Fiber`2"; "T:FsFlow.FiberId"; "T:FsFlow.FiberStatus"; "T:FsFlow.FiberMetadata"; "T:FsFlow.FiberDump"]
             "Module functions", ["M:FsFlow.Fiber.dump"]
@@ -331,7 +336,7 @@ let pageSpecs = [
         OutPath = ["exit"; "_index.md"]
         Title = "Exit"
         Description = "Documentation for the Exit workflow outcome."
-        Intro = "This page shows the `Exit<'value, 'error>` type, which represents the final outcome of an FsFlow execution. Every flow eventually resolves to either a success or a failure cause. Use the `Exit` module functions to transform outcomes without manually pattern matching at every boundary."
+        Intro = "This page shows the `Exit<'value, 'error>` type, which is FsFlow's name for `Result<'value, Cause<'error>>`. We name it `Exit` because it represents a completed workflow execution, not an ordinary domain result. Use the `Exit` module functions to transform completed outcomes without manually pattern matching at every boundary."
         SymbolIds = [
             "Core type", ["T:FsFlow.Exit`2"]
             "Module functions", ["M:FsFlow.Exit.map"; "M:FsFlow.Exit.bind"; "M:FsFlow.Exit.mapError"; "M:FsFlow.Exit.mapBoth"; "M:FsFlow.Exit.fromResult"; "M:FsFlow.Exit.toResult"]
@@ -422,7 +427,7 @@ let pageSpecs = [
         SymbolIds = [
             "Core type", ["T:Check"]
             "Structured errors", ["T:FsFlow.CheckError"; "T:FsFlow.CardinalityFailure"]
-            "Module functions", ["M:FsFlow.Check.fromPredicate"; "M:FsFlow.Check.fromTry"; "M:FsFlow.Check.fromChoice"; "M:FsFlow.Check.okIfTrueTuple"; "M:FsFlow.Check.not"; "M:FsFlow.Check.and"; "M:FsFlow.Check.or"; "M:FsFlow.Check.all"; "M:FsFlow.Check.any"; "M:FsFlow.Check.okIf"; "M:FsFlow.Check.failIf"; "M:FsFlow.Check.okIfSome"; "M:FsFlow.Check.okIfNone"; "M:FsFlow.Check.failIfSome"; "M:FsFlow.Check.failIfNone"; "M:FsFlow.Check.okIfValueSome"; "M:FsFlow.Check.okIfValueNone"; "M:FsFlow.Check.failIfValueSome"; "M:FsFlow.Check.failIfValueNone"; "M:FsFlow.Check.okIfNotNullable"; "M:FsFlow.Check.okIfNullable"; "M:FsFlow.Check.failIfNotNullable"; "M:FsFlow.Check.failIfNullable"; "M:FsFlow.Check.notNullable"; "M:FsFlow.Check.okIfNotNull"; "M:FsFlow.Check.okIfNull"; "M:FsFlow.Check.failIfNotNull"; "M:FsFlow.Check.failIfNull"; "M:FsFlow.Check.okIfNotEmpty"; "M:FsFlow.Check.okIfEmpty"; "M:FsFlow.Check.failIfNotEmpty"; "M:FsFlow.Check.failIfEmpty"; "M:FsFlow.Check.okIfExactlyOne"; "M:FsFlow.Check.failIfExactlyOne"; "M:FsFlow.Check.okIfAtMostOne"; "M:FsFlow.Check.failIfAtMostOne"; "M:FsFlow.Check.okIfCountIs"; "M:FsFlow.Check.okIfContains"; "M:FsFlow.Check.okIfEqual"; "M:FsFlow.Check.okIfNotEqual"; "M:FsFlow.Check.failIfEqual"; "M:FsFlow.Check.failIfNotEqual"; "M:FsFlow.Check.okIfNonEmptyStr"; "M:FsFlow.Check.okIfEmptyStr"; "M:FsFlow.Check.failIfNonEmptyStr"; "M:FsFlow.Check.failIfEmptyStr"; "M:FsFlow.Check.okIfNotBlank"; "M:FsFlow.Check.notBlank"; "M:FsFlow.Check.okIfBlank"; "M:FsFlow.Check.blank"; "M:FsFlow.Check.failIfNotBlank"; "M:FsFlow.Check.failIfBlank"; "M:FsFlow.Check.orError"; "M:FsFlow.Check.orErrorWith"; "M:FsFlow.Check.notNull"; "M:FsFlow.Check.notEmpty"; "M:FsFlow.Check.equal"; "M:FsFlow.Check.notEqual"]
+            "Module functions", ["M:FsFlow.Check.fromPredicate"; "M:FsFlow.Check.fromTry"; "M:FsFlow.Check.fromChoice"; "M:FsFlow.Check.okIfTrueTuple"; "M:FsFlow.CheckModule.not``1"; "M:FsFlow.CheckModule.and``2"; "M:FsFlow.CheckModule.or``2"; "M:FsFlow.Check.all"; "M:FsFlow.Check.any"; "M:FsFlow.Check.okIf"; "M:FsFlow.Check.failIf"; "M:FsFlow.Check.okIfSome"; "M:FsFlow.Check.okIfNone"; "M:FsFlow.Check.failIfSome"; "M:FsFlow.Check.failIfNone"; "M:FsFlow.Check.okIfValueSome"; "M:FsFlow.Check.okIfValueNone"; "M:FsFlow.Check.failIfValueSome"; "M:FsFlow.Check.failIfValueNone"; "M:FsFlow.Check.okIfNotNullable"; "M:FsFlow.Check.okIfNullable"; "M:FsFlow.Check.failIfNotNullable"; "M:FsFlow.Check.failIfNullable"; "M:FsFlow.Check.notNullable"; "M:FsFlow.Check.okIfNotNull"; "M:FsFlow.Check.okIfNull"; "M:FsFlow.Check.failIfNotNull"; "M:FsFlow.Check.failIfNull"; "M:FsFlow.Check.okIfNotEmpty"; "M:FsFlow.Check.okIfEmpty"; "M:FsFlow.Check.failIfNotEmpty"; "M:FsFlow.Check.failIfEmpty"; "M:FsFlow.Check.okIfExactlyOne"; "M:FsFlow.Check.failIfExactlyOne"; "M:FsFlow.Check.okIfAtMostOne"; "M:FsFlow.Check.failIfAtMostOne"; "M:FsFlow.Check.okIfCountIs"; "M:FsFlow.Check.okIfContains"; "M:FsFlow.Check.okIfEqual"; "M:FsFlow.Check.okIfNotEqual"; "M:FsFlow.Check.failIfEqual"; "M:FsFlow.Check.failIfNotEqual"; "M:FsFlow.Check.okIfNonEmptyStr"; "M:FsFlow.Check.okIfEmptyStr"; "M:FsFlow.Check.failIfNonEmptyStr"; "M:FsFlow.Check.failIfEmptyStr"; "M:FsFlow.Check.okIfNotBlank"; "M:FsFlow.Check.notBlank"; "M:FsFlow.Check.okIfBlank"; "M:FsFlow.Check.blank"; "M:FsFlow.Check.failIfNotBlank"; "M:FsFlow.Check.failIfBlank"; "M:FsFlow.Check.orError"; "M:FsFlow.Check.orErrorWith"; "M:FsFlow.Check.notNull"; "M:FsFlow.Check.notEmpty"; "M:FsFlow.Check.equal"; "M:FsFlow.Check.notEqual"]
         ]
         Alias = None
     }
@@ -669,6 +674,218 @@ let pageSpecs = [
     }
 ]
 
+let flowSectionDirectories =
+    dict [
+        "Fiber operations", ("concurrency", "Forking, joining, and interrupting child workflows.")
+        "Execution", ("execution", "Start a flow and choose the handle that matches the host boundary.")
+        "Module functions", ("composition", "Construct, transform, compose, and adapt workflows.")
+        "Scoped resources", ("resources", "Register cleanup and scope-owned resources inside a flow execution.")
+        "Parallel orchestration", ("concurrency", "Run workflows concurrently or race them when independent work can overlap.")
+        "Scheduling", ("scheduling", "Attach retry and repeat policies to an existing workflow.")
+    ]
+
+let groupedFlowEnvironmentMembers =
+    set [
+        "M:FsFlow.Flow.env"
+        "M:FsFlow.Flow.read"
+        "M:FsFlow.Flow.localEnv"
+        "M:FsFlow.Flow.provide"
+    ]
+
+let groupedFlowConstructionMembers =
+    set [
+        "M:FsFlow.Flow.ok"
+        "M:FsFlow.Flow.error"
+        "M:FsFlow.Flow.succeed"
+        "M:FsFlow.Flow.value"
+        "M:FsFlow.Flow.fail"
+        "M:FsFlow.Flow.fromResult"
+        "M:FsFlow.Flow.fromOption"
+        "M:FsFlow.Flow.fromValueOption"
+        "M:FsFlow.Flow.fromAsync"
+        "M:FsFlow.Flow.fromTask"
+        "M:FsFlow.Flow.fromValueTask"
+        "M:FsFlow.Flow.orElseFlow"
+        "M:FsFlow.Flow.delay"
+    ]
+
+let sectionDirectory (spec: PageSpec) (sectionTitle: string) (id: string) =
+    match spec.OutPath, sectionTitle with
+    | ["flow"; "_index.md"], "Core type" -> None
+    | ["flow"; "_index.md"], "Module functions" when groupedFlowEnvironmentMembers.Contains id -> Some "environment"
+    | ["flow"; "_index.md"], "Module functions" when groupedFlowConstructionMembers.Contains id -> Some "construction"
+    | ["flow"; "_index.md"], "Module functions" -> Some "composition"
+    | ["flow"; "_index.md"], _ when flowSectionDirectories.ContainsKey sectionTitle ->
+        let dir, _ = flowSectionDirectories[sectionTitle]
+        Some dir
+    | _ -> None
+
+let sectionTitleForDirectory = function
+    | "construction" -> "Construction"
+    | "environment" -> "Environment"
+    | "composition" -> "Composition"
+    | "execution" -> "Execution"
+    | "resources" -> "Resources"
+    | "concurrency" -> "Concurrency"
+    | "scheduling" -> "Scheduling"
+    | other -> other
+
+let sectionIntroForDirectory = function
+    | "construction" -> "This page shows the helpers that create or adapt flows before you start composing them with domain logic."
+    | "environment" -> "This page shows the helpers that read, reshape, and provide explicit environments for flows."
+    | "composition" -> "This page shows the everyday Flow combinators for mapping, binding, zipping, and otherwise shaping workflow logic."
+    | "execution" -> "This page shows the execution members that turn a cold flow description into a running handle or a blocking exit."
+    | "resources" -> "This page shows the Flow helpers that register cleanup and manage scoped resources during execution."
+    | "concurrency" -> "This page shows the Flow helpers that fork work, coordinate fibers, and run independent workflows in parallel."
+    | "scheduling" -> "This page shows the Flow helpers that apply retry and repeat schedules."
+    | _ -> "This page shows the members in this Flow subgroup."
+
+let finalSegment (name: string) =
+    let parts = name.Split('.')
+    parts[parts.Length - 1]
+
+let candidateNamesForMember (m: ApiDocMember) =
+    let qualifier = memberQualifier m
+    let rawNames =
+        match m.Symbol with
+        | :? FSharpMemberOrFunctionOrValue as mfv ->
+            [
+                mfv.DisplayName
+                mfv.CompiledName
+                if String.IsNullOrEmpty qualifier then mfv.DisplayName else qualifier + "." + mfv.DisplayName
+                if String.IsNullOrEmpty qualifier then mfv.CompiledName else qualifier + "." + mfv.CompiledName
+            ]
+        | _ -> []
+
+    [
+        cleanName (logicalName m.Symbol)
+        cleanName (safeFullName m.Symbol)
+        if String.IsNullOrEmpty qualifier then cleanName m.Name else cleanName (qualifier + "." + m.Name)
+        cleanName m.Name
+        yield!
+            rawNames
+            |> List.map cleanName
+    ]
+    |> List.distinct
+
+let candidateNamesForEntity (e: ApiDocEntity) =
+    [ cleanName (safeFullName e.Symbol); cleanName e.Name ]
+    |> List.distinct
+
+let matchScore (idNorm: string) (candidate: string) =
+    if String.IsNullOrEmpty candidate then 0
+    elif candidate = idNorm then 1000
+    elif candidate.EndsWith("." + idNorm, StringComparison.Ordinal) then 850
+    elif idNorm.EndsWith("." + candidate, StringComparison.Ordinal) then
+        if finalSegment candidate = finalSegment idNorm then 400 else 150
+    elif finalSegment candidate = finalSegment idNorm then 75
+    else 0
+
+type ResolvedSymbol =
+    | ResolvedMember of ApiDocMember
+    | ResolvedEntity of ApiDocEntity
+
+let matchesReservedCheckMember (rawId: string) (m: ApiDocMember) =
+    let wants =
+        if rawId.StartsWith("FsFlow.CheckModule.not", StringComparison.Ordinal) then Some "not"
+        elif rawId.StartsWith("FsFlow.CheckModule.and", StringComparison.Ordinal) then Some "and"
+        elif rawId.StartsWith("FsFlow.CheckModule.or", StringComparison.Ordinal) then Some "or"
+        else None
+
+    match wants, m.Symbol with
+    | Some wanted, (:? FSharpMemberOrFunctionOrValue as mfv) ->
+        let enclosing =
+            match mfv.DeclaringEntity with
+            | Some ent -> cleanName ent.FullName
+            | None -> ""
+
+        if enclosing <> "Check" then
+            false
+        else
+            let rawCandidates =
+                [
+                    m.Name
+                    mfv.DisplayName
+                    mfv.CompiledName
+                    logicalName m.Symbol
+                    safeFullName m.Symbol
+                ]
+                |> List.filter (String.IsNullOrWhiteSpace >> not)
+                |> List.map (fun value -> value.ToLowerInvariant())
+
+            rawCandidates
+            |> List.exists (fun candidate ->
+                candidate = wanted
+                || candidate.EndsWith("." + wanted, StringComparison.Ordinal)
+                || candidate.Contains("." + wanted + "`", StringComparison.Ordinal)
+                || candidate.Contains("." + wanted + "``", StringComparison.Ordinal))
+    | _ -> false
+
+let findBestSymbol (allEntities: ApiDocEntity list) (id: string) =
+    let rawId = id.Substring(2).Split('(').[0]
+    let idNorm = cleanName rawId
+
+    let reservedCheckMatch =
+        allEntities
+        |> Seq.collect (fun e -> e.AllMembers)
+        |> Seq.tryFind (matchesReservedCheckMember rawId)
+        |> Option.map ResolvedMember
+
+    match reservedCheckMatch with
+    | Some matchResult -> Some matchResult
+    | None ->
+        let candidates =
+            seq {
+                for e in allEntities do
+                    let entityScore =
+                        candidateNamesForEntity e
+                        |> List.map (matchScore idNorm)
+                        |> List.max
+
+                    if id[0] = 'T' && entityScore > 0 then
+                        yield entityScore, ResolvedEntity e
+
+                    for m in e.AllMembers do
+                        let memberScore =
+                            candidateNamesForMember m
+                            |> List.map (matchScore idNorm)
+                            |> List.max
+
+                        if memberScore > 0 then
+                            yield memberScore, ResolvedMember m
+            }
+            |> Seq.sortByDescending fst
+            |> Seq.toList
+
+        candidates
+        |> List.tryHead
+        |> Option.map snd
+
+let relativeLinkFrom (fromFile: string) (toFile: string) =
+    Path.GetRelativePath(Path.GetDirectoryName(fromFile), toFile).Replace("\\", "/")
+
+let rewriteApiDocHtml (slugMap: IDictionary<string, string>) (filePath: string) (content: string) =
+    let unresolved = ResizeArray<string>()
+
+    let rewritten =
+        Regex.Replace(
+            content,
+            "https://adz\\.github\\.io/FsFlow/reference/FsFlow/([a-z0-9\\-]+)\\.html",
+            MatchEvaluator(fun m ->
+                let slug = m.Groups[1].Value
+                match slugMap.TryGetValue slug with
+                | true, target ->
+                    relativeLinkFrom filePath target
+                | _ ->
+                    unresolved.Add slug
+                    m.Value))
+
+    if unresolved.Count > 0 then
+        let unique = unresolved |> Seq.distinct |> String.concat ", "
+        printfn "Warning: unresolved generated reference links in %s -> %s" filePath unique
+
+    rewritten
+
 let rec collectAllEntities (e: ApiDocEntity) =
     seq {
         yield e
@@ -756,6 +973,71 @@ let main argv =
         |> Seq.map (fun ei -> ei.Entity)
         |> Seq.collect collectAllEntities
         |> Seq.toList
+
+    let referenceTargetMap = Dictionary<string, string>()
+
+    let registerReferenceTarget (symbolFullName: string) (absolutePath: string) =
+        if not (String.IsNullOrWhiteSpace symbolFullName) then
+            referenceTargetMap[formatterApiSlug symbolFullName] <- absolutePath
+
+    let registerReferenceId (id: string) (absolutePath: string) =
+        let rawName = id.Substring(2).Split('(').[0]
+        referenceTargetMap[formatterApiSlug rawName] <- absolutePath
+
+    for spec in pageSpecs do
+        let outPath = Path.Combine(outRoot, Path.Combine(Array.ofList spec.OutPath))
+
+        for sectionTitle, ids in spec.SymbolIds do
+            for id in ids do
+                let targetDir =
+                    match sectionDirectory spec sectionTitle id with
+                    | Some dir -> Path.Combine(Path.GetDirectoryName(outPath), dir)
+                    | None -> Path.GetDirectoryName outPath
+
+                let pagePath = Path.Combine(targetDir, getPageName id)
+
+                match findBestSymbol allEntities id with
+                | Some (ResolvedMember m) ->
+                    registerReferenceId id pagePath
+                    registerReferenceTarget (safeFullName m.Symbol) pagePath
+                    registerReferenceTarget (logicalName m.Symbol) pagePath
+                | Some (ResolvedEntity e) ->
+                    registerReferenceId id pagePath
+                    registerReferenceTarget (safeFullName e.Symbol) pagePath
+                | _ -> ()
+
+    let canonicalAliases =
+        dict [
+            formatterApiSlug "FsFlow.CheckModule", Path.Combine(outRoot, "check", "_index.md")
+            formatterApiSlug "FsFlow.FlowModule", Path.Combine(outRoot, "flow", "_index.md")
+            formatterApiSlug "FsFlow.LayerBuilder", Path.Combine(outRoot, "layer", "p-layer.md")
+            formatterApiSlug "FsFlow.FlowBuilder", Path.Combine(outRoot, "flow", "builders-flow.md")
+            formatterApiSlug "FsFlow.ValidateBuilder", Path.Combine(outRoot, "validation", "builders-validate.md")
+            formatterApiSlug "FsFlow.ResultBuilder", Path.Combine(outRoot, "result", "builders-result.md")
+            formatterApiSlug "FsFlow.StmBuilder", Path.Combine(outRoot, "stm", "p-stm-stm.md")
+            formatterApiSlug "FsFlow.Check`1", Path.Combine(outRoot, "check", "t-check.md")
+            formatterApiSlug "FsFlow.Path", Path.Combine(outRoot, "diagnostics", "t-path.md")
+            formatterApiSlug "FsFlow.LogLevel", Path.Combine(outRoot, "service", "core", "_index.md")
+            formatterApiSlug "FsFlow.RetryPolicy`1", Path.Combine(outRoot, "flow", "runtime", "_index.md")
+            formatterApiSlug "FsFlow.Never", Path.Combine(outRoot, "layer", "_index.md")
+            formatterApiSlug "FsFlow.Services.Core.Clock", Path.Combine(outRoot, "service", "core", "_index.md")
+            formatterApiSlug "FsFlow.Services.Core.Log", Path.Combine(outRoot, "service", "core", "_index.md")
+            formatterApiSlug "FsFlow.Services.Core.Random", Path.Combine(outRoot, "service", "core", "_index.md")
+            formatterApiSlug "FsFlow.Services.Core.Guid", Path.Combine(outRoot, "service", "core", "_index.md")
+            formatterApiSlug "FsFlow.Services.Core.EnvironmentVariables", Path.Combine(outRoot, "service", "core", "_index.md")
+            formatterApiSlug "FsFlow.Services.Core.BaseRuntime", Path.Combine(outRoot, "service", "core", "_index.md")
+            formatterApiSlug "FsFlow.Services.Console.Console", Path.Combine(outRoot, "service", "console", "_index.md")
+            formatterApiSlug "FsFlow.Services.FileSystem.FileSystem", Path.Combine(outRoot, "service", "filesystem", "_index.md")
+            formatterApiSlug "FsFlow.Services.FileSystem.FileSystemError", Path.Combine(outRoot, "service", "filesystem", "_index.md")
+            formatterApiSlug "FsFlow.Services.Http.Http", Path.Combine(outRoot, "service", "http", "_index.md")
+            formatterApiSlug "FsFlow.Services.Process.Process", Path.Combine(outRoot, "service", "process", "_index.md")
+        ]
+
+    for KeyValue(slug, path) in canonicalAliases do
+        if not (referenceTargetMap.ContainsKey slug) then
+            referenceTargetMap[slug] <- path
+
+    let sectionMembers = Dictionary<string, ResizeArray<string * string * string>>()
     
     // Debug: print all entity names
     // for e in allEntities do printfn "Entity: %s" (safeFullName e.Symbol)
@@ -770,47 +1052,88 @@ let main argv =
         for sectionOrdinal, (sectionTitle, ids) in spec.SymbolIds |> List.indexed do
             indexContent <- indexContent + $"## {sectionTitle}\n\n"
             for itemOrdinal, id in ids |> List.indexed do
-                let idNorm = normalize (id.Substring(2))
-                
-                let foundFinal = 
-                    allEntities |> Seq.tryPick (fun e ->
-                        let eNorm = normalize (safeFullName e.Symbol)
-                        
-                        if id.[0] = 'T' && (eNorm = idNorm || eNorm.EndsWith("." + idNorm) || idNorm.EndsWith("." + eNorm)) then
-                            Some (e :> obj)
-                        else
-                            e.AllMembers |> Seq.tryPick (fun m ->
-                                let mNorm = normalize (logicalName m.Symbol)
-                                if mNorm = idNorm || mNorm.EndsWith("." + idNorm) || idNorm.EndsWith("." + mNorm) then
-                                    Some (m :> obj)
-                                else None
-                            )
-                    )
+                let targetDir =
+                    match sectionDirectory spec sectionTitle id with
+                    | Some dir ->
+                        let dirPath = Path.Combine(Path.GetDirectoryName(outPath), dir)
+                        Directory.CreateDirectory dirPath |> ignore
+                        dirPath
+                    | None ->
+                        Path.GetDirectoryName outPath
 
-                match foundFinal with
-                | Some (:? ApiDocMember as m) ->
+                match findBestSymbol allEntities id with
+                | Some (ResolvedMember m) ->
                     let pageName = getPageName id
                     let qualifier = memberQualifier m
                     let linkText = if String.IsNullOrEmpty qualifier then m.Name else qualifier + "." + m.Name
-                    indexContent <- indexContent + $"- [`{linkText}`](./{pageName}): {m.Comment.Summary.HtmlText}\n"
-                    let memberPageContent = renderMemberPage (childPageWeight id sectionOrdinal itemOrdinal) m
-                    File.WriteAllText(Path.Combine(Path.GetDirectoryName(outPath), pageName), normalizeGeneratedMarkdown memberPageContent)
+                    let pagePath = Path.Combine(targetDir, pageName)
+                    let relativeLink = relativeLinkFrom outPath pagePath
+                    let rewriteHtml = rewriteApiDocHtml referenceTargetMap pagePath
+                    let summaryHtml = rewriteHtml m.Comment.Summary.HtmlText
+                    indexContent <- indexContent + $"- [`{linkText}`](./{relativeLink}): {summaryHtml}\n"
+                    let memberPageContent = renderMemberPage rewriteHtml (childPageWeight id sectionOrdinal itemOrdinal) m
+                    File.WriteAllText(pagePath, normalizeGeneratedMarkdown memberPageContent)
+
+                    match sectionDirectory spec sectionTitle id with
+                    | Some dir ->
+                        let key = Path.Combine(Path.GetDirectoryName(outPath), dir, "_index.md")
+                        let items =
+                            match sectionMembers.TryGetValue key with
+                            | true, existing -> existing
+                            | _ ->
+                                let created = ResizeArray()
+                                sectionMembers[key] <- created
+                                created
+
+                        items.Add(linkText, pageName, summaryHtml)
+                    | None -> ()
                     
                     match spec.Alias with
                     | Some a -> File.WriteAllText(Path.Combine(Path.GetDirectoryName(outPath), a), normalizeGeneratedMarkdown memberPageContent)
                     | None -> ()
 
-                | Some (:? ApiDocEntity as e) ->
+                | Some (ResolvedEntity e) ->
                     let pageName = getPageName id
                     let eFullName = safeFullName e.Symbol
                     let linkText = cleanName eFullName
-                    indexContent <- indexContent + $"- [`{linkText}`](./{pageName}): {e.Comment.Summary.HtmlText}\n"
-                    let entityPageContent = renderEntityPage (childPageWeight id sectionOrdinal itemOrdinal) e
-                    File.WriteAllText(Path.Combine(Path.GetDirectoryName(outPath), pageName), normalizeGeneratedMarkdown entityPageContent)
+                    let pagePath = Path.Combine(targetDir, pageName)
+                    let relativeLink = relativeLinkFrom outPath pagePath
+                    let rewriteHtml = rewriteApiDocHtml referenceTargetMap pagePath
+                    let summaryHtml = rewriteHtml e.Comment.Summary.HtmlText
+                    indexContent <- indexContent + $"- [`{linkText}`](./{relativeLink}): {summaryHtml}\n"
+                    let entityPageContent = renderEntityPage rewriteHtml (childPageWeight id sectionOrdinal itemOrdinal) e
+                    File.WriteAllText(pagePath, normalizeGeneratedMarkdown entityPageContent)
+
+                    match sectionDirectory spec sectionTitle id with
+                    | Some dir ->
+                        let key = Path.Combine(Path.GetDirectoryName(outPath), dir, "_index.md")
+                        let items =
+                            match sectionMembers.TryGetValue key with
+                            | true, existing -> existing
+                            | _ ->
+                                let created = ResizeArray()
+                                sectionMembers[key] <- created
+                                created
+
+                        items.Add(linkText, pageName, summaryHtml)
+                    | None -> ()
                 | _ -> 
                     printfn "Warning: symbol not found: %s" id
             indexContent <- indexContent + "\n"
             
         File.WriteAllText(outPath, normalizeGeneratedMarkdown indexContent)
+
+    for KeyValue(indexPath, members) in sectionMembers do
+        let dirName = Path.GetFileName(Path.GetDirectoryName indexPath)
+        let title = sectionTitleForDirectory dirName
+        let intro = sectionIntroForDirectory dirName
+
+        let mutable content =
+            $"---\ntitle: \"{title}\"\n---\n\n{intro}\n\n"
+
+        for linkText, pageName, summary in members do
+            content <- content + $"- [`{linkText}`](./{pageName}): {summary}\n"
+
+        File.WriteAllText(indexPath, normalizeGeneratedMarkdown content)
 
     0

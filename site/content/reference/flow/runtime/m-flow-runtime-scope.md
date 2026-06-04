@@ -17,4 +17,4 @@ Reads the current runtime scope.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;<a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-scope.html">Scope</a></span>&gt;</span></code> | A flow that succeeds with the scope owned by the current execution boundary. |
+| <code><span><a href="../t-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;<a href="../../scope/t-scope.md">Scope</a></span>&gt;</span></code> | A flow that succeeds with the scope owned by the current execution boundary. |

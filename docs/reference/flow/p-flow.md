@@ -18,7 +18,7 @@ weight: 2000
 
 | Type | Description |
 | --- | --- |
-| <code><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flowbuilder.html">FlowBuilder</a></code> | A <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flowbuilder.html">FlowBuilder</a> instance. |
+| <code><a href="builders-flow.md">FlowBuilder</a></code> | A <a href="builders-flow.md">FlowBuilder</a> instance. |
 
 ## Remarks
 

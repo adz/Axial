@@ -16,19 +16,19 @@ Flattens the structured diagnostics graph into a linear list of diagnostics.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `graph` | <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-diagnostics-1.html">Diagnostics</a>&lt;'error&gt;</span></code> | The <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-diagnostics-1.html">Diagnostics</a> to flatten. |
+| `graph` | <code><span><a href="t-diagnostics.md">Diagnostics</a>&lt;'error&gt;</span></code> | The <a href="t-diagnostics.md">Diagnostics</a> to flatten. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-diagnostic-1.html">Diagnostic</a>&lt;'error&gt;</span>&#32;list</span></code> | A list of type <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-diagnostic-1.html">Diagnostic</a> list. |
+| <code><span><span><a href="t-diagnostic.md">Diagnostic</a>&lt;'error&gt;</span>&#32;list</span></code> | A list of type <a href="t-diagnostic.md">Diagnostic</a> list. |
 
 ## Remarks
 
 
  During flattening, child paths are accumulated from the root down into each emitted diagnostic.
- The tree itself stores only local errors and child branches, while <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-diagnostic-1.html">Diagnostic</a>
+ The tree itself stores only local errors and child branches, while <a href="t-diagnostic.md">Diagnostic</a>
  is reserved for reporting output.
 
 

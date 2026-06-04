@@ -8,9 +8,7 @@ This page shows the small Flow-native concurrency primitives added for coordinat
 
 ## Deferred
 
-- [`Deferred`](./t-deferred.md):
- A one-shot, typed handoff point that can be completed exactly once with a full <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-exit-2.html">Exit</a>.
-
+- [`Deferred`](./t-deferred.md): Flow-native helpers for one-shot typed coordination.
 - [`Deferred.make`](./m-deferred-make.md): Creates an empty deferred value.
 - [`Deferred.await`](./m-deferred-await.md): Waits for the deferred outcome, preserving success, typed failure, defect, or interruption.
 - [`Deferred.complete`](./m-deferred-complete.md): Attempts to complete the deferred value with a full outcome.
