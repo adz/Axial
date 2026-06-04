@@ -568,8 +568,11 @@ type Flow<'env, 'error, 'value> =
 
             try
                 let! result =
-                    RuntimeState.withRuntime runtime (fun () ->
-                        operation environment cancellationToken)
+                    try
+                        RuntimeState.withRuntime runtime (fun () ->
+                            operation environment cancellationToken)
+                    with error ->
+                        async { return raise error }
 
                 exit <- Some result
             with error ->
@@ -592,8 +595,11 @@ type Flow<'env, 'error, 'value> =
 
                 try
                     let! result =
-                        RuntimeState.withRuntime runtime (fun () ->
-                            operation environment cancellationToken |> _.AsTask())
+                        try
+                            RuntimeState.withRuntime runtime (fun () ->
+                                operation environment cancellationToken |> _.AsTask())
+                        with error ->
+                            Task.FromException<Exit<'value, 'error>>(error)
 
                     exit <- Some result
                 with error ->

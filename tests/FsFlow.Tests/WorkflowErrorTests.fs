@@ -472,3 +472,14 @@ let probe : Flow<unit, string, int> =
         test <@ Flow.runSync () flowFail = Exit.Failure (Cause.Fail "failed") @>
         test <@ Flow.runSync () asyncFlowFail = Exit.Failure (Cause.Fail "failed") @>
         test <@ Flow.runSync () taskFlowFail = Exit.Failure (Cause.Fail "failed") @>
+
+    [<Fact>]
+    let ``ToValueTask catches synchronous exception and returns Exit.Failure`` () =
+        let defect = InvalidOperationException "sync boom"
+        let badFlow = Flow(fun env ct -> raise defect)
+        let vt = badFlow.ToValueTask(())
+        let exit = vt.GetAwaiter().GetResult()
+        match exit with
+        | Exit.Failure (Cause.Die ex) -> test <@ obj.ReferenceEquals(ex, defect) @>
+        | other -> failwithf "Expected defect cause, got %A" other
+
