@@ -21,7 +21,13 @@ let normalize (name: string) =
     if String.IsNullOrEmpty name then ""
     else
         name.Replace("FsFlow.", "").Replace("Services.", "").Replace("Module", "").Replace("Extensions", "").Replace("Builders", "")
-        |> (fun s -> s.Replace("`", "").Replace("'", "").Split('(').[0].Trim('.'))
+        |> (fun s ->
+            s
+                .Split('(').[0]
+                .Trim('.')
+                |> fun value -> System.Text.RegularExpressions.Regex.Replace(value, @"``[0-9]+(?=$|[.])", "")
+                |> fun value -> System.Text.RegularExpressions.Regex.Replace(value, @"`[0-9]+(?=$|[.])", "")
+                |> fun value -> value.Replace("`", "").Replace("'", ""))
 
 let cleanName (name: string) =
     if String.IsNullOrEmpty name then ""
@@ -29,8 +35,9 @@ let cleanName (name: string) =
         name.Replace("FsFlow.", "").Replace("Services.", "").Replace("Module", "").Replace("Extensions", "").Replace("Builders", "")
         |> (fun s -> s.Trim('.'))
         |> (fun s -> 
-            // Surgical removal of generic backticks like `1, `2, etc.
-            System.Text.RegularExpressions.Regex.Replace(s, @"`[0-9]+", "")
+            s
+            |> fun value -> System.Text.RegularExpressions.Regex.Replace(value, @"``[0-9]+(?=$|[.])", "")
+            |> fun value -> System.Text.RegularExpressions.Regex.Replace(value, @"`[0-9]+(?=$|[.])", "")
         )
         |> (fun s -> s.Replace("'", ""))
         |> (fun s -> if s.EndsWith(".Static") then s.Substring(0, s.Length - 7) else s)
@@ -785,81 +792,36 @@ type ResolvedSymbol =
     | ResolvedMember of ApiDocMember
     | ResolvedEntity of ApiDocEntity
 
-let matchesReservedCheckMember (rawId: string) (m: ApiDocMember) =
-    let wants =
-        if rawId.StartsWith("FsFlow.CheckModule.not", StringComparison.Ordinal) then Some "not"
-        elif rawId.StartsWith("FsFlow.CheckModule.and", StringComparison.Ordinal) then Some "and"
-        elif rawId.StartsWith("FsFlow.CheckModule.or", StringComparison.Ordinal) then Some "or"
-        else None
-
-    match wants, m.Symbol with
-    | Some wanted, (:? FSharpMemberOrFunctionOrValue as mfv) ->
-        let enclosing =
-            match mfv.DeclaringEntity with
-            | Some ent -> cleanName ent.FullName
-            | None -> ""
-
-        if enclosing <> "Check" then
-            false
-        else
-            let rawCandidates =
-                [
-                    m.Name
-                    mfv.DisplayName
-                    mfv.CompiledName
-                    logicalName m.Symbol
-                    safeFullName m.Symbol
-                ]
-                |> List.filter (String.IsNullOrWhiteSpace >> not)
-                |> List.map (fun value -> value.ToLowerInvariant())
-
-            rawCandidates
-            |> List.exists (fun candidate ->
-                candidate = wanted
-                || candidate.EndsWith("." + wanted, StringComparison.Ordinal)
-                || candidate.Contains("." + wanted + "`", StringComparison.Ordinal)
-                || candidate.Contains("." + wanted + "``", StringComparison.Ordinal))
-    | _ -> false
-
 let findBestSymbol (allEntities: ApiDocEntity list) (id: string) =
     let rawId = id.Substring(2).Split('(').[0]
     let idNorm = cleanName rawId
 
-    let reservedCheckMatch =
-        allEntities
-        |> Seq.collect (fun e -> e.AllMembers)
-        |> Seq.tryFind (matchesReservedCheckMember rawId)
-        |> Option.map ResolvedMember
+    let candidates =
+        seq {
+            for e in allEntities do
+                let entityScore =
+                    candidateNamesForEntity e
+                    |> List.map (matchScore idNorm)
+                    |> List.max
 
-    match reservedCheckMatch with
-    | Some matchResult -> Some matchResult
-    | None ->
-        let candidates =
-            seq {
-                for e in allEntities do
-                    let entityScore =
-                        candidateNamesForEntity e
+                if id[0] = 'T' && entityScore > 0 then
+                    yield entityScore, ResolvedEntity e
+
+                for m in e.AllMembers do
+                    let memberScore =
+                        candidateNamesForMember m
                         |> List.map (matchScore idNorm)
                         |> List.max
 
-                    if id[0] = 'T' && entityScore > 0 then
-                        yield entityScore, ResolvedEntity e
+                    if memberScore > 0 then
+                        yield memberScore, ResolvedMember m
+        }
+        |> Seq.sortByDescending fst
+        |> Seq.toList
 
-                    for m in e.AllMembers do
-                        let memberScore =
-                            candidateNamesForMember m
-                            |> List.map (matchScore idNorm)
-                            |> List.max
-
-                        if memberScore > 0 then
-                            yield memberScore, ResolvedMember m
-            }
-            |> Seq.sortByDescending fst
-            |> Seq.toList
-
-        candidates
-        |> List.tryHead
-        |> Option.map snd
+    candidates
+    |> List.tryHead
+    |> Option.map snd
 
 let relativeLinkFrom (fromFile: string) (toFile: string) =
     Path.GetRelativePath(Path.GetDirectoryName(fromFile), toFile).Replace("\\", "/")
