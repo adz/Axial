@@ -58,18 +58,15 @@ let run () =
 
     let syncResult =
         loadUser
-        |> Flow.run environment
-        |> fun t -> t.AsTask().GetAwaiter().GetResult()
+        |> fun workflow -> workflow.RunSynchronously(environment)
 
     let asyncResult =
         renderTrace
-        |> Flow.run environment
-        |> fun t -> t.AsTask().GetAwaiter().GetResult()
+        |> fun workflow -> workflow.RunSynchronously(environment)
 
     let taskResult =
         publishResponse
-        |> Flow.run environment
-        |> fun t -> t.AsTask().GetAwaiter().GetResult()
+        |> fun workflow -> workflow.RunSynchronously(environment)
 
     printfn "Flow result: %A" syncResult
     printfn "Flow result: %A" asyncResult

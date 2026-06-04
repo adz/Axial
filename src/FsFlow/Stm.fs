@@ -259,7 +259,7 @@ module STM =
 
             match outcome with
             | Choice1Of2 result ->
-                EffectFlow.ofValue result
+                Execution.ofValue result
             | Choice2Of2 versionToWaitFor ->
                 lock stmLock (fun () ->
                     while version = versionToWaitFor do

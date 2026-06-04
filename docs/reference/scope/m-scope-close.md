@@ -4,7 +4,7 @@ linkTitle: "Close"
 weight: 2104
 ---
 
-Closes the scope and runs all registered finalizers in reverse order.
+
 
 ## Signature
 
@@ -16,10 +16,10 @@ Closes the scope and runs all registered finalizers in reverse order.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `cancellationToken` | <code><a href="https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken">CancellationToken</a></code> | The token passed to registered finalizers. |
+| `cancellationToken` | <code><a href="https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken">CancellationToken</a></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><a href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.task">Task</a></code> | A task that completes when all finalizers have run. |
+| <code><a href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.task">Task</a></code> |  |

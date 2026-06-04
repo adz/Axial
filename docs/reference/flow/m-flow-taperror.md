@@ -1,7 +1,7 @@
 ---
 title: "Flow.tapError"
 linkTitle: "tapError"
-weight: 2314
+weight: 2317
 ---
 
 Runs a synchronous side effect on failure and preserves the original error.

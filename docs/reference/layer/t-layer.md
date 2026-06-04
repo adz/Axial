@@ -21,9 +21,3 @@ weight: 1000
 | `input` |
 | `error` |
 | `output` |
-
-## Union Cases
-
-| Case | Description |
-| --- | --- |
-| `Layer` |  |

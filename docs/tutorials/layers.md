@@ -69,7 +69,7 @@ let run () = task {
     let! exit =
         saveOrder "A-100"
         |> Flow.provide appLayer
-        |> Flow.run ()
+        |> RunSynchronously or ToTask ()
 
     match exit with
     | Exit.Success () -> printfn "done"

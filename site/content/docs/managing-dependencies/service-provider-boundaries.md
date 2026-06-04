@@ -31,7 +31,7 @@ Use layers when startup should validate requirements before the core workflow ru
 open System.Threading.Tasks
 
 let ordersLayer : Layer<IServiceProvider, StartupError, IOrderRepository> =
-    Layer.effect (fun (provider, _) _ ->
+    Layer.fromValueTask (fun (provider, _) _ ->
         match provider.GetService(typeof<IOrderRepository>) with
         | null -> ValueTask(Exit.Failure (Cause.Fail MissingOrders))
         | service -> ValueTask(Exit.Success (service :?> IOrderRepository)))

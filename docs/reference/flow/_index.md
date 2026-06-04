@@ -3,7 +3,7 @@ title: "Flow"
 weight: 10
 ---
 
-This page shows the `Flow<'env, 'error, 'value>` surface, the central workflow type in FsFlow. A flow is a cold description of work that reads an explicit environment, can fail with a typed error, and only runs when you call an execution function such as `Flow.run`. Use this page as the API map for building fail-fast workflows, reading dependencies from `env`, reshaping environments with `localEnv`, composing typed failures, and introducing concurrency with fibers, `zipPar`, or `race`. Start with `flow { }`, `Flow.read`, `Flow.bind`, and `Flow.map`; reach for [runtime helpers](./runtime/) and parallel orchestration only at the boundary where the workflow actually needs them.
+This page shows the `Flow<'env, 'error, 'value>` surface, the central workflow type in FsFlow. A flow is a cold description of work that reads an explicit environment, can fail with a typed error, and only starts when you call an execution member such as `workflow.ToTask(env)`, `workflow.ToValueTask(env)`, `workflow.ToAsync(env)`, or `workflow.RunSynchronously(env)`. Use this page as the API map for building fail-fast workflows, reading dependencies from `env`, reshaping environments with `localEnv`, composing typed failures, and introducing concurrency with fibers, `zipPar`, or `race`. Start with `flow { }`, `Flow.read`, `Flow.bind`, and `Flow.map`; reach for [runtime helpers](./runtime/) and parallel orchestration only at the boundary where the workflow actually needs them.
 
 Note that common extensions such as `Flow.Retry` and `Flow.Repeat` are available as soon as you `open FsFlow` because their modules are marked with `[<AutoOpen>]`.
 
@@ -11,7 +11,7 @@ Note that common extensions such as `Flow.Retry` and `Flow.Repeat` are available
 
 - [`Flow`](./t-flow.md):
  Represents a cold workflow that reads an environment, returns a typed result, and is executed
- explicitly through <code>Flow.run</code>.
+ explicitly through one of its execution members such as <code>ToTask</code>, <code>ToAsync</code>, or <code>RunSynchronously</code>.
 
 
 ## Fiber operations
@@ -22,17 +22,10 @@ Note that common extensions such as `Flow.Retry` and `Flow.Repeat` are available
 
 ## Execution
 
-- [`Flow.run`](./m-flow-run.md): Executes a flow with the provided environment and the default cancellation token.
-- [`Flow.runFull`](./m-flow-runfull.md): Executes a flow with an explicit cancellation token.
-- [`Flow.toAsync`](./m-flow-toasync.md): Executes a flow and returns an async that resolves to the final exit outcome, observing the ambient cancellation token.
-- [`Flow.toAsyncResult`](./m-flow-toasyncresult.md): Executes a flow and returns an async that resolves to a standard result, observing the ambient cancellation token.
-- [`Flow.toTask`](./m-flow-totask.md): Executes a flow and returns a task that resolves to the final exit outcome.
-- [`Flow.toTaskResult`](./m-flow-totaskresult.md): Executes a flow and returns a task that resolves to a standard result.
-- [`Flow.toTaskWithToken`](./m-flow-totaskwithtoken.md): Executes a flow and returns a task that resolves to the final exit outcome with an explicit cancellation token.
-- [`Flow.toTaskResultWithToken`](./m-flow-totaskresultwithtoken.md): Executes a flow and returns a task that resolves to a standard result with an explicit cancellation token.
-- [`Flow.toValueTaskResult`](./m-flow-tovaluetaskresult.md): Executes a flow and returns a value task that resolves to a standard result.
-- [`Flow.toValueTaskResultWithToken`](./m-flow-tovaluetaskresultwithtoken.md): Executes a flow and returns a value task that resolves to a standard result with an explicit cancellation token.
-- [`Flow.toResult`](./m-flow-toresult.md): Executes a flow and converts the final <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-exit-2.html">Exit</a> into a standard <a href="https://learn.microsoft.com/dotnet/api/system.result-2">Result</a>.
+- [`Flow.ToAsync`](./m-flow-toasync.md): Starts the workflow and returns an F# async handle that completes with the final exit.
+- [`Flow.ToTask`](./m-flow-totask.md): Starts the workflow and returns a task handle that completes with the final exit.
+- [`Flow.ToValueTask`](./m-flow-tovaluetask.md): Starts the workflow and returns a value-task handle that completes with the final exit.
+- [`Flow.RunSynchronously`](./m-flow-runsynchronously.md): Starts the workflow and blocks until the final exit is available.
 
 ## Module functions
 
@@ -44,6 +37,9 @@ Note that common extensions such as `Flow.Retry` and `Flow.Repeat` are available
 - [`Flow.fromResult`](./m-flow-fromresult.md): Lifts a <a href="https://learn.microsoft.com/dotnet/api/system.result-2">Result</a> into a synchronous flow.
 - [`Flow.fromOption`](./m-flow-fromoption.md): Lifts an option into a synchronous flow with the supplied error.
 - [`Flow.fromValueOption`](./m-flow-fromvalueoption.md): Lifts a value option into a synchronous flow with the supplied error.
+- [`Flow.fromAsync`](./m-flow-fromasync.md): Creates a flow from a raw async operation.
+- [`Flow.fromTask`](./m-flow-fromtask.md): Creates a flow from a raw task operation.
+- [`Flow.fromValueTask`](./m-flow-fromvaluetask.md): Creates a flow from a raw value task operation.
 - [`Flow.orElseFlow`](./m-flow-orelseflow.md): Turns a pure validation result into a synchronous flow with environment-provided failure.
 - [`Flow.env`](./m-flow-env.md): Reads the current environment as the successful flow value.
 - [`Flow.read`](./m-flow-read.md): Projects one value from the current environment.

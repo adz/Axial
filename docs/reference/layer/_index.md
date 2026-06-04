@@ -19,7 +19,9 @@ This page shows the `Layer<'input, 'error, 'output>` surface used to provision e
 
 ## Module functions
 
-- [`Layer.effect`](./m-layer-effect.md): Creates a layer from a raw effectful provisioning function.
+- [`Layer.fromAsync`](./m-layer-fromasync.md): Creates a layer from a raw async provisioning function.
+- [`Layer.fromTask`](./m-layer-fromtask.md): Creates a layer from a raw task provisioning function.
+- [`Layer.fromValueTask`](./m-layer-fromvaluetask.md): Creates a layer from a raw value task provisioning function.
 - [`Layer.succeed`](./m-layer-succeed.md): Creates a layer that succeeds with a fixed output value.
 - [`Layer.read`](./m-layer-read.md): Projects part of the input environment into the layer output.
 - [`Layer.addFinalizer`](./m-layer-addfinalizer.md): Registers an asynchronous finalizer with the layer scope.

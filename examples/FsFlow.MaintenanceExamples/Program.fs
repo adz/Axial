@@ -3,23 +3,21 @@ open System.Threading
 open System.Threading.Tasks
 open FsFlow
 
-let runFlow label env workflow =
-    let result = Flow.run env workflow |> fun t -> t.AsTask().GetAwaiter().GetResult()
+let runFlow label env (workflow: Flow<'env, 'error, 'value>) =
+    let result = workflow.RunSynchronously(env)
     printfn "%s: %A" label result
 
-let runAsyncExample label env workflow =
+let runAsyncExample label env (workflow: Flow<'env, 'error, 'value>) =
     let result =
         workflow
-        |> Flow.run env
-        |> fun t -> t.AsTask().GetAwaiter().GetResult()
+        |> fun workflow -> workflow.RunSynchronously(env)
 
     printfn "%s: %A" label result
 
-let runTaskExample label env workflow =
+let runTaskExample label env (workflow: Flow<'env, 'error, 'value>) =
     let result =
         workflow
-        |> Flow.run env
-        |> fun t -> t.AsTask().GetAwaiter().GetResult()
+        |> fun workflow -> workflow.RunSynchronously(env)
 
     printfn "%s: %A" label result
 

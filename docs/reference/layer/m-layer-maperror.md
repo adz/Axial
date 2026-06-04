@@ -1,7 +1,7 @@
 ---
 title: "Layer.mapError"
 linkTitle: "mapError"
-weight: 2206
+weight: 2208
 ---
 
 Maps the typed provisioning failure of a layer.

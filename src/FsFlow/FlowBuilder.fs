@@ -8,13 +8,13 @@ open System.ComponentModel
 
 [<EditorBrowsable(EditorBrowsableState.Never)>]
 module FlowBuilderRuntime =
-    let inline run environment cancellationToken (Flow operation) =
+    let run environment cancellationToken (Flow operation) =
         operation environment cancellationToken
 
-    let inline fromResult<'env, 'error, 'value> (result: Result<'value, 'error>) : Flow<'env, 'error, 'value> =
-        Flow(fun _ _ -> EffectFlow.ofResult result)
+    let fromResult<'env, 'error, 'value> (result: Result<'value, 'error>) : Flow<'env, 'error, 'value> =
+        Flow(fun _ _ -> Execution.ofResult result)
 
-    let inline fromAsync<'env, 'error, 'value> (operation: Async<'value>) : Flow<'env, 'error, 'value> =
+    let fromAsync<'env, 'error, 'value> (operation: Async<'value>) : Flow<'env, 'error, 'value> =
         Flow(fun _ cancellationToken ->
             #if FABLE_COMPILER
             async {
@@ -30,7 +30,7 @@ module FlowBuilderRuntime =
             #endif
         )
 
-    let inline fromAsyncResult<'env, 'error, 'value>
+    let fromAsyncResult<'env, 'error, 'value>
         (operation: Async<Result<'value, 'error>>)
         : Flow<'env, 'error, 'value> =
         Flow(fun _ cancellationToken ->
@@ -49,7 +49,7 @@ module FlowBuilderRuntime =
         )
 
 #if !FABLE_COMPILER
-    let inline fromColdTask<'env, 'error, 'value> (ColdTask operation: ColdTask<'value>) : Flow<'env, 'error, 'value> =
+    let fromColdTask<'env, 'error, 'value> (ColdTask operation: ColdTask<'value>) : Flow<'env, 'error, 'value> =
         Flow(fun _ cancellationToken ->
             ValueTask<Exit<'value, 'error>>(
                 task {
@@ -61,7 +61,7 @@ module FlowBuilderRuntime =
                 })
         )
 
-    let inline fromTask<'env, 'error, 'value> (operation: Task<'value>) : Flow<'env, 'error, 'value> =
+    let fromTask<'env, 'error, 'value> (operation: Task<'value>) : Flow<'env, 'error, 'value> =
         Flow(fun _ cancellationToken ->
             ValueTask<Exit<'value, 'error>>(
                 task {
@@ -73,7 +73,7 @@ module FlowBuilderRuntime =
                 })
         )
 
-    let inline fromTaskResult<'env, 'error, 'value>
+    let fromTaskResult<'env, 'error, 'value>
         (operation: Task<Result<'value, 'error>>)
         : Flow<'env, 'error, 'value> =
         Flow(fun _ cancellationToken ->
@@ -87,7 +87,7 @@ module FlowBuilderRuntime =
                 })
         )
 
-    let inline fromTaskUnit<'env, 'error> (operation: Task) : Flow<'env, 'error, unit> =
+    let fromTaskUnit<'env, 'error> (operation: Task) : Flow<'env, 'error, unit> =
         Flow(fun _ cancellationToken ->
             ValueTask<Exit<unit, 'error>>(
                 task {
@@ -99,7 +99,7 @@ module FlowBuilderRuntime =
                 })
         )
 
-    let inline fromValueTask<'env, 'error, 'value> (operation: ValueTask<'value>) : Flow<'env, 'error, 'value> =
+    let fromValueTask<'env, 'error, 'value> (operation: ValueTask<'value>) : Flow<'env, 'error, 'value> =
         Flow(fun _ cancellationToken ->
             ValueTask<Exit<'value, 'error>>(
                 task {
@@ -111,7 +111,7 @@ module FlowBuilderRuntime =
                 })
         )
 
-    let inline fromValueTaskResult<'env, 'error, 'value>
+    let fromValueTaskResult<'env, 'error, 'value>
         (operation: ValueTask<Result<'value, 'error>>)
         : Flow<'env, 'error, 'value> =
         Flow(fun _ cancellationToken ->
@@ -125,7 +125,7 @@ module FlowBuilderRuntime =
                 })
         )
 
-    let inline fromValueTaskUnit<'env, 'error> (operation: ValueTask) : Flow<'env, 'error, unit> =
+    let fromValueTaskUnit<'env, 'error> (operation: ValueTask) : Flow<'env, 'error, unit> =
         Flow(fun _ cancellationToken ->
             ValueTask<Exit<unit, 'error>>(
                 task {
@@ -139,65 +139,65 @@ module FlowBuilderRuntime =
 #endif
 
 type FlowBuilder() =
-    member inline _.Return(value: 'value) : Flow<'env, 'error, 'value> =
+    member _.Return(value: 'value) : Flow<'env, 'error, 'value> =
         Flow.ok value
 
-    member inline _.ReturnFrom(flow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
+    member _.ReturnFrom(flow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
         flow
 
-    member inline _.ReturnFrom(operation: Async<'value>) : Flow<'env, 'error, 'value> =
+    member _.ReturnFrom(operation: Async<'value>) : Flow<'env, 'error, 'value> =
         FlowBuilderRuntime.fromAsync operation
 
-    member inline _.ReturnFrom(operation: Async<Result<'value, 'error>>) : Flow<'env, 'error, 'value> =
+    member _.ReturnFrom(operation: Async<Result<'value, 'error>>) : Flow<'env, 'error, 'value> =
         FlowBuilderRuntime.fromAsyncResult operation
 
-    member inline _.ReturnFrom(result: Result<'value, 'error>) : Flow<'env, 'error, 'value> =
+    member _.ReturnFrom(result: Result<'value, 'error>) : Flow<'env, 'error, 'value> =
         FlowBuilderRuntime.fromResult result
 
-    member inline _.ReturnFrom(option: 'value option) : Flow<'env, unit, 'value> =
+    member _.ReturnFrom(option: 'value option) : Flow<'env, unit, 'value> =
         option
         |> OptionFlow.toUnitResult
         |> FlowBuilderRuntime.fromResult
 
-    member inline _.ReturnFrom(option: 'value voption) : Flow<'env, unit, 'value> =
+    member _.ReturnFrom(option: 'value voption) : Flow<'env, unit, 'value> =
         option
         |> OptionFlow.toUnitResultValueOption
         |> FlowBuilderRuntime.fromResult
 
 #if !FABLE_COMPILER
-    member inline _.ReturnFrom(operation: ColdTask<'value>) : Flow<'env, 'error, 'value> =
+    member _.ReturnFrom(operation: ColdTask<'value>) : Flow<'env, 'error, 'value> =
         FlowBuilderRuntime.fromColdTask operation
 
-    member inline _.ReturnFrom(operation: Task<'value>) : Flow<'env, 'error, 'value> =
+    member _.ReturnFrom(operation: Task<'value>) : Flow<'env, 'error, 'value> =
         FlowBuilderRuntime.fromTask operation
 
-    member inline _.ReturnFrom(operation: Task<Result<'value, 'error>>) : Flow<'env, 'error, 'value> =
+    member _.ReturnFrom(operation: Task<Result<'value, 'error>>) : Flow<'env, 'error, 'value> =
         FlowBuilderRuntime.fromTaskResult operation
 
-    member inline _.ReturnFrom(operation: Task) : Flow<'env, 'error, unit> =
+    member _.ReturnFrom(operation: Task) : Flow<'env, 'error, unit> =
         FlowBuilderRuntime.fromTaskUnit operation
 
-    member inline _.ReturnFrom(operation: ValueTask<'value>) : Flow<'env, 'error, 'value> =
+    member _.ReturnFrom(operation: ValueTask<'value>) : Flow<'env, 'error, 'value> =
         FlowBuilderRuntime.fromValueTask operation
 
-    member inline _.ReturnFrom(operation: ValueTask<Result<'value, 'error>>) : Flow<'env, 'error, 'value> =
+    member _.ReturnFrom(operation: ValueTask<Result<'value, 'error>>) : Flow<'env, 'error, 'value> =
         FlowBuilderRuntime.fromValueTaskResult operation
 
-    member inline _.ReturnFrom(operation: ValueTask) : Flow<'env, 'error, unit> =
+    member _.ReturnFrom(operation: ValueTask) : Flow<'env, 'error, unit> =
         FlowBuilderRuntime.fromValueTaskUnit operation
 #endif
 
-    member inline _.Zero() : Flow<'env, 'error, unit> =
+    member _.Zero() : Flow<'env, 'error, unit> =
         Flow.ok ()
 
-    member inline _.Bind
+    member _.Bind
         (
             flow: Flow<'env, 'error, 'value>,
             binder: 'value -> Flow<'env, 'error, 'next>
         ) : Flow<'env, 'error, 'next> =
         Flow.bind binder flow
 
-    member inline _.Bind
+    member _.Bind
         (
             operation: Async<'value>,
             binder: 'value -> Flow<'env, 'error, 'next>
@@ -206,7 +206,7 @@ type FlowBuilder() =
         |> FlowBuilderRuntime.fromAsync
         |> Flow.bind binder
 
-    member inline _.Bind
+    member _.Bind
         (
             operation: Async<Result<'value, 'error>>,
             binder: 'value -> Flow<'env, 'error, 'next>
@@ -215,7 +215,7 @@ type FlowBuilder() =
         |> FlowBuilderRuntime.fromAsyncResult
         |> Flow.bind binder
 
-    member inline _.Bind
+    member _.Bind
         (
             result: Result<'value, 'error>,
             binder: 'value -> Flow<'env, 'error, 'next>
@@ -224,7 +224,7 @@ type FlowBuilder() =
         |> FlowBuilderRuntime.fromResult
         |> Flow.bind binder
 
-    member inline _.Bind
+    member _.Bind
         (
             option: 'value option,
             binder: 'value -> Flow<'env, unit, 'next>
@@ -234,7 +234,7 @@ type FlowBuilder() =
         |> FlowBuilderRuntime.fromResult
         |> Flow.bind binder
 
-    member inline _.Bind
+    member _.Bind
         (
             option: 'value voption,
             binder: 'value -> Flow<'env, unit, 'next>
@@ -245,7 +245,7 @@ type FlowBuilder() =
         |> Flow.bind binder
 
 #if !FABLE_COMPILER
-    member inline _.Bind
+    member _.Bind
         (
             operation: ColdTask<'value>,
             binder: 'value -> Flow<'env, 'error, 'next>
@@ -254,7 +254,7 @@ type FlowBuilder() =
         |> FlowBuilderRuntime.fromColdTask
         |> Flow.bind binder
 
-    member inline _.Bind
+    member _.Bind
         (
             operation: Task<'value>,
             binder: 'value -> Flow<'env, 'error, 'next>
@@ -263,7 +263,7 @@ type FlowBuilder() =
         |> FlowBuilderRuntime.fromTask
         |> Flow.bind binder
 
-    member inline _.Bind
+    member _.Bind
         (
             operation: Task<Result<'value, 'error>>,
             binder: 'value -> Flow<'env, 'error, 'next>
@@ -272,7 +272,7 @@ type FlowBuilder() =
         |> FlowBuilderRuntime.fromTaskResult
         |> Flow.bind binder
 
-    member inline _.Bind
+    member _.Bind
         (
             operation: Task,
             binder: unit -> Flow<'env, 'error, 'next>
@@ -281,7 +281,7 @@ type FlowBuilder() =
         |> FlowBuilderRuntime.fromTaskUnit
         |> Flow.bind binder
 
-    member inline _.Bind
+    member _.Bind
         (
             operation: ValueTask<'value>,
             binder: 'value -> Flow<'env, 'error, 'next>
@@ -290,7 +290,7 @@ type FlowBuilder() =
         |> FlowBuilderRuntime.fromValueTask
         |> Flow.bind binder
 
-    member inline _.Bind
+    member _.Bind
         (
             operation: ValueTask<Result<'value, 'error>>,
             binder: 'value -> Flow<'env, 'error, 'next>
@@ -299,7 +299,7 @@ type FlowBuilder() =
         |> FlowBuilderRuntime.fromValueTaskResult
         |> Flow.bind binder
 
-    member inline _.Bind
+    member _.Bind
         (
             operation: ValueTask,
             binder: unit -> Flow<'env, 'error, 'next>
@@ -309,13 +309,13 @@ type FlowBuilder() =
         |> Flow.bind binder
 #endif
 
-    member inline _.Delay(factory: unit -> Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
+    member _.Delay(factory: unit -> Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
         Flow.delay factory
 
     member _.Run(flow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
         flow
 
-    member inline _.Combine
+    member _.Combine
         (
             first: Flow<'env, 'error, unit>,
             second: Flow<'env, 'error, 'value>
@@ -323,7 +323,7 @@ type FlowBuilder() =
         first
         |> Flow.bind (fun () -> second)
 
-    member inline _.TryWith
+    member _.TryWith
         (
             flow: Flow<'env, 'error, 'value>,
             handler: exn -> Flow<'env, 'error, 'value>
@@ -334,10 +334,10 @@ type FlowBuilder() =
             with error ->
                 FlowBuilderRuntime.run environment cancellationToken (handler error))
 
-    member inline _.TryFinally(flow: Flow<'env, 'error, 'value>, compensation: unit -> unit) : Flow<'env, 'error, 'value> =
+    member _.TryFinally(flow: Flow<'env, 'error, 'value>, compensation: unit -> unit) : Flow<'env, 'error, 'value> =
         Flow(fun environment cancellationToken ->
             FlowBuilderRuntime.run environment cancellationToken flow
-            |> EffectFlow.mapBoth
+            |> Execution.mapBoth
                 (fun value -> compensation (); value)
                 (fun cause -> compensation (); cause))
 

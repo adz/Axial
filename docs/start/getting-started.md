@@ -62,17 +62,17 @@ let greetUser (id: int) : Flow<unit, UserError, string> =
 
 Because a `Flow` is just a description, you must explicitly **run** it. This is the boundary where your platform-independent logic meets the real world.
 
-When you call `Flow.run`, you provide the required **environment** (which can be `()` if none is needed) and a cancellation token is handled for you (defaulting to `CancellationToken.None`).
+When you call `RunSynchronously or ToTask`, you provide the required **environment** (which can be `()` if none is needed) and a cancellation token is handled for you (defaulting to `CancellationToken.None`).
 If the flow throws an uncaught exception, the runtime records it as `Cause.Die` in the returned `Exit`.
 
 ### Execution Handle vs. Outcome
 
 Because a `Flow` is just a description, you must explicitly **run** it. FsFlow handles the platform differences for you:
 
-`Flow.run` returns an **`Effect<'value, 'error>`**. The platform-specific carrier is defined by the target:
+`RunSynchronously or ToTask` returns an **`Execution<'value, 'error>`**. The platform-specific carrier is defined by the target:
 
-- On **.NET**: `Effect<'value, 'error>` is a `ValueTask<Exit<'value, 'error>>`.
-- On **Fable**: `Effect<'value, 'error>` is an `Async<Exit<'value, 'error>>`.
+- On **.NET**: `Execution<'value, 'error>` is a `ValueTask<Exit<'value, 'error>>`.
+- On **Fable**: `Execution<'value, 'error>` is an `Async<Exit<'value, 'error>>`.
 
 ### The `Exit` Outcome
 
@@ -97,14 +97,14 @@ Use `Flow.fail` or `Flow.error` for expected domain failures, `Flow.die` for exp
 
 ## 5. Running Your First Flow
 
-Because `Flow.run` returns a deferred execution handle (`Effect`), you must await it to get the final `Exit` outcome.
+Because `RunSynchronously or ToTask` returns a deferred execution handle (platform execution handle), you must await it to get the final `Exit` outcome.
 
 ```fsharp
 let myFlow = Flow.succeed "Hello World"
 
 // On .NET:
 let runOnDotNet () = task {
-    let! exit = Flow.run () myFlow
+    let! exit = RunSynchronously or ToTask () myFlow
     match exit with
     | Exit.Success s -> printfn "%s" s
     | _ -> ()
@@ -112,7 +112,7 @@ let runOnDotNet () = task {
 
 // On Fable:
 let runOnFable () = async {
-    let! exit = Flow.run () myFlow
+    let! exit = RunSynchronously or ToTask () myFlow
     match exit with
     | Exit.Success s -> printfn "%s" s
     | _ -> ()
@@ -139,7 +139,7 @@ let fetchFromApi : Flow<AppConfig, unit, string> =
 let config = { ApiUrl = "https://api.example.com" }
 
 let runExample () = task {
-    let! result = Flow.run config fetchFromApi
+    let! result = RunSynchronously or ToTask config fetchFromApi
     printfn "Result: %A" result
 }
 ```
@@ -148,5 +148,5 @@ let runExample () = task {
 
 1.  **Define**: Use `flow {}` to describe your logic and its requirements.
 2.  **Compose**: Combine smaller flows, Results, Tasks, and Asyncs into larger ones.
-3.  **Run**: Call `Flow.run env` at your application's entry point (e.g., a Controller or Main function).
+3.  **Run**: Call `RunSynchronously or ToTask env` at your application's entry point (e.g., a Controller or Main function).
 4.  **Handle**: Match on the `Exit` value to handle success, failure, or defects.

@@ -124,11 +124,11 @@ module WorkflowSchedulingTests =
         let tokenResult =
             Flow.Runtime.cancellationToken
             |> Flow.map (fun token -> token.IsCancellationRequested)
-            |> Flow.runFullSync () cts.Token
+            |> Flow.runSyncWithToken () cts.Token
 
         let ensureResult =
             Flow.Runtime.ensureNotCanceled "canceled"
-            |> Flow.runFullSync () cts.Token
+            |> Flow.runSyncWithToken () cts.Token
 
         test <@ tokenResult = Exit.Success true @>
         test <@ ensureResult = Exit.Failure (Cause.Fail "canceled") @>

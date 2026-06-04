@@ -29,5 +29,4 @@ streams. These modules are useful, but they are not the starting point for ordin
 code.
 
 Finally, understand the core model outcomes: [`Exit`](./exit/) represents the final result of a flow,
-[`Cause`](./cause/) explains why a flow failed, and [`Effect`](./effect/) provides the low-level
-execution algebra.
+and [`Cause`](./cause/) explains why a flow failed.

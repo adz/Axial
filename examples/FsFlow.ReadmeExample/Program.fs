@@ -46,7 +46,7 @@ let main _ =
 
     let readPairResult =
         program
-        |> Flow.run { Root = root }
+        |> fun workflow -> workflow.RunSynchronously({ Root = root })
 
     printfn "Config pair result: %A" readPairResult
     // Config pair result: Ok ("{\"name\":\"Ada\"}", "{\"darkMode\":true}")

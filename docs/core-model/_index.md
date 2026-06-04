@@ -156,7 +156,7 @@ FsFlow does not try to hide that behavior inside the workflow builders.
 The design stays explicit in the places that matter for teams:
 
 - env access is visible through [`Flow.read`]({{< relref "/reference/flow/m-flow-read.md" >}})
-- execution is visible through [`Flow.run`]({{< relref "/reference/flow/m-flow-run.md" >}}) or `Flow.runFull`
+- execution is visible through [`RunSynchronously or ToTask`]({{< relref "/reference/flow/m-flow-run.md" >}}) or `execution members`
 - expected failures stay in the type
 - the computation family tells you whether the use case is sync, `Async`, or `.NET Task`
 

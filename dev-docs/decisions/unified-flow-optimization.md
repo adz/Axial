@@ -34,8 +34,8 @@ We landed on a **Hybrid Approach** that maximizes performance on .NET while main
 
 ### Key Implementation Details
 
-1.  **ValueTask Backbone**: The internal `Effect` type on .NET is now `ValueTask<Exit<'v, 'e>>`. This enables a synchronous fast-path for flows that complete without yielding.
-2.  **Inlined Overloads**: `FlowBuilder` methods are now `inline`. This allows the compiler to perform type-directed member resolution at the call site.
+1.  **ValueTask Backbone**: The internal `Execution` carrier on .NET is now `ValueTask<Exit<'v, 'e>>`. This enables a synchronous fast-path for flows that complete without yielding.
+2.  **Builder Overloads**: `FlowBuilder` methods provide type-directed overloads for common interop carriers.
 3.  **Direct Interop**: Explicit `Bind` and `ReturnFrom` overloads were added for `Task`, `ValueTask`, and `Async`. 
 4.  **Internal State Machines**: Instead of wrapping tasks in a `Flow` closure before binding, we use the compiler's built-in `task {}` or `async {}` infrastructure *inside* the inlined bind step. This eliminates the "adapter tax" for interop.
 

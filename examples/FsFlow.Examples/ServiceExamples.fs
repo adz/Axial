@@ -49,7 +49,7 @@ module HonestBridgeExample =
 
     let run (sp: IServiceProvider) order =
         let env = AppEnv(sp)
-        Flow.run env (processOrder order)
+        (processOrder order).RunSynchronously(env)
 
 // --- MOCKS FOR RUNNING ---
 type MockRepo() =
@@ -68,17 +68,17 @@ module ServiceExamples =
 
         // Level 1
         let env1 = { RecordExample.Repo = mockRepo }
-        Flow.run env1 (RecordExample.saveOrder order) |> ignore
+        (RecordExample.saveOrder order).RunSynchronously(env1) |> ignore
 
         // Level 2
         let env2 = { Repo = mockRepo }
-        Flow.run env2 (NominalExample.saveOrder order) |> ignore
+        (NominalExample.saveOrder order).RunSynchronously(env2) |> ignore
 
         // Level 3
         let services = ServiceCollection()
         services.AddSingleton<IOrderRepo>(mockRepo) |> ignore
         let sp = services.BuildServiceProvider()
-        Flow.run (sp :> IServiceProvider) (DIExample.saveOrder order) |> ignore
+        (DIExample.saveOrder order).RunSynchronously(sp :> IServiceProvider) |> ignore
 
         // Bridge
         HonestBridgeExample.run sp order |> ignore

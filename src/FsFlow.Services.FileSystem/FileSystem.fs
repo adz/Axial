@@ -1088,7 +1088,7 @@ module FileSystem =
     /// <summary>Builds the live file-system service as a layer.</summary>
     let layer : Layer<unit, Never, IFileSystem> =
 #if FABLE_COMPILER
-        Layer.effect (fun _ _ -> async { return Exit.Failure (Cause.Die (PlatformNotSupportedException("File-system services are not supported on Fable."))) })
+        Layer.fromAsync (fun _ _ -> async { return Exit.Failure (Cause.Die (PlatformNotSupportedException("File-system services are not supported on Fable."))) })
 #else
         Layer.succeed live
 #endif

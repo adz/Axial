@@ -1,7 +1,7 @@
 ---
 title: "Layer.read"
 linkTitle: "read"
-weight: 2202
+weight: 2204
 ---
 
 Projects part of the input environment into the layer output.

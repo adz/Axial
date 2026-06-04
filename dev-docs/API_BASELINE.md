@@ -75,7 +75,7 @@ correctness issue requires a hard break.
 `ApiShapeTests.fs` is the current API baseline mechanism. It does not freeze every overload signature, but it must cover
 the named modules, types, and members users and examples are expected to depend on:
 
-- `Flow`, `Flow.Runtime`, `EffectFlow`, `Cause`, `Exit`, `Fiber`, `Scope`
+- `Flow`, `Flow.Runtime`, `Execution`, `Cause`, `Exit`, `Fiber`, `Scope`
 - computation builders
 - `Check`, `Guard`, `Validation`, `Diagnostics`
 - `Schedule`, `FlowStream`, `STM`, `TRef`, `Ref`

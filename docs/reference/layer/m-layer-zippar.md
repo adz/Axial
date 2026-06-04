@@ -1,7 +1,7 @@
 ---
 title: "Layer.zipPar"
 linkTitle: "zipPar"
-weight: 2209
+weight: 2211
 ---
 
 Builds two independent layers in parallel and returns both outputs.

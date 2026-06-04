@@ -48,7 +48,7 @@ let printNumbers =
 
 - **Environment-Aware**: Can read dependencies like databases or APIs during iteration.
 - **Typed Failures**: Handles errors consistently with the rest of your application.
-- **Cancellable**: Automatically respects the `CancellationToken` provided to `Flow.run`.
+- **Cancellable**: Automatically respects the `CancellationToken` provided to `RunSynchronously or ToTask`.
 
 ## API Reference: Module `FlowStream`
 

@@ -52,8 +52,8 @@ module RuntimeSemanticsTests =
 
     [<Fact>]
     let ``Layer zipPar accumulates parallel provisioning failures`` () =
-        let left : Layer<unit, string, int> = Layer.effect (fun _ _ -> EffectFlow.ofError "left")
-        let right : Layer<unit, string, int> = Layer.effect (fun _ _ -> EffectFlow.ofError "right")
+        let left : Layer<unit, string, int> = Layer.fromValueTask (fun _ _ -> Execution.ofError "left")
+        let right : Layer<unit, string, int> = Layer.fromValueTask (fun _ _ -> Execution.ofError "right")
 
         let workflow =
             Flow.env<int * int, string>
@@ -252,7 +252,7 @@ module RuntimeSemanticsTests =
             }
 
         cts.CancelAfter(TimeSpan.FromMilliseconds 50.0)
-        let result = Flow.runFullSync () cts.Token workflow
+        let result = Flow.runSyncWithToken () cts.Token workflow
 
         match result, capturedFiber with
         | Exit.Failure Cause.Interrupt, Some fiber ->
@@ -281,7 +281,7 @@ module RuntimeSemanticsTests =
             }
 
         cts.CancelAfter(TimeSpan.FromMilliseconds 50.0)
-        let result = Flow.runFullSync () cts.Token workflow
+        let result = Flow.runSyncWithToken () cts.Token workflow
 
         test <@ result = Exit.Failure Cause.Interrupt @>
         test <@ List.ofSeq calls = [ "second:True"; "first:True" ] @>
@@ -298,6 +298,6 @@ module RuntimeSemanticsTests =
             }
 
         cts.CancelAfter(TimeSpan.FromMilliseconds 50.0)
-        let result = Flow.runFullSync () cts.Token workflow
+        let result = Flow.runSyncWithToken () cts.Token workflow
 
         test <@ result = Exit.Failure(Cause.Then(Cause.Interrupt, Cause.Die finalizerDefect)) @>

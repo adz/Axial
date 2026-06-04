@@ -107,9 +107,9 @@ type Guard private () =
     static member Of(error: 'error, flow: Flow<'env, unit, 'value>) : Flow<'env, 'error, 'value> =
         Flow(fun environment cancellationToken ->
             FlowInternal.invoke flow environment cancellationToken
-            |> EffectFlow.fold
-                EffectFlow.ofValue
-                (fun _ -> EffectFlow.ofError error)
+            |> Execution.fold
+                Execution.ofValue
+                (fun _ -> Execution.ofError error)
         )
 
     static member MapError(mapper: 'error1 -> 'error2, result: Result<'value, 'error1>) : Result<'value, 'error2> =

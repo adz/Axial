@@ -7,7 +7,7 @@ type: docs
 
 
  Represents a cold workflow that reads an environment, returns a typed result, and is executed
- explicitly through <code>Flow.run</code>.
+ explicitly through one of its execution members such as <code>ToTask</code>, <code>ToAsync</code>, or <code>RunSynchronously</code>.
 
 
 ## Signature
@@ -23,9 +23,3 @@ type: docs
 | `env` |
 | `error` |
 | `value` |
-
-## Union Cases
-
-| Case | Description |
-| --- | --- |
-| `Flow` |  |

@@ -33,7 +33,7 @@ type LayerBuilder() =
         Layer.map mapper layer
 
     member _.Delay(factory: unit -> Layer<'input, 'error, 'value>) : Layer<'input, 'error, 'value> =
-        Layer.effect (fun (input, scope) cancellationToken ->
+        Layer.fromExecution (fun (input, scope) cancellationToken ->
             Layer.invoke (factory ()) input scope cancellationToken)
 
     member _.Run(layer: Layer<'input, 'error, 'value>) : Layer<'input, 'error, 'value> =

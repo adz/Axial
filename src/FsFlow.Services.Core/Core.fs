@@ -565,7 +565,7 @@ module BaseRuntime =
     /// <summary>Builds the base runtime from an <see cref="T:System.IServiceProvider" />.</summary>
     #if FABLE_COMPILER
     let fromServiceProvider : Layer<IServiceProvider, BaseRuntimeError, BaseRuntime> =
-        Layer.effect (fun _ _ ->
+        Layer.fromAsync (fun _ _ ->
             async.Return(
                 Exit.Failure (
                     Cause.Die (PlatformNotSupportedException("IServiceProvider layers are not supported on Fable."))
@@ -573,7 +573,7 @@ module BaseRuntime =
             ))
     #else
     let fromServiceProvider : Layer<IServiceProvider, BaseRuntimeError, BaseRuntime> =
-        Layer.effect (fun (serviceProvider, _) _ ->
+        Layer.fromValueTask (fun (serviceProvider, _) _ ->
             ValueTask<Exit<BaseRuntime, BaseRuntimeError>>(
                 task {
                     match

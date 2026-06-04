@@ -102,9 +102,9 @@ module Semaphore =
     let make (permits: int) : Flow<'env, 'error, FlowSemaphore> =
         Flow(fun _ _ ->
             if permits <= 0 then
-                EffectFlow.ofDie (ArgumentOutOfRangeException(nameof permits, "Permit count must be positive."))
+                Execution.ofDie (ArgumentOutOfRangeException(nameof permits, "Permit count must be positive."))
             else
-                EffectFlow.ofValue (FlowSemaphore(new SemaphoreSlim(permits, permits))))
+                Execution.ofValue (FlowSemaphore(new SemaphoreSlim(permits, permits))))
 
     /// <summary>Alias for <c>make</c>.</summary>
     let create (permits: int) : Flow<'env, 'error, FlowSemaphore> =

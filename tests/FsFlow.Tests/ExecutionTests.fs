@@ -9,27 +9,30 @@ open FsFlow
 module ExecutionTests =
 
     [<Fact>]
-    let ``Flow.toAsyncResult works correctly within async block on .NET`` () =
+    let ``Flow ToAsync can be converted to Result within async block on .NET`` () =
         async {
             let flow = Flow.ok 42
-            let! result = flow |> Flow.toAsyncResult ()
-            Assert.Equal(Ok 42, result)
+            let! result = flow.ToAsync(())
+            Assert.Equal(Exit.Success 42, result)
+            Assert.Equal(Ok 42, Exit.toResult result)
         } |> Async.RunSynchronously
 
     [<Fact>]
-    let ``Flow.toAsyncResult handles failure as exception`` () =
+    let ``Flow ToAsync preserves typed failure in Exit`` () =
         async {
             let flow = Flow.fail "oops"
-            let! result = flow |> Flow.toAsyncResult ()
-            Assert.Equal(Error "oops", result)
+            let! result = flow.ToAsync(())
+            Assert.Equal(Exit.Failure(Cause.Fail "oops"), result)
+            Assert.Equal(Error "oops", Exit.toResult result)
         } |> Async.RunSynchronously
 
     [<Fact>]
-    let ``Flow.toTaskResult works correctly within task block`` () =
+    let ``Flow ToTask can be converted to Result within task block`` () =
         task {
             let flow = Flow.ok 42
-            let! result = flow |> Flow.toTaskResult ()
-            Assert.Equal(Ok 42, result)
+            let! result = flow.ToTask(())
+            Assert.Equal(Exit.Success 42, result)
+            Assert.Equal(Ok 42, Exit.toResult result)
         } :> Task
 
     [<Fact>]
@@ -38,7 +41,7 @@ module ExecutionTests =
         let flow = Flow.Runtime.sleep (TimeSpan.FromSeconds 10.0)
         
         let operation = async {
-            let! _ = flow |> Flow.toAsync ()
+            let! _ = flow.ToAsync(())
             return ()
         }
         

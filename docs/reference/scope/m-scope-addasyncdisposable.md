@@ -4,7 +4,7 @@ linkTitle: "AddAsyncDisposable"
 weight: 2102
 ---
 
-Registers an asynchronously disposable resource for cleanup.
+
 
 ## Signature
 
@@ -16,7 +16,7 @@ Registers an asynchronously disposable resource for cleanup.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `resource` | <code><a href="https://learn.microsoft.com/dotnet/api/system.iasyncdisposable">IAsyncDisposable</a></code> | The asynchronous disposable resource to close with the scope. |
+| `resource` | <code><a href="https://learn.microsoft.com/dotnet/api/system.iasyncdisposable">IAsyncDisposable</a></code> |  |
 
 ## Returns
 

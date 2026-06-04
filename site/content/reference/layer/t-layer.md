@@ -22,9 +22,3 @@ type: docs
 | `input` |
 | `error` |
 | `output` |
-
-## Union Cases
-
-| Case | Description |
-| --- | --- |
-| `Layer` |  |

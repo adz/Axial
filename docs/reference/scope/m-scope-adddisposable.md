@@ -4,7 +4,7 @@ linkTitle: "AddDisposable"
 weight: 2101
 ---
 
-Registers a disposable resource for synchronous cleanup.
+
 
 ## Signature
 
@@ -16,7 +16,7 @@ Registers a disposable resource for synchronous cleanup.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `resource` | <code><a href="https://learn.microsoft.com/dotnet/api/system.idisposable">IDisposable</a></code> | The disposable resource to close with the scope. |
+| `resource` | <code><a href="https://learn.microsoft.com/dotnet/api/system.idisposable">IDisposable</a></code> |  |
 
 ## Returns
 

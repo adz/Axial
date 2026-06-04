@@ -39,21 +39,15 @@ module internal Shared =
         consumeResult result
 
     let runFlow (flow: Flow<int, string, int>) =
-        flow
-        |> Flow.run 0
-        |> fun t -> t.AsTask().GetAwaiter().GetResult()
+        flow.RunSynchronously(0)
         |> consumeExit
 
     let runFlowAsync (flow: Flow<int, string, int>) =
-        flow
-        |> Flow.run 0
-        |> fun t -> t.AsTask().GetAwaiter().GetResult()
+        flow.RunSynchronously(0)
         |> consumeExit
 
     let runFlowTask (flow: Flow<int, string, int>) =
-        flow
-        |> Flow.run 0
-        |> fun t -> t.AsTask().GetAwaiter().GetResult()
+        flow.RunSynchronously(0)
         |> consumeExit
 
     let runTaskResult (workflow: unit -> Task<Result<int, string>>) =

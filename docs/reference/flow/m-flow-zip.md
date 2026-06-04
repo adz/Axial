@@ -1,7 +1,7 @@
 ---
 title: "Flow.zip"
 linkTitle: "zip"
-weight: 2319
+weight: 2322
 ---
 
 Runs two flows sequentially and combines their successful values into a tuple.

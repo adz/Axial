@@ -71,7 +71,7 @@ type ConsoleEmail() =
 
 ## 4. Run the App
 
-Construct the `AppEnv` record and use `Flow.run` to execute your workflow.
+Construct the `AppEnv` record and use `RunSynchronously or ToTask` to execute your workflow.
 
 ```fsharp
 [<EntryPoint>]
@@ -84,7 +84,7 @@ let main _ =
     
     // Run the flow and handle the result
     let run () = task {
-        let! result = Flow.run env (placeOrder order)
+        let! result = RunSynchronously or ToTask env (placeOrder order)
         
         match result with
         | Exit.Success id -> 

@@ -1,6 +1,6 @@
 ---
 title: "Concurrency"
-weight: 500
+weight: 115
 type: docs
 ---
 

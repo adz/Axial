@@ -52,15 +52,13 @@ module ApiShapeTests =
         moduleType typeof<Flow<unit, unit, unit>> "FsFlow.Flow"
         |> publicStaticMemberNames
         |> assertContainsAll
-            [ "run"
-              "runFull"
-              "runWithToken"
-              "toAsync"
-              "toTask"
-              "ok"
+            [ "ok"
               "fail"
               "fromResult"
               "fromOption"
+              "fromAsync"
+              "fromTask"
+              "fromValueTask"
               "acquireRelease"
               "acquireReleaseWith"
               "addFinalizer"
@@ -74,6 +72,10 @@ module ApiShapeTests =
               "race"
               "traverse"
               "sequence" ]
+
+        typeof<Flow<unit, unit, unit>>
+        |> publicInstanceMethodNames
+        |> assertContainsAll [ "ToAsync"; "ToTask"; "ToValueTask"; "RunSynchronously" ]
 
     [<Fact>]
     let ``runtime outcome types keep expected public shape`` () =
@@ -253,7 +255,7 @@ module ApiShapeTests =
     let ``hosting and telemetry modules keep expected public shape`` () =
         moduleType typeof<LiveClock> "FsFlow.Hosting.Hosting"
         |> publicStaticMemberNames
-        |> assertContainsAll [ "createBaseRuntime"; "run" ]
+        |> assertContainsAll [ "createBaseRuntime" ]
 
         moduleType typeof<LiveClock> "FsFlow.Hosting.Startup"
         |> publicStaticMemberNames
@@ -406,7 +408,7 @@ module ApiShapeTests =
 
         moduleType typeof<Layer<unit, unit, int>> "FsFlow.Layer"
         |> publicStaticMemberNames
-        |> assertContainsAll [ "effect"; "succeed"; "read"; "addFinalizer"; "acquireRelease"; "map"; "mapError"; "bind"; "zip"; "zipPar"; "merge"; "map2"; "map3"; "apply" ]
+        |> assertContainsAll [ "fromAsync"; "fromTask"; "fromValueTask"; "succeed"; "read"; "addFinalizer"; "acquireRelease"; "map"; "mapError"; "bind"; "zip"; "zipPar"; "merge"; "map2"; "map3"; "apply" ]
 
         typeof<LayerBuilder>
         |> publicInstanceMethodNames

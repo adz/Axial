@@ -19,14 +19,14 @@ module WorkflowBasicTests =
         test <@ Flow.runSync 21 workflow = Exit.Success 42 @>
 
     [<Fact>]
-    let ``Flow runFull and runWithToken mirror run for the default token`` () =
+    let ``Flow execution members use explicit cancellation token`` () =
         let workflow : Flow<int, string, int> =
             Flow.env
             |> Flow.map (fun value -> value * 2)
 
         test <@ Flow.runSync 21 workflow = Exit.Success 42 @>
-        test <@ Flow.runFull 21 CancellationToken.None workflow |> fun t -> t.AsTask().GetAwaiter().GetResult() = Exit.Success 42 @>
-        test <@ Flow.runWithToken 21 CancellationToken.None workflow |> fun t -> t.AsTask().GetAwaiter().GetResult() = Exit.Success 42 @>
+        test <@ workflow.RunSynchronously(21, cancellationToken = CancellationToken.None) = Exit.Success 42 @>
+        test <@ workflow.ToValueTask(21, cancellationToken = CancellationToken.None).AsTask().GetAwaiter().GetResult() = Exit.Success 42 @>
 
     [<Fact>]
     let ``Flow delay reruns from scratch`` () =
@@ -151,8 +151,8 @@ module WorkflowBasicTests =
 
         use cts = new CancellationTokenSource()
 
-        let first = Flow.runFullSync () cts.Token workflow
-        let second = Flow.runFullSync () cts.Token workflow
+        let first = Flow.runSyncWithToken () cts.Token workflow
+        let second = Flow.runSyncWithToken () cts.Token workflow
 
         test <@ first = Exit.Success 2 @>
         test <@ second = Exit.Success 4 @>

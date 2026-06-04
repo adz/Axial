@@ -95,20 +95,20 @@ module FlowScheduleExtensions =
             let (Schedule op) = schedule
             let rec loop attempt =
                 Flow(fun env ct ->
-                    EffectFlow.fold
-                        (fun v -> EffectFlow.ofValue v)
+                    Execution.fold
+                        (fun v -> Execution.ofValue v)
                         (fun cause ->
                             match cause with
                             | Cause.Fail e ->
-                                EffectFlow.bind (fun (decision, delay) ->
+                                Execution.bind (fun (decision, delay) ->
                                     match decision with
                                     | Some _ ->
-                                        EffectFlow.bind (fun () -> 
+                                        Execution.bind (fun () -> 
                                             FlowInternal.invoke (loop (attempt + 1)) env ct) 
-                                            (EffectFlow.mapError (fun () -> e) (FlowInternal.invoke (Flow.Runtime.sleep delay) env ct))
-                                    | None -> EffectFlow.ofCause cause) 
-                                    (EffectFlow.mapError (fun () -> e) (FlowInternal.invoke (op e attempt) env ct))
-                            | _ -> EffectFlow.ofCause cause)
+                                            (Execution.mapError (fun () -> e) (FlowInternal.invoke (Flow.Runtime.sleep delay) env ct))
+                                    | None -> Execution.ofCause cause) 
+                                    (Execution.mapError (fun () -> e) (FlowInternal.invoke (op e attempt) env ct))
+                            | _ -> Execution.ofCause cause)
                         (FlowInternal.invoke flow env ct))
             loop 0
 
@@ -130,14 +130,14 @@ module FlowScheduleExtensions =
             let (Schedule op) = schedule
             let rec loop attempt lastValue =
                 Flow(fun env ct ->
-                    EffectFlow.bind (fun (decision, (delay: TimeSpan)) ->
+                    Execution.bind (fun (decision, (delay: TimeSpan)) ->
                         match decision with
                         | Some _ ->
-                            EffectFlow.bind (fun () -> 
-                                EffectFlow.bind (fun nextValue -> 
+                            Execution.bind (fun () -> 
+                                Execution.bind (fun nextValue -> 
                                     FlowInternal.invoke (loop (attempt + 1) nextValue) env ct) (FlowInternal.invoke flow env ct)) 
-                                (EffectFlow.mapError (fun () -> Unchecked.defaultof<'error>) (FlowInternal.invoke (Flow.Runtime.sleep delay) env ct))
-                        | None -> EffectFlow.ofValue lastValue) 
-                        (EffectFlow.mapError (fun () -> Unchecked.defaultof<'error>) (FlowInternal.invoke (op lastValue attempt) env ct)))
+                                (Execution.mapError (fun () -> Unchecked.defaultof<'error>) (FlowInternal.invoke (Flow.Runtime.sleep delay) env ct))
+                        | None -> Execution.ofValue lastValue) 
+                        (Execution.mapError (fun () -> Unchecked.defaultof<'error>) (FlowInternal.invoke (op lastValue attempt) env ct)))
             flow |> Flow.bind (loop 0)
 #endif

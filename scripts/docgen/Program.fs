@@ -133,6 +133,20 @@ let qualifyUsageHtml usageName (html: string) =
                 
     result
 
+let platformLabel (qualifiedName: string) =
+    let netOnly =
+        [ ".ToTask"; ".ToValueTask"; ".RunSynchronously"; ".fromTask"; ".fromValueTask" ]
+
+    let fableCompatible =
+        [ ".ToAsync"; ".fromAsync" ]
+
+    if netOnly |> List.exists qualifiedName.EndsWith then
+        Some ".NET only"
+    elif fableCompatible |> List.exists qualifiedName.EndsWith then
+        Some "Fable compatible"
+    else
+        None
+
 let renderMemberPage (weight: int) (m: ApiDocMember) =
     let fullName = logicalName m.Symbol
     let qualifiedName = cleanName fullName
@@ -151,6 +165,11 @@ let renderMemberPage (weight: int) (m: ApiDocMember) =
     
     // Description
     content <- content + m.Comment.Summary.HtmlText + "\n\n"
+
+    match platformLabel qualifiedName with
+    | Some label ->
+        content <- content + $"**Platform:** {label}\n\n"
+    | None -> ()
 
     // Signature
     let qualifier = memberQualifier m
@@ -274,12 +293,12 @@ let pageSpecs = [
         OutPath = ["flow"; "_index.md"]
         Title = "Flow"
         Description = "Source-documented workflow surface in FsFlow."
-        Intro = "This page shows the `Flow<'env, 'error, 'value>` surface, the central workflow type in FsFlow. A flow is a cold description of work that reads an explicit environment, can fail with a typed error, and only runs when you call an execution function such as `Flow.run`. Use this page as the API map for building fail-fast workflows, reading dependencies from `env`, reshaping environments with `localEnv`, composing typed failures, and introducing concurrency with fibers, `zipPar`, or `race`. Start with `flow { }`, `Flow.read`, `Flow.bind`, and `Flow.map`; reach for [runtime helpers](./runtime/) and parallel orchestration only at the boundary where the workflow actually needs them. \n\nNote that common extensions such as `Flow.Retry` and `Flow.Repeat` are available as soon as you `open FsFlow` because their modules are marked with `[<AutoOpen>]`."
+        Intro = "This page shows the `Flow<'env, 'error, 'value>` surface, the central workflow type in FsFlow. A flow is a cold description of work that reads an explicit environment, can fail with a typed error, and only starts when you call an execution member such as `workflow.ToTask(env)`, `workflow.ToValueTask(env)`, `workflow.ToAsync(env)`, or `workflow.RunSynchronously(env)`. Use this page as the API map for building fail-fast workflows, reading dependencies from `env`, reshaping environments with `localEnv`, composing typed failures, and introducing concurrency with fibers, `zipPar`, or `race`. Start with `flow { }`, `Flow.read`, `Flow.bind`, and `Flow.map`; reach for [runtime helpers](./runtime/) and parallel orchestration only at the boundary where the workflow actually needs them. \n\nNote that common extensions such as `Flow.Retry` and `Flow.Repeat` are available as soon as you `open FsFlow` because their modules are marked with `[<AutoOpen>]`."
         SymbolIds = [
             "Core type", ["T:FsFlow.Flow`3"]
             "Fiber operations", ["M:FsFlow.Flow.fork"; "M:FsFlow.Flow.join"; "M:FsFlow.Flow.interrupt"]
-            "Execution", ["M:FsFlow.Flow.run"; "M:FsFlow.Flow.runFull"; "M:FsFlow.Flow.toAsync"; "M:FsFlow.Flow.toAsyncResult"; "M:FsFlow.Flow.toTask"; "M:FsFlow.Flow.toTaskResult"; "M:FsFlow.Flow.toTaskWithToken"; "M:FsFlow.Flow.toTaskResultWithToken"; "M:FsFlow.Flow.toValueTaskResult"; "M:FsFlow.Flow.toValueTaskResultWithToken"; "M:FsFlow.Flow.toResult"]
-            "Module functions", ["M:FsFlow.Flow.ok"; "M:FsFlow.Flow.error"; "M:FsFlow.Flow.succeed"; "M:FsFlow.Flow.value"; "M:FsFlow.Flow.fail"; "M:FsFlow.Flow.fromResult"; "M:FsFlow.Flow.fromOption"; "M:FsFlow.Flow.fromValueOption"; "M:FsFlow.Flow.orElseFlow"; "M:FsFlow.Flow.env"; "M:FsFlow.Flow.read"; "M:FsFlow.Flow.map"; "M:FsFlow.Flow.bind"; "M:FsFlow.Flow.tap"; "M:FsFlow.Flow.tapError"; "M:FsFlow.Flow.mapError"; "M:FsFlow.Flow.catch"; "M:FsFlow.Flow.orElseWith"; "M:FsFlow.Flow.orElse"; "M:FsFlow.Flow.zip"; "M:FsFlow.Flow.map2"; "M:FsFlow.Flow.map3"; "M:FsFlow.Flow.apply"; "M:FsFlow.Flow.ignore"; "M:FsFlow.Flow.localEnv"; "M:FsFlow.Flow.provide"; "M:FsFlow.Flow.delay"; "M:FsFlow.Flow.traverse"; "M:FsFlow.Flow.sequence"]
+            "Execution", ["M:FsFlow.Flow.ToAsync"; "M:FsFlow.Flow.ToTask"; "M:FsFlow.Flow.ToValueTask"; "M:FsFlow.Flow.RunSynchronously"]
+            "Module functions", ["M:FsFlow.Flow.ok"; "M:FsFlow.Flow.error"; "M:FsFlow.Flow.succeed"; "M:FsFlow.Flow.value"; "M:FsFlow.Flow.fail"; "M:FsFlow.Flow.fromResult"; "M:FsFlow.Flow.fromOption"; "M:FsFlow.Flow.fromValueOption"; "M:FsFlow.Flow.fromAsync"; "M:FsFlow.Flow.fromTask"; "M:FsFlow.Flow.fromValueTask"; "M:FsFlow.Flow.orElseFlow"; "M:FsFlow.Flow.env"; "M:FsFlow.Flow.read"; "M:FsFlow.Flow.map"; "M:FsFlow.Flow.bind"; "M:FsFlow.Flow.tap"; "M:FsFlow.Flow.tapError"; "M:FsFlow.Flow.mapError"; "M:FsFlow.Flow.catch"; "M:FsFlow.Flow.orElseWith"; "M:FsFlow.Flow.orElse"; "M:FsFlow.Flow.zip"; "M:FsFlow.Flow.map2"; "M:FsFlow.Flow.map3"; "M:FsFlow.Flow.apply"; "M:FsFlow.Flow.ignore"; "M:FsFlow.Flow.localEnv"; "M:FsFlow.Flow.provide"; "M:FsFlow.Flow.delay"; "M:FsFlow.Flow.traverse"; "M:FsFlow.Flow.sequence"]
             "Scoped resources", ["M:FsFlow.Flow.addFinalizer"; "M:FsFlow.Flow.addDisposable"; "M:FsFlow.Flow.addAsyncDisposable"; "M:FsFlow.Flow.acquireRelease"; "M:FsFlow.Flow.acquireReleaseWith"]
             "Parallel orchestration", ["M:FsFlow.Flow.zipPar"; "M:FsFlow.Flow.race"]
             "Scheduling", ["M:FsFlow.Flow`3.Retry"; "M:FsFlow.Flow`3.Repeat"]
@@ -327,17 +346,6 @@ let pageSpecs = [
         SymbolIds = [
             "Core type", ["T:FsFlow.Cause`1"]
             "Module functions", ["M:FsFlow.Cause.map"; "M:FsFlow.Cause.thenCause"; "M:FsFlow.Cause.both"; "M:FsFlow.Cause.traced"; "M:FsFlow.Cause.failures"; "M:FsFlow.Cause.defects"; "M:FsFlow.Cause.isInterrupted"; "M:FsFlow.Cause.prettyPrint"]
-        ]
-        Alias = None
-    }
-    {
-        OutPath = ["effect"; "_index.md"]
-        Title = "Effect"
-        Description = "Documentation for the Effect execution shape."
-        Intro = "This page shows the `Effect<'value, 'error>` shape and the `EffectFlow` module. An effect is the deferred execution handle returned by `Flow.run`; on .NET it is a `ValueTask<Exit<'v, 'e>>` and on Fable it is an `Async<Exit<'v, 'e>>`. Use the `EffectFlow` functions for low-level algebra and for bridging between the unified flow surface and platform-native async primitives."
-        SymbolIds = [
-            "Core type", ["T:FsFlow.Effect"]
-            "Module functions", ["M:FsFlow.EffectFlow.ofValue"; "M:FsFlow.EffectFlow.ofError"; "M:FsFlow.EffectFlow.ofExit"; "M:FsFlow.EffectFlow.ofCause"; "M:FsFlow.EffectFlow.ofDie"; "M:FsFlow.EffectFlow.ofInterrupt"; "M:FsFlow.EffectFlow.ofResult"; "M:FsFlow.EffectFlow.fold"; "M:FsFlow.EffectFlow.mapBoth"]
         ]
         Alias = None
     }
@@ -481,7 +489,7 @@ let pageSpecs = [
         SymbolIds = [
             "Core type", ["T:FsFlow.Layer`3"]
             "Builder", ["P:FsFlow.Builders.layer"]
-            "Module functions", ["M:FsFlow.Layer.effect"; "M:FsFlow.Layer.succeed"; "M:FsFlow.Layer.read"; "M:FsFlow.Layer.addFinalizer"; "M:FsFlow.Layer.acquireRelease"; "M:FsFlow.Layer.map"; "M:FsFlow.Layer.mapError"; "M:FsFlow.Layer.bind"; "M:FsFlow.Layer.zip"; "M:FsFlow.Layer.zipPar"; "M:FsFlow.Layer.merge"; "M:FsFlow.Layer.map2"; "M:FsFlow.Layer.apply"; "M:FsFlow.Layer.map3"]
+            "Module functions", ["M:FsFlow.Layer.fromAsync"; "M:FsFlow.Layer.fromTask"; "M:FsFlow.Layer.fromValueTask"; "M:FsFlow.Layer.succeed"; "M:FsFlow.Layer.read"; "M:FsFlow.Layer.addFinalizer"; "M:FsFlow.Layer.acquireRelease"; "M:FsFlow.Layer.map"; "M:FsFlow.Layer.mapError"; "M:FsFlow.Layer.bind"; "M:FsFlow.Layer.zip"; "M:FsFlow.Layer.zipPar"; "M:FsFlow.Layer.merge"; "M:FsFlow.Layer.map2"; "M:FsFlow.Layer.apply"; "M:FsFlow.Layer.map3"]
             "Flow integration", ["M:FsFlow.Flow.provide"]
         ]
         Alias = None

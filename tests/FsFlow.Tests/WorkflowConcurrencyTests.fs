@@ -77,7 +77,7 @@ module WorkflowConcurrencyTests =
 
         cts.Cancel()
 
-        test <@ Flow.runFullSync () cts.Token workflow = Exit.Failure Cause.Interrupt @>
+        test <@ Flow.runSyncWithToken () cts.Token workflow = Exit.Failure Cause.Interrupt @>
 
     [<Fact>]
     let ``Deferred: await composes with race`` () =

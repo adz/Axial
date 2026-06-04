@@ -16,8 +16,7 @@ let flowProbe () =
         Flow.read String.length
 
     workflow
-    |> Flow.run "Ada"
-    |> fun t -> t.AsTask().GetAwaiter().GetResult()
+    |> fun workflow -> workflow.RunSynchronously("Ada")
     |> Assert.equal (Exit.Success 3)
 
 let asyncProbe () =
@@ -28,8 +27,7 @@ let asyncProbe () =
         }
 
     workflow
-    |> Flow.run 21
-    |> fun t -> t.AsTask().GetAwaiter().GetResult()
+    |> fun workflow -> workflow.RunSynchronously(21)
     |> Assert.equal (Exit.Success 42)
 
 let taskProbe () =
@@ -41,8 +39,7 @@ let taskProbe () =
 
     let result =
         workflow
-        |> Flow.run ()
-        |> fun t -> t.AsTask().GetAwaiter().GetResult()
+        |> fun workflow -> workflow.RunSynchronously(())
 
     Assert.equal (Exit.Success 42) result
 

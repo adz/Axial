@@ -46,15 +46,13 @@ module OptionFlow =
         | ValueSome innerValue -> Ok innerValue
         | ValueNone -> Error error
 
-/// <summary>
-/// Core functions for working with the portable <see cref="T:FsFlow.Effect`2" /> shape.
-/// </summary>
-module EffectFlow =
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module internal Execution =
     let mapBoth
         (onSuccess: 'value -> 'next)
         (onFailure: Cause<'error> -> Cause<'nextError>)
-        (effect: Effect<'value, 'error>)
-        : Effect<'next, 'nextError> =
+        (effect: Execution<'value, 'error>)
+        : Execution<'next, 'nextError> =
 #if FABLE_COMPILER
         async {
             let! exit = effect
@@ -74,41 +72,41 @@ module EffectFlow =
         else
             Cause.Die exn
 
-    let ofExit (exit: Exit<'value, 'error>) : Effect<'value, 'error> =
+    let ofExit (exit: Exit<'value, 'error>) : Execution<'value, 'error> =
 #if FABLE_COMPILER
         async.Return exit
 #else
         ValueTask<Exit<'value, 'error>>(exit)
 #endif
 
-    let ofValue (value: 'value) : Effect<'value, 'error> =
+    let ofValue (value: 'value) : Execution<'value, 'error> =
         ofExit (Exit.Success value)
 
-    let ofCause (cause: Cause<'error>) : Effect<'value, 'error> =
+    let ofCause (cause: Cause<'error>) : Execution<'value, 'error> =
         ofExit (Exit.Failure cause)
 
-    let ofError (error: 'error) : Effect<'value, 'error> =
+    let ofError (error: 'error) : Execution<'value, 'error> =
         ofCause (Cause.Fail error)
 
-    let ofDie (exn: exn) : Effect<'value, 'error> =
+    let ofDie (exn: exn) : Execution<'value, 'error> =
         ofCause (Cause.Die exn)
 
-    let ofException (exn: exn) : Effect<'value, 'error> =
+    let ofException (exn: exn) : Execution<'value, 'error> =
         ofCause (causeOfException exn)
 
-    let ofInterrupt () : Effect<'value, 'error> =
+    let ofInterrupt () : Execution<'value, 'error> =
         ofCause Cause.Interrupt
 
-    let ofResult (result: Result<'value, 'error>) : Effect<'value, 'error> =
+    let ofResult (result: Result<'value, 'error>) : Execution<'value, 'error> =
         match result with
         | Ok value -> ofValue value
         | Error error -> ofError error
 
     let fold
-        (onSuccess: 'value -> Effect<'next, 'nextError>)
-        (onFailure: Cause<'error> -> Effect<'next, 'nextError>)
-        (effect: Effect<'value, 'error>)
-        : Effect<'next, 'nextError> =
+        (onSuccess: 'value -> Execution<'next, 'nextError>)
+        (onFailure: Cause<'error> -> Execution<'next, 'nextError>)
+        (effect: Execution<'value, 'error>)
+        : Execution<'next, 'nextError> =
 #if FABLE_COMPILER
         async {
             let! exit = effect
@@ -129,20 +127,20 @@ module EffectFlow =
 
     let map
         (mapper: 'value -> 'next)
-        (effect: Effect<'value, 'error>)
-        : Effect<'next, 'error> =
+        (effect: Execution<'value, 'error>)
+        : Execution<'next, 'error> =
         fold (mapper >> ofValue) ofCause effect
 
     let bind
-        (binder: 'value -> Effect<'next, 'error>)
-        (effect: Effect<'value, 'error>)
-        : Effect<'next, 'error> =
+        (binder: 'value -> Execution<'next, 'error>)
+        (effect: Execution<'value, 'error>)
+        : Execution<'next, 'error> =
         fold binder ofCause effect
 
     let mapError
         (mapper: 'error -> 'nextError)
-        (effect: Effect<'value, 'error>)
-        : Effect<'next, 'nextError> =
+        (effect: Execution<'value, 'error>)
+        : Execution<'next, 'nextError> =
         fold ofValue (Cause.map mapper >> ofCause) effect
 
 module internal InternalCombinatorCore =
@@ -180,20 +178,3 @@ module internal InternalCombinatorCore =
         (factory: unit -> 'flow)
         : 'environment -> 'operation =
         fun environment -> factory () |> run environment
-
-[<EditorBrowsable(EditorBrowsableState.Never)>]
-module FlowInternal =
-    let inline invoke
-        (Flow operation: Flow<'env, 'error, 'value>)
-        (environment: 'env)
-        (cancellationToken: CancellationToken)
-        : Effect<'value, 'error> =
-        operation environment cancellationToken
-
-    #if FABLE_COMPILER
-    let run (environment: 'env) (flow: Flow<'env, 'error, 'value>) : Effect<'value, 'error> =
-        invoke flow environment CancellationToken.None
-    #else
-    let run (environment: 'env) (flow: Flow<'env, 'error, 'value>) : Exit<'value, 'error> =
-        (invoke flow environment CancellationToken.None).GetAwaiter().GetResult()
-    #endif

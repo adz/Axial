@@ -41,7 +41,7 @@ The core layer surface is:
 ```fsharp
 Layer.succeed value
 Layer.read projection
-Layer.effect provision
+Layer.fromValueTask provision
 Layer.map mapper layer
 Layer.mapError mapper layer
 Layer.bind binder layer
@@ -52,7 +52,7 @@ Layer.map2 mapper left right
 Layer.map3 mapper left middle right
 ```
 
-Use `Layer.succeed` for already-built values, `Layer.effect` when construction can fail or register cleanup, and
+Use `Layer.succeed` for already-built values, `Layer.fromValueTask` when construction can fail or register cleanup, and
 `Layer.bind` / `layer { let! }` when the next provisioning step depends on an earlier value.
 
 ## Example
@@ -69,7 +69,7 @@ type AppEnv =
     interface IHas<IOrderRepository> with member this.Service = this.Orders
 
 let ordersLayer : Layer<IServiceProvider, BaseRuntimeError, IOrderRepository> =
-    Layer.effect (fun (provider, _) _ ->
+    Layer.fromValueTask (fun (provider, _) _ ->
         match provider.GetService(typeof<IOrderRepository>) with
         | null ->
             ValueTask(Exit.Failure (Cause.Fail (BaseRuntimeError.MissingService "IOrderRepository")))
@@ -96,7 +96,7 @@ Use `let!` when provisioning is dependent:
 
 ```fsharp
 let ordersLayerFromConfig config : Layer<IServiceProvider, BaseRuntimeError, IOrderRepository> =
-    Layer.effect (fun (provider, scope) cancellationToken ->
+    Layer.fromValueTask (fun (provider, scope) cancellationToken ->
         // Build or resolve the repository from config, provider, and scope.
         provisionOrders config provider scope cancellationToken)
 
@@ -168,9 +168,9 @@ provided flow:
 ```fsharp
 let connectionLayer =
     Layer.acquireRelease
-        (Layer.effect (fun (connectionString, _) _ ->
+        (Layer.fromValueTask (fun (connectionString, _) _ ->
             openConnection connectionString
-            |> EffectFlow.ofValue))
+            |> Execution.ofValue))
         (fun connection _ ->
             connection.Dispose()
             Task.CompletedTask)

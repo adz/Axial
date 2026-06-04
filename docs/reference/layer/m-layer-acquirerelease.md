@@ -1,7 +1,7 @@
 ---
 title: "Layer.acquireRelease"
 linkTitle: "acquireRelease"
-weight: 2204
+weight: 2206
 ---
 
 Acquires a resource and registers its release with the layer scope.

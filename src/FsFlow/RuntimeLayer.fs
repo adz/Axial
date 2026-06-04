@@ -10,7 +10,8 @@ open System.Threading.Tasks
 /// <typeparam name="error">The typed failure produced during provisioning.</typeparam>
 /// <typeparam name="output">The environment or service bundle produced by the layer.</typeparam>
 type Layer<'input, 'error, 'output> =
-    | Layer of (('input * Scope) -> CancellationToken -> Effect<'output, 'error>)
+    internal
+    | Layer of (('input * Scope) -> CancellationToken -> Execution<'output, 'error>)
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
@@ -20,23 +21,55 @@ module Layer =
         (input: 'input)
         (scope: Scope)
         (cancellationToken: CancellationToken)
-        : Effect<'output, 'error> =
+        : Execution<'output, 'error> =
         let (Layer operation) = layer
         operation (input, scope) cancellationToken
 
-    /// <summary>Creates a layer from a raw effectful provisioning function.</summary>
-    let effect
-        (operation: ('input * Scope) -> CancellationToken -> Effect<'output, 'error>)
+    let internal fromExecution
+        (operation: ('input * Scope) -> CancellationToken -> Execution<'output, 'error>)
         : Layer<'input, 'error, 'output> =
         Layer operation
 
+#if FABLE_COMPILER
+    /// <summary>Creates a layer from a raw async provisioning function.</summary>
+    /// <platforms>Fable compatible</platforms>
+    let fromAsync
+        (operation: ('input * Scope) -> CancellationToken -> Async<Exit<'output, 'error>>)
+        : Layer<'input, 'error, 'output> =
+        Layer operation
+#else
+    /// <summary>Creates a layer from a raw value task provisioning function.</summary>
+    /// <platforms>.NET only</platforms>
+    let fromValueTask
+        (operation: ('input * Scope) -> CancellationToken -> ValueTask<Exit<'output, 'error>>)
+        : Layer<'input, 'error, 'output> =
+        Layer operation
+
+    /// <summary>Creates a layer from a raw task provisioning function.</summary>
+    /// <platforms>.NET only</platforms>
+    let fromTask
+        (operation: ('input * Scope) -> CancellationToken -> Task<Exit<'output, 'error>>)
+        : Layer<'input, 'error, 'output> =
+        Layer(fun input cancellationToken ->
+            ValueTask<Exit<'output, 'error>>(operation input cancellationToken))
+
+    /// <summary>Creates a layer from a raw async provisioning function.</summary>
+    /// <platforms>Fable compatible</platforms>
+    let fromAsync
+        (operation: ('input * Scope) -> CancellationToken -> Async<Exit<'output, 'error>>)
+        : Layer<'input, 'error, 'output> =
+        Layer(fun input cancellationToken ->
+            ValueTask<Exit<'output, 'error>>(
+                Async.StartAsTask(operation input cancellationToken, cancellationToken = cancellationToken)))
+#endif
+
     /// <summary>Creates a layer that succeeds with a fixed output value.</summary>
     let succeed (value: 'output) : Layer<'input, 'error, 'output> =
-        Layer(fun _ _ -> EffectFlow.ofValue value)
+        Layer(fun _ _ -> Execution.ofValue value)
 
     /// <summary>Projects part of the input environment into the layer output.</summary>
     let read (projection: 'input -> 'output) : Layer<'input, 'error, 'output> =
-        Layer(fun (input, _) _ -> EffectFlow.ofValue (projection input))
+        Layer(fun (input, _) _ -> Execution.ofValue (projection input))
 
     /// <summary>Registers an asynchronous finalizer with the layer scope.</summary>
     /// <param name="finalizer">The finalizer to run when the layer scope closes.</param>
@@ -50,7 +83,7 @@ module Layer =
         : Layer<'input, 'error, unit> =
         Layer(fun (_, scope) _ ->
             scope.AddFinalizer finalizer
-            EffectFlow.ofValue ())
+            Execution.ofValue ())
 
     /// <summary>Acquires a resource and registers its release with the layer scope.</summary>
     /// <param name="acquire">The layer that acquires the resource.</param>
@@ -70,9 +103,9 @@ module Layer =
         : Layer<'input, 'error, 'resource> =
         Layer(fun (input, scope) cancellationToken ->
             invoke acquire input scope cancellationToken
-            |> EffectFlow.bind (fun resource ->
+            |> Execution.bind (fun resource ->
                 scope.AddFinalizer(fun ct -> release resource ct)
-                EffectFlow.ofValue resource))
+                Execution.ofValue resource))
 
     /// <summary>Maps the successful output of a layer.</summary>
     let map
@@ -81,7 +114,7 @@ module Layer =
         : Layer<'input, 'error, 'next> =
         Layer(fun (input, scope) cancellationToken ->
             invoke layer input scope cancellationToken
-            |> EffectFlow.map mapper)
+            |> Execution.map mapper)
 
     /// <summary>Maps the typed provisioning failure of a layer.</summary>
     let mapError
@@ -90,7 +123,7 @@ module Layer =
         : Layer<'input, 'nextError, 'output> =
         Layer(fun (input, scope) cancellationToken ->
             invoke layer input scope cancellationToken
-            |> EffectFlow.mapError mapper)
+            |> Execution.mapError mapper)
 
     /// <summary>Sequences layer provisioning with a dependent follow-up layer.</summary>
     let bind
@@ -99,7 +132,7 @@ module Layer =
         : Layer<'input, 'error, 'next> =
         Layer(fun (input, scope) cancellationToken ->
             invoke layer input scope cancellationToken
-            |> EffectFlow.bind (fun value ->
+            |> Execution.bind (fun value ->
                 invoke (binder value) input scope cancellationToken))
 
     /// <summary>Builds two layers from the same input and scope and returns both outputs.</summary>
@@ -113,9 +146,9 @@ module Layer =
         : Layer<'input, 'error, 'left * 'right> =
         Layer(fun (input, scope) cancellationToken ->
             invoke left input scope cancellationToken
-            |> EffectFlow.bind (fun leftValue ->
+            |> Execution.bind (fun leftValue ->
                 invoke right input scope cancellationToken
-                |> EffectFlow.map (fun rightValue -> leftValue, rightValue)))
+                |> Execution.map (fun rightValue -> leftValue, rightValue)))
 
     let private chooseParallelExit
         (leftExit: Exit<'left, 'error>)
@@ -152,7 +185,7 @@ module Layer =
                     try
                         return! invoke layer input branchScope cancellationToken
                     with error ->
-                        return Exit.Failure (EffectFlow.causeOfException error)
+                        return Exit.Failure (Execution.causeOfException error)
                 }
 
             async {
@@ -179,7 +212,7 @@ module Layer =
                             try
                                 return! invoke layer input branchScope cancellationToken |> _.AsTask()
                             with error ->
-                                return Exit.Failure (EffectFlow.causeOfException error)
+                                return Exit.Failure (Execution.causeOfException error)
                         }
 
                     let leftTask = runBranch left leftScope

@@ -31,7 +31,7 @@ module Ref =
     /// <returns>A flow that creates and returns the reference.</returns>
     /// <example>
     /// <code>
-    /// Flow.run () (Ref.make 10)
+    /// (Ref.make 10).RunSynchronously(())
     /// </code>
     /// </example>
     let make (value: 'T) : Flow<'env, 'none, Ref<'T>> =

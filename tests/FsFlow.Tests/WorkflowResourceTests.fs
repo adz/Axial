@@ -70,7 +70,7 @@ module WorkflowResourceTests =
     [<Fact>]
     let ``Flow acquireReleaseWith releases after interruption`` () =
         let releaseCount = ref 0
-        let interrupted = Flow(fun _ _ -> EffectFlow.ofInterrupt ())
+        let interrupted = Flow(fun _ _ -> Execution.ofInterrupt ())
 
         let acquireReleaseResult =
             Flow.acquireReleaseWith
@@ -190,7 +190,7 @@ module WorkflowResourceTests =
                     Task.CompletedTask)
 
         let failed =
-            Layer.effect (fun (_, _) _ -> EffectFlow.ofError "failed")
+            Layer.fromValueTask (fun (_, _) _ -> Execution.ofError "failed")
 
         let result =
             Flow.env<string * string, string>

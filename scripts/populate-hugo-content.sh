@@ -17,6 +17,10 @@ upsert_frontmatter() {
   local value="$3"
   local tmp
 
+  if [ ! -f "$file" ]; then
+    return 0
+  fi
+
   tmp="$(mktemp)"
   awk -v key="$key" -v value="$value" '
     NR == 1 && $0 == "---" {
@@ -59,7 +63,7 @@ upsert_frontmatter "$ref_dir/flow/runtime/_index.md" "weight" "10"
 upsert_frontmatter "$ref_dir/fiber/_index.md" "weight" "20"
 upsert_frontmatter "$ref_dir/exit/_index.md" "weight" "30"
 upsert_frontmatter "$ref_dir/cause/_index.md" "weight" "40"
-upsert_frontmatter "$ref_dir/effect/_index.md" "weight" "50"
+upsert_frontmatter "$ref_dir/concurrency/_index.md" "weight" "115"
 upsert_frontmatter "$ref_dir/result/_index.md" "weight" "60"
 upsert_frontmatter "$ref_dir/check/_index.md" "weight" "70"
 upsert_frontmatter "$ref_dir/validation/_index.md" "weight" "80"

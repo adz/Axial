@@ -130,7 +130,7 @@ module Shared =
         let mutable result = 0
 
         Async.StartWithContinuations(
-            flow |> Flow.run environment,
+            flow.ToAsync(environment),
             (fun value ->
                 result <- consumeExit value
                 completed <- true),

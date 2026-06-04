@@ -359,7 +359,7 @@ A layer builds an output environment from an input environment and a scope:
 
 ```fsharp
 type Layer<'input, 'error, 'output> =
-    ('input * Scope) -> CancellationToken -> Effect<'output, 'error>
+    ('input * Scope) -> CancellationToken -> Execution<'output, 'error>
 ```
 
 Conceptually:
@@ -375,8 +375,11 @@ The public surface should stay small and obvious. The minimum useful operations 
 module Layer =
     val succeed : 'output -> Layer<'input, 'error, 'output>
     val read : ('input -> 'output) -> Layer<'input, 'error, 'output>
-    val effect :
-        (('input * Scope) -> CancellationToken -> Effect<'output, 'error>) ->
+    val fromValueTask :
+        (('input * Scope) -> CancellationToken -> ValueTask<Exit<'output, 'error>>) ->
+        Layer<'input, 'error, 'output>
+    val fromAsync :
+        (('input * Scope) -> CancellationToken -> Async<Exit<'output, 'error>>) ->
         Layer<'input, 'error, 'output>
     val map :
         ('output -> 'next) ->
@@ -508,7 +511,7 @@ type StartupError =
 
 module BaseRuntime =
     let fromServiceProvider : Layer<IServiceProvider, StartupError, BaseRuntime> =
-        Layer.effect (fun (sp, _) _ ->
+        Layer.fromValueTask (fun (sp, _) _ ->
             task {
                 let get<'service> () =
                     match sp.GetService(typeof<'service>) with

@@ -16,4 +16,4 @@ Reads the current runtime cancellation token.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;<a href="https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken">CancellationToken</a></span>&gt;</span></code> | A flow that succeeds with the token supplied to <a href="https://learn.microsoft.com/dotnet/api/runfull">runFull</a> or <a href="https://learn.microsoft.com/dotnet/api/runwithtoken">runWithToken</a>. |
+| <code><span><a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;<a href="https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken">CancellationToken</a></span>&gt;</span></code> | A flow that succeeds with the token supplied at the workflow execution boundary. |

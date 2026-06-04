@@ -25,7 +25,7 @@ type RecordingLoggerFactory(logger: RecordingLogger) =
 
 module HostingTests =
     [<Fact>]
-    let ``Hosting.run provides the standard base runtime from IServiceProvider`` () =
+    let ``BaseRuntime fromServiceProvider provides the standard base runtime from IServiceProvider`` () =
         let innerLogger = RecordingLogger()
         let loggerFactory = new RecordingLoggerFactory(innerLogger) :> ILoggerFactory
         let sp =
@@ -41,8 +41,7 @@ module HostingTests =
             }
 
         let result =
-            Hosting.run sp flow
-            |> fun effect -> effect.AsTask().GetAwaiter().GetResult()
+            flow.RunSynchronously(Hosting.createBaseRuntime sp)
 
         match result with
         | Exit.Success _ -> ()

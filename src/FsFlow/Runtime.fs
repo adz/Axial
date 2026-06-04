@@ -4,19 +4,6 @@ open System
 open System.Collections.Generic
 open System.Threading
 
-[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-[<RequireQualifiedAccess>]
-module internal FiberId =
-    let mutable private nextValue = 0L
-
-    let next () =
-#if FABLE_COMPILER
-        nextValue <- nextValue + 1L
-        FiberId(nextValue)
-#else
-        FiberId(Interlocked.Increment(&nextValue))
-#endif
-
 /// <summary>
 /// Provides a standard way to access a unique request identifier from an environment.
 /// </summary>
@@ -91,74 +78,3 @@ type IEnvironmentVariables =
 
     /// <summary>Returns all visible environment variables as name/value pairs.</summary>
     abstract GetAll: unit -> IReadOnlyDictionary<string, string>
-
-/// <summary>Internal runtime services owned by the flow execution engine.</summary>
-type internal RuntimeContext =
-    {
-        Scope: Scope
-        Annotations: Map<string, string>
-        AnnotationSink: string -> string -> unit
-        FiberId: FiberId
-    }
-
-/// <summary>Helpers for creating and overriding runtime-owned services.</summary>
-[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-[<RequireQualifiedAccess>]
-module internal RuntimeContext =
-    let create (scope: Scope) : RuntimeContext =
-        {
-            Scope = scope
-            Annotations = Map.empty
-            AnnotationSink = fun _ _ -> ()
-            FiberId = FiberId.next ()
-        }
-
-    let detached : RuntimeContext =
-        create (Scope())
-
-    let withScope (scope: Scope) (runtime: RuntimeContext) : RuntimeContext =
-        { runtime with Scope = scope }
-
-    let withAnnotation (name: string) (value: string) (runtime: RuntimeContext) : RuntimeContext =
-        { runtime with Annotations = runtime.Annotations |> Map.add name value }
-
-    let withAnnotationSink (sink: string -> string -> unit) (runtime: RuntimeContext) : RuntimeContext =
-        { runtime with AnnotationSink = sink }
-
-    let withFiberId (fiberId: FiberId) (runtime: RuntimeContext) : RuntimeContext =
-        { runtime with FiberId = fiberId }
-
-/// <summary>Stores the ambient runtime context for the current execution.</summary>
-[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-[<RequireQualifiedAccess>]
-module internal RuntimeState =
-#if FABLE_COMPILER
-    let mutable private currentRuntime = RuntimeContext.detached
-
-    let current () : RuntimeContext = currentRuntime
-
-    let withRuntime (runtime: RuntimeContext) (operation: unit -> 'value) : 'value =
-        let previous = currentRuntime
-        currentRuntime <- runtime
-
-        try
-            operation ()
-        finally
-            currentRuntime <- previous
-#else
-    let private currentRuntime = AsyncLocal<RuntimeContext>()
-
-    let current () : RuntimeContext =
-        match box currentRuntime.Value with
-        | null -> RuntimeContext.detached
-        | _ -> currentRuntime.Value
-
-    let withRuntime (runtime: RuntimeContext) (operation: unit -> 'value) : 'value =
-        let previous = currentRuntime.Value
-        currentRuntime.Value <- runtime
-
-        try
-            operation ()
-        finally
-            currentRuntime.Value <- previous
-#endif

@@ -37,7 +37,7 @@ module Console =
     /// <summary>Builds the live console service as a layer.</summary>
     let layer : Layer<unit, Never, IConsole> =
 #if FABLE_COMPILER
-        Layer.effect (fun _ _ -> async { return Exit.Failure (Cause.Die (PlatformNotSupportedException("Console services are not supported on Fable."))) })
+        Layer.fromAsync (fun _ _ -> async { return Exit.Failure (Cause.Die (PlatformNotSupportedException("Console services are not supported on Fable."))) })
 #else
         Layer.succeed live
 #endif

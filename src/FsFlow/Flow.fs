@@ -9,7 +9,7 @@ module Flow =
         (flow: Flow<'env, 'error, 'value>)
         (environment: 'env)
         (cancellationToken: CancellationToken)
-        : Effect<'value, 'error> =
+        : Execution<'value, 'error> =
         FlowInternal.invoke flow environment cancellationToken
 
     let private combineCleanup
@@ -20,15 +20,15 @@ module Flow =
         : Exit<'value, 'error> =
         let primary =
             match executionError, exit with
-            | Some error, _ -> Exit.Failure (EffectFlow.causeOfException error)
+            | Some error, _ -> Exit.Failure (Execution.causeOfException error)
             | None, Some result -> result
             | None, None -> Exit.Failure (Cause.Die (InvalidOperationException missingOutcomeMessage))
 
         match cleanupError, primary with
         | Some error, Exit.Failure cause ->
-            Exit.Failure (Cause.thenCause cause (EffectFlow.causeOfException error))
+            Exit.Failure (Cause.thenCause cause (Execution.causeOfException error))
         | Some error, Exit.Success _ ->
-            Exit.Failure (EffectFlow.causeOfException error)
+            Exit.Failure (Execution.causeOfException error)
         | None, result ->
             result
 
@@ -68,7 +68,7 @@ module Flow =
         (environment: 'env)
         (cancellationToken: CancellationToken)
         (flow: Flow<'env, 'error, 'value>)
-        : Effect<'value, 'error> =
+        : Execution<'value, 'error> =
         let scope = Scope()
         let runtime = RuntimeContext.create scope
 
@@ -123,26 +123,65 @@ module Flow =
 
     /// <summary>Creates a flow from an execution outcome.</summary>
     let ofExit (exit: Exit<'value, 'error>) : Flow<'env, 'error, 'value> =
-        Flow(fun _ _ -> EffectFlow.ofExit exit)
+        Flow(fun _ _ -> Execution.ofExit exit)
 
-    /// <summary>Internal alias for invoke used by orchestration helpers.</summary>
-    let internal runFullInternal = invoke
-
-    /// <summary>Executes a flow with an explicit cancellation token.</summary>
-    /// <param name="environment">The environment required by the flow.</param>
-    /// <param name="cancellationToken">The token used to signal cancellation.</param>
-    /// <param name="flow">The workflow to execute.</param>
-    /// <returns>An effect that represents the asynchronous execution outcome.</returns>
-    /// <remarks>Uncaught exceptions become <c>Cause.Die</c>; cancellation becomes <c>Cause.Interrupt</c>.</remarks>
-    let runFull (environment: 'env) (cancellationToken: CancellationToken) (flow: Flow<'env, 'error, 'value>) : Effect<'value, 'error> =
+    let internal toExecution
+        (environment: 'env)
+        (cancellationToken: CancellationToken)
+        (flow: Flow<'env, 'error, 'value>)
+        : Execution<'value, 'error> =
         runEffect environment cancellationToken flow
 
-    /// <summary>Executes a flow with an explicit cancellation token.</summary>
-    /// <param name="environment">The environment required by the flow.</param>
-    /// <param name="cancellationToken">The token used to signal cancellation.</param>
-    /// <param name="flow">The workflow to execute.</param>
-    /// <returns>An effect that represents the asynchronous execution outcome.</returns>
-    let runWithToken = runFull
+    let internal toAsyncInternal
+        (environment: 'env)
+        (cancellationToken: CancellationToken option)
+        (flow: Flow<'env, 'error, 'value>)
+        : Async<Exit<'value, 'error>> =
+        async {
+            let! token =
+                match cancellationToken with
+                | Some token -> async.Return token
+                | None -> Async.CancellationToken
+
+            #if FABLE_COMPILER
+            return! toExecution environment token flow
+            #else
+            return! (toExecution environment token flow).AsTask() |> Async.AwaitTask
+            #endif
+        }
+
+    #if !FABLE_COMPILER
+    let internal toValueTaskInternal
+        (environment: 'env)
+        (cancellationToken: CancellationToken)
+        (flow: Flow<'env, 'error, 'value>)
+        : ValueTask<Exit<'value, 'error>> =
+        toExecution environment cancellationToken flow
+
+    let internal toTaskInternal
+        (environment: 'env)
+        (cancellationToken: CancellationToken)
+        (flow: Flow<'env, 'error, 'value>)
+        : Task<Exit<'value, 'error>> =
+        (toExecution environment cancellationToken flow).AsTask()
+
+    let internal runSynchronouslyInternal
+        (environment: 'env)
+        (timeout: int option)
+        (cancellationToken: CancellationToken)
+        (flow: Flow<'env, 'error, 'value>)
+        : Exit<'value, 'error> =
+        let task = toTaskInternal environment cancellationToken flow
+
+        match timeout with
+        | None ->
+            task.GetAwaiter().GetResult()
+        | Some millisecondsTimeout ->
+            if task.Wait(millisecondsTimeout) then
+                task.GetAwaiter().GetResult()
+            else
+                raise (TimeoutException("The flow did not complete before the timeout."))
+    #endif
 
 #if !FABLE_COMPILER
     /// <summary>Registers an asynchronous finalizer with the current runtime scope.</summary>
@@ -157,7 +196,7 @@ module Flow =
         : Flow<'env, 'error, unit> =
         Flow(fun _ _ ->
             RuntimeState.current().Scope.AddFinalizer finalizer
-            EffectFlow.ofValue ())
+            Execution.ofValue ())
 
     /// <summary>Registers a disposable resource with the current runtime scope.</summary>
     /// <param name="resource">The disposable resource to close when the current scope closes.</param>
@@ -167,7 +206,7 @@ module Flow =
         : Flow<'env, 'error, unit> =
         Flow(fun _ _ ->
             RuntimeState.current().Scope.AddDisposable resource
-            EffectFlow.ofValue ())
+            Execution.ofValue ())
 
     /// <summary>Registers an asynchronously disposable resource with the current runtime scope.</summary>
     /// <param name="resource">The async disposable resource to close when the current scope closes.</param>
@@ -177,7 +216,7 @@ module Flow =
         : Flow<'env, 'error, unit> =
         Flow(fun _ _ ->
             RuntimeState.current().Scope.AddAsyncDisposable resource
-            EffectFlow.ofValue ())
+            Execution.ofValue ())
 
     /// <summary>Acquires a resource and registers its release with the current runtime scope.</summary>
     /// <param name="acquire">The flow that acquires the resource.</param>
@@ -194,9 +233,9 @@ module Flow =
         : Flow<'env, 'error, 'resource> =
         Flow(fun environment cancellationToken ->
             invoke acquire environment cancellationToken
-            |> EffectFlow.bind (fun resource ->
+            |> Execution.bind (fun resource ->
                 RuntimeState.current().Scope.AddFinalizer(fun ct -> release resource ct)
-                EffectFlow.ofValue resource))
+                Execution.ofValue resource))
 
     /// <summary>Acquires a resource, uses it, and always runs the release action.</summary>
     /// <param name="acquire">The flow that acquires the resource.</param>
@@ -226,7 +265,7 @@ module Flow =
                                 try
                                     return! invoke (useResource resource) environment cancellationToken |> _.AsTask()
                                 with error ->
-                                    return Exit.Failure (EffectFlow.causeOfException error)
+                                    return Exit.Failure (Execution.causeOfException error)
                             }
 
                         try
@@ -235,122 +274,72 @@ module Flow =
                         with error ->
                             match useExit with
                             | Exit.Failure cause ->
-                                return Exit.Failure (Cause.thenCause cause (EffectFlow.causeOfException error))
+                                return Exit.Failure (Cause.thenCause cause (Execution.causeOfException error))
                             | Exit.Success _ ->
-                                return Exit.Failure (EffectFlow.causeOfException error)
+                                return Exit.Failure (Execution.causeOfException error)
                 }))
 #endif
 
-    /// <summary>Executes a flow with the provided environment and the default cancellation token.</summary>
-    /// <param name="environment">The environment required by the flow.</param>
-    /// <param name="flow">The workflow to execute.</param>
-    /// <returns>An effect that represents the asynchronous execution outcome.</returns>
-    /// <remarks>Uncaught exceptions become <c>Cause.Die</c>; cancellation becomes <c>Cause.Interrupt</c>.</remarks>
-    /// <example>
-    /// <code>
-    /// let flow = Flow.read (fun env -> $"Hello, {env}!")
-    /// let result = Flow.run "World" flow
-    /// // result = Effect that resolves to Success "Hello, World!" on both .NET and Fable
-    /// </code>
-    /// </example>
-    let run (environment: 'env) (flow: Flow<'env, 'error, 'value>) : Effect<'value, 'error> =
-        runEffect environment CancellationToken.None flow
-
-    /// <summary>Executes a flow and returns an async that resolves to the final exit outcome, observing the ambient cancellation token.</summary>
-    /// <param name="environment">The environment required by the flow.</param>
-    /// <param name="flow">The workflow to execute.</param>
-    /// <returns>An async that completes with the fiber's final outcome.</returns>
-    let toAsync (environment: 'env) (flow: Flow<'env, 'error, 'value>) : Async<Exit<'value, 'error>> =
-        async {
-            let! ct = Async.CancellationToken
-            #if FABLE_COMPILER
-            return! runFull environment ct flow
-            #else
-            return! (runFull environment ct flow).AsTask() |> Async.AwaitTask
-            #endif
-        }
-
-    /// <summary>Executes a flow and returns an async that resolves to a standard result, observing the ambient cancellation token.</summary>
-    /// <param name="environment">The environment required by the flow.</param>
-    /// <param name="flow">The workflow to execute.</param>
-    /// <returns>An async that completes with a <see cref="T:System.Result`2" /> representing the successful value or domain failure.</returns>
-    /// <remarks>Interruption signals and defects are raised as exceptions in the caller's context.</remarks>
-    let toAsyncResult (environment: 'env) (flow: Flow<'env, 'error, 'value>) : Async<Result<'value, 'error>> =
-        async {
-            let! exit = toAsync environment flow
-            return Exit.toResult exit
-        }
-
-    #if !FABLE_COMPILER
-    /// <summary>Executes a flow and returns a task that resolves to the final exit outcome.</summary>
-    /// <param name="environment">The environment required by the flow.</param>
-    /// <param name="flow">The workflow to execute.</param>
-    /// <returns>A task that completes with the fiber's final outcome.</returns>
-    let toTask (environment: 'env) (flow: Flow<'env, 'error, 'value>) : Task<Exit<'value, 'error>> =
-        (run environment flow).AsTask()
-
-    /// <summary>Executes a flow and returns a task that resolves to the final exit outcome with an explicit cancellation token.</summary>
-    /// <param name="environment">The environment required by the flow.</param>
-    /// <param name="cancellationToken">The token used to signal cancellation.</param>
-    /// <param name="flow">The workflow to execute.</param>
-    /// <returns>A task that completes with the fiber's final outcome.</returns>
-    let toTaskWithToken (environment: 'env) (cancellationToken: CancellationToken) (flow: Flow<'env, 'error, 'value>) : Task<Exit<'value, 'error>> =
-        (runFull environment cancellationToken flow).AsTask()
-
-    /// <summary>Executes a flow and returns a task that resolves to a standard result.</summary>
-    /// <param name="environment">The environment required by the flow.</param>
-    /// <param name="flow">The workflow to execute.</param>
-    /// <returns>A task that completes with a <see cref="T:System.Result`2" /> representing the successful value or domain failure.</returns>
-    /// <remarks>Interruption signals and defects are raised as exceptions in the caller's context.</remarks>
-    let toTaskResult (environment: 'env) (flow: Flow<'env, 'error, 'value>) : Task<Result<'value, 'error>> =
-        task {
-            let! exit = toTask environment flow
-            return Exit.toResult exit
-        }
-
-    /// <summary>Executes a flow and returns a task that resolves to a standard result with an explicit cancellation token.</summary>
-    /// <param name="environment">The environment required by the flow.</param>
-    /// <param name="cancellationToken">The token used to signal cancellation.</param>
-    /// <param name="flow">The workflow to execute.</param>
-    /// <returns>A task that completes with a <see cref="T:System.Result`2" /> representing the successful value or domain failure.</returns>
-    /// <remarks>Interruption signals and defects are raised as exceptions in the caller's context.</remarks>
-    let toTaskResultWithToken (environment: 'env) (cancellationToken: CancellationToken) (flow: Flow<'env, 'error, 'value>) : Task<Result<'value, 'error>> =
-        task {
-            let! exit = toTaskWithToken environment cancellationToken flow
-            return Exit.toResult exit
-        }
-
-    /// <summary>Executes a flow and returns a value task that resolves to a standard result.</summary>
-    /// <param name="environment">The environment required by the flow.</param>
-    /// <param name="flow">The workflow to execute.</param>
-    /// <returns>A value task that completes with a <see cref="T:System.Result`2" /> representing the successful value or domain failure.</returns>
-    /// <remarks>Interruption signals and defects are raised as exceptions in the caller's context.</remarks>
-    let toValueTaskResult (environment: 'env) (flow: Flow<'env, 'error, 'value>) : ValueTask<Result<'value, 'error>> =
-        ValueTask<Result<'value, 'error>>(
-            task {
-                let! exit = run environment flow
-                return Exit.toResult exit
+#if FABLE_COMPILER
+    /// <summary>Creates a flow from a raw async operation.</summary>
+    /// <platforms>Fable compatible</platforms>
+    let fromAsync (operation: Async<'value>) : Flow<'env, 'error, 'value> =
+        Flow(fun _ _ ->
+            async {
+                try
+                    let! value = operation
+                    return Exit.Success value
+                with error ->
+                    return Exit.Failure (Execution.causeOfException error)
             })
+#else
+    /// <summary>Creates a flow from a raw async operation.</summary>
+    /// <platforms>Fable compatible</platforms>
+    let fromAsync (operation: Async<'value>) : Flow<'env, 'error, 'value> =
+        Flow(fun _ cancellationToken ->
+            ValueTask<Exit<'value, 'error>>(
+                task {
+                    try
+                        let! value =
+                            Async.StartAsTask(operation, cancellationToken = cancellationToken)
 
-    /// <summary>Executes a flow and returns a value task that resolves to a standard result with an explicit cancellation token.</summary>
-    /// <param name="environment">The environment required by the flow.</param>
-    /// <param name="cancellationToken">The token used to signal cancellation.</param>
-    /// <param name="flow">The workflow to execute.</param>
-    /// <returns>A value task that completes with a <see cref="T:System.Result`2" /> representing the successful value or domain failure.</returns>
-    /// <remarks>Interruption signals and defects are raised as exceptions in the caller's context.</remarks>
-    let toValueTaskResultWithToken (environment: 'env) (cancellationToken: CancellationToken) (flow: Flow<'env, 'error, 'value>) : ValueTask<Result<'value, 'error>> =
-        ValueTask<Result<'value, 'error>>(
-            task {
-                let! exit = runFull environment cancellationToken flow
-                return Exit.toResult exit
-            })
-    #endif
+                        return Exit.Success value
+                    with error ->
+                        return Exit.Failure (Execution.causeOfException error)
+                }))
+
+    /// <summary>Creates a flow from a raw task operation.</summary>
+    /// <platforms>.NET only</platforms>
+    let fromTask (operation: Task<'value>) : Flow<'env, 'error, 'value> =
+        Flow(fun _ _ ->
+            ValueTask<Exit<'value, 'error>>(
+                task {
+                    try
+                        let! value = operation
+                        return Exit.Success value
+                    with error ->
+                        return Exit.Failure (Execution.causeOfException error)
+                }))
+
+    /// <summary>Creates a flow from a raw value task operation.</summary>
+    /// <platforms>.NET only</platforms>
+    let fromValueTask (operation: ValueTask<'value>) : Flow<'env, 'error, 'value> =
+        Flow(fun _ _ ->
+            ValueTask<Exit<'value, 'error>>(
+                task {
+                    try
+                        let! value = operation.AsTask()
+                        return Exit.Success value
+                    with error ->
+                        return Exit.Failure (Execution.causeOfException error)
+                }))
+#endif
 
     /// <summary>Creates a successful synchronous flow.</summary>
     /// <param name="value">The value to wrap in a successful flow.</param>
     /// <returns>A flow that always succeeds with the provided value.</returns>
     let ok (value: 'value) : Flow<'env, 'error, 'value> =
-        Flow(fun _ _ -> EffectFlow.ofValue value)
+        Flow(fun _ _ -> Execution.ofValue value)
 
     /// <summary>Alias for <c>ok</c> that reads well in some call sites.</summary>
     /// <param name="value">The value to wrap in a successful flow.</param>
@@ -358,7 +347,7 @@ module Flow =
     /// <example>
     /// <code>
     /// let flow = Flow.succeed 42
-    /// let result = Flow.run () flow
+    /// let result = flow.RunSynchronously(())
     /// // result = Success 42
     /// </code>
     /// </example>
@@ -380,7 +369,7 @@ module Flow =
     /// <param name="failure">The error value to wrap in a failing flow.</param>
     /// <returns>A flow that always fails with the provided error.</returns>
     let error (failure: 'error) : Flow<'env, 'error, 'value> =
-        Flow(fun _ _ -> EffectFlow.ofError failure)
+        Flow(fun _ _ -> Execution.ofError failure)
 
     /// <summary>Alias for <c>error</c> that reads well in some call sites.</summary>
     /// <param name="failure">The error value to wrap in a failing flow.</param>
@@ -388,7 +377,7 @@ module Flow =
     /// <example>
     /// <code>
     /// let flow = Flow.fail "error"
-    /// let result = Flow.run () flow
+    /// let result = flow.RunSynchronously(())
     /// // result = Failure (Cause.Fail "error")
     /// </code>
     /// </example>
@@ -403,7 +392,7 @@ module Flow =
     /// typed failures and <c>die</c> when the workflow should surface a bug or panic.
     /// </remarks>
     let die (exn: exn) : Flow<'env, 'error, 'value> =
-        Flow(fun _ _ -> EffectFlow.ofDie exn)
+        Flow(fun _ _ -> Execution.ofDie exn)
 
     /// <summary>Lifts a <see cref="T:System.Result`2" /> into a synchronous flow.</summary>
     /// <param name="result">The result value to lift.</param>
@@ -415,7 +404,7 @@ module Flow =
     /// </code>
     /// </example>
     let fromResult (result: Result<'value, 'error>) : Flow<'env, 'error, 'value> =
-        Flow(fun _ _ -> EffectFlow.ofResult result)
+        Flow(fun _ _ -> Execution.ofResult result)
 
     let inline private withRuntime
         (mapper: RuntimeContext -> RuntimeContext)
@@ -497,9 +486,9 @@ module Flow =
     [<RequireQualifiedAccess>]
     module Runtime =
         /// <summary>Reads the current runtime cancellation token.</summary>
-        /// <returns>A flow that succeeds with the token supplied to <see cref="runFull" /> or <see cref="runWithToken" />.</returns>
+        /// <returns>A flow that succeeds with the token supplied at the workflow execution boundary.</returns>
         let cancellationToken<'env, 'error> : Flow<'env, 'error, CancellationToken> =
-            Flow(fun _ cancellationToken -> EffectFlow.ofValue cancellationToken)
+            Flow(fun _ cancellationToken -> Execution.ofValue cancellationToken)
 
         /// <summary>Catches <see cref="OperationCanceledException" /> raised by a flow and converts it into a typed error.</summary>
         /// <param name="handler">Maps the cancellation exception into the workflow error type.</param>
@@ -538,9 +527,9 @@ module Flow =
         let ensureNotCanceled<'env, 'error> (canceledError: 'error) : Flow<'env, 'error, unit> =
             Flow(fun _ cancellationToken ->
                 if cancellationToken.IsCancellationRequested then
-                    EffectFlow.ofError canceledError
+                    Execution.ofError canceledError
                 else
-                    EffectFlow.ofValue ())
+                    Execution.ofValue ())
 
         /// <summary>Suspends the flow for the specified duration, observing cancellation.</summary>
         /// <param name="delay">The duration to sleep.</param>
@@ -570,17 +559,17 @@ module Flow =
         /// <summary>Reads the current runtime scope.</summary>
         /// <returns>A flow that succeeds with the scope owned by the current execution boundary.</returns>
         let scope<'env, 'error> : Flow<'env, 'error, Scope> =
-            Flow(fun _ _ -> EffectFlow.ofValue (RuntimeState.current().Scope))
+            Flow(fun _ _ -> Execution.ofValue (RuntimeState.current().Scope))
 
         /// <summary>Reads the current runtime annotations.</summary>
         /// <returns>A flow that succeeds with the ambient annotation map.</returns>
         let annotations<'env, 'error> : Flow<'env, 'error, Map<string, string>> =
-            Flow(fun _ _ -> EffectFlow.ofValue (RuntimeState.current().Annotations))
+            Flow(fun _ _ -> Execution.ofValue (RuntimeState.current().Annotations))
 
         /// <summary>Reads the current runtime trace id annotation if one is present.</summary>
         /// <returns>A flow that succeeds with the ambient <c>trace_id</c> value, if present.</returns>
         let traceId<'env, 'error> : Flow<'env, 'error, string option> =
-            Flow(fun _ _ -> EffectFlow.ofValue (RuntimeState.current().Annotations |> Map.tryFind "trace_id"))
+            Flow(fun _ _ -> Execution.ofValue (RuntimeState.current().Annotations |> Map.tryFind "trace_id"))
 
         /// <summary>Fails with the supplied typed error when the flow does not complete before the timeout.</summary>
         /// <param name="after">The timeout duration.</param>
@@ -722,8 +711,8 @@ module Flow =
             let rec loop attempt =
                 Flow(fun environment cancellationToken ->
                     invoke flow environment cancellationToken
-                    |> EffectFlow.fold
-                        EffectFlow.ofValue
+                    |> Execution.fold
+                        Execution.ofValue
                         (fun cause ->
                             match cause with
                             | Cause.Fail error when attempt < policy.MaxAttempts && policy.ShouldRetry error ->
@@ -745,7 +734,7 @@ module Flow =
                                     })
                                 #endif
                             | _ ->
-                                EffectFlow.ofCause cause))
+                                Execution.ofCause cause))
 
             loop 1
 
@@ -781,7 +770,7 @@ module Flow =
                             metadata.Status <- statusFromExit exit
                             return exit
                         with error ->
-                            let exit = Exit.Failure (EffectFlow.causeOfException error)
+                            let exit = Exit.Failure (Execution.causeOfException error)
                             metadata.Status <- statusFromExit exit
                             return exit
                     }
@@ -817,7 +806,7 @@ module Flow =
                         metadata.Status <- statusFromExit exit
                         return exit
                     with error ->
-                        let exit = Exit.Failure (EffectFlow.causeOfException error)
+                        let exit = Exit.Failure (Execution.causeOfException error)
                         metadata.Status <- statusFromExit exit
                         return exit
                 }
@@ -828,7 +817,7 @@ module Flow =
                     ExitTask = exitTask
                     InterruptSource = cts
                 }
-            EffectFlow.ofValue fiber
+            Execution.ofValue fiber
             #endif
         )
 
@@ -848,17 +837,6 @@ module Flow =
             ValueTask<Exit<'value, 'error>>(fiber.ExitTask)
             #endif
         )
-
-    #if !FABLE_COMPILER
-    /// <summary>Executes a flow and converts the final <see cref="T:FsFlow.Exit`2" /> into a standard <see cref="T:System.Result`2" />.</summary>
-    /// <remarks>
-    /// Interruption signals and defects are raised as exceptions in the caller's context.
-    /// </remarks>
-    let toResult (environment: 'env) (flow: Flow<'env, 'error, 'value>) : Result<'value, 'error> =
-        let effect = run environment flow
-        effect.AsTask().GetAwaiter().GetResult()
-        |> Exit.toResult
-    #endif
 
     /// <summary>Signals a fiber to stop and waits for it to finish its cleanup.</summary>
     /// <remarks>
@@ -1048,10 +1026,10 @@ module Flow =
         : Flow<'env, 'error, 'value> =
         Flow(fun environment cancellationToken ->
             match result with
-            | Ok value -> EffectFlow.ofValue value
+            | Ok value -> Execution.ofValue value
             | Error () ->
                 invoke errorFlow environment cancellationToken
-                |> EffectFlow.fold EffectFlow.ofError EffectFlow.ofCause)
+                |> Execution.fold Execution.ofError Execution.ofCause)
 
     /// <summary>Reads the current environment as the successful flow value.</summary>
     /// <remarks>
@@ -1066,7 +1044,7 @@ module Flow =
     /// </code>
     /// </example>
     let env<'env, 'error> : Flow<'env, 'error, 'env> =
-        Flow(fun environment _ -> EffectFlow.ofValue environment)
+        Flow(fun environment _ -> Execution.ofValue environment)
 
     /// <summary>Projects one value from the current environment.</summary>
     /// <remarks>
@@ -1083,7 +1061,7 @@ module Flow =
     /// </code>
     /// </example>
     let read (projection: 'env -> 'value) : Flow<'env, 'error, 'value> =
-        Flow(fun environment _ -> EffectFlow.ofValue (projection environment))
+        Flow(fun environment _ -> Execution.ofValue (projection environment))
 
     /// <summary>Transforms the successful value of a flow.</summary>
     /// <remarks>
@@ -1105,7 +1083,7 @@ module Flow =
         : Flow<'env, 'error, 'next> =
         Flow(fun environment cancellationToken ->
             invoke flow environment cancellationToken
-            |> EffectFlow.map mapper)
+            |> Execution.map mapper)
 
     /// <summary>Maps the successful value of a synchronous flow to <c>unit</c>.</summary>
     /// <param name="flow">The source flow.</param>
@@ -1138,7 +1116,7 @@ module Flow =
         : Flow<'env, 'error, 'next> =
         Flow(fun environment cancellationToken ->
             invoke flow environment cancellationToken
-            |> EffectFlow.bind (fun value -> invoke (binder value) environment cancellationToken))
+            |> Execution.bind (fun value -> invoke (binder value) environment cancellationToken))
 
     /// <summary>Sequences a synchronous continuation after a successful value.</summary>
     let (>>=)
@@ -1191,16 +1169,16 @@ module Flow =
         : Flow<'env, 'error, 'value> =
         Flow(fun environment cancellationToken ->
             invoke flow environment cancellationToken
-            |> EffectFlow.fold
-                EffectFlow.ofValue
+            |> Execution.fold
+                Execution.ofValue
                 (fun cause ->
                     match cause with
                     | Cause.Fail error ->
                         invoke (binder error) environment cancellationToken
-                        |> EffectFlow.fold
-                            (fun () -> EffectFlow.ofCause cause)
-                            EffectFlow.ofCause
-                    | _ -> EffectFlow.ofCause cause))
+                        |> Execution.fold
+                            (fun () -> Execution.ofCause cause)
+                            Execution.ofCause
+                    | _ -> Execution.ofCause cause))
 
     /// <summary>Maps the error value of a synchronous flow.</summary>
     /// <remarks>
@@ -1221,7 +1199,7 @@ module Flow =
         : Flow<'env, 'nextError, 'value> =
         Flow(fun environment cancellationToken ->
             invoke flow environment cancellationToken
-            |> EffectFlow.mapError mapper)
+            |> Execution.mapError mapper)
 
     /// <summary>Maps both the successful value and the failure cause of a synchronous flow.</summary>
     /// <param name="onSuccess">The function to transform the success value.</param>
@@ -1235,7 +1213,7 @@ module Flow =
         : Flow<'env, 'nextError, 'next> =
         Flow(fun environment cancellationToken ->
             invoke flow environment cancellationToken
-            |> EffectFlow.mapBoth onSuccess onFailure)
+            |> Execution.mapBoth onSuccess onFailure)
 
     /// <summary>Folds both the successful value and the failure cause into a new flow.</summary>
     /// <remarks>
@@ -1253,7 +1231,7 @@ module Flow =
         : Flow<'env, 'nextError, 'next> =
         Flow(fun environment cancellationToken ->
             invoke flow environment cancellationToken
-            |> EffectFlow.fold
+            |> Execution.fold
                 (fun value -> invoke (onSuccess value) environment cancellationToken)
                 (fun cause -> invoke (onFailure cause) environment cancellationToken))
 
@@ -1312,12 +1290,12 @@ module Flow =
         : Flow<'env, 'error, 'value> =
         Flow(fun environment cancellationToken ->
             invoke flow environment cancellationToken
-            |> EffectFlow.fold
-                EffectFlow.ofValue
+            |> Execution.fold
+                Execution.ofValue
                 (fun cause ->
                     match cause with
                     | Cause.Fail error -> invoke (fallback error) environment cancellationToken
-                    | _ -> EffectFlow.ofCause cause))
+                    | _ -> Execution.ofCause cause))
 
     /// <summary>Falls back to another flow when the source flow fails.</summary>
     /// <param name="fallback">The flow to run if the source flow fails.</param>
@@ -1469,7 +1447,7 @@ module Flow =
                     let! result =
                         RuntimeState.withRuntime runtime (fun () ->
                             Layer.invoke layer environment scope cancellationToken
-                            |> EffectFlow.bind (fun innerEnvironment ->
+                            |> Execution.bind (fun innerEnvironment ->
                                 invoke flow innerEnvironment cancellationToken))
 
                     exit <- Some result
@@ -1549,11 +1527,11 @@ module Flow =
             |> Seq.fold
                 (fun effect value ->
                     effect
-                    |> EffectFlow.bind (fun results ->
+                    |> Execution.bind (fun results ->
                         invoke (mapping value) environment ct
-                        |> EffectFlow.map (fun mapped -> mapped :: results)))
-                (EffectFlow.ofValue [])
-            |> EffectFlow.map List.rev)
+                        |> Execution.map (fun mapped -> mapped :: results)))
+                (Execution.ofValue [])
+            |> Execution.map List.rev)
 
     /// <summary>Transforms a sequence of flows into a flow of a sequence and stops at the first failure.</summary>
     /// <param name="flows">The sequence of flows to run.</param>

@@ -37,7 +37,7 @@ module CoreServicesExample =
                           "FSFLOW_SERVICES_PORT_TEXT", "abc" ]
             }
 
-        let run flow = Flow.run services flow |> fun t -> t.AsTask().GetAwaiter().GetResult()
+        let run (flow: Flow<AppServices, 'error, 'value>) = flow.RunSynchronously(services)
 
         printfn "clock=%O" (run Clock.now)
         printfn "random=%d" (run (FsFlow.Services.Core.Random.nextInt 0 10) |> function Exit.Success v -> v | _ -> -1)

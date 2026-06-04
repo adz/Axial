@@ -17,9 +17,7 @@ type ReaderOverheadBenchmarks() =
 
     [<Benchmark(Baseline = true, Description = "Flow localEnv x10")>]
     member _.FlowLocalEnvX10() =
-        flowLocalEnv
-        |> Flow.run 0
-        |> fun operation -> operation.AsTask().GetAwaiter().GetResult()
+        flowLocalEnv.RunSynchronously(0)
         |> Shared.consumeExit
 
     [<Benchmark(Description = "Manual env passing x10")>]
@@ -199,9 +197,7 @@ type SynchronousCompletionBenchmarks() =
 
     [<Benchmark(Baseline = true)>]
     member _.Flow() =
-        flow
-        |> Flow.run 0
-        |> fun operation -> operation.AsTask().GetAwaiter().GetResult()
+        flow.RunSynchronously(0)
         |> Shared.consumeExit
 
     [<Benchmark(Description = "Candidate ValueTaskFlow")>]

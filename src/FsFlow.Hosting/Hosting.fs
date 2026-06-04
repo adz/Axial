@@ -42,15 +42,11 @@ module Hosting =
             EnvironmentVariables = EnvironmentVariables.live
         }
 
-    /// <summary>Executes a flow that depends on the standard base runtime using services from the provided <see cref="T:System.IServiceProvider" />.</summary>
-    let run (sp: IServiceProvider) (flow: Flow<BaseRuntime, 'error, 'value>) : Effect<'value, 'error> =
-        Flow.run (createBaseRuntime sp) flow
-
 [<RequireQualifiedAccess>]
 module Startup =
     /// <summary>Validates that all required environment variables are present and valid using the live base runtime.</summary>
     let validateEnvironment (flow: Flow<BaseRuntime, EnvironmentVariableError, 'v>) : Result<'v, string list> =
-        match (Flow.run BaseRuntime.liveValue flow).AsTask().GetAwaiter().GetResult() with
+        match flow.RunSynchronously(BaseRuntime.liveValue) with
         | Exit.Success v -> Ok v
         | Exit.Failure (Cause.Fail e) -> Error [ EnvironmentVariableErrors.describe e ]
         | Exit.Failure Cause.Interrupt -> Error [ "Validation was interrupted" ]

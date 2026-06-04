@@ -1,7 +1,7 @@
 ---
 title: "Layer.addFinalizer"
 linkTitle: "addFinalizer"
-weight: 2203
+weight: 2205
 type: docs
 ---
 

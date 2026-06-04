@@ -12,10 +12,10 @@ open FsFlow
 module TestExtensions =
     module Flow =
         let runSync (environment: 'env) (flow: Flow<'env, 'error, 'value>) : Exit<'value, 'error> =
-            Flow.run environment flow |> fun t -> t.AsTask().GetAwaiter().GetResult()
+            flow.RunSynchronously(environment)
         
-        let runFullSync (environment: 'env) (cancellationToken: CancellationToken) (flow: Flow<'env, 'error, 'value>) : Exit<'value, 'error> =
-            Flow.runFull environment cancellationToken flow |> fun t -> t.AsTask().GetAwaiter().GetResult()
+        let runSyncWithToken (environment: 'env) (cancellationToken: CancellationToken) (flow: Flow<'env, 'error, 'value>) : Exit<'value, 'error> =
+            flow.RunSynchronously(environment, cancellationToken = cancellationToken)
 
 module TestSupport =
     type Address =

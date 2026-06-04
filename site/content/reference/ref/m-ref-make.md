@@ -27,5 +27,5 @@ Creates a new <a href="https://adz.github.io/FsFlow/reference/FsFlow/fsflow-ref-
 
 ## Examples
 
-<pre class="fssnip highlighted"><code lang="fsharp"> <span class="id">Flow</span><span class="pn">.</span><span class="id">run</span> <span class="pn">(</span><span class="pn">)</span> <span class="pn">(</span><span class="id">Ref</span><span class="pn">.</span><span class="id">make</span> <span class="n">10</span><span class="pn">)</span>
+<pre class="fssnip highlighted"><code lang="fsharp"> <span class="pn">(</span><span class="id">Ref</span><span class="pn">.</span><span class="id">make</span> <span class="n">10</span><span class="pn">)</span><span class="pn">.</span><span class="id">RunSynchronously</span><span class="pn">(</span><span class="pn">(</span><span class="pn">)</span><span class="pn">)</span>
 </code></pre>
