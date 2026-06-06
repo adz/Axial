@@ -12,13 +12,13 @@ FsFlow keeps the public workflow type simple:
 Flow<'env, 'error, 'value>
 ```
 
-The active direction now splits concerns like this:
+The active direction splits concerns like this:
 
 - explicit services and app/domain dependencies live in `'env`
 - executor mechanics live in a closed ambient runtime
 
-This is a stricter model than the earlier ambient-services plan. First-party service packages and former
-ambient operational services should be expressed as explicit services, not runtime slots.
+First-party service packages and standard operational services should be expressed as explicit services, not runtime
+slots.
 
 ## Active Architecture
 
@@ -72,8 +72,8 @@ Missing provider registrations are configuration defects, not domain errors.
 
 ### Closed Ambient Runtime
 
-Ambient runtime state is now reserved for executor mechanics only. It is not the dependency model for first-party
-service packages.
+Ambient runtime state is reserved for executor mechanics only. It is not the dependency model for first-party service
+packages.
 
 Ambient mechanics include:
 
@@ -82,12 +82,12 @@ Ambient mechanics include:
 - scheduling and interruption helpers
 - runtime annotations and trace metadata
 
-Former ambient operational services such as clock, log, random, GUID, and environment variables should be modeled as
-explicit services and provisioned through environments and layers.
+Operational services such as clock, log, random, GUID, and environment variables should be modeled as explicit services
+and provisioned through environments and layers.
 
 ## Scope And Layers
 
-`Scope` and `Layer` are now part of the target public architecture rather than deferred internals.
+`Scope` and `Layer` are part of the target public architecture rather than deferred internals.
 
 - `Scope` owns deterministic teardown
 - `Layer` provisions explicit environments and service bundles
@@ -144,7 +144,7 @@ As of 2026-06-03, core code, service packages, tests, examples, and generated re
 service/layer model. Integration tests cover `Microsoft.Extensions.DependencyInjection` provider-backed base runtime
 construction, typed missing-registration failures, direct `Service<'T>.resolve()` defects, and composition of the
 current Console, FileSystem, Http, and Process service layers. Remaining work should improve public guide coverage and
-future service packages, not preserve the old ambient-core or `Flow.service` / `Flow.inject` direction.
+future service packages, not ambient-core or `Flow.service` / `Flow.inject` direction.
 
 ## Open Product Questions
 

@@ -49,7 +49,8 @@ type RangeFailure<'value> =
 
 /// <summary>
 /// Pure validation helpers. Unprefixed names are predicates, <c>when*</c> names preserve the
-/// original input on success, and <c>take*</c> names extract or narrow the successful value.
+/// original input on success, and <c>take*</c> names extract an inner value or return a
+/// deliberately different success shape.
 /// </summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Check =
@@ -337,12 +338,6 @@ module Check =
     /// <returns><c>Ok value</c> when non-null; otherwise <c>Error ()</c>.</returns>
     let whenNotNull (value: 'value when 'value : null) : Check<'value> =
         notNull value |> keepValue value
-
-    /// <summary>Takes the reference when it is not null.</summary>
-    /// <param name="value">The reference value to check.</param>
-    /// <returns><c>Ok value</c> when non-null; otherwise <c>Error ()</c>.</returns>
-    let takeNotNull (value: 'value when 'value : null) : Check<'value> =
-        whenNotNull value
 
     /// <summary>Returns success when the reference is null.</summary>
     /// <param name="value">The reference value to check.</param>

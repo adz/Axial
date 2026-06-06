@@ -77,7 +77,7 @@ module Builders =
     /// <para>
     /// <c>Check&lt;'value&gt;</c> covers unit-error predicate results. Use <c>Check.when*</c>
     /// when a predicate should preserve the original value, <c>Check.take*</c> when it should
-    /// extract an inner value, <c>Check.withError</c> to attach an application error, and
+    /// extract or reshape the success value, <c>Check.withError</c> to attach an application error, and
     /// <c>Validation.mapError</c> when you need to remap accumulated diagnostics.
     /// </para>
     /// <para>

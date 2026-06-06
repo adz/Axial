@@ -3,13 +3,14 @@ title: "Check"
 weight: 70
 ---
 
-This page shows the `Check` surface for reusable, pure validation. Unprefixed helpers test a property, `when*` helpers preserve the original input on success, and `take*` helpers extract or narrow a useful value. Simple helpers carry a `unit` error and can be converted into typed failures with `Check.withError`. Helpers with useful built-in diagnostics return typed `Result` values such as `CardinalityFailure`, `StringLengthFailure`, or `RangeFailure`. Use `Check` before moving into `Result`, `Validation`, or `Flow`.
+This page shows the `Check` surface for reusable, pure validation. Unprefixed helpers test a property, `when*` helpers preserve the original input on success, and `take*` helpers extract an inner value or return a deliberately different success shape. Simple helpers carry a `unit` error and can be converted into typed failures with `Check.withError`. Helpers with useful built-in diagnostics return typed `Result` values such as `CardinalityFailure`, `StringLengthFailure`, or `RangeFailure`. Use `Check` before moving into `Result`, `Validation`, or `Flow`.
 
 ## Core type
 
 - [`Check`](./t-check.md):
  Pure validation helpers. Unprefixed names are predicates, <code>when*</code> names preserve the
- original input on success, and <code>take*</code> names extract or narrow the successful value.
+ original input on success, and <code>take*</code> names extract an inner value or return a
+ deliberately different success shape.
 
 
 ## Structured errors
@@ -141,7 +142,6 @@ This page shows the `Check` surface for reusable, pure validation. Unprefixed he
 - [`Check.takeSome`](./m-check-takesome.md): Takes the value from an option when it is <code>Some</code>.
 - [`Check.takeValueSome`](./m-check-takevaluesome.md): Takes the value from a value option when it is <code>ValueSome</code>.
 - [`Check.takeHasValue`](./m-check-takehasvalue.md): Takes the value from a nullable when it has a value.
-- [`Check.takeNotNull`](./m-check-takenotnull.md): Takes the reference when it is not null.
 - [`Check.takeOk`](./m-check-takeok.md): Takes the successful value from a result when it is <code>Ok</code>.
 - [`Check.takeError`](./m-check-takeerror.md): Takes the error value from a result when it is <code>Error</code>.
 - [`Check.takeHead`](./m-check-takehead.md): Takes the first item from a sequence when it is not empty.

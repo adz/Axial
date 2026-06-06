@@ -53,7 +53,7 @@ when their error must be assigned or mapped before entering `flow {}`.
 
 FsFlow unifies Result-based programming across pure logic and effectful execution.
 
-- write predicate logic once with Check, using `when*` checks when you need the input again, `take*` checks when you need an extracted value, and unprefixed checks when you only need yes/no
+- write predicate logic once with Check, using `when*` checks when you need the input again, `take*` checks when you need an inner value or deliberately different success shape, and unprefixed checks when you only need yes/no
 - keep fail-fast domain logic in Result
 - accumulate independent validation with Validation
 - lift the same logic directly into flows when you need environment, async, task, cancellation, logging, or resource handling

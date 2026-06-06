@@ -16,7 +16,7 @@ If you are an AI assistant, prioritize the patterns in the **Dependency Guidance
 When using FsFlow, follow these "Golden Path" patterns for the best results.
 
 ### 1. Handling Failures (Idiomatic Way)
-Use `Check` for pure validation. Unprefixed helpers are yes/no predicates, `when*` helpers preserve the original value, `take*` helpers extract or narrow a value, and `Check.withError` turns a pure unit-error result into a domain error.
+Use `Check` for pure validation. Unprefixed helpers are yes/no predicates, `when*` helpers preserve the original value, `take*` helpers extract an inner value or return a deliberately different success shape, and `Check.withError` turns a pure unit-error result into a domain error.
 
 | Source Type | Idiomatic Pattern |
 | :--- | :--- |
@@ -27,7 +27,7 @@ Use `Check` for pure validation. Unprefixed helpers are yes/no predicates, `when
 | `Result<'T, unit>` | `check |> Check.withError e` |
 
 ### 2. Binding Error-Adapted Sources (Idiomatic Way)
-Use `BindError.withError` inside `flow {}` when the source fails with missingness, falsehood, or `unit`, and you need to assign the flow's domain error at the bind site.
+Use `BindError.withError` inside `flow {}` when the source fails with option/value-option absence or a `unit` error, and you need to assign the flow's domain error at the bind site.
 
 | Source Type | Idiomatic Pattern |
 | :--- | :--- |
@@ -35,7 +35,7 @@ Use `BindError.withError` inside `flow {}` when the source fails with missingnes
 | `voption<'T>` | `let! x = vopt |> BindError.withError e` |
 | `Async<Option<'T>>` | `let! x = aOpt |> BindError.withError e` |
 | `Async<voption<'T>>` | `let! x = aVOpt |> BindError.withError e` |
-| `bool` | `do! cond |> BindError.withError e` |
+| `bool` predicate | `do! cond |> Check.isTrue |> BindError.withError e` |
 | `Result<'T, unit>` | `let! x = check |> BindError.withError e` |
 | `Flow<'Env, unit, 'T>` | `let! x = flow |> BindError.withError e` |
 | `Task<Option<'T>>` | `let! x = tOpt |> BindError.withError e` |

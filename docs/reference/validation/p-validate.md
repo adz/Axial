@@ -31,7 +31,7 @@ weight: 2000
  not evaluated.
  </p><p class='fsdocs-para'><code>Check&lt;&#39;value&gt;</code> covers unit-error predicate results. Use <code>Check.when*</code>
  when a predicate should preserve the original value, <code>Check.take*</code> when it should
- extract an inner value, <code>Check.withError</code> to attach an application error, and
+ extract or reshape the success value, <code>Check.withError</code> to attach an application error, and
  <code>Validation.mapError</code> when you need to remap accumulated diagnostics.
  </p><p class='fsdocs-para'>
  When nested API response fields need to keep their place in the diagnostics graph, use

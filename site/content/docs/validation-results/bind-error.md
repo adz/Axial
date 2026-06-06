@@ -12,7 +12,7 @@ This page shows how to assign or map a source error immediately before `flow {}`
 
 ## Assign an Error
 
-Use `BindError.withError` when the source fails with missingness, falsehood, or `unit`.
+Use `BindError.withError` when the source fails with option/value-option absence or a `unit` error.
 
 ```fsharp
 type User = { Name: string }
@@ -38,15 +38,22 @@ let login username password =
 
 `BindError.withError` works on:
 
-- `bool`
 - `Option<'value>`
 - `ValueOption<'value>`
 - `Result<'value, unit>`
 - `Flow<'env, unit, 'value>`
-- `Async<bool>`, `Task<bool>`, `ValueTask<bool>`
 - `Async<Option<'value>>`, `Task<Option<'value>>`, `ValueTask<Option<'value>>`
 - `Async<ValueOption<'value>>`, `Task<ValueOption<'value>>`, `ValueTask<ValueOption<'value>>`
 - `Async<Result<'value, unit>>`, `Task<Result<'value, unit>>`, `ValueTask<Result<'value, unit>>`
+
+For boolean predicates, make the predicate explicit first:
+
+```fsharp
+do!
+    isValid
+    |> Check.isTrue
+    |> BindError.withError InvalidPassword
+```
 
 ## Map an Error
 

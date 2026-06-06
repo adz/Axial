@@ -10,10 +10,10 @@ FsFlow should move to a single, explicit dependency story:
 1. Delete the internal registry completely.
 2. Keep `Flow<'env, 'error, 'value>` as the public workflow type.
 3. Keep ambient runtime state only for closed executor mechanics.
-4. Move former ambient operational services into explicit services.
+4. Model operational services as explicit services.
 5. Replace `Flow.service` and `Flow.inject` with `Service<'service>.get()` and `Service<'service>.resolve()`.
 6. Make `Layer` the public provisioning abstraction.
-7. Use layers to build a base runtime bundle for the former ambient services.
+7. Use layers to build a base runtime bundle for standard operational services.
 
 This is the v1 direction. Backward compatibility is not a design constraint.
 
@@ -254,9 +254,9 @@ more honestly.
 
 ---
 
-## 8. Former Ambient Services Become Explicit Service Packages
+## 8. Operational Services Are Explicit Service Packages
 
-The former ambient core services should move to the same model as the service packages.
+Core operational services should use the same model as the service packages.
 
 This means:
 
@@ -266,8 +266,7 @@ This means:
 - `Guid.newGuid` becomes a thin wrapper over `Service<IGuid>.get()`
 - `EnvironmentVariable.get` becomes a thin wrapper over `Service<IEnvironmentVariables>.get()`
 
-The important point is that the nice helper modules can stay, but their dependency model changes from ambient runtime to
-explicit service access.
+The important point is that the helper modules expose explicit service access.
 
 Example:
 
@@ -463,7 +462,7 @@ It should not be treated as optional architecture garnish. It is the provisionin
 
 ## 11. Building a Base Runtime with Layers
 
-The former ambient core services should have a recommended explicit bundle that can be built by layers.
+Core operational services should have a recommended explicit bundle that can be built by layers.
 
 ### 11.1 Base Runtime Bundle
 
@@ -483,8 +482,8 @@ type BaseRuntime =
     interface IHas<IEnvironmentVariables> with member x.Service = x.EnvironmentVariables
 ```
 
-This bundle is not ambient runtime state. It is an ordinary explicit environment value that happens to group the
-former core services.
+This bundle is not ambient runtime state. It is an ordinary explicit environment value that groups the standard
+operational services.
 
 ### 11.2 Live Base Runtime Layer
 
@@ -665,14 +664,14 @@ The clean implementation order is:
 3. Introduce public `Scope` with async finalizers.
 4. Introduce public `Layer`.
 5. Replace the current flow-based `provideLayer` with `Flow.provide`.
-6. Migrate former ambient core service modules to explicit services.
+6. Implement core operational service modules as explicit services.
 7. Delete `Flow.service`, `Flow.inject`, and ambient operational overrides.
 8. Delete `Registry` and `RuntimeAdapter`.
 9. Update examples and docs in the same implementation wave.
 
 The important sequencing rule is:
 
-- do not leave both the old and new stories presented as equally supported for long
+- do not leave multiple dependency stories presented as equally supported for long
 
 Short migration scaffolding is acceptable during implementation, but the final public model should be singular.
 

@@ -6,8 +6,8 @@ type: docs
 ---
 
 
-The former ambient operational services are now explicit services. `FsFlow.Services.Core` provides a `BaseRuntime`
-record that groups the standard services most hosts need:
+Clock, logging, random, GUID, and environment-variable access are explicit services. `FsFlow.Services.Core` provides a
+`BaseRuntime` record that groups the standard services most hosts need:
 
 ```fsharp
 type BaseRuntime =

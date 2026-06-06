@@ -340,17 +340,20 @@ let probe : Flow<unit, string, int> =
     let ``BindError assigns errors in all flow families`` () =
         let successOption : int option = Some 42
         let successValueOption : int voption = ValueSome 10
+        let successCheck : Check<unit> = Ok ()
         let asyncOption : Async<int option> = async { return Some 42 }
         let asyncValueOption : Async<int voption> = async { return ValueSome 10 }
-        let asyncBool : Async<bool> = async { return true }
+        let asyncCheck : Async<Result<unit, unit>> = async { return Ok () }
         let successTaskOption : Task<int option> = Task.FromResult(Some 5)
+        let successTaskCheck : Task<Result<unit, unit>> = Task.FromResult(Ok ())
         let successTaskValueOption : ValueTask<int voption> = ValueTask.FromResult(ValueSome 3)
+        let successValueTaskCheck : ValueTask<Result<unit, unit>> = ValueTask.FromResult(Ok ())
 
         let flowTest =
             flow {
                 let! x = successOption |> BindError.withError "missing-option"
                 let! y = successValueOption |> BindError.withError "missing-voption"
-                do! true |> BindError.withError "bool-false"
+                do! successCheck |> BindError.withError "check-failed"
                 return x + y
             }
 
@@ -358,7 +361,7 @@ let probe : Flow<unit, string, int> =
             flow {
                 let! (x : int) = asyncOption |> BindError.withError "missing-option"
                 let! (y : int) = asyncValueOption |> BindError.withError "missing-voption"
-                do! asyncBool |> BindError.withError "bool-false"
+                do! asyncCheck |> BindError.withError "check-failed"
                 return x + y
             }
 
@@ -366,9 +369,11 @@ let probe : Flow<unit, string, int> =
             flow {
                 let! x = successOption |> BindError.withError "missing-option"
                 let! y = successValueOption |> BindError.withError "missing-voption"
-                do! true |> BindError.withError "bool-false"
+                do! Check.isTrue true |> BindError.withError "check-failed"
                 let! z = successTaskOption |> BindError.withError "task-missing"
+                do! successTaskCheck |> BindError.withError "task-check-failed"
                 let! w = successTaskValueOption |> BindError.withError "vtask-missing"
+                do! successValueTaskCheck |> BindError.withError "vtask-check-failed"
                 return x + y + z + w
             }
 

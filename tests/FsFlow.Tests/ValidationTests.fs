@@ -88,7 +88,6 @@ module ValidationTests =
             test <@ Check.isNull nullString = Ok () @>
             test <@ Check.isNull nonNull = Error () @>
             test <@ Check.whenNotNull nonNull = Ok "flowkit" @>
-            test <@ Check.takeNotNull nonNull = Ok "flowkit" @>
             test <@ Check.whenNull nullString = Ok nullString @>
 
             test <@ Check.isOk (Ok 3) = Ok () @>

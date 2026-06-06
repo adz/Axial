@@ -1,7 +1,7 @@
 ---
 title: "Check.takeHead"
 linkTitle: "takeHead"
-weight: 3006
+weight: 3005
 type: docs
 ---
 

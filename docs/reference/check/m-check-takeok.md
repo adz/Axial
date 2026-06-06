@@ -1,7 +1,7 @@
 ---
 title: "Check.takeOk"
 linkTitle: "takeOk"
-weight: 3004
+weight: 3003
 ---
 
 Takes the successful value from a result when it is <code>Ok</code>.

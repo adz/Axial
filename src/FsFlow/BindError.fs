@@ -9,8 +9,8 @@ open System.Threading.Tasks
 /// A marker that adapts a source error before <c>flow { }</c> binds it.
 /// </summary>
 /// <remarks>
-/// Use <c>BindError.withError</c> for sources that fail with missingness, falsehood, or
-/// <c>unit</c>. Use <c>BindError.map</c> for sources that already carry a meaningful error.
+/// Use <c>BindError.withError</c> for sources that fail with missingness or <c>unit</c>.
+/// Use <c>BindError.map</c> for sources that already carry a meaningful error.
 /// </remarks>
 type BindError<'env, 'error, 'value> =
     private
@@ -20,11 +20,6 @@ type BindError<'env, 'error, 'value> =
 /// <exclude/>
 [<EditorBrowsable(EditorBrowsableState.Never)>]
 type BindErrorWithError =
-    static member WithError((source: bool, error: 'error), _mthd: BindErrorWithError) : BindError<'env, 'error, unit> =
-        if source then Ok () else Error error
-        |> Flow.fromResult
-        |> BindError
-
     static member WithError
         (
             (source: Result<'value, unit>, error: 'error),
@@ -57,19 +52,6 @@ type BindErrorWithError =
         |> BindError
 
 #if !FABLE_COMPILER
-    static member WithError
-        (
-            (source: Async<bool>, error: 'error),
-            _mthd: BindErrorWithError
-        ) : BindError<'env, 'error, unit> =
-        async {
-            let! value = source
-            return if value then Ok () else Error error
-        }
-        |> Flow.fromAsync
-        |> Flow.bind Flow.fromResult
-        |> BindError
-
     static member WithError
         (
             (source: Async<Result<'value, unit>>, error: 'error),
@@ -111,19 +93,6 @@ type BindErrorWithError =
 
     static member WithError
         (
-            (source: Task<bool>, error: 'error),
-            _mthd: BindErrorWithError
-        ) : BindError<'env, 'error, unit> =
-        task {
-            let! value = source
-            return if value then Ok () else Error error
-        }
-        |> Flow.fromTask
-        |> Flow.bind Flow.fromResult
-        |> BindError
-
-    static member WithError
-        (
             (source: Task<Result<'value, unit>>, error: 'error),
             _mthd: BindErrorWithError
         ) : BindError<'env, 'error, 'value> =
@@ -156,19 +125,6 @@ type BindErrorWithError =
         task {
             let! value = source
             return OptionFlow.toResultValueOption error value
-        }
-        |> Flow.fromTask
-        |> Flow.bind Flow.fromResult
-        |> BindError
-
-    static member WithError
-        (
-            (source: ValueTask<bool>, error: 'error),
-            _mthd: BindErrorWithError
-        ) : BindError<'env, 'error, unit> =
-        task {
-            let! value = source.AsTask()
-            return if value then Ok () else Error error
         }
         |> Flow.fromTask
         |> Flow.bind Flow.fromResult
@@ -309,7 +265,7 @@ module BindError =
     let internal toFlow (BindError flow: BindError<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
         flow
 
-    /// <summary>Assigns an error to a missing, false, or unit-error source before <c>flow { }</c> binds it.</summary>
+    /// <summary>Assigns an error to a missing or unit-error source before <c>flow { }</c> binds it.</summary>
     /// <param name="error">The error to use if the source fails.</param>
     /// <param name="source">The source to adapt.</param>
     /// <returns>A bind marker for the flow computation expression.</returns>
@@ -317,7 +273,7 @@ module BindError =
     /// <code>
     /// flow {
     ///     let! user = maybeUser |> BindError.withError InvalidUser
-    ///     do! isValid |> BindError.withError InvalidInput
+    ///     do! isValid |> Check.isTrue |> BindError.withError InvalidInput
     /// }
     /// </code>
     /// </example>

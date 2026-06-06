@@ -14,9 +14,9 @@ Start by deciding what success should carry.
 | --- | --- | --- |
 | Require a fact and keep no value | `value |> Check.x` | `unit` |
 | Require a fact and keep the original input | `value |> Check.whenX` | the original input |
-| Extract or narrow the useful value | `value |> Check.takeX` | the extracted value |
+| Extract an inner value or return a deliberately different success shape | `value |> Check.takeX` | the extracted or reshaped value |
 
-Unprefixed helpers are predicates. `when*` helpers are value-preserving gates. `take*` helpers unwrap or narrow a structure.
+Unprefixed helpers are predicates. `when*` helpers are value-preserving gates. `take*` helpers unwrap a structure or return a deliberately different success shape.
 
 ## Attach an Error
 
@@ -113,7 +113,7 @@ let validateEmail email : Result<string, EmailError> =
 
 ## Choose `take*`
 
-Use `Check.takeX` helpers when the predicate exposes a narrower value.
+Use `Check.takeX` helpers when the predicate exposes an inner value or a deliberately different success shape.
 
 ```fsharp
 type LookupError =
@@ -136,7 +136,7 @@ let requireExistingUser maybeUser : Result<User, LookupError> =
 | `Check.isSome` | `Check.whenSome` | `Check.takeSome` |
 | `Check.isValueSome` | `Check.whenValueSome` | `Check.takeValueSome` |
 | `Check.hasValue` | `Check.whenHasValue` | `Check.takeHasValue` |
-| `Check.notNull` | `Check.whenNotNull` | `Check.takeNotNull` |
+| `Check.notNull` | `Check.whenNotNull` | none |
 | `Check.isOk` | `Check.whenOk` | `Check.takeOk` |
 | `Check.isError` | `Check.whenError` | `Check.takeError` |
 | `Check.notEmpty` | `Check.whenNotEmpty` | `Check.takeHead` |

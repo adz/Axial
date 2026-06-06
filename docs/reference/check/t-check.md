@@ -6,7 +6,8 @@ weight: 1000
 
 
  Pure validation helpers. Unprefixed names are predicates, <code>when*</code> names preserve the
- original input on success, and <code>take*</code> names extract or narrow the successful value.
+ original input on success, and <code>take*</code> names extract an inner value or return a
+ deliberately different success shape.
 
 
 ## Signature

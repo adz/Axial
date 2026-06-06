@@ -26,9 +26,9 @@ There is no public `Take` module. The old `Take` split made users choose a modul
 
 - `Check.x` tests property `x` and usually succeeds with `unit`.
 - `Check.whenX` tests property `x` and preserves the original input on success.
-- `Check.takeX` tests property `x` and extracts or narrows the useful value exposed by the property.
+- `Check.takeX` tests property `x` and extracts an inner value or returns a deliberately different success shape.
 
-Use `when` only for value-preserving gates. Use `take` only when the success value is structurally different or intentionally narrowed.
+Use `when` only for value-preserving gates. Use `take` only when the success value is structurally different. Do not add a `takeX` helper that returns the same success shape as `whenX`.
 
 ```fsharp
 Check.notBlank       : string -> Check<unit>
@@ -59,7 +59,7 @@ The old `Take` module made a helpful distinction between preserving and extracti
 
 - an unprefixed predicate when success only means "the property holds"
 - a `when*` gate when the next step needs the original input
-- a `take*` extraction when the next step needs an inner or narrowed value
+- a `take*` extraction when the next step needs an inner value or a deliberately different success shape
 
 `BindError` remains separate because it is not a pure validation helper. It is a marker interpreted by `flow { }` at a bind site.
 
@@ -180,12 +180,11 @@ Use `Check.whenX` when success keeps the original input:
 
 ### Extraction Names
 
-Use `Check.takeX` when success extracts or narrows to the value the caller wants next:
+Use `Check.takeX` when success extracts an inner value or returns a deliberately different success shape:
 
 - `takeSome`
 - `takeValueSome`
 - `takeHasValue`
-- `takeNotNull`
 - `takeOk`
 - `takeError`
 - `takeHead`
@@ -225,7 +224,7 @@ Use `Result.mapError` to map those diagnostics to an application error.
 | `Check.okIfValueNone` / `Check.failIfValueSome` | `Check.isValueNone` |
 | `Check.okIfNotNullable` / `Check.failIfNullable` | `Check.takeHasValue` |
 | `Check.okIfNullable` / `Check.failIfNotNullable` | `Check.hasNoValue` |
-| `Check.okIfNotNull` / `Check.failIfNull` | `Check.whenNotNull` or `Check.takeNotNull` |
+| `Check.okIfNotNull` / `Check.failIfNull` | `Check.whenNotNull` |
 | `Check.okIfNull` / `Check.failIfNotNull` | `Check.isNull` |
 | `Check.okIfNotEmpty` / `Check.failIfEmpty` | `Check.whenNotEmpty` |
 | `Check.okIfEmpty` / `Check.failIfNotEmpty` | `Check.empty` |
@@ -287,7 +286,7 @@ let primaryId : Result<OrderId, OrderError> =
     ids |> Check.takeSingle |> Result.mapError InvalidPrimaryId
 ```
 
-Flow bind-site errors use `BindError`:
+Flow bind-site errors use `BindError`. Boolean predicates must be converted to a unit-error result before assignment:
 
 ```fsharp
 flow {
@@ -312,7 +311,7 @@ Docs should present predicate, preserving, and extracting forms together:
 | --- | --- | --- |
 | `Check.isSome` | `Check.whenSome` | `Check.takeSome` |
 | `Check.hasValue` | `Check.whenHasValue` | `Check.takeHasValue` |
-| `Check.notNull` | `Check.whenNotNull` | `Check.takeNotNull` |
+| `Check.notNull` | `Check.whenNotNull` | none |
 | `Check.notEmpty` | `Check.whenNotEmpty` | `Check.takeHead` where a first item is needed |
 | `Check.notBlank` | `Check.whenNotBlank` | none |
 | `Check.isSingle` | `Check.whenSingle` | `Check.takeSingle` |
@@ -323,7 +322,7 @@ Docs should present pure and flow bind-site error adaptation separately:
 | --- | --- |
 | pure unit-error check | `check |> Check.withError DomainError` |
 | pure existing error | `result |> Result.mapError ErrorCase` |
-| flow bind, missing/unit failure | `source |> BindError.withError DomainError` |
+| flow bind, option/value-option absence or unit-error failure | `source |> BindError.withError DomainError` |
 | flow bind, existing error | `source |> BindError.map ErrorCase` |
 
 ## Migration
@@ -353,7 +352,7 @@ Unprefixed helper names remain predicate-shaped.
 
 `Check.whenX` keeps the original source value when the property holds.
 
-`Check.takeX` extracts or narrows the useful value exposed by the property.
+`Check.takeX` extracts an inner value or returns a deliberately different success shape exposed by the property.
 
 `BindError` preserves direct `flow { }` binding fluency when an error needs to be assigned or mapped.
 
@@ -370,8 +369,8 @@ The redesign is coherent when:
 - diagnostic predicate helpers return `Result<unit, StringLengthFailure>`, `Result<unit, RangeFailure<_>>`, or `Result<unit, CardinalityFailure>`
 - simple `Check.whenX` helpers preserve the original source value in a unit-error carrier
 - diagnostic `Check.whenX` helpers preserve the original source value while keeping their diagnostic error
-- simple `Check.takeX` helpers extract or narrow the success value in a unit-error carrier
-- diagnostic `Check.takeX` helpers extract or narrow the success value while keeping their diagnostic error
+- simple `Check.takeX` helpers extract or reshape the success value in a unit-error carrier
+- diagnostic `Check.takeX` helpers extract or reshape the success value while keeping their diagnostic error
 - `BindError.withError` and `BindError.map` are the only golden-path flow bind-site error adapters
 - `Guard.Of` and `Guard.MapError` are removed
 - old `okIf*`, `failIf*`, and `Take.*` names are gone

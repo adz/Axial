@@ -2,9 +2,11 @@ namespace FsFlow.Tests
 
 open System
 open System.Reflection
+open System.Threading.Tasks
 open FsFlow
 open FsFlow.Hosting
 open FsFlow.Runtime.Telemetry
+open Microsoft.FSharp.Reflection
 open Swensen.Unquote
 open Xunit
 
@@ -46,6 +48,10 @@ module ApiShapeTests =
     let private assertContainsAll expected actual =
         let missing = expected |> List.filter (fun name -> not (Set.contains name actual))
         test <@ List.isEmpty missing @>
+
+    let private assertContainsNone forbidden actual =
+        let present = forbidden |> List.filter (fun name -> Set.contains name actual)
+        test <@ List.isEmpty present @>
 
     [<Fact>]
     let ``core Flow module keeps expected public shape`` () =
@@ -151,8 +157,11 @@ module ApiShapeTests =
 
     [<Fact>]
     let ``check take binderror diagnostics and ref helpers keep expected public shape`` () =
-        moduleType typeof<Flow<unit, unit, unit>> "FsFlow.Check"
-        |> publicStaticMemberNames
+        let checkMembers =
+            moduleType typeof<Flow<unit, unit, unit>> "FsFlow.Check"
+            |> publicStaticMemberNames
+
+        checkMembers
         |> assertContainsAll
             [ "fromPredicate"
               "fromTry"
@@ -183,7 +192,6 @@ module ApiShapeTests =
               "whenHasNoValue"
               "notNull"
               "whenNotNull"
-              "takeNotNull"
               "isNull"
               "whenNull"
               "isOk"
@@ -259,9 +267,29 @@ module ApiShapeTests =
               "whenNonPositive"
               "withError" ]
 
+        checkMembers
+        |> assertContainsNone [ "takeNotNull"; "takeNotBlank" ]
+
         moduleType typeof<Flow<unit, unit, unit>> "FsFlow.BindError"
         |> publicStaticMemberNames
         |> assertContainsAll [ "withError"; "map" ]
+
+        let bindErrorWithErrorSources =
+            typeof<BindErrorWithError>.GetMethods(BindingFlags.Static ||| BindingFlags.Public)
+            |> Array.filter (fun methodInfo -> methodInfo.Name = "WithError")
+            |> Array.choose (fun methodInfo ->
+                let parameters = methodInfo.GetParameters()
+
+                if parameters.Length = 0 then
+                    None
+                else
+                    let tupleFields = FSharpType.GetTupleElements parameters[0].ParameterType
+                    tupleFields |> Array.tryHead)
+            |> Array.map _.FullName
+            |> Set.ofArray
+
+        bindErrorWithErrorSources
+        |> assertContainsNone [ typeof<bool>.FullName; typeof<Async<bool>>.FullName; typeof<Task<bool>>.FullName; typeof<ValueTask<bool>>.FullName ]
 
         moduleType typeof<Diagnostics<string>> "FsFlow.Diagnostics"
         |> publicStaticMemberNames

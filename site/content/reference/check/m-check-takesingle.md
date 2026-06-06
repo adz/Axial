@@ -1,7 +1,7 @@
 ---
 title: "Check.takeSingle"
 linkTitle: "takeSingle"
-weight: 3007
+weight: 3006
 type: docs
 ---
 

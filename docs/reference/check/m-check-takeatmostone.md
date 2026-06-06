@@ -1,7 +1,7 @@
 ---
 title: "Check.takeAtMostOne"
 linkTitle: "takeAtMostOne"
-weight: 3008
+weight: 3007
 ---
 
 Takes zero or one item from a sequence when it contains at most one item.

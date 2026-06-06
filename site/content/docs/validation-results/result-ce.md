@@ -33,7 +33,7 @@ let validateUser name email : Result<User, UserError> =
 ## Options and Checks
 
 `result {}` binds `Result` directly.
-Use `Check.take*` when the source must expose a value, `Check.when*` when the source should be preserved, and unprefixed `Check` predicates when the source is only a yes/no gate.
+Use `Check.take*` when the source must expose an inner value or deliberately different success shape, `Check.when*` when the source should be preserved, and unprefixed `Check` predicates when the source is only a yes/no gate.
 
 ```fsharp
 type User = { Name: string }

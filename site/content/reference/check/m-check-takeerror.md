@@ -1,7 +1,7 @@
 ---
 title: "Check.takeError"
 linkTitle: "takeError"
-weight: 3005
+weight: 3004
 type: docs
 ---
 

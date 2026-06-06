@@ -4,7 +4,7 @@ linkTitle: "withError"
 weight: 2100
 ---
 
-Assigns an error to a missing, false, or unit-error source before <code>flow { }</code> binds it.
+Assigns an error to a missing or unit-error source before <code>flow { }</code> binds it.
 
 ## Signature
 
@@ -29,6 +29,6 @@ Assigns an error to a missing, false, or unit-error source before <code>flow { }
 
 <pre class="fssnip highlighted"><code lang="fsharp"> <span class="id">flow</span> <span class="pn">{</span>
      <span class="k">let!</span> <span class="id">user</span> <span class="o">=</span> <span class="id">maybeUser</span> <span class="o">|&gt;</span> <span class="id">BindError</span><span class="pn">.</span><span class="id">withError</span> <span class="id">InvalidUser</span>
-     <span class="k">do!</span> <span class="id">isValid</span> <span class="o">|&gt;</span> <span class="id">BindError</span><span class="pn">.</span><span class="id">withError</span> <span class="id">InvalidInput</span>
+     <span class="k">do!</span> <span class="id">isValid</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">isTrue</span> <span class="o">|&gt;</span> <span class="id">BindError</span><span class="pn">.</span><span class="id">withError</span> <span class="id">InvalidInput</span>
  <span class="pn">}</span>
 </code></pre>
