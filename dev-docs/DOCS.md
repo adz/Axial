@@ -48,13 +48,13 @@ Do not hand-edit the generated API member pages unless you are fixing a generate
 - Update the generator in `scripts/generate-api-docs.mjs` when the reference structure changes, then rerun the script.
 - The reference index pages and guide pages are hand-written markdown in `docs/`.
 
-### Preview and building
+### Validate, preview, and deploy
 
-Run `bash scripts/validate-docs.sh` for routine non-serving validation.
+Run `bash scripts/validate-docs.sh` for routine documentation validation. This regenerates examples, regenerates API reference pages, syncs Hugo content, and runs a static Hugo render into `.fsdocs/validate` without starting a long-lived server.
 
 Run `bash scripts/preview-docs.sh` for a local live-reload server at `http://localhost:3000` when you need browser review or screenshots. Stop it with `SIGHUP`, `TERM`, `INT`, or by creating `$FSFLOW_DOCS_PREVIEW_STOP_FILE` (default `/tmp/fsflow-docs-preview.stop`).
 
-To build the static site for deployment, run `bash scripts/build-docs-site.sh`. This will output the site to the `/output` directory.
+Use `bash scripts/build-docs-site.sh` only when preparing or checking deployment output. It builds all projects and writes the deployable site to `/output`, so it is heavier than the normal validation path.
 
 ## Documentation rules
 
