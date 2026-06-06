@@ -18,7 +18,7 @@ Refer to [`dev-docs/PLAN.md`](dev-docs/PLAN.md) for architectural direction and 
 - Treat `docs/reference/**`, `docs/examples/README.md`, `llms.txt`, and versioned docs as generated outputs or generator-backed outputs.
 - When changing an API, update the source comments and the doc generator inputs first, then regenerate the docs. Do not hand-edit generated reference pages as the primary fix.
 - When a user-facing guide needs to cite a new or renamed API, update the source comments and reference pages in the same pass, then run the generators immediately.
-- Do not consider any doc change done until both `./scripts/generate-api-docs.sh` and `npm run build` in `site` pass.
+- Do not consider any doc change done until `bash scripts/validate-docs.sh` passes. For release/deploy checks, also run `npm run build` in `site`.
 
 ## Versioning and Compatibility
 
@@ -31,6 +31,7 @@ Refer to [`dev-docs/PLAN.md`](dev-docs/PLAN.md) for architectural direction and 
 
 ## Documentation Integrity
 
-- **Always Validate:** Every change to the codebase or documentation must be followed by a documentation build via `bash scripts/preview-docs.sh` to ensure correct rendering.
+- **Always Validate:** Every change to the codebase or documentation must be followed by a documentation build via `bash scripts/validate-docs.sh` to ensure correct rendering. Use `bash scripts/preview-docs.sh` only when a live server is needed for browser review or screenshots.
+- **Preview Lifecycle:** `bash scripts/preview-docs.sh` stops cleanly on `SIGHUP`, `TERM`, or `INT`. It can also be stopped by creating `$FSFLOW_DOCS_PREVIEW_STOP_FILE`, which defaults to `/tmp/fsflow-docs-preview.stop`.
 - **Link Integrity:** Ensure that all cross-references between guides and reference pages are valid. Broken links degrade the experience for both humans and AI agents.
 - **Code Highlighting:** Ensure all code examples are wrapped in triple-backticks with the `fsharp` language hint for proper syntax highlighting.

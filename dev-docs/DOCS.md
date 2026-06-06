@@ -33,8 +33,8 @@ The API member pages are generated from the XML doc comments in `src/`. When you
 The pipeline is:
 
 1. Edit the public XML doc comments in `src/`.
-2. Run `bash scripts/preview-docs.sh`.
-3. Review the regenerated reference pages in the browser.
+2. Run `bash scripts/validate-docs.sh`.
+3. Review regenerated reference pages with `bash scripts/preview-docs.sh` when browser inspection or screenshots are needed.
 4. Update the hand-written guides in `docs/` as needed.
 
 Do not hand-edit the generated API member pages unless you are fixing a generated-doc bug. If the source comments change, the generated markdown should change with them.
@@ -50,7 +50,9 @@ Do not hand-edit the generated API member pages unless you are fixing a generate
 
 ### Preview and building
 
-Run `bash scripts/preview-docs.sh` for a local live-reload server at `http://localhost:3000`.
+Run `bash scripts/validate-docs.sh` for routine non-serving validation.
+
+Run `bash scripts/preview-docs.sh` for a local live-reload server at `http://localhost:3000` when you need browser review or screenshots. Stop it with `SIGHUP`, `TERM`, `INT`, or by creating `$FSFLOW_DOCS_PREVIEW_STOP_FILE` (default `/tmp/fsflow-docs-preview.stop`).
 
 To build the static site for deployment, run `bash scripts/build-docs-site.sh`. This will output the site to the `/output` directory.
 
