@@ -15,15 +15,13 @@ While the standard `result {}` or `flow {}` blocks "fail fast" (stopping at the 
 The key to accumulation is the `and!` keyword. Steps joined by `and!` are evaluated independently, and their errors are merged into a `Diagnostics` graph.
 
 ```fsharp
-open FsFlow.Check
-
 type Registration = { Name: string; Email: string }
 type RegError = NameRequired | EmailRequired
 
 let validateRegistration input =
     validate {
-        let! name = input.Name |> notBlank |> orError NameRequired
-        and! email = input.Email |> notBlank |> orError EmailRequired
+        let! name = input.Name |> Take.whenNotBlank |> Check.withError NameRequired
+        and! email = input.Email |> Take.whenNotBlank |> Check.withError EmailRequired
         return { Name = name; Email = email }
     }
 
@@ -43,11 +41,11 @@ Standard `let!` and `do!` inside a `validate {}` block still short-circuit. This
 ```fsharp
 validate {
     // Stop immediately if the whole object is null
-    let! input = input |> notNull |> orError ObjectMissing
+    let! input = input |> Take.whenNotNull |> Check.withError ObjectMissing
     
     // These run only if input was not null, but they run independently of each other
-    let! name = input.Name |> notBlank |> orError NameRequired
-    and! email = input.Email |> notBlank |> orError EmailRequired
+    let! name = input.Name |> Take.whenNotBlank |> Check.withError NameRequired
+    and! email = input.Email |> Take.whenNotBlank |> Check.withError EmailRequired
     
     return { Name = name; Email = email }
 }
@@ -58,7 +56,7 @@ validate {
 [`Validation<'value, 'error>`]({{< relref "/reference/validation/t-validation.md" >}}) is structurally similar to `Result<'value, Diagnostics<'error>>`. You can convert between them easily:
 
 - Use [`Validation.toResult`]({{< relref "/reference/validation/m-validation-toresult.md" >}}) to get a standard result back.
-- Use `Result.toValidation` to start an accumulating block from an existing result.
+- Use [`Validation.fromResult`]({{< relref "/reference/validation/m-validation-fromresult.md" >}}) to start an accumulating block from an existing result.
 
 In general, use [`validate {}`]({{< relref "/reference/validation/builders-validate.md" >}}) at the "leaves" of your application (like form parsing) and [`flow {}`]({{< relref "/reference/flow/builders-flow.md" >}}) for the "branches" (the main business logic).
 
@@ -71,7 +69,7 @@ let validateCustomer customer =
     validate.key "customer" {
         let! name = 
             validate.name "Name" {
-                return! customer.Name |> notBlank |> orError "Required"
+                return! customer.Name |> Take.whenNotBlank |> Check.withError "Required"
             }
         return name
     }

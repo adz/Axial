@@ -24,7 +24,7 @@ when the boundary needs environment access, async work, task interop, or runtime
 FsFlow is built around one progression:
 
 ```text
-Check -> Result -> Validation -> Flow
+Check/Take -> Result -> Validation -> Flow
 ```
 
 The same vocabulary stays the same while the execution context grows.
@@ -45,8 +45,8 @@ type RegistrationError =
 
 let validateEmail (email: string) : Result<string, RegistrationError> =
     email
-    |> Check.notBlank
-    |> Check.orError EmailMissing
+    |> Take.whenNotBlank
+    |> Check.withError EmailMissing
 ```
 
 Use the same validation logic directly inside a task-oriented workflow:
@@ -103,7 +103,7 @@ dotnet run --project examples/FsFlow.ReadmeExample/FsFlow.ReadmeExample.fsproj
 let readTextFile (path: string) : Flow<ReadmeEnv, FileReadError, string> =
     flow {
         // In production, map access and path exceptions separately at the boundary.
-        do! Check.okIf (File.Exists path) |> Check.orElse (NotFound path)
+        do! File.Exists path |> Check.isTrue |> BindError.withError (NotFound path)
 
         // Wrap in ColdTask for later exeuction
         return! ColdTask(fun ct -> File.ReadAllTextAsync(path, ct))

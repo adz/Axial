@@ -1,7 +1,7 @@
 ---
 title: "Check.all"
 linkTitle: "all"
-weight: 2207
+weight: 2303
 type: docs
 ---
 
@@ -17,23 +17,16 @@ Returns success when every check in the sequence succeeds.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `checks` | <code><span><span><a href="t-check.md">Check</a>&lt;'value&gt;</span>&#32;seq</span></code> | A sequence of checks. |
+| `checks` | <code><span><span><a href="t-check.md">Check</a>&lt;'value&gt;</span>&#32;seq</span></code> | The checks to evaluate. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="t-check.md">Check</a>&lt;unit&gt;</span></code> | A <a href="t-check.md">Check</a> that succeeds only if all inputs succeed. |
-
-## Remarks
-
-
- Sequentially evaluates each check in the <span class="fsdocs-param-name">checks</span> sequence.
- Stops at the first failure.
-
+| <code><span><a href="t-check.md">Check</a>&lt;unit&gt;</span></code> | A unit-success check that short-circuits on the first failure. |
 
 ## Examples
 
-<pre class="fssnip highlighted"><code lang="fsharp"> <span class="pn">[</span> <span class="id">Check</span><span class="pn">.</span><span class="id">okIf</span> <span class="k">true</span><span class="pn">;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">okIf</span> <span class="k">true</span> <span class="pn">]</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">all</span> <span class="c">// Ok ()</span>
- <span class="pn">[</span> <span class="id">Check</span><span class="pn">.</span><span class="id">okIf</span> <span class="k">true</span><span class="pn">;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">okIf</span> <span class="k">false</span> <span class="pn">]</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">all</span> <span class="c">// Error ()</span>
+<pre class="fssnip highlighted"><code lang="fsharp"> <span class="pn">[</span> <span class="id">Check</span><span class="pn">.</span><span class="id">isTrue</span> <span class="k">true</span><span class="pn">;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">isTrue</span> <span class="k">true</span> <span class="pn">]</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">all</span> <span class="c">// Ok ()</span>
+ <span class="pn">[</span> <span class="id">Check</span><span class="pn">.</span><span class="id">isTrue</span> <span class="k">true</span><span class="pn">;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">isTrue</span> <span class="k">false</span> <span class="pn">]</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">all</span> <span class="c">// Error ()</span>
 </code></pre>

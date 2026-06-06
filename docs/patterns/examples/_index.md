@@ -12,75 +12,6 @@ The examples below are built from the repository projects, run with the current 
 The code blocks keep the important API calls on the same lines as the values they bind, with trailing comments where that makes the signature easier to read.
 The examples prefer the normal direct-bind style inside computation expressions, so the docs reflect the recommended day-to-day usage.
 
-## Maintenance Example
-
-This example shows smaller, focused shapes for maintenance and interop scenarios without switching away from the normal direct-bind style.
-
-Run it:
-
-```bash
-dotnet run --project examples/FsFlow.MaintenanceExamples/FsFlow.MaintenanceExamples.fsproj --nologo
-```
-
-Source:
-
-- [Program.fs](https://github.com/adz/FsFlow/blob/main/examples/FsFlow.MaintenanceExamples/Program.fs)
-
-Source code:
-
-```fsharp
-open System
-open System.Threading
-open System.Threading.Tasks
-open FsFlow
-
-let runFlow label env (workflow: Flow<'env, 'error, 'value>) =
-    let result = workflow.RunSynchronously(env)
-    printfn "%s: %A" label result
-
-let runAsyncExample label env (workflow: Flow<'env, 'error, 'value>) =
-    let result =
-        workflow
-        |> fun workflow -> workflow.RunSynchronously(env)
-
-    printfn "%s: %A" label result
-
-let runTaskExample label env (workflow: Flow<'env, 'error, 'value>) =
-    let result =
-        workflow
-        |> fun workflow -> workflow.RunSynchronously(env)
-
-    printfn "%s: %A" label result
-
-let syncExample : Flow<int, string, int> =
-    Flow.read id // Flow<int, string, int>
-    |> Flow.map ((+) 1)
-
-let asyncExample : Flow<int, string, int> =
-    flow {
-        let! value = async { return 21 }
-        return value * 2
-    }
-
-let taskExample : Flow<int, string, int> =
-    flow {
-        let! env = Flow.read id
-        let! suffix = Task.FromResult 5
-        return env + suffix
-    }
-
-[<EntryPoint>]
-let main _ =
-    runFlow "Flow" 20 syncExample
-    runAsyncExample "Async" 20 asyncExample
-    runTaskExample "Task" 20 taskExample
-    // Flow: Ok 21
-    // Async: Ok 42
-    // Task: Ok 25
-    0
-
-```
-
 ## Request Boundary Example
 
 This example shows a request boundary that pulls a user from a database-like environment, threads a trace id through the request context, and reuses the same validation shape across Flow.
@@ -119,8 +50,8 @@ type RequestEnv =
       LoadSuffix: Task<string> }
 
 let validateName (name: string) : Result<string, string> =
-    Check.notBlank name
-    |> Check.orError "name is required"
+    Take.whenNotBlank name
+    |> Check.withError "name is required"
 
 let loadUser : Flow<RequestEnv, string, User> =
     flow {
@@ -227,7 +158,7 @@ let validateAddress address =
     validate.key "address" {
         let! city =
             validate.name "City" {
-                return! address.City |> Check.notBlank |> Check.orError "City required"
+                return! address.City |> Take.whenNotBlank |> Check.withError "City required"
             }
 
         return { address with City = city }
@@ -237,7 +168,7 @@ let validateCustomer customer =
     validate {
         let! name =
             validate.name "Name" {
-                return! customer.Name |> Check.notBlank |> Check.orError "Name required"
+                return! customer.Name |> Take.whenNotBlank |> Check.withError "Name required"
             }
 
         and! address = validateAddress customer.Address
@@ -249,7 +180,7 @@ let validateCustomer customer =
                     |> Validation.traverseIndexed (fun index line ->
                         validate.name "Name" {
                             let! name =
-                                line.Name |> Check.notBlank |> Check.orError $"Line {index} name required"
+                                line.Name |> Take.whenNotBlank |> Check.withError $"Line {index} name required"
 
                             return { Name = name }
                         }
@@ -283,7 +214,7 @@ let validateCreateCustomerRequest request =
     validate {
         let! requestId =
             validate.name "RequestId" {
-                return! request.RequestId |> Check.notBlank |> Check.orError "RequestId required"
+                return! request.RequestId |> Take.whenNotBlank |> Check.withError "RequestId required"
             }
 
         and! customer =

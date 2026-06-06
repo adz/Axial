@@ -50,8 +50,8 @@ type RequestEnv =
       LoadSuffix: Task<string> }
 
 let validateName (name: string) : Result<string, string> =
-    Check.notBlank name
-    |> Check.orError "name is required"
+    Take.whenNotBlank name
+    |> Check.withError "name is required"
 
 let loadUser : Flow<RequestEnv, string, User> =
     flow {
@@ -158,7 +158,7 @@ let validateAddress address =
     validate.key "address" {
         let! city =
             validate.name "City" {
-                return! address.City |> Check.notBlank |> Check.orError "City required"
+                return! address.City |> Take.whenNotBlank |> Check.withError "City required"
             }
 
         return { address with City = city }
@@ -168,7 +168,7 @@ let validateCustomer customer =
     validate {
         let! name =
             validate.name "Name" {
-                return! customer.Name |> Check.notBlank |> Check.orError "Name required"
+                return! customer.Name |> Take.whenNotBlank |> Check.withError "Name required"
             }
 
         and! address = validateAddress customer.Address
@@ -180,7 +180,7 @@ let validateCustomer customer =
                     |> Validation.traverseIndexed (fun index line ->
                         validate.name "Name" {
                             let! name =
-                                line.Name |> Check.notBlank |> Check.orError $"Line {index} name required"
+                                line.Name |> Take.whenNotBlank |> Check.withError $"Line {index} name required"
 
                             return { Name = name }
                         }
@@ -214,7 +214,7 @@ let validateCreateCustomerRequest request =
     validate {
         let! requestId =
             validate.name "RequestId" {
-                return! request.RequestId |> Check.notBlank |> Check.orError "RequestId required"
+                return! request.RequestId |> Take.whenNotBlank |> Check.withError "RequestId required"
             }
 
         and! customer =

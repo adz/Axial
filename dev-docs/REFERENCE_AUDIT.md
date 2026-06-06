@@ -22,11 +22,7 @@ These are still worth fixing with dedicated pages instead of section-level alias
 
 ### Missing dedicated member pages
 
-- `Check.not`
-- `Check.and`
-- `Check.or`
-
-The XML doc ids for these reserved-word members currently do not match the existing page-spec lookup logic cleanly.
+No Check reserved-word pages remain after the surface redesign removed `Check.not`, `Check.and`, and `Check.or`.
 
 ### Still aliased to a broader page instead of a dedicated target
 
@@ -40,6 +36,5 @@ These no longer leave broken links in the generated markdown, but they should ev
 
 ## Suggested next cleanup
 
-1. Teach `scripts/docgen/Program.fs` to resolve XML ids for reserved-word members such as `Check.and`.
-2. Decide whether `Never`, `LogLevel`, and `RetryPolicy<'error>` belong in their own top-level reference section or in an existing section.
-3. Add dedicated builder/type pages where aliases are still carrying the load.
+1. Decide whether `Never`, `LogLevel`, and `RetryPolicy<'error>` belong in their own top-level reference section or in an existing section.
+2. Add dedicated builder/type pages where aliases are still carrying the load.

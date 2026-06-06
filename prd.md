@@ -20,7 +20,7 @@ FsFlow already provides a compact typed effect model:
 
 - `src/FsFlow/Core.fs` defines `Cause<'error>`, `Exit<'value,'error>`, `Flow<'env,'error,'value>`, `Fiber<'error,'value>`, runtime service contracts, retry policy, and .NET/Fable conditional effect representation.
 - `src/FsFlow/Flow.fs` provides construction, execution, conversion to `Async`/`Task`/`ValueTask`, environment access, mapping/binding, typed recovery, `fork`/`join`/`interrupt`, `zipPar`, .NET `race`, timeouts, retry, sleep, logging, clock/random/GUID/environment-variable access, and acquire/release.
-- `src/FsFlow/FlowBuilder.fs`, `AsyncAdapter.fs`, `TaskAdapter.fs`, `ResultBuilder.fs`, `ValidateBuilder.fs`, `Builders.fs`, and `Guard.fs` provide computation expressions and interop for `Result`, `Async`, `Task`, `ValueTask`, `option`, `voption`, and guard-style error mapping.
+- `src/FsFlow/FlowBuilder.fs`, `BindError.fs`, `ResultBuilder.fs`, `ValidateBuilder.fs`, and `Builders.fs` provide computation expressions and interop for `Result`, `Async`, `Task`, `ValueTask`, `option`, `voption`, and flow bind-site error adaptation.
 - `src/FsFlow/Runtime*.fs` provides internal registry, tagged service lookup, nominal runtime adaptation, simple layer composition, and deterministic scope finalization.
 - `src/FsFlow/Ref.fs`, `Stm.fs`, `Stream.fs`, and `Schedule.fs` provide initial state, STM, streaming, and scheduling primitives on .NET.
 - `src/FsFlow/Diagnostics.fs`, `Validation.fs`, and `Check.fs` provide structured validation diagnostics and applicative validation support.
@@ -38,7 +38,7 @@ Core package files reviewed:
 - `Core.fs`, `Foundation.fs`, `Flow.fs`: the core `Flow` representation, effect helpers, execution, construction, environment access, runtime helpers, fibers, parallel composition, and transformations.
 - `FlowBuilder.fs`, `Builders.fs`, `ResultBuilder.fs`, `ValidateBuilder.fs`: computation expressions and public builder values.
 - `AsyncAdapter.fs`, `TaskAdapter.fs`: .NET-only adapter flow families for async/task-oriented composition.
-- `Guard.fs`, `Check.fs`, `Diagnostics.fs`, `Validation.fs`: guard conversions, pure checks, structured diagnostics, and accumulating validation.
+- `Check.fs`, `Take.fs`, `BindError.fs`, `Diagnostics.fs`, `Validation.fs`: pure checks, value-returning checks, flow bind-site error adaptation, structured diagnostics, and accumulating validation.
 - `Runtime.fs`, `RuntimeScope.fs`, `RuntimeRegistry.fs`, `RuntimeAdapter.fs`, `RuntimeLayer.fs`: ambient runtime services, service registry, scoped finalizers, adapter projection, and internal layer composition.
 - `Ref.fs`, `Stm.fs`, `Stream.fs`, `Schedule.fs`: .NET-only state, transactional memory, stream, and schedule primitives.
 - `FsFlow.fsproj`: `netstandard2.1;net8.0` target configuration, Fable dependency, and `net8.0` AOT compatibility marker.

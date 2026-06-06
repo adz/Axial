@@ -430,11 +430,36 @@ let pageSpecs = [
         OutPath = ["check"; "_index.md"]
         Title = "Check"
         Description = "Source-documented pure predicate helpers for FsFlow."
-        Intro = "This page shows the `Check` surface for reusable, pure predicates. A check is a `Result<unit, unit>`-style decision: it says whether a condition passed, without deciding the final domain error yet. This makes checks easy to compose, negate, reuse, and convert into typed failures with `orError` or `orErrorWith`. Use `Check` for local facts such as non-empty strings, equality, null checks, and option presence. When you need to collect several named failures, move to `Validation`; when you need environment or async work, lift the result into `Flow`."
+        Intro = "This page shows the `Check` surface for reusable, pure predicates. A check carries a `unit` error: it says whether a condition passed without deciding the final domain error yet. This makes checks easy to compose, negate, reuse, and convert into typed failures with `withError`. Use `Check` for local facts such as non-empty strings, equality, null checks, cardinality checks, and option presence. When a predicate should return a useful value, use `Take`; when you need to collect several named failures, move to `Validation`; when you need environment or async work, lift the result into `Flow`."
         SymbolIds = [
-            "Core type", ["T:Check"]
-            "Structured errors", ["T:FsFlow.CheckError"; "T:FsFlow.CardinalityFailure"]
-            "Module functions", ["M:FsFlow.Check.fromPredicate"; "M:FsFlow.Check.fromTry"; "M:FsFlow.Check.fromChoice"; "M:FsFlow.Check.okIfTrueTuple"; "M:FsFlow.CheckModule.not``1"; "M:FsFlow.CheckModule.and``2"; "M:FsFlow.CheckModule.or``2"; "M:FsFlow.Check.all"; "M:FsFlow.Check.any"; "M:FsFlow.Check.okIf"; "M:FsFlow.Check.failIf"; "M:FsFlow.Check.okIfSome"; "M:FsFlow.Check.okIfNone"; "M:FsFlow.Check.failIfSome"; "M:FsFlow.Check.failIfNone"; "M:FsFlow.Check.okIfValueSome"; "M:FsFlow.Check.okIfValueNone"; "M:FsFlow.Check.failIfValueSome"; "M:FsFlow.Check.failIfValueNone"; "M:FsFlow.Check.okIfNotNullable"; "M:FsFlow.Check.okIfNullable"; "M:FsFlow.Check.failIfNotNullable"; "M:FsFlow.Check.failIfNullable"; "M:FsFlow.Check.notNullable"; "M:FsFlow.Check.okIfNotNull"; "M:FsFlow.Check.okIfNull"; "M:FsFlow.Check.failIfNotNull"; "M:FsFlow.Check.failIfNull"; "M:FsFlow.Check.okIfNotEmpty"; "M:FsFlow.Check.okIfEmpty"; "M:FsFlow.Check.failIfNotEmpty"; "M:FsFlow.Check.failIfEmpty"; "M:FsFlow.Check.okIfExactlyOne"; "M:FsFlow.Check.failIfExactlyOne"; "M:FsFlow.Check.okIfAtMostOne"; "M:FsFlow.Check.failIfAtMostOne"; "M:FsFlow.Check.okIfCountIs"; "M:FsFlow.Check.okIfContains"; "M:FsFlow.Check.okIfEqual"; "M:FsFlow.Check.okIfNotEqual"; "M:FsFlow.Check.failIfEqual"; "M:FsFlow.Check.failIfNotEqual"; "M:FsFlow.Check.okIfNonEmptyStr"; "M:FsFlow.Check.okIfEmptyStr"; "M:FsFlow.Check.failIfNonEmptyStr"; "M:FsFlow.Check.failIfEmptyStr"; "M:FsFlow.Check.okIfNotBlank"; "M:FsFlow.Check.notBlank"; "M:FsFlow.Check.okIfBlank"; "M:FsFlow.Check.blank"; "M:FsFlow.Check.failIfNotBlank"; "M:FsFlow.Check.failIfBlank"; "M:FsFlow.Check.orError"; "M:FsFlow.Check.orErrorWith"; "M:FsFlow.Check.notNull"; "M:FsFlow.Check.notEmpty"; "M:FsFlow.Check.equal"; "M:FsFlow.Check.notEqual"]
+            "Core type", ["T:FsFlow.Check`1"]
+            "Structured errors", ["T:FsFlow.CardinalityFailure"]
+            "Construction", ["M:FsFlow.Check.fromPredicate"; "M:FsFlow.Check.fromTry"; "M:FsFlow.Check.fromChoice"]
+            "Composition", ["M:FsFlow.Check.negate"; "M:FsFlow.Check.both"; "M:FsFlow.Check.either"; "M:FsFlow.Check.all"; "M:FsFlow.Check.any"]
+            "Predicates", ["M:FsFlow.Check.isTrue"; "M:FsFlow.Check.isFalse"; "M:FsFlow.Check.some"; "M:FsFlow.Check.none"; "M:FsFlow.Check.valueSome"; "M:FsFlow.Check.valueNone"; "M:FsFlow.Check.hasValue"; "M:FsFlow.Check.hasNoValue"; "M:FsFlow.Check.notNull"; "M:FsFlow.Check.isNull"; "M:FsFlow.Check.notEmpty"; "M:FsFlow.Check.empty"; "M:FsFlow.Check.notNullOrEmpty"; "M:FsFlow.Check.nullOrEmpty"; "M:FsFlow.Check.notBlank"; "M:FsFlow.Check.blank"; "M:FsFlow.Check.equalTo"; "M:FsFlow.Check.notEqualTo"; "M:FsFlow.Check.contains"; "M:FsFlow.Check.hasCount"; "M:FsFlow.Check.exactlyOne"; "M:FsFlow.Check.atMostOne"; "M:FsFlow.Check.atLeastOne"; "M:FsFlow.Check.moreThanOne"; "M:FsFlow.Check.hasDuplicates"]
+            "Error attachment", ["M:FsFlow.Check.withError"]
+        ]
+        Alias = None
+    }
+    {
+        OutPath = ["take"; "_index.md"]
+        Title = "Take"
+        Description = "Source-documented value-returning validation helpers for FsFlow."
+        Intro = "This page shows the `Take` surface for checks that should return a useful value. `Take.whenX` helpers keep the original input when a property holds, while bare `Take.x` helpers extract or narrow the value exposed by that property. Use `Take` when a later step needs the non-blank string, unwrapped option value, non-null reference, or cardinality-narrowed element. Attach domain errors to unit-error Take results with `Check.withError` in pure code, or use `BindError.withError` at a `flow { }` bind site. Cardinality helpers already carry `CardinalityFailure`; use `Result.mapError` when you need a domain error."
+        SymbolIds = [
+            "Option and nullable", ["M:FsFlow.Take.whenSome"; "M:FsFlow.Take.some"; "M:FsFlow.Take.whenValueSome"; "M:FsFlow.Take.valueSome"; "M:FsFlow.Take.whenHasValue"; "M:FsFlow.Take.hasValue"; "M:FsFlow.Take.whenNotNull"]
+            "Strings and collections", ["M:FsFlow.Take.whenNotEmpty"; "M:FsFlow.Take.whenNotNullOrEmpty"; "M:FsFlow.Take.whenNotBlank"; "M:FsFlow.Take.whenExactlyOne"; "M:FsFlow.Take.exactlyOne"; "M:FsFlow.Take.whenAtMostOne"; "M:FsFlow.Take.atMostOne"]
+        ]
+        Alias = None
+    }
+    {
+        OutPath = ["bind-error"; "_index.md"]
+        Title = "BindError"
+        Description = "Source-documented flow bind-site error adaptation for FsFlow."
+        Intro = "This page shows the `BindError` marker used when a source needs its error assigned or mapped immediately before `flow { }` binds it. Use `BindError.withError` for missingness, falsehood, or `unit` failures such as `option`, `bool`, or `Result<'value, unit>`. Use `BindError.map` when the source already carries a meaningful error that must be wrapped or translated into the surrounding flow error. Do not use `BindError` as a general Result adapter; in pure code use `Check.withError`, `Result.mapError`, or `Validation.mapError`."
+        SymbolIds = [
+            "Core type", ["T:FsFlow.BindError`3"]
+            "Module functions", ["M:FsFlow.BindError.withError"; "M:FsFlow.BindError.map"]
         ]
         Alias = None
     }
@@ -716,6 +741,28 @@ let groupedFlowConstructionMembers =
         "M:FsFlow.Flow.delay"
     ]
 
+let serviceCoreSectionDirectories =
+    dict [
+        "Base runtime", ("base-runtime", "Base runtime", "This page shows the `Core.BaseRuntime` helpers for building the standard explicit service bundle used by FsFlow workflow hosts.")
+        "Clock", ("clock", "Clock", "This page shows the `Core.Clock` helpers for reading time from an explicit clock service.")
+        "Logging", ("log", "Logging", "This page shows the `Core.Log` helpers for writing messages through an explicit logging service.")
+        "Random", ("random", "Random", "This page shows the `Core.Random` helpers for reading values from an explicit random-number service.")
+        "GUID", ("guid", "GUID", "This page shows the `Core.Guid` helpers for reading GUID values from an explicit GUID service.")
+        "Environment variables", ("environment-variables", "Environment variables", "This page shows the `Core.EnvironmentVariables`, `Core.EnvironmentVariable`, and `Core.EnvironmentVariableErrors` helpers for explicit environment-variable access.")
+    ]
+
+let serviceFileSystemSectionDirectories =
+    dict [
+        "Errors", ("errors", "Errors", "This page shows the `FileSystemError` helpers for classifying and describing file-system failures.")
+        "Text and bytes", ("text-and-bytes", "Text and bytes", "This page shows the `FileSystem.FileSystem` helpers for reading and writing text and byte content through an explicit file-system service.")
+        "Files and streams", ("files-and-streams", "Files and streams", "This page shows the `FileSystem.FileSystem` helpers for file existence, mutation, and stream access.")
+        "File metadata", ("file-metadata", "File metadata", "This page shows the `FileSystem.FileSystem` helpers for reading and updating file metadata.")
+        "Directories", ("directories", "Directories", "This page shows the `FileSystem.FileSystem` helpers for directory creation, discovery, and enumeration.")
+        "Directory metadata", ("directory-metadata", "Directory metadata", "This page shows the `FileSystem.FileSystem` helpers for reading and updating directory metadata.")
+        "Paths", ("paths", "Paths", "This page shows the `FileSystem.FileSystem` helpers for path manipulation and inspection.")
+        "Implementations", ("implementations", "Implementations", "This page shows the live `FileSystem.FileSystem` implementations used to provide the explicit file-system service.")
+    ]
+
 let sectionDirectory (spec: PageSpec) (sectionTitle: string) (id: string) =
     match spec.OutPath, sectionTitle with
     | ["flow"; "_index.md"], "Core type" -> None
@@ -724,6 +771,12 @@ let sectionDirectory (spec: PageSpec) (sectionTitle: string) (id: string) =
     | ["flow"; "_index.md"], "Module functions" -> Some "composition"
     | ["flow"; "_index.md"], _ when flowSectionDirectories.ContainsKey sectionTitle ->
         let dir, _ = flowSectionDirectories[sectionTitle]
+        Some dir
+    | ["service"; "core"; "_index.md"], _ when serviceCoreSectionDirectories.ContainsKey sectionTitle ->
+        let dir, _, _ = serviceCoreSectionDirectories[sectionTitle]
+        Some dir
+    | ["service"; "filesystem"; "_index.md"], _ when serviceFileSystemSectionDirectories.ContainsKey sectionTitle ->
+        let dir, _, _ = serviceFileSystemSectionDirectories[sectionTitle]
         Some dir
     | _ -> None
 
@@ -735,6 +788,20 @@ let sectionTitleForDirectory = function
     | "resources" -> "Resources"
     | "concurrency" -> "Concurrency"
     | "scheduling" -> "Scheduling"
+    | "base-runtime" -> "Base runtime"
+    | "clock" -> "Clock"
+    | "log" -> "Logging"
+    | "random" -> "Random"
+    | "guid" -> "GUID"
+    | "environment-variables" -> "Environment variables"
+    | "errors" -> "Errors"
+    | "text-and-bytes" -> "Text and bytes"
+    | "files-and-streams" -> "Files and streams"
+    | "file-metadata" -> "File metadata"
+    | "directories" -> "Directories"
+    | "directory-metadata" -> "Directory metadata"
+    | "paths" -> "Paths"
+    | "implementations" -> "Implementations"
     | other -> other
 
 let sectionIntroForDirectory = function
@@ -745,7 +812,21 @@ let sectionIntroForDirectory = function
     | "resources" -> "This page shows the Flow helpers that register cleanup and manage scoped resources during execution."
     | "concurrency" -> "This page shows the Flow helpers that fork work, coordinate fibers, and run independent workflows in parallel."
     | "scheduling" -> "This page shows the Flow helpers that apply retry and repeat schedules."
-    | _ -> "This page shows the members in this Flow subgroup."
+    | "base-runtime" -> "This page shows the `Core.BaseRuntime` helpers for building the standard explicit service bundle used by FsFlow workflow hosts."
+    | "clock" -> "This page shows the `Core.Clock` helpers for reading time from an explicit clock service."
+    | "log" -> "This page shows the `Core.Log` helpers for writing messages through an explicit logging service."
+    | "random" -> "This page shows the `Core.Random` helpers for reading values from an explicit random-number service."
+    | "guid" -> "This page shows the `Core.Guid` helpers for reading GUID values from an explicit GUID service."
+    | "environment-variables" -> "This page shows the `Core.EnvironmentVariables`, `Core.EnvironmentVariable`, and `Core.EnvironmentVariableErrors` helpers for explicit environment-variable access."
+    | "errors" -> "This page shows the `FileSystemError` helpers for classifying and describing file-system failures."
+    | "text-and-bytes" -> "This page shows the `FileSystem.FileSystem` helpers for reading and writing text and byte content through an explicit file-system service."
+    | "files-and-streams" -> "This page shows the `FileSystem.FileSystem` helpers for file existence, mutation, and stream access."
+    | "file-metadata" -> "This page shows the `FileSystem.FileSystem` helpers for reading and updating file metadata."
+    | "directories" -> "This page shows the `FileSystem.FileSystem` helpers for directory creation, discovery, and enumeration."
+    | "directory-metadata" -> "This page shows the `FileSystem.FileSystem` helpers for reading and updating directory metadata."
+    | "paths" -> "This page shows the `FileSystem.FileSystem` helpers for path manipulation and inspection."
+    | "implementations" -> "This page shows the live `FileSystem.FileSystem` implementations used to provide the explicit file-system service."
+    | _ -> "This page shows the members in this reference subgroup."
 
 let finalSegment (name: string) =
     let parts = name.Split('.')
@@ -866,6 +947,8 @@ let pageWeight (spec: PageSpec) =
     | ["effect"; "_index.md"] -> 50
     | ["result"; "_index.md"] -> 60
     | ["check"; "_index.md"] -> 70
+    | ["take"; "_index.md"] -> 75
+    | ["bind-error"; "_index.md"] -> 76
     | ["validation"; "_index.md"] -> 80
     | ["diagnostics"; "_index.md"] -> 90
     | ["schedule"; "_index.md"] -> 100
@@ -971,6 +1054,8 @@ let main argv =
     let canonicalAliases =
         dict [
             formatterApiSlug "FsFlow.CheckModule", Path.Combine(outRoot, "check", "_index.md")
+            formatterApiSlug "FsFlow.TakeModule", Path.Combine(outRoot, "take", "_index.md")
+            formatterApiSlug "FsFlow.BindErrorModule", Path.Combine(outRoot, "bind-error", "_index.md")
             formatterApiSlug "FsFlow.FlowModule", Path.Combine(outRoot, "flow", "_index.md")
             formatterApiSlug "FsFlow.LayerBuilder", Path.Combine(outRoot, "layer", "p-layer.md")
             formatterApiSlug "FsFlow.FlowBuilder", Path.Combine(outRoot, "flow", "builders-flow.md")
@@ -978,6 +1063,7 @@ let main argv =
             formatterApiSlug "FsFlow.ResultBuilder", Path.Combine(outRoot, "result", "builders-result.md")
             formatterApiSlug "FsFlow.StmBuilder", Path.Combine(outRoot, "stm", "p-stm-stm.md")
             formatterApiSlug "FsFlow.Check`1", Path.Combine(outRoot, "check", "t-check.md")
+            formatterApiSlug "FsFlow.BindError`3", Path.Combine(outRoot, "bind-error", "t-binderror.md")
             formatterApiSlug "FsFlow.Path", Path.Combine(outRoot, "diagnostics", "t-path.md")
             formatterApiSlug "FsFlow.LogLevel", Path.Combine(outRoot, "service", "core", "_index.md")
             formatterApiSlug "FsFlow.RetryPolicy`1", Path.Combine(outRoot, "flow", "runtime", "_index.md")

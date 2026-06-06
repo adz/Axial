@@ -16,8 +16,8 @@ module Builders =
     /// to stop the flow immediately instead of accumulating diagnostics.
     /// </para>
     /// <para>
-    /// Use <c>Check.orError</c> when a pure check needs a domain error, and <c>Guard.MapError</c> when
-    /// you need to remap an existing error before entering the CE.
+    /// Use <c>Check.withError</c> when a pure check needs a domain error, and <c>Result.mapError</c>
+    /// when you need to remap an existing error before entering the CE.
     /// </para>
     /// </remarks>
     /// <example>
@@ -75,10 +75,10 @@ module Builders =
     /// not evaluated.
     /// </para>
     /// <para>
-    /// <c>Check&lt;'value&gt;</c> covers both value-preserving checks and gate checks.
-    /// Use <c>Check.orError</c> to attach an application error, and <c>Guard.Of</c> /
-    /// <c>Guard.MapError</c> when you want the same error-bound source shape to participate
-    /// directly in validation.
+    /// <c>Check&lt;'value&gt;</c> covers unit-error predicate results.
+    /// Use <c>Take</c> when a predicate should return a useful value, <c>Check.withError</c>
+    /// to attach an application error, and <c>Validation.mapError</c> when you need to
+    /// remap accumulated diagnostics.
     /// </para>
     /// <para>
     /// When nested API response fields need to keep their place in the diagnostics graph, use
@@ -96,9 +96,9 @@ module Builders =
     /// <code>
     /// let validatedUser =
     ///     validate {
-    ///         let! name = Check.notBlank input.Name
-    ///         let! age = Check.okIf (input.Age > 0) "Age must be positive"
-    ///         return { Name = name; Age = age }
+    ///         let! name = input.Name |> Take.whenNotBlank |> Check.withError "Name required"
+    ///         do! input.Age > 0 |> Check.isTrue |> Check.withError "Age must be positive"
+    ///         return { Name = name; Age = input.Age }
     ///     }
     /// </code>
     ///
@@ -107,7 +107,7 @@ module Builders =
     ///     validate.key "customer" {
     ///         let! name =
     ///             validate.name "Name" {
-    ///                 return! input.Name |> Check.notBlank |> Check.orError "Name required"
+    ///                 return! input.Name |> Take.whenNotBlank |> Check.withError "Name required"
     ///             }
     ///
     ///         return name

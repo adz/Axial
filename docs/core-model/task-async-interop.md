@@ -97,16 +97,17 @@ let myFlow =
     }
 ```
 
-## Guard: Bridging with Error Packaging
+## BindError: Bridging with Error Packaging
 
-When you have a source that already contains an error (like `Async<Result<_,_>>` or `Task<Option<_>>`), and you want to bind it while providing or mapping the error, use **`Guard`**.
+When a source needs its error assigned or mapped before `flow {}` binds it, use **`BindError`** at the binding site.
 
 ```fsharp
-let guardedTask = Guard.Of("missing", Task.FromResult(None))
-
 let myFlow =
     flow {
-        let! value = guardedTask // Binds and fails with "missing" if None
+        let! value =
+            Task.FromResult(None)
+            |> BindError.withError "missing"
+
         return value
     }
 ```
@@ -116,4 +117,4 @@ let myFlow =
 - Use **`flow {}`** for all application orchestration.
 - Prefer **direct binding** for `Async`, `Task`, and `Result`.
 - Use **`ColdTask`** for task-based logic that should respect flow cancellation, retry, and repetition.
-- Use **`Guard`** to bridge existing error-bearing sources with custom error mapping.
+- Use **`BindError`** when a bind source needs `withError` or `map` before entering `flow {}`.

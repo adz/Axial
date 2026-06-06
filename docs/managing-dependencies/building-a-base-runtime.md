@@ -27,8 +27,7 @@ Use `BaseRuntime.liveValue` when you already want a concrete value:
 
 ```fsharp
 let result =
-    Clock.now
-    |> Flow.runSync BaseRuntime.liveValue
+    (Clock.now).RunSynchronously(BaseRuntime.liveValue)
 ```
 
 Use `BaseRuntime.live` when composing with layers:

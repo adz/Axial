@@ -22,7 +22,7 @@ FsFlow is a unified model for building robust, Result-based programs. Write pred
 <div class="docs-home-meta">
 <a class="docs-chip" href="{{< relref "/docs/start/getting-started.md" >}}">Get Started</a>
 <a class="docs-chip" href="{{< relref "/docs/tutorials/" >}}">Tutorials</a>
-<a class="docs-chip" href="{{< relref "/docs/validation-results/" >}}">Pure Checks -> Result & Validation</a>
+<a class="docs-chip" href="{{< relref "/docs/validation-results/" >}}">Check/Take -> Result & Validation</a>
 <a class="docs-chip" href="{{< relref "/docs/core-model/" >}}">Typed failure</a>
 <a class="docs-chip" href="{{< relref "/docs/core-model/task-async-interop.md" >}}">Host context</a>
 <a class="docs-chip" href="{{< relref "/docs/managing-dependencies/" >}}">Managing dependencies</a>
@@ -52,8 +52,8 @@ type RegistrationError =
 
 let validateEmail (email: string) : Result<string, RegistrationError> =
     email
-    |> Check.notBlank
-    |> Check.orError EmailMissing
+    |> Take.whenNotBlank
+    |> Check.withError EmailMissing
 
 type User =
     { Email: string }

@@ -16,9 +16,11 @@
     <Compile Include="..\..\src\FsFlow\Diagnostics.fs" />
     <Compile Include="..\..\src\FsFlow\Validation.fs" />
     <Compile Include="..\..\src\FsFlow\Check.fs" />
+    <Compile Include="..\..\src\FsFlow\Take.fs" />
     <Compile Include="..\..\src\FsFlow\Runtime.fs" />
     <Compile Include="..\..\src\FsFlow\RuntimeLayer.fs" />
     <Compile Include="..\..\src\FsFlow\Flow.fs" />
+    <Compile Include="..\..\src\FsFlow\BindError.fs" />
     <Compile Include="..\..\src\FsFlow\Ref.fs" />
     <Compile Include="..\..\src\FsFlow\Stm.fs" />
     <Compile Include="..\..\src\FsFlow\Stream.fs" />
@@ -28,7 +30,6 @@
     <Compile Include="..\..\src\FsFlow\ValidateBuilder.fs" />
     <Compile Include="..\..\src\FsFlow\ResultBuilder.fs" />
     <Compile Include="..\..\src\FsFlow\Builders.fs" />
-    <Compile Include="..\..\src\FsFlow\Guard.fs" />
     <Compile Include="Shared.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

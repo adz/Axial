@@ -1,31 +1,31 @@
 ---
 title: "Check.notEmpty"
 linkTitle: "notEmpty"
-weight: 2255
+weight: 2410
 ---
 
-Returns the sequence when it is not empty.
+Returns success when the sequence is not empty.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Check.notEmpty&#32;<span>coll</span></span></code>
+<code><span>Check.notEmpty&#32;<span>values</span></span></code>
 </div>
 
 ## Parameters
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `coll` | <code><span>'a&#32;seq</span></code> | The sequence to check. |
+| `values` | <code><span>'value&#32;seq</span></code> | The sequence to check. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="t-check.md">Check</a>&lt;<span>'a&#32;seq</span>&gt;</span></code> | A <a href="t-check.md">Check</a> containing the non-empty sequence; otherwise, an Error with unit. |
+| <code><span><a href="t-check.md">Check</a>&lt;unit&gt;</span></code> | <code>Ok ()</code> for non-empty sequences; otherwise <code>Error ()</code>. |
 
 ## Examples
 
-<pre class="fssnip highlighted"><code lang="fsharp"> <span class="pn">[</span><span class="n">1</span><span class="pn">]</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">notEmpty</span> <span class="c">// Ok [1]</span>
+<pre class="fssnip highlighted"><code lang="fsharp"> <span class="pn">[</span> <span class="n">1</span> <span class="pn">]</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">notEmpty</span> <span class="c">// Ok ()</span>
  <span class="pn">[</span><span class="pn">]</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">notEmpty</span> <span class="c">// Error ()</span>
 </code></pre>

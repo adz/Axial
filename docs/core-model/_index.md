@@ -1,7 +1,7 @@
 ---
 weight: 30
 title: The FsFlow Model
-description: The core FsFlow progression from Check and Result into Validation and Flow.
+description: The core FsFlow progression from Check and Take into Result, Validation, and Flow.
 ---
 
 
@@ -12,12 +12,12 @@ This page shows why FsFlow is best understood as one scalable model for Result-b
 The core progression is:
 
 ```text
-Pure Checks -> Result & Validation -> Flow
+Check/Take -> Result & Validation -> Flow
 ```
 
 The validation vocabulary stays the same while the execution context grows.
 
-- start with **Pure Checks** for reusable predicates
+- start with **Check and Take** for reusable predicates and value-returning checks
 - move to **Result & Validation** for fail-fast domain logic or accumulating errors
 - lift into **Flow** only when the boundary needs explicit environment access or becomes asynchronous
 
@@ -35,8 +35,9 @@ and repeated adaptation between pure validation and effectful orchestration.
 
 FsFlow gives those shapes one coherent family:
 
-```fsharp
+```text
 Check<'value>
+Take helpers returning Check<'value>
 Result<'value, 'error>
 Validation<'value, 'error>
 Flow<'env, 'error, 'value>
@@ -46,14 +47,14 @@ The point is not to replace Result, `Async`, or `Task`.
 The point is to let one Result-based style scale into real application boundaries without changing the mental model.
 
 Flow is the boundary model. The same builder can bind sync values, `Async`, `Task`, `ValueTask`, and `ColdTask` directly.
-Guard is the explicit bridge that keeps check-like sources and existing error-bearing sources readable
-when they need to enter `flow {}`.
+`BindError` is the explicit bind-site bridge that keeps check-like sources and existing error-bearing sources readable
+when their error must be assigned or mapped before entering `flow {}`.
 
 ## The Main Claim
 
 FsFlow unifies Result-based programming across pure logic and effectful execution.
 
-- write predicate logic once with Check, using value-preserving checks when you need the input again and gate checks when you only need yes/no
+- write predicate logic once with Check and Take, using value-preserving checks when you need the input again and gate checks when you only need yes/no
 - keep fail-fast domain logic in Result
 - accumulate independent validation with Validation
 - lift the same logic directly into flows when you need environment, async, task, cancellation, logging, or resource handling
@@ -72,8 +73,8 @@ type RegistrationError =
 
 let validateEmail (email: string) : Result<string, RegistrationError> =
     email
-    |> notBlank
-    |> orError EmailMissing
+    |> Take.whenNotBlank
+    |> Check.withError EmailMissing
 ```
 
 This is already enough for pure code and should stay plain when the surrounding logic is still plain.
@@ -84,7 +85,7 @@ If independent checks should accumulate, move to Validation instead of forcing e
 let validateRegistration (email: string) (name: string) : Validation<string * string, RegistrationError> =
     validate {
         let! validEmail = validateEmail email
-        and! validName = Check.notBlank name |> Check.orError NameMissing
+        and! validName = name |> Take.whenNotBlank |> Check.withError NameMissing
         return validEmail, validName
     }
 ```

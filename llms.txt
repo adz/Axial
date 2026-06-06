@@ -14,7 +14,7 @@
 
 ## The Flow Hierarchy
 Data flows from left to right. Later stages can bind earlier stages directly.
-`Check` (unit error) -> `Result` (typed error) -> `Validation` (accumulating diagnostics) -> `Flow` (sync/async/task + env + cancellation)
+`Check`/`Take` (unit-error checks) -> `Result` (typed error) -> `Validation` (accumulating diagnostics) -> `Flow` (sync/async/task + env + cancellation)
 
 ## Execution Outcomes (Exit Model)
 Workflows result in one of three `Exit` outcomes:
@@ -39,37 +39,37 @@ Workflows result in one of three `Exit` outcomes:
 - Keep `IServiceProvider` interop and host-specific adapters at the outer boundary.
 
 ## Core Patterns (Idiomatic Way)
-Use `Check` for reusable predicates and `Check.orError` for pure bridge-to-error cases:
+Use `Check` for reusable yes/no predicates, `Take` when the predicate should return a useful value, and `Check.withError` for pure bridge-to-error cases:
 
-- `Check.notBlank name |> Check.orError InvalidName`
-- `Check.okIf condition |> Check.orError Disabled`
+- `name |> Take.whenNotBlank |> Check.withError InvalidName`
+- `condition |> Check.isTrue |> Check.withError Disabled`
+- `opt |> Take.some |> Check.withError MissingValue`
 
-Use `Guard.Of` when the source itself should bind directly inside a flow or validation boundary:
+Use `BindError.withError` only at a `flow {}` bind site when the source fails with missingness, falsehood, or `unit`:
 
-- `Option<'T>` -> `let! x = opt |> Guard.Of error`
-- `voption<'T>` -> `let! x = vopt |> Guard.Of error`
-- `Async<Option<'T>>` -> `let! x = aOpt |> Guard.Of error`
-- `Async<voption<'T>>` -> `let! x = aVOpt |> Guard.Of error`
-- `bool` -> `do! cond |> Guard.Of error`
-- `Result<'T, unit>` -> `let! x = check |> Guard.Of error`
-- `Validation<'T, unit>` -> `let! x = validation |> Guard.Of error`
-- `Task<Option<'T>>` -> `let! x = tOpt |> Guard.Of error`
-- `Task<voption<'T>>` -> `let! x = tVOpt |> Guard.Of error`
+- `Option<'T>` -> `let! x = opt |> BindError.withError error`
+- `voption<'T>` -> `let! x = vopt |> BindError.withError error`
+- `Async<Option<'T>>` -> `let! x = aOpt |> BindError.withError error`
+- `Async<voption<'T>>` -> `let! x = aVOpt |> BindError.withError error`
+- `bool` -> `do! cond |> BindError.withError error`
+- `Result<'T, unit>` -> `let! x = check |> BindError.withError error`
+- `Flow<'Env, unit, 'T>` -> `let! x = flow |> BindError.withError error`
+- `Task<Option<'T>>` -> `let! x = tOpt |> BindError.withError error`
+- `Task<voption<'T>>` -> `let! x = tVOpt |> BindError.withError error`
 
-Use `Guard.MapError` when the source already carries a meaningful error:
+Use `BindError.map` only at a `flow {}` bind site when the source already carries a meaningful error:
 
-- `Result<'T, 'E1>` -> `let! x = result |> Guard.MapError mapper`
-- `Validation<'T, 'E1>` -> `let! x = validation |> Guard.MapError mapper`
-- `Flow<'Env, 'E1, 'T>` -> `let! x = flow |> Guard.MapError mapper`
-- `Async<Result<'T, 'E1>>` -> `let! x = aResult |> Guard.MapError mapper`
-- `Task<Result<'T, 'E1>>` -> `let! x = taskResult |> Guard.MapError mapper`
+- `Result<'T, 'E1>` -> `let! x = result |> BindError.map mapper`
+- `Flow<'Env, 'E1, 'T>` -> `let! x = flow |> BindError.map mapper`
+- `Async<Result<'T, 'E1>>` -> `let! x = aResult |> BindError.map mapper`
+- `Task<Result<'T, 'E1>>` -> `let! x = taskResult |> BindError.map mapper`
 
 ## Rosetta Stone (Mappings)
-- **FsToolkit**: `AsyncResult.requireSome e` -> `let! x = opt |> Guard.Of e`
-- **ZIO**: `option.getOrFail(e)` -> `let! x = opt |> Guard.Of e`
+- **FsToolkit**: `AsyncResult.requireSome e` -> `let! x = opt |> BindError.withError e` in `flow {}` or `opt |> Take.some |> Check.withError e` in pure code
+- **ZIO**: `option.getOrFail(e)` -> `let! x = opt |> BindError.withError e` in `flow {}`
 - **ZIO**: `ZIO.service<T>` -> `Service<T>.get()` when the environment implements `IHas<T>`
-- **Manual**: `match x with Some v -> Ok v | None -> Error e` -> `let! v = x |> Guard.Of e`
-- **Manual**: `Result.mapError mapper` -> `let! x = result |> Guard.MapError mapper`
+- **Manual**: `match x with Some v -> Ok v | None -> Error e` -> `let! v = x |> BindError.withError e` in `flow {}`
+- **Manual**: `Result.mapError mapper` -> `let! x = result |> BindError.map mapper` in `flow {}`
 
 ## FsToolkit.ErrorHandling Compatibility Map
 Use this when translating FsToolkit-style code into FsFlow. If a function is not listed as a direct
@@ -77,8 +77,8 @@ equivalent, FsFlow usually expects a different boundary shape rather than a 1:1 
 
 ### Result<'T, 'E>
 - FsFlow uses the standard FSharp.Core `Result<'T, 'E>` directly; there is no parallel FsFlow `Result` helper module
-- FsFlow replacements: use `result {}` for fail-fast sequencing, `Validation` for accumulation, `Check` for unit-error predicates, and `Guard` when the source should bind directly inside a flow
-- For predicate checks, use `Check.orError` or `Check.orErrorWith` to attach a typed error to `Result<'T, unit>` values
+- FsFlow replacements: use `result {}` for fail-fast sequencing, `Validation` for accumulation, `Check` for unit-error predicates, `Take` for value-returning checks, and `BindError` when a flow bind source needs error assignment or mapping
+- For predicate checks, use `Check.withError` to attach a typed error to `Result<'T, unit>` values
 
 ### AsyncResult<'T, 'E>
 - Closest FsFlow shape: `Flow<'env, 'error, 'value>`
@@ -86,7 +86,7 @@ equivalent, FsFlow usually expects a different boundary shape rather than a 1:1 
 - Boundary lifts: use `flow { let! value = asyncResult; return value }`, or `Flow.fromResult`, `Flow.fromOption`, and `Flow.fromValueOption` for synchronous values.
 - Async fallback helpers: `orElse` -> `Flow.orElse`, `orElseFlow` -> `Flow.orElseFlow`, `orElseWith` -> `Flow.orElseWith`
 - Missing as dedicated helpers: `fold`, `ignore`, `defaultValue`, `defaultError`, `defaultWith`, `valueOr`, `setError`, `withError`, `require*`
-- Important difference: FsFlow folds `Async<Result<'T, 'E>>` into a larger environment-aware model. Execute at the edge with `Flow.run`, `Flow.runFull`, or `Flow.runSync`.
+- Important difference: FsFlow folds `Async<Result<'T, 'E>>` into a larger environment-aware model. Execute at the edge with `ToTask`, `ToAsync`, `ToValueTask`, or `RunSynchronously`.
 
 ### Validation
 - FsFlow equivalent type: `Validation<'value, 'error>` is not `Result<'value, 'error list>`; it stores a structured `Diagnostics<'error>` graph

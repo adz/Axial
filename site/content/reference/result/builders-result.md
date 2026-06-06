@@ -30,8 +30,8 @@ type: docs
  It works well for parsing, validation, and other boundaries where failure is expected
  to stop the flow immediately instead of accumulating diagnostics.
  </p><p class='fsdocs-para'>
- Use <code>Check.orError</code> when a pure check needs a domain error, and <code>Guard.MapError</code> when
- you need to remap an existing error before entering the CE.
+ Use <code>Check.withError</code> when a pure check needs a domain error, and <code>Result.mapError</code>
+ when you need to remap an existing error before entering the CE.
  </p>
 
 ## Examples

@@ -145,6 +145,9 @@ type FlowBuilder() =
     member _.ReturnFrom(flow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
         flow
 
+    member _.ReturnFrom(source: BindError<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
+        BindError.toFlow source
+
     member _.ReturnFrom(operation: Async<'value>) : Flow<'env, 'error, 'value> =
         FlowBuilderRuntime.fromAsync operation
 
@@ -196,6 +199,15 @@ type FlowBuilder() =
             binder: 'value -> Flow<'env, 'error, 'next>
         ) : Flow<'env, 'error, 'next> =
         Flow.bind binder flow
+
+    member _.Bind
+        (
+            source: BindError<'env, 'error, 'value>,
+            binder: 'value -> Flow<'env, 'error, 'next>
+        ) : Flow<'env, 'error, 'next> =
+        source
+        |> BindError.toFlow
+        |> Flow.bind binder
 
     member _.Bind
         (

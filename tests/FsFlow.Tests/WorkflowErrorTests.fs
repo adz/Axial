@@ -196,7 +196,7 @@ module WorkflowErrorTests =
     [<Fact>]
     let ``Check bridges into flow shapes`` () =
         let flowBridge =
-            Check.okIf false
+            Check.isTrue false
             |> Flow.orElseFlow (Flow.read (fun env -> $"flow:{env}"))
             |> Flow.runSync "env"
 
@@ -337,7 +337,7 @@ let probe : Flow<unit, string, int> =
         test <@ syncValueNone = Exit.Failure (Cause.Fail "missing value") @>
 
     [<Fact>]
-    let ``Guard constructors work in all flow families`` () =
+    let ``BindError assigns errors in all flow families`` () =
         let successOption : int option = Some 42
         let successValueOption : int voption = ValueSome 10
         let asyncOption : Async<int option> = async { return Some 42 }
@@ -345,38 +345,30 @@ let probe : Flow<unit, string, int> =
         let asyncBool : Async<bool> = async { return true }
         let successTaskOption : Task<int option> = Task.FromResult(Some 5)
         let successTaskValueOption : ValueTask<int voption> = ValueTask.FromResult(ValueSome 3)
-        let guardedSuccessOption : Result<int, string> = Guard.Of("missing-option", successOption)
-        let guardedSuccessValueOption : Result<int, string> = Guard.Of("missing-voption", successValueOption)
-        let guardedBool : Result<unit, string> = Guard.Of("bool-false", true)
-        let guardedAsyncOption : Async<Result<int, string>> = Guard.Of("missing-option", asyncOption)
-        let guardedAsyncValueOption : Async<Result<int, string>> = Guard.Of("missing-voption", asyncValueOption)
-        let guardedAsyncBool : Async<Result<unit, string>> = Guard.Of("bool-false", asyncBool)
-        let guardedTaskOption : Task<Result<int, string>> = Guard.Of("task-missing", successTaskOption)
-        let guardedTaskValueOption : ValueTask<Result<int, string>> = Guard.Of("vtask-missing", successTaskValueOption)
 
         let flowTest =
             flow {
-                let! x = guardedSuccessOption
-                let! y = guardedSuccessValueOption
-                do! guardedBool
+                let! x = successOption |> BindError.withError "missing-option"
+                let! y = successValueOption |> BindError.withError "missing-voption"
+                do! true |> BindError.withError "bool-false"
                 return x + y
             }
 
         let asyncFlowTest =
             flow {
-                let! (x : int) = guardedAsyncOption
-                let! (y : int) = guardedAsyncValueOption
-                do! guardedAsyncBool
+                let! (x : int) = asyncOption |> BindError.withError "missing-option"
+                let! (y : int) = asyncValueOption |> BindError.withError "missing-voption"
+                do! asyncBool |> BindError.withError "bool-false"
                 return x + y
             }
 
         let taskFlowTest =
             flow {
-                let! x = guardedSuccessOption
-                let! y = guardedSuccessValueOption
-                do! guardedBool
-                let! z = guardedTaskOption
-                let! w = guardedTaskValueOption
+                let! x = successOption |> BindError.withError "missing-option"
+                let! y = successValueOption |> BindError.withError "missing-voption"
+                do! true |> BindError.withError "bool-false"
+                let! z = successTaskOption |> BindError.withError "task-missing"
+                let! w = successTaskValueOption |> BindError.withError "vtask-missing"
                 return x + y + z + w
             }
 
@@ -389,7 +381,7 @@ let probe : Flow<unit, string, int> =
         test <@ taskFlowResult = Exit.Success 60 @>
 
     [<Fact>]
-    let ``Flow async syntax uses Guard constructors and error mapping`` () =
+    let ``Flow async syntax uses BindError assignment and mapping`` () =
         let tryGetUser username = async { return if username = "missing" then None else Some username }
         let isPwdValid password user = password = $"{user}-pwd"
         let authorize user = async { return if user = "blocked" then Error "denied" else Ok () }
@@ -397,17 +389,22 @@ let probe : Flow<unit, string, int> =
 
         let login username password =
             flow {
-                let userResult : Async<Result<string, LoginError>> = Guard.Of(InvalidUser, tryGetUser username)
-                let! (user : string) = userResult
+                let! (user : string) =
+                    tryGetUser username
+                    |> BindError.withError InvalidUser
 
-                let passwordCheck : Result<unit, LoginError> = Guard.Of(InvalidPwd, isPwdValid password user)
-                do! passwordCheck
+                do!
+                    isPwdValid password user
+                    |> Check.isTrue
+                    |> BindError.withError InvalidPwd
 
-                let authorizeResult : Async<Result<unit, LoginError>> = Guard.MapError(Unauthorized, authorize user)
-                do! authorizeResult
+                do!
+                    authorize user
+                    |> BindError.map Unauthorized
 
-                let tokenResult : Result<string, LoginError> = Guard.MapError(TokenErr, createAuthToken user)
-                return! tokenResult
+                return!
+                    createAuthToken user
+                    |> BindError.map TokenErr
             }
 
         let success = Flow.runSync () (login "alice" "alice-pwd")
@@ -419,30 +416,30 @@ let probe : Flow<unit, string, int> =
         test <@ tokenFailure = Exit.Failure (Cause.Fail (TokenErr "token-expired")) @>
 
     [<Fact>]
-    let ``Guard mapError stays symmetric across flow families`` () =
+    let ``BindError map stays symmetric across flow families`` () =
         let asyncSource : Async<Result<int, string>> = async { return Error "async-source" }
         let taskSource : Task<Result<int, string>> = task { return Error "task-source" }
         let asyncSuccess : Async<Result<int, string>> = async { return Ok 1 }
 
         let asyncMapped =
-            let mappedAsyncSource : Async<Result<int, string>> =
-                Guard.MapError((fun error -> $"mapped-{error}"), asyncSource)
-
             flow {
-                let! value = mappedAsyncSource
+                let! value =
+                    asyncSource
+                    |> BindError.map (fun error -> $"mapped-{error}")
+
                 return value + 1
             }
 
         let taskMapped =
-            let mappedAsyncSuccess : Async<Result<int, string>> =
-                Guard.MapError((fun error -> $"mapped-{error}"), asyncSuccess)
-
-            let mappedTaskSource : Task<Result<int, string>> =
-                Guard.MapError((fun error -> $"mapped-{error}"), taskSource)
-
             flow {
-                let! (asyncValue : int) = mappedAsyncSuccess
-                let! (taskValue : int) = mappedTaskSource
+                let! (asyncValue : int) =
+                    asyncSuccess
+                    |> BindError.map (fun error -> $"mapped-{error}")
+
+                let! (taskValue : int) =
+                    taskSource
+                    |> BindError.map (fun error -> $"mapped-{error}")
+
                 return asyncValue + taskValue
             }
 
@@ -450,22 +447,30 @@ let probe : Flow<unit, string, int> =
         test <@ Flow.runSync () taskMapped = Exit.Failure (Cause.Fail "mapped-task-source") @>
 
     [<Fact>]
-    let ``Guard.of fails correctly for check-like sources`` () =
+    let ``BindError withError fails correctly for check-like sources`` () =
         let missingOption : int option = None
-        let guardedFlowFail : Result<int, string> = Guard.Of("failed", missingOption)
-        let guardedAsyncFlowFail : Async<Result<int, string>> = Guard.Of("failed", async { return ValueNone })
-        let guardedTaskFlowFail : Result<int, string> = Guard.Of("failed", missingOption)
 
         let flowFail = flow {
-            let! (value : int) = guardedFlowFail
+            let! (value : int) =
+                missingOption
+                |> BindError.withError "failed"
+
             return value
         }
+
         let asyncFlowFail = flow {
-            let! (value : int) = guardedAsyncFlowFail
+            let! (value : int) =
+                async { return ValueNone }
+                |> BindError.withError "failed"
+
             return value
         }
+
         let taskFlowFail = flow {
-            let! (value : int) = guardedTaskFlowFail
+            let! (value : int) =
+                missingOption
+                |> BindError.withError "failed"
+
             return value
         }
 
@@ -482,4 +487,3 @@ let probe : Flow<unit, string, int> =
         match exit with
         | Exit.Failure (Cause.Die ex) -> test <@ obj.ReferenceEquals(ex, defect) @>
         | other -> failwithf "Expected defect cause, got %A" other
-

@@ -33,7 +33,9 @@ Use `flow {}` to mix pure `Check` logic, `Async` blocks, and other flows.
 
 ```fsharp
 let validateId id =
-    id |> okIf (id > 0) |> orError "Invalid ID"
+    id
+    |> Check.fromPredicate (fun value -> value > 0)
+    |> Check.withError "Invalid ID"
 
 let fetchUser id =
     async { return { Id = id; Name = "Ada" } }

@@ -13,6 +13,10 @@ No active scope/layer redesign tasks remain.
 Future service-package design work has moved to the root `TODO.md` because it is broader v1/post-v1 product work, not
 part of this completed redesign queue.
 
+## Active Surface Work
+
+- Implement the `Check`, `Take`, and `BindError` surface redesign, then sweep generated and hand-written docs so the public golden path no longer teaches the retired `Guard` API.
+
 ## Acceptance Checks
 
 The current architecture is coherent when the following are true:

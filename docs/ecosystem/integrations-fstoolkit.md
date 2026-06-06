@@ -30,8 +30,8 @@ If you use these FsToolkit patterns, here is how they correspond to FsFlow:
 
 | FsToolkit.ErrorHandling | FsFlow |
 | --- | --- |
-| [Result]({{< relref "/reference/result/" >}}).requireTrue | `Check.okIf condition |> Check.orError` |
-| [Result]({{< relref "/reference/result/" >}}).requireSome | `Check.okIfSome opt |> Check.orError` |
+| [Result]({{< relref "/reference/result/" >}}).requireTrue | `condition |> Check.isTrue |> Check.withError error` |
+| [Result]({{< relref "/reference/result/" >}}).requireSome | `opt |> Take.some |> Check.withError error` |
 | `asyncResult { }` | `flow {}` |
 | `taskResult { }` | `flow {}` |
 | [Validation]({{< relref "/reference/validation/" >}}) helpers | [Validation]({{< relref "/reference/validation/" >}}) and [`validate {}`]({{< relref "/reference/validation/builders-validate.md" >}}) |

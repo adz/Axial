@@ -16,23 +16,24 @@ The `result {}` builder binds standard F# `Result<'value, 'error>` types.
 
 ```fsharp
 type UserError = | MissingName | MissingEmail
+type User = { Name: string; Email: string }
 
-let validateUser name email =
+let validateUser name email : Result<User, UserError> =
     result {
         // If name is blank, it returns Error MissingName and stops.
-        let! validName = name |> Check.notBlank |> Check.orError MissingName
+        let! validName = name |> Take.whenNotBlank |> Check.withError MissingName
         
         // This line only runs if the name was valid.
-        let! validEmail = email |> Check.notBlank |> Check.orError MissingEmail
+        let! validEmail = email |> Take.whenNotBlank |> Check.withError MissingEmail
         
         return { Name = validName; Email = validEmail }
     }
 ```
 
-## Guard
+## Options and Checks
 
 `result {}` binds `Result` directly.
-`Guard` bridges `Option`, `bool`, `Check`, and other source shapes into `result {}` while attaching an error value at the binding site.
+Use `Take` when the source must expose a value, and `Check` when the source is only a yes/no gate.
 
 ```fsharp
 type User = { Name: string }
@@ -43,8 +44,8 @@ let tryGetUser username =
 
 let login username password =
     result {
-        let! user = tryGetUser username |> Guard.Of Unauthorized
-        do! Check.notBlank password |> Guard.Of MissingPassword
+        let! user = tryGetUser username |> Take.some |> Check.withError Unauthorized
+        do! password |> Check.notBlank |> Check.withError MissingPassword
 
         return user
     }

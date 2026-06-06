@@ -8,120 +8,113 @@ open Xunit
 
 module ValidationTests =
         [<Fact>]
-        let ``Check covers the pure result surface`` () =
-            test <@ Check.not (Check.okIf true) = Error () @>
-            test <@ Check.not (Check.okIf false) = Ok () @>
+        let ``Check and Take cover the pure result surface`` () =
+            test <@ Check.negate (Check.isTrue true) = Error () @>
+            test <@ Check.negate (Check.isTrue false) = Ok () @>
 
-            test <@ Check.``and`` (Check.okIf true) (Check.okIfSome (Some 10)) = Ok () @>
-            test <@ Check.``and`` (Check.okIf true) (Check.okIf false) = Error () @>
+            test <@ Check.both (Check.isTrue true) (Check.some (Some 10)) = Ok () @>
+            test <@ Check.both (Check.isTrue true) (Check.isTrue false) = Error () @>
 
-            test <@ Check.``or`` (Check.okIf false) (Check.okIfSome (Some 10)) = Ok () @>
-            test <@ Check.``or`` (Check.okIf false) (Check.okIf false) = Error () @>
+            test <@ Check.either (Check.isTrue false) (Check.some (Some 10)) = Ok () @>
+            test <@ Check.either (Check.isTrue false) (Check.isTrue false) = Error () @>
 
-            test <@ Check.all [ Check.okIf true; Check.okIf true; Check.okIf true ] = Ok () @>
+            test <@ Check.all [ Check.isTrue true; Check.isTrue true; Check.isTrue true ] = Ok () @>
 
             let allShortCircuits =
                 seq {
-                    yield Check.okIf true
-                    yield Check.okIf false
+                    yield Check.isTrue true
+                    yield Check.isTrue false
                     failwith "Check.all should short-circuit before the third item"
                 }
 
             test <@ Check.all allShortCircuits = Error () @>
 
-            test <@ Check.any [ Check.okIf false; Check.okIf false; Check.okIf true ] = Ok () @>
+            test <@ Check.any [ Check.isTrue false; Check.isTrue false; Check.isTrue true ] = Ok () @>
 
             let anyShortCircuits =
                 seq {
-                    yield Check.okIf true
+                    yield Check.isTrue true
                     failwith "Check.any should short-circuit before the second item"
                 }
 
             test <@ Check.any anyShortCircuits = Ok () @>
 
-            test <@ Check.okIf true = Ok () @>
-            test <@ Check.okIf false = Error () @>
-            test <@ Check.failIf true = Error () @>
-            test <@ Check.failIf false = Ok () @>
+            test <@ Check.isTrue true = Ok () @>
+            test <@ Check.isTrue false = Error () @>
+            test <@ Check.isFalse true = Error () @>
+            test <@ Check.isFalse false = Ok () @>
             test <@ Check.fromPredicate (fun value -> value > 3) 4 = Ok 4 @>
             test <@ Check.fromPredicate (fun value -> value > 3) 2 = Error () @>
             test <@ Check.fromTry (true, 42) = Ok 42 @>
             test <@ Check.fromTry (false, 42) = Error () @>
-            test <@ Check.okIfTrueTuple (true, "value") = Ok "value" @>
-            test <@ Check.okIfTrueTuple (false, "value") = Error () @>
             test <@ Check.fromChoice (Choice1Of2 42) = Ok 42 @>
             test <@ Check.fromChoice (Choice2Of2 "missing") = Error "missing" @>
 
-            test <@ Check.okIfSome (Some 10) = Ok 10 @>
-            test <@ Check.okIfSome None = Error () @>
-            test <@ Check.failIfNone None = Error () @>
-            test <@ Check.failIfNone (Some 7) = Ok 7 @>
+            test <@ Check.some (Some 10) = Ok () @>
+            test <@ Check.some None = Error () @>
+            test <@ Check.none None = Ok () @>
+            test <@ Check.none (Some 7) = Error () @>
+            test <@ Take.whenSome (Some 7) = Ok (Some 7) @>
+            test <@ Take.some (Some 7) = Ok 7 @>
+            test <@ Take.some None = Error () @>
 
-            test <@ Check.okIfValueSome (ValueSome 11) = Ok 11 @>
-            test <@ Check.okIfValueNone ValueNone = Ok () @>
-            test <@ Check.failIfValueSome ValueNone = Ok () @>
-            test <@ Check.failIfValueNone (ValueSome 8) = Ok 8 @>
-            test <@ Check.okIfNotNullable (System.Nullable 12) = Ok 12 @>
-            test <@ Check.okIfNotNullable (System.Nullable<int>()) = Error () @>
-            test <@ Check.okIfNullable (System.Nullable<int>()) = Ok () @>
-            test <@ Check.okIfNullable (System.Nullable 12) = Error () @>
-            test <@ Check.failIfNotNullable (System.Nullable<int>()) = Ok () @>
-            test <@ Check.failIfNotNullable (System.Nullable 12) = Error () @>
-            test <@ Check.failIfNullable (System.Nullable 12) = Ok 12 @>
-            test <@ Check.failIfNullable (System.Nullable<int>()) = Error () @>
-            test <@ Check.notNullable (System.Nullable 12) = Ok 12 @>
-            test <@ Check.notNullable (System.Nullable<int>()) = Error CheckError.Null @>
+            test <@ Check.valueSome (ValueSome 11) = Ok () @>
+            test <@ Check.valueNone ValueNone = Ok () @>
+            test <@ Check.valueNone (ValueSome 8) = Error () @>
+            test <@ Take.whenValueSome (ValueSome 8) = Ok (ValueSome 8) @>
+            test <@ Take.valueSome (ValueSome 8) = Ok 8 @>
+            test <@ Take.valueSome ValueNone = Error () @>
+
+            test <@ Check.hasValue (System.Nullable 12) = Ok () @>
+            test <@ Check.hasValue (System.Nullable<int>()) = Error () @>
+            test <@ Check.hasNoValue (System.Nullable<int>()) = Ok () @>
+            test <@ Check.hasNoValue (System.Nullable 12) = Error () @>
+            test <@ Take.whenHasValue (System.Nullable 12) = Ok (System.Nullable 12) @>
+            test <@ Take.hasValue (System.Nullable 12) = Ok 12 @>
+            test <@ Take.hasValue (System.Nullable<int>()) = Error () @>
 
             let nonNull = "flowkit"
             let nullString: string = null
 
-            test <@ Check.okIfNotNull nonNull = Ok "flowkit" @>
-            test <@ Check.okIfNull nullString = Ok () @>
-            test <@ Check.failIfNotNull nullString = Error () @>
-            test <@ Check.failIfNull nonNull = Error () @>
+            test <@ Check.notNull nonNull = Ok () @>
+            test <@ Check.notNull nullString = Error () @>
+            test <@ Check.isNull nullString = Ok () @>
+            test <@ Check.isNull nonNull = Error () @>
+            test <@ Take.whenNotNull nonNull = Ok "flowkit" @>
 
-            test <@ Check.okIfNotEmpty [ 1; 2 ] |> Result.map Seq.toList = Ok [ 1; 2 ] @>
-            test <@ Check.okIfEmpty Seq.empty = Ok () @>
-            test <@ Check.failIfNotEmpty Seq.empty = Ok () @>
-            test <@ Check.failIfEmpty Seq.empty = Error () @>
-            test <@ Check.okIfExactlyOne [ 5 ] = Ok 5 @>
-            test <@ Check.okIfExactlyOne [] = Error(ExpectedExactlyOne 0) @>
-            test <@ Check.okIfExactlyOne [ 1; 2 ] = Error(ExpectedExactlyOne 2) @>
-            test <@ Check.failIfExactlyOne [] |> Result.map Seq.toList = Ok [] @>
-            test <@ Check.failIfExactlyOne [ 5 ] = Error ExpectedNotExactlyOne @>
-            test <@ Check.okIfAtMostOne [] = Ok None @>
-            test <@ Check.okIfAtMostOne [ 5 ] = Ok(Some 5) @>
-            test <@ Check.okIfAtMostOne [ 1; 2 ] = Error(ExpectedAtMostOne 2) @>
-            test <@ Check.failIfAtMostOne [ 1; 2 ] |> Result.map Seq.toList = Ok [ 1; 2 ] @>
-            test <@ Check.failIfAtMostOne [] = Error(ExpectedMoreThanOne 0) @>
-            test <@ Check.failIfAtMostOne [ 5 ] = Error(ExpectedMoreThanOne 1) @>
-            test <@ Check.okIfCountIs 2 [ 1; 2 ] = Ok () @>
-            test <@ Check.okIfCountIs 2 [ 1 ] = Error () @>
-            test <@ Check.okIfContains 2 [ 1; 2 ] = Ok () @>
-            test <@ Check.okIfContains 3 [ 1; 2 ] = Error () @>
+            test <@ Check.notEmpty [ 1; 2 ] = Ok () @>
+            test <@ Take.whenNotEmpty [ 1; 2 ] = Ok [ 1; 2 ] @>
+            test <@ Check.empty Seq.empty = Ok () @>
+            test <@ Check.empty [ 1 ] = Error () @>
+            test <@ Check.exactlyOne [ 5 ] = Ok () @>
+            test <@ Check.exactlyOne [] = Error () @>
+            test <@ Check.exactlyOne [ 1; 2 ] = Error () @>
+            test <@ Take.whenExactlyOne [ 5 ] = Ok [ 5 ] @>
+            test <@ Take.exactlyOne [ 5 ] = Ok 5 @>
+            test <@ Take.exactlyOne [] = Error(ExpectedExactlyOne 0) @>
+            test <@ Take.exactlyOne [ 1; 2 ] = Error(ExpectedExactlyOne 2) @>
+            test <@ Check.atMostOne [] = Ok () @>
+            test <@ Check.atMostOne [ 1; 2 ] = Error () @>
+            test <@ Take.whenAtMostOne [ 5 ] = Ok [ 5 ] @>
+            test <@ Take.atMostOne [] = Ok None @>
+            test <@ Take.atMostOne [ 5 ] = Ok(Some 5) @>
+            test <@ Take.atMostOne [ 1; 2 ] = Error(ExpectedAtMostOne 2) @>
+            test <@ Check.moreThanOne [ 1; 2 ] = Ok () @>
+            test <@ Check.moreThanOne [ 5 ] = Error () @>
+            test <@ Check.hasCount 2 [ 1; 2 ] = Ok () @>
+            test <@ Check.hasCount 2 [ 1 ] = Error () @>
+            test <@ Check.contains 2 [ 1; 2 ] = Ok () @>
+            test <@ Check.contains 3 [ 1; 2 ] = Error () @>
 
-            test <@ Check.okIfEqual 3 3 = Ok () @>
-            test <@ Check.okIfNotEqual 3 4 = Ok () @>
-            test <@ Check.failIfEqual 3 4 = Ok () @>
-            test <@ Check.failIfNotEqual 3 3 = Ok () @>
+            test <@ Check.equalTo 3 3 = Ok () @>
+            test <@ Check.notEqualTo 3 4 = Ok () @>
 
-            test <@ Check.okIfNonEmptyStr "hello" = Ok "hello" @>
-            test <@ Check.okIfEmptyStr "" = Ok () @>
-            test <@ Check.okIfNotBlank "  x  " = Ok "  x  " @>
-            test <@ Check.okIfBlank "   " = Ok () @>
-            test <@ Check.failIfNonEmptyStr "" = Ok () @>
-            test <@ Check.failIfEmptyStr "hello" = Ok "hello" @>
-            test <@ Check.failIfNotBlank "   " = Ok () @>
-            test <@ Check.failIfBlank "x" = Ok "x" @>
-            test <@ Check.notNull nonNull = Ok "flowkit" @>
-            test <@ Check.notBlank "  x  " = Ok "  x  " @>
-            test <@ Check.notEmpty [ 1; 2 ] |> Result.map Seq.toList = Ok [ 1; 2 ] @>
+            test <@ Check.notNullOrEmpty "hello" = Ok () @>
+            test <@ Check.nullOrEmpty "" = Ok () @>
+            test <@ Take.whenNotNullOrEmpty "hello" = Ok "hello" @>
+            test <@ Check.notBlank "  x  " = Ok () @>
+            test <@ Take.whenNotBlank "  x  " = Ok "  x  " @>
             test <@ Check.blank "   " = Ok () @>
-            test <@ Check.equal 3 3 = Ok () @>
-            test <@ Check.notEqual 3 4 = Ok () @>
-
-            test <@ Check.notBlank "  x  " = Ok "  x  " @>
-            test <@ Check.notNull nonNull = Ok "flowkit" @>
 
         [<Fact>]
         let ``Result covers fail-fast helpers and the result computation expression`` () =
@@ -136,7 +129,7 @@ module ValidationTests =
             test <@ Result.map ((+) 1) (Ok 10) = Ok 11 @>
             test <@ Result.bind (fun value -> Ok(value + 5)) (Ok 7) = Ok 12 @>
             test <@ Result.mapError string (Error 42) = Error "42" @>
-            test <@ (Check.okIf false |> Result.mapError (fun _ -> "invalid")) = Error "invalid" @>
+            test <@ (Check.isTrue false |> Result.mapError (fun _ -> "invalid")) = Error "invalid" @>
             test <@ workflow = Ok 10 @>
 
         [<Fact>]
@@ -294,7 +287,7 @@ module ValidationTests =
                 validate.key "address" {
                     let! city =
                         validate.name "City" {
-                            return! address.City |> Check.notBlank |> Check.orError "City required"
+                            return! address.City |> Take.whenNotBlank |> Check.withError "City required"
                         }
 
                     return { address with City = city }
@@ -304,7 +297,7 @@ module ValidationTests =
                 validate.key "customer" {
                     let! name =
                         validate.name "Name" {
-                            return! customer.Name |> Check.notBlank |> Check.orError "Name required"
+                            return! customer.Name |> Take.whenNotBlank |> Check.withError "Name required"
                         }
 
                     and! address = validateAddress customer.Address
@@ -314,7 +307,7 @@ module ValidationTests =
                             customer.Lines
                             |> Validation.traverseIndexed (fun index line ->
                                 validate.name "Name" {
-                                    return! line |> Check.notBlank |> Check.orError $"Line {index} name required"
+                                    return! line |> Take.whenNotBlank |> Check.withError $"Line {index} name required"
                                 }
                             )
                         )

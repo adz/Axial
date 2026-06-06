@@ -26,14 +26,13 @@ Most logic starts pure. Use `Check` for reusable predicates and `Result` for dom
 
 ```fsharp
 open FsFlow
-open FsFlow.Check
 
 type UserError = | NameTooShort
 
 let validateName (name: string) : Result<string, UserError> =
     name 
-    |> minLength 3 
-    |> orError NameTooShort
+    |> Check.fromPredicate (fun value -> value.Length >= 3)
+    |> Check.withError NameTooShort
 
 // This is just a standard F# Result. No magic yet.
 let result = validateName "Ad" // Error NameTooShort

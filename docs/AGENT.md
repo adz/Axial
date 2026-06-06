@@ -16,42 +16,40 @@ If you are an AI assistant, prioritize the patterns in the **Dependency Guidance
 When using FsFlow, follow these "Golden Path" patterns for the best results.
 
 ### 1. Handling Failures (Idiomatic Way)
-Use Check for reusable predicates and `Check.orError` when a pure check should become a domain error.
+Use `Check` for reusable yes/no predicates, `Take` when the predicate should return a useful value, and `Check.withError` when a pure unit-error result should become a domain error.
 
 | Source Type | Idiomatic Pattern |
 | :--- | :--- |
-| `Check<'T>` | `Check.notBlank name |> Check.orError e` |
-| `bool` | `Check.okIf condition |> Check.orError e` |
-| `option<'T>` | `Check.okIfSome opt |> Check.orError e` |
-| `voption<'T>` | `Check.okIfValueSome vopt |> Check.orError e` |
-| `Result<'T, unit>` | `Check.notBlank name |> Check.orError e` |
+| `bool` | `Check.isTrue condition |> Check.withError e` |
+| `string` value | `name |> Take.whenNotBlank |> Check.withError e` |
+| `option<'T>` | `opt |> Take.some |> Check.withError e` |
+| `voption<'T>` | `vopt |> Take.valueSome |> Check.withError e` |
+| `Result<'T, unit>` | `check |> Check.withError e` |
 
-### 2. Binding Guarded Sources (Idiomatic Way)
-Use `Guard.Of` when the source already has a predicate/boolean-like shape and you want the
-computation expression to bind the source while preserving the supplied error.
+### 2. Binding Error-Adapted Sources (Idiomatic Way)
+Use `BindError.withError` inside `flow {}` when the source fails with missingness, falsehood, or `unit`, and you need to assign the flow's domain error at the bind site.
 
 | Source Type | Idiomatic Pattern |
 | :--- | :--- |
-| `Option<'T>` | `let! x = opt |> Guard.Of e` |
-| `voption<'T>` | `let! x = vopt |> Guard.Of e` |
-| `Async<Option<'T>>` | `let! x = aOpt |> Guard.Of e` |
-| `Async<voption<'T>>` | `let! x = aVOpt |> Guard.Of e` |
-| `bool` | `do! cond |> Guard.Of e` |
-| `Result<'T, unit>` | `let! x = check |> Guard.Of e` |
-| `Validation<'T, unit>` | `let! x = validation |> Guard.Of e` |
-| `Task<Option<'T>>` | `let! x = tOpt |> Guard.Of e` |
-| `Task<voption<'T>>` | `let! x = tVOpt |> Guard.Of e` |
+| `Option<'T>` | `let! x = opt |> BindError.withError e` |
+| `voption<'T>` | `let! x = vopt |> BindError.withError e` |
+| `Async<Option<'T>>` | `let! x = aOpt |> BindError.withError e` |
+| `Async<voption<'T>>` | `let! x = aVOpt |> BindError.withError e` |
+| `bool` | `do! cond |> BindError.withError e` |
+| `Result<'T, unit>` | `let! x = check |> BindError.withError e` |
+| `Flow<'Env, unit, 'T>` | `let! x = flow |> BindError.withError e` |
+| `Task<Option<'T>>` | `let! x = tOpt |> BindError.withError e` |
+| `Task<voption<'T>>` | `let! x = tVOpt |> BindError.withError e` |
 
 ### 3. Mapping Errors (Idiomatic Way)
-Use `Guard.MapError` when the source already carries a meaningful error value.
+Use `BindError.map` inside `flow {}` when the source already carries a meaningful error value that must be wrapped or translated before binding.
 
 | Source Type | Idiomatic Pattern |
 | :--- | :--- |
-| `Result<'T, 'E1>` | `let! x = result |> Guard.MapError mapper` |
-| `Validation<'T, 'E1>` | `let! x = validation |> Guard.MapError mapper` |
-| `Flow<'Env, 'E1, 'T>` | `let! x = flow |> Guard.MapError mapper` |
-| `Async<Result<'T, 'E1>>` | `let! x = aResult |> Guard.MapError mapper` |
-| `Task<Result<'T, 'E1>>` | `let! x = tResult |> Guard.MapError mapper` |
+| `Result<'T, 'E1>` | `let! x = result |> BindError.map mapper` |
+| `Flow<'Env, 'E1, 'T>` | `let! x = flow |> BindError.map mapper` |
+| `Async<Result<'T, 'E1>>` | `let! x = aResult |> BindError.map mapper` |
+| `Task<Result<'T, 'E1>>` | `let! x = tResult |> BindError.map mapper` |
 
 ### 4. Same-Family Fallbacks
 Use `orElse` and `orElseWith` for alternate computations in the same flow family.
@@ -78,14 +76,14 @@ Translate common patterns from other libraries into idiomatic FsFlow.
 
 | If you use... | Do this in FsFlow |
 | :--- | :--- |
-| `requireSome` | `let! x = opt |> Guard.Of e` |
-| `requireTrue` | `Check.okIf cond |> Check.orError e` |
+| `requireSome` | `let! x = opt |> BindError.withError e` in `flow {}` or `opt |> Take.some |> Check.withError e` in pure code |
+| `requireTrue` | `cond |> Check.isTrue |> Check.withError e` |
 | `Reader.ask` | `let! env = Flow.env` |
 | `Reader.asks` | `let! value = Flow.read projector` |
 | `ZIO.service` | `let! service = Service<IService>.get()` |
 | `.NET IServiceProvider.GetRequiredService` | `let! service = Service<IService>.resolve()` at the edge |
-| `match x with Some...` | `let! v = x |> Guard.Of e` |
-| `Result.mapError` | `let! x = result |> Guard.MapError mapper` |
+| `match x with Some...` | `let! v = x |> BindError.withError e` in `flow {}` |
+| `Result.mapError` | `let! x = result |> BindError.map mapper` in `flow {}` |
 
 
 ## Hierarchy of Effects
@@ -93,9 +91,10 @@ Translate common patterns from other libraries into idiomatic FsFlow.
 FsFlow unifies several types. Later types can "bind" (consume) earlier types directly within their computation expressions.
 
 1. **Check**: Unit-error predicates (`Result<'T, unit>`).
-2. **Guard**: Bindable guards that lift check-like or error-bearing sources into flows.
+2. **Take**: Value-returning checks such as `Take.some` and `Take.whenNotBlank`.
 3. **Result**: Pure typed errors (`Result<'T, 'E>`).
-4. **Flow**: Environment-aware workflows (`Flow<'Env, 'E, 'T>`) for synchronous, async, and task-based composition.
+4. **Validation**: Accumulating diagnostics.
+5. **Flow**: Environment-aware workflows (`Flow<'Env, 'E, 'T>`) for synchronous, async, and task-based composition.
 
 ## Machine-Readable Reference
 

@@ -1,10 +1,10 @@
 ---
 title: "CardinalityFailure"
 linkTitle: "CardinalityFailure"
-weight: 1101
+weight: 1100
 ---
 
-Structured errors returned by sequence cardinality checks.
+Structured errors returned by sequence cardinality helpers that preserve useful diagnostics.
 
 ## Signature
 
@@ -17,6 +17,4 @@ Structured errors returned by sequence cardinality checks.
 | Case | Description |
 | --- | --- |
 | `ExpectedExactlyOne` | The sequence was expected to contain exactly one item. |
-| `ExpectedNotExactlyOne` | The sequence was expected to contain zero items or more than one item. |
 | `ExpectedAtMostOne` | The sequence was expected to contain at most one item. |
-| `ExpectedMoreThanOne` | The sequence was expected to contain more than one item. |
