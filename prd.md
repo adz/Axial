@@ -38,7 +38,7 @@ Core package files reviewed:
 - `Core.fs`, `Foundation.fs`, `Flow.fs`: the core `Flow` representation, effect helpers, execution, construction, environment access, runtime helpers, fibers, parallel composition, and transformations.
 - `FlowBuilder.fs`, `Builders.fs`, `ResultBuilder.fs`, `ValidateBuilder.fs`: computation expressions and public builder values.
 - `AsyncAdapter.fs`, `TaskAdapter.fs`: .NET-only adapter flow families for async/task-oriented composition.
-- `Check.fs`, `Take.fs`, `BindError.fs`, `Diagnostics.fs`, `Validation.fs`: pure checks, value-returning checks, flow bind-site error adaptation, structured diagnostics, and accumulating validation.
+- `Check.fs`, `BindError.fs`, `Diagnostics.fs`, `Validation.fs`: pure predicates, value-preserving gates, extracting checks, flow bind-site error adaptation, structured diagnostics, and accumulating validation.
 - `Runtime.fs`, `RuntimeScope.fs`, `RuntimeRegistry.fs`, `RuntimeAdapter.fs`, `RuntimeLayer.fs`: ambient runtime services, service registry, scoped finalizers, adapter projection, and internal layer composition.
 - `Ref.fs`, `Stm.fs`, `Stream.fs`, `Schedule.fs`: .NET-only state, transactional memory, stream, and schedule primitives.
 - `FsFlow.fsproj`: `netstandard2.1;net8.0` target configuration, Fable dependency, and `net8.0` AOT compatibility marker.

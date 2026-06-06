@@ -1,10 +1,10 @@
 <!doctype html>
 <html itemscope itemtype="http://schema.org/WebPage" lang="en" class="no-js">
-  <head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=3000&amp;path=livereload" data-no-instant defer></script>
+  <head>
     <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-<meta name="robots" content="noindex, nofollow">
+<meta name="robots" content="index, follow">
 
 
 <link rel="shortcut icon" href="http://localhost:3000/favicons/favicon.ico" >
@@ -18,23 +18,24 @@
 <link rel="icon" type="image/png" href="http://localhost:3000/favicons/android-144x144.png" sizes="144x144">
 <link rel="icon" type="image/png" href="http://localhost:3000/favicons/android-192x192.png" sizes="192x192">
 
-<title>Pure Checks | FsFlow</title>
-<meta name="description" content="Reusable predicate layer with the Check module.">
+<title>Check | FsFlow</title>
+<meta name="description" content="Choose between predicate, preserving, and extracting Check helpers before entering Result, Validation, or Flow.">
 <meta property="og:url" content="http://localhost:3000/docs/validation-results/checks/">
   <meta property="og:site_name" content="FsFlow">
-  <meta property="og:title" content="Pure Checks">
-  <meta property="og:description" content="Reusable predicate layer with the Check module.">
+  <meta property="og:title" content="Check">
+  <meta property="og:description" content="Choose between predicate, preserving, and extracting Check helpers before entering Result, Validation, or Flow.">
   <meta property="og:locale" content="en_us">
   <meta property="og:type" content="article">
     <meta property="article:section" content="docs">
 
-  <meta itemprop="name" content="Pure Checks">
-  <meta itemprop="description" content="Reusable predicate layer with the Check module.">
-  <meta itemprop="wordCount" content="211">
+  <meta itemprop="name" content="Check">
+  <meta itemprop="description" content="Choose between predicate, preserving, and extracting Check helpers before entering Result, Validation, or Flow.">
+  <meta itemprop="wordCount" content="580">
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Pure Checks">
-  <meta name="twitter:description" content="Reusable predicate layer with the Check module.">
-<link href="http://localhost:3000/scss/main.css" rel="stylesheet">
+  <meta name="twitter:title" content="Check">
+  <meta name="twitter:description" content="Choose between predicate, preserving, and extracting Check helpers before entering Result, Validation, or Flow.">
+<link rel="preload" href="http://localhost:3000/scss/main.min.c2e6489a9d8ef949a0dead85d2b883caca7e8cf3176c0e7ff6ff57d94fff640c.css" as="style" integrity="sha256-wuZImp2O&#43;Umg3q2F0riDysp&#43;jPMXbA5/9v9X2U//ZAw=" crossorigin="anonymous">
+<link href="http://localhost:3000/scss/main.min.c2e6489a9d8ef949a0dead85d2b883caca7e8cf3176c0e7ff6ff57d94fff640c.css" rel="stylesheet" integrity="sha256-wuZImp2O&#43;Umg3q2F0riDysp&#43;jPMXbA5/9v9X2U//ZAw=" crossorigin="anonymous">
 <script
   src="https://code.jquery.com/jquery-3.7.1.min.js"
   integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g=="
@@ -91,7 +92,7 @@
     aria-label='Search this site…'
     autocomplete="off"
     
-    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.json"
+    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.fdfeb58d323eca75c7cc9a9f4f28965b.json"
     data-offline-search-base-href="http://localhost:3000/"
     data-offline-search-max-results="10"
   >
@@ -127,7 +128,7 @@
     aria-label='Search this site…'
     autocomplete="off"
     
-    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.json"
+    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.fdfeb58d323eca75c7cc9a9f4f28965b.json"
     data-offline-search-base-href="http://localhost:3000/"
     data-offline-search-max-results="10"
   >
@@ -197,15 +198,19 @@
     <ul class="ul-2 foldable">
       <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child active-path" id="m-docsvalidation-resultschecks-li">
     <input type="checkbox" id="m-docsvalidation-resultschecks-check" checked/>
-    <label for="m-docsvalidation-resultschecks-check"><a href="http://localhost:3000/docs/validation-results/checks/" class="align-left ps-0  active td-sidebar-link td-sidebar-link__page" id="m-docsvalidation-resultschecks"><span class="td-sidebar-nav-active-item">Pure Checks</span></a></label>
+    <label for="m-docsvalidation-resultschecks-check"><a href="http://localhost:3000/docs/validation-results/checks/" class="align-left ps-0  active td-sidebar-link td-sidebar-link__page" id="m-docsvalidation-resultschecks"><span class="td-sidebar-nav-active-item">Check</span></a></label>
+    
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsvalidation-resultscheck-result-tutorial-li">
+    <input type="checkbox" id="m-docsvalidation-resultscheck-result-tutorial-check"/>
+    <label for="m-docsvalidation-resultscheck-result-tutorial-check"><a href="http://localhost:3000/docs/validation-results/check-result-tutorial/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsvalidation-resultscheck-result-tutorial"><span class="">Check to Result Tutorial</span></a></label>
     
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsvalidation-resultsresult-ce-li">
     <input type="checkbox" id="m-docsvalidation-resultsresult-ce-check"/>
     <label for="m-docsvalidation-resultsresult-ce-check"><a href="http://localhost:3000/docs/validation-results/result-ce/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsvalidation-resultsresult-ce"><span class="">Result CE</span></a></label>
     
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsvalidation-resultsguard-li">
-    <input type="checkbox" id="m-docsvalidation-resultsguard-check"/>
-    <label for="m-docsvalidation-resultsguard-check"><a href="http://localhost:3000/docs/validation-results/guard/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsvalidation-resultsguard"><span class="">The Guard</span></a></label>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsvalidation-resultsbind-error-li">
+    <input type="checkbox" id="m-docsvalidation-resultsbind-error-check"/>
+    <label for="m-docsvalidation-resultsbind-error-check"><a href="http://localhost:3000/docs/validation-results/bind-error/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsvalidation-resultsbind-error"><span class="">BindError</span></a></label>
     
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsvalidation-resultsvalidate-ce-li">
     <input type="checkbox" id="m-docsvalidation-resultsvalidate-ce-check"/>
@@ -349,7 +354,7 @@
 <a href="https://github.com/adz/FsFlow/tree/main/content/docs/validation-results/checks.md" class="td-page-meta--view td-page-meta__view" target="_blank" rel="noopener"><i class="fa-solid fa-file-lines fa-fw"></i> View page source</a>
   <a href="https://github.com/adz/FsFlow/edit/main/content/docs/validation-results/checks.md" class="td-page-meta--edit td-page-meta__edit" target="_blank" rel="noopener"><i class="fa-solid fa-pen-to-square fa-fw"></i> Edit this page</a>
   <a href="https://github.com/adz/FsFlow/new/main/content/docs/validation-results?filename=change-me.md&amp;value=---%0Atitle%3A&#43;%22Long&#43;Page&#43;Title%22%0AlinkTitle%3A&#43;%22Short&#43;Nav&#43;Title%22%0Aweight%3A&#43;100%0Adescription%3A&#43;%3E-%0A&#43;&#43;&#43;&#43;&#43;Page&#43;description&#43;for&#43;heading&#43;and&#43;indexes.%0A---%0A%0A%23%23&#43;Heading%0A%0AEdit&#43;this&#43;template&#43;to&#43;create&#43;your&#43;new&#43;page.%0A%0A%2A&#43;Give&#43;it&#43;a&#43;good&#43;name%2C&#43;ending&#43;in&#43;%60.md%60&#43;-&#43;e.g.&#43;%60get-started.md%60%0A%2A&#43;Edit&#43;the&#43;%22front&#43;matter%22&#43;section&#43;at&#43;the&#43;top&#43;of&#43;the&#43;page&#43;%28weight&#43;controls&#43;how&#43;its&#43;ordered&#43;amongst&#43;other&#43;pages&#43;in&#43;the&#43;same&#43;directory%3B&#43;lowest&#43;number&#43;first%29.%0A%2A&#43;Add&#43;a&#43;good&#43;commit&#43;message&#43;at&#43;the&#43;bottom&#43;of&#43;the&#43;page&#43;%28%3C80&#43;characters%3B&#43;use&#43;the&#43;extended&#43;description&#43;field&#43;for&#43;more&#43;detail%29.%0A%2A&#43;Create&#43;a&#43;new&#43;branch&#43;so&#43;you&#43;can&#43;preview&#43;your&#43;new&#43;file&#43;and&#43;request&#43;a&#43;review&#43;via&#43;Pull&#43;Request.%0A" class="td-page-meta--child td-page-meta__child" target="_blank" rel="noopener"><i class="fa-solid fa-pen-to-square fa-fw"></i> Create child page</a>
-  <a href="https://github.com/adz/FsFlow/issues/new?title=Pure%20Checks" class="td-page-meta--issue td-page-meta__issue" target="_blank" rel="noopener"><i class="fa-solid fa-list-check fa-fw"></i> Create documentation issue</a>
+  <a href="https://github.com/adz/FsFlow/issues/new?title=Check" class="td-page-meta--issue td-page-meta__issue" target="_blank" rel="noopener"><i class="fa-solid fa-list-check fa-fw"></i> Create documentation issue</a>
   
 </div>
 
@@ -360,10 +365,13 @@
     </div>
     <nav id="TableOfContents">
   <ul>
-    <li><a href="#the-two-shapes-of-check">The Two Shapes of Check</a></li>
-    <li><a href="#attaching-errors-with-checkorerror">Attaching Errors with <code>Check.orError</code></a></li>
-    <li><a href="#common-helpers">Common Helpers</a></li>
-    <li><a href="#why-use-checks">Why use Checks?</a></li>
+    <li><a href="#attach-an-error">Attach an Error</a></li>
+    <li><a href="#choose-a-predicate">Choose a Predicate</a></li>
+    <li><a href="#choose-when">Choose <code>when*</code></a></li>
+    <li><a href="#choose-take">Choose <code>take*</code></a></li>
+    <li><a href="#common-families">Common Families</a></li>
+    <li><a href="#cardinality">Cardinality</a></li>
+    <li><a href="#flow-bind-sites">Flow Bind Sites</a></li>
   </ul>
 </nav>
   </div>
@@ -380,57 +388,215 @@
   <li class="breadcrumb-item">
     <a href="http://localhost:3000/docs/validation-results/">Validation &amp; Results</a></li>
   <li class="breadcrumb-item active" aria-current="page">
-    Pure Checks</li>
+    Check</li>
   </ol>
 </nav>
 <div class="td-content">
-	<h1>Pure Checks</h1>
-	<div class="lead">Reusable predicate layer with the Check module.</div>
+	<h1>Check</h1>
+	<div class="lead">Choose between predicate, preserving, and extracting Check helpers before entering Result, Validation, or Flow.</div>
 	<header class="article-meta">
 		
 </header>
-	<p><code>Check&lt;'value&gt;</code> is the foundation of FsFlow validation. It is a reusable predicate layer that returns <code>Result&lt;'value, unit&gt;</code>.</p>
-<ul>
-<li>If the predicate is true, it returns <code>Ok value</code>.</li>
-<li>If the predicate is false, it returns <code>Error ()</code>.</li>
-</ul>
-<p>By returning <code>unit</code> on failure, <code>Check</code> stays agnostic about your application&rsquo;s error types. You decide what the error means at the boundary where you use it.</p>
-<h2 id="the-two-shapes-of-check">The Two Shapes of Check</h2>
-<ol>
-<li><strong>Value-Preserving</strong>: <code>Check&lt;'value&gt;</code> - returns the input value on success.
-<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">check</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">Check</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">notBlank</span> <span style="color:#8f5902;font-style:italic">// string -&gt; Result&lt;string, unit&gt;
-</span></span></span></code></pre></div></li>
-<li><strong>Gate</strong>: <code>Check&lt;unit&gt;</code> - returns <code>unit</code> on success (useful for yes/no questions).
-<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">check</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">Check</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">okIf</span> <span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">age</span> <span style="color:#ce5c00;font-weight:bold">&gt;</span> <span style="color:#000">18</span><span style="color:#ce5c00;font-weight:bold">)</span> <span style="color:#8f5902;font-style:italic">// unit -&gt; Result&lt;unit, unit&gt;
-</span></span></span></code></pre></div></li>
-</ol>
-<h2 id="attaching-errors-with-checkorerror">Attaching Errors with <code>Check.orError</code></h2>
-<p>Use <code>Check.orError</code> to turn a unit failure into a meaningful application error.</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">type</span> <span style="color:#000">ValidationError</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+	<p>This page shows how to choose between the three <code>Check</code> helper shapes.</p>
+<p>Start by deciding what success should carry.</p>
+<table>
+  <thead>
+      <tr>
+          <th>Intent</th>
+          <th>Helper shape</th>
+          <th>Success value</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Require a fact and keep no value</td>
+          <td>`value</td>
+          <td>&gt; Check.x`</td>
+      </tr>
+      <tr>
+          <td>Require a fact and keep the original input</td>
+          <td>`value</td>
+          <td>&gt; Check.whenX`</td>
+      </tr>
+      <tr>
+          <td>Extract or narrow the useful value</td>
+          <td>`value</td>
+          <td>&gt; Check.takeX`</td>
+      </tr>
+  </tbody>
+</table>
+<p>Unprefixed helpers are predicates. <code>when*</code> helpers are value-preserving gates. <code>take*</code> helpers unwrap or narrow a structure.</p>
+<h2 id="attach-an-error">Attach an Error</h2>
+<p>Most simple helpers return <code>Result&lt;'value, unit&gt;</code>. The <code>unit</code> failure means &ldquo;this check failed, but no domain error has been chosen yet&rdquo;.</p>
+<p>Use <code>Check.withError</code> to assign the application error in pure code.</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">type</span> <span style="color:#000">SignUpError</span> <span style="color:#ce5c00;font-weight:bold">=</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|</span> <span style="color:#000">NameRequired</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|</span> <span style="color:#000">InvalidAge</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|</span> <span style="color:#000">UserMissing</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|</span> <span style="color:#000">AgeInvalid</span>
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">validateName</span> <span style="color:#000">name</span> <span style="color:#ce5c00;font-weight:bold">=</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#000">name</span> <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Check</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">notBlank</span> <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Check</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">orError</span> <span style="color:#000">NameRequired</span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">type</span> <span style="color:#000">User</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#ce5c00;font-weight:bold">{</span> <span style="color:#000">Name</span><span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#204a87;font-weight:bold">string</span> <span style="color:#ce5c00;font-weight:bold">}</span>
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">validateAge</span> <span style="color:#000">age</span> <span style="color:#ce5c00;font-weight:bold">=</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#000">age</span> <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Check</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">okIf</span> <span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">age</span> <span style="color:#ce5c00;font-weight:bold">&gt;</span> <span style="color:#000">0</span><span style="color:#ce5c00;font-weight:bold">)</span> <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Check</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">orError</span> <span style="color:#000">InvalidAge</span>
-</span></span></code></pre></div><h2 id="common-helpers">Common Helpers</h2>
-<p>The <code>Check</code> module includes many built-in helpers:</p>
-<ul>
-<li><code>Check.notBlank</code>, <code>Check.notNull</code>, <code>Check.notEmpty</code></li>
-<li><code>Check.okIf</code>, <code>Check.failIf</code></li>
-<li><code>Check.equal</code>, <code>Check.notEqual</code></li>
-<li><code>Check.okIfSome</code>, <code>Check.okIfValueSome</code></li>
-</ul>
-<h2 id="why-use-checks">Why use Checks?</h2>
-<ul>
-<li><strong>Reusability</strong>: Write a check once, use it in <code>result {}</code>, <code>validate {}</code>, or any Flow.</li>
-<li><strong>Composition</strong>: You can combine checks using <code>Check.and</code> and <code>Check.or</code>.</li>
-<li><strong>Decoupling</strong>: Pure logic doesn&rsquo;t need to know about your logging or your database.</li>
-</ul>
-
-	<nav class="docs-page-nav docs-page-nav--next-only"><a class="docs-home-cta docs-page-nav__link docs-page-nav__next" href="http://localhost:3000/docs/validation-results/result-ce/" aria-label="Next - Result CE">
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">requireName</span> <span style="color:#000">name</span> <span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">Result</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#204a87;font-weight:bold">string</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#000">SignUpError</span><span style="color:#ce5c00;font-weight:bold">&gt;</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#000">name</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Check</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">whenNotBlank</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Check</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">withError</span> <span style="color:#000">NameRequired</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">requireUser</span> <span style="color:#000">maybeUser</span> <span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">Result</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#000">User</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#000">SignUpError</span><span style="color:#ce5c00;font-weight:bold">&gt;</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#000">maybeUser</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Check</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">takeSome</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Check</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">withError</span> <span style="color:#000">UserMissing</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">requireAdult</span> <span style="color:#000">age</span> <span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">Result</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#204a87;font-weight:bold">unit</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#000">SignUpError</span><span style="color:#ce5c00;font-weight:bold">&gt;</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#000">age</span> <span style="color:#ce5c00;font-weight:bold">&gt;=</span> <span style="color:#000">18</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Check</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">isTrue</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Check</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">withError</span> <span style="color:#000">AgeInvalid</span>
+</span></span></code></pre></div><p>Some helpers already return a useful diagnostic error. Use <code>Result.mapError</code> for those.</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">type</span> <span style="color:#000">OrderError</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|</span> <span style="color:#000">InvalidPrimaryId</span> <span style="color:#204a87;font-weight:bold">of</span> <span style="color:#000">CardinalityFailure</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|</span> <span style="color:#000">InvalidQuantity</span> <span style="color:#204a87;font-weight:bold">of</span> <span style="color:#000">RangeFailure</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#000">int</span><span style="color:#ce5c00;font-weight:bold">&gt;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">primaryId</span> <span style="color:#000">ids</span> <span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">Result</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#000">int</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#000">OrderError</span><span style="color:#ce5c00;font-weight:bold">&gt;</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#000">ids</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Check</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">takeSingle</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Result</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">mapError</span> <span style="color:#000">InvalidPrimaryId</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">quantity</span> <span style="color:#000">value</span> <span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">Result</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#000">int</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#000">OrderError</span><span style="color:#ce5c00;font-weight:bold">&gt;</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#000">value</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Check</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">whenPositive</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Result</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">mapError</span> <span style="color:#000">InvalidQuantity</span>
+</span></span></code></pre></div><h2 id="choose-a-predicate">Choose a Predicate</h2>
+<p>Use an unprefixed helper when success is only a gate.</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">type</span> <span style="color:#000">RegistrationError</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|</span> <span style="color:#000">PasswordRequired</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">validatePassword</span> <span style="color:#000">password</span> <span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">Result</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#204a87;font-weight:bold">unit</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#000">RegistrationError</span><span style="color:#ce5c00;font-weight:bold">&gt;</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#000">password</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Check</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">notBlank</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Check</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">withError</span> <span style="color:#000">PasswordRequired</span>
+</span></span></code></pre></div><p>This is useful for <code>do!</code> in <code>result {}</code> or <code>validate {}</code> blocks because the workflow does not need a value from the check.</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">type</span> <span style="color:#000">RegistrationError</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|</span> <span style="color:#000">NameRequired</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|</span> <span style="color:#000">PasswordRequired</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">register</span> <span style="color:#000">name</span> <span style="color:#000">password</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#000">result</span> <span style="color:#ce5c00;font-weight:bold">{</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">let!</span> <span style="color:#000">validName</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">name</span> <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Check</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">whenNotBlank</span> <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Check</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">withError</span> <span style="color:#000">NameRequired</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">do</span><span style="color:#ce5c00;font-weight:bold">!</span> <span style="color:#000">password</span> <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Check</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">notBlank</span> <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Check</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">withError</span> <span style="color:#000">PasswordRequired</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">return</span> <span style="color:#000">validName</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">}</span>
+</span></span></code></pre></div><h2 id="choose-when">Choose <code>when*</code></h2>
+<p>Use <code>Check.whenX</code> when the predicate should return the original input.</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">type</span> <span style="color:#000">EmailError</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|</span> <span style="color:#000">EmailRequired</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">validateEmail</span> <span style="color:#000">email</span> <span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">Result</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#204a87;font-weight:bold">string</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#000">EmailError</span><span style="color:#ce5c00;font-weight:bold">&gt;</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#000">email</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Check</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">whenNotBlank</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Check</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">withError</span> <span style="color:#000">EmailRequired</span>
+</span></span></code></pre></div><p><code>Check.whenNotBlank</code> checks that the string is not blank and returns the original string. That makes it the right choice for <code>let! validEmail = ...</code>.</p>
+<h2 id="choose-take">Choose <code>take*</code></h2>
+<p>Use <code>Check.takeX</code> helpers when the predicate exposes a narrower value.</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">type</span> <span style="color:#000">LookupError</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|</span> <span style="color:#000">UserMissing</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">type</span> <span style="color:#000">User</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#ce5c00;font-weight:bold">{</span> <span style="color:#000">Name</span><span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#204a87;font-weight:bold">string</span> <span style="color:#ce5c00;font-weight:bold">}</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">requireExistingUser</span> <span style="color:#000">maybeUser</span> <span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#000">Result</span><span style="color:#ce5c00;font-weight:bold">&lt;</span><span style="color:#000">User</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#000">LookupError</span><span style="color:#ce5c00;font-weight:bold">&gt;</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#000">maybeUser</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Check</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">takeSome</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Check</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">withError</span> <span style="color:#000">UserMissing</span>
+</span></span></code></pre></div><p><code>Check.takeSome</code> checks that the option is <code>Some</code> and returns the unwrapped value.</p>
+<h2 id="common-families">Common Families</h2>
+<table>
+  <thead>
+      <tr>
+          <th>Predicate</th>
+          <th>Preserve original</th>
+          <th>Extract/narrow</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>Check.isSome</code></td>
+          <td><code>Check.whenSome</code></td>
+          <td><code>Check.takeSome</code></td>
+      </tr>
+      <tr>
+          <td><code>Check.isValueSome</code></td>
+          <td><code>Check.whenValueSome</code></td>
+          <td><code>Check.takeValueSome</code></td>
+      </tr>
+      <tr>
+          <td><code>Check.hasValue</code></td>
+          <td><code>Check.whenHasValue</code></td>
+          <td><code>Check.takeHasValue</code></td>
+      </tr>
+      <tr>
+          <td><code>Check.notNull</code></td>
+          <td><code>Check.whenNotNull</code></td>
+          <td><code>Check.takeNotNull</code></td>
+      </tr>
+      <tr>
+          <td><code>Check.isOk</code></td>
+          <td><code>Check.whenOk</code></td>
+          <td><code>Check.takeOk</code></td>
+      </tr>
+      <tr>
+          <td><code>Check.isError</code></td>
+          <td><code>Check.whenError</code></td>
+          <td><code>Check.takeError</code></td>
+      </tr>
+      <tr>
+          <td><code>Check.notEmpty</code></td>
+          <td><code>Check.whenNotEmpty</code></td>
+          <td><code>Check.takeHead</code></td>
+      </tr>
+      <tr>
+          <td><code>Check.isSingle</code></td>
+          <td><code>Check.whenSingle</code></td>
+          <td><code>Check.takeSingle</code></td>
+      </tr>
+      <tr>
+          <td><code>Check.atMostOne</code></td>
+          <td><code>Check.whenAtMostOne</code></td>
+          <td><code>Check.takeAtMostOne</code></td>
+      </tr>
+      <tr>
+          <td><code>Check.notBlank</code></td>
+          <td><code>Check.whenNotBlank</code></td>
+          <td>none</td>
+      </tr>
+      <tr>
+          <td><code>Check.positive</code></td>
+          <td><code>Check.whenPositive</code></td>
+          <td>none</td>
+      </tr>
+  </tbody>
+</table>
+<h2 id="cardinality">Cardinality</h2>
+<p>Cardinality helpers keep <code>CardinalityFailure</code> because the count is useful diagnostic information.</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#000">ids</span> <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Check</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">isSingle</span>
+</span></span><span style="display:flex;"><span><span style="color:#000">ids</span> <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Check</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">whenSingle</span>
+</span></span><span style="display:flex;"><span><span style="color:#000">ids</span> <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Check</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">takeSingle</span>
+</span></span></code></pre></div><p>Use <code>Check.isSingle</code> when you only need to know the fact, <code>Check.whenSingle</code> when the next step needs the original collection, and <code>Check.takeSingle</code> when the next step needs the single element.</p>
+<p>The preserving cardinality helpers enumerate enough items to establish the cardinality before returning the original collection. Prefer arrays, lists, or other reusable collections for <code>Check.whenSingle</code> and <code>Check.whenAtMostOne</code>; use the extracting helpers when the next step only needs the element.</p>
+<h2 id="flow-bind-sites">Flow Bind Sites</h2>
+<p>Outside <code>flow {}</code>, keep pure code in <code>Result</code> with <code>Check.withError</code> or <code>Result.mapError</code>.</p>
+<p>Inside <code>flow {}</code>, use <code>BindError.withError</code> only when a source needs an error assigned immediately before binding.</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">type</span> <span style="color:#000">LoginError</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|</span> <span style="color:#000">MissingPassword</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">login</span> <span style="color:#000">password</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#000">flow</span> <span style="color:#ce5c00;font-weight:bold">{</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">do</span><span style="color:#ce5c00;font-weight:bold">!</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#000">password</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Check</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">notBlank</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">BindError</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">withError</span> <span style="color:#000">MissingPassword</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">return</span> <span style="color:#3465a4">()</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">}</span>
+</span></span></code></pre></div>
+	<nav class="docs-page-nav docs-page-nav--next-only"><a class="docs-home-cta docs-page-nav__link docs-page-nav__next" href="http://localhost:3000/docs/validation-results/check-result-tutorial/" aria-label="Next - Check to Result Tutorial">
     <span>Next</span>
     <span class="docs-page-nav__arrow" aria-hidden="true">→</span>
   </a></nav>
@@ -443,8 +609,8 @@
       </div>
       
     </div>
-    <script src="http://localhost:3000/js/main.js"></script>
-<script defer src="http://localhost:3000/js/click-to-copy.js" crossorigin="anonymous"></script>
+    <script src="http://localhost:3000/js/main.min.c60de03ed52a34012f330c3e18c526426ec97efa9822bedfadbf14ffe917bc3e.js" integrity="sha256-xg3gPtUqNAEvMww&#43;GMUmQm7JfvqYIr7frb8U/&#43;kXvD4=" crossorigin="anonymous"></script>
+<script defer src="http://localhost:3000/js/click-to-copy.min.24576ff9fe9f85bb1948ecae52ce227cafce53757a3ad52301f2a79260f6b97d.js" integrity="sha256-JFdv&#43;f6fhbsZSOyuUs4ifK/OU3V6OtUjAfKnkmD2uX0=" crossorigin="anonymous"></script>
 <script src='http://localhost:3000/js/tabpane-persist.js'></script>
 
   </body>

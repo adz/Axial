@@ -2,33 +2,73 @@
 weight: 20
 title: Validation & Results
 type: docs
-description: Overview of the FsFlow validation stack, from pure checks to structured diagnostics.
+description: Overview of standard F# Result, FsFlow checks, fail-fast Result workflows, and accumulating validation.
 ---
 
 # Validation & Results
 
-FsFlow provides a unified stack for handling failure, ranging from pure predicate checks to complex, path-aware diagnostics graphs.
+This page shows how FsFlow builds on the standard F# `Result<'value, 'error>` type without making validation depend on `Flow`.
 
-The core philosophy is to **check once, lift later**. You write pure logic with simple tools, then lift it into richer execution contexts only when needed.
+Start here when your code is still pure. `Flow` is for application boundaries that need an explicit environment, async or task work, cancellation, resources, or runtime policy. Checks, `Result`, and `Validation` can be useful as a small standalone validation layer.
 
-## The Progression
+## Start With F# Result
 
-1.  **[Check and Take](./checks/)**: Choose between yes/no predicates and value-returning checks with [`Check`]({{< relref "/reference/check/" >}}) and [`Take`]({{< relref "/reference/take/" >}}).
-2.  **[Result & Validation](./result-validation/)**: Domain logic that either fails fast (`result {}`) or accumulates multiple errors ([`validate {}`]({{< relref "/reference/validation/builders-validate.md" >}})).
-3.  **[BindError](./bind-error/)**: A flow bind-site marker for assigning or mapping a source error before binding.
-4.  **[Flow](../start/getting-started/)**: The application boundary where you need dependencies, async work, or interop.
+`Result<'value, 'error>` is the base fail-fast type in F#:
 
-## Why use this stack?
+```fsharp
+Ok value
+Error problem
+```
 
--   **Consistency**: Use the same patterns for simple form validation and complex background job logic.
--   **Testability**: Pure checks are trivial to test in isolation.
--   **Ergonomics**: Computation expressions like `result {}` and `validate {}` make complex logic readable and idiomatic.
--   **Structured Reporting**: Diagnostics graphs preserve the shape of your data, making it easy to report errors back to users or external systems.
+Use the standard library functions when one step has already produced a result:
 
-## Getting Started
+```fsharp
+let parseInt text =
+    match System.Int32.TryParse text with
+    | true, value -> Ok value
+    | false, _ -> Error "not an int"
 
-If you are new to FsFlow, start with **[Check and Take](./checks/)** to see how the smallest building blocks work.
+let parsedPlusOne =
+    parseInt "41"
+    |> Result.map ((+) 1)
 
-## See it in Action
+let reciprocal text =
+    parseInt text
+    |> Result.bind (fun value ->
+        if value = 0 then Error "zero"
+        else Ok (1.0 / float value))
+```
 
-For a complete, runnable example that demonstrates how these pieces fit together—from nested validation to JSON API error formatting—see the [Diagnostics Example](../patterns/examples/#diagnostics-example).
+`Result.map` changes a success value. `Result.bind` runs the next result-producing step only after success. `Result.mapError` changes the error value.
+
+## What FsFlow Adds
+
+FsFlow keeps those standard `Result` semantics and adds a small stack around them:
+
+1. **[Check](./checks/)**: pure predicates, preserving gates, and extraction helpers under one module.
+2. **[Result CE](./result-ce/)**: `result {}` syntax for fail-fast chains of standard `Result<'value, 'error>`.
+3. **[Validate CE](./validate-ce/)**: `validate {}` syntax for accumulating independent failures.
+4. **[Diagnostics](./diagnostics/)**: a path-aware diagnostics graph used by accumulating validation.
+5. **[BindError](./bind-error/)**: a `flow {}` bind-site adapter. Use it at the Flow boundary, not as a general Result helper.
+
+`Check` and `result {}` are based directly on standard `Result`. `Validation` is Result-like, but its error side is expanded into `Diagnostics<'error>` so independent failures can accumulate instead of stopping at the first one.
+
+## Check Once, Lift Later
+
+Keep the smallest honest shape:
+
+```text
+Check -> Result -> Validation
+```
+
+Use `Flow` only after the boundary grows:
+
+```text
+Check -> Result -> Validation -> Flow
+```
+
+That separation keeps pure domain validation testable and reusable. A validation function can stay as `Result<string, RegistrationError>` today and later be bound inside `flow {}` without changing its core logic.
+
+## First Tutorial
+
+Start with [Check to Result](./check-result-tutorial/). It builds a pure validation function in stages: first with `Check`, then with typed errors, then with `result {}`.

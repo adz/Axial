@@ -50,7 +50,6 @@
     <Compile Include="Diagnostics.fs" />
     <Compile Include="Validation.fs" />
     <Compile Include="Check.fs" />
-    <Compile Include="Take.fs" />
     <Compile Include="Runtime.fs" />
     <Compile Include="RuntimeLayer.fs" />
     <Compile Include="Flow.fs" />

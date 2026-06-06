@@ -31,7 +31,7 @@ let validateAddress address =
     validate.key "address" {
         let! city =
             validate.name "City" {
-                return! address.City |> Take.whenNotBlank |> Check.withError "City required"
+                return! address.City |> Check.whenNotBlank |> Check.withError "City required"
             }
 
         return { address with City = city }
@@ -41,7 +41,7 @@ let validateCustomer customer =
     validate {
         let! name =
             validate.name "Name" {
-                return! customer.Name |> Take.whenNotBlank |> Check.withError "Name required"
+                return! customer.Name |> Check.whenNotBlank |> Check.withError "Name required"
             }
 
         and! address = validateAddress customer.Address
@@ -53,7 +53,7 @@ let validateCustomer customer =
                     |> Validation.traverseIndexed (fun index line ->
                         validate.name "Name" {
                             let! name =
-                                line.Name |> Take.whenNotBlank |> Check.withError $"Line {index} name required"
+                                line.Name |> Check.whenNotBlank |> Check.withError $"Line {index} name required"
 
                             return { Name = name }
                         }
@@ -87,7 +87,7 @@ let validateCreateCustomerRequest request =
     validate {
         let! requestId =
             validate.name "RequestId" {
-                return! request.RequestId |> Take.whenNotBlank |> Check.withError "RequestId required"
+                return! request.RequestId |> Check.whenNotBlank |> Check.withError "RequestId required"
             }
 
         and! customer =

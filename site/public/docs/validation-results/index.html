@@ -1,11 +1,11 @@
 <!doctype html>
 <html itemscope itemtype="http://schema.org/WebPage" lang="en" class="no-js">
-  <head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=3000&amp;path=livereload" data-no-instant defer></script>
+  <head>
     <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
 <link rel="alternate" type="application/rss&#43;xml" href="http://localhost:3000/docs/validation-results/index.xml">
-<meta name="robots" content="noindex, nofollow">
+<meta name="robots" content="index, follow">
 
 
 <link rel="shortcut icon" href="http://localhost:3000/favicons/favicon.ico" >
@@ -20,21 +20,22 @@
 <link rel="icon" type="image/png" href="http://localhost:3000/favicons/android-192x192.png" sizes="192x192">
 
 <title>Validation &amp; Results | FsFlow</title>
-<meta name="description" content="Overview of the FsFlow validation stack, from pure checks to structured diagnostics.">
+<meta name="description" content="Overview of standard F# Result, FsFlow checks, fail-fast Result workflows, and accumulating validation.">
 <meta property="og:url" content="http://localhost:3000/docs/validation-results/">
   <meta property="og:site_name" content="FsFlow">
   <meta property="og:title" content="Validation & Results">
-  <meta property="og:description" content="Overview of the FsFlow validation stack, from pure checks to structured diagnostics.">
+  <meta property="og:description" content="Overview of standard F# Result, FsFlow checks, fail-fast Result workflows, and accumulating validation.">
   <meta property="og:locale" content="en_us">
   <meta property="og:type" content="website">
 
   <meta itemprop="name" content="Validation & Results">
-  <meta itemprop="description" content="Overview of the FsFlow validation stack, from pure checks to structured diagnostics.">
-  <meta itemprop="wordCount" content="219">
+  <meta itemprop="description" content="Overview of standard F# Result, FsFlow checks, fail-fast Result workflows, and accumulating validation.">
+  <meta itemprop="wordCount" content="355">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Validation & Results">
-  <meta name="twitter:description" content="Overview of the FsFlow validation stack, from pure checks to structured diagnostics.">
-<link href="http://localhost:3000/scss/main.css" rel="stylesheet">
+  <meta name="twitter:description" content="Overview of standard F# Result, FsFlow checks, fail-fast Result workflows, and accumulating validation.">
+<link rel="preload" href="http://localhost:3000/scss/main.min.c2e6489a9d8ef949a0dead85d2b883caca7e8cf3176c0e7ff6ff57d94fff640c.css" as="style" integrity="sha256-wuZImp2O&#43;Umg3q2F0riDysp&#43;jPMXbA5/9v9X2U//ZAw=" crossorigin="anonymous">
+<link href="http://localhost:3000/scss/main.min.c2e6489a9d8ef949a0dead85d2b883caca7e8cf3176c0e7ff6ff57d94fff640c.css" rel="stylesheet" integrity="sha256-wuZImp2O&#43;Umg3q2F0riDysp&#43;jPMXbA5/9v9X2U//ZAw=" crossorigin="anonymous">
 <script
   src="https://code.jquery.com/jquery-3.7.1.min.js"
   integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g=="
@@ -91,7 +92,7 @@
     aria-label='Search this site…'
     autocomplete="off"
     
-    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.json"
+    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.fdfeb58d323eca75c7cc9a9f4f28965b.json"
     data-offline-search-base-href="http://localhost:3000/"
     data-offline-search-max-results="10"
   >
@@ -127,7 +128,7 @@
     aria-label='Search this site…'
     autocomplete="off"
     
-    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.json"
+    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.fdfeb58d323eca75c7cc9a9f4f28965b.json"
     data-offline-search-base-href="http://localhost:3000/"
     data-offline-search-max-results="10"
   >
@@ -197,15 +198,19 @@
     <ul class="ul-2 foldable">
       <li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsvalidation-resultschecks-li">
     <input type="checkbox" id="m-docsvalidation-resultschecks-check"/>
-    <label for="m-docsvalidation-resultschecks-check"><a href="http://localhost:3000/docs/validation-results/checks/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsvalidation-resultschecks"><span class="">Pure Checks</span></a></label>
+    <label for="m-docsvalidation-resultschecks-check"><a href="http://localhost:3000/docs/validation-results/checks/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsvalidation-resultschecks"><span class="">Check</span></a></label>
+    
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsvalidation-resultscheck-result-tutorial-li">
+    <input type="checkbox" id="m-docsvalidation-resultscheck-result-tutorial-check"/>
+    <label for="m-docsvalidation-resultscheck-result-tutorial-check"><a href="http://localhost:3000/docs/validation-results/check-result-tutorial/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsvalidation-resultscheck-result-tutorial"><span class="">Check to Result Tutorial</span></a></label>
     
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsvalidation-resultsresult-ce-li">
     <input type="checkbox" id="m-docsvalidation-resultsresult-ce-check"/>
     <label for="m-docsvalidation-resultsresult-ce-check"><a href="http://localhost:3000/docs/validation-results/result-ce/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsvalidation-resultsresult-ce"><span class="">Result CE</span></a></label>
     
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsvalidation-resultsguard-li">
-    <input type="checkbox" id="m-docsvalidation-resultsguard-check"/>
-    <label for="m-docsvalidation-resultsguard-check"><a href="http://localhost:3000/docs/validation-results/guard/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsvalidation-resultsguard"><span class="">The Guard</span></a></label>
+  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsvalidation-resultsbind-error-li">
+    <input type="checkbox" id="m-docsvalidation-resultsbind-error-check"/>
+    <label for="m-docsvalidation-resultsbind-error-check"><a href="http://localhost:3000/docs/validation-results/bind-error/" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-docsvalidation-resultsbind-error"><span class="">BindError</span></a></label>
     
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-docsvalidation-resultsvalidate-ce-li">
     <input type="checkbox" id="m-docsvalidation-resultsvalidate-ce-check"/>
@@ -360,10 +365,10 @@
     </div>
     <nav id="TableOfContents">
   <ul>
-    <li><a href="#the-progression">The Progression</a></li>
-    <li><a href="#why-use-this-stack">Why use this stack?</a></li>
-    <li><a href="#getting-started">Getting Started</a></li>
-    <li><a href="#see-it-in-action">See it in Action</a></li>
+    <li><a href="#start-with-f-result">Start With F# Result</a></li>
+    <li><a href="#what-fsflow-adds">What FsFlow Adds</a></li>
+    <li><a href="#check-once-lift-later">Check Once, Lift Later</a></li>
+    <li><a href="#first-tutorial">First Tutorial</a></li>
   </ul>
 </nav>
   </div>
@@ -383,30 +388,50 @@
 </nav>
 <div class="td-content">
 	<h1>Validation &amp; Results</h1>
-  <div class="lead">Overview of the FsFlow validation stack, from pure checks to structured diagnostics.</div>
+  <div class="lead">Overview of standard F# Result, FsFlow checks, fail-fast Result workflows, and accumulating validation.</div>
 	<header class="article-meta">
 		
 </header>
-	<p>FsFlow provides a unified stack for handling failure, ranging from pure predicate checks to complex, path-aware diagnostics graphs.</p>
-<p>The core philosophy is to <strong>check once, lift later</strong>. You write your pure logic using simple tools and then lift them into richer execution contexts (like <code>Flow</code> or <code>Flow</code>) only when needed.</p>
-<h2 id="the-progression">The Progression</h2>
+	<p>This page shows how FsFlow builds on the standard F# <code>Result&lt;'value, 'error&gt;</code> type without making validation depend on <code>Flow</code>.</p>
+<p>Start here when your code is still pure. <code>Flow</code> is for application boundaries that need an explicit environment, async or task work, cancellation, resources, or runtime policy. Checks, <code>Result</code>, and <code>Validation</code> can be useful as a small standalone validation layer.</p>
+<h2 id="start-with-f-result">Start With F# Result</h2>
+<p><code>Result&lt;'value, 'error&gt;</code> is the base fail-fast type in F#:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#000">Ok</span> <span style="color:#000">value</span>
+</span></span><span style="display:flex;"><span><span style="color:#000">Error</span> <span style="color:#000">problem</span>
+</span></span></code></pre></div><p>Use the standard library functions when one step has already produced a result:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">parseInt</span> <span style="color:#000">text</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#204a87;font-weight:bold">match</span> <span style="color:#000">System</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">Int32</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">TryParse</span> <span style="color:#000">text</span> <span style="color:#204a87;font-weight:bold">with</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|</span> <span style="color:#204a87;font-weight:bold">true</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#000">value</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#000">Ok</span> <span style="color:#000">value</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|</span> <span style="color:#204a87;font-weight:bold">false</span><span style="color:#ce5c00;font-weight:bold">,</span> <span style="color:#ce5c00;font-weight:bold">_</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span> <span style="color:#000">Error</span> <span style="color:#4e9a06">&#34;not an int&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">parsedPlusOne</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#000">parseInt</span> <span style="color:#4e9a06">&#34;41&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Result</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">map</span> <span style="color:#ce5c00;font-weight:bold">((+)</span> <span style="color:#000">1</span><span style="color:#ce5c00;font-weight:bold">)</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">let</span> <span style="color:#000">reciprocal</span> <span style="color:#000">text</span> <span style="color:#ce5c00;font-weight:bold">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#000">parseInt</span> <span style="color:#000">text</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Result</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">bind</span> <span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#204a87;font-weight:bold">fun</span> <span style="color:#000">value</span> <span style="color:#ce5c00;font-weight:bold">-&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">if</span> <span style="color:#000">value</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">0</span> <span style="color:#204a87;font-weight:bold">then</span> <span style="color:#000">Error</span> <span style="color:#4e9a06">&#34;zero&#34;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#204a87;font-weight:bold">else</span> <span style="color:#000">Ok</span> <span style="color:#ce5c00;font-weight:bold">(</span><span style="color:#000">1</span><span style="color:#ce5c00;font-weight:bold">.</span><span style="color:#000">0</span> <span style="color:#ce5c00;font-weight:bold">/</span> <span style="color:#204a87;font-weight:bold">float</span> <span style="color:#000">value</span><span style="color:#ce5c00;font-weight:bold">))</span>
+</span></span></code></pre></div><p><code>Result.map</code> changes a success value. <code>Result.bind</code> runs the next result-producing step only after success. <code>Result.mapError</code> changes the error value.</p>
+<h2 id="what-fsflow-adds">What FsFlow Adds</h2>
+<p>FsFlow keeps those standard <code>Result</code> semantics and adds a small stack around them:</p>
 <ol>
-<li><strong><a href="http://localhost:3000/docs/validation-results/checks/">Pure Checks</a></strong>: Build reusable predicates with the <code>Check</code> module.</li>
-<li><strong>Result &amp; Validation</strong>: Domain logic that either fails fast (<code>result {}</code>) or accumulates multiple errors (<code>validate {}</code>).</li>
-<li><strong><a href="http://localhost:3000/docs/validation-results/guard/">Guard</a></strong>: The bridge that allows pure checks and simple sources to fail a flow with a specific domain error.</li>
-<li><strong><a href="http://localhost:3000/docs/start/getting-started/">Flow</a></strong>: The application boundary where you need dependencies, async work, or interop.</li>
+<li><strong><a href="http://localhost:3000/docs/validation-results/checks/">Check</a></strong>: pure predicates, preserving gates, and extraction helpers under one module.</li>
+<li><strong><a href="http://localhost:3000/docs/validation-results/result-ce/">Result CE</a></strong>: <code>result {}</code> syntax for fail-fast chains of standard <code>Result&lt;'value, 'error&gt;</code>.</li>
+<li><strong><a href="http://localhost:3000/docs/validation-results/validate-ce/">Validate CE</a></strong>: <code>validate {}</code> syntax for accumulating independent failures.</li>
+<li><strong><a href="http://localhost:3000/docs/validation-results/diagnostics/">Diagnostics</a></strong>: a path-aware diagnostics graph used by accumulating validation.</li>
+<li><strong><a href="http://localhost:3000/docs/validation-results/bind-error/">BindError</a></strong>: a <code>flow {}</code> bind-site adapter. Use it at the Flow boundary, not as a general Result helper.</li>
 </ol>
-<h2 id="why-use-this-stack">Why use this stack?</h2>
-<ul>
-<li><strong>Consistency</strong>: Use the same patterns for simple form validation and complex background job logic.</li>
-<li><strong>Testability</strong>: Pure checks are trivial to test in isolation.</li>
-<li><strong>Ergonomics</strong>: Computation expressions like <code>result {}</code> and <code>validate {}</code> make complex logic readable and idiomatic.</li>
-<li><strong>Structured Reporting</strong>: Diagnostics graphs preserve the shape of your data, making it easy to report errors back to users or external systems.</li>
-</ul>
-<h2 id="getting-started">Getting Started</h2>
-<p>If you are new to FsFlow, start with <strong><a href="http://localhost:3000/docs/validation-results/checks/">Pure Checks</a></strong> to see how the smallest building blocks work.</p>
-<h2 id="see-it-in-action">See it in Action</h2>
-<p>For a complete, runnable example that demonstrates how these pieces fit together—from nested validation to JSON API error formatting—see the <a href="http://localhost:3000/docs/patterns/examples/#diagnostics-example">Diagnostics Example</a>.</p>
+<p><code>Check</code> and <code>result {}</code> are based directly on standard <code>Result</code>. <code>Validation</code> is Result-like, but its error side is expanded into <code>Diagnostics&lt;'error&gt;</code> so independent failures can accumulate instead of stopping at the first one.</p>
+<h2 id="check-once-lift-later">Check Once, Lift Later</h2>
+<p>Keep the smallest honest shape:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>Check -&gt; Result -&gt; Validation
+</span></span></code></pre></div><p>Use <code>Flow</code> only after the boundary grows:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>Check -&gt; Result -&gt; Validation -&gt; Flow
+</span></span></code></pre></div><p>That separation keeps pure domain validation testable and reusable. A validation function can stay as <code>Result&lt;string, RegistrationError&gt;</code> today and later be bound inside <code>flow {}</code> without changing its core logic.</p>
+<h2 id="first-tutorial">First Tutorial</h2>
+<p>Start with <a href="http://localhost:3000/docs/validation-results/check-result-tutorial/">Check to Result</a>. It builds a pure validation function in stages: first with <code>Check</code>, then with typed errors, then with <code>result {}</code>.</p>
 
 	<div class="section-index">
     
@@ -414,9 +439,15 @@
     <hr class="panel-line">
         <div class="entry">
                 <h5>
-                    <a href="http://localhost:3000/docs/validation-results/checks/">Pure Checks</a>
+                    <a href="http://localhost:3000/docs/validation-results/checks/">Check</a>
                 </h5>
-                <p>Reusable predicate layer with the Check module.</p>
+                <p>Choose between predicate, preserving, and extracting Check helpers before entering Result, Validation, or Flow.</p>
+            </div>
+        <div class="entry">
+                <h5>
+                    <a href="http://localhost:3000/docs/validation-results/check-result-tutorial/">Check to Result Tutorial</a>
+                </h5>
+                <p>Build pure validation with Check first, then attach typed errors and compose with result { }.</p>
             </div>
         <div class="entry">
                 <h5>
@@ -426,9 +457,9 @@
             </div>
         <div class="entry">
                 <h5>
-                    <a href="http://localhost:3000/docs/validation-results/guard/">The Guard</a>
+                    <a href="http://localhost:3000/docs/validation-results/bind-error/">BindError</a>
                 </h5>
-                <p>Bridging pure checks and effectful sources into Flow.</p>
+                <p>Flow bind-site error assignment and mapping.</p>
             </div>
         <div class="entry">
                 <h5>
@@ -450,8 +481,8 @@
       </div>
       
     </div>
-    <script src="http://localhost:3000/js/main.js"></script>
-<script defer src="http://localhost:3000/js/click-to-copy.js" crossorigin="anonymous"></script>
+    <script src="http://localhost:3000/js/main.min.c60de03ed52a34012f330c3e18c526426ec97efa9822bedfadbf14ffe917bc3e.js" integrity="sha256-xg3gPtUqNAEvMww&#43;GMUmQm7JfvqYIr7frb8U/&#43;kXvD4=" crossorigin="anonymous"></script>
+<script defer src="http://localhost:3000/js/click-to-copy.min.24576ff9fe9f85bb1948ecae52ce227cafce53757a3ad52301f2a79260f6b97d.js" integrity="sha256-JFdv&#43;f6fhbsZSOyuUs4ifK/OU3V6OtUjAfKnkmD2uX0=" crossorigin="anonymous"></script>
 <script src='http://localhost:3000/js/tabpane-persist.js'></script>
 
   </body>

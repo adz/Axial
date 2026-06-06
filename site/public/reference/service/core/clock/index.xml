@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Clock on FsFlow</title>
+    <link>http://localhost:3000/reference/service/core/clock/</link>
+    <description>Recent content in Clock on FsFlow</description>
+    <generator>Hugo</generator>
+    <language>en-us</language>
+    <atom:link href="http://localhost:3000/reference/service/core/clock/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Core.Clock.now</title>
+      <link>http://localhost:3000/reference/service/core/clock/m-core-clock-now/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/service/core/clock/m-core-clock-now/</guid>
+      <description>&lt;p&gt;Reads the current UTC timestamp from an explicit clock service.&lt;/p&gt;&#xA;&lt;h2 id=&#34;signature&#34;&gt;Signature&lt;/h2&gt;&#xA;&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Core.Clock.now&amp;#32;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;table&gt;&#xA;  &lt;thead&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;th&gt;Type&lt;/th&gt;&#xA;          &lt;th&gt;Description&lt;/th&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/thead&gt;&#xA;  &lt;tbody&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td&gt;&lt;code&gt;&lt;span&gt;&lt;a href=&#34;../../../flow/t-flow.md&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, &lt;a href=&#34;https://learn.microsoft.com/dotnet/api/system.datetimeoffset&#34;&gt;DateTimeOffset&lt;/a&gt;&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/td&gt;&#xA;          &lt;td&gt;&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/tbody&gt;&#xA;&lt;/table&gt;</description>
+    </item>
+    <item>
+      <title>Core.Clock.utcDateTime</title>
+      <link>http://localhost:3000/reference/service/core/clock/m-core-clock-utcdatetime/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/service/core/clock/m-core-clock-utcdatetime/</guid>
+      <description>&lt;p&gt;Reads the current UTC date/time from an explicit clock service.&lt;/p&gt;&#xA;&lt;h2 id=&#34;signature&#34;&gt;Signature&lt;/h2&gt;&#xA;&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Core.Clock.utcDateTime&amp;#32;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;table&gt;&#xA;  &lt;thead&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;th&gt;Type&lt;/th&gt;&#xA;          &lt;th&gt;Description&lt;/th&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/thead&gt;&#xA;  &lt;tbody&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td&gt;&lt;code&gt;&lt;span&gt;&lt;a href=&#34;../../../flow/t-flow.md&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, &lt;a href=&#34;https://learn.microsoft.com/dotnet/api/system.datetime&#34;&gt;DateTime&lt;/a&gt;&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/td&gt;&#xA;          &lt;td&gt;&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/tbody&gt;&#xA;&lt;/table&gt;</description>
+    </item>
+    <item>
+      <title>Core.Clock.unixTimeSeconds</title>
+      <link>http://localhost:3000/reference/service/core/clock/m-core-clock-unixtimeseconds/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/service/core/clock/m-core-clock-unixtimeseconds/</guid>
+      <description>&lt;p&gt;Reads the current Unix timestamp in seconds from an explicit clock service.&lt;/p&gt;&#xA;&lt;h2 id=&#34;signature&#34;&gt;Signature&lt;/h2&gt;&#xA;&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Core.Clock.unixTimeSeconds&amp;#32;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;table&gt;&#xA;  &lt;thead&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;th&gt;Type&lt;/th&gt;&#xA;          &lt;th&gt;Description&lt;/th&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/thead&gt;&#xA;  &lt;tbody&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td&gt;&lt;code&gt;&lt;span&gt;&lt;a href=&#34;../../../flow/t-flow.md&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, int64&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/td&gt;&#xA;          &lt;td&gt;&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/tbody&gt;&#xA;&lt;/table&gt;</description>
+    </item>
+    <item>
+      <title>Core.Clock.unixTimeMilliseconds</title>
+      <link>http://localhost:3000/reference/service/core/clock/m-core-clock-unixtimemilliseconds/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/service/core/clock/m-core-clock-unixtimemilliseconds/</guid>
+      <description>&lt;p&gt;Reads the current Unix timestamp in milliseconds from an explicit clock service.&lt;/p&gt;&#xA;&lt;h2 id=&#34;signature&#34;&gt;Signature&lt;/h2&gt;&#xA;&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Core.Clock.unixTimeMilliseconds&amp;#32;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;table&gt;&#xA;  &lt;thead&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;th&gt;Type&lt;/th&gt;&#xA;          &lt;th&gt;Description&lt;/th&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/thead&gt;&#xA;  &lt;tbody&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td&gt;&lt;code&gt;&lt;span&gt;&lt;a href=&#34;../../../flow/t-flow.md&#34;&gt;Flow&lt;/a&gt;&amp;lt;&lt;span&gt;&amp;lsquo;env, &amp;rsquo;error, int64&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/td&gt;&#xA;          &lt;td&gt;&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/tbody&gt;&#xA;&lt;/table&gt;</description>
+    </item>
+    <item>
+      <title>Core.Clock.live</title>
+      <link>http://localhost:3000/reference/service/core/clock/p-core-clock-live/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/service/core/clock/p-core-clock-live/</guid>
+      <description>&lt;p&gt;Creates a live clock backed by &lt;a href=&#34;https://learn.microsoft.com/dotnet/api/system.datetimeoffset.utcnow&#34;&gt;DateTimeOffset.UtcNow&lt;/a&gt;.&lt;/p&gt;&#xA;&lt;h2 id=&#34;signature&#34;&gt;Signature&lt;/h2&gt;&#xA;&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Core.Clock.live&amp;#32;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;table&gt;&#xA;  &lt;thead&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;th&gt;Type&lt;/th&gt;&#xA;          &lt;th&gt;Description&lt;/th&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/thead&gt;&#xA;  &lt;tbody&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td&gt;&lt;code&gt;&lt;a href=&#34;../t-core-iclock.md&#34;&gt;IClock&lt;/a&gt;&lt;/code&gt;&lt;/td&gt;&#xA;          &lt;td&gt;&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/tbody&gt;&#xA;&lt;/table&gt;</description>
+    </item>
+    <item>
+      <title>Core.Clock.layer</title>
+      <link>http://localhost:3000/reference/service/core/clock/p-core-clock-layer/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/service/core/clock/p-core-clock-layer/</guid>
+      <description>&lt;p&gt;Builds the live clock as a layer.&lt;/p&gt;&#xA;&lt;h2 id=&#34;signature&#34;&gt;Signature&lt;/h2&gt;&#xA;&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Core.Clock.layer&amp;#32;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;table&gt;&#xA;  &lt;thead&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;th&gt;Type&lt;/th&gt;&#xA;          &lt;th&gt;Description&lt;/th&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/thead&gt;&#xA;  &lt;tbody&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td&gt;&lt;code&gt;&lt;span&gt;&lt;a href=&#34;../../../layer/t-layer.md&#34;&gt;Layer&lt;/a&gt;&amp;lt;&lt;span&gt;unit, &lt;a href=&#34;../../../layer/_index.md&#34;&gt;Never&lt;/a&gt;, &lt;a href=&#34;../t-core-iclock.md&#34;&gt;IClock&lt;/a&gt;&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/td&gt;&#xA;          &lt;td&gt;&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/tbody&gt;&#xA;&lt;/table&gt;</description>
+    </item>
+    <item>
+      <title>Core.Clock.fromValue</title>
+      <link>http://localhost:3000/reference/service/core/clock/m-core-clock-fromvalue/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/service/core/clock/m-core-clock-fromvalue/</guid>
+      <description>&lt;p&gt;Creates a deterministic clock that always returns the supplied instant.&lt;/p&gt;&#xA;&lt;h2 id=&#34;signature&#34;&gt;Signature&lt;/h2&gt;&#xA;&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Core.Clock.fromValue&amp;#32;&lt;span&gt;utcNow&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;h2 id=&#34;parameters&#34;&gt;Parameters&lt;/h2&gt;&#xA;&lt;table&gt;&#xA;  &lt;thead&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;th&gt;Name&lt;/th&gt;&#xA;          &lt;th&gt;Type&lt;/th&gt;&#xA;          &lt;th&gt;Description&lt;/th&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/thead&gt;&#xA;  &lt;tbody&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td&gt;&lt;code&gt;utcNow&lt;/code&gt;&lt;/td&gt;&#xA;          &lt;td&gt;&lt;code&gt;&lt;a href=&#34;https://learn.microsoft.com/dotnet/api/system.datetimeoffset&#34;&gt;DateTimeOffset&lt;/a&gt;&lt;/code&gt;&lt;/td&gt;&#xA;          &lt;td&gt;&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/tbody&gt;&#xA;&lt;/table&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;table&gt;&#xA;  &lt;thead&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;th&gt;Type&lt;/th&gt;&#xA;          &lt;th&gt;Description&lt;/th&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/thead&gt;&#xA;  &lt;tbody&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td&gt;&lt;code&gt;&lt;a href=&#34;../t-core-iclock.md&#34;&gt;IClock&lt;/a&gt;&lt;/code&gt;&lt;/td&gt;&#xA;          &lt;td&gt;&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/tbody&gt;&#xA;&lt;/table&gt;</description>
+    </item>
+  </channel>
+</rss>

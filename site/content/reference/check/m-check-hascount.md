@@ -1,7 +1,7 @@
 ---
 title: "Check.hasCount"
 linkTitle: "hasCount"
-weight: 2419
+weight: 2701
 type: docs
 ---
 
@@ -25,9 +25,3 @@ Returns success when the sequence count equals the expected count.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-check.md">Check</a>&lt;unit&gt;</span></code> | <code>Ok ()</code> when the count matches; otherwise <code>Error ()</code>. |
-
-## Examples
-
-<pre class="fssnip highlighted"><code lang="fsharp"> <span class="pn">[</span> <span class="n">1</span><span class="pn">;</span> <span class="n">2</span> <span class="pn">]</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">hasCount</span> <span class="n">2</span> <span class="c">// Ok ()</span>
- <span class="pn">[</span> <span class="n">1</span> <span class="pn">]</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">hasCount</span> <span class="n">2</span> <span class="c">// Error ()</span>
-</code></pre>

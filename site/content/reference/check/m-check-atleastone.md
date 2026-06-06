@@ -1,7 +1,7 @@
 ---
 title: "Check.atLeastOne"
 linkTitle: "atLeastOne"
-weight: 2422
+weight: 2706
 type: docs
 ---
 
@@ -23,4 +23,4 @@ Returns success when the sequence contains at least one item.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="t-check.md">Check</a>&lt;unit&gt;</span></code> | <code>Ok ()</code> when one or more items are present; otherwise <code>Error ()</code>. |
+| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>unit,&#32;<a href="t-cardinalityfailure.md">CardinalityFailure</a></span>&gt;</span></code> | <code>Ok ()</code> when one or more items are present; otherwise a cardinality failure. |

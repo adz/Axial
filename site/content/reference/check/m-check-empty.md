@@ -1,7 +1,7 @@
 ---
 title: "Check.empty"
 linkTitle: "empty"
-weight: 2411
+weight: 2505
 type: docs
 ---
 
@@ -24,9 +24,3 @@ Returns success when the sequence is empty.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-check.md">Check</a>&lt;unit&gt;</span></code> | <code>Ok ()</code> for empty sequences; otherwise <code>Error ()</code>. |
-
-## Examples
-
-<pre class="fssnip highlighted"><code lang="fsharp"> <span class="pn">[</span><span class="pn">]</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">empty</span> <span class="c">// Ok ()</span>
- <span class="pn">[</span> <span class="n">1</span> <span class="pn">]</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">empty</span> <span class="c">// Error ()</span>
-</code></pre>

@@ -1,7 +1,7 @@
 ---
 title: "Check.equalTo"
 linkTitle: "equalTo"
-weight: 2416
+weight: 2800
 type: docs
 ---
 
@@ -25,8 +25,3 @@ Returns success when the actual value equals the expected value.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-check.md">Check</a>&lt;unit&gt;</span></code> | <code>Ok ()</code> when equal; otherwise <code>Error ()</code>. |
-
-## Examples
-
-<pre class="fssnip highlighted"><code lang="fsharp"> <span class="id">actual</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">equalTo</span> <span class="id">expected</span>
-</code></pre>

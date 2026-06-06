@@ -1,28 +1,28 @@
 ---
 weight: 10
-title: Check and Take
-description: Choose between yes/no checks and value-returning checks before entering Result, Validation, or Flow.
+title: Check
+description: Choose between predicate, preserving, and extracting Check helpers before entering Result, Validation, or Flow.
 type: docs
 ---
 
 
-This page shows how to choose between `Check` and `Take`, the pure validation helpers that sit before `Result`, `validate {}`, and `flow {}`.
+This page shows how to choose between the three `Check` helper shapes.
 
 Start by deciding what success should carry.
 
 | Intent | Helper shape | Success value |
 | --- | --- | --- |
 | Require a fact and keep no value | `value |> Check.x` | `unit` |
-| Require a fact and keep the original input | `value |> Take.whenX` | the original input |
-| Extract or narrow the useful value | `value |> Take.x` | the extracted value |
+| Require a fact and keep the original input | `value |> Check.whenX` | the original input |
+| Extract or narrow the useful value | `value |> Check.takeX` | the extracted value |
 
-`Check` answers a yes/no question. `Take` answers the same kind of question when the next step needs a value.
+Unprefixed helpers are predicates. `when*` helpers are value-preserving gates. `take*` helpers unwrap or narrow a structure.
 
 ## Attach an Error
 
-Most `Check` helpers and the option, nullable, string, and collection-preserving `Take` helpers return `Result<'value, unit>`. The `unit` failure means "this check failed, but no domain error has been chosen yet".
+Most simple helpers return `Result<'value, unit>`. The `unit` failure means "this check failed, but no domain error has been chosen yet".
 
-Use `Check.withError` to assign the application error in pure code when the source has a `unit` error.
+Use `Check.withError` to assign the application error in pure code.
 
 ```fsharp
 type SignUpError =
@@ -34,12 +34,12 @@ type User = { Name: string }
 
 let requireName name : Result<string, SignUpError> =
     name
-    |> Take.whenNotBlank
+    |> Check.whenNotBlank
     |> Check.withError NameRequired
 
 let requireUser maybeUser : Result<User, SignUpError> =
     maybeUser
-    |> Take.some
+    |> Check.takeSome
     |> Check.withError UserMissing
 
 let requireAdult age : Result<unit, SignUpError> =
@@ -48,15 +48,30 @@ let requireAdult age : Result<unit, SignUpError> =
     |> Check.withError AgeInvalid
 ```
 
-The same function attaches errors to both `Check` and `Take` because both are unit-error checks.
+Some helpers already return a useful diagnostic error. Use `Result.mapError` for those.
 
-## Choose Check
+```fsharp
+type OrderError =
+    | InvalidPrimaryId of CardinalityFailure
+    | InvalidQuantity of RangeFailure<int>
 
-Use `Check` when success is only a gate.
+let primaryId ids : Result<int, OrderError> =
+    ids
+    |> Check.takeSingle
+    |> Result.mapError InvalidPrimaryId
+
+let quantity value : Result<int, OrderError> =
+    value
+    |> Check.whenPositive
+    |> Result.mapError InvalidQuantity
+```
+
+## Choose a Predicate
+
+Use an unprefixed helper when success is only a gate.
 
 ```fsharp
 type RegistrationError =
-    | NameRequired
     | PasswordRequired
 
 let validatePassword password : Result<unit, RegistrationError> =
@@ -68,17 +83,21 @@ let validatePassword password : Result<unit, RegistrationError> =
 This is useful for `do!` in `result {}` or `validate {}` blocks because the workflow does not need a value from the check.
 
 ```fsharp
+type RegistrationError =
+    | NameRequired
+    | PasswordRequired
+
 let register name password =
     result {
-        let! validName = name |> Take.whenNotBlank |> Check.withError NameRequired
+        let! validName = name |> Check.whenNotBlank |> Check.withError NameRequired
         do! password |> Check.notBlank |> Check.withError PasswordRequired
         return validName
     }
 ```
 
-## Choose Take.whenX
+## Choose `when*`
 
-Use `Take.whenX` when the predicate should return the original input.
+Use `Check.whenX` when the predicate should return the original input.
 
 ```fsharp
 type EmailError =
@@ -86,15 +105,15 @@ type EmailError =
 
 let validateEmail email : Result<string, EmailError> =
     email
-    |> Take.whenNotBlank
+    |> Check.whenNotBlank
     |> Check.withError EmailRequired
 ```
 
-`Take.whenNotBlank` checks that the string is not blank and returns the original string. That makes it the right choice for `let! validEmail = ...`.
+`Check.whenNotBlank` checks that the string is not blank and returns the original string. That makes it the right choice for `let! validEmail = ...`.
 
-## Choose Take.x
+## Choose `take*`
 
-Use bare `Take.x` helpers when the predicate exposes a narrower value.
+Use `Check.takeX` helpers when the predicate exposes a narrower value.
 
 ```fsharp
 type LookupError =
@@ -104,41 +123,47 @@ type User = { Name: string }
 
 let requireExistingUser maybeUser : Result<User, LookupError> =
     maybeUser
-    |> Take.some
+    |> Check.takeSome
     |> Check.withError UserMissing
 ```
 
-`Take.some` checks that the option is `Some` and returns the unwrapped value.
+`Check.takeSome` checks that the option is `Some` and returns the unwrapped value.
+
+## Common Families
+
+| Predicate | Preserve original | Extract/narrow |
+| --- | --- | --- |
+| `Check.isSome` | `Check.whenSome` | `Check.takeSome` |
+| `Check.isValueSome` | `Check.whenValueSome` | `Check.takeValueSome` |
+| `Check.hasValue` | `Check.whenHasValue` | `Check.takeHasValue` |
+| `Check.notNull` | `Check.whenNotNull` | `Check.takeNotNull` |
+| `Check.isOk` | `Check.whenOk` | `Check.takeOk` |
+| `Check.isError` | `Check.whenError` | `Check.takeError` |
+| `Check.notEmpty` | `Check.whenNotEmpty` | `Check.takeHead` |
+| `Check.isSingle` | `Check.whenSingle` | `Check.takeSingle` |
+| `Check.atMostOne` | `Check.whenAtMostOne` | `Check.takeAtMostOne` |
+| `Check.notBlank` | `Check.whenNotBlank` | none |
+| `Check.positive` | `Check.whenPositive` | none |
 
 ## Cardinality
 
-Cardinality has all three success shapes.
+Cardinality helpers keep `CardinalityFailure` because the count is useful diagnostic information.
 
 ```fsharp
-ids |> Check.exactlyOne
-ids |> Take.whenExactlyOne
-ids |> Take.exactlyOne
+ids |> Check.isSingle
+ids |> Check.whenSingle
+ids |> Check.takeSingle
 ```
 
-Use `Check.exactlyOne` when you only need to know the fact, `Take.whenExactlyOne` when the next step needs the original collection, and `Take.exactlyOne` when the next step needs the single element.
+Use `Check.isSingle` when you only need to know the fact, `Check.whenSingle` when the next step needs the original collection, and `Check.takeSingle` when the next step needs the single element.
 
-The preserving cardinality helpers enumerate up to two items before returning the original collection. Prefer arrays, lists, or other reusable collections for `Take.whenExactlyOne` and `Take.whenAtMostOne`; use the extracting helpers when the next step only needs the element.
-
-The `Take` cardinality helpers already carry `CardinalityFailure` because the count is useful diagnostic information. Use `Result.mapError` when the caller needs a domain error.
-
-```fsharp
-type OrderId = OrderId of int
-type OrderError = InvalidPrimaryId of CardinalityFailure
-
-let primaryId ids : Result<OrderId, OrderError> =
-    ids
-    |> Take.exactlyOne
-    |> Result.mapError InvalidPrimaryId
-```
+The preserving cardinality helpers enumerate enough items to establish the cardinality before returning the original collection. Prefer arrays, lists, or other reusable collections for `Check.whenSingle` and `Check.whenAtMostOne`; use the extracting helpers when the next step only needs the element.
 
 ## Flow Bind Sites
 
-Inside `flow {}`, use `BindError.withError` when a source needs an error assigned immediately before binding.
+Outside `flow {}`, keep pure code in `Result` with `Check.withError` or `Result.mapError`.
+
+Inside `flow {}`, use `BindError.withError` only when a source needs an error assigned immediately before binding.
 
 ```fsharp
 type LoginError =
@@ -154,5 +179,3 @@ let login password =
         return ()
     }
 ```
-
-Outside `flow {}`, keep pure code in `Result` with `Check.withError`. When a source already carries a meaningful error, use `Result.mapError`, `Validation.mapError`, or `BindError.map` instead.

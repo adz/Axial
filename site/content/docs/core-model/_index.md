@@ -1,7 +1,7 @@
 ---
 weight: 30
 title: The FsFlow Model
-description: The core FsFlow progression from Check and Take into Result, Validation, and Flow.
+description: The core FsFlow progression from Check into Result, Validation, and Flow.
 type: docs
 ---
 
@@ -12,12 +12,12 @@ This page shows why FsFlow is best understood as one scalable model for Result-b
 The core progression is:
 
 ```text
-Check/Take -> Result & Validation -> Flow
+Check -> Result & Validation -> Flow
 ```
 
 The validation vocabulary stays the same while the execution context grows.
 
-- start with **Check and Take** for reusable predicates and value-returning checks
+- start with **Check** for reusable predicates, value-preserving gates, and extraction helpers
 - move to **Result & Validation** for fail-fast domain logic or accumulating errors
 - lift into **Flow** only when the boundary needs explicit environment access or becomes asynchronous
 
@@ -37,7 +37,6 @@ FsFlow gives those shapes one coherent family:
 
 ```text
 Check<'value>
-Take helpers returning Check<'value>
 Result<'value, 'error>
 Validation<'value, 'error>
 Flow<'env, 'error, 'value>
@@ -54,7 +53,7 @@ when their error must be assigned or mapped before entering `flow {}`.
 
 FsFlow unifies Result-based programming across pure logic and effectful execution.
 
-- write predicate logic once with Check and Take, using value-preserving checks when you need the input again and gate checks when you only need yes/no
+- write predicate logic once with Check, using `when*` checks when you need the input again, `take*` checks when you need an extracted value, and unprefixed checks when you only need yes/no
 - keep fail-fast domain logic in Result
 - accumulate independent validation with Validation
 - lift the same logic directly into flows when you need environment, async, task, cancellation, logging, or resource handling
@@ -73,7 +72,7 @@ type RegistrationError =
 
 let validateEmail (email: string) : Result<string, RegistrationError> =
     email
-    |> Take.whenNotBlank
+    |> Check.whenNotBlank
     |> Check.withError EmailMissing
 ```
 
@@ -85,7 +84,7 @@ If independent checks should accumulate, move to Validation instead of forcing e
 let validateRegistration (email: string) (name: string) : Validation<string * string, RegistrationError> =
     validate {
         let! validEmail = validateEmail email
-        and! validName = name |> Take.whenNotBlank |> Check.withError NameMissing
+        and! validName = name |> Check.whenNotBlank |> Check.withError NameMissing
         return validEmail, validName
     }
 ```

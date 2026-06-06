@@ -29,10 +29,10 @@ weight: 2000
  Use <code>and!</code> when sibling validations should accumulate into the same diagnostics graph.
  Plain <code>let!</code> and <code>do!</code> are sequential: if the left side fails, the later step is
  not evaluated.
- </p><p class='fsdocs-para'><code>Check&lt;&#39;value&gt;</code> covers unit-error predicate results.
- Use <code>Take</code> when a predicate should return a useful value, <code>Check.withError</code>
- to attach an application error, and <code>Validation.mapError</code> when you need to
- remap accumulated diagnostics.
+ </p><p class='fsdocs-para'><code>Check&lt;&#39;value&gt;</code> covers unit-error predicate results. Use <code>Check.when*</code>
+ when a predicate should preserve the original value, <code>Check.take*</code> when it should
+ extract an inner value, <code>Check.withError</code> to attach an application error, and
+ <code>Validation.mapError</code> when you need to remap accumulated diagnostics.
  </p><p class='fsdocs-para'>
  When nested API response fields need to keep their place in the diagnostics graph, use
  the scoped helpers <code>validate.key</code>, <code>validate.index</code>, and <code>validate.name</code>
@@ -48,7 +48,7 @@ weight: 2000
 
 <pre class="fssnip highlighted"><code lang="fsharp"> <span class="k">let</span> <span data-fsdocs-tip="fs1" data-fsdocs-tip-unique="1" class="id">validatedUser</span> <span class="o">=</span>
      <span class="id">validate</span> <span class="pn">{</span>
-         <span class="k">let!</span> <span class="id">name</span> <span class="o">=</span> <span class="id">input</span><span class="pn">.</span><span class="id">Name</span> <span class="o">|&gt;</span> <span class="id">Take</span><span class="pn">.</span><span class="id">whenNotBlank</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">withError</span> <span class="s">&quot;Name required&quot;</span>
+         <span class="k">let!</span> <span class="id">name</span> <span class="o">=</span> <span class="id">input</span><span class="pn">.</span><span class="id">Name</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">whenNotBlank</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">withError</span> <span class="s">&quot;Name required&quot;</span>
          <span class="k">do!</span> <span class="id">input</span><span class="pn">.</span><span class="id">Age</span> <span class="pn">&gt;</span> <span class="n">0</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">isTrue</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">withError</span> <span class="s">&quot;Age must be positive&quot;</span>
          <span class="k">return</span> <span class="pn">{</span> <span class="id">Name</span> <span class="o">=</span> <span class="id">name</span><span class="pn">;</span> <span class="id">Age</span> <span class="o">=</span> <span class="id">input</span><span class="pn">.</span><span class="id">Age</span> <span class="pn">}</span>
      <span class="pn">}</span>
@@ -59,7 +59,7 @@ weight: 2000
      <span class="id">validate</span><span class="pn">.</span><span class="id">key</span> <span class="s">&quot;customer&quot;</span> <span class="pn">{</span>
          <span class="k">let!</span> <span class="id">name</span> <span class="o">=</span>
              <span class="id">validate</span><span class="pn">.</span><span class="id">name</span> <span class="s">&quot;Name&quot;</span> <span class="pn">{</span>
-                 <span class="k">return!</span> <span class="id">input</span><span class="pn">.</span><span class="id">Name</span> <span class="o">|&gt;</span> <span class="id">Take</span><span class="pn">.</span><span class="id">whenNotBlank</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">withError</span> <span class="s">&quot;Name required&quot;</span>
+                 <span class="k">return!</span> <span class="id">input</span><span class="pn">.</span><span class="id">Name</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">whenNotBlank</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">withError</span> <span class="s">&quot;Name required&quot;</span>
              <span class="pn">}</span>
 
          <span class="k">return</span> <span class="id">name</span>

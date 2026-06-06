@@ -1,7 +1,7 @@
 ---
 title: "Check.notBlank"
 linkTitle: "notBlank"
-weight: 2414
+weight: 2604
 ---
 
 Returns success when the string is not blank.
@@ -23,9 +23,3 @@ Returns success when the string is not blank.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-check.md">Check</a>&lt;unit&gt;</span></code> | <code>Ok ()</code> for non-blank strings; otherwise <code>Error ()</code>. |
-
-## Examples
-
-<pre class="fssnip highlighted"><code lang="fsharp"> <span class="s">&quot;hello&quot;</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">notBlank</span> <span class="c">// Ok ()</span>
- <span class="s">&quot;  &quot;</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">notBlank</span> <span class="c">// Error ()</span>
-</code></pre>

@@ -4,6 +4,8 @@
   <url>
     <loc>http://localhost:3000/docs/tutorials/explicit-dependencies/</loc>
   </url><url>
+    <loc>http://localhost:3000/docs/validation-results/checks/</loc>
+  </url><url>
     <loc>http://localhost:3000/docs/managing-dependencies/explicit-services/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/</loc>
@@ -14,8 +16,6 @@
   </url><url>
     <loc>http://localhost:3000/docs/start/getting-started/</loc>
   </url><url>
-    <loc>http://localhost:3000/docs/validation-results/checks/</loc>
-  </url><url>
     <loc>http://localhost:3000/docs/state-concurrency/ref/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/service/core/</loc>
@@ -25,6 +25,8 @@
     <loc>http://localhost:3000/docs/tutorials/app-record/</loc>
   </url><url>
     <loc>http://localhost:3000/docs/state-concurrency/deferred-semaphore/</loc>
+  </url><url>
+    <loc>http://localhost:3000/docs/validation-results/check-result-tutorial/</loc>
   </url><url>
     <loc>http://localhost:3000/docs/tutorials/</loc>
   </url><url>
@@ -54,9 +56,9 @@
   </url><url>
     <loc>http://localhost:3000/docs/core-model/fibers/</loc>
   </url><url>
-    <loc>http://localhost:3000/docs/core-model/defects/</loc>
+    <loc>http://localhost:3000/docs/validation-results/bind-error/</loc>
   </url><url>
-    <loc>http://localhost:3000/docs/validation-results/guard/</loc>
+    <loc>http://localhost:3000/docs/core-model/defects/</loc>
   </url><url>
     <loc>http://localhost:3000/docs/patterns/benchmarks/</loc>
   </url><url>
@@ -114,6 +116,8 @@
   </url><url>
     <loc>http://localhost:3000/docs/ecosystem/</loc>
   </url><url>
+    <loc>http://localhost:3000/reference/bind-error/</loc>
+  </url><url>
     <loc>http://localhost:3000/reference/validation/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/diagnostics/</loc>
@@ -133,6 +137,8 @@
     <loc>http://localhost:3000/reference/layer/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/scope/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/bind-error/t-binderror/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/cause/t-cause/</loc>
   </url><url>
@@ -210,11 +216,13 @@
   </url><url>
     <loc>http://localhost:3000/reference/service/core/t-core-baseruntime/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/check/t-checkerror/</loc>
+    <loc>http://localhost:3000/reference/check/t-cardinalityfailure/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/concurrency/t-flowsemaphore/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/check/t-cardinalityfailure/</loc>
+    <loc>http://localhost:3000/reference/check/t-stringlengthfailure/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/t-rangefailure/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/runtime/m-flow-runtime-cancellationtoken/</loc>
   </url><url>
@@ -276,7 +284,7 @@
   </url><url>
     <loc>http://localhost:3000/reference/flow/concurrency/m-flow-fork/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystemerror-fromexception/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/errors/m-filesystem-filesystemerror-fromexception/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/stream/m-flowstream-fromseq/</loc>
   </url><url>
@@ -286,7 +294,7 @@
   </url><url>
     <loc>http://localhost:3000/reference/layer/p-layer/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/p-core-baseruntime-livevalue/</loc>
+    <loc>http://localhost:3000/reference/service/core/base-runtime/p-core-baseruntime-livevalue/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/ref/m-ref-make/</loc>
   </url><url>
@@ -302,11 +310,13 @@
   </url><url>
     <loc>http://localhost:3000/reference/validation/m-validation-toresult/</loc>
   </url><url>
+    <loc>http://localhost:3000/reference/bind-error/m-binderror-witherror/</loc>
+  </url><url>
     <loc>http://localhost:3000/reference/scope/m-scope-adddisposable/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/exit/m-exit-bind/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystemerror-describe/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/errors/m-filesystem-filesystemerror-describe/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/ref/m-ref-get/</loc>
   </url><url>
@@ -314,13 +324,15 @@
   </url><url>
     <loc>http://localhost:3000/reference/flow/concurrency/m-flow-join/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/p-core-baseruntime-live/</loc>
+    <loc>http://localhost:3000/reference/service/core/base-runtime/p-core-baseruntime-live/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/service/http/m-http-http-live/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/service/process/p-process-process-live/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/concurrency/m-semaphore-make/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/bind-error/m-binderror-map/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/stream/m-flowstream-map/</loc>
   </url><url>
@@ -346,7 +358,7 @@
   </url><url>
     <loc>http://localhost:3000/reference/schedule/m-schedule-exponential/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/p-core-baseruntime-fromserviceprovider/</loc>
+    <loc>http://localhost:3000/reference/service/core/base-runtime/p-core-baseruntime-fromserviceprovider/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/concurrency/m-flow-interrupt/</loc>
   </url><url>
@@ -442,11 +454,11 @@
   </url><url>
     <loc>http://localhost:3000/reference/check/m-check-frompredicate/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-clock-now/</loc>
+    <loc>http://localhost:3000/reference/service/core/clock/m-core-clock-now/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/service/m-flow-read/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-readalltext/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/text-and-bytes/m-filesystem-filesystem-readalltext/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/stm/p-stm-stm/</loc>
   </url><url>
@@ -458,11 +470,11 @@
   </url><url>
     <loc>http://localhost:3000/reference/validation/m-validation-key/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-readalltextwithencoding/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/text-and-bytes/m-filesystem-filesystem-readalltextwithencoding/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/execution/m-flow-totask/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-clock-utcdatetime/</loc>
+    <loc>http://localhost:3000/reference/service/core/clock/m-core-clock-utcdatetime/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/check/m-check-fromchoice/</loc>
   </url><url>
@@ -470,271 +482,171 @@
   </url><url>
     <loc>http://localhost:3000/reference/validation/m-validation-index/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-readalltextasync/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/text-and-bytes/m-filesystem-filesystem-readalltextasync/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/execution/m-flow-tovaluetask/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-clock-unixtimeseconds/</loc>
+    <loc>http://localhost:3000/reference/service/core/clock/m-core-clock-unixtimeseconds/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/validation/m-validation-name/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-okiftruetuple/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-readalllines/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/text-and-bytes/m-filesystem-filesystem-readalllines/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/execution/m-flow-runsynchronously/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/layer/m-layer-succeed/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-clock-unixtimemilliseconds/</loc>
+    <loc>http://localhost:3000/reference/service/core/clock/m-core-clock-unixtimemilliseconds/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-not/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/service/core/p-core-clock-live/</loc>
+    <loc>http://localhost:3000/reference/service/core/clock/p-core-clock-live/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/layer/m-layer-read/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-readalllineswithencoding/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-and/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/text-and-bytes/m-filesystem-filesystem-readalllineswithencoding/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/layer/m-layer-addfinalizer/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/p-core-clock-layer/</loc>
+    <loc>http://localhost:3000/reference/service/core/clock/p-core-clock-layer/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-readalllinesasync/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-or/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/text-and-bytes/m-filesystem-filesystem-readalllinesasync/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/layer/m-layer-acquirerelease/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-clock-fromvalue/</loc>
+    <loc>http://localhost:3000/reference/service/core/clock/m-core-clock-fromvalue/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-readallbytes/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-all/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/text-and-bytes/m-filesystem-filesystem-readallbytes/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/layer/m-layer-map/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-readallbytesasync/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-any/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/text-and-bytes/m-filesystem-filesystem-readallbytesasync/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/layer/m-layer-maperror/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-writealltext/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/text-and-bytes/m-filesystem-filesystem-writealltext/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/layer/m-layer-bind/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-okif/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/text-and-bytes/m-filesystem-filesystem-writealltextwithencoding/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-writealltextwithencoding/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-failif/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-writealltextasync/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/text-and-bytes/m-filesystem-filesystem-writealltextasync/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/layer/m-layer-zip/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-okifsome/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-writealllines/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/text-and-bytes/m-filesystem-filesystem-writealllines/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/layer/m-layer-zippar/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/layer/m-layer-merge/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-okifnone/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-writealllineswithencoding/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-failifsome/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/text-and-bytes/m-filesystem-filesystem-writealllineswithencoding/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/layer/m-layer-map2/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-writealllinesasync/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/text-and-bytes/m-filesystem-filesystem-writealllinesasync/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/layer/m-layer-apply/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-failifnone/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-writeallbytes/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/text-and-bytes/m-filesystem-filesystem-writeallbytes/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/layer/m-layer-map3/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-okifvaluesome/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/text-and-bytes/m-filesystem-filesystem-writeallbytesasync/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-writeallbytesasync/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/text-and-bytes/m-filesystem-filesystem-appendalltext/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-appendalltext/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/text-and-bytes/m-filesystem-filesystem-appendalltextwithencoding/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-okifvaluenone/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/text-and-bytes/m-filesystem-filesystem-appendalltextasync/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-appendalltextwithencoding/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/text-and-bytes/m-filesystem-filesystem-appendalllines/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-failifvaluesome/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/text-and-bytes/m-filesystem-filesystem-appendalllineswithencoding/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-appendalltextasync/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/files-and-streams/m-filesystem-filesystem-fileexists/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-failifvaluenone/</loc>
+    <loc>http://localhost:3000/reference/service/core/log/m-core-log-log/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-appendalllines/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-okifnotnullable/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-appendalllineswithencoding/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-okifnullable/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-failifnotnullable/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-failifnullable/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-notnullable/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-okifnotnull/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-okifnull/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-failifnotnull/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-failifnull/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-okifnotempty/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-okifempty/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-failifnotempty/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-failifempty/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-okifexactlyone/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-failifexactlyone/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-okifatmostone/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-failifatmostone/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-okifcountis/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-okifcontains/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-okifequal/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-okifnotequal/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-failifequal/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-failifnotequal/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-okifnonemptystr/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-okifemptystr/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-failifnonemptystr/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-failifemptystr/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-okifnotblank/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-notblank/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-okifblank/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-blank/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-failifnotblank/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-failifblank/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-orerror/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-orerrorwith/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-notnull/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-notempty/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-equal/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-notequal/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-fileexists/</loc>
-  </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-log-log/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-negate/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/construction/m-flow-ok/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/layer/m-flow-provide/</loc>
   </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-both/</loc>
+  </url><url>
     <loc>http://localhost:3000/reference/flow/construction/m-flow-error/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-exists/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/files-and-streams/m-filesystem-filesystem-exists/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-log-trace/</loc>
+    <loc>http://localhost:3000/reference/service/core/log/m-core-log-trace/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-log-debug/</loc>
+    <loc>http://localhost:3000/reference/service/core/log/m-core-log-debug/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-deletefile/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/files-and-streams/m-filesystem-filesystem-deletefile/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-either/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/construction/m-flow-succeed/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-copyfile/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-all/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-log-info/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/files-and-streams/m-filesystem-filesystem-copyfile/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/core/log/m-core-log-info/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/construction/m-flow-value/</loc>
   </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-any/</loc>
+  </url><url>
     <loc>http://localhost:3000/reference/flow/construction/m-flow-fail/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-movefile/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/files-and-streams/m-filesystem-filesystem-movefile/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-log-warning/</loc>
+    <loc>http://localhost:3000/reference/service/core/log/m-core-log-warning/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-log-error/</loc>
+    <loc>http://localhost:3000/reference/service/core/log/m-core-log-error/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/construction/m-flow-fromresult/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-openfile/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/files-and-streams/m-filesystem-filesystem-openfile/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-log-critical/</loc>
+    <loc>http://localhost:3000/reference/service/core/log/m-core-log-critical/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/construction/m-flow-fromoption/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-openfilewithaccess/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/files-and-streams/m-filesystem-filesystem-openfilewithaccess/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/construction/m-flow-fromvalueoption/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/p-core-log-live/</loc>
+    <loc>http://localhost:3000/reference/service/core/log/p-core-log-live/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-openfilewithshare/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/files-and-streams/m-filesystem-filesystem-openfilewithshare/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/construction/m-flow-fromasync/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/p-core-log-layer/</loc>
+    <loc>http://localhost:3000/reference/service/core/log/p-core-log-layer/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-openread/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/files-and-streams/m-filesystem-filesystem-openread/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-log-fromsink/</loc>
+    <loc>http://localhost:3000/reference/service/core/log/m-core-log-fromsink/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/construction/m-flow-fromtask/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-opentext/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/files-and-streams/m-filesystem-filesystem-opentext/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/construction/m-flow-fromvaluetask/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-openwrite/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/files-and-streams/m-filesystem-filesystem-openwrite/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-createfile/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/files-and-streams/m-filesystem-filesystem-createfile/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/construction/m-flow-orelseflow/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-createtext/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/files-and-streams/m-filesystem-filesystem-createtext/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/environment/m-flow-env/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-appendtext/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/files-and-streams/m-filesystem-filesystem-appendtext/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/environment/m-flow-read/</loc>
   </url><url>
@@ -776,213 +688,409 @@
   </url><url>
     <loc>http://localhost:3000/reference/flow/resources/m-flow-addfinalizer/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-getfileattributes/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/file-metadata/m-filesystem-filesystem-getfileattributes/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-random-next/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-istrue/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/core/random/m-core-random-next/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/resources/m-flow-adddisposable/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-random-nextmax/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-isfalse/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-setfileattributes/</loc>
+    <loc>http://localhost:3000/reference/service/core/random/m-core-random-nextmax/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/filesystem/file-metadata/m-filesystem-filesystem-setfileattributes/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/resources/m-flow-addasyncdisposable/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-getfilecreationtime/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/file-metadata/m-filesystem-filesystem-getfilecreationtime/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-random-nextint/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-issome/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/core/random/m-core-random-nextint/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/resources/m-flow-acquirerelease/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-getfilecreationtimeutc/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/file-metadata/m-filesystem-filesystem-getfilecreationtimeutc/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-random-nextdouble/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-isnone/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/core/random/m-core-random-nextdouble/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/resources/m-flow-acquirereleasewith/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-random-nextbytes/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-isvaluesome/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-setfilecreationtime/</loc>
+    <loc>http://localhost:3000/reference/service/core/random/m-core-random-nextbytes/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-random-bytes/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/file-metadata/m-filesystem-filesystem-setfilecreationtime/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-setfilecreationtimeutc/</loc>
+    <loc>http://localhost:3000/reference/service/core/random/m-core-random-bytes/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-getfilelastaccesstime/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-isvaluenone/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/p-core-random-live/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/file-metadata/m-filesystem-filesystem-setfilecreationtimeutc/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-getfilelastaccesstimeutc/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/file-metadata/m-filesystem-filesystem-getfilelastaccesstime/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/p-core-random-layer/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-isok/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-random-fromvalue/</loc>
+    <loc>http://localhost:3000/reference/service/core/random/p-core-random-live/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-setfilelastaccesstime/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/file-metadata/m-filesystem-filesystem-getfilelastaccesstimeutc/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-random-fromfixed/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-iserror/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-setfilelastaccesstimeutc/</loc>
+    <loc>http://localhost:3000/reference/service/core/random/p-core-random-layer/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-getfilelastwritetime/</loc>
+    <loc>http://localhost:3000/reference/service/core/random/m-core-random-fromvalue/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-getfilelastwritetimeutc/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/file-metadata/m-filesystem-filesystem-setfilelastaccesstime/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-setfilelastwritetime/</loc>
+    <loc>http://localhost:3000/reference/service/core/random/m-core-random-fromfixed/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-setfilelastwritetimeutc/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/file-metadata/m-filesystem-filesystem-setfilelastaccesstimeutc/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-directoryexists/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/file-metadata/m-filesystem-filesystem-getfilelastwritetime/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-guid-newguid/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/file-metadata/m-filesystem-filesystem-getfilelastwritetimeutc/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/filesystem/file-metadata/m-filesystem-filesystem-setfilelastwritetime/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/filesystem/file-metadata/m-filesystem-filesystem-setfilelastwritetimeutc/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/filesystem/directories/m-filesystem-filesystem-directoryexists/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-hasvalue/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/core/guid/m-core-guid-newguid/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/concurrency/m-flow-zippar/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-createdirectory/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/directories/m-filesystem-filesystem-createdirectory/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/p-core-guid-live/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-hasnovalue/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/core/guid/p-core-guid-live/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/concurrency/m-flow-race/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-deletedirectory/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/directories/m-filesystem-filesystem-deletedirectory/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/p-core-guid-layer/</loc>
+    <loc>http://localhost:3000/reference/service/core/guid/p-core-guid-layer/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-guid-fromvalue/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-notnull/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-movedirectory/</loc>
+    <loc>http://localhost:3000/reference/service/core/guid/m-core-guid-fromvalue/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-enumeratefiles/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-isnull/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-getfiles/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/directories/m-filesystem-filesystem-movedirectory/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-enumeratedirectories/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/directories/m-filesystem-filesystem-enumeratefiles/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-getdirectories/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-notempty/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-enumeratefilesystementries/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-empty/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-getfilesystementries/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/directories/m-filesystem-filesystem-getfiles/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-getlogicaldrives/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/directories/m-filesystem-filesystem-enumeratedirectories/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-getdirectoryroot/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/directories/m-filesystem-filesystem-getdirectories/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-getparent/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/directories/m-filesystem-filesystem-enumeratefilesystementries/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-getcurrentdirectory/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/directories/m-filesystem-filesystem-getfilesystementries/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-setcurrentdirectory/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/directories/m-filesystem-filesystem-getlogicaldrives/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-getdirectorycreationtime/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/directories/m-filesystem-filesystem-getdirectoryroot/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/filesystem/directories/m-filesystem-filesystem-getparent/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/filesystem/directories/m-filesystem-filesystem-getcurrentdirectory/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/filesystem/directories/m-filesystem-filesystem-setcurrentdirectory/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/filesystem/directory-metadata/m-filesystem-filesystem-getdirectorycreationtime/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-notnullorempty/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/scheduling/m-flow-retry/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-environmentvariables-tryget/</loc>
+    <loc>http://localhost:3000/reference/service/core/environment-variables/m-core-environmentvariables-tryget/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-environmentvariables-getall/</loc>
+    <loc>http://localhost:3000/reference/service/core/environment-variables/m-core-environmentvariables-getall/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-getdirectorycreationtimeutc/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/directory-metadata/m-filesystem-filesystem-getdirectorycreationtimeutc/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-nullorempty/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/scheduling/m-flow-repeat/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-environmentvariables-set/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-notemptystring/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-setdirectorycreationtime/</loc>
+    <loc>http://localhost:3000/reference/service/core/environment-variables/m-core-environmentvariables-set/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-environmentvariables-clear/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/directory-metadata/m-filesystem-filesystem-setdirectorycreationtime/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-setdirectorycreationtimeutc/</loc>
+    <loc>http://localhost:3000/reference/service/core/environment-variables/m-core-environmentvariables-clear/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-environmentvariables-expand/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-emptystring/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-getdirectorylastaccesstime/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/directory-metadata/m-filesystem-filesystem-setdirectorycreationtimeutc/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-getdirectorylastaccesstimeutc/</loc>
+    <loc>http://localhost:3000/reference/service/core/environment-variables/m-core-environmentvariables-expand/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/p-core-environmentvariables-live/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/directory-metadata/m-filesystem-filesystem-getdirectorylastaccesstime/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/p-core-environmentvariables-layer/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-notblank/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-setdirectorylastaccesstime/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-blank/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-environmentvariables-frompairs/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/directory-metadata/m-filesystem-filesystem-getdirectorylastaccesstimeutc/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-setdirectorylastaccesstimeutc/</loc>
+    <loc>http://localhost:3000/reference/service/core/environment-variables/p-core-environmentvariables-live/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-getdirectorylastwritetime/</loc>
+    <loc>http://localhost:3000/reference/service/core/environment-variables/p-core-environmentvariables-layer/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-environmentvariable-tryget/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-minlength/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-environmentvariable-get/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/directory-metadata/m-filesystem-filesystem-setdirectorylastaccesstime/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-getdirectorylastwritetimeutc/</loc>
+    <loc>http://localhost:3000/reference/service/core/environment-variables/m-core-environmentvariables-frompairs/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-environmentvariable-getint/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-maxlength/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-setdirectorylastwritetime/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/directory-metadata/m-filesystem-filesystem-setdirectorylastaccesstimeutc/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-environmentvariable-getint64/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-exactlength/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-setdirectorylastwritetimeutc/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/directory-metadata/m-filesystem-filesystem-getdirectorylastwritetime/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-environmentvariable-getdouble/</loc>
+    <loc>http://localhost:3000/reference/service/core/environment-variables/m-core-environmentvariable-tryget/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-environmentvariable-getdecimal/</loc>
+    <loc>http://localhost:3000/reference/service/core/environment-variables/m-core-environmentvariable-get/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-environmentvariable-getguid/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/directory-metadata/m-filesystem-filesystem-getdirectorylastwritetimeutc/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-environmentvariable-geturi/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-matchesregex/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-environmentvariable-gettimespan/</loc>
+    <loc>http://localhost:3000/reference/service/core/environment-variables/m-core-environmentvariable-getint/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-environmentvariable-getbool/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/directory-metadata/m-filesystem-filesystem-setdirectorylastwritetime/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/core/m-core-environmentvariableerrors-describe/</loc>
+    <loc>http://localhost:3000/reference/service/core/environment-variables/m-core-environmentvariable-getint64/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-combine/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/directory-metadata/m-filesystem-filesystem-setdirectorylastwritetimeutc/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-changeextension/</loc>
+    <loc>http://localhost:3000/reference/service/core/environment-variables/m-core-environmentvariable-getdouble/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-getdirectoryname/</loc>
+    <loc>http://localhost:3000/reference/service/core/environment-variables/m-core-environmentvariable-getdecimal/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-getinvalidfilenamechars/</loc>
+    <loc>http://localhost:3000/reference/service/core/environment-variables/m-core-environmentvariable-getguid/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-getinvalidpathchars/</loc>
+    <loc>http://localhost:3000/reference/service/core/environment-variables/m-core-environmentvariable-geturi/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-getextension/</loc>
+    <loc>http://localhost:3000/reference/service/core/environment-variables/m-core-environmentvariable-gettimespan/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-getfilename/</loc>
+    <loc>http://localhost:3000/reference/service/core/environment-variables/m-core-environmentvariable-getbool/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-getfilenamewithoutextension/</loc>
+    <loc>http://localhost:3000/reference/service/core/environment-variables/m-core-environmentvariableerrors-describe/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-getfullpath/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/paths/m-filesystem-filesystem-combine/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-getpathroot/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-contains/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-getrelativepath/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/paths/m-filesystem-filesystem-changeextension/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-gettemppath/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-hascount/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-gettempfilename/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/paths/m-filesystem-filesystem-getdirectoryname/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-getrandomfilename/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-hasduplicates/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-hasextension/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/paths/m-filesystem-filesystem-getinvalidfilenamechars/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-endsindirectoryseparator/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-hasnoduplicates/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-trimendingdirectoryseparator/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/paths/m-filesystem-filesystem-getinvalidpathchars/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-ispathfullyqualified/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-issingle/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/m-filesystem-filesystem-ispathrooted/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-atmostone/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/p-filesystem-filesystem-live/</loc>
+    <loc>http://localhost:3000/reference/service/filesystem/paths/m-filesystem-filesystem-getextension/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/service/filesystem/p-filesystem-filesystem-layer/</loc>
+    <loc>http://localhost:3000/reference/check/m-check-atleastone/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/filesystem/paths/m-filesystem-filesystem-getfilename/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/filesystem/paths/m-filesystem-filesystem-getfilenamewithoutextension/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-morethanone/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/filesystem/paths/m-filesystem-filesystem-getfullpath/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/filesystem/paths/m-filesystem-filesystem-getpathroot/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/filesystem/paths/m-filesystem-filesystem-getrelativepath/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/filesystem/paths/m-filesystem-filesystem-gettemppath/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/filesystem/paths/m-filesystem-filesystem-gettempfilename/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/filesystem/paths/m-filesystem-filesystem-getrandomfilename/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/filesystem/paths/m-filesystem-filesystem-hasextension/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/filesystem/paths/m-filesystem-filesystem-endsindirectoryseparator/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/filesystem/paths/m-filesystem-filesystem-trimendingdirectoryseparator/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/filesystem/paths/m-filesystem-filesystem-ispathfullyqualified/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/filesystem/paths/m-filesystem-filesystem-ispathrooted/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-equalto/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/filesystem/implementations/p-filesystem-filesystem-live/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/filesystem/implementations/p-filesystem-filesystem-layer/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-notequalto/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-greaterthan/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-lessthan/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-atleast/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-atmost/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-between/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-positive/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-nonnegative/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-negative/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-nonpositive/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whentrue/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whenfalse/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whensome/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whennone/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whenvaluesome/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whenvaluenone/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whenhasvalue/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whenhasnovalue/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whennotnull/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whennull/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whenok/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whenerror/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whennotempty/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whenempty/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whennotnullorempty/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whennullorempty/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whennotemptystring/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whenemptystring/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whennotblank/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whenblank/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whenminlength/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whenmaxlength/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whenexactlength/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whenmatchesregex/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whenequalto/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whennotequalto/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whencontains/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whencount/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whenhasduplicates/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whenhasnoduplicates/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whensingle/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whenatmostone/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whenatleastone/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whenmorethanone/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whengreaterthan/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whenlessthan/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whenatleast/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whenatmost/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whenbetween/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whenpositive/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whennonnegative/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whennegative/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-whennonpositive/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-takesome/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-takevaluesome/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-takehasvalue/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-takenotnull/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-takeok/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-takeerror/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-takehead/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-takesingle/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-takeatmostone/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/check/m-check-witherror/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/core/base-runtime/</loc>
   </url><url>
     <loc>http://localhost:3000/categories/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/core/clock/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/composition/</loc>
   </url><url>
@@ -990,11 +1098,33 @@
   </url><url>
     <loc>http://localhost:3000/reference/flow/construction/</loc>
   </url><url>
+    <loc>http://localhost:3000/reference/service/filesystem/directories/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/filesystem/directory-metadata/</loc>
+  </url><url>
     <loc>http://localhost:3000/reference/flow/environment/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/core/environment-variables/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/filesystem/errors/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/execution/</loc>
   </url><url>
+    <loc>http://localhost:3000/reference/service/filesystem/file-metadata/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/filesystem/files-and-streams/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/core/guid/</loc>
+  </url><url>
     <loc>http://localhost:3000/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/filesystem/implementations/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/core/log/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/filesystem/paths/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/core/random/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/flow/resources/</loc>
   </url><url>
@@ -1003,5 +1133,7 @@
     <loc>http://localhost:3000/reference/flow/scheduling/</loc>
   </url><url>
     <loc>http://localhost:3000/tags/</loc>
+  </url><url>
+    <loc>http://localhost:3000/reference/service/filesystem/text-and-bytes/</loc>
   </url>
 </urlset>

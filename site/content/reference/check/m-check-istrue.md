@@ -24,9 +24,3 @@ Returns success when the condition is true.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-check.md">Check</a>&lt;unit&gt;</span></code> | <code>Ok ()</code> when true; otherwise <code>Error ()</code>. |
-
-## Examples
-
-<pre class="fssnip highlighted"><code lang="fsharp"> <span class="k">true</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">isTrue</span> <span class="c">// Ok ()</span>
- <span class="k">false</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">isTrue</span> <span class="c">// Error ()</span>
-</code></pre>

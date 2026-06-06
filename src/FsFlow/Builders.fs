@@ -75,10 +75,10 @@ module Builders =
     /// not evaluated.
     /// </para>
     /// <para>
-    /// <c>Check&lt;'value&gt;</c> covers unit-error predicate results.
-    /// Use <c>Take</c> when a predicate should return a useful value, <c>Check.withError</c>
-    /// to attach an application error, and <c>Validation.mapError</c> when you need to
-    /// remap accumulated diagnostics.
+    /// <c>Check&lt;'value&gt;</c> covers unit-error predicate results. Use <c>Check.when*</c>
+    /// when a predicate should preserve the original value, <c>Check.take*</c> when it should
+    /// extract an inner value, <c>Check.withError</c> to attach an application error, and
+    /// <c>Validation.mapError</c> when you need to remap accumulated diagnostics.
     /// </para>
     /// <para>
     /// When nested API response fields need to keep their place in the diagnostics graph, use
@@ -96,7 +96,7 @@ module Builders =
     /// <code>
     /// let validatedUser =
     ///     validate {
-    ///         let! name = input.Name |> Take.whenNotBlank |> Check.withError "Name required"
+    ///         let! name = input.Name |> Check.whenNotBlank |> Check.withError "Name required"
     ///         do! input.Age > 0 |> Check.isTrue |> Check.withError "Age must be positive"
     ///         return { Name = name; Age = input.Age }
     ///     }
@@ -107,7 +107,7 @@ module Builders =
     ///     validate.key "customer" {
     ///         let! name =
     ///             validate.name "Name" {
-    ///                 return! input.Name |> Take.whenNotBlank |> Check.withError "Name required"
+    ///                 return! input.Name |> Check.whenNotBlank |> Check.withError "Name required"
     ///             }
     ///
     ///         return name

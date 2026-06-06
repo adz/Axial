@@ -5,8 +5,8 @@ weight: 1000
 ---
 
 
- Predicate helpers that return <a href="t-check.md">Check</a> values with a unit error, plus
- bridge functions that turn those checks into application errors.
+ Pure validation helpers. Unprefixed names are predicates, <code>when*</code> names preserve the
+ original input on success, and <code>take*</code> names extract or narrow the successful value.
 
 
 ## Signature

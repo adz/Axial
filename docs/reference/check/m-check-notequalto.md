@@ -1,7 +1,7 @@
 ---
 title: "Check.notEqualTo"
 linkTitle: "notEqualTo"
-weight: 2417
+weight: 2801
 ---
 
 Returns success when the actual value does not equal the expected value.
@@ -24,8 +24,3 @@ Returns success when the actual value does not equal the expected value.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-check.md">Check</a>&lt;unit&gt;</span></code> | <code>Ok ()</code> when values differ; otherwise <code>Error ()</code>. |
-
-## Examples
-
-<pre class="fssnip highlighted"><code lang="fsharp"> <span class="id">actual</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">notEqualTo</span> <span class="id">forbidden</span>
-</code></pre>

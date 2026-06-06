@@ -19,7 +19,7 @@ type RequestEnv =
       LoadSuffix: Task<string> }
 
 let validateName (name: string) : Result<string, string> =
-    Take.whenNotBlank name
+    Check.whenNotBlank name
     |> Check.withError "name is required"
 
 let loadUser : Flow<RequestEnv, string, User> =

@@ -16,14 +16,14 @@ If you are an AI assistant, prioritize the patterns in the **Dependency Guidance
 When using FsFlow, follow these "Golden Path" patterns for the best results.
 
 ### 1. Handling Failures (Idiomatic Way)
-Use `Check` for reusable yes/no predicates, `Take` when the predicate should return a useful value, and `Check.withError` when a pure unit-error result should become a domain error.
+Use `Check` for pure validation. Unprefixed helpers are yes/no predicates, `when*` helpers preserve the original value, `take*` helpers extract or narrow a value, and `Check.withError` turns a pure unit-error result into a domain error.
 
 | Source Type | Idiomatic Pattern |
 | :--- | :--- |
 | `bool` | `Check.isTrue condition |> Check.withError e` |
-| `string` value | `name |> Take.whenNotBlank |> Check.withError e` |
-| `option<'T>` | `opt |> Take.some |> Check.withError e` |
-| `voption<'T>` | `vopt |> Take.valueSome |> Check.withError e` |
+| `string` value | `name |> Check.whenNotBlank |> Check.withError e` |
+| `option<'T>` | `opt |> Check.takeSome |> Check.withError e` |
+| `voption<'T>` | `vopt |> Check.takeValueSome |> Check.withError e` |
 | `Result<'T, unit>` | `check |> Check.withError e` |
 
 ### 2. Binding Error-Adapted Sources (Idiomatic Way)
@@ -76,7 +76,7 @@ Translate common patterns from other libraries into idiomatic FsFlow.
 
 | If you use... | Do this in FsFlow |
 | :--- | :--- |
-| `requireSome` | `let! x = opt |> BindError.withError e` in `flow {}` or `opt |> Take.some |> Check.withError e` in pure code |
+| `requireSome` | `let! x = opt |> BindError.withError e` in `flow {}` or `opt |> Check.takeSome |> Check.withError e` in pure code |
 | `requireTrue` | `cond |> Check.isTrue |> Check.withError e` |
 | `Reader.ask` | `let! env = Flow.env` |
 | `Reader.asks` | `let! value = Flow.read projector` |
@@ -91,10 +91,9 @@ Translate common patterns from other libraries into idiomatic FsFlow.
 FsFlow unifies several types. Later types can "bind" (consume) earlier types directly within their computation expressions.
 
 1. **Check**: Unit-error predicates (`Result<'T, unit>`).
-2. **Take**: Value-returning checks such as `Take.some` and `Take.whenNotBlank`.
-3. **Result**: Pure typed errors (`Result<'T, 'E>`).
-4. **Validation**: Accumulating diagnostics.
-5. **Flow**: Environment-aware workflows (`Flow<'Env, 'E, 'T>`) for synchronous, async, and task-based composition.
+2. **Result**: Pure typed errors (`Result<'T, 'E>`).
+3. **Validation**: Accumulating diagnostics.
+4. **Flow**: Environment-aware workflows (`Flow<'Env, 'E, 'T>`) for synchronous, async, and task-based composition.
 
 ## Machine-Readable Reference
 

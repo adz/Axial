@@ -21,10 +21,10 @@ type User = { Name: string; Email: string }
 let validateUser name email : Result<User, UserError> =
     result {
         // If name is blank, it returns Error MissingName and stops.
-        let! validName = name |> Take.whenNotBlank |> Check.withError MissingName
+        let! validName = name |> Check.whenNotBlank |> Check.withError MissingName
         
         // This line only runs if the name was valid.
-        let! validEmail = email |> Take.whenNotBlank |> Check.withError MissingEmail
+        let! validEmail = email |> Check.whenNotBlank |> Check.withError MissingEmail
         
         return { Name = validName; Email = validEmail }
     }
@@ -33,7 +33,7 @@ let validateUser name email : Result<User, UserError> =
 ## Options and Checks
 
 `result {}` binds `Result` directly.
-Use `Take` when the source must expose a value, and `Check` when the source is only a yes/no gate.
+Use `Check.take*` when the source must expose a value, `Check.when*` when the source should be preserved, and unprefixed `Check` predicates when the source is only a yes/no gate.
 
 ```fsharp
 type User = { Name: string }
@@ -44,7 +44,7 @@ let tryGetUser username =
 
 let login username password =
     result {
-        let! user = tryGetUser username |> Take.some |> Check.withError Unauthorized
+        let! user = tryGetUser username |> Check.takeSome |> Check.withError Unauthorized
         do! password |> Check.notBlank |> Check.withError MissingPassword
 
         return user

@@ -1,0 +1,104 @@
+---
+weight: 15
+title: Check to Result Tutorial
+description: Build pure validation with Check first, then attach typed errors and compose with result { }.
+type: docs
+---
+
+
+This page shows how to build pure validation without introducing `Flow`.
+
+The example starts with facts about values, then turns those facts into typed `Result` values, then composes them with `result {}`.
+
+## Start With Checks
+
+`Check` helpers answer validation questions before you choose a domain error.
+
+```fsharp
+open FsFlow
+
+Check.notBlank "Ada"          // Ok ()
+Check.whenNotBlank "Ada"      // Ok "Ada"
+Check.takeSome (Some "Ada")   // Ok "Ada"
+```
+
+Use the helper shape that matches the success value you need:
+
+| Need | Shape | Example |
+| --- | --- | --- |
+| Only prove a fact | `Check.x` | `name |> Check.notBlank` |
+| Keep the original input | `Check.whenX` | `name |> Check.whenNotBlank` |
+| Extract an inner value | `Check.takeX` | `maybeUser |> Check.takeSome` |
+
+These simple checks fail with `unit`. That means the check failed, but no application error has been chosen yet.
+
+## Attach Domain Errors
+
+Use `Check.withError` when a unit-error check should become a domain result.
+
+```fsharp
+type RegistrationError =
+    | NameMissing
+    | EmailMissing
+    | PrimaryIdInvalid of CardinalityFailure
+
+let validateName name : Result<string, RegistrationError> =
+    name
+    |> Check.whenNotBlank
+    |> Check.withError NameMissing
+
+let validateEmail email : Result<string, RegistrationError> =
+    email
+    |> Check.whenNotBlank
+    |> Check.withError EmailMissing
+```
+
+Some helpers already carry useful diagnostics. Keep those diagnostics until you map them deliberately.
+
+```fsharp
+let primaryId ids : Result<int, RegistrationError> =
+    ids
+    |> Check.takeSingle
+    |> Result.mapError PrimaryIdInvalid
+```
+
+## Compose With Result
+
+Use `result {}` when later steps depend on earlier successful values and the first failure should stop the workflow.
+
+```fsharp
+type Registration =
+    { Name: string
+      Email: string
+      PrimaryId: int }
+
+let validateRegistration name email ids : Result<Registration, RegistrationError> =
+    result {
+        let! validName = validateName name
+        let! validEmail = validateEmail email
+        let! validPrimaryId = primaryId ids
+
+        return
+            { Name = validName
+              Email = validEmail
+              PrimaryId = validPrimaryId }
+    }
+```
+
+This is still ordinary pure code. It can be unit-tested without a runtime, environment, cancellation token, task, or service provider.
+
+## Add Accumulation Only When Needed
+
+If independent fields should all be reported together, move to `validate {}` instead of forcing everything through fail-fast `Result`.
+
+```fsharp
+let validateRegistrationFields name email =
+    validate {
+        let! validName = validateName name
+        and! validEmail = validateEmail email
+
+        return validName, validEmail
+    }
+```
+
+Use `Result` for dependent fail-fast logic. Use `Validation` for sibling checks where the caller needs every failure at once.

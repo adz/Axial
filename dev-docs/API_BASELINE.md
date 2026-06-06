@@ -77,7 +77,7 @@ the named modules, types, and members users and examples are expected to depend 
 
 - `Flow`, `Flow.Runtime`, `Execution`, `Cause`, `Exit`, `Fiber`, `Scope`
 - computation builders
-- `Check`, `Take`, `BindError`, `Validation`, `Diagnostics`
+- `Check`, `BindError`, `Validation`, `Diagnostics`
 - `Schedule`, `FlowStream`, `STM`, `TRef`, `Ref`
 - `Service`, `Layer`, `LayerBuilder`
 - first-party service packages

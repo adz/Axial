@@ -1,7 +1,7 @@
 ---
 title: "Check.moreThanOne"
 linkTitle: "moreThanOne"
-weight: 2423
+weight: 2707
 ---
 
 Returns success when the sequence contains more than one item.
@@ -22,10 +22,4 @@ Returns success when the sequence contains more than one item.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="t-check.md">Check</a>&lt;unit&gt;</span></code> | <code>Ok ()</code> when more than one item is present; otherwise <code>Error ()</code>. |
-
-## Examples
-
-<pre class="fssnip highlighted"><code lang="fsharp"> <span class="pn">[</span> <span class="n">1</span><span class="pn">;</span> <span class="n">2</span> <span class="pn">]</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">moreThanOne</span> <span class="c">// Ok ()</span>
- <span class="pn">[</span> <span class="n">1</span> <span class="pn">]</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">moreThanOne</span> <span class="c">// Error ()</span>
-</code></pre>
+| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>unit,&#32;<a href="t-cardinalityfailure.md">CardinalityFailure</a></span>&gt;</span></code> | <code>Ok ()</code> when more than one item is present; otherwise a cardinality failure. |

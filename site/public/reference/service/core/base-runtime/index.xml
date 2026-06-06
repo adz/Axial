@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Base runtime on FsFlow</title>
+    <link>http://localhost:3000/reference/service/core/base-runtime/</link>
+    <description>Recent content in Base runtime on FsFlow</description>
+    <generator>Hugo</generator>
+    <language>en-us</language>
+    <atom:link href="http://localhost:3000/reference/service/core/base-runtime/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Core.BaseRuntime.liveValue</title>
+      <link>http://localhost:3000/reference/service/core/base-runtime/p-core-baseruntime-livevalue/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/service/core/base-runtime/p-core-baseruntime-livevalue/</guid>
+      <description>&lt;p&gt;Creates the standard live base runtime as an explicit service bundle.&lt;/p&gt;&#xA;&lt;h2 id=&#34;signature&#34;&gt;Signature&lt;/h2&gt;&#xA;&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Core.BaseRuntime.liveValue&amp;#32;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;table&gt;&#xA;  &lt;thead&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;th&gt;Type&lt;/th&gt;&#xA;          &lt;th&gt;Description&lt;/th&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/thead&gt;&#xA;  &lt;tbody&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td&gt;&lt;code&gt;&lt;a href=&#34;../t-core-baseruntime.md&#34;&gt;BaseRuntime&lt;/a&gt;&lt;/code&gt;&lt;/td&gt;&#xA;          &lt;td&gt;&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/tbody&gt;&#xA;&lt;/table&gt;</description>
+    </item>
+    <item>
+      <title>Core.BaseRuntime.live</title>
+      <link>http://localhost:3000/reference/service/core/base-runtime/p-core-baseruntime-live/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/service/core/base-runtime/p-core-baseruntime-live/</guid>
+      <description>&lt;p&gt;Builds the standard live base runtime as an explicit service bundle.&lt;/p&gt;&#xA;&lt;h2 id=&#34;signature&#34;&gt;Signature&lt;/h2&gt;&#xA;&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Core.BaseRuntime.live&amp;#32;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;table&gt;&#xA;  &lt;thead&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;th&gt;Type&lt;/th&gt;&#xA;          &lt;th&gt;Description&lt;/th&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/thead&gt;&#xA;  &lt;tbody&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td&gt;&lt;code&gt;&lt;span&gt;&lt;a href=&#34;../../../layer/t-layer.md&#34;&gt;Layer&lt;/a&gt;&amp;lt;&lt;span&gt;unit, &lt;a href=&#34;../../../layer/_index.md&#34;&gt;Never&lt;/a&gt;, &lt;a href=&#34;../t-core-baseruntime.md&#34;&gt;BaseRuntime&lt;/a&gt;&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/td&gt;&#xA;          &lt;td&gt;&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/tbody&gt;&#xA;&lt;/table&gt;</description>
+    </item>
+    <item>
+      <title>Core.BaseRuntime.fromServiceProvider</title>
+      <link>http://localhost:3000/reference/service/core/base-runtime/p-core-baseruntime-fromserviceprovider/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/service/core/base-runtime/p-core-baseruntime-fromserviceprovider/</guid>
+      <description>&lt;p&gt;Builds the base runtime from an &lt;a href=&#34;https://learn.microsoft.com/dotnet/api/system.iserviceprovider&#34;&gt;IServiceProvider&lt;/a&gt;.&lt;/p&gt;&#xA;&lt;h2 id=&#34;signature&#34;&gt;Signature&lt;/h2&gt;&#xA;&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;&lt;span&gt;Core.BaseRuntime.fromServiceProvider&amp;#32;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;h2 id=&#34;returns&#34;&gt;Returns&lt;/h2&gt;&#xA;&lt;table&gt;&#xA;  &lt;thead&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;th&gt;Type&lt;/th&gt;&#xA;          &lt;th&gt;Description&lt;/th&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/thead&gt;&#xA;  &lt;tbody&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td&gt;&lt;code&gt;&lt;span&gt;&lt;a href=&#34;../../../layer/t-layer.md&#34;&gt;Layer&lt;/a&gt;&amp;lt;&lt;span&gt;&lt;a href=&#34;https://learn.microsoft.com/dotnet/api/system.iserviceprovider&#34;&gt;IServiceProvider&lt;/a&gt;, &lt;a href=&#34;../t-core-baseruntimeerror.md&#34;&gt;BaseRuntimeError&lt;/a&gt;, &lt;a href=&#34;../t-core-baseruntime.md&#34;&gt;BaseRuntime&lt;/a&gt;&lt;/span&gt;&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/td&gt;&#xA;          &lt;td&gt;&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/tbody&gt;&#xA;&lt;/table&gt;</description>
+    </item>
+  </channel>
+</rss>

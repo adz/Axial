@@ -91,7 +91,7 @@ Do not use `BindError` as a general Result helper. In pure code, use `Check.with
 ```fsharp
 let validateName name =
     name
-    |> Take.whenNotBlank
+    |> Check.whenNotBlank
     |> Check.withError "Name required"
 ```
 

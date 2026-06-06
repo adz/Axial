@@ -1,7 +1,7 @@
 ---
 title: "Check.contains"
 linkTitle: "contains"
-weight: 2418
+weight: 2700
 type: docs
 ---
 
@@ -25,9 +25,3 @@ Returns success when the sequence contains the expected value.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-check.md">Check</a>&lt;unit&gt;</span></code> | <code>Ok ()</code> when the value is present; otherwise <code>Error ()</code>. |
-
-## Examples
-
-<pre class="fssnip highlighted"><code lang="fsharp"> <span class="pn">[</span> <span class="n">1</span><span class="pn">;</span> <span class="n">2</span> <span class="pn">]</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">contains</span> <span class="n">2</span> <span class="c">// Ok ()</span>
- <span class="pn">[</span> <span class="n">1</span><span class="pn">;</span> <span class="n">2</span> <span class="pn">]</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">contains</span> <span class="n">3</span> <span class="c">// Error ()</span>
-</code></pre>

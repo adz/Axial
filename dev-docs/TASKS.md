@@ -15,7 +15,7 @@ part of this completed redesign queue.
 
 ## Active Surface Work
 
-- Implement the `Check`, `Take`, and `BindError` surface redesign, then sweep generated and hand-written docs so the public golden path no longer teaches the retired `Guard` API.
+- Implement the unified `Check` and `BindError` surface redesign, then sweep generated and hand-written docs so the public golden path no longer teaches the retired `Guard` or `Take` APIs.
 
 ## Acceptance Checks
 

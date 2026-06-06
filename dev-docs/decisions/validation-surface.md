@@ -27,7 +27,7 @@ The graph type is explicit and path-aware:
 The canonical combinators are:
 
 - `Check.negate`, `Check.both`, `Check.either`, `Check.all`, and `Check.any`
-- `Take` for value-returning checks such as `Take.some` and `Take.whenNotBlank`
+- `Check.when*` and `Check.take*` for value-preserving and value-extracting checks such as `Check.whenNotBlank` and `Check.takeSome`
 - `Check.withError` for bridging unit-error checks into typed errors
 - `Validation.fromResult`, `Validation.map2`, `Validation.apply`, `Validation.collect`, and `Validation.sequence`
 - `validate {}` as the applicative accumulation entry point

@@ -1,7 +1,7 @@
 ---
 title: "Check.withError"
 linkTitle: "withError"
-weight: 2500
+weight: 3100
 type: docs
 ---
 

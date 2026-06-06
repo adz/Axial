@@ -1,7 +1,7 @@
 ---
 title: "Check.notNull"
 linkTitle: "notNull"
-weight: 2408
+weight: 2502
 type: docs
 ---
 
@@ -24,9 +24,3 @@ Returns success when the reference is not null.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-check.md">Check</a>&lt;unit&gt;</span></code> | <code>Ok ()</code> for non-null values; otherwise <code>Error ()</code>. |
-
-## Examples
-
-<pre class="fssnip highlighted"><code lang="fsharp"> <span class="s">&quot;hello&quot;</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">notNull</span> <span class="c">// Ok ()</span>
- <span class="k">null</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">notNull</span> <span class="c">// Error ()</span>
-</code></pre>

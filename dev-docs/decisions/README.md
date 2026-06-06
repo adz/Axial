@@ -14,7 +14,7 @@ and the current [`../PLAN.md`](../PLAN.md). Older service/runtime research under
 - [Option and ValueOption binding](option-valueoption-binding.md): 2026-05-03. Keep implicit binding only for `unit` error workflows and use explicit conversion helpers for typed errors.
 - [Logging ergonomics](logging-ergonomics.md): 2026-05-03. Keep the core logging abstraction generic and treat `ILogger` as an integration adapter.
 - [Validation surface](validation-surface.md): 2026-05-03. `Check`, `Diagnostics`, `Validation`, and the applicative `validate {}` split.
-- [Check surface redesign](check-surface-redesign.md): 2026-06-05. Predicate-first `Check`, value-returning `Take`, and flow bind-site `BindError`.
+- [Check surface redesign](check-surface-redesign.md): 2026-06-05, updated 2026-06-07. Unified `Check` predicate/when/take helpers and flow bind-site `BindError`.
 - [Validation path scoping](validation-path-scoping.md): 2026-05-06. Root-local `validate {}` plus scoped helpers for `Key` / `Index` / `Name` branches.
 - [API reference page shape](reference-page-shape.md): 2026-05-03. One page per public API surface, side-menu entries, examples, and versioned source links.
 - [Scope, services, and layers](../scope-layer-redesign.md): 2026-06-02. Delete the registry, move former ambient services to explicit service access, and make Scope/Layer part of the v1 architecture.

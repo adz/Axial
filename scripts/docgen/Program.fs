@@ -429,26 +429,21 @@ let pageSpecs = [
     {
         OutPath = ["check"; "_index.md"]
         Title = "Check"
-        Description = "Source-documented pure predicate helpers for FsFlow."
-        Intro = "This page shows the `Check` surface for reusable, pure predicates. A check carries a `unit` error: it says whether a condition passed without deciding the final domain error yet. This makes checks easy to compose, negate, reuse, and convert into typed failures with `withError`. Use `Check` for local facts such as non-empty strings, equality, null checks, cardinality checks, and option presence. When a predicate should return a useful value, use `Take`; when you need to collect several named failures, move to `Validation`; when you need environment or async work, lift the result into `Flow`."
+        Description = "Source-documented pure validation helpers for FsFlow."
+        Intro = "This page shows the `Check` surface for reusable, pure validation. Unprefixed helpers test a property, `when*` helpers preserve the original input on success, and `take*` helpers extract or narrow a useful value. Simple helpers carry a `unit` error and can be converted into typed failures with `Check.withError`. Helpers with useful built-in diagnostics return typed `Result` values such as `CardinalityFailure`, `StringLengthFailure`, or `RangeFailure`. Use `Check` before moving into `Result`, `Validation`, or `Flow`."
         SymbolIds = [
             "Core type", ["T:FsFlow.Check`1"]
-            "Structured errors", ["T:FsFlow.CardinalityFailure"]
+            "Structured errors", ["T:FsFlow.CardinalityFailure"; "T:FsFlow.StringLengthFailure"; "T:FsFlow.RangeFailure`1"]
             "Construction", ["M:FsFlow.Check.fromPredicate"; "M:FsFlow.Check.fromTry"; "M:FsFlow.Check.fromChoice"]
             "Composition", ["M:FsFlow.Check.negate"; "M:FsFlow.Check.both"; "M:FsFlow.Check.either"; "M:FsFlow.Check.all"; "M:FsFlow.Check.any"]
-            "Predicates", ["M:FsFlow.Check.isTrue"; "M:FsFlow.Check.isFalse"; "M:FsFlow.Check.some"; "M:FsFlow.Check.none"; "M:FsFlow.Check.valueSome"; "M:FsFlow.Check.valueNone"; "M:FsFlow.Check.hasValue"; "M:FsFlow.Check.hasNoValue"; "M:FsFlow.Check.notNull"; "M:FsFlow.Check.isNull"; "M:FsFlow.Check.notEmpty"; "M:FsFlow.Check.empty"; "M:FsFlow.Check.notNullOrEmpty"; "M:FsFlow.Check.nullOrEmpty"; "M:FsFlow.Check.notBlank"; "M:FsFlow.Check.blank"; "M:FsFlow.Check.equalTo"; "M:FsFlow.Check.notEqualTo"; "M:FsFlow.Check.contains"; "M:FsFlow.Check.hasCount"; "M:FsFlow.Check.exactlyOne"; "M:FsFlow.Check.atMostOne"; "M:FsFlow.Check.atLeastOne"; "M:FsFlow.Check.moreThanOne"; "M:FsFlow.Check.hasDuplicates"]
+            "Boolean and branch predicates", ["M:FsFlow.Check.isTrue"; "M:FsFlow.Check.isFalse"; "M:FsFlow.Check.isSome"; "M:FsFlow.Check.isNone"; "M:FsFlow.Check.isValueSome"; "M:FsFlow.Check.isValueNone"; "M:FsFlow.Check.isOk"; "M:FsFlow.Check.isError"]
+            "Presence predicates", ["M:FsFlow.Check.hasValue"; "M:FsFlow.Check.hasNoValue"; "M:FsFlow.Check.notNull"; "M:FsFlow.Check.isNull"; "M:FsFlow.Check.notEmpty"; "M:FsFlow.Check.empty"]
+            "String predicates", ["M:FsFlow.Check.notNullOrEmpty"; "M:FsFlow.Check.nullOrEmpty"; "M:FsFlow.Check.notEmptyString"; "M:FsFlow.Check.emptyString"; "M:FsFlow.Check.notBlank"; "M:FsFlow.Check.blank"; "M:FsFlow.Check.minLength"; "M:FsFlow.Check.maxLength"; "M:FsFlow.Check.exactLength"; "M:FsFlow.Check.matchesRegex"]
+            "Collection predicates", ["M:FsFlow.Check.contains"; "M:FsFlow.Check.hasCount"; "M:FsFlow.Check.hasDuplicates"; "M:FsFlow.Check.hasNoDuplicates"; "M:FsFlow.Check.isSingle"; "M:FsFlow.Check.atMostOne"; "M:FsFlow.Check.atLeastOne"; "M:FsFlow.Check.moreThanOne"]
+            "Equality and range predicates", ["M:FsFlow.Check.equalTo"; "M:FsFlow.Check.notEqualTo"; "M:FsFlow.Check.greaterThan"; "M:FsFlow.Check.lessThan"; "M:FsFlow.Check.atLeast"; "M:FsFlow.Check.atMost"; "M:FsFlow.Check.between"; "M:FsFlow.Check.positive"; "M:FsFlow.Check.nonNegative"; "M:FsFlow.Check.negative"; "M:FsFlow.Check.nonPositive"]
+            "Preserving gates", ["M:FsFlow.Check.whenTrue"; "M:FsFlow.Check.whenFalse"; "M:FsFlow.Check.whenSome"; "M:FsFlow.Check.whenNone"; "M:FsFlow.Check.whenValueSome"; "M:FsFlow.Check.whenValueNone"; "M:FsFlow.Check.whenHasValue"; "M:FsFlow.Check.whenHasNoValue"; "M:FsFlow.Check.whenNotNull"; "M:FsFlow.Check.whenNull"; "M:FsFlow.Check.whenOk"; "M:FsFlow.Check.whenError"; "M:FsFlow.Check.whenNotEmpty"; "M:FsFlow.Check.whenEmpty"; "M:FsFlow.Check.whenNotNullOrEmpty"; "M:FsFlow.Check.whenNullOrEmpty"; "M:FsFlow.Check.whenNotEmptyString"; "M:FsFlow.Check.whenEmptyString"; "M:FsFlow.Check.whenNotBlank"; "M:FsFlow.Check.whenBlank"; "M:FsFlow.Check.whenMinLength"; "M:FsFlow.Check.whenMaxLength"; "M:FsFlow.Check.whenExactLength"; "M:FsFlow.Check.whenMatchesRegex"; "M:FsFlow.Check.whenEqualTo"; "M:FsFlow.Check.whenNotEqualTo"; "M:FsFlow.Check.whenContains"; "M:FsFlow.Check.whenCount"; "M:FsFlow.Check.whenHasDuplicates"; "M:FsFlow.Check.whenHasNoDuplicates"; "M:FsFlow.Check.whenSingle"; "M:FsFlow.Check.whenAtMostOne"; "M:FsFlow.Check.whenAtLeastOne"; "M:FsFlow.Check.whenMoreThanOne"; "M:FsFlow.Check.whenGreaterThan"; "M:FsFlow.Check.whenLessThan"; "M:FsFlow.Check.whenAtLeast"; "M:FsFlow.Check.whenAtMost"; "M:FsFlow.Check.whenBetween"; "M:FsFlow.Check.whenPositive"; "M:FsFlow.Check.whenNonNegative"; "M:FsFlow.Check.whenNegative"; "M:FsFlow.Check.whenNonPositive"]
+            "Extraction helpers", ["M:FsFlow.Check.takeSome"; "M:FsFlow.Check.takeValueSome"; "M:FsFlow.Check.takeHasValue"; "M:FsFlow.Check.takeNotNull"; "M:FsFlow.Check.takeOk"; "M:FsFlow.Check.takeError"; "M:FsFlow.Check.takeHead"; "M:FsFlow.Check.takeSingle"; "M:FsFlow.Check.takeAtMostOne"]
             "Error attachment", ["M:FsFlow.Check.withError"]
-        ]
-        Alias = None
-    }
-    {
-        OutPath = ["take"; "_index.md"]
-        Title = "Take"
-        Description = "Source-documented value-returning validation helpers for FsFlow."
-        Intro = "This page shows the `Take` surface for checks that should return a useful value. `Take.whenX` helpers keep the original input when a property holds, while bare `Take.x` helpers extract or narrow the value exposed by that property. Use `Take` when a later step needs the non-blank string, unwrapped option value, non-null reference, or cardinality-narrowed element. Attach domain errors to unit-error Take results with `Check.withError` in pure code, or use `BindError.withError` at a `flow { }` bind site. Cardinality helpers already carry `CardinalityFailure`; use `Result.mapError` when you need a domain error."
-        SymbolIds = [
-            "Option and nullable", ["M:FsFlow.Take.whenSome"; "M:FsFlow.Take.some"; "M:FsFlow.Take.whenValueSome"; "M:FsFlow.Take.valueSome"; "M:FsFlow.Take.whenHasValue"; "M:FsFlow.Take.hasValue"; "M:FsFlow.Take.whenNotNull"]
-            "Strings and collections", ["M:FsFlow.Take.whenNotEmpty"; "M:FsFlow.Take.whenNotNullOrEmpty"; "M:FsFlow.Take.whenNotBlank"; "M:FsFlow.Take.whenExactlyOne"; "M:FsFlow.Take.exactlyOne"; "M:FsFlow.Take.whenAtMostOne"; "M:FsFlow.Take.atMostOne"]
         ]
         Alias = None
     }
@@ -1054,7 +1049,6 @@ let main argv =
     let canonicalAliases =
         dict [
             formatterApiSlug "FsFlow.CheckModule", Path.Combine(outRoot, "check", "_index.md")
-            formatterApiSlug "FsFlow.TakeModule", Path.Combine(outRoot, "take", "_index.md")
             formatterApiSlug "FsFlow.BindErrorModule", Path.Combine(outRoot, "bind-error", "_index.md")
             formatterApiSlug "FsFlow.FlowModule", Path.Combine(outRoot, "flow", "_index.md")
             formatterApiSlug "FsFlow.LayerBuilder", Path.Combine(outRoot, "layer", "p-layer.md")

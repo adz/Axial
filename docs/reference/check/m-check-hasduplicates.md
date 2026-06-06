@@ -1,7 +1,7 @@
 ---
 title: "Check.hasDuplicates"
 linkTitle: "hasDuplicates"
-weight: 2424
+weight: 2702
 ---
 
 Returns success when the sequence contains duplicate values.

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Services Core on FsFlow</title>
+    <link>http://localhost:3000/reference/service/core/</link>
+    <description>Recent content in Services Core on FsFlow</description>
+    <generator>Hugo</generator>
+    <language>en-us</language>
+    <atom:link href="http://localhost:3000/reference/service/core/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>IClock</title>
+      <link>http://localhost:3000/reference/service/core/t-core-iclock/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/service/core/t-core-iclock/</guid>
+      <description>&lt;p&gt;Provides synchronous access to the current UTC clock.&lt;/p&gt;&#xA;&lt;h2 id=&#34;signature&#34;&gt;Signature&lt;/h2&gt;&#xA;&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;type IClock&lt;/code&gt;&#xA;&lt;/div&gt;</description>
+    </item>
+    <item>
+      <title>ILog</title>
+      <link>http://localhost:3000/reference/service/core/t-core-ilog/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/service/core/t-core-ilog/</guid>
+      <description>&lt;p&gt;Provides synchronous access to explicit workflow logging.&lt;/p&gt;&#xA;&lt;h2 id=&#34;signature&#34;&gt;Signature&lt;/h2&gt;&#xA;&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;type ILog&lt;/code&gt;&#xA;&lt;/div&gt;</description>
+    </item>
+    <item>
+      <title>IRandom</title>
+      <link>http://localhost:3000/reference/service/core/t-core-irandom/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/service/core/t-core-irandom/</guid>
+      <description>&lt;p&gt;Provides synchronous random-number generation.&lt;/p&gt;&#xA;&lt;h2 id=&#34;signature&#34;&gt;Signature&lt;/h2&gt;&#xA;&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;type IRandom&lt;/code&gt;&#xA;&lt;/div&gt;</description>
+    </item>
+    <item>
+      <title>IGuid</title>
+      <link>http://localhost:3000/reference/service/core/t-core-iguid/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/service/core/t-core-iguid/</guid>
+      <description>&lt;p&gt;Provides synchronous GUID generation.&lt;/p&gt;&#xA;&lt;h2 id=&#34;signature&#34;&gt;Signature&lt;/h2&gt;&#xA;&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;type IGuid&lt;/code&gt;&#xA;&lt;/div&gt;</description>
+    </item>
+    <item>
+      <title>IEnvironmentVariables</title>
+      <link>http://localhost:3000/reference/service/core/t-core-ienvironmentvariables/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/service/core/t-core-ienvironmentvariables/</guid>
+      <description>&lt;p&gt;Provides synchronous environment-variable access.&lt;/p&gt;&#xA;&lt;h2 id=&#34;signature&#34;&gt;Signature&lt;/h2&gt;&#xA;&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;type IEnvironmentVariables&lt;/code&gt;&#xA;&lt;/div&gt;</description>
+    </item>
+    <item>
+      <title>Core.EnvironmentVariableError</title>
+      <link>http://localhost:3000/reference/service/core/t-core-environmentvariableerror/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/service/core/t-core-environmentvariableerror/</guid>
+      <description>&lt;p&gt;Describes a meaningful environment-variable failure.&lt;/p&gt;&#xA;&lt;h2 id=&#34;signature&#34;&gt;Signature&lt;/h2&gt;&#xA;&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;type EnvironmentVariableError&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;h2 id=&#34;union-cases&#34;&gt;Union Cases&lt;/h2&gt;&#xA;&lt;table&gt;&#xA;  &lt;thead&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;th&gt;Case&lt;/th&gt;&#xA;          &lt;th&gt;Description&lt;/th&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/thead&gt;&#xA;  &lt;tbody&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td&gt;&lt;code&gt;MissingVariable&lt;/code&gt;&lt;/td&gt;&#xA;          &lt;td&gt;The requested variable was not present.&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td&gt;&lt;code&gt;InvalidVariable&lt;/code&gt;&lt;/td&gt;&#xA;          &lt;td&gt;The requested variable existed but could not be parsed.&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/tbody&gt;&#xA;&lt;/table&gt;</description>
+    </item>
+    <item>
+      <title>Core.BaseRuntimeError</title>
+      <link>http://localhost:3000/reference/service/core/t-core-baseruntimeerror/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/service/core/t-core-baseruntimeerror/</guid>
+      <description>&lt;p&gt;Describes a service-provider bootstrap failure while building the base runtime.&lt;/p&gt;&#xA;&lt;h2 id=&#34;signature&#34;&gt;Signature&lt;/h2&gt;&#xA;&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;type BaseRuntimeError&lt;/code&gt;&#xA;&lt;/div&gt;&#xA;&lt;h2 id=&#34;union-cases&#34;&gt;Union Cases&lt;/h2&gt;&#xA;&lt;table&gt;&#xA;  &lt;thead&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;th&gt;Case&lt;/th&gt;&#xA;          &lt;th&gt;Description&lt;/th&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/thead&gt;&#xA;  &lt;tbody&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td&gt;&lt;code&gt;MissingService&lt;/code&gt;&lt;/td&gt;&#xA;          &lt;td&gt;A required service was missing from the provider.&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/tbody&gt;&#xA;&lt;/table&gt;</description>
+    </item>
+    <item>
+      <title>Core.BaseRuntime</title>
+      <link>http://localhost:3000/reference/service/core/t-core-baseruntime/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:3000/reference/service/core/t-core-baseruntime/</guid>
+      <description>&lt;p&gt;Helpers for constructing the standard explicit service bundle used by workflow hosts.&lt;/p&gt;&#xA;&lt;h2 id=&#34;signature&#34;&gt;Signature&lt;/h2&gt;&#xA;&lt;div class=&#34;fsdocs-usage&#34;&gt;&#xA;&lt;code&gt;type BaseRuntime&lt;/code&gt;&#xA;&lt;/div&gt;</description>
+    </item>
+  </channel>
+</rss>

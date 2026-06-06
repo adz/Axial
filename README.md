@@ -24,7 +24,7 @@ when the boundary needs environment access, async work, task interop, or runtime
 FsFlow is built around one progression:
 
 ```text
-Check/Take -> Result -> Validation -> Flow
+Check -> Result -> Validation -> Flow
 ```
 
 The same vocabulary stays the same while the execution context grows.
@@ -45,7 +45,7 @@ type RegistrationError =
 
 let validateEmail (email: string) : Result<string, RegistrationError> =
     email
-    |> Take.whenNotBlank
+    |> Check.whenNotBlank
     |> Check.withError EmailMissing
 ```
 
