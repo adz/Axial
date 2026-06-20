@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="FsFlow logo">
-  <rect x="42" y="42" width="428" height="428" rx="28" fill="#0D1117" stroke="#6B7280" stroke-width="10"/>
-  <text x="86" y="144" font-family="JetBrains Mono, Cascadia Mono, Fira Code, Consolas, monospace" font-size="68" font-weight="600" fill="#C084FC">flow</text>
-  <text x="342" y="144" font-family="JetBrains Mono, Cascadia Mono, Fira Code, Consolas, monospace" font-size="68" font-weight="500" fill="#B6C2D1">{</text>
-  <text x="172" y="278" font-family="JetBrains Mono, Cascadia Mono, Fira Code, Consolas, monospace" font-size="68" font-weight="500" fill="#9CA3AF">...</text>
-  <text x="86" y="410" font-family="JetBrains Mono, Cascadia Mono, Fira Code, Consolas, monospace" font-size="68" font-weight="500" fill="#B6C2D1">}</text>
-</svg>

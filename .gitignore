@@ -10,5 +10,7 @@ output/
 tmp/
 site/node_modules/
 site/resources/
+site/public/
+site/output/
 site/.hugo_build.lock
 BenchmarkDotNet.Artifacts/
