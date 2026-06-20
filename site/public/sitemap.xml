@@ -1072,8 +1072,6 @@
   </url><url>
     <loc>http://localhost:3000/reference/check/m-check-takehasvalue/</loc>
   </url><url>
-    <loc>http://localhost:3000/reference/check/m-check-takenotnull/</loc>
-  </url><url>
     <loc>http://localhost:3000/reference/check/m-check-takeok/</loc>
   </url><url>
     <loc>http://localhost:3000/reference/check/m-check-takeerror/</loc>

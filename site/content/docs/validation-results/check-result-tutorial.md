@@ -1,14 +1,14 @@
 ---
 weight: 15
-title: Check to Result Tutorial
-description: Build pure validation with Check first, then attach typed errors and compose with result { }.
+title: Check, Result, and Validation Tutorial
+description: Build pure validation with Check first, then attach typed errors, compose with result {}, and accumulate with validate {}.
 type: docs
 ---
 
 
 This page shows how to build pure validation without introducing `Flow`.
 
-The example starts with facts about values, then turns those facts into typed `Result` values, then composes them with `result {}`.
+The example starts with facts about values, then turns those facts into typed `Result` values, then composes them with `result {}`. It finishes by showing when to switch to `validate {}` so sibling failures can accumulate.
 
 ## Start With Checks
 
@@ -31,6 +31,25 @@ Use the helper shape that matches the success value you need:
 | Extract an inner value | `Check.takeX` | `maybeUser |> Check.takeSome` |
 
 These simple checks fail with `unit`. That means the check failed, but no application error has been chosen yet.
+
+## Start From The Core Result Shape
+
+The pure validation stack stays on the standard F# `Result<'value, 'error>` type. `Check` is just a small layer over that shape.
+
+```fsharp
+let parsed =
+    "41"
+    |> System.Int32.TryParse
+    |> function
+        | true, value -> Ok value
+        | false, _ -> Error "not an int"
+
+let mapped =
+    parsed
+    |> Result.map ((+) 1)
+```
+
+Once you have a result, use `Result.map`, `Result.bind`, and `Result.mapError` to keep the logic explicit. That keeps the code easy to test without any runtime, environment, or flow machinery.
 
 ## Attach Domain Errors
 
@@ -87,9 +106,9 @@ let validateRegistration name email ids : Result<Registration, RegistrationError
 
 This is still ordinary pure code. It can be unit-tested without a runtime, environment, cancellation token, task, or service provider.
 
-## Add Accumulation Only When Needed
+## Accumulate Sibling Failures
 
-If independent fields should all be reported together, move to `validate {}` instead of forcing everything through fail-fast `Result`.
+Use `validate {}` when independent fields should all be reported together.
 
 ```fsharp
 let validateRegistrationFields name email =
@@ -101,4 +120,14 @@ let validateRegistrationFields name email =
     }
 ```
 
-Use `Result` for dependent fail-fast logic. Use `Validation` for sibling checks where the caller needs every failure at once.
+`validate {}` is the accumulating step in the stack. It is still pure, but it uses `Validation` and `Diagnostics` so sibling failures can be returned together.
+
+## Use The Smallest Honest Shape
+
+Choose the smallest shape that matches the problem:
+
+- `Check` when you are still proving a fact
+- `Result` when one failure should stop the workflow
+- `Validation` when sibling failures should be accumulated
+
+That keeps the validation code independent from `Flow` and makes it easy to move the same logic into a boundary later if needed.

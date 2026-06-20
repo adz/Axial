@@ -39,19 +39,19 @@ Workflows result in one of three `Exit` outcomes:
 - Keep `IServiceProvider` interop and host-specific adapters at the outer boundary.
 
 ## Core Patterns (Idiomatic Way)
-Use `Check` for pure validation: unprefixed helpers are predicates, `when*` helpers preserve the input, `take*` helpers extract or narrow a value, and `Check.withError` attaches a domain error to unit-error checks:
+Use `Check` for pure validation: unprefixed helpers are predicates, `when*` helpers preserve the input, `take*` helpers extract an inner value or return a deliberately different success shape, and `Check.withError` attaches a domain error to unit-error checks:
 
 - `name |> Check.whenNotBlank |> Check.withError InvalidName`
 - `condition |> Check.isTrue |> Check.withError Disabled`
 - `opt |> Check.takeSome |> Check.withError MissingValue`
 
-Use `BindError.withError` only at a `flow {}` bind site when the source fails with missingness, falsehood, or `unit`:
+Use `BindError.withError` only at a `flow {}` bind site when the source fails with option/value-option absence or a `unit` error:
 
 - `Option<'T>` -> `let! x = opt |> BindError.withError error`
 - `voption<'T>` -> `let! x = vopt |> BindError.withError error`
 - `Async<Option<'T>>` -> `let! x = aOpt |> BindError.withError error`
 - `Async<voption<'T>>` -> `let! x = aVOpt |> BindError.withError error`
-- `bool` -> `do! cond |> BindError.withError error`
+- `bool` predicate -> `do! cond |> Check.isTrue |> BindError.withError error`
 - `Result<'T, unit>` -> `let! x = check |> BindError.withError error`
 - `Flow<'Env, unit, 'T>` -> `let! x = flow |> BindError.withError error`
 - `Task<Option<'T>>` -> `let! x = tOpt |> BindError.withError error`

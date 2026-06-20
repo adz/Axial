@@ -1,11 +1,11 @@
 <!doctype html>
 <html itemscope itemtype="http://schema.org/WebPage" lang="en" class="no-js">
-  <head>
+  <head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=3000&amp;path=livereload" data-no-instant defer></script>
     <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
 <link rel="alternate" type="application/rss&#43;xml" href="http://localhost:3000/reference/check/index.xml">
-<meta name="robots" content="index, follow">
+<meta name="robots" content="noindex, nofollow">
 
 
 <link rel="shortcut icon" href="http://localhost:3000/favicons/favicon.ico" >
@@ -20,22 +20,21 @@
 <link rel="icon" type="image/png" href="http://localhost:3000/favicons/android-192x192.png" sizes="192x192">
 
 <title>Check | FsFlow</title>
-<meta name="description" content="This page shows the Check surface for reusable, pure validation. Unprefixed helpers test a property, when* helpers preserve the original input on success, and take* helpers extract or narrow a useful value. Simple helpers carry a unit error and can be converted into typed failures with Check.withError. Helpers with useful built-in diagnostics return typed Result values such as CardinalityFailure, StringLengthFailure, or RangeFailure. Use Check before moving into Result, Validation, or Flow.">
+<meta name="description" content="This page shows the Check surface for reusable, pure validation. Unprefixed helpers test a property, when* helpers preserve the original input on success, and take* helpers extract an inner value or return a deliberately different success shape. Simple helpers carry a unit error and can be converted into typed failures with Check.withError. Helpers with useful built-in diagnostics return typed Result values such as CardinalityFailure, StringLengthFailure, or RangeFailure. Use Check before moving into Result, Validation, or Flow.">
 <meta property="og:url" content="http://localhost:3000/reference/check/">
   <meta property="og:site_name" content="FsFlow">
   <meta property="og:title" content="Check">
-  <meta property="og:description" content="This page shows the Check surface for reusable, pure validation. Unprefixed helpers test a property, when* helpers preserve the original input on success, and take* helpers extract or narrow a useful value. Simple helpers carry a unit error and can be converted into typed failures with Check.withError. Helpers with useful built-in diagnostics return typed Result values such as CardinalityFailure, StringLengthFailure, or RangeFailure. Use Check before moving into Result, Validation, or Flow.">
+  <meta property="og:description" content="This page shows the Check surface for reusable, pure validation. Unprefixed helpers test a property, when* helpers preserve the original input on success, and take* helpers extract an inner value or return a deliberately different success shape. Simple helpers carry a unit error and can be converted into typed failures with Check.withError. Helpers with useful built-in diagnostics return typed Result values such as CardinalityFailure, StringLengthFailure, or RangeFailure. Use Check before moving into Result, Validation, or Flow.">
   <meta property="og:locale" content="en_us">
   <meta property="og:type" content="website">
 
   <meta itemprop="name" content="Check">
-  <meta itemprop="description" content="This page shows the Check surface for reusable, pure validation. Unprefixed helpers test a property, when* helpers preserve the original input on success, and take* helpers extract or narrow a useful value. Simple helpers carry a unit error and can be converted into typed failures with Check.withError. Helpers with useful built-in diagnostics return typed Result values such as CardinalityFailure, StringLengthFailure, or RangeFailure. Use Check before moving into Result, Validation, or Flow.">
-  <meta itemprop="wordCount" content="1246">
+  <meta itemprop="description" content="This page shows the Check surface for reusable, pure validation. Unprefixed helpers test a property, when* helpers preserve the original input on success, and take* helpers extract an inner value or return a deliberately different success shape. Simple helpers carry a unit error and can be converted into typed failures with Check.withError. Helpers with useful built-in diagnostics return typed Result values such as CardinalityFailure, StringLengthFailure, or RangeFailure. Use Check before moving into Result, Validation, or Flow.">
+  <meta itemprop="wordCount" content="1247">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Check">
-  <meta name="twitter:description" content="This page shows the Check surface for reusable, pure validation. Unprefixed helpers test a property, when* helpers preserve the original input on success, and take* helpers extract or narrow a useful value. Simple helpers carry a unit error and can be converted into typed failures with Check.withError. Helpers with useful built-in diagnostics return typed Result values such as CardinalityFailure, StringLengthFailure, or RangeFailure. Use Check before moving into Result, Validation, or Flow.">
-<link rel="preload" href="http://localhost:3000/scss/main.min.c2e6489a9d8ef949a0dead85d2b883caca7e8cf3176c0e7ff6ff57d94fff640c.css" as="style" integrity="sha256-wuZImp2O&#43;Umg3q2F0riDysp&#43;jPMXbA5/9v9X2U//ZAw=" crossorigin="anonymous">
-<link href="http://localhost:3000/scss/main.min.c2e6489a9d8ef949a0dead85d2b883caca7e8cf3176c0e7ff6ff57d94fff640c.css" rel="stylesheet" integrity="sha256-wuZImp2O&#43;Umg3q2F0riDysp&#43;jPMXbA5/9v9X2U//ZAw=" crossorigin="anonymous">
+  <meta name="twitter:description" content="This page shows the Check surface for reusable, pure validation. Unprefixed helpers test a property, when* helpers preserve the original input on success, and take* helpers extract an inner value or return a deliberately different success shape. Simple helpers carry a unit error and can be converted into typed failures with Check.withError. Helpers with useful built-in diagnostics return typed Result values such as CardinalityFailure, StringLengthFailure, or RangeFailure. Use Check before moving into Result, Validation, or Flow.">
+<link href="http://localhost:3000/scss/main.css" rel="stylesheet">
 <script
   src="https://code.jquery.com/jquery-3.7.1.min.js"
   integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g=="
@@ -92,7 +91,7 @@
     aria-label='Search this site…'
     autocomplete="off"
     
-    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.fdfeb58d323eca75c7cc9a9f4f28965b.json"
+    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.json"
     data-offline-search-base-href="http://localhost:3000/"
     data-offline-search-max-results="10"
   >
@@ -128,7 +127,7 @@
     aria-label='Search this site…'
     autocomplete="off"
     
-    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.fdfeb58d323eca75c7cc9a9f4f28965b.json"
+    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.json"
     data-offline-search-base-href="http://localhost:3000/"
     data-offline-search-max-results="10"
   >
@@ -988,10 +987,6 @@
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referencecheckm-check-takehasvalue-li">
     <input type="checkbox" id="m-referencecheckm-check-takehasvalue-check"/>
     <label for="m-referencecheckm-check-takehasvalue-check"><a href="http://localhost:3000/reference/check/m-check-takehasvalue/" title="Check.takeHasValue" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-referencecheckm-check-takehasvalue"><span class="">takeHasValue</span></a></label>
-    
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referencecheckm-check-takenotnull-li">
-    <input type="checkbox" id="m-referencecheckm-check-takenotnull-check"/>
-    <label for="m-referencecheckm-check-takenotnull-check"><a href="http://localhost:3000/reference/check/m-check-takenotnull/" title="Check.takeNotNull" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-referencecheckm-check-takenotnull"><span class="">takeNotNull</span></a></label>
     
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referencecheckm-check-takeok-li">
     <input type="checkbox" id="m-referencecheckm-check-takeok-check"/>
@@ -2404,12 +2399,13 @@
 	<header class="article-meta">
 		
 </header>
-	<p>This page shows the <code>Check</code> surface for reusable, pure validation. Unprefixed helpers test a property, <code>when*</code> helpers preserve the original input on success, and <code>take*</code> helpers extract or narrow a useful value. Simple helpers carry a <code>unit</code> error and can be converted into typed failures with <code>Check.withError</code>. Helpers with useful built-in diagnostics return typed <code>Result</code> values such as <code>CardinalityFailure</code>, <code>StringLengthFailure</code>, or <code>RangeFailure</code>. Use <code>Check</code> before moving into <code>Result</code>, <code>Validation</code>, or <code>Flow</code>.</p>
+	<p>This page shows the <code>Check</code> surface for reusable, pure validation. Unprefixed helpers test a property, <code>when*</code> helpers preserve the original input on success, and <code>take*</code> helpers extract an inner value or return a deliberately different success shape. Simple helpers carry a <code>unit</code> error and can be converted into typed failures with <code>Check.withError</code>. Helpers with useful built-in diagnostics return typed <code>Result</code> values such as <code>CardinalityFailure</code>, <code>StringLengthFailure</code>, or <code>RangeFailure</code>. Use <code>Check</code> before moving into <code>Result</code>, <code>Validation</code>, or <code>Flow</code>.</p>
 <h2 id="core-type">Core type</h2>
 <ul>
 <li><a href="http://localhost:3000/reference/check/t-check/"><code>Check</code></a>:
 Pure validation helpers. Unprefixed names are predicates, <code>when*</code> names preserve the
-original input on success, and <code>take*</code> names extract or narrow the successful value.</li>
+original input on success, and <code>take*</code> names extract an inner value or return a
+deliberately different success shape.</li>
 </ul>
 <h2 id="structured-errors">Structured errors</h2>
 <ul>
@@ -2540,7 +2536,6 @@ original input on success, and <code>take*</code> names extract or narrow the su
 <li><a href="http://localhost:3000/reference/check/m-check-takesome/"><code>Check.takeSome</code></a>: Takes the value from an option when it is <code>Some</code>.</li>
 <li><a href="http://localhost:3000/reference/check/m-check-takevaluesome/"><code>Check.takeValueSome</code></a>: Takes the value from a value option when it is <code>ValueSome</code>.</li>
 <li><a href="http://localhost:3000/reference/check/m-check-takehasvalue/"><code>Check.takeHasValue</code></a>: Takes the value from a nullable when it has a value.</li>
-<li><a href="http://localhost:3000/reference/check/m-check-takenotnull/"><code>Check.takeNotNull</code></a>: Takes the reference when it is not null.</li>
 <li><a href="http://localhost:3000/reference/check/m-check-takeok/"><code>Check.takeOk</code></a>: Takes the successful value from a result when it is <code>Ok</code>.</li>
 <li><a href="http://localhost:3000/reference/check/m-check-takeerror/"><code>Check.takeError</code></a>: Takes the error value from a result when it is <code>Error</code>.</li>
 <li><a href="http://localhost:3000/reference/check/m-check-takehead/"><code>Check.takeHead</code></a>: Takes the first item from a sequence when it is not empty.</li>
@@ -3164,12 +3159,6 @@ original input on success, and <code>take*</code> names extract or narrow the su
             </div>
         <div class="entry">
                 <h5>
-                    <a href="http://localhost:3000/reference/check/m-check-takenotnull/">Check.takeNotNull</a>
-                </h5>
-                <p></p>
-            </div>
-        <div class="entry">
-                <h5>
                     <a href="http://localhost:3000/reference/check/m-check-takeok/">Check.takeOk</a>
                 </h5>
                 <p></p>
@@ -3212,8 +3201,8 @@ original input on success, and <code>take*</code> names extract or narrow the su
       </div>
       
     </div>
-    <script src="http://localhost:3000/js/main.min.c60de03ed52a34012f330c3e18c526426ec97efa9822bedfadbf14ffe917bc3e.js" integrity="sha256-xg3gPtUqNAEvMww&#43;GMUmQm7JfvqYIr7frb8U/&#43;kXvD4=" crossorigin="anonymous"></script>
-<script defer src="http://localhost:3000/js/click-to-copy.min.24576ff9fe9f85bb1948ecae52ce227cafce53757a3ad52301f2a79260f6b97d.js" integrity="sha256-JFdv&#43;f6fhbsZSOyuUs4ifK/OU3V6OtUjAfKnkmD2uX0=" crossorigin="anonymous"></script>
+    <script src="http://localhost:3000/js/main.js"></script>
+<script defer src="http://localhost:3000/js/click-to-copy.js" crossorigin="anonymous"></script>
 <script src='http://localhost:3000/js/tabpane-persist.js'></script>
 
   </body>

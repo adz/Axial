@@ -1,11 +1,11 @@
 <!doctype html>
 <html itemscope itemtype="http://schema.org/WebPage" lang="en" class="no-js">
-  <head>
+  <head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=3000&amp;path=livereload" data-no-instant defer></script>
     <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
 <link rel="alternate" type="application/rss&#43;xml" href="http://localhost:3000/docs/core-model/index.xml">
-<meta name="robots" content="index, follow">
+<meta name="robots" content="noindex, nofollow">
 
 
 <link rel="shortcut icon" href="http://localhost:3000/favicons/favicon.ico" >
@@ -30,12 +30,11 @@
 
   <meta itemprop="name" content="The FsFlow Model">
   <meta itemprop="description" content="The core FsFlow progression from Check into Result, Validation, and Flow.">
-  <meta itemprop="wordCount" content="838">
+  <meta itemprop="wordCount" content="843">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="The FsFlow Model">
   <meta name="twitter:description" content="The core FsFlow progression from Check into Result, Validation, and Flow.">
-<link rel="preload" href="http://localhost:3000/scss/main.min.c2e6489a9d8ef949a0dead85d2b883caca7e8cf3176c0e7ff6ff57d94fff640c.css" as="style" integrity="sha256-wuZImp2O&#43;Umg3q2F0riDysp&#43;jPMXbA5/9v9X2U//ZAw=" crossorigin="anonymous">
-<link href="http://localhost:3000/scss/main.min.c2e6489a9d8ef949a0dead85d2b883caca7e8cf3176c0e7ff6ff57d94fff640c.css" rel="stylesheet" integrity="sha256-wuZImp2O&#43;Umg3q2F0riDysp&#43;jPMXbA5/9v9X2U//ZAw=" crossorigin="anonymous">
+<link href="http://localhost:3000/scss/main.css" rel="stylesheet">
 <script
   src="https://code.jquery.com/jquery-3.7.1.min.js"
   integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g=="
@@ -92,7 +91,7 @@
     aria-label='Search this site…'
     autocomplete="off"
     
-    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.fdfeb58d323eca75c7cc9a9f4f28965b.json"
+    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.json"
     data-offline-search-base-href="http://localhost:3000/"
     data-offline-search-max-results="10"
   >
@@ -128,7 +127,7 @@
     aria-label='Search this site…'
     autocomplete="off"
     
-    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.fdfeb58d323eca75c7cc9a9f4f28965b.json"
+    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.json"
     data-offline-search-base-href="http://localhost:3000/"
     data-offline-search-max-results="10"
   >
@@ -426,7 +425,7 @@ when their error must be assigned or mapped before entering <code>flow {}</code>
 <h2 id="the-main-claim">The Main Claim</h2>
 <p>FsFlow unifies Result-based programming across pure logic and effectful execution.</p>
 <ul>
-<li>write predicate logic once with Check, using <code>when*</code> checks when you need the input again, <code>take*</code> checks when you need an extracted value, and unprefixed checks when you only need yes/no</li>
+<li>write predicate logic once with Check, using <code>when*</code> checks when you need the input again, <code>take*</code> checks when you need an inner value or deliberately different success shape, and unprefixed checks when you only need yes/no</li>
 <li>keep fail-fast domain logic in Result</li>
 <li>accumulate independent validation with Validation</li>
 <li>lift the same logic directly into flows when you need environment, async, task, cancellation, logging, or resource handling</li>
@@ -565,8 +564,8 @@ The goal is to make mixed application computations easier to write and easier to
       </div>
       
     </div>
-    <script src="http://localhost:3000/js/main.min.c60de03ed52a34012f330c3e18c526426ec97efa9822bedfadbf14ffe917bc3e.js" integrity="sha256-xg3gPtUqNAEvMww&#43;GMUmQm7JfvqYIr7frb8U/&#43;kXvD4=" crossorigin="anonymous"></script>
-<script defer src="http://localhost:3000/js/click-to-copy.min.24576ff9fe9f85bb1948ecae52ce227cafce53757a3ad52301f2a79260f6b97d.js" integrity="sha256-JFdv&#43;f6fhbsZSOyuUs4ifK/OU3V6OtUjAfKnkmD2uX0=" crossorigin="anonymous"></script>
+    <script src="http://localhost:3000/js/main.js"></script>
+<script defer src="http://localhost:3000/js/click-to-copy.js" crossorigin="anonymous"></script>
 <script src='http://localhost:3000/js/tabpane-persist.js'></script>
 
   </body>

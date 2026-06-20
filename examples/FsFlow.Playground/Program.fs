@@ -14,7 +14,8 @@ let greetingFlow : Flow<AppEnv, string, string> =
 let greetingAsync : Flow<AppEnv, string, string> =
     flow {
         let! greeting = greetingFlow
-        return greeting.ToUpperInvariant()
+        let! checkedGreeting = greeting |> Check.whenNotBlank |> Check.withError "Blanko"
+        return checkedGreeting.ToUpperInvariant()
     }
 
 let greetingTask : Flow<AppEnv, string, string> =

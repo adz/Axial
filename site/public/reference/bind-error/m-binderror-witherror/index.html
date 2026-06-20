@@ -1,10 +1,10 @@
 <!doctype html>
 <html itemscope itemtype="http://schema.org/WebPage" lang="en" class="no-js">
-  <head>
+  <head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=3000&amp;path=livereload" data-no-instant defer></script>
     <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-<meta name="robots" content="index, follow">
+<meta name="robots" content="noindex, nofollow">
 
 
 <link rel="shortcut icon" href="http://localhost:3000/favicons/favicon.ico" >
@@ -19,27 +19,26 @@
 <link rel="icon" type="image/png" href="http://localhost:3000/favicons/android-192x192.png" sizes="192x192">
 
 <title>BindError.withError | FsFlow</title>
-<meta name="description" content="Assigns an error to a missing, false, or unit-error source before flow { } binds it.
-Signature BindError.withError error source Parameters Name Type Description error ‘error The error to use if the source fails. source ^source The source to adapt. Returns Type Description BindError&lt;‘env, ’error, ‘value&gt; A bind marker for the flow computation expression. Examples flow { let! user = maybeUser |&gt; BindError.withError InvalidUser do! isValid |&gt; BindError.withError InvalidInput }">
+<meta name="description" content="Assigns an error to a missing or unit-error source before flow { } binds it.
+Signature BindError.withError error source Parameters Name Type Description error ‘error The error to use if the source fails. source ^source The source to adapt. Returns Type Description BindError&lt;‘env, ’error, ‘value&gt; A bind marker for the flow computation expression. Examples flow { let! user = maybeUser |&gt; BindError.withError InvalidUser do! isValid |&gt; Check.isTrue |&gt; BindError.withError InvalidInput }">
 <meta property="og:url" content="http://localhost:3000/reference/bind-error/m-binderror-witherror/">
   <meta property="og:site_name" content="FsFlow">
   <meta property="og:title" content="BindError.withError">
-  <meta property="og:description" content="Assigns an error to a missing, false, or unit-error source before flow { } binds it.
-Signature BindError.withError error source Parameters Name Type Description error ‘error The error to use if the source fails. source ^source The source to adapt. Returns Type Description BindError&lt;‘env, ’error, ‘value&gt; A bind marker for the flow computation expression. Examples flow { let! user = maybeUser |&gt; BindError.withError InvalidUser do! isValid |&gt; BindError.withError InvalidInput }">
+  <meta property="og:description" content="Assigns an error to a missing or unit-error source before flow { } binds it.
+Signature BindError.withError error source Parameters Name Type Description error ‘error The error to use if the source fails. source ^source The source to adapt. Returns Type Description BindError&lt;‘env, ’error, ‘value&gt; A bind marker for the flow computation expression. Examples flow { let! user = maybeUser |&gt; BindError.withError InvalidUser do! isValid |&gt; Check.isTrue |&gt; BindError.withError InvalidInput }">
   <meta property="og:locale" content="en_us">
   <meta property="og:type" content="article">
     <meta property="article:section" content="reference">
 
   <meta itemprop="name" content="BindError.withError">
-  <meta itemprop="description" content="Assigns an error to a missing, false, or unit-error source before flow { } binds it.
-Signature BindError.withError error source Parameters Name Type Description error ‘error The error to use if the source fails. source ^source The source to adapt. Returns Type Description BindError&lt;‘env, ’error, ‘value&gt; A bind marker for the flow computation expression. Examples flow { let! user = maybeUser |&gt; BindError.withError InvalidUser do! isValid |&gt; BindError.withError InvalidInput }">
-  <meta itemprop="wordCount" content="68">
+  <meta itemprop="description" content="Assigns an error to a missing or unit-error source before flow { } binds it.
+Signature BindError.withError error source Parameters Name Type Description error ‘error The error to use if the source fails. source ^source The source to adapt. Returns Type Description BindError&lt;‘env, ’error, ‘value&gt; A bind marker for the flow computation expression. Examples flow { let! user = maybeUser |&gt; BindError.withError InvalidUser do! isValid |&gt; Check.isTrue |&gt; BindError.withError InvalidInput }">
+  <meta itemprop="wordCount" content="69">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="BindError.withError">
-  <meta name="twitter:description" content="Assigns an error to a missing, false, or unit-error source before flow { } binds it.
-Signature BindError.withError error source Parameters Name Type Description error ‘error The error to use if the source fails. source ^source The source to adapt. Returns Type Description BindError&lt;‘env, ’error, ‘value&gt; A bind marker for the flow computation expression. Examples flow { let! user = maybeUser |&gt; BindError.withError InvalidUser do! isValid |&gt; BindError.withError InvalidInput }">
-<link rel="preload" href="http://localhost:3000/scss/main.min.c2e6489a9d8ef949a0dead85d2b883caca7e8cf3176c0e7ff6ff57d94fff640c.css" as="style" integrity="sha256-wuZImp2O&#43;Umg3q2F0riDysp&#43;jPMXbA5/9v9X2U//ZAw=" crossorigin="anonymous">
-<link href="http://localhost:3000/scss/main.min.c2e6489a9d8ef949a0dead85d2b883caca7e8cf3176c0e7ff6ff57d94fff640c.css" rel="stylesheet" integrity="sha256-wuZImp2O&#43;Umg3q2F0riDysp&#43;jPMXbA5/9v9X2U//ZAw=" crossorigin="anonymous">
+  <meta name="twitter:description" content="Assigns an error to a missing or unit-error source before flow { } binds it.
+Signature BindError.withError error source Parameters Name Type Description error ‘error The error to use if the source fails. source ^source The source to adapt. Returns Type Description BindError&lt;‘env, ’error, ‘value&gt; A bind marker for the flow computation expression. Examples flow { let! user = maybeUser |&gt; BindError.withError InvalidUser do! isValid |&gt; Check.isTrue |&gt; BindError.withError InvalidInput }">
+<link href="http://localhost:3000/scss/main.css" rel="stylesheet">
 <script
   src="https://code.jquery.com/jquery-3.7.1.min.js"
   integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g=="
@@ -96,7 +95,7 @@ Signature BindError.withError error source Parameters Name Type Description erro
     aria-label='Search this site…'
     autocomplete="off"
     
-    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.fdfeb58d323eca75c7cc9a9f4f28965b.json"
+    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.json"
     data-offline-search-base-href="http://localhost:3000/"
     data-offline-search-max-results="10"
   >
@@ -132,7 +131,7 @@ Signature BindError.withError error source Parameters Name Type Description erro
     aria-label='Search this site…'
     autocomplete="off"
     
-    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.fdfeb58d323eca75c7cc9a9f4f28965b.json"
+    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.json"
     data-offline-search-base-href="http://localhost:3000/"
     data-offline-search-max-results="10"
   >
@@ -992,10 +991,6 @@ Signature BindError.withError error source Parameters Name Type Description erro
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referencecheckm-check-takehasvalue-li">
     <input type="checkbox" id="m-referencecheckm-check-takehasvalue-check"/>
     <label for="m-referencecheckm-check-takehasvalue-check"><a href="http://localhost:3000/reference/check/m-check-takehasvalue/" title="Check.takeHasValue" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-referencecheckm-check-takehasvalue"><span class="">takeHasValue</span></a></label>
-    
-  </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referencecheckm-check-takenotnull-li">
-    <input type="checkbox" id="m-referencecheckm-check-takenotnull-check"/>
-    <label for="m-referencecheckm-check-takenotnull-check"><a href="http://localhost:3000/reference/check/m-check-takenotnull/" title="Check.takeNotNull" class="align-left ps-0  td-sidebar-link td-sidebar-link__page" id="m-referencecheckm-check-takenotnull"><span class="">takeNotNull</span></a></label>
     
   </li><li class="td-sidebar-nav__section-title td-sidebar-nav__section without-child" id="m-referencecheckm-check-takeok-li">
     <input type="checkbox" id="m-referencecheckm-check-takeok-check"/>
@@ -2402,7 +2397,7 @@ Signature BindError.withError error source Parameters Name Type Description erro
 	<header class="article-meta">
 		
 </header>
-	<p>Assigns an error to a missing, false, or unit-error source before <code>flow { }</code> binds it.</p>
+	<p>Assigns an error to a missing or unit-error source before <code>flow { }</code> binds it.</p>
 <h2 id="signature">Signature</h2>
 <div class="fsdocs-usage">
 <code><span>BindError.withError&#32;<span>error&#32;source</span></span></code>
@@ -2447,7 +2442,7 @@ Signature BindError.withError error source Parameters Name Type Description erro
 <h2 id="examples">Examples</h2>
 <pre class="fssnip highlighted"><code lang="fsharp"> <span class="id">flow</span> <span class="pn">{</span>
      <span class="k">let!</span> <span class="id">user</span> <span class="o">=</span> <span class="id">maybeUser</span> <span class="o">|&gt;</span> <span class="id">BindError</span><span class="pn">.</span><span class="id">withError</span> <span class="id">InvalidUser</span>
-     <span class="k">do!</span> <span class="id">isValid</span> <span class="o">|&gt;</span> <span class="id">BindError</span><span class="pn">.</span><span class="id">withError</span> <span class="id">InvalidInput</span>
+     <span class="k">do!</span> <span class="id">isValid</span> <span class="o">|&gt;</span> <span class="id">Check</span><span class="pn">.</span><span class="id">isTrue</span> <span class="o">|&gt;</span> <span class="id">BindError</span><span class="pn">.</span><span class="id">withError</span> <span class="id">InvalidInput</span>
  <span class="pn">}</span>
 </code></pre>
 
@@ -2467,8 +2462,8 @@ Signature BindError.withError error source Parameters Name Type Description erro
       </div>
       
     </div>
-    <script src="http://localhost:3000/js/main.min.c60de03ed52a34012f330c3e18c526426ec97efa9822bedfadbf14ffe917bc3e.js" integrity="sha256-xg3gPtUqNAEvMww&#43;GMUmQm7JfvqYIr7frb8U/&#43;kXvD4=" crossorigin="anonymous"></script>
-<script defer src="http://localhost:3000/js/click-to-copy.min.24576ff9fe9f85bb1948ecae52ce227cafce53757a3ad52301f2a79260f6b97d.js" integrity="sha256-JFdv&#43;f6fhbsZSOyuUs4ifK/OU3V6OtUjAfKnkmD2uX0=" crossorigin="anonymous"></script>
+    <script src="http://localhost:3000/js/main.js"></script>
+<script defer src="http://localhost:3000/js/click-to-copy.js" crossorigin="anonymous"></script>
 <script src='http://localhost:3000/js/tabpane-persist.js'></script>
 
   </body>

@@ -1,10 +1,10 @@
 <!doctype html>
 <html itemscope itemtype="http://schema.org/WebPage" lang="en" class="no-js">
-  <head>
+  <head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=3000&amp;path=livereload" data-no-instant defer></script>
     <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-<meta name="robots" content="index, follow">
+<meta name="robots" content="noindex, nofollow">
 
 
 <link rel="shortcut icon" href="http://localhost:3000/favicons/favicon.ico" >
@@ -30,12 +30,11 @@
 
   <meta itemprop="name" content="BindError">
   <meta itemprop="description" content="Flow bind-site error assignment and mapping.">
-  <meta itemprop="wordCount" content="316">
+  <meta itemprop="wordCount" content="329">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="BindError">
   <meta name="twitter:description" content="Flow bind-site error assignment and mapping.">
-<link rel="preload" href="http://localhost:3000/scss/main.min.c2e6489a9d8ef949a0dead85d2b883caca7e8cf3176c0e7ff6ff57d94fff640c.css" as="style" integrity="sha256-wuZImp2O&#43;Umg3q2F0riDysp&#43;jPMXbA5/9v9X2U//ZAw=" crossorigin="anonymous">
-<link href="http://localhost:3000/scss/main.min.c2e6489a9d8ef949a0dead85d2b883caca7e8cf3176c0e7ff6ff57d94fff640c.css" rel="stylesheet" integrity="sha256-wuZImp2O&#43;Umg3q2F0riDysp&#43;jPMXbA5/9v9X2U//ZAw=" crossorigin="anonymous">
+<link href="http://localhost:3000/scss/main.css" rel="stylesheet">
 <script
   src="https://code.jquery.com/jquery-3.7.1.min.js"
   integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g=="
@@ -92,7 +91,7 @@
     aria-label='Search this site…'
     autocomplete="off"
     
-    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.fdfeb58d323eca75c7cc9a9f4f28965b.json"
+    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.json"
     data-offline-search-base-href="http://localhost:3000/"
     data-offline-search-max-results="10"
   >
@@ -128,7 +127,7 @@
     aria-label='Search this site…'
     autocomplete="off"
     
-    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.fdfeb58d323eca75c7cc9a9f4f28965b.json"
+    data-offline-search-index-json-src="http://localhost:3000/offline-search-index.json"
     data-offline-search-base-href="http://localhost:3000/"
     data-offline-search-max-results="10"
   >
@@ -396,7 +395,7 @@
 	<p>This page shows how to assign or map a source error immediately before <code>flow {}</code> binds that source.</p>
 <p><code>flow {}</code> can bind many source shapes directly. When the source already has the right error type, bind it directly. Use <code>BindError</code> only when the bind source needs a different error at the call site.</p>
 <h2 id="assign-an-error">Assign an Error</h2>
-<p>Use <code>BindError.withError</code> when the source fails with missingness, falsehood, or <code>unit</code>.</p>
+<p>Use <code>BindError.withError</code> when the source fails with option/value-option absence or a <code>unit</code> error.</p>
 <div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">type</span> <span style="color:#000">User</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#ce5c00;font-weight:bold">{</span> <span style="color:#000">Name</span><span style="color:#ce5c00;font-weight:bold">:</span> <span style="color:#204a87;font-weight:bold">string</span> <span style="color:#ce5c00;font-weight:bold">}</span>
 </span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">type</span> <span style="color:#000">LoginError</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">UserNotFound</span> <span style="color:#ce5c00;font-weight:bold">|</span> <span style="color:#000">InvalidPassword</span>
 </span></span><span style="display:flex;"><span>
@@ -418,17 +417,20 @@
 </span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">}</span>
 </span></span></code></pre></div><p><code>BindError.withError</code> works on:</p>
 <ul>
-<li><code>bool</code></li>
 <li><code>Option&lt;'value&gt;</code></li>
 <li><code>ValueOption&lt;'value&gt;</code></li>
 <li><code>Result&lt;'value, unit&gt;</code></li>
 <li><code>Flow&lt;'env, unit, 'value&gt;</code></li>
-<li><code>Async&lt;bool&gt;</code>, <code>Task&lt;bool&gt;</code>, <code>ValueTask&lt;bool&gt;</code></li>
 <li><code>Async&lt;Option&lt;'value&gt;&gt;</code>, <code>Task&lt;Option&lt;'value&gt;&gt;</code>, <code>ValueTask&lt;Option&lt;'value&gt;&gt;</code></li>
 <li><code>Async&lt;ValueOption&lt;'value&gt;&gt;</code>, <code>Task&lt;ValueOption&lt;'value&gt;&gt;</code>, <code>ValueTask&lt;ValueOption&lt;'value&gt;&gt;</code></li>
 <li><code>Async&lt;Result&lt;'value, unit&gt;&gt;</code>, <code>Task&lt;Result&lt;'value, unit&gt;&gt;</code>, <code>ValueTask&lt;Result&lt;'value, unit&gt;&gt;</code></li>
 </ul>
-<h2 id="map-an-error">Map an Error</h2>
+<p>For boolean predicates, make the predicate explicit first:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">do</span><span style="color:#ce5c00;font-weight:bold">!</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#000">isValid</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">Check</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">isTrue</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ce5c00;font-weight:bold">|&gt;</span> <span style="color:#000">BindError</span><span style="color:#000;font-weight:bold">.</span><span style="color:#000">withError</span> <span style="color:#000">InvalidPassword</span>
+</span></span></code></pre></div><h2 id="map-an-error">Map an Error</h2>
 <p>Use <code>BindError.map</code> when the source already carries a meaningful error, but it is not the error type of the surrounding flow.</p>
 <div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-fsharp" data-lang="fsharp"><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">type</span> <span style="color:#000">AuthError</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">Denied</span> <span style="color:#204a87;font-weight:bold">of</span> <span style="color:#204a87;font-weight:bold">string</span>
 </span></span><span style="display:flex;"><span><span style="color:#204a87;font-weight:bold">type</span> <span style="color:#000">TokenError</span> <span style="color:#ce5c00;font-weight:bold">=</span> <span style="color:#000">Expired</span> <span style="color:#204a87;font-weight:bold">of</span> <span style="color:#204a87;font-weight:bold">string</span>
@@ -482,8 +484,8 @@
       </div>
       
     </div>
-    <script src="http://localhost:3000/js/main.min.c60de03ed52a34012f330c3e18c526426ec97efa9822bedfadbf14ffe917bc3e.js" integrity="sha256-xg3gPtUqNAEvMww&#43;GMUmQm7JfvqYIr7frb8U/&#43;kXvD4=" crossorigin="anonymous"></script>
-<script defer src="http://localhost:3000/js/click-to-copy.min.24576ff9fe9f85bb1948ecae52ce227cafce53757a3ad52301f2a79260f6b97d.js" integrity="sha256-JFdv&#43;f6fhbsZSOyuUs4ifK/OU3V6OtUjAfKnkmD2uX0=" crossorigin="anonymous"></script>
+    <script src="http://localhost:3000/js/main.js"></script>
+<script defer src="http://localhost:3000/js/click-to-copy.js" crossorigin="anonymous"></script>
 <script src='http://localhost:3000/js/tabpane-persist.js'></script>
 
   </body>
