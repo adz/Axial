@@ -8,15 +8,15 @@ This page shows the diagnostics graph used by `Validation`. A `Diagnostics<'erro
 
 ## Graph types
 
-- [`PathSegment`](./t-pathsegment.md): Location markers used to describe where a diagnostic belongs in a validation graph.
-- [`Diagnostic.Path`](./t-path.md): The path to the source of the error.
-- [`Diagnostic`](./t-diagnostic.md): A single failure item attached to a path in a validation graph.
-- [`Diagnostics`](./t-diagnostics.md):  Helpers for building, merging, and flattening validation diagnostics graphs.
+- [`Validation.PathSegment`](./t-validation-pathsegment.md): Location markers used to describe where a diagnostic belongs in a validation graph.
+- [`Validation.Diagnostic.Path`](./t-path.md): The path to the source of the error.
+- [`Validation.Diagnostic`](./t-validation-diagnostic.md): A single failure item attached to a path in a validation graph.
+- [`Validation.Diagnostics`](./t-validation-diagnostics.md):  Helpers for building, merging, and flattening validation diagnostics graphs.
 
 ## Module functions
 
-- [`Diagnostics.empty`](./m-diagnostics-empty.md): Creates an empty diagnostics graph with no errors.
-- [`Diagnostics.singleton`](./m-diagnostics-singleton.md): Creates a diagnostics graph containing exactly one error at the root.
-- [`Diagnostics.merge`](./m-diagnostics-merge.md): Recursively merges two diagnostics graphs, combining shared branches and local errors.
-- [`Diagnostics.toString`](./m-diagnostics-tostring.md): Renders a diagnostics graph in a YAML-like layout for display.
-- [`Diagnostics.flatten`](./m-diagnostics-flatten.md): Flattens the structured diagnostics graph into a linear list of diagnostics.
+- [`Validation.Diagnostics.empty`](./m-validation-diagnostics-empty.md): Creates an empty diagnostics graph with no errors.
+- [`Validation.Diagnostics.singleton`](./m-validation-diagnostics-singleton.md): Creates a diagnostics graph containing exactly one error at the root.
+- [`Validation.Diagnostics.merge`](./m-validation-diagnostics-merge.md): Recursively merges two diagnostics graphs, combining shared branches and local errors.
+- [`Validation.Diagnostics.toString`](./m-validation-diagnostics-tostring.md): Renders a diagnostics graph in a YAML-like layout for display.
+- [`Validation.Diagnostics.flatten`](./m-validation-diagnostics-flatten.md): Flattens the structured diagnostics graph into a linear list of diagnostics.

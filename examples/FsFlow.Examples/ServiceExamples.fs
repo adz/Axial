@@ -2,7 +2,9 @@ namespace FsFlow.Examples
 
 open System
 open System.Threading.Tasks
-open FsFlow
+open Axial.Flow
+open Axial.Result
+open Axial.Validation
 open Microsoft.Extensions.DependencyInjection
 
 // --- DOMAIN TYPES ---

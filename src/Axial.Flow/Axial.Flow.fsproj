@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.1;net8.0</TargetFrameworks>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsAotCompatible Condition="'$(TargetFramework)' == 'net8.0'">true</IsAotCompatible>
+    <PackageId>Axial.Flow</PackageId>
+    <AssemblyName>Axial.Flow</AssemblyName>
+    <RootNamespace>Axial.Flow</RootNamespace>
+    <Version>0.1.0</Version>
+    <Authors>Adam Davies</Authors>
+    <Description>Effectful workflow execution for sync, Async, Task, and explicit environment code.</Description>
+    <PackageProjectUrl>https://github.com/adz/FsFlow</PackageProjectUrl>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/adz/FsFlow</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <PackageTags>fsharp;workflow;async;task;effect;application</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <FsDocsCollectionName>Axial</FsDocsCollectionName>
+    <FsDocsLogoSource>content/img/fsflow-inline-light.svg</FsDocsLogoSource>
+    <FsDocsLogoAlt>Axial.Flow</FsDocsLogoAlt>
+    <FsDocsLogoLink>https://github.com/adz/FsFlow</FsDocsLogoLink>
+    <FsDocsLicenseLink>https://github.com/adz/FsFlow/blob/main/LICENSE</FsDocsLicenseLink>
+    <FsDocsReleaseNotesLink>https://github.com/adz/FsFlow/blob/main/RELEASE_NOTES.md</FsDocsReleaseNotesLink>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Fable.Core" Version="4.3.0" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Core.fs" />
+    <Compile Include="Foundation.fs" />
+    <Compile Include="Runtime.fs" />
+    <Compile Include="RuntimeLayer.fs" />
+    <Compile Include="Flow.fs" />
+    <Compile Include="BindError.fs" />
+    <Compile Include="Concurrency.fs" />
+    <Compile Include="Ref.fs" />
+    <Compile Include="Stm.fs" />
+    <Compile Include="Stream.fs" />
+    <Compile Include="Schedule.fs" />
+    <Compile Include="FlowBuilder.fs" />
+    <Compile Include="LayerBuilder.fs" />
+    <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="Builders.fs" />
+  </ItemGroup>
+
+</Project>

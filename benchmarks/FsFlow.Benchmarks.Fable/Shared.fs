@@ -2,7 +2,9 @@ namespace FsFlow.Benchmarks.Fable
 
 open System
 open System.Threading
-open FsFlow
+open Axial.Flow
+open Axial.Result
+open Axial.Validation
 
 [<RequireQualifiedAccess>]
 module Shared =

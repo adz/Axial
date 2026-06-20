@@ -11,7 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\FsFlow.Services.Core\FsFlow.Services.Core.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Flow.PlatformService\Axial.Flow.PlatformService.fsproj" />
   </ItemGroup>
 
 </Project>

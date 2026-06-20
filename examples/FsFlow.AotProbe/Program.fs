@@ -1,5 +1,7 @@
 open System
-open FsFlow
+open Axial.Flow
+open Axial.Result
+open Axial.Validation
 
 type ProbeFailure(message: string) =
     inherit Exception(message)

@@ -4,7 +4,9 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open Xunit
-open FsFlow
+open Axial.Flow
+open Axial.Result
+open Axial.Validation
 
 module ExecutionTests =
 

@@ -3,9 +3,11 @@ namespace FsFlow.Tests
 open System
 open System.Reflection
 open System.Threading.Tasks
-open FsFlow
-open FsFlow.Hosting
-open FsFlow.Runtime.Telemetry
+open Axial.Flow
+open Axial.Result
+open Axial.Validation
+open Axial.Flow.Hosting
+open Axial.Flow.Telemetry
 open Microsoft.FSharp.Reflection
 open Swensen.Unquote
 open Xunit
@@ -55,7 +57,7 @@ module ApiShapeTests =
 
     [<Fact>]
     let ``core Flow module keeps expected public shape`` () =
-        moduleType typeof<Flow<unit, unit, unit>> "FsFlow.Flow"
+        moduleType typeof<Flow<unit, unit, unit>> "Axial.Flow.Flow"
         |> publicStaticMemberNames
         |> assertContainsAll
             [ "ok"
@@ -85,7 +87,7 @@ module ApiShapeTests =
 
     [<Fact>]
     let ``runtime outcome types keep expected public shape`` () =
-        moduleType typeof<Cause<unit>> "FsFlow.Cause"
+        moduleType typeof<Cause<unit>> "Axial.Flow.Cause"
         |> publicStaticMemberNames
         |> assertContainsAll
             [ "map"
@@ -97,11 +99,11 @@ module ApiShapeTests =
               "isInterrupted"
               "prettyPrint" ]
 
-        moduleType typeof<Exit<unit, unit>> "FsFlow.Exit"
+        moduleType typeof<Exit<unit, unit>> "Axial.Flow.Exit"
         |> publicStaticMemberNames
         |> assertContainsAll [ "map"; "bind"; "mapError"; "mapBoth"; "fromResult"; "toResult" ]
 
-        moduleType typeof<Fiber<unit, unit>> "FsFlow.Fiber"
+        moduleType typeof<Fiber<unit, unit>> "Axial.Flow.Fiber"
         |> publicStaticMemberNames
         |> assertContainsAll [ "dump" ]
 
@@ -131,7 +133,7 @@ module ApiShapeTests =
 
     [<Fact>]
     let ``validation modules and builders keep expected public shape`` () =
-        moduleType typeof<Validation<int, string>> "FsFlow.Validation"
+        moduleType typeof<Validation<int, string>> "Axial.Validation.Validation"
         |> publicStaticMemberNames
         |> assertContainsAll
             [ "ok"
@@ -158,7 +160,7 @@ module ApiShapeTests =
     [<Fact>]
     let ``check take binderror diagnostics and ref helpers keep expected public shape`` () =
         let checkMembers =
-            moduleType typeof<Flow<unit, unit, unit>> "FsFlow.Check"
+            moduleType typeof<Flow<unit, unit, unit>> "Axial.Result.Check"
             |> publicStaticMemberNames
 
         checkMembers
@@ -270,7 +272,7 @@ module ApiShapeTests =
         checkMembers
         |> assertContainsNone [ "takeNotNull"; "takeNotBlank" ]
 
-        moduleType typeof<Flow<unit, unit, unit>> "FsFlow.BindError"
+        moduleType typeof<Flow<unit, unit, unit>> "Axial.Flow.BindError"
         |> publicStaticMemberNames
         |> assertContainsAll [ "withError"; "map" ]
 
@@ -291,63 +293,63 @@ module ApiShapeTests =
         bindErrorWithErrorSources
         |> assertContainsNone [ typeof<bool>.FullName; typeof<Async<bool>>.FullName; typeof<Task<bool>>.FullName; typeof<ValueTask<bool>>.FullName ]
 
-        moduleType typeof<Diagnostics<string>> "FsFlow.Diagnostics"
+        moduleType typeof<Diagnostics<string>> "Axial.Validation.Diagnostics"
         |> publicStaticMemberNames
         |> assertContainsAll [ "empty"; "singleton"; "merge"; "toString"; "flatten" ]
 
-        moduleType typeof<Ref<int>> "FsFlow.Ref"
+        moduleType typeof<Ref<int>> "Axial.Flow.Ref"
         |> publicStaticMemberNames
         |> assertContainsAll [ "make"; "get"; "set"; "update"; "modify" ]
 
     [<Fact>]
     let ``schedule stream and STM modules keep expected public shape`` () =
-        moduleType typeof<Schedule<unit, unit, unit>> "FsFlow.Schedule"
+        moduleType typeof<Schedule<unit, unit, unit>> "Axial.Flow.Schedule"
         |> publicStaticMemberNames
         |> assertContainsAll [ "recurs"; "spaced"; "exponential"; "jittered" ]
 
-        moduleType typeof<FlowStream<unit, unit, unit>> "FsFlow.FlowStream"
+        moduleType typeof<FlowStream<unit, unit, unit>> "Axial.Flow.FlowStream"
         |> publicStaticMemberNames
         |> assertContainsAll [ "fromSeq"; "runForEach"; "map" ]
 
-        moduleType typeof<STM<int>> "FsFlow.STM"
+        moduleType typeof<STM<int>> "Axial.Flow.STM"
         |> publicStaticMemberNames
         |> assertContainsAll [ "retry"; "orElse"; "atomically" ]
 
-        moduleType typeof<TRef<int>> "FsFlow.TRef"
+        moduleType typeof<TRef<int>> "Axial.Flow.TRef"
         |> publicStaticMemberNames
         |> assertContainsAll [ "make"; "get"; "set"; "update" ]
 
     [<Fact>]
     let ``concurrency modules keep expected public shape`` () =
-        moduleType typeof<Deferred<string, int>> "FsFlow.Deferred"
+        moduleType typeof<Deferred<string, int>> "Axial.Flow.Deferred"
         |> publicStaticMemberNames
         |> assertContainsAll [ "make"; "await"; "complete"; "succeed"; "fail"; "die"; "interrupt" ]
 
-        moduleType typeof<FlowSemaphore> "FsFlow.Semaphore"
+        moduleType typeof<FlowSemaphore> "Axial.Flow.Semaphore"
         |> publicStaticMemberNames
         |> assertContainsAll [ "make"; "create"; "withPermit" ]
 
     [<Fact>]
     let ``hosting and telemetry modules keep expected public shape`` () =
-        moduleType typeof<LiveClock> "FsFlow.Hosting.Hosting"
+        moduleType typeof<LiveClock> "Axial.Flow.Hosting.Hosting"
         |> publicStaticMemberNames
         |> assertContainsAll [ "createBaseRuntime" ]
 
-        moduleType typeof<LiveClock> "FsFlow.Hosting.Startup"
+        moduleType typeof<LiveClock> "Axial.Flow.Hosting.Startup"
         |> publicStaticMemberNames
         |> assertContainsAll [ "validateEnvironment" ]
 
-        moduleTypeFromAssembly "FsFlow.Runtime.Telemetry" "FsFlow.Runtime.Telemetry.Activity"
+        moduleTypeFromAssembly "Axial.Flow.Telemetry" "Axial.Flow.Telemetry.Activity"
         |> publicStaticMemberNames
         |> assertContainsAll [ "source"; "trace" ]
 
     [<Fact>]
     let ``service modules keep expected public shape`` () =
-        moduleType typeof<FsFlow.Services.Console.IConsole> "FsFlow.Services.Console.Console"
+        moduleType typeof<Axial.Flow.Console.IConsole> "Axial.Flow.Console.Console"
         |> publicStaticMemberNames
         |> assertContainsAll [ "readLine"; "writeLine"; "layer"; "live" ]
 
-        moduleType typeof<FsFlow.Services.FileSystem.IFileSystem> "FsFlow.Services.FileSystem.FileSystem"
+        moduleType typeof<Axial.Flow.FileSystem.IFileSystem> "Axial.Flow.FileSystem.FileSystem"
         |> publicStaticMemberNames
         |> assertContainsAll
             [ "readAllText"
@@ -448,31 +450,31 @@ module ApiShapeTests =
               "layer"
               "live" ]
 
-        moduleType typeof<FsFlow.Services.FileSystem.IFileSystem> "FsFlow.Services.FileSystem.FileSystemErrorModule"
+        moduleType typeof<Axial.Flow.FileSystem.IFileSystem> "Axial.Flow.FileSystem.FileSystemErrorModule"
         |> publicStaticMemberNames
         |> assertContainsAll [ "fromException"; "describe" ]
 
-        moduleType typeof<FsFlow.Services.Http.IHttp> "FsFlow.Services.Http.Http"
+        moduleType typeof<Axial.Flow.Http.IHttp> "Axial.Flow.Http.Http"
         |> publicStaticMemberNames
         |> assertContainsAll [ "getString"; "layer"; "live" ]
 
-        moduleType typeof<FsFlow.Services.Process.IProcess> "FsFlow.Services.Process.Process"
+        moduleType typeof<Axial.Flow.Process.IProcess> "Axial.Flow.Process.Process"
         |> publicStaticMemberNames
         |> assertContainsAll [ "execute"; "layer"; "live" ]
 
-        moduleType typeof<FsFlow.Services.Core.EnvironmentVariableError> "FsFlow.Services.Core.Clock"
+        moduleType typeof<Axial.Flow.PlatformService.EnvironmentVariableError> "Axial.Flow.PlatformService.Clock"
         |> publicStaticMemberNames
         |> assertContainsAll [ "now"; "utcDateTime"; "unixTimeSeconds"; "unixTimeMilliseconds"; "layer"; "live"; "fromValue" ]
 
-        moduleType typeof<FsFlow.Services.Core.EnvironmentVariableError> "FsFlow.Services.Core.Log"
+        moduleType typeof<Axial.Flow.PlatformService.EnvironmentVariableError> "Axial.Flow.PlatformService.Log"
         |> publicStaticMemberNames
         |> assertContainsAll [ "log"; "trace"; "debug"; "info"; "warning"; "error"; "critical"; "layer"; "live"; "fromSink" ]
 
-        moduleType typeof<FsFlow.Services.Core.EnvironmentVariableError> "FsFlow.Services.Core.Random"
+        moduleType typeof<Axial.Flow.PlatformService.EnvironmentVariableError> "Axial.Flow.PlatformService.Random"
         |> publicStaticMemberNames
         |> assertContainsAll [ "next"; "nextMax"; "nextInt"; "nextDouble"; "nextBytes"; "bytes"; "layer"; "live"; "fromValue"; "fromFixed" ]
 
-        moduleType typeof<FsFlow.Services.Core.EnvironmentVariableError> "FsFlow.Services.Core.EnvironmentVariable"
+        moduleType typeof<Axial.Flow.PlatformService.EnvironmentVariableError> "Axial.Flow.PlatformService.EnvironmentVariable"
         |> publicStaticMemberNames
         |> assertContainsAll [ "get"; "tryGet"; "getInt"; "getInt64"; "getDouble"; "getDecimal"; "getGuid"; "getUri"; "getTimeSpan"; "getBool" ]
 
@@ -482,7 +484,7 @@ module ApiShapeTests =
         |> publicStaticMemberNames
         |> assertContainsAll [ "get"; "resolve" ]
 
-        moduleType typeof<Layer<unit, unit, int>> "FsFlow.Layer"
+        moduleType typeof<Layer<unit, unit, int>> "Axial.Flow.Layer"
         |> publicStaticMemberNames
         |> assertContainsAll [ "fromAsync"; "fromTask"; "fromValueTask"; "succeed"; "read"; "addFinalizer"; "acquireRelease"; "map"; "mapError"; "bind"; "zip"; "zipPar"; "merge"; "map2"; "map3"; "apply" ]
 

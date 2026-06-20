@@ -18,7 +18,7 @@
     <PackageReference Include="FsToolkit.ErrorHandling" Version="5.2.0" />
     <PackageReference Include="IcedTasks" Version="0.11.9" />
     <PackageReference Include="Ply" Version="0.3.1" />
-    <ProjectReference Include="..\..\src\FsFlow\FsFlow.fsproj" />
+    <ProjectReference Include="..\..\src\Axial\Axial.fsproj" />
   </ItemGroup>
 
 </Project>

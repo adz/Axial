@@ -1,6 +1,6 @@
 # Examples
 
-This page points to runnable examples so you can see what FsFlow looks like in code.
+This page points to runnable examples so you can see what the Axial package family looks like in code.
 
 ## Run The Examples
 

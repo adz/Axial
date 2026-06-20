@@ -46,14 +46,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\FsFlow\FsFlow.fsproj" />
-    <ProjectReference Include="..\..\src\FsFlow.Services.Core\FsFlow.Services.Core.fsproj" />
-    <ProjectReference Include="..\..\src\FsFlow.Services.Console\FsFlow.Services.Console.fsproj" />
-    <ProjectReference Include="..\..\src\FsFlow.Services.FileSystem\FsFlow.Services.FileSystem.fsproj" />
-    <ProjectReference Include="..\..\src\FsFlow.Services.Http\FsFlow.Services.Http.fsproj" />
-    <ProjectReference Include="..\..\src\FsFlow.Services.Process\FsFlow.Services.Process.fsproj" />
-    <ProjectReference Include="..\..\src\FsFlow.Hosting\FsFlow.Hosting.fsproj" />
-    <ProjectReference Include="..\..\src\FsFlow.Runtime.Telemetry\FsFlow.Runtime.Telemetry.fsproj" />
+    <ProjectReference Include="..\..\src\Axial\Axial.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Flow.PlatformService\Axial.Flow.PlatformService.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Flow.Console\Axial.Flow.Console.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Flow.FileSystem\Axial.Flow.FileSystem.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Flow.Http\Axial.Flow.Http.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Flow.Process\Axial.Flow.Process.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Flow.Hosting\Axial.Flow.Hosting.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Flow.Telemetry\Axial.Flow.Telemetry.fsproj" />
   </ItemGroup>
 
 </Project>

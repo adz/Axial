@@ -1,6 +1,8 @@
 namespace FsFlow.Tests
 
-open FsFlow
+open Axial.Flow
+open Axial.Result
+open Axial.Validation
 open FsFlow.Tests.TestSupport
 open Swensen.Unquote
 open Xunit

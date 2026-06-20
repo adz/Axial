@@ -1,7 +1,7 @@
 # FsFlow
 
 > [!WARNING]
-> FsFlow 0.7.0 is the last planned release under the FsFlow name before the split. Future development continues in `Axial.Result`, `Axial.Validation`, and `Axial`.
+> FsFlow 0.7.0 is the last planned release under the FsFlow name before the split. The new package line continues in `Axial.Flow`, `Axial.Result`, `Axial.Validation`, and the umbrella `Axial` package.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/content/img/fsflow-readme-dark.svg">
@@ -11,8 +11,8 @@
 
 FsFlow provides **structured composition over normal F#/.NET code**. It is a coherent application architecture model for F# on .NET, centered on a unified effect system.
 
-Write small predicate checks with `Check`, keep fail-fast logic in standard `Result`, accumulate sibling
-validation with `Validation` and `validate {}`, then lift the same logic into `Flow`
+Write small predicate checks with `Axial.Result.Check`, keep fail-fast logic in standard `Result`, accumulate sibling
+validation with `Axial.Validation.Validation` and `validate {}`, then lift the same logic into `Axial.Flow.Flow`
 when the boundary needs environment access, async work, task interop, or runtime policy.
 
 [![ci](https://github.com/adz/FsFlow/actions/workflows/ci.yml/badge.svg)](https://github.com/adz/FsFlow/actions/workflows/ci.yml)
@@ -24,7 +24,7 @@ when the boundary needs environment access, async work, task interop, or runtime
 FsFlow is built around one progression:
 
 ```text
-Check -> Result -> Validation -> Flow
+Axial.Result.Check -> Result -> Axial.Validation.Validation -> Axial.Flow.Flow
 ```
 
 The same vocabulary stays the same while the execution context grows.
@@ -39,6 +39,9 @@ The same vocabulary stays the same while the execution context grows.
 Lets start by showing a reusable check and a fail-fast result:
 
 ```fsharp
+open Axial.Flow
+open Axial.Result
+
 type RegistrationError =
     | EmailMissing
     | SaveFailed of string

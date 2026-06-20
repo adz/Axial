@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.1;net8.0</TargetFrameworks>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsAotCompatible Condition="'$(TargetFramework)' == 'net8.0'">true</IsAotCompatible>
+    <PackageId>Axial.Validation</PackageId>
+    <AssemblyName>Axial.Validation</AssemblyName>
+    <RootNamespace>Axial.Validation</RootNamespace>
+    <Version>0.1.0</Version>
+    <Authors>Adam Davies</Authors>
+    <Description>Accumulating validation and diagnostics helpers for path-aware input checking.</Description>
+    <PackageProjectUrl>https://github.com/adz/FsFlow</PackageProjectUrl>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/adz/FsFlow</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <PackageTags>fsharp;validation;diagnostics;check;application</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <FsDocsCollectionName>Axial</FsDocsCollectionName>
+    <FsDocsLogoSource>content/img/fsflow-inline-light.svg</FsDocsLogoSource>
+    <FsDocsLogoAlt>Axial.Validation</FsDocsLogoAlt>
+    <FsDocsLogoLink>https://github.com/adz/FsFlow</FsDocsLogoLink>
+    <FsDocsLicenseLink>https://github.com/adz/FsFlow/blob/main/LICENSE</FsDocsLicenseLink>
+    <FsDocsReleaseNotesLink>https://github.com/adz/FsFlow/blob/main/RELEASE_NOTES.md</FsDocsReleaseNotesLink>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Fable.Core" Version="4.3.0" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Diagnostics.fs" />
+    <Compile Include="Validation.fs" />
+    <Compile Include="ValidateBuilder.fs" />
+    <Compile Include="Builders.fs" />
+  </ItemGroup>
+
+</Project>

@@ -1,5 +1,5 @@
 ---
-title: "Diagnostic<_>.Path"
+title: "Validation.Diagnostic<_>.Path"
 linkTitle: "Path"
 weight: 1001
 type: docs
@@ -17,4 +17,4 @@ The path to the source of the error.
 
 | Type | Description |
 | --- | --- |
-| <code><a href="t-path.md">Path</a></code> |  |
+| <code><a href="/reference/Axial/axial-validation-path.html">Path</a></code> |  |

@@ -8,9 +8,9 @@ This page shows the `BindError` marker used when a source needs its error assign
 
 ## Core type
 
-- [`BindError`](./t-binderror.md): Pipeable helpers for assigning or mapping errors before a source is bound by <code>flow { }</code>.
+- [`Flow.BindError`](./t-flow-binderror.md): Pipeable helpers for assigning or mapping errors before a source is bound by <code>flow { }</code>.
 
 ## Module functions
 
-- [`BindError.withError`](./m-binderror-witherror.md): Assigns an error to a missing or unit-error source before <code>flow { }</code> binds it.
-- [`BindError.map`](./m-binderror-map.md): Maps an existing source error before <code>flow { }</code> binds it.
+- [`Flow.BindError.withError`](./m-flow-binderror-witherror.md): Assigns an error to a missing or unit-error source before <code>flow { }</code> binds it.
+- [`Flow.BindError.map`](./m-flow-binderror-map.md): Maps an existing source error before <code>flow { }</code> binds it.

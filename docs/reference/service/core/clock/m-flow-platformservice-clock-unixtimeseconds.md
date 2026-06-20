@@ -1,0 +1,19 @@
+---
+title: "Flow.PlatformService.Clock.unixTimeSeconds"
+linkTitle: "unixTimeSeconds"
+weight: 2202
+---
+
+Reads the current Unix timestamp in seconds from an explicit clock service.
+
+## Signature
+
+<div class="fsdocs-usage">
+<code><span>Flow.PlatformService.Clock.unixTimeSeconds&#32;<span></span></span></code>
+</div>
+
+## Returns
+
+| Type | Description |
+| --- | --- |
+| <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;int64</span>&gt;</span></code> |  |

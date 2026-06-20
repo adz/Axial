@@ -1,0 +1,56 @@
+namespace Axial.Flow.Hosting
+
+open System
+open Microsoft.Extensions.DependencyInjection
+open Microsoft.Extensions.Logging
+open Axial.Flow
+open Axial.Result
+open Axial.Validation
+open Axial.Flow.PlatformService
+
+/// <summary>
+/// A live clock implementation that uses <see cref="P:System.DateTimeOffset.UtcNow" />.
+/// </summary>
+type LiveClock() =
+    interface IClock with
+        member _.UtcNow() = DateTimeOffset.UtcNow
+
+[<RequireQualifiedAccess>]
+module Hosting =
+    /// <summary>Creates the standard service bundle for host execution.</summary>
+    let createBaseRuntime (sp: IServiceProvider) : BaseRuntime =
+        let logger =
+            match sp.GetService(typeof<ILoggerFactory>) with
+            | :? ILoggerFactory as loggerFactory ->
+                let inner = loggerFactory.CreateLogger("Axial.Flow")
+
+                { new ILog with
+                    member _.Log level message =
+                        match level with
+                        | LogLevel.Trace -> inner.LogTrace message
+                        | LogLevel.Debug -> inner.LogDebug message
+                        | LogLevel.Information -> inner.LogInformation message
+                        | LogLevel.Warning -> inner.LogWarning message
+                        | LogLevel.Error -> inner.LogError message
+                        | LogLevel.Critical -> inner.LogCritical message }
+            | _ ->
+                Log.live
+
+        {
+            Clock = LiveClock() :> IClock
+            Log = logger
+            Random = Random.live
+            Guid = Guid.live
+            EnvironmentVariables = EnvironmentVariables.live
+        }
+
+[<RequireQualifiedAccess>]
+module Startup =
+    /// <summary>Validates that all required environment variables are present and valid using the live base runtime.</summary>
+    let validateEnvironment (flow: Flow<BaseRuntime, EnvironmentVariableError, 'v>) : Result<'v, string list> =
+        match flow.RunSynchronously(BaseRuntime.liveValue) with
+        | Exit.Success v -> Ok v
+        | Exit.Failure (Cause.Fail e) -> Error [ EnvironmentVariableErrors.describe e ]
+        | Exit.Failure Cause.Interrupt -> Error [ "Validation was interrupted" ]
+        | Exit.Failure (Cause.Die ex) -> Error [ ex.Message ]
+        | Exit.Failure cause -> Error [ Cause.prettyPrint EnvironmentVariableErrors.describe cause ]

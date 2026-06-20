@@ -1,7 +1,9 @@
 module DiagnosticsExample
 
 open System.Text.Json
-open FsFlow
+open Axial.Flow
+open Axial.Result
+open Axial.Validation
 
 type CustomerLine =
     { Name: string }

@@ -6,7 +6,9 @@ open System.Threading.Tasks
 open FSharp.Control.Tasks
 open FsToolkit.ErrorHandling
 open IcedTasks
-open FsFlow
+open Axial.Flow
+open Axial.Result
+open Axial.Validation
 
 [<RequireQualifiedAccess>]
 module internal Shared =

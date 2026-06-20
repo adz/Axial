@@ -7,14 +7,14 @@ This page shows the `Scope` surface used to own cleanup for resources acquired d
 
 ## Core type
 
-- [`Scope`](./t-scope.md):
+- [`Flow.Scope`](./t-flow-scope.md):
  Owns finalizers for resources acquired during provisioning or runtime execution.
 
 
 ## Methods
 
-- [`Scope.AddFinalizer`](./m-scope-addfinalizer.md):
-- [`Scope.AddDisposable`](./m-scope-adddisposable.md):
-- [`Scope.AddAsyncDisposable`](./m-scope-addasyncdisposable.md):
-- [`Scope.AddChild`](./m-scope-addchild.md):
-- [`Scope.Close`](./m-scope-close.md):
+- [`Flow.Scope.AddFinalizer`](./m-flow-scope-addfinalizer.md):
+- [`Flow.Scope.AddDisposable`](./m-flow-scope-adddisposable.md):
+- [`Flow.Scope.AddAsyncDisposable`](./m-flow-scope-addasyncdisposable.md):
+- [`Flow.Scope.AddChild`](./m-flow-scope-addchild.md):
+- [`Flow.Scope.Close`](./m-flow-scope-close.md):

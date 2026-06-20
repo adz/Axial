@@ -6,7 +6,9 @@ open System.IO
 open System.Threading
 open System.Threading.Tasks
 open System.Threading.Tasks.Sources
-open FsFlow
+open Axial.Flow
+open Axial.Result
+open Axial.Validation
 
 [<AutoOpen>]
 module TestExtensions =

@@ -7,11 +7,11 @@ This page shows the `Schedule` surface for describing retry and repeat policies 
 
 ## Core type
 
-- [`Schedule`](./t-schedule.md):
+- [`Flow.Schedule`](./t-flow-schedule.md):
 
 ## Module functions
 
-- [`Schedule.recurs`](./m-schedule-recurs.md): Creates a schedule that recurs a fixed number of times.
-- [`Schedule.spaced`](./m-schedule-spaced.md): Creates a schedule that recurs with a fixed delay between attempts.
-- [`Schedule.exponential`](./m-schedule-exponential.md): Creates a schedule that recurs with exponential backoff.
-- [`Schedule.jittered`](./m-schedule-jittered.md): Adds random jitter to a schedule&#39;s delay.
+- [`Flow.Schedule.recurs`](./m-flow-schedule-recurs.md): Creates a schedule that recurs a fixed number of times.
+- [`Flow.Schedule.spaced`](./m-flow-schedule-spaced.md): Creates a schedule that recurs with a fixed delay between attempts.
+- [`Flow.Schedule.exponential`](./m-flow-schedule-exponential.md): Creates a schedule that recurs with exponential backoff.
+- [`Flow.Schedule.jittered`](./m-flow-schedule-jittered.md): Adds random jitter to a schedule&#39;s delay.

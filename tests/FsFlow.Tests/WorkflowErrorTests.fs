@@ -4,7 +4,9 @@ open System
 open System.IO
 open System.Threading
 open System.Threading.Tasks
-open FsFlow
+open Axial.Flow
+open Axial.Result
+open Axial.Validation
 open FsFlow.Tests.TestSupport
 open Swensen.Unquote
 open Xunit
@@ -278,7 +280,9 @@ module WorkflowErrorTests =
         let flowProbe =
             $"""
 #r @"{fsFlowAssemblyPath}"
-open FsFlow
+open Axial.Flow
+open Axial.Result
+open Axial.Validation
 
 let probe : Flow<unit, string, int> =
     flow {{
@@ -290,7 +294,9 @@ let probe : Flow<unit, string, int> =
         let asyncProbe =
             $"""
 #r @"{fsFlowAssemblyPath}"
-open FsFlow
+open Axial.Flow
+open Axial.Result
+open Axial.Validation
 
 let probe : Flow<unit, string, int> =
     flow {{

@@ -6,25 +6,27 @@ open System.Net
 open System.Net.Http
 open System.Threading
 open System.Threading.Tasks
-open FsFlow
-open FsFlow.Services.Console
-open FsFlow.Services.Core
-open FsFlow.Services.FileSystem
-open FsFlow.Services.Http
-open FsFlow.Services.Process
+open Axial.Flow
+open Axial.Result
+open Axial.Validation
+open Axial.Flow.Console
+open Axial.Flow.PlatformService
+open Axial.Flow.FileSystem
+open Axial.Flow.Http
+open Axial.Flow.Process
 open Microsoft.Extensions.DependencyInjection
 open Swensen.Unquote
 open Xunit
 
-module CoreClock = FsFlow.Services.Core.Clock
-module CoreEnvironmentVariables = FsFlow.Services.Core.EnvironmentVariables
-module CoreGuid = FsFlow.Services.Core.Guid
-module CoreLog = FsFlow.Services.Core.Log
-module CoreRandom = FsFlow.Services.Core.Random
-module ConsoleService = FsFlow.Services.Console.Console
-module FileSystemService = FsFlow.Services.FileSystem.FileSystem
-module HttpService = FsFlow.Services.Http.Http
-module ProcessService = FsFlow.Services.Process.Process
+module CoreClock = Axial.Flow.PlatformService.Clock
+module CoreEnvironmentVariables = Axial.Flow.PlatformService.EnvironmentVariables
+module CoreGuid = Axial.Flow.PlatformService.Guid
+module CoreLog = Axial.Flow.PlatformService.Log
+module CoreRandom = Axial.Flow.PlatformService.Random
+module ConsoleService = Axial.Flow.Console.Console
+module FileSystemService = Axial.Flow.FileSystem.FileSystem
+module HttpService = Axial.Flow.Http.Http
+module ProcessService = Axial.Flow.Process.Process
 
 type ServicePackageLayerServices =
     {

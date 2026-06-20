@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.1;net8.0</TargetFrameworks>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsAotCompatible Condition="'$(TargetFramework)' == 'net8.0'">true</IsAotCompatible>
+    <AssemblyName>Axial.Flow.Process</AssemblyName>
+    <RootNamespace>Axial.Flow.Process</RootNamespace>
+    <PackageId>Axial.Flow.Process</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>Adam Davies</Authors>
+    <Description>Standard external process service for Axial workflows.</Description>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/adz/FsFlow</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <PackageTags>fsharp;axial;flow;process;shell;platform</PackageTags>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Axial\Axial.fsproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Process.fs" />
+  </ItemGroup>
+
+</Project>

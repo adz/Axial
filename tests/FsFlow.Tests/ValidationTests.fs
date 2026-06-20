@@ -1,7 +1,9 @@
 namespace FsFlow.Tests
 
 open Microsoft.FSharp.Core
-open FsFlow
+open Axial.Flow
+open Axial.Result
+open Axial.Validation
 open FsFlow.Tests.TestSupport
 open Swensen.Unquote
 open Xunit

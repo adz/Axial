@@ -1,0 +1,27 @@
+---
+title: "Result.Check.whenContains"
+linkTitle: "whenContains"
+weight: 2926
+type: docs
+---
+
+Keeps the collection when it contains the expected value.
+
+## Signature
+
+<div class="fsdocs-usage">
+<code><span>Result.Check.whenContains&#32;<span>expected&#32;values</span></span></code>
+</div>
+
+## Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `expected` | <code>'value</code> | The value to search for. |
+| `values` | <code>'collection</code> | The collection to check. |
+
+## Returns
+
+| Type | Description |
+| --- | --- |
+| <code><span><a href="/reference/Axial/axial-result-check-1.html">Check</a>&lt;'collection&gt;</span></code> | <code>Ok values</code> when the value is present; otherwise <code>Error ()</code>. |

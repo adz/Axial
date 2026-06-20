@@ -4,7 +4,9 @@ open System
 open System.IO
 open System.Threading
 open System.Threading.Tasks
-open FsFlow
+open Axial.Flow
+open Axial.Result
+open Axial.Validation
 open FsFlow.Tests.TestSupport
 open Swensen.Unquote
 open Xunit

@@ -5,11 +5,13 @@ open System.IO
 open System.Text
 open System.Threading
 open System.Threading.Tasks
-open FsFlow
-open FsFlow.Services.Console
-open FsFlow.Services.FileSystem
-open FsFlow.Services.Http
-open FsFlow.Services.Process
+open Axial.Flow
+open Axial.Result
+open Axial.Validation
+open Axial.Flow.Console
+open Axial.Flow.FileSystem
+open Axial.Flow.Http
+open Axial.Flow.Process
 open Swensen.Unquote
 open Xunit
 

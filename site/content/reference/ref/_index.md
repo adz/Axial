@@ -8,12 +8,12 @@ This page shows the `Ref` surface for small pieces of shared mutable state insid
 
 ## Core type
 
-- [`Ref`](./t-ref.md):
+- [`Flow.Ref`](./t-flow-ref.md):
 
 ## Module functions
 
-- [`Ref.make`](./m-ref-make.md): Creates a new <a href="t-ref.md">Ref</a> with the initial value.
-- [`Ref.get`](./m-ref-get.md): Reads the current value of the reference.
-- [`Ref.set`](./m-ref-set.md): Sets the value of the reference to the specified value.
-- [`Ref.update`](./m-ref-update.md): Updates the value of the reference using the supplied function.
-- [`Ref.modify`](./m-ref-modify.md): Updates the value of the reference using the supplied function and returns a derived value.
+- [`Flow.Ref.make`](./m-flow-ref-make.md): Creates a new <a href="https://learn.microsoft.com/dotnet/api/axial.ref-1">Ref</a> with the initial value.
+- [`Flow.Ref.get`](./m-flow-ref-get.md): Reads the current value of the reference.
+- [`Flow.Ref.set`](./m-flow-ref-set.md): Sets the value of the reference to the specified value.
+- [`Flow.Ref.update`](./m-flow-ref-update.md): Updates the value of the reference using the supplied function.
+- [`Flow.Ref.modify`](./m-flow-ref-modify.md): Updates the value of the reference using the supplied function and returns a derived value.

@@ -22,14 +22,14 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(UsePrebuiltFsFlow)' != 'true'">
-    <ProjectReference Include="..\..\src\FsFlow\FsFlow.fsproj"
+    <ProjectReference Include="..\..\src\Axial\Axial.fsproj"
                       SetTargetFramework="TargetFramework=net8.0"
                       GlobalPropertiesToRemove="PublishAot" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(UsePrebuiltFsFlow)' == 'true'">
-    <Reference Include="FsFlow">
-      <HintPath>..\..\artifacts\bin\FsFlow\release_net8.0\FsFlow.dll</HintPath>
+    <Reference Include="Axial">
+      <HintPath>..\..\artifacts\bin\Axial\release_net8.0\Axial.dll</HintPath>
       <Private>true</Private>
     </Reference>
   </ItemGroup>

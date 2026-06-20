@@ -7,5 +7,4 @@ This page shows the `validate { }` computation expression for writing validation
 
 ## Builder
 
-- [`validate`](./p-validate.md):
- The accumulating <code>validate { }</code> computation expression.
+- [`validate`](./p-validation--validate.md): The accumulating <code>validate { }</code> computation expression.

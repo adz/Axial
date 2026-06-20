@@ -1,5 +1,5 @@
 open System
-open FsFlow.Services.Core.Examples
+open Axial.Flow.PlatformService.Examples
 
 module Runner =
     let run () =

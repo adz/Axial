@@ -3,7 +3,9 @@ namespace FsFlow.Tests
 open System
 open System.Threading
 open System.Threading.Tasks
-open FsFlow
+open Axial.Flow
+open Axial.Result
+open Axial.Validation
 open Swensen.Unquote
 open Xunit
 

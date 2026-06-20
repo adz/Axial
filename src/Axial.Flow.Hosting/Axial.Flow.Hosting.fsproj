@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.1;net8.0</TargetFrameworks>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsAotCompatible Condition="'$(TargetFramework)' == 'net8.0'">true</IsAotCompatible>
+    <AssemblyName>Axial.Flow.Hosting</AssemblyName>
+    <RootNamespace>Axial.Flow.Hosting</RootNamespace>
+    <PackageId>Axial.Flow.Hosting</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>Adam Davies</Authors>
+    <Description>Host integration and IServiceProvider adapters for Axial runtimes and flow platform services.</Description>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/adz/FsFlow</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <PackageTags>fsharp;axial;flow;hosting;di;iserviceprovider</PackageTags>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Axial\Axial.fsproj" />
+    <ProjectReference Include="..\Axial.Flow.PlatformService\Axial.Flow.PlatformService.fsproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Hosting.fs" />
+  </ItemGroup>
+
+</Project>

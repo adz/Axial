@@ -1,8 +1,10 @@
 namespace FsFlow.Tests
 
 open System.Diagnostics
-open FsFlow
-open FsFlow.Runtime.Telemetry
+open Axial.Flow
+open Axial.Result
+open Axial.Validation
+open Axial.Flow.Telemetry
 open Swensen.Unquote
 open Xunit
 

@@ -8,33 +8,31 @@ This page shows the `Layer<'input, 'error, 'output>` surface used to provision e
 
 ## Core type
 
-- [`Layer`](./t-layer.md):
+- [`Flow.Layer`](./t-flow-layer.md):
 
 ## Builder
 
-- [`layer`](./p-layer.md):
- The <code>layer { }</code> computation expression for provisioning explicit service environments.
-
+- [`layer`](./p-flow--layer.md): The <code>layer { }</code> computation expression for provisioning explicit service environments.
 
 ## Module functions
 
-- [`Layer.fromAsync`](./m-layer-fromasync.md): Creates a layer from a raw async provisioning function.
-- [`Layer.fromTask`](./m-layer-fromtask.md): Creates a layer from a raw task provisioning function.
-- [`Layer.fromValueTask`](./m-layer-fromvaluetask.md): Creates a layer from a raw value task provisioning function.
-- [`Layer.succeed`](./m-layer-succeed.md): Creates a layer that succeeds with a fixed output value.
-- [`Layer.read`](./m-layer-read.md): Projects part of the input environment into the layer output.
-- [`Layer.addFinalizer`](./m-layer-addfinalizer.md): Registers an asynchronous finalizer with the layer scope.
-- [`Layer.acquireRelease`](./m-layer-acquirerelease.md): Acquires a resource and registers its release with the layer scope.
-- [`Layer.map`](./m-layer-map.md): Maps the successful output of a layer.
-- [`Layer.mapError`](./m-layer-maperror.md): Maps the typed provisioning failure of a layer.
-- [`Layer.bind`](./m-layer-bind.md): Sequences layer provisioning with a dependent follow-up layer.
-- [`Layer.zip`](./m-layer-zip.md): Builds two layers from the same input and scope and returns both outputs.
-- [`Layer.zipPar`](./m-layer-zippar.md): Builds two independent layers in parallel and returns both outputs.
-- [`Layer.merge`](./m-layer-merge.md): Merges two independent service layers in parallel.
-- [`Layer.map2`](./m-layer-map2.md): Combines two layers with a mapping function.
-- [`Layer.apply`](./m-layer-apply.md): Applies a layer-wrapped function to a layer-wrapped value.
-- [`Layer.map3`](./m-layer-map3.md): Combines three layers with a mapping function.
+- [`Flow.Layer.fromAsync`](./m-flow-layer-fromasync.md): Creates a layer from a raw async provisioning function.
+- [`Flow.Layer.fromTask`](./m-flow-layer-fromtask.md): Creates a layer from a raw task provisioning function.
+- [`Flow.Layer.fromValueTask`](./m-flow-layer-fromvaluetask.md): Creates a layer from a raw value task provisioning function.
+- [`Flow.Layer.succeed`](./m-flow-layer-succeed.md): Creates a layer that succeeds with a fixed output value.
+- [`Flow.Layer.read`](./m-flow-layer-read.md): Projects part of the input environment into the layer output.
+- [`Flow.Layer.addFinalizer`](./m-flow-layer-addfinalizer.md): Registers an asynchronous finalizer with the layer scope.
+- [`Flow.Layer.acquireRelease`](./m-flow-layer-acquirerelease.md): Acquires a resource and registers its release with the layer scope.
+- [`Flow.Layer.map`](./m-flow-layer-map.md): Maps the successful output of a layer.
+- [`Flow.Layer.mapError`](./m-flow-layer-maperror.md): Maps the typed provisioning failure of a layer.
+- [`Flow.Layer.bind`](./m-flow-layer-bind.md): Sequences layer provisioning with a dependent follow-up layer.
+- [`Flow.Layer.zip`](./m-flow-layer-zip.md): Builds two layers from the same input and scope and returns both outputs.
+- [`Flow.Layer.zipPar`](./m-flow-layer-zippar.md): Builds two independent layers in parallel and returns both outputs.
+- [`Flow.Layer.merge`](./m-flow-layer-merge.md): Merges two independent service layers in parallel.
+- [`Flow.Layer.map2`](./m-flow-layer-map2.md): Combines two layers with a mapping function.
+- [`Flow.Layer.apply`](./m-flow-layer-apply.md): Applies a layer-wrapped function to a layer-wrapped value.
+- [`Flow.Layer.map3`](./m-flow-layer-map3.md): Combines three layers with a mapping function.
 
 ## Flow integration
 
-- [`Flow.provide`](./m-flow-provide.md): Builds an environment with a layer, runs a downstream flow, and always closes the layer scope.
+- [`Flow.Flow.provide`](./m-flow-flow-provide.md): Builds an environment with a layer, runs a downstream flow, and always closes the layer scope.

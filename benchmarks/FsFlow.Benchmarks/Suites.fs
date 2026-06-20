@@ -3,7 +3,9 @@ namespace FsFlow.Benchmarks
 open System.Threading
 open BenchmarkDotNet.Attributes
 open BenchmarkDotNet.Order
-open FsFlow
+open Axial.Flow
+open Axial.Result
+open Axial.Validation
 
 [<MemoryDiagnoser>]
 [<InProcess>]

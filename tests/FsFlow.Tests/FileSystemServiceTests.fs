@@ -3,8 +3,10 @@ namespace FsFlow.Tests
 open System
 open System.IO
 open System.Text
-open FsFlow
-open FsFlow.Services.FileSystem
+open Axial.Flow
+open Axial.Result
+open Axial.Validation
+open Axial.Flow.FileSystem
 open Swensen.Unquote
 open Xunit
 

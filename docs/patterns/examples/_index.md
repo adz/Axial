@@ -34,7 +34,9 @@ module RequestBoundaryExample
 open System
 open System.Threading
 open System.Threading.Tasks
-open FsFlow
+open Axial.Flow
+open Axial.Result
+open Axial.Validation
 
 type User =
     { Id: int
@@ -128,7 +130,9 @@ Source code:
 module DiagnosticsExample
 
 open System.Text.Json
-open FsFlow
+open Axial.Flow
+open Axial.Result
+open Axial.Validation
 
 type CustomerLine =
     { Name: string }
@@ -306,7 +310,9 @@ Source code:
 open System
 open System.Threading
 open System.Threading.Tasks
-open FsFlow
+open Axial.Flow
+open Axial.Result
+open Axial.Validation
 
 type AppEnv =
     { Prefix: string
@@ -380,7 +386,9 @@ Source code:
 open System
 open System.Threading
 open System.Threading.Tasks
-open FsFlow
+open Axial.Flow
+open Axial.Result
+open Axial.Validation
 
 let runFlow label env (workflow: Flow<'env, 'error, 'value>) =
     let result = workflow.RunSynchronously(env)

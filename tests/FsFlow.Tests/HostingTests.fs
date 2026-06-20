@@ -3,9 +3,11 @@ namespace FsFlow.Tests
 open System
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Logging
-open FsFlow
-open FsFlow.Hosting
-open FsFlow.Services.Core
+open Axial.Flow
+open Axial.Result
+open Axial.Validation
+open Axial.Flow.Hosting
+open Axial.Flow.PlatformService
 open Swensen.Unquote
 open Xunit
 
