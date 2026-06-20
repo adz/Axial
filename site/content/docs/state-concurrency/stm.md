@@ -1,7 +1,7 @@
 ---
 weight: 30
 title: STM (Software Transactional Memory)
-description: Composable atomic transactions across multiple variables in FsFlow.
+description: Composable atomic transactions across multiple variables in Axial.
 type: docs
 ---
 
@@ -10,7 +10,7 @@ Software Transactional Memory (STM) is a concurrency primitive that lets you com
 atomic operations into a single **transaction**.
 
 While `Ref` is perfect for updating a single variable, `STM` is designed for scenarios where you
-need to update **multiple** variables consistently. FsFlow ensures that the entire transaction is
+need to update **multiple** variables consistently. Axial ensures that the entire transaction is
 executed atomically, and it now supports `retry` / `orElse` style coordination for transactions
 that need to wait on state changes or fall back to alternate branches.
 
@@ -74,13 +74,13 @@ let batchTransfer acc1 acc2 acc3 amount =
 Using manual `lock` calls is error-prone and often leads to deadlocks when different parts of your
 code acquire multiple locks in inconsistent orders.
 
-FsFlow's `STM` keeps commit atomicity inside the engine and adds `retry` / `orElse` coordination
+Axial's `STM` keeps commit atomicity inside the engine and adds `retry` / `orElse` coordination
 so a transaction can wait for a relevant state change or fall back to another branch without
 exposing lock management in user code.
 
 ## Implementation Details
 
-It is important to note that FsFlow's current STM implementation is based on a **global synchronizing lock** 
+It is important to note that Axial's current STM implementation is based on a **global synchronizing lock** 
 rather than an optimistic or lock-free model.
 
 - **Atomicity**: The entire `stm {}` block is executed while holding a global lock, ensuring no other transaction can interfere.

@@ -11,7 +11,7 @@
 
 ## Decision
 
-FsFlow keeps `Diagnostics<'error>` as the explicit tree-shaped validation graph, with:
+Axial keeps `Diagnostics<'error>` as the explicit tree-shaped validation graph, with:
 
 - `Errors` holding diagnostics attached to the current node
 - `Children` holding nested branches keyed by `PathSegment`
@@ -22,7 +22,7 @@ The current `validate {}` builder remains root-local:
 - sibling failures accumulate in the current node’s `Errors` list
 - the builder does not invent `Key`, `Index`, or `Name` branches on its own
 
-To make the graph useful, FsFlow should expose scoped validation helpers that prefix a sub-validation with a path segment.
+To make the graph useful, Axial should expose scoped validation helpers that prefix a sub-validation with a path segment.
 The preferred surface is a builder-scoped or companion API such as:
 
 - `validate.key "customer" { ... }`

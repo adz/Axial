@@ -14,7 +14,7 @@ Short version:
 
 ```text
 Do not make user domain dependencies the main capability story.
-Make FsFlow's capability story about explicit, typed, testable .NET/system effects.
+Make Axial's capability story about explicit, typed, testable .NET/system effects.
 Keep user dependencies boring by default: records, RuntimeContext env, or IServiceProvider.
 In the implemented model, runtime/system services are ambient and do not appear in end-user `'env` signatures.
 Offer fine-grained caps primarily through opt-in cap packages.
@@ -22,7 +22,7 @@ Offer fine-grained caps primarily through opt-in cap packages.
 
 ## Coherent Summary
 
-FsFlow should have one workflow model and many optional capability families.
+Axial should have one workflow model and many optional capability families.
 
 The researched workflow model was:
 
@@ -73,9 +73,9 @@ type SubmitOrderEnv =
       Inventory : IInventoryClient }
 ```
 
-But FsFlow should not force every repository or domain service into an `IHasX` capability model.
+But Axial should not force every repository or domain service into an `IHasX` capability model.
 
-Instead, FsFlow's strongest capability story is:
+Instead, Axial's strongest capability story is:
 
 ```text
 Capify the ambient .NET/BCL/System.* effects.
@@ -88,9 +88,9 @@ Package them as opt-in NuGets.
 Examples:
 
 ```fsharp
-open FsFlow.Capabilities.Core
-open FsFlow.Capabilities.FileSystem
-open FsFlow.Capabilities.Console
+open Axial.Capabilities.Core
+open Axial.Capabilities.FileSystem
+open Axial.Capabilities.Console
 
 let readAndPrint path =
     taskFlow {
@@ -144,7 +144,7 @@ recommendation.
 The better center is:
 
 ```text
-FsFlow capifies effects the platform currently hides.
+Axial capifies effects the platform currently hides.
 User domain dependencies remain plain unless the user wants more precision.
 ```
 
@@ -159,7 +159,7 @@ NuGet reference controls whether the concept exists.
 For example:
 
 ```fsharp
-open FsFlow.Capabilities.FileSystem
+open Axial.Capabilities.FileSystem
 ```
 
 brings `File.readAllText`, `Directory.enumerateFiles`, etc. into scope.
@@ -167,7 +167,7 @@ brings `File.readAllText`, `Directory.enumerateFiles`, etc. into scope.
 It does not magically provide a file system. The workflow must still run with a runtime that satisfies the file
 system requirements.
 
-If the user does not reference `FsFlow.Capabilities.FileSystem`, that API and dependency model do not exist in their world.
+If the user does not reference `Axial.Capabilities.FileSystem`, that API and dependency model do not exist in their world.
 
 ## Capability Families
 
@@ -187,7 +187,7 @@ Capability families are optional modules/packages. Each family exposes:
 Package:
 
 ```text
-FsFlow.Capabilities.Core
+Axial.Capabilities.Core
 ```
 
 Dependencies:
@@ -267,7 +267,7 @@ Provisioning can be grouped.
 Package:
 
 ```text
-FsFlow.Capabilities.Context
+Axial.Capabilities.Context
 ```
 
 Purpose:
@@ -291,7 +291,7 @@ feature flags if they are request-scoped
 Example:
 
 ```fsharp
-open FsFlow.Capabilities.Context
+open Axial.Capabilities.Context
 
 taskFlow {
     let! user = CurrentUser.get
@@ -337,12 +337,12 @@ type IHasCurrentUser =
 Packages:
 
 ```text
-FsFlow.Capabilities.Observability
-FsFlow.Capabilities.Observability.MicrosoftLogging
-FsFlow.Capabilities.Observability.OpenTelemetry
+Axial.Capabilities.Observability
+Axial.Capabilities.Observability.MicrosoftLogging
+Axial.Capabilities.Observability.OpenTelemetry
 ```
 
-Base package defines FsFlow-owned abstractions:
+Base package defines Axial-owned abstractions:
 
 ```text
 LogEntry
@@ -358,10 +358,10 @@ MicrosoftLogging adapter -> ILogger / ILoggerFactory
 OpenTelemetry adapter    -> ActivitySource / Meter / TracerProvider / MeterProvider
 ```
 
-Core workflow code depends on FsFlow abstractions:
+Core workflow code depends on Axial abstractions:
 
 ```fsharp
-open FsFlow.Capabilities.Observability
+open Axial.Capabilities.Observability
 
 taskFlow {
     do! Log.info "Submitting order"
@@ -373,8 +373,8 @@ taskFlow {
 Host code chooses adapters:
 
 ```fsharp
-open FsFlow.Capabilities.Observability.MicrosoftLogging
-open FsFlow.Capabilities.Observability.OpenTelemetry
+open Axial.Capabilities.Observability.MicrosoftLogging
+open Axial.Capabilities.Observability.OpenTelemetry
 
 let runtime =
     Runtime.empty
@@ -383,14 +383,14 @@ let runtime =
     |> OpenTelemetry.useMeterProvider meterProvider
 ```
 
-This keeps `FsFlow` core dependency-light while giving rich host integration.
+This keeps `Axial` core dependency-light while giving rich host integration.
 
 ### Console Caps
 
 Package:
 
 ```text
-FsFlow.Capabilities.Console
+Axial.Capabilities.Console
 ```
 
 Operations:
@@ -416,7 +416,7 @@ scripted input
 Package:
 
 ```text
-FsFlow.Capabilities.FileSystem
+Axial.Capabilities.FileSystem
 ```
 
 Operations:
@@ -467,8 +467,8 @@ inconsistent around cancellation
 Packages:
 
 ```text
-FsFlow.Capabilities.Http
-FsFlow.Capabilities.Network
+Axial.Capabilities.Http
+Axial.Capabilities.Network
 ```
 
 Start with HTTP before lower-level networking.
@@ -482,7 +482,7 @@ Http.getJson
 Http.postJson
 ```
 
-Runtime slot can be an `HttpClient` or an FsFlow-owned wrapper:
+Runtime slot can be an `HttpClient` or an Axial-owned wrapper:
 
 ```fsharp
 type IHttp =
@@ -514,7 +514,7 @@ resilience handlers
 Package:
 
 ```text
-FsFlow.Capabilities.Process
+Axial.Capabilities.Process
 ```
 
 Operations:
@@ -543,7 +543,7 @@ This is also high-value because process APIs are exception-heavy and awkward to 
 Package:
 
 ```text
-FsFlow.Capabilities.ServiceProvider
+Axial.Capabilities.ServiceProvider
 ```
 
 Dependency:
@@ -587,7 +587,7 @@ If the package is not referenced, `Service.get<'T>` does not exist.
 Package:
 
 ```text
-FsFlow.Capabilities.Aspire
+Axial.Capabilities.Aspire
 ```
 
 Dependency:
@@ -599,7 +599,7 @@ Aspire / AppHost packages as needed
 Purpose:
 
 ```text
-make FsFlow runtime/caps easy to build from modern .NET app hosting
+make Axial runtime/caps easy to build from modern .NET app hosting
 ```
 
 This should be an integration package, not core.
@@ -610,7 +610,7 @@ There are two kinds of cap packages.
 
 ### Packages That Fill Existing Slots
 
-These adapt provider libraries into FsFlow-owned slots.
+These adapt provider libraries into Axial-owned slots.
 
 Examples:
 
@@ -682,7 +682,7 @@ No generator means adding a statically checked slot requires editing the runtime
 
 ## Fine-Grained Caps
 
-The design should preserve fine-grained caps for FsFlow-provided effect families.
+The design should preserve fine-grained caps for Axial-provided effect families.
 
 Rule:
 
@@ -736,7 +736,7 @@ Nominal IHasX mode: fine-grained in function types, but boilerplate-heavy.
 The recommendation is:
 
 ```text
-Keep fine-grained caps for FsFlow-provided runtime/system effects.
+Keep fine-grained caps for Axial-provided runtime/system effects.
 Let domain dependencies remain records or provider-backed by default.
 Use nominal domain caps only for heavily reused helpers.
 ```
@@ -787,7 +787,7 @@ Explicit Dependencies Plus Context
 
 Standard .NET AppHost Plus DI
   DI is already a layer system.
-  FsFlow layers/adapters convert IServiceProvider into runtime/context/env/caps.
+  Axial layers/adapters convert IServiceProvider into runtime/context/env/caps.
 ```
 
 ## Package Strategy
@@ -795,7 +795,7 @@ Standard .NET AppHost Plus DI
 Core package:
 
 ```text
-FsFlow
+Axial
   Result/Validation/Flow/AsyncFlow/TaskFlow
   RuntimeContext
   basic runtime helpers
@@ -805,17 +805,17 @@ FsFlow
 Optional packages:
 
 ```text
-FsFlow.Capabilities.Core
-FsFlow.Capabilities.Context
-FsFlow.Capabilities.Observability
-FsFlow.Capabilities.Observability.MicrosoftLogging
-FsFlow.Capabilities.Observability.OpenTelemetry
-FsFlow.Capabilities.Console
-FsFlow.Capabilities.FileSystem
-FsFlow.Capabilities.Http
-FsFlow.Capabilities.Process
-FsFlow.Capabilities.ServiceProvider
-FsFlow.Capabilities.Aspire
+Axial.Capabilities.Core
+Axial.Capabilities.Context
+Axial.Capabilities.Observability
+Axial.Capabilities.Observability.MicrosoftLogging
+Axial.Capabilities.Observability.OpenTelemetry
+Axial.Capabilities.Console
+Axial.Capabilities.FileSystem
+Axial.Capabilities.Http
+Axial.Capabilities.Process
+Axial.Capabilities.ServiceProvider
+Axial.Capabilities.Aspire
 ```
 
 Reason:
@@ -850,7 +850,7 @@ Recommended order for agent-maintained code:
 4. nominal domain IHasX only when already established
 ```
 
-However, FsFlow-provided cap families can be LLM-friendly because they are standardized:
+However, Axial-provided cap families can be LLM-friendly because they are standardized:
 
 ```fsharp
 Clock.utcNow
@@ -863,9 +863,9 @@ The library owns those patterns, docs, errors, and tests. Agents can reuse them 
 
 Avoid asking agents to invent new domain capability structures unless examples already exist nearby.
 
-## What FsFlow Provides If Domain Caps Stay Boring
+## What Axial Provides If Domain Caps Stay Boring
 
-Even without fine-grained domain caps, FsFlow still provides:
+Even without fine-grained domain caps, Axial still provides:
 
 ```text
 typed failures
@@ -882,13 +882,13 @@ DI/AppHost interop through optional packages
 The distinctive 1.0 story becomes:
 
 ```text
-FsFlow makes effectful .NET code explicit, typed, composable, and testable.
+Axial makes effectful .NET code explicit, typed, composable, and testable.
 ```
 
 not:
 
 ```text
-FsFlow forces every app dependency into a capability framework.
+Axial forces every app dependency into a capability framework.
 ```
 
 ## What To Do Next

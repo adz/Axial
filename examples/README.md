@@ -7,29 +7,29 @@ This page points to runnable examples so you can see what the Axial package fami
 Main example:
 
 ```bash
-dotnet run --project examples/FsFlow.Examples/FsFlow.Examples.fsproj --nologo
+dotnet run --project examples/Axial.Examples/Axial.Examples.fsproj --nologo
 ```
 
 Readme example:
 
 ```bash
-dotnet run --project examples/FsFlow.ReadmeExample/FsFlow.ReadmeExample.fsproj --nologo
+dotnet run --project examples/Axial.ReadmeExample/Axial.ReadmeExample.fsproj --nologo
 ```
 
 Full source:
 
-[`examples/FsFlow.ReadmeExample/Program.fs`](./FsFlow.ReadmeExample/Program.fs)
+[`examples/Axial.ReadmeExample/Program.fs`](./Axial.ReadmeExample/Program.fs)
 
 Maintenance example:
 
 ```bash
-dotnet run --project examples/FsFlow.MaintenanceExamples/FsFlow.MaintenanceExamples.fsproj --nologo
+dotnet run --project examples/Axial.MaintenanceExamples/Axial.MaintenanceExamples.fsproj --nologo
 ```
 
 Playground example:
 
 ```bash
-dotnet run --project examples/FsFlow.Playground/FsFlow.Playground.fsproj --nologo
+dotnet run --project examples/Axial.Playground/Axial.Playground.fsproj --nologo
 ```
 
 NativeAOT probe:
@@ -40,7 +40,7 @@ bash scripts/run-aot-probe.sh
 
 ## Main Example
 
-The main example in [`examples/FsFlow.Examples/Program.fs`](./FsFlow.Examples/Program.fs) shows a small application-shaped set of flows:
+The main example in [`examples/Axial.Examples/Program.fs`](./Axial.Examples/Program.fs) shows a small application-shaped set of flows:
 
 - validate configuration with plain `Result`
 - build a smaller runtime environment from config
@@ -60,14 +60,14 @@ Read it in this order:
 
 ## Maintenance Example
 
-The maintenance example in [`examples/FsFlow.MaintenanceExamples/Program.fs`](./FsFlow.MaintenanceExamples/Program.fs) is smaller and more focused. It shows:
+The maintenance example in [`examples/Axial.MaintenanceExamples/Program.fs`](./Axial.MaintenanceExamples/Program.fs) is smaller and more focused. It shows:
 
 - how to normalize awkward nested wrapper shapes one layer at a time
 - the difference between cold task factories and already-created task values
 
 ## Playground Example
 
-The playground example in [`examples/FsFlow.Playground/Program.fs`](./FsFlow.Playground/Program.fs) is the quickest way to feel the new surface in practice. It shows:
+The playground example in [`examples/Axial.Playground/Program.fs`](./Axial.Playground/Program.fs) is the quickest way to feel the new surface in practice. It shows:
 
 - plain `Result` validation first
 - a small `flow {}` workflow

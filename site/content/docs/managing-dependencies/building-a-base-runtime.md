@@ -6,7 +6,7 @@ type: docs
 ---
 
 
-Clock, logging, random, GUID, and environment-variable access are explicit services. `FsFlow.Services.Core` provides a
+Clock, logging, random, GUID, and environment-variable access are explicit services. `Axial.Flow.PlatformService` provides a
 `BaseRuntime` record that groups the standard services most hosts need:
 
 ```fsharp

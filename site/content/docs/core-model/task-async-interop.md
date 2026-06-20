@@ -1,16 +1,16 @@
 ---
 weight: 30
 title: Task and Async Interop
-description: Direct binding rules for async and task work in FsFlow.
+description: Direct binding rules for async and task work in Axial.
 type: docs
 ---
 
 
-FsFlow provides a single, unified computation expression—**`flow {}`**—that handles synchronous code, F# `Async`, and .NET `Task` interop natively. You don't have to choose between different builders; the same flow can orchestrate all these effect types.
+Axial provides a single, unified computation expression—**`flow {}`**—that handles synchronous code, F# `Async`, and .NET `Task` interop natively. You don't have to choose between different builders; the same flow can orchestrate all these effect types.
 
 ## Direct Binds
 
-Inside a `flow {}` block, you can use `let!` to bind many common F# and .NET types directly. FsFlow handles the conversion to its internal execution model automatically.
+Inside a `flow {}` block, you can use `let!` to bind many common F# and .NET types directly. Axial handles the conversion to its internal execution model automatically.
 
 | Type | Outcome |
 | :--- | :--- |

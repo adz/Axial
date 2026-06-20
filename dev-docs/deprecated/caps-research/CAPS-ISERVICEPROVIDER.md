@@ -12,7 +12,7 @@ This approach uses `IServiceProvider` as the environment. It fits ASP.NET Core, 
 ## Example
 
 ```fsharp
-let inline service<'T> : TaskFlow<IServiceProvider, FsFlowError, 'T> =
+let inline service<'T> : TaskFlow<IServiceProvider, AxialError, 'T> =
     fun sp -> task {
         match sp.GetService(typeof<'T>) with
         | null -> return Error (MissingService typeof<'T>)
@@ -48,4 +48,4 @@ let myFlow = taskFlow {
 
 ## Verdict
 
-CAPS2 should not be the primary strict FsFlow model. It is, however, valuable as a pragmatic integration layer for app edges and DI-heavy .NET applications.
+CAPS2 should not be the primary strict Axial model. It is, however, valuable as a pragmatic integration layer for app edges and DI-heavy .NET applications.

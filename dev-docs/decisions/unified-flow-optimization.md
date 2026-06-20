@@ -5,7 +5,7 @@ Recorded: 2026-05-17.
 
 ## Context
 
-The original `FsFlow` design used three distinct workflow types (`Flow`, `AsyncFlow`, `TaskFlow`) to handle different execution models. This caused significant friction in composition and documentation. 
+The original `Axial` design used three distinct workflow types (`Flow`, `AsyncFlow`, `TaskFlow`) to handle different execution models. This caused significant friction in composition and documentation. 
 
 Furthermore, the initial `flow {}` implementation relied heavily on function closures for every `Bind` and `Return` step, leading to high heap allocation overhead compared to standard .NET `task {}` expressions.
 

@@ -1,13 +1,13 @@
 ---
 weight: 30
-title: The FsFlow Model
-description: The core FsFlow progression from Check into Result, Validation, and Flow.
+title: The Axial Model
+description: The core Axial progression from Check into Result, Validation, and Flow.
 type: docs
 ---
 
 
 
-This page shows why FsFlow is best understood as one scalable model for Result-based programs rather than a small helper for application boundaries.
+This page shows why Axial is best understood as one scalable model for Result-based programs rather than a small helper for application boundaries.
 
 The core progression is:
 
@@ -33,7 +33,7 @@ Task<Result<'value, 'error>>
 Those shapes work, but they often split the same program across separate helper modules, separate builders,
 and repeated adaptation between pure validation and effectful orchestration.
 
-FsFlow gives those shapes one coherent family:
+Axial gives those shapes one coherent family:
 
 ```text
 Check<'value>
@@ -51,7 +51,7 @@ when their error must be assigned or mapped before entering `flow {}`.
 
 ## The Main Claim
 
-FsFlow unifies Result-based programming across pure logic and effectful execution.
+Axial unifies Result-based programming across pure logic and effectful execution.
 
 - write predicate logic once with Check, using `when*` checks when you need the input again, `take*` checks when you need an inner value or deliberately different success shape, and unprefixed checks when you only need yes/no
 - keep fail-fast domain logic in Result
@@ -64,7 +64,7 @@ FsFlow unifies Result-based programming across pure logic and effectful executio
 Start with a plain check or validation helper:
 
 ```fsharp
-open FsFlow
+open Axial
 
 type RegistrationError =
     | NameMissing
@@ -116,7 +116,7 @@ There is no separate task-result validation vocabulary to switch to first.
 
 ## What This Replaces
 
-FsFlow is strongest when you would otherwise spread the same use case across:
+Axial is strongest when you would otherwise spread the same use case across:
 
 - plain Check, Result, and Validation helpers
 - `Async<Result<_,_>>` or `Task<Result<_,_>>` wrappers
@@ -127,7 +127,7 @@ Instead, the same logic can move upward through the computation families while k
 
 ## Adoption Rule
 
-Use FsFlow by default in the effectful application layer where the boundary genuinely needs more than plain Result:
+Use Axial by default in the effectful application layer where the boundary genuinely needs more than plain Result:
 
 - handlers
 - use cases
@@ -149,7 +149,7 @@ They stop on the first typed failure.
 That is a feature, not a missing applicative layer.
 
 If you need accumulated validation, use Validation and [`validate {}`]({{< relref "/reference/validation/builders-validate.md" >}}) explicitly.
-FsFlow does not try to hide that behavior inside the workflow builders.
+Axial does not try to hide that behavior inside the workflow builders.
 
 ## What Keeps It Readable
 
@@ -164,7 +164,7 @@ This keeps the code close to ordinary F# application code instead of turning eac
 
 ## Why This Is Low Risk
 
-Adopting FsFlow does not mean betting on a replacement runtime.
+Adopting Axial does not mean betting on a replacement runtime.
 
 - the underlying async and task work still runs on F# `Async` and `.NET Task`
 - execution is still explicit
@@ -175,7 +175,7 @@ The goal is to make mixed application computations easier to write and easier to
 
 ## When Not To Use It
 
-Do not introduce FsFlow early just because a dependency might appear later.
+Do not introduce Axial early just because a dependency might appear later.
 
 Stay with plain F# when:
 

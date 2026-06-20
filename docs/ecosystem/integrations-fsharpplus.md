@@ -1,28 +1,28 @@
 ---
 weight: 40
 title: FSharpPlus Integration
-description: How FsFlow fits beside FSharpPlus-based codebases.
+description: How Axial fits beside FSharpPlus-based codebases.
 ---
 
 
 # FSharpPlus Integration
 
-This page shows how FsFlow can fit beside codebases that already use `FSharpPlus`.
+This page shows how Axial can fit beside codebases that already use `FSharpPlus`.
 
 `FSharpPlus` is a broad functional base library. That makes it different from the more targeted integration stories like `FsToolkit.ErrorHandling` and `Validus`.
 
-FsFlow can sit on top of that style where orchestration begins.
+Axial can sit on top of that style where orchestration begins.
 
-`FSharpPlus` is strongest when the codebase already relies on broad generic operations and monad transformer stacks. That strength comes with a cost: more compiler work, more abstraction to keep in your head, and error surfaces that can be harder to read when you are trying to understand a FsFlow boundary.
+`FSharpPlus` is strongest when the codebase already relies on broad generic operations and monad transformer stacks. That strength comes with a cost: more compiler work, more abstraction to keep in your head, and error surfaces that can be harder to read when you are trying to understand a Axial boundary.
 
 ## Keep The Boundary Clear
 
 Good separation looks like this:
 
 - use `FSharpPlus` for the generic functional helpers and abstractions the codebase already trusts
-- use FsFlow for explicit execution, environment threading, and typed failure
+- use Axial for explicit execution, environment threading, and typed failure
 
-This makes FsFlow the boundary model and keeps `FSharpPlus` focused on the general-purpose helpers it already does well.
+This makes Axial the boundary model and keeps `FSharpPlus` focused on the general-purpose helpers it already does well.
 
 That keeps the surface coherent and avoids turning one function into a stack of overlapping abstractions.
 
@@ -31,10 +31,10 @@ That keeps the surface coherent and avoids turning one function into a stack of 
 Typical coexistence patterns:
 
 - keep pure transformations in `FSharpPlus`
-- use FsFlow to sequence those transformations against a runtime boundary
-- let FsFlow own the Flow boundary at the edge
+- use Axial to sequence those transformations against a runtime boundary
+- let Axial own the Flow boundary at the edge
 
-The practical rule is: if the code is generic and reusable across many domains, `FSharpPlus` can own it. If the code is choosing the runtime shape, the environment, or the typed failure boundary, FsFlow can own it.
+The practical rule is: if the code is generic and reusable across many domains, `FSharpPlus` can own it. If the code is choosing the runtime shape, the environment, or the typed failure boundary, Axial can own it.
 
 ## Example
 
@@ -59,7 +59,7 @@ let greet : Flow<AppEnv, string, string> =
     }
 ```
 
-If you already use `FSharpPlus` for generic mapping or chaining, keep that code in the helper layer and let FsFlow read the environment at the edge.
+If you already use `FSharpPlus` for generic mapping or chaining, keep that code in the helper layer and let Axial read the environment at the edge.
 
 The same helper can sit under an async boundary without changing its shape:
 
@@ -72,11 +72,11 @@ let greetAsync : Flow<AppEnv, string, string> =
     }
 ```
 
-The generic helper remains generic, but the boundary is FsFlow.
+The generic helper remains generic, but the boundary is Axial.
 
-## When To Prefer FsFlow Over More Generic Abstractions
+## When To Prefer Axial Over More Generic Abstractions
 
-Prefer FsFlow when the concern is:
+Prefer Axial when the concern is:
 
 - the runtime boundary
 - explicit environment access

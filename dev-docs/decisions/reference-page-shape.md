@@ -11,7 +11,7 @@
 
 ## Decision
 
-FsFlow documents every public API surface with its own reference page, following a "one page per function" model similar to FsToolkit.ErrorHandling.
+Axial documents every public API surface with its own reference page, following a "one page per function" model similar to FsToolkit.ErrorHandling.
 
 The reference shape is:
 

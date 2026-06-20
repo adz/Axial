@@ -92,7 +92,7 @@ helpers that need direct access to the scope object.
 
 ## Child Scopes
 
-`Scope.AddChild()` creates a parent-owned scope. FsFlow uses this internally for `Layer.zipPar` and `Layer.merge` so each
+`Scope.AddChild()` creates a parent-owned scope. Axial uses this internally for `Layer.zipPar` and `Layer.merge` so each
 parallel provisioning branch can acquire resources independently.
 
 If one parallel branch fails after another branch acquired resources, the successful branch cleanup still runs when

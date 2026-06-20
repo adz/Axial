@@ -15,7 +15,7 @@ The example starts with facts about values, then turns those facts into typed `R
 `Check` helpers answer validation questions before you choose a domain error.
 
 ```fsharp
-open FsFlow
+open Axial
 
 Check.notBlank "Ada"          // Ok ()
 Check.whenNotBlank "Ada"      // Ok "Ada"

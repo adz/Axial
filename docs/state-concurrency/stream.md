@@ -1,7 +1,7 @@
 ---
 weight: 40
 title: Stream (FlowStream)
-description: Effectful, pull-based asynchronous streams in FsFlow.
+description: Effectful, pull-based asynchronous streams in Axial.
 ---
 
 # Stream (FlowStream)
@@ -44,7 +44,7 @@ let printNumbers =
 
 ## Why use FlowStream?
 
-`FlowStream` is designed for scenarios where you need to process large amounts of data without loading everything into memory at once. Because it is part of the FsFlow family, it integrates perfectly with your existing environments, errors, and cancellation logic.
+`FlowStream` is designed for scenarios where you need to process large amounts of data without loading everything into memory at once. Because it is part of the Axial family, it integrates perfectly with your existing environments, errors, and cancellation logic.
 
 - **Environment-Aware**: Can read dependencies like databases or APIs during iteration.
 - **Typed Failures**: Handles errors consistently with the rest of your application.

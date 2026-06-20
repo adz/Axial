@@ -1,12 +1,12 @@
 ---
 weight: 30
 title: Straightforward Examples
-description: Quick, practical examples of FsFlow in action.
+description: Quick, practical examples of Axial in action.
 type: docs
 ---
 
 
-These examples show how to use FsFlow for common tasks without the overhead of a full application setup.
+These examples show how to use Axial for common tasks without the overhead of a full application setup.
 
 ## 1. Simple Environment Access
 

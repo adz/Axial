@@ -11,10 +11,10 @@ This document records the redesign that replaced `Resolve`/`Requires`-style CE m
 see `dev-docs/PLAN.md`.
 
 ## The Goal
-To build **FsFlow** as an LLM-friendly (Agent-Legible) effect boundary library that bridges the gap between ZIO's strict effect discipline and .NET's pragmatism. The library must provide clear compiler guarantees ("Static Honesty") without fighting the .NET `IServiceProvider` ecosystem.
+To build **Axial** as an LLM-friendly (Agent-Legible) effect boundary library that bridges the gap between ZIO's strict effect discipline and .NET's pragmatism. The library must provide clear compiler guarantees ("Static Honesty") without fighting the .NET `IServiceProvider` ecosystem.
 
 ## The Problem This Addressed
-Earlier FsFlow drafts used a `Resolve<'T>` token that was intercepted by heavily overloaded `Bind` methods in the computation expression (CE) builder.
+Earlier Axial drafts used a `Resolve<'T>` token that was intercepted by heavily overloaded `Bind` methods in the computation expression (CE) builder.
 1. **Agent Noise**: `Resolve<'T>` is a phantom token, not a real `Flow`. It requires "magic" CE overloads, making it hard for LLMs to compose outside of a `flow { }` block.
 2. **Naming Ambiguity**: "Service" and "Resolve" are overloaded terms. In ZIO, `service` means a strict capability. In .NET, `service` often means an untyped bag of DI registrations.
 
@@ -104,4 +104,4 @@ let inline inject<'T, 'env, 'error when 'env :> IServiceProvider> () : Flow<'env
 * The CE will now only need the standard `Bind(flow: Flow<'env, 'error, 'value>, binder)` implementation, as `service`, `inject`, and `read` all return first-class `Flow` values.
 
 ## Conclusion
-This redesign makes FsFlow simpler internally and significantly more legible to both humans and LLMs. By providing both `service` (Honest) and `inject` (Pragmatic), FsFlow natively supports the ZIO mindset while playing perfectly with the .NET DI ecosystem.
+This redesign makes Axial simpler internally and significantly more legible to both humans and LLMs. By providing both `service` (Honest) and `inject` (Pragmatic), Axial natively supports the ZIO mindset while playing perfectly with the .NET DI ecosystem.

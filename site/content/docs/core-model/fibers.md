@@ -1,14 +1,14 @@
 ---
 weight: 22
 title: Fibers
-description: Lightweight logical threads and structured concurrency in FsFlow.
+description: Lightweight logical threads and structured concurrency in Axial.
 type: docs
 ---
 
 
-This page shows how FsFlow represents running child workflows with fibers.
+This page shows how Axial represents running child workflows with fibers.
 
-In FsFlow, a **Fiber** is a handle to a running [**`Flow`**]({{< relref "/reference/flow/t-flow.md" >}}). A flow is a cold description of work. A fiber is the hot execution that exists after that work has been started in the background.
+In Axial, a **Fiber** is a handle to a running [**`Flow`**]({{< relref "/reference/flow/t-flow.md" >}}). A flow is a cold description of work. A fiber is the hot execution that exists after that work has been started in the background.
 
 ## The Mental Model
 
@@ -30,7 +30,7 @@ The example starts `left` in the background, runs `right` in the current workflo
 
 ## Structured Concurrency
 
-Fibers are the foundation of **Structured Concurrency** in FsFlow. Unlike "fire-and-forget" background tasks, Fibers allow you to maintain a parent-child relationship between workflows, ensuring that background work is always accounted for and safely cleaned up.
+Fibers are the foundation of **Structured Concurrency** in Axial. Unlike "fire-and-forget" background tasks, Fibers allow you to maintain a parent-child relationship between workflows, ensuring that background work is always accounted for and safely cleaned up.
 
 The three primary operations for managing fibers are:
 
@@ -45,7 +45,7 @@ Fibers provide several advantages over raw `Task` or `Async` values:
 
 ### Interruption
 
-In ordinary .NET code, cancellation often depends on manually threading a `CancellationToken` through every layer. In FsFlow, interruption is part of the execution model. `Flow.interrupt` signals the child fiber and waits for it to finish, so callers can observe the final `Exit<'value, 'error>`.
+In ordinary .NET code, cancellation often depends on manually threading a `CancellationToken` through every layer. In Axial, interruption is part of the execution model. `Flow.interrupt` signals the child fiber and waits for it to finish, so callers can observe the final `Exit<'value, 'error>`.
 
 ### Typed Outcomes
 

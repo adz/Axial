@@ -5,14 +5,14 @@ Status: research context. The live source of truth is `../PLAN.md`.
 > Superseded research note: this model still explains some tradeoffs well, but its ambient-core and
 > `RuntimeContext<'runtime, 'env>` direction is no longer the target v1 architecture.
 
-This was the compressed recommendation for FsFlow capabilities without generators. It still helps explain records,
+This was the compressed recommendation for Axial capabilities without generators. It still helps explain records,
 provider edges, and nominal helper tradeoffs, but its `RuntimeContext<'runtime, 'env>` examples are not the current
 implemented public model. The active model keeps runtime/system services ambient and outside end-user `'env`
 signatures.
 
 ## One Sentence
 
-Use FsFlow levels: explicit records for local clarity, ambient runtime helpers for system services,
+Use Axial levels: explicit records for local clarity, ambient runtime helpers for system services,
 `IServiceProvider` at host edges, nominal helpers for reusable strict app dependencies, and adapters between those
 shapes.
 
@@ -55,7 +55,7 @@ Adapters
   IServiceProvider -> explicit deps record
   IServiceProvider -> nominal capability record
   explicit deps record -> nominal capability interfaces
-  ILogger / IClock / Meter -> FsFlow runtime capabilities
+  ILogger / IClock / Meter -> Axial runtime capabilities
 ```
 
 This avoids pretending there is one perfect capability model.
@@ -65,7 +65,7 @@ This avoids pretending there is one perfect capability model.
 Layers are not a fifth architecture style. They are the way to build or adapt an environment before a workflow
 runs.
 
-In FsFlow terms, a layer is:
+In Axial terms, a layer is:
 
 ```fsharp
 TaskFlow<'input, 'error, 'environment>
@@ -111,7 +111,7 @@ Explicit Dependencies Plus Context
 
 Standard .NET AppHost Plus DI
   The host DI container is already a layer system.
-  FsFlow layers/adapters convert IServiceProvider into RuntimeContext, feature records, or nominal capability records.
+  Axial layers/adapters convert IServiceProvider into RuntimeContext, feature records, or nominal capability records.
 ```
 
 Mapped to the capability levels:
@@ -154,7 +154,7 @@ standard Microsoft.Extensions.* infrastructure
 teams already invested in DI registration and validation
 ```
 
-FsFlow should support it directly, but honestly:
+Axial should support it directly, but honestly:
 
 ```text
 Provider-backed flows are ergonomic and host-native.
@@ -179,7 +179,7 @@ type AppContext =
     RuntimeContext<AppRuntime, IServiceProvider>
 ```
 
-Provider access is then an explicit FsFlow operation:
+Provider access is then an explicit Axial operation:
 
 ```fsharp
 module Service =
@@ -233,9 +233,9 @@ The workflow type says IServiceProvider, not IOrderRepository + IEmailSender.
 ## Runtime Adapters
 
 Runtime adapters are the key to making provider-backed flows feel good without hard-wiring Microsoft types into
-FsFlow core.
+Axial core.
 
-Example: adapt `ILogger` into FsFlow's generic `LogEntry -> unit` shape:
+Example: adapt `ILogger` into Axial's generic `LogEntry -> unit` shape:
 
 ```fsharp
 module RuntimeAdapters =
@@ -249,7 +249,7 @@ module RuntimeAdapters =
     let fromServiceProvider (sp: IServiceProvider) : AppRuntime =
         { Log =
             sp.GetRequiredService<ILoggerFactory>()
-              .CreateLogger("FsFlow")
+              .CreateLogger("Axial")
             |> logFromLogger
 
           Clock =
@@ -261,7 +261,7 @@ module RuntimeAdapters =
 This gives a clean separation:
 
 ```text
-FsFlow core owns LogEntry and runtime helper semantics.
+Axial core owns LogEntry and runtime helper semantics.
 Hosting package owns ILogger / IServiceProvider adapters.
 Application host owns registrations.
 ```
@@ -515,18 +515,18 @@ This is another reason not to make nominal capabilities the universal default.
 
 ## Recommended 1.0 Position
 
-FsFlow should not present “capabilities” as one mandatory framework.
+Axial should not present “capabilities” as one mandatory framework.
 
 Ship:
 
 ```text
-FsFlow.Core
+Axial.Core
   TaskFlow, RuntimeContext, read/readRuntime/readEnvironment, cancellation mechanics.
 
-FsFlow.Runtime
+Axial.Runtime
   Generic runtime helper contracts and operations: log, clock, metrics, tracing, annotations.
 
-FsFlow.Hosting
+Axial.Hosting
   IServiceProvider-backed runtime/app adapters, service lookup helpers, startup validation helpers.
 
 Docs

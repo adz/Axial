@@ -1,4 +1,4 @@
-# FsFlow Documentation Guide
+# Axial Documentation Guide
 
 Source of truth for Hugo + Docsy maintenance and documentation style.
 

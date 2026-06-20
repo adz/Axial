@@ -1,25 +1,25 @@
 ---
 weight: 70
 title: Comparisons and Integrations
-description: Other libraries FsFlow compares with and works alongside, including FsToolkit, Validus, FSharpPlus, and Effect-TS.
+description: Other libraries Axial compares with and works alongside, including FsToolkit, Validus, FSharpPlus, and Effect-TS.
 ---
 
 
 # Comparisons and Integrations
 
-This page compares FsFlow with libraries you may already use, and shows where they fit together in the same codebase.
+This page compares Axial with libraries you may already use, and shows where they fit together in the same codebase.
 
-The rule of thumb is simple: keep each library on the boundary it already owns, then let FsFlow take over orchestration where the runtime shape becomes explicit.
+The rule of thumb is simple: keep each library on the boundary it already owns, then let Axial take over orchestration where the runtime shape becomes explicit.
 
 ## How The Libraries Differ
 
 - `FsToolkit.ErrorHandling` is the established result-oriented layer: it uses core F# types, a small number of wrappers such as `Task<Result<_,_>>`, and a familiar module-and-builder surface. It fits existing code with low overhead.
-- `Validus` is a richer validation DSL if you already use it. FsFlow now covers the common check/result/validation path itself.
-- `FSharpPlus` is the generic FP layer: it brings broad abstractions and monad-transformer-style composition, but that also means more compiler work and more complex error surfacing when you are trying to follow a FsFlow boundary.
+- `Validus` is a richer validation DSL if you already use it. Axial now covers the common check/result/validation path itself.
+- `FSharpPlus` is the generic FP layer: it brings broad abstractions and monad-transformer-style composition, but that also means more compiler work and more complex error surfacing when you are trying to follow a Axial boundary.
 
-## What FsFlow Adds
+## What Axial Adds
 
-FsFlow captures the common application boundary needs in one model:
+Axial captures the common application boundary needs in one model:
 
 - Check for reusable predicates
 - Result for fail-fast typed failures
@@ -60,7 +60,7 @@ The best coexistence pattern is:
 
 - validate the incoming model with `Validus`
 - keep the result pure
-- bridge the final Result into FsFlow when the runtime boundary begins
+- bridge the final Result into Axial when the runtime boundary begins
 
 Go to [`Validus Integration`](./integrations-validus/) for the integration shape and examples.
 
@@ -68,9 +68,9 @@ Go to [`Validus Integration`](./integrations-validus/) for the integration shape
 
 Use `FSharpPlus` when the codebase already depends on broad functional helpers and generic FP abstractions.
 
-FsFlow can sit beside that style. Instead:
+Axial can sit beside that style. Instead:
 
-- keep FsFlow at the orchestration boundary
+- keep Axial at the orchestration boundary
 - continue using FSharpPlus for the generic transformations your codebase already relies on
 - avoid mixing too many abstraction layers inside a single step
 

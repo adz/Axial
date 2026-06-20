@@ -1,4 +1,4 @@
-# FsFlow v1 Baseline and API Surface Policy
+# Axial v1 Baseline and API Surface Policy
 
 This file records the current v1 stabilization baseline. It is for maintainers and coding agents, not user-facing
 documentation.
@@ -16,13 +16,13 @@ Validated commands:
 bash scripts/check-source-inventory.sh
 => Source inventory covers src/tests .fs and .fsproj files.
 
-dotnet build tests/FsFlow.Tests/FsFlow.Tests.fsproj --nologo -v minimal
+dotnet build tests/Axial.Tests/Axial.Tests.fsproj --nologo -v minimal
 => Build succeeded.
 
-timeout 300s dotnet test tests/FsFlow.Tests/FsFlow.Tests.fsproj --no-build --nologo -v minimal
+timeout 300s dotnet test tests/Axial.Tests/Axial.Tests.fsproj --no-build --nologo -v minimal
 => Passed: 130, Failed: 0, Skipped: 0.
 
-dotnet run --project tests/FsFlow.Tests/FsFlow.Tests.fsproj --nologo
+dotnet run --project tests/Axial.Tests/Axial.Tests.fsproj --nologo
 => Exit code 0.
 
 bash scripts/check-fable-js-surface.sh
@@ -39,9 +39,9 @@ baseline/API-surface update. Record their result in the commit summary when they
 
 CI currently proves:
 
-- every `src/**/*.fsproj` and `tests/**/*.fsproj` project is listed by `FsFlow.slnx`
+- every `src/**/*.fsproj` and `tests/**/*.fsproj` project is listed by `Axial.slnx`
 - every `src/**/*.fs` and `tests/**/*.fs` file is explicitly compiled by a `src` or `tests` project
-- the FsFlow test harness runs
+- the Axial test harness runs
 - the intended Fable JavaScript surface compiles and excludes .NET-only `ColdTask`
 - examples run
 - the NativeAOT probe publishes and runs
@@ -50,12 +50,12 @@ CI currently proves:
 
 ## API Surface Policy Before 1.0
 
-FsFlow is still pre-1.0, so breaking changes are allowed when they improve coherence. However, every public API change
+Axial is still pre-1.0, so breaking changes are allowed when they improve coherence. However, every public API change
 must be deliberate.
 
 Required checks for public API changes:
 
-1. Update or extend `tests/FsFlow.Tests/ApiShapeTests.fs` in the same change.
+1. Update or extend `tests/Axial.Tests/ApiShapeTests.fs` in the same change.
 2. Update XML docs on the changed public members.
 3. Regenerate API docs with `bash scripts/generate-api-docs.sh`.
 4. Build the docs site with `npm run build` in `site`.

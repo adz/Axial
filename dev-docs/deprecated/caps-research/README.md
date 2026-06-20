@@ -1,6 +1,6 @@
-# FsFlow Capability Design Bundle
+# Axial Capability Design Bundle
 
-This bundle contains capability-design research documents for FsFlow.
+This bundle contains capability-design research documents for Axial.
 
 Start with `../PLAN.md` for current architecture.
 
@@ -37,7 +37,7 @@ that as research context, not current implementation.
 The active direction is:
 
 ```text
-Make FsFlow-provided runtime/system effects explicit, typed, ambient, and locally overridable.
+Make Axial-provided runtime/system effects explicit, typed, ambient, and locally overridable.
 Keep runtime/system services out of end-user 'env signatures.
 Keep user domain dependencies as records/provider/env by default.
 Ship optional capability-family NuGets for Core, Context, Observability, FileSystem, Console, Http, and Process.

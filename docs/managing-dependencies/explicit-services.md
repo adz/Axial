@@ -6,7 +6,7 @@ description: Choosing between records, IHas service contracts, and Service acces
 
 # Explicit Services
 
-FsFlow workflows declare what they need through `Flow<'env, 'error, 'value>`. The environment is an ordinary F# value.
+Axial workflows declare what they need through `Flow<'env, 'error, 'value>`. The environment is an ordinary F# value.
 That value can be a small record, a larger application record, or an object that implements named service contracts.
 
 ## Start With Records
@@ -75,7 +75,7 @@ let appLayer =
 ```
 
 This is more explicit than a generated or proxy environment, and it keeps compile errors tied to named application
-types. FsFlow v1 does not include tagged services; when you need two values with the same service type, use named record
+types. Axial v1 does not include tagged services; when you need two values with the same service type, use named record
 fields or distinct service contracts.
 
 ## Keep Resolve At The Edge

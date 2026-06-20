@@ -1,6 +1,6 @@
 ---
 title: Home
-description: FsFlow technical guides, semantics, and API reference.
+description: Axial technical guides, semantics, and API reference.
 ---
 
 <div class="docs-home-container">
@@ -16,7 +16,7 @@ Structured composition over normal F#/.NET code
 </h1>
 
 <div class="lede">
-FsFlow is a unified model for building robust, Result-based programs. Write predicate checks once, keep fail-fast logic in <code>Result</code>, accumulate sibling failures with <a href="{{< relref "/reference/validation/" >}}"><code>Validation</code></a>, then lift the same logic into <a href="{{< relref "/reference/flow/" >}}"><code>Flow</code></a> when the boundary needs environment access, async work, task interop, cancellation, or runtime policy.
+Axial is a unified model for building robust, Result-based programs. Write predicate checks once, keep fail-fast logic in <code>Result</code>, accumulate sibling failures with <a href="{{< relref "/reference/validation/" >}}"><code>Validation</code></a>, then lift the same logic into <a href="{{< relref "/reference/flow/" >}}"><code>Flow</code></a> when the boundary needs environment access, async work, task interop, cancellation, or runtime policy.
 </div>
 
 <div class="docs-home-meta">
@@ -33,7 +33,7 @@ FsFlow is a unified model for building robust, Result-based programs. Write pred
 
 <div class="docs-home-visual">
 <a class="docs-home-visual-link" href="{{< relref "/docs/start/getting-started.md" >}}">
-<img src="content/img/flow-graphic.png" alt="FsFlow Model" />
+<img src="content/img/flow-graphic.png" alt="Axial Model" />
 </a>
 <div class="docs-home-visual-cta">
 <a class="docs-home-cta" href="{{< relref "/docs/start/getting-started.md" >}}">Get Started &gt;</a>

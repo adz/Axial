@@ -92,7 +92,7 @@ The "define field name twice" problem in explicit descriptors is real. What you 
 
 That's a lens. Or more precisely, it's an optic (a lens is a specific case). The insight is that **this is exactly what ZIO Schema does** — the schema record is the lens *is* the validator *is* the codec definition. One definition serves all three consumers.
 
-For FsFlow specifically, combining with CodecMapper, that would look like:
+For Axial specifically, combining with CodecMapper, that would look like:
 
 ```fsharp
 // Declared once
@@ -101,7 +101,7 @@ module User.Schema =
     let email    : Field<User, string> = Field.define "Email"    _.Email    (fun v u -> { u with Email    = v })
     let address  : Field<User, Address> = Field.define "Address" _.Address  (fun v u -> { u with Address  = v })
 
-// FsFlow validation uses it:
+// Axial validation uses it:
 ModelRule.define [
     User.Schema.username |> Field.check [ whenNotBlank UsernameRequired ]
     User.Schema.address  |> Field.checkNested validateAddress
@@ -119,7 +119,7 @@ Source generators (Roslyn) can emit the full lens boilerplate from a `[<Lenses>]
 
 The quotation route — `Field.ofQuotation <@ _.Username @>` — gives you the name for free but doesn't give you the setter without additional tricks. For pure validation (no Parse) that's fine. For `Parse`, you need the setter. So quotations get you halfway.
 
-**The deeper question** is whether you want `Field<'root, 'value>` to live in FsFlow, in CodecMapper, or in a shared primitives package. If the lens definition is truly foundational — serving both validation and serialization — it arguably doesn't belong in either library. It's the schema layer, and both FsFlow and CodecMapper consume it. That's the design direction worth naming explicitly, even if you don't build it yet: a thin `FsFlow.Schema` or `Schema.Core` package that defines the optic types, with FsFlow and CodecMapper taking optional dependencies on it.
+**The deeper question** is whether you want `Field<'root, 'value>` to live in Axial, in CodecMapper, or in a shared primitives package. If the lens definition is truly foundational — serving both validation and serialization — it arguably doesn't belong in either library. It's the schema layer, and both Axial and CodecMapper consume it. That's the design direction worth naming explicitly, even if you don't build it yet: a thin `Axial.Schema` or `Schema.Core` package that defines the optic types, with Axial and CodecMapper taking optional dependencies on it.
 
 That's essentially ZIO Schema's architecture — and whether you want that unification is a bigger product question than any of the implementation details.
 
@@ -194,7 +194,7 @@ Now User.schema is simultaneously:
 
     A structural description for OpenAPI/docs generation
 
-FsFlow consumes the validation part. CodecMapper consumes the codec part. Both get a Schema<'T> dependency that they interpret in their own domain. Neither library defines the schema — they both take it as input.
+Axial consumes the validation part. CodecMapper consumes the codec part. Both get a Schema<'T> dependency that they interpret in their own domain. Neither library defines the schema — they both take it as input.
 
 The open design question is whether Schema.validate annotations should live in the schema definition or be attached by a separate combinator. Having them inline is convenient but couples validation concerns to the schema. Separating them keeps the schema pure structural metadata:
 fsharp
@@ -218,10 +218,10 @@ The package split would be:
 text
 
 Schema.Core        — Field<'T,'V>, Schema<'T>, the reflection-based record builder
-FsFlow             — Rule<'T,'E>, Validation<'T,'E>, the CE, takes Schema<'T> dependency
+Axial             — Rule<'T,'E>, Validation<'T,'E>, the CE, takes Schema<'T> dependency
 CodecMapper        — Encoder<'T>, Decoder<'T>, takes Schema<'T> dependency
 
-Schema.Core is tiny, has no dependencies beyond FSharp.Core, and is the single point of definition. FsFlow and CodecMapper each depend on it. Users who want both get automatic consistency. Users who only want validation don't pay for serialization.
+Schema.Core is tiny, has no dependencies beyond FSharp.Core, and is the single point of definition. Axial and CodecMapper each depend on it. Users who want both get automatic consistency. Users who only want validation don't pay for serialization.
 
 This is ZIO Schema's architecture translated to .NET's dependency model — and it's simpler here because F# records and DU sum types map naturally to schema definitions without the type erasure gymnastics ZIO Schema needs for Scala's type system.
 no thats' not good - i want aot safe. we'd probably have to go myriad source genand if you don't want to then you have to write it out.
@@ -455,7 +455,7 @@ module UserSchema =
         ]
 
 Per-field: bare names. Aggregate: record. Two concepts, two naming rules, no stutter in the common case.
-ok write the myriad plugin that would enable this, and how we'd use it in FsFlow to make Validation types and CodecMapper
+ok write the myriad plugin that would enable this, and how we'd use it in Axial to make Validation types and CodecMapper
 
 Here's the Myriad generator, then the consumption side.
 Myriad Generator
@@ -632,12 +632,12 @@ module UserSchema =
             age      |> Field.schema Schema.int
         ]
 
-Consumption in FsFlow
+Consumption in Axial
 
-FsFlow takes a Schema<'T> and produces validation:
+Axial takes a Schema<'T> and produces validation:
 fsharp
 
-module FsFlow =
+module Axial =
     // Schema<'T> comes from Schema.Core
     type Rule<'T, 'E> = 'T -> Validation<'T, 'E>
 
@@ -670,7 +670,7 @@ fsharp
             UserSchema.email,    [ whenNotBlank EmailRequired ]
         ]
 
-FsFlow only cares about the validation aspect. It accesses Field.get to extract values, applies rules, and returns the original model on success (since it's pure validation, not parsing — the output type equals the input type).
+Axial only cares about the validation aspect. It accesses Field.get to extract values, applies rules, and returns the original model on success (since it's pure validation, not parsing — the output type equals the input type).
 Consumption in CodecMapper
 
 CodecMapper takes the same schema and produces encoders/decoders:
@@ -755,7 +755,7 @@ module Schema =
             | Record(_, fields) ->
                 fields |> List.find (fun (f, _) -> f.Name = name)
 
-The key: Field<'T, 'V> is the lens. Schema<'T> is the structural description. FsFlow uses Field.Get for validation. CodecMapper uses Field.Get for encoding and Field.Set for decoding. One definition, two consumers, zero reflection at runtime.
+The key: Field<'T, 'V> is the lens. Schema<'T> is the structural description. Axial uses Field.Get for validation. CodecMapper uses Field.Get for encoding and Field.Set for decoding. One definition, two consumers, zero reflection at runtime.
 now review the validation using it in fsflow - optimise for DX and LLM guessability
 
 You're right to call that out. The validation API I sketched has friction points that would make an LLM — or a developer — stumble. Let me go back to the usage site and work outward from there.
@@ -882,7 +882,7 @@ type Check<'v, 'e> = 'v -> Validation<unit, 'e>
 These are the leaf nodes. They know nothing about paths, nothing about composition. They just look at a value and say pass or fail.
 fsharp
 
-// Built-in checks (in FsFlow)
+// Built-in checks (in Axial)
 Check.whenNotBlank : 'e -> Check<string, 'e>
 Check.whenMinLength : int -> 'e -> Check<string, 'e>
 Check.whenPattern : Regex -> 'e -> Check<string, 'e>
@@ -911,7 +911,7 @@ module Validation =
     let combine (v1: Validation<'a, 'e>) (v2: Validation<'b, 'e>) = ...
     let sequence (vs: Validation<'v, 'e> list) = ...
 
-This is the applicative core. Checks return Validation<unit, 'e>. Multiple checks on the same field get combined via Validation.combine, accumulating all failures. This exists in FsFlow already.
+This is the applicative core. Checks return Validation<unit, 'e>. Multiple checks on the same field get combined via Validation.combine, accumulating all failures. This exists in Axial already.
 Layer 3: Rule<'v, 'e>
 
 A named type alias for a check function. The term "Rule" signals intent: this is a composable, reusable validation rule, not just a raw function.

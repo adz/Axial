@@ -6,9 +6,9 @@ description: One-shot typed coordination and scoped concurrency limits.
 
 # Deferred and Semaphore
 
-FsFlow includes a small set of concurrency primitives only where they add FsFlow semantics over the .NET primitives underneath.
+Axial includes a small set of concurrency primitives only where they add Axial semantics over the .NET primitives underneath.
 
-Use .NET `Task`, `Channel<T>`, `SemaphoreSlim`, and `ConcurrentQueue<T>` directly when raw platform behavior is enough. Use FsFlow primitives when coordination should preserve typed `Exit` and `Cause`, participate in workflow interruption, or release resources through the `Flow` model.
+Use .NET `Task`, `Channel<T>`, `SemaphoreSlim`, and `ConcurrentQueue<T>` directly when raw platform behavior is enough. Use Axial primitives when coordination should preserve typed `Exit` and `Cause`, participate in workflow interruption, or release resources through the `Flow` model.
 
 ## Deferred
 
@@ -68,10 +68,10 @@ let program : Flow<unit, string, unit> =
     }
 ```
 
-Zero permits are rejected because FsFlow does not expose an external raw release operation. A semaphore created with zero permits would be a permanently blocked handle rather than a useful concurrency limit.
+Zero permits are rejected because Axial does not expose an external raw release operation. A semaphore created with zero permits would be a permanently blocked handle rather than a useful concurrency limit.
 
 ## Queues
 
-FsFlow does not currently expose a queue primitive. A useful FsFlow queue needs more than a thin wrapper over `Channel<T>`: bounded strategy, shutdown, blocked offerer/taker interruption, fairness, and resource cleanup all need explicit semantics.
+Axial does not currently expose a queue primitive. A useful Axial queue needs more than a thin wrapper over `Channel<T>`: bounded strategy, shutdown, blocked offerer/taker interruption, fairness, and resource cleanup all need explicit semantics.
 
 Until a v1 feature needs those semantics, use .NET channels directly at the edge of a workflow and convert operations into `Flow` where needed.

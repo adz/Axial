@@ -1,27 +1,27 @@
-# FsFlow
+# Axial
 
 > [!WARNING]
-> FsFlow 0.7.0 is the last planned release under the FsFlow name before the split. The new package line continues in `Axial.Flow`, `Axial.Result`, `Axial.Validation`, and the umbrella `Axial` package.
+> Axial 0.7.0 is the last planned release under the Axial name before the split. The new package line continues in `Axial.Flow`, `Axial.Result`, `Axial.Validation`, and the umbrella `Axial` package.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/content/img/fsflow-readme-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="docs/content/img/fsflow-readme-light.svg">
-  <img alt="FsFlow" src="docs/content/img/fsflow-readme-light.svg" width="160">
+  <img alt="Axial" src="docs/content/img/fsflow-readme-light.svg" width="160">
 </picture>
 
-FsFlow provides **structured composition over normal F#/.NET code**. It is a coherent application architecture model for F# on .NET, centered on a unified effect system.
+Axial provides **structured composition over normal F#/.NET code**. It is a coherent application architecture model for F# on .NET, centered on a unified effect system.
 
 Write small predicate checks with `Axial.Result.Check`, keep fail-fast logic in standard `Result`, accumulate sibling
 validation with `Axial.Validation.Validation` and `validate {}`, then lift the same logic into `Axial.Flow.Flow`
 when the boundary needs environment access, async work, task interop, or runtime policy.
 
-[![ci](https://github.com/adz/FsFlow/actions/workflows/ci.yml/badge.svg)](https://github.com/adz/FsFlow/actions/workflows/ci.yml)
-[![NuGet](https://img.shields.io/nuget/v/FsFlow.svg)](https://www.nuget.org/packages/FsFlow)
+[![ci](https://github.com/adz/Axial/actions/workflows/ci.yml/badge.svg)](https://github.com/adz/Axial/actions/workflows/ci.yml)
+[![NuGet](https://img.shields.io/nuget/v/Axial.svg)](https://www.nuget.org/packages/Axial)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 ## Coherent Application Architecture
 
-FsFlow is built around one progression:
+Axial is built around one progression:
 
 ```text
 Axial.Result.Check -> Result -> Axial.Validation.Validation -> Axial.Flow.Flow
@@ -80,7 +80,7 @@ The same builder also binds `Async`, `Task`, `ValueTask`, and `ColdTask` directl
 
 ## What You Get
 
-FsFlow stays close to standard F# and .NET:
+Axial stays close to standard F# and .NET:
 
 - `flow { ... }` binds to `Result` and `Option`
 - `flow { ... }` also binds to `Async`, `Async<Option<_>>`, `Async<ValueOption<_>>`, and `Async<Result<_,_>>`
@@ -88,15 +88,15 @@ FsFlow stays close to standard F# and .NET:
 - `result {}` keeps fail-fast pure code readable
 - `validate {}` keeps sibling validation accumulation explicit
 
-Because tasks are hot, FsFlow includes `ColdTask`: a small wrapper around `CancellationToken -> Task`.
+Because tasks are hot, Axial includes `ColdTask`: a small wrapper around `CancellationToken -> Task`.
 `flow` handles token passing for you and keeps reruns explicit.
 
 ## A full example
 
-The full runnable example is in [`examples/FsFlow.ReadmeExample/Program.fs`](./examples/FsFlow.ReadmeExample/Program.fs).
+The full runnable example is in [`examples/Axial.ReadmeExample/Program.fs`](./examples/Axial.ReadmeExample/Program.fs).
 
 ```bash
-dotnet run --project examples/FsFlow.ReadmeExample/FsFlow.ReadmeExample.fsproj
+dotnet run --project examples/Axial.ReadmeExample/Axial.ReadmeExample.fsproj
 ```
 
 ```fsharp

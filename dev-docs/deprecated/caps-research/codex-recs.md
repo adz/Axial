@@ -50,7 +50,7 @@ While it compiles in some contexts, it does **not reliably abstract or hide the 
 
 ### 💡 The Practical Solution: Trait Accessor Modules
 
-Instead of aliasing constraints, FsFlow standardizes on **centralized trait accessors**.
+Instead of aliasing constraints, Axial standardizes on **centralized trait accessors**.
 
 ```fsharp
 module Cap =
@@ -118,7 +118,7 @@ module Cap =
 ### Add clarification below:
 
 > ⚠️ Note: SRTP constraints cannot be aliased into reusable “requirement types” in F#.
-> FsFlow instead centralizes constraints inside **trait accessor functions** (e.g., `Cap.email`), which serve as the canonical definition of each capability.
+> Axial instead centralizes constraints inside **trait accessor functions** (e.g., `Cap.email`), which serve as the canonical definition of each capability.
 
 ---
 
@@ -172,7 +172,7 @@ Functions represent capabilities
 
 That aligns **much better** with:
 
-* FsFlow CE usage
+* Axial CE usage
 * effect systems (ZIO style)
 * your “actions add requirements” model
 
@@ -182,7 +182,7 @@ That aligns **much better** with:
 
 Lean into this explicitly in docs:
 
-> “Capabilities in FsFlow are defined by **trait accessor functions**, not types.”
+> “Capabilities in Axial are defined by **trait accessor functions**, not types.”
 
 That’s actually a **clearer mental model** than the alias idea.
 

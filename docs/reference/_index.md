@@ -5,7 +5,7 @@ weight: 30
 
 # API Reference
 
-This page shows the generated API reference for FsFlow core and the standard service packages.
+This page shows the generated API reference for Axial core and the standard service packages.
 
 Start with [`Flow`](./flow/) if you are writing application workflows. It is the central execution
 type: a cold computation that reads `env`, returns a typed failure or success value, and preserves
@@ -28,6 +28,6 @@ runtime concerns: mutable references, transactional state, retry or repeat polic
 streams. These modules are useful, but they are not the starting point for ordinary application
 code.
 
-Finally, understand the core model outcomes: [`Exit`](./exit/) is FsFlow's name for
+Finally, understand the core model outcomes: [`Exit`](./exit/) is Axial's name for
 `Result<'value, Cause<'error>>`, because it represents a completed workflow execution rather than an
 ordinary domain result, and [`Cause`](./cause/) explains why a flow failed.

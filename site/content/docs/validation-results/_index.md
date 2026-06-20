@@ -2,11 +2,11 @@
 weight: 20
 title: Validation & Results
 type: docs
-description: Overview of standard F# Result, FsFlow checks, fail-fast Result workflows, and accumulating validation.
+description: Overview of standard F# Result, Axial checks, fail-fast Result workflows, and accumulating validation.
 ---
 
 
-This page shows how FsFlow starts from standard F# `Result<'value, 'error>` and layers on `Check`, `result {}`, `Validation`, and `validate {}` without making pure validation depend on `Flow`.
+This page shows how Axial starts from standard F# `Result<'value, 'error>` and layers on `Check`, `result {}`, `Validation`, and `validate {}` without making pure validation depend on `Flow`.
 
 Use this section when your code is still pure. `Flow` is for application boundaries that need an explicit environment, async or task work, cancellation, resources, or runtime policy. The validation stack here can be used on its own as a small standalone layer.
 
@@ -44,9 +44,9 @@ let reciprocal text =
         else Ok (1.0 / float value))
 ```
 
-## What FsFlow Adds
+## What Axial Adds
 
-FsFlow keeps the standard `Result` model and makes the validation story more structured:
+Axial keeps the standard `Result` model and makes the validation story more structured:
 
 | Layer | Shape | What it adds |
 | --- | --- | --- |

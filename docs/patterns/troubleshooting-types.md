@@ -7,7 +7,7 @@ title: Troubleshooting Types
 
 This page shows the compiler errors that usually mean you crossed a wrapper boundary in the wrong place.
 
-Most FsFlow type errors are not exotic.
+Most Axial type errors are not exotic.
 The compiler usually sees one wrapper shape and you intended another.
 
 ## Error: A Unique Overload For Method `Bind` Could Not Be Determined

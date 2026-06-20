@@ -4,7 +4,7 @@ Snapshot after the current docgen cleanup pass.
 
 ## Fixed in this pass
 
-- Legacy `https://adz.github.io/FsFlow/reference/FsFlow/*.html` links are no longer emitted into `docs/reference/**`.
+- Legacy `https://adz.github.io/Axial/reference/Axial/*.html` links are no longer emitted into `docs/reference/**`.
 - `Flow` reference pages are grouped into sub-sections:
   - `construction`
   - `environment`

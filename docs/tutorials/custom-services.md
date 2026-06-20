@@ -12,7 +12,7 @@ Use a custom service when several workflows should depend on the same named cont
 
 ```fsharp
 open System.Threading.Tasks
-open FsFlow
+open Axial
 
 type IExchangeRates =
     abstract GetUsdToAud : unit -> Task<decimal>

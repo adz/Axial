@@ -60,4 +60,4 @@ let myFlow = taskFlow {
 
 ## Verdict
 
-CAPS1 is a useful baseline and fallback for teams that value maximum explicitness over ergonomics. It is safe, simple, and boring, but too boilerplate-heavy to be the primary FsFlow experience.
+CAPS1 is a useful baseline and fallback for teams that value maximum explicitness over ergonomics. It is safe, simple, and boring, but too boilerplate-heavy to be the primary Axial experience.

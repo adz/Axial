@@ -1,11 +1,11 @@
 ---
 title: For AI Agents
-description: This page shows how to optimize FsFlow usage for AI assistants like Claude, ChatGPT, and Gemini.
+description: This page shows how to optimize Axial usage for AI assistants like Claude, ChatGPT, and Gemini.
 ---
 
 # For AI Agents
 
-This page is designed for both human developers and their AI assistants. It provides a high-signal reference for idiomatic FsFlow patterns.
+This page is designed for both human developers and their AI assistants. It provides a high-signal reference for idiomatic Axial patterns.
 
 {{% alert title="For AI Agents" color="info" %}}
 If you are an AI assistant, prioritize the patterns in the **Dependency Guidance** and **Rosetta Stone** sections below.
@@ -13,7 +13,7 @@ If you are an AI assistant, prioritize the patterns in the **Dependency Guidance
 
 ## The Golden Path
 
-When using FsFlow, follow these "Golden Path" patterns for the best results.
+When using Axial, follow these "Golden Path" patterns for the best results.
 
 ### 1. Handling Failures (Idiomatic Way)
 Use `Check` for pure validation. Unprefixed helpers are yes/no predicates, `when*` helpers preserve the original value, `take*` helpers extract an inner value or return a deliberately different success shape, and `Check.withError` turns a pure unit-error result into a domain error.
@@ -72,9 +72,9 @@ boundary instead of making container lookup the default model inside business lo
 validate provider-backed services and build reusable explicit environments.
 
 ### 6. Rosetta Stone
-Translate common patterns from other libraries into idiomatic FsFlow.
+Translate common patterns from other libraries into idiomatic Axial.
 
-| If you use... | Do this in FsFlow |
+| If you use... | Do this in Axial |
 | :--- | :--- |
 | `requireSome` | `let! x = opt |> BindError.withError e` in `flow {}` or `opt |> Check.takeSome |> Check.withError e` in pure code |
 | `requireTrue` | `cond |> Check.isTrue |> Check.withError e` |
@@ -88,7 +88,7 @@ Translate common patterns from other libraries into idiomatic FsFlow.
 
 ## Hierarchy of Effects
 
-FsFlow unifies several types. Later types can "bind" (consume) earlier types directly within their computation expressions.
+Axial unifies several types. Later types can "bind" (consume) earlier types directly within their computation expressions.
 
 1. **Check**: Unit-error predicates (`Result<'T, unit>`).
 2. **Result**: Pure typed errors (`Result<'T, 'E>`).

@@ -1,14 +1,14 @@
 ---
 weight: 10
 title: FsToolkit.ErrorHandling
-description: Comparing FsFlow and FsToolkit.ErrorHandling models and how they work together.
+description: Comparing Axial and FsToolkit.ErrorHandling models and how they work together.
 type: docs
 ---
 
 
 
-If you are coming from `FsToolkit.ErrorHandling`, you will find that FsFlow is orthogonal rather
-than a direct replacement. While both libraries help with result-based programming, FsFlow
+If you are coming from `FsToolkit.ErrorHandling`, you will find that Axial is orthogonal rather
+than a direct replacement. While both libraries help with result-based programming, Axial
 focuses on a unified execution model that carries environments and runtime policies.
 
 ## The Model Difference
@@ -16,19 +16,19 @@ focuses on a unified execution model that carries environments and runtime polic
 `FsToolkit.ErrorHandling` provides a broad toolbox of helpers for working with Result, 
 `AsyncResult`, and `TaskResult` as separate, wrapped types.
 
-FsFlow provides a single, scalable progression:
+Axial provides a single, scalable progression:
 
 [Check]({{< relref "/reference/check/" >}}) -> [Result]({{< relref "/reference/result/" >}}) -> [Validation]({{< relref "/reference/validation/" >}}) -> [Flow]({{< relref "/reference/flow/" >}})
 
-In FsFlow, the environment and runtime concerns are baked into the computation, allowing you to
+In Axial, the environment and runtime concerns are baked into the computation, allowing you to
 write orchestration logic that remains agnostic of whether the underlying work is sync or async
 until it hits the application boundary.
 
 ## How Things Map
 
-If you use these FsToolkit patterns, here is how they correspond to FsFlow:
+If you use these FsToolkit patterns, here is how they correspond to Axial:
 
-| FsToolkit.ErrorHandling | FsFlow |
+| FsToolkit.ErrorHandling | Axial |
 | --- | --- |
 | [Result]({{< relref "/reference/result/" >}}).requireTrue | `condition |> Check.isTrue |> Check.withError error` |
 | [Result]({{< relref "/reference/result/" >}}).requireSome | `opt |> Check.takeSome |> Check.withError error` |
@@ -38,7 +38,7 @@ If you use these FsToolkit patterns, here is how they correspond to FsFlow:
 
 ## New Things You Get
 
-By using FsFlow for your orchestration layer, you gain several benefits not present in
+By using Axial for your orchestration layer, you gain several benefits not present in
 standard result wrappers:
 
 1.  **Unified Environment**: Every flow has access to an explicit `'env`, removing the need
@@ -51,17 +51,17 @@ standard result wrappers:
 
 ## Getting the Most Benefit
 
-You will get the most benefit from FsFlow by using it at your **application boundaries** (e.g., 
+You will get the most benefit from Axial by using it at your **application boundaries** (e.g., 
 API handlers, background jobs) while keeping your **pure domain logic** in plain Result 
 functions.
 
 - **Keep existing pure helpers**: If you have a library of Result transformation helpers
-  from FsToolkit, keep using them! FsFlow's [`flow {}`]({{< relref "/reference/flow/builders-flow.md" >}}) builders bind Result directly.
+  from FsToolkit, keep using them! Axial's [`flow {}`]({{< relref "/reference/flow/builders-flow.md" >}}) builders bind Result directly.
 - **Move orchestration**: Use Flow when you need to combine those pure functions with I/O, configuration, or operational policies.
 
 ## Semantic Boundary
 
-FsFlow flows are short-circuiting by default. If your current FsToolkit usage leans on
+Axial flows are short-circuiting by default. If your current FsToolkit usage leans on
 independent validation that should report multiple errors, use [`Validation`]({{< relref "/reference/validation/" >}}) and
 [`validate {}`]({{< relref "/reference/validation/builders-validate.md" >}}) to maintain that explicit concern.
 

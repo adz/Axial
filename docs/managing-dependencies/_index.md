@@ -1,12 +1,12 @@
 ---
 weight: 40
 title: Managing Dependencies
-description: How FsFlow models records, services, layers, scopes, and host-provider boundaries.
+description: How Axial models records, services, layers, scopes, and host-provider boundaries.
 ---
 
 # Managing Dependencies
 
-Keep dependencies explicit. FsFlow has one dependency model for v1: workflows read an explicit environment, reusable
+Keep dependencies explicit. Axial has one dependency model for v1: workflows read an explicit environment, reusable
 helpers name service contracts, and layers build the environment at the boundary.
 
 Use this order:

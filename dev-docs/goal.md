@@ -2,7 +2,7 @@
 
 ## Objective
 
-FsFlow should expose one public workflow model:
+Axial should expose one public workflow model:
 
 ```fsharp
 Flow<'env, 'error, 'value>
@@ -31,9 +31,9 @@ The current `Effect` terminology leaks runtime plumbing into the public API.
 
 Problems:
 
-- `Effect<'value, 'error>` is not a separate FsFlow domain concept; it is the platform-specific execution carrier.
+- `Effect<'value, 'error>` is not a separate Axial domain concept; it is the platform-specific execution carrier.
 - `EffectFlow` sounds like a second workflow abstraction, but it is implementation machinery.
-- User-facing docs mention "effect" in ways that make FsFlow feel like it has a hidden extra concept.
+- User-facing docs mention "effect" in ways that make Axial feel like it has a hidden extra concept.
 - Fable and .NET really do differ at the carrier level, but that difference should not infect ordinary composition or
   service package APIs.
 - Service packages need one stable `Flow<'env, 'error, 'value>` shape so they can be consumed from .NET-only,
@@ -46,7 +46,7 @@ carrier-free and make execution/construction boundaries explicit.
 
 - Do not introduce `Flow<'carrier, 'env, 'error, 'value>`.
 - Do not return to separate public `AsyncFlow`, `TaskFlow`, `ValueTaskFlow`, or `PromiseFlow` types.
-- Do not keep compatibility aliases. FsFlow is pre-1.0.
+- Do not keep compatibility aliases. Axial is pre-1.0.
 - Do not add ambient or global runtime execution.
 - Do not make service packages carrier-specific.
 - Do not add `ToPromise` / `fromPromise` in this goal unless required to remove existing public `Effect` usage.
@@ -61,7 +61,7 @@ carrier-free and make execution/construction boundaries explicit.
 - Keep the platform carrier abstraction internal.
 - Keep module-level `Flow` APIs for construction and composition.
 - Move workflow execution to instance members on `Flow<'env, 'error, 'value>`.
-- Use `fromTask`, `fromValueTask`, and `fromAsync` for adapting raw platform APIs into FsFlow.
+- Use `fromTask`, `fromValueTask`, and `fromAsync` for adapting raw platform APIs into Axial.
 - Use `ToTask`, `ToValueTask`, `ToAsync`, and `RunSynchronously` for starting a `Flow`.
 - Use visible documentation metadata for platform-specific APIs.
 
@@ -169,7 +169,7 @@ discard structured failure information.
 - `RunSynchronously` starts the workflow and blocks until an `Exit<'value, 'error>` is available.
 - If no cancellation token is supplied to .NET `ToTask`, `ToValueTask`, or `RunSynchronously`, use
   `CancellationToken.None`.
-- Do not introduce a global/default FsFlow cancellation token source.
+- Do not introduce a global/default Axial cancellation token source.
 
 `ToAsync` should align with FSharp.Core expectations:
 
@@ -250,7 +250,7 @@ Hosting.toAsync
 Hosting.runSynchronously
 ```
 
-The hosting package adapts host/container-backed construction into FsFlow. It should not become a second workflow
+The hosting package adapts host/container-backed construction into Axial. It should not become a second workflow
 execution surface.
 
 ## Internal Runtime Shape
@@ -351,7 +351,7 @@ Terminology:
 
 Avoid:
 
-- `Effect` as an FsFlow user concept.
+- `Effect` as an Axial user concept.
 - `EffectFlow`.
 - `Layer.effect`.
 - `Flow.run`.
@@ -436,7 +436,7 @@ Make platform-specific assertions target-aware where needed.
 - `Flow<'env, 'error, 'value>` remains the single public workflow type used by services and examples.
 - No public `Effect<'value, 'error>` type appears in generated API reference.
 - No public `EffectFlow` module appears in generated API reference.
-- No user-facing guide introduces `Effect` as an FsFlow concept.
+- No user-facing guide introduces `Effect` as an Axial concept.
 - No public `Layer.effect` appears in generated API reference or guides.
 - Module-level `Flow.run`, `Flow.runFull`, and `Flow.runWithToken` are gone.
 - Result-returning execution helpers are gone.
@@ -463,8 +463,8 @@ Run:
 
 ```text
 bash scripts/check-source-inventory.sh
-dotnet build FsFlow.slnx --nologo -v minimal
-timeout 300s dotnet test tests/FsFlow.Tests/FsFlow.Tests.fsproj --no-build --nologo -v minimal
+dotnet build Axial.slnx --nologo -v minimal
+timeout 300s dotnet test tests/Axial.Tests/Axial.Tests.fsproj --no-build --nologo -v minimal
 bash scripts/check-fable-js-surface.sh
 bash scripts/generate-api-docs.sh
 npm run build

@@ -1,6 +1,6 @@
 # Rules Ideas
 
-This note explores three shapes for a first-class validation/rule system in FsFlow, then follows the consequences into a `parse don't validate` story that stays F#-native, path-aware, and more regular than Rails' `ActiveModel`.
+This note explores three shapes for a first-class validation/rule system in Axial, then follows the consequences into a `parse don't validate` story that stays F#-native, path-aware, and more regular than Rails' `ActiveModel`.
 
 ## Problem Statement
 
@@ -13,7 +13,7 @@ That creates two pressures:
 - object validation wants field paths, nested scopes, and source access for rendering
 
 The design question is not "how do we make checks prettier".
-It is "what is the first-class unit of validation in FsFlow".
+It is "what is the first-class unit of validation in Axial".
 
 The answer should let us write something compact and regular:
 
@@ -163,7 +163,7 @@ What it costs:
 - more concepts than many app developers want to carry around
 - a larger gap between "small field checks" and "validated model construction"
 
-If we want FsFlow to support "parse don't validate" as a first-class style, the proof-based shape is the strongest conceptual anchor.
+If we want Axial to support "parse don't validate" as a first-class style, the proof-based shape is the strongest conceptual anchor.
 
 ## Comparison
 
@@ -222,7 +222,7 @@ Rails is slick because the validation declaration is:
 
 It is not slick because it is magical. It is slick because it has a stable mental model.
 
-FsFlow should aim for the same regularity, but with better foundations:
+Axial should aim for the same regularity, but with better foundations:
 
 - typed failures instead of strings
 - tree-shaped diagnostics instead of a flat list
@@ -256,7 +256,7 @@ It is the transition from untrusted to trusted.
 
 ### First-Class Support
 
-FsFlow can support that by making the following first-class:
+Axial can support that by making the following first-class:
 
 - `Rule.For<'root>` or `Parse.For<'raw,'model>`
 - scoped path helpers for nested members and list items

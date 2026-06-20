@@ -59,7 +59,7 @@ TaskFlow.run env (processJob data)
 Best for NativeAOT-safe F# projects.
 
 ```fsharp
-[<MyriadGenerator("FsFlow.Bridge")>]
+[<MyriadGenerator("Axial.Bridge")>]
 type AppEnv =
     { Db : IDb
       Logger : ILogger
@@ -95,16 +95,16 @@ module AppEnvBridge =
 Best for mixed F# / C# systems where the app host is C# but business logic is F#.
 
 ```csharp
-public partial class FsFlowBridges
+public partial class AxialBridges
 {
-    [FsFlowBridgeFor(typeof(MyFSharpProject.AppEnv))]
+    [AxialBridgeFor(typeof(MyFSharpProject.AppEnv))]
     public static partial MyFSharpProject.AppEnv CreateAppEnv(IServiceProvider sp);
 }
 
 app.MapGet("/", (IServiceProvider sp) =>
 {
-    var env = FsFlowBridges.CreateAppEnv(sp);
-    return FsFlow.TaskFlow.Run(env, MyLogic.ProcessJob(data));
+    var env = AxialBridges.CreateAppEnv(sp);
+    return Axial.TaskFlow.Run(env, MyLogic.ProcessJob(data));
 });
 ```
 
@@ -121,8 +121,8 @@ app.MapGet("/", (IServiceProvider sp) =>
 
 ## Relationship to Strict and Pragmatic APIs
 
-- `FsFlow.Strict` uses structural capability accessors.
-- `FsFlow.Pragmatic` may use `IServiceProvider` directly for convenience.
+- `Axial.Strict` uses structural capability accessors.
+- `Axial.Pragmatic` may use `IServiceProvider` directly for convenience.
 - Bridges let strict logic participate in pragmatic app hosts without weakening the core model.
 
 ## Verdict

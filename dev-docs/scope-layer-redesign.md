@@ -5,7 +5,7 @@ Recorded: 2026-06-02.
 
 ## Decision Summary
 
-FsFlow should move to a single, explicit dependency story:
+Axial should move to a single, explicit dependency story:
 
 1. Delete the internal registry completely.
 2. Keep `Flow<'env, 'error, 'value>` as the public workflow type.
@@ -29,7 +29,7 @@ The current codebase contains two competing stories:
 That split is not coherent enough for v1.
 
 Keeping the registry would preserve extensible ambient services, but it would also keep a second dependency container
-inside FsFlow alongside `IServiceProvider`. That creates hidden requirements, weakens type visibility, and makes the
+inside Axial alongside `IServiceProvider`. That creates hidden requirements, weakens type visibility, and makes the
 mental model harder for both humans and LLMs:
 
 - some dependencies are explicit in `'env`
@@ -74,7 +74,7 @@ core architecture.
 
 ## 4. The New Dependency Taxonomy
 
-FsFlow should teach and implement four distinct concepts.
+Axial should teach and implement four distinct concepts.
 
 | Concern | Mechanism | Visibility | Intended Use |
 | --- | --- | --- | --- |
@@ -282,11 +282,11 @@ module Clock =
 
 This same pattern should be used for:
 
-- `FsFlow.Services.Core`
-- `FsFlow.Services.Console`
-- `FsFlow.Services.FileSystem`
-- `FsFlow.Services.Http`
-- `FsFlow.Services.Process`
+- `Axial.Flow.PlatformService`
+- `Axial.Flow.Console`
+- `Axial.Flow.FileSystem`
+- `Axial.Flow.Http`
+- `Axial.Flow.Process`
 - future `Network`
 - telemetry-related service packages
 
@@ -487,7 +487,7 @@ operational services.
 
 ### 11.2 Live Base Runtime Layer
 
-FsFlow should ship a straightforward live layer for that bundle:
+Axial should ship a straightforward live layer for that bundle:
 
 ```fsharp
 module BaseRuntime =
@@ -734,7 +734,7 @@ The generated reference docs must reflect the new surface:
 
 The public message should be:
 
-- FsFlow does not hide first-party services in a magical ambient bag
+- Axial does not hide first-party services in a magical ambient bag
 - explicit services are the normal model
 - layers provision services and own teardown
 - `IServiceProvider` is an edge, not the center
@@ -747,7 +747,7 @@ That should be consistent across guides, examples, reference docs, and `llms.txt
 
 The v1 architecture should be stated plainly:
 
-- FsFlow has explicit services, not extensible ambient service slots.
+- Axial has explicit services, not extensible ambient service slots.
 - The runtime is closed and executor-owned.
 - Layers build environments.
 - Scope owns cleanup.

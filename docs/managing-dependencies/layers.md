@@ -177,5 +177,5 @@ let connectionLayer =
 ```
 
 Parallel layer composition uses parent-owned child scopes. If one branch fails after another branch acquired resources,
-the acquired branch is finalized when the root scope closes. If both parallel branches fail, FsFlow preserves both
+the acquired branch is finalized when the root scope closes. If both parallel branches fail, Axial preserves both
 failures as `Cause.Both (leftCause, rightCause)` rather than discarding one side.

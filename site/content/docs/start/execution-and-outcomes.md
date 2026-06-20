@@ -35,7 +35,7 @@ for completion. Await or run the returned handle to observe the final `Exit<'val
 
 ## Exit
 
-Execution completes with `Exit<'value, 'error>`, which is FsFlow's name for `Result<'value, Cause<'error>>`. It has a distinct name because it describes the completed state of a workflow execution, not just an ordinary domain success or failure.
+Execution completes with `Exit<'value, 'error>`, which is Axial's name for `Result<'value, Cause<'error>>`. It has a distinct name because it describes the completed state of a workflow execution, not just an ordinary domain success or failure.
 
 ```fsharp
 match exit with

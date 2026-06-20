@@ -20,7 +20,7 @@ Keep the core logging abstraction generic.
 
 ## Why
 
-- A generic core keeps `FsFlow` dependency-light and usable outside `Microsoft.Extensions.Logging`.
+- A generic core keeps `Axial` dependency-light and usable outside `Microsoft.Extensions.Logging`.
 - It matches the explicit service direction and keeps logging separate from host-specific adapters.
 - Application code can still adapt existing `ILogger` instances without forcing that dependency on every consumer.
 - Ergonomics belong in the integration layer, not in the core type identity.

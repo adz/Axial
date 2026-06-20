@@ -11,7 +11,7 @@
 
 ## Decision
 
-FsFlow uses a three-layer validation model:
+Axial uses a three-layer validation model:
 
 - `Check<'value>` is the reusable predicate layer and carries a `unit` failure placeholder
 - `Result<'value, 'error>` is the fail-fast carrier for typed failures

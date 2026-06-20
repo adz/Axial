@@ -63,7 +63,7 @@ simple `Cause.Fail error`, and raises for defects, interruption, and composite c
 ## Interruption and Scope
 
 Cancellation tokens supplied to execution members are visible through `Flow.Runtime.cancellationToken`. Forked fibers
-and scoped resources are tied to the current runtime scope. When the root execution ends, FsFlow closes the root scope
+and scoped resources are tied to the current runtime scope. When the root execution ends, Axial closes the root scope
 and runs registered finalizers.
 
-If both workflow execution and cleanup fail, FsFlow preserves both causes with `Cause.Then`.
+If both workflow execution and cleanup fail, Axial preserves both causes with `Cause.Then`.

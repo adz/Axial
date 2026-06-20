@@ -6,11 +6,11 @@ description: The fastest path from Check and Result into Flow.
 
 # Getting Started
 
-FsFlow is a toolkit for building robust, Result-based programs in F#. It allows you to scale from simple validation logic to complex, effectful application boundaries using a single, unified mental model.
+Axial is a toolkit for building robust, Result-based programs in F#. It allows you to scale from simple validation logic to complex, effectful application boundaries using a single, unified mental model.
 
 ## 1. The Continuum of Logic
 
-FsFlow is designed around a continuum. You should always use the simplest tool that satisfies your current requirement:
+Axial is designed around a continuum. You should always use the simplest tool that satisfies your current requirement:
 
 ```text
 Pure Checks -> Result & Validation -> Flow
@@ -25,7 +25,7 @@ Pure Checks -> Result & Validation -> Flow
 Most logic starts pure. Use `Check` for reusable predicates and `Result` for domain logic.
 
 ```fsharp
-open FsFlow
+open Axial
 
 type UserError = | NameTooShort
 
@@ -66,7 +66,7 @@ If the flow throws an uncaught exception, the runtime records it as `Cause.Die` 
 
 ### Execution Handle vs. Outcome
 
-Because a `Flow` is just a description, you must explicitly **run** it. FsFlow handles the platform differences for you:
+Because a `Flow` is just a description, you must explicitly **run** it. Axial handles the platform differences for you:
 
 The execution handle is target-specific:
 
@@ -75,7 +75,7 @@ The execution handle is target-specific:
 
 ### The `Exit` Outcome
 
-The final result of any flow is an **`Exit<'value, 'error>`**. In FsFlow terms, that is `Result<'value, Cause<'error>>`. We give it its own name because it represents a completed workflow execution, not an ordinary domain result. It covers every possible outcome:
+The final result of any flow is an **`Exit<'value, 'error>`**. In Axial terms, that is `Result<'value, Cause<'error>>`. We give it its own name because it represents a completed workflow execution, not an ordinary domain result. It covers every possible outcome:
 
 ```fsharp
 match exitValue with

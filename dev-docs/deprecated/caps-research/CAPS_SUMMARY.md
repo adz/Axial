@@ -1,11 +1,11 @@
-# FsFlow Capability Approaches: Comparative Summary
+# Axial Capability Approaches: Comparative Summary
 
 Status: research context. The live source of truth is `../PLAN.md`.
 
 > Superseded research note: this summary predates the explicit-services-and-layers redesign. In particular, its
 > ambient-core guidance is no longer the target v1 architecture.
 
-This document compares the capability designs explored for FsFlow and adds four approaches that are
+This document compares the capability designs explored for Axial and adds four approaches that are
 meaningfully different from the earlier SRTP / `IServiceProvider` / explicit-interface variants.
 
 See `NEW-APPROACH.md` for the closest research ancestor of the active direction. The implemented public model keeps
@@ -15,9 +15,9 @@ See `NEW-APPROACH.md` for the closest research ancestor of the active direction.
 The important pre-1.0 constraint is simple: compatibility does not matter yet. Pick the shape that should
 survive 1.0, then delete or demote everything that points users at a weaker model.
 
-## What FsFlow Is Optimizing For
+## What Axial Is Optimizing For
 
-Capabilities in FsFlow are not just dependency lookup. They should make workflows better in three ways:
+Capabilities in Axial are not just dependency lookup. They should make workflows better in three ways:
 
 - Ergonomics: workflow code should stay close to normal F# and not drown in environment plumbing.
 - Compiler safety and fine-grained effects: important logic should expose exactly what it needs, and missing
@@ -52,7 +52,7 @@ Primary docs:
 | Structural Accessors + DI bridge | Strict core with DI edge | 4/5 | 3/5 | 2/5 | Yes | Compile-time core | Mixed | Bridge idea is good; SRTP target is not |
 | Explicit interface/record hybrid | Nominal strict baseline | 2/5 | 4/5 | 4/5 | Partial | Compile-time | Good | Useful baseline, still too manual |
 | Capability Manifest CE | Max ergonomics | 5/5 | 2/5 | 1/5 | Partial | Startup/runtime validation | Excellent | Best authoring feel, weaker static honesty |
-| Effect-Indexed Flow | Max fine-grained compiler safety | 2/5 | 5/5 | 4/5 | Yes | Compile-time | Fair | Most honest model, likely too heavy for FsFlow |
+| Effect-Indexed Flow | Max fine-grained compiler safety | 2/5 | 5/5 | 4/5 | Yes | Compile-time | Fair | Most honest model, likely too heavy for Axial |
 | Explicit Local Dependency Records | Max IDE clarity | 4/5 | 2/5 | 2/5 | Yes, manually | Compile-time | Excellent | Best simple/local workflow option |
 | Leveled Capability Surface | Best overall | 4/5 | 2/5 | 2/5 | Optional | Compile-time or runtime by level | Good | Recommended direction |
 
@@ -61,7 +61,7 @@ Primary docs:
 ### Boilerplate Records + Slices
 
 This is ordinary F#: define small records, pass them explicitly, and project them with `TaskFlow.read`.
-It is safe and clear, but it is not distinctive enough for FsFlow's capability story. It makes every workflow
+It is safe and clear, but it is not distinctive enough for Axial's capability story. It makes every workflow
 author do the wiring that the library should absorb.
 
 Verdict: keep as the fallback mental model.
@@ -87,7 +87,7 @@ Verdict: keep for edges, examples, and bridges. Do not make it the strict core m
 
 This groups capabilities into records and uses SRTP accessors for those records. It reduces boilerplate, but
 the grouping pressure is real. Broad records such as `SystemCaps` and `RuntimeCaps` hide the fine-grained effects
-FsFlow should preserve.
+Axial should preserve.
 
 Verdict: useful fallback for advanced F# users, not the main story.
 
@@ -275,7 +275,7 @@ Cons:
 
 Verdict:
 
-This is the most honest design on paper. It is also too heavy for FsFlow's pragmatic goals unless FsFlow is willing
+This is the most honest design on paper. It is also too heavy for Axial's pragmatic goals unless Axial is willing
 to become a type-level programming library.
 
 ## New Approach 3: Explicit Local Dependency Records
@@ -431,9 +431,9 @@ Verdict:
 
 This is the best overall 1.0 direction.
 
-## Recommendation For FsFlow
+## Recommendation For Axial
 
-Because FsFlow is pre-1.0, make the breaking move now.
+Because Axial is pre-1.0, make the breaking move now.
 
 For the compressed recommended model, see `CAPS_RECOMMENDED_MODEL.md`.
 For a new-user walkthrough, see `CAPS_RECOMMENDED_WALKTHROUGH.md`.
@@ -447,14 +447,14 @@ Recommended direction:
 3. Keep `RuntimeContext<'runtime, 'env>` as the execution carrier when runtime/app separation matters.
 4. Treat `IServiceProvider` as a valid provider-backed app/runtime shape for DI-heavy hosts, not only as an
    awkward edge escape hatch.
-5. Add hosting adapters from `ILogger`, clocks, metrics, tracing, and `IServiceProvider` into FsFlow runtime
+5. Add hosting adapters from `ILogger`, clocks, metrics, tracing, and `IServiceProvider` into Axial runtime
    contracts.
 6. Use hand-written nominal interfaces only for reusable strict capabilities where static requirements pay for the
    boilerplate.
 7. Keep cancellation token as executor mechanics, not as a user capability.
-8. Keep logging generic (`LogEntry -> unit` or an FsFlow-owned abstraction), with `ILogger` only as an adapter.
+8. Keep logging generic (`LogEntry -> unit` or an Axial-owned abstraction), with `ILogger` only as an adapter.
 9. Demote SRTP structural accessors to advanced research, not the default strict API.
-10. Only add plan/spec custom operations such as `withRetry`, `measure`, and `annotate` if FsFlow commits to a
+10. Only add plan/spec custom operations such as `withRetry`, `measure`, and `annotate` if Axial commits to a
     policy-aware builder model.
 
 ## Concrete 1.0 Shape
@@ -462,13 +462,13 @@ Recommended direction:
 Ship these layers:
 
 ```text
-FsFlow.Core
+Axial.Core
   TaskFlow, RuntimeContext, read/readRuntime/readEnvironment, cancellation mechanics
 
-FsFlow.Capabilities
+Axial.Capabilities
   optional nominal runtime/application helper conventions for reusable strict capabilities
 
-FsFlow.Hosting
+Axial.Hosting
   IServiceProvider-backed runtime/app adapters, ASP.NET/Aspire edge helpers, startup validation
 ```
 

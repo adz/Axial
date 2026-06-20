@@ -18,7 +18,7 @@ type SystemCaps =
       Sleep : TimeSpan -> Task }
 
 [<AutoOpen>]
-module FsFlowSystem =
+module AxialSystem =
     let inline log message : TaskFlow< ^env, 'err, unit> =
         fun env ->
             let system = (^env : (member System : SystemCaps) env)

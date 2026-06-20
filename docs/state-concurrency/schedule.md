@@ -1,7 +1,7 @@
 ---
 weight: 20
 title: Schedule (Retry & Repeat)
-description: Declarative policies for retrying failures and repeating successes in FsFlow.
+description: Declarative policies for retrying failures and repeating successes in Axial.
 ---
 
 # Schedule (Retry & Repeat)

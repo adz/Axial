@@ -1,7 +1,7 @@
 # Structural Accessor Pattern
 ## Anonymous records + SRTP trait accessors
 
-Status: historical research. This was the preferred strict FsFlow model in an earlier design pass, but
+Status: historical research. This was the preferred strict Axial model in an earlier design pass, but
 `CAPS_RECOMMENDED_MODEL.md` now supersedes it for the 1.0 direction.
 
 This model combines SRTP member constraints with anonymous records to create a low-boilerplate, structural
@@ -140,7 +140,7 @@ type EmailDeps< ^env > = ^env
 Observed compiler error:
 
 ```text
-/home/adam/projects/FsFlow/main/probe.fsx(8,5): error FS0010: Unexpected keyword 'when' in interaction. Expected ';', ';;' or other token.
+/home/adam/projects/Axial/main/probe.fsx(8,5): error FS0010: Unexpected keyword 'when' in interaction. Expected ';', ';;' or other token.
 ```
 
 Conclusion:

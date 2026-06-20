@@ -6,7 +6,7 @@ description: Keeping IServiceProvider at the host edge.
 
 # Service Provider Boundaries
 
-`IServiceProvider` is useful host infrastructure, but it is not the main FsFlow application model. Keep provider lookup
+`IServiceProvider` is useful host infrastructure, but it is not the main Axial application model. Keep provider lookup
 at the edge and move into explicit environments before core workflows.
 
 ## Direct Resolve
@@ -39,7 +39,7 @@ let ordersLayer : Layer<IServiceProvider, StartupError, IOrderRepository> =
 
 Then compose provider-backed layers into the application environment and run the real workflow with `Flow.provide`.
 
-`FsFlow.Services.Core` follows this pattern with `BaseRuntime.fromServiceProvider`. Register `IClock`, `ILog`,
+`Axial.Flow.PlatformService` follows this pattern with `BaseRuntime.fromServiceProvider`. Register `IClock`, `ILog`,
 `IRandom`, `IGuid`, and `IEnvironmentVariables` in a Microsoft DI `ServiceCollection`, build the provider at the host
 edge, and use the layer to convert those dynamic registrations into an explicit `BaseRuntime`. Missing registrations
 fail as typed startup errors through `BaseRuntimeError.MissingService`, while direct `Service<'T>.resolve()` remains a

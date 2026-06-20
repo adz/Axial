@@ -4,7 +4,7 @@
 Proposed Plan (Target: 1.0 Milestone)
 
 ## Context
-The current FsFlow `STM` implementation is a "Composable Lock" model. It uses a **Global Lock** and a **Journal** to ensure atomicity across multiple `TRef` variables. While it is deadlock-safe and composable, it lacks the core **Coordination** features that make STM powerful in ZIO or Haskell: `retry` and `orElse`.
+The current Axial `STM` implementation is a "Composable Lock" model. It uses a **Global Lock** and a **Journal** to ensure atomicity across multiple `TRef` variables. While it is deadlock-safe and composable, it lacks the core **Coordination** features that make STM powerful in ZIO or Haskell: `retry` and `orElse`.
 
 Without `retry`, users cannot express "wait until this condition is met" without manual, inefficient polling.
 

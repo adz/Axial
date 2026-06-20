@@ -24,13 +24,13 @@ Recorded: 2026-04-27 to 2026-04-28.
 Use three workflow types:
 
 - `Flow<'env,'error,'value>` for sync/result-oriented work.
-- `AsyncFlow<'env,'error,'value>` for async workflows in core `FsFlow`.
-- `TaskFlow<'env,'error,'value>` for .NET task-based workflows in the main `FsFlow` package.
+- `AsyncFlow<'env,'error,'value>` for async workflows in core `Axial`.
+- `TaskFlow<'env,'error,'value>` for .NET task-based workflows in the main `Axial` package.
 
 Keep the core package unified:
 
-- `FsFlow` exports `Flow`, `AsyncFlow`, `TaskFlow`, `ColdTask<'value>`, and the sync/async/task combinators.
-- the task-specific types and helpers live in `FsFlow`.
+- `Axial` exports `Flow`, `AsyncFlow`, `TaskFlow`, `ColdTask<'value>`, and the sync/async/task combinators.
+- the task-specific types and helpers live in `Axial`.
 
 Keep workflows cold and restartable:
 

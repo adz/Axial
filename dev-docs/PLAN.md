@@ -1,4 +1,4 @@
-# FsFlow Plan
+# Axial Plan
 
 This file tracks current product and architecture direction.
 Settled historical decisions live in `dev-docs/decisions/`.
@@ -6,7 +6,7 @@ Historical dependency-model research lives in `dev-docs/deprecated/caps-research
 
 ## Current Direction
 
-FsFlow keeps the public workflow type simple:
+Axial keeps the public workflow type simple:
 
 ```fsharp
 Flow<'env, 'error, 'value>
@@ -102,7 +102,7 @@ and provisioned through environments and layers.
 
 The internal registry has been removed rather than promoted.
 
-FsFlow v1 intentionally does not add tagged services or automatic service-environment merging. Multiple services of the
+Axial v1 intentionally does not add tagged services or automatic service-environment merging. Multiple services of the
 same type should be modeled with explicit named record fields or distinct nominal contracts. If boilerplate becomes a
 real problem, prefer a future source generator that emits named environment records and `IHas<'service>` implementations
 over reflection, proxy types, or hidden service maps.
@@ -148,5 +148,5 @@ future service packages, not ambient-core or `Flow.service` / `Flow.inject` dire
 
 ## Open Product Questions
 
-- Should future telemetry services live under `FsFlow.Services.Telemetry` or stay as runtime instrumentation adapters?
+- Should future telemetry services live under `Axial.Services.Telemetry` or stay as runtime instrumentation adapters?
 - Should process support add scoped long-running process helpers beyond one-shot `Process.execute`?

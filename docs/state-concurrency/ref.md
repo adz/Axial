@@ -1,7 +1,7 @@
 ---
 weight: 10
 title: Ref (Atomic References)
-description: Shared mutable state with atomic updates in FsFlow.
+description: Shared mutable state with atomic updates in Axial.
 ---
 
 # Ref (Atomic References)
@@ -18,7 +18,7 @@ In a functional program, state is usually passed as parameters or through the en
 
 ## Creating a Ref
 
-Use `Ref.make` to create a new reference with an initial value. Like all things in FsFlow, creating a `Ref` is an effectful operation that returns a `Flow`.
+Use `Ref.make` to create a new reference with an initial value. Like all things in Axial, creating a `Ref` is an effectful operation that returns a `Flow`.
 
 ```fsharp
 let counterWorkflow =

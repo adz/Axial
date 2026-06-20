@@ -1,4 +1,4 @@
-# FsFlow Tasks
+# Axial Tasks
 
 This file is the active development queue. Keep completed work out of this file.
 Keep live architecture direction in `dev-docs/PLAN.md`.
@@ -15,7 +15,7 @@ part of this completed redesign queue.
 
 ## Active Surface Work
 
-- Execute the Axial split classification pass in `dev-docs/project-split.md`: assign each public file in `src/FsFlow` to `Axial.Flow`, `Axial.Result`, `Axial.Validation`, or `defer`, and record the decision explicitly.
+- Execute the Axial split classification pass in `dev-docs/project-split.md`: assign each public file in `src/Axial` to `Axial.Flow`, `Axial.Result`, `Axial.Validation`, or `defer`, and record the decision explicitly.
 
 - Remove the current forbidden package coupling from core code by making `BindError` independent of `Check.withError`, so `Axial.Flow` can remain package-independent.
 

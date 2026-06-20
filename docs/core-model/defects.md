@@ -1,12 +1,12 @@
 ---
 weight: 25
 title: Defects and Exceptions
-description: Why FsFlow separates domain failures, interruptions, and defects.
+description: Why Axial separates domain failures, interruptions, and defects.
 ---
 
 # Defects and Exceptions
 
-FsFlow distinguishes between expected failures, administrative signals (interruption), and unexpected defects. This separation ensures that your domain logic remains clean while the runtime provides robust, leak-proof resource management.
+Axial distinguishes between expected failures, administrative signals (interruption), and unexpected defects. This separation ensures that your domain logic remains clean while the runtime provides robust, leak-proof resource management.
 
 ## Quick Start: Usage Patterns
 
@@ -39,7 +39,7 @@ let safeParse id =
 
 ## The "Why": Architectural Rationale
 
-While standard F# practice favors "just using exceptions" for defects, FsFlow treats them as first-class data in the `Exit` type for three critical reasons.
+While standard F# practice favors "just using exceptions" for defects, Axial treats them as first-class data in the `Exit` type for three critical reasons.
 
 ### 1. Structural Integrity (The "Closed" Algebra)
 In complex orchestration like `Flow.zipPar` (running two flows concurrently), the engine must coordinate the lifecycle of multiple [**fibers**]({{< relref "fibers.md" >}}).
@@ -50,9 +50,9 @@ In complex orchestration like `Flow.zipPar` (running two flows concurrently), th
 ### 2. Lossless Concurrency Coordination
 When a fiber fails, you often need to perform cleanup (e.g., `ensuring` or `onExit`). 
 
-By reifying defects into `Cause.Die`, FsFlow passes the exact cause, including the original exception and stack trace, to your finalizers as a value. This enables high-fidelity observability: you can log exactly why a background fiber died without crashing the host process, and without needing a `try...with` block inside every finalizer.
+By reifying defects into `Cause.Die`, Axial passes the exact cause, including the original exception and stack trace, to your finalizers as a value. This enables high-fidelity observability: you can log exactly why a background fiber died without crashing the host process, and without needing a `try...with` block inside every finalizer.
 
-If cleanup itself fails after the workflow has already failed, FsFlow does not discard either side. It returns `Cause.Then (workflowCause, cleanupCause)` so observability and host boundaries can see the original failure and the cleanup defect in order.
+If cleanup itself fails after the workflow has already failed, Axial does not discard either side. It returns `Cause.Then (workflowCause, cleanupCause)` so observability and host boundaries can see the original failure and the cleanup defect in order.
 
 ### 3. Precision in Retries and Fallbacks
 The distinction between `Fail` and `Die` allows for smarter defaults:

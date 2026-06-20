@@ -1,23 +1,23 @@
-# FsFlow Capability Plan
+# Axial Capability Plan
 ## Corrected capability architecture
 
 Status: historical. This document records the corrected structural-accessor plan after removing
 invalid SRTP trait aliases. The current recommendation is in `CAPS_SUMMARY.md`, which prefers
 nominal micro-capability interfaces for the 1.0 strict capability model.
 
-This document is no longer the current source of truth for the FsFlow capability system.
+This document is no longer the current source of truth for the Axial capability system.
 
 The key correction from earlier drafts:
 
 > F# does not support reusable aliases for SRTP member constraints.
 >
-> FsFlow therefore models capabilities as inline accessor functions, not named requirement aliases.
+> Axial therefore models capabilities as inline accessor functions, not named requirement aliases.
 
 ## Vision: Dual API strategy
 
-FsFlow should provide two distinct capability experiences.
+Axial should provide two distinct capability experiences.
 
-### 1. Strict API: `FsFlow.Strict`
+### 1. Strict API: `Axial.Strict`
 
 **Mental model:** Compile-time honesty.
 
@@ -25,7 +25,7 @@ FsFlow should provide two distinct capability experiences.
 
 **Best for:** Core business logic, DDD-style workflows, library code, tests, and any area where dependencies should be statically visible to the compiler.
 
-### 2. Pragmatic API: `FsFlow.Pragmatic`
+### 2. Pragmatic API: `Axial.Pragmatic`
 
 **Mental model:** Enterprise convenience.
 
@@ -35,7 +35,7 @@ FsFlow should provide two distinct capability experiences.
 
 ## User model
 
-Instead of passing dependencies manually as function arguments, FsFlow treats capability usage as adding requirements to a flow.
+Instead of passing dependencies manually as function arguments, Axial treats capability usage as adding requirements to a flow.
 
 In Strict mode, requirements are induced by inline accessor functions:
 
@@ -47,20 +47,20 @@ module Cap =
 
 Any operation that calls `Cap.logger env` requires an environment with a `Logger : ILogger` member.
 
-When functions are composed, the compiler infers the combined structural requirements. FsFlow does not name the combined requirement set.
+When functions are composed, the compiler infers the combined structural requirements. Axial does not name the combined requirement set.
 
 ## How to use Strict mode
 
 ### Step 1: Open the API
 
 ```fsharp
-open FsFlow
-open FsFlow.Strict
+open Axial
+open Axial.Strict
 ```
 
 ### Step 2: Write capability accessors
 
-For built-ins, FsFlow provides these. For app-specific capabilities, users add their own.
+For built-ins, Axial provides these. For app-specific capabilities, users add their own.
 
 ```fsharp
 module MyApp.Cap =
@@ -152,9 +152,9 @@ processOrder     business workflow
 Recommended module layout:
 
 ```text
-FsFlow.Strict.Cap.logger
-FsFlow.Strict.Cap.clock
-FsFlow.Strict.Cap.random
+Axial.Strict.Cap.logger
+Axial.Strict.Cap.clock
+Axial.Strict.Cap.random
 
 MyApp.Cap.db
 MyApp.Cap.email
@@ -223,7 +223,7 @@ type EmailDeps< ^env > = ^env
 Observed result:
 
 ```text
-/home/adam/projects/FsFlow/main/probe.fsx(8,5): error FS0010: Unexpected keyword 'when' in interaction. Expected ';', ';;' or other token.
+/home/adam/projects/Axial/main/probe.fsx(8,5): error FS0010: Unexpected keyword 'when' in interaction. Expected ';', ';;' or other token.
 ```
 
 Design consequence:
@@ -236,7 +236,7 @@ Composition happens through ordinary function composition and CE binding.
 
 ## Recommendation
 
-Standardize on Structural Accessors for `FsFlow.Strict`, with Simple Record SRTP as a conservative documented fallback and `IServiceProvider` as the basis for `FsFlow.Pragmatic`.
+Standardize on Structural Accessors for `Axial.Strict`, with Simple Record SRTP as a conservative documented fallback and `IServiceProvider` as the basis for `Axial.Pragmatic`.
 
 The final position:
 

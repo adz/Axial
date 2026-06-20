@@ -1,6 +1,6 @@
 # Axial Project Split
 
-This file is the decided plan for splitting the current `FsFlow` codebase into separate Axial packages.
+This file is the decided plan for splitting the current `Axial` codebase into separate Axial packages.
 
 The audience is a coding agent. The plan is intentionally explicit and avoids "maybe this, maybe that" branches unless a
 question is truly still open.
@@ -311,9 +311,9 @@ Later:
 
 Follow this order. Do not start by renaming everything blindly.
 
-### Step 1: classify existing FsFlow code
+### Step 1: classify existing Axial code
 
-For each public source file in `src/FsFlow`, assign exactly one target:
+For each public source file in `src/Axial`, assign exactly one target:
 
 - `Axial.Flow`
 - `Axial.Result`

@@ -7,7 +7,7 @@ Status: research context. The live source of truth is `../PLAN.md`.
 
 This walkthrough shows an older no-generator capability-level model from a new user's point of view. It contains
 useful tradeoff examples, but its `RuntimeContext<'runtime, 'env>` sections are not the implemented public model.
-Current FsFlow keeps runtime/system services ambient and outside end-user `'env` signatures.
+Current Axial keeps runtime/system services ambient and outside end-user `'env` signatures.
 
 The example is an order workflow. It logs a message, saves an order, sends an email, and returns the new order id.
 
@@ -46,7 +46,7 @@ type IEmailSender =
     abstract SendConfirmation : Order -> Task<Result<unit, AppError>>
 ```
 
-FsFlow does not own these. They are your application contracts.
+Axial does not own these. They are your application contracts.
 
 ## Level 1: Explicit Dependency Record
 
@@ -289,7 +289,7 @@ module RuntimeAdapters =
     let fromServiceProvider (sp: IServiceProvider) : AppRuntime =
         { Log =
             sp.GetRequiredService<ILoggerFactory>()
-              .CreateLogger("FsFlow")
+              .CreateLogger("Axial")
             |> RuntimeAdapters.logFromLogger
 
           Clock = sp.GetRequiredService<IClock>()
@@ -322,14 +322,14 @@ uses existing DI registrations
 can use startup validation
 ```
 
-Layers are optional here. The host's DI container already acts like a layer system. Add an FsFlow layer only when
+Layers are optional here. The host's DI container already acts like a layer system. Add an Axial layer only when
 you want to validate or adapt the provider before running the workflow.
 
 ## Runtime Adapters
 
-Adapters let FsFlow keep generic runtime semantics while still using host-native services.
+Adapters let Axial keep generic runtime semantics while still using host-native services.
 
-Example: adapt `ILogger` into FsFlow logging:
+Example: adapt `ILogger` into Axial logging:
 
 ```fsharp
 module RuntimeAdapters =
@@ -524,7 +524,7 @@ Use nominal IHasX helpers only for shared reusable effects.
 
 ## End State
 
-The recommended FsFlow capability story is:
+The recommended Axial capability story is:
 
 ```text
 Do not force a capability framework.

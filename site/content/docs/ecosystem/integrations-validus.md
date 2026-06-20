@@ -1,21 +1,21 @@
 ---
 weight: 20
 title: Validus Integration
-description: How FsFlow fits beside Validus validation pipelines.
+description: How Axial fits beside Validus validation pipelines.
 type: docs
 ---
 
 
 
-This page shows how FsFlow can fit beside `Validus` validation pipelines.
+This page shows how Axial can fit beside `Validus` validation pipelines.
 
 `Validus` is a strong choice when the problem is still validation, especially when you want a richer DSL,
 composition, accumulation, or value-object style checks.
 
-FsFlow can usually begin after that work is done.
+Axial can usually begin after that work is done.
 
-`Validus` and `FsFlow.Check` fit especially well together: `Validus` can handle richer validation rules,
-while `FsFlow.Check` stays available for smaller pure guards that feed directly into Result,
+`Validus` and `Axial.Check` fit especially well together: `Validus` can handle richer validation rules,
+while `Axial.Check` stays available for smaller pure guards that feed directly into Result,
 Validation, or Flow.
 
 ## Keep Validation Before Workflow Orchestration
@@ -23,7 +23,7 @@ Validation, or Flow.
 The best division of labor is:
 
 - `Validus` validates the incoming model or command
-- FsFlow orchestrates the application boundary, environment, runtime, typed failure, and structured validation
+- Axial orchestrates the application boundary, environment, runtime, typed failure, and structured validation
 
 That keeps the validation step reusable and keeps the runtime boundary honest.
 
@@ -39,13 +39,13 @@ Common patterns:
 ## Why The Pair Works
 
 - `Validus` owns the validation story when composition, accumulation, or richer checks matter
-- `FsFlow.Check` gives you a small, readable bridge when the check is a plain guard clause, option test, null check, or string predicate
+- `Axial.Check` gives you a small, readable bridge when the check is a plain guard clause, option test, null check, or string predicate
 - the flow family can then own the runtime boundary without swallowing validation concerns
 
 ## Example
 
 The Validus README uses a `PersonDto` example to show the normal shape: validate the DTO, build a
-domain record, and keep the output pure. That fits FsFlow cleanly because the boundary can bind the
+domain record, and keep the output pure. That fits Axial cleanly because the boundary can bind the
 `Result` directly.
 
 ```fsharp
@@ -103,12 +103,12 @@ let createUser (incoming: CreateUserDto) : Flow<AppEnv, ValidationErrors, User> 
     }
 ```
 
-If the validation story is already richer than `FsFlow.Check` or `FsFlow.Validation`, keep it richer.
-FsFlow can receive the outcome, not fight the validation library.
+If the validation story is already richer than `Axial.Check` or `Axial.Validation`, keep it richer.
+Axial can receive the outcome, not fight the validation library.
 
-## When To Prefer `FsFlow.Check`
+## When To Prefer `Axial.Check`
 
-Use `FsFlow.Check` when the checks are simple and can stay purely `Result<'value, unit>`-based:
+Use `Axial.Check` when the checks are simple and can stay purely `Result<'value, unit>`-based:
 
 - guard clauses
 - option checks

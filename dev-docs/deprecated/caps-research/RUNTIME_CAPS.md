@@ -5,7 +5,7 @@ Here’s a **clean, complete design brief** you can drop into a fresh LLM sessio
 
 ---
 
-# FsFlow Design: RuntimeContext + Env + Policy-based CE
+# Axial Design: RuntimeContext + Env + Policy-based CE
 
 ## 🎯 Goal
 
@@ -664,7 +664,7 @@ This maps nicely to AppHost/Aspire.
 
 Aspire AppHost is already an orchestration project that defines app resources, services, databases, containers, and relationships in code; Microsoft’s starter structure includes an AppHost project and shared ServiceDefaults project. ([Microsoft Learn][2])
 
-So FsFlow should **not replace AppHost**. It should consume what AppHost/Generic Host already builds.
+So Axial should **not replace AppHost**. It should consume what AppHost/Generic Host already builds.
 
 Interop target:
 
@@ -699,7 +699,7 @@ app.MapPost("/poll", Func<PollRequest, Task<IResult>>(fun req ->
 Even better, DI registration:
 
 ```fsharp
-builder.Services.AddFsFlowRuntime(fun rt ->
+builder.Services.AddAxialRuntime(fun rt ->
     rt.UseLoggerFactory()
       .UseOpenTelemetry()
       .UseSystemClock()
@@ -709,7 +709,7 @@ builder.Services.AddFsFlowRuntime(fun rt ->
 Then handlers get:
 
 ```fsharp
-type PollHandler(runtime: FsFlowRuntime) =
+type PollHandler(runtime: AxialRuntime) =
 
     member _.Poll req =
         taskFlow {
@@ -783,4 +783,4 @@ taskFlow {
 }
 ```
 
-That is the exciting version: FsFlow becomes a **typed effect runtime + capability DSL**, not merely `Task<Result<_,_>>` with Reader.
+That is the exciting version: Axial becomes a **typed effect runtime + capability DSL**, not merely `Task<Result<_,_>>` with Reader.

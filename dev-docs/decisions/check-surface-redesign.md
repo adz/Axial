@@ -15,7 +15,7 @@
 
 ## Decision
 
-FsFlow should split validation and bind adaptation into three explicit concepts:
+Axial should split validation and bind adaptation into three explicit concepts:
 
 - `Check<'value>` is the unit-error carrier for simple pure checks.
 - `Check` is also the full validation helper module. The function prefix chooses the success shape.
@@ -327,16 +327,16 @@ Docs should present pure and flow bind-site error adaptation separately:
 
 ## Migration
 
-Because FsFlow is pre-1.0, remove old names in the implementation pass instead of adding aliases.
+Because Axial is pre-1.0, remove old names in the implementation pass instead of adding aliases.
 
 The implementation pass must update:
 
-- source comments in `src/FsFlow/Check.fs`
-- remove `src/FsFlow/Take.fs` from the project
-- bind marker source in `src/FsFlow/BindError.fs` if examples mention the retired surface
+- source comments in `src/Axial/Check.fs`
+- remove `src/Axial/Take.fs` from the project
+- bind marker source in `src/Axial/BindError.fs` if examples mention the retired surface
 - flow and validation builder source comments
-- tests in `tests/FsFlow.Tests/ValidationTests.fs`
-- tests in `tests/FsFlow.Tests/WorkflowErrorTests.fs` if they mention retired names
+- tests in `tests/Axial.Tests/ValidationTests.fs`
+- tests in `tests/Axial.Tests/WorkflowErrorTests.fs` if they mention retired names
 - user-facing guides in `README.md`, `docs/`, and `llms.txt`
 - generated reference docs
 
@@ -364,7 +364,7 @@ Typed diagnostic helpers keep their diagnostic error rather than forcing callers
 
 The redesign is coherent when:
 
-- no public `FsFlow.Take` module remains
+- no public `Axial.Take` module remains
 - simple unprefixed `Check` predicate helpers return `Check<unit>`
 - diagnostic predicate helpers return `Result<unit, StringLengthFailure>`, `Result<unit, RangeFailure<_>>`, or `Result<unit, CardinalityFailure>`
 - simple `Check.whenX` helpers preserve the original source value in a unit-error carrier

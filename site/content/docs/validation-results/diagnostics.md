@@ -6,7 +6,7 @@ type: docs
 ---
 
 
-Unlike many validation libraries that return a flat list of error strings, FsFlow returns a structured **Diagnostics Graph**. This allows you to represent exactly *where* in a complex data structure a failure occurred.
+Unlike many validation libraries that return a flat list of error strings, Axial returns a structured **Diagnostics Graph**. This allows you to represent exactly *where* in a complex data structure a failure occurred.
 
 ## The Structure
 
@@ -74,4 +74,4 @@ Diagnostics are generic over the `'error` type. You can use `Validation.mapError
 
 For a complete, runnable example that demonstrates nested validation, path rendering, and JSON API error formatting, see the [Diagnostics Example](../patterns/examples/#diagnostics-example) in the runnable examples gallery.
 
-You can also view the [source code directly on GitHub](https://github.com/adz/FsFlow/blob/main/examples/FsFlow.Examples/DiagnosticsExample.fs).
+You can also view the [source code directly on GitHub](https://github.com/adz/Axial/blob/main/examples/Axial.Examples/DiagnosticsExample.fs).

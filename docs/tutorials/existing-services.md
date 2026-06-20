@@ -1,20 +1,20 @@
 ---
 weight: 30
 title: "Tutorial: Using Existing Services"
-description: Consume the standard FsFlow service packages from an explicit environment.
+description: Consume the standard Axial service packages from an explicit environment.
 ---
 
 # Tutorial: Using Existing Services
 
-FsFlow ships with a few reusable service packages such as clock, logging, environment variables, console, filesystem, HTTP, and process execution.
+Axial ships with a few reusable service packages such as clock, logging, environment variables, console, filesystem, HTTP, and process execution.
 
 These are still explicit dependencies. The workflow only sees them when your environment provides them.
 
 ## Build An Environment
 
 ```fsharp
-open FsFlow
-open FsFlow.Services.Core
+open Axial
+open Axial.Flow.PlatformService
 
 type AppEnv =
     { Runtime: BaseRuntime }
