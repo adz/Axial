@@ -4,9 +4,9 @@
     <NuGetAudit>false</NuGetAudit>
     <RepositoryUrl>https://github.com/adz/FsFlow</RepositoryUrl>
     <RepositoryBranch>main</RepositoryBranch>
-    <PackageProjectUrl>https://adz.github.io/FsFlow/</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/adz/FsFlow</PackageProjectUrl>
     <FsDocsCollectionName>FsFlow</FsDocsCollectionName>
-    <FsDocsLogoLink>https://adz.github.io/FsFlow/</FsDocsLogoLink>
+    <FsDocsLogoLink>https://github.com/adz/FsFlow</FsDocsLogoLink>
     <FsDocsLogoSource>content/img/fsflow-inline-light.svg</FsDocsLogoSource>
     <FsDocsFaviconSource>content/img/favicon-light.svg</FsDocsFaviconSource>
     <FsDocsLicenseLink>https://github.com/adz/FsFlow/blob/main/LICENSE</FsDocsLicenseLink>

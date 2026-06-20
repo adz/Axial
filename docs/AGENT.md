@@ -98,4 +98,4 @@ FsFlow unifies several types. Later types can "bind" (consume) earlier types dir
 ## Machine-Readable Reference
 
 For a more compressed, machine-optimized reference, point your agent to:
-`https://adz.github.io/FsFlow/llms.txt`
+`llms.txt` in the repo root, or the locally generated preview at `/llms.txt` when serving the docs site.

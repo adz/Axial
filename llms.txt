@@ -109,4 +109,4 @@ equivalent, FsFlow usually expects a different boundary shape rather than a 1:1 
 - `catch`: Handle exceptions.
 
 ## Usage in Prompting
-Users should point agents to `https://adz.github.io/FsFlow/llms.txt` for the full context.
+Users should point agents to `llms.txt` in the repo root, or the locally generated docs preview when available, for the full context.

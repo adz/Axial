@@ -1,4 +1,4 @@
-baseURL = "https://adz.github.io/FsFlow/"
+baseURL = "/"
 canonifyURLs = true
 locale = "en-us"
 title = "FsFlow"

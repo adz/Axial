@@ -1,7 +1,7 @@
 # FsFlow
 
 > [!WARNING]
-> API Still stabilising - wait for 1.0 to avoid breaking changes
+> FsFlow 0.7.0 is the last planned release under the FsFlow name before the split. Future development continues in `Axial.Result`, `Axial.Validation`, and `Axial`.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/content/img/fsflow-readme-dark.svg">
@@ -126,5 +126,6 @@ It reads `Root` from `'env`, performs two file reads in one `flow {}`, and keeps
 
 ## Getting Started
 
-- [Docs site](https://adz.github.io/FsFlow) for guides and API reference
+- Preview the docs locally with `bash scripts/preview-docs.sh`
+- Build and validate the docs with `bash scripts/validate-docs.sh`
 - [`examples/`](examples/) for runnable repo examples

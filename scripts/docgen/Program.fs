@@ -1006,7 +1006,7 @@ let main argv =
     ]
 
     let substitutions = Substitutions.Empty
-    let model = ApiDocs.GenerateModel(apiDocInputs, "FsFlow", substitutions, root="https://adz.github.io/FsFlow/", qualify=true)
+    let model = ApiDocs.GenerateModel(apiDocInputs, "FsFlow", substitutions, root="/", qualify=true)
     
     let allEntities = 
         model.EntityInfos 

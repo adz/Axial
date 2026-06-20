@@ -3,7 +3,7 @@
 set -euo pipefail
 
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-HUGO_BASEURL="${HUGO_BASEURL:-"https://adz.github.io/FsFlow/"}"
+HUGO_BASEURL="${HUGO_BASEURL:-"/"}"
 
 for project in \
   "src/FsFlow/FsFlow.fsproj" \

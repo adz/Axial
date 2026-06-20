@@ -8,7 +8,7 @@
     <Version>0.6.0</Version>
     <Authors>Adam Davies</Authors>
     <Description>F# application workflows for sync, Async, and task-oriented code with explicit environment requirements and typed failures.</Description>
-    <PackageProjectUrl>https://adz.github.io/FsFlow/</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/adz/FsFlow</PackageProjectUrl>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/adz/FsFlow</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -19,8 +19,8 @@
     <FsDocsCollectionName>FsFlow</FsDocsCollectionName>
     <FsDocsLogoSource>content/img/fsflow-inline-light.svg</FsDocsLogoSource>
     <FsDocsLogoAlt>FsFlow</FsDocsLogoAlt>
-    <FsDocsLogoLink>https://adz.github.io/FsFlow/</FsDocsLogoLink>
-    <FsDocsLogoLink>https://adz.github.io/FsFlow/</FsDocsLogoLink>
+    <FsDocsLogoLink>https://github.com/adz/FsFlow</FsDocsLogoLink>
+    <FsDocsLogoLink>https://github.com/adz/FsFlow</FsDocsLogoLink>
     <FsDocsLicenseLink>https://github.com/adz/FsFlow/blob/main/LICENSE</FsDocsLicenseLink>
     <FsDocsReleaseNotesLink>https://github.com/adz/FsFlow/blob/main/RELEASE_NOTES.md</FsDocsReleaseNotesLink>
     <IncludeSymbols>true</IncludeSymbols>
