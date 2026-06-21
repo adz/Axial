@@ -52,7 +52,7 @@ Do not hand-edit the generated API member pages unless you are fixing a generate
 
 Run `bash scripts/validate-docs.sh` for routine documentation validation. This regenerates examples, regenerates API reference pages, syncs Hugo content, and runs a static Hugo render into `.fsdocs/validate` without starting a long-lived server.
 
-Run `bash scripts/preview-docs.sh` for a local live-reload server at `http://localhost:3000` when you need browser review or screenshots. Stop it with `SIGHUP`, `TERM`, `INT`, or by creating `$FSFLOW_DOCS_PREVIEW_STOP_FILE` (default `/tmp/fsflow-docs-preview.stop`).
+Run `bash scripts/preview-docs.sh` for a local live-reload server at `http://localhost:3000` when you need browser review or screenshots. Stop it with `SIGHUP`, `TERM`, `INT`, or by creating `$AXIAL_DOCS_PREVIEW_STOP_FILE` (default `/tmp/axial-docs-preview.stop`).
 
 Use `bash scripts/build-docs-site.sh` only when preparing or checking deployment output. It builds all projects and writes the deployable site to `/output`, so it is heavier than the normal validation path.
 

@@ -1,5 +1,14 @@
 # Release Notes
 
+## 0.7.0 - 2026-06-21
+
+- First public release under the `Axial` package and repository identity, replacing the previous `FsFlow` naming.
+- Split the library into the coordinated Axial package family: `Axial.Flow`, `Axial.Result`, `Axial.Validation`, the umbrella `Axial` package, and focused `Axial.Flow.*` service packages.
+- Made `Axial.Flow` the primary effect package for explicit environment, typed failure, async/task interop, runtime policy, layers, scoped cleanup, fibers, STM, streams, and scheduling.
+- Added independent `Axial.Result` and `Axial.Validation` packages for fail-fast result helpers, `Check`, `result {}`, diagnostics, accumulating validation, and `validate {}`.
+- Refreshed package metadata, README content, examples, generated reference pages, and documentation site content for the Axial identity and split package surface.
+- Standardized pre-1.0 release versioning so every public Axial package in the release train ships at the same version from `Directory.Build.props`.
+
 ## 0.6.0 - 2026-05-17
 
 - **Hybrid Interop Optimization**: Re-engineered the `flow {}` builder to use inlined overloads for `Task`, `ValueTask`, and `Async`. This eliminates the "adapter tax" and brings performance significantly closer to native `task {}` expressions.
@@ -18,7 +27,7 @@
 - **Runtime Foundation**: Implemented a new internal `RuntimeRegistry` and `Scope` system for explicit service management and deterministic resource teardown.
 - **Service Redesign**: Migrated to nominal service contracts using standard F# interfaces, making workflow signatures more readable and stable.
 - **Fable 5 & Cross-Platform Support**: Full support for Fable 5 with a unified asynchronous strategy that remains performant on both .NET and JS targets.
-- **Telemetry & Hosting**: Added `FsFlow.Hosting` for seamless DI integration and `FsFlow.Runtime.Telemetry` for automatic distributed tracing and activity tagging.
+- **Telemetry & Hosting**: Added hosting and telemetry packages for seamless DI integration, distributed tracing, and activity tagging.
 - **Documentation Reorganization**: Completely restructured the documentation site with a hierarchical sidebar, new tutorials on dependency management, and a comprehensive API reference.
 
 ## 0.4.0 - 2026-05-03
@@ -35,26 +44,26 @@
 ## 0.3.0 - 2026-05-02
 
 - Major architectural shift to a workflow family: `Flow`, `AsyncFlow`, and `TaskFlow`
-- Introduced `FsFlow.Net` package for .NET task-oriented workflows and interop
+- Introduced a .NET task-oriented workflows and interop package
 - Added `ColdTask<'value>` for deferred, restartable task factories
 - Migrated documentation to a versioned Docusaurus site with generated runnable examples
 - Reorganized the docs into a clearer product-manual path across getting started, execution semantics, runtime interop, environment slicing, and architecture
-- Added package-oriented API landing pages for `FsFlow` and `FsFlow.Net`
+- Added package-oriented API landing pages
 - Trimmed the README into a shorter NuGet-facing entry point
 - Added pure validation helpers and effect bridges for `Async` and `Task`
 - Expanded benchmark suite with BenchmarkDotNet and new comparison scenarios
 
 ## 0.2.0 - 2026-04-28
 
-- Second public preview release of `FsFlow`
-- Completed the package and repository identity move to `FsFlow` across project files, examples, tests, docs, and packaging metadata
+- Second public preview release
+- Completed package and repository identity work across project files, examples, tests, docs, and packaging metadata
 - Refreshed the docs site presentation and bundled docs assets for the renamed package
 - Cleaned up solution and workflow references after the `v0.1.0` release
 - Kept the public `Flow` API stable while polishing the package surface before larger follow-up changes
 
 ## 0.1.0 - 2026-04-26
 
-- Initial public preview release of `FsFlow`
+- Initial public preview release
 - Core `Flow<'env, 'error, 'value>` abstraction for explicit environment requirements, typed failures, and cold execution
 - Direct `Result`, `Async`, `Task`, and `ColdTask` interop inside one `flow {}` workflow
 - Runtime helpers for cancellation, timeout, retry, logging, and scoped cleanup
@@ -64,9 +73,8 @@
 
 ## Release Process
 
-Publish versions as Git tags such as `v0.6.0`.
+Publish versions as Git tags such as `v0.7.0`.
 
 The GitHub release workflow builds the package artifacts and attaches them to a GitHub Release.
-**Note:** Only the core `FsFlow` package is currently part of the public release cycle. Service packages (`FsFlow.Services.*`) are experimental and versioned independently.
 
-NuGet publishing stays manual. Use `scripts/pack.sh` to build the local artifacts.
+NuGet publishing is handled by the release workflow for `v*.*.*` tags. Use `scripts/pack.sh` to build local artifacts before tagging.
