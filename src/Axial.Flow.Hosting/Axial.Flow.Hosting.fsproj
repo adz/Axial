@@ -7,7 +7,6 @@
     <AssemblyName>Axial.Flow.Hosting</AssemblyName>
     <RootNamespace>Axial.Flow.Hosting</RootNamespace>
     <PackageId>Axial.Flow.Hosting</PackageId>
-    <Version>0.1.0</Version>
     <Authors>Adam Davies</Authors>
     <Description>Host integration and IServiceProvider adapters for Axial runtimes and flow platform services.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>

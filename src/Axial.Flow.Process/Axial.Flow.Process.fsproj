@@ -7,7 +7,6 @@
     <AssemblyName>Axial.Flow.Process</AssemblyName>
     <RootNamespace>Axial.Flow.Process</RootNamespace>
     <PackageId>Axial.Flow.Process</PackageId>
-    <Version>0.1.0</Version>
     <Authors>Adam Davies</Authors>
     <Description>Standard external process service for Axial workflows.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>

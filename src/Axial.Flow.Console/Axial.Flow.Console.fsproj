@@ -7,7 +7,6 @@
     <AssemblyName>Axial.Flow.Console</AssemblyName>
     <RootNamespace>Axial.Flow.Console</RootNamespace>
     <PackageId>Axial.Flow.Console</PackageId>
-    <Version>0.1.0</Version>
     <Authors>Adam Davies</Authors>
     <Description>Standard console I/O service for Axial workflows.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>

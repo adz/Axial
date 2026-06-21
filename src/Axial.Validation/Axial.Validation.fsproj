@@ -7,7 +7,6 @@
     <PackageId>Axial.Validation</PackageId>
     <AssemblyName>Axial.Validation</AssemblyName>
     <RootNamespace>Axial.Validation</RootNamespace>
-    <Version>0.1.0</Version>
     <Authors>Adam Davies</Authors>
     <Description>Accumulating validation and diagnostics helpers for path-aware input checking.</Description>
     <PackageProjectUrl>https://github.com/adz/Axial</PackageProjectUrl>

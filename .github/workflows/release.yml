@@ -51,11 +51,24 @@ jobs:
       - name: Install PostCSS dependencies
         run: npm install --prefix site
 
-      - name: Run test harness
-        run: dotnet run --project tests/FsFlow.Tests/FsFlow.Tests.fsproj --nologo
+      - name: Build
+        run: dotnet build Axial.slnx --configuration Release --no-restore --nologo -v minimal
 
-      - name: Pack library
-        run: dotnet pack src/FsFlow/FsFlow.fsproj --configuration Release --output artifacts/package
+      - name: Test
+        run: dotnet test tests/Axial.Tests/Axial.Tests.fsproj --configuration Release --no-build --nologo -v minimal
+
+      - name: Determine package version
+        id: version
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "package_version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "package_version=0.7.0" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Pack libraries
+        run: bash scripts/pack.sh -v "${{ steps.version.outputs.package_version }}"
 
       - name: Build docs site
         run: bash scripts/build-docs-site.sh
@@ -82,3 +95,42 @@ jobs:
           files: |
             artifacts/package/*.nupkg
             artifacts/package/*.snupkg
+
+  publish-nuget:
+    runs-on: ubuntu-latest
+    needs: package
+    if: startsWith(github.ref, 'refs/tags/v')
+    environment: nuget
+    permissions:
+      contents: read
+
+    steps:
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Download package artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: packages
+          path: artifacts/package
+
+      - name: Publish NuGet packages
+        shell: bash
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          for package in artifacts/package/*.nupkg; do
+            dotnet nuget push "$package" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
+          done
+
+      - name: Publish NuGet symbol packages
+        shell: bash
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          for package in artifacts/package/*.snupkg; do
+            [ -e "$package" ] || continue
+            dotnet nuget push "$package" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
+          done

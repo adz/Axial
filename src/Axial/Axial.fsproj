@@ -7,7 +7,6 @@
     <PackageId>Axial</PackageId>
     <AssemblyName>Axial</AssemblyName>
     <RootNamespace>Axial</RootNamespace>
-    <Version>0.1.0</Version>
     <Authors>Adam Davies</Authors>
     <Description>Umbrella package for Axial.Flow, Axial.Result, and Axial.Validation.</Description>
     <PackageProjectUrl>https://github.com/adz/Axial</PackageProjectUrl>

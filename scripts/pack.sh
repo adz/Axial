@@ -3,13 +3,14 @@
 set -euo pipefail
 
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-output_dir="$root_dir/artifacts/package"
+cd "$root_dir"
 
-# Ensure output directory exists and is clean
-rm -rf "$output_dir"
+output_dir="artifacts/package"
+
 mkdir -p "$output_dir"
+find "$output_dir" -maxdepth 1 -type f \( -name '*.nupkg' -o -name '*.snupkg' \) -delete
 
-# Default version from Axial.fsproj if not provided via -v
+# Default version comes from Directory.Build.props if not provided via -v.
 VERSION=""
 while getopts "v:" opt; do
   case $opt in
@@ -18,9 +19,18 @@ while getopts "v:" opt; do
   esac
 done
 
-# Current released projects (only core Axial for now)
 projects=(
+  "src/Axial.Flow/Axial.Flow.fsproj"
+  "src/Axial.Result/Axial.Result.fsproj"
+  "src/Axial.Validation/Axial.Validation.fsproj"
   "src/Axial/Axial.fsproj"
+  "src/Axial.Flow.Console/Axial.Flow.Console.fsproj"
+  "src/Axial.Flow.FileSystem/Axial.Flow.FileSystem.fsproj"
+  "src/Axial.Flow.Http/Axial.Flow.Http.fsproj"
+  "src/Axial.Flow.Process/Axial.Flow.Process.fsproj"
+  "src/Axial.Flow.PlatformService/Axial.Flow.PlatformService.fsproj"
+  "src/Axial.Flow.Hosting/Axial.Flow.Hosting.fsproj"
+  "src/Axial.Flow.Telemetry/Axial.Flow.Telemetry.fsproj"
 )
 
 echo "Packing projects to $output_dir..."
@@ -28,9 +38,9 @@ echo "Packing projects to $output_dir..."
 for project in "${projects[@]}"; do
   echo "--- Packing $(basename "$project") ---"
   if [[ -n "$VERSION" ]]; then
-    dotnet pack "$root_dir/$project" --configuration Release --output "$output_dir" -p:Version="$VERSION"
+    dotnet pack "$project" --configuration Release --output "$output_dir" -p:Version="$VERSION"
   else
-    dotnet pack "$root_dir/$project" --configuration Release --output "$output_dir"
+    dotnet pack "$project" --configuration Release --output "$output_dir"
   fi
 done
 

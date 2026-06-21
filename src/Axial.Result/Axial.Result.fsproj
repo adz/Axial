@@ -7,7 +7,6 @@
     <PackageId>Axial.Result</PackageId>
     <AssemblyName>Axial.Result</AssemblyName>
     <RootNamespace>Axial.Result</RootNamespace>
-    <Version>0.1.0</Version>
     <Authors>Adam Davies</Authors>
     <Description>Fail-fast Result helpers, checks, and result computation expressions.</Description>
     <PackageProjectUrl>https://github.com/adz/Axial</PackageProjectUrl>

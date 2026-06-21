@@ -7,7 +7,6 @@
     <AssemblyName>Axial.Flow.Http</AssemblyName>
     <RootNamespace>Axial.Flow.Http</RootNamespace>
     <PackageId>Axial.Flow.Http</PackageId>
-    <Version>0.1.0</Version>
     <Authors>Adam Davies</Authors>
     <Description>Standard HTTP client service for Axial workflows.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>

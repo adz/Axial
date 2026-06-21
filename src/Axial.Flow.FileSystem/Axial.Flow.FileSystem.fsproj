@@ -7,7 +7,6 @@
     <AssemblyName>Axial.Flow.FileSystem</AssemblyName>
     <RootNamespace>Axial.Flow.FileSystem</RootNamespace>
     <PackageId>Axial.Flow.FileSystem</PackageId>
-    <Version>0.1.0</Version>
     <Authors>Adam Davies</Authors>
     <Description>Standard file-system service for Axial workflows.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>

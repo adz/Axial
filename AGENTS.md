@@ -24,10 +24,10 @@ Refer to [`dev-docs/PLAN.md`](dev-docs/PLAN.md) for architectural direction and 
 
 - **Before 1.0:** Bravely iterate. Remove old APIs and "old ways" immediately when a better alternative is established. Do not maintain compatibility aliases or stale patterns.
 - **Post 1.0:** Standard semantic versioning applies. Maintain compatibility and use deprecation cycles for breaking changes.
-- `Axial.Flow`, `Axial.Result`, `Axial.Validation`, the umbrella `Axial` package, and the `Axial.Flow.*` add-on packages are versioned independently until a release policy says otherwise.
-- **Experimental Status:** The `Axial.Flow.*` add-on packages (PlatformService, Console, FileSystem, HTTP, Process, Hosting, Telemetry, etc.) are currently considered experimental and are **not** included in the public NuGet release cycle. Their versioning relationship to the primary packages is TBD.
-- Do not force the core release line to wait for the least mature service package.
-- Treat `Axial.Flow.*` add-on packages as optional add-ons until each package has its own stable release story.
+- Pre-1.0 releases use one coordinated package version across `Axial.Flow`, `Axial.Result`, `Axial.Validation`, the umbrella `Axial` package, and the `Axial.Flow.*` add-on packages.
+- The shared package version lives in `Directory.Build.props`; individual packable projects should not declare their own `<Version>`.
+- A release tag such as `v0.7.0` produces all public Axial NuGet packages at version `0.7.0`.
+- Revisit independent package versioning after the package boundaries stabilize, likely at or after 1.0.
 
 ## Documentation Integrity
 

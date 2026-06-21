@@ -7,7 +7,6 @@
     <AssemblyName>Axial.Flow.Telemetry</AssemblyName>
     <RootNamespace>Axial.Flow.Telemetry</RootNamespace>
     <PackageId>Axial.Flow.Telemetry</PackageId>
-    <Version>0.1.0</Version>
     <Authors>Adam Davies</Authors>
     <Description>Automatic telemetry and tracing for Axial flow runtimes using System.Diagnostics.Activity.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>

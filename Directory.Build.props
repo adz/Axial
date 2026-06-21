@@ -1,6 +1,7 @@
 <Project>
   <PropertyGroup>
     <UseArtifactsOutput>true</UseArtifactsOutput>
+    <Version>0.7.0</Version>
     <NuGetAudit>false</NuGetAudit>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
     <RepositoryBranch>main</RepositoryBranch>
@@ -11,5 +12,10 @@
     <FsDocsFaviconSource>content/img/favicon-light.svg</FsDocsFaviconSource>
     <FsDocsLicenseLink>https://github.com/adz/Axial/blob/main/LICENSE</FsDocsLicenseLink>
     <FsDocsReleaseNotesLink>https://github.com/adz/Axial/blob/main/RELEASE_NOTES.md</FsDocsReleaseNotesLink>
+    <PackageReadmeFile Condition="'$(PackageReadmeFile)' == ''">README.md</PackageReadmeFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
 </Project>

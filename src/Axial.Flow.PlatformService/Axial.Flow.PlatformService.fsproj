@@ -7,7 +7,6 @@
     <AssemblyName>Axial.Flow.PlatformService</AssemblyName>
     <RootNamespace>Axial.Flow.PlatformService</RootNamespace>
     <PackageId>Axial.Flow.PlatformService</PackageId>
-    <Version>0.1.0</Version>
     <Authors>Adam Davies</Authors>
     <Description>Shared explicit service primitives for Axial flow clock, random, GUID, logging, and environment-variable boundaries.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>

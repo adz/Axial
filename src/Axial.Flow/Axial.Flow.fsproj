@@ -7,7 +7,6 @@
     <PackageId>Axial.Flow</PackageId>
     <AssemblyName>Axial.Flow</AssemblyName>
     <RootNamespace>Axial.Flow</RootNamespace>
-    <Version>0.1.0</Version>
     <Authors>Adam Davies</Authors>
     <Description>Effectful workflow execution for sync, Async, Task, and explicit environment code.</Description>
     <PackageProjectUrl>https://github.com/adz/Axial</PackageProjectUrl>
