@@ -1,14 +1,14 @@
-// Custom styles for FsFlow docs
-$fsflow-text: "Inter", "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
-$fsflow-code: "JetBrains Mono", "Cascadia Code", "Fira Code", "SFMono-Regular", Consolas, monospace;
+// Custom styles for Axial docs
+$axial-text: "Inter", "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+$axial-code: "JetBrains Mono", "Cascadia Code", "Fira Code", "SFMono-Regular", Consolas, monospace;
 
 body {
-  font-family: $fsflow-text;
+  font-family: $axial-text;
   color: #243041;
 }
 
 .td-content {
-  font-family: $fsflow-text;
+  font-family: $axial-text;
 
   p,
   li,
@@ -34,7 +34,7 @@ kbd,
 pre,
 samp,
 .highlight {
-  font-family: $fsflow-code;
+  font-family: $axial-code;
 }
 
 .td-content :not(pre) > code {
@@ -58,7 +58,7 @@ samp,
   padding-inline: 0.7rem;
 }
 
-.fsflow-pre1-banner {
+.axial-pre1-banner {
   width: 100%;
   min-height: 2.75rem;
   margin: 4rem 0 1.25rem;
@@ -72,17 +72,17 @@ samp,
   text-align: center;
 }
 
-.fsflow-pre1-banner p {
+.axial-pre1-banner p {
   margin: 0;
 }
 
-.fsflow-pre1-banner code {
+.axial-pre1-banner code {
   color: inherit;
   background: rgba(124, 45, 18, 0.08);
 }
 
 @media (min-width: 768px) {
-  .fsflow-pre1-banner + .row > main {
+  .axial-pre1-banner + .row > main {
     padding-top: var(--td-main-padding-top);
   }
 }
@@ -117,7 +117,7 @@ samp,
   display: block;
   max-width: 60ch;
   margin: 0 0 2.5rem;
-  font-family: $fsflow-text;
+  font-family: $axial-text;
   font-size: 1.4rem;
   line-height: 1.6;
   color: #334155;

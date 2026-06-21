@@ -3,7 +3,7 @@
 set -euo pipefail
 
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-project="$root_dir/benchmarks/FsFlow.Benchmarks.Fable/FsFlow.Benchmarks.Fable.fsproj"
+project="$root_dir/benchmarks/Axial.Benchmarks.Fable/Axial.Benchmarks.Fable.fsproj"
 out_dir="$root_dir/artifacts/fable-js-surface"
 
 rm -rf "$out_dir"

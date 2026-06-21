@@ -4,9 +4,9 @@
 > Axial 0.7.0 is the last planned release under the Axial name before the split. The new package line continues in `Axial.Flow`, `Axial.Result`, `Axial.Validation`, and the umbrella `Axial` package.
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/content/img/fsflow-readme-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="docs/content/img/fsflow-readme-light.svg">
-  <img alt="Axial" src="docs/content/img/fsflow-readme-light.svg" width="160">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/content/img/axial-readme-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="docs/content/img/axial-readme-light.svg">
+  <img alt="Axial" src="docs/content/img/axial-readme-light.svg" width="160">
 </picture>
 
 Axial provides **structured composition over normal F#/.NET code**. It is a coherent application architecture model for F# on .NET, centered on a unified effect system.

@@ -1,17 +1,17 @@
-# FsFlow TODO
+# Axial TODO
 
-This TODO is for FsFlow in `/home/adam/projects/FsFlow/main`. It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Native files in `/home/adam/projects/zio_fsflow_docs/zio` should be used as behavioral and compatibility references only, not as target platforms for .NET.
+This TODO is for Axial in this repository. It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Native reference material should be used as behavioral and compatibility input only, not as target platforms for .NET.
 
 ## References
 
 - Delta PRD: `prd.md`
-- Reference PRD: `/home/adam/projects/zio_fsflow_docs/zio/specs/prd.md`
-- Reference TODO: `/home/adam/projects/zio_fsflow_docs/zio/TODO.md`
-- Reference source/test specs: `/home/adam/projects/zio_fsflow_docs/zio/specs/*.md`
+- Reference PRD: external ZIO reference corpus, `specs/prd.md`
+- Reference TODO: external ZIO reference corpus, `TODO.md`
+- Reference source/test specs: external ZIO reference corpus, `specs/*.md`
 
 ## 1. Lock the Current Baseline
 
-- [x] Run the current FsFlow test suite and record the baseline command/result in this repo.
+- [x] Run the current Axial test suite and record the baseline command/result in this repo.
 - [x] Record a source/test inventory in CI or docs so future delta reviews can prove every `src/**/*.fs`, `src/**/*.fsproj`, `tests/**/*.fs`, and `tests/**/*.fsproj` file is covered.
 - [x] Add API-shape tests for the public `Flow`, builder, validation, schedule, stream, STM, and service modules.
 - [x] Add a Fable compilation gate for the intended JavaScript surface.
@@ -41,7 +41,7 @@ This TODO is for FsFlow in `/home/adam/projects/FsFlow/main`. It is .NET focused
 - [x] Replace `Flow.service` and `Flow.inject` with `Service<'service>.get()` and `Service<'service>.resolve()`.
 - [x] Make `Scope`, `Layer`, and `Flow.provide` part of the public service provisioning model.
 - [x] Move former ambient operational services to explicit services.
-- [x] Add `BaseRuntime` and live/provider-backed layer helpers in `FsFlow.Services.Core`.
+- [x] Add `BaseRuntime` and live/provider-backed layer helpers in `Axial.Flow.PlatformService`.
 - [x] Align Console, FileSystem, Http, and Process packages to the service-plus-layer model.
 - [x] Add public docs for explicit services, provider boundaries, layers, scopes/resources, and base runtime construction.
 - [x] Update `llms.txt`, agent guidance, and generated API reference docs for the service/layer model.
@@ -54,7 +54,7 @@ This TODO is for FsFlow in `/home/adam/projects/FsFlow/main`. It is .NET focused
 ## 5. v1.0 Concurrency and State
 
 - [x] Add Promise/deferred result primitive.
-- [ ] Design bounded and unbounded queues only when a concrete v1 feature needs FsFlow-owned backpressure, shutdown, and interruption semantics.
+- [ ] Design bounded and unbounded queues only when a concrete v1 feature needs Axial-owned backpressure, shutdown, and interruption semantics.
 - [x] Add semaphore primitive.
 - [ ] Stabilize `Ref` for v1.0, including atomic modify/get-and-set/update-and-get helpers.
 - [ ] Cover future queue shutdown/fairness semantics and remaining state/resource cleanup cases in tests.
@@ -69,24 +69,24 @@ This TODO is for FsFlow in `/home/adam/projects/FsFlow/main`. It is .NET focused
 
 - [ ] Add structured log context or annotations sufficient for request/correlation/tenant-style metadata.
 - [ ] Extend the current `ActivitySource` telemetry wrapper with exit tagging, error/defect recording, cancellation tagging, and fiber/runtime metadata available in v1.0.
-- [ ] Integrate observability with `FsFlow.Runtime.Telemetry` and `Microsoft.Extensions.Logging`.
+- [ ] Integrate observability with `Axial.Flow.Telemetry` and `Microsoft.Extensions.Logging`.
 - [ ] Add tests for annotation/span propagation through flows, fibers, layers, resources, and retries.
 
 ## 7a. Future Service Packages
 
-- [ ] Treat service packages as explicit service contracts over the expected .NET API surface: wrap most operations a competent .NET developer would look for, omitting only obsolete, legacy-only, redundant, unsafe-to-abstract, or poor-FsFlow-fit APIs.
-- [ ] Use `FsFlow.Services.Core` and `FsFlow.Services.FileSystem` as the first examples of near-complete service surfaces with live implementations, typed Flow helpers, fake-friendly contracts, tests, and generated reference docs.
-- [ ] Expand `FsFlow.Services.Console` into a near-complete console/terminal service package rather than only read/write-line helpers.
-- [ ] Expand `FsFlow.Services.Http` into a practical HTTP service package that covers common `HttpClient` request/response, headers, content, timeout, cancellation, and error-classification scenarios without hiding host-owned client configuration.
-- [ ] Expand `FsFlow.Services.Process` into a near-complete process service package covering start-info configuration, environment, working directory, streams, cancellation, timeouts, exit handling, and typed errors.
-- [ ] Design `FsFlow.Services.Network` after the core v1 service/layer surface is stable.
-- [ ] Decide whether telemetry needs explicit service contracts under `FsFlow.Services.Telemetry`, or should remain runtime instrumentation through `FsFlow.Runtime.Telemetry`.
+- [ ] Treat service packages as explicit service contracts over the expected .NET API surface: wrap most operations a competent .NET developer would look for, omitting only obsolete, legacy-only, redundant, unsafe-to-abstract, or poor-Axial-fit APIs.
+- [ ] Use `Axial.Flow.PlatformService` and `Axial.Flow.FileSystem` as the first examples of near-complete service surfaces with live implementations, typed Flow helpers, fake-friendly contracts, tests, and generated reference docs.
+- [ ] Expand `Axial.Flow.Console` into a near-complete console/terminal service package rather than only read/write-line helpers.
+- [ ] Expand `Axial.Flow.Http` into a practical HTTP service package that covers common `HttpClient` request/response, headers, content, timeout, cancellation, and error-classification scenarios without hiding host-owned client configuration.
+- [ ] Expand `Axial.Flow.Process` into a near-complete process service package covering start-info configuration, environment, working directory, streams, cancellation, timeouts, exit handling, and typed errors.
+- [ ] Design `Axial.Flow.Network` after the core v1 service/layer surface is stable.
+- [ ] Decide whether telemetry needs explicit service contracts under a future telemetry package, or should remain runtime instrumentation through `Axial.Flow.Telemetry`.
 - [ ] If telemetry services are introduced, define how they compose with annotations, `ActivitySource`, `Microsoft.Extensions.Logging`, layers, and host-provider boundaries.
 
 ## 8. v1.0 Compatibility Tracks
 
 - [ ] Define the supported Fable subset explicitly.
-- [ ] Add a minimal Fable app/test project that references FsFlow and compiles to JavaScript.
+- [ ] Add a minimal Fable app/test project that references Axial and compiles to JavaScript.
 - [ ] Audit APIs guarded by `#if !FABLE_COMPILER`, especially `AsyncAdapter`, `TaskAdapter`, `Ref`, `STM`, `Stream`, `Schedule`, `Task`, `ValueTask`, process, live console, filesystem, hosting, and telemetry APIs.
 - [ ] Provide Fable-safe alternatives or document unsupported modules.
 - [ ] Add trimming analyzer warnings as build failures for the `net8.0` target.
@@ -96,10 +96,10 @@ This TODO is for FsFlow in `/home/adam/projects/FsFlow/main`. It is .NET focused
 
 ## 9. v1.0 Documentation and Examples
 
-- [ ] Update README/docs to explain FsFlow's target model: .NET baseline, Fable JavaScript, NativeAOT/trimming.
+- [ ] Update README/docs to explain Axial's target model: .NET baseline, Fable JavaScript, NativeAOT/trimming.
 - [ ] Add examples for environment/layer usage, resource safety, fibers, cancellation, retry/timeout, validation, services, and hosting.
 - [ ] Add migration notes as runtime semantics become richer.
-- [ ] Keep links back to `/home/adam/projects/zio_fsflow_docs/zio` for parity rationale, not platform promises.
+- [ ] Keep links back to the external ZIO reference corpus for parity rationale, not platform promises.
 
 ## 10. Post-v1.0 Fiber Runtime
 

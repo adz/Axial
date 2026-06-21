@@ -14,12 +14,12 @@ case "$answer" in
 esac
 
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-project="$root_dir/benchmarks/FsFlow.Benchmarks.Fable/FsFlow.Benchmarks.Fable.fsproj"
-project_dir="$root_dir/benchmarks/FsFlow.Benchmarks.Fable"
+project="$root_dir/benchmarks/Axial.Benchmarks.Fable/Axial.Benchmarks.Fable.fsproj"
+project_dir="$root_dir/benchmarks/Axial.Benchmarks.Fable"
 node_out="$root_dir/artifacts/fable-benchmarks/node"
 beam_out="$root_dir/artifacts/fable-benchmarks/beam"
-mise_state_dir="/tmp/fsflow-mise-state"
-mise_cache_dir="/tmp/fsflow-mise-cache"
+mise_state_dir="/tmp/axial-mise-state"
+mise_cache_dir="/tmp/axial-mise-cache"
 
 rm -rf "$node_out" "$beam_out"
 mkdir -p "$node_out" "$beam_out"
@@ -35,7 +35,7 @@ XDG_STATE_HOME="$mise_state_dir" XDG_CACHE_HOME="$mise_cache_dir" mise exec -C "
 
 echo "Running Fable benchmark suite on Erlang/BEAM..."
 XDG_STATE_HOME="$mise_state_dir" XDG_CACHE_HOME="$mise_cache_dir" mise exec -C "$project_dir" -- dotnet fable "$project" --lang beam --define BENCHMARK_BEAM --outDir "$beam_out"
-beam_ebin="$beam_out/_build/default/lib/fsflow_benchmarks_fable/ebin"
+beam_ebin="$beam_out/_build/default/lib/axial_benchmarks_fable/ebin"
 rm -rf "$beam_ebin"
 mkdir -p "$beam_ebin"
 find "$beam_out" -name '*.erl' -print0 | xargs -0 /home/adam/.local/share/mise/installs/erlang/27.2.2/bin/erlc -o "$beam_ebin"

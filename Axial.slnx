@@ -1,0 +1,35 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/examples/">
+    <Project Path="examples/Axial.AotProbe/Axial.AotProbe.fsproj" />
+    <Project Path="examples/Axial.Examples/Axial.Examples.fsproj" />
+    <Project Path="examples/Axial.ReadmeExample/Axial.ReadmeExample.fsproj" />
+    <Project Path="examples/Axial.MaintenanceExamples/Axial.MaintenanceExamples.fsproj" />
+    <Project Path="examples/Axial.Playground/Axial.Playground.fsproj" />
+    <Project Path="examples/Axial.Flow.PlatformService.Examples/Axial.Flow.PlatformService.Examples.fsproj" />
+  </Folder>
+  <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/Axial.Benchmarks/Axial.Benchmarks.fsproj" />
+    <Project Path="benchmarks/Axial.Benchmarks.Fable/Axial.Benchmarks.Fable.fsproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Axial/Axial.fsproj" />
+    <Project Path="src/Axial.Flow.PlatformService/Axial.Flow.PlatformService.fsproj" />
+    <Project Path="src/Axial.Flow.Console/Axial.Flow.Console.fsproj" />
+    <Project Path="src/Axial.Flow.FileSystem/Axial.Flow.FileSystem.fsproj" />
+    <Project Path="src/Axial.Flow.Http/Axial.Flow.Http.fsproj" />
+    <Project Path="src/Axial.Flow.Process/Axial.Flow.Process.fsproj" />
+    <Project Path="src/Axial.Flow/Axial.Flow.fsproj" />
+    <Project Path="src/Axial.Result/Axial.Result.fsproj" />
+    <Project Path="src/Axial.Validation/Axial.Validation.fsproj" />
+    <Project Path="src/Axial.Flow.Hosting/Axial.Flow.Hosting.fsproj" />
+    <Project Path="src/Axial.Flow.Telemetry/Axial.Flow.Telemetry.fsproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Axial.Tests/Axial.Tests.fsproj" />
+  </Folder>
+</Solution>

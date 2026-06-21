@@ -69,7 +69,7 @@ ${task_number}. [ ] ${task_text}
 Repository rules to follow:
 - Read and follow AGENTS.md, dev-docs/PLAN.md, and dev-docs/TASKS.md.
 - Complete this task end-to-end and do not start any later tasks.
-- Keep the repository's FsFlow architecture direction intact.
+- Keep the repository's Axial architecture direction intact.
 - Update dev-docs/TASKS.md to mark this task complete only if it is actually complete.
 - After completing this task, create exactly one git commit for it before stopping.
 - Leave the working tree clean when you finish.

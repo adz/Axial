@@ -22,15 +22,15 @@
       */ -}}
       {{ $attr := ` data-bs-spy="scroll" data-bs-target=".td-toc" data-bs-root-margin="0px 0px -10%"` -}}
       <div class="td-main" {{- $attr | safeHTMLAttr }}>
-        {{ partial "fsflow-pre1-banner.html" . }}
+        {{ partial "axial-pre1-banner.html" . }}
         <div class="row flex-xl-nowrap">
-          <aside class="col-12 col-md-3 col-xl-2 td-sidebar d-print-none" id="fsflow-docs-sidebar">
-            <button class="btn btn-link fsflow-sidebar-collapse-toggle" type="button"
-              data-bs-toggle="collapse" data-bs-target="#fsflow-sidebar-body"
-              aria-controls="fsflow-sidebar-body" aria-expanded="true">
+          <aside class="col-12 col-md-3 col-xl-2 td-sidebar d-print-none" id="axial-docs-sidebar">
+            <button class="btn btn-link axial-sidebar-collapse-toggle" type="button"
+              data-bs-toggle="collapse" data-bs-target="#axial-sidebar-body"
+              aria-controls="axial-sidebar-body" aria-expanded="true">
               Toggle menu
             </button>
-            <div id="fsflow-sidebar-body" class="collapse show">
+            <div id="axial-sidebar-body" class="collapse show">
               {{ partial "sidebar.html" . }}
             </div>
           </aside>

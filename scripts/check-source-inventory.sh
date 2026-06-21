@@ -9,7 +9,7 @@ tmp_dir="$(mktemp -d)"
 trap 'rm -rf "$tmp_dir"' EXIT
 
 find src tests -name '*.fsproj' -print | sort > "$tmp_dir/projects.actual"
-grep -o 'Path="[^"]*\.fsproj"' FsFlow.slnx \
+grep -o 'Path="[^"]*\.fsproj"' Axial.slnx \
   | sed 's/^Path="//; s/"$//' \
   | grep -E '^(src|tests)/' \
   | sort > "$tmp_dir/projects.expected"
@@ -31,7 +31,7 @@ while IFS= read -r project; do
 done < "$tmp_dir/projects.actual" | sort -u > "$tmp_dir/sources.expected"
 
 if ! diff -u "$tmp_dir/projects.expected" "$tmp_dir/projects.actual"; then
-  echo "Source project inventory mismatch: update FsFlow.slnx or remove stale src/tests project files." >&2
+  echo "Source project inventory mismatch: update Axial.slnx or remove stale src/tests project files." >&2
   exit 1
 fi
 

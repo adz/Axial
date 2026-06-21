@@ -22,7 +22,7 @@ run_example() {
 
   dotnet build "$project_path" --nologo --verbosity quiet --disable-build-servers -p:UseSharedCompilation=false
   if [[ -n "$example_filter" ]]; then
-    FSFLOW_EXAMPLE="$example_filter" dotnet run --project "$project_path" --no-build --no-restore --nologo 2>&1
+    AXIAL_EXAMPLE="$example_filter" dotnet run --project "$project_path" --no-build --no-restore --nologo 2>&1
   else
     dotnet run --project "$project_path" --no-build --no-restore --nologo 2>&1
   fi
@@ -73,33 +73,33 @@ EOF
 render_example_section \
   "Request Boundary Example" \
   "This example shows a request boundary that pulls a user from a database-like environment, threads a trace id through the request context, and reuses the same validation shape across Flow." \
-  "$root_dir/examples/FsFlow.Examples/FsFlow.Examples.fsproj" \
-  "$root_dir/examples/FsFlow.Examples/RequestBoundaryExample.fs" \
-  "https://github.com/adz/FsFlow/blob/main/examples/FsFlow.Examples/RequestBoundaryExample.fs" \
-  "FSFLOW_EXAMPLE=request-boundary dotnet run --project examples/FsFlow.Examples/FsFlow.Examples.fsproj --nologo" \
+  "$root_dir/examples/Axial.Examples/Axial.Examples.fsproj" \
+  "$root_dir/examples/Axial.Examples/RequestBoundaryExample.fs" \
+  "https://github.com/adz/Axial/blob/main/examples/Axial.Examples/RequestBoundaryExample.fs" \
+  "AXIAL_EXAMPLE=request-boundary dotnet run --project examples/Axial.Examples/Axial.Examples.fsproj --nologo" \
   "request-boundary"
 
 render_example_section \
   "Diagnostics Example" \
   "This example shows a JSON-shaped request boundary with a root-level error, nested child branches, and a display-friendly diagnostics tree." \
-  "$root_dir/examples/FsFlow.Examples/FsFlow.Examples.fsproj" \
-  "$root_dir/examples/FsFlow.Examples/DiagnosticsExample.fs" \
-  "https://github.com/adz/FsFlow/blob/main/examples/FsFlow.Examples/DiagnosticsExample.fs" \
-  "FSFLOW_EXAMPLE=diagnostics dotnet run --project examples/FsFlow.Examples/FsFlow.Examples.fsproj --nologo" \
+  "$root_dir/examples/Axial.Examples/Axial.Examples.fsproj" \
+  "$root_dir/examples/Axial.Examples/DiagnosticsExample.fs" \
+  "https://github.com/adz/Axial/blob/main/examples/Axial.Examples/DiagnosticsExample.fs" \
+  "AXIAL_EXAMPLE=diagnostics dotnet run --project examples/Axial.Examples/Axial.Examples.fsproj --nologo" \
   "diagnostics"
 
 render_example_section \
   'Playground Example' \
   "This example shows the same core boundary across Flow using the normal direct-bind style inside each computation expression." \
-  "$root_dir/examples/FsFlow.Playground/FsFlow.Playground.fsproj" \
-  "$root_dir/examples/FsFlow.Playground/Program.fs" \
-  "https://github.com/adz/FsFlow/blob/main/examples/FsFlow.Playground/Program.fs" \
-  "dotnet run --project examples/FsFlow.Playground/FsFlow.Playground.fsproj --nologo"
+  "$root_dir/examples/Axial.Playground/Axial.Playground.fsproj" \
+  "$root_dir/examples/Axial.Playground/Program.fs" \
+  "https://github.com/adz/Axial/blob/main/examples/Axial.Playground/Program.fs" \
+  "dotnet run --project examples/Axial.Playground/Axial.Playground.fsproj --nologo"
 
 render_example_section \
   "Maintenance Example" \
   "This example shows smaller, focused shapes for maintenance and interop scenarios without switching away from the normal direct-bind style." \
-  "$root_dir/examples/FsFlow.MaintenanceExamples/FsFlow.MaintenanceExamples.fsproj" \
-  "$root_dir/examples/FsFlow.MaintenanceExamples/Program.fs" \
-  "https://github.com/adz/FsFlow/blob/main/examples/FsFlow.MaintenanceExamples/Program.fs" \
-  "dotnet run --project examples/FsFlow.MaintenanceExamples/FsFlow.MaintenanceExamples.fsproj --nologo"
+  "$root_dir/examples/Axial.MaintenanceExamples/Axial.MaintenanceExamples.fsproj" \
+  "$root_dir/examples/Axial.MaintenanceExamples/Program.fs" \
+  "https://github.com/adz/Axial/blob/main/examples/Axial.MaintenanceExamples/Program.fs" \
+  "dotnet run --project examples/Axial.MaintenanceExamples/Axial.MaintenanceExamples.fsproj --nologo"

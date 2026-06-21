@@ -10,19 +10,19 @@
     <Version>0.1.0</Version>
     <Authors>Adam Davies</Authors>
     <Description>Umbrella package for Axial.Flow, Axial.Result, and Axial.Validation.</Description>
-    <PackageProjectUrl>https://github.com/adz/FsFlow</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/adz/Axial</PackageProjectUrl>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-    <RepositoryUrl>https://github.com/adz/FsFlow</RepositoryUrl>
+    <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <PackageTags>fsharp;axial;workflow;result;validation;effect</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <FsDocsCollectionName>Axial</FsDocsCollectionName>
-    <FsDocsLogoSource>content/img/fsflow-inline-light.svg</FsDocsLogoSource>
+    <FsDocsLogoSource>content/img/axial-inline-light.svg</FsDocsLogoSource>
     <FsDocsLogoAlt>Axial</FsDocsLogoAlt>
-    <FsDocsLogoLink>https://github.com/adz/FsFlow</FsDocsLogoLink>
-    <FsDocsLicenseLink>https://github.com/adz/FsFlow/blob/main/LICENSE</FsDocsLicenseLink>
-    <FsDocsReleaseNotesLink>https://github.com/adz/FsFlow/blob/main/RELEASE_NOTES.md</FsDocsReleaseNotesLink>
+    <FsDocsLogoLink>https://github.com/adz/Axial</FsDocsLogoLink>
+    <FsDocsLicenseLink>https://github.com/adz/Axial/blob/main/LICENSE</FsDocsLicenseLink>
+    <FsDocsReleaseNotesLink>https://github.com/adz/Axial/blob/main/RELEASE_NOTES.md</FsDocsReleaseNotesLink>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>

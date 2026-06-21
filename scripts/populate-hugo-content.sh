@@ -129,7 +129,7 @@ type: docs
 weight: 20
 ---
 
-Welcome to the FsFlow guides. Choose a section from the sidebar or start with [Getting Started](./start/getting-started/).
+Welcome to the Axial guides. Choose a section from the sidebar or start with [Getting Started](./start/getting-started/).
 
 <div class=\"docs-grid docs-index-grid\">
 
@@ -148,11 +148,11 @@ Welcome to the FsFlow guides. Choose a section from the sidebar or start with [G
 <section class=\"docs-card\">
 <span class=\"label\">Pure checks and results</span>
 <h2><a href=\"./validation-results/\">Validation & Results</a></h2>
-<p>Overview of the FsFlow validation stack, from pure checks to structured diagnostics.</p>
+<p>Overview of the Axial validation stack, from pure checks to structured diagnostics.</p>
 </section>
 
 <section class=\"docs-card\">
-<span class=\"label\">How FsFlow fits together</span>
+<span class=\"label\">How Axial fits together</span>
 <h2><a href=\"./core-model/\">Core Model</a></h2>
 <p>Read the semantics, task or async interop rules, and architectural styles.</p>
 </section>
@@ -172,13 +172,13 @@ Welcome to the FsFlow guides. Choose a section from the sidebar or start with [G
 <section class=\"docs-card\">
 <span class=\"label\">Usage patterns</span>
 <h2><a href=\"./patterns/\">Patterns</a></h2>
-<p>Use runnable examples, benchmarks, and type troubleshooting notes while applying FsFlow.</p>
+<p>Use runnable examples, benchmarks, and type troubleshooting notes while applying Axial.</p>
 </section>
 
 <section class=\"docs-card\">
 <span class=\"label\">Comparisons and integrations</span>
 <h2><a href=\"./ecosystem/\">Comparisons</a></h2>
-<p>Compare FsFlow with Validus, FsToolkit.ErrorHandling, FSharpPlus, and Effect-TS, and see where they fit together.</p>
+<p>Compare Axial with Validus, FsToolkit.ErrorHandling, FSharpPlus, and Effect-TS, and see where they fit together.</p>
 </section>
 
 </div>

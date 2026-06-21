@@ -9,7 +9,7 @@ output_dir="$root_dir/artifacts/package"
 rm -rf "$output_dir"
 mkdir -p "$output_dir"
 
-# Default version from FsFlow.fsproj if not provided via -v
+# Default version from Axial.fsproj if not provided via -v
 VERSION=""
 while getopts "v:" opt; do
   case $opt in
@@ -18,9 +18,9 @@ while getopts "v:" opt; do
   esac
 done
 
-# Current released projects (only core FsFlow for now)
+# Current released projects (only core Axial for now)
 projects=(
-  "src/FsFlow/FsFlow.fsproj"
+  "src/Axial/Axial.fsproj"
 )
 
 echo "Packing projects to $output_dir..."

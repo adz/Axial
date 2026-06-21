@@ -1,7 +1,7 @@
 baseURL = "/"
 canonifyURLs = true
 locale = "en-us"
-title = "FsFlow"
+title = "Axial"
 theme = ["github.com/google/docsy"]
 
 # Language configuration
@@ -46,19 +46,19 @@ defaultContentLanguage = "en"
 [params]
   offlineSearch = true
   copyright = "Adam Davies"
-  github_repo = "https://github.com/adz/FsFlow"
+  github_repo = "https://github.com/adz/Axial"
   version = "next"
   version_menu = "next"
   version_menu_pagelinks = true
   [[params.versions]]
     version = "next"
     name = "next"
-    url = "/FsFlow/"
+    url = "/Axial/"
   
   # Navigation links
   [[params.links.user]]
     name = "GitHub"
-    url = "https://github.com/adz/FsFlow"
+    url = "https://github.com/adz/Axial"
     icon = "fab fa-github"
     desc = "Source Code"
 
@@ -88,5 +88,5 @@ defaultContentLanguage = "en"
     weight = 20
   [[menu.main]]
     name = "GitHub"
-    url = "https://github.com/adz/FsFlow"
+    url = "https://github.com/adz/Axial"
     weight = 30

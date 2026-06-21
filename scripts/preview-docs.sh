@@ -3,9 +3,9 @@
 set -euo pipefail
 
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-port="${FSFLOW_DOCS_PREVIEW_PORT:-3000}"
+port="${AXIAL_DOCS_PREVIEW_PORT:-3000}"
 HUGO_BASEURL="${HUGO_BASEURL:-http://localhost:$port/}"
-stop_file="${FSFLOW_DOCS_PREVIEW_STOP_FILE:-/tmp/fsflow-docs-preview.stop}"
+stop_file="${AXIAL_DOCS_PREVIEW_STOP_FILE:-/tmp/axial-docs-preview.stop}"
 hugo_pid=""
 
 "$root_dir/scripts/generate-example-docs.sh"

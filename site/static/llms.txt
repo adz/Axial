@@ -1,4 +1,4 @@
-# FsFlow: LLM Context & Reference
+# Axial: LLM Context & Reference
 > This file is optimized for AI agents (Claude, Gemini, Codex).
 
 ## Core Model
@@ -72,28 +72,28 @@ Use `BindError.map` only at a `flow {}` bind site when the source already carrie
 - **Manual**: `Result.mapError mapper` -> `let! x = result |> BindError.map mapper` in `flow {}`
 
 ## FsToolkit.ErrorHandling Compatibility Map
-Use this when translating FsToolkit-style code into FsFlow. If a function is not listed as a direct
-equivalent, FsFlow usually expects a different boundary shape rather than a 1:1 helper.
+Use this when translating FsToolkit-style code into Axial. If a function is not listed as a direct
+equivalent, Axial usually expects a different boundary shape rather than a 1:1 helper.
 
 ### Result<'T, 'E>
-- FsFlow uses the standard FSharp.Core `Result<'T, 'E>` directly; there is no parallel FsFlow `Result` helper module
-- FsFlow replacements: use `result {}` for fail-fast sequencing, `Validation` for accumulation, `Check` for pure predicates/preserving gates/extractions, and `BindError` when a flow bind source needs error assignment or mapping
+- Axial uses the standard FSharp.Core `Result<'T, 'E>` directly; there is no parallel Axial `Result` helper module
+- Axial replacements: use `result {}` for fail-fast sequencing, `Validation` for accumulation, `Check` for pure predicates/preserving gates/extractions, and `BindError` when a flow bind source needs error assignment or mapping
 - For predicate checks, use `Check.withError` to attach a typed error to `Result<'T, unit>` values
 
 ### AsyncResult<'T, 'E>
-- Closest FsFlow shape: `Flow<'env, 'error, 'value>`
+- Closest Axial shape: `Flow<'env, 'error, 'value>`
 - Direct equivalents: `AsyncResult.map` -> `Flow.map`, `AsyncResult.bind` -> `Flow.bind`, `AsyncResult.mapError` -> `Flow.mapError`, `AsyncResult.map2` -> `Flow.map2`, `AsyncResult.sequence` -> `Flow.sequence`, `AsyncResult.traverse` -> `Flow.traverse`
 - Boundary lifts: use `flow { let! value = asyncResult; return value }`, or `Flow.fromResult`, `Flow.fromOption`, and `Flow.fromValueOption` for synchronous values.
 - Async fallback helpers: `orElse` -> `Flow.orElse`, `orElseFlow` -> `Flow.orElseFlow`, `orElseWith` -> `Flow.orElseWith`
 - Missing as dedicated helpers: `fold`, `ignore`, `defaultValue`, `defaultError`, `defaultWith`, `valueOr`, `setError`, `withError`, `require*`
-- Important difference: FsFlow folds `Async<Result<'T, 'E>>` into a larger environment-aware model. Execute at the edge with `ToTask`, `ToAsync`, `ToValueTask`, or `RunSynchronously`.
+- Important difference: Axial folds `Async<Result<'T, 'E>>` into a larger environment-aware model. Execute at the edge with `ToTask`, `ToAsync`, `ToValueTask`, or `RunSynchronously`.
 
 ### Validation
-- FsFlow equivalent type: `Validation<'value, 'error>` is not `Result<'value, 'error list>`; it stores a structured `Diagnostics<'error>` graph
+- Axial equivalent type: `Validation<'value, 'error>` is not `Result<'value, 'error list>`; it stores a structured `Diagnostics<'error>` graph
 - Direct equivalents: `Validation.ok` -> `Validation.ok`, `Validation.error` -> `Validation.error`, `Validation.succeed` -> `Validation.succeed`, `Validation.fail` -> `Validation.fail`, `Validation.map` -> `Validation.map`, `Validation.bind` -> `Validation.bind`, `Validation.mapError` -> `Validation.mapError`, `Validation.map2` -> `Validation.map2`, `Validation.map3` -> `Validation.map3`, `Validation.apply` -> `Validation.apply`, `Validation.ignore` -> `Validation.ignore`, `Validation.orElse` -> `Validation.orElse`, `Validation.orElseWith` -> `Validation.orElseWith`, `Validation.sequence` -> `Validation.sequence`, `Validation.zip` -> `Validation.merge`, `Validation.toResult` -> `Validation.toResult`, `Validation.fromResult` -> `Validation.fromResult`
-- FsFlow-only additions: `Validation.at`, `Validation.key`, `Validation.index`, `Validation.name`, `Validation.traverseIndexed`, `Validation.<!>`, `Validation.<*>`
+- Axial-only additions: `Validation.at`, `Validation.key`, `Validation.index`, `Validation.name`, `Validation.traverseIndexed`, `Validation.<!>`, `Validation.<*>`
 - Missing as dedicated helpers: `mapErrors` and list-shaped error APIs
-- `Validation.bind` is short-circuiting in FsFlow just like FsToolkit.Validation.bind; accumulation comes from applicative composition (`validate { and! }`, `map2`, `apply`, `merge`, `traverseIndexed`)
+- `Validation.bind` is short-circuiting in Axial just like FsToolkit.Validation.bind; accumulation comes from applicative composition (`validate { and! }`, `map2`, `apply`, `merge`, `traverseIndexed`)
 - Important difference: `Validation.mapError` remaps the entire diagnostics tree recursively, not just a flat error list
 
 ## Golden Path API

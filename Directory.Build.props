@@ -2,14 +2,14 @@
   <PropertyGroup>
     <UseArtifactsOutput>true</UseArtifactsOutput>
     <NuGetAudit>false</NuGetAudit>
-    <RepositoryUrl>https://github.com/adz/FsFlow</RepositoryUrl>
+    <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
     <RepositoryBranch>main</RepositoryBranch>
-    <PackageProjectUrl>https://github.com/adz/FsFlow</PackageProjectUrl>
-    <FsDocsCollectionName>FsFlow</FsDocsCollectionName>
-    <FsDocsLogoLink>https://github.com/adz/FsFlow</FsDocsLogoLink>
-    <FsDocsLogoSource>content/img/fsflow-inline-light.svg</FsDocsLogoSource>
+    <PackageProjectUrl>https://github.com/adz/Axial</PackageProjectUrl>
+    <FsDocsCollectionName>Axial</FsDocsCollectionName>
+    <FsDocsLogoLink>https://github.com/adz/Axial</FsDocsLogoLink>
+    <FsDocsLogoSource>content/img/axial-inline-light.svg</FsDocsLogoSource>
     <FsDocsFaviconSource>content/img/favicon-light.svg</FsDocsFaviconSource>
-    <FsDocsLicenseLink>https://github.com/adz/FsFlow/blob/main/LICENSE</FsDocsLicenseLink>
-    <FsDocsReleaseNotesLink>https://github.com/adz/FsFlow/blob/main/RELEASE_NOTES.md</FsDocsReleaseNotesLink>
+    <FsDocsLicenseLink>https://github.com/adz/Axial/blob/main/LICENSE</FsDocsLicenseLink>
+    <FsDocsReleaseNotesLink>https://github.com/adz/Axial/blob/main/RELEASE_NOTES.md</FsDocsReleaseNotesLink>
   </PropertyGroup>
 </Project>

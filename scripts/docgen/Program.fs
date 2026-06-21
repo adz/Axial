@@ -20,7 +20,7 @@ type PageSpec = {
 let normalize (name: string) =
     if String.IsNullOrEmpty name then ""
     else
-        name.Replace("Axial.", "").Replace("FsFlow.", "").Replace("Services.", "").Replace("Module", "").Replace("Extensions", "").Replace("Builders", "")
+        name.Replace("Axial.", "").Replace("Axial.", "").Replace("Services.", "").Replace("Module", "").Replace("Extensions", "").Replace("Builders", "")
         |> (fun s ->
             s
                 .Split('(').[0]
@@ -32,7 +32,7 @@ let normalize (name: string) =
 let cleanName (name: string) =
     if String.IsNullOrEmpty name then ""
     else
-        name.Replace("Axial.", "").Replace("FsFlow.", "").Replace("Services.", "").Replace("Module", "").Replace("Extensions", "").Replace("Builders", "")
+        name.Replace("Axial.", "").Replace("Axial.", "").Replace("Services.", "").Replace("Module", "").Replace("Extensions", "").Replace("Builders", "")
         |> (fun s -> s.Trim('.'))
         |> (fun s -> 
             s
@@ -53,7 +53,7 @@ let getPageName (id: string) =
     let kind = id.[0].ToString().ToLower()
     let namePart = id.Substring(2).Split('(').[0]
     let clean = 
-        namePart.Replace("Axial.", "").Replace("FsFlow.", "").Replace("Services.", "").Replace("Module", "").Replace("Extensions", "").Replace("Builders", "")
+        namePart.Replace("Axial.", "").Replace("Axial.", "").Replace("Services.", "").Replace("Module", "").Replace("Extensions", "").Replace("Builders", "")
         |> (fun s -> System.Text.RegularExpressions.Regex.Replace(s, @"`[0-9]+", ""))
         |> (fun s -> s.Replace("'", "").Trim('.'))
         

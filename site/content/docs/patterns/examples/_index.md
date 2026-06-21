@@ -19,12 +19,12 @@ This example shows a request boundary that pulls a user from a database-like env
 Run it:
 
 ```bash
-FSFLOW_EXAMPLE=request-boundary dotnet run --project examples/FsFlow.Examples/FsFlow.Examples.fsproj --nologo
+AXIAL_EXAMPLE=request-boundary dotnet run --project examples/Axial.Examples/Axial.Examples.fsproj --nologo
 ```
 
 Source:
 
-- [RequestBoundaryExample.fs](https://github.com/adz/FsFlow/blob/main/examples/FsFlow.Examples/RequestBoundaryExample.fs)
+- [RequestBoundaryExample.fs](https://github.com/adz/Axial/blob/main/examples/Axial.Examples/RequestBoundaryExample.fs)
 
 Source code:
 
@@ -117,12 +117,12 @@ This example shows a JSON-shaped request boundary with a root-level error, neste
 Run it:
 
 ```bash
-FSFLOW_EXAMPLE=diagnostics dotnet run --project examples/FsFlow.Examples/FsFlow.Examples.fsproj --nologo
+AXIAL_EXAMPLE=diagnostics dotnet run --project examples/Axial.Examples/Axial.Examples.fsproj --nologo
 ```
 
 Source:
 
-- [DiagnosticsExample.fs](https://github.com/adz/FsFlow/blob/main/examples/FsFlow.Examples/DiagnosticsExample.fs)
+- [DiagnosticsExample.fs](https://github.com/adz/Axial/blob/main/examples/Axial.Examples/DiagnosticsExample.fs)
 
 Source code:
 
@@ -297,12 +297,12 @@ This example shows the same core boundary across Flow using the normal direct-bi
 Run it:
 
 ```bash
-dotnet run --project examples/FsFlow.Playground/FsFlow.Playground.fsproj --nologo
+dotnet run --project examples/Axial.Playground/Axial.Playground.fsproj --nologo
 ```
 
 Source:
 
-- [Program.fs](https://github.com/adz/FsFlow/blob/main/examples/FsFlow.Playground/Program.fs)
+- [Program.fs](https://github.com/adz/Axial/blob/main/examples/Axial.Playground/Program.fs)
 
 Source code:
 
@@ -373,12 +373,12 @@ This example shows smaller, focused shapes for maintenance and interop scenarios
 Run it:
 
 ```bash
-dotnet run --project examples/FsFlow.MaintenanceExamples/FsFlow.MaintenanceExamples.fsproj --nologo
+dotnet run --project examples/Axial.MaintenanceExamples/Axial.MaintenanceExamples.fsproj --nologo
 ```
 
 Source:
 
-- [Program.fs](https://github.com/adz/FsFlow/blob/main/examples/FsFlow.MaintenanceExamples/Program.fs)
+- [Program.fs](https://github.com/adz/Axial/blob/main/examples/Axial.MaintenanceExamples/Program.fs)
 
 Source code:
 

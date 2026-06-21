@@ -1,4 +1,4 @@
-module github.com/adz/FsFlow/site
+module github.com/adz/Axial/site
 
 go 1.26.3
 
