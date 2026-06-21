@@ -1,7 +1,7 @@
 # Axial
 
 > [!WARNING]
-> Axial 0.7.0 is the first planned release under the Axial name before the split. The new package line continues in `Axial.Flow`, `Axial.Result`, `Axial.Validation`, and the umbrella `Axial` package. This takes over from previous FsFlow naming.
+> Axial 0.7.0 is the first planned release under the Axial name as split packages, renamed from monolithic FsFlow. The new package line continues in `Axial.Flow`, `Axial.Result`, `Axial.Validation`, and the umbrella `Axial` package. The direction is designed to keep parts usable independently and reduce cognitive load.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/content/img/axial-readme-dark.svg">
