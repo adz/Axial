@@ -3,8 +3,6 @@ namespace Axial.Flow.Process
 open System.Diagnostics
 open System.Threading.Tasks
 open Axial.Flow
-open Axial.Result
-open Axial.Validation
 
 /// <summary>Represents the outcome of an external process execution.</summary>
 type ProcessResult =

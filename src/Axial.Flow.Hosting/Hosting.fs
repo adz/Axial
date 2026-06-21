@@ -4,8 +4,6 @@ open System
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Logging
 open Axial.Flow
-open Axial.Result
-open Axial.Validation
 open Axial.Flow.PlatformService
 
 /// <summary>

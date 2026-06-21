@@ -2,8 +2,6 @@ namespace Axial.Flow.PlatformService.Examples
 
 open System
 open Axial.Flow
-open Axial.Result
-open Axial.Validation
 open Axial.Flow.PlatformService
 
 module CoreServicesExample =

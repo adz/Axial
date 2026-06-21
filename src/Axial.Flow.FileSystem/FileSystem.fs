@@ -6,8 +6,6 @@ open System.Text
 open System.Threading
 open System.Threading.Tasks
 open Axial.Flow
-open Axial.Result
-open Axial.Validation
 
 /// <summary>Describes a meaningful file-system failure.</summary>
 [<RequireQualifiedAccess>]

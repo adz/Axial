@@ -2,8 +2,6 @@ namespace Axial.Flow.Telemetry
 
 open System.Diagnostics
 open Axial.Flow
-open Axial.Result
-open Axial.Validation
 
 [<RequireQualifiedAccess>]
 module Activity =

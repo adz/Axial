@@ -2,8 +2,6 @@ namespace Axial.Flow.Console
 
 open System
 open Axial.Flow
-open Axial.Result
-open Axial.Validation
 
 /// <summary>Provides synchronous access to standard console I/O.</summary>
 type IConsole =

@@ -3,8 +3,6 @@ namespace Axial.Flow.Http
 open System.Net.Http
 open System.Threading.Tasks
 open Axial.Flow
-open Axial.Result
-open Axial.Validation
 
 /// <summary>Provides asynchronous access to HTTP client operations.</summary>
 type IHttp =

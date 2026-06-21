@@ -6,8 +6,6 @@ open System.Collections.Generic
 open System.Globalization
 open System.Threading.Tasks
 open Axial.Flow
-open Axial.Result
-open Axial.Validation
 
 /// <summary>Provides synchronous access to the current UTC clock.</summary>
 type IClock = Axial.Flow.IClock
