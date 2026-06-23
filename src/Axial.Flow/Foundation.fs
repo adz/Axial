@@ -140,7 +140,7 @@ module internal Execution =
     let mapError
         (mapper: 'error -> 'nextError)
         (effect: Execution<'value, 'error>)
-        : Execution<'next, 'nextError> =
+        : Execution<'value, 'nextError> =
         fold ofValue (Cause.map mapper >> ofCause) effect
 
 module internal InternalCombinatorCore =

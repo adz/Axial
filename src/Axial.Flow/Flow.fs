@@ -69,7 +69,7 @@ module Flow =
         (cancellationToken: CancellationToken)
         (flow: Flow<'env, 'error, 'value>)
         : Execution<'value, 'error> =
-        let scope = Scope()
+        let scope = new Scope()
         let runtime = RuntimeContext.create scope
 
         #if FABLE_COMPILER
@@ -1435,7 +1435,7 @@ module Flow =
         (flow: Flow<'environment, 'error, 'value>)
         : Flow<'input, 'error, 'value> =
         Flow(fun environment cancellationToken ->
-            let scope = Scope()
+            let scope = new Scope()
             let runtime = RuntimeState.current() |> RuntimeContext.withScope scope
 
             #if FABLE_COMPILER
