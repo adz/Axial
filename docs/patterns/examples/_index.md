@@ -132,6 +132,7 @@ module DiagnosticsExample
 open System.Text.Json
 open Axial.Flow
 open Axial.Result
+open Axial.Result.Check
 open Axial.Validation
 
 type CustomerLine =
@@ -158,13 +159,32 @@ type ApiErrorResponse =
 
 let jsonOptions = JsonSerializerOptions(WriteIndented = true)
 
+let validateAddressWithoutCEOrPipe address =
+    Validation.at [PathSegment.Key "address"] (
+        Validation.at [PathSegment.Name "City"] (
+            address.City |> whenNotBlank |> withError "City required"
+            |> Validation.fromResult
+        )
+        |> Validation.map (fun city -> {address with City = city })
+    )
+
+let validateAddressWithoutCE address =
+    let cityResult =
+        address.City
+        |> whenNotBlank
+        |> withError "City required"
+
+    cityResult
+    |> Validation.fromResult
+    |> Validation.at [PathSegment.Name "City"]
+    |> Validation.map (fun city -> {address with City = city })
+    |> Validation.at [PathSegment.Key "address"]
+// Equivalent using CE
 let validateAddress address =
     validate.key "address" {
-        let! city =
-            validate.name "City" {
-                return! address.City |> Check.whenNotBlank |> Check.withError "City required"
-            }
-
+        let! city = validate.name "city" {
+            return! address.City |> whenNotBlank |> withError "City required"
+        }
         return { address with City = city }
     }
 
@@ -172,7 +192,7 @@ let validateCustomer customer =
     validate {
         let! name =
             validate.name "Name" {
-                return! customer.Name |> Check.whenNotBlank |> Check.withError "Name required"
+                return! customer.Name |> whenNotBlank |> withError "Name required"
             }
 
         and! address = validateAddress customer.Address
@@ -184,7 +204,7 @@ let validateCustomer customer =
                     |> Validation.traverseIndexed (fun index line ->
                         validate.name "Name" {
                             let! name =
-                                line.Name |> Check.whenNotBlank |> Check.withError $"Line {index} name required"
+                                line.Name |> whenNotBlank |> withError $"Line {index} name required"
 
                             return { Name = name }
                         }
@@ -218,7 +238,7 @@ let validateCreateCustomerRequest request =
     validate {
         let! requestId =
             validate.name "RequestId" {
-                return! request.RequestId |> Check.whenNotBlank |> Check.withError "RequestId required"
+                return! request.RequestId |> whenNotBlank |> withError "RequestId required"
             }
 
         and! customer =
