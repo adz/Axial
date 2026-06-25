@@ -1,8 +1,8 @@
 # Axial Plan
 
 This file tracks current product and architecture direction.
-Settled historical decisions live in `dev-docs/decisions/`.
-Historical dependency-model research lives in `dev-docs/deprecated/caps-research/`, but this file is the live direction.
+High-level durable decisions live in `dev-docs/decisions/`.
+Speculative sketches live in `dev-docs/current-ideas/`, but this file is the live direction.
 
 ## Current Direction
 

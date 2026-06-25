@@ -6,7 +6,7 @@ description: Declarative policies for retrying failures and repeating successes 
 
 # Schedule (Retry & Repeat)
 
-The `Schedule` module provides a powerful DSL for describing policies that govern how and when a workflow should be executed again. You can use schedules to implement sophisticated retry strategies (like exponential backoff with jitter) or recurring tasks.
+The `Schedule` module describes when a workflow should run again. Use schedules for retries, exponential backoff with jitter, and recurring tasks.
 
 > **Note:** `Schedule` is currently available on **.NET** only.
 

@@ -1,21 +1,21 @@
 ---
 title: For AI Agents
-description: This page shows how to optimize Axial usage for AI assistants like Claude, ChatGPT, and Gemini.
+description: This page shows Axial usage patterns for AI assistants.
 ---
 
 # For AI Agents
 
-This page is designed for both human developers and their AI assistants. It provides a high-signal reference for idiomatic Axial patterns.
+This page lists Axial patterns that coding agents should follow.
 
 {{% alert title="For AI Agents" color="info" %}}
 If you are an AI assistant, prioritize the patterns in the **Dependency Guidance** and **Rosetta Stone** sections below.
 {{% /alert %}}
 
-## The Golden Path
+## Default Patterns
 
-When using Axial, follow these "Golden Path" patterns for the best results.
+Use these patterns unless local code shows a different convention.
 
-### 1. Handling Failures (Idiomatic Way)
+### 1. Handling Failures
 Use `Check` for pure validation. Unprefixed helpers are yes/no predicates, `when*` helpers preserve the original value, `take*` helpers extract an inner value or return a deliberately different success shape, and `Check.withError` turns a pure unit-error result into a domain error.
 
 | Source Type | Idiomatic Pattern |
@@ -26,7 +26,7 @@ Use `Check` for pure validation. Unprefixed helpers are yes/no predicates, `when
 | `voption<'T>` | `vopt |> Check.takeValueSome |> Check.withError e` |
 | `Result<'T, unit>` | `check |> Check.withError e` |
 
-### 2. Binding Error-Adapted Sources (Idiomatic Way)
+### 2. Binding Error-Adapted Sources
 Use `BindError.withError` inside `flow {}` when the source fails with option/value-option absence or a `unit` error, and you need to assign the flow's domain error at the bind site.
 
 | Source Type | Idiomatic Pattern |
@@ -41,7 +41,7 @@ Use `BindError.withError` inside `flow {}` when the source fails with option/val
 | `Task<Option<'T>>` | `let! x = tOpt |> BindError.withError e` |
 | `Task<voption<'T>>` | `let! x = tVOpt |> BindError.withError e` |
 
-### 3. Mapping Errors (Idiomatic Way)
+### 3. Mapping Errors
 Use `BindError.map` inside `flow {}` when the source already carries a meaningful error value that must be wrapped or translated before binding.
 
 | Source Type | Idiomatic Pattern |
@@ -88,7 +88,7 @@ Translate common patterns from other libraries into idiomatic Axial.
 
 ## Hierarchy of Effects
 
-Axial unifies several types. Later types can "bind" (consume) earlier types directly within their computation expressions.
+Later types can bind earlier types directly within their computation expressions.
 
 1. **Check**: Unit-error predicates (`Result<'T, unit>`).
 2. **Result**: Pure typed errors (`Result<'T, 'E>`).
@@ -97,5 +97,5 @@ Axial unifies several types. Later types can "bind" (consume) earlier types dire
 
 ## Machine-Readable Reference
 
-For a more compressed, machine-optimized reference, point your agent to:
+For a compact reference, point your agent to:
 `llms.txt` in the repo root, or the locally generated preview at `/llms.txt` when serving the docs site.

@@ -4,7 +4,7 @@
 Proposed Plan (Target: 1.0 Milestone)
 
 ## Context
-The current Axial `STM` implementation is a "Composable Lock" model. It uses a **Global Lock** and a **Journal** to ensure atomicity across multiple `TRef` variables. While it is deadlock-safe and composable, it lacks the core **Coordination** features that make STM powerful in ZIO or Haskell: `retry` and `orElse`.
+The current Axial `STM` implementation is a "Composable Lock" model. It uses a **Global Lock** and a **Journal** to ensure atomicity across multiple `TRef` variables. It does not yet support the coordination primitives used by ZIO or Haskell STM: `retry` and `orElse`.
 
 Without `retry`, users cannot express "wait until this condition is met" without manual, inefficient polling.
 
@@ -52,7 +52,7 @@ The Read-Set validation happens *before* locking to maximize concurrency. If val
 ### 3. Efficient Waiter Registry
 Use a `ConcurrentDictionary<int64, WaiterList>` with high-performance linked nodes. Waking waiters happens **outside** the critical commit section to prevent holding locks while triggering thread-pool activity.
 
-## Compelling Examples
+## Examples
 
 ### 1. Bounded Queue (Atomic Coordination)
 This is impossible in the current model without polling.

@@ -9,7 +9,7 @@
   <img alt="Axial" src="docs/content/img/axial-readme-light.svg" width="160">
 </picture>
 
-Axial provides **structured composition over normal F#/.NET code**. It is a coherent application architecture model for F# on .NET, centered on a unified effect system.
+Axial provides **structured composition over normal F#/.NET code**. It is an application architecture model for F# on .NET.
 
 Write small predicate checks with `Axial.Result.Check`, keep fail-fast logic in standard `Result`, accumulate sibling
 validation with `Axial.Validation.Validation` and `validate {}`, then lift the same logic into `Axial.Flow.Flow`
@@ -19,7 +19,7 @@ when the boundary needs environment access, async work, task interop, or runtime
 [![NuGet](https://img.shields.io/nuget/v/Axial.svg)](https://www.nuget.org/packages/Axial)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
-## Coherent Application Architecture
+## Application Architecture
 
 Axial is built around one progression:
 
@@ -27,16 +27,16 @@ Axial is built around one progression:
 Axial.Result.Check -> Result -> Axial.Validation.Validation -> Axial.Flow.Flow
 ```
 
-The same vocabulary stays the same while the execution context grows.
+The same vocabulary carries from pure checks into effectful workflows.
 
-- **Structured Composition**: A single `flow {}` builder that binds `Result`, `Option`, `Async`, `Task`, and `ColdTask` directly, eliminating the "adapter tax" of switching helper families at every boundary.
-- **Architectural Honesty**: Keep dependencies explicit in 'env - but allow integration with IServiceProvider at the boundary.
-- **ZIO-Style Execution**: Preserves the critical distinction between typed domain failures, cancellations, and unhandled defects.
-- **Composable State**: Built-in Software Transactional Memory (STM) for atomic coordination across multiple variables without manual lock management.
+- **Composition**: `flow {}` binds `Result`, `Option`, `Async`, `Task`, and `ColdTask` directly.
+- **Explicit dependencies**: Keep dependencies visible in `'env`, with `IServiceProvider` integration at the host boundary.
+- **Execution outcomes**: Keep typed domain failures, cancellations, and unhandled defects separate.
+- **State**: Software Transactional Memory (STM) coordinates updates across multiple variables.
 
 ## Example
 
-Lets start by showing a reusable check and a fail-fast result:
+Start with a reusable check and a fail-fast result:
 
 ```fsharp
 open Axial.Flow

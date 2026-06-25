@@ -13,6 +13,22 @@ When writing or editing user-facing docs, follow the documentation guide in [`de
 
 Refer to [`dev-docs/PLAN.md`](dev-docs/PLAN.md) for architectural direction and [`dev-docs/TASKS.md`](dev-docs/TASKS.md) for the active backlog.
 
+## Architecture Invariants
+
+- `Flow<'env, 'error, 'value>` is the public workflow model. Do not reintroduce public `Effect`, `EffectFlow`, `AsyncFlow`, `TaskFlow`, or carrier-specific workflow concepts.
+- Keep `Axial.Flow`, `Axial.Result`, and `Axial.Validation` as independent leaf packages. `Axial.Flow` must not depend on `Axial.Result` or `Axial.Validation`.
+- Model application and operational dependencies explicitly in `'env`; keep the ambient runtime for executor mechanics only.
+- `Check` lives in `Axial.Result`, `Validation`/`Diagnostics` live in `Axial.Validation`, and `BindError` lives in `Axial.Flow`.
+- Use the Check naming grammar consistently: unprefixed helpers test, `when*` helpers preserve the input, and `take*` helpers extract or reshape the success value.
+- Use `BindError` only at a `flow { }` bind site when a source error must be assigned or mapped immediately before binding.
+- Prefer AOT- and trimming-safe designs. Do not introduce runtime reflection as the foundation for core workflow, validation, schema, or service-access APIs; use explicit definitions first and consider build-time generation only after the API shape stabilizes.
+
+## Dev Doc Organization
+
+- Keep active architecture in `dev-docs/PLAN.md`, active work in `dev-docs/TASKS.md`, and high-level durable decisions in `dev-docs/decisions/README.md`.
+- Keep speculative or pre-idea work in `dev-docs/current-ideas/`.
+- Do not retain detailed historical specs after their useful decisions have been folded into current instructions. Delete stale specs instead of archiving large files that no longer match the codebase.
+
 ## Doc Workflow
 
 - Treat `docs/reference/**`, `docs/examples/README.md`, `llms.txt`, and versioned docs as generated outputs or generator-backed outputs.

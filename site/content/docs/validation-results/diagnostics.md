@@ -1,12 +1,12 @@
 ---
 weight: 40
 title: Diagnostics Graph
-description: Deep dive into the structured error reporting system.
+description: Structured validation diagnostics.
 type: docs
 ---
 
 
-Unlike many validation libraries that return a flat list of error strings, Axial returns a structured **Diagnostics Graph**. This allows you to represent exactly *where* in a complex data structure a failure occurred.
+Axial returns a structured **Diagnostics Graph** for validation failures. The graph records where each failure occurred.
 
 ## The Structure
 
@@ -57,7 +57,7 @@ Use `Diagnostics.flatten` to turn the tree into a flat list of path-bearing erro
 ```
 
 ### 2. Human-Readable Output
-Use `Diagnostics.toString` to render the graph as a compact, YAML-like tree. This is great for logs or console output.
+Use `Diagnostics.toString` to render the graph as a compact, YAML-like tree for logs or console output.
 
 ```yaml
 customer:
@@ -70,8 +70,8 @@ customer:
 
 Diagnostics are generic over the `'error` type. You can use `Validation.mapError` (or `Diagnostics.map` directly) to translate internal domain errors into user-facing localized strings at the application boundary.
 
-## See it in Action
+## Example
 
-For a complete, runnable example that demonstrates nested validation, path rendering, and JSON API error formatting, see the [Diagnostics Example](../patterns/examples/#diagnostics-example) in the runnable examples gallery.
+For a runnable example with nested validation, path rendering, and JSON API error formatting, see the [Diagnostics Example](../patterns/examples/#diagnostics-example) in the examples gallery.
 
 You can also view the [source code directly on GitHub](https://github.com/adz/Axial/blob/main/examples/Axial.Examples/DiagnosticsExample.fs).

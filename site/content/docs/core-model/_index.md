@@ -7,7 +7,7 @@ type: docs
 
 
 
-This page shows why Axial is best understood as one scalable model for Result-based programs rather than a small helper for application boundaries.
+This page shows the Axial progression from pure checks to application boundaries.
 
 The core progression is:
 
@@ -33,7 +33,7 @@ Task<Result<'value, 'error>>
 Those shapes work, but they often split the same program across separate helper modules, separate builders,
 and repeated adaptation between pure validation and effectful orchestration.
 
-Axial gives those shapes one coherent family:
+Axial groups those shapes into one family:
 
 ```text
 Check<'value>
@@ -43,15 +43,15 @@ Flow<'env, 'error, 'value>
 ```
 
 The point is not to replace Result, `Async`, or `Task`.
-The point is to let one Result-based style scale into real application boundaries without changing the mental model.
+The point is to carry one Result-based style into application boundaries.
 
 Flow is the boundary model. The same builder can bind sync values, `Async`, `Task`, `ValueTask`, and `ColdTask` directly.
 `BindError` is the explicit bind-site bridge that keeps check-like sources and existing error-bearing sources readable
 when their error must be assigned or mapped before entering `flow {}`.
 
-## The Main Claim
+## Main Model
 
-Axial unifies Result-based programming across pure logic and effectful execution.
+Axial uses the same failure model across pure logic and effectful execution.
 
 - write predicate logic once with Check, using `when*` checks when you need the input again, `take*` checks when you need an inner value or deliberately different success shape, and unprefixed checks when you only need yes/no
 - keep fail-fast domain logic in Result
@@ -111,7 +111,7 @@ let register userId : Flow<RegistrationEnv, RegistrationError, unit> =
     }
 ```
 
-`validateEmail` is still just `Result<string, RegistrationError>`.
+`validateEmail` is still `Result<string, RegistrationError>`.
 There is no separate task-result validation vocabulary to switch to first.
 
 ## What This Replaces
@@ -127,7 +127,7 @@ Instead, the same logic can move upward through the computation families while k
 
 ## Adoption Rule
 
-Use Axial by default in the effectful application layer where the boundary genuinely needs more than plain Result:
+Use Axial in the effectful application layer where the boundary needs more than plain Result:
 
 - handlers
 - use cases
@@ -146,7 +146,7 @@ Keep the domain plain F# by default:
 Check, Result, Validation, and Flow are short-circuiting.
 They stop on the first typed failure.
 
-That is a feature, not a missing applicative layer.
+That behavior is intentional.
 
 If you need accumulated validation, use Validation and [`validate {}`]({{< relref "/reference/validation/builders-validate.md" >}}) explicitly.
 Axial does not try to hide that behavior inside the workflow builders.
@@ -160,18 +160,18 @@ The design stays explicit in the places that matter for teams:
 - expected failures stay in the type
 - the computation family tells you whether the use case is sync, `Async`, or `.NET Task`
 
-This keeps the code close to ordinary F# application code instead of turning each runtime shape into a new mini-ecosystem.
+This keeps the code close to ordinary F# application code.
 
-## Why This Is Low Risk
+## Runtime Boundary
 
-Adopting Axial does not mean betting on a replacement runtime.
+Axial does not replace the .NET or F# runtimes.
 
 - the underlying async and task work still runs on F# `Async` and `.NET Task`
 - execution is still explicit
-- the library stays narrow and DX-focused rather than growing into a concurrency platform
+- the library stays focused on application workflows
 
 The goal is not to compete with the BCL or the F# core library.
-The goal is to make mixed application computations easier to write and easier to read.
+The goal is to make mixed application computations easier to write and read.
 
 ## When Not To Use It
 

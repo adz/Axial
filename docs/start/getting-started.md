@@ -6,17 +6,17 @@ description: The fastest path from Check and Result into Flow.
 
 # Getting Started
 
-Axial is a toolkit for building robust, Result-based programs in F#. It allows you to scale from simple validation logic to complex, effectful application boundaries using a single, unified mental model.
+Axial is a toolkit for Result-based programs in F#. It starts with validation helpers and extends to application boundaries that need dependencies, async work, cancellation, or runtime policy.
 
-## 1. The Continuum of Logic
+## 1. Choose the Smallest Tool
 
-Axial is designed around a continuum. You should always use the simplest tool that satisfies your current requirement:
+Use the smallest tool that fits the code you are writing:
 
 ```text
 Pure Checks -> Result & Validation -> Flow
 ```
 
-- **Pure Checks**: Reusable predicates for basic validation.
+- **Pure Checks**: Reusable predicates.
 - **Result & Validation**: Domain logic that handles success or failure (either fail-fast or error-accumulating).
 - **Flow**: The application boundary where you need dependencies, async/task interop, logging, or cancellation.
 
@@ -34,7 +34,7 @@ let validateName (name: string) : Result<string, UserError> =
     |> Check.fromPredicate (fun value -> value.Length >= 3)
     |> Check.withError NameTooShort
 
-// This is just a standard F# Result. No magic yet.
+// This is a standard F# Result.
 let result = validateName "Ad" // Error NameTooShort
 ```
 
@@ -42,31 +42,29 @@ let result = validateName "Ad" // Error NameTooShort
 
 When your logic needs to interact with the outside world—by calling a database, reading an environment variable, or performing an async task—you move to `Flow`.
 
-A **`Flow<'env, 'error, 'value>`** is a **description of a computation**. It doesn't do anything until you run it.
+A **`Flow<'env, 'error, 'value>`** is a description of a computation. It does not do anything until you run it.
 
 ```fsharp
 let greetUser (id: int) : Flow<unit, UserError, string> =
     flow {
-        // You can bind a Result directly!
+        // Result can be bound directly.
         let! name = validateName "Adam"
         
-        // You can perform Async or Task work directly!
+        // Async and Task values can be bound directly.
         let! (data: string) = async { return $"Hello {name}" }
         
         return data
     }
 ```
 
-## 4. Execution: Turning Description into Action
+## 4. Execution
 
-Because a `Flow` is just a description, you must explicitly **run** it. This is the boundary where your platform-independent logic meets the real world.
+Because a `Flow` is a description, you must explicitly **run** it.
 
 When you call an execution member such as `ToTask`, `ToAsync`, `ToValueTask`, or `RunSynchronously`, you provide the required **environment** (which can be `()` if none is needed). On .NET, the default cancellation token is `CancellationToken.None`.
 If the flow throws an uncaught exception, the runtime records it as `Cause.Die` in the returned `Exit`.
 
 ### Execution Handle vs. Outcome
-
-Because a `Flow` is just a description, you must explicitly **run** it. Axial handles the platform differences for you:
 
 The execution handle is target-specific:
 
@@ -75,7 +73,7 @@ The execution handle is target-specific:
 
 ### The `Exit` Outcome
 
-The final result of any flow is an **`Exit<'value, 'error>`**. In Axial terms, that is `Result<'value, Cause<'error>>`. We give it its own name because it represents a completed workflow execution, not an ordinary domain result. It covers every possible outcome:
+The final result of any flow is an **`Exit<'value, 'error>`**. In Axial terms, that is `Result<'value, Cause<'error>>`. It has its own name because it represents a completed workflow execution, not an ordinary domain result.
 
 ```fsharp
 match exitValue with
@@ -122,14 +120,14 @@ For a deeper dive into handling outcomes, cancellation, and combining multiple f
 
 ## 6. Reading from the Environment
 
-One of Flow's greatest strengths is managing dependencies without manual parameter passing.
+Flow can read dependencies from an explicit environment.
 
 ```fsharp
 type AppConfig = { ApiUrl: string }
 
 let fetchFromApi : Flow<AppConfig, unit, string> =
     flow {
-        // Read just the ApiUrl from the environment record
+        // Read ApiUrl from the environment record.
         let! url = Flow.read _.ApiUrl
         return $"Fetching from {url}..."
     }
@@ -143,9 +141,9 @@ let runExample () = task {
 }
 ```
 
-## Summary: The Flow Lifecycle
+## Summary
 
-1.  **Define**: Use `flow {}` to describe your logic and its requirements.
-2.  **Compose**: Combine smaller flows, Results, Tasks, and Asyncs into larger ones.
-3.  **Run**: Call `RunSynchronously`, `ToTask`, or `ToAsync` at your application's entry point (e.g., a Controller or Main function).
-4.  **Handle**: Match on the `Exit` value to handle success, failure, or defects.
+1.  **Define**: Use `flow {}` to describe the work and its requirements.
+2.  **Compose**: Combine flows, Results, Tasks, and Asyncs.
+3.  **Run**: Call `RunSynchronously`, `ToTask`, or `ToAsync` at an application entry point.
+4.  **Handle**: Match on the `Exit` value.

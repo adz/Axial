@@ -162,8 +162,9 @@ let jsonOptions = JsonSerializerOptions(WriteIndented = true)
 let validateAddressWithoutCEOrPipe address =
     Validation.at [PathSegment.Key "address"] (
         Validation.at [PathSegment.Name "City"] (
-            address.City |> whenNotBlank |> withError "City required"
-            |> Validation.fromResult
+            Validation.fromResult (
+                address.City |> whenNotBlank |> withError "City required"
+            )
         )
         |> Validation.map (fun city -> {address with City = city })
     )
@@ -179,14 +180,13 @@ let validateAddressWithoutCE address =
     |> Validation.at [PathSegment.Name "City"]
     |> Validation.map (fun city -> {address with City = city })
     |> Validation.at [PathSegment.Key "address"]
+
 // Equivalent using CE
 let validateAddress address =
     validate.key "address" {
-        let! city =
-            validate.name "City" {
-                return! address.City |> Check.whenNotBlank |> Check.withError "City required"
-            }
-
+        let! city = validate.name "city" {
+            return! address.City |> whenNotBlank |> withError "City required"
+        }
         return { address with City = city }
     }
 
