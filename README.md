@@ -24,7 +24,7 @@ when the boundary needs environment access, async work, task interop, or runtime
 Axial is built around one progression:
 
 ```text
-Axial.Result.Check -> Result -> Axial.Validation.Validation -> Axial.Flow.Flow
+Check -> Result -> Validation -> Flow
 ```
 
 The same vocabulary carries from pure checks into effectful workflows.
