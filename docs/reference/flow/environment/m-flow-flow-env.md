@@ -1,7 +1,7 @@
 ---
 title: "Flow.Flow.env"
 linkTitle: "env"
-weight: 2312
+weight: 2315
 ---
 
 Reads the current environment as the successful flow value.

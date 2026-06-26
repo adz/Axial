@@ -9,7 +9,7 @@ This page shows the everyday Flow combinators for mapping, binding, zipping, and
 - [`Flow.Flow.tap`](./m-flow-flow-tap.md): Runs an effect on success and preserves the original value.
 - [`Flow.Flow.tapError`](./m-flow-flow-taperror.md): Runs a synchronous side effect on failure and preserves the original error.
 - [`Flow.Flow.mapError`](./m-flow-flow-maperror.md): Maps the error value of a synchronous flow.
-- [`Flow.Flow.catch`](./m-flow-flow-catch.md): Catches exceptions raised during execution and maps them to a typed error.
+- [`Flow.Flow.catch`](./m-flow-flow-catch.md): Catches exceptions raised during execution and simple defect outcomes, then maps them to a typed error.
 - [`Flow.Flow.orElseWith`](./m-flow-flow-orelsewith.md): Computes a fallback flow from the typed error when the source flow fails.
 - [`Flow.Flow.orElse`](./m-flow-flow-orelse.md): Falls back to another flow when the source flow fails.
 - [`Flow.Flow.zip`](./m-flow-flow-zip.md): Runs two flows sequentially and combines their successful values into a tuple.

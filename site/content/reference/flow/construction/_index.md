@@ -14,7 +14,10 @@ This page shows the helpers that create or adapt flows before you start composin
 - [`Flow.Flow.fromOption`](./m-flow-flow-fromoption.md): Lifts an option into a synchronous flow with the supplied error.
 - [`Flow.Flow.fromValueOption`](./m-flow-flow-fromvalueoption.md): Lifts a value option into a synchronous flow with the supplied error.
 - [`Flow.Flow.fromAsync`](./m-flow-flow-fromasync.md): Creates a flow from a raw async operation.
+- [`Flow.Flow.attemptAsync`](./m-flow-flow-attemptasync.md): Creates a flow from an async operation and treats thrown exceptions as recoverable typed errors.
 - [`Flow.Flow.fromTask`](./m-flow-flow-fromtask.md): Creates a flow from a raw task operation.
+- [`Flow.Flow.attemptTask`](./m-flow-flow-attempttask.md): Creates a flow from a task operation and treats thrown exceptions as recoverable typed errors.
 - [`Flow.Flow.fromValueTask`](./m-flow-flow-fromvaluetask.md): Creates a flow from a raw value task operation.
+- [`Flow.Flow.attemptValueTask`](./m-flow-flow-attemptvaluetask.md): Creates a flow from a value task operation and treats thrown exceptions as recoverable typed errors.
 - [`Flow.Flow.orElseFlow`](./m-flow-flow-orelseflow.md): Turns a pure validation result into a synchronous flow with environment-provided failure.
 - [`Flow.Flow.delay`](./m-flow-flow-delay.md): Defers flow construction until execution time.

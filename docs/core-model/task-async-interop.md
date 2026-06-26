@@ -23,6 +23,15 @@ Inside a `flow {}` block, you can use `let!` to bind many common F# and .NET typ
 | `ValueTask<'value>` | Awaits the value task and continues with the value. |
 | `ValueTask<Result<'value, 'error>>` | Awaits and handles the Result outcome. |
 
+Direct `Async`, `Task`, and `ValueTask` binds treat thrown exceptions as defects (`Cause.Die`) and cancellation as interruption (`Cause.Interrupt`). Use the attempt constructors when exceptions are expected and should become typed failures:
+
+```fsharp
+let loadFromInterop : ExnFlow<string> =
+    Flow.attemptTask (legacyClient.LoadAsync())
+```
+
+`Flow.attemptAsync`, `Flow.attemptTask`, and `Flow.attemptValueTask` return `Cause.Fail exn` for non-cancellation exceptions. `Flow.attemptTask` and `Flow.attemptValueTask` are .NET only.
+
 ### Example: Mixed Orchestration
 
 ```fsharp
@@ -52,7 +61,7 @@ let processUser id =
 ```fsharp
 let maybeValue = Some 42
 
-let workflow : Flow<unit, unit, int> =
+let workflow : Flow<unit, int> =
     flow {
         let! x = maybeValue // Binds directly because error is unit
         return x

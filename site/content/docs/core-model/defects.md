@@ -22,7 +22,14 @@ Choose the function that matches your intent:
 | **Parallel Failures** | Parallel branches both fail | `Cause.Both (leftCause, rightCause)` |
 
 ### Bridging Exceptions
-Use `Flow.catch` to convert specific exceptions into domain errors. Exceptions not caught by the handler will remain as `Cause.Die`.
+Use `Flow.attemptAsync`, `Flow.attemptTask`, or `Flow.attemptValueTask` when exceptions from an interop boundary are expected and should enter the typed error channel. These constructors return `Cause.Fail exn` for non-cancellation exceptions and `Cause.Interrupt` for cancellation.
+
+```fsharp
+let loadConfig : ExnFlow<string> =
+    Flow.attemptTask (File.ReadAllTextAsync("appsettings.json"))
+```
+
+Use `Flow.catch` to convert simple defects into domain errors after a flow has already produced `Cause.Die`. Existing typed failures and interruptions are preserved. Compound causes such as `Cause.Then` and `Cause.Both` are left unchanged.
 
 ```fsharp
 let safeParse id =
@@ -32,7 +39,7 @@ let safeParse id =
     }
     |> Flow.catch (function
         | :? JsonException as ex -> DomainError.InvalidFormat ex.Message
-        | ex -> reraise ex) // Bubbles up as Cause.Die
+        | ex -> raise ex)
 ```
 
 ---

@@ -3,12 +3,14 @@
 
 ## Core Model
 - **Unified Flow**: `Flow<'env, 'error, 'value>` is a cold, environment-aware effect system.
+- **Flow aliases**: `Flow<'value>` = no env/no typed failure, `Flow<'error, 'value>` = no env with typed failure, `EnvFlow<'env, 'value>` = env with no typed failure, `ExnFlow<'value>` and `ExnEnvFlow<'env, 'value>` = exception-channel interop shapes.
 - **Hybrid Optimization**: On .NET, `flow { }` uses inlined overloads for zero-boilerplate, low-allocation interop with `Task`, `ValueTask`, and `Async`.
 - **Exit Outcomes**: Workflows result in `Success`, `Failure` (`Cause.Fail`), `Interruption` (`Cause.Interrupt`), or `Defect` (`Cause.Die`).
 
 ## Concurrency & Coordination
 - **Fibers**: Use `Flow.fork` to start a fiber, `Flow.join` to wait for its outcome, and `Flow.interrupt` for graceful stopping.
 - **Parallelism**: Use `Flow.zipPar` to run two flows concurrently or `Flow.race` for the first winner.
+- **Scheduling**: Use `Schedule.retry schedule flow` for typed failure retries and `Schedule.repeat schedule flow` for repeating successes.
 - **STM (Software Transactional Memory)**: Use `TRef` for transactional state and `stm { }` for atomic, composable transitions. Use `STM.retry` and `STM.orElse` for coordination without locks.
 - **Streams**: Use `FlowStream` for effectful, backpressured pull-based sequences.
 
@@ -64,6 +66,8 @@ Use `BindError.map` only at a `flow {}` bind site when the source already carrie
 - `Async<Result<'T, 'E1>>` -> `let! x = aResult |> BindError.map mapper`
 - `Task<Result<'T, 'E1>>` -> `let! x = taskResult |> BindError.map mapper`
 
+Use `Flow.fromAsync`, `Flow.fromTask`, and `Flow.fromValueTask` when thrown exceptions are defects. Use `Flow.attemptAsync`, `Flow.attemptTask`, and `Flow.attemptValueTask` when thrown exceptions are expected and should become `Cause.Fail exn`.
+
 ## Rosetta Stone (Mappings)
 - **FsToolkit**: `AsyncResult.requireSome e` -> `let! x = opt |> BindError.withError e` in `flow {}` or `opt |> Check.takeSome |> Check.withError e` in pure code
 - **ZIO**: `option.getOrFail(e)` -> `let! x = opt |> BindError.withError e` in `flow {}`
@@ -107,6 +111,8 @@ equivalent, Axial usually expects a different boundary shape rather than a 1:1 h
 - `provide layer flow`: Run a flow with an environment built by a layer.
 - `map`, `mapError`, `bind`, `tap`, `tapError`: Core combinators.
 - `catch`: Handle exceptions.
+- `attemptAsync`, `attemptTask`, `attemptValueTask`: Convert expected interop exceptions into typed `exn` failures.
+- `Schedule.retry`, `Schedule.repeat`: Apply retry/repeat policies.
 
 ## Usage in Prompting
 Users should point agents to `llms.txt` in the repo root, or the locally generated docs preview when available, for the full context.

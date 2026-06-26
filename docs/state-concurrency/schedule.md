@@ -44,9 +44,9 @@ let policy =
 
 ## Retrying Failures
 
-Use `Flow.Retry` to apply a schedule to a flow that might fail with an expected domain error (`Cause.Fail`).
+Use `Schedule.retry` to apply a schedule to a flow that might fail with an expected domain error (`Cause.Fail`).
 
-**Important:** `Flow.Retry` retries only `Cause.Fail`. `Cause.Die` and `Cause.Interrupt` pass through unchanged, so defects and cancellation are not translated into retries.
+**Important:** `Schedule.retry` retries only `Cause.Fail`. `Cause.Die` and `Cause.Interrupt` pass through unchanged, so defects and cancellation are not translated into retries.
 
 ```fsharp
 let unstableCall = 
@@ -56,12 +56,12 @@ let unstableCall =
 
 // This will attempt the call up to 4 times (initial + 3 retries)
 let resilientCall = 
-    Flow.Retry(unstableCall, Schedule.recurs 3)
+    unstableCall |> Schedule.retry (Schedule.recurs 3)
 ```
 
 ## Repeating Successes
 
-Use `Flow.Repeat` to execute a successful flow again. This is useful for polling, heartbeats, or recurring background tasks.
+Use `Schedule.repeat` to execute a successful flow again. This is useful for polling, heartbeats, or recurring background tasks.
 
 ```fsharp
 let pollStatus = 
@@ -71,7 +71,7 @@ let pollStatus =
 
 // This will poll every 5 seconds until it fails or is cancelled
 let recurringPoll = 
-    Flow.Repeat(pollStatus, Schedule.spaced (TimeSpan.FromSeconds 5.0))
+    pollStatus |> Schedule.repeat (Schedule.spaced (TimeSpan.FromSeconds 5.0))
 ```
 
 ## API Reference: Module `Schedule`
@@ -82,10 +82,5 @@ let recurringPoll =
 | `spaced` | `TimeSpan -> Schedule<'env, 'i, int>` | Recurs indefinitely with a fixed delay. |
 | `exponential` | `TimeSpan -> Schedule<'env, 'i, TimeSpan>` | Recurs indefinitely with doubling delays. |
 | `jittered` | `Schedule<'env, 'i, 'o> -> Schedule<'env, 'i, 'o>` | Wraps a schedule to add random jitter (0.5x to 1.5x). |
-
-## API Reference: `Flow` Extensions
-
-| Function | Signature | Description |
-| :--- | :--- | :--- |
-| `Flow.Retry` | `Flow<'e, 'err, 'v> * Schedule<'e, 'err, 'o> -> Flow<'e, 'err, 'v>` | Retries the flow on `Cause.Fail` only. |
-| `Flow.Repeat` | `Flow<'e, 'err, 'v> * Schedule<'e, 'v, 'o> -> Flow<'e, 'err, 'v>` | Repeats the flow on success. |
+| `retry` | `Schedule<'env, 'error, 'output> -> Flow<'env, 'error, 'value> -> Flow<'env, 'error, 'value>` | Retries the flow on `Cause.Fail` only. |
+| `repeat` | `Schedule<'env, 'value, 'output> -> Flow<'env, 'error, 'value> -> Flow<'env, 'error, 'value>` | Repeats the flow on success. |

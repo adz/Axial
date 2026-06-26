@@ -305,15 +305,15 @@ let pageSpecs = [
         OutPath = ["flow"; "_index.md"]
         Title = "Flow"
         Description = "Source-documented workflow surface in Axial."
-        Intro = "This page shows the `Flow<'env, 'error, 'value>` surface, the central workflow type in Axial. A flow is a cold description of work that reads an explicit environment, can fail with a typed error, and only starts when you call an execution member such as `workflow.ToTask(env)`, `workflow.ToValueTask(env)`, `workflow.ToAsync(env)`, or `workflow.RunSynchronously(env)`. Use this page as the API map for building fail-fast workflows, reading dependencies from `env`, reshaping environments with `localEnv`, composing typed failures, and introducing concurrency with fibers, `zipPar`, or `race`. Start with `flow { }`, `Flow.read`, `Flow.bind`, and `Flow.map`; reach for [runtime helpers](./runtime/) and parallel orchestration only at the boundary where the workflow actually needs them. \n\nNote that common extensions such as `Flow.Retry` and `Flow.Repeat` are available as soon as you `open Axial.Flow` because their modules are marked with `[<AutoOpen>]`."
+        Intro = "This page shows the Flow surface for cold workflow descriptions that only start when you call an execution member such as `workflow.ToTask(env)`, `workflow.ToValueTask(env)`, `workflow.ToAsync(env)`, or `workflow.RunSynchronously(env)`. Start with the smallest useful signature: `Flow<'value>` means no environment and no typed failure, `Flow<'error, 'value>` means no environment with typed failure, `EnvFlow<'env, 'value>` means environment with no typed failure, and `ExnFlow`/`ExnEnvFlow` put recoverable exceptions in the typed error channel. Use the full `Flow<'env, 'error, 'value>` form when a workflow needs both environment and typed failure channels. Use this page as the API map for building fail-fast workflows, reading dependencies from `env`, reshaping environments with `localEnv`, composing typed failures, and introducing concurrency with fibers, `zipPar`, or `race`. Start with `flow { }`, `Flow.read`, `Flow.bind`, and `Flow.map`; reach for [runtime helpers](./runtime/) and parallel orchestration only at the boundary where the workflow actually needs them."
         SymbolIds = [
-            "Core type", ["T:Axial.Flow.Flow`3"]
+            "Core type", ["T:Axial.Flow.Flow`3"; "T:Axial.Flow.Flow`2"; "T:Axial.Flow.Flow`1"; "T:Axial.Flow.EnvFlow`2"; "T:Axial.Flow.ExnFlow`1"; "T:Axial.Flow.ExnEnvFlow`2"]
             "Fiber operations", ["M:Axial.Flow.Flow.fork"; "M:Axial.Flow.Flow.join"; "M:Axial.Flow.Flow.interrupt"]
             "Execution", ["M:Axial.Flow.Flow.ToAsync"; "M:Axial.Flow.Flow.ToTask"; "M:Axial.Flow.Flow.ToValueTask"; "M:Axial.Flow.Flow.RunSynchronously"]
-            "Module functions", ["M:Axial.Flow.Flow.ok"; "M:Axial.Flow.Flow.error"; "M:Axial.Flow.Flow.succeed"; "M:Axial.Flow.Flow.value"; "M:Axial.Flow.Flow.fail"; "M:Axial.Flow.Flow.fromResult"; "M:Axial.Flow.Flow.fromOption"; "M:Axial.Flow.Flow.fromValueOption"; "M:Axial.Flow.Flow.fromAsync"; "M:Axial.Flow.Flow.fromTask"; "M:Axial.Flow.Flow.fromValueTask"; "M:Axial.Flow.Flow.orElseFlow"; "M:Axial.Flow.Flow.env"; "M:Axial.Flow.Flow.read"; "M:Axial.Flow.Flow.map"; "M:Axial.Flow.Flow.bind"; "M:Axial.Flow.Flow.tap"; "M:Axial.Flow.Flow.tapError"; "M:Axial.Flow.Flow.mapError"; "M:Axial.Flow.Flow.catch"; "M:Axial.Flow.Flow.orElseWith"; "M:Axial.Flow.Flow.orElse"; "M:Axial.Flow.Flow.zip"; "M:Axial.Flow.Flow.map2"; "M:Axial.Flow.Flow.map3"; "M:Axial.Flow.Flow.apply"; "M:Axial.Flow.Flow.ignore"; "M:Axial.Flow.Flow.localEnv"; "M:Axial.Flow.Flow.provide"; "M:Axial.Flow.Flow.delay"; "M:Axial.Flow.Flow.traverse"; "M:Axial.Flow.Flow.sequence"]
+            "Module functions", ["M:Axial.Flow.Flow.ok"; "M:Axial.Flow.Flow.error"; "M:Axial.Flow.Flow.succeed"; "M:Axial.Flow.Flow.value"; "M:Axial.Flow.Flow.fail"; "M:Axial.Flow.Flow.fromResult"; "M:Axial.Flow.Flow.fromOption"; "M:Axial.Flow.Flow.fromValueOption"; "M:Axial.Flow.Flow.fromAsync"; "M:Axial.Flow.Flow.attemptAsync"; "M:Axial.Flow.Flow.fromTask"; "M:Axial.Flow.Flow.attemptTask"; "M:Axial.Flow.Flow.fromValueTask"; "M:Axial.Flow.Flow.attemptValueTask"; "M:Axial.Flow.Flow.orElseFlow"; "M:Axial.Flow.Flow.env"; "M:Axial.Flow.Flow.read"; "M:Axial.Flow.Flow.map"; "M:Axial.Flow.Flow.bind"; "M:Axial.Flow.Flow.tap"; "M:Axial.Flow.Flow.tapError"; "M:Axial.Flow.Flow.mapError"; "M:Axial.Flow.Flow.catch"; "M:Axial.Flow.Flow.orElseWith"; "M:Axial.Flow.Flow.orElse"; "M:Axial.Flow.Flow.zip"; "M:Axial.Flow.Flow.map2"; "M:Axial.Flow.Flow.map3"; "M:Axial.Flow.Flow.apply"; "M:Axial.Flow.Flow.ignore"; "M:Axial.Flow.Flow.localEnv"; "M:Axial.Flow.Flow.provide"; "M:Axial.Flow.Flow.delay"; "M:Axial.Flow.Flow.traverse"; "M:Axial.Flow.Flow.sequence"]
             "Scoped resources", ["M:Axial.Flow.Flow.addFinalizer"; "M:Axial.Flow.Flow.addDisposable"; "M:Axial.Flow.Flow.addAsyncDisposable"; "M:Axial.Flow.Flow.acquireRelease"; "M:Axial.Flow.Flow.acquireReleaseWith"]
             "Parallel orchestration", ["M:Axial.Flow.Flow.zipPar"; "M:Axial.Flow.Flow.race"]
-            "Scheduling", ["M:Axial.Flow.Flow`3.Retry"; "M:Axial.Flow.Flow`3.Repeat"]
+            "Scheduling", ["M:Axial.Flow.ScheduleModule.retry"; "M:Axial.Flow.ScheduleModule.repeat"]
         ]
         Alias = None
     }
@@ -375,10 +375,10 @@ let pageSpecs = [
         OutPath = ["schedule"; "_index.md"]
         Title = "Schedule"
         Description = "Source-documented retry and repeat logic for Axial."
-        Intro = "This page shows the `Schedule` surface for describing retry and repeat policies as values. A schedule decides when a workflow should run again, what delay should be used, and what output should be accumulated for each step. Use schedules when retry behavior is part of the workflow boundary and must stay explicit, testable, and separate from the domain operation being retried. The common entry points are `recurs` for bounded repetition, `spaced` for fixed delays, `exponential` for backoff, and `jittered` when several callers should not retry in lockstep."
+        Intro = "This page shows the `Schedule` surface for describing retry and repeat policies as values. A schedule decides when a workflow should run again, what delay should be used, and what output should be accumulated for each step. Use schedules when retry behavior is part of the workflow boundary and must stay explicit, testable, and separate from the domain operation being retried. The common entry points are `recurs` for bounded repetition, `spaced` for fixed delays, `exponential` for backoff, `jittered` when several callers should not retry in lockstep, `retry` for typed failures, and `repeat` for successful values."
         SymbolIds = [
             "Core type", ["T:Axial.Flow.Schedule`3"]
-            "Module functions", ["M:Axial.Flow.Schedule.recurs"; "M:Axial.Flow.Schedule.spaced"; "M:Axial.Flow.Schedule.exponential"; "M:Axial.Flow.Schedule.jittered"]
+            "Module functions", ["M:Axial.Flow.ScheduleModule.recurs"; "M:Axial.Flow.ScheduleModule.spaced"; "M:Axial.Flow.ScheduleModule.exponential"; "M:Axial.Flow.ScheduleModule.jittered"; "M:Axial.Flow.ScheduleModule.retry"; "M:Axial.Flow.ScheduleModule.repeat"]
         ]
         Alias = None
     }
@@ -730,8 +730,11 @@ let groupedFlowConstructionMembers =
         "M:Axial.Flow.Flow.fromOption"
         "M:Axial.Flow.Flow.fromValueOption"
         "M:Axial.Flow.Flow.fromAsync"
+        "M:Axial.Flow.Flow.attemptAsync"
         "M:Axial.Flow.Flow.fromTask"
+        "M:Axial.Flow.Flow.attemptTask"
         "M:Axial.Flow.Flow.fromValueTask"
+        "M:Axial.Flow.Flow.attemptValueTask"
         "M:Axial.Flow.Flow.orElseFlow"
         "M:Axial.Flow.Flow.delay"
     ]

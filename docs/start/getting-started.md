@@ -42,10 +42,31 @@ let result = validateName "Ad" // Error NameTooShort
 
 When your logic needs to interact with the outside world—by calling a database, reading an environment variable, or performing an async task—you move to `Flow`.
 
-A **`Flow<'env, 'error, 'value>`** is a description of a computation. It does not do anything until you run it.
+Start with the smallest signature that says what the workflow needs.
 
 ```fsharp
-let greetUser (id: int) : Flow<unit, UserError, string> =
+let hello : Flow<string> =
+    flow {
+        return "Hello World"
+    }
+```
+
+A `Flow` is a description of a computation. It does not do anything until you run it.
+
+The shortest forms remove channels you are not using:
+
+| Alias | Meaning |
+| :--- | :--- |
+| `Flow<'value>` | No environment and no typed failure. |
+| `Flow<'error, 'value>` | No environment, with a typed failure channel. |
+| `EnvFlow<'env, 'value>` | Environment, with no typed failure. |
+| `ExnFlow<'value>` | No environment, with recoverable exceptions in the typed failure channel. |
+| `ExnEnvFlow<'env, 'value>` | Environment, with recoverable exceptions in the typed failure channel. |
+
+Use the full `Flow<'env, 'error, 'value>` shape when a workflow needs both an environment and a typed failure channel.
+
+```fsharp
+let greetUser (id: int) : Flow<UserError, string> =
     flow {
         // Result can be bound directly.
         let! name = validateName "Adam"
@@ -56,6 +77,8 @@ let greetUser (id: int) : Flow<unit, UserError, string> =
         return data
     }
 ```
+
+The example above has a typed failure channel but no environment, so it uses `Flow<UserError, string>`.
 
 ## 4. Execution
 
@@ -90,7 +113,7 @@ match exitValue with
     printfn "The workflow was cancelled."
 ```
 
-Use `Flow.fail` or `Flow.error` for expected domain failures, `Flow.die` for explicit defects, and `Flow.catch` only when you intentionally want to translate an exception into a typed error.
+Use `Flow.fail` or `Flow.error` for expected domain failures, `Flow.die` for explicit defects, and `Flow.catch` only when you intentionally want to translate a defect into a typed error. Use `Flow.attemptTask`, `Flow.attemptValueTask`, or `Flow.attemptAsync` when thrown exceptions are expected interop outcomes.
 
 ## 5. Running Your First Flow
 
@@ -125,7 +148,7 @@ Flow can read dependencies from an explicit environment.
 ```fsharp
 type AppConfig = { ApiUrl: string }
 
-let fetchFromApi : Flow<AppConfig, unit, string> =
+let fetchFromApi : EnvFlow<AppConfig, string> =
     flow {
         // Read ApiUrl from the environment record.
         let! url = Flow.read _.ApiUrl

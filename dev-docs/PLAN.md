@@ -6,11 +6,25 @@ Speculative sketches live in `dev-docs/current-ideas/`, but this file is the liv
 
 ## Current Direction
 
-Axial keeps the public workflow type simple:
+Axial has one fully expanded workflow shape:
 
 ```fsharp
 Flow<'env, 'error, 'value>
 ```
+
+Shorter type aliases cover common channel combinations:
+
+```fsharp
+Flow<'value> = Flow<unit, Never, 'value>
+Flow<'error, 'value> = Flow<unit, 'error, 'value>
+EnvFlow<'env, 'value> = Flow<'env, Never, 'value>
+ExnFlow<'value> = Flow<unit, exn, 'value>
+ExnEnvFlow<'env, 'value> = Flow<'env, exn, 'value>
+```
+
+Teach from the smallest useful shape first, then expand to `Flow<'env, 'error, 'value>` when environment and typed
+failure channels matter. Use `Never` for an error channel that cannot fail, and use the `Exn*` aliases only for
+recoverable exception-channel interop.
 
 The active direction splits concerns like this:
 

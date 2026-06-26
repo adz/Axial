@@ -54,7 +54,21 @@ Use `BindError.map` inside `flow {}` when the source already carries a meaningfu
 ### 4. Same-Family Fallbacks
 Use `orElse` and `orElseWith` for alternate computations in the same flow family.
 
-### 5. Dependency Guidance
+### 5. Flow Signatures
+
+Start with the smallest useful Flow signature. Expand to the full `Flow<'env, 'error, 'value>` form only when a workflow needs both environment and typed failure channels:
+
+| Alias | Use when |
+| :--- | :--- |
+| `Flow<'value>` | No environment and no typed failure. |
+| `Flow<'error, 'value>` | No environment, with typed failure. |
+| `EnvFlow<'env, 'value>` | Environment, with no typed failure. |
+| `ExnFlow<'value>` | No environment, with recoverable exceptions as typed failures. |
+| `ExnEnvFlow<'env, 'value>` | Environment, with recoverable exceptions as typed failures. |
+
+Use `Flow.fromAsync`, `Flow.fromTask`, and `Flow.fromValueTask` when thrown exceptions are defects. Use `Flow.attemptAsync`, `Flow.attemptTask`, and `Flow.attemptValueTask` when expected exceptions should become `Cause.Fail exn`.
+
+### 6. Dependency Guidance
 
 Keep application dependencies explicit in `'env`.
 
@@ -71,7 +85,7 @@ Prefer plain records for most application workflows. Keep `IServiceProvider` int
 boundary instead of making container lookup the default model inside business logic. Use layers to
 validate provider-backed services and build reusable explicit environments.
 
-### 6. Rosetta Stone
+### 7. Rosetta Stone
 Translate common patterns from other libraries into idiomatic Axial.
 
 | If you use... | Do this in Axial |
@@ -84,6 +98,8 @@ Translate common patterns from other libraries into idiomatic Axial.
 | `.NET IServiceProvider.GetRequiredService` | `let! service = Service<IService>.resolve()` at the edge |
 | `match x with Some...` | `let! v = x |> BindError.withError e` in `flow {}` |
 | `Result.mapError` | `let! x = result |> BindError.map mapper` in `flow {}` |
+| retry policy | `flow |> Schedule.retry schedule` |
+| repeat policy | `flow |> Schedule.repeat schedule` |
 
 
 ## Hierarchy of Effects

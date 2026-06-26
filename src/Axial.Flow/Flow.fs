@@ -282,6 +282,7 @@ module Flow =
 
 #if FABLE_COMPILER
     /// <summary>Creates a flow from a raw async operation.</summary>
+    /// <remarks>Thrown exceptions are recorded as defects (<c>Cause.Die</c>), while cancellation is recorded as interruption. Use <c>attemptAsync</c> when expected exceptions should enter the typed error channel.</remarks>
     /// <platforms>Fable compatible</platforms>
     let fromAsync (operation: Async<'value>) : Flow<'env, 'error, 'value> =
         Flow(fun _ _ ->
@@ -292,8 +293,25 @@ module Flow =
                 with error ->
                     return Exit.Failure (Execution.causeOfException error)
             })
+
+    /// <summary>Creates a flow from an async operation and treats thrown exceptions as recoverable typed errors.</summary>
+    /// <remarks>Successful completion returns <c>Exit.Success</c>. <c>OperationCanceledException</c> returns <c>Cause.Interrupt</c>. Other exceptions return <c>Cause.Fail exn</c>.</remarks>
+    /// <platforms>Fable compatible</platforms>
+    let attemptAsync (operation: Async<'value>) : Flow<'env, exn, 'value> =
+        Flow(fun _ _ ->
+            async {
+                try
+                    let! value = operation
+                    return Exit.Success value
+                with
+                | :? OperationCanceledException ->
+                    return Exit.Failure Cause.Interrupt
+                | error ->
+                    return Exit.Failure (Cause.Fail error)
+            })
 #else
     /// <summary>Creates a flow from a raw async operation.</summary>
+    /// <remarks>Thrown exceptions are recorded as defects (<c>Cause.Die</c>), while cancellation is recorded as interruption. Use <c>attemptAsync</c> when expected exceptions should enter the typed error channel.</remarks>
     /// <platforms>Fable compatible</platforms>
     let fromAsync (operation: Async<'value>) : Flow<'env, 'error, 'value> =
         Flow(fun _ cancellationToken ->
@@ -308,7 +326,27 @@ module Flow =
                         return Exit.Failure (Execution.causeOfException error)
                 }))
 
+    /// <summary>Creates a flow from an async operation and treats thrown exceptions as recoverable typed errors.</summary>
+    /// <remarks>Successful completion returns <c>Exit.Success</c>. <c>OperationCanceledException</c> returns <c>Cause.Interrupt</c>. Other exceptions return <c>Cause.Fail exn</c>.</remarks>
+    /// <platforms>Fable compatible</platforms>
+    let attemptAsync (operation: Async<'value>) : Flow<'env, exn, 'value> =
+        Flow(fun _ cancellationToken ->
+            ValueTask<Exit<'value, exn>>(
+                task {
+                    try
+                        let! value =
+                            Async.StartAsTask(operation, cancellationToken = cancellationToken)
+
+                        return Exit.Success value
+                    with
+                    | :? OperationCanceledException ->
+                        return Exit.Failure Cause.Interrupt
+                    | error ->
+                        return Exit.Failure (Cause.Fail error)
+                }))
+
     /// <summary>Creates a flow from a raw task operation.</summary>
+    /// <remarks>Thrown exceptions are recorded as defects (<c>Cause.Die</c>), while cancellation is recorded as interruption. Use <c>attemptTask</c> when expected exceptions should enter the typed error channel.</remarks>
     /// <platforms>.NET only</platforms>
     let fromTask (operation: Task<'value>) : Flow<'env, 'error, 'value> =
         Flow(fun _ _ ->
@@ -321,7 +359,25 @@ module Flow =
                         return Exit.Failure (Execution.causeOfException error)
                 }))
 
+    /// <summary>Creates a flow from a task operation and treats thrown exceptions as recoverable typed errors.</summary>
+    /// <remarks>Successful completion returns <c>Exit.Success</c>. <c>OperationCanceledException</c> returns <c>Cause.Interrupt</c>. Other exceptions return <c>Cause.Fail exn</c>.</remarks>
+    /// <platforms>.NET only</platforms>
+    let attemptTask (operation: Task<'value>) : Flow<'env, exn, 'value> =
+        Flow(fun _ _ ->
+            ValueTask<Exit<'value, exn>>(
+                task {
+                    try
+                        let! value = operation
+                        return Exit.Success value
+                    with
+                    | :? OperationCanceledException ->
+                        return Exit.Failure Cause.Interrupt
+                    | error ->
+                        return Exit.Failure (Cause.Fail error)
+                }))
+
     /// <summary>Creates a flow from a raw value task operation.</summary>
+    /// <remarks>Thrown exceptions are recorded as defects (<c>Cause.Die</c>), while cancellation is recorded as interruption. Use <c>attemptValueTask</c> when expected exceptions should enter the typed error channel.</remarks>
     /// <platforms>.NET only</platforms>
     let fromValueTask (operation: ValueTask<'value>) : Flow<'env, 'error, 'value> =
         Flow(fun _ _ ->
@@ -332,6 +388,23 @@ module Flow =
                         return Exit.Success value
                     with error ->
                         return Exit.Failure (Execution.causeOfException error)
+                }))
+
+    /// <summary>Creates a flow from a value task operation and treats thrown exceptions as recoverable typed errors.</summary>
+    /// <remarks>Successful completion returns <c>Exit.Success</c>. <c>OperationCanceledException</c> returns <c>Cause.Interrupt</c>. Other exceptions return <c>Cause.Fail exn</c>.</remarks>
+    /// <platforms>.NET only</platforms>
+    let attemptValueTask (operation: ValueTask<'value>) : Flow<'env, exn, 'value> =
+        Flow(fun _ _ ->
+            ValueTask<Exit<'value, exn>>(
+                task {
+                    try
+                        let! value = operation.AsTask()
+                        return Exit.Success value
+                    with
+                    | :? OperationCanceledException ->
+                        return Exit.Failure Cause.Interrupt
+                    | error ->
+                        return Exit.Failure (Cause.Fail error)
                 }))
 #endif
 
@@ -1235,14 +1308,14 @@ module Flow =
                 (fun value -> invoke (onSuccess value) environment cancellationToken)
                 (fun cause -> invoke (onFailure cause) environment cancellationToken))
 
-    /// <summary>Catches exceptions raised during execution and maps them to a typed error.</summary>
+    /// <summary>Catches exceptions raised during execution and simple defect outcomes, then maps them to a typed error.</summary>
     /// <remarks>
-    /// Exceptions that are not caught by this helper will bubble up to the caller of <see cref="run" />.
-    /// This ensures that known exceptions can be handled within the flow context.
+    /// Thrown exceptions and simple <c>Cause.Die</c> outcomes are converted to <c>Cause.Fail</c>.
+    /// Existing typed failures and interruptions are preserved. Compound causes are preserved unchanged.
     /// </remarks>
     /// <param name="handler">A function of type <c>exn -> 'error</c> to map the exception.</param>
     /// <param name="flow">The source flow of type <see cref="T:Axial.Flow`3" /> to monitor.</param>
-    /// <returns>A <see cref="T:Axial.Flow`3" /> that converts exceptions into success-path errors.</returns>
+    /// <returns>A <see cref="T:Axial.Flow`3" /> that converts recoverable exceptions into typed errors.</returns>
     /// <example>
     /// <code>
     /// let flow = Flow.die (System.Exception("boom")) |> Flow.catch (fun ex -> "caught: " + ex.Message)
@@ -1256,14 +1329,26 @@ module Flow =
             #if FABLE_COMPILER
             async {
                 try
-                    return! (invoke flow environment cancellationToken)
+                    let! exit = invoke flow environment cancellationToken
+
+                    match exit with
+                    | Exit.Failure (Cause.Die error) ->
+                        return Exit.Failure (Cause.Fail (handler error))
+                    | other ->
+                        return other
                 with error ->
                     return Exit.Failure (Cause.Fail (handler error))
             }
             #else
             task {
                 try
-                    return! (invoke flow environment cancellationToken)
+                    let! exit = invoke flow environment cancellationToken
+
+                    match exit with
+                    | Exit.Failure (Cause.Die error) ->
+                        return Exit.Failure (Cause.Fail (handler error))
+                    | other ->
+                        return other
                 with error ->
                     return Exit.Failure (Cause.Fail (handler error))
             } |> ValueTask<Exit<'value, 'error>>

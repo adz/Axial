@@ -15,7 +15,7 @@ module WorkflowSchedulingTests =
     [<Fact>]
     let ``Scheduling: retry failing flow`` () =
         let mutable attempts = 0
-        let workflow =
+        let workflow : Flow<unit, string, string> =
             flow {
                 attempts <- attempts + 1
                 if attempts < 3 then
@@ -24,7 +24,9 @@ module WorkflowSchedulingTests =
                     return "success"
             }
 
-        let retried = Flow.Retry(workflow, Schedule.recurs 5)
+        let retried : Flow<unit, string, string> =
+            workflow |> Schedule.retry (Schedule.recurs 5)
+
         let result = Flow.runSync () retried
         
         test <@ result = Exit.Success "success" @>
@@ -33,13 +35,15 @@ module WorkflowSchedulingTests =
     [<Fact>]
     let ``Scheduling: repeat successful flow`` () =
         let mutable count = 0
-        let workflow =
+        let workflow : Flow<unit, unit, int> =
             flow {
                 count <- count + 1
                 return count
             }
 
-        let repeated = Flow.Repeat(workflow, Schedule.recurs 3)
+        let repeated : Flow<unit, unit, int> =
+            workflow |> Schedule.repeat (Schedule.recurs 3)
+
         let result = Flow.runSync () repeated
         
         test <@ result = Exit.Success 4 @>

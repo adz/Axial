@@ -74,70 +74,76 @@ module Schedule =
                 out, jitteredDelay
             ) (op input attempt))
 
-[<AutoOpen>]
-module FlowScheduleExtensions =
-    type Flow<'env, 'error, 'value> with
-        /// <summary>Retries a failing flow according to the supplied schedule.</summary>
-        /// <param name="flow">The workflow to retry if it fails.</param>
-        /// <param name="schedule">The schedule that determines when and if to retry based on the error.</param>
-        /// <returns>A flow that will retry the original flow according to the schedule until it succeeds or the schedule stops.</returns>
-        /// <example>
-        /// <code>
-        /// let flakyWork = Flow.fail "oops"
-        /// let retried = Flow.Retry(flakyWork, Schedule.recurs 3)
-        /// </code>
-        /// </example>
-        static member Retry
-            (
-                flow: Flow<'env, 'error, 'value>,
-                schedule: Schedule<'env, 'error, 'output>
-            ) : Flow<'env, 'error, 'value> =
-            let (Schedule op) = schedule
-            let rec loop attempt =
-                Flow(fun env ct ->
-                    Execution.fold
-                        (fun v -> Execution.ofValue v)
-                        (fun cause ->
-                            match cause with
-                            | Cause.Fail e ->
-                                Execution.bind (fun (decision, delay) ->
+    /// <summary>Retries a failing flow according to the supplied schedule.</summary>
+    /// <param name="schedule">The schedule that determines when and if to retry based on the error.</param>
+    /// <param name="flow">The workflow to retry if it fails.</param>
+    /// <returns>A flow that will retry the original flow according to the schedule until it succeeds or the schedule stops.</returns>
+    /// <example>
+    /// <code>
+    /// let flakyWork = Flow.fail "oops"
+    /// let retried = flakyWork |> Schedule.retry (Schedule.recurs 3)
+    /// </code>
+    /// </example>
+    let retry
+        (schedule: Schedule<'env, 'error, 'output>)
+        (flow: Flow<'env, 'error, 'value>)
+        : Flow<'env, 'error, 'value> =
+        let (Schedule op) = schedule
+
+        let rec loop attempt =
+            Flow(fun env ct ->
+                Execution.fold
+                    (fun v -> Execution.ofValue v)
+                    (fun cause ->
+                        match cause with
+                        | Cause.Fail e ->
+                            Execution.bind
+                                (fun (decision, delay) ->
                                     match decision with
                                     | Some _ ->
-                                        Execution.bind (fun () -> 
-                                            FlowInternal.invoke (loop (attempt + 1)) env ct) 
+                                        Execution.bind
+                                            (fun () -> FlowInternal.invoke (loop (attempt + 1)) env ct)
                                             (Execution.mapError (fun () -> e) (FlowInternal.invoke (Flow.Runtime.sleep delay) env ct))
-                                    | None -> Execution.ofCause cause) 
-                                    (Execution.mapError (fun () -> e) (FlowInternal.invoke (op e attempt) env ct))
-                            | _ -> Execution.ofCause cause)
-                        (FlowInternal.invoke flow env ct))
-            loop 0
+                                    | None ->
+                                        Execution.ofCause cause)
+                                (Execution.mapError (fun () -> e) (FlowInternal.invoke (op e attempt) env ct))
+                        | _ ->
+                            Execution.ofCause cause)
+                    (FlowInternal.invoke flow env ct))
 
-        /// <summary>Repeats a successful flow according to the supplied schedule.</summary>
-        /// <param name="flow">The workflow to repeat if it succeeds.</param>
-        /// <param name="schedule">The schedule that determines when and if to repeat based on the successful value.</param>
-        /// <returns>A flow that repeats the original flow according to the schedule, returning the last successful value when it stops.</returns>
-        /// <example>
-        /// <code>
-        /// let work = Flow.ok 42
-        /// let repeated = Flow.Repeat(work, Schedule.recurs 5)
-        /// </code>
-        /// </example>
-        static member Repeat
-            (
-                flow: Flow<'env, 'error, 'value>,
-                schedule: Schedule<'env, 'value, 'output>
-            ) : Flow<'env, 'error, 'value> =
-            let (Schedule op) = schedule
-            let rec loop attempt lastValue =
-                Flow(fun env ct ->
-                    Execution.bind (fun (decision, (delay: TimeSpan)) ->
+        loop 0
+
+    /// <summary>Repeats a successful flow according to the supplied schedule.</summary>
+    /// <param name="schedule">The schedule that determines when and if to repeat based on the successful value.</param>
+    /// <param name="flow">The workflow to repeat if it succeeds.</param>
+    /// <returns>A flow that repeats the original flow according to the schedule, returning the last successful value when it stops.</returns>
+    /// <example>
+    /// <code>
+    /// let work = Flow.ok 42
+    /// let repeated = work |> Schedule.repeat (Schedule.recurs 5)
+    /// </code>
+    /// </example>
+    let repeat
+        (schedule: Schedule<'env, 'value, 'output>)
+        (flow: Flow<'env, 'error, 'value>)
+        : Flow<'env, 'error, 'value> =
+        let (Schedule op) = schedule
+
+        let rec loop attempt lastValue =
+            Flow(fun env ct ->
+                Execution.bind
+                    (fun (decision, (delay: TimeSpan)) ->
                         match decision with
                         | Some _ ->
-                            Execution.bind (fun () -> 
-                                Execution.bind (fun nextValue -> 
-                                    FlowInternal.invoke (loop (attempt + 1) nextValue) env ct) (FlowInternal.invoke flow env ct)) 
+                            Execution.bind
+                                (fun () ->
+                                    Execution.bind
+                                        (fun nextValue -> FlowInternal.invoke (loop (attempt + 1) nextValue) env ct)
+                                        (FlowInternal.invoke flow env ct))
                                 (Execution.mapError (fun () -> Unchecked.defaultof<'error>) (FlowInternal.invoke (Flow.Runtime.sleep delay) env ct))
-                        | None -> Execution.ofValue lastValue) 
-                        (Execution.mapError (fun () -> Unchecked.defaultof<'error>) (FlowInternal.invoke (op lastValue attempt) env ct)))
-            flow |> Flow.bind (loop 0)
+                        | None ->
+                            Execution.ofValue lastValue)
+                    (Execution.mapError (fun () -> Unchecked.defaultof<'error>) (FlowInternal.invoke (op lastValue attempt) env ct)))
+
+        flow |> Flow.bind (loop 0)
 #endif

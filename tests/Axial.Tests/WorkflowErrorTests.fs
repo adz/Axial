@@ -69,6 +69,88 @@ module WorkflowErrorTests =
         | other -> failwithf "Expected defect cause, got %A" other
 
     [<Fact>]
+    let ``attempt constructors translate exceptions to recoverable typed failures`` () =
+        let asyncDefect = InvalidOperationException "async boom"
+        let taskDefect = InvalidOperationException "task boom"
+        let valueTaskDefect = InvalidOperationException "value task boom"
+
+        let fromTaskResult =
+            Task.FromException<int>(taskDefect)
+            |> Flow.fromTask
+            |> Flow.runSync ()
+
+        let attemptTaskResult =
+            Task.FromException<int>(taskDefect)
+            |> Flow.attemptTask
+            |> Flow.runSync ()
+
+        let attemptValueTaskResult =
+            ValueTask<int>(Task.FromException<int>(valueTaskDefect))
+            |> Flow.attemptValueTask
+            |> Flow.runSync ()
+
+        let attemptAsyncResult =
+            async { return raise asyncDefect }
+            |> Flow.attemptAsync
+            |> Flow.runSync ()
+
+        let attemptCancellationResult =
+            Task.FromCanceled<int>(CancellationToken(true))
+            |> Flow.attemptTask
+            |> Flow.runSync ()
+
+        match fromTaskResult with
+        | Exit.Failure (Cause.Die ex) -> test <@ obj.ReferenceEquals(ex, taskDefect) @>
+        | other -> failwithf "Expected defect cause, got %A" other
+
+        match attemptTaskResult with
+        | Exit.Failure (Cause.Fail ex) -> test <@ obj.ReferenceEquals(ex, taskDefect) @>
+        | other -> failwithf "Expected typed exception failure, got %A" other
+
+        match attemptValueTaskResult with
+        | Exit.Failure (Cause.Fail ex) -> test <@ obj.ReferenceEquals(ex, valueTaskDefect) @>
+        | other -> failwithf "Expected typed exception failure, got %A" other
+
+        match attemptAsyncResult with
+        | Exit.Failure (Cause.Fail ex) -> test <@ obj.ReferenceEquals(ex, asyncDefect) @>
+        | other -> failwithf "Expected typed exception failure, got %A" other
+
+        test <@ attemptCancellationResult = Exit.Failure Cause.Interrupt @>
+
+    [<Fact>]
+    let ``Flow catch converts simple defects and preserves typed failures and interruptions`` () =
+        let defect = InvalidOperationException "boom"
+        let mapper (ex: exn) = $"caught:{ex.Message}"
+
+        let caughtDefect =
+            Flow.die defect
+            |> Flow.catch mapper
+            |> Flow.runSync ()
+
+        let typedFailure =
+            Flow.fail "domain"
+            |> Flow.catch mapper
+            |> Flow.runSync ()
+
+        let interrupted =
+            Flow.ofExit (Exit.Failure Cause.Interrupt)
+            |> Flow.catch mapper
+            |> Flow.runSync ()
+
+        let compound =
+            Flow.ofExit (Exit.Failure (Cause.Then(Cause.Die defect, Cause.Fail "domain")))
+            |> Flow.catch mapper
+            |> Flow.runSync ()
+
+        test <@ caughtDefect = Exit.Failure (Cause.Fail "caught:boom") @>
+        test <@ typedFailure = Exit.Failure (Cause.Fail "domain") @>
+        test <@ interrupted = Exit.Failure Cause.Interrupt @>
+
+        match compound with
+        | Exit.Failure (Cause.Then(Cause.Die ex, Cause.Fail "domain")) -> test <@ obj.ReferenceEquals(ex, defect) @>
+        | other -> failwithf "Expected compound cause to be preserved, got %A" other
+
+    [<Fact>]
     let ``Runtime boundaries classify defects and cancellation`` () =
         let defect = InvalidOperationException "boom"
         let canceled = OperationCanceledException "stop"
@@ -162,11 +244,15 @@ module WorkflowErrorTests =
         let retryAttempts = ref 0
 
         let retryResult =
-            Flow.Retry(
+            let workflow : Flow<unit, string, int> =
                 Flow.delay (fun () ->
-                retryAttempts.Value <- retryAttempts.Value + 1
-                raise defect),
-                Schedule.recurs 5)
+                    retryAttempts.Value <- retryAttempts.Value + 1
+                    raise defect)
+
+            let retried : Flow<unit, string, int> =
+                workflow |> Schedule.retry (Schedule.recurs 5)
+
+            retried
             |> Flow.runSync ()
 
         match mapErrorResult with

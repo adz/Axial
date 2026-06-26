@@ -65,8 +65,11 @@ module ApiShapeTests =
               "fromResult"
               "fromOption"
               "fromAsync"
+              "attemptAsync"
               "fromTask"
+              "attemptTask"
               "fromValueTask"
+              "attemptValueTask"
               "acquireRelease"
               "acquireReleaseWith"
               "addFinalizer"
@@ -84,6 +87,29 @@ module ApiShapeTests =
         typeof<Flow<unit, unit, unit>>
         |> publicInstanceMethodNames
         |> assertContainsAll [ "ToAsync"; "ToTask"; "ToValueTask"; "RunSynchronously" ]
+
+    [<Fact>]
+    let ``flow type aliases compile to canonical flow shapes`` () =
+        let valueFlow : Flow<unit, Never, int> = Flow.succeed 1
+        let typedFlow : Flow<unit, string, int> = Flow.fail "missing"
+        let envFlow : Flow<string, Never, int> = Flow.read _.Length
+        let exnFlow : Flow<unit, exn, int> = Flow.fail (InvalidOperationException "recoverable")
+        let exnEnvFlow : Flow<string, exn, int> = Flow.read _.Length
+
+        let valueAlias : Flow<int> = valueFlow
+        let typedAlias : Flow<string, int> = typedFlow
+        let envAlias : EnvFlow<string, int> = envFlow
+        let exnAlias : ExnFlow<int> = exnFlow
+        let exnEnvAlias : ExnEnvFlow<string, int> = exnEnvFlow
+
+        test <@ valueAlias.RunSynchronously(()) = Exit.Success 1 @>
+        test <@ typedAlias.RunSynchronously(()) = Exit.Failure (Cause.Fail "missing") @>
+        test <@ envAlias.RunSynchronously("abc") = Exit.Success 3 @>
+        match exnAlias.RunSynchronously(()) with
+        | Exit.Failure (Cause.Fail (:? InvalidOperationException)) -> ()
+        | other -> failwithf "Expected typed exception failure, got %A" other
+
+        test <@ exnEnvAlias.RunSynchronously("abcd") = Exit.Success 4 @>
 
     [<Fact>]
     let ``runtime outcome types keep expected public shape`` () =
@@ -305,7 +331,7 @@ module ApiShapeTests =
     let ``schedule stream and STM modules keep expected public shape`` () =
         moduleType typeof<Schedule<unit, unit, unit>> "Axial.Flow.Schedule"
         |> publicStaticMemberNames
-        |> assertContainsAll [ "recurs"; "spaced"; "exponential"; "jittered" ]
+        |> assertContainsAll [ "recurs"; "spaced"; "exponential"; "jittered"; "retry"; "repeat" ]
 
         moduleType typeof<FlowStream<unit, unit, unit>> "Axial.Flow.FlowStream"
         |> publicStaticMemberNames

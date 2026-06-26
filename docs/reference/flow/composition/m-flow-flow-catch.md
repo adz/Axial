@@ -1,10 +1,10 @@
 ---
 title: "Flow.Flow.catch"
 linkTitle: "catch"
-weight: 2319
+weight: 2322
 ---
 
-Catches exceptions raised during execution and maps them to a typed error.
+Catches exceptions raised during execution and simple defect outcomes, then maps them to a typed error.
 
 ## Signature
 
@@ -23,13 +23,13 @@ Catches exceptions raised during execution and maps them to a typed error.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | A <a href="https://learn.microsoft.com/dotnet/api/axial.flow-3">Flow</a> that converts exceptions into success-path errors. |
+| <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | A <a href="https://learn.microsoft.com/dotnet/api/axial.flow-3">Flow</a> that converts recoverable exceptions into typed errors. |
 
 ## Remarks
 
 
- Exceptions that are not caught by this helper will bubble up to the caller of <a href="https://learn.microsoft.com/dotnet/api/run">run</a>.
- This ensures that known exceptions can be handled within the flow context.
+ Thrown exceptions and simple <code>Cause.Die</code> outcomes are converted to <code>Cause.Fail</code>.
+ Existing typed failures and interruptions are preserved. Compound causes are preserved unchanged.
 
 
 ## Examples

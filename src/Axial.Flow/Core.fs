@@ -732,6 +732,21 @@ module RetryPolicy =
 /// </summary>
 type Never = private Never of unit
 
+/// <summary>A flow that requires no environment and cannot fail with a typed error.</summary>
+type Flow<'value> = Flow<unit, Never, 'value>
+
+/// <summary>A flow that requires no environment and can fail with a typed error.</summary>
+type Flow<'error, 'value> = Flow<unit, 'error, 'value>
+
+/// <summary>A flow that reads an environment and cannot fail with a typed error.</summary>
+type EnvFlow<'env, 'value> = Flow<'env, Never, 'value>
+
+/// <summary>A flow that requires no environment and uses exceptions as recoverable typed errors.</summary>
+type ExnFlow<'value> = Flow<unit, exn, 'value>
+
+/// <summary>A flow that reads an environment and uses exceptions as recoverable typed errors.</summary>
+type ExnEnvFlow<'env, 'value> = Flow<'env, exn, 'value>
+
 /// <summary>Nominal contract for an explicit service dependency.</summary>
 /// <remarks>
 /// Environments implement <c>IHas&lt;'service&gt;</c> when they can supply one service value of that type

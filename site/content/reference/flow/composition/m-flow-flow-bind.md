@@ -1,7 +1,7 @@
 ---
 title: "Flow.Flow.bind"
 linkTitle: "bind"
-weight: 2315
+weight: 2318
 type: docs
 ---
 

@@ -10,6 +10,20 @@ This page shows the compiler errors that usually mean you crossed a wrapper boun
 Most Axial type errors are not exotic.
 The compiler usually sees one wrapper shape and you intended another.
 
+## Error: A Flow Alias Does Not Match The Channels You Intended
+
+`Flow<'env, 'error, 'value>` is the full workflow shape. The shorter aliases remove common channels:
+
+| Alias | Expands to |
+| :--- | :--- |
+| `Flow<'value>` | `Flow<unit, Never, 'value>` |
+| `Flow<'error, 'value>` | `Flow<unit, 'error, 'value>` |
+| `EnvFlow<'env, 'value>` | `Flow<'env, Never, 'value>` |
+| `ExnFlow<'value>` | `Flow<unit, exn, 'value>` |
+| `ExnEnvFlow<'env, 'value>` | `Flow<'env, exn, 'value>` |
+
+If your workflow reads an environment and has a typed domain error, use the full `Flow<'env, 'error, 'value>` form.
+
 ## Error: A Unique Overload For Method `Bind` Could Not Be Determined
 
 This usually happens when the compiler cannot tell which wrapper shape a `let!` value should use.
@@ -129,6 +143,8 @@ If the compiler error mentions one of these shapes, check the boundary first:
 - `Task<...>`
 - `Task<Result<...>>`
 - `Flow<...>`
+
+`Flow.Retry` and `Flow.Repeat` were replaced with `Schedule.retry` and `Schedule.repeat` to avoid ambiguity with shorter `Flow` aliases.
 
 Most fixes are one of:
 

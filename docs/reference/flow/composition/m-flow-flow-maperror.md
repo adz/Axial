@@ -1,7 +1,7 @@
 ---
 title: "Flow.Flow.mapError"
 linkTitle: "mapError"
-weight: 2318
+weight: 2321
 ---
 
 Maps the error value of a synchronous flow.
