@@ -30,8 +30,8 @@ If you use these FsToolkit patterns, here is how they correspond to Axial:
 
 | FsToolkit.ErrorHandling | Axial |
 | --- | --- |
-| [Result]({{< relref "/reference/result/" >}}).requireTrue | `condition |> Check.isTrue |> Check.withError error` |
-| [Result]({{< relref "/reference/result/" >}}).requireSome | `opt |> Check.takeSome |> Check.withError error` |
+| [Result]({{< relref "/reference/result/" >}}).requireTrue | `condition |> Check.isTrue |> Check.orError error` |
+| [Result]({{< relref "/reference/result/" >}}).requireSome | `opt |> Check.takeSome |> Check.orError error` |
 | `asyncResult { }` | `flow {}` |
 | `taskResult { }` | `flow {}` |
 | [Validation]({{< relref "/reference/validation/" >}}) helpers | [Validation]({{< relref "/reference/validation/" >}}) and [`validate {}`]({{< relref "/reference/validation/builders-validate.md" >}}) |

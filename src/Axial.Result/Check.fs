@@ -9,7 +9,7 @@ open System.Text.RegularExpressions
 /// </summary>
 /// <remarks>
 /// Simple <c>Check</c> helpers return <c>Result&lt;'value, unit&gt;</c> and can be mapped into an
-/// application error with <c>Check.withError</c>. Helpers with useful built-in diagnostics return
+/// application error with <c>Check.orError</c>. Helpers with useful built-in diagnostics return
 /// typed <c>Result</c> values directly, such as <c>CardinalityFailure</c> or <c>RangeFailure</c>.
 /// </remarks>
 type Check<'value> = Result<'value, unit>
@@ -872,17 +872,17 @@ module Check =
         | Ok () -> Ok actual
         | Error error -> Error error
 
-    /// <summary>Assigns the supplied application error to a unit-error check failure.</summary>
+    /// <summary>Returns the successful check value, or the supplied application error when the check fails.</summary>
     /// <param name="error">The domain error to return when the check fails.</param>
     /// <param name="result">The source unit-error check.</param>
     /// <returns>The successful check value, or the supplied error when the check fails.</returns>
     /// <example>
     /// <code>
-    /// "" |> Check.notBlank |> Check.withError "Name required" // Error "Name required"
-    /// "Ada" |> Check.notBlank |> Check.withError "Name required" // Ok ()
+    /// "" |> Check.notBlank |> Check.orError "Name required" // Error "Name required"
+    /// "Ada" |> Check.notBlank |> Check.orError "Name required" // Ok ()
     /// </code>
     /// </example>
-    let withError (error: 'error) (result: Check<'value>) : Result<'value, 'error> =
+    let orError (error: 'error) (result: Check<'value>) : Result<'value, 'error> =
         match result with
         | Ok value -> Ok value
         | Error () -> Error error

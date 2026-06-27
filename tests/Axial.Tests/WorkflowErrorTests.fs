@@ -435,7 +435,7 @@ let probe : Flow<unit, string, int> =
         test <@ syncValueNone = Exit.Failure (Cause.Fail "missing value") @>
 
     [<Fact>]
-    let ``BindError assigns errors in all flow families`` () =
+    let ``Bind assigns errors in all flow families`` () =
         let successOption : int option = Some 42
         let successValueOption : int voption = ValueSome 10
         let successCheck : Check<unit> = Ok ()
@@ -449,29 +449,29 @@ let probe : Flow<unit, string, int> =
 
         let flowTest =
             flow {
-                let! x = successOption |> BindError.withError "missing-option"
-                let! y = successValueOption |> BindError.withError "missing-voption"
-                do! successCheck |> BindError.withError "check-failed"
+                let! x = successOption |> Bind.error "missing-option"
+                let! y = successValueOption |> Bind.error "missing-voption"
+                do! successCheck |> Bind.error "check-failed"
                 return x + y
             }
 
         let asyncFlowTest =
             flow {
-                let! (x : int) = asyncOption |> BindError.withError "missing-option"
-                let! (y : int) = asyncValueOption |> BindError.withError "missing-voption"
-                do! asyncCheck |> BindError.withError "check-failed"
+                let! (x : int) = asyncOption |> Bind.error "missing-option"
+                let! (y : int) = asyncValueOption |> Bind.error "missing-voption"
+                do! asyncCheck |> Bind.error "check-failed"
                 return x + y
             }
 
         let taskFlowTest =
             flow {
-                let! x = successOption |> BindError.withError "missing-option"
-                let! y = successValueOption |> BindError.withError "missing-voption"
-                do! Check.isTrue true |> BindError.withError "check-failed"
-                let! z = successTaskOption |> BindError.withError "task-missing"
-                do! successTaskCheck |> BindError.withError "task-check-failed"
-                let! w = successTaskValueOption |> BindError.withError "vtask-missing"
-                do! successValueTaskCheck |> BindError.withError "vtask-check-failed"
+                let! x = successOption |> Bind.error "missing-option"
+                let! y = successValueOption |> Bind.error "missing-voption"
+                do! Check.isTrue true |> Bind.error "check-failed"
+                let! z = successTaskOption |> Bind.error "task-missing"
+                do! successTaskCheck |> Bind.error "task-check-failed"
+                let! w = successTaskValueOption |> Bind.error "vtask-missing"
+                do! successValueTaskCheck |> Bind.error "vtask-check-failed"
                 return x + y + z + w
             }
 
@@ -484,7 +484,7 @@ let probe : Flow<unit, string, int> =
         test <@ taskFlowResult = Exit.Success 60 @>
 
     [<Fact>]
-    let ``Flow async syntax uses BindError assignment and mapping`` () =
+    let ``Flow async syntax uses Bind assignment and mapping`` () =
         let tryGetUser username = async { return if username = "missing" then None else Some username }
         let isPwdValid password user = password = $"{user}-pwd"
         let authorize user = async { return if user = "blocked" then Error "denied" else Ok () }
@@ -494,20 +494,20 @@ let probe : Flow<unit, string, int> =
             flow {
                 let! (user : string) =
                     tryGetUser username
-                    |> BindError.withError InvalidUser
+                    |> Bind.error InvalidUser
 
                 do!
                     isPwdValid password user
                     |> Check.isTrue
-                    |> BindError.withError InvalidPwd
+                    |> Bind.error InvalidPwd
 
                 do!
                     authorize user
-                    |> BindError.map Unauthorized
+                    |> Bind.mapError Unauthorized
 
                 return!
                     createAuthToken user
-                    |> BindError.map TokenErr
+                    |> Bind.mapError TokenErr
             }
 
         let success = Flow.runSync () (login "alice" "alice-pwd")
@@ -519,7 +519,7 @@ let probe : Flow<unit, string, int> =
         test <@ tokenFailure = Exit.Failure (Cause.Fail (TokenErr "token-expired")) @>
 
     [<Fact>]
-    let ``BindError map stays symmetric across flow families`` () =
+    let ``Bind mapError stays symmetric across flow families`` () =
         let asyncSource : Async<Result<int, string>> = async { return Error "async-source" }
         let taskSource : Task<Result<int, string>> = task { return Error "task-source" }
         let asyncSuccess : Async<Result<int, string>> = async { return Ok 1 }
@@ -528,7 +528,7 @@ let probe : Flow<unit, string, int> =
             flow {
                 let! value =
                     asyncSource
-                    |> BindError.map (fun error -> $"mapped-{error}")
+                    |> Bind.mapError (fun error -> $"mapped-{error}")
 
                 return value + 1
             }
@@ -537,11 +537,11 @@ let probe : Flow<unit, string, int> =
             flow {
                 let! (asyncValue : int) =
                     asyncSuccess
-                    |> BindError.map (fun error -> $"mapped-{error}")
+                    |> Bind.mapError (fun error -> $"mapped-{error}")
 
                 let! (taskValue : int) =
                     taskSource
-                    |> BindError.map (fun error -> $"mapped-{error}")
+                    |> Bind.mapError (fun error -> $"mapped-{error}")
 
                 return asyncValue + taskValue
             }
@@ -550,13 +550,13 @@ let probe : Flow<unit, string, int> =
         test <@ Flow.runSync () taskMapped = Exit.Failure (Cause.Fail "mapped-task-source") @>
 
     [<Fact>]
-    let ``BindError withError fails correctly for check-like sources`` () =
+    let ``Bind error fails correctly for check-like sources`` () =
         let missingOption : int option = None
 
         let flowFail = flow {
             let! (value : int) =
                 missingOption
-                |> BindError.withError "failed"
+                |> Bind.error "failed"
 
             return value
         }
@@ -564,7 +564,7 @@ let probe : Flow<unit, string, int> =
         let asyncFlowFail = flow {
             let! (value : int) =
                 async { return ValueNone }
-                |> BindError.withError "failed"
+                |> Bind.error "failed"
 
             return value
         }
@@ -572,7 +572,7 @@ let probe : Flow<unit, string, int> =
         let taskFlowFail = flow {
             let! (value : int) =
                 missingOption
-                |> BindError.withError "failed"
+                |> Bind.error "failed"
 
             return value
         }

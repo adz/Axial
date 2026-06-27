@@ -293,14 +293,14 @@ module ApiShapeTests =
               "whenNegative"
               "nonPositive"
               "whenNonPositive"
-              "withError" ]
+              "orError" ]
 
         checkMembers
-        |> assertContainsNone [ "takeNotNull"; "takeNotBlank" ]
+        |> assertContainsNone [ "takeNotNull"; "takeNotBlank"; "withError" ]
 
-        moduleType typeof<Flow<unit, unit, unit>> "Axial.Flow.BindError"
+        moduleType typeof<Flow<unit, unit, unit>> "Axial.Flow.Bind"
         |> publicStaticMemberNames
-        |> assertContainsAll [ "withError"; "map" ]
+        |> assertContainsAll [ "error"; "mapError" ]
 
         let bindErrorWithErrorSources =
             typeof<BindErrorWithError>.GetMethods(BindingFlags.Static ||| BindingFlags.Public)

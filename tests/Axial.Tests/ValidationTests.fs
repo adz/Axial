@@ -373,7 +373,7 @@ module ValidationTests =
                 validate.key "address" {
                     let! city =
                         validate.name "City" {
-                            return! address.City |> Check.whenNotBlank |> Check.withError "City required"
+                            return! address.City |> Check.whenNotBlank |> Check.orError "City required"
                         }
 
                     return { address with City = city }
@@ -383,7 +383,7 @@ module ValidationTests =
                 validate.key "customer" {
                     let! name =
                         validate.name "Name" {
-                            return! customer.Name |> Check.whenNotBlank |> Check.withError "Name required"
+                            return! customer.Name |> Check.whenNotBlank |> Check.orError "Name required"
                         }
 
                     and! address = validateAddress customer.Address
@@ -393,7 +393,7 @@ module ValidationTests =
                             customer.Lines
                             |> Validation.traverseIndexed (fun index line ->
                                 validate.name "Name" {
-                                    return! line |> Check.whenNotBlank |> Check.withError $"Line {index} name required"
+                                    return! line |> Check.whenNotBlank |> Check.orError $"Line {index} name required"
                                 }
                             )
                         )

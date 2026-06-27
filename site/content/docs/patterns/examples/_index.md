@@ -53,7 +53,7 @@ type RequestEnv =
 
 let validateName (name: string) : Result<string, string> =
     Check.whenNotBlank name
-    |> Check.withError "name is required"
+    |> Check.orError "name is required"
 
 let loadUser : Flow<RequestEnv, string, User> =
     flow {
@@ -163,7 +163,7 @@ let validateAddressWithoutCEOrPipe address =
     Validation.at [PathSegment.Key "address"] (
         Validation.at [PathSegment.Name "City"] (
             Validation.fromResult (
-                address.City |> whenNotBlank |> withError "City required"
+                address.City |> whenNotBlank |> orError "City required"
             )
         )
         |> Validation.map (fun city -> {address with City = city })
@@ -173,7 +173,7 @@ let validateAddressWithoutCE address =
     let cityResult =
         address.City
         |> whenNotBlank
-        |> withError "City required"
+        |> orError "City required"
 
     cityResult
     |> Validation.fromResult
@@ -185,7 +185,7 @@ let validateAddressWithoutCE address =
 let validateAddress address =
     validate.key "address" {
         let! city = validate.name "city" {
-            return! address.City |> whenNotBlank |> withError "City required"
+            return! address.City |> whenNotBlank |> orError "City required"
         }
         return { address with City = city }
     }
@@ -194,7 +194,7 @@ let validateCustomer customer =
     validate {
         let! name =
             validate.name "Name" {
-                return! customer.Name |> whenNotBlank |> withError "Name required"
+                return! customer.Name |> whenNotBlank |> orError "Name required"
             }
 
         and! address = validateAddress customer.Address
@@ -206,7 +206,7 @@ let validateCustomer customer =
                     |> Validation.traverseIndexed (fun index line ->
                         validate.name "Name" {
                             let! name =
-                                line.Name |> whenNotBlank |> withError $"Line {index} name required"
+                                line.Name |> whenNotBlank |> orError $"Line {index} name required"
 
                             return { Name = name }
                         }
@@ -240,7 +240,7 @@ let validateCreateCustomerRequest request =
     validate {
         let! requestId =
             validate.name "RequestId" {
-                return! request.RequestId |> whenNotBlank |> withError "RequestId required"
+                return! request.RequestId |> whenNotBlank |> orError "RequestId required"
             }
 
         and! customer =
@@ -347,7 +347,7 @@ let greetingFlow : Flow<AppEnv, string, string> =
 let greetingAsync : Flow<AppEnv, string, string> =
     flow {
         let! greeting = greetingFlow
-        let! checkedGreeting = greeting |> Check.whenNotBlank |> Check.withError "Blanko"
+        let! checkedGreeting = greeting |> Check.whenNotBlank |> Check.orError "Blanko"
         return checkedGreeting.ToUpperInvariant()
     }
 

@@ -1,7 +1,8 @@
 ---
-title: "Flow.BindError.map"
-linkTitle: "map"
+title: "Flow.Bind.mapError"
+linkTitle: "mapError"
 weight: 2101
+type: docs
 ---
 
 Maps an existing source error before <code>flow { }</code> binds it.
@@ -9,7 +10,7 @@ Maps an existing source error before <code>flow { }</code> binds it.
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Flow.BindError.map&#32;<span>mapper&#32;source</span></span></code>
+<code><span>Flow.Bind.mapError&#32;<span>mapper&#32;source</span></span></code>
 </div>
 
 ## Parameters
@@ -28,6 +29,6 @@ Maps an existing source error before <code>flow { }</code> binds it.
 ## Examples
 
 <pre class="fssnip highlighted"><code lang="fsharp"> <span class="id">flow</span> <span class="pn">{</span>
-     <span class="k">do!</span> <span class="id">authorize</span> <span class="id">user</span> <span class="o">|&gt;</span> <span class="id">BindError</span><span class="pn">.</span><span class="id">map</span> <span class="id">Unauthorized</span>
+     <span class="k">do!</span> <span class="id">authorize</span> <span class="id">user</span> <span class="o">|&gt;</span> <span class="id">Bind</span><span class="pn">.</span><span class="id">mapError</span> <span class="id">Unauthorized</span>
  <span class="pn">}</span>
 </code></pre>

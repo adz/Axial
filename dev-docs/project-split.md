@@ -252,19 +252,18 @@ This lifts one fail-fast error into one validation error.
 
 That helper does not require a dependency on `Axial.Result` because it operates on the standard F# `Result` type.
 
-### BindError
+### Bind
 
-`Axial.Flow` keeps `BindError`, but its implementation must not call validation-specific helpers.
+`Axial.Flow` keeps the public `Bind` helper module and the `BindError` marker, but its implementation must not call
+validation-specific helpers.
 
-In the current codebase, `BindError` uses `Check.withError`. That coupling must be removed before or during the split.
-
-`Axial.Flow` should instead keep its own local conversion from:
+The bind-site error assignment implementation keeps its own local conversion from:
 
 ```fsharp
 Result<'T, unit> -> Result<'T, 'Error>
 ```
 
-so that `BindError.withError` still works without pulling in `Axial.Result` or `Axial.Validation`.
+so that `Bind.error` still works without pulling in `Axial.Result` or `Axial.Validation`.
 
 ## Non-Goals
 
@@ -326,11 +325,7 @@ For each public source file in `src/Axial`, assign exactly one target:
 
 Before creating packages, remove any implementation dependency that would force one package to reference another.
 
-The known coupling to remove first is:
-
-```text
-BindError -> Check.withError
-```
+There is no known forbidden implementation coupling to remove first.
 
 ### Step 3: create the package projects
 
@@ -427,7 +422,7 @@ The first split is complete when all of the following are true:
 - `validate { }` exists in `Axial.Validation`
 - `flow { }` still binds `Result<'T,'Error>`
 - `Validation.toResult` exists as the canonical bridge into Flow
-- `BindError.withError` still works from user code
+- `Bind.error` still works from user code
 - users can install only the package they need for their use case
 - docs and examples match the new package boundaries
 

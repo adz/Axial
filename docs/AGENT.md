@@ -16,40 +16,40 @@ If you are an AI assistant, prioritize the patterns in the **Dependency Guidance
 Use these patterns unless local code shows a different convention.
 
 ### 1. Handling Failures
-Use `Check` for pure validation. Unprefixed helpers are yes/no predicates, `when*` helpers preserve the original value, `take*` helpers extract an inner value or return a deliberately different success shape, and `Check.withError` turns a pure unit-error result into a domain error.
+Use `Check` for pure validation. Unprefixed helpers are yes/no predicates, `when*` helpers preserve the original value, `take*` helpers extract an inner value or return a deliberately different success shape, and `Check.orError` turns a pure unit-error result into a domain error.
 
 | Source Type | Idiomatic Pattern |
 | :--- | :--- |
-| `bool` | `Check.isTrue condition |> Check.withError e` |
-| `string` value | `name |> Check.whenNotBlank |> Check.withError e` |
-| `option<'T>` | `opt |> Check.takeSome |> Check.withError e` |
-| `voption<'T>` | `vopt |> Check.takeValueSome |> Check.withError e` |
-| `Result<'T, unit>` | `check |> Check.withError e` |
+| `bool` | `Check.isTrue condition |> Check.orError e` |
+| `string` value | `name |> Check.whenNotBlank |> Check.orError e` |
+| `option<'T>` | `opt |> Check.takeSome |> Check.orError e` |
+| `voption<'T>` | `vopt |> Check.takeValueSome |> Check.orError e` |
+| `Result<'T, unit>` | `check |> Check.orError e` |
 
 ### 2. Binding Error-Adapted Sources
-Use `BindError.withError` inside `flow {}` when the source fails with option/value-option absence or a `unit` error, and you need to assign the flow's domain error at the bind site.
+Use `Bind.error` inside `flow {}` when the source fails with option/value-option absence or a `unit` error, and you need to assign the flow's domain error at the bind site.
 
 | Source Type | Idiomatic Pattern |
 | :--- | :--- |
-| `Option<'T>` | `let! x = opt |> BindError.withError e` |
-| `voption<'T>` | `let! x = vopt |> BindError.withError e` |
-| `Async<Option<'T>>` | `let! x = aOpt |> BindError.withError e` |
-| `Async<voption<'T>>` | `let! x = aVOpt |> BindError.withError e` |
-| `bool` predicate | `do! cond |> Check.isTrue |> BindError.withError e` |
-| `Result<'T, unit>` | `let! x = check |> BindError.withError e` |
-| `Flow<'Env, unit, 'T>` | `let! x = flow |> BindError.withError e` |
-| `Task<Option<'T>>` | `let! x = tOpt |> BindError.withError e` |
-| `Task<voption<'T>>` | `let! x = tVOpt |> BindError.withError e` |
+| `Option<'T>` | `let! x = opt |> Bind.error e` |
+| `voption<'T>` | `let! x = vopt |> Bind.error e` |
+| `Async<Option<'T>>` | `let! x = aOpt |> Bind.error e` |
+| `Async<voption<'T>>` | `let! x = aVOpt |> Bind.error e` |
+| `bool` predicate | `do! cond |> Check.isTrue |> Bind.error e` |
+| `Result<'T, unit>` | `let! x = check |> Bind.error e` |
+| `Flow<'Env, unit, 'T>` | `let! x = flow |> Bind.error e` |
+| `Task<Option<'T>>` | `let! x = tOpt |> Bind.error e` |
+| `Task<voption<'T>>` | `let! x = tVOpt |> Bind.error e` |
 
 ### 3. Mapping Errors
-Use `BindError.map` inside `flow {}` when the source already carries a meaningful error value that must be wrapped or translated before binding.
+Use `Bind.mapError` inside `flow {}` when the source already carries a meaningful error value that must be wrapped or translated before binding.
 
 | Source Type | Idiomatic Pattern |
 | :--- | :--- |
-| `Result<'T, 'E1>` | `let! x = result |> BindError.map mapper` |
-| `Flow<'Env, 'E1, 'T>` | `let! x = flow |> BindError.map mapper` |
-| `Async<Result<'T, 'E1>>` | `let! x = aResult |> BindError.map mapper` |
-| `Task<Result<'T, 'E1>>` | `let! x = tResult |> BindError.map mapper` |
+| `Result<'T, 'E1>` | `let! x = result |> Bind.mapError mapper` |
+| `Flow<'Env, 'E1, 'T>` | `let! x = flow |> Bind.mapError mapper` |
+| `Async<Result<'T, 'E1>>` | `let! x = aResult |> Bind.mapError mapper` |
+| `Task<Result<'T, 'E1>>` | `let! x = tResult |> Bind.mapError mapper` |
 
 ### 4. Same-Family Fallbacks
 Use `orElse` and `orElseWith` for alternate computations in the same flow family.
@@ -90,14 +90,14 @@ Translate common patterns from other libraries into idiomatic Axial.
 
 | If you use... | Do this in Axial |
 | :--- | :--- |
-| `requireSome` | `let! x = opt |> BindError.withError e` in `flow {}` or `opt |> Check.takeSome |> Check.withError e` in pure code |
-| `requireTrue` | `cond |> Check.isTrue |> Check.withError e` |
+| `requireSome` | `let! x = opt |> Bind.error e` in `flow {}` or `opt |> Check.takeSome |> Check.orError e` in pure code |
+| `requireTrue` | `cond |> Check.isTrue |> Check.orError e` |
 | `Reader.ask` | `let! env = Flow.env` |
 | `Reader.asks` | `let! value = Flow.read projector` |
 | `ZIO.service` | `let! service = Service<IService>.get()` |
 | `.NET IServiceProvider.GetRequiredService` | `let! service = Service<IService>.resolve()` at the edge |
-| `match x with Some...` | `let! v = x |> BindError.withError e` in `flow {}` |
-| `Result.mapError` | `let! x = result |> BindError.map mapper` in `flow {}` |
+| `match x with Some...` | `let! v = x |> Bind.error e` in `flow {}` |
+| `Result.mapError` | `let! x = result |> Bind.mapError mapper` in `flow {}` |
 | retry policy | `flow |> Schedule.retry schedule` |
 | repeat policy | `flow |> Schedule.repeat schedule` |
 

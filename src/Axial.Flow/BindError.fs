@@ -9,14 +9,14 @@ open System.Threading.Tasks
 /// A marker that adapts a source error before <c>flow { }</c> binds it.
 /// </summary>
 /// <remarks>
-/// Use <c>BindError.withError</c> for sources that fail with missingness or <c>unit</c>.
-/// Use <c>BindError.map</c> for sources that already carry a meaningful error.
+/// Use <c>Bind.error</c> for sources that fail with missingness or <c>unit</c>.
+/// Use <c>Bind.mapError</c> for sources that already carry a meaningful error.
 /// </remarks>
 type BindError<'env, 'error, 'value> =
     private
     | BindError of Flow<'env, 'error, 'value>
 
-/// <summary>Internal dispatch marker for <c>BindError.withError</c>.</summary>
+/// <summary>Internal dispatch marker for <c>Bind.error</c>.</summary>
 /// <exclude/>
 [<EditorBrowsable(EditorBrowsableState.Never)>]
 type BindErrorWithError =
@@ -195,7 +195,7 @@ type BindErrorWithError =
             Unchecked.defaultof<BindError<'env, 'error, 'value>>
         )
 
-/// <summary>Internal dispatch marker for <c>BindError.map</c>.</summary>
+/// <summary>Internal dispatch marker for <c>Bind.mapError</c>.</summary>
 /// <exclude/>
 [<EditorBrowsable(EditorBrowsableState.Never)>]
 type BindErrorMap =
@@ -271,27 +271,27 @@ type BindErrorMap =
             Unchecked.defaultof<BindError<'env, 'error2, 'value>>
         )
 
-/// <summary>Pipeable helpers for assigning or mapping errors before a source is bound by <c>flow { }</c>.</summary>
+/// <summary>Pipeable helpers for adapting source errors before a source is bound by <c>flow { }</c>.</summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module BindError =
+module Bind =
     [<EditorBrowsable(EditorBrowsableState.Never)>]
     let internal toFlow (BindError flow: BindError<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
         flow
 
     /// <summary>Assigns an error to a missing or unit-error source before <c>flow { }</c> binds it.</summary>
-    /// <param name="error">The error to use if the source fails.</param>
+    /// <param name="failure">The error to use if the source fails.</param>
     /// <param name="source">The source to adapt.</param>
     /// <returns>A bind marker for the flow computation expression.</returns>
     /// <example>
     /// <code>
     /// flow {
-    ///     let! user = maybeUser |> BindError.withError InvalidUser
-    ///     do! isValid |> Check.isTrue |> BindError.withError InvalidInput
+    ///     let! user = maybeUser |> Bind.error InvalidUser
+    ///     do! isValid |> Check.isTrue |> Bind.error InvalidInput
     /// }
     /// </code>
     /// </example>
-    let inline withError (error: 'error) (source: 'source) : BindError<'env, 'error, 'value> =
-        BindErrorWithError.Invoke error source
+    let inline error (failure: 'error) (source: 'source) : BindError<'env, 'error, 'value> =
+        BindErrorWithError.Invoke failure source
 
     /// <summary>Maps an existing source error before <c>flow { }</c> binds it.</summary>
     /// <param name="mapper">The error mapping function.</param>
@@ -300,9 +300,9 @@ module BindError =
     /// <example>
     /// <code>
     /// flow {
-    ///     do! authorize user |> BindError.map Unauthorized
+    ///     do! authorize user |> Bind.mapError Unauthorized
     /// }
     /// </code>
     /// </example>
-    let inline map (mapper: 'error1 -> 'error2) (source: 'source) : BindError<'env, 'error2, 'value> =
+    let inline mapError (mapper: 'error1 -> 'error2) (source: 'source) : BindError<'env, 'error2, 'value> =
         BindErrorMap.Invoke mapper source

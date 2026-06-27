@@ -150,5 +150,5 @@ Most fixes are one of:
 
 - add a type annotation to disambiguate `let!` overloads
 - derive a smaller local environment with `localEnv`
-- use `BindError.withError` or `BindError.map` at a `flow {}` bind site when the source error must be assigned or mapped first
+- use `Bind.error` or `Bind.mapError` at a `flow {}` bind site when the source error must be assigned or mapped first
 - move back to plain Result until the real workflow boundary appears

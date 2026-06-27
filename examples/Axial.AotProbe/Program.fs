@@ -83,7 +83,7 @@ module Rule =
         fun root ->
             field.Get root
             |> Check.whenNotBlank
-            |> Check.withError error
+            |> Check.orError error
             |> lift field.Path root
 
     let whenMinLength (minimum: int) (error: 'error) (field: Field<'root, string>) : Rule<'root, 'error> =

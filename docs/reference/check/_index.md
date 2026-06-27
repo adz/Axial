@@ -3,7 +3,7 @@ title: "Check"
 weight: 70
 ---
 
-This page shows the `Check` surface for reusable, pure validation. Unprefixed helpers test a property, `when*` helpers preserve the original input on success, and `take*` helpers extract an inner value or return a deliberately different success shape. Simple helpers carry a `unit` error and can be converted into typed failures with `Check.withError`. Helpers with useful built-in diagnostics return typed `Result` values such as `CardinalityFailure`, `StringLengthFailure`, or `RangeFailure`. Use `Check` before moving into `Result`, `Validation`, or `Flow`.
+This page shows the `Check` surface for reusable, pure validation. Unprefixed helpers test a property, `when*` helpers preserve the original input on success, and `take*` helpers extract an inner value or return a deliberately different success shape. Simple helpers carry a `unit` error and can be converted into typed failures with `Check.orError`. Helpers with useful built-in diagnostics return typed `Result` values such as `CardinalityFailure`, `StringLengthFailure`, or `RangeFailure`. Use `Check` before moving into `Result`, `Validation`, or `Flow`.
 
 ## Core type
 
@@ -150,4 +150,4 @@ This page shows the `Check` surface for reusable, pure validation. Unprefixed he
 
 ## Error attachment
 
-- [`Result.Check.withError`](./m-result-check-witherror.md): Assigns the supplied application error to a unit-error check failure.
+- [`Result.Check.orError`](./m-result-check-orerror.md): Returns the successful check value, or the supplied application error when the check fails.

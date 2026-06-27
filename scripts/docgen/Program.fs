@@ -430,7 +430,7 @@ let pageSpecs = [
         OutPath = ["check"; "_index.md"]
         Title = "Check"
         Description = "Source-documented pure validation helpers for Axial."
-        Intro = "This page shows the `Check` surface for reusable, pure validation. Unprefixed helpers test a property, `when*` helpers preserve the original input on success, and `take*` helpers extract an inner value or return a deliberately different success shape. Simple helpers carry a `unit` error and can be converted into typed failures with `Check.withError`. Helpers with useful built-in diagnostics return typed `Result` values such as `CardinalityFailure`, `StringLengthFailure`, or `RangeFailure`. Use `Check` before moving into `Result`, `Validation`, or `Flow`."
+        Intro = "This page shows the `Check` surface for reusable, pure validation. Unprefixed helpers test a property, `when*` helpers preserve the original input on success, and `take*` helpers extract an inner value or return a deliberately different success shape. Simple helpers carry a `unit` error and can be converted into typed failures with `Check.orError`. Helpers with useful built-in diagnostics return typed `Result` values such as `CardinalityFailure`, `StringLengthFailure`, or `RangeFailure`. Use `Check` before moving into `Result`, `Validation`, or `Flow`."
         SymbolIds = [
             "Core type", ["T:Axial.Result.Check`1"]
             "Structured errors", ["T:Axial.Result.CardinalityFailure"; "T:Axial.Result.StringLengthFailure"; "T:Axial.Result.RangeFailure`1"]
@@ -443,18 +443,18 @@ let pageSpecs = [
             "Equality and range predicates", ["M:Axial.Result.Check.equalTo"; "M:Axial.Result.Check.notEqualTo"; "M:Axial.Result.Check.greaterThan"; "M:Axial.Result.Check.lessThan"; "M:Axial.Result.Check.atLeast"; "M:Axial.Result.Check.atMost"; "M:Axial.Result.Check.between"; "M:Axial.Result.Check.positive"; "M:Axial.Result.Check.nonNegative"; "M:Axial.Result.Check.negative"; "M:Axial.Result.Check.nonPositive"]
             "Preserving gates", ["M:Axial.Result.Check.whenTrue"; "M:Axial.Result.Check.whenFalse"; "M:Axial.Result.Check.whenSome"; "M:Axial.Result.Check.whenNone"; "M:Axial.Result.Check.whenValueSome"; "M:Axial.Result.Check.whenValueNone"; "M:Axial.Result.Check.whenHasValue"; "M:Axial.Result.Check.whenHasNoValue"; "M:Axial.Result.Check.whenNotNull"; "M:Axial.Result.Check.whenNull"; "M:Axial.Result.Check.whenOk"; "M:Axial.Result.Check.whenError"; "M:Axial.Result.Check.whenNotEmpty"; "M:Axial.Result.Check.whenEmpty"; "M:Axial.Result.Check.whenNotNullOrEmpty"; "M:Axial.Result.Check.whenNullOrEmpty"; "M:Axial.Result.Check.whenNotEmptyString"; "M:Axial.Result.Check.whenEmptyString"; "M:Axial.Result.Check.whenNotBlank"; "M:Axial.Result.Check.whenBlank"; "M:Axial.Result.Check.whenMinLength"; "M:Axial.Result.Check.whenMaxLength"; "M:Axial.Result.Check.whenExactLength"; "M:Axial.Result.Check.whenMatchesRegex"; "M:Axial.Result.Check.whenEqualTo"; "M:Axial.Result.Check.whenNotEqualTo"; "M:Axial.Result.Check.whenContains"; "M:Axial.Result.Check.whenCount"; "M:Axial.Result.Check.whenHasDuplicates"; "M:Axial.Result.Check.whenHasNoDuplicates"; "M:Axial.Result.Check.whenSingle"; "M:Axial.Result.Check.whenAtMostOne"; "M:Axial.Result.Check.whenAtLeastOne"; "M:Axial.Result.Check.whenMoreThanOne"; "M:Axial.Result.Check.whenGreaterThan"; "M:Axial.Result.Check.whenLessThan"; "M:Axial.Result.Check.whenAtLeast"; "M:Axial.Result.Check.whenAtMost"; "M:Axial.Result.Check.whenBetween"; "M:Axial.Result.Check.whenPositive"; "M:Axial.Result.Check.whenNonNegative"; "M:Axial.Result.Check.whenNegative"; "M:Axial.Result.Check.whenNonPositive"]
             "Extraction helpers", ["M:Axial.Result.Check.takeSome"; "M:Axial.Result.Check.takeValueSome"; "M:Axial.Result.Check.takeHasValue"; "M:Axial.Result.Check.takeOk"; "M:Axial.Result.Check.takeError"; "M:Axial.Result.Check.takeHead"; "M:Axial.Result.Check.takeSingle"; "M:Axial.Result.Check.takeAtMostOne"]
-            "Error attachment", ["M:Axial.Result.Check.withError"]
+            "Error attachment", ["M:Axial.Result.Check.orError"]
         ]
         Alias = None
     }
     {
-        OutPath = ["bind-error"; "_index.md"]
-        Title = "BindError"
+        OutPath = ["bind"; "_index.md"]
+        Title = "Bind"
         Description = "Source-documented flow bind-site error adaptation for Axial."
-        Intro = "This page shows the `BindError` marker used when a source needs its error assigned or mapped immediately before `flow { }` binds it. Use `BindError.withError` for option or value-option absence and unit-error failures such as `Result<'value, unit>` or `Flow<'env, unit, 'value>`. Use `BindError.map` when the source already carries a meaningful error that must be wrapped or translated into the surrounding flow error. Do not use `BindError` as a general Result adapter; in pure code use `Check.withError`, `Result.mapError`, or `Validation.mapError`."
+        Intro = "This page shows the `Bind` helpers used when a source needs its error assigned or mapped immediately before `flow { }` binds it. Use `Bind.error` for option or value-option absence and unit-error failures such as `Result<'value, unit>` or `Flow<'env, unit, 'value>`. Use `Bind.mapError` when the source already carries a meaningful error that must be wrapped or translated into the surrounding flow error. The helpers return a `BindError` marker for the flow builder. Do not use `Bind` as a general Result adapter; in pure code use `Check.orError`, `Result.mapError`, or `Validation.mapError`."
         SymbolIds = [
             "Core type", ["T:Axial.Flow.BindError`3"]
-            "Module functions", ["M:Axial.Flow.BindError.withError"; "M:Axial.Flow.BindError.map"]
+            "Module functions", ["M:Axial.Flow.Bind.error"; "M:Axial.Flow.Bind.mapError"]
         ]
         Alias = None
     }
@@ -946,7 +946,7 @@ let pageWeight (spec: PageSpec) =
     | ["result"; "_index.md"] -> 60
     | ["check"; "_index.md"] -> 70
     | ["take"; "_index.md"] -> 75
-    | ["bind-error"; "_index.md"] -> 76
+    | ["bind"; "_index.md"] -> 76
     | ["validation"; "_index.md"] -> 80
     | ["diagnostics"; "_index.md"] -> 90
     | ["schedule"; "_index.md"] -> 100
@@ -1054,7 +1054,8 @@ let main argv =
     let canonicalAliases =
         dict [
             formatterApiSlug "Axial.CheckModule", Path.Combine(outRoot, "check", "_index.md")
-            formatterApiSlug "Axial.BindErrorModule", Path.Combine(outRoot, "bind-error", "_index.md")
+            formatterApiSlug "Axial.BindModule", Path.Combine(outRoot, "bind", "_index.md")
+            formatterApiSlug "Axial.BindErrorModule", Path.Combine(outRoot, "bind", "_index.md")
             formatterApiSlug "Axial.FlowModule", Path.Combine(outRoot, "flow", "_index.md")
             formatterApiSlug "Axial.LayerBuilder", Path.Combine(outRoot, "layer", "p-layer.md")
             formatterApiSlug "Axial.FlowBuilder", Path.Combine(outRoot, "flow", "builders-flow.md")
@@ -1062,7 +1063,7 @@ let main argv =
             formatterApiSlug "Axial.ResultBuilder", Path.Combine(outRoot, "result", "builders-result.md")
             formatterApiSlug "Axial.StmBuilder", Path.Combine(outRoot, "stm", "p-stm-stm.md")
             formatterApiSlug "Axial.Check`1", Path.Combine(outRoot, "check", "t-check.md")
-            formatterApiSlug "Axial.BindError`3", Path.Combine(outRoot, "bind-error", "t-binderror.md")
+            formatterApiSlug "Axial.BindError`3", Path.Combine(outRoot, "bind", "t-binderror.md")
             formatterApiSlug "Axial.Path", Path.Combine(outRoot, "diagnostics", "t-path.md")
             formatterApiSlug "Axial.LogLevel", Path.Combine(outRoot, "service", "core", "_index.md")
             formatterApiSlug "Axial.RetryPolicy`1", Path.Combine(outRoot, "flow", "runtime", "_index.md")

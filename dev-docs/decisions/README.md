@@ -13,12 +13,12 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
   cancellation, scope, scheduling, interruption, and trace metadata.
 - Operational services are explicit services provisioned through records, nominal `IHas<'service>` contracts, host-edge
   `IServiceProvider` resolution, and `Layer`.
-- `Check` belongs to `Axial.Result`; `Validation` and `Diagnostics` belong to `Axial.Validation`; `BindError` belongs to
-  `Axial.Flow`.
+- `Check` belongs to `Axial.Result`; `Validation` and `Diagnostics` belong to `Axial.Validation`; `Bind` and `BindError`
+  belong to `Axial.Flow`.
 - `Check` naming follows one grammar: unprefixed helpers test and usually return `unit`; `when*` helpers preserve the
   input; `take*` helpers extract or reshape the success value.
-- `BindError` is only for assigning or mapping a source error immediately before `flow { }` binds it. In pure code, use
-  `Check.withError`, `Result.mapError`, or `Validation.mapError`.
+- `Bind` is only for assigning or mapping a source error immediately before `flow { }` binds it. In pure code, use
+  `Check.orError`, `Result.mapError`, or `Validation.mapError`.
 - Generated reference docs come from XML comments and generator inputs. Do not hand-edit generated reference pages as the
   primary source of truth.
 
