@@ -20,6 +20,14 @@ Pure Checks -> Result & Validation -> Flow
 - **Result & Validation**: Domain logic that handles success or failure (either fail-fast or error-accumulating).
 - **Flow**: The application boundary where you need dependencies, async/task interop, logging, or cancellation.
 
+Use the three guide sections as separate manuals:
+
+| Need | Start here |
+| :--- | :--- |
+| Pure fail-fast logic | [Result](../result/) |
+| Accumulating sibling failures | [Validation](../validation/) |
+| Async, task work, dependencies, resources, or runtime policy | [Flow](../flow/) |
+
 ## 2. Start with Checks and Results
 
 Most logic starts pure. Use `Check` for reusable predicates and `Result` for domain logic.
@@ -32,7 +40,7 @@ type UserError = | NameTooShort
 let validateName (name: string) : Result<string, UserError> =
     name 
     |> Check.fromPredicate (fun value -> value.Length >= 3)
-    |> Check.withError NameTooShort
+    |> Check.orError NameTooShort
 
 // This is a standard F# Result.
 let result = validateName "Ad" // Error NameTooShort
@@ -139,7 +147,7 @@ let runOnFable () = async {
 }
 ```
 
-For a deeper dive into handling outcomes, cancellation, and combining multiple flows, see **[Execution and Outcomes](./execution-and-outcomes/)**.
+For a deeper dive into handling outcomes, cancellation, and combining multiple flows, see **[Execution and Outcomes](../flow/execution-and-outcomes/)**.
 
 ## 6. Reading from the Environment
 

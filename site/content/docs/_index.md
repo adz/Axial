@@ -23,26 +23,20 @@ Welcome to the Axial guides. Choose a section from the sidebar or start with [Ge
 
 <section class="docs-card">
 <span class="label">Pure checks and results</span>
-<h2><a href="./validation-results/">Validation & Results</a></h2>
-<p>Overview of the Axial validation stack, from pure checks to structured diagnostics.</p>
+<h2><a href="./result/">Result</a></h2>
+<p>Use Check and standard F# Result for pure fail-fast logic.</p>
 </section>
 
 <section class="docs-card">
-<span class="label">How Axial fits together</span>
-<h2><a href="./core-model/">Core Model</a></h2>
-<p>Read the semantics, task or async interop rules, and architectural styles.</p>
+<span class="label">Accumulating validation</span>
+<h2><a href="./validation/">Validation</a></h2>
+<p>Collect sibling failures with Validation, Diagnostics, and validate { }.</p>
 </section>
 
 <section class="docs-card">
-<span class="label">Environment handling</span>
-<h2><a href="./managing-dependencies/">Managing Dependencies</a></h2>
-<p>Learn how to manage dependencies using records, service contracts, layers, and runtime mechanics.</p>
-</section>
-
-<section class="docs-card">
-<span class="label">Concurrent workflows</span>
-<h2><a href="./state-concurrency/">State and Concurrency</a></h2>
-<p>Manage shared state, coordination, retries, and streaming.</p>
+<span class="label">Effectful workflows</span>
+<h2><a href="./flow/">Flow</a></h2>
+<p>Run workflows with environment access, async or task work, layers, resources, scheduling, and concurrency.</p>
 </section>
 
 <section class="docs-card">

@@ -22,11 +22,11 @@ Axial is a model for Result-based programs. Write predicate checks once, keep fa
 <div class="docs-home-meta">
 <a class="docs-chip" href="{{< relref "/docs/start/getting-started.md" >}}">Get Started</a>
 <a class="docs-chip" href="{{< relref "/docs/tutorials/" >}}">Tutorials</a>
-<a class="docs-chip" href="{{< relref "/docs/validation-results/" >}}">Check -> Result & Validation</a>
-<a class="docs-chip" href="{{< relref "/docs/core-model/" >}}">Typed failure</a>
-<a class="docs-chip" href="{{< relref "/docs/core-model/task-async-interop.md" >}}">Host context</a>
-<a class="docs-chip" href="{{< relref "/docs/managing-dependencies/" >}}">Managing dependencies</a>
-<a class="docs-chip" href="{{< relref "/docs/core-model/semantics.md" >}}">Cold execution semantics</a>
+<a class="docs-chip" href="{{< relref "/docs/result/" >}}">Result</a>
+<a class="docs-chip" href="{{< relref "/docs/validation/" >}}">Validation</a>
+<a class="docs-chip" href="{{< relref "/docs/flow/" >}}">Flow</a>
+<a class="docs-chip" href="{{< relref "/docs/flow/dependencies.md" >}}">Managing dependencies</a>
+<a class="docs-chip" href="{{< relref "/docs/flow/semantics.md" >}}">Cold execution semantics</a>
 </div>
 
 </div>
@@ -53,7 +53,7 @@ type RegistrationError =
 let validateEmail (email: string) : Result<string, RegistrationError> =
     email
     |> Check.whenNotBlank
-    |> Check.withError EmailMissing
+    |> Check.orError EmailMissing
 
 type User =
     { Email: string }
