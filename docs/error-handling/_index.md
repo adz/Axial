@@ -1,13 +1,13 @@
 ---
 weight: 20
-title: Result
+title: Error Handling
 type: docs
 description: Pure fail-fast logic with Check and standard F# Result.
 aliases:
   - /docs/validation-results/
 ---
 
-# Result
+# Error Handling
 
 Use this section for pure fail-fast logic with standard F# `Result<'value, 'error>`, Axial `Check`, focused `Result` helpers, and the `result {}` builder.
 

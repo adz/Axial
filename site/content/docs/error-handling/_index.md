@@ -1,6 +1,6 @@
 ---
 weight: 20
-title: Result
+title: Error Handling
 type: docs
 description: Pure fail-fast logic with Check and standard F# Result.
 aliases:

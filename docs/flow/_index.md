@@ -13,7 +13,7 @@ aliases:
 
 Flow covers effectful workflow boundaries: environment access, async and task work, cancellation, resources, scheduling, and concurrency.
 
-Use `Flow` when pure `Result` or `Validation` no longer describes the work. If the code is still pure, start with [Result](../result/) or [Validation](../validation/) instead.
+Use `Flow` when pure `Result` or `Validation` no longer describes the work. If the code is still pure, start with [Error Handling](../error-handling/) or [Validation](../validation/) instead.
 
 ## Mental Model
 

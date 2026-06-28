@@ -12,4 +12,4 @@ These tutorials use `Validation`, `Diagnostics`, and `validate {}`. Use them whe
 
 - [Registration Form](./registration-form/): validate independent fields and return every sibling failure.
 
-Use [Result tutorials](../../result/tutorials/) when the first failure should stop the operation.
+Use [Error Handling tutorials](../../error-handling/tutorials/) when the first failure should stop the operation.

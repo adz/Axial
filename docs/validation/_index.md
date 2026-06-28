@@ -9,7 +9,7 @@ description: Accumulating sibling failures with Validation and Diagnostics.
 
 Use this section for accumulating sibling failures with `Validation<'value, 'error>`, `Diagnostics<'error>`, and the `validate {}` builder.
 
-Use this section when independent checks should all report their failures together. If one failure should stop the operation, use [Result](../result/). If the work needs async, task interop, dependencies, resources, or runtime policy, use [Flow](../flow/).
+Use this section when independent checks should all report their failures together. If one failure should stop the operation, use [Error Handling](../error-handling/). If the work needs async, task interop, dependencies, resources, or runtime policy, use [Flow](../flow/).
 
 ## Mental Model
 
@@ -29,7 +29,7 @@ Result -> Validation
 
 Use `Validation.fromResult` to bring an existing fail-fast result into validation, and `Validation.toResult` when a boundary expects ordinary `Result`.
 
-Pure `Check` and `Result` helpers usually live in the [Result](../result/) section. `Validation` is the next step when the user needs all sibling errors, not only the first one.
+Pure `Check` and `Result` helpers usually live in the [Error Handling](../error-handling/) section. `Validation` is the next step when the user needs all sibling errors, not only the first one.
 
 ## Reference
 

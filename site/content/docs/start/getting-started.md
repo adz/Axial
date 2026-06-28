@@ -17,7 +17,7 @@ Check -> Result & Refined -> Validation -> Flow
 ```
 
 - **Pure Checks**: Reusable predicates.
-- **Result & Refined**: Fail-fast domain logic and structural domain values.
+- **Error Handling & Refined**: Fail-fast domain logic and structural domain values.
 - **Validation**: Error-accumulating input validation.
 - **Flow**: The application boundary where you need dependencies, async/task interop, logging, or cancellation.
 
@@ -25,7 +25,7 @@ Use the three guide sections as separate manuals:
 
 | Need | Start here |
 | :--- | :--- |
-| Pure fail-fast logic | [Result](../result/) |
+| Pure fail-fast logic | [Error Handling](../error-handling/) |
 | Accumulating sibling failures | [Validation](../validation/) |
 | Async, task work, dependencies, resources, or runtime policy | [Flow](../flow/) |
 

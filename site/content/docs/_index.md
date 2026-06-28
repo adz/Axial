@@ -17,8 +17,14 @@ Welcome to the Axial guides. Choose a section from the sidebar or start with [Ge
 
 <section class="docs-card">
 <span class="label">Pure checks and results</span>
-<h2><a href="./result/">Result</a></h2>
-<p>Pure fail-fast logic with Check, standard F# Result, result { }, and Result tutorials.</p>
+<h2><a href="./error-handling/">Error Handling</a></h2>
+<p>Pure fail-fast logic with Check, standard F# Result, result { }, and Error Handling tutorials.</p>
+</section>
+
+<section class="docs-card">
+<span class="label">Type-safe boundaries</span>
+<h2><a href="./refined/">Refined</a></h2>
+<p>Type-safe boundary logic with Parse, Refine, and the refine { } builder.</p>
 </section>
 
 <section class="docs-card">
