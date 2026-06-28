@@ -2,9 +2,11 @@
 weight: 50
 title: "Tutorial: Layers"
 description: Provision environments, manage resources, and keep startup concerns out of workflow code.
-type: docs
+aliases:
+  - /docs/tutorials/layers/
 ---
 
+# Tutorial: Layers
 
 Layers are for construction time, not business logic time.
 

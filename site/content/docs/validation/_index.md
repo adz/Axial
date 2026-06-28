@@ -6,7 +6,7 @@ description: Accumulating sibling failures with Validation and Diagnostics.
 ---
 
 
-This page shows accumulating sibling failures with `Validation<'value, 'error>`, `Diagnostics<'error>`, and the `validate {}` builder.
+Use this section for accumulating sibling failures with `Validation<'value, 'error>`, `Diagnostics<'error>`, and the `validate {}` builder.
 
 Use this section when independent checks should all report their failures together. If one failure should stop the operation, use [Result](../result/). If the work needs async, task interop, dependencies, resources, or runtime policy, use [Flow](../flow/).
 
@@ -20,6 +20,7 @@ Result -> Validation
 
 ## Start Here
 
+- [Tutorials](./tutorials/): validate independent fields and return all sibling failures.
 - [Validate Builder](./validate-builder/): accumulating validation with `validate {}` and `and!`.
 - [Diagnostics](./diagnostics/): structured error graphs and rendering.
 

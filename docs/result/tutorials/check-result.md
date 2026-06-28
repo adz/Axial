@@ -1,16 +1,17 @@
 ---
-weight: 15
-title: Check, Result, and Validation Tutorial
-description: Build pure validation with Check first, then attach typed errors, compose with result {}, and accumulate with validate {}.
+weight: 10
+title: Check and Result Tutorial
+description: Build typed fail-fast results from pure Check helpers.
 aliases:
+  - /docs/result/tutorial/
   - /docs/validation-results/check-result-tutorial/
-type: docs
 ---
 
+# Check and Result Tutorial
 
-This page shows how to build pure validation without introducing `Flow`.
+This tutorial builds pure fail-fast validation without introducing `Flow`.
 
-The example starts with facts about values, then turns those facts into typed `Result` values, then composes them with `result {}`. It finishes by showing when to switch to `validate {}` so sibling failures can accumulate.
+The example starts with facts about values, turns those facts into typed `Result` values, and composes them with `result {}`.
 
 ## Start With Checks
 
@@ -51,7 +52,7 @@ let mapped =
     |> Result.map ((+) 1)
 ```
 
-Once you have a result, use `Result.map`, `Result.bind`, and `Result.mapError` to keep the logic explicit. That keeps the code easy to test without any runtime, environment, or flow machinery.
+Once you have a result, use `Result.map`, `Result.bind`, and `Result.mapError` to keep the logic explicit. The code stays testable without a runtime, environment, or flow machinery.
 
 ## Attach Domain Errors
 
@@ -108,28 +109,13 @@ let validateRegistration name email ids : Result<Registration, RegistrationError
 
 This is still ordinary pure code. It can be unit-tested without a runtime, environment, cancellation token, task, or service provider.
 
-## Accumulate Sibling Failures
-
-Use `validate {}` when independent fields should all be reported together.
-
-```fsharp
-let validateRegistrationFields name email =
-    validate {
-        let! validName = validateName name
-        and! validEmail = validateEmail email
-
-        return validName, validEmail
-    }
-```
-
-`validate {}` is the accumulating step in the stack. It is still pure, but it uses `Validation` and `Diagnostics` so sibling failures can be returned together.
-
 ## Use The Smallest Honest Shape
 
 Choose the smallest shape that matches the problem:
 
 - `Check` when you are still proving a fact
 - `Result` when one failure should stop the workflow
-- `Validation` when sibling failures should be accumulated
 
-That keeps the validation code independent from `Flow` and makes it easy to move the same logic into a boundary later if needed.
+That keeps validation code independent from `Flow`, so it can move into an application boundary later.
+
+When independent fields should report all sibling failures together, move to the [Validation tutorial](../../../validation/tutorials/registration-form/).

@@ -2,17 +2,19 @@
 weight: 5
 title: "Tutorial: Explicit Dependencies First"
 description: Start with plain function arguments and interfaces before introducing an environment.
-type: docs
+aliases:
+  - /docs/tutorials/explicit-dependencies/
 ---
 
+# Tutorial: Explicit Dependencies First
 
-This tutorial starts one step before `Flow<'env, 'error, 'value>`. The point is to keep the domain shape obvious: define small interfaces, pass them explicitly, and compose a few operations before introducing an environment record.
+This tutorial starts one step before `Flow<'env, 'error, 'value>`. Define small interfaces, pass them explicitly, and compose a few operations before introducing an environment record.
 
 Use this approach first when:
 
 - the workflow is still local to one feature
 - you want to prove the dependency boundaries before choosing an environment shape
-- you want the easiest possible tests
+- you want direct tests without building an environment first
 
 ## 1. Define The Contract
 
@@ -165,4 +167,4 @@ That is the point where you move to an environment record:
 - the execution boundary gets cleaner
 - adding a third dependency becomes additive instead of rewriting every call site
 
-Continue with [Tutorial: AppRecord](./app-record/).
+Continue with [Tutorial: App Record](../app-record/).

@@ -95,7 +95,7 @@ upsert_frontmatter "$ref_dir/_index.md" "weight" "30"
 # Sync guide directories from docs/ to site/content/docs/
 # We exclude reference, content, and the root AGENT.md/index.md for now
 rm -rf "$docs_dir"
-for dir in ecosystem flow patterns result start tutorials validation; do
+for dir in ecosystem flow patterns result start validation; do
   if [ -d "$root_dir/docs/$dir" ]; then
     mkdir -p "$docs_dir/$dir"
     cp -r "$root_dir/docs/$dir/"* "$docs_dir/$dir/"
@@ -135,31 +135,25 @@ Welcome to the Axial guides. Choose a section from the sidebar or start with [Ge
 <section class=\"docs-card\">
 <span class=\"label\">Getting oriented</span>
 <h2><a href=\"./start/\">Start</a></h2>
-<p>Install the package, see tiny examples, and learn the validation-first path into real app boundaries.</p>
-</section>
-
-<section class=\"docs-card\">
-<span class=\"label\">Step-by-step guides</span>
-<h2><a href=\"./tutorials/\">Tutorials</a></h2>
-<p>Learn common setups for records, explicit services, layers, and .NET host integration.</p>
+<p>Install the package, run small examples, and choose Result, Validation, or Flow for the work in front of you.</p>
 </section>
 
 <section class=\"docs-card\">
 <span class=\"label\">Pure checks and results</span>
 <h2><a href=\"./result/\">Result</a></h2>
-<p>Use Check and standard F# Result for pure fail-fast logic.</p>
+<p>Pure fail-fast logic with Check, standard F# Result, result { }, and Result tutorials.</p>
 </section>
 
 <section class=\"docs-card\">
 <span class=\"label\">Accumulating validation</span>
 <h2><a href=\"./validation/\">Validation</a></h2>
-<p>Collect sibling failures with Validation, Diagnostics, and validate { }.</p>
+<p>Sibling failure accumulation with Validation, Diagnostics, validate { }, and Validation tutorials.</p>
 </section>
 
 <section class=\"docs-card\">
 <span class=\"label\">Effectful workflows</span>
 <h2><a href=\"./flow/\">Flow</a></h2>
-<p>Run workflows with environment access, async or task work, layers, resources, scheduling, and concurrency.</p>
+<p>Environment access, async or task work, layers, resources, scheduling, concurrency, and service tutorials.</p>
 </section>
 
 <section class=\"docs-card\">

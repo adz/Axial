@@ -21,7 +21,7 @@ Axial is a model for Result-based programs. Write predicate checks once, keep fa
 
 <div class="docs-home-meta">
 <a class="docs-chip" href="{{< relref "/docs/start/getting-started.md" >}}">Get Started</a>
-<a class="docs-chip" href="{{< relref "/docs/tutorials/" >}}">Tutorials</a>
+<a class="docs-chip" href="{{< relref "/docs/flow/tutorials/" >}}">Flow Tutorials</a>
 <a class="docs-chip" href="{{< relref "/docs/result/" >}}">Result</a>
 <a class="docs-chip" href="{{< relref "/docs/validation/" >}}">Validation</a>
 <a class="docs-chip" href="{{< relref "/docs/flow/" >}}">Flow</a>

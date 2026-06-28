@@ -8,7 +8,7 @@ aliases:
 ---
 
 
-This page shows pure fail-fast logic with standard F# `Result<'value, 'error>`, Axial `Check`, and the `result {}` builder.
+Use this section for pure fail-fast logic with standard F# `Result<'value, 'error>`, Axial `Check`, and the `result {}` builder.
 
 Use this section when the code is still pure and one failure is enough to stop the operation. Do not introduce `Flow` just because dependencies might appear later.
 
@@ -22,7 +22,7 @@ Check -> Result
 
 ## Start Here
 
-- [Tutorial](./tutorial/): builds a validation function from `Check` into typed `Result`.
+- [Tutorials](./tutorials/): build typed `Result` values from pure checks.
 - [Checks](./checks/): predicate, preserving, and extracting helper shapes.
 - [Result Builder](./result-builder/): fail-fast composition over standard `Result`.
 

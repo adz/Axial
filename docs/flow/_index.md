@@ -11,9 +11,9 @@ aliases:
 
 # Flow
 
-This page shows effectful workflow boundaries: environment access, async and task work, cancellation, resources, scheduling, and concurrency.
+Flow covers effectful workflow boundaries: environment access, async and task work, cancellation, resources, scheduling, and concurrency.
 
-Use `Flow` when pure `Result` or `Validation` is no longer the honest shape for the work. If the code is still pure, start with [Result](../result/) or [Validation](../validation/) instead.
+Use `Flow` when pure `Result` or `Validation` no longer describes the work. If the code is still pure, start with [Result](../result/) or [Validation](../validation/) instead.
 
 ## Mental Model
 
@@ -35,6 +35,7 @@ Use the full `Flow<'env, 'error, 'value>` form when a workflow needs both an env
 - [Task and Async Interop](./task-async-interop/): binding `Async`, `Task`, `ValueTask`, and attempt constructors.
 - [Defects and Exceptions](./defects/): typed failures, defects, interruption, and exception recovery.
 - [Bind](./bind/): bind-site error assignment and mapping inside `flow {}`.
+- [Flow Tutorials](./tutorials/): service, runtime, environment, and layer walkthroughs.
 
 ## Dependencies and Resources
 

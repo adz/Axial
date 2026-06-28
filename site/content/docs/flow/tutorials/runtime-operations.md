@@ -2,9 +2,11 @@
 weight: 20
 title: "Tutorial: Runtime Operations"
 description: Timeout, retry, cancellation, and runtime annotations.
+aliases:
+  - /docs/tutorials/runtime-operations/
+type: docs
 ---
 
-# Tutorial: Runtime Operations
 
 This tutorial focuses on the operational helpers that sit around a workflow: timeout, retry, cancellation, annotations, and exception translation.
 

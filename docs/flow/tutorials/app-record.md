@@ -2,17 +2,19 @@
 weight: 10
 title: "Tutorial: App Record"
 description: Move from explicit dependency parameters to a reusable environment record.
+aliases:
+  - /docs/tutorials/app-record/
 ---
 
 # Tutorial: App Record
 
-This tutorial starts where [Explicit Dependencies First](./explicit-dependencies/) leaves off.
+This tutorial starts where [Explicit Dependencies First](../explicit-dependencies/) leaves off.
 
 The problem is not that explicit parameters are wrong. The problem is repetition:
 
 - every helper has to thread the same dependencies
 - adding one more dependency means touching many signatures
-- the execution boundary gets noisier as the feature grows
+- the execution boundary grows as the feature adds dependencies
 
 An app record solves that by bundling dependencies once at the boundary while keeping the workflow code explicit.
 
@@ -198,4 +200,4 @@ Move beyond it when:
 - you want startup-time provisioning with failure handling
 - you want scope-owned resources and cleanup
 
-Continue with [Tutorial: Creating Reusable Services](./custom-services/) and then [Tutorial: Layers](./layers/).
+Continue with [Tutorial: Creating Reusable Services](../custom-services/) and then [Tutorial: Layers](../layers/).

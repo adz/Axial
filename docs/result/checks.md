@@ -8,7 +8,7 @@ aliases:
 
 # Check
 
-This page shows how to choose between the three `Check` helper shapes.
+Choose between the three `Check` helper shapes by the success value you need.
 
 Start by deciding what success should carry.
 

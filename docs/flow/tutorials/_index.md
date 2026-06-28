@@ -1,12 +1,14 @@
 ---
 weight: 15
-title: Tutorials
-description: Step-by-step guides for common Axial patterns.
-type: docs
+title: Flow Tutorials
+description: Service, runtime, layer, and environment tutorials for Flow.
+aliases:
+  - /docs/tutorials/
 ---
 
+# Flow Tutorials
 
-These tutorials provide step-by-step setups for the dependency and runtime patterns that show up most often in real Axial applications.
+These tutorials cover Flow service boundaries, environment records, runtime operations, and layers.
 
 ## Which Tutorial Should I Use?
 
@@ -19,4 +21,4 @@ These tutorials provide step-by-step setups for the dependency and runtime patte
 | **[Creating Reusable Services](./custom-services/)** | Named service contracts | Shared helpers that should depend on `IHas<'service>` instead of one record field name. |
 | **[Layers](./layers/)** | Provisioned environments and resource ownership | Apps that need startup construction, cleanup, provisioning failure, or scope-owned resources. |
 
-If you are new to Axial, start with **Explicit Dependencies First**, then move to **App Record**.
+If you are new to Flow, start with **Explicit Dependencies First**, then move to **App Record**.

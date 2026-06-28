@@ -8,7 +8,7 @@ aliases:
 
 # Fibers
 
-This page shows how Axial represents running child workflows with fibers.
+Fibers represent running child workflows.
 
 In Axial, a **Fiber** is a handle to a running [**`Flow`**]({{< relref "/reference/flow/t-flow.md" >}}). A flow is a cold description of work. A fiber is the hot execution that exists after that work has been started in the background.
 

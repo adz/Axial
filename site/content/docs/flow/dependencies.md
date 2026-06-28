@@ -69,7 +69,7 @@ startup. Plain `let!` is sequential and dependent; sibling `and!` bindings are i
 
 ## Tutorials
 
-For concrete starting points, use [AppRecord](../tutorials/app-record/) and [Layers](../tutorials/layers/).
+For concrete starting points, use [App Record](../tutorials/app-record/) and [Layers](../tutorials/layers/).
 
 ## More Detail
 

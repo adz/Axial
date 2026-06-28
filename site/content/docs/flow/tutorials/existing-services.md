@@ -2,9 +2,11 @@
 weight: 30
 title: "Tutorial: Using Existing Services"
 description: Consume the standard Axial service packages from an explicit environment.
+aliases:
+  - /docs/tutorials/existing-services/
+type: docs
 ---
 
-# Tutorial: Using Existing Services
 
 Axial ships with a few reusable service packages such as clock, logging, environment variables, console, filesystem, HTTP, and process execution.
 
@@ -55,4 +57,4 @@ let run () = task {
 
 If you already have several standard services, wrapping them once in an app environment is usually the cleanest boundary.
 
-Continue with [Tutorial: Creating Reusable Services](./custom-services/) when you need your own service contract alongside the built-in ones.
+Continue with [Tutorial: Creating Reusable Services](../custom-services/) when you need your own service contract alongside the built-in ones.

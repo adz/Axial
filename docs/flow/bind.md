@@ -9,7 +9,7 @@ aliases:
 
 # Bind
 
-This page shows how to assign or map a source error immediately before `flow {}` binds that source.
+Use `Bind` to assign or map a source error immediately before `flow {}` binds that source.
 
 `flow {}` can bind many source shapes directly. When the source already has the right error type, bind it directly. Use `Bind` only when the bind source needs a different error at the call site.
 
