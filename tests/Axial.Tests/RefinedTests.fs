@@ -16,27 +16,29 @@ module RefinedTests =
         let parsedGuid = Guid.Parse guidText
 
         test <@ Parse.int "42" = Ok 42 @>
-        test <@ Parse.int "nope" = Error () @>
+        test <@ Parse.int "nope" = Error(ParseError.InvalidFormat("int", "nope")) @>
         test <@ Parse.long "42000000000" = Ok 42000000000L @>
-        test <@ Parse.long "nope" = Error () @>
+        test <@ Parse.long "nope" = Error(ParseError.InvalidFormat("int64", "nope")) @>
         test <@ Parse.decimal "12.5" = Ok 12.5M @>
-        test <@ Parse.decimal "nope" = Error () @>
+        test <@ Parse.decimal "nope" = Error(ParseError.InvalidFormat("decimal", "nope")) @>
         test <@ Parse.float "12.5" = Ok 12.5 @>
-        test <@ Parse.float "nope" = Error () @>
+        test <@ Parse.float "nope" = Error(ParseError.InvalidFormat("float", "nope")) @>
         test <@ Parse.bool "true" = Ok true @>
-        test <@ Parse.bool "nope" = Error () @>
+        test <@ Parse.bool "nope" = Error(ParseError.InvalidFormat("bool", "nope")) @>
         test <@ Parse.guid guidText = Ok parsedGuid @>
-        test <@ Parse.guid "nope" = Error () @>
+        test <@ Parse.guid "nope" = Error(ParseError.InvalidFormat("Guid", "nope")) @>
         test <@ Parse.dateTime "2026-06-28T12:30:00" |> Result.isOk @>
-        test <@ Parse.dateTime "nope" = Error () @>
+        test <@ Parse.dateTime "nope" = Error(ParseError.InvalidFormat("DateTime", "nope")) @>
         test <@ Parse.dateTimeOffset "2026-06-28T12:30:00+09:30" |> Result.isOk @>
-        test <@ Parse.dateTimeOffset "nope" = Error () @>
+        test <@ Parse.dateTimeOffset "nope" = Error(ParseError.InvalidFormat("DateTimeOffset", "nope")) @>
         test <@ Parse.dateOnly "2026-06-28" |> Result.isOk @>
-        test <@ Parse.dateOnly "nope" = Error () @>
+        test <@ Parse.dateOnly "nope" = Error(ParseError.InvalidFormat("DateOnly", "nope")) @>
         test <@ Parse.timeOnly "12:30:00" |> Result.isOk @>
-        test <@ Parse.timeOnly "nope" = Error () @>
+        test <@ Parse.timeOnly "nope" = Error(ParseError.InvalidFormat("TimeOnly", "nope")) @>
         test <@ Parse.enum<SampleEnum> "Second" = Ok SampleEnum.Second @>
-        test <@ Parse.enum<SampleEnum> "nope" = Error () @>
+        test <@ Parse.enum<SampleEnum> "nope" = Error(ParseError.InvalidFormat("SampleEnum", "nope")) @>
+        test <@ Parse.int "" = Error(ParseError.MissingValue "int") @>
+        test <@ Parse.int "999999999999999999999999" = Error(ParseError.OutOfRange("int", "999999999999999999999999")) @>
 
     [<Fact>]
     let ``Parse option and default helpers cover missing invalid and valid input`` () =
@@ -100,12 +102,26 @@ module RefinedTests =
                 return name.Value, quantity.Value, items.ToList()
             }
 
+        let inferredRawBinding : Result<NonBlankString * PositiveInt, RefinementError> =
+            refine {
+                let! name = "Ada"
+                let! quantity = 3
+                return name, quantity
+            }
+
         let parseFailure =
             refine {
                 let! count = Parse.int "nope"
                 return count
             }
 
+        let parseReturnFrom =
+            refine {
+                return! Parse.int "42"
+            }
+
         test <@ explicitBinding = Ok 42 @>
         test <@ annotatedRawBinding = Ok("Ada", 3, [ 1; 2 ]) @>
-        test <@ parseFailure = Error(InvalidFormat("Parse", "The value could not be parsed.")) @>
+        test <@ (inferredRawBinding |> Result.map (fun (name, quantity) -> name.Value, quantity.Value)) = Ok("Ada", 3) @>
+        test <@ parseFailure = Error(ParseFailed(ParseError.InvalidFormat("int", "nope"))) @>
+        test <@ parseReturnFrom = Ok 42 @>

@@ -7,7 +7,8 @@ This page shows the `Axial.Refined` surface for turning untrusted boundary data 
 
 ## Errors and refined types
 
-- [`Refined.RefinementError`](./t-refined-refinementerror.md): Structural failures returned by built-in refinement constructors.
+- [`Refined.ParseError`](./t-refined-parseerror.md): Primitive parse failures returned by <code>Parse</code> helpers.
+- [`Refined.RefinementError`](./t-refined-refinementerror.md): Structural failures returned by built-in refinement constructors and the <code>refine { }</code> builder.
 - [`Refined.NonBlankString`](./t-refined-nonblankstring.md): A string that is not null, empty, or whitespace.
 - [`Refined.PositiveInt`](./t-refined-positiveint.md): An integer greater than zero.
 - [`Refined.NonEmptyList`](./t-refined-nonemptylist.md): A list that contains at least one item.

@@ -22,4 +22,4 @@ Parses a date and time value.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><a href="https://learn.microsoft.com/dotnet/api/system.datetime">DateTime</a>,&#32;unit</span>&gt;</span></code> |  |
+| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><a href="https://learn.microsoft.com/dotnet/api/system.datetime">DateTime</a>,&#32;<a href="/reference/Axial/axial-refined-parseerror.html">ParseError</a></span>&gt;</span></code> |  |

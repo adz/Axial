@@ -144,13 +144,13 @@ shape, not an Axial-specific carrier.
 - `Parse` lives in `Axial.Refined`, not `Axial.ErrorHandling`.
 - `Parse` owns untrusted serialized input to primitive conversion. Initial targets include `int`, `int64`, `decimal`,
   `float`, `bool`, `Guid`, `DateTime`, `DateTimeOffset`, `DateOnly`, `TimeOnly`, and enums.
-- `Parse` initially returns `Result<'primitive, unit>` unless a more useful shared parse error is chosen during
-  implementation.
+- `Parse` returns `Result<'primitive, ParseError>` so callers can inspect the target primitive type and failed input.
 - `Refine` lives in `Axial.Refined` and owns construction of stronger values from raw primitives or structures.
 - `Axial.Refined` owns the dedicated `refine { }` CE.
 - `refine { }` supports explicit result binding from parser/refinement functions.
-- `refine { }` also supports target-type-driven binding from raw primitives when the left-hand binding has an explicit
-  target type annotation, such as `let! (email: Email) = rawEmail`.
+- `refine { }` also supports target-type-driven binding from raw primitives. Left-hand type annotations are recommended
+  when inference is ambiguous or when the target refined type is not obvious at the call site, such as
+  `let! (email: Email) = rawEmail`.
 - Target-type-driven binding is not added to `flow { }`.
 - Refined types do not know about application workflow error unions. Application errors are assigned by `Policy` or normal
   `Result.mapError` at the boundary.
@@ -182,8 +182,8 @@ module Result =
     val fromPredicate : ('input -> bool) -> 'input -> Result<'input, unit>
 
 module Parse =
-    val int : string -> Result<int, unit>
-    val guid : string -> Result<System.Guid, unit>
+    val int : string -> Result<int, ParseError>
+    val guid : string -> Result<System.Guid, ParseError>
 
 module Refine =
     val email : string -> Result<Email, RefinementError>
@@ -372,17 +372,17 @@ namespace Axial.Refined
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Parse =
-    val int : string -> Result<int, unit>
-    val long : string -> Result<int64, unit>
-    val decimal : string -> Result<decimal, unit>
-    val float : string -> Result<float, unit>
-    val bool : string -> Result<bool, unit>
-    val guid : string -> Result<System.Guid, unit>
-    val dateTime : string -> Result<System.DateTime, unit>
-    val dateTimeOffset : string -> Result<System.DateTimeOffset, unit>
-    val dateOnly : string -> Result<System.DateOnly, unit>
-    val timeOnly : string -> Result<System.TimeOnly, unit>
-    val enum<'enum when 'enum: struct and 'enum : (new: unit -> 'enum) and 'enum :> System.ValueType> : string -> Result<'enum, unit>
+    val int : string -> Result<int, ParseError>
+    val long : string -> Result<int64, ParseError>
+    val decimal : string -> Result<decimal, ParseError>
+    val float : string -> Result<float, ParseError>
+    val bool : string -> Result<bool, ParseError>
+    val guid : string -> Result<System.Guid, ParseError>
+    val dateTime : string -> Result<System.DateTime, ParseError>
+    val dateTimeOffset : string -> Result<System.DateTimeOffset, ParseError>
+    val dateOnly : string -> Result<System.DateOnly, ParseError>
+    val timeOnly : string -> Result<System.TimeOnly, ParseError>
+    val enum<'enum when 'enum: struct and 'enum : (new: unit -> 'enum) and 'enum :> System.ValueType> : string -> Result<'enum, ParseError>
 
     // Optional configuration helpers
     val intOption : string option -> int option
@@ -406,7 +406,13 @@ modules, but the package should provide core structural examples and the machine
 ```fsharp
 namespace Axial.Refined
 
+type ParseError =
+    | MissingValue of target: string
+    | InvalidFormat of target: string * input: string
+    | OutOfRange of target: string * input: string
+
 type RefinementError =
+    | ParseFailed of ParseError
     | InvalidFormat of target: string * reason: string
     | OutOfRange of target: string * reason: string
     | MissingValue of target: string
@@ -444,8 +450,8 @@ let trustedForm = refine {
 }
 ```
 
-Target-type-driven binding requires an explicit type annotation on the left-hand side. Without the annotation, raw values
-remain raw values. This rule is part of the API contract and should be documented as a deliberate clarity requirement.
+Target-type-driven binding may be inferred when the surrounding expression gives enough type information. Use explicit
+left-hand type annotations when inference is ambiguous or when the refined target would otherwise be unclear to readers.
 
 ### Axial.Flow.Policy
 
@@ -568,9 +574,9 @@ type responsibilities above are settled for this PRD.
 - Add parse tests for every primitive parser in `Axial.Refined.Parse`, including failure behavior.
 - Add parse tests for optional and defaulting parse helpers, including `None`, invalid text, and valid text cases.
 - Add refinement tests for initial refined values and structural refined types.
-- Add `refine { }` tests for explicit result binding and target-type-driven raw binding with explicit left-hand type
-  annotations.
-- Add negative compile-time or API-shape coverage where practical to ensure target-type-driven binding does not leak into
+- Add `refine { }` tests for explicit result binding and target-type-driven raw binding, including annotated examples for
+  clarity and inferred examples where practical.
+- Add negative compile-time or API-shape coverage where practical to ensure raw refinement binding does not leak into
   `flow { }`.
 - Add `Policy` tests proving pure, fixed-error, context-aware, composed, pass-through, and optional policies all run with
   the expected environment and error mapping behavior.

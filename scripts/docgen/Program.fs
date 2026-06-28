@@ -497,7 +497,7 @@ let pageSpecs = [
         Description = "Source-documented parsing and structural refinement helpers for Axial."
         Intro = "This page shows the `Axial.Refined` surface for turning untrusted boundary data into stronger structural values. Use `Parse` to convert serialized strings into primitive values, `Refine` to construct built-in refined values such as `NonBlankString`, `PositiveInt`, and `NonEmptyList`, and `refine { }` to sequence fail-fast parsing and refinement before workflow execution."
         SymbolIds = [
-            "Errors and refined types", ["T:Axial.Refined.RefinementError"; "T:Axial.Refined.NonBlankString"; "T:Axial.Refined.PositiveInt"; "T:Axial.Refined.NonEmptyList`1"]
+            "Errors and refined types", ["T:Axial.Refined.ParseError"; "T:Axial.Refined.RefinementError"; "T:Axial.Refined.NonBlankString"; "T:Axial.Refined.PositiveInt"; "T:Axial.Refined.NonEmptyList`1"]
             "Parse", ["M:Axial.Refined.Parse.int"; "M:Axial.Refined.Parse.long"; "M:Axial.Refined.Parse.decimal"; "M:Axial.Refined.Parse.float"; "M:Axial.Refined.Parse.bool"; "M:Axial.Refined.Parse.guid"; "M:Axial.Refined.Parse.dateTime"; "M:Axial.Refined.Parse.dateTimeOffset"; "M:Axial.Refined.Parse.dateOnly"; "M:Axial.Refined.Parse.timeOnly"; "M:Axial.Refined.Parse.enum"; "M:Axial.Refined.Parse.intOption"; "M:Axial.Refined.Parse.boolOption"; "M:Axial.Refined.Parse.decimalOption"; "M:Axial.Refined.Parse.guidOption"; "M:Axial.Refined.Parse.intOrDefault"; "M:Axial.Refined.Parse.boolOrDefault"; "M:Axial.Refined.Parse.decimalOrDefault"]
             "Refine", ["M:Axial.Refined.Refine.nonBlankString"; "M:Axial.Refined.Refine.positiveInt"; "M:Axial.Refined.Refine.nonEmptyList"]
             "Builder", ["P:Axial.Refined.Builders.refine"]

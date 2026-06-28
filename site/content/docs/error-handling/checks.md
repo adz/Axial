@@ -8,7 +8,7 @@ type: docs
 ---
 
 
-`Check` contains pure predicates. A check answers a yes/no question and returns `Result<unit, unit>`.
+`Check` contains pure predicates. A check answers a yes/no question and returns `bool`.
 
 Use `Check` when success only proves a fact. Use `Result` when success should preserve, extract, or reshape a value.
 
@@ -21,7 +21,7 @@ Use `Check` when success only proves a fact. Use `Result` when success should pr
 
 ## Attach an Error
 
-`Check` predicates fail with `unit`. The `unit` failure means "this check failed, but no domain error has been chosen yet".
+`Check` predicates do not carry errors. They only decide whether a local fact is true.
 
 Use `Result.require` when a boolean condition should become a domain result.
 

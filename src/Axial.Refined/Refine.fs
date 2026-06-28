@@ -2,17 +2,6 @@ namespace Axial.Refined
 
 open System
 
-/// <summary>Structural failures returned by built-in refinement constructors.</summary>
-type RefinementError =
-    /// <summary>The value had an invalid format for the target refined type.</summary>
-    | InvalidFormat of target: string * reason: string
-    /// <summary>The value was outside the accepted range for the target refined type.</summary>
-    | OutOfRange of target: string * reason: string
-    /// <summary>The value required for the target refined type was missing.</summary>
-    | MissingValue of target: string
-    /// <summary>The value had an invalid structure for the target refined type.</summary>
-    | InvalidStructure of target: string * reason: string
-
 /// <summary>A string that is not null, empty, or whitespace.</summary>
 type NonBlankString =
     private
@@ -71,7 +60,7 @@ module Refine =
     /// <summary>Builds a non-blank string.</summary>
     let nonBlankString (value: string) : Result<NonBlankString, RefinementError> =
         if String.IsNullOrWhiteSpace value then
-            Error(MissingValue "NonBlankString")
+            Error(RefinementError.MissingValue "NonBlankString")
         else
             Ok(NonBlankString value)
 
@@ -80,13 +69,13 @@ module Refine =
         if value > 0 then
             Ok(PositiveInt value)
         else
-            Error(OutOfRange("PositiveInt", "Expected a value greater than zero."))
+            Error(RefinementError.OutOfRange("PositiveInt", "Expected a value greater than zero."))
 
     /// <summary>Builds a non-empty list from a sequence.</summary>
     let nonEmptyList (values: seq<'value>) : Result<NonEmptyList<'value>, RefinementError> =
         if isNull (box values) then
-            Error(MissingValue "NonEmptyList")
+            Error(RefinementError.MissingValue "NonEmptyList")
         else
             match values |> Seq.toList with
-            | [] -> Error(InvalidStructure("NonEmptyList", "Expected at least one item."))
+            | [] -> Error(RefinementError.InvalidStructure("NonEmptyList", "Expected at least one item."))
             | head :: tail -> Ok(NonEmptyList(head, tail))

@@ -16,7 +16,7 @@ or accumulate a graph of errors in `Validation` using `validate {}`. Accumulated
 
 However, the stronger goal of Axial is to preference 'parse' over 'error handling'. That is supported by `Refine`
 and `Parse` in `Axial.Refined`. You'll find these help by providing base parsers for types (like `Parse.int`) but
-also introducing new types to represent the refinement, like `Refined.NonEmptyList`. User `refined {}` for an 
+also introducing new types to represent the refinement, like `Refined.NonEmptyList`. Use `refine {}` for an
 elegant way of refining.
 
 Finally, Axial gives you an orchestrating workflow concept in `Axial.Flow`. It is useful in code at the boundary

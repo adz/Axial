@@ -23,4 +23,4 @@ Parses a 32-bit integer.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>int,&#32;unit</span>&gt;</span></code> |  |
+| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>int,&#32;<a href="/reference/Axial/axial-refined-parseerror.html">ParseError</a></span>&gt;</span></code> |  |

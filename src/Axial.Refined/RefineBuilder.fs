@@ -9,6 +9,9 @@ type RefineBuilder() =
     member _.ReturnFrom(result: Result<'value, RefinementError>) : Result<'value, RefinementError> =
         result
 
+    member _.ReturnFrom(result: Result<'value, ParseError>) : Result<'value, RefinementError> =
+        result |> Result.mapError RefinementError.ParseFailed
+
     member _.Zero() : Result<unit, RefinementError> =
         Ok ()
 
@@ -21,11 +24,11 @@ type RefineBuilder() =
 
     member _.Bind
         (
-            result: Result<'value, unit>,
+            result: Result<'value, ParseError>,
             binder: 'value -> Result<'next, RefinementError>
         ) : Result<'next, RefinementError> =
         result
-        |> Result.mapError (fun _ -> InvalidFormat("Parse", "The value could not be parsed."))
+        |> Result.mapError RefinementError.ParseFailed
         |> Result.bind binder
 
     member _.Bind

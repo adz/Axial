@@ -8,7 +8,7 @@ type: docs
 
 Use the `refine {}` computation expression when you need to parse and refine multiple input fields into a validated domain record in a fail-fast manner.
 
-Inside `refine {}`, you can bind standard F# `Result` values, parse operations, and refinement helpers. It aggregates these operations under `RefinementError`.
+Inside `refine {}`, you can bind parse operations, refinement helpers, and standard F# `Result` values that use `RefinementError`. Parse failures are wrapped as `RefinementError.ParseFailed`.
 
 ## Basic Usage
 
@@ -38,13 +38,13 @@ let createUser (rawId: string) (rawEmail: string) : Result<User, RefinementError
 
 ## Parsing Helpers
 
-`Parse` contains pure functions that parse raw inputs (usually string representations) and return `Result<'value, RefinementError>` or optional options:
+`Parse` contains pure functions that parse raw inputs, usually string representations, and return `Result<'value, ParseError>`:
 
 - `Parse.int`, `Parse.bool`, `Parse.decimal`, `Parse.float`
 - `Parse.guid`, `Parse.dateTime`, `Parse.dateTimeOffset`, `Parse.dateOnly`, `Parse.timeOnly`
 - `Parse.enum`
 
-On failure, these helpers return a detailed `RefinementError` indicating the target type and input value.
+On failure, these helpers return a `ParseError` indicating the target type and input value. When bound inside `refine {}`, that failure becomes `RefinementError.ParseFailed`.
 
 ## Refinement Helpers
 
@@ -53,6 +53,26 @@ On failure, these helpers return a detailed `RefinementError` indicating the tar
 - `Refine.nonBlankString`: returns a `NonBlankString`
 - `Refine.positiveInt`: returns a `PositiveInt`
 - `Refine.nonEmptyList`: returns a `NonEmptyList`
+
+`refine {}` can also bind raw values directly when the target refined type is clear from inference:
+
+```fsharp
+let trustedName : Result<NonBlankString, RefinementError> =
+    refine {
+        let! name = "Ada"
+        return name
+    }
+```
+
+Use an explicit left-hand annotation when the target refined type would otherwise be unclear:
+
+```fsharp
+let trustedName =
+    refine {
+        let! (name: NonBlankString) = "Ada"
+        return name
+    }
+```
 
 ## When to use `refine {}`
 

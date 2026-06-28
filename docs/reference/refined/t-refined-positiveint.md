@@ -1,7 +1,7 @@
 ---
 title: "Refined.PositiveInt"
 linkTitle: "PositiveInt"
-weight: 1002
+weight: 1003
 ---
 
 An integer greater than zero.
