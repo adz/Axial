@@ -34,7 +34,6 @@ The same vocabulary carries from pure checks into effectful workflows.
 - **Composition**: `flow {}` binds `Result`, `Option`, `Async`, `Task`, and `ColdTask` directly.
 - **Explicit dependencies**: Keep dependencies visible in `'env`, with `IServiceProvider` integration at the host boundary.
 - **Execution outcomes**: Keep typed domain failures, cancellations, and unhandled defects separate.
-- **State**: Software Transactional Memory (STM) coordinates updates across multiple variables.
 
 ## Example
 
