@@ -1,7 +1,7 @@
 ---
 title: "Flow.Flow.addFinalizer"
 linkTitle: "addFinalizer"
-weight: 2400
+weight: 2500
 ---
 
 Registers an asynchronous finalizer with the current runtime scope.

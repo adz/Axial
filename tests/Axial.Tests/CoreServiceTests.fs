@@ -2,7 +2,7 @@ namespace Axial.Tests
 
 open System
 open Axial.Flow
-open Axial.Result
+open Axial.ErrorHandling
 open Axial.Validation
 open Axial.Flow.PlatformService
 open Swensen.Unquote

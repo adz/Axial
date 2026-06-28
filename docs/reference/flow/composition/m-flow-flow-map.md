@@ -1,7 +1,7 @@
 ---
 title: "Flow.Flow.map"
 linkTitle: "map"
-weight: 2317
+weight: 2318
 ---
 
 Transforms the successful value of a flow.

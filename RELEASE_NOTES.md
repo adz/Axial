@@ -1,5 +1,11 @@
 # Release Notes
 
+## Unreleased
+
+- Renamed the fail-fast package from `Axial.Result` to `Axial.ErrorHandling`, keeping `Check`, focused `Result` helpers, collection traversal, and `result {}` together.
+- Added `Axial.Refined` for parse helpers, initial refined value types, and `refine {}`.
+- Added environment-aware `Policy` helpers and `Flow.verify` for running pure checks at workflow boundaries.
+
 ## 0.7.0 - 2026-06-21
 
 - First public release under the `Axial` package and repository identity, replacing the previous `FsFlow` naming.

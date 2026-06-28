@@ -4,7 +4,7 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open Axial.Flow
-open Axial.Result
+open Axial.ErrorHandling
 open Axial.Validation
 
 type User =
@@ -21,8 +21,8 @@ type RequestEnv =
       LoadSuffix: Task<string> }
 
 let validateName (name: string) : Result<string, string> =
-    Check.whenNotBlank name
-    |> Check.orError "name is required"
+    name
+    |> Result.notBlank "name is required"
 
 let loadUser : Flow<RequestEnv, string, User> =
     flow {

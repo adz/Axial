@@ -479,6 +479,16 @@ module Flow =
     let fromResult (result: Result<'value, 'error>) : Flow<'env, 'error, 'value> =
         Flow(fun _ _ -> Execution.ofResult result)
 
+    /// <summary>Runs an environment-aware policy against an input value inside a workflow.</summary>
+    /// <param name="policy">The policy to run.</param>
+    /// <param name="input">The input value supplied to the policy.</param>
+    /// <returns>A flow that succeeds or fails with the policy result.</returns>
+    let verify
+        (policy: Policy<'env, 'error, 'input, 'output>)
+        (input: 'input)
+        : Flow<'env, 'error, 'output> =
+        Flow(fun environment _ -> policy environment input |> Execution.ofResult)
+
     let inline private withRuntime
         (mapper: RuntimeContext -> RuntimeContext)
         (flow: Flow<'env, 'error, 'value>)

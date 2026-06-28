@@ -1,7 +1,7 @@
 ---
 title: "Flow.Flow.acquireRelease"
 linkTitle: "acquireRelease"
-weight: 2403
+weight: 2503
 ---
 
 Acquires a resource and registers its release with the current runtime scope.

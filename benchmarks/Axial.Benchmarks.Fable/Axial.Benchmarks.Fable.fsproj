@@ -15,9 +15,12 @@
     <Compile Include="..\..\src\Axial.Flow\Foundation.fs" />
     <Compile Include="..\..\src\Axial.Validation\Diagnostics.fs" />
     <Compile Include="..\..\src\Axial.Validation\Validation.fs" />
-    <Compile Include="..\..\src\Axial.Result\Check.fs" />
+    <Compile Include="..\..\src\Axial.ErrorHandling\Check.fs" />
+    <Compile Include="..\..\src\Axial.ErrorHandling\Result.fs" />
+    <Compile Include="..\..\src\Axial.ErrorHandling\Collection.fs" />
     <Compile Include="..\..\src\Axial.Flow\Runtime.fs" />
     <Compile Include="..\..\src\Axial.Flow\RuntimeLayer.fs" />
+    <Compile Include="..\..\src\Axial.Flow\Policy.fs" />
     <Compile Include="..\..\src\Axial.Flow\Flow.fs" />
     <Compile Include="..\..\src\Axial.Flow\BindError.fs" />
     <Compile Include="..\..\src\Axial.Flow\Ref.fs" />
@@ -27,9 +30,9 @@
     <Compile Include="..\..\src\Axial.Flow\FlowBuilder.fs" />
     <Compile Include="..\..\src\Axial.Flow\LayerBuilder.fs" />
     <Compile Include="..\..\src\Axial.Validation\ValidateBuilder.fs" />
-    <Compile Include="..\..\src\Axial.Result\ResultBuilder.fs" />
+    <Compile Include="..\..\src\Axial.ErrorHandling\ResultBuilder.fs" />
     <Compile Include="..\..\src\Axial.Flow\Builders.fs" />
-    <Compile Include="..\..\src\Axial.Result\Builders.fs" />
+    <Compile Include="..\..\src\Axial.ErrorHandling\Builders.fs" />
     <Compile Include="..\..\src\Axial.Validation\Builders.fs" />
     <Compile Include="Shared.fs" />
     <Compile Include="Program.fs" />

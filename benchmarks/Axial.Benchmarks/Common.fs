@@ -7,7 +7,7 @@ open FSharp.Control.Tasks
 open FsToolkit.ErrorHandling
 open IcedTasks
 open Axial.Flow
-open Axial.Result
+open Axial.ErrorHandling
 open Axial.Validation
 
 [<RequireQualifiedAccess>]

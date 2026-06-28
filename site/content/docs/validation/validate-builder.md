@@ -22,8 +22,8 @@ type RegError = NameRequired | EmailRequired
 
 let validateRegistration input =
     validate {
-        let! name = input.Name |> Check.whenNotBlank |> Check.orError NameRequired
-        and! email = input.Email |> Check.whenNotBlank |> Check.orError EmailRequired
+        let! name = input.Name |> Result.notBlank |> Result.mapError (fun () -> NameRequired)
+        and! email = input.Email |> Result.notBlank |> Result.mapError (fun () -> EmailRequired)
         return { Name = name; Email = email }
     }
 
@@ -43,11 +43,11 @@ Standard `let!` and `do!` inside a `validate {}` block still short-circuit. This
 ```fsharp
 validate {
     // Stop immediately if the whole object is null
-    let! input = input |> Check.whenNotNull |> Check.orError ObjectMissing
+    let! input = input |> Result.notNull |> Result.mapError (fun () -> ObjectMissing)
     
     // These run only if input was not null, but they run independently of each other
-    let! name = input.Name |> Check.whenNotBlank |> Check.orError NameRequired
-    and! email = input.Email |> Check.whenNotBlank |> Check.orError EmailRequired
+    let! name = input.Name |> Result.notBlank |> Result.mapError (fun () -> NameRequired)
+    and! email = input.Email |> Result.notBlank |> Result.mapError (fun () -> EmailRequired)
     
     return { Name = name; Email = email }
 }
@@ -71,7 +71,7 @@ let validateCustomer customer =
     validate.key "customer" {
         let! name = 
             validate.name "Name" {
-                return! customer.Name |> Check.whenNotBlank |> Check.orError "Required"
+                return! customer.Name |> Result.notBlank |> Result.mapError (fun () -> "Required")
             }
         return name
     }

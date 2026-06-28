@@ -1,0 +1,265 @@
+namespace Axial.ErrorHandling
+
+/// <summary>Structured errors returned by sequence cardinality helpers.</summary>
+type CardinalityFailure =
+    /// <summary>The sequence was expected to contain exactly one item.</summary>
+    | ExpectedSingle of observedCount: int
+    /// <summary>The sequence was expected to contain at most one item.</summary>
+    | ExpectedAtMostOne of observedCount: int
+    /// <summary>The sequence was expected to contain at least one item.</summary>
+    | ExpectedAtLeastOne
+    /// <summary>The sequence was expected to contain more than one item.</summary>
+    | ExpectedMoreThanOne of observedCount: int
+
+/// <summary>Structured errors returned by string length helpers.</summary>
+type StringLengthFailure =
+    /// <summary>The string was shorter than the minimum length.</summary>
+    | ExpectedMinLength of minLength: int * actualLength: int
+    /// <summary>The string was longer than the maximum length.</summary>
+    | ExpectedMaxLength of maxLength: int * actualLength: int
+    /// <summary>The string length did not match the expected length.</summary>
+    | ExpectedExactLength of expectedLength: int * actualLength: int
+
+/// <summary>Structured errors returned by comparison helpers.</summary>
+type RangeFailure<'value> =
+    /// <summary>The value was expected to be greater than the supplied lower bound.</summary>
+    | ExpectedGreaterThan of minimumExclusive: 'value * actual: 'value
+    /// <summary>The value was expected to be less than the supplied upper bound.</summary>
+    | ExpectedLessThan of maximumExclusive: 'value * actual: 'value
+    /// <summary>The value was expected to be greater than or equal to the supplied lower bound.</summary>
+    | ExpectedAtLeast of minimumInclusive: 'value * actual: 'value
+    /// <summary>The value was expected to be less than or equal to the supplied upper bound.</summary>
+    | ExpectedAtMost of maximumInclusive: 'value * actual: 'value
+    /// <summary>The value was expected to be between the supplied inclusive bounds.</summary>
+    | ExpectedBetween of minimumInclusive: 'value * maximumInclusive: 'value * actual: 'value
+
+/// <summary>Fail-fast helpers over the standard F# <c>Result</c> type.</summary>
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module Result =
+    let private stringLength (value: string) =
+        if isNull value then 0 else value.Length
+
+    let private cardinalityAtMostTwo (values: seq<'value>) : int * 'value =
+        use enumerator = values.GetEnumerator()
+        let mutable count = 0
+        let mutable first = Unchecked.defaultof<'value>
+
+        if enumerator.MoveNext() then
+            count <- 1
+            first <- enumerator.Current
+
+            if enumerator.MoveNext() then
+                count <- 2
+
+        count, first
+
+    /// <summary>Creates an <c>Ok</c> result.</summary>
+    let inline ok value =
+        Ok value
+
+    /// <summary>Creates an <c>Error</c> result.</summary>
+    let inline error failure =
+        Error failure
+
+    /// <summary>Maps the success value of a result.</summary>
+    let map mapper result =
+        match result with
+        | Ok value -> Ok(mapper value)
+        | Error failure -> Error failure
+
+    /// <summary>Maps the error value of a result.</summary>
+    let mapError mapper result =
+        match result with
+        | Ok value -> Ok value
+        | Error failure -> Error(mapper failure)
+
+    /// <summary>Binds a result to the next fail-fast operation.</summary>
+    let bind binder result =
+        match result with
+        | Ok value -> binder value
+        | Error failure -> Error failure
+
+    /// <summary>Lifts a predicate into a type-preserving result guard with the supplied error.</summary>
+    let inline guard (predicate: 'input -> bool) (failure: 'error) (input: 'input) : Result<'input, 'error> =
+        if predicate input then Ok input else Error failure
+
+    /// <summary>Turns a boolean condition into a unit-success result with the supplied error.</summary>
+    let inline require (condition: bool) (failure: 'error) : Result<unit, 'error> =
+        if condition then Ok () else Error failure
+
+    /// <summary>Lifts a predicate into a unit-error result.</summary>
+    let fromPredicate (predicate: 'input -> bool) (input: 'input) : Result<'input, unit> =
+        if predicate input then Ok input else Error ()
+
+    /// <summary>Converts a .NET <c>Try*</c> tuple into a unit-error result.</summary>
+    let fromTry (tryResult: bool * 'value) : Result<'value, unit> =
+        match tryResult with
+        | true, value -> Ok value
+        | false, _ -> Error ()
+
+    /// <summary>Converts an F# <c>Choice</c> into a result.</summary>
+    let fromChoice (choice: Choice<'value, 'error>) : Result<'value, 'error> =
+        match choice with
+        | Choice1Of2 value -> Ok value
+        | Choice2Of2 failure -> Error failure
+
+    /// <summary>Drops the error channel and returns <c>Some</c> for success.</summary>
+    let toOption (result: Result<'value, 'error>) : 'value option =
+        match result with
+        | Ok value -> Some value
+        | Error _ -> None
+
+    /// <summary>Drops the error channel and returns <c>ValueSome</c> for success.</summary>
+    let toValueOption (result: Result<'value, 'error>) : 'value voption =
+        match result with
+        | Ok value -> ValueSome value
+        | Error _ -> ValueNone
+
+    /// <summary>Returns the success value or the supplied fallback value.</summary>
+    let defaultValue (fallback: 'value) (result: Result<'value, 'error>) : 'value =
+        match result with
+        | Ok value -> value
+        | Error _ -> fallback
+
+    /// <summary>Takes the value from an option when it is <c>Some</c>.</summary>
+    let some (value: 'value option) : Result<'value, unit> =
+        match value with
+        | Some inner -> Ok inner
+        | None -> Error ()
+
+    /// <summary>Returns success when the option is <c>None</c>.</summary>
+    let none (value: 'value option) : Result<unit, unit> =
+        match value with
+        | None -> Ok ()
+        | Some _ -> Error ()
+
+    /// <summary>Takes the value from a value option when it is <c>ValueSome</c>.</summary>
+    let valueSome (value: 'value voption) : Result<'value, unit> =
+        match value with
+        | ValueSome inner -> Ok inner
+        | ValueNone -> Error ()
+
+    /// <summary>Returns success when the value option is <c>ValueNone</c>.</summary>
+    let valueNone (value: 'value voption) : Result<unit, unit> =
+        match value with
+        | ValueNone -> Ok ()
+        | ValueSome _ -> Error ()
+
+    /// <summary>Takes the value from a nullable when it has a value.</summary>
+    let nullable (value: System.Nullable<'value>) : Result<'value, unit> =
+        if value.HasValue then Ok value.Value else Error ()
+
+    /// <summary>Takes the successful value from a result.</summary>
+    let okValue (result: Result<'value, 'error>) : Result<'value, unit> =
+        match result with
+        | Ok value -> Ok value
+        | Error _ -> Error ()
+
+    /// <summary>Takes the error value from a result.</summary>
+    let errorValue (result: Result<'value, 'error>) : Result<'error, unit> =
+        match result with
+        | Error failure -> Ok failure
+        | Ok _ -> Error ()
+
+    /// <summary>Takes the first item from a sequence.</summary>
+    let head (values: seq<'value>) : Result<'value, unit> =
+        use enumerator = values.GetEnumerator()
+        if enumerator.MoveNext() then Ok enumerator.Current else Error ()
+
+    /// <summary>Keeps a non-blank string or returns the supplied error.</summary>
+    let notBlank failure value =
+        guard Check.notBlank failure value
+
+    /// <summary>Keeps a non-null reference or returns the supplied error.</summary>
+    let notNull failure value =
+        guard Check.notNull failure value
+
+    /// <summary>Keeps a non-empty collection or returns the supplied error.</summary>
+    let notEmpty
+        (failure: 'error)
+        (values: #seq<'value>)
+        : Result<#seq<'value>, 'error> =
+        if Check.notEmpty values then Ok values else Error failure
+
+    /// <summary>Keeps a collection that contains the expected value or returns the supplied error.</summary>
+    let contains
+        (expected: 'value)
+        (failure: 'error)
+        (values: #seq<'value>)
+        : Result<#seq<'value>, 'error> =
+        if Check.contains expected values then Ok values else Error failure
+
+    /// <summary>Keeps a collection that contains no duplicate values or returns the supplied error.</summary>
+    let hasNoDuplicates
+        (failure: 'error)
+        (values: #seq<'value>)
+        : Result<#seq<'value>, 'error> =
+        if Check.hasNoDuplicates values then Ok values else Error failure
+
+    /// <summary>Keeps a string whose length lies between the supplied inclusive bounds.</summary>
+    let length minimum maximum value : Result<string, StringLengthFailure> =
+        let actual = stringLength value
+
+        if actual < minimum then Error(ExpectedMinLength(minimum, actual))
+        elif actual > maximum then Error(ExpectedMaxLength(maximum, actual))
+        else Ok value
+
+    /// <summary>Keeps a string whose length is at least the supplied minimum.</summary>
+    let minLength minimum value : Result<string, StringLengthFailure> =
+        let actual = stringLength value
+        if actual >= minimum then Ok value else Error(ExpectedMinLength(minimum, actual))
+
+    /// <summary>Keeps a string whose length is at most the supplied maximum.</summary>
+    let maxLength maximum value : Result<string, StringLengthFailure> =
+        let actual = stringLength value
+        if actual <= maximum then Ok value else Error(ExpectedMaxLength(maximum, actual))
+
+    /// <summary>Keeps a string whose length equals the supplied expected length.</summary>
+    let exactLength expected value : Result<string, StringLengthFailure> =
+        let actual = stringLength value
+        if actual = expected then Ok value else Error(ExpectedExactLength(expected, actual))
+
+    /// <summary>Keeps a value between the supplied inclusive bounds.</summary>
+    let inline range minimum maximum value =
+        if value < minimum then Error(ExpectedAtLeast(minimum, value))
+        elif value > maximum then Error(ExpectedAtMost(maximum, value))
+        else Ok value
+
+    /// <summary>Keeps a value greater than the supplied exclusive lower bound.</summary>
+    let inline greaterThan minimum value =
+        if value > minimum then Ok value else Error(ExpectedGreaterThan(minimum, value))
+
+    /// <summary>Keeps a value less than the supplied exclusive upper bound.</summary>
+    let inline lessThan maximum value =
+        if value < maximum then Ok value else Error(ExpectedLessThan(maximum, value))
+
+    /// <summary>Keeps a value greater than or equal to the supplied lower bound.</summary>
+    let inline atLeast minimum value =
+        if value >= minimum then Ok value else Error(ExpectedAtLeast(minimum, value))
+
+    /// <summary>Keeps a value less than or equal to the supplied upper bound.</summary>
+    let inline atMost maximum value =
+        if value <= maximum then Ok value else Error(ExpectedAtMost(maximum, value))
+
+    /// <summary>Takes the only item from a sequence.</summary>
+    let single (values: seq<'value>) : Result<'value, CardinalityFailure> =
+        match cardinalityAtMostTwo values with
+        | 1, value -> Ok value
+        | count, _ -> Error(ExpectedSingle count)
+
+    /// <summary>Takes zero or one item from a sequence.</summary>
+    let atMostOne (values: seq<'value>) : Result<'value option, CardinalityFailure> =
+        match cardinalityAtMostTwo values with
+        | 0, _ -> Ok None
+        | 1, value -> Ok(Some value)
+        | count, _ -> Error(ExpectedAtMostOne count)
+
+    /// <summary>Keeps a sequence that contains at least one item.</summary>
+    let atLeastOne (values: seq<'value>) : Result<seq<'value>, CardinalityFailure> =
+        if Seq.isEmpty values then Error ExpectedAtLeastOne else Ok values
+
+    /// <summary>Keeps a sequence that contains more than one item.</summary>
+    let moreThanOne (values: seq<'value>) : Result<seq<'value>, CardinalityFailure> =
+        match cardinalityAtMostTwo values with
+        | 2, _ -> Ok values
+        | count, _ -> Error(ExpectedMoreThanOne count)

@@ -1,7 +1,7 @@
 # Axial
 
 > [!WARNING]
-> Axial 0.7.0 is the first planned release under the Axial name as split packages, renamed from monolithic FsFlow. The new package line continues in `Axial.Flow`, `Axial.Result`, `Axial.Validation`, and the umbrella `Axial` package. The direction is designed to keep parts usable independently and reduce cognitive load.
+> Axial 0.7.0 is the first planned release under the Axial name as split packages, renamed from monolithic FsFlow. The new package line continues in `Axial.Flow`, `Axial.ErrorHandling`, `Axial.Refined`, `Axial.Validation`, and the umbrella `Axial` package. The direction is designed to keep parts usable independently and reduce cognitive load.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/content/img/axial-readme-dark.svg">
@@ -11,8 +11,8 @@
 
 Axial provides **structured composition over normal F#/.NET code**. It is an application architecture model for F# on .NET.
 
-Write small predicate checks with `Axial.Result.Check`, keep fail-fast logic in standard `Result`, accumulate sibling
-validation with `Axial.Validation.Validation` and `validate {}`, then lift the same logic into `Axial.Flow.Flow`
+Write small predicate checks with `Axial.ErrorHandling.Check`, keep fail-fast logic in standard `Result`, compile untrusted values with `Axial.Refined`, accumulate sibling
+validation with `Axial.Validation.Validation` and `validate {}`, then lift boundary policy into `Axial.Flow.Flow`
 when the boundary needs environment access, async work, task interop, or runtime policy.
 
 [![ci](https://github.com/adz/Axial/actions/workflows/ci.yml/badge.svg)](https://github.com/adz/Axial/actions/workflows/ci.yml)
@@ -24,7 +24,7 @@ when the boundary needs environment access, async work, task interop, or runtime
 Axial is built around one progression:
 
 ```text
-Check -> Result -> Validation -> Flow
+Check -> Result -> Refined -> Flow
 ```
 
 The same vocabulary carries from pure checks into effectful workflows.
@@ -40,7 +40,7 @@ Start with a reusable check and a fail-fast result:
 
 ```fsharp
 open Axial.Flow
-open Axial.Result
+open Axial.ErrorHandling
 
 type RegistrationError =
     | EmailMissing
@@ -48,8 +48,7 @@ type RegistrationError =
 
 let validateEmail (email: string) : Result<string, RegistrationError> =
     email
-    |> Check.whenNotBlank
-    |> Check.orError EmailMissing
+    |> Result.notBlank EmailMissing
 ```
 
 Use the same validation logic directly inside a task-oriented workflow:
@@ -106,7 +105,7 @@ dotnet run --project examples/Axial.ReadmeExample/Axial.ReadmeExample.fsproj
 let readTextFile (path: string) : Flow<ReadmeEnv, FileReadError, string> =
     flow {
         // In production, map access and path exceptions separately at the boundary.
-        do! File.Exists path |> Check.isTrue |> Bind.error (NotFound path)
+        do! Result.require (File.Exists path) () |> Bind.error (NotFound path)
 
         // Wrap in ColdTask for later exeuction
         return! ColdTask(fun ct -> File.ReadAllTextAsync(path, ct))

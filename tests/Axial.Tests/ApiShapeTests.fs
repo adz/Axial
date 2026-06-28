@@ -4,7 +4,8 @@ open System
 open System.Reflection
 open System.Threading.Tasks
 open Axial.Flow
-open Axial.Result
+open Axial.ErrorHandling
+open Axial.Refined
 open Axial.Validation
 open Axial.Flow.Hosting
 open Axial.Flow.Telemetry
@@ -183,120 +184,150 @@ module ApiShapeTests =
         |> publicInstanceMethodNames
         |> assertContainsAll [ "Return"; "ReturnFrom"; "Bind"; "Delay"; "Run"; "Combine"; "TryWith"; "TryFinally"; "Using"; "While"; "For" ]
 
+        typeof<RefineBuilder>
+        |> publicInstanceMethodNames
+        |> assertContainsAll [ "Return"; "ReturnFrom"; "Bind"; "Delay"; "Run"; "Combine" ]
+
     [<Fact>]
     let ``check take binderror diagnostics and ref helpers keep expected public shape`` () =
         let checkMembers =
-            moduleTypeFromAssembly "Axial.Result" "Axial.Result.Check"
+            moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.Check"
             |> publicStaticMemberNames
 
         checkMembers
         |> assertContainsAll
-            [ "fromPredicate"
+            [ "isSome"
+              "isNone"
+              "isValueSome"
+              "isValueNone"
+              "hasValue"
+              "hasNoValue"
+              "notNull"
+              "isNull"
+              "isOk"
+              "isError"
+              "notEmpty"
+              "isEmpty"
+              "notNullOrEmpty"
+              "nullOrEmpty"
+              "notEmptyString"
+              "emptyString"
+              "notBlank"
+              "blank"
+              "hasMinLength"
+              "hasMaxLength"
+              "hasExactLength"
+              "matchesRegex"
+              "isEmail"
+              "isNumeric"
+              "isAlphaNumeric"
+              "equalTo"
+              "notEqualTo"
+              "contains"
+              "hasCount"
+              "isSingle"
+              "atMostOne"
+              "atLeastOne"
+              "moreThanOne"
+              "hasDuplicates"
+              "hasNoDuplicates"
+              "greaterThan"
+              "lessThan"
+              "atLeast"
+              "atMost"
+              "between"
+              "positive"
+              "nonNegative"
+              "negative"
+              "nonPositive"
+              "negate" ]
+
+        checkMembers
+        |> assertContainsNone
+            [ "isTrue"
+              "isFalse"
+              "fromPredicate"
               "fromTry"
               "fromChoice"
-              "negate"
               "both"
               "either"
               "all"
               "any"
-              "isTrue"
               "whenTrue"
-              "isFalse"
               "whenFalse"
-              "isSome"
-              "whenSome"
-              "takeSome"
-              "isNone"
-              "whenNone"
-              "isValueSome"
-              "whenValueSome"
-              "takeValueSome"
-              "isValueNone"
-              "whenValueNone"
-              "hasValue"
-              "whenHasValue"
-              "takeHasValue"
-              "hasNoValue"
-              "whenHasNoValue"
-              "notNull"
-              "whenNotNull"
-              "isNull"
-              "whenNull"
-              "isOk"
-              "whenOk"
-              "takeOk"
-              "isError"
-              "whenError"
-              "takeError"
-              "notEmpty"
-              "whenNotEmpty"
-              "takeHead"
-              "empty"
-              "whenEmpty"
-              "notNullOrEmpty"
-              "whenNotNullOrEmpty"
-              "nullOrEmpty"
-              "whenNullOrEmpty"
-              "notEmptyString"
-              "whenNotEmptyString"
-              "emptyString"
-              "whenEmptyString"
-              "notBlank"
               "whenNotBlank"
-              "blank"
-              "whenBlank"
-              "minLength"
-              "whenMinLength"
-              "maxLength"
-              "whenMaxLength"
-              "exactLength"
-              "whenExactLength"
-              "matchesRegex"
-              "whenMatchesRegex"
-              "equalTo"
-              "whenEqualTo"
-              "notEqualTo"
-              "whenNotEqualTo"
-              "contains"
-              "whenContains"
-              "hasCount"
-              "whenCount"
-              "isSingle"
-              "whenSingle"
-              "takeSingle"
-              "atMostOne"
-              "whenAtMostOne"
-              "takeAtMostOne"
-              "atLeastOne"
-              "whenAtLeastOne"
-              "moreThanOne"
-              "whenMoreThanOne"
-              "hasDuplicates"
-              "whenHasDuplicates"
-              "hasNoDuplicates"
-              "whenHasNoDuplicates"
-              "greaterThan"
-              "whenGreaterThan"
-              "lessThan"
-              "whenLessThan"
-              "atLeast"
-              "whenAtLeast"
-              "atMost"
-              "whenAtMost"
-              "between"
-              "whenBetween"
-              "positive"
-              "whenPositive"
-              "nonNegative"
-              "whenNonNegative"
-              "negative"
-              "whenNegative"
-              "nonPositive"
-              "whenNonPositive"
+              "takeSome"
               "orError" ]
 
-        checkMembers
-        |> assertContainsNone [ "takeNotNull"; "takeNotBlank"; "withError" ]
+        let resultMembers =
+            moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.Result"
+            |> publicStaticMemberNames
+
+        resultMembers
+        |> assertContainsAll
+            [ "guard"
+              "require"
+              "fromPredicate"
+              "fromTry"
+              "fromChoice"
+              "toOption"
+              "toValueOption"
+              "defaultValue"
+              "some"
+              "valueSome"
+              "nullable"
+              "okValue"
+              "errorValue"
+              "head"
+              "notBlank"
+              "notNull"
+              "notEmpty"
+              "contains"
+              "hasNoDuplicates"
+              "minLength"
+              "maxLength"
+              "exactLength"
+              "range"
+              "greaterThan"
+              "lessThan"
+              "atLeast"
+              "atMost"
+              "single"
+              "atMostOne"
+              "atLeastOne"
+              "moreThanOne" ]
+
+        let parseMembers =
+            moduleTypeFromAssembly "Axial.Refined" "Axial.Refined.Parse"
+            |> publicStaticMemberNames
+
+        parseMembers
+        |> assertContainsAll
+            [ "int"
+              "long"
+              "decimal"
+              "float"
+              "bool"
+              "guid"
+              "dateTime"
+              "dateTimeOffset"
+              "dateOnly"
+              "timeOnly"
+              "enum"
+              "intOption"
+              "boolOption"
+              "decimalOption"
+              "guidOption"
+              "intOrDefault"
+              "boolOrDefault"
+              "decimalOrDefault" ]
+
+        let refineMembers =
+            moduleTypeFromAssembly "Axial.Refined" "Axial.Refined.Refine"
+            |> publicStaticMemberNames
+
+        refineMembers
+        |> assertContainsAll [ "nonBlankString"; "positiveInt"; "nonEmptyList" ]
 
         moduleType typeof<Flow<unit, unit, unit>> "Axial.Flow.Bind"
         |> publicStaticMemberNames

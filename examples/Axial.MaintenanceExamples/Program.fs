@@ -2,7 +2,7 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open Axial.Flow
-open Axial.Result
+open Axial.ErrorHandling
 open Axial.Validation
 
 let runFlow label env (workflow: Flow<'env, 'error, 'value>) =

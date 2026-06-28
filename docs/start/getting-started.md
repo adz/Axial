@@ -13,11 +13,12 @@ Axial is a toolkit for Result-based programs in F#. It starts with validation he
 Use the smallest tool that fits the code you are writing:
 
 ```text
-Pure Checks -> Result & Validation -> Flow
+Check -> Result & Refined -> Validation -> Flow
 ```
 
 - **Pure Checks**: Reusable predicates.
-- **Result & Validation**: Domain logic that handles success or failure (either fail-fast or error-accumulating).
+- **Result & Refined**: Fail-fast domain logic and structural domain values.
+- **Validation**: Error-accumulating input validation.
 - **Flow**: The application boundary where you need dependencies, async/task interop, logging, or cancellation.
 
 Use the three guide sections as separate manuals:
@@ -39,8 +40,8 @@ type UserError = | NameTooShort
 
 let validateName (name: string) : Result<string, UserError> =
     name 
-    |> Check.fromPredicate (fun value -> value.Length >= 3)
-    |> Check.orError NameTooShort
+    |> Result.minLength 3
+    |> Result.mapError (fun _ -> NameTooShort)
 
 // This is a standard F# Result.
 let result = validateName "Ad" // Error NameTooShort

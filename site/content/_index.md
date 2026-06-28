@@ -16,13 +16,14 @@ Structured composition over normal F#/.NET code
 </h1>
 
 <div class="lede">
-Axial is a model for Result-based programs. Write predicate checks once, keep fail-fast logic in <code>Result</code>, accumulate sibling failures with <a href="{{< relref "/reference/validation/" >}}"><code>Validation</code></a>, then lift the same logic into <a href="{{< relref "/reference/flow/" >}}"><code>Flow</code></a> when the boundary needs environment access, async work, task interop, cancellation, or runtime policy.
+Axial is a model for Result-based programs. Write predicate checks with <code>Check</code>, keep fail-fast logic in <code>Result</code>, compile untrusted values with <a href="{{< relref "/reference/refined/" >}}"><code>Refined</code></a>, accumulate sibling failures with <a href="{{< relref "/reference/validation/" >}}"><code>Validation</code></a>, then lift boundary policy into <a href="{{< relref "/reference/flow/" >}}"><code>Flow</code></a> when the boundary needs environment access, async work, task interop, cancellation, or runtime policy.
 </div>
 
 <div class="docs-home-meta">
 <a class="docs-chip" href="{{< relref "/docs/start/getting-started.md" >}}">Get Started</a>
 <a class="docs-chip" href="{{< relref "/docs/flow/tutorials/" >}}">Flow Tutorials</a>
 <a class="docs-chip" href="{{< relref "/docs/result/" >}}">Result</a>
+<a class="docs-chip" href="{{< relref "/reference/refined/" >}}">Refined</a>
 <a class="docs-chip" href="{{< relref "/docs/validation/" >}}">Validation</a>
 <a class="docs-chip" href="{{< relref "/docs/flow/" >}}">Flow</a>
 <a class="docs-chip" href="{{< relref "/docs/flow/dependencies.md" >}}">Managing dependencies</a>
@@ -52,8 +53,7 @@ type RegistrationError =
 
 let validateEmail (email: string) : Result<string, RegistrationError> =
     email
-    |> Check.whenNotBlank
-    |> Check.orError EmailMissing
+    |> Result.notBlank EmailMissing
 
 type User =
     { Email: string }

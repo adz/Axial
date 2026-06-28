@@ -4,7 +4,7 @@ open System
 open System.IO
 open System.Text
 open Axial.Flow
-open Axial.Result
+open Axial.ErrorHandling
 open Axial.Validation
 open Axial.Flow.FileSystem
 open Swensen.Unquote

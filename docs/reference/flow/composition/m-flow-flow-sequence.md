@@ -1,7 +1,7 @@
 ---
 title: "Flow.Flow.sequence"
 linkTitle: "sequence"
-weight: 2334
+weight: 2335
 ---
 
 Transforms a sequence of flows into a flow of a sequence and stops at the first failure.

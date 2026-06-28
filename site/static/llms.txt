@@ -16,7 +16,7 @@
 
 ## The Flow Hierarchy
 Data flows from left to right. Later stages can bind earlier stages directly.
-`Check` (pure checks) -> `Result` (typed fail-fast error) -> `Validation` (accumulating diagnostics) -> `Flow` (sync/async/task + env + cancellation)
+`Check` (pure predicates) -> `Result` (typed fail-fast error) -> `Refined` (parse/refine boundary values) -> `Validation` (accumulating diagnostics) -> `Flow` (sync/async/task + env + cancellation)
 
 ## Execution Outcomes (Exit Model)
 Workflows result in one of three `Exit` outcomes:
@@ -41,11 +41,12 @@ Workflows result in one of three `Exit` outcomes:
 - Keep `IServiceProvider` interop and host-specific adapters at the outer boundary.
 
 ## Core Patterns (Idiomatic Way)
-Use `Check` for pure validation: unprefixed helpers are predicates, `when*` helpers preserve the input, `take*` helpers extract an inner value or return a deliberately different success shape, and `Check.orError` attaches a domain error to unit-error checks:
+Use `Check` for pure predicates and `Result` for fail-fast boundary values:
 
-- `name |> Check.whenNotBlank |> Check.orError InvalidName`
-- `condition |> Check.isTrue |> Check.orError Disabled`
-- `opt |> Check.takeSome |> Check.orError MissingValue`
+- `name |> Result.notBlank InvalidName`
+- `Result.require condition Disabled`
+- `opt |> Result.some |> Result.mapError (fun () -> MissingValue)`
+- `value |> Result.guard Check.notBlank InvalidName`
 
 Use `Bind.error` only at a `flow {}` bind site when the source fails with option/value-option absence or a `unit` error:
 
@@ -53,7 +54,7 @@ Use `Bind.error` only at a `flow {}` bind site when the source fails with option
 - `voption<'T>` -> `let! x = vopt |> Bind.error error`
 - `Async<Option<'T>>` -> `let! x = aOpt |> Bind.error error`
 - `Async<voption<'T>>` -> `let! x = aVOpt |> Bind.error error`
-- `bool` predicate -> `do! cond |> Check.isTrue |> Bind.error error`
+- `bool` predicate -> `do! Result.require cond () |> Bind.error error`
 - `Result<'T, unit>` -> `let! x = check |> Bind.error error`
 - `Flow<'Env, unit, 'T>` -> `let! x = flow |> Bind.error error`
 - `Task<Option<'T>>` -> `let! x = tOpt |> Bind.error error`
@@ -69,7 +70,7 @@ Use `Bind.mapError` only at a `flow {}` bind site when the source already carrie
 Use `Flow.fromAsync`, `Flow.fromTask`, and `Flow.fromValueTask` when thrown exceptions are defects. Use `Flow.attemptAsync`, `Flow.attemptTask`, and `Flow.attemptValueTask` when thrown exceptions are expected and should become `Cause.Fail exn`.
 
 ## Rosetta Stone (Mappings)
-- **FsToolkit**: `AsyncResult.requireSome e` -> `let! x = opt |> Bind.error e` in `flow {}` or `opt |> Check.takeSome |> Check.orError e` in pure code
+- **FsToolkit**: `AsyncResult.requireSome e` -> `let! x = opt |> Bind.error e` in `flow {}` or `opt |> Result.some |> Result.mapError (fun () -> e)` in pure code
 - **ZIO**: `option.getOrFail(e)` -> `let! x = opt |> Bind.error e` in `flow {}`
 - **ZIO**: `ZIO.service<T>` -> `Service<T>.get()` when the environment implements `IHas<T>`
 - **Manual**: `match x with Some v -> Ok v | None -> Error e` -> `let! v = x |> Bind.error e` in `flow {}`
@@ -80,9 +81,9 @@ Use this when translating FsToolkit-style code into Axial. If a function is not 
 equivalent, Axial usually expects a different boundary shape rather than a 1:1 helper.
 
 ### Result<'T, 'E>
-- Axial uses the standard FSharp.Core `Result<'T, 'E>` directly; there is no parallel Axial `Result` helper module
-- Axial replacements: use `result {}` for fail-fast sequencing, `Validation` for accumulation, `Check` for pure predicates/preserving gates/extractions, and `Bind` when a flow bind source needs error assignment or mapping
-- For predicate checks, use `Check.orError` to attach a typed error to `Result<'T, unit>` values
+- Axial uses the standard FSharp.Core `Result<'T, 'E>` directly with helpers in `Axial.ErrorHandling.Result`
+- Axial replacements: use `result {}` for fail-fast sequencing, `Validation` for accumulation, `Check` for pure predicates, `Result` for guards/extractions, and `Bind` when a flow bind source needs error assignment or mapping
+- For predicate checks, use `Result.guard` or `Result.require` to attach a typed error
 
 ### AsyncResult<'T, 'E>
 - Closest Axial shape: `Flow<'env, 'error, 'value>`

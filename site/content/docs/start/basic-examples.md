@@ -29,13 +29,12 @@ let run () = task {
 
 ## 2. Combining Pure Logic and Async Work
 
-Use `flow {}` to mix pure `Check` logic, `Async` blocks, and other flows.
+Use `flow {}` to mix pure `Result` logic, `Async` blocks, and other flows.
 
 ```fsharp
 let validateId id =
-    id
-    |> Check.fromPredicate (fun value -> value > 0)
-    |> Check.orError "Invalid ID"
+    Result.require (id > 0) "Invalid ID"
+    |> Result.map (fun () -> id)
 
 let fetchUser id =
     async { return { Id = id; Name = "Ada" } }

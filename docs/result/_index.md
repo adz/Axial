@@ -9,7 +9,7 @@ aliases:
 
 # Result
 
-Use this section for pure fail-fast logic with standard F# `Result<'value, 'error>`, Axial `Check`, and the `result {}` builder.
+Use this section for pure fail-fast logic with standard F# `Result<'value, 'error>`, Axial `Check`, focused `Result` helpers, and the `result {}` builder.
 
 Use this section when the code is still pure and one failure is enough to stop the operation. Do not introduce `Flow` just because dependencies might appear later.
 
@@ -19,12 +19,12 @@ Use this section when the code is still pure and one failure is enough to stop t
 Check -> Result
 ```
 
-`Check` gives reusable predicates, value-preserving gates, and extraction helpers. The output is still ordinary `Result`, so the rest of your domain code stays plain F#.
+`Check` gives reusable predicates. `Result` preserves inputs, extracts inner values, adds typed failures, and composes fail-fast steps. The output is still ordinary `Result`, so the rest of your domain code stays plain F#.
 
 ## Start Here
 
 - [Tutorials](./tutorials/): build typed `Result` values from pure checks.
-- [Checks](./checks/): predicate, preserving, and extracting helper shapes.
+- [Checks](./checks/): predicate helpers and how to move into typed `Result` values.
 - [Result Builder](./result-builder/): fail-fast composition over standard `Result`.
 
 ## Move On When

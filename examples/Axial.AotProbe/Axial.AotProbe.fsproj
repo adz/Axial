@@ -36,8 +36,12 @@
       <HintPath>..\..\artifacts\bin\Axial\release_net8.0\Axial.Flow.dll</HintPath>
       <Private>true</Private>
     </Reference>
-    <Reference Include="Axial.Result">
-      <HintPath>..\..\artifacts\bin\Axial\release_net8.0\Axial.Result.dll</HintPath>
+    <Reference Include="Axial.ErrorHandling">
+      <HintPath>..\..\artifacts\bin\Axial\release_net8.0\Axial.ErrorHandling.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="Axial.Refined">
+      <HintPath>..\..\artifacts\bin\Axial\release_net8.0\Axial.Refined.dll</HintPath>
       <Private>true</Private>
     </Reference>
     <Reference Include="Axial.Validation">

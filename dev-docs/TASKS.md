@@ -16,7 +16,7 @@ part of this completed redesign queue.
 
 ## Active Surface Work
 
-- Split tests into `Axial.Flow.Tests`, `Axial.Result.Tests`, and `Axial.Validation.Tests`, with each test project
+- Split tests into `Axial.Flow.Tests`, `Axial.ErrorHandling.Tests`, `Axial.Refined.Tests`, and `Axial.Validation.Tests`, with each test project
   building only against its own target package boundary.
 
 - Decide whether the canonical validation bridge is `Validation.fromResult` or `Validation.ofResult`, then align source

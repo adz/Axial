@@ -4,7 +4,7 @@ open System
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Logging
 open Axial.Flow
-open Axial.Result
+open Axial.ErrorHandling
 open Axial.Validation
 open Axial.Flow.Hosting
 open Axial.Flow.PlatformService

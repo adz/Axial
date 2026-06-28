@@ -3,7 +3,7 @@ namespace Axial.Examples
 open System
 open System.Threading.Tasks
 open Axial.Flow
-open Axial.Result
+open Axial.ErrorHandling
 open Axial.Validation
 open Microsoft.Extensions.DependencyInjection
 

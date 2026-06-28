@@ -2,7 +2,7 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open Axial.Flow
-open Axial.Result
+open Axial.ErrorHandling
 open Axial.Validation
 
 type AppEnv =
@@ -16,7 +16,7 @@ let greetingFlow : Flow<AppEnv, string, string> =
 let greetingAsync : Flow<AppEnv, string, string> =
     flow {
         let! greeting = greetingFlow
-        let! checkedGreeting = greeting |> Check.whenNotBlank |> Check.orError "Blanko"
+        let! checkedGreeting = greeting |> Result.notBlank "Blanko"
         return checkedGreeting.ToUpperInvariant()
     }
 

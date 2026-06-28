@@ -4,7 +4,7 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open Axial.Flow
-open Axial.Result
+open Axial.ErrorHandling
 open Axial.Validation
 open Axial.Flow.PlatformService
 open Swensen.Unquote

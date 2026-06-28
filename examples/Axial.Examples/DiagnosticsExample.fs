@@ -2,8 +2,7 @@ module DiagnosticsExample
 
 open System.Text.Json
 open Axial.Flow
-open Axial.Result
-open Axial.Result.Check
+open Axial.ErrorHandling
 open Axial.Validation
 
 type CustomerLine =
@@ -34,7 +33,7 @@ let validateAddressWithoutCEOrPipe address =
     Validation.at [PathSegment.Key "address"] (
         Validation.at [PathSegment.Name "City"] (
             Validation.fromResult (
-                address.City |> whenNotBlank |> orError "City required"
+                address.City |> Result.notBlank "City required"
             )
         )
         |> Validation.map (fun city -> {address with City = city })
@@ -43,8 +42,7 @@ let validateAddressWithoutCEOrPipe address =
 let validateAddressWithoutCE address =
     let cityResult =
         address.City
-        |> whenNotBlank
-        |> orError "City required"
+        |> Result.notBlank "City required"
 
     cityResult
     |> Validation.fromResult
@@ -56,7 +54,7 @@ let validateAddressWithoutCE address =
 let validateAddress address =
     validate.key "address" {
         let! city = validate.name "city" {
-            return! address.City |> whenNotBlank |> orError "City required"
+            return! address.City |> Result.notBlank "City required"
         }
         return { address with City = city }
     }
@@ -65,7 +63,7 @@ let validateCustomer customer =
     validate {
         let! name =
             validate.name "Name" {
-                return! customer.Name |> whenNotBlank |> orError "Name required"
+                return! customer.Name |> Result.notBlank "Name required"
             }
 
         and! address = validateAddress customer.Address
@@ -77,7 +75,7 @@ let validateCustomer customer =
                     |> Validation.traverseIndexed (fun index line ->
                         validate.name "Name" {
                             let! name =
-                                line.Name |> whenNotBlank |> orError $"Line {index} name required"
+                                line.Name |> Result.notBlank $"Line {index} name required"
 
                             return { Name = name }
                         }
@@ -111,7 +109,7 @@ let validateCreateCustomerRequest request =
     validate {
         let! requestId =
             validate.name "RequestId" {
-                return! request.RequestId |> whenNotBlank |> orError "RequestId required"
+                return! request.RequestId |> Result.notBlank "RequestId required"
             }
 
         and! customer =

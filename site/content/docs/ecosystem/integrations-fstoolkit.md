@@ -18,7 +18,7 @@ focuses on a unified execution model that carries environments and runtime polic
 
 Axial provides a single, scalable progression:
 
-[Check]({{< relref "/reference/check/" >}}) -> [Result]({{< relref "/reference/result/" >}}) -> [Validation]({{< relref "/reference/validation/" >}}) -> [Flow]({{< relref "/reference/flow/" >}})
+[Check]({{< relref "/reference/check/" >}}) -> [Result]({{< relref "/reference/result/" >}}) -> [Refined]({{< relref "/reference/refined/" >}}) -> [Validation]({{< relref "/reference/validation/" >}}) -> [Flow]({{< relref "/reference/flow/" >}})
 
 In Axial, the environment and runtime concerns are baked into the computation, allowing you to
 write orchestration logic that remains agnostic of whether the underlying work is sync or async
@@ -30,8 +30,8 @@ If you use these FsToolkit patterns, here is how they correspond to Axial:
 
 | FsToolkit.ErrorHandling | Axial |
 | --- | --- |
-| [Result]({{< relref "/reference/result/" >}}).requireTrue | `condition |> Check.isTrue |> Check.orError error` |
-| [Result]({{< relref "/reference/result/" >}}).requireSome | `opt |> Check.takeSome |> Check.orError error` |
+| [Result]({{< relref "/reference/result/" >}}).requireTrue | `Result.require condition error` |
+| [Result]({{< relref "/reference/result/" >}}).requireSome | `opt |> Result.some |> Result.mapError (fun () -> error)` |
 | `asyncResult { }` | `flow {}` |
 | `taskResult { }` | `flow {}` |
 | [Validation]({{< relref "/reference/validation/" >}}) helpers | [Validation]({{< relref "/reference/validation/" >}}) and [`validate {}`]({{< relref "/reference/validation/builders-validate.md" >}}) |

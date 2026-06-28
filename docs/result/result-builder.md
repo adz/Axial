@@ -23,10 +23,10 @@ type User = { Name: string; Email: string }
 let validateUser name email : Result<User, UserError> =
     result {
         // If name is blank, it returns Error MissingName and stops.
-        let! validName = name |> Check.whenNotBlank |> Check.orError MissingName
+        let! validName = name |> Result.notBlank |> Result.mapError (fun () -> MissingName)
         
         // This line only runs if the name was valid.
-        let! validEmail = email |> Check.whenNotBlank |> Check.orError MissingEmail
+        let! validEmail = email |> Result.notBlank |> Result.mapError (fun () -> MissingEmail)
         
         return { Name = validName; Email = validEmail }
     }
@@ -35,7 +35,7 @@ let validateUser name email : Result<User, UserError> =
 ## Options and Checks
 
 `result {}` binds `Result` directly.
-Use `Check.take*` when the source must expose an inner value or deliberately different success shape, `Check.when*` when the source should be preserved, and unprefixed `Check` predicates when the source is only a yes/no gate.
+Use `Result.some` when the source must expose an option value, value-preserving `Result` helpers when the source should be preserved, and `Result.require` when the source is only a yes/no gate.
 
 ```fsharp
 type User = { Name: string }
@@ -46,8 +46,8 @@ let tryGetUser username =
 
 let login username password =
     result {
-        let! user = tryGetUser username |> Check.takeSome |> Check.orError Unauthorized
-        do! password |> Check.notBlank |> Check.orError MissingPassword
+        let! user = tryGetUser username |> Result.some |> Result.mapError (fun () -> Unauthorized)
+        do! Result.require (Check.notBlank password |> Result.isOk) MissingPassword
 
         return user
     }

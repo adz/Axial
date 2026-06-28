@@ -4,6 +4,7 @@ title: "Composition"
 
 This page shows the everyday Flow combinators for mapping, binding, zipping, and otherwise shaping workflow logic.
 
+- [`Flow.Flow.verify`](./m-flow-flow-verify.md): Runs an environment-aware policy against an input value inside a workflow.
 - [`Flow.Flow.map`](./m-flow-flow-map.md): Transforms the successful value of a flow.
 - [`Flow.Flow.bind`](./m-flow-flow-bind.md): Sequences a dependent flow after a successful value.
 - [`Flow.Flow.tap`](./m-flow-flow-tap.md): Runs an effect on success and preserves the original value.

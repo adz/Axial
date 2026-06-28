@@ -43,6 +43,7 @@ This page shows the Flow surface for cold workflow descriptions that only start 
 - [`Flow.Flow.attemptTask`](./construction/m-flow-flow-attempttask.md): Creates a flow from a task operation and treats thrown exceptions as recoverable typed errors.
 - [`Flow.Flow.fromValueTask`](./construction/m-flow-flow-fromvaluetask.md): Creates a flow from a raw value task operation.
 - [`Flow.Flow.attemptValueTask`](./construction/m-flow-flow-attemptvaluetask.md): Creates a flow from a value task operation and treats thrown exceptions as recoverable typed errors.
+- [`Flow.Flow.verify`](./composition/m-flow-flow-verify.md): Runs an environment-aware policy against an input value inside a workflow.
 - [`Flow.Flow.orElseFlow`](./construction/m-flow-flow-orelseflow.md): Turns a pure validation result into a synchronous flow with environment-provided failure.
 - [`Flow.Flow.env`](./environment/m-flow-flow-env.md): Reads the current environment as the successful flow value.
 - [`Flow.Flow.read`](./environment/m-flow-flow-read.md): Projects one value from the current environment.
@@ -64,6 +65,16 @@ This page shows the Flow surface for cold workflow descriptions that only start 
 - [`Flow.Flow.delay`](./construction/m-flow-flow-delay.md): Defers flow construction until execution time.
 - [`Flow.Flow.traverse`](./composition/m-flow-flow-traverse.md): Transforms a sequence of values into a flow and stops at the first failure.
 - [`Flow.Flow.sequence`](./composition/m-flow-flow-sequence.md): Transforms a sequence of flows into a flow of a sequence and stops at the first failure.
+
+## Policies
+
+- [`Flow.Policy`](./t-flow-policy.md): Constructors and combinators for environment-aware workflow requirements.
+- [`Flow.Policy.pure`](./m-flow-policy-pure.md): Lifts a pure result-returning function and maps its error into the workflow error type.
+- [`Flow.Policy.withError`](./m-flow-policy-witherror.md): Lifts a pure result-returning function and replaces any error with a fixed workflow error.
+- [`Flow.Policy.context`](./m-flow-policy-context.md): Lifts an environment-aware result-returning function and maps its error into the workflow error type.
+- [`Flow.Policy.pass`](./p-flow-policy-pass.md): A policy that returns the input unchanged.
+- [`Flow.Policy.compose`](./m-flow-policy-compose.md): Composes two policies left to right.
+- [`Flow.Policy.optional`](./m-flow-policy-optional.md): Runs a policy only when the environment predicate is true; otherwise returns the input unchanged.
 
 ## Scoped resources
 

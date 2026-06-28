@@ -1,30 +1,29 @@
 ---
 weight: 10
 title: Check
-description: Choose between predicate, preserving, and extracting Check helpers before entering Result, Validation, or Flow.
+description: Use pure Check predicates before shaping failures with Result, Validation, or Flow.
 aliases:
   - /docs/validation-results/checks/
 ---
 
 # Check
 
-Choose between the three `Check` helper shapes by the success value you need.
+`Check` contains pure predicates. A check answers a yes/no question and returns `Result<unit, unit>`.
 
-Start by deciding what success should carry.
+Use `Check` when success only proves a fact. Use `Result` when success should preserve, extract, or reshape a value.
 
-| Intent | Helper shape | Success value |
-| --- | --- | --- |
-| Require a fact and keep no value | `value |> Check.x` | `unit` |
-| Require a fact and keep the original input | `value |> Check.whenX` | the original input |
-| Extract an inner value or return a deliberately different success shape | `value |> Check.takeX` | the extracted or reshaped value |
-
-Unprefixed helpers are predicates. `when*` helpers are value-preserving gates. `take*` helpers unwrap a structure or return a deliberately different success shape.
+| Intent | Use |
+| --- | --- |
+| Prove a fact and keep no value | `Check.notBlank value` |
+| Preserve the input on success | `Result.notBlank value` |
+| Extract an inner value | `Result.some value` |
+| Attach a domain error to a predicate | `Result.require condition error` |
 
 ## Attach an Error
 
-Most simple helpers return `Result<'value, unit>`. The `unit` failure means "this check failed, but no domain error has been chosen yet".
+`Check` predicates fail with `unit`. The `unit` failure means "this check failed, but no domain error has been chosen yet".
 
-Use `Check.orError` to assign the application error in pure code.
+Use `Result.require` when a boolean condition should become a domain result.
 
 ```fsharp
 type SignUpError =
@@ -34,20 +33,18 @@ type SignUpError =
 
 type User = { Name: string }
 
+let requireAdult age : Result<unit, SignUpError> =
+    Result.require (age >= 18) AgeInvalid
+```
+
+Use the value-preserving and extracting helpers in `Result` when success should carry a value.
+
+```fsharp
 let requireName name : Result<string, SignUpError> =
-    name
-    |> Check.whenNotBlank
-    |> Check.orError NameRequired
+    Result.notBlank name |> Result.mapError (fun () -> NameRequired)
 
 let requireUser maybeUser : Result<User, SignUpError> =
-    maybeUser
-    |> Check.takeSome
-    |> Check.orError UserMissing
-
-let requireAdult age : Result<unit, SignUpError> =
-    age >= 18
-    |> Check.isTrue
-    |> Check.orError AgeInvalid
+    Result.some maybeUser |> Result.mapError (fun () -> UserMissing)
 ```
 
 Some helpers already return a useful diagnostic error. Use `Result.mapError` for those.
@@ -59,30 +56,31 @@ type OrderError =
 
 let primaryId ids : Result<int, OrderError> =
     ids
-    |> Check.takeSingle
+    |> Result.single
     |> Result.mapError InvalidPrimaryId
 
 let quantity value : Result<int, OrderError> =
     value
-    |> Check.whenPositive
+    |> Result.greaterThan 0
     |> Result.mapError InvalidQuantity
 ```
 
 ## Choose a Predicate
 
-Use an unprefixed helper when success is only a gate.
+Use `Check` when success is only a gate.
 
 ```fsharp
 type RegistrationError =
     | PasswordRequired
 
 let validatePassword password : Result<unit, RegistrationError> =
-    password
-    |> Check.notBlank
-    |> Check.orError PasswordRequired
+    if Check.notBlank password |> Result.isOk then
+        Ok ()
+    else
+        Error PasswordRequired
 ```
 
-This is useful for `do!` in `result {}` or `validate {}` blocks because the workflow does not need a value from the check.
+In most application code, `Result.require` is terser because it performs the same gate and assigns the error in one step.
 
 ```fsharp
 type RegistrationError =
@@ -91,15 +89,13 @@ type RegistrationError =
 
 let register name password =
     result {
-        let! validName = name |> Check.whenNotBlank |> Check.orError NameRequired
-        do! password |> Check.notBlank |> Check.orError PasswordRequired
+        let! validName = Result.notBlank name |> Result.mapError (fun () -> NameRequired)
+        do! Result.require (Check.notBlank password |> Result.isOk) PasswordRequired
         return validName
     }
 ```
 
-## Choose `when*`
-
-Use `Check.whenX` when the predicate should return the original input.
+## Preserve the Input
 
 ```fsharp
 type EmailError =
@@ -107,15 +103,15 @@ type EmailError =
 
 let validateEmail email : Result<string, EmailError> =
     email
-    |> Check.whenNotBlank
-    |> Check.orError EmailRequired
+    |> Result.notBlank
+    |> Result.mapError (fun () -> EmailRequired)
 ```
 
-`Check.whenNotBlank` checks that the string is not blank and returns the original string. That makes it the right choice for `let! validEmail = ...`.
+`Result.notBlank` checks that the string is not blank and returns the original string.
 
-## Choose `take*`
+## Extract Values
 
-Use `Check.takeX` helpers when the predicate exposes an inner value or a deliberately different success shape.
+Use `Result` helpers when success exposes an inner value or a deliberately different success shape.
 
 ```fsharp
 type LookupError =
@@ -125,27 +121,27 @@ type User = { Name: string }
 
 let requireExistingUser maybeUser : Result<User, LookupError> =
     maybeUser
-    |> Check.takeSome
-    |> Check.orError UserMissing
+    |> Result.some
+    |> Result.mapError (fun () -> UserMissing)
 ```
 
-`Check.takeSome` checks that the option is `Some` and returns the unwrapped value.
+`Result.some` checks that the option is `Some` and returns the unwrapped value.
 
 ## Common Families
 
-| Predicate | Preserve original | Extract/narrow |
-| --- | --- | --- |
-| `Check.isSome` | `Check.whenSome` | `Check.takeSome` |
-| `Check.isValueSome` | `Check.whenValueSome` | `Check.takeValueSome` |
-| `Check.hasValue` | `Check.whenHasValue` | `Check.takeHasValue` |
-| `Check.notNull` | `Check.whenNotNull` | none |
-| `Check.isOk` | `Check.whenOk` | `Check.takeOk` |
-| `Check.isError` | `Check.whenError` | `Check.takeError` |
-| `Check.notEmpty` | `Check.whenNotEmpty` | `Check.takeHead` |
-| `Check.isSingle` | `Check.whenSingle` | `Check.takeSingle` |
-| `Check.atMostOne` | `Check.whenAtMostOne` | `Check.takeAtMostOne` |
-| `Check.notBlank` | `Check.whenNotBlank` | none |
-| `Check.positive` | `Check.whenPositive` | none |
+| Predicate | Preserve or extract |
+| --- | --- |
+| `Check.isSome` | `Result.some` |
+| `Check.isValueSome` | `Result.valueSome` |
+| `Check.hasValue` | `Result.nullable` |
+| `Check.notNull` | `Result.notNull` |
+| `Check.isOk` | `Result.okValue` |
+| `Check.isError` | `Result.errorValue` |
+| `Check.notEmpty` | `Result.notEmpty` or `Result.head` |
+| `Check.isSingle` | `Result.single` |
+| `Check.atMostOne` | `Result.atMostOne` |
+| `Check.notBlank` | `Result.notBlank` |
+| `Check.positive` | `Result.greaterThan 0` |
 
 ## Cardinality
 
@@ -153,17 +149,15 @@ Cardinality helpers keep `CardinalityFailure` because the count is useful diagno
 
 ```fsharp
 ids |> Check.isSingle
-ids |> Check.whenSingle
-ids |> Check.takeSingle
+ids |> Result.single
+ids |> Result.atMostOne
 ```
 
-Use `Check.isSingle` when you only need to know the fact, `Check.whenSingle` when the next step needs the original collection, and `Check.takeSingle` when the next step needs the single element.
-
-The preserving cardinality helpers enumerate enough items to establish the cardinality before returning the original collection. Prefer arrays, lists, or other reusable collections for `Check.whenSingle` and `Check.whenAtMostOne`; use the extracting helpers when the next step only needs the element.
+Use `Check.isSingle` when you only need to know the fact. Use `Result.single` when the next step needs the single element.
 
 ## Flow Bind Sites
 
-Outside `flow {}`, keep pure code in `Result` with `Check.orError` or `Result.mapError`.
+Outside `flow {}`, keep pure code in `Result` with `Result.require`, value-preserving helpers, extracting helpers, or `Result.mapError`.
 
 Inside `flow {}`, use `Bind.error` only when a source needs an error assigned immediately before binding.
 
@@ -175,8 +169,8 @@ let login password =
     flow {
         do!
             password
-            |> Check.notBlank
-            |> Bind.error MissingPassword
+            |> Result.notBlank
+            |> Result.mapError (fun () -> MissingPassword)
 
         return ()
     }

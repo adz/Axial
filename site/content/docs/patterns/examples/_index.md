@@ -35,7 +35,7 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open Axial.Flow
-open Axial.Result
+open Axial.ErrorHandling
 open Axial.Validation
 
 type User =
@@ -52,8 +52,8 @@ type RequestEnv =
       LoadSuffix: Task<string> }
 
 let validateName (name: string) : Result<string, string> =
-    Check.whenNotBlank name
-    |> Check.orError "name is required"
+    name
+    |> Result.notBlank "name is required"
 
 let loadUser : Flow<RequestEnv, string, User> =
     flow {
@@ -131,8 +131,7 @@ module DiagnosticsExample
 
 open System.Text.Json
 open Axial.Flow
-open Axial.Result
-open Axial.Result.Check
+open Axial.ErrorHandling
 open Axial.Validation
 
 type CustomerLine =
@@ -163,7 +162,7 @@ let validateAddressWithoutCEOrPipe address =
     Validation.at [PathSegment.Key "address"] (
         Validation.at [PathSegment.Name "City"] (
             Validation.fromResult (
-                address.City |> whenNotBlank |> orError "City required"
+                address.City |> Result.notBlank "City required"
             )
         )
         |> Validation.map (fun city -> {address with City = city })
@@ -172,8 +171,7 @@ let validateAddressWithoutCEOrPipe address =
 let validateAddressWithoutCE address =
     let cityResult =
         address.City
-        |> whenNotBlank
-        |> orError "City required"
+        |> Result.notBlank "City required"
 
     cityResult
     |> Validation.fromResult
@@ -185,7 +183,7 @@ let validateAddressWithoutCE address =
 let validateAddress address =
     validate.key "address" {
         let! city = validate.name "city" {
-            return! address.City |> whenNotBlank |> orError "City required"
+            return! address.City |> Result.notBlank "City required"
         }
         return { address with City = city }
     }
@@ -194,7 +192,7 @@ let validateCustomer customer =
     validate {
         let! name =
             validate.name "Name" {
-                return! customer.Name |> whenNotBlank |> orError "Name required"
+                return! customer.Name |> Result.notBlank "Name required"
             }
 
         and! address = validateAddress customer.Address
@@ -206,7 +204,7 @@ let validateCustomer customer =
                     |> Validation.traverseIndexed (fun index line ->
                         validate.name "Name" {
                             let! name =
-                                line.Name |> whenNotBlank |> orError $"Line {index} name required"
+                                line.Name |> Result.notBlank $"Line {index} name required"
 
                             return { Name = name }
                         }
@@ -240,7 +238,7 @@ let validateCreateCustomerRequest request =
     validate {
         let! requestId =
             validate.name "RequestId" {
-                return! request.RequestId |> whenNotBlank |> orError "RequestId required"
+                return! request.RequestId |> Result.notBlank "RequestId required"
             }
 
         and! customer =
@@ -333,7 +331,7 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open Axial.Flow
-open Axial.Result
+open Axial.ErrorHandling
 open Axial.Validation
 
 type AppEnv =
@@ -347,7 +345,7 @@ let greetingFlow : Flow<AppEnv, string, string> =
 let greetingAsync : Flow<AppEnv, string, string> =
     flow {
         let! greeting = greetingFlow
-        let! checkedGreeting = greeting |> Check.whenNotBlank |> Check.orError "Blanko"
+        let! checkedGreeting = greeting |> Result.notBlank "Blanko"
         return checkedGreeting.ToUpperInvariant()
     }
 
@@ -409,7 +407,7 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open Axial.Flow
-open Axial.Result
+open Axial.ErrorHandling
 open Axial.Validation
 
 let runFlow label env (workflow: Flow<'env, 'error, 'value>) =

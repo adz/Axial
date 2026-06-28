@@ -5,7 +5,7 @@ open System.Threading
 open System.Threading.Tasks
 open Xunit
 open Axial.Flow
-open Axial.Result
+open Axial.ErrorHandling
 open Axial.Validation
 
 module ExecutionTests =

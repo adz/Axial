@@ -20,9 +20,9 @@ The example starts with facts about values, turns those facts into typed `Result
 ```fsharp
 open Axial
 
-Check.notBlank "Ada"          // Ok ()
-Check.whenNotBlank "Ada"      // Ok "Ada"
-Check.takeSome (Some "Ada")   // Ok "Ada"
+Check.notBlank "Ada"        // Ok ()
+Result.notBlank "Ada"       // Ok "Ada"
+Result.some (Some "Ada")    // Ok "Ada"
 ```
 
 Use the helper shape that matches the success value you need:
@@ -30,14 +30,14 @@ Use the helper shape that matches the success value you need:
 | Need | Shape | Example |
 | --- | --- | --- |
 | Only prove a fact | `Check.x` | `name |> Check.notBlank` |
-| Keep the original input | `Check.whenX` | `name |> Check.whenNotBlank` |
-| Extract an inner value | `Check.takeX` | `maybeUser |> Check.takeSome` |
+| Keep the original input | `Result.x` | `name |> Result.notBlank` |
+| Extract an inner value | `Result.x` | `maybeUser |> Result.some` |
 
 These simple checks fail with `unit`. That means the check failed, but no application error has been chosen yet.
 
 ## Start From The Core Result Shape
 
-The pure validation stack stays on the standard F# `Result<'value, 'error>` type. `Check` is just a small layer over that shape.
+The pure validation stack stays on the standard F# `Result<'value, 'error>` type. `Check` is just the predicate layer over that shape.
 
 ```fsharp
 let parsed =
@@ -56,7 +56,7 @@ Once you have a result, use `Result.map`, `Result.bind`, and `Result.mapError` t
 
 ## Attach Domain Errors
 
-Use `Check.orError` when a unit-error check should become a domain result.
+Use value-preserving `Result` helpers when success should carry the input.
 
 ```fsharp
 type RegistrationError =
@@ -66,13 +66,13 @@ type RegistrationError =
 
 let validateName name : Result<string, RegistrationError> =
     name
-    |> Check.whenNotBlank
-    |> Check.orError NameMissing
+    |> Result.notBlank
+    |> Result.mapError (fun () -> NameMissing)
 
 let validateEmail email : Result<string, RegistrationError> =
     email
-    |> Check.whenNotBlank
-    |> Check.orError EmailMissing
+    |> Result.notBlank
+    |> Result.mapError (fun () -> EmailMissing)
 ```
 
 Some helpers already carry useful diagnostics. Keep those diagnostics until you map them deliberately.
@@ -80,7 +80,7 @@ Some helpers already carry useful diagnostics. Keep those diagnostics until you 
 ```fsharp
 let primaryId ids : Result<int, RegistrationError> =
     ids
-    |> Check.takeSingle
+    |> Result.single
     |> Result.mapError PrimaryIdInvalid
 ```
 

@@ -32,8 +32,8 @@ let login username password =
 
         do!
             password
-            |> Check.notBlank
-            |> Bind.error InvalidPassword
+            |> Result.notBlank
+            |> Result.mapError (fun () -> InvalidPassword)
 
         return user
     }
@@ -53,9 +53,7 @@ For boolean predicates, make the predicate explicit first:
 
 ```fsharp
 do!
-    isValid
-    |> Check.isTrue
-    |> Bind.error InvalidPassword
+    Result.require isValid InvalidPassword
 ```
 
 ## Map an Error
@@ -95,13 +93,13 @@ let login user =
 
 ## When Not To Use It
 
-Do not use `Bind` as a general Result helper. In pure code, use `Check.orError`, `Result.mapError`, or `Validation.mapError`.
+Do not use `Bind` as a general Result helper. In pure code, use `Result.require`, `Result.mapError`, or `Validation.mapError`.
 
 ```fsharp
 let validateName name =
     name
-    |> Check.whenNotBlank
-    |> Check.orError "Name required"
+    |> Result.notBlank
+    |> Result.mapError (fun () -> "Name required")
 ```
 
 Inside `flow {}`, direct binding is still the default. Reach for `Bind` only when the source error must be assigned or mapped before the bind.

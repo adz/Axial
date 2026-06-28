@@ -7,7 +7,7 @@ open System.Threading
 open System.Threading.Tasks
 open System.Threading.Tasks.Sources
 open Axial.Flow
-open Axial.Result
+open Axial.ErrorHandling
 open Axial.Validation
 
 [<AutoOpen>]

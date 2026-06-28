@@ -6,7 +6,7 @@ open System.Text
 open System.Threading
 open System.Threading.Tasks
 open Axial.Flow
-open Axial.Result
+open Axial.ErrorHandling
 open Axial.Validation
 open Axial.Flow.Console
 open Axial.Flow.FileSystem

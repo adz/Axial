@@ -1,7 +1,7 @@
 ---
 title: "Flow.Flow.addDisposable"
 linkTitle: "addDisposable"
-weight: 2401
+weight: 2501
 ---
 
 Registers a disposable resource with the current runtime scope.

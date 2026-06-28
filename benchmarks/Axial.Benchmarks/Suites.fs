@@ -4,7 +4,7 @@ open System.Threading
 open BenchmarkDotNet.Attributes
 open BenchmarkDotNet.Order
 open Axial.Flow
-open Axial.Result
+open Axial.ErrorHandling
 open Axial.Validation
 
 [<MemoryDiagnoser>]

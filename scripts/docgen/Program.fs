@@ -310,7 +310,8 @@ let pageSpecs = [
             "Core type", ["T:Axial.Flow.Flow`3"; "T:Axial.Flow.Flow`2"; "T:Axial.Flow.Flow`1"; "T:Axial.Flow.EnvFlow`2"; "T:Axial.Flow.ExnFlow`1"; "T:Axial.Flow.ExnEnvFlow`2"]
             "Fiber operations", ["M:Axial.Flow.Flow.fork"; "M:Axial.Flow.Flow.join"; "M:Axial.Flow.Flow.interrupt"]
             "Execution", ["M:Axial.Flow.Flow.ToAsync"; "M:Axial.Flow.Flow.ToTask"; "M:Axial.Flow.Flow.ToValueTask"; "M:Axial.Flow.Flow.RunSynchronously"]
-            "Module functions", ["M:Axial.Flow.Flow.ok"; "M:Axial.Flow.Flow.error"; "M:Axial.Flow.Flow.succeed"; "M:Axial.Flow.Flow.value"; "M:Axial.Flow.Flow.fail"; "M:Axial.Flow.Flow.fromResult"; "M:Axial.Flow.Flow.fromOption"; "M:Axial.Flow.Flow.fromValueOption"; "M:Axial.Flow.Flow.fromAsync"; "M:Axial.Flow.Flow.attemptAsync"; "M:Axial.Flow.Flow.fromTask"; "M:Axial.Flow.Flow.attemptTask"; "M:Axial.Flow.Flow.fromValueTask"; "M:Axial.Flow.Flow.attemptValueTask"; "M:Axial.Flow.Flow.orElseFlow"; "M:Axial.Flow.Flow.env"; "M:Axial.Flow.Flow.read"; "M:Axial.Flow.Flow.map"; "M:Axial.Flow.Flow.bind"; "M:Axial.Flow.Flow.tap"; "M:Axial.Flow.Flow.tapError"; "M:Axial.Flow.Flow.mapError"; "M:Axial.Flow.Flow.catch"; "M:Axial.Flow.Flow.orElseWith"; "M:Axial.Flow.Flow.orElse"; "M:Axial.Flow.Flow.zip"; "M:Axial.Flow.Flow.map2"; "M:Axial.Flow.Flow.map3"; "M:Axial.Flow.Flow.apply"; "M:Axial.Flow.Flow.ignore"; "M:Axial.Flow.Flow.localEnv"; "M:Axial.Flow.Flow.provide"; "M:Axial.Flow.Flow.delay"; "M:Axial.Flow.Flow.traverse"; "M:Axial.Flow.Flow.sequence"]
+            "Module functions", ["M:Axial.Flow.Flow.ok"; "M:Axial.Flow.Flow.error"; "M:Axial.Flow.Flow.succeed"; "M:Axial.Flow.Flow.value"; "M:Axial.Flow.Flow.fail"; "M:Axial.Flow.Flow.fromResult"; "M:Axial.Flow.Flow.fromOption"; "M:Axial.Flow.Flow.fromValueOption"; "M:Axial.Flow.Flow.fromAsync"; "M:Axial.Flow.Flow.attemptAsync"; "M:Axial.Flow.Flow.fromTask"; "M:Axial.Flow.Flow.attemptTask"; "M:Axial.Flow.Flow.fromValueTask"; "M:Axial.Flow.Flow.attemptValueTask"; "M:Axial.Flow.Flow.verify"; "M:Axial.Flow.Flow.orElseFlow"; "M:Axial.Flow.Flow.env"; "M:Axial.Flow.Flow.read"; "M:Axial.Flow.Flow.map"; "M:Axial.Flow.Flow.bind"; "M:Axial.Flow.Flow.tap"; "M:Axial.Flow.Flow.tapError"; "M:Axial.Flow.Flow.mapError"; "M:Axial.Flow.Flow.catch"; "M:Axial.Flow.Flow.orElseWith"; "M:Axial.Flow.Flow.orElse"; "M:Axial.Flow.Flow.zip"; "M:Axial.Flow.Flow.map2"; "M:Axial.Flow.Flow.map3"; "M:Axial.Flow.Flow.apply"; "M:Axial.Flow.Flow.ignore"; "M:Axial.Flow.Flow.localEnv"; "M:Axial.Flow.Flow.provide"; "M:Axial.Flow.Flow.delay"; "M:Axial.Flow.Flow.traverse"; "M:Axial.Flow.Flow.sequence"]
+            "Policies", ["T:Axial.Flow.Policy`4"; "M:Axial.Flow.Policy.pure"; "M:Axial.Flow.Policy.withError"; "M:Axial.Flow.Policy.context"; "P:Axial.Flow.Policy.pass"; "M:Axial.Flow.Policy.compose"; "M:Axial.Flow.Policy.optional"]
             "Scoped resources", ["M:Axial.Flow.Flow.addFinalizer"; "M:Axial.Flow.Flow.addDisposable"; "M:Axial.Flow.Flow.addAsyncDisposable"; "M:Axial.Flow.Flow.acquireRelease"; "M:Axial.Flow.Flow.acquireReleaseWith"]
             "Parallel orchestration", ["M:Axial.Flow.Flow.zipPar"; "M:Axial.Flow.Flow.race"]
             "Scheduling", ["M:Axial.Flow.ScheduleModule.retry"; "M:Axial.Flow.ScheduleModule.repeat"]
@@ -430,20 +431,14 @@ let pageSpecs = [
         OutPath = ["check"; "_index.md"]
         Title = "Check"
         Description = "Source-documented pure validation helpers for Axial."
-        Intro = "This page shows the `Check` surface for reusable, pure validation. Unprefixed helpers test a property, `when*` helpers preserve the original input on success, and `take*` helpers extract an inner value or return a deliberately different success shape. Simple helpers carry a `unit` error and can be converted into typed failures with `Check.orError`. Helpers with useful built-in diagnostics return typed `Result` values such as `CardinalityFailure`, `StringLengthFailure`, or `RangeFailure`. Use `Check` before moving into `Result`, `Validation`, or `Flow`."
+        Intro = "This page shows the `Check` surface for reusable, pure predicates. `Check` functions return `bool`; they do not attach errors, preserve values in a `Result`, or extract inner values. Use them directly with ordinary F# boolean composition, collection functions, and `Result.guard` or `Result.fromPredicate` when a predicate needs to become a fail-fast result."
         SymbolIds = [
-            "Core type", ["T:Axial.Result.Check`1"]
-            "Structured errors", ["T:Axial.Result.CardinalityFailure"; "T:Axial.Result.StringLengthFailure"; "T:Axial.Result.RangeFailure`1"]
-            "Construction", ["M:Axial.Result.Check.fromPredicate"; "M:Axial.Result.Check.fromTry"; "M:Axial.Result.Check.fromChoice"]
-            "Composition", ["M:Axial.Result.Check.negate"; "M:Axial.Result.Check.both"; "M:Axial.Result.Check.either"; "M:Axial.Result.Check.all"; "M:Axial.Result.Check.any"]
-            "Boolean and branch predicates", ["M:Axial.Result.Check.isTrue"; "M:Axial.Result.Check.isFalse"; "M:Axial.Result.Check.isSome"; "M:Axial.Result.Check.isNone"; "M:Axial.Result.Check.isValueSome"; "M:Axial.Result.Check.isValueNone"; "M:Axial.Result.Check.isOk"; "M:Axial.Result.Check.isError"]
-            "Presence predicates", ["M:Axial.Result.Check.hasValue"; "M:Axial.Result.Check.hasNoValue"; "M:Axial.Result.Check.notNull"; "M:Axial.Result.Check.isNull"; "M:Axial.Result.Check.notEmpty"; "M:Axial.Result.Check.empty"]
-            "String predicates", ["M:Axial.Result.Check.notNullOrEmpty"; "M:Axial.Result.Check.nullOrEmpty"; "M:Axial.Result.Check.notEmptyString"; "M:Axial.Result.Check.emptyString"; "M:Axial.Result.Check.notBlank"; "M:Axial.Result.Check.blank"; "M:Axial.Result.Check.minLength"; "M:Axial.Result.Check.maxLength"; "M:Axial.Result.Check.exactLength"; "M:Axial.Result.Check.matchesRegex"]
-            "Collection predicates", ["M:Axial.Result.Check.contains"; "M:Axial.Result.Check.hasCount"; "M:Axial.Result.Check.hasDuplicates"; "M:Axial.Result.Check.hasNoDuplicates"; "M:Axial.Result.Check.isSingle"; "M:Axial.Result.Check.atMostOne"; "M:Axial.Result.Check.atLeastOne"; "M:Axial.Result.Check.moreThanOne"]
-            "Equality and range predicates", ["M:Axial.Result.Check.equalTo"; "M:Axial.Result.Check.notEqualTo"; "M:Axial.Result.Check.greaterThan"; "M:Axial.Result.Check.lessThan"; "M:Axial.Result.Check.atLeast"; "M:Axial.Result.Check.atMost"; "M:Axial.Result.Check.between"; "M:Axial.Result.Check.positive"; "M:Axial.Result.Check.nonNegative"; "M:Axial.Result.Check.negative"; "M:Axial.Result.Check.nonPositive"]
-            "Preserving gates", ["M:Axial.Result.Check.whenTrue"; "M:Axial.Result.Check.whenFalse"; "M:Axial.Result.Check.whenSome"; "M:Axial.Result.Check.whenNone"; "M:Axial.Result.Check.whenValueSome"; "M:Axial.Result.Check.whenValueNone"; "M:Axial.Result.Check.whenHasValue"; "M:Axial.Result.Check.whenHasNoValue"; "M:Axial.Result.Check.whenNotNull"; "M:Axial.Result.Check.whenNull"; "M:Axial.Result.Check.whenOk"; "M:Axial.Result.Check.whenError"; "M:Axial.Result.Check.whenNotEmpty"; "M:Axial.Result.Check.whenEmpty"; "M:Axial.Result.Check.whenNotNullOrEmpty"; "M:Axial.Result.Check.whenNullOrEmpty"; "M:Axial.Result.Check.whenNotEmptyString"; "M:Axial.Result.Check.whenEmptyString"; "M:Axial.Result.Check.whenNotBlank"; "M:Axial.Result.Check.whenBlank"; "M:Axial.Result.Check.whenMinLength"; "M:Axial.Result.Check.whenMaxLength"; "M:Axial.Result.Check.whenExactLength"; "M:Axial.Result.Check.whenMatchesRegex"; "M:Axial.Result.Check.whenEqualTo"; "M:Axial.Result.Check.whenNotEqualTo"; "M:Axial.Result.Check.whenContains"; "M:Axial.Result.Check.whenCount"; "M:Axial.Result.Check.whenHasDuplicates"; "M:Axial.Result.Check.whenHasNoDuplicates"; "M:Axial.Result.Check.whenSingle"; "M:Axial.Result.Check.whenAtMostOne"; "M:Axial.Result.Check.whenAtLeastOne"; "M:Axial.Result.Check.whenMoreThanOne"; "M:Axial.Result.Check.whenGreaterThan"; "M:Axial.Result.Check.whenLessThan"; "M:Axial.Result.Check.whenAtLeast"; "M:Axial.Result.Check.whenAtMost"; "M:Axial.Result.Check.whenBetween"; "M:Axial.Result.Check.whenPositive"; "M:Axial.Result.Check.whenNonNegative"; "M:Axial.Result.Check.whenNegative"; "M:Axial.Result.Check.whenNonPositive"]
-            "Extraction helpers", ["M:Axial.Result.Check.takeSome"; "M:Axial.Result.Check.takeValueSome"; "M:Axial.Result.Check.takeHasValue"; "M:Axial.Result.Check.takeOk"; "M:Axial.Result.Check.takeError"; "M:Axial.Result.Check.takeHead"; "M:Axial.Result.Check.takeSingle"; "M:Axial.Result.Check.takeAtMostOne"]
-            "Error attachment", ["M:Axial.Result.Check.orError"]
+            "Option and result predicates", ["M:Axial.ErrorHandling.Check.isSome"; "M:Axial.ErrorHandling.Check.isNone"; "M:Axial.ErrorHandling.Check.isValueSome"; "M:Axial.ErrorHandling.Check.isValueNone"; "M:Axial.ErrorHandling.Check.isOk"; "M:Axial.ErrorHandling.Check.isError"]
+            "Presence predicates", ["M:Axial.ErrorHandling.Check.hasValue"; "M:Axial.ErrorHandling.Check.hasNoValue"; "M:Axial.ErrorHandling.Check.notNull"; "M:Axial.ErrorHandling.Check.isNull"; "M:Axial.ErrorHandling.Check.notEmpty"; "M:Axial.ErrorHandling.Check.isEmpty"]
+            "String predicates", ["M:Axial.ErrorHandling.Check.notNullOrEmpty"; "M:Axial.ErrorHandling.Check.nullOrEmpty"; "M:Axial.ErrorHandling.Check.notEmptyString"; "M:Axial.ErrorHandling.Check.emptyString"; "M:Axial.ErrorHandling.Check.notBlank"; "M:Axial.ErrorHandling.Check.blank"; "M:Axial.ErrorHandling.Check.hasMinLength"; "M:Axial.ErrorHandling.Check.hasMaxLength"; "M:Axial.ErrorHandling.Check.hasExactLength"; "M:Axial.ErrorHandling.Check.matchesRegex"; "M:Axial.ErrorHandling.Check.isEmail"; "M:Axial.ErrorHandling.Check.isNumeric"; "M:Axial.ErrorHandling.Check.isAlphaNumeric"]
+            "Collection predicates", ["M:Axial.ErrorHandling.Check.contains"; "M:Axial.ErrorHandling.Check.hasCount"; "M:Axial.ErrorHandling.Check.hasDuplicates"; "M:Axial.ErrorHandling.Check.hasNoDuplicates"; "M:Axial.ErrorHandling.Check.isSingle"; "M:Axial.ErrorHandling.Check.atMostOne"; "M:Axial.ErrorHandling.Check.atLeastOne"; "M:Axial.ErrorHandling.Check.moreThanOne"]
+            "Equality and range predicates", ["M:Axial.ErrorHandling.Check.equalTo"; "M:Axial.ErrorHandling.Check.notEqualTo"; "M:Axial.ErrorHandling.Check.greaterThan"; "M:Axial.ErrorHandling.Check.lessThan"; "M:Axial.ErrorHandling.Check.atLeast"; "M:Axial.ErrorHandling.Check.atMost"; "M:Axial.ErrorHandling.Check.between"; "M:Axial.ErrorHandling.Check.positive"; "M:Axial.ErrorHandling.Check.nonNegative"; "M:Axial.ErrorHandling.Check.negative"; "M:Axial.ErrorHandling.Check.nonPositive"]
+            "Predicate composition", ["M:Axial.ErrorHandling.Check.negate"]
         ]
         Alias = None
     }
@@ -451,7 +446,7 @@ let pageSpecs = [
         OutPath = ["bind"; "_index.md"]
         Title = "Bind"
         Description = "Source-documented flow bind-site error adaptation for Axial."
-        Intro = "This page shows the `Bind` helpers used when a source needs its error assigned or mapped immediately before `flow { }` binds it. Use `Bind.error` for option or value-option absence and unit-error failures such as `Result<'value, unit>` or `Flow<'env, unit, 'value>`. Use `Bind.mapError` when the source already carries a meaningful error that must be wrapped or translated into the surrounding flow error. The helpers return a `BindError` marker for the flow builder. Do not use `Bind` as a general Result adapter; in pure code use `Check.orError`, `Result.mapError`, or `Validation.mapError`."
+        Intro = "This page shows the `Bind` helpers used when a source needs its error assigned or mapped immediately before `flow { }` binds it. Use `Bind.error` for option or value-option absence and unit-error failures such as `Result<'value, unit>` or `Flow<'env, unit, 'value>`. Use `Bind.mapError` when the source already carries a meaningful error that must be wrapped or translated into the surrounding flow error. The helpers return a `BindError` marker for the flow builder. Do not use `Bind` as a general Result adapter; in pure code use `Result.guard`, `Result.mapError`, or `Validation.mapError`."
         SymbolIds = [
             "Core type", ["T:Axial.Flow.BindError`3"]
             "Module functions", ["M:Axial.Flow.Bind.error"; "M:Axial.Flow.Bind.mapError"]
@@ -482,13 +477,32 @@ let pageSpecs = [
     }
     {
         OutPath = ["result"; "_index.md"]
-        Title = "Result Builder"
-        Description = "Documentation for the result { } computation expression."
-        Intro = "This page shows the `result { }` computation expression for ordinary fail-fast `Result` workflows. It is the smallest effect in the Axial stack: no environment, no async boundary, and no runtime services. Use it for pure domain transformations where the first error should stop the computation. If the same logic later needs dependency access, async work, cancellation, logging, or typed execution outcomes, lift it into `Flow` without changing the underlying error model."
+        Title = "Result"
+        Description = "Source-documented fail-fast Result helpers for Axial."
+        Intro = "This page shows Axial's fail-fast helpers over the standard F# `Result<'value, 'error>` type. Use `Result.guard` or named guards such as `Result.notBlank` when a predicate should keep the original value, extraction helpers such as `Result.some` when the success shape changes, and structural helpers such as `Result.single` when a useful diagnostic is available. The `result { }` builder sequences ordinary fail-fast `Result` workflows."
         SymbolIds = [
-            "Builder", ["P:Axial.Result.Builders.result"]
+            "Structured errors", ["T:Axial.ErrorHandling.CardinalityFailure"; "T:Axial.ErrorHandling.StringLengthFailure"; "T:Axial.ErrorHandling.RangeFailure`1"]
+            "Core helpers", ["M:Axial.ErrorHandling.Result.ok"; "M:Axial.ErrorHandling.Result.error"; "M:Axial.ErrorHandling.Result.map"; "M:Axial.ErrorHandling.Result.mapError"; "M:Axial.ErrorHandling.Result.bind"]
+            "Lifts and conversions", ["M:Axial.ErrorHandling.Result.guard"; "M:Axial.ErrorHandling.Result.require"; "M:Axial.ErrorHandling.Result.fromPredicate"; "M:Axial.ErrorHandling.Result.fromTry"; "M:Axial.ErrorHandling.Result.fromChoice"; "M:Axial.ErrorHandling.Result.toOption"; "M:Axial.ErrorHandling.Result.toValueOption"; "M:Axial.ErrorHandling.Result.defaultValue"]
+            "Extraction helpers", ["M:Axial.ErrorHandling.Result.some"; "M:Axial.ErrorHandling.Result.none"; "M:Axial.ErrorHandling.Result.valueSome"; "M:Axial.ErrorHandling.Result.valueNone"; "M:Axial.ErrorHandling.Result.nullable"; "M:Axial.ErrorHandling.Result.okValue"; "M:Axial.ErrorHandling.Result.errorValue"; "M:Axial.ErrorHandling.Result.head"]
+            "Structural guards", ["M:Axial.ErrorHandling.Result.notBlank"; "M:Axial.ErrorHandling.Result.notNull"; "M:Axial.ErrorHandling.Result.notEmpty"; "M:Axial.ErrorHandling.Result.contains"; "M:Axial.ErrorHandling.Result.hasNoDuplicates"; "M:Axial.ErrorHandling.Result.length"; "M:Axial.ErrorHandling.Result.minLength"; "M:Axial.ErrorHandling.Result.maxLength"; "M:Axial.ErrorHandling.Result.exactLength"; "M:Axial.ErrorHandling.Result.range"; "M:Axial.ErrorHandling.Result.greaterThan"; "M:Axial.ErrorHandling.Result.lessThan"; "M:Axial.ErrorHandling.Result.atLeast"; "M:Axial.ErrorHandling.Result.atMost"; "M:Axial.ErrorHandling.Result.single"; "M:Axial.ErrorHandling.Result.atMostOne"; "M:Axial.ErrorHandling.Result.atLeastOne"; "M:Axial.ErrorHandling.Result.moreThanOne"]
+            "Traversal", ["M:Axial.ErrorHandling.Collection.traverseResult"; "M:Axial.ErrorHandling.Collection.sequenceResult"]
+            "Builder", ["P:Axial.ErrorHandling.Builders.result"]
         ]
         Alias = Some "builders-result.md"
+    }
+    {
+        OutPath = ["refined"; "_index.md"]
+        Title = "Refined"
+        Description = "Source-documented parsing and structural refinement helpers for Axial."
+        Intro = "This page shows the `Axial.Refined` surface for turning untrusted boundary data into stronger structural values. Use `Parse` to convert serialized strings into primitive values, `Refine` to construct built-in refined values such as `NonBlankString`, `PositiveInt`, and `NonEmptyList`, and `refine { }` to sequence fail-fast parsing and refinement before workflow execution."
+        SymbolIds = [
+            "Errors and refined types", ["T:Axial.Refined.RefinementError"; "T:Axial.Refined.NonBlankString"; "T:Axial.Refined.PositiveInt"; "T:Axial.Refined.NonEmptyList`1"]
+            "Parse", ["M:Axial.Refined.Parse.int"; "M:Axial.Refined.Parse.long"; "M:Axial.Refined.Parse.decimal"; "M:Axial.Refined.Parse.float"; "M:Axial.Refined.Parse.bool"; "M:Axial.Refined.Parse.guid"; "M:Axial.Refined.Parse.dateTime"; "M:Axial.Refined.Parse.dateTimeOffset"; "M:Axial.Refined.Parse.dateOnly"; "M:Axial.Refined.Parse.timeOnly"; "M:Axial.Refined.Parse.enum"; "M:Axial.Refined.Parse.intOption"; "M:Axial.Refined.Parse.boolOption"; "M:Axial.Refined.Parse.decimalOption"; "M:Axial.Refined.Parse.guidOption"; "M:Axial.Refined.Parse.intOrDefault"; "M:Axial.Refined.Parse.boolOrDefault"; "M:Axial.Refined.Parse.decimalOrDefault"]
+            "Refine", ["M:Axial.Refined.Refine.nonBlankString"; "M:Axial.Refined.Refine.positiveInt"; "M:Axial.Refined.Refine.nonEmptyList"]
+            "Builder", ["P:Axial.Refined.Builders.refine"]
+        ]
+        Alias = None
     }
     {
         OutPath = ["diagnostics"; "_index.md"]
@@ -995,7 +1009,8 @@ let main argv =
 
     let dllPaths = [
         Path.Combine(artifactsDir, "Axial.Flow/debug_netstandard2.1/Axial.Flow.dll")
-        Path.Combine(artifactsDir, "Axial.Result/debug_netstandard2.1/Axial.Result.dll")
+        Path.Combine(artifactsDir, "Axial.ErrorHandling/debug_netstandard2.1/Axial.ErrorHandling.dll")
+        Path.Combine(artifactsDir, "Axial.Refined/debug_net8.0/Axial.Refined.dll")
         Path.Combine(artifactsDir, "Axial.Validation/debug_netstandard2.1/Axial.Validation.dll")
         Path.Combine(artifactsDir, "Axial.Flow.PlatformService/debug_netstandard2.1/Axial.Flow.PlatformService.dll")
         Path.Combine(artifactsDir, "Axial.Flow.Console/debug_netstandard2.1/Axial.Flow.Console.dll")
@@ -1057,12 +1072,13 @@ let main argv =
             formatterApiSlug "Axial.BindModule", Path.Combine(outRoot, "bind", "_index.md")
             formatterApiSlug "Axial.BindErrorModule", Path.Combine(outRoot, "bind", "_index.md")
             formatterApiSlug "Axial.FlowModule", Path.Combine(outRoot, "flow", "_index.md")
+            formatterApiSlug "Axial.PolicyModule", Path.Combine(outRoot, "flow", "_index.md")
             formatterApiSlug "Axial.LayerBuilder", Path.Combine(outRoot, "layer", "p-layer.md")
             formatterApiSlug "Axial.FlowBuilder", Path.Combine(outRoot, "flow", "builders-flow.md")
             formatterApiSlug "Axial.ValidateBuilder", Path.Combine(outRoot, "validation", "builders-validate.md")
             formatterApiSlug "Axial.ResultBuilder", Path.Combine(outRoot, "result", "builders-result.md")
+            formatterApiSlug "Axial.RefineBuilder", Path.Combine(outRoot, "refined", "p-refined--refine.md")
             formatterApiSlug "Axial.StmBuilder", Path.Combine(outRoot, "stm", "p-stm-stm.md")
-            formatterApiSlug "Axial.Check`1", Path.Combine(outRoot, "check", "t-check.md")
             formatterApiSlug "Axial.BindError`3", Path.Combine(outRoot, "bind", "t-binderror.md")
             formatterApiSlug "Axial.Path", Path.Combine(outRoot, "diagnostics", "t-path.md")
             formatterApiSlug "Axial.LogLevel", Path.Combine(outRoot, "service", "core", "_index.md")

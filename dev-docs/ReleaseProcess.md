@@ -4,7 +4,7 @@ This project uses a coordinated pre-1.0 release train.
 
 ## Versioning policy
 
-- `Axial.Flow`, `Axial.Result`, `Axial.Validation`, the umbrella `Axial` package, and the `Axial.Flow.*` add-on packages share one package version before 1.0.
+- `Axial.Flow`, `Axial.ErrorHandling`, `Axial.Refined`, `Axial.Validation`, the umbrella `Axial` package, and the `Axial.Flow.*` add-on packages share one package version before 1.0.
 - The shared version is declared once in `Directory.Build.props`.
 - Packable project files must not declare their own `<Version>`.
 - A tag such as `v0.7.0` produces every public Axial package at version `0.7.0`.
@@ -16,7 +16,8 @@ This project uses a coordinated pre-1.0 release train.
 The coordinated release currently packs:
 
 - `Axial.Flow`
-- `Axial.Result`
+- `Axial.ErrorHandling`
+- `Axial.Refined`
 - `Axial.Validation`
 - `Axial`
 - `Axial.Flow.Console`
@@ -27,9 +28,9 @@ The coordinated release currently packs:
 - `Axial.Flow.Hosting`
 - `Axial.Flow.Telemetry`
 
-`Axial` is the umbrella package. It references `Axial.Flow`, `Axial.Result`, and `Axial.Validation`.
+`Axial` is the umbrella package. It references `Axial.Flow`, `Axial.ErrorHandling`, `Axial.Refined`, and `Axial.Validation`.
 
-The `Axial.Flow.*` add-on packages should depend on `Axial.Flow`, not the umbrella `Axial` package, unless there is a specific reason to expose Result or Validation APIs.
+The `Axial.Flow.*` add-on packages should depend on `Axial.Flow`, not the umbrella `Axial` package, unless there is a specific reason to expose ErrorHandling, Refined, or Validation APIs.
 
 ## Preparing a release
 

@@ -1,7 +1,7 @@
 namespace Axial.Tests
 
 open Axial.Flow
-open Axial.Result
+open Axial.ErrorHandling
 open Axial.Validation
 open Axial.Tests.TestSupport
 open Swensen.Unquote

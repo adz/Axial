@@ -1,6 +1,6 @@
 open System
 open Axial.Flow
-open Axial.Result
+open Axial.ErrorHandling
 open Axial.Validation
 
 type ProbeFailure(message: string) =
@@ -82,28 +82,27 @@ module Rule =
     let whenNotBlank (error: 'error) (field: Field<'root, string>) : Rule<'root, 'error> =
         fun root ->
             field.Get root
-            |> Check.whenNotBlank
-            |> Check.orError error
+            |> Result.notBlank error
             |> lift field.Path root
 
     let whenMinLength (minimum: int) (error: 'error) (field: Field<'root, string>) : Rule<'root, 'error> =
         fun root ->
             field.Get root
-            |> Check.whenMinLength minimum
+            |> Result.minLength minimum
             |> Result.mapError (fun _ -> error)
             |> lift field.Path root
 
     let whenMaxLength (maximum: int) (error: 'error) (field: Field<'root, string>) : Rule<'root, 'error> =
         fun root ->
             field.Get root
-            |> Check.whenMaxLength maximum
+            |> Result.maxLength maximum
             |> Result.mapError (fun _ -> error)
             |> lift field.Path root
 
     let whenPositive (error: 'error) (field: Field<'root, int>) : Rule<'root, 'error> =
         fun root ->
             field.Get root
-            |> Check.whenPositive
+            |> Result.greaterThan 0
             |> Result.mapError (fun _ -> error)
             |> lift field.Path root
 

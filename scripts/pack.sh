@@ -21,7 +21,8 @@ done
 
 projects=(
   "src/Axial.Flow/Axial.Flow.fsproj"
-  "src/Axial.Result/Axial.Result.fsproj"
+  "src/Axial.ErrorHandling/Axial.ErrorHandling.fsproj"
+  "src/Axial.Refined/Axial.Refined.fsproj"
   "src/Axial.Validation/Axial.Validation.fsproj"
   "src/Axial/Axial.fsproj"
   "src/Axial.Flow.Console/Axial.Flow.Console.fsproj"

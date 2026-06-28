@@ -5,7 +5,7 @@ open System.IO
 open System.Threading
 open System.Threading.Tasks
 open Axial.Flow
-open Axial.Result
+open Axial.ErrorHandling
 open Axial.Validation
 open Axial.Tests.TestSupport
 open Swensen.Unquote
@@ -284,7 +284,7 @@ module WorkflowErrorTests =
     [<Fact>]
     let ``Check bridges into flow shapes`` () =
         let flowBridge =
-            Check.isTrue false
+            Result.require false ()
             |> Flow.orElseFlow (Flow.read (fun env -> $"flow:{env}"))
             |> Flow.runSync "env"
 
@@ -371,7 +371,7 @@ module WorkflowErrorTests =
 #r @"{resultAssemblyPath}"
 #r @"{validationAssemblyPath}"
 open Axial.Flow
-open Axial.Result
+open Axial.ErrorHandling
 open Axial.Validation
 
 let probe : Flow<unit, string, int> =
@@ -387,7 +387,7 @@ let probe : Flow<unit, string, int> =
 #r @"{resultAssemblyPath}"
 #r @"{validationAssemblyPath}"
 open Axial.Flow
-open Axial.Result
+open Axial.ErrorHandling
 open Axial.Validation
 
 let probe : Flow<unit, string, int> =
@@ -438,7 +438,7 @@ let probe : Flow<unit, string, int> =
     let ``Bind assigns errors in all flow families`` () =
         let successOption : int option = Some 42
         let successValueOption : int voption = ValueSome 10
-        let successCheck : Check<unit> = Ok ()
+        let successCheck : Result<unit, unit> = Ok ()
         let asyncOption : Async<int option> = async { return Some 42 }
         let asyncValueOption : Async<int voption> = async { return ValueSome 10 }
         let asyncCheck : Async<Result<unit, unit>> = async { return Ok () }
@@ -467,7 +467,7 @@ let probe : Flow<unit, string, int> =
             flow {
                 let! x = successOption |> Bind.error "missing-option"
                 let! y = successValueOption |> Bind.error "missing-voption"
-                do! Check.isTrue true |> Bind.error "check-failed"
+                do! Result.require true () |> Bind.error "check-failed"
                 let! z = successTaskOption |> Bind.error "task-missing"
                 do! successTaskCheck |> Bind.error "task-check-failed"
                 let! w = successTaskValueOption |> Bind.error "vtask-missing"
@@ -497,8 +497,7 @@ let probe : Flow<unit, string, int> =
                     |> Bind.error InvalidUser
 
                 do!
-                    isPwdValid password user
-                    |> Check.isTrue
+                    Result.require (isPwdValid password user) ()
                     |> Bind.error InvalidPwd
 
                 do!

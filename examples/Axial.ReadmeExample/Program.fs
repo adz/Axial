@@ -2,7 +2,7 @@ open System
 open System.IO
 open System.Threading
 open Axial.Flow
-open Axial.Result
+open Axial.ErrorHandling
 open Axial.Validation
 
 type ReadmeEnv =
@@ -14,7 +14,7 @@ type FileReadError =
 let readTextFile (path: string) : Flow<ReadmeEnv, FileReadError, string> =
     flow {
         // In production, map access and path exceptions separately at the boundary.
-        do! File.Exists path |> Check.isTrue |> Bind.error (NotFound path)
+        do! Result.require (File.Exists path) () |> Bind.error (NotFound path)
 
         return! ColdTask(fun ct -> File.ReadAllTextAsync(path, ct))
     }
