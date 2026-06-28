@@ -6,7 +6,7 @@ description: Sequencing parsing and refinement with the refine { } builder.
 
 # Refine CE
 
-Use the `refine {}` computation expression when you need to parse and refine multiple input fields into a validated domain record in a fail-fast manner.
+This page shows how to use the `refine {}` computation expression when you need to parse and refine multiple input fields into a domain record in a fail-fast manner.
 
 Inside `refine {}`, you can bind parse operations, refinement helpers, and standard F# `Result` values that use `RefinementError`. Parse failures are wrapped as `RefinementError.ParseFailed`.
 
@@ -51,8 +51,18 @@ On failure, these helpers return a `ParseError` indicating the target type and i
 `Refine` validates that a value satisfies specific rules, wrapping it in a refined type wrapper on success:
 
 - `Refine.nonBlankString`: returns a `NonBlankString`
+- `Refine.trimmedString`: returns a `TrimmedString`
+- `Refine.boundedString`: returns a `BoundedString`
+- `Refine.slug`: returns a `Slug`
 - `Refine.positiveInt`: returns a `PositiveInt`
+- `Refine.nonNegativeInt`: returns a `NonNegativeInt`
+- `Refine.nonZeroInt`: returns a `NonZeroInt`
 - `Refine.nonEmptyList`: returns a `NonEmptyList`
+- `Refine.nonEmptyArray`: returns a `NonEmptyArray`
+- `Refine.distinctList`: returns a `DistinctList`
+- `Refine.boundedList`: returns a `BoundedList`
+- `Refine.boundedArray`: returns a `BoundedArray`
+- `Refine.dateTimeOffsetRange`: returns a `DateTimeOffsetRange`
 
 `refine {}` can also bind raw values directly when the target refined type is clear from inference:
 

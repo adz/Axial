@@ -89,6 +89,15 @@ render_example_section \
   "diagnostics"
 
 render_example_section \
+  "Refined Catalog Example" \
+  "This example shows a request boundary that parses strings, builds refined numeric/text/collection values, chooses a domain union case, and rejects invalid input before the domain record is created." \
+  "$root_dir/examples/Axial.Examples/Axial.Examples.fsproj" \
+  "$root_dir/examples/Axial.Examples/RefinedCatalogExample.fs" \
+  "https://github.com/adz/Axial/blob/main/examples/Axial.Examples/RefinedCatalogExample.fs" \
+  "AXIAL_EXAMPLE=refined-catalog dotnet run --project examples/Axial.Examples/Axial.Examples.fsproj --nologo" \
+  "refined-catalog"
+
+render_example_section \
   'Playground Example' \
   "This example shows the same core boundary across Flow using the normal direct-bind style inside each computation expression." \
   "$root_dir/examples/Axial.Playground/Axial.Playground.fsproj" \

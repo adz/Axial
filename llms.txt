@@ -18,6 +18,17 @@
 Data flows from left to right. Later stages can bind earlier stages directly.
 `Check` (pure predicates) -> `Result` (typed fail-fast error) -> `Refined` (parse/refine boundary values) -> `Validation` (accumulating diagnostics) -> `Flow` (sync/async/task + env + cancellation)
 
+## Refined Boundary Values
+- Package/namespace remains `Axial.Refined`, not `Axial.RefinedTypes`.
+- Use `Parse` for serialized primitives: `Parse.int`, `Parse.guid`, `Parse.dateTimeOffset`, etc.
+- Use `Refine` as the facade for built-in refined values: `nonBlankString`, `trimmedString`, `boundedString`, `slug`, `positiveInt`, `nonNegativeInt`, `nonZeroInt`, `negativeInt`, `nonPositiveInt`, `nonEmptyList`, `nonEmptyArray`, `distinctList`, `boundedList`, `boundedArray`, `dateTimeOffsetRange`.
+- Use submodules for discovery: `Text`, `Numeric`, `Collection`, `Temporal`, `Character`, `Choice`.
+- `NonBlankString` preserves accepted input exactly. Use `TrimmedString` when no leading/trailing whitespace is required.
+- `Slug` is ASCII lowercase letters, digits, and hyphens, with no leading/trailing/repeated hyphen.
+- Use `Choice.orElse` and `Choice.tryAny` to produce caller-owned domain DUs from alternative parsers. Prefer `Discount = Percent of PositiveInt | Code of Slug` over a generic `Or`.
+- `refine {}` is fail-fast. Use `validate {}` for accumulated sibling diagnostics.
+- Clock-relative refined types such as future/past date-time are intentionally absent.
+
 ## Execution Outcomes (Exit Model)
 Workflows result in one of three `Exit` outcomes:
 - `Success`: The workflow completed successfully.
