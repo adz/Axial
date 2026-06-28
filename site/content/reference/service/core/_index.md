@@ -15,7 +15,7 @@ This page shows the core service package: clock, logging, random numbers, GUID g
 - [`Flow.IEnvironmentVariables`](./t-flow-platformservice-ienvironmentvariables.md): Provides synchronous environment-variable access.
 - [`Flow.PlatformService.EnvironmentVariableError`](./t-flow-platformservice-environmentvariableerror.md): Describes a meaningful environment-variable failure.
 - [`Flow.PlatformService.BaseRuntimeError`](./t-flow-platformservice-baseruntimeerror.md): Describes a service-provider bootstrap failure while building the base runtime.
-- [`Flow.PlatformService.BaseRuntime`](./t-flow-platformservice-baseruntime.md): Helpers for constructing the standard explicit service bundle used by workflow hosts.
+- [`Flow.PlatformService.BaseRuntime`](./t-flow-platformservice-baseruntime.md): Groups the standard explicit services commonly used by workflow hosts.
 
 ## Base runtime
 

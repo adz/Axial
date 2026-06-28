@@ -1,19 +1,19 @@
 ---
-title: "Validation.Diagnostic<_>.Path"
+title: "Path"
 linkTitle: "Path"
 weight: 1001
 ---
 
-The path to the source of the error.
+A path through a validation graph, represented as a list of <a href="https://learn.microsoft.com/dotnet/api/axial.pathsegment">PathSegment</a>.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code>Path</code>
+<code>type Path</code>
 </div>
 
-## Returns
+## Examples
 
-| Type | Description |
-| --- | --- |
-| <code><a href="/reference/Axial/axial-validation-path.html">Path</a></code> |  |
+<pre class="fssnip highlighted"><code lang="fsharp"> <span class="k">let</span> <span data-fsdocs-tip="fs1" data-fsdocs-tip-unique="1" class="id">path</span><span class="pn">:</span> <span class="id">Path</span> <span class="o">=</span> <span class="pn">[</span> <span class="id">PathSegment</span><span class="pn">.</span><span class="id">Name</span> <span class="s">&quot;User&quot;</span><span class="pn">;</span> <span class="id">PathSegment</span><span class="pn">.</span><span class="id">Index</span> <span class="n">0</span><span class="pn">;</span> <span class="id">PathSegment</span><span class="pn">.</span><span class="id">Name</span> <span class="s">&quot;Email&quot;</span> <span class="pn">]</span>
+</code></pre>
+<div popover class="fsdocs-tip" id="fs1">val path: obj list</div>

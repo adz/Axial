@@ -9,7 +9,7 @@ This page shows the file-system service package. `IFileSystem` models common `Sy
 ## Service
 
 - [`Flow.FileSystem.IFileSystem`](./t-flow-filesystem-ifilesystem.md): Provides access to common file, directory, and path operations.
-- [`Flow.FileSystem.FileSystemError`](./t-flow-filesystem-filesystemerror.md):
+- [`Flow.FileSystem.FileSystemError`](./t-flow-filesystem-filesystemerror.md): Describes a meaningful file-system failure.
 
 ## Errors
 

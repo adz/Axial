@@ -495,11 +495,24 @@ let pageSpecs = [
         OutPath = ["refined"; "_index.md"]
         Title = "Refined"
         Description = "Source-documented parsing and structural refinement helpers for Axial."
-        Intro = "This page shows the `Axial.Refined` surface for turning untrusted boundary data into stronger structural values. Use `Parse` to convert serialized strings into primitive values, `Refine` to construct built-in refined values such as `NonBlankString`, `PositiveInt`, and `NonEmptyList`, and `refine { }` to sequence fail-fast parsing and refinement before workflow execution."
+        Intro = "This page shows the `Axial.Refined` surface for turning untrusted boundary data into stronger structural values. Use `Parse` to convert serialized strings into primitive values, focused modules such as `Text`, `Numeric`, `Collection`, and `Temporal` to construct refined values such as `Slug`, `NonZeroInt`, and `DateTimeOffsetRange`, and `refine { }` to sequence fail-fast parsing and refinement before workflow execution."
         SymbolIds = [
-            "Errors and refined types", ["T:Axial.Refined.ParseError"; "T:Axial.Refined.RefinementError"; "T:Axial.Refined.NonBlankString"; "T:Axial.Refined.PositiveInt"; "T:Axial.Refined.NonEmptyList`1"]
+            "Errors and refined types", [
+                "T:Axial.Refined.ParseError"; "T:Axial.Refined.RefinementError"
+                "T:Axial.Refined.NonBlankString"; "T:Axial.Refined.TrimmedString"; "T:Axial.Refined.BoundedString"; "T:Axial.Refined.Slug"
+                "T:Axial.Refined.PositiveInt"; "T:Axial.Refined.NonNegativeInt"; "T:Axial.Refined.NonZeroInt"; "T:Axial.Refined.NegativeInt"; "T:Axial.Refined.NonPositiveInt"
+                "T:Axial.Refined.NonEmptyList`1"; "T:Axial.Refined.NonEmptyArray`1"; "T:Axial.Refined.DistinctList`1"; "T:Axial.Refined.BoundedList`1"; "T:Axial.Refined.BoundedArray`1"
+                "T:Axial.Refined.DateTimeOffsetRange"; "T:Axial.Refined.DateOnlyRange"
+            ]
             "Parse", ["M:Axial.Refined.Parse.int"; "M:Axial.Refined.Parse.long"; "M:Axial.Refined.Parse.decimal"; "M:Axial.Refined.Parse.float"; "M:Axial.Refined.Parse.bool"; "M:Axial.Refined.Parse.guid"; "M:Axial.Refined.Parse.dateTime"; "M:Axial.Refined.Parse.dateTimeOffset"; "M:Axial.Refined.Parse.dateOnly"; "M:Axial.Refined.Parse.timeOnly"; "M:Axial.Refined.Parse.enum"; "M:Axial.Refined.Parse.intOption"; "M:Axial.Refined.Parse.boolOption"; "M:Axial.Refined.Parse.decimalOption"; "M:Axial.Refined.Parse.guidOption"; "M:Axial.Refined.Parse.intOrDefault"; "M:Axial.Refined.Parse.boolOrDefault"; "M:Axial.Refined.Parse.decimalOrDefault"]
-            "Refine", ["M:Axial.Refined.Refine.nonBlankString"; "M:Axial.Refined.Refine.positiveInt"; "M:Axial.Refined.Refine.nonEmptyList"]
+            "Text", ["M:Axial.Refined.Text.nonBlankString"; "M:Axial.Refined.Text.trimmedString"; "M:Axial.Refined.Text.boundedString"; "M:Axial.Refined.Text.slug"]
+            "Numeric", ["M:Axial.Refined.Numeric.positiveInt"; "M:Axial.Refined.Numeric.nonNegativeInt"; "M:Axial.Refined.Numeric.nonZeroInt"; "M:Axial.Refined.Numeric.negativeInt"; "M:Axial.Refined.Numeric.nonPositiveInt"]
+            "Collection", ["M:Axial.Refined.Collection.nonEmptyList"; "M:Axial.Refined.Collection.nonEmptyArray"; "M:Axial.Refined.Collection.distinctList"; "M:Axial.Refined.Collection.boundedList"; "M:Axial.Refined.Collection.boundedArray"]
+            "Temporal", ["M:Axial.Refined.Temporal.dateTimeOffsetRange"; "M:Axial.Refined.Temporal.dateOnlyRange"]
+            "Character", ["M:Axial.Refined.Character.isAsciiDigit"; "M:Axial.Refined.Character.isAsciiHexDigit"; "M:Axial.Refined.Character.isLowercase"; "M:Axial.Refined.Character.isUppercase"; "M:Axial.Refined.Character.isWhitespace"; "M:Axial.Refined.Character.isControl"; "M:Axial.Refined.Character.isNumeric"]
+            "Choice", ["M:Axial.Refined.Choice.orElse"; "M:Axial.Refined.Choice.tryAny"]
+            "Re-certifying helpers", ["M:Axial.Refined.NonBlankString.value"; "M:Axial.Refined.NonBlankString.create"; "M:Axial.Refined.NonBlankString.map"; "M:Axial.Refined.PositiveInt.value"; "M:Axial.Refined.PositiveInt.create"; "M:Axial.Refined.PositiveInt.map"; "M:Axial.Refined.PositiveInt.replace"; "M:Axial.Refined.NonEmptyList.toList"; "M:Axial.Refined.NonEmptyList.create"; "M:Axial.Refined.NonEmptyList.cons"; "M:Axial.Refined.NonEmptyList.map"; "M:Axial.Refined.NonEmptyList.filter"; "M:Axial.Refined.NonEmptyList.tryFilter"]
+            "Refine facade", ["M:Axial.Refined.Refine.nonBlankString"; "M:Axial.Refined.Refine.trimmedString"; "M:Axial.Refined.Refine.boundedString"; "M:Axial.Refined.Refine.slug"; "M:Axial.Refined.Refine.positiveInt"; "M:Axial.Refined.Refine.nonNegativeInt"; "M:Axial.Refined.Refine.nonZeroInt"; "M:Axial.Refined.Refine.negativeInt"; "M:Axial.Refined.Refine.nonPositiveInt"; "M:Axial.Refined.Refine.nonEmptyList"; "M:Axial.Refined.Refine.nonEmptyArray"; "M:Axial.Refined.Refine.distinctList"; "M:Axial.Refined.Refine.boundedList"; "M:Axial.Refined.Refine.boundedArray"; "M:Axial.Refined.Refine.dateTimeOffsetRange"; "M:Axial.Refined.Refine.dateOnlyRange"]
             "Builder", ["P:Axial.Refined.Builders.refine"]
         ]
         Alias = None
@@ -893,18 +906,24 @@ let findBestSymbol (allEntities: ApiDocEntity list) (id: string) =
         seq {
             for e in allEntities do
                 let entityScore =
-                    candidateNamesForEntity e
-                    |> List.map (matchScore idNorm)
-                    |> List.max
+                    if safeFullName e.Symbol = rawId || logicalName e.Symbol = rawId then
+                        5000
+                    else
+                        candidateNamesForEntity e
+                        |> List.map (matchScore idNorm)
+                        |> List.max
 
                 if id[0] = 'T' && entityScore > 0 then
                     yield entityScore, ResolvedEntity e
 
                 for m in e.AllMembers do
                     let memberScore =
-                        candidateNamesForMember m
-                        |> List.map (matchScore idNorm)
-                        |> List.max
+                        if safeFullName m.Symbol = rawId || logicalName m.Symbol = rawId then
+                            5000
+                        else
+                            candidateNamesForMember m
+                            |> List.map (matchScore idNorm)
+                            |> List.max
 
                     if memberScore > 0 then
                         yield memberScore, ResolvedMember m

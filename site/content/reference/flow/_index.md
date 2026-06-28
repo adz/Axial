@@ -9,6 +9,9 @@ This page shows the Flow surface for cold workflow descriptions that only start 
 ## Core type
 
 - [`Flow.Flow`](./t-flow-flow.md):
+ Represents a cold workflow that reads an environment, returns a typed result, and is executed
+ explicitly through one of its execution members such as <code>ToTask</code>, <code>ToAsync</code>, or <code>RunSynchronously</code>.
+
 - [`Flow.Flow`](./t-flow-flow.md):
 - [`Flow.Flow`](./t-flow-flow.md):
 - [`EnvFlow`](./t-flow-envflow.md): A flow that reads an environment and cannot fail with a typed error.

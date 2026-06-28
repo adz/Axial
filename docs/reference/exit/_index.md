@@ -8,6 +8,8 @@ This page shows the `Exit<'value, 'error>` type, which is Axial's name for `Resu
 ## Core type
 
 - [`Flow.Exit`](./t-flow-exit.md):
+ Represents the final outcome of a workflow execution.
+
 
 ## Module functions
 

@@ -8,6 +8,8 @@ This page shows the `Ref` surface for small pieces of shared mutable state insid
 ## Core type
 
 - [`Flow.Ref`](./t-flow-ref.md):
+ Represents a handle to a mutable reference that can be updated atomically.
+
 
 ## Module functions
 

@@ -8,7 +8,9 @@ This page shows the `Validation<'value, 'error>` surface for accumulating severa
 
 ## Core type
 
-- [`Validation.Validation`](./t-validation-validation.md):  Helpers for accumulating validation results with mergeable diagnostics.
+- [`Validation.Validation`](./t-validation-validation.md):
+ An accumulating validation result that keeps the structured diagnostics graph visible.
+
 
 ## Module functions
 

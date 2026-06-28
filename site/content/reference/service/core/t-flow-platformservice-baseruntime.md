@@ -5,10 +5,20 @@ weight: 1007
 type: docs
 ---
 
-Helpers for constructing the standard explicit service bundle used by workflow hosts.
+Groups the standard explicit services commonly used by workflow hosts.
 
 ## Signature
 
 <div class="fsdocs-usage">
 <code>type BaseRuntime</code>
 </div>
+
+## Record Fields
+
+| Field | Description |
+| --- | --- |
+| `Clock` |  |
+| `Log` |  |
+| `Random` |  |
+| `Guid` |  |
+| `EnvironmentVariables` |  |

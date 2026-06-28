@@ -7,7 +7,9 @@ This page shows the small Flow-native concurrency primitives added for coordinat
 
 ## Deferred
 
-- [`Flow.Deferred`](./t-flow-deferred.md): Flow-native helpers for one-shot typed coordination.
+- [`Flow.Deferred`](./t-flow-deferred.md):
+ A one-shot, typed handoff point that can be completed exactly once with a full <a href="https://learn.microsoft.com/dotnet/api/axial.exit-2">Exit</a>.
+
 - [`Flow.Deferred.make`](./m-flow-deferred-make.md): Creates an empty deferred value.
 - [`Flow.Deferred.await`](./m-flow-deferred-await.md): Waits for the deferred outcome, preserving success, typed failure, defect, or interruption.
 - [`Flow.Deferred.complete`](./m-flow-deferred-complete.md): Attempts to complete the deferred value with a full outcome.

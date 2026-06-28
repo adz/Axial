@@ -9,6 +9,8 @@ This page shows the `Fiber<'error, 'value>` handle used by Axial concurrency. A 
 ## Core types
 
 - [`Flow.Fiber`](./t-flow-fiber.md):
+ Represents a handle to a workflow that has already been started.
+
 - [`Flow.FiberId`](./t-flow-fiberid.md): Unique identifier for a running fiber.
 - [`Flow.FiberStatus`](./t-flow-fiberstatus.md): Describes the current lifecycle state of a fiber.
 - [`Flow.FiberMetadata`](./t-flow-fibermetadata.md): Diagnostic metadata for a running fiber.

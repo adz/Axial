@@ -11,7 +11,11 @@ This page shows the STM surface for composable atomic state transitions. STM is 
 ## Core types
 
 - [`Flow.TRef`](./t-flow-tref.md):
+ Represents a transactional reference that can be updated atomically within an <a href="https://learn.microsoft.com/dotnet/api/axial.stm-1">STM</a> transaction.
+
 - [`Flow.STM`](./t-flow-stm.md):
+ Represents a transactional operation that can be composed, retried, and executed atomically.
+
 
 ## Module functions
 

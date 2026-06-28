@@ -1,7 +1,7 @@
 ---
 title: "Refined.NonEmptyList"
 linkTitle: "NonEmptyList<value>"
-weight: 1004
+weight: 1011
 ---
 
 A list that contains at least one item.

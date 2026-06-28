@@ -8,9 +8,11 @@ This page shows the diagnostics graph used by `Validation`. A `Diagnostics<'erro
 ## Graph types
 
 - [`Validation.PathSegment`](./t-validation-pathsegment.md): Location markers used to describe where a diagnostic belongs in a validation graph.
-- [`Validation.Diagnostic.Path`](./t-path.md): The path to the source of the error.
+- [`Path`](./t-path.md): A path through a validation graph, represented as a list of <a href="https://learn.microsoft.com/dotnet/api/axial.pathsegment">PathSegment</a>.
 - [`Validation.Diagnostic`](./t-validation-diagnostic.md): A single failure item attached to a path in a validation graph.
-- [`Validation.Diagnostics`](./t-validation-diagnostics.md):  Helpers for building, merging, and flattening validation diagnostics graphs.
+- [`Validation.Diagnostics`](./t-validation-diagnostics.md):
+ A mergeable validation graph that carries local errors and nested child branches.
+
 
 ## Module functions
 

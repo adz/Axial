@@ -8,7 +8,7 @@ This page shows the `Schedule` surface for describing retry and repeat policies 
 
 ## Core type
 
-- [`Flow.Schedule`](./t-flow-schedule.md):
+- [`Flow.Schedule`](./t-flow-schedule.md):  Represents a stateful schedule that can decide whether to continue and how long to delay.
 
 ## Module functions
 

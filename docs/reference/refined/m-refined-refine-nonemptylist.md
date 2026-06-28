@@ -1,7 +1,7 @@
 ---
 title: "Refined.Refine.nonEmptyList"
 linkTitle: "nonEmptyList"
-weight: 2202
+weight: 2909
 ---
 
 Builds a non-empty list from a sequence.
@@ -16,10 +16,10 @@ Builds a non-empty list from a sequence.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `values` | <code><span>'value&#32;seq</span></code> |  |
+| `values` | <code><span>'a&#32;seq</span></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><span><a href="/reference/Axial/axial-refined-nonemptylist-1.html">NonEmptyList</a>&lt;'value&gt;</span>,&#32;<a href="/reference/Axial/axial-refined-refinementerror.html">RefinementError</a></span>&gt;</span></code> |  |
+| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><span><a href="/reference/Axial/axial-refined-nonemptylist-1.html">NonEmptyList</a>&lt;'a&gt;</span>,&#32;<a href="/reference/Axial/axial-refined-refinementerror.html">RefinementError</a></span>&gt;</span></code> |  |

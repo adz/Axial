@@ -8,6 +8,8 @@ This page shows the `Cause<'error>` type, which distinguishes expected domain fa
 ## Core type
 
 - [`Flow.Cause`](./t-flow-cause.md):
+ Represents the cause of a failed workflow.
+
 
 ## Module functions
 
