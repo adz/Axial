@@ -11,21 +11,23 @@
 
 Axial provides **structured composition over normal F#/.NET code**. It is an application architecture model for F# on .NET.
 
-Write small predicate checks with `Axial.ErrorHandling.Check`, keep fail-fast logic in standard `Result`, compile untrusted values with `Axial.Refined`, accumulate sibling
-validation with `Axial.Validation.Validation` and `validate {}`, then lift boundary policy into `Axial.Flow.Flow`
-when the boundary needs environment access, async work, task interop, or runtime policy.
+Starting in `Axial.ErrorHandling` write small predicate checks with `Check`, keep fail-fast logic in standard `Result`,
+or accumulate a graph of errors in `Validation` using `validate {}`. Accumulated errors are described by `Diagnostics`.
+
+However, the stronger goal of Axial is to preference 'parse' over 'error handling'. That is supported by `Refine`
+and `Parse` in `Axial.Refined`. You'll find these help by providing base parsers for types (like `Parse.int`) but
+also introducing new types to represent the refinement, like `Refined.NonEmptyList`. User `refined {}` for an 
+elegant way of refining.
+
+Finally, Axial gives you an orchestrating workflow concept in `Axial.Flow`. It is useful in code at the boundary
+of your app, which often needs environment access, async work, task interop, or runtime policy. `Policy` directly
+brings the `'environment` form the Flow into your `Refine` or `Result` functions. 
 
 [![ci](https://github.com/adz/Axial/actions/workflows/ci.yml/badge.svg)](https://github.com/adz/Axial/actions/workflows/ci.yml)
 [![NuGet](https://img.shields.io/nuget/v/Axial.svg)](https://www.nuget.org/packages/Axial)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 ## Application Architecture
-
-Axial is built around one progression:
-
-```text
-Check -> Result -> Refined -> Flow
-```
 
 The same vocabulary carries from pure checks into effectful workflows.
 
