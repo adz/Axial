@@ -32,5 +32,6 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Axial.Tests/Axial.Tests.fsproj" />
+    <Project Path="tests/Axial.Refined.Tests/Axial.Refined.Tests.fsproj" />
   </Folder>
 </Solution>

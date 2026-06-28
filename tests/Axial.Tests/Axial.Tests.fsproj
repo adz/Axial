@@ -30,7 +30,6 @@
     <Compile Include="WorkflowResourceTests.fs" />
     <Compile Include="WorkflowStateTests.fs" />
     <Compile Include="WorkflowStreamTests.fs" />
-    <Compile Include="RefinedTests.fs" />
     <Compile Include="ValidationTests.fs" />
   </ItemGroup>
 

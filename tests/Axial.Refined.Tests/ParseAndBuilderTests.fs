@@ -1,11 +1,11 @@
-namespace Axial.Tests
+namespace Axial.Refined.Tests
 
 open System
 open Axial.Refined
 open Swensen.Unquote
 open Xunit
 
-module RefinedTests =
+module ParseAndBuilderTests =
     type SampleEnum =
         | First = 1
         | Second = 2
