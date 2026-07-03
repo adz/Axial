@@ -32,6 +32,10 @@ module ApiShapeTests =
 
         Array.append methods properties |> Set.ofArray
 
+    let private publicStaticMethods (targetType: Type) =
+        targetType.GetMethods(BindingFlags.Static ||| BindingFlags.Public)
+        |> Array.filter (fun methodInfo -> not methodInfo.IsSpecialName)
+
     let private moduleType (assemblyMarker: Type) (fullName: string) =
         let assembly = assemblyMarker.Assembly
 
@@ -55,6 +59,42 @@ module ApiShapeTests =
     let private assertContainsNone forbidden actual =
         let present = forbidden |> List.filter (fun name -> Set.contains name actual)
         test <@ List.isEmpty present @>
+
+    let private returnsCheckResultShape (returnType: Type) =
+        let checkResultType = typedefof<Result<_, _>>
+        let checkFunctionType = typedefof<FSharpFunc<_, _>>
+
+        let rec loop (returnType: Type) =
+            if returnType.IsGenericType && returnType.GetGenericTypeDefinition() = checkResultType then
+                let arguments = returnType.GetGenericArguments()
+                arguments[0] = typeof<unit> && arguments[1] = typeof<CheckFailure list>
+            elif returnType.IsGenericType && returnType.GetGenericTypeDefinition() = checkFunctionType then
+                returnType.GetGenericArguments()[1] |> loop
+            else
+                false
+
+        loop returnType
+
+    let private assertMethodsReturnCheckResult methodNames (targetType: Type) =
+        let methods = targetType |> publicStaticMethods
+
+        let missing =
+            methodNames
+            |> List.filter (fun name -> methods |> Array.exists (fun methodInfo -> methodInfo.Name = name) |> not)
+
+        let wrongReturnType =
+            methodNames
+            |> List.choose (fun name ->
+                methods
+                |> Array.tryFind (fun methodInfo -> methodInfo.Name = name)
+                |> Option.bind (fun methodInfo ->
+                    if returnsCheckResultShape methodInfo.ReturnType then
+                        None
+                    else
+                        Some(name, methodInfo.ReturnType.FullName)))
+
+        test <@ List.isEmpty missing @>
+        test <@ List.isEmpty wrongReturnType @>
 
     [<Fact>]
     let ``core Flow module keeps expected public shape`` () =
@@ -190,8 +230,11 @@ module ApiShapeTests =
 
     [<Fact>]
     let ``check take binderror diagnostics and ref helpers keep expected public shape`` () =
-        let checkMembers =
+        let checkModule =
             moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.Check"
+
+        let checkMembers =
+            checkModule
             |> publicStaticMemberNames
 
         checkMembers
@@ -245,6 +288,79 @@ module ApiShapeTests =
               "negative"
               "nonPositive"
               "negate" ]
+
+        checkModule
+        |> assertMethodsReturnCheckResult [ "all"; "any"; "not"; "mapFailure" ]
+
+        let checkStringModule =
+            moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.CheckModule+String"
+
+        checkStringModule
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "present"; "minLength"; "maxLength"; "lengthBetween"; "email"; "matches"; "oneOf" ]
+
+        checkStringModule
+        |> assertMethodsReturnCheckResult [ "present"; "minLength"; "maxLength"; "lengthBetween"; "email"; "matches"; "oneOf" ]
+
+        let checkNumberModule =
+            moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.CheckModule+Number"
+
+        checkNumberModule
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "between"; "greaterThan"; "lessThan"; "atLeast"; "atMost" ]
+
+        checkNumberModule
+        |> assertMethodsReturnCheckResult [ "between"; "greaterThan"; "lessThan"; "atLeast"; "atMost" ]
+
+        let checkCollectionModule =
+            moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.CheckModule+Collection"
+
+        checkCollectionModule
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "notEmpty"; "minCount"; "maxCount"; "countBetween"; "distinct" ]
+
+        checkCollectionModule
+        |> assertMethodsReturnCheckResult [ "notEmpty"; "minCount"; "maxCount"; "countBetween"; "distinct" ]
+
+        let checkOptionModule =
+            moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.CheckModule+Option"
+
+        checkOptionModule
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "some"; "none" ]
+
+        checkOptionModule
+        |> assertMethodsReturnCheckResult [ "some"; "none" ]
+
+        let checkValueOptionModule =
+            moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.CheckModule+ValueOption"
+
+        checkValueOptionModule
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "some"; "none" ]
+
+        checkValueOptionModule
+        |> assertMethodsReturnCheckResult [ "some"; "none" ]
+
+        let checkNullableModule =
+            moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.CheckModule+Nullable"
+
+        checkNullableModule
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "hasValue"; "hasNoValue" ]
+
+        checkNullableModule
+        |> assertMethodsReturnCheckResult [ "hasValue"; "hasNoValue" ]
+
+        let checkResultModule =
+            moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.CheckModule+Result"
+
+        checkResultModule
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "ok"; "error" ]
+
+        checkResultModule
+        |> assertMethodsReturnCheckResult [ "ok"; "error" ]
 
         checkMembers
         |> assertContainsNone

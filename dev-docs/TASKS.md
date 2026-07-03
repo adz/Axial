@@ -40,7 +40,7 @@ Work this list top to bottom. Each item should be small enough to become an issu
 - [x] Implement `Check.Result`:
   `ok` and `error`.
 - [x] Decide whether nullable/value-option checks belong in first pass: include both as first-pass typed checks.
-- [ ] Update or replace current API shape tests that assert `Check` returns `bool`.
+- [x] Update or replace current API shape tests that assert `Check` returns `bool`.
 - [ ] Add behavior tests for composition, error accumulation, short-circuit policy if any, null-sensitive strings, ranges,
   collections, options, and results.
 - [ ] Update source comments for the new `Check` model.
