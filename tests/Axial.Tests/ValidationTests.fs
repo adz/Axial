@@ -141,6 +141,31 @@ module ValidationTests =
             test <@ Check.Number.atLeast 1.5m 1.0m = Error [ Range(AtLeast "1.5", Some "1.0") ] @>
 
         [<Fact>]
+        let ``Check Collection exposes executable collection value checks`` () =
+            let nullValues: seq<int> = null
+
+            test <@ Check.Collection.notEmpty [ 1 ] = Ok () @>
+            test <@ Check.Collection.notEmpty [] = Error [ Count(MinimumCount 1, Some 0) ] @>
+            test <@ Check.Collection.notEmpty nullValues = Error [ Count(MinimumCount 1, None) ] @>
+
+            test <@ Check.Collection.minCount 2 [ 1; 2 ] = Ok () @>
+            test <@ Check.Collection.minCount 2 [ 1 ] = Error [ Count(MinimumCount 2, Some 1) ] @>
+            test <@ Check.Collection.minCount 2 nullValues = Error [ Count(MinimumCount 2, None) ] @>
+
+            test <@ Check.Collection.maxCount 2 [ 1; 2 ] = Ok () @>
+            test <@ Check.Collection.maxCount 2 [ 1; 2; 3 ] = Error [ Count(MaximumCount 2, Some 3) ] @>
+            test <@ Check.Collection.maxCount 2 nullValues = Error [ Count(MaximumCount 2, None) ] @>
+
+            test <@ Check.Collection.countBetween 2 4 [ 1; 2; 3 ] = Ok () @>
+            test <@ Check.Collection.countBetween 2 4 [ 1 ] = Error [ Count(CountBetween(2, 4), Some 1) ] @>
+            test <@ Check.Collection.countBetween 2 4 [ 1; 2; 3; 4; 5 ] = Error [ Count(CountBetween(2, 4), Some 5) ] @>
+            test <@ Check.Collection.countBetween 2 4 nullValues = Error [ Count(CountBetween(2, 4), None) ] @>
+
+            test <@ Check.Collection.distinct [ 1; 2; 3 ] = Ok () @>
+            test <@ Check.Collection.distinct [ 1; 2; 1 ] = Error [ CustomCode "collection.distinct" ] @>
+            test <@ Check.Collection.distinct nullValues = Error [ Missing ] @>
+
+        [<Fact>]
         let ``Check exposes pure predicates`` () =
             let nullString: string = null
 

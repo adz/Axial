@@ -33,7 +33,7 @@ Work this list top to bottom. Each item should be small enough to become an issu
   `between`, `greaterThan`, `lessThan`, `atLeast`, and `atMost`.
 - [x] Decide whether numeric helpers need separate modules for `int`, `decimal`, `float`, date/time, or generic
   comparison is enough for the first pass.
-- [ ] Implement `Check.Collection`:
+- [x] Implement `Check.Collection`:
   `notEmpty`, `minCount`, `maxCount`, `countBetween`, and `distinct`.
 - [ ] Implement `Check.Option`:
   `some` and `none`.

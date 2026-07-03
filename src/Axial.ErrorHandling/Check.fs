@@ -365,6 +365,58 @@ module Check =
                 if value <= maximum then Ok ()
                 else Error [ Range(AtMost(string maximum), Some(string value)) ]
 
+    /// <summary>Executable value checks for collections.</summary>
+    module Collection =
+        let private pass : Result<unit, CheckFailure list> = Ok ()
+
+        let private fail failure : Result<unit, CheckFailure list> =
+            Error [ failure ]
+
+        let private actualCount (values: #seq<'value>) =
+            if Object.ReferenceEquals(values, null) then None
+            else Some(Seq.length values)
+
+        /// <summary>Requires a collection to contain at least one item. Null fails with an unknown actual count.</summary>
+        let notEmpty : Check<#seq<'value>> =
+            fun values ->
+                match actualCount values with
+                | Some count when count > 0 -> pass
+                | actual -> fail (Count(MinimumCount 1, actual))
+
+        /// <summary>Requires a collection to contain at least the supplied count. Null fails with an unknown actual count.</summary>
+        let minCount (minimum: int) : Check<#seq<'value>> =
+            fun values ->
+                match actualCount values with
+                | Some count when count >= minimum -> pass
+                | actual -> fail (Count(MinimumCount minimum, actual))
+
+        /// <summary>Requires a collection to contain at most the supplied count. Null fails with an unknown actual count.</summary>
+        let maxCount (maximum: int) : Check<#seq<'value>> =
+            fun values ->
+                match actualCount values with
+                | Some count when count <= maximum -> pass
+                | actual -> fail (Count(MaximumCount maximum, actual))
+
+        /// <summary>Requires a collection count to lie inside the supplied inclusive bounds. Null fails with an unknown actual count.</summary>
+        let countBetween (minimum: int) (maximum: int) : Check<#seq<'value>> =
+            fun values ->
+                match actualCount values with
+                | Some count when count >= minimum && count <= maximum -> pass
+                | actual -> fail (Count(CountBetween(minimum, maximum), actual))
+
+        /// <summary>Requires a collection to contain no duplicate values.</summary>
+        let distinct : Check<#seq<'value>> =
+            fun values ->
+                if Object.ReferenceEquals(values, null) then
+                    fail Missing
+                else
+                    let seen = Collections.Generic.HashSet<'value>()
+
+                    if values |> Seq.forall seen.Add then
+                        pass
+                    else
+                        fail (CustomCode "collection.distinct")
+
     /// <summary>Runs every check against the value and accumulates all failures. An empty list succeeds.</summary>
     let all (checks: Check<'value> list) : Check<'value> =
         fun value ->
