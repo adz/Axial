@@ -116,6 +116,16 @@ module ApiShapeTests =
 
         loop returnType
 
+    let private assertCheckAliasShape<'value> () =
+        let checkType = typeof<Check<'value>>
+
+        test <@ checkType.IsGenericType @>
+        test <@ checkType.GetGenericTypeDefinition() = typedefof<FSharpFunc<_, _>> @>
+
+        let arguments = checkType.GetGenericArguments()
+        test <@ arguments[0] = typeof<'value> @>
+        test <@ arguments[1] = typeof<Result<unit, CheckFailure list>> @>
+
     let private assertMethodsReturnCheckResult methodNames (targetType: Type) =
         let methods = targetType |> publicStaticMethods
 
@@ -509,6 +519,18 @@ module ApiShapeTests =
 
     [<Fact>]
     let ``check take binderror diagnostics and ref helpers keep expected public shape`` () =
+        assertCheckAliasShape<string> ()
+        assertCheckAliasShape<int> ()
+
+        let checkProgram : Check<string> =
+            fun value ->
+                if String.IsNullOrWhiteSpace value then Error [ Blank ]
+                else Ok ()
+
+        let checkFunction : string -> Result<unit, CheckFailure list> = checkProgram
+        test <@ checkFunction "Ada" = Ok () @>
+        test <@ checkFunction "" = Error [ Blank ] @>
+
         typeof<CheckFailure>
         |> publicUnionCaseNames
         |> assertContainsAll [ "Missing"; "Blank"; "InvalidFormat"; "Length"; "Range"; "Count"; "Equality"; "CustomCode" ]

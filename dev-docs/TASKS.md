@@ -78,7 +78,7 @@ Work this list top to bottom. Each item should be small enough to become an issu
 Lift the design in `dev-docs/tighten-check-module-and-funcs.md` into source before continuing the next schema slice.
 Schema constraints should lower onto the tightened `Check` shape, not the verbose transitional one.
 
-- [ ] Keep `Check<'value> = 'value -> Result<unit, CheckFailure list>` as the public structured check model.
+- [x] Keep `Check<'value> = 'value -> Result<unit, CheckFailure list>` as the public structured check model.
 - [ ] Keep `CheckFailure` path-free and raw-input-free; do not move schema/input diagnostics into `CheckFailure`.
 - [ ] Keep `Check.all`, `Check.any`, `Check.not`, and `Check.mapFailure` as top-level structured check combinators.
 - [ ] Rename or replace `Check.Collection` with `Check.Seq` for direct sequence-shaped checks.
