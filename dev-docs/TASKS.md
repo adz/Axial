@@ -47,7 +47,7 @@ Work this list top to bottom. Each item should be small enough to become an issu
 
 ## Phase 2: Stabilize Result/Parse/Refine Around New Check
 
-- [ ] Decide which existing `Result` helpers remain as fail-fast guards over `Check`.
+- [x] Decide which existing `Result` helpers remain as fail-fast guards over `Check`.
 - [ ] Align `Result.guard`, `Result.require`, and type-preserving guards with `Check<'value>`.
 - [ ] Ensure `Parse` remains in `Axial.Refined` for text-to-primitive conversion.
 - [ ] Ensure refined constructors can use `Check` programs without depending on schema.

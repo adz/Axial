@@ -20,6 +20,16 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
   `Check<'value> = 'value -> Result<unit, CheckFailure list>`. Checks are path-free, raw-input-free value programs;
   value-preserving guards and extraction helpers belong in `Result`, and parsing and refined value construction belong in
   `Axial.Refined`.
+- `Result` keeps fail-fast adapters around `Check`, not a second accumulating constraint language. The retained helper
+  families are:
+  - generic Result combinators and conversions (`ok`, `error`, `map`, `bind`, `mapError`, `withError`, `fromTry`,
+    `fromChoice`, `toOption`, `toValueOption`, and `defaultValue`);
+  - extraction helpers for option, value option, nullable, result, and sequence values (`someOr`, `noneOr`,
+    `valueSomeOr`, `valueNoneOr`, `nullableOr`, `notNullOr`, `okOr`, `errorOr`, `headOr`, `single`, and `atMostOne`);
+  - value-preserving fail-fast guards that mirror executable `Check` programs (`keepIf` today; `Result.require` and
+    `Result.guard` when the API is aligned; string length, ordered range, and sequence count guards).
+  Do not add new predicate-specific `Result` helpers when the same rule belongs in `Check.*` and can be adapted through
+  the generic fail-fast guard.
 - First-pass ordered range checks stay in generic `Check.Number` helpers over comparable values. Do not add separate
   `Check.Int`, `Check.Decimal`, `Check.Float`, or date/time check modules until a schema, refined value, or diagnostics
   requirement needs type-specific semantics beyond plain ordering.

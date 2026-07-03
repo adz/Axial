@@ -383,7 +383,12 @@ module ApiShapeTests =
 
         resultMembers
         |> assertContainsAll
-            [ "checkOr"
+            [ "ok"
+              "error"
+              "map"
+              "bind"
+              "mapError"
+              "checkOr"
               "keepIf"
               "withError"
               "fromTry"
@@ -400,6 +405,7 @@ module ApiShapeTests =
               "okOr"
               "errorOr"
               "headOr"
+              "length"
               "minLength"
               "maxLength"
               "exactLength"

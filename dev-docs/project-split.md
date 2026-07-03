@@ -156,8 +156,12 @@ requirements into typed workflow errors. `Policy` constructors should accept ord
 Use `Bind.error` or `Bind.mapError` only at a `flow { }` bind site when the source error must be assigned or mapped
 immediately before binding.
 
-Pure code should stay in `Result` with `Result.require`, `Result.mapError`, or focused `Result` helpers. Accumulating
-input validation should stay in `Validation`.
+Pure code should stay in `Result` with `Result.require`, `Result.guard`, `Result.mapError`, or focused `Result`
+helpers. The focused `Result` surface is deliberately fail-fast: keep generic combinators/conversions, extraction
+helpers for option/value-option/nullable/result/sequence shapes, and value-preserving guards that adapt executable
+`Check` programs. Do not grow a second predicate-specific constraint catalog in `Result`; new reusable value
+constraints belong in `Check.*` first, then flow through the generic fail-fast guard. Accumulating input validation
+should stay in `Validation`.
 
 Use `Policy` for named, reusable, environment-aware requirements in workflow code. Use `Bind.error` or `Bind.mapError`
 for immediate one-off bind-site assignment or mapping.
