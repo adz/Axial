@@ -196,7 +196,11 @@ module ApiShapeTests =
 
         checkMembers
         |> assertContainsAll
-            [ "isSome"
+            [ "all"
+              "any"
+              "not"
+              "mapFailure"
+              "isSome"
               "isNone"
               "isValueSome"
               "isValueNone"
@@ -251,8 +255,6 @@ module ApiShapeTests =
               "fromChoice"
               "both"
               "either"
-              "all"
-              "any"
               "whenTrue"
               "whenFalse"
               "whenNotBlank"

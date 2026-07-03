@@ -52,6 +52,38 @@ module ValidationTests =
                 @>
 
         [<Fact>]
+        let ``Check composition accumulates alternatives and maps failures`` () =
+            let missingWhenEmpty : Check<string> =
+                fun value -> if value = "" then Error [ Missing ] else Ok ()
+
+            let blankWhenWhitespace : Check<string> =
+                fun value -> if value.Trim() = "" then Error [ Blank ] else Ok ()
+
+            let invalidWhenNotEmail : Check<string> =
+                fun value ->
+                    if value.Contains("@") then Ok ()
+                    else Error [ InvalidFormat "email" ]
+
+            let invalidWhenNotPhone : Check<string> =
+                fun value ->
+                    if value.StartsWith("+") then Ok ()
+                    else Error [ InvalidFormat "phone" ]
+
+            test <@ Check.all [ missingWhenEmpty; blankWhenWhitespace ] "" = Error [ Missing; Blank ] @>
+            test <@ Check.all [ missingWhenEmpty; blankWhenWhitespace ] "Ada" = Ok () @>
+            test <@ Check.any [ invalidWhenNotEmail; invalidWhenNotPhone ] "ada@example.com" = Ok () @>
+            test <@ Check.any [ invalidWhenNotEmail; invalidWhenNotPhone ] "Ada" = Error [ InvalidFormat "email"; InvalidFormat "phone" ] @>
+            test <@ Check.not invalidWhenNotEmail "Ada" = Ok () @>
+            test <@ Check.not invalidWhenNotEmail "ada@example.com" = Error [ CustomCode "check.not" ] @>
+
+            test
+                <@
+                    Check.mapFailure (function
+                        | InvalidFormat expected -> CustomCode $"format.{expected}"
+                        | failure -> failure) invalidWhenNotEmail "Ada" = Error [ CustomCode "format.email" ]
+                @>
+
+        [<Fact>]
         let ``Check exposes pure predicates`` () =
             let nullString: string = null
 

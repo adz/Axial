@@ -24,7 +24,7 @@ Work this list top to bottom. Each item should be small enough to become an issu
 - [x] Define `Check<'value> = 'value -> Result<unit, CheckFailure list>`.
 - [x] Define `CheckFailure` with at least missing/blank, invalid format, length, range, count, equality, and custom-code
   cases.
-- [ ] Implement top-level composition:
+- [x] Implement top-level composition:
   `Check.all`, `Check.any`, `Check.not`, and `Check.mapFailure`.
 - [ ] Decide and document whether `Check.all []` succeeds and whether `Check.any []` fails.
 - [ ] Implement `Check.String`:

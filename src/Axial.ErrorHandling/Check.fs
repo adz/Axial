@@ -67,7 +67,7 @@ type CheckFailure =
 /// <summary>A typed value check that succeeds with <c>unit</c> or returns one or more check failures.</summary>
 type Check<'value> = 'value -> Result<unit, CheckFailure list>
 
-/// <summary>Pure, null-safe predicates for common structural checks.</summary>
+/// <summary>Typed value checks and pure, null-safe predicates for common structural checks.</summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Check =
     let private emailRegex =
@@ -270,3 +270,42 @@ module Check =
     /// <summary>Inverts a predicate.</summary>
     let negate (predicate: 'input -> bool) (input: 'input) : bool =
         not (predicate input)
+
+    /// <summary>Runs every check against the value and accumulates all failures.</summary>
+    let all (checks: Check<'value> list) : Check<'value> =
+        fun value ->
+            let failures =
+                checks
+                |> List.collect (fun check ->
+                    match check value with
+                    | Ok () -> []
+                    | Error failures -> failures)
+
+            if List.isEmpty failures then Ok () else Error failures
+
+    /// <summary>Runs checks until one succeeds, or returns the accumulated failures when every check fails.</summary>
+    let any (checks: Check<'value> list) : Check<'value> =
+        fun value ->
+            let rec loop failures remaining =
+                match remaining with
+                | [] -> Error(List.rev failures)
+                | check :: rest ->
+                    match check value with
+                    | Ok () -> Ok ()
+                    | Error nextFailures -> loop (List.rev nextFailures @ failures) rest
+
+            loop [] checks
+
+    /// <summary>Inverts a check. A successful inner check becomes a custom-code failure.</summary>
+    let ``not`` (check: Check<'value>) : Check<'value> =
+        fun value ->
+            match check value with
+            | Ok () -> Error [ CustomCode "check.not" ]
+            | Error _ -> Ok ()
+
+    /// <summary>Maps every failure produced by a check.</summary>
+    let mapFailure (mapper: CheckFailure -> CheckFailure) (check: Check<'value>) : Check<'value> =
+        fun value ->
+            match check value with
+            | Ok () -> Ok ()
+            | Error failures -> Error(List.map mapper failures)
