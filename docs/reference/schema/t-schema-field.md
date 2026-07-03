@@ -25,8 +25,9 @@ weight: 1002
 
 <p class='fsdocs-para'>
  A field definition records typed field metadata without tying that metadata to input parsing, diagnostics,
- validation, codecs, UI generation, or workflow execution.
+ validation, codecs, UI generation, or workflow execution. The field&#39;s external name is the portable boundary-facing
+ name interpreters use for raw input lookup, diagnostic paths, codecs, generated documentation, and UI metadata.
  </p><p class='fsdocs-para'>
- Field names, getters, constructor application, ordering, and public construction helpers are introduced by the
- schema operations that follow this core type.
+ Getters, constructor application, ordering, and public construction helpers are introduced by the schema operations
+ that follow this core type.
  </p>

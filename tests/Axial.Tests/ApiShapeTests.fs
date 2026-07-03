@@ -252,6 +252,7 @@ module ApiShapeTests =
         let schemaType = typedefof<Schema<_>>
         let valueSchemaType = typedefof<ValueSchema<_>>
         let fieldType = typedefof<Field<_, _>>
+        let externalFieldNameType = typeof<ExternalFieldName>
         let schemaAssembly = schemaType.Assembly
         let references = referencedAssemblyNames schemaAssembly
         let publicConstructors =
@@ -260,6 +261,15 @@ module ApiShapeTests =
             valueSchemaType.GetConstructors(BindingFlags.Public ||| BindingFlags.Instance)
         let publicFieldConstructors =
             fieldType.GetConstructors(BindingFlags.Public ||| BindingFlags.Instance)
+        let publicExternalFieldNameConstructors =
+            externalFieldNameType.GetConstructors(BindingFlags.Public ||| BindingFlags.Instance)
+        let fieldDefinitionType =
+            schemaAssembly.GetType("Axial.Schema.FieldDefinition`1", true)
+        let externalNameProperty =
+            fieldDefinitionType.GetProperty(
+                "ExternalName",
+                BindingFlags.Public ||| BindingFlags.NonPublic ||| BindingFlags.Instance
+            )
 
         test <@ schemaType.IsGenericTypeDefinition @>
         test <@ schemaType.GetGenericArguments().Length = 1 @>
@@ -270,11 +280,26 @@ module ApiShapeTests =
         test <@ fieldType.IsGenericTypeDefinition @>
         test <@ fieldType.GetGenericArguments().Length = 2 @>
         test <@ publicFieldConstructors.Length = 0 @>
+        test <@ publicExternalFieldNameConstructors.Length = 0 @>
         test <@ valueSchemaType.Assembly = schemaAssembly @>
         test <@ fieldType.Assembly = schemaAssembly @>
+        test <@ externalFieldNameType.Assembly = schemaAssembly @>
+        test <@ externalNameProperty.PropertyType = externalFieldNameType @>
         test <@ schemaAssembly.GetName().Name = "Axial.Schema" @>
         references
         |> assertContainsNone [ "Axial.Flow"; "Axial.ErrorHandling"; "Axial.Refined"; "Axial.Validation" ]
+
+    [<Fact>]
+    let ``external field names preserve exact boundary names and reject unusable names`` () =
+        let name = ExternalFieldName.create " customer_id "
+
+        test <@ name.Value = " customer_id " @>
+        test <@ ExternalFieldName.value name = " customer_id " @>
+        test <@ string name = " customer_id " @>
+        raises<ArgumentNullException> <@ ExternalFieldName.create null |> ignore @>
+        raises<ArgumentException> <@ ExternalFieldName.create "" |> ignore @>
+        raises<ArgumentException> <@ ExternalFieldName.create "   " |> ignore @>
+        raises<ArgumentNullException> <@ ExternalFieldName.value null |> ignore @>
 
     [<Fact>]
     let ``check take binderror diagnostics and ref helpers keep expected public shape`` () =
