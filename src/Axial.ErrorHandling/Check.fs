@@ -3,6 +3,14 @@ namespace Axial.ErrorHandling
 open System
 open System.Text.RegularExpressions
 
+/// <summary>Describes a failed value check.</summary>
+type CheckFailure =
+    private
+    | CheckFailure of string
+
+/// <summary>A typed value check that succeeds with <c>unit</c> or returns one or more check failures.</summary>
+type Check<'value> = 'value -> Result<unit, CheckFailure list>
+
 /// <summary>Pure, null-safe predicates for common structural checks.</summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Check =

@@ -17,6 +17,16 @@ module ValidationTests =
             | PolicyDisabled
 
         [<Fact>]
+        let ``Check is a typed value program that returns accumulated check failures`` () =
+            let check : Check<string> =
+                fun value ->
+                    if value = "valid" then Ok ()
+                    else Error []
+
+            test <@ check "valid" = Ok () @>
+            test <@ check "invalid" = Error [] @>
+
+        [<Fact>]
         let ``Check exposes pure predicates`` () =
             let nullString: string = null
 
