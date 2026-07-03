@@ -3,10 +3,66 @@ namespace Axial.ErrorHandling
 open System
 open System.Text.RegularExpressions
 
-/// <summary>Describes a failed value check.</summary>
+/// <summary>Describes an expected string length for a failed check.</summary>
+type CheckLengthExpectation =
+    /// <summary>The value was expected to have at least the supplied length.</summary>
+    | MinimumLength of minimum: int
+    /// <summary>The value was expected to have at most the supplied length.</summary>
+    | MaximumLength of maximum: int
+    /// <summary>The value was expected to have exactly the supplied length.</summary>
+    | ExactLength of expected: int
+    /// <summary>The value was expected to have a length inside the inclusive bounds.</summary>
+    | LengthBetween of minimum: int * maximum: int
+
+/// <summary>Describes an expected ordered range for a failed check.</summary>
+type CheckRangeExpectation =
+    /// <summary>The value was expected to be greater than the supplied exclusive lower bound.</summary>
+    | GreaterThan of minimumExclusive: string
+    /// <summary>The value was expected to be less than the supplied exclusive upper bound.</summary>
+    | LessThan of maximumExclusive: string
+    /// <summary>The value was expected to be greater than or equal to the supplied lower bound.</summary>
+    | AtLeast of minimumInclusive: string
+    /// <summary>The value was expected to be less than or equal to the supplied upper bound.</summary>
+    | AtMost of maximumInclusive: string
+    /// <summary>The value was expected to be between the supplied inclusive bounds.</summary>
+    | Between of minimumInclusive: string * maximumInclusive: string
+
+/// <summary>Describes an expected collection count for a failed check.</summary>
+type CheckCountExpectation =
+    /// <summary>The collection was expected to contain at least the supplied count.</summary>
+    | MinimumCount of minimum: int
+    /// <summary>The collection was expected to contain at most the supplied count.</summary>
+    | MaximumCount of maximum: int
+    /// <summary>The collection was expected to contain exactly the supplied count.</summary>
+    | ExactCount of expected: int
+    /// <summary>The collection was expected to contain a count inside the inclusive bounds.</summary>
+    | CountBetween of minimum: int * maximum: int
+
+/// <summary>Describes an equality expectation for a failed check.</summary>
+type CheckEqualityExpectation =
+    /// <summary>The value was expected to equal the supplied value description.</summary>
+    | EqualTo of expected: string
+    /// <summary>The value was expected not to equal the supplied value description.</summary>
+    | NotEqualTo of unexpected: string
+
+/// <summary>Describes a failed value check without attaching source paths or raw input.</summary>
 type CheckFailure =
-    private
-    | CheckFailure of string
+    /// <summary>A required value was missing.</summary>
+    | Missing
+    /// <summary>A required text value was blank.</summary>
+    | Blank
+    /// <summary>The value did not match the expected format.</summary>
+    | InvalidFormat of expected: string
+    /// <summary>The value length did not match the expected length constraint.</summary>
+    | Length of expectation: CheckLengthExpectation * actualLength: int option
+    /// <summary>The value did not match the expected ordered range constraint.</summary>
+    | Range of expectation: CheckRangeExpectation * actual: string option
+    /// <summary>The collection count did not match the expected count constraint.</summary>
+    | Count of expectation: CheckCountExpectation * actualCount: int option
+    /// <summary>The value did not match the expected equality constraint.</summary>
+    | Equality of expectation: CheckEqualityExpectation * actual: string option
+    /// <summary>A custom check identified by an application-defined code failed.</summary>
+    | CustomCode of code: string
 
 /// <summary>A typed value check that succeeds with <c>unit</c> or returns one or more check failures.</summary>
 type Check<'value> = 'value -> Result<unit, CheckFailure list>

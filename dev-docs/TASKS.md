@@ -22,7 +22,7 @@ Work this list top to bottom. Each item should be small enough to become an issu
 ## Phase 1: Redesign Check As A Complete Subsystem
 
 - [x] Define `Check<'value> = 'value -> Result<unit, CheckFailure list>`.
-- [ ] Define `CheckFailure` with at least missing/blank, invalid format, length, range, count, equality, and custom-code
+- [x] Define `CheckFailure` with at least missing/blank, invalid format, length, range, count, equality, and custom-code
   cases.
 - [ ] Implement top-level composition:
   `Check.all`, `Check.any`, `Check.not`, and `Check.mapFailure`.

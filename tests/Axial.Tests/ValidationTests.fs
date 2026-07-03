@@ -27,6 +27,31 @@ module ValidationTests =
             test <@ check "invalid" = Error [] @>
 
         [<Fact>]
+        let ``CheckFailure exposes structured value constraint cases`` () =
+            let failures =
+                [ Missing
+                  Blank
+                  InvalidFormat "email"
+                  Length(MinimumLength 3, Some 2)
+                  Range(Between("1", "10"), Some "12")
+                  Count(CountBetween(1, 3), Some 0)
+                  Equality(EqualTo "expected", Some "actual")
+                  CustomCode "domain.rule" ]
+
+            test
+                <@
+                    failures =
+                        [ Missing
+                          Blank
+                          InvalidFormat "email"
+                          Length(MinimumLength 3, Some 2)
+                          Range(Between("1", "10"), Some "12")
+                          Count(CountBetween(1, 3), Some 0)
+                          Equality(EqualTo "expected", Some "actual")
+                          CustomCode "domain.rule" ]
+                @>
+
+        [<Fact>]
         let ``Check exposes pure predicates`` () =
             let nullString: string = null
 
