@@ -260,6 +260,12 @@ module Check.Result =
     val error: Check<Result<'value, 'error>>
 ```
 
+First-pass numeric checks stay generic over ordered values. Do not add separate `Check.Int`, `Check.Decimal`,
+`Check.Float`, or date/time modules unless a later schema, refined value, or diagnostics requirement needs
+type-specific semantics such as parsing, units, precision policy, clock-relative checks, or richer metadata. Schema
+primitive names such as `int`, `decimal`, and `date` may still lower to the generic `Check.Number` range checks when
+plain ordering is enough.
+
 `Check` is intentionally path-free and raw-input-free. It does not know about models, diagnostics trees, localization, or
 effects. Schema, input, validation, rules, and policy give checks context.
 

@@ -20,6 +20,9 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
   `Check<'value> = 'value -> Result<unit, CheckFailure list>`. Checks are path-free, raw-input-free value programs;
   value-preserving guards and extraction helpers belong in `Result`, and parsing and refined value construction belong in
   `Axial.Refined`.
+- First-pass ordered range checks stay in generic `Check.Number` helpers over comparable values. Do not add separate
+  `Check.Int`, `Check.Decimal`, `Check.Float`, or date/time check modules until a schema, refined value, or diagnostics
+  requirement needs type-specific semantics beyond plain ordering.
 - `Axial.Schema` starts as its own package and project as soon as schema source work begins. Do not incubate schema
   definitions inside `Axial.Validation`; keep schema definitions independent and put input, validation, diagnostics, and
   rules integration in `Axial.Validation.Schema`.

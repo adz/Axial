@@ -31,7 +31,7 @@ Work this list top to bottom. Each item should be small enough to become an issu
   `present`, `minLength`, `maxLength`, `lengthBetween`, `email`, `matches`, `oneOf`, and null/blank behavior.
 - [x] Implement `Check.Number`:
   `between`, `greaterThan`, `lessThan`, `atLeast`, and `atMost`.
-- [ ] Decide whether numeric helpers need separate modules for `int`, `decimal`, `float`, date/time, or generic
+- [x] Decide whether numeric helpers need separate modules for `int`, `decimal`, `float`, date/time, or generic
   comparison is enough for the first pass.
 - [ ] Implement `Check.Collection`:
   `notEmpty`, `minCount`, `maxCount`, `countBetween`, and `distinct`.
