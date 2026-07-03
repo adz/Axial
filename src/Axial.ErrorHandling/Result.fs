@@ -206,8 +206,8 @@ module Result =
 
     /// <summary>Keeps a sequence that contains at least one item.</summary>
     let atLeastOne (values: seq<'value>) : Result<seq<'value>, CheckFailure list> =
-        guard Check.Collection.notEmpty values
+        guard Check.Seq.notEmpty values
 
     /// <summary>Keeps a sequence that contains more than one item.</summary>
     let moreThanOne (values: seq<'value>) : Result<seq<'value>, CheckFailure list> =
-        guard (Check.Collection.minCount 2) values
+        guard (Check.Seq.minCount 2) values

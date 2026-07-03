@@ -1,15 +1,16 @@
 ---
-title: "ErrorHandling.Check.Collection.maxCount"
+title: "ErrorHandling.Check.Seq.maxCount"
 linkTitle: "maxCount"
 weight: 2402
+type: docs
 ---
 
-Requires an already parsed collection to contain at most the supplied count. Null fails with an unknown actual count.
+Requires an already parsed sequence-shaped value to contain at most the supplied count. Null fails with an unknown actual count.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>ErrorHandling.Check.Collection.maxCount&#32;<span>maximum&#32;values</span></span></code>
+<code><span>ErrorHandling.Check.Seq.maxCount&#32;<span>maximum&#32;values</span></span></code>
 </div>
 
 ## Parameters

@@ -641,14 +641,14 @@ module ApiShapeTests =
         checkNumberModule
         |> assertMethodsReturnCheckResult [ "between"; "greaterThan"; "lessThan"; "atLeast"; "atMost" ]
 
-        let checkCollectionModule =
-            moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.CheckModule+Collection"
+        let checkSeqModule =
+            moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.CheckModule+Seq"
 
-        checkCollectionModule
+        checkSeqModule
         |> publicStaticMemberNames
         |> assertContainsAll [ "notEmpty"; "minCount"; "maxCount"; "countBetween"; "distinct" ]
 
-        checkCollectionModule
+        checkSeqModule
         |> assertMethodsReturnCheckResult [ "notEmpty"; "minCount"; "maxCount"; "countBetween"; "distinct" ]
 
         let checkOptionModule =

@@ -1,21 +1,23 @@
 ---
-title: "ErrorHandling.Check.Collection.notEmpty"
-linkTitle: "notEmpty"
-weight: 2400
+title: "ErrorHandling.Check.Seq.countBetween"
+linkTitle: "countBetween"
+weight: 2403
 ---
 
-Requires an already parsed collection to contain at least one item. Null fails with an unknown actual count.
+Requires an already parsed sequence-shaped value count to lie inside the supplied inclusive bounds. Null fails with an unknown actual count.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>ErrorHandling.Check.Collection.notEmpty&#32;<span>values</span></span></code>
+<code><span>ErrorHandling.Check.Seq.countBetween&#32;<span>minimum&#32;maximum&#32;values</span></span></code>
 </div>
 
 ## Parameters
 
 | Name | Type | Description |
 | --- | --- | --- |
+| `minimum` | <code>int</code> |  |
+| `maximum` | <code>int</code> |  |
 | `values` | <code>'a</code> |  |
 
 ## Returns

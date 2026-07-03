@@ -21,6 +21,6 @@ Describes why an executable value check failed, without attaching source paths o
 | `InvalidFormat` | The value did not match the expected format. |
 | `Length` | The value length did not match the expected length constraint. |
 | `Range` | The value did not match the expected ordered range constraint. |
-| `Count` | The collection count did not match the expected count constraint. |
+| `Count` | The sequence count did not match the expected count constraint. |
 | `Equality` | The value did not match the expected equality constraint. |
 | `CustomCode` | A custom value check identified by an application-defined code failed. |

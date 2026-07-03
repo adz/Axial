@@ -14,7 +14,7 @@ This page shows the `Check` surface for reusable, path-free value constraints. E
 - [`ErrorHandling.CheckFailure`](./t-errorhandling-checkfailure.md): Describes why an executable value check failed, without attaching source paths or raw input.
 - [`ErrorHandling.CheckLengthExpectation`](./t-errorhandling-checklengthexpectation.md): Describes the length requirement that a value check expected a string-like value to satisfy.
 - [`ErrorHandling.CheckRangeExpectation`](./t-errorhandling-checkrangeexpectation.md): Describes the ordering requirement that a value check expected a comparable value to satisfy.
-- [`ErrorHandling.CheckCountExpectation`](./t-errorhandling-checkcountexpectation.md): Describes the count requirement that a value check expected a collection to satisfy.
+- [`ErrorHandling.CheckCountExpectation`](./t-errorhandling-checkcountexpectation.md): Describes the count requirement that a value check expected a sequence-shaped value to satisfy.
 - [`ErrorHandling.CheckEqualityExpectation`](./t-errorhandling-checkequalityexpectation.md): Describes the equality requirement that a value check expected a value to satisfy.
 
 ## Executable composition
@@ -43,13 +43,13 @@ This page shows the `Check` surface for reusable, path-free value constraints. E
 - [`ErrorHandling.Check.Number.atLeast`](./m-errorhandling-check-number-atleast.md): Requires a value to be greater than or equal to the supplied lower bound.
 - [`ErrorHandling.Check.Number.atMost`](./m-errorhandling-check-number-atmost.md): Requires a value to be less than or equal to the supplied upper bound.
 
-## Executable collection checks
+## Executable sequence checks
 
-- [`ErrorHandling.Check.Collection.notEmpty`](./m-errorhandling-check-collection-notempty.md): Requires an already parsed collection to contain at least one item. Null fails with an unknown actual count.
-- [`ErrorHandling.Check.Collection.minCount`](./m-errorhandling-check-collection-mincount.md): Requires an already parsed collection to contain at least the supplied count. Null fails with an unknown actual count.
-- [`ErrorHandling.Check.Collection.maxCount`](./m-errorhandling-check-collection-maxcount.md): Requires an already parsed collection to contain at most the supplied count. Null fails with an unknown actual count.
-- [`ErrorHandling.Check.Collection.countBetween`](./m-errorhandling-check-collection-countbetween.md): Requires an already parsed collection count to lie inside the supplied inclusive bounds. Null fails with an unknown actual count.
-- [`ErrorHandling.Check.Collection.distinct`](./m-errorhandling-check-collection-distinct.md): Requires an already parsed collection to contain no duplicate values.
+- [`ErrorHandling.Check.Seq.notEmpty`](./m-errorhandling-check-seq-notempty.md): Requires an already parsed sequence-shaped value to contain at least one item. Null fails with an unknown actual count.
+- [`ErrorHandling.Check.Seq.minCount`](./m-errorhandling-check-seq-mincount.md): Requires an already parsed sequence-shaped value to contain at least the supplied count. Null fails with an unknown actual count.
+- [`ErrorHandling.Check.Seq.maxCount`](./m-errorhandling-check-seq-maxcount.md): Requires an already parsed sequence-shaped value to contain at most the supplied count. Null fails with an unknown actual count.
+- [`ErrorHandling.Check.Seq.countBetween`](./m-errorhandling-check-seq-countbetween.md): Requires an already parsed sequence-shaped value count to lie inside the supplied inclusive bounds. Null fails with an unknown actual count.
+- [`ErrorHandling.Check.Seq.distinct`](./m-errorhandling-check-seq-distinct.md): Requires an already parsed sequence-shaped value to contain no duplicate values.
 
 ## Executable optional checks
 

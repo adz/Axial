@@ -4,7 +4,7 @@ linkTitle: "CheckCountExpectation"
 weight: 1004
 ---
 
-Describes the count requirement that a value check expected a collection to satisfy.
+Describes the count requirement that a value check expected a sequence-shaped value to satisfy.
 
 ## Signature
 
@@ -16,7 +16,7 @@ Describes the count requirement that a value check expected a collection to sati
 
 | Case | Description |
 | --- | --- |
-| `MinimumCount` | The collection was expected to contain at least the supplied count. |
-| `MaximumCount` | The collection was expected to contain at most the supplied count. |
-| `ExactCount` | The collection was expected to contain exactly the supplied count. |
-| `CountBetween` | The collection was expected to contain a count inside the inclusive bounds. |
+| `MinimumCount` | The sequence was expected to contain at least the supplied count. |
+| `MaximumCount` | The sequence was expected to contain at most the supplied count. |
+| `ExactCount` | The sequence was expected to contain exactly the supplied count. |
+| `CountBetween` | The sequence was expected to contain a count inside the inclusive bounds. |

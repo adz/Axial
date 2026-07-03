@@ -17,6 +17,6 @@ weight: 1000
 ## Remarks
 
 
- The nested modules such as <code>Check.String</code>, <code>Check.Number</code>, and <code>Check.Collection</code> return
+ The nested modules such as <code>Check.String</code>, <code>Check.Number</code>, and <code>Check.Seq</code> return
  <a href="/reference/Axial/axial-errorhandling-check-1.html">Check</a> programs. Top-level helpers such as <code>notBlank</code> and
  <code>greaterThan</code> remain boolean predicates for code that only needs a local fact.

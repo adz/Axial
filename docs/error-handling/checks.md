@@ -144,7 +144,7 @@ let requireExistingUser maybeUser : Result<User, LookupError> =
 | `Check.notNull` | `Result.notNullOr` |
 | `Check.Result.ok` | `Result.okOr` |
 | `Check.Result.error` | `Result.errorOr` |
-| `Check.Collection.notEmpty` | `Result.atLeastOne` or `Result.headOr` |
+| `Check.Seq.notEmpty` | `Result.atLeastOne` or `Result.headOr` |
 | `Check.isSingle` | `Result.single` |
 | `Check.atMostOne` | `Result.atMostOne` |
 | `Check.notBlank` | `Result.notBlank` |

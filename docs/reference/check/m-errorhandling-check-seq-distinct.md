@@ -1,23 +1,21 @@
 ---
-title: "ErrorHandling.Check.Collection.countBetween"
-linkTitle: "countBetween"
-weight: 2403
+title: "ErrorHandling.Check.Seq.distinct"
+linkTitle: "distinct"
+weight: 2404
 ---
 
-Requires an already parsed collection count to lie inside the supplied inclusive bounds. Null fails with an unknown actual count.
+Requires an already parsed sequence-shaped value to contain no duplicate values.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>ErrorHandling.Check.Collection.countBetween&#32;<span>minimum&#32;maximum&#32;values</span></span></code>
+<code><span>ErrorHandling.Check.Seq.distinct&#32;<span>values</span></span></code>
 </div>
 
 ## Parameters
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `minimum` | <code>int</code> |  |
-| `maximum` | <code>int</code> |  |
 | `values` | <code>'a</code> |  |
 
 ## Returns

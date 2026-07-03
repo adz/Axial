@@ -1,16 +1,15 @@
 ---
-title: "ErrorHandling.Check.Collection.notEmpty"
+title: "ErrorHandling.Check.Seq.notEmpty"
 linkTitle: "notEmpty"
 weight: 2400
-type: docs
 ---
 
-Requires an already parsed collection to contain at least one item. Null fails with an unknown actual count.
+Requires an already parsed sequence-shaped value to contain at least one item. Null fails with an unknown actual count.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>ErrorHandling.Check.Collection.notEmpty&#32;<span>values</span></span></code>
+<code><span>ErrorHandling.Check.Seq.notEmpty&#32;<span>values</span></span></code>
 </div>
 
 ## Parameters

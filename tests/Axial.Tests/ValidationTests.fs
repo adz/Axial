@@ -182,21 +182,21 @@ module ValidationTests =
             test <@ Check.Number.atMost 3 3 = Ok () @>
 
         [<Fact>]
-        let ``Check Collection behavior accumulates count and distinct failures`` () =
+        let ``Check Seq behavior accumulates count and distinct failures`` () =
             let nullValues: seq<int> = null
 
-            let collectionCheck : Check<seq<int>> =
+            let seqCheck : Check<seq<int>> =
                 Check.all
                     [
-                        Check.Collection.minCount 2
-                        Check.Collection.maxCount 3
-                        Check.Collection.distinct
+                        Check.Seq.minCount 2
+                        Check.Seq.maxCount 3
+                        Check.Seq.distinct
                     ]
 
-            test <@ collectionCheck [ 1; 2; 3 ] = Ok () @>
-            test <@ collectionCheck [] = Error [ Count(MinimumCount 2, Some 0) ] @>
-            test <@ collectionCheck [ 1; 2; 1; 3 ] = Error [ Count(MaximumCount 3, Some 4); CustomCode "collection.distinct" ] @>
-            test <@ collectionCheck nullValues = Error [ Count(MinimumCount 2, None); Count(MaximumCount 3, None); Missing ] @>
+            test <@ seqCheck [ 1; 2; 3 ] = Ok () @>
+            test <@ seqCheck [] = Error [ Count(MinimumCount 2, Some 0) ] @>
+            test <@ seqCheck [ 1; 2; 1; 3 ] = Error [ Count(MaximumCount 3, Some 4); CustomCode "seq.distinct" ] @>
+            test <@ seqCheck nullValues = Error [ Count(MinimumCount 2, None); Count(MaximumCount 3, None); Missing ] @>
 
         [<Fact>]
         let ``Check Option and Result behavior composes with all and any`` () =
@@ -270,29 +270,29 @@ module ValidationTests =
             test <@ Check.Number.atLeast 1.5m 1.0m = Error [ Range(AtLeast "1.5", Some "1.0") ] @>
 
         [<Fact>]
-        let ``Check Collection exposes executable collection value checks`` () =
+        let ``Check Seq exposes executable sequence value checks`` () =
             let nullValues: seq<int> = null
 
-            test <@ Check.Collection.notEmpty [ 1 ] = Ok () @>
-            test <@ Check.Collection.notEmpty [] = Error [ Count(MinimumCount 1, Some 0) ] @>
-            test <@ Check.Collection.notEmpty nullValues = Error [ Count(MinimumCount 1, None) ] @>
+            test <@ Check.Seq.notEmpty [ 1 ] = Ok () @>
+            test <@ Check.Seq.notEmpty [] = Error [ Count(MinimumCount 1, Some 0) ] @>
+            test <@ Check.Seq.notEmpty nullValues = Error [ Count(MinimumCount 1, None) ] @>
 
-            test <@ Check.Collection.minCount 2 [ 1; 2 ] = Ok () @>
-            test <@ Check.Collection.minCount 2 [ 1 ] = Error [ Count(MinimumCount 2, Some 1) ] @>
-            test <@ Check.Collection.minCount 2 nullValues = Error [ Count(MinimumCount 2, None) ] @>
+            test <@ Check.Seq.minCount 2 [ 1; 2 ] = Ok () @>
+            test <@ Check.Seq.minCount 2 [ 1 ] = Error [ Count(MinimumCount 2, Some 1) ] @>
+            test <@ Check.Seq.minCount 2 nullValues = Error [ Count(MinimumCount 2, None) ] @>
 
-            test <@ Check.Collection.maxCount 2 [ 1; 2 ] = Ok () @>
-            test <@ Check.Collection.maxCount 2 [ 1; 2; 3 ] = Error [ Count(MaximumCount 2, Some 3) ] @>
-            test <@ Check.Collection.maxCount 2 nullValues = Error [ Count(MaximumCount 2, None) ] @>
+            test <@ Check.Seq.maxCount 2 [ 1; 2 ] = Ok () @>
+            test <@ Check.Seq.maxCount 2 [ 1; 2; 3 ] = Error [ Count(MaximumCount 2, Some 3) ] @>
+            test <@ Check.Seq.maxCount 2 nullValues = Error [ Count(MaximumCount 2, None) ] @>
 
-            test <@ Check.Collection.countBetween 2 4 [ 1; 2; 3 ] = Ok () @>
-            test <@ Check.Collection.countBetween 2 4 [ 1 ] = Error [ Count(CountBetween(2, 4), Some 1) ] @>
-            test <@ Check.Collection.countBetween 2 4 [ 1; 2; 3; 4; 5 ] = Error [ Count(CountBetween(2, 4), Some 5) ] @>
-            test <@ Check.Collection.countBetween 2 4 nullValues = Error [ Count(CountBetween(2, 4), None) ] @>
+            test <@ Check.Seq.countBetween 2 4 [ 1; 2; 3 ] = Ok () @>
+            test <@ Check.Seq.countBetween 2 4 [ 1 ] = Error [ Count(CountBetween(2, 4), Some 1) ] @>
+            test <@ Check.Seq.countBetween 2 4 [ 1; 2; 3; 4; 5 ] = Error [ Count(CountBetween(2, 4), Some 5) ] @>
+            test <@ Check.Seq.countBetween 2 4 nullValues = Error [ Count(CountBetween(2, 4), None) ] @>
 
-            test <@ Check.Collection.distinct [ 1; 2; 3 ] = Ok () @>
-            test <@ Check.Collection.distinct [ 1; 2; 1 ] = Error [ CustomCode "collection.distinct" ] @>
-            test <@ Check.Collection.distinct nullValues = Error [ Missing ] @>
+            test <@ Check.Seq.distinct [ 1; 2; 3 ] = Ok () @>
+            test <@ Check.Seq.distinct [ 1; 2; 1 ] = Error [ CustomCode "seq.distinct" ] @>
+            test <@ Check.Seq.distinct nullValues = Error [ Missing ] @>
 
         [<Fact>]
         let ``Check Option exposes executable option value checks`` () =

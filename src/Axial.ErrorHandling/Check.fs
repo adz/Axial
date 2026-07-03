@@ -27,15 +27,15 @@ type CheckRangeExpectation =
     /// <summary>The value was expected to be between the supplied inclusive bounds.</summary>
     | Between of minimumInclusive: string * maximumInclusive: string
 
-/// <summary>Describes the count requirement that a value check expected a collection to satisfy.</summary>
+/// <summary>Describes the count requirement that a value check expected a sequence-shaped value to satisfy.</summary>
 type CheckCountExpectation =
-    /// <summary>The collection was expected to contain at least the supplied count.</summary>
+    /// <summary>The sequence was expected to contain at least the supplied count.</summary>
     | MinimumCount of minimum: int
-    /// <summary>The collection was expected to contain at most the supplied count.</summary>
+    /// <summary>The sequence was expected to contain at most the supplied count.</summary>
     | MaximumCount of maximum: int
-    /// <summary>The collection was expected to contain exactly the supplied count.</summary>
+    /// <summary>The sequence was expected to contain exactly the supplied count.</summary>
     | ExactCount of expected: int
-    /// <summary>The collection was expected to contain a count inside the inclusive bounds.</summary>
+    /// <summary>The sequence was expected to contain a count inside the inclusive bounds.</summary>
     | CountBetween of minimum: int * maximum: int
 
 /// <summary>Describes the equality requirement that a value check expected a value to satisfy.</summary>
@@ -57,7 +57,7 @@ type CheckFailure =
     | Length of expectation: CheckLengthExpectation * actualLength: int option
     /// <summary>The value did not match the expected ordered range constraint.</summary>
     | Range of expectation: CheckRangeExpectation * actual: string option
-    /// <summary>The collection count did not match the expected count constraint.</summary>
+    /// <summary>The sequence count did not match the expected count constraint.</summary>
     | Count of expectation: CheckCountExpectation * actualCount: int option
     /// <summary>The value did not match the expected equality constraint.</summary>
     | Equality of expectation: CheckEqualityExpectation * actual: string option
@@ -73,7 +73,7 @@ type Check<'value> = 'value -> Result<unit, CheckFailure list>
 /// Typed value-check programs and common boolean predicates for local structural facts.
 /// </summary>
 /// <remarks>
-/// The nested modules such as <c>Check.String</c>, <c>Check.Number</c>, and <c>Check.Collection</c> return
+/// The nested modules such as <c>Check.String</c>, <c>Check.Number</c>, and <c>Check.Seq</c> return
 /// <see cref="T:Axial.ErrorHandling.Check`1" /> programs. Top-level helpers such as <c>notBlank</c> and
 /// <c>greaterThan</c> remain boolean predicates for code that only needs a local fact.
 /// </remarks>
@@ -381,8 +381,8 @@ module Check =
                 if value <= maximum then Ok ()
                 else Error [ Range(AtMost(string maximum), Some(string value)) ]
 
-    /// <summary>Executable, path-free value checks for already parsed collections.</summary>
-    module Collection =
+    /// <summary>Executable, path-free value checks for already parsed sequence-shaped values.</summary>
+    module Seq =
         let private pass : Result<unit, CheckFailure list> = Ok ()
 
         let private fail failure : Result<unit, CheckFailure list> =
@@ -390,37 +390,37 @@ module Check =
 
         let private actualCount (values: #seq<'value>) =
             if Object.ReferenceEquals(values, null) then None
-            else Some(Seq.length values)
+            else Some(Microsoft.FSharp.Collections.Seq.length values)
 
-        /// <summary>Requires an already parsed collection to contain at least one item. Null fails with an unknown actual count.</summary>
+        /// <summary>Requires an already parsed sequence-shaped value to contain at least one item. Null fails with an unknown actual count.</summary>
         let notEmpty : Check<#seq<'value>> =
             fun values ->
                 match actualCount values with
                 | Some count when count > 0 -> pass
                 | actual -> fail (Count(MinimumCount 1, actual))
 
-        /// <summary>Requires an already parsed collection to contain at least the supplied count. Null fails with an unknown actual count.</summary>
+        /// <summary>Requires an already parsed sequence-shaped value to contain at least the supplied count. Null fails with an unknown actual count.</summary>
         let minCount (minimum: int) : Check<#seq<'value>> =
             fun values ->
                 match actualCount values with
                 | Some count when count >= minimum -> pass
                 | actual -> fail (Count(MinimumCount minimum, actual))
 
-        /// <summary>Requires an already parsed collection to contain at most the supplied count. Null fails with an unknown actual count.</summary>
+        /// <summary>Requires an already parsed sequence-shaped value to contain at most the supplied count. Null fails with an unknown actual count.</summary>
         let maxCount (maximum: int) : Check<#seq<'value>> =
             fun values ->
                 match actualCount values with
                 | Some count when count <= maximum -> pass
                 | actual -> fail (Count(MaximumCount maximum, actual))
 
-        /// <summary>Requires an already parsed collection count to lie inside the supplied inclusive bounds. Null fails with an unknown actual count.</summary>
+        /// <summary>Requires an already parsed sequence-shaped value count to lie inside the supplied inclusive bounds. Null fails with an unknown actual count.</summary>
         let countBetween (minimum: int) (maximum: int) : Check<#seq<'value>> =
             fun values ->
                 match actualCount values with
                 | Some count when count >= minimum && count <= maximum -> pass
                 | actual -> fail (Count(CountBetween(minimum, maximum), actual))
 
-        /// <summary>Requires an already parsed collection to contain no duplicate values.</summary>
+        /// <summary>Requires an already parsed sequence-shaped value to contain no duplicate values.</summary>
         let distinct : Check<#seq<'value>> =
             fun values ->
                 if Object.ReferenceEquals(values, null) then
@@ -428,10 +428,10 @@ module Check =
                 else
                     let seen = Collections.Generic.HashSet<'value>()
 
-                    if values |> Seq.forall seen.Add then
+                    if values |> Microsoft.FSharp.Collections.Seq.forall seen.Add then
                         pass
                     else
-                        fail (CustomCode "collection.distinct")
+                        fail (CustomCode "seq.distinct")
 
     /// <summary>Executable, path-free value checks for already parsed optional values.</summary>
     module Option =

@@ -1,23 +1,22 @@
 ---
-title: "ErrorHandling.Check.Collection.maxCount"
-linkTitle: "maxCount"
-weight: 2402
+title: "ErrorHandling.Check.Seq.distinct"
+linkTitle: "distinct"
+weight: 2404
 type: docs
 ---
 
-Requires an already parsed collection to contain at most the supplied count. Null fails with an unknown actual count.
+Requires an already parsed sequence-shaped value to contain no duplicate values.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>ErrorHandling.Check.Collection.maxCount&#32;<span>maximum&#32;values</span></span></code>
+<code><span>ErrorHandling.Check.Seq.distinct&#32;<span>values</span></span></code>
 </div>
 
 ## Parameters
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `maximum` | <code>int</code> |  |
 | `values` | <code>'a</code> |  |
 
 ## Returns
