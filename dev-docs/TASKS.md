@@ -35,7 +35,7 @@ Work this list top to bottom. Each item should be small enough to become an issu
   comparison is enough for the first pass.
 - [x] Implement `Check.Collection`:
   `notEmpty`, `minCount`, `maxCount`, `countBetween`, and `distinct`.
-- [ ] Implement `Check.Option`:
+- [x] Implement `Check.Option`:
   `some` and `none`.
 - [ ] Implement `Check.Result`:
   `ok` and `error`.

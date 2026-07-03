@@ -417,6 +417,27 @@ module Check =
                     else
                         fail (CustomCode "collection.distinct")
 
+    /// <summary>Executable value checks for optional values.</summary>
+    module Option =
+        let private pass : Result<unit, CheckFailure list> = Ok ()
+
+        let private fail failure : Result<unit, CheckFailure list> =
+            Error [ failure ]
+
+        /// <summary>Requires an option to contain a value.</summary>
+        let some : Check<'value option> =
+            fun value ->
+                match value with
+                | Some _ -> pass
+                | None -> fail Missing
+
+        /// <summary>Requires an option to contain no value.</summary>
+        let none : Check<'value option> =
+            fun value ->
+                match value with
+                | None -> pass
+                | Some _ -> fail (Equality(EqualTo "None", Some "Some"))
+
     /// <summary>Runs every check against the value and accumulates all failures. An empty list succeeds.</summary>
     let all (checks: Check<'value> list) : Check<'value> =
         fun value ->

@@ -166,6 +166,14 @@ module ValidationTests =
             test <@ Check.Collection.distinct nullValues = Error [ Missing ] @>
 
         [<Fact>]
+        let ``Check Option exposes executable option value checks`` () =
+            test <@ Check.Option.some (Some 1) = Ok () @>
+            test <@ Check.Option.some None = Error [ Missing ] @>
+
+            test <@ Check.Option.none None = Ok () @>
+            test <@ Check.Option.none (Some 1) = Error [ Equality(EqualTo "None", Some "Some") ] @>
+
+        [<Fact>]
         let ``Check exposes pure predicates`` () =
             let nullString: string = null
 
