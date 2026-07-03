@@ -15,8 +15,8 @@ Work this list top to bottom. Each item should be small enough to become an issu
 - [x] Remove or rewrite stale current-ideas notes that still require predicate-only `Check`, especially
   `dev-docs/current-ideas/check-and-result-splits.md`.
 - [x] Reconcile `dev-docs/TASKS.md` with this plan, including the package-boundary test split already listed there.
-- [ ] Decide whether `Axial.Schema` starts as a new project immediately or begins inside `Axial.Validation` behind the
-  future package boundary.
+- [x] Decide whether `Axial.Schema` starts as a new project immediately or begins inside `Axial.Validation` behind the
+  future package boundary: start `Axial.Schema` as a separate project immediately when schema source work begins.
 - [ ] Record the package-boundary decision before any source work starts.
 
 ## Phase 1: Redesign Check As A Complete Subsystem

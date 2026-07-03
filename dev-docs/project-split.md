@@ -17,6 +17,15 @@ Axial.Flow.*           Flow add-on packages
 
 Before 1.0, these packages share one coordinated version from `Directory.Build.props`.
 
+## Package Timing
+
+`Axial.Schema` starts as a separate project immediately when schema source work begins. Do not incubate schema
+definitions inside `Axial.Validation` behind a future package boundary.
+
+Keep the first schema implementation small, but keep the package boundary real from the start so schema definitions stay
+independent of diagnostics, raw input, validation interpreters, and flow execution. This preserves `Axial.Schema` as a
+leaf package and lets `Axial.Validation.Schema` own the integration behavior explicitly.
+
 ## Responsibilities
 
 `Axial.Flow` owns:
