@@ -14,7 +14,7 @@ Work this list top to bottom. Each item should be small enough to become an issu
   schema interpreters, and `Policy`.
 - [x] Remove or rewrite stale current-ideas notes that still require predicate-only `Check`, especially
   `dev-docs/current-ideas/check-and-result-splits.md`.
-- [ ] Reconcile `dev-docs/TASKS.md` with this plan, including the package-boundary test split already listed there.
+- [x] Reconcile `dev-docs/TASKS.md` with this plan, including the package-boundary test split already listed there.
 - [ ] Decide whether `Axial.Schema` starts as a new project immediately or begins inside `Axial.Validation` behind the
   future package boundary.
 - [ ] Record the package-boundary decision before any source work starts.
@@ -232,7 +232,17 @@ Work this list top to bottom. Each item should be small enough to become an issu
 
 - [ ] Delete stale design notes after decisions are promoted.
 - [ ] Refresh `dev-docs/API_BASELINE.md`.
-- [ ] Split tests into package-specific projects as already listed in `dev-docs/TASKS.md`.
+- [ ] Split tests into package-specific projects that mirror the package boundaries:
+  - `Axial.Flow.Tests` for `Flow`, `Layer`, `Scope`, `BindError`, `Policy`, runtime mechanics, and `Axial.Flow.*`
+    service packages.
+  - `Axial.ErrorHandling.Tests` for `Check`, `CheckFailure`, `Result`, `Collection`, and `result { }`.
+  - `Axial.Refined.Tests` for `Parse`, `Refine`, refined/domain values, and `refine { }`.
+  - `Axial.Validation.Tests` for `Validation`, `Diagnostics`, paths, and `validate { }`.
+  - `Axial.Schema.Tests` for schema/value-schema definitions, field metadata, constructor/getter descriptors,
+    constraint metadata, and field ordering.
+  - `Axial.Validation.Schema.Tests` for input parsing, schema validation, rules, `SchemaError`, and diagnostics
+    interpretation.
+  - `Axial.Tests` only for umbrella-package smoke tests and cross-package integration scenarios.
 - [ ] Ensure package dependency rules are enforced by tests.
 - [ ] Ensure generated docs and examples do not teach old predicate-only `Check`.
 - [ ] Ensure docs do not present schema as only validation.
