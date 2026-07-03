@@ -59,7 +59,7 @@ Work this list top to bottom. Each item should be small enough to become an issu
 
 - [x] Define `Schema<'model>`.
 - [x] Define `ValueSchema<'value>`.
-- [ ] Define `Field<'model, 'value>` metadata.
+- [x] Define `Field<'model, 'value>` metadata.
 - [ ] Model external field names.
 - [ ] Model getters for existing model inspection.
 - [ ] Model constructor application for trusted construction.

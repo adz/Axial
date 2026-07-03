@@ -305,9 +305,9 @@ let pageSpecs = [
         OutPath = ["schema"; "_index.md"]
         Title = "Schema"
         Description = "Source-documented model schema definitions for Axial."
-        Intro = "This page shows the core `Schema<'model>` and `ValueSchema<'value>` types. Schemas describe trusted model and value structure for interpreters such as input parsing, validation, codecs, JSON Schema, UI, and documentation. The core schema package stays independent of workflow execution, diagnostics, raw input, and validation interpreters."
+        Intro = "This page shows the core `Schema<'model>`, `ValueSchema<'value>`, and `Field<'model, 'value>` types. Schemas describe trusted model and value structure for interpreters such as input parsing, validation, codecs, JSON Schema, UI, and documentation. The core schema package stays independent of workflow execution, diagnostics, raw input, and validation interpreters."
         SymbolIds = [
-            "Core types", ["T:Axial.Schema.Schema`1"; "T:Axial.Schema.ValueSchema`1"]
+            "Core types", ["T:Axial.Schema.Schema`1"; "T:Axial.Schema.ValueSchema`1"; "T:Axial.Schema.Field`2"]
         ]
         Alias = None
     }
