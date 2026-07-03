@@ -216,6 +216,9 @@ Check.any [
 ]
 ```
 
+Empty composition is explicit: `Check.all []` succeeds as the identity for conjunction, while `Check.any []` fails with
+no collected failures because no alternative check succeeded or produced evidence.
+
 Typed modules own typed vocabularies:
 
 ```fsharp

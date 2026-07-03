@@ -71,8 +71,10 @@ module ValidationTests =
 
             test <@ Check.all [ missingWhenEmpty; blankWhenWhitespace ] "" = Error [ Missing; Blank ] @>
             test <@ Check.all [ missingWhenEmpty; blankWhenWhitespace ] "Ada" = Ok () @>
+            test <@ Check.all [] "Ada" = Ok () @>
             test <@ Check.any [ invalidWhenNotEmail; invalidWhenNotPhone ] "ada@example.com" = Ok () @>
             test <@ Check.any [ invalidWhenNotEmail; invalidWhenNotPhone ] "Ada" = Error [ InvalidFormat "email"; InvalidFormat "phone" ] @>
+            test <@ Check.any [] "Ada" = Error [] @>
             test <@ Check.not invalidWhenNotEmail "Ada" = Ok () @>
             test <@ Check.not invalidWhenNotEmail "ada@example.com" = Error [ CustomCode "check.not" ] @>
 

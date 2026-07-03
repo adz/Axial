@@ -64,7 +64,7 @@ type CheckFailure =
     /// <summary>A custom check identified by an application-defined code failed.</summary>
     | CustomCode of code: string
 
-/// <summary>A typed value check that succeeds with <c>unit</c> or returns one or more check failures.</summary>
+/// <summary>A typed value check that succeeds with <c>unit</c> or returns zero or more check failures.</summary>
 type Check<'value> = 'value -> Result<unit, CheckFailure list>
 
 /// <summary>Typed value checks and pure, null-safe predicates for common structural checks.</summary>
@@ -271,7 +271,7 @@ module Check =
     let negate (predicate: 'input -> bool) (input: 'input) : bool =
         not (predicate input)
 
-    /// <summary>Runs every check against the value and accumulates all failures.</summary>
+    /// <summary>Runs every check against the value and accumulates all failures. An empty list succeeds.</summary>
     let all (checks: Check<'value> list) : Check<'value> =
         fun value ->
             let failures =
@@ -283,7 +283,7 @@ module Check =
 
             if List.isEmpty failures then Ok () else Error failures
 
-    /// <summary>Runs checks until one succeeds, or returns the accumulated failures when every check fails.</summary>
+    /// <summary>Runs checks until one succeeds, or returns the accumulated failures when every check fails. An empty list fails with no failures.</summary>
     let any (checks: Check<'value> list) : Check<'value> =
         fun value ->
             let rec loop failures remaining =
