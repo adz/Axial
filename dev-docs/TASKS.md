@@ -52,7 +52,7 @@ Work this list top to bottom. Each item should be small enough to become an issu
 - [x] Ensure `Parse` remains in `Axial.Refined` for text-to-primitive conversion.
 - [x] Ensure refined constructors can use `Check` programs without depending on schema.
 - [x] Add examples of refined/domain types using `Check.String.*` and `Check.Number.*`.
-- [ ] Confirm `Axial.Refined` does not depend on `Axial.Validation` or `Axial.Schema`.
+- [x] Confirm `Axial.Refined` does not depend on `Axial.Validation` or `Axial.Schema`.
 - [ ] Update affected tests and API baselines.
 
 ## Phase 3: Introduce Schema Core
