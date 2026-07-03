@@ -86,6 +86,135 @@ module ValidationTests =
                 @>
 
         [<Fact>]
+        let ``Check all evaluates every check and preserves accumulated failure order`` () =
+            let calls = ResizeArray<string>()
+
+            let failWith name failure : Check<string> =
+                fun _ ->
+                    calls.Add name
+                    Error [ failure ]
+
+            let passWith name : Check<string> =
+                fun _ ->
+                    calls.Add name
+                    Ok ()
+
+            let check =
+                Check.all
+                    [
+                        failWith "first" Missing
+                        passWith "second"
+                        failWith "third" Blank
+                        failWith "fourth" (InvalidFormat "email")
+                    ]
+
+            test <@ check "" = Error [ Missing; Blank; InvalidFormat "email" ] @>
+            test <@ calls |> Seq.toList = [ "first"; "second"; "third"; "fourth" ] @>
+
+        [<Fact>]
+        let ``Check any accumulates failed alternatives and short-circuits after success`` () =
+            let calls = ResizeArray<string>()
+
+            let failWith name failure : Check<string> =
+                fun _ ->
+                    calls.Add name
+                    Error [ failure ]
+
+            let passWith name : Check<string> =
+                fun _ ->
+                    calls.Add name
+                    Ok ()
+
+            let firstSuccess =
+                Check.any
+                    [
+                        failWith "email" (InvalidFormat "email")
+                        failWith "phone" (InvalidFormat "phone")
+                        passWith "username"
+                        failWith "later" (CustomCode "unreachable")
+                    ]
+
+            test <@ firstSuccess "ada" = Ok () @>
+            test <@ calls |> Seq.toList = [ "email"; "phone"; "username" ] @>
+
+            calls.Clear()
+
+            let allFail =
+                Check.any
+                    [
+                        failWith "email" (InvalidFormat "email")
+                        failWith "phone" (InvalidFormat "phone")
+                    ]
+
+            test <@ allFail "ada" = Error [ InvalidFormat "email"; InvalidFormat "phone" ] @>
+            test <@ calls |> Seq.toList = [ "email"; "phone" ] @>
+
+        [<Fact>]
+        let ``Check String behavior distinguishes null blank format and length failures`` () =
+            let nullString: string = null
+
+            let requiredEmail =
+                Check.all
+                    [
+                        Check.String.present
+                        Check.String.email
+                        Check.String.lengthBetween 5 20
+                    ]
+
+            test <@ requiredEmail nullString = Error [ Missing; InvalidFormat "email"; Length(LengthBetween(5, 20), None) ] @>
+            test <@ requiredEmail "" = Error [ Blank; InvalidFormat "email"; Length(LengthBetween(5, 20), Some 0) ] @>
+            test <@ requiredEmail "   " = Error [ Blank; InvalidFormat "email"; Length(LengthBetween(5, 20), Some 3) ] @>
+            test <@ requiredEmail "ada" = Error [ InvalidFormat "email"; Length(LengthBetween(5, 20), Some 3) ] @>
+            test <@ requiredEmail "ada@example.com" = Ok () @>
+
+        [<Fact>]
+        let ``Check Number behavior keeps inclusive and exclusive range boundaries distinct`` () =
+            test <@ Check.Number.between 1 3 1 = Ok () @>
+            test <@ Check.Number.between 1 3 3 = Ok () @>
+            test <@ Check.Number.between 1 3 0 = Error [ Range(Between("1", "3"), Some "0") ] @>
+            test <@ Check.Number.between 1 3 4 = Error [ Range(Between("1", "3"), Some "4") ] @>
+
+            test <@ Check.Number.greaterThan 1 1 = Error [ Range(GreaterThan "1", Some "1") ] @>
+            test <@ Check.Number.greaterThan 1 2 = Ok () @>
+            test <@ Check.Number.lessThan 3 3 = Error [ Range(LessThan "3", Some "3") ] @>
+            test <@ Check.Number.lessThan 3 2 = Ok () @>
+            test <@ Check.Number.atLeast 1 1 = Ok () @>
+            test <@ Check.Number.atMost 3 3 = Ok () @>
+
+        [<Fact>]
+        let ``Check Collection behavior accumulates count and distinct failures`` () =
+            let nullValues: seq<int> = null
+
+            let collectionCheck : Check<seq<int>> =
+                Check.all
+                    [
+                        Check.Collection.minCount 2
+                        Check.Collection.maxCount 3
+                        Check.Collection.distinct
+                    ]
+
+            test <@ collectionCheck [ 1; 2; 3 ] = Ok () @>
+            test <@ collectionCheck [] = Error [ Count(MinimumCount 2, Some 0) ] @>
+            test <@ collectionCheck [ 1; 2; 1; 3 ] = Error [ Count(MaximumCount 3, Some 4); CustomCode "collection.distinct" ] @>
+            test <@ collectionCheck nullValues = Error [ Count(MinimumCount 2, None); Count(MaximumCount 3, None); Missing ] @>
+
+        [<Fact>]
+        let ``Check Option and Result behavior composes with all and any`` () =
+            test <@ Check.all [ Check.Option.some; Check.not Check.Option.none ] (Some 1) = Ok () @>
+            test <@ Check.all [ Check.Option.some; Check.not Check.Option.none ] None = Error [ Missing; CustomCode "check.not" ] @>
+            test <@ Check.any [ Check.Option.none; Check.Option.some ] (Some 1) = Ok () @>
+            test <@ Check.any [ Check.Option.none; Check.Option.some ] None = Ok () @>
+
+            test <@ Check.all [ Check.Result.ok; Check.not Check.Result.error ] (Ok 1) = Ok () @>
+            test
+                <@
+                    Check.all [ Check.Result.ok; Check.not Check.Result.error ] (Error "missing") =
+                        Error [ Equality(EqualTo "Ok", Some "Error"); CustomCode "check.not" ]
+                @>
+            test <@ Check.any [ Check.Result.error; Check.Result.ok ] (Error "missing") = Ok () @>
+            test <@ Check.any [ Check.Result.error; Check.Result.ok ] (Ok 1) = Ok () @>
+
+        [<Fact>]
         let ``Check String exposes executable string value checks`` () =
             let nullString: string = null
 
