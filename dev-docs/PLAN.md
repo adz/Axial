@@ -30,9 +30,40 @@ The active direction splits concerns like this:
 
 - explicit services and app/domain dependencies live in `'env`
 - executor mechanics live in a closed ambient runtime
+- data boundaries are described with portable schemas, reusable value checks, path-aware input/validation interpreters,
+  contextual rules, and environment-aware policies
 
 First-party service packages and standard operational services should be expressed as explicit services, not runtime
 slots.
+
+Axial's data-boundary direction splits concerns like this:
+
+- `Check<'value>` describes reusable, path-free, raw-input-free value constraints
+- `Schema<'model>` describes trusted model shape, field ordering, construction, inspection, and portable constraint
+  metadata
+- schema interpreters parse raw input, validate existing models, produce diagnostics, and drive non-validation metadata
+  consumers
+- rules describe contextual requirements over already trusted models
+- policies adapt checks, parsers, validations, and rules into `Flow`
+
+Core schema definitions live in `Axial.Schema`. Schema interpreters live in `Axial.Validation.Schema`, so `Axial.Schema`
+stays independent of diagnostics, raw input, validation, refined values, and flow execution.
+
+Schema work should prove the portable metadata model before growing broad interpreters. The next implementation slice is
+field ordering, primitive value schemas, schema constraints as inspectable metadata, lowering those constraints to
+`Check`, and enough explicit `Schema.field` / `Schema.mapN` API to prove constructor/getter alignment. Raw input,
+schema validation, rules, and DSL work should build on that explicit core rather than bypass it.
+
+Schema must also preserve a high-performance codec lowering path. The inspectable schema model may contain rich metadata,
+but JSON codecs should not interpret that metadata tree directly on the hot path. A codec interpreter must be able to
+compile schemas into direct record plans: ordered field descriptors, cached wire-name bytes, indexed field slots,
+typed field decoders, and constructor application that does not require per-value reflection or `obj array` dispatch.
+CodecMapper is the performance reference for this shape.
+
+Runtime reflection must not be the foundation for schema construction, constructor binding, validation, or codec
+execution. Reflection can be an optional import/tooling path on .NET, but the core authored schema path must remain AOT-
+and trimming-safe and must have a Fable-compatible fallback. If ergonomic boilerplate becomes painful, prefer build-time
+generation layered over explicit schemas rather than reflection-heavy runtime discovery.
 
 ## Active Architecture
 

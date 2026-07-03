@@ -18,6 +18,11 @@ Work this list top to bottom. Each item should be small enough to become an issu
 - [x] Decide whether `Axial.Schema` starts as a new project immediately or begins inside `Axial.Validation` behind the
   future package boundary: start `Axial.Schema` as a separate project immediately when schema source work begins.
 - [x] Record the package-boundary decision before any source work starts.
+- [x] Promote the accepted schema/input/rules direction into `dev-docs/PLAN.md` so it is not only a current-ideas sketch.
+- [x] Create the `Axial.Validation.Schema` integration project before raw input, schema diagnostics, schema validation,
+  or schema rules source work begins.
+- [x] Decide refined schema ownership: `Axial.Refined` must not ship schema-valued APIs while it remains independent of
+  `Axial.Schema`; refined schemas belong in examples, user code, or a future integration package.
 
 ## Phase 1: Redesign Check As A Complete Subsystem
 
@@ -77,6 +82,24 @@ Work this list top to bottom. Each item should be small enough to become an issu
 - [ ] Decide how many `mapN` helpers are acceptable before requiring generator support.
 - [ ] Add tests proving constructor/getter alignment behavior.
 - [ ] Add tests proving schema constraints are inspectable without running validation.
+- [ ] Prove `Schema` can lower to a high-performance compiled record plan before codec work starts:
+  - Reasoning: CodecMapper gets its JSON performance by compiling authored schemas into direct record codecs, not by
+    interpreting a rich metadata tree for every value. Its hot path uses ordered field chains, cached field-name bytes,
+    indexed field storage, typed field decoders, and constructor-specialized record decoders. Axial schema must preserve
+    enough typed information for an equivalent lowering.
+  - The proof should compile at least one flat record schema into a plan with ordered fields, cached UTF-8 external
+    names, typed per-field decode/encode hooks, indexed field slots, and direct constructor application.
+  - The plan must not require per-value runtime reflection, generic dictionary dispatch, or `obj array` constructor
+    application on the hot path.
+  - The authored schema path must be AOT- and trimming-safe: no runtime reflection as the foundation for constructor
+    binding, field discovery, validation, or codec execution.
+  - The authored schema path must remain Fable-compatible. Any .NET-only acceleration may use conditional compilation,
+    but there must be a portable fallback that keeps the same explicit schema semantics.
+  - Compare the intended lowering shape against `../../CodecMapper/main` before accepting the API. Use CodecMapper's
+    benchmark scenarios as the performance reference once an Axial JSON codec prototype exists.
+- [ ] Do not start RawInput, schema validation, rules, or DSL work until Phase 3 proves a vertical schema metadata slice:
+  ordered fields, primitive value schema, at least required and maxLength metadata, lowering to `Check`, metadata
+  inspection, constructor/getter alignment, and the compiled-record-plan proof above.
 
 ## Phase 4: Add Refined Value Schemas
 
@@ -87,10 +110,12 @@ Work this list top to bottom. Each item should be small enough to become an issu
 - [ ] Ensure refined value schemas can run `Check` programs.
 - [ ] Ensure model schemas can use `field "email" _.Email Email.schema { required }`.
 - [ ] Add examples for `Email`, `ContactName`, positive/non-negative numbers, and bounded strings.
-- [ ] Decide which refined schemas ship in `Axial.Refined` versus examples only.
+- [x] Decide which refined schemas ship in `Axial.Refined` versus examples only: examples/user code only unless the
+  package-boundary invariant changes.
 
 ## Phase 5: Build RawInput And Input Parsing
 
+- [ ] Keep all schema input parsing source in `Axial.Validation.Schema`, not `Axial.Validation` or `Axial.Schema`.
 - [ ] Define source-agnostic `RawInput`:
   `Missing`, `Scalar`, `Many`, and `Object`.
 - [ ] Implement path addressing for names and indexes.
@@ -110,6 +135,7 @@ Work this list top to bottom. Each item should be small enough to become an issu
 
 ## Phase 6: Define Schema Errors And Diagnostics Interpretation
 
+- [ ] Keep `SchemaError` and schema diagnostics interpretation in `Axial.Validation.Schema`, not core `Axial.Schema`.
 - [ ] Define `SchemaError`.
 - [ ] Include required, expected scalar/object/many, invalid format, too short, too long, out of range, count failures,
   duplicate failures, constructor failures, and custom code/message.
@@ -144,6 +170,7 @@ Work this list top to bottom. Each item should be small enough to become an issu
 
 ## Phase 9: Validation Interpreter For Existing Models
 
+- [ ] Keep schema-based validation interpreters in `Axial.Validation.Schema`, not core `Axial.Validation`.
 - [ ] Implement `Validation.validate : Schema<'model> -> 'model -> Validation<'model, SchemaError>` or equivalent.
 - [ ] Use getters, not raw input.
 - [ ] Reuse schema constraints and `Check` lowering.
@@ -154,6 +181,7 @@ Work this list top to bottom. Each item should be small enough to become an issu
 
 ## Phase 10: Contextual Rules
 
+- [ ] Keep schema/contextual rules in `Axial.Validation.Schema` unless a separate rules package is deliberately created.
 - [ ] Define `RuleSet<'model, 'error>`.
 - [ ] Implement `rules<'model> { ... }` or explicit core API.
 - [ ] Support field/path attachment for rule failures.

@@ -80,8 +80,9 @@ RefineBuilder
 refine { }
 ```
 
-Refined/domain value types can expose value schemas for schema integration, but `Axial.Refined` must not depend on
-`Axial.Schema`, `Axial.Validation`, or `Axial.Flow`.
+Refined/domain value types can participate in schema integration through examples, user code, or an integration package,
+but `Axial.Refined` must not depend on `Axial.Schema`, `Axial.Validation`, or `Axial.Flow`. Do not ship schema-valued
+APIs from `Axial.Refined` unless the package-boundary invariant is deliberately changed.
 
 `Axial.Schema` owns:
 
@@ -98,6 +99,16 @@ schema constraint metadata
 
 Schema definitions describe model shape, trusted construction, inspection, and portable constraints. Schema constraints
 must retain metadata for interpreters and lower to executable `Check` programs where appropriate.
+
+Schema definitions must also retain enough typed construction and field-order information for high-performance codec
+interpreters to compile direct hot-path plans. Interpreters such as JSON codecs should be able to lower a schema into
+cached field-name bytes, indexed field slots, typed decoders, and direct constructor application. Do not make codecs
+walk a generic metadata tree, perform runtime reflection, or invoke `obj array` constructor application for every
+decoded value.
+
+The authored schema path must stay AOT-, trimming-, and Fable-compatible. Runtime reflection belongs only in optional
+.NET import/tooling packages or experiments; it must not become the foundation for schema construction, constructor
+binding, validation, or codec execution.
 
 `Axial.Validation` owns:
 
@@ -124,6 +135,9 @@ SchemaError / diagnostic interpretation
 
 Schema interpreters give schema definitions path-aware, raw-input-aware, diagnostic, and contextual behavior. Core
 schema definitions stay independent of validation and flow execution.
+
+Create and use the `Axial.Validation.Schema` project before implementing raw input parsing, schema validation, schema
+diagnostics, or schema rules. Those features should not be staged inside `Axial.Validation` or `Axial.Schema`.
 
 `Axial` is the umbrella package. It references the leaf packages and re-exports the common builders, but it should not
 become a new abstraction layer.

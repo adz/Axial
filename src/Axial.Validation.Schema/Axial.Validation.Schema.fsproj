@@ -4,21 +4,21 @@
     <TargetFrameworks>netstandard2.1;net8.0</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IsAotCompatible Condition="'$(TargetFramework)' == 'net8.0'">true</IsAotCompatible>
-    <PackageId>Axial</PackageId>
-    <AssemblyName>Axial</AssemblyName>
-    <RootNamespace>Axial</RootNamespace>
+    <PackageId>Axial.Validation.Schema</PackageId>
+    <AssemblyName>Axial.Validation.Schema</AssemblyName>
+    <RootNamespace>Axial.Validation.Schema</RootNamespace>
     <Authors>Adam Davies</Authors>
-    <Description>Umbrella package for Axial.Flow, Axial.ErrorHandling, Axial.Refined, Axial.Schema, Axial.Validation, and Axial.Validation.Schema.</Description>
+    <Description>Schema interpreters for Axial input parsing, diagnostics, validation, and contextual rules.</Description>
     <PackageProjectUrl>https://github.com/adz/Axial</PackageProjectUrl>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
-    <PackageTags>fsharp;axial;workflow;result;validation;effect</PackageTags>
+    <PackageTags>fsharp;schema;validation;input;diagnostics;rules</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <FsDocsCollectionName>Axial</FsDocsCollectionName>
     <FsDocsLogoSource>content/img/axial-inline-light.svg</FsDocsLogoSource>
-    <FsDocsLogoAlt>Axial</FsDocsLogoAlt>
+    <FsDocsLogoAlt>Axial.Validation.Schema</FsDocsLogoAlt>
     <FsDocsLogoLink>https://github.com/adz/Axial</FsDocsLogoLink>
     <FsDocsLicenseLink>https://github.com/adz/Axial/blob/main/LICENSE</FsDocsLicenseLink>
     <FsDocsReleaseNotesLink>https://github.com/adz/Axial/blob/main/RELEASE_NOTES.md</FsDocsReleaseNotesLink>
@@ -28,16 +28,20 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Axial.Flow\Axial.Flow.fsproj" />
-    <ProjectReference Include="..\Axial.ErrorHandling\Axial.ErrorHandling.fsproj" />
-    <ProjectReference Include="..\Axial.Refined\Axial.Refined.fsproj" />
-    <ProjectReference Include="..\Axial.Schema\Axial.Schema.fsproj" />
-    <ProjectReference Include="..\Axial.Validation\Axial.Validation.fsproj" />
-    <ProjectReference Include="..\Axial.Validation.Schema\Axial.Validation.Schema.fsproj" />
+    <PackageReference Include="Fable.Core" Version="4.3.0" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="Builders.fs" />
+    <ProjectReference Include="..\Axial.Schema\Axial.Schema.fsproj" />
+    <ProjectReference Include="..\Axial.Validation\Axial.Validation.fsproj" />
+    <ProjectReference Include="..\Axial.ErrorHandling\Axial.ErrorHandling.fsproj" />
+    <ProjectReference Include="..\Axial.Refined\Axial.Refined.fsproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="SchemaValidation.fs" />
   </ItemGroup>
 
 </Project>
