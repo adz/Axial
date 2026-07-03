@@ -88,7 +88,8 @@ module ApiShapeTests =
             { ExternalName = ExternalFieldName.create externalName
               Order = FieldOrder.create order
               Getter = getter
-              ValueSchema = Value.text.Definition }
+              ValueSchema = Value.text.Definition
+              Constraints = [] }
 
         Field definition
 
@@ -274,10 +275,12 @@ module ApiShapeTests =
         let valueSchemaType = typedefof<ValueSchema<_>>
         let fieldType = typedefof<Field<_, _>>
         let primitiveValueKindType = typeof<PrimitiveValueKind>
+        let schemaConstraintType = typeof<SchemaConstraint>
         let externalFieldNameType = typeof<ExternalFieldName>
         let fieldOrderType = typeof<FieldOrder>
         let fieldModule = moduleType fieldType "Axial.Schema.Field"
         let valueModule = moduleType valueSchemaType "Axial.Schema.Value"
+        let schemaConstraintModule = moduleType schemaConstraintType "Axial.Schema.SchemaConstraintModule"
         let schemaAssembly = schemaType.Assembly
         let references = referencedAssemblyNames schemaAssembly
         let publicConstructors =
@@ -286,6 +289,8 @@ module ApiShapeTests =
             valueSchemaType.GetConstructors(BindingFlags.Public ||| BindingFlags.Instance)
         let publicFieldConstructors =
             fieldType.GetConstructors(BindingFlags.Public ||| BindingFlags.Instance)
+        let publicSchemaConstraintConstructors =
+            schemaConstraintType.GetConstructors(BindingFlags.Public ||| BindingFlags.Instance)
         let publicExternalFieldNameConstructors =
             externalFieldNameType.GetConstructors(BindingFlags.Public ||| BindingFlags.Instance)
         let fieldDefinitionType =
@@ -315,17 +320,24 @@ module ApiShapeTests =
         test <@ fieldType.IsGenericTypeDefinition @>
         test <@ fieldType.GetGenericArguments().Length = 2 @>
         test <@ publicFieldConstructors.Length = 0 @>
+        test <@ publicSchemaConstraintConstructors.Length = 0 @>
         test <@ publicExternalFieldNameConstructors.Length = 0 @>
-        fieldModule |> publicStaticMemberNames |> assertContainsAll [ "externalName"; "order"; "getValue" ]
+        fieldModule
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "externalName"; "order"; "getValue"; "constraints"; "withConstraint"; "withConstraints" ]
         valueModule
         |> publicStaticMemberNames
-        |> assertContainsAll [ "text"; "int"; "decimal"; "bool"; "date"; "dateTime"; "guid"; "primitiveKind" ]
+        |> assertContainsAll [ "text"; "int"; "decimal"; "bool"; "date"; "dateTime"; "guid"; "primitiveKind"; "constraints"; "withConstraint"; "withConstraints" ]
+        schemaConstraintModule
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "create"; "createWithArguments"; "code"; "arguments"; "tryFindArgument" ]
         primitiveValueKindType
         |> publicUnionCaseNames
         |> assertContainsAll [ "Text"; "Int"; "Decimal"; "Bool"; "Date"; "DateTime"; "Guid" ]
         test <@ valueSchemaType.Assembly = schemaAssembly @>
         test <@ fieldType.Assembly = schemaAssembly @>
         test <@ primitiveValueKindType.Assembly = schemaAssembly @>
+        test <@ schemaConstraintType.Assembly = schemaAssembly @>
         test <@ externalFieldNameType.Assembly = schemaAssembly @>
         test <@ fieldOrderType.Assembly = schemaAssembly @>
         test <@ externalNameProperty.PropertyType = externalFieldNameType @>
@@ -356,14 +368,41 @@ module ApiShapeTests =
                   PrimitiveValueKind.DateTime
                   PrimitiveValueKind.Guid ]
         @>
-        test <@ Value.text.Definition = PrimitiveValueDefinition PrimitiveValueKind.Text @>
-        test <@ Value.``int``.Definition = PrimitiveValueDefinition PrimitiveValueKind.Int @>
-        test <@ Value.``decimal``.Definition = PrimitiveValueDefinition PrimitiveValueKind.Decimal @>
-        test <@ Value.``bool``.Definition = PrimitiveValueDefinition PrimitiveValueKind.Bool @>
-        test <@ Value.date.Definition = PrimitiveValueDefinition PrimitiveValueKind.Date @>
-        test <@ Value.dateTime.Definition = PrimitiveValueDefinition PrimitiveValueKind.DateTime @>
-        test <@ Value.guid.Definition = PrimitiveValueDefinition PrimitiveValueKind.Guid @>
+        test <@ Value.text.Definition.Shape = PrimitiveValueDefinition PrimitiveValueKind.Text @>
+        test <@ Value.``int``.Definition.Shape = PrimitiveValueDefinition PrimitiveValueKind.Int @>
+        test <@ Value.``decimal``.Definition.Shape = PrimitiveValueDefinition PrimitiveValueKind.Decimal @>
+        test <@ Value.``bool``.Definition.Shape = PrimitiveValueDefinition PrimitiveValueKind.Bool @>
+        test <@ Value.date.Definition.Shape = PrimitiveValueDefinition PrimitiveValueKind.Date @>
+        test <@ Value.dateTime.Definition.Shape = PrimitiveValueDefinition PrimitiveValueKind.DateTime @>
+        test <@ Value.guid.Definition.Shape = PrimitiveValueDefinition PrimitiveValueKind.Guid @>
+        test <@ Value.constraints Value.text = [] @>
         raises<ArgumentNullException> <@ Value.primitiveKind Unchecked.defaultof<ValueSchema<string>> |> ignore @>
+
+    [<Fact>]
+    let ``schema constraints are inspectable metadata independent of executable checks`` () =
+        let required = SchemaConstraint.create "required"
+        let maxLength = SchemaConstraint.createWithArguments "maxLength" [ "maximum", box 20 ]
+        let text = Value.text |> Value.withConstraints [ required; maxLength ]
+        let field =
+            schemaField "name" 0 (fun (model: Customer) -> model.Name)
+            |> Field.withConstraint required
+            |> Field.withConstraint maxLength
+        let descriptor = field |> schemaFieldDescriptor
+
+        test <@ SchemaConstraint.code required = "required" @>
+        test <@ string required = "required" @>
+        test <@ SchemaConstraint.arguments required |> Seq.isEmpty @>
+        test <@ SchemaConstraint.tryFindArgument "maximum" maxLength = Some(box 20) @>
+        test <@ Value.constraints text |> List.map SchemaConstraint.code = [ "required"; "maxLength" ] @>
+        test <@ Field.constraints field |> List.map SchemaConstraint.code = [ "required"; "maxLength" ] @>
+        test <@ descriptor.Constraints |> List.map SchemaConstraint.code = [ "required"; "maxLength" ] @>
+        test <@ descriptor.ValueSchema.Constraints = [] @>
+        test <@ text.Definition.Constraints |> List.map SchemaConstraint.code = [ "required"; "maxLength" ] @>
+        raises<ArgumentException> <@ SchemaConstraint.create "" |> ignore @>
+        raises<ArgumentException> <@ SchemaConstraint.createWithArguments "maxLength" [ "", box 20 ] |> ignore @>
+        raises<ArgumentException> <@ SchemaConstraint.createWithArguments "maxLength" [ "maximum", box 20; "maximum", box 30 ] |> ignore @>
+        raises<ArgumentNullException> <@ Value.withConstraint null Value.text |> ignore @>
+        raises<ArgumentNullException> <@ Field.constraints Unchecked.defaultof<Field<Customer, string>> |> ignore @>
 
     [<Fact>]
     let ``schema fields inspect existing trusted models through typed getters`` () =

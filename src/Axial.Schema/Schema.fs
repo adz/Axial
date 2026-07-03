@@ -1,6 +1,8 @@
 namespace Axial.Schema
 
 open System
+open System.Collections.Generic
+open System.Collections.ObjectModel
 
 /// <summary>
 /// Represents the source-facing name of a schema field.
@@ -73,6 +75,100 @@ module FieldOrder =
 
     /// <summary>Returns the zero-based field position.</summary>
     let value (order: FieldOrder) = order.Value
+
+/// <summary>
+/// Describes a portable schema constraint as inspectable metadata.
+/// </summary>
+/// <remarks>
+/// <para>
+/// Schema constraints are declarative data for interpreters. They are intentionally separate from executable check
+/// functions so input parsers, diagnostics, JSON Schema emitters, UI renderers, and documentation generators can inspect
+/// the same constraint without running validation logic.
+/// </para>
+/// <para>
+/// The generic metadata shape comes before the named constraint helpers. Later helpers such as required, max length, and
+/// numeric ranges can create these values with stable codes and arguments while still lowering to executable checks in
+/// validation-oriented interpreters.
+/// </para>
+/// </remarks>
+[<Sealed; AllowNullLiteral>]
+type SchemaConstraint internal (code: string, arguments: IReadOnlyDictionary<string, obj>) =
+    /// <summary>Gets the stable interpreter-facing constraint code.</summary>
+    member _.Code = code
+
+    /// <summary>Gets the structured constraint arguments keyed by stable interpreter-facing names.</summary>
+    member _.Arguments = arguments
+
+    override _.ToString() = code
+
+/// <summary>Functions for creating and inspecting schema constraint metadata.</summary>
+[<RequireQualifiedAccess>]
+module SchemaConstraint =
+    let private ensureName parameterName (value: string) =
+        if isNull value then
+            nullArg parameterName
+
+        if String.IsNullOrWhiteSpace value then
+            invalidArg parameterName "Schema constraint names must not be empty or whitespace."
+
+    let private emptyArguments =
+        ReadOnlyDictionary<string, obj>(Dictionary<string, obj>()) :> IReadOnlyDictionary<string, obj>
+
+    /// <summary>Creates portable schema constraint metadata with no arguments.</summary>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="code" /> is null.</exception>
+    /// <exception cref="T:System.ArgumentException">
+    /// Thrown when <paramref name="code" /> is empty or contains only whitespace.
+    /// </exception>
+    let create code =
+        ensureName (nameof code) code
+        SchemaConstraint(code, emptyArguments)
+
+    /// <summary>Creates portable schema constraint metadata with structured arguments.</summary>
+    /// <exception cref="T:System.ArgumentNullException">
+    /// Thrown when <paramref name="code" />, <paramref name="arguments" />, or an argument name is null.
+    /// </exception>
+    /// <exception cref="T:System.ArgumentException">
+    /// Thrown when <paramref name="code" /> or an argument name is empty or contains only whitespace.
+    /// </exception>
+    let createWithArguments code (arguments: (string * obj) seq) =
+        ensureName (nameof code) code
+
+        if isNull (box arguments) then
+            nullArg (nameof arguments)
+
+        let values = Dictionary<string, obj>()
+
+        arguments
+        |> Seq.iter (fun (name, value) ->
+            ensureName (nameof arguments) name
+            values.Add(name, value))
+
+        SchemaConstraint(code, ReadOnlyDictionary<string, obj>(values) :> IReadOnlyDictionary<string, obj>)
+
+    /// <summary>Returns the stable interpreter-facing constraint code.</summary>
+    let code (constraint': SchemaConstraint) =
+        if isNull constraint' then
+            nullArg (nameof constraint')
+
+        constraint'.Code
+
+    /// <summary>Returns the structured constraint arguments.</summary>
+    let arguments (constraint': SchemaConstraint) =
+        if isNull constraint' then
+            nullArg (nameof constraint')
+
+        constraint'.Arguments
+
+    /// <summary>Returns a structured constraint argument when present.</summary>
+    let tryFindArgument name (constraint': SchemaConstraint) =
+        ensureName (nameof name) name
+
+        if isNull constraint' then
+            nullArg (nameof constraint')
+
+        match constraint'.Arguments.TryGetValue name with
+        | true, value -> Some value
+        | false, _ -> None
 
 type internal ConstructorApplication<'model> =
     { ArgumentCount: int
@@ -155,13 +251,18 @@ type PrimitiveValueKind =
     | Guid
 
 type internal ValueSchemaDefinition =
+    { Shape: ValueSchemaShape
+      Constraints: SchemaConstraint list }
+
+and internal ValueSchemaShape =
     | PrimitiveValueDefinition of PrimitiveValueKind
 
 type internal FieldDescriptor<'model> =
     { ExternalName: ExternalFieldName
       Order: FieldOrder
       Getter: 'model -> obj
-      ValueSchema: ValueSchemaDefinition }
+      ValueSchema: ValueSchemaDefinition
+      Constraints: SchemaConstraint list }
 
 type internal ModelSchemaDefinition<'model> =
     { Constructor: ConstructorApplication<'model>
@@ -175,7 +276,8 @@ type internal FieldDefinition<'model, 'value> =
     { ExternalName: ExternalFieldName
       Order: FieldOrder
       Getter: 'model -> 'value
-      ValueSchema: ValueSchemaDefinition }
+      ValueSchema: ValueSchemaDefinition
+      Constraints: SchemaConstraint list }
 
 module internal ModelSchemaDefinition =
     let private ensureContiguousOrders (fields: FieldDescriptor<'model> list) =
@@ -245,7 +347,11 @@ type ValueSchema<'value> internal (definition: ValueSchemaDefinition) =
 /// <summary>Functions for creating and inspecting value schemas.</summary>
 [<RequireQualifiedAccess>]
 module Value =
-    let private primitive kind = ValueSchema(PrimitiveValueDefinition kind)
+    let private primitive kind =
+        ValueSchema(
+            { Shape = PrimitiveValueDefinition kind
+              Constraints = [] }
+        )
 
     /// <summary>Describes text represented as <see cref="T:System.String" />.</summary>
     let text : ValueSchema<string> = primitive PrimitiveValueKind.Text
@@ -275,8 +381,46 @@ module Value =
         if isNull (box schema) then
             nullArg (nameof schema)
 
-        match schema.Definition with
+        match schema.Definition.Shape with
         | PrimitiveValueDefinition kind -> kind
+
+    /// <summary>Returns the portable constraint metadata attached to a value schema.</summary>
+    let constraints (schema: ValueSchema<'value>) =
+        if isNull (box schema) then
+            nullArg (nameof schema)
+
+        schema.Definition.Constraints
+
+    /// <summary>Returns a value schema with additional portable constraint metadata appended in declaration order.</summary>
+    let withConstraint (constraint': SchemaConstraint) (schema: ValueSchema<'value>) =
+        if isNull constraint' then
+            nullArg (nameof constraint')
+
+        if isNull (box schema) then
+            nullArg (nameof schema)
+
+        ValueSchema(
+            { schema.Definition with
+                Constraints = schema.Definition.Constraints @ [ constraint' ] }
+        )
+
+    /// <summary>Returns a value schema with additional portable constraint metadata appended in declaration order.</summary>
+    let withConstraints (constraints: SchemaConstraint list) (schema: ValueSchema<'value>) =
+        if isNull (box constraints) then
+            nullArg (nameof constraints)
+
+        constraints
+        |> List.iter (fun constraint' ->
+            if isNull constraint' then
+                nullArg (nameof constraints))
+
+        if isNull (box schema) then
+            nullArg (nameof schema)
+
+        ValueSchema(
+            { schema.Definition with
+                Constraints = schema.Definition.Constraints @ constraints }
+        )
 
 /// <summary>
 /// Describes one typed field of a trusted model for schema interpreters.
@@ -306,7 +450,8 @@ module internal FieldDescriptorOps =
         { FieldDescriptor.ExternalName = field.Definition.ExternalName
           Order = field.Definition.Order
           Getter = fun model -> field.Definition.Getter model |> box
-          ValueSchema = field.Definition.ValueSchema }
+          ValueSchema = field.Definition.ValueSchema
+          Constraints = field.Definition.Constraints }
 
 /// <summary>Functions for inspecting schema field metadata.</summary>
 [<RequireQualifiedAccess>]
@@ -331,3 +476,41 @@ module Field =
             nullArg (nameof field)
 
         field.Definition.Getter model
+
+    /// <summary>Returns the portable constraint metadata attached to a schema field.</summary>
+    let constraints (field: Field<'model, 'value>) =
+        if isNull (box field) then
+            nullArg (nameof field)
+
+        field.Definition.Constraints
+
+    /// <summary>Returns a schema field with additional portable constraint metadata appended in declaration order.</summary>
+    let withConstraint (constraint': SchemaConstraint) (field: Field<'model, 'value>) =
+        if isNull constraint' then
+            nullArg (nameof constraint')
+
+        if isNull (box field) then
+            nullArg (nameof field)
+
+        Field(
+            { field.Definition with
+                Constraints = field.Definition.Constraints @ [ constraint' ] }
+        )
+
+    /// <summary>Returns a schema field with additional portable constraint metadata appended in declaration order.</summary>
+    let withConstraints (constraints: SchemaConstraint list) (field: Field<'model, 'value>) =
+        if isNull (box constraints) then
+            nullArg (nameof constraints)
+
+        constraints
+        |> List.iter (fun constraint' ->
+            if isNull constraint' then
+                nullArg (nameof constraints))
+
+        if isNull (box field) then
+            nullArg (nameof field)
+
+        Field(
+            { field.Definition with
+                Constraints = field.Definition.Constraints @ constraints }
+        )
