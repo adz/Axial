@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.isValueNone"
 linkTitle: "isValueNone"
-weight: 2003
+weight: 2603
 type: docs
 ---
 

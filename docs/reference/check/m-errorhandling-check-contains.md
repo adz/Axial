@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.contains"
 linkTitle: "contains"
-weight: 2300
+weight: 2900
 ---
 
 Returns true when the sequence contains the expected value.

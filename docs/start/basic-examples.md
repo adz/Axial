@@ -33,7 +33,9 @@ Use `flow {}` to mix pure `Result` logic, `Async` blocks, and other flows.
 
 ```fsharp
 let validateId id =
-    Result.require (id > 0) "Invalid ID"
+    id
+    |> Result.require (Check.Number.greaterThan 0)
+    |> Result.mapError (fun _ -> "Invalid ID")
     |> Result.map (fun () -> id)
 
 let fetchUser id =

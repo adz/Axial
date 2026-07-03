@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.isEmail"
 linkTitle: "isEmail"
-weight: 2210
+weight: 2810
 type: docs
 ---
 

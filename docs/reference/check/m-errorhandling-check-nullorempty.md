@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.nullOrEmpty"
 linkTitle: "nullOrEmpty"
-weight: 2201
+weight: 2801
 ---
 
 Returns true when the string is null or empty.

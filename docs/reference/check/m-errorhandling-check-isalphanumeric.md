@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.isAlphaNumeric"
 linkTitle: "isAlphaNumeric"
-weight: 2212
+weight: 2812
 ---
 
 Returns true when the string contains only letter or digit characters.

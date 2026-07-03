@@ -53,7 +53,7 @@ For boolean predicates, make the predicate explicit first:
 
 ```fsharp
 do!
-    Result.require isValid InvalidPassword
+    Result.checkOr InvalidPassword isValid
 ```
 
 ## Map an Error

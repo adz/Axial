@@ -6,39 +6,10 @@ type CardinalityFailure =
     | ExpectedSingle of observedCount: int
     /// <summary>The sequence was expected to contain at most one item.</summary>
     | ExpectedAtMostOne of observedCount: int
-    /// <summary>The sequence was expected to contain at least one item.</summary>
-    | ExpectedAtLeastOne
-    /// <summary>The sequence was expected to contain more than one item.</summary>
-    | ExpectedMoreThanOne of observedCount: int
-
-/// <summary>Structured errors returned by string length helpers.</summary>
-type StringLengthFailure =
-    /// <summary>The string was shorter than the minimum length.</summary>
-    | ExpectedMinLength of minLength: int * actualLength: int
-    /// <summary>The string was longer than the maximum length.</summary>
-    | ExpectedMaxLength of maxLength: int * actualLength: int
-    /// <summary>The string length did not match the expected length.</summary>
-    | ExpectedExactLength of expectedLength: int * actualLength: int
-
-/// <summary>Structured errors returned by comparison helpers.</summary>
-type RangeFailure<'value> =
-    /// <summary>The value was expected to be greater than the supplied lower bound.</summary>
-    | ExpectedGreaterThan of minimumExclusive: 'value * actual: 'value
-    /// <summary>The value was expected to be less than the supplied upper bound.</summary>
-    | ExpectedLessThan of maximumExclusive: 'value * actual: 'value
-    /// <summary>The value was expected to be greater than or equal to the supplied lower bound.</summary>
-    | ExpectedAtLeast of minimumInclusive: 'value * actual: 'value
-    /// <summary>The value was expected to be less than or equal to the supplied upper bound.</summary>
-    | ExpectedAtMost of maximumInclusive: 'value * actual: 'value
-    /// <summary>The value was expected to be between the supplied inclusive bounds.</summary>
-    | ExpectedBetween of minimumInclusive: 'value * maximumInclusive: 'value * actual: 'value
 
 /// <summary>Fail-fast helpers over the standard F# <c>Result</c> type.</summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Result =
-    let private stringLength (value: string) =
-        if isNull value then 0 else value.Length
-
     let private cardinalityAtMostTwo (values: seq<'value>) : int * 'value =
         use enumerator = values.GetEnumerator()
         let mutable count = 0
@@ -78,6 +49,16 @@ module Result =
         match result with
         | Ok value -> binder value
         | Error failure -> Error failure
+
+    /// <summary>Runs a value check and returns <c>Ok ()</c> or the check failures.</summary>
+    let require (check: Check<'input>) (input: 'input) : Result<unit, CheckFailure list> =
+        check input
+
+    /// <summary>Runs a value check and keeps the original input when it succeeds.</summary>
+    let guard (check: Check<'input>) (input: 'input) : Result<'input, CheckFailure list> =
+        input
+        |> require check
+        |> map (fun () -> input)
 
     /// <summary>Returns <c>Ok ()</c> when the condition is true, or the supplied error when it is false.</summary>
     let inline checkOr (failure: 'error) (condition: bool) : Result<unit, 'error> =
@@ -170,50 +151,45 @@ module Result =
         use enumerator = values.GetEnumerator()
         if enumerator.MoveNext() then Ok enumerator.Current else Error failure
 
-    /// <summary>Keeps a string whose length lies between the supplied inclusive bounds.</summary>
-    let length minimum maximum value : Result<string, StringLengthFailure> =
-        let actual = stringLength value
+    /// <summary>Keeps a non-null, non-empty, non-whitespace string.</summary>
+    let notBlank value : Result<string, CheckFailure list> =
+        guard Check.String.present value
 
-        if actual < minimum then Error(ExpectedMinLength(minimum, actual))
-        elif actual > maximum then Error(ExpectedMaxLength(maximum, actual))
-        else Ok value
+    /// <summary>Keeps a string whose length lies between the supplied inclusive bounds.</summary>
+    let length minimum maximum value : Result<string, CheckFailure list> =
+        guard (Check.String.lengthBetween minimum maximum) value
 
     /// <summary>Keeps a string whose length is at least the supplied minimum.</summary>
-    let minLength minimum value : Result<string, StringLengthFailure> =
-        let actual = stringLength value
-        if actual >= minimum then Ok value else Error(ExpectedMinLength(minimum, actual))
+    let minLength minimum value : Result<string, CheckFailure list> =
+        guard (Check.String.minLength minimum) value
 
     /// <summary>Keeps a string whose length is at most the supplied maximum.</summary>
-    let maxLength maximum value : Result<string, StringLengthFailure> =
-        let actual = stringLength value
-        if actual <= maximum then Ok value else Error(ExpectedMaxLength(maximum, actual))
+    let maxLength maximum value : Result<string, CheckFailure list> =
+        guard (Check.String.maxLength maximum) value
 
     /// <summary>Keeps a string whose length equals the supplied expected length.</summary>
-    let exactLength expected value : Result<string, StringLengthFailure> =
-        let actual = stringLength value
-        if actual = expected then Ok value else Error(ExpectedExactLength(expected, actual))
+    let exactLength expected value : Result<string, CheckFailure list> =
+        guard (Check.String.exactLength expected) value
 
     /// <summary>Keeps a value between the supplied inclusive bounds.</summary>
     let inline range minimum maximum value =
-        if value < minimum then Error(ExpectedAtLeast(minimum, value))
-        elif value > maximum then Error(ExpectedAtMost(maximum, value))
-        else Ok value
+        guard (Check.Number.between minimum maximum) value
 
     /// <summary>Keeps a value greater than the supplied exclusive lower bound.</summary>
     let inline greaterThan minimum value =
-        if value > minimum then Ok value else Error(ExpectedGreaterThan(minimum, value))
+        guard (Check.Number.greaterThan minimum) value
 
     /// <summary>Keeps a value less than the supplied exclusive upper bound.</summary>
     let inline lessThan maximum value =
-        if value < maximum then Ok value else Error(ExpectedLessThan(maximum, value))
+        guard (Check.Number.lessThan maximum) value
 
     /// <summary>Keeps a value greater than or equal to the supplied lower bound.</summary>
     let inline atLeast minimum value =
-        if value >= minimum then Ok value else Error(ExpectedAtLeast(minimum, value))
+        guard (Check.Number.atLeast minimum) value
 
     /// <summary>Keeps a value less than or equal to the supplied upper bound.</summary>
     let inline atMost maximum value =
-        if value <= maximum then Ok value else Error(ExpectedAtMost(maximum, value))
+        guard (Check.Number.atMost maximum) value
 
     /// <summary>Takes the only item from a sequence.</summary>
     let single (values: seq<'value>) : Result<'value, CardinalityFailure> =
@@ -229,11 +205,9 @@ module Result =
         | count, _ -> Error(ExpectedAtMostOne count)
 
     /// <summary>Keeps a sequence that contains at least one item.</summary>
-    let atLeastOne (values: seq<'value>) : Result<seq<'value>, CardinalityFailure> =
-        if Seq.isEmpty values then Error ExpectedAtLeastOne else Ok values
+    let atLeastOne (values: seq<'value>) : Result<seq<'value>, CheckFailure list> =
+        guard Check.Collection.notEmpty values
 
     /// <summary>Keeps a sequence that contains more than one item.</summary>
-    let moreThanOne (values: seq<'value>) : Result<seq<'value>, CardinalityFailure> =
-        match cardinalityAtMostTwo values with
-        | 2, _ -> Ok values
-        | count, _ -> Error(ExpectedMoreThanOne count)
+    let moreThanOne (values: seq<'value>) : Result<seq<'value>, CheckFailure list> =
+        guard (Check.Collection.minCount 2) values

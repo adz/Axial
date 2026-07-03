@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.isNone"
 linkTitle: "isNone"
-weight: 2001
+weight: 2601
 type: docs
 ---
 

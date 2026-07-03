@@ -14,7 +14,7 @@ type FileReadError =
 let readTextFile (path: string) : Flow<ReadmeEnv, FileReadError, string> =
     flow {
         // In production, map access and path exceptions separately at the boundary.
-        do! Result.require (File.Exists path) () |> Bind.error (NotFound path)
+        do! File.Exists path |> Result.checkOr () |> Bind.error (NotFound path)
 
         return! ColdTask(fun ct -> File.ReadAllTextAsync(path, ct))
     }

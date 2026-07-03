@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.hasNoValue"
 linkTitle: "hasNoValue"
-weight: 2101
+weight: 2701
 ---
 
 Returns true when the nullable is empty.

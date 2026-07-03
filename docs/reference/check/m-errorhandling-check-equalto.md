@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.equalTo"
 linkTitle: "equalTo"
-weight: 2400
+weight: 3000
 ---
 
 Returns true when the actual value equals the expected value.

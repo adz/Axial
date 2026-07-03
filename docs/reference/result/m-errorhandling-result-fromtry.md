@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Result.fromTry"
 linkTitle: "fromTry"
-weight: 2203
+weight: 2205
 ---
 
 Converts a .NET <code>Try*</code> tuple into a unit-error result.

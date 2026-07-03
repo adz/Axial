@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Result.fromChoice"
 linkTitle: "fromChoice"
-weight: 2204
+weight: 2206
 type: docs
 ---
 

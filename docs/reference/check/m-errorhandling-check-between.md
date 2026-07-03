@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.between"
 linkTitle: "between"
-weight: 2406
+weight: 3006
 ---
 
 Returns true when the value lies between the supplied inclusive bounds.

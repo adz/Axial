@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.lessThan"
 linkTitle: "lessThan"
-weight: 2403
+weight: 3003
 ---
 
 Returns true when the value is less than the supplied exclusive upper bound.

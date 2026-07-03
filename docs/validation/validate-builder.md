@@ -43,11 +43,11 @@ Standard `let!` and `do!` inside a `validate {}` block still short-circuit. This
 ```fsharp
 validate {
     // Stop immediately if the whole object is null
-    let! input = input |> Result.notNull |> Result.mapError (fun () -> ObjectMissing)
+    let! input = input |> Result.notNullOr ObjectMissing
     
     // These run only if input was not null, but they run independently of each other
-    let! name = input.Name |> Result.notBlank |> Result.mapError (fun () -> NameRequired)
-    and! email = input.Email |> Result.notBlank |> Result.mapError (fun () -> EmailRequired)
+    let! name = input.Name |> Result.notBlank |> Result.mapError (fun _ -> NameRequired)
+    and! email = input.Email |> Result.notBlank |> Result.mapError (fun _ -> EmailRequired)
     
     return { Name = name; Email = email }
 }

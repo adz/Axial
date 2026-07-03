@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.isValueSome"
 linkTitle: "isValueSome"
-weight: 2002
+weight: 2602
 ---
 
 Returns true when the value option is <code>ValueSome</code>.

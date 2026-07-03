@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.isOk"
 linkTitle: "isOk"
-weight: 2004
+weight: 2604
 type: docs
 ---
 

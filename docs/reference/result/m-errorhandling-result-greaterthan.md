@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Result.greaterThan"
 linkTitle: "greaterThan"
-weight: 2410
+weight: 2406
 ---
 
 Keeps a value greater than the supplied exclusive lower bound.
@@ -23,4 +23,4 @@ Keeps a value greater than the supplied exclusive lower bound.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'a,&#32;<span><a href="/reference/Axial/axial-errorhandling-rangefailure-1.html">RangeFailure</a>&lt;'a&gt;</span></span>&gt;</span></code> |  |
+| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'a,&#32;<span><a href="/reference/Axial/axial-errorhandling-checkfailure.html">CheckFailure</a>&#32;list</span></span>&gt;</span></code> |  |

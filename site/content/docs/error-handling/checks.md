@@ -8,22 +8,26 @@ type: docs
 ---
 
 
-`Check` contains pure predicates. A check answers a yes/no question and returns `bool`.
+`Check` contains reusable value constraints. Executable checks such as `Check.String.present` return
+`Result<unit, CheckFailure list>`. Top-level helpers such as `Check.notBlank` remain lightweight boolean predicates for
+local structural facts.
 
 Use `Check` when success only proves a fact. Use `Result` when success should preserve, extract, or reshape a value.
 
 | Intent | Use |
 | --- | --- |
-| Prove a fact and keep no value | `Check.notBlank value` |
+| Prove a fact and keep no value | `Check.String.present value` |
 | Preserve the input on success | `Result.notBlank value` |
-| Extract an inner value | `Result.some value` |
-| Attach a domain error to a predicate | `Result.require condition error` |
+| Extract an inner value | `Result.someOr error value` |
+| Attach a domain error to a check | `Result.require check value |> Result.mapError mapper` |
+| Attach a domain error to a boolean | `Result.checkOr error condition` |
 
 ## Attach an Error
 
-`Check` predicates do not carry errors. They only decide whether a local fact is true.
+`Check` failures are reusable structural facts. Map them to domain errors at the boundary where the domain decision is
+known.
 
-Use `Result.require` when a boolean condition should become a domain result.
+Use `Result.require` when an executable check should become a unit-success result.
 
 ```fsharp
 type SignUpError =
@@ -34,17 +38,19 @@ type SignUpError =
 type User = { Name: string }
 
 let requireAdult age : Result<unit, SignUpError> =
-    Result.require (age >= 18) AgeInvalid
+    age
+    |> Result.require (Check.Number.atLeast 18)
+    |> Result.mapError (fun _ -> AgeInvalid)
 ```
 
 Use the value-preserving and extracting helpers in `Result` when success should carry a value.
 
 ```fsharp
 let requireName name : Result<string, SignUpError> =
-    Result.notBlank name |> Result.mapError (fun () -> NameRequired)
+    Result.notBlank name |> Result.mapError (fun _ -> NameRequired)
 
 let requireUser maybeUser : Result<User, SignUpError> =
-    Result.some maybeUser |> Result.mapError (fun () -> UserMissing)
+    maybeUser |> Result.someOr UserMissing
 ```
 
 Some helpers already return a useful diagnostic error. Use `Result.mapError` for those.
@@ -52,7 +58,7 @@ Some helpers already return a useful diagnostic error. Use `Result.mapError` for
 ```fsharp
 type OrderError =
     | InvalidPrimaryId of CardinalityFailure
-    | InvalidQuantity of RangeFailure<int>
+    | InvalidQuantity of CheckFailure list
 
 let primaryId ids : Result<int, OrderError> =
     ids
@@ -67,20 +73,18 @@ let quantity value : Result<int, OrderError> =
 
 ## Choose a Predicate
 
-Use `Check` when success is only a gate.
+Use `Result.checkOr` when a raw boolean should become a result.
 
 ```fsharp
 type RegistrationError =
     | PasswordRequired
 
 let validatePassword password : Result<unit, RegistrationError> =
-    if Check.notBlank password |> Result.isOk then
-        Ok ()
-    else
-        Error PasswordRequired
+    Check.notBlank password
+    |> Result.checkOr PasswordRequired
 ```
 
-In most application code, `Result.require` is terser because it performs the same gate and assigns the error in one step.
+Use `Result.require` when the gate is a reusable `Check<'value>`.
 
 ```fsharp
 type RegistrationError =
@@ -89,8 +93,12 @@ type RegistrationError =
 
 let register name password =
     result {
-        let! validName = Result.notBlank name |> Result.mapError (fun () -> NameRequired)
-        do! Result.require (Check.notBlank password |> Result.isOk) PasswordRequired
+        let! validName = Result.notBlank name |> Result.mapError (fun _ -> NameRequired)
+        do!
+            password
+            |> Result.require Check.String.present
+            |> Result.mapError (fun _ -> PasswordRequired)
+
         return validName
     }
 ```
@@ -104,7 +112,7 @@ type EmailError =
 let validateEmail email : Result<string, EmailError> =
     email
     |> Result.notBlank
-    |> Result.mapError (fun () -> EmailRequired)
+    |> Result.mapError (fun _ -> EmailRequired)
 ```
 
 `Result.notBlank` checks that the string is not blank and returns the original string.
@@ -121,23 +129,22 @@ type User = { Name: string }
 
 let requireExistingUser maybeUser : Result<User, LookupError> =
     maybeUser
-    |> Result.some
-    |> Result.mapError (fun () -> UserMissing)
+    |> Result.someOr UserMissing
 ```
 
-`Result.some` checks that the option is `Some` and returns the unwrapped value.
+`Result.someOr` checks that the option is `Some` and returns the unwrapped value.
 
 ## Common Families
 
 | Predicate | Preserve or extract |
 | --- | --- |
-| `Check.isSome` | `Result.some` |
-| `Check.isValueSome` | `Result.valueSome` |
-| `Check.hasValue` | `Result.nullable` |
-| `Check.notNull` | `Result.notNull` |
-| `Check.isOk` | `Result.okValue` |
-| `Check.isError` | `Result.errorValue` |
-| `Check.notEmpty` | `Result.notEmpty` or `Result.head` |
+| `Check.Option.some` | `Result.someOr` |
+| `Check.ValueOption.some` | `Result.valueSomeOr` |
+| `Check.Nullable.hasValue` | `Result.nullableOr` |
+| `Check.notNull` | `Result.notNullOr` |
+| `Check.Result.ok` | `Result.okOr` |
+| `Check.Result.error` | `Result.errorOr` |
+| `Check.Collection.notEmpty` | `Result.atLeastOne` or `Result.headOr` |
 | `Check.isSingle` | `Result.single` |
 | `Check.atMostOne` | `Result.atMostOne` |
 | `Check.notBlank` | `Result.notBlank` |
@@ -170,7 +177,7 @@ let login password =
         do!
             password
             |> Result.notBlank
-            |> Result.mapError (fun () -> MissingPassword)
+            |> Result.mapError (fun _ -> MissingPassword)
 
         return ()
     }

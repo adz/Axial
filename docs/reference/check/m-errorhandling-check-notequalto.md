@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.notEqualTo"
 linkTitle: "notEqualTo"
-weight: 2401
+weight: 3001
 ---
 
 Returns true when the actual value does not equal the expected value.

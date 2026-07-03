@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.atMostOne"
 linkTitle: "atMostOne"
-weight: 2305
+weight: 2905
 ---
 
 Returns true when the sequence contains zero or one item.

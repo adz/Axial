@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.hasExactLength"
 linkTitle: "hasExactLength"
-weight: 2208
+weight: 2808
 ---
 
 Returns true when the string length equals the supplied expected length.

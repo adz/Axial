@@ -53,7 +53,8 @@ type RegistrationError =
 
 let validateEmail (email: string) : Result<string, RegistrationError> =
     email
-    |> Result.notBlank EmailMissing
+    |> Result.notBlank
+    |> Result.mapError (fun _ -> EmailMissing)
 
 type User =
     { Email: string }

@@ -20,18 +20,18 @@ The example starts with facts about values, turns those facts into typed `Result
 ```fsharp
 open Axial
 
-Check.notBlank "Ada"        // Ok ()
-Result.notBlank "Ada"       // Ok "Ada"
-Result.some (Some "Ada")    // Ok "Ada"
+Check.String.present "Ada"              // Ok ()
+Result.notBlank "Ada"                   // Ok "Ada"
+Result.someOr "missing" (Some "Ada")    // Ok "Ada"
 ```
 
 Use the helper shape that matches the success value you need:
 
 | Need | Shape | Example |
 | --- | --- | --- |
-| Only prove a fact | `Check.x` | `name |> Check.notBlank` |
+| Only prove a fact | `Check.x` | `name |> Check.String.present` |
 | Keep the original input | `Result.x` | `name |> Result.notBlank` |
-| Extract an inner value | `Result.x` | `maybeUser |> Result.some` |
+| Extract an inner value | `Result.x` | `maybeUser |> Result.someOr MissingUser` |
 
 These simple checks fail with `unit`. That means the check failed, but no application error has been chosen yet.
 
@@ -67,12 +67,12 @@ type RegistrationError =
 let validateName name : Result<string, RegistrationError> =
     name
     |> Result.notBlank
-    |> Result.mapError (fun () -> NameMissing)
+    |> Result.mapError (fun _ -> NameMissing)
 
 let validateEmail email : Result<string, RegistrationError> =
     email
     |> Result.notBlank
-    |> Result.mapError (fun () -> EmailMissing)
+    |> Result.mapError (fun _ -> EmailMissing)
 ```
 
 Some helpers already carry useful diagnostics. Keep those diagnostics until you map them deliberately.

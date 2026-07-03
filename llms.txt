@@ -52,12 +52,12 @@ Workflows result in one of three `Exit` outcomes:
 - Keep `IServiceProvider` interop and host-specific adapters at the outer boundary.
 
 ## Core Patterns (Idiomatic Way)
-Use `Check` for pure predicates and `Result` for fail-fast boundary values:
+Use `Check` for executable value constraints and local predicates, and `Result` for fail-fast boundary values:
 
-- `name |> Result.notBlank InvalidName`
-- `Result.require condition Disabled`
-- `opt |> Result.some |> Result.mapError (fun () -> MissingValue)`
-- `value |> Result.guard Check.notBlank InvalidName`
+- `name |> Result.notBlank |> Result.mapError (fun _ -> InvalidName)`
+- `condition |> Result.checkOr Disabled`
+- `opt |> Result.someOr MissingValue`
+- `value |> Result.guard Check.String.present |> Result.mapError mapper`
 
 Use `Bind.error` only at a `flow {}` bind site when the source fails with option/value-option absence or a `unit` error:
 
@@ -65,7 +65,7 @@ Use `Bind.error` only at a `flow {}` bind site when the source fails with option
 - `voption<'T>` -> `let! x = vopt |> Bind.error error`
 - `Async<Option<'T>>` -> `let! x = aOpt |> Bind.error error`
 - `Async<voption<'T>>` -> `let! x = aVOpt |> Bind.error error`
-- `bool` predicate -> `do! Result.require cond () |> Bind.error error`
+- `bool` predicate -> `do! Result.checkOr () cond |> Bind.error error`
 - `Result<'T, unit>` -> `let! x = check |> Bind.error error`
 - `Flow<'Env, unit, 'T>` -> `let! x = flow |> Bind.error error`
 - `Task<Option<'T>>` -> `let! x = tOpt |> Bind.error error`
@@ -81,7 +81,7 @@ Use `Bind.mapError` only at a `flow {}` bind site when the source already carrie
 Use `Flow.fromAsync`, `Flow.fromTask`, and `Flow.fromValueTask` when thrown exceptions are defects. Use `Flow.attemptAsync`, `Flow.attemptTask`, and `Flow.attemptValueTask` when thrown exceptions are expected and should become `Cause.Fail exn`.
 
 ## Rosetta Stone (Mappings)
-- **FsToolkit**: `AsyncResult.requireSome e` -> `let! x = opt |> Bind.error e` in `flow {}` or `opt |> Result.some |> Result.mapError (fun () -> e)` in pure code
+- **FsToolkit**: `AsyncResult.requireSome e` -> `let! x = opt |> Bind.error e` in `flow {}` or `opt |> Result.someOr e` in pure code
 - **ZIO**: `option.getOrFail(e)` -> `let! x = opt |> Bind.error e` in `flow {}`
 - **ZIO**: `ZIO.service<T>` -> `Service<T>.get()` when the environment implements `IHas<T>`
 - **Manual**: `match x with Some v -> Ok v | None -> Error e` -> `let! v = x |> Bind.error e` in `flow {}`

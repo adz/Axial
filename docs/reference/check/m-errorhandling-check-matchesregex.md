@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.matchesRegex"
 linkTitle: "matchesRegex"
-weight: 2209
+weight: 2809
 ---
 
 Returns true when the string matches the supplied regular expression pattern.

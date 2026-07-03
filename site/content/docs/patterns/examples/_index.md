@@ -53,7 +53,8 @@ type RequestEnv =
 
 let validateName (name: string) : Result<string, string> =
     name
-    |> Result.notBlank "name is required"
+    |> Result.notBlank
+    |> Result.mapError (fun _ -> "name is required")
 
 let loadUser : Flow<RequestEnv, string, User> =
     flow {
@@ -158,11 +159,16 @@ type ApiErrorResponse =
 
 let jsonOptions = JsonSerializerOptions(WriteIndented = true)
 
+let private required message value =
+    value
+    |> Result.notBlank
+    |> Result.mapError (fun _ -> message)
+
 let validateAddressWithoutCEOrPipe address =
     Validation.at [PathSegment.Key "address"] (
         Validation.at [PathSegment.Name "City"] (
             Validation.fromResult (
-                address.City |> Result.notBlank "City required"
+                address.City |> required "City required"
             )
         )
         |> Validation.map (fun city -> {address with City = city })
@@ -171,7 +177,7 @@ let validateAddressWithoutCEOrPipe address =
 let validateAddressWithoutCE address =
     let cityResult =
         address.City
-        |> Result.notBlank "City required"
+        |> required "City required"
 
     cityResult
     |> Validation.fromResult
@@ -183,7 +189,7 @@ let validateAddressWithoutCE address =
 let validateAddress address =
     validate.key "address" {
         let! city = validate.name "city" {
-            return! address.City |> Result.notBlank "City required"
+            return! address.City |> required "City required"
         }
         return { address with City = city }
     }
@@ -192,7 +198,7 @@ let validateCustomer customer =
     validate {
         let! name =
             validate.name "Name" {
-                return! customer.Name |> Result.notBlank "Name required"
+                return! customer.Name |> required "Name required"
             }
 
         and! address = validateAddress customer.Address
@@ -204,7 +210,7 @@ let validateCustomer customer =
                     |> Validation.traverseIndexed (fun index line ->
                         validate.name "Name" {
                             let! name =
-                                line.Name |> Result.notBlank $"Line {index} name required"
+                                line.Name |> required $"Line {index} name required"
 
                             return { Name = name }
                         }
@@ -238,7 +244,7 @@ let validateCreateCustomerRequest request =
     validate {
         let! requestId =
             validate.name "RequestId" {
-                return! request.RequestId |> Result.notBlank "RequestId required"
+                return! request.RequestId |> required "RequestId required"
             }
 
         and! customer =
@@ -478,7 +484,11 @@ let greetingFlow : Flow<AppEnv, string, string> =
 let greetingAsync : Flow<AppEnv, string, string> =
     flow {
         let! greeting = greetingFlow
-        let! checkedGreeting = greeting |> Result.notBlank "Blanko"
+        let! checkedGreeting =
+            greeting
+            |> Result.notBlank
+            |> Result.mapError (fun _ -> "Blanko")
+
         return checkedGreeting.ToUpperInvariant()
     }
 

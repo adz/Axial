@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.hasValue"
 linkTitle: "hasValue"
-weight: 2100
+weight: 2700
 type: docs
 ---
 

@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.matchesRegex"
 linkTitle: "matchesRegex"
-weight: 2209
+weight: 2809
 type: docs
 ---
 

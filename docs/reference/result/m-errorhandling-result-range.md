@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Result.range"
 linkTitle: "range"
-weight: 2409
+weight: 2405
 ---
 
 Keeps a value between the supplied inclusive bounds.
@@ -24,4 +24,4 @@ Keeps a value between the supplied inclusive bounds.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'a,&#32;<span><a href="/reference/Axial/axial-errorhandling-rangefailure-1.html">RangeFailure</a>&lt;'a&gt;</span></span>&gt;</span></code> |  |
+| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'a,&#32;<span><a href="/reference/Axial/axial-errorhandling-checkfailure.html">CheckFailure</a>&#32;list</span></span>&gt;</span></code> |  |

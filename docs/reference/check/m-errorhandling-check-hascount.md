@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.hasCount"
 linkTitle: "hasCount"
-weight: 2301
+weight: 2901
 ---
 
 Returns true when the sequence count equals the expected count.

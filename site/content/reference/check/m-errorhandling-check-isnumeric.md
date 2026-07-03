@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.isNumeric"
 linkTitle: "isNumeric"
-weight: 2211
+weight: 2811
 type: docs
 ---
 

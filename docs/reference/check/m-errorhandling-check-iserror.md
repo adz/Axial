@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.isError"
 linkTitle: "isError"
-weight: 2005
+weight: 2605
 ---
 
 Returns true when the result is <code>Error</code>.

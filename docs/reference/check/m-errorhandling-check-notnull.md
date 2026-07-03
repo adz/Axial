@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.notNull"
 linkTitle: "notNull"
-weight: 2102
+weight: 2702
 ---
 
 Returns true when the reference is not null.

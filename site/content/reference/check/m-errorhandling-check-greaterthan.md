@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.greaterThan"
 linkTitle: "greaterThan"
-weight: 2402
+weight: 3002
 type: docs
 ---
 

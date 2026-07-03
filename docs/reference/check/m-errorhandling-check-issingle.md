@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.isSingle"
 linkTitle: "isSingle"
-weight: 2304
+weight: 2904
 ---
 
 Returns true when the sequence contains exactly one item.

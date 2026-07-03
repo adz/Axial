@@ -16,15 +16,15 @@ If you are an AI assistant, prioritize the patterns in the **Dependency Guidance
 Use these patterns unless local code shows a different convention.
 
 ### 1. Handling Failures
-Use `Check` for pure predicates and `Result` for fail-fast values. `Check.*` returns `bool`; `Result.guard`, named `Result.*` guards, and extraction helpers attach errors or change the success shape.
+Use `Check` for executable value constraints and local predicates, and `Result` for fail-fast values. Executable `Check.*` helpers return `Result<unit, CheckFailure list>`; `Result.guard`, named `Result.*` guards, and extraction helpers preserve values or change the success shape.
 
 | Source Type | Idiomatic Pattern |
 | :--- | :--- |
-| `bool` | `Result.require condition e` |
-| `string` value | `name |> Result.notBlank e` |
-| `option<'T>` | `opt |> Result.some |> Result.mapError (fun () -> e)` |
-| `voption<'T>` | `vopt |> Result.valueSome |> Result.mapError (fun () -> e)` |
-| predicate + value | `value |> Result.guard predicate e` |
+| `bool` | `Result.checkOr e condition` |
+| `string` value | `name |> Result.notBlank |> Result.mapError (fun _ -> e)` |
+| `option<'T>` | `opt |> Result.someOr e` |
+| `voption<'T>` | `vopt |> Result.valueSomeOr e` |
+| check + value | `value |> Result.guard check |> Result.mapError mapper` |
 
 ### 2. Binding Error-Adapted Sources
 Use `Bind.error` inside `flow {}` when the source fails with option/value-option absence or a `unit` error, and you need to assign the flow's domain error at the bind site.
@@ -35,7 +35,7 @@ Use `Bind.error` inside `flow {}` when the source fails with option/value-option
 | `voption<'T>` | `let! x = vopt |> Bind.error e` |
 | `Async<Option<'T>>` | `let! x = aOpt |> Bind.error e` |
 | `Async<voption<'T>>` | `let! x = aVOpt |> Bind.error e` |
-| `bool` predicate | `do! Result.require cond () |> Bind.error e` |
+| `bool` predicate | `do! Result.checkOr () cond |> Bind.error e` |
 | `Result<'T, unit>` | `let! x = check |> Bind.error e` |
 | `Flow<'Env, unit, 'T>` | `let! x = flow |> Bind.error e` |
 | `Task<Option<'T>>` | `let! x = tOpt |> Bind.error e` |
@@ -90,8 +90,8 @@ Translate common patterns from other libraries into idiomatic Axial.
 
 | If you use... | Do this in Axial |
 | :--- | :--- |
-| `requireSome` | `let! x = opt |> Bind.error e` in `flow {}` or `opt |> Result.some |> Result.mapError (fun () -> e)` in pure code |
-| `requireTrue` | `Result.require cond e` |
+| `requireSome` | `let! x = opt |> Bind.error e` in `flow {}` or `opt |> Result.someOr e` in pure code |
+| `requireTrue` | `Result.checkOr e cond` |
 | `Reader.ask` | `let! env = Flow.env` |
 | `Reader.asks` | `let! value = Flow.read projector` |
 | `ZIO.service` | `let! service = Service<IService>.get()` |
@@ -106,7 +106,7 @@ Translate common patterns from other libraries into idiomatic Axial.
 
 Later types can bind earlier types directly within their computation expressions.
 
-1. **Check**: Pure predicates (`'T -> bool`).
+1. **Check**: Executable value constraints (`'T -> Result<unit, CheckFailure list>`) plus local predicates.
 2. **Result**: Fail-fast typed errors (`Result<'T, 'E>`).
 3. **Refined**: Parsing and structural refined values.
 4. **Validation**: Accumulating diagnostics.

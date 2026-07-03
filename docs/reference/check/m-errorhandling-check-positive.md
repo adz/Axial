@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.positive"
 linkTitle: "positive"
-weight: 2407
+weight: 3007
 ---
 
 Returns true when the numeric value is greater than zero.

@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Result.exactLength"
 linkTitle: "exactLength"
-weight: 2408
+weight: 2404
 ---
 
 Keeps a string whose length equals the supplied expected length.
@@ -23,4 +23,4 @@ Keeps a string whose length equals the supplied expected length.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>string,&#32;<a href="/reference/Axial/axial-errorhandling-stringlengthfailure.html">StringLengthFailure</a></span>&gt;</span></code> |  |
+| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>string,&#32;<span><a href="/reference/Axial/axial-errorhandling-checkfailure.html">CheckFailure</a>&#32;list</span></span>&gt;</span></code> |  |

@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.isValueNone"
 linkTitle: "isValueNone"
-weight: 2003
+weight: 2603
 ---
 
 Returns true when the value option is <code>ValueNone</code>.

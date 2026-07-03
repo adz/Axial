@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.isOk"
 linkTitle: "isOk"
-weight: 2004
+weight: 2604
 ---
 
 Returns true when the result is <code>Ok</code>.

@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.hasMinLength"
 linkTitle: "hasMinLength"
-weight: 2206
+weight: 2806
 ---
 
 Returns true when the string length is at least the supplied minimum.

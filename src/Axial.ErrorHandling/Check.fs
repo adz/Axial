@@ -321,6 +321,13 @@ module Check =
                 | Some length when length >= minimum && length <= maximum -> pass
                 | actual -> fail (Length(LengthBetween(minimum, maximum), actual))
 
+        /// <summary>Requires an already parsed string value to have exactly the supplied length. Null fails with an unknown actual length.</summary>
+        let exactLength (expected: int) : Check<string> =
+            fun value ->
+                match actualLength value with
+                | Some length when length = expected -> pass
+                | actual -> fail (Length(ExactLength expected, actual))
+
         /// <summary>Requires an already parsed string value to match Axial's pragmatic email format.</summary>
         let email : Check<string> =
             fun value ->

@@ -297,10 +297,10 @@ module ApiShapeTests =
 
         checkStringModule
         |> publicStaticMemberNames
-        |> assertContainsAll [ "present"; "minLength"; "maxLength"; "lengthBetween"; "email"; "matches"; "oneOf" ]
+        |> assertContainsAll [ "present"; "minLength"; "maxLength"; "lengthBetween"; "exactLength"; "email"; "matches"; "oneOf" ]
 
         checkStringModule
-        |> assertMethodsReturnCheckResult [ "present"; "minLength"; "maxLength"; "lengthBetween"; "email"; "matches"; "oneOf" ]
+        |> assertMethodsReturnCheckResult [ "present"; "minLength"; "maxLength"; "lengthBetween"; "exactLength"; "email"; "matches"; "oneOf" ]
 
         let checkNumberModule =
             moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.CheckModule+Number"
@@ -388,6 +388,8 @@ module ApiShapeTests =
               "map"
               "bind"
               "mapError"
+              "require"
+              "guard"
               "checkOr"
               "keepIf"
               "withError"
@@ -405,6 +407,7 @@ module ApiShapeTests =
               "okOr"
               "errorOr"
               "headOr"
+              "notBlank"
               "length"
               "minLength"
               "maxLength"

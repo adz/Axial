@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.notEmptyString"
 linkTitle: "notEmptyString"
-weight: 2202
+weight: 2802
 ---
 
 Returns true when the string has at least one character and is not null.

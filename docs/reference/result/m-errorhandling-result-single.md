@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Result.single"
 linkTitle: "single"
-weight: 2414
+weight: 2309
 ---
 
 Takes the only item from a sequence.

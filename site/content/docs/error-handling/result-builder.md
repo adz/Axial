@@ -23,10 +23,10 @@ type User = { Name: string; Email: string }
 let validateUser name email : Result<User, UserError> =
     result {
         // If name is blank, it returns Error MissingName and stops.
-        let! validName = name |> Result.notBlank |> Result.mapError (fun () -> MissingName)
+        let! validName = name |> Result.notBlank |> Result.mapError (fun _ -> MissingName)
         
         // This line only runs if the name was valid.
-        let! validEmail = email |> Result.notBlank |> Result.mapError (fun () -> MissingEmail)
+        let! validEmail = email |> Result.notBlank |> Result.mapError (fun _ -> MissingEmail)
         
         return { Name = validName; Email = validEmail }
     }
@@ -35,7 +35,7 @@ let validateUser name email : Result<User, UserError> =
 ## Options and Checks
 
 `result {}` binds `Result` directly.
-Use `Result.some` when the source must expose an option value, value-preserving `Result` helpers when the source should be preserved, and `Result.require` when the source is only a yes/no gate.
+Use `Result.someOr` when the source must expose an option value, value-preserving `Result` helpers when the source should be preserved, and `Result.require` when the source is an executable check.
 
 ```fsharp
 type User = { Name: string }
@@ -46,8 +46,11 @@ let tryGetUser username =
 
 let login username password =
     result {
-        let! user = tryGetUser username |> Result.some |> Result.mapError (fun () -> Unauthorized)
-        do! Result.require (Check.notBlank password |> Result.isOk) MissingPassword
+        let! user = tryGetUser username |> Result.someOr Unauthorized
+        do!
+            password
+            |> Result.require Check.String.present
+            |> Result.mapError (fun _ -> MissingPassword)
 
         return user
     }

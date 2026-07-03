@@ -3,7 +3,63 @@ title: "Check"
 weight: 70
 ---
 
-This page shows the `Check` surface for reusable, pure predicates. `Check` functions return `bool`; they do not attach errors, preserve values in a `Result`, or extract inner values. Use them directly with ordinary F# boolean composition, collection functions, and `Result.guard` or `Result.fromPredicate` when a predicate needs to become a fail-fast result.
+This page shows the `Check` surface for reusable, path-free value constraints. Executable checks return `Result<unit, CheckFailure list>` and can be composed with `Check.all`, `Check.any`, `Check.not`, and `Check.mapFailure`. Top-level helpers such as `Check.notBlank` remain lightweight boolean predicates for local structural facts. Use `Result.require` or `Result.guard` when a `Check<'value>` should become a fail-fast result that preserves the checked value.
+
+## Core types
+
+- [`ErrorHandling.Check`](./t-errorhandling-check.md):
+ Typed value-check programs and common boolean predicates for local structural facts.
+
+- [`ErrorHandling.CheckFailure`](./t-errorhandling-checkfailure.md): Describes why an executable value check failed, without attaching source paths or raw input.
+- [`ErrorHandling.CheckLengthExpectation`](./t-errorhandling-checklengthexpectation.md): Describes the length requirement that a value check expected a string-like value to satisfy.
+- [`ErrorHandling.CheckRangeExpectation`](./t-errorhandling-checkrangeexpectation.md): Describes the ordering requirement that a value check expected a comparable value to satisfy.
+- [`ErrorHandling.CheckCountExpectation`](./t-errorhandling-checkcountexpectation.md): Describes the count requirement that a value check expected a collection to satisfy.
+- [`ErrorHandling.CheckEqualityExpectation`](./t-errorhandling-checkequalityexpectation.md): Describes the equality requirement that a value check expected a value to satisfy.
+
+## Executable composition
+
+- [`ErrorHandling.Check.all`](./m-errorhandling-check-all.md): Combines checks conjunctively by running every check against the value and accumulating all failures. An empty list succeeds.
+- [`ErrorHandling.Check.any`](./m-errorhandling-check-any.md): Combines checks disjunctively by running checks until one succeeds, or returns accumulated failures when every check fails. An empty list fails with no failures.
+- [`ErrorHandling.Check.``not```](./m-errorhandling-check-not.md): Inverts a check. A successful inner check becomes a custom-code failure, while any failed inner check succeeds.
+- [`ErrorHandling.Check.mapFailure`](./m-errorhandling-check-mapfailure.md): Maps every failure produced by a check.
+
+## Executable string checks
+
+- [`ErrorHandling.Check.String.present`](./m-errorhandling-check-string-present.md): Requires an already parsed string value to be non-null and contain at least one non-whitespace character.
+- [`ErrorHandling.Check.String.minLength`](./m-errorhandling-check-string-minlength.md): Requires an already parsed string value to have at least the supplied length. Null fails with an unknown actual length.
+- [`ErrorHandling.Check.String.maxLength`](./m-errorhandling-check-string-maxlength.md): Requires an already parsed string value to have at most the supplied length. Null fails with an unknown actual length.
+- [`ErrorHandling.Check.String.lengthBetween`](./m-errorhandling-check-string-lengthbetween.md): Requires an already parsed string value length to lie inside the supplied inclusive bounds. Null fails with an unknown actual length.
+- [`ErrorHandling.Check.String.exactLength`](./m-errorhandling-check-string-exactlength.md): Requires an already parsed string value to have exactly the supplied length. Null fails with an unknown actual length.
+- [`ErrorHandling.Check.String.email`](./m-errorhandling-check-string-email.md): Requires an already parsed string value to match Axial's pragmatic email format.
+- [`ErrorHandling.Check.String.matches`](./m-errorhandling-check-string-matches.md): Requires an already parsed string value to match the supplied regular expression pattern.
+- [`ErrorHandling.Check.String.oneOf`](./m-errorhandling-check-string-oneof.md): Requires an already parsed string value to equal one of the supplied choices. Null fails with an unknown actual value.
+
+## Executable number checks
+
+- [`ErrorHandling.Check.Number.between`](./m-errorhandling-check-number-between.md): Requires a value to lie inside the supplied inclusive bounds.
+- [`ErrorHandling.Check.Number.greaterThan`](./m-errorhandling-check-number-greaterthan.md): Requires a value to be greater than the supplied exclusive lower bound.
+- [`ErrorHandling.Check.Number.lessThan`](./m-errorhandling-check-number-lessthan.md): Requires a value to be less than the supplied exclusive upper bound.
+- [`ErrorHandling.Check.Number.atLeast`](./m-errorhandling-check-number-atleast.md): Requires a value to be greater than or equal to the supplied lower bound.
+- [`ErrorHandling.Check.Number.atMost`](./m-errorhandling-check-number-atmost.md): Requires a value to be less than or equal to the supplied upper bound.
+
+## Executable collection checks
+
+- [`ErrorHandling.Check.Collection.notEmpty`](./m-errorhandling-check-collection-notempty.md): Requires an already parsed collection to contain at least one item. Null fails with an unknown actual count.
+- [`ErrorHandling.Check.Collection.minCount`](./m-errorhandling-check-collection-mincount.md): Requires an already parsed collection to contain at least the supplied count. Null fails with an unknown actual count.
+- [`ErrorHandling.Check.Collection.maxCount`](./m-errorhandling-check-collection-maxcount.md): Requires an already parsed collection to contain at most the supplied count. Null fails with an unknown actual count.
+- [`ErrorHandling.Check.Collection.countBetween`](./m-errorhandling-check-collection-countbetween.md): Requires an already parsed collection count to lie inside the supplied inclusive bounds. Null fails with an unknown actual count.
+- [`ErrorHandling.Check.Collection.distinct`](./m-errorhandling-check-collection-distinct.md): Requires an already parsed collection to contain no duplicate values.
+
+## Executable optional checks
+
+- [`ErrorHandling.Check.Option.some`](./m-errorhandling-check-option-some.md): Requires an option to contain a value.
+- [`ErrorHandling.Check.Option.none`](./m-errorhandling-check-option-none.md): Requires an option to contain no value.
+- [`ErrorHandling.Check.ValueOption.some`](./m-errorhandling-check-valueoption-some.md): Requires a value option to contain a value.
+- [`ErrorHandling.Check.ValueOption.none`](./m-errorhandling-check-valueoption-none.md): Requires a value option to contain no value.
+- [`ErrorHandling.Check.Nullable.hasValue`](./m-errorhandling-check-nullable-hasvalue.md): Requires a nullable value to contain a value.
+- [`ErrorHandling.Check.Nullable.hasNoValue`](./m-errorhandling-check-nullable-hasnovalue.md): Requires a nullable value to contain no value.
+- [`ErrorHandling.Check.Result.ok`](./m-errorhandling-check-result-ok.md): Requires a result to contain a successful value.
+- [`ErrorHandling.Check.Result.error`](./m-errorhandling-check-result-error.md): Requires a result to contain an error value.
 
 ## Option and result predicates
 

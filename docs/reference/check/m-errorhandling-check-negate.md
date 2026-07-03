@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.negate"
 linkTitle: "negate"
-weight: 2500
+weight: 3100
 ---
 
 Inverts a predicate.
