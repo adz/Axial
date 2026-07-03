@@ -68,6 +68,11 @@ module ApiShapeTests =
         let present = forbidden |> List.filter (fun name -> Set.contains name actual)
         test <@ List.isEmpty present @>
 
+    let private publicUnionCaseNames (targetType: Type) =
+        FSharpType.GetUnionCases(targetType, BindingFlags.Public)
+        |> Array.map _.Name
+        |> Set.ofArray
+
     let private returnsCheckResultShape (returnType: Type) =
         let checkResultType = typedefof<Result<_, _>>
         let checkFunctionType = typedefof<FSharpFunc<_, _>>
@@ -238,6 +243,10 @@ module ApiShapeTests =
 
     [<Fact>]
     let ``check take binderror diagnostics and ref helpers keep expected public shape`` () =
+        typeof<CheckFailure>
+        |> publicUnionCaseNames
+        |> assertContainsAll [ "Missing"; "Blank"; "InvalidFormat"; "Length"; "Range"; "Count"; "Equality"; "CustomCode" ]
+
         let checkModule =
             moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.Check"
 
