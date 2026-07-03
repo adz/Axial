@@ -651,6 +651,8 @@ module ApiShapeTests =
         checkSeqModule
         |> assertMethodsReturnCheckResult [ "notEmpty"; "minCount"; "maxCount"; "countBetween"; "distinct" ]
 
+        assertModuleAbsentFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.CheckModule+Collection"
+
         let checkOptionModule =
             moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.CheckModule+Option"
 
