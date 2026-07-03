@@ -535,6 +535,30 @@ module ApiShapeTests =
         |> publicUnionCaseNames
         |> assertContainsAll [ "Missing"; "Blank"; "InvalidFormat"; "Length"; "Range"; "Count"; "Equality"; "CustomCode" ]
 
+        let forbiddenCheckFailureFieldNames =
+            set [ "Path"; "Raw"; "RawInput"; "Input"; "Schema"; "Diagnostic"; "Diagnostics" ]
+
+        let forbiddenCheckFailureTypeNamespaces =
+            [ "Axial.Schema"; "Axial.Validation"; "Axial.Refined" ]
+
+        let publicCheckFailureFields =
+            FSharpType.GetUnionCases(typeof<CheckFailure>, BindingFlags.Public)
+            |> Array.collect (fun caseInfo ->
+                caseInfo.GetFields()
+                |> Array.map (fun propertyInfo -> caseInfo.Name, propertyInfo.Name, propertyInfo.PropertyType))
+
+        let forbiddenFields =
+            publicCheckFailureFields
+            |> Array.filter (fun (_, fieldName, fieldType) ->
+                Set.contains fieldName forbiddenCheckFailureFieldNames
+                || forbiddenCheckFailureTypeNamespaces
+                   |> List.exists (fun namespaceName ->
+                       let fullName = fieldType.FullName
+
+                       not (isNull fullName) && fullName.StartsWith(namespaceName, StringComparison.Ordinal)))
+
+        test <@ Array.isEmpty forbiddenFields @>
+
         let checkModule =
             moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.Check"
 
