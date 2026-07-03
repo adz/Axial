@@ -27,7 +27,7 @@ Work this list top to bottom. Each item should be small enough to become an issu
 - [x] Implement top-level composition:
   `Check.all`, `Check.any`, `Check.not`, and `Check.mapFailure`.
 - [x] Decide and document whether `Check.all []` succeeds and whether `Check.any []` fails.
-- [ ] Implement `Check.String`:
+- [x] Implement `Check.String`:
   `present`, `minLength`, `maxLength`, `lengthBetween`, `email`, `matches`, `oneOf`, and null/blank behavior.
 - [ ] Implement `Check.Number`:
   `between`, `greaterThan`, `lessThan`, `atLeast`, and `atMost`.

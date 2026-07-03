@@ -86,6 +86,40 @@ module ValidationTests =
                 @>
 
         [<Fact>]
+        let ``Check String exposes executable string value checks`` () =
+            let nullString: string = null
+
+            test <@ Check.String.present "Ada" = Ok () @>
+            test <@ Check.String.present nullString = Error [ Missing ] @>
+            test <@ Check.String.present "" = Error [ Blank ] @>
+            test <@ Check.String.present "   " = Error [ Blank ] @>
+
+            test <@ Check.String.minLength 3 "Ada" = Ok () @>
+            test <@ Check.String.minLength 3 "Al" = Error [ Length(MinimumLength 3, Some 2) ] @>
+            test <@ Check.String.minLength 3 nullString = Error [ Length(MinimumLength 3, None) ] @>
+
+            test <@ Check.String.maxLength 3 "Ada" = Ok () @>
+            test <@ Check.String.maxLength 3 "Axial" = Error [ Length(MaximumLength 3, Some 5) ] @>
+            test <@ Check.String.maxLength 3 nullString = Error [ Length(MaximumLength 3, None) ] @>
+
+            test <@ Check.String.lengthBetween 2 4 "Ada" = Ok () @>
+            test <@ Check.String.lengthBetween 2 4 "A" = Error [ Length(LengthBetween(2, 4), Some 1) ] @>
+            test <@ Check.String.lengthBetween 2 4 "Axial" = Error [ Length(LengthBetween(2, 4), Some 5) ] @>
+            test <@ Check.String.lengthBetween 2 4 nullString = Error [ Length(LengthBetween(2, 4), None) ] @>
+
+            test <@ Check.String.email "ada@example.com" = Ok () @>
+            test <@ Check.String.email "Ada" = Error [ InvalidFormat "email" ] @>
+            test <@ Check.String.email nullString = Error [ InvalidFormat "email" ] @>
+
+            test <@ Check.String.matches "^[a-z]+$" "ada" = Ok () @>
+            test <@ Check.String.matches "^[a-z]+$" "Ada" = Error [ InvalidFormat "^[a-z]+$" ] @>
+            test <@ Check.String.matches "^[a-z]+$" nullString = Error [ InvalidFormat "^[a-z]+$" ] @>
+
+            test <@ Check.String.oneOf [ "draft"; "published" ] "draft" = Ok () @>
+            test <@ Check.String.oneOf [ "draft"; "published" ] "archived" = Error [ Equality(EqualTo "draft|published", Some "archived") ] @>
+            test <@ Check.String.oneOf [ "draft"; "published" ] nullString = Error [ Equality(EqualTo "draft|published", None) ] @>
+
+        [<Fact>]
         let ``Check exposes pure predicates`` () =
             let nullString: string = null
 

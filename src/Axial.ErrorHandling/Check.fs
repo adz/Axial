@@ -271,6 +271,68 @@ module Check =
     let negate (predicate: 'input -> bool) (input: 'input) : bool =
         not (predicate input)
 
+    /// <summary>Executable value checks for strings.</summary>
+    module String =
+        let private pass : Result<unit, CheckFailure list> = Ok ()
+
+        let private fail failure : Result<unit, CheckFailure list> =
+            Error [ failure ]
+
+        let private actualLength (value: string) =
+            if isNull value then None else Some value.Length
+
+        let private actualString (value: string) =
+            if isNull value then None else Some value
+
+        /// <summary>Requires a string to be non-null and contain at least one non-whitespace character.</summary>
+        let present : Check<string> =
+            fun value ->
+                if isNull value then fail Missing
+                elif global.System.String.IsNullOrWhiteSpace value then fail Blank
+                else pass
+
+        /// <summary>Requires a string to have at least the supplied length. Null fails with an unknown actual length.</summary>
+        let minLength (minimum: int) : Check<string> =
+            fun value ->
+                match actualLength value with
+                | Some length when length >= minimum -> pass
+                | actual -> fail (Length(MinimumLength minimum, actual))
+
+        /// <summary>Requires a string to have at most the supplied length. Null fails with an unknown actual length.</summary>
+        let maxLength (maximum: int) : Check<string> =
+            fun value ->
+                match actualLength value with
+                | Some length when length <= maximum -> pass
+                | actual -> fail (Length(MaximumLength maximum, actual))
+
+        /// <summary>Requires a string length to lie inside the supplied inclusive bounds. Null fails with an unknown actual length.</summary>
+        let lengthBetween (minimum: int) (maximum: int) : Check<string> =
+            fun value ->
+                match actualLength value with
+                | Some length when length >= minimum && length <= maximum -> pass
+                | actual -> fail (Length(LengthBetween(minimum, maximum), actual))
+
+        /// <summary>Requires a string to match Axial's pragmatic email format.</summary>
+        let email : Check<string> =
+            fun value ->
+                if not (isNull value) && emailRegex.IsMatch value then pass
+                else fail (InvalidFormat "email")
+
+        /// <summary>Requires a string to match the supplied regular expression pattern.</summary>
+        let matches (pattern: string) : Check<string> =
+            fun value ->
+                if not (isNull value) && Regex.IsMatch(value, pattern) then pass
+                else fail (InvalidFormat pattern)
+
+        /// <summary>Requires a string to equal one of the supplied choices. Null fails with an unknown actual value.</summary>
+        let oneOf (choices: string seq) : Check<string> =
+            let choices = choices |> Seq.toList
+            let expected = global.System.String.Join("|", choices)
+
+            fun value ->
+                if not (isNull value) && List.contains value choices then pass
+                else fail (Equality(EqualTo expected, actualString value))
+
     /// <summary>Runs every check against the value and accumulates all failures. An empty list succeeds.</summary>
     let all (checks: Check<'value> list) : Check<'value> =
         fun value ->
