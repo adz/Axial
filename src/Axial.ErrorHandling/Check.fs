@@ -438,6 +438,42 @@ module Check =
                 | None -> pass
                 | Some _ -> fail (Equality(EqualTo "None", Some "Some"))
 
+    /// <summary>Executable value checks for value option values.</summary>
+    module ValueOption =
+        let private pass : Result<unit, CheckFailure list> = Ok ()
+
+        let private fail failure : Result<unit, CheckFailure list> =
+            Error [ failure ]
+
+        /// <summary>Requires a value option to contain a value.</summary>
+        let some : Check<'value voption> =
+            fun value ->
+                match value with
+                | ValueSome _ -> pass
+                | ValueNone -> fail Missing
+
+        /// <summary>Requires a value option to contain no value.</summary>
+        let none : Check<'value voption> =
+            fun value ->
+                match value with
+                | ValueNone -> pass
+                | ValueSome _ -> fail (Equality(EqualTo "ValueNone", Some "ValueSome"))
+
+    /// <summary>Executable value checks for nullable values.</summary>
+    module Nullable =
+        let private pass : Result<unit, CheckFailure list> = Ok ()
+
+        let private fail failure : Result<unit, CheckFailure list> =
+            Error [ failure ]
+
+        /// <summary>Requires a nullable value to contain a value.</summary>
+        let hasValue : Check<System.Nullable<'value>> =
+            fun value -> if value.HasValue then pass else fail Missing
+
+        /// <summary>Requires a nullable value to contain no value.</summary>
+        let hasNoValue : Check<System.Nullable<'value>> =
+            fun value -> if value.HasValue then fail (Equality(EqualTo "null", Some "value")) else pass
+
     /// <summary>Executable value checks for result values.</summary>
     module Result =
         let private pass : Result<unit, CheckFailure list> = Ok ()

@@ -255,6 +255,14 @@ module Check.Option =
     val some: Check<'value option>
     val none: Check<'value option>
 
+module Check.ValueOption =
+    val some: Check<'value voption>
+    val none: Check<'value voption>
+
+module Check.Nullable =
+    val hasValue: Check<System.Nullable<'value>>
+    val hasNoValue: Check<System.Nullable<'value>>
+
 module Check.Result =
     val ok: Check<Result<'value, 'error>>
     val error: Check<Result<'value, 'error>>

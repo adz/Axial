@@ -174,6 +174,22 @@ module ValidationTests =
             test <@ Check.Option.none (Some 1) = Error [ Equality(EqualTo "None", Some "Some") ] @>
 
         [<Fact>]
+        let ``Check ValueOption exposes executable value option checks`` () =
+            test <@ Check.ValueOption.some (ValueSome 1) = Ok () @>
+            test <@ Check.ValueOption.some ValueNone = Error [ Missing ] @>
+
+            test <@ Check.ValueOption.none ValueNone = Ok () @>
+            test <@ Check.ValueOption.none (ValueSome 1) = Error [ Equality(EqualTo "ValueNone", Some "ValueSome") ] @>
+
+        [<Fact>]
+        let ``Check Nullable exposes executable nullable value checks`` () =
+            test <@ Check.Nullable.hasValue (System.Nullable 1) = Ok () @>
+            test <@ Check.Nullable.hasValue (System.Nullable<int>()) = Error [ Missing ] @>
+
+            test <@ Check.Nullable.hasNoValue (System.Nullable<int>()) = Ok () @>
+            test <@ Check.Nullable.hasNoValue (System.Nullable 1) = Error [ Equality(EqualTo "null", Some "value") ] @>
+
+        [<Fact>]
         let ``Check Result exposes executable result value checks`` () =
             test <@ Check.Result.ok (Ok 1) = Ok () @>
             test <@ Check.Result.ok (Error "missing") = Error [ Equality(EqualTo "Ok", Some "Error") ] @>
