@@ -1,7 +1,7 @@
 ---
 title: "Refined.Refine.boundedString"
 linkTitle: "boundedString"
-weight: 2902
+weight: 2903
 type: docs
 ---
 

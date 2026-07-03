@@ -1,7 +1,7 @@
 ---
 title: "Refined.Refine.nonEmptyList"
 linkTitle: "nonEmptyList"
-weight: 2909
+weight: 2910
 type: docs
 ---
 

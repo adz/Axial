@@ -605,6 +605,18 @@ module Choice =
 /// <summary>Smart constructors for built-in structural refined values.</summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Refine =
+    /// <summary>Builds a refined value by running a reusable check-shaped program before calling the constructor.</summary>
+    let withCheck
+        (target: string)
+        (check: 'raw -> Result<unit, 'failure list>)
+        (mapFailures: string -> 'failure list -> RefinementError)
+        (construct: 'raw -> 'refined)
+        (value: 'raw)
+        : Result<'refined, RefinementError> =
+        match check value with
+        | Ok () -> Ok(construct value)
+        | Error failures -> Error(mapFailures target failures)
+
     /// <summary>Builds a non-blank string.</summary>
     let nonBlankString value =
         Text.nonBlankString value

@@ -1,7 +1,7 @@
 ---
 title: "Refined.Refine.negativeInt"
 linkTitle: "negativeInt"
-weight: 2907
+weight: 2908
 ---
 
 Builds a negative integer.

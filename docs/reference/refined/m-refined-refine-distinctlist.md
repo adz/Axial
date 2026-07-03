@@ -1,7 +1,7 @@
 ---
 title: "Refined.Refine.distinctList"
 linkTitle: "distinctList"
-weight: 2911
+weight: 2912
 ---
 
 Builds a distinct list from a sequence.

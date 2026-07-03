@@ -1,7 +1,7 @@
 ---
 title: "Refined.Refine.nonEmptyArray"
 linkTitle: "nonEmptyArray"
-weight: 2910
+weight: 2911
 ---
 
 Builds a non-empty array from a sequence.

@@ -1,6 +1,7 @@
 namespace Axial.Refined.Tests
 
 open System
+open Axial.ErrorHandling
 open Axial.Refined
 open Swensen.Unquote
 open Xunit
@@ -9,6 +10,31 @@ module CatalogTests =
     type Contact =
         | Name of NonBlankString
         | Id of PositiveInt
+
+    type Email =
+        private
+        | Email of string
+
+        member this.Value =
+            let (Email value) = this
+            value
+
+    module Email =
+        let private describeCheckFailures failures =
+            failures
+            |> List.map (sprintf "%A")
+            |> String.concat "; "
+
+        let create value =
+            Refine.withCheck
+                "Email"
+                (Check.all [
+                    Check.String.present
+                    Check.String.email
+                ])
+                (fun target failures -> InvalidStructure(target, describeCheckFailures failures))
+                Email
+                value
 
     let unwrap result =
         match result with
@@ -37,6 +63,16 @@ module CatalogTests =
         test <@ Refine.slug "ada-2026" |> Result.map _.Value = Ok "ada-2026" @>
         test <@ Refine.slug "Ada" = Error(InvalidFormat("Slug", "Expected only ASCII lowercase letters, digits, and hyphens.")) @>
         test <@ Refine.slug "-ada" = Error(InvalidFormat("Slug", "Expected no leading, trailing, or repeated hyphen.")) @>
+
+    [<Fact>]
+    let ``Refined constructors can use Check programs directly`` () =
+        test <@ Email.create "ada@example.com" |> Result.map _.Value = Ok "ada@example.com" @>
+
+        match Email.create "" with
+        | Error(InvalidStructure("Email", reason)) ->
+            test <@ reason.Contains("Blank") @>
+            test <@ reason.Contains("InvalidFormat") @>
+        | other -> failwithf "Expected Email check failures, got %A" other
 
     [<Fact>]
     let ``Collection refinements cover non-empty distinct and bounded shapes`` () =

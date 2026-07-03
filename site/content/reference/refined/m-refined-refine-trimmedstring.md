@@ -1,7 +1,7 @@
 ---
 title: "Refined.Refine.trimmedString"
 linkTitle: "trimmedString"
-weight: 2901
+weight: 2902
 type: docs
 ---
 

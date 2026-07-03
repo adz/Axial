@@ -1,7 +1,7 @@
 ---
 title: "Refined.Refine.nonZeroInt"
 linkTitle: "nonZeroInt"
-weight: 2906
+weight: 2907
 ---
 
 Builds a non-zero integer.

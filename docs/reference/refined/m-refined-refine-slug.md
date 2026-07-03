@@ -1,7 +1,7 @@
 ---
 title: "Refined.Refine.slug"
 linkTitle: "slug"
-weight: 2903
+weight: 2904
 ---
 
 Builds an ASCII slug.
