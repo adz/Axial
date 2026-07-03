@@ -438,6 +438,27 @@ module Check =
                 | None -> pass
                 | Some _ -> fail (Equality(EqualTo "None", Some "Some"))
 
+    /// <summary>Executable value checks for result values.</summary>
+    module Result =
+        let private pass : Result<unit, CheckFailure list> = Ok ()
+
+        let private fail failure : Result<unit, CheckFailure list> =
+            Error [ failure ]
+
+        /// <summary>Requires a result to contain a successful value.</summary>
+        let ok : Check<Result<'value, 'error>> =
+            fun value ->
+                match value with
+                | Ok _ -> pass
+                | Error _ -> fail (Equality(EqualTo "Ok", Some "Error"))
+
+        /// <summary>Requires a result to contain an error value.</summary>
+        let error : Check<Result<'value, 'error>> =
+            fun value ->
+                match value with
+                | Error _ -> pass
+                | Ok _ -> fail (Equality(EqualTo "Error", Some "Ok"))
+
     /// <summary>Runs every check against the value and accumulates all failures. An empty list succeeds.</summary>
     let all (checks: Check<'value> list) : Check<'value> =
         fun value ->

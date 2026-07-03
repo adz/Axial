@@ -37,7 +37,7 @@ Work this list top to bottom. Each item should be small enough to become an issu
   `notEmpty`, `minCount`, `maxCount`, `countBetween`, and `distinct`.
 - [x] Implement `Check.Option`:
   `some` and `none`.
-- [ ] Implement `Check.Result`:
+- [x] Implement `Check.Result`:
   `ok` and `error`.
 - [ ] Decide whether nullable/value-option checks belong in first pass.
 - [ ] Update or replace current API shape tests that assert `Check` returns `bool`.
