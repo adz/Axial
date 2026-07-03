@@ -12,7 +12,7 @@ Work this list top to bottom. Each item should be small enough to become an issu
   `Check<'value> = 'value -> Result<unit, CheckFailure list>`.
 - [x] Update `dev-docs/project-split.md` so package responsibilities include complete typed `Check`, `Axial.Schema`,
   schema interpreters, and `Policy`.
-- [ ] Remove or rewrite stale current-ideas notes that still require predicate-only `Check`, especially
+- [x] Remove or rewrite stale current-ideas notes that still require predicate-only `Check`, especially
   `dev-docs/current-ideas/check-and-result-splits.md`.
 - [ ] Reconcile `dev-docs/TASKS.md` with this plan, including the package-boundary test split already listed there.
 - [ ] Decide whether `Axial.Schema` starts as a new project immediately or begins inside `Axial.Validation` behind the

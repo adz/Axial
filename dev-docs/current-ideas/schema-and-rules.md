@@ -876,8 +876,8 @@ Then add the DSL.
 
 ### 1. Promote Check Into A Real Subsystem
 
-Current repository instructions and sibling docs say `Check` is pure predicates returning `bool`. Replace that direction
-with:
+Earlier repository instructions and sibling sketches treated `Check` as pure predicates returning `bool`. The accepted
+direction replaces that with:
 
 ```text
 Check = complete typed value-constraint subsystem
