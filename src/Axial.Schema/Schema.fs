@@ -52,8 +52,9 @@ type internal SchemaDefinition =
 type internal ValueSchemaDefinition =
     | PendingValueDefinition
 
-type internal FieldDefinition<'value> =
+type internal FieldDefinition<'model, 'value> =
     { ExternalName: ExternalFieldName
+      Getter: 'model -> 'value
       ValueSchema: ValueSchemaDefinition }
 
 /// <summary>
@@ -98,14 +99,16 @@ type ValueSchema<'value> internal (definition: ValueSchemaDefinition) =
 /// A field definition records typed field metadata without tying that metadata to input parsing, diagnostics,
 /// validation, codecs, UI generation, or workflow execution. The field's external name is the portable boundary-facing
 /// name interpreters use for raw input lookup, diagnostic paths, codecs, generated documentation, and UI metadata.
+/// Its getter reads the field value from an already trusted model so inspection interpreters can observe existing
+/// values without using reflection.
 /// </para>
 /// <para>
-/// Getters, constructor application, ordering, and public construction helpers are introduced by the schema operations
-/// that follow this core type.
+/// Constructor application, ordering, and public construction helpers are introduced by the schema operations that
+/// follow this core type.
 /// </para>
 /// </remarks>
 [<Sealed>]
-type Field<'model, 'value> internal (definition: FieldDefinition<'value>) =
+type Field<'model, 'value> internal (definition: FieldDefinition<'model, 'value>) =
     member internal _.Definition = definition
 
 /// <summary>Functions for inspecting schema field metadata.</summary>
@@ -117,3 +120,10 @@ module Field =
             nullArg (nameof field)
 
         field.Definition.ExternalName
+
+    /// <summary>Reads a schema field value from an existing trusted model.</summary>
+    let getValue (field: Field<'model, 'value>) (model: 'model) =
+        if isNull (box field) then
+            nullArg (nameof field)
+
+        field.Definition.Getter model

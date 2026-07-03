@@ -15,6 +15,10 @@ open Swensen.Unquote
 open Xunit
 
 module ApiShapeTests =
+    type private Customer =
+        { Name: string
+          Age: int }
+
     let private publicInstanceMethodNames (targetType: Type) =
         targetType.GetMethods(BindingFlags.Instance ||| BindingFlags.Public)
         |> Array.filter (fun methodInfo -> not methodInfo.IsSpecialName)
@@ -73,6 +77,14 @@ module ApiShapeTests =
     let private assertContainsNone forbidden actual =
         let present = forbidden |> List.filter (fun name -> Set.contains name actual)
         test <@ List.isEmpty present @>
+
+    let private schemaField<'model, 'value> externalName getter : Field<'model, 'value> =
+        let definition: FieldDefinition<'model, 'value> =
+            { ExternalName = ExternalFieldName.create externalName
+              Getter = getter
+              ValueSchema = PendingValueDefinition }
+
+        Field definition
 
     let private publicUnionCaseNames (targetType: Type) =
         FSharpType.GetUnionCases(targetType, BindingFlags.Public)
@@ -253,6 +265,7 @@ module ApiShapeTests =
         let valueSchemaType = typedefof<ValueSchema<_>>
         let fieldType = typedefof<Field<_, _>>
         let externalFieldNameType = typeof<ExternalFieldName>
+        let fieldModule = moduleType fieldType "Axial.Schema.Field"
         let schemaAssembly = schemaType.Assembly
         let references = referencedAssemblyNames schemaAssembly
         let publicConstructors =
@@ -264,10 +277,15 @@ module ApiShapeTests =
         let publicExternalFieldNameConstructors =
             externalFieldNameType.GetConstructors(BindingFlags.Public ||| BindingFlags.Instance)
         let fieldDefinitionType =
-            schemaAssembly.GetType("Axial.Schema.FieldDefinition`1", true)
+            schemaAssembly.GetType("Axial.Schema.FieldDefinition`2", true)
         let externalNameProperty =
             fieldDefinitionType.GetProperty(
                 "ExternalName",
+                BindingFlags.Public ||| BindingFlags.NonPublic ||| BindingFlags.Instance
+            )
+        let getterProperty =
+            fieldDefinitionType.GetProperty(
+                "Getter",
                 BindingFlags.Public ||| BindingFlags.NonPublic ||| BindingFlags.Instance
             )
 
@@ -281,13 +299,27 @@ module ApiShapeTests =
         test <@ fieldType.GetGenericArguments().Length = 2 @>
         test <@ publicFieldConstructors.Length = 0 @>
         test <@ publicExternalFieldNameConstructors.Length = 0 @>
+        fieldModule |> publicStaticMemberNames |> assertContainsAll [ "externalName"; "getValue" ]
         test <@ valueSchemaType.Assembly = schemaAssembly @>
         test <@ fieldType.Assembly = schemaAssembly @>
         test <@ externalFieldNameType.Assembly = schemaAssembly @>
         test <@ externalNameProperty.PropertyType = externalFieldNameType @>
+        test <@ getterProperty.PropertyType.GetGenericTypeDefinition() = typedefof<FSharpFunc<_, _>> @>
         test <@ schemaAssembly.GetName().Name = "Axial.Schema" @>
         references
         |> assertContainsNone [ "Axial.Flow"; "Axial.ErrorHandling"; "Axial.Refined"; "Axial.Validation" ]
+
+    [<Fact>]
+    let ``schema fields inspect existing trusted models through typed getters`` () =
+        let nameField = schemaField "name" (fun (model: Customer) -> model.Name)
+        let ageField = schemaField "age" (fun (model: Customer) -> model.Age)
+        let customer = { Name = "Ada"; Age = 37 }
+        let missingField = Unchecked.defaultof<Field<Customer, string>>
+
+        test <@ Field.externalName nameField |> ExternalFieldName.value = "name" @>
+        test <@ Field.getValue nameField customer = "Ada" @>
+        test <@ Field.getValue ageField customer = 37 @>
+        raises<ArgumentNullException> <@ Field.getValue missingField customer |> ignore @>
 
     [<Fact>]
     let ``external field names preserve exact boundary names and reject unusable names`` () =
