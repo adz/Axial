@@ -20,6 +20,9 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
   `Check<'value> = 'value -> Result<unit, CheckFailure list>`. Checks are path-free, raw-input-free value programs;
   value-preserving guards and extraction helpers belong in `Result`, and parsing and refined value construction belong in
   `Axial.Refined`.
+- `Axial.Schema` starts as its own package and project as soon as schema source work begins. Do not incubate schema
+  definitions inside `Axial.Validation`; keep schema definitions independent and put input, validation, diagnostics, and
+  rules integration in `Axial.Validation.Schema`.
 - `Bind` is only for assigning or mapping a source error immediately before `flow { }` binds it. In pure code, use
   `Result.require`, `Result.mapError`, or `Validation.mapError`.
 - Generated reference docs come from XML comments and generator inputs. Do not hand-edit generated reference pages as the
