@@ -60,7 +60,7 @@ Work this list top to bottom. Each item should be small enough to become an issu
 - [x] Confirm `Axial.Refined` does not depend on `Axial.Validation` or `Axial.Schema`.
 - [x] Update affected tests and API baselines.
 
-## Phase 3: Introduce Schema Core
+## Phase 3: Introduce Schema Core Foundation
 
 - [x] Define `Schema<'model>`.
 - [x] Define `ValueSchema<'value>`.
@@ -72,6 +72,67 @@ Work this list top to bottom. Each item should be small enough to become an issu
 - [x] Define primitive value schemas:
   text, int, decimal, bool, date/date-time where supported, and GUID.
 - [x] Define schema constraints as metadata, not just executable checks.
+
+## Phase 4: Tighten Check Module Ergonomics
+
+Lift the design in `dev-docs/tighten-check-module-and-funcs.md` into source before continuing the next schema slice.
+Schema constraints should lower onto the tightened `Check` shape, not the verbose transitional one.
+
+- [ ] Keep `Check<'value> = 'value -> Result<unit, CheckFailure list>` as the public structured check model.
+- [ ] Keep `CheckFailure` path-free and raw-input-free; do not move schema/input diagnostics into `CheckFailure`.
+- [ ] Keep `Check.all`, `Check.any`, `Check.not`, and `Check.mapFailure` as top-level structured check combinators.
+- [ ] Rename or replace `Check.Collection` with `Check.Seq` for direct sequence-shaped checks.
+- [ ] Decide whether to retain `Check.Collection` as a short-lived compatibility alias; because Axial is pre-1.0,
+  prefer removing it once call sites and docs are updated.
+- [ ] Keep direct implementation modules:
+  `Check.String`, `Check.Number`, `Check.Seq`, `Check.Option`, `Check.ValueOption`, `Check.Nullable`, and
+  `Check.Result`.
+- [ ] Add top-level concrete structured check aliases for common single-target checks:
+  `length`, `minLength`, `maxLength`, `lengthBetween`, `email`, `matches`, `oneOf`, `between`, `greaterThan`,
+  `lessThan`, `atLeast`, `atMost`, `count`, `minCount`, `maxCount`, `countBetween`, `distinct`, `contains`,
+  `single`, `atMostOne`, `atLeastOne`, `moreThanOne`, `equalTo`, and `notEqualTo`.
+- [ ] Add `Check.String.length` for exact string length.
+- [ ] Add `Check.Seq.count` for exact sequence count.
+- [ ] Add structured string checks missing from the direct module:
+  `empty`, `notEmpty`, `numeric`, and `alphaNumeric`.
+- [ ] Add structured numeric sign checks to `Check.Number` and top-level `Check`:
+  `positive`, `nonNegative`, `negative`, and `nonPositive`.
+- [ ] Add structured sequence checks missing from the direct module:
+  `empty`, `count`, `contains`, `single`, `atMostOne`, `atLeastOne`, and `moreThanOne`.
+- [ ] Add option presence aliases:
+  `Check.Option.present`, `Check.Option.empty`, `Check.Option.notEmpty`.
+- [ ] Add value-option presence aliases:
+  `Check.ValueOption.present`, `Check.ValueOption.empty`, `Check.ValueOption.notEmpty`.
+- [ ] Add nullable presence aliases:
+  `Check.Nullable.present`, `Check.Nullable.empty`, `Check.Nullable.notEmpty`.
+- [ ] Keep `Check.Result.ok` and `Check.Result.error` direct-only for now; do not add top-level `Check.ok` or
+  `Check.error` unless the constructor-like names prove useful enough.
+- [ ] Add only a very small SRTP top-level facade at first:
+  `Check.present`, `Check.empty`, and `Check.notEmpty`.
+- [ ] Ensure SRTP facade functions only delegate to direct module implementations; do not make SRTP the semantic source
+  of truth.
+- [ ] Do not use SRTP for `distinct`, count checks, length checks, format checks, numeric ranges, result checks, or
+  equality checks in the first pass.
+- [ ] Move or remove top-level boolean predicates from `Check` so top-level `Check.*` consistently means structured
+  `Result<unit, CheckFailure list>`.
+- [ ] Add or relocate boolean predicates outside structured `Check.*`, using type-specific predicate modules or
+  extensions such as `Seq.isDistinct`, `String.isBlank`, `Result.isOk`, and nullable/option presence helpers.
+- [ ] Do not add `Seq.distinct` as a boolean predicate or structured check; it collides with FSharp.Core's sequence
+  transformation.
+- [ ] Decide null semantics before implementation:
+  `Check.String.empty null`, `Check.Seq.empty null`, and whether `Check.Seq.notEmpty null` keeps current
+  `Count(MinimumCount 1, None)` behavior.
+- [ ] Update API shape tests so top-level `Check` contains structured check names, not the old predicate-only surface.
+- [ ] Add behavior tests for both direct modules and top-level facade functions.
+- [ ] Add tests proving `Check.present`, `Check.empty`, and `Check.notEmpty` work for string, option, value option,
+  nullable, and sequence values where applicable.
+- [ ] Add composition tests using tightened top-level checks, including function-list use such as
+  `Check.all [ Check.present; Check.lengthBetween 2 40 ]`.
+- [ ] Update source comments for the tightened `Check` model.
+- [ ] Regenerate reference docs only after source comments and public APIs are updated.
+
+## Phase 5: Continue Schema Core Constraints And Lowering
+
 - [ ] Implement schema constraints for:
   `required`, `optional`, `minLength`, `maxLength`, `lengthBetween`, `email`, `pattern`, `oneOf`, numeric ranges,
   collection counts, and distinctness.
@@ -97,11 +158,11 @@ Work this list top to bottom. Each item should be small enough to become an issu
     but there must be a portable fallback that keeps the same explicit schema semantics.
   - Compare the intended lowering shape against `../../CodecMapper/main` before accepting the API. Use CodecMapper's
     benchmark scenarios as the performance reference once an Axial JSON codec prototype exists.
-- [ ] Do not start RawInput, schema validation, rules, or DSL work until Phase 3 proves a vertical schema metadata slice:
+- [ ] Do not start RawInput, schema validation, rules, or DSL work until Phase 5 proves a vertical schema metadata slice:
   ordered fields, primitive value schema, at least required and maxLength metadata, lowering to `Check`, metadata
   inspection, constructor/getter alignment, and the compiled-record-plan proof above.
 
-## Phase 4: Add Refined Value Schemas
+## Phase 6: Add Refined Value Schemas
 
 - [ ] Define `Value.refined` or equivalent for named refined/domain types.
 - [ ] Require both construction and inspection functions for refined value schemas.
@@ -113,7 +174,7 @@ Work this list top to bottom. Each item should be small enough to become an issu
 - [x] Decide which refined schemas ship in `Axial.Refined` versus examples only: examples/user code only unless the
   package-boundary invariant changes.
 
-## Phase 5: Build RawInput And Input Parsing
+## Phase 7: Build RawInput And Input Parsing
 
 - [ ] Keep all schema input parsing source in `Axial.Validation.Schema`, not `Axial.Validation` or `Axial.Schema`.
 - [ ] Define source-agnostic `RawInput`:
@@ -133,7 +194,7 @@ Work this list top to bottom. Each item should be small enough to become an issu
 - [ ] Ensure constructors are not called when intrinsic field parsing fails.
 - [ ] Add tests for successful parse, failed parse, multiple sibling errors, raw redisplay, and field error lookup.
 
-## Phase 6: Define Schema Errors And Diagnostics Interpretation
+## Phase 8: Define Schema Errors And Diagnostics Interpretation
 
 - [ ] Keep `SchemaError` and schema diagnostics interpretation in `Axial.Validation.Schema`, not core `Axial.Schema`.
 - [ ] Define `SchemaError`.
@@ -146,7 +207,7 @@ Work this list top to bottom. Each item should be small enough to become an issu
 - [ ] Support mapping schema/input errors to domain/application errors.
 - [ ] Add tests for path rendering and flattened diagnostics.
 
-## Phase 7: Nested Models And Collections
+## Phase 9: Nested Models And Collections
 
 - [ ] Implement `nested "address" _.Address Address.schema { required }`.
 - [ ] Ensure nested schemas use getters for inspection interpreters.
@@ -159,7 +220,7 @@ Work this list top to bottom. Each item should be small enough to become an issu
 - [ ] Support raw redisplay paths such as `contacts[1].value`.
 - [ ] Add tests for nested success, nested failure, collection success, multiple item failures, and count constraints.
 
-## Phase 8: Constructor-Level Intrinsic Errors
+## Phase 10: Constructor-Level Intrinsic Errors
 
 - [ ] Support `schemaResult` or equivalent for constructors returning `Result`.
 - [ ] Attach constructor errors at root by default.
@@ -168,7 +229,7 @@ Work this list top to bottom. Each item should be small enough to become an issu
 - [ ] Add `DateRange`-style tests for cross-field intrinsic invariants.
 - [ ] Document the difference between constructor invariants and contextual rules.
 
-## Phase 9: Validation Interpreter For Existing Models
+## Phase 11: Validation Interpreter For Existing Models
 
 - [ ] Keep schema-based validation interpreters in `Axial.Validation.Schema`, not core `Axial.Validation`.
 - [ ] Implement `Validation.validate : Schema<'model> -> 'model -> Validation<'model, SchemaError>` or equivalent.
@@ -179,7 +240,7 @@ Work this list top to bottom. Each item should be small enough to become an issu
 - [ ] Ensure values created by `Input.parse` normally pass intrinsic validation.
 - [ ] Add tests for imported/hand-built values and generated-builder values.
 
-## Phase 10: Contextual Rules
+## Phase 12: Contextual Rules
 
 - [ ] Keep schema/contextual rules in `Axial.Validation.Schema` unless a separate rules package is deliberately created.
 - [ ] Define `RuleSet<'model, 'error>`.
@@ -192,7 +253,7 @@ Work this list top to bottom. Each item should be small enough to become an issu
 - [ ] Add examples and tests for support-ticket and approval-style workflow rules.
 - [ ] Document the distinction between schema constraints and rules.
 
-## Phase 11: Policy And Flow Integration
+## Phase 13: Policy And Flow Integration
 
 - [ ] Define or update `Policy<'env, 'error, 'input, 'output> =
   'env -> 'input -> Result<'output, 'error>`.
@@ -210,7 +271,7 @@ Work this list top to bottom. Each item should be small enough to become an issu
 - [ ] Add tests for context-aware and optional policies.
 - [ ] Document when to use `Bind.error`, `Bind.mapError`, and `Policy`.
 
-## Phase 12: Non-Validation Interpreters
+## Phase 14: Non-Validation Interpreters
 
 - [ ] Define an inspection API over `Schema<'model>`.
 - [ ] Prototype `JsonSchema.generate`.
@@ -221,7 +282,7 @@ Work this list top to bottom. Each item should be small enough to become an issu
 - [ ] Decide how CodecMapper should consume schema without taking a dependency cycle.
 - [ ] Add tests that prove schema metadata can be inspected without running validation.
 
-## Phase 13: Computation Expression DSL
+## Phase 15: Computation Expression DSL
 
 - [ ] Design `schema create { ... }` over the explicit core.
 - [ ] Implement primitive field operations:
@@ -234,7 +295,7 @@ Work this list top to bottom. Each item should be small enough to become an issu
 - [ ] Add examples comparing Rails ActiveModel and Axial schema side by side.
 - [ ] Add compile/API shape tests for the DSL.
 
-## Phase 14: Source Generation Later
+## Phase 16: Source Generation Later
 
 - [ ] Defer runtime reflection as a foundation.
 - [ ] Design source generation only after explicit schema and DSL APIs stabilize.
@@ -243,7 +304,7 @@ Work this list top to bottom. Each item should be small enough to become an issu
 - [ ] Generate schemas for primitive field attributes such as required, max length, email, and min length.
 - [ ] Decide whether generated schemas can target private constructors safely.
 
-## Phase 15: Documentation And Examples
+## Phase 17: Documentation And Examples
 
 - [ ] Update architecture docs after the direction is accepted.
 - [ ] Update source comments for changed public APIs.
@@ -256,7 +317,7 @@ Work this list top to bottom. Each item should be small enough to become an issu
 - [ ] Regenerate reference docs when public APIs exist.
 - [ ] Run `bash scripts/validate-docs.sh` after user-facing docs or API comments change.
 
-## Phase 16: Cleanup
+## Phase 18: Cleanup
 
 - [ ] Delete stale design notes after decisions are promoted.
 - [ ] Refresh `dev-docs/API_BASELINE.md`.
