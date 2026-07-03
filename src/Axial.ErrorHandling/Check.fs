@@ -333,6 +333,38 @@ module Check =
                 if not (isNull value) && List.contains value choices then pass
                 else fail (Equality(EqualTo expected, actualString value))
 
+    /// <summary>Executable value checks for ordered numeric values.</summary>
+    module Number =
+        /// <summary>Requires a value to lie inside the supplied inclusive bounds.</summary>
+        let inline between minimum maximum : Check<'value> =
+            fun value ->
+                if value >= minimum && value <= maximum then Ok ()
+                else Error [ Range(Between(string minimum, string maximum), Some(string value)) ]
+
+        /// <summary>Requires a value to be greater than the supplied exclusive lower bound.</summary>
+        let inline greaterThan minimum : Check<'value> =
+            fun value ->
+                if value > minimum then Ok ()
+                else Error [ Range(GreaterThan(string minimum), Some(string value)) ]
+
+        /// <summary>Requires a value to be less than the supplied exclusive upper bound.</summary>
+        let inline lessThan maximum : Check<'value> =
+            fun value ->
+                if value < maximum then Ok ()
+                else Error [ Range(LessThan(string maximum), Some(string value)) ]
+
+        /// <summary>Requires a value to be greater than or equal to the supplied lower bound.</summary>
+        let inline atLeast minimum : Check<'value> =
+            fun value ->
+                if value >= minimum then Ok ()
+                else Error [ Range(AtLeast(string minimum), Some(string value)) ]
+
+        /// <summary>Requires a value to be less than or equal to the supplied upper bound.</summary>
+        let inline atMost maximum : Check<'value> =
+            fun value ->
+                if value <= maximum then Ok ()
+                else Error [ Range(AtMost(string maximum), Some(string value)) ]
+
     /// <summary>Runs every check against the value and accumulates all failures. An empty list succeeds.</summary>
     let all (checks: Check<'value> list) : Check<'value> =
         fun value ->

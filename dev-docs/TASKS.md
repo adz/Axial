@@ -29,7 +29,7 @@ Work this list top to bottom. Each item should be small enough to become an issu
 - [x] Decide and document whether `Check.all []` succeeds and whether `Check.any []` fails.
 - [x] Implement `Check.String`:
   `present`, `minLength`, `maxLength`, `lengthBetween`, `email`, `matches`, `oneOf`, and null/blank behavior.
-- [ ] Implement `Check.Number`:
+- [x] Implement `Check.Number`:
   `between`, `greaterThan`, `lessThan`, `atLeast`, and `atMost`.
 - [ ] Decide whether numeric helpers need separate modules for `int`, `decimal`, `float`, date/time, or generic
   comparison is enough for the first pass.

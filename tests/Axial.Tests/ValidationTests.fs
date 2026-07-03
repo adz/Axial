@@ -120,6 +120,27 @@ module ValidationTests =
             test <@ Check.String.oneOf [ "draft"; "published" ] nullString = Error [ Equality(EqualTo "draft|published", None) ] @>
 
         [<Fact>]
+        let ``Check Number exposes executable range checks`` () =
+            test <@ Check.Number.between 1 10 5 = Ok () @>
+            test <@ Check.Number.between 1 10 0 = Error [ Range(Between("1", "10"), Some "0") ] @>
+            test <@ Check.Number.between 1 10 11 = Error [ Range(Between("1", "10"), Some "11") ] @>
+
+            test <@ Check.Number.greaterThan 3 4 = Ok () @>
+            test <@ Check.Number.greaterThan 3 3 = Error [ Range(GreaterThan "3", Some "3") ] @>
+
+            test <@ Check.Number.lessThan 3 2 = Ok () @>
+            test <@ Check.Number.lessThan 3 3 = Error [ Range(LessThan "3", Some "3") ] @>
+
+            test <@ Check.Number.atLeast 3 3 = Ok () @>
+            test <@ Check.Number.atLeast 3 2 = Error [ Range(AtLeast "3", Some "2") ] @>
+
+            test <@ Check.Number.atMost 3 3 = Ok () @>
+            test <@ Check.Number.atMost 3 4 = Error [ Range(AtMost "3", Some "4") ] @>
+
+            test <@ Check.Number.between 1.5m 2.5m 2.0m = Ok () @>
+            test <@ Check.Number.atLeast 1.5m 1.0m = Error [ Range(AtLeast "1.5", Some "1.0") ] @>
+
+        [<Fact>]
         let ``Check exposes pure predicates`` () =
             let nullString: string = null
 
