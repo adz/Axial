@@ -19,7 +19,7 @@ Refer to [`dev-docs/PLAN.md`](dev-docs/PLAN.md) for architectural direction and 
 - Keep `Axial.Flow`, `Axial.ErrorHandling`, `Axial.Refined`, and `Axial.Validation` as independent leaf packages. `Axial.Flow` must not depend on `Axial.ErrorHandling`, `Axial.Refined`, or `Axial.Validation`.
 - Model application and operational dependencies explicitly in `'env`; keep the ambient runtime for executor mechanics only.
 - `Check` and `Result` live in `Axial.ErrorHandling`, `Parse`/`Refine`/`refine { }` live in `Axial.Refined`, `Validation`/`Diagnostics` live in `Axial.Validation`, and `BindError`/`Policy` live in `Axial.Flow`.
-- Keep `Check` as pure predicates returning `bool`. Value-preserving guards and extraction helpers belong in `Result`; parsing and refined value construction belong in `Axial.Refined`.
+- Keep `Check` as a complete typed value-constraint subsystem: `Check<'value> = 'value -> Result<unit, CheckFailure list>`. Checks are path-free, raw-input-free value programs; value-preserving guards and extraction helpers belong in `Result`, and parsing and refined value construction belong in `Axial.Refined`.
 - Use `BindError` only at a `flow { }` bind site when a source error must be assigned or mapped immediately before binding.
 - Prefer AOT- and trimming-safe designs. Do not introduce runtime reflection as the foundation for core workflow, validation, schema, or service-access APIs; use explicit definitions first and consider build-time generation only after the API shape stabilizes.
 
