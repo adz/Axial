@@ -132,8 +132,30 @@ module internal ConstructorApplication =
 
         application.ApplyTrusted arguments
 
+/// <summary>Identifies the intrinsic primitive shape of a schema value.</summary>
+/// <remarks>
+/// Primitive kinds are portable metadata for interpreters such as input parsers, codecs, JSON Schema emitters, UI
+/// renderers, and documentation generators. They describe the trusted .NET value shape without selecting any
+/// particular serialized representation.
+/// </remarks>
+type PrimitiveValueKind =
+    /// <summary>Text represented as <see cref="T:System.String" />.</summary>
+    | Text
+    /// <summary>A 32-bit signed integer represented as <see cref="T:System.Int32" />.</summary>
+    | Int
+    /// <summary>A decimal number represented as <see cref="T:System.Decimal" />.</summary>
+    | Decimal
+    /// <summary>A Boolean value represented as <see cref="T:System.Boolean" />.</summary>
+    | Bool
+    /// <summary>A calendar date represented as <see cref="T:System.DateOnly" />.</summary>
+    | Date
+    /// <summary>An instant-like date and time represented as <see cref="T:System.DateTimeOffset" />.</summary>
+    | DateTime
+    /// <summary>A globally unique identifier represented as <see cref="T:System.Guid" />.</summary>
+    | Guid
+
 type internal ValueSchemaDefinition =
-    | PendingValueDefinition
+    | PrimitiveValueDefinition of PrimitiveValueKind
 
 type internal FieldDescriptor<'model> =
     { ExternalName: ExternalFieldName
@@ -219,6 +241,42 @@ type Schema<'model> internal (definition: SchemaDefinition<'model>) =
 [<Sealed>]
 type ValueSchema<'value> internal (definition: ValueSchemaDefinition) =
     member internal _.Definition = definition
+
+/// <summary>Functions for creating and inspecting value schemas.</summary>
+[<RequireQualifiedAccess>]
+module Value =
+    let private primitive kind = ValueSchema(PrimitiveValueDefinition kind)
+
+    /// <summary>Describes text represented as <see cref="T:System.String" />.</summary>
+    let text : ValueSchema<string> = primitive PrimitiveValueKind.Text
+
+    /// <summary>Describes a 32-bit signed integer represented as <see cref="T:System.Int32" />.</summary>
+    let ``int`` : ValueSchema<int> = primitive PrimitiveValueKind.Int
+
+    /// <summary>Describes a decimal number represented as <see cref="T:System.Decimal" />.</summary>
+    let ``decimal`` : ValueSchema<decimal> = primitive PrimitiveValueKind.Decimal
+
+    /// <summary>Describes a Boolean value represented as <see cref="T:System.Boolean" />.</summary>
+    let ``bool`` : ValueSchema<bool> = primitive PrimitiveValueKind.Bool
+
+#if NET6_0_OR_GREATER
+    /// <summary>Describes a calendar date represented as <see cref="T:System.DateOnly" />.</summary>
+    let date : ValueSchema<DateOnly> = primitive PrimitiveValueKind.Date
+#endif
+
+    /// <summary>Describes an instant-like date and time represented as <see cref="T:System.DateTimeOffset" />.</summary>
+    let dateTime : ValueSchema<DateTimeOffset> = primitive PrimitiveValueKind.DateTime
+
+    /// <summary>Describes a globally unique identifier represented as <see cref="T:System.Guid" />.</summary>
+    let guid : ValueSchema<Guid> = primitive PrimitiveValueKind.Guid
+
+    /// <summary>Returns the intrinsic primitive kind for a primitive value schema.</summary>
+    let primitiveKind (schema: ValueSchema<'value>) =
+        if isNull (box schema) then
+            nullArg (nameof schema)
+
+        match schema.Definition with
+        | PrimitiveValueDefinition kind -> kind
 
 /// <summary>
 /// Describes one typed field of a trusted model for schema interpreters.

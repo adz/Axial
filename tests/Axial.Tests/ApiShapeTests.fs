@@ -88,7 +88,7 @@ module ApiShapeTests =
             { ExternalName = ExternalFieldName.create externalName
               Order = FieldOrder.create order
               Getter = getter
-              ValueSchema = PendingValueDefinition }
+              ValueSchema = Value.text.Definition }
 
         Field definition
 
@@ -273,9 +273,11 @@ module ApiShapeTests =
         let schemaType = typedefof<Schema<_>>
         let valueSchemaType = typedefof<ValueSchema<_>>
         let fieldType = typedefof<Field<_, _>>
+        let primitiveValueKindType = typeof<PrimitiveValueKind>
         let externalFieldNameType = typeof<ExternalFieldName>
         let fieldOrderType = typeof<FieldOrder>
         let fieldModule = moduleType fieldType "Axial.Schema.Field"
+        let valueModule = moduleType valueSchemaType "Axial.Schema.Value"
         let schemaAssembly = schemaType.Assembly
         let references = referencedAssemblyNames schemaAssembly
         let publicConstructors =
@@ -315,8 +317,15 @@ module ApiShapeTests =
         test <@ publicFieldConstructors.Length = 0 @>
         test <@ publicExternalFieldNameConstructors.Length = 0 @>
         fieldModule |> publicStaticMemberNames |> assertContainsAll [ "externalName"; "order"; "getValue" ]
+        valueModule
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "text"; "int"; "decimal"; "bool"; "date"; "dateTime"; "guid"; "primitiveKind" ]
+        primitiveValueKindType
+        |> publicUnionCaseNames
+        |> assertContainsAll [ "Text"; "Int"; "Decimal"; "Bool"; "Date"; "DateTime"; "Guid" ]
         test <@ valueSchemaType.Assembly = schemaAssembly @>
         test <@ fieldType.Assembly = schemaAssembly @>
+        test <@ primitiveValueKindType.Assembly = schemaAssembly @>
         test <@ externalFieldNameType.Assembly = schemaAssembly @>
         test <@ fieldOrderType.Assembly = schemaAssembly @>
         test <@ externalNameProperty.PropertyType = externalFieldNameType @>
@@ -325,6 +334,36 @@ module ApiShapeTests =
         test <@ schemaAssembly.GetName().Name = "Axial.Schema" @>
         references
         |> assertContainsNone [ "Axial.Flow"; "Axial.ErrorHandling"; "Axial.Refined"; "Axial.Validation" ]
+
+    [<Fact>]
+    let ``primitive value schemas carry typed intrinsic metadata`` () =
+        let valueSchemas =
+            [ Value.primitiveKind Value.text
+              Value.primitiveKind Value.``int``
+              Value.primitiveKind Value.``decimal``
+              Value.primitiveKind Value.``bool``
+              Value.primitiveKind Value.date
+              Value.primitiveKind Value.dateTime
+              Value.primitiveKind Value.guid ]
+
+        test <@
+            valueSchemas =
+                [ PrimitiveValueKind.Text
+                  PrimitiveValueKind.Int
+                  PrimitiveValueKind.Decimal
+                  PrimitiveValueKind.Bool
+                  PrimitiveValueKind.Date
+                  PrimitiveValueKind.DateTime
+                  PrimitiveValueKind.Guid ]
+        @>
+        test <@ Value.text.Definition = PrimitiveValueDefinition PrimitiveValueKind.Text @>
+        test <@ Value.``int``.Definition = PrimitiveValueDefinition PrimitiveValueKind.Int @>
+        test <@ Value.``decimal``.Definition = PrimitiveValueDefinition PrimitiveValueKind.Decimal @>
+        test <@ Value.``bool``.Definition = PrimitiveValueDefinition PrimitiveValueKind.Bool @>
+        test <@ Value.date.Definition = PrimitiveValueDefinition PrimitiveValueKind.Date @>
+        test <@ Value.dateTime.Definition = PrimitiveValueDefinition PrimitiveValueKind.DateTime @>
+        test <@ Value.guid.Definition = PrimitiveValueDefinition PrimitiveValueKind.Guid @>
+        raises<ArgumentNullException> <@ Value.primitiveKind Unchecked.defaultof<ValueSchema<string>> |> ignore @>
 
     [<Fact>]
     let ``schema fields inspect existing trusted models through typed getters`` () =
