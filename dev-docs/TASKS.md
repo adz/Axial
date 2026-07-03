@@ -10,7 +10,7 @@ Work this list top to bottom. Each item should be small enough to become an issu
 - [x] Update `AGENTS.md` architecture invariants so `Check` is no longer defined as pure `bool` predicates.
 - [x] Update `dev-docs/decisions/README.md` to record the new direction:
   `Check<'value> = 'value -> Result<unit, CheckFailure list>`.
-- [ ] Update `dev-docs/project-split.md` so package responsibilities include complete typed `Check`, `Axial.Schema`,
+- [x] Update `dev-docs/project-split.md` so package responsibilities include complete typed `Check`, `Axial.Schema`,
   schema interpreters, and `Policy`.
 - [ ] Remove or rewrite stale current-ideas notes that still require predicate-only `Check`, especially
   `dev-docs/current-ideas/check-and-result-splits.md`.
