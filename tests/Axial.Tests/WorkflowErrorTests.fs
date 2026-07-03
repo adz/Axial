@@ -284,7 +284,8 @@ module WorkflowErrorTests =
     [<Fact>]
     let ``Check bridges into flow shapes`` () =
         let flowBridge =
-            Result.require false ()
+            false
+            |> Result.checkOr ()
             |> Flow.orElseFlow (Flow.read (fun env -> $"flow:{env}"))
             |> Flow.runSync "env"
 
@@ -467,7 +468,10 @@ let probe : Flow<unit, string, int> =
             flow {
                 let! x = successOption |> Bind.error "missing-option"
                 let! y = successValueOption |> Bind.error "missing-voption"
-                do! Result.require true () |> Bind.error "check-failed"
+                do!
+                    true
+                    |> Result.checkOr ()
+                    |> Bind.error "check-failed"
                 let! z = successTaskOption |> Bind.error "task-missing"
                 do! successTaskCheck |> Bind.error "task-check-failed"
                 let! w = successTaskValueOption |> Bind.error "vtask-missing"
@@ -497,7 +501,8 @@ let probe : Flow<unit, string, int> =
                     |> Bind.error InvalidUser
 
                 do!
-                    Result.require (isPwdValid password user) ()
+                    isPwdValid password user
+                    |> Result.checkOr ()
                     |> Bind.error InvalidPwd
 
                 do!

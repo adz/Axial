@@ -72,54 +72,59 @@ module ValidationTests =
                     return value / divisor
                 }
 
-            test <@ Result.map ((+) 1) (Ok 10) = Ok 11 @>
-            test <@ Result.bind (fun value -> Ok(value + 5)) (Ok 7) = Ok 12 @>
-            test <@ Result.mapError string (Error 42) = Error "42" @>
-            test <@ Result.guard Check.notBlank "required" "Ada" = Ok "Ada" @>
-            test <@ Result.guard Check.notBlank "required" "" = Error "required" @>
-            test <@ Result.require true "invalid" = Ok () @>
-            test <@ Result.require false "invalid" = Error "invalid" @>
-            test <@ Result.fromPredicate Check.positive 4 = Ok 4 @>
-            test <@ Result.fromPredicate Check.positive 0 = Error () @>
-            test <@ Result.fromTry (true, 42) = Ok 42 @>
-            test <@ Result.fromTry (false, 42) = Error () @>
-            test <@ Result.fromChoice (Choice1Of2 42) = Ok 42 @>
-            test <@ Result.fromChoice (Choice2Of2 "missing") = Error "missing" @>
-            test <@ Result.toOption (Ok 10) = Some 10 @>
-            test <@ Result.toValueOption (Error "missing") = ValueNone @>
-            test <@ Result.defaultValue 5 (Error "missing") = 5 @>
-            test <@ Result.some (Some 7) = Ok 7 @>
-            test <@ Result.valueSome (ValueSome 8) = Ok 8 @>
-            test <@ Result.nullable (System.Nullable 12) = Ok 12 @>
-            test <@ Result.okValue (Ok 3) = Ok 3 @>
-            test <@ Result.errorValue (Error "missing") = Ok "missing" @>
-            test <@ Result.head [ 1; 2 ] = Ok 1 @>
-            test <@ Result.notBlank "required" "Ada" = Ok "Ada" @>
-            test <@ Result.notNull "required" "Ada" = Ok "Ada" @>
-            test <@ Result.notEmpty "required" [ 1; 2 ] = Ok [ 1; 2 ] @>
-            test <@ Result.contains 2 "missing" [ 1; 2 ] = Ok [ 1; 2 ] @>
-            test <@ Result.hasNoDuplicates "duplicate" [ 1; 2; 3 ] = Ok [ 1; 2; 3 ] @>
-            test <@ Result.minLength 3 "ab" = Error(ExpectedMinLength(3, 2)) @>
-            test <@ Result.maxLength 3 "abcd" = Error(ExpectedMaxLength(3, 4)) @>
-            test <@ Result.exactLength 3 "ab" = Error(ExpectedExactLength(3, 2)) @>
-            test <@ Result.range 3 5 6 = Error(ExpectedAtMost(5, 6)) @>
-            test <@ Result.greaterThan 3 3 = Error(ExpectedGreaterThan(3, 3)) @>
-            test <@ Result.lessThan 3 3 = Error(ExpectedLessThan(3, 3)) @>
-            test <@ Result.atLeast 3 2 = Error(ExpectedAtLeast(3, 2)) @>
-            test <@ Result.atMost 3 4 = Error(ExpectedAtMost(3, 4)) @>
-            test <@ Result.single [ 5 ] = Ok 5 @>
-            test <@ Result.single [] = Error(ExpectedSingle 0) @>
-            test <@ Result.atMostOne [ 5 ] = Ok(Some 5) @>
-            test <@ Result.atLeastOne [] = Error ExpectedAtLeastOne @>
-            test <@ Result.moreThanOne [ 5 ] = Error(ExpectedMoreThanOne 1) @>
+            test <@ (Ok 10 |> Result.map ((+) 1)) = Ok 11 @>
+            test <@ (Ok 7 |> Result.bind (fun value -> Ok(value + 5))) = Ok 12 @>
+            test <@ (Error 42 |> Result.mapError string) = Error "42" @>
+            test <@ ("Ada" |> Result.keepIf Check.notBlank "required") = Ok "Ada" @>
+            test <@ ("" |> Result.keepIf Check.notBlank "required") = Error "required" @>
+            test <@ (true |> Result.checkOr "invalid") = Ok () @>
+            test <@ (false |> Result.checkOr "invalid") = Error "invalid" @>
+            test <@ (Error () |> Result.withError "typed") = Error "typed" @>
+            test <@ ((true, 42) |> Result.fromTry) = Ok 42 @>
+            test <@ ((false, 42) |> Result.fromTry) = Error () @>
+            test <@ (Choice1Of2 42 |> Result.fromChoice) = Ok 42 @>
+            test <@ (Choice2Of2 "missing" |> Result.fromChoice) = Error "missing" @>
+            test <@ (Ok 10 |> Result.toOption) = Some 10 @>
+            test <@ (Error "missing" |> Result.toValueOption) = ValueNone @>
+            test <@ (Error "missing" |> Result.defaultValue 5) = 5 @>
+            test <@ (Some 7 |> Result.someOr "missing") = Ok 7 @>
+            test <@ (None |> Result.noneOr "unexpected") = Ok () @>
+            test <@ (ValueSome 8 |> Result.valueSomeOr "missing") = Ok 8 @>
+            test <@ (ValueNone |> Result.valueNoneOr "unexpected") = Ok () @>
+            test <@ (System.Nullable 12 |> Result.nullableOr "missing") = Ok 12 @>
+            test <@ ("Ada" |> Result.notNullOr "required") = Ok "Ada" @>
+            test <@ (Ok 3 |> Result.okOr "missing") = Ok 3 @>
+            test <@ (Error "failed" |> Result.errorOr "missing") = Ok "failed" @>
+            test <@ ([ 1; 2 ] |> Result.headOr "missing") = Ok 1 @>
+            test <@ ("Ada" |> Result.keepIf Check.notBlank "required") = Ok "Ada" @>
+            test <@ ("Ada" |> Result.keepIf Check.notNull "required") = Ok "Ada" @>
+            test <@ ([ 1; 2 ] |> Result.keepIf Check.notEmpty "required") = Ok [ 1; 2 ] @>
+            test <@ ([ 1; 2 ] |> Result.keepIf (Check.contains 2) "missing") = Ok [ 1; 2 ] @>
+            test <@ ([ 1; 2; 3 ] |> Result.keepIf Check.hasNoDuplicates "duplicate") = Ok [ 1; 2; 3 ] @>
+            test <@ ("ab" |> Result.minLength 3) = Error(ExpectedMinLength(3, 2)) @>
+            test <@ ("abcd" |> Result.maxLength 3) = Error(ExpectedMaxLength(3, 4)) @>
+            test <@ ("ab" |> Result.exactLength 3) = Error(ExpectedExactLength(3, 2)) @>
+            test <@ (6 |> Result.range 3 5) = Error(ExpectedAtMost(5, 6)) @>
+            test <@ (3 |> Result.greaterThan 3) = Error(ExpectedGreaterThan(3, 3)) @>
+            test <@ (3 |> Result.lessThan 3) = Error(ExpectedLessThan(3, 3)) @>
+            test <@ (2 |> Result.atLeast 3) = Error(ExpectedAtLeast(3, 2)) @>
+            test <@ (4 |> Result.atMost 3) = Error(ExpectedAtMost(3, 4)) @>
+            test <@ ([ 5 ] |> Result.single) = Ok 5 @>
+            test <@ ([] |> Result.single) = Error(ExpectedSingle 0) @>
+            test <@ ([ 5 ] |> Result.atMostOne) = Ok(Some 5) @>
+            test <@ ([] |> Result.atLeastOne) = Error ExpectedAtLeastOne @>
+            test <@ ([ 5 ] |> Result.moreThanOne) = Error(ExpectedMoreThanOne 1) @>
             test <@ Collection.traverseResult (fun value -> if value < 3 then Ok(value * 2) else Error value) [ 1; 2 ] = Ok [ 2; 4 ] @>
             test <@ Collection.sequenceResult [ Ok 1; Error "missing"; Ok 3 ] = Error "missing" @>
             test <@ workflow = Ok 10 @>
 
         [<Fact>]
         let ``Policy adapts result functions to flow verification`` () =
+            let requireNonBlank value =
+                value |> Result.keepIf Check.notBlank ()
+
             let requireName =
-                Policy.withError (Result.fromPredicate Check.notBlank) Required
+                Policy.withError requireNonBlank Required
 
             let withinLimit =
                 Policy.context
@@ -298,7 +303,7 @@ module ValidationTests =
                 validate.key "address" {
                     let! city =
                         validate.name "City" {
-                            return! address.City |> Result.notBlank "City required"
+                            return! address.City |> Result.keepIf Check.notBlank "City required"
                         }
 
                     return { address with City = city }
@@ -308,7 +313,7 @@ module ValidationTests =
                 validate.key "customer" {
                     let! name =
                         validate.name "Name" {
-                            return! customer.Name |> Result.notBlank "Name required"
+                            return! customer.Name |> Result.keepIf Check.notBlank "Name required"
                         }
 
                     and! address = validateAddress customer.Address
@@ -318,7 +323,7 @@ module ValidationTests =
                             customer.Lines
                             |> Validation.traverseIndexed (fun index line ->
                                 validate.name "Name" {
-                                    return! line |> Result.notBlank $"Line {index} name required"
+                                    return! line |> Result.keepIf Check.notBlank $"Line {index} name required"
                                 }
                             )
                         )
