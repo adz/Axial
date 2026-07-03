@@ -43,7 +43,7 @@ Work this list top to bottom. Each item should be small enough to become an issu
 - [x] Update or replace current API shape tests that assert `Check` returns `bool`.
 - [x] Add behavior tests for composition, error accumulation, short-circuit policy if any, null-sensitive strings, ranges,
   collections, options, and results.
-- [ ] Update source comments for the new `Check` model.
+- [x] Update source comments for the new `Check` model.
 
 ## Phase 2: Stabilize Result/Parse/Refine Around New Check
 

@@ -3,7 +3,7 @@ namespace Axial.ErrorHandling
 open System
 open System.Text.RegularExpressions
 
-/// <summary>Describes an expected string length for a failed check.</summary>
+/// <summary>Describes the length requirement that a value check expected a string-like value to satisfy.</summary>
 type CheckLengthExpectation =
     /// <summary>The value was expected to have at least the supplied length.</summary>
     | MinimumLength of minimum: int
@@ -14,7 +14,7 @@ type CheckLengthExpectation =
     /// <summary>The value was expected to have a length inside the inclusive bounds.</summary>
     | LengthBetween of minimum: int * maximum: int
 
-/// <summary>Describes an expected ordered range for a failed check.</summary>
+/// <summary>Describes the ordering requirement that a value check expected a comparable value to satisfy.</summary>
 type CheckRangeExpectation =
     /// <summary>The value was expected to be greater than the supplied exclusive lower bound.</summary>
     | GreaterThan of minimumExclusive: string
@@ -27,7 +27,7 @@ type CheckRangeExpectation =
     /// <summary>The value was expected to be between the supplied inclusive bounds.</summary>
     | Between of minimumInclusive: string * maximumInclusive: string
 
-/// <summary>Describes an expected collection count for a failed check.</summary>
+/// <summary>Describes the count requirement that a value check expected a collection to satisfy.</summary>
 type CheckCountExpectation =
     /// <summary>The collection was expected to contain at least the supplied count.</summary>
     | MinimumCount of minimum: int
@@ -38,14 +38,14 @@ type CheckCountExpectation =
     /// <summary>The collection was expected to contain a count inside the inclusive bounds.</summary>
     | CountBetween of minimum: int * maximum: int
 
-/// <summary>Describes an equality expectation for a failed check.</summary>
+/// <summary>Describes the equality requirement that a value check expected a value to satisfy.</summary>
 type CheckEqualityExpectation =
     /// <summary>The value was expected to equal the supplied value description.</summary>
     | EqualTo of expected: string
     /// <summary>The value was expected not to equal the supplied value description.</summary>
     | NotEqualTo of unexpected: string
 
-/// <summary>Describes a failed value check without attaching source paths or raw input.</summary>
+/// <summary>Describes why an executable value check failed, without attaching source paths or raw input.</summary>
 type CheckFailure =
     /// <summary>A required value was missing.</summary>
     | Missing
@@ -61,13 +61,22 @@ type CheckFailure =
     | Count of expectation: CheckCountExpectation * actualCount: int option
     /// <summary>The value did not match the expected equality constraint.</summary>
     | Equality of expectation: CheckEqualityExpectation * actual: string option
-    /// <summary>A custom check identified by an application-defined code failed.</summary>
+    /// <summary>A custom value check identified by an application-defined code failed.</summary>
     | CustomCode of code: string
 
-/// <summary>A typed value check that succeeds with <c>unit</c> or returns zero or more check failures.</summary>
+/// <summary>
+/// An executable, path-free value constraint that succeeds with <c>unit</c> or returns structured check failures.
+/// </summary>
 type Check<'value> = 'value -> Result<unit, CheckFailure list>
 
-/// <summary>Typed value checks and pure, null-safe predicates for common structural checks.</summary>
+/// <summary>
+/// Typed value-check programs and common boolean predicates for local structural facts.
+/// </summary>
+/// <remarks>
+/// The nested modules such as <c>Check.String</c>, <c>Check.Number</c>, and <c>Check.Collection</c> return
+/// <see cref="T:Axial.ErrorHandling.Check`1" /> programs. Top-level helpers such as <c>notBlank</c> and
+/// <c>greaterThan</c> remain boolean predicates for code that only needs a local fact.
+/// </remarks>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Check =
     let private emailRegex =
@@ -271,7 +280,7 @@ module Check =
     let negate (predicate: 'input -> bool) (input: 'input) : bool =
         not (predicate input)
 
-    /// <summary>Executable value checks for strings.</summary>
+    /// <summary>Executable, path-free value checks for already parsed strings.</summary>
     module String =
         let private pass : Result<unit, CheckFailure list> = Ok ()
 
@@ -284,47 +293,47 @@ module Check =
         let private actualString (value: string) =
             if isNull value then None else Some value
 
-        /// <summary>Requires a string to be non-null and contain at least one non-whitespace character.</summary>
+        /// <summary>Requires an already parsed string value to be non-null and contain at least one non-whitespace character.</summary>
         let present : Check<string> =
             fun value ->
                 if isNull value then fail Missing
                 elif global.System.String.IsNullOrWhiteSpace value then fail Blank
                 else pass
 
-        /// <summary>Requires a string to have at least the supplied length. Null fails with an unknown actual length.</summary>
+        /// <summary>Requires an already parsed string value to have at least the supplied length. Null fails with an unknown actual length.</summary>
         let minLength (minimum: int) : Check<string> =
             fun value ->
                 match actualLength value with
                 | Some length when length >= minimum -> pass
                 | actual -> fail (Length(MinimumLength minimum, actual))
 
-        /// <summary>Requires a string to have at most the supplied length. Null fails with an unknown actual length.</summary>
+        /// <summary>Requires an already parsed string value to have at most the supplied length. Null fails with an unknown actual length.</summary>
         let maxLength (maximum: int) : Check<string> =
             fun value ->
                 match actualLength value with
                 | Some length when length <= maximum -> pass
                 | actual -> fail (Length(MaximumLength maximum, actual))
 
-        /// <summary>Requires a string length to lie inside the supplied inclusive bounds. Null fails with an unknown actual length.</summary>
+        /// <summary>Requires an already parsed string value length to lie inside the supplied inclusive bounds. Null fails with an unknown actual length.</summary>
         let lengthBetween (minimum: int) (maximum: int) : Check<string> =
             fun value ->
                 match actualLength value with
                 | Some length when length >= minimum && length <= maximum -> pass
                 | actual -> fail (Length(LengthBetween(minimum, maximum), actual))
 
-        /// <summary>Requires a string to match Axial's pragmatic email format.</summary>
+        /// <summary>Requires an already parsed string value to match Axial's pragmatic email format.</summary>
         let email : Check<string> =
             fun value ->
                 if not (isNull value) && emailRegex.IsMatch value then pass
                 else fail (InvalidFormat "email")
 
-        /// <summary>Requires a string to match the supplied regular expression pattern.</summary>
+        /// <summary>Requires an already parsed string value to match the supplied regular expression pattern.</summary>
         let matches (pattern: string) : Check<string> =
             fun value ->
                 if not (isNull value) && Regex.IsMatch(value, pattern) then pass
                 else fail (InvalidFormat pattern)
 
-        /// <summary>Requires a string to equal one of the supplied choices. Null fails with an unknown actual value.</summary>
+        /// <summary>Requires an already parsed string value to equal one of the supplied choices. Null fails with an unknown actual value.</summary>
         let oneOf (choices: string seq) : Check<string> =
             let choices = choices |> Seq.toList
             let expected = global.System.String.Join("|", choices)
@@ -333,7 +342,7 @@ module Check =
                 if not (isNull value) && List.contains value choices then pass
                 else fail (Equality(EqualTo expected, actualString value))
 
-    /// <summary>Executable value checks for ordered numeric values.</summary>
+    /// <summary>Executable, path-free value checks for already parsed ordered values.</summary>
     module Number =
         /// <summary>Requires a value to lie inside the supplied inclusive bounds.</summary>
         let inline between minimum maximum : Check<'value> =
@@ -365,7 +374,7 @@ module Check =
                 if value <= maximum then Ok ()
                 else Error [ Range(AtMost(string maximum), Some(string value)) ]
 
-    /// <summary>Executable value checks for collections.</summary>
+    /// <summary>Executable, path-free value checks for already parsed collections.</summary>
     module Collection =
         let private pass : Result<unit, CheckFailure list> = Ok ()
 
@@ -376,35 +385,35 @@ module Check =
             if Object.ReferenceEquals(values, null) then None
             else Some(Seq.length values)
 
-        /// <summary>Requires a collection to contain at least one item. Null fails with an unknown actual count.</summary>
+        /// <summary>Requires an already parsed collection to contain at least one item. Null fails with an unknown actual count.</summary>
         let notEmpty : Check<#seq<'value>> =
             fun values ->
                 match actualCount values with
                 | Some count when count > 0 -> pass
                 | actual -> fail (Count(MinimumCount 1, actual))
 
-        /// <summary>Requires a collection to contain at least the supplied count. Null fails with an unknown actual count.</summary>
+        /// <summary>Requires an already parsed collection to contain at least the supplied count. Null fails with an unknown actual count.</summary>
         let minCount (minimum: int) : Check<#seq<'value>> =
             fun values ->
                 match actualCount values with
                 | Some count when count >= minimum -> pass
                 | actual -> fail (Count(MinimumCount minimum, actual))
 
-        /// <summary>Requires a collection to contain at most the supplied count. Null fails with an unknown actual count.</summary>
+        /// <summary>Requires an already parsed collection to contain at most the supplied count. Null fails with an unknown actual count.</summary>
         let maxCount (maximum: int) : Check<#seq<'value>> =
             fun values ->
                 match actualCount values with
                 | Some count when count <= maximum -> pass
                 | actual -> fail (Count(MaximumCount maximum, actual))
 
-        /// <summary>Requires a collection count to lie inside the supplied inclusive bounds. Null fails with an unknown actual count.</summary>
+        /// <summary>Requires an already parsed collection count to lie inside the supplied inclusive bounds. Null fails with an unknown actual count.</summary>
         let countBetween (minimum: int) (maximum: int) : Check<#seq<'value>> =
             fun values ->
                 match actualCount values with
                 | Some count when count >= minimum && count <= maximum -> pass
                 | actual -> fail (Count(CountBetween(minimum, maximum), actual))
 
-        /// <summary>Requires a collection to contain no duplicate values.</summary>
+        /// <summary>Requires an already parsed collection to contain no duplicate values.</summary>
         let distinct : Check<#seq<'value>> =
             fun values ->
                 if Object.ReferenceEquals(values, null) then
@@ -417,7 +426,7 @@ module Check =
                     else
                         fail (CustomCode "collection.distinct")
 
-    /// <summary>Executable value checks for optional values.</summary>
+    /// <summary>Executable, path-free value checks for already parsed optional values.</summary>
     module Option =
         let private pass : Result<unit, CheckFailure list> = Ok ()
 
@@ -438,7 +447,7 @@ module Check =
                 | None -> pass
                 | Some _ -> fail (Equality(EqualTo "None", Some "Some"))
 
-    /// <summary>Executable value checks for value option values.</summary>
+    /// <summary>Executable, path-free value checks for already parsed value option values.</summary>
     module ValueOption =
         let private pass : Result<unit, CheckFailure list> = Ok ()
 
@@ -459,7 +468,7 @@ module Check =
                 | ValueNone -> pass
                 | ValueSome _ -> fail (Equality(EqualTo "ValueNone", Some "ValueSome"))
 
-    /// <summary>Executable value checks for nullable values.</summary>
+    /// <summary>Executable, path-free value checks for already parsed nullable values.</summary>
     module Nullable =
         let private pass : Result<unit, CheckFailure list> = Ok ()
 
@@ -474,7 +483,7 @@ module Check =
         let hasNoValue : Check<System.Nullable<'value>> =
             fun value -> if value.HasValue then fail (Equality(EqualTo "null", Some "value")) else pass
 
-    /// <summary>Executable value checks for result values.</summary>
+    /// <summary>Executable, path-free value checks for result values.</summary>
     module Result =
         let private pass : Result<unit, CheckFailure list> = Ok ()
 
@@ -495,7 +504,7 @@ module Check =
                 | Error _ -> pass
                 | Ok _ -> fail (Equality(EqualTo "Error", Some "Ok"))
 
-    /// <summary>Runs every check against the value and accumulates all failures. An empty list succeeds.</summary>
+    /// <summary>Combines checks conjunctively by running every check against the value and accumulating all failures. An empty list succeeds.</summary>
     let all (checks: Check<'value> list) : Check<'value> =
         fun value ->
             let failures =
@@ -507,7 +516,7 @@ module Check =
 
             if List.isEmpty failures then Ok () else Error failures
 
-    /// <summary>Runs checks until one succeeds, or returns the accumulated failures when every check fails. An empty list fails with no failures.</summary>
+    /// <summary>Combines checks disjunctively by running checks until one succeeds, or returns accumulated failures when every check fails. An empty list fails with no failures.</summary>
     let any (checks: Check<'value> list) : Check<'value> =
         fun value ->
             let rec loop failures remaining =
@@ -520,7 +529,7 @@ module Check =
 
             loop [] checks
 
-    /// <summary>Inverts a check. A successful inner check becomes a custom-code failure.</summary>
+    /// <summary>Inverts a check. A successful inner check becomes a custom-code failure, while any failed inner check succeeds.</summary>
     let ``not`` (check: Check<'value>) : Check<'value> =
         fun value ->
             match check value with
