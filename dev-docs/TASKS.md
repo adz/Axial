@@ -84,7 +84,7 @@ Schema constraints should lower onto the tightened `Check` shape, not the verbos
 - [x] Rename or replace `Check.Collection` with `Check.Seq` for direct sequence-shaped checks.
 - [x] Decide whether to retain `Check.Collection` as a short-lived compatibility alias; because Axial is pre-1.0,
   prefer removing it once call sites and docs are updated.
-- [ ] Keep direct implementation modules:
+- [x] Keep direct implementation modules:
   `Check.String`, `Check.Number`, `Check.Seq`, `Check.Option`, `Check.ValueOption`, `Check.Nullable`, and
   `Check.Result`.
 - [ ] Add top-level concrete structured check aliases for common single-target checks:
