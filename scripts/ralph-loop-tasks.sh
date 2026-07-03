@@ -35,36 +35,72 @@ require_clean_tree() {
 next_task() {
   awk '
     match($0, /^[[:space:]]*([0-9]+)\. \[ \] (.*)$/, m) {
-      print m[1] "\t" m[2]
+      print NR "\tnumbered\t" m[1] "\t" m[2]
+      exit
+    }
+    match($0, /^[[:space:]]*[-*+] \[ \] (.*)$/, m) {
+      print NR "\tbullet\t-\t" m[1]
       exit
     }
   ' "$TASKS_FILE"
 }
 
 task_is_checked() {
-  local number="$1"
-  grep -Eq "^[[:space:]]*${number}\. \[x\] " "$TASKS_FILE"
+  local line_number="$1"
+  local task_kind="$2"
+  local task_marker="$3"
+  local task_text="$4"
+
+  awk \
+    -v line_number="$line_number" \
+    -v task_kind="$task_kind" \
+    -v task_marker="$task_marker" \
+    -v task_text="$task_text" '
+      NR == line_number {
+        if (task_kind == "numbered" && $0 ~ "^[[:space:]]*" task_marker "\\. \\[x\\] " && index($0, "[x] " task_text) > 0) {
+          found = 1
+        }
+        if (task_kind == "bullet" && $0 ~ "^[[:space:]]*[-*+] \\[x\\] " && index($0, "[x] " task_text) > 0) {
+          found = 1
+        }
+      }
+      END {
+        exit(found ? 0 : 1)
+      }
+    ' "$TASKS_FILE"
 }
 
 count_remaining_tasks() {
-  grep -Ec '^[[:space:]]*[0-9]+\. \[ \] ' "$TASKS_FILE" || true
+  grep -Ec '^[[:space:]]*([0-9]+\.|[-*+]) \[ \] ' "$TASKS_FILE" || true
 }
 
 run_task() {
-  local task_number="$1"
-  local task_text="$2"
+  local task_line_number="$1"
+  local task_kind="$2"
+  local task_marker="$3"
+  local task_text="$4"
   local before_head
   local after_head
   local prompt
+  local task_ref
+  local task_line
 
   before_head="$(git -C "$ROOT_DIR" rev-parse --verify HEAD 2>/dev/null || true)"
 
-  printf 'Running task %s: %s\n' "$task_number" "$task_text"
+  if [[ "$task_kind" == "numbered" ]]; then
+    task_ref="$task_marker"
+    task_line="${task_marker}. [ ] ${task_text}"
+  else
+    task_ref="line ${task_line_number}"
+    task_line="- [ ] ${task_text}"
+  fi
+
+  printf 'Running task %s: %s\n' "$task_ref" "$task_text"
 
   prompt=$(cat <<EOF
-Work only on task ${task_number} from dev-docs/TASKS.md in this repository:
+Work only on the unchecked task at ${task_ref} from dev-docs/TASKS.md in this repository:
 
-${task_number}. [ ] ${task_text}
+${task_line}
 
 Repository rules to follow:
 - Read and follow AGENTS.md, dev-docs/PLAN.md, and dev-docs/TASKS.md.
@@ -82,29 +118,31 @@ EOF
   "$CODEX_BIN" exec "${CODEX_EXEC_ARGS[@]}" -C "$ROOT_DIR" "$prompt"
 
   if ! git -C "$ROOT_DIR" diff --quiet || ! git -C "$ROOT_DIR" diff --cached --quiet; then
-    echo "Codex left uncommitted changes after task ${task_number}. Stopping." >&2
+    echo "Codex left uncommitted changes after task ${task_ref}. Stopping." >&2
     exit 1
   fi
 
   after_head="$(git -C "$ROOT_DIR" rev-parse --verify HEAD 2>/dev/null || true)"
 
   if [[ "$after_head" == "$before_head" ]]; then
-    echo "No new commit was created for task ${task_number}. Stopping." >&2
+    echo "No new commit was created for task ${task_ref}. Stopping." >&2
     exit 1
   fi
 
-  if ! task_is_checked "$task_number"; then
-    echo "Task ${task_number} is still unchecked in TASKS.md. Stopping." >&2
+  if ! task_is_checked "$task_line_number" "$task_kind" "$task_marker" "$task_text"; then
+    echo "Task ${task_ref} is still unchecked in TASKS.md. Stopping." >&2
     exit 1
   fi
 
-  printf 'Completed task %s with commit %s\n' "$task_number" "$after_head"
+  printf 'Completed task %s with commit %s\n' "$task_ref" "$after_head"
 }
 
 main() {
   local once="false"
   local task_line
-  local task_number
+  local task_line_number
+  local task_kind
+  local task_marker
   local task_text
   CODEX_EXEC_ARGS=(--full-auto)
 
@@ -142,8 +180,8 @@ main() {
       exit 0
     fi
 
-    IFS=$'\t' read -r task_number task_text <<<"$task_line"
-    run_task "$task_number" "$task_text"
+    IFS=$'\t' read -r task_line_number task_kind task_marker task_text <<<"$task_line"
+    run_task "$task_line_number" "$task_kind" "$task_marker" "$task_text"
 
     if [[ "$once" == "true" ]]; then
       exit 0
