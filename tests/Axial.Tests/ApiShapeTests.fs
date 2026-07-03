@@ -248,16 +248,23 @@ module ApiShapeTests =
         |> assertContainsAll [ "Return"; "ReturnFrom"; "Bind"; "Delay"; "Run"; "Combine" ]
 
     [<Fact>]
-    let ``schema type starts as independent leaf package`` () =
+    let ``schema types start as independent leaf package`` () =
         let schemaType = typedefof<Schema<_>>
+        let valueSchemaType = typedefof<ValueSchema<_>>
         let schemaAssembly = schemaType.Assembly
         let references = referencedAssemblyNames schemaAssembly
         let publicConstructors =
             schemaType.GetConstructors(BindingFlags.Public ||| BindingFlags.Instance)
+        let publicValueConstructors =
+            valueSchemaType.GetConstructors(BindingFlags.Public ||| BindingFlags.Instance)
 
         test <@ schemaType.IsGenericTypeDefinition @>
         test <@ schemaType.GetGenericArguments().Length = 1 @>
         test <@ publicConstructors.Length = 0 @>
+        test <@ valueSchemaType.IsGenericTypeDefinition @>
+        test <@ valueSchemaType.GetGenericArguments().Length = 1 @>
+        test <@ publicValueConstructors.Length = 0 @>
+        test <@ valueSchemaType.Assembly = schemaAssembly @>
         test <@ schemaAssembly.GetName().Name = "Axial.Schema" @>
         references
         |> assertContainsNone [ "Axial.Flow"; "Axial.ErrorHandling"; "Axial.Refined"; "Axial.Validation" ]

@@ -58,7 +58,7 @@ Work this list top to bottom. Each item should be small enough to become an issu
 ## Phase 3: Introduce Schema Core
 
 - [x] Define `Schema<'model>`.
-- [ ] Define `ValueSchema<'value>`.
+- [x] Define `ValueSchema<'value>`.
 - [ ] Define `Field<'model, 'value>` metadata.
 - [ ] Model external field names.
 - [ ] Model getters for existing model inspection.
