@@ -1,6 +1,7 @@
 module RefinedCatalogExample
 
 open System
+open Axial.ErrorHandling
 open Axial.Refined
 
 type ProductId = ProductId of NonZeroInt
@@ -8,6 +9,82 @@ type ProductSlug = ProductSlug of Slug
 type DisplayName = DisplayName of NonBlankString
 type ProductTags = ProductTags of DistinctList<Slug>
 type Quantity = Quantity of PositiveInt
+type ContactEmail = private ContactEmail of string
+type Sku = private Sku of string
+type Rating = private Rating of int
+type UnitPrice = private UnitPrice of decimal
+
+module ContactEmail =
+    let value (ContactEmail value) = value
+
+    let private describe failures =
+        failures
+        |> List.map (sprintf "%A")
+        |> String.concat "; "
+
+    let create value : Result<ContactEmail, RefinementError> =
+        Refine.withCheck
+            "ContactEmail"
+            (Check.all [
+                Check.String.present
+                Check.String.email
+                Check.String.maxLength 254
+            ])
+            (fun target failures -> RefinementError.InvalidFormat(target, describe failures))
+            ContactEmail
+            value
+
+module Sku =
+    let value (Sku value) = value
+
+    let private describe failures =
+        failures
+        |> List.map (sprintf "%A")
+        |> String.concat "; "
+
+    let create value : Result<Sku, RefinementError> =
+        Refine.withCheck
+            "Sku"
+            (Check.all [
+                Check.String.present
+                Check.String.lengthBetween 3 12
+                Check.String.matches "^[A-Z0-9-]+$"
+            ])
+            (fun target failures -> RefinementError.InvalidFormat(target, describe failures))
+            Sku
+            value
+
+module Rating =
+    let value (Rating value) = value
+
+    let private describe failures =
+        failures
+        |> List.map (sprintf "%A")
+        |> String.concat "; "
+
+    let create value : Result<Rating, RefinementError> =
+        Refine.withCheck
+            "Rating"
+            (Check.Number.between 1 5)
+            (fun target failures -> RefinementError.OutOfRange(target, describe failures))
+            Rating
+            value
+
+module UnitPrice =
+    let value (UnitPrice value) = value
+
+    let private describe failures =
+        failures
+        |> List.map (sprintf "%A")
+        |> String.concat "; "
+
+    let create value : Result<UnitPrice, RefinementError> =
+        Refine.withCheck
+            "UnitPrice"
+            (Check.Number.greaterThan 0m)
+            (fun target failures -> RefinementError.OutOfRange(target, describe failures))
+            UnitPrice
+            value
 
 type Discount =
     | Percent of PositiveInt
@@ -22,6 +99,10 @@ type ProductRequest =
       DisplayName: DisplayName
       Tags: ProductTags
       Quantity: Quantity
+      ContactEmail: ContactEmail
+      Sku: Sku
+      Rating: Rating
+      UnitPrice: UnitPrice
       Discount: Discount
       PublishWindow: PublishWindow }
 
@@ -56,6 +137,10 @@ let createProductRequest
     rawDisplayName
     rawTags
     rawQuantity
+    rawContactEmail
+    rawSku
+    rawRating
+    rawUnitPrice
     rawDiscount
     publishStart
     publishEnd
@@ -69,6 +154,12 @@ let createProductRequest
         let! distinctTags = Refine.distinctList tags
         let! parsedQuantity = Parse.int rawQuantity
         let! quantity = Refine.positiveInt parsedQuantity
+        let! contactEmail = ContactEmail.create rawContactEmail
+        let! sku = Sku.create rawSku
+        let! parsedRating = Parse.int rawRating
+        let! rating = Rating.create parsedRating
+        let! parsedUnitPrice = Parse.decimal rawUnitPrice
+        let! unitPrice = UnitPrice.create parsedUnitPrice
         let! discount = parseDiscount rawDiscount
         let! publishWindow = Refine.dateTimeOffsetRange publishStart publishEnd
 
@@ -78,6 +169,10 @@ let createProductRequest
             DisplayName = DisplayName displayName
             Tags = ProductTags distinctTags
             Quantity = Quantity quantity
+            ContactEmail = contactEmail
+            Sku = sku
+            Rating = rating
+            UnitPrice = unitPrice
             Discount = discount
             PublishWindow = { Range = publishWindow }
         }
@@ -94,6 +189,10 @@ let run () =
             "Axial Guide"
             [ "fsharp"; "typed-errors" ]
             "3"
+            "ada@example.com"
+            "AX-42"
+            "5"
+            "19.95"
             "launch-sale"
             start
             finish
@@ -105,6 +204,10 @@ let run () =
             " "
             [ "fsharp"; "fsharp" ]
             "-1"
+            "not-email"
+            "x"
+            "6"
+            "0"
             ""
             finish
             start

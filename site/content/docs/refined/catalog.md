@@ -76,6 +76,54 @@ Important semantics:
 
 Regex-backed values, email addresses, URLs, telephone numbers, postal codes, and sanitized text are deferred. Regex adds dependency and timeout concerns; sanitizing text transforms input rather than simply refining it.
 
+## Caller-Owned Domain Types
+
+Use `Refine.withCheck` when the built-in wrappers are too generic and your model needs a named domain type. Checks stay reusable structural programs from `Axial.ErrorHandling`; the smart constructor maps their failures to the refined error shape your boundary uses.
+
+```fsharp
+open Axial.ErrorHandling
+open Axial.Refined
+
+type ContactEmail = private ContactEmail of string
+type Rating = private Rating of int
+
+module ContactEmail =
+    let value (ContactEmail value) = value
+
+    let create value : Result<ContactEmail, RefinementError> =
+        Refine.withCheck
+            "ContactEmail"
+            (Check.all [
+                Check.String.present
+                Check.String.email
+                Check.String.maxLength 254
+            ])
+            (fun target failures -> RefinementError.InvalidFormat(target, sprintf "%A" failures))
+            ContactEmail
+            value
+
+module Rating =
+    let value (Rating value) = value
+
+    let create value : Result<Rating, RefinementError> =
+        Refine.withCheck
+            "Rating"
+            (Check.Number.between 1 5)
+            (fun target failures -> RefinementError.OutOfRange(target, sprintf "%A" failures))
+            Rating
+            value
+```
+
+This keeps value constraints path-free and raw-input-free. Parse text first when needed, then run the named constructor:
+
+```fsharp
+let parseRating text : Result<Rating, RefinementError> =
+    refine {
+        let! value = Parse.int text
+        return! Rating.create value
+    }
+```
+
 ## Collections
 
 Use collection refinements when the collection shape matters to later logic.
