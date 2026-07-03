@@ -16,7 +16,10 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 - `Check` and `Result` helpers belong to `Axial.ErrorHandling`; `Parse`, `Refine`, and the `refine { }` builder belong
   to `Axial.Refined`; `Validation` and `Diagnostics` belong to `Axial.Validation`; `Policy`, `Bind`, and `BindError`
   belong to `Axial.Flow`.
-- `Check` is a predicate module. Value-preserving gates and extracting helpers belong to `Result`.
+- `Check` is a complete typed value-constraint subsystem:
+  `Check<'value> = 'value -> Result<unit, CheckFailure list>`. Checks are path-free, raw-input-free value programs;
+  value-preserving guards and extraction helpers belong in `Result`, and parsing and refined value construction belong in
+  `Axial.Refined`.
 - `Bind` is only for assigning or mapping a source error immediately before `flow { }` binds it. In pure code, use
   `Result.require`, `Result.mapError`, or `Validation.mapError`.
 - Generated reference docs come from XML comments and generator inputs. Do not hand-edit generated reference pages as the

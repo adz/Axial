@@ -8,7 +8,7 @@ Work this list top to bottom. Each item should be small enough to become an issu
 ## Phase 0: Align The Architecture Docs
 
 - [x] Update `AGENTS.md` architecture invariants so `Check` is no longer defined as pure `bool` predicates.
-- [ ] Update `dev-docs/decisions/README.md` to record the new direction:
+- [x] Update `dev-docs/decisions/README.md` to record the new direction:
   `Check<'value> = 'value -> Result<unit, CheckFailure list>`.
 - [ ] Update `dev-docs/project-split.md` so package responsibilities include complete typed `Check`, `Axial.Schema`,
   schema interpreters, and `Policy`.
