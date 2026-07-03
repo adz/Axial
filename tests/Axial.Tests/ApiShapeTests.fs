@@ -6,6 +6,7 @@ open System.Threading.Tasks
 open Axial.Flow
 open Axial.ErrorHandling
 open Axial.Refined
+open Axial.Schema
 open Axial.Validation
 open Axial.Flow.Hosting
 open Axial.Flow.Telemetry
@@ -59,6 +60,11 @@ module ApiShapeTests =
 
         test <@ isNull found @>
         test <@ isNull foundModule @>
+
+    let private referencedAssemblyNames (assembly: Assembly) =
+        assembly.GetReferencedAssemblies()
+        |> Array.map _.Name
+        |> Set.ofArray
 
     let private assertContainsAll expected actual =
         let missing = expected |> List.filter (fun name -> not (Set.contains name actual))
@@ -240,6 +246,21 @@ module ApiShapeTests =
         typeof<RefineBuilder>
         |> publicInstanceMethodNames
         |> assertContainsAll [ "Return"; "ReturnFrom"; "Bind"; "Delay"; "Run"; "Combine" ]
+
+    [<Fact>]
+    let ``schema type starts as independent leaf package`` () =
+        let schemaType = typedefof<Schema<_>>
+        let schemaAssembly = schemaType.Assembly
+        let references = referencedAssemblyNames schemaAssembly
+        let publicConstructors =
+            schemaType.GetConstructors(BindingFlags.Public ||| BindingFlags.Instance)
+
+        test <@ schemaType.IsGenericTypeDefinition @>
+        test <@ schemaType.GetGenericArguments().Length = 1 @>
+        test <@ publicConstructors.Length = 0 @>
+        test <@ schemaAssembly.GetName().Name = "Axial.Schema" @>
+        references
+        |> assertContainsNone [ "Axial.Flow"; "Axial.ErrorHandling"; "Axial.Refined"; "Axial.Validation" ]
 
     [<Fact>]
     let ``check take binderror diagnostics and ref helpers keep expected public shape`` () =

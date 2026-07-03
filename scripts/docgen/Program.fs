@@ -302,6 +302,16 @@ let renderEntityPage (rewriteHtml: string -> string) (weight: int) (e: ApiDocEnt
 
 let pageSpecs = [
     {
+        OutPath = ["schema"; "_index.md"]
+        Title = "Schema"
+        Description = "Source-documented model schema definitions for Axial."
+        Intro = "This page shows the core `Schema<'model>` type. Schemas describe trusted model structure for interpreters such as input parsing, validation, codecs, JSON Schema, UI, and documentation. The core schema package stays independent of workflow execution, diagnostics, raw input, and validation interpreters."
+        SymbolIds = [
+            "Core type", ["T:Axial.Schema.Schema`1"]
+        ]
+        Alias = None
+    }
+    {
         OutPath = ["flow"; "_index.md"]
         Title = "Flow"
         Description = "Source-documented workflow surface in Axial."
@@ -1036,6 +1046,7 @@ let main argv =
         Path.Combine(artifactsDir, "Axial.Flow/debug_netstandard2.1/Axial.Flow.dll")
         Path.Combine(artifactsDir, "Axial.ErrorHandling/debug_netstandard2.1/Axial.ErrorHandling.dll")
         Path.Combine(artifactsDir, "Axial.Refined/debug_net8.0/Axial.Refined.dll")
+        Path.Combine(artifactsDir, "Axial.Schema/debug_netstandard2.1/Axial.Schema.dll")
         Path.Combine(artifactsDir, "Axial.Validation/debug_netstandard2.1/Axial.Validation.dll")
         Path.Combine(artifactsDir, "Axial.Flow.PlatformService/debug_netstandard2.1/Axial.Flow.PlatformService.dll")
         Path.Combine(artifactsDir, "Axial.Flow.Console/debug_netstandard2.1/Axial.Flow.Console.dll")

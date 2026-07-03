@@ -26,6 +26,7 @@
     <Project Path="src/Axial.Flow/Axial.Flow.fsproj" />
     <Project Path="src/Axial.ErrorHandling/Axial.ErrorHandling.fsproj" />
     <Project Path="src/Axial.Refined/Axial.Refined.fsproj" />
+    <Project Path="src/Axial.Schema/Axial.Schema.fsproj" />
     <Project Path="src/Axial.Validation/Axial.Validation.fsproj" />
     <Project Path="src/Axial.Flow.Hosting/Axial.Flow.Hosting.fsproj" />
     <Project Path="src/Axial.Flow.Telemetry/Axial.Flow.Telemetry.fsproj" />
