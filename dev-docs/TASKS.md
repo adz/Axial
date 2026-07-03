@@ -49,7 +49,7 @@ Work this list top to bottom. Each item should be small enough to become an issu
 
 - [x] Decide which existing `Result` helpers remain as fail-fast guards over `Check`.
 - [x] Align `Result.guard`, `Result.require`, and type-preserving guards with `Check<'value>`.
-- [ ] Ensure `Parse` remains in `Axial.Refined` for text-to-primitive conversion.
+- [x] Ensure `Parse` remains in `Axial.Refined` for text-to-primitive conversion.
 - [ ] Ensure refined constructors can use `Check` programs without depending on schema.
 - [ ] Add examples of refined/domain types using `Check.String.*` and `Check.Number.*`.
 - [ ] Confirm `Axial.Refined` does not depend on `Axial.Validation` or `Axial.Schema`.

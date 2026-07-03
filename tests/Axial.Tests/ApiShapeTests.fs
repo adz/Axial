@@ -52,6 +52,14 @@ module ApiShapeTests =
         | found, _ when not (isNull found) -> found
         | _, found -> found
 
+    let private assertModuleAbsentFromAssembly (assemblyName: string) (fullName: string) =
+        let assembly = Assembly.Load assemblyName
+        let found = assembly.GetType(fullName, false)
+        let foundModule = assembly.GetType(fullName + "Module", false)
+
+        test <@ isNull found @>
+        test <@ isNull foundModule @>
+
     let private assertContainsAll expected actual =
         let missing = expected |> List.filter (fun name -> not (Set.contains name actual))
         test <@ List.isEmpty missing @>
@@ -425,6 +433,10 @@ module ApiShapeTests =
         let parseMembers =
             moduleTypeFromAssembly "Axial.Refined" "Axial.Refined.Parse"
             |> publicStaticMemberNames
+
+        test <@ typeof<ParseError>.Assembly.GetName().Name = "Axial.Refined" @>
+        assertModuleAbsentFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.Parse"
+        assertModuleAbsentFromAssembly "Axial.Validation" "Axial.Validation.Parse"
 
         parseMembers
         |> assertContainsAll
