@@ -46,8 +46,67 @@ module ExternalFieldName =
 
         name.Value
 
-type internal SchemaDefinition =
+type internal ConstructorApplication<'model> =
+    { ArgumentCount: int
+      ApplyTrusted: obj array -> 'model }
+
+module internal ConstructorApplication =
+    let private ensureArgumentCount expected (arguments: obj array) =
+        if isNull arguments then
+            nullArg (nameof arguments)
+
+        if arguments.Length <> expected then
+            invalidArg (nameof arguments) $"Expected {expected} constructor argument(s), but received {arguments.Length}."
+
+    let create0 (construct: unit -> 'model) =
+        if isNull (box construct) then
+            nullArg (nameof construct)
+
+        { ArgumentCount = 0
+          ApplyTrusted =
+            fun arguments ->
+                ensureArgumentCount 0 arguments
+                construct () }
+
+    let create1 (construct: 'a -> 'model) =
+        if isNull (box construct) then
+            nullArg (nameof construct)
+
+        { ArgumentCount = 1
+          ApplyTrusted =
+            fun arguments ->
+                ensureArgumentCount 1 arguments
+                construct (unbox<'a> arguments[0]) }
+
+    let create2 (construct: 'a -> 'b -> 'model) =
+        if isNull (box construct) then
+            nullArg (nameof construct)
+
+        { ArgumentCount = 2
+          ApplyTrusted =
+            fun arguments ->
+                ensureArgumentCount 2 arguments
+                construct (unbox<'a> arguments[0]) (unbox<'b> arguments[1]) }
+
+    let create3 (construct: 'a -> 'b -> 'c -> 'model) =
+        if isNull (box construct) then
+            nullArg (nameof construct)
+
+        { ArgumentCount = 3
+          ApplyTrusted =
+            fun arguments ->
+                ensureArgumentCount 3 arguments
+                construct (unbox<'a> arguments[0]) (unbox<'b> arguments[1]) (unbox<'c> arguments[2]) }
+
+    let apply (application: ConstructorApplication<'model>) (arguments: obj array) =
+        if isNull (box application) then
+            nullArg (nameof application)
+
+        application.ApplyTrusted arguments
+
+type internal SchemaDefinition<'model> =
     | PendingDefinition
+    | ModelDefinition of ConstructorApplication<'model>
 
 type internal ValueSchemaDefinition =
     | PendingValueDefinition
@@ -71,7 +130,7 @@ type internal FieldDefinition<'model, 'value> =
 /// </para>
 /// </remarks>
 [<Sealed>]
-type Schema<'model> internal (definition: SchemaDefinition) =
+type Schema<'model> internal (definition: SchemaDefinition<'model>) =
     member internal _.Definition = definition
 
 /// <summary>

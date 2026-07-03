@@ -322,6 +322,32 @@ module ApiShapeTests =
         raises<ArgumentNullException> <@ Field.getValue missingField customer |> ignore @>
 
     [<Fact>]
+    let ``schema definitions carry trusted constructor application`` () =
+        let application = ConstructorApplication.create2 (fun name age -> { Name = name; Age = age })
+        let schema = Schema<Customer>(ModelDefinition application)
+
+        let constructed =
+            match schema.Definition with
+            | ModelDefinition constructor ->
+                test <@ constructor.ArgumentCount = 2 @>
+                ConstructorApplication.apply constructor [| box "Ada"; box 37 |]
+            | PendingDefinition -> failwith "Expected schema definition to carry a constructor application."
+
+        test <@ constructed = { Name = "Ada"; Age = 37 } @>
+        raises<ArgumentException> <@ ConstructorApplication.apply application [| box "Ada" |] |> ignore @>
+        raises<ArgumentNullException> <@ ConstructorApplication.apply application null |> ignore @>
+
+    [<Fact>]
+    let ``constructor applications support zero one and three trusted arguments`` () =
+        let constant = ConstructorApplication.create0 (fun () -> { Name = "System"; Age = 0 })
+        let named = ConstructorApplication.create1 (fun name -> { Name = name; Age = 0 })
+        let combined = ConstructorApplication.create3 (fun first last age -> { Name = first + " " + last; Age = age })
+
+        test <@ ConstructorApplication.apply constant [||] = { Name = "System"; Age = 0 } @>
+        test <@ ConstructorApplication.apply named [| box "Ada" |] = { Name = "Ada"; Age = 0 } @>
+        test <@ ConstructorApplication.apply combined [| box "Ada"; box "Lovelace"; box 37 |] = { Name = "Ada Lovelace"; Age = 37 } @>
+
+    [<Fact>]
     let ``external field names preserve exact boundary names and reject unusable names`` () =
         let name = ExternalFieldName.create " customer_id "
 
