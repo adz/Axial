@@ -27,7 +27,9 @@ weight: 1002
  A field definition records typed field metadata without tying that metadata to input parsing, diagnostics,
  validation, codecs, UI generation, or workflow execution. The field&#39;s external name is the portable boundary-facing
  name interpreters use for raw input lookup, diagnostic paths, codecs, generated documentation, and UI metadata.
+ Its getter reads the field value from an already trusted model so inspection interpreters can observe existing
+ values without using reflection.
  </p><p class='fsdocs-para'>
- Getters, constructor application, ordering, and public construction helpers are introduced by the schema operations
- that follow this core type.
+ Constructor application, ordering, and public construction helpers are introduced by the schema operations that
+ follow this core type.
  </p>

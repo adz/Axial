@@ -19,6 +19,11 @@ module ApiShapeTests =
         { Name: string
           Age: int }
 
+    type private CustomerProfile =
+        { Name: string
+          Age: int
+          Active: bool }
+
     let private publicInstanceMethodNames (targetType: Type) =
         targetType.GetMethods(BindingFlags.Instance ||| BindingFlags.Public)
         |> Array.filter (fun methodInfo -> not methodInfo.IsSpecialName)
@@ -78,13 +83,17 @@ module ApiShapeTests =
         let present = forbidden |> List.filter (fun name -> Set.contains name actual)
         test <@ List.isEmpty present @>
 
-    let private schemaField<'model, 'value> externalName getter : Field<'model, 'value> =
+    let private schemaField<'model, 'value> externalName order getter : Field<'model, 'value> =
         let definition: FieldDefinition<'model, 'value> =
             { ExternalName = ExternalFieldName.create externalName
+              Order = FieldOrder.create order
               Getter = getter
               ValueSchema = PendingValueDefinition }
 
         Field definition
+
+    let private schemaFieldDescriptor<'model, 'value> (field: Field<'model, 'value>) : FieldDescriptor<'model> =
+        FieldDescriptorOps.fromField field
 
     let private publicUnionCaseNames (targetType: Type) =
         FSharpType.GetUnionCases(targetType, BindingFlags.Public)
@@ -265,6 +274,7 @@ module ApiShapeTests =
         let valueSchemaType = typedefof<ValueSchema<_>>
         let fieldType = typedefof<Field<_, _>>
         let externalFieldNameType = typeof<ExternalFieldName>
+        let fieldOrderType = typeof<FieldOrder>
         let fieldModule = moduleType fieldType "Axial.Schema.Field"
         let schemaAssembly = schemaType.Assembly
         let references = referencedAssemblyNames schemaAssembly
@@ -288,6 +298,11 @@ module ApiShapeTests =
                 "Getter",
                 BindingFlags.Public ||| BindingFlags.NonPublic ||| BindingFlags.Instance
             )
+        let orderProperty =
+            fieldDefinitionType.GetProperty(
+                "Order",
+                BindingFlags.Public ||| BindingFlags.NonPublic ||| BindingFlags.Instance
+            )
 
         test <@ schemaType.IsGenericTypeDefinition @>
         test <@ schemaType.GetGenericArguments().Length = 1 @>
@@ -299,11 +314,13 @@ module ApiShapeTests =
         test <@ fieldType.GetGenericArguments().Length = 2 @>
         test <@ publicFieldConstructors.Length = 0 @>
         test <@ publicExternalFieldNameConstructors.Length = 0 @>
-        fieldModule |> publicStaticMemberNames |> assertContainsAll [ "externalName"; "getValue" ]
+        fieldModule |> publicStaticMemberNames |> assertContainsAll [ "externalName"; "order"; "getValue" ]
         test <@ valueSchemaType.Assembly = schemaAssembly @>
         test <@ fieldType.Assembly = schemaAssembly @>
         test <@ externalFieldNameType.Assembly = schemaAssembly @>
+        test <@ fieldOrderType.Assembly = schemaAssembly @>
         test <@ externalNameProperty.PropertyType = externalFieldNameType @>
+        test <@ orderProperty.PropertyType = fieldOrderType @>
         test <@ getterProperty.PropertyType.GetGenericTypeDefinition() = typedefof<FSharpFunc<_, _>> @>
         test <@ schemaAssembly.GetName().Name = "Axial.Schema" @>
         references
@@ -311,31 +328,74 @@ module ApiShapeTests =
 
     [<Fact>]
     let ``schema fields inspect existing trusted models through typed getters`` () =
-        let nameField = schemaField "name" (fun (model: Customer) -> model.Name)
-        let ageField = schemaField "age" (fun (model: Customer) -> model.Age)
+        let nameField = schemaField "name" 0 (fun (model: Customer) -> model.Name)
+        let ageField = schemaField "age" 1 (fun (model: Customer) -> model.Age)
         let customer = { Name = "Ada"; Age = 37 }
         let missingField = Unchecked.defaultof<Field<Customer, string>>
 
         test <@ Field.externalName nameField |> ExternalFieldName.value = "name" @>
+        test <@ Field.order nameField |> FieldOrder.value = 0 @>
         test <@ Field.getValue nameField customer = "Ada" @>
         test <@ Field.getValue ageField customer = 37 @>
         raises<ArgumentNullException> <@ Field.getValue missingField customer |> ignore @>
+        raises<ArgumentNullException> <@ Field.order missingField |> ignore @>
 
     [<Fact>]
     let ``schema definitions carry trusted constructor application`` () =
         let application = ConstructorApplication.create2 (fun name age -> { Name = name; Age = age })
-        let schema = Schema<Customer>(ModelDefinition application)
+        let fields =
+            [ schemaField "age" 1 (fun (customer: Customer) -> customer.Age) |> schemaFieldDescriptor
+              schemaField "name" 0 (fun (customer: Customer) -> customer.Name) |> schemaFieldDescriptor ]
+
+        let definition = ModelSchemaDefinition.create application fields
+        let schema = Schema<Customer>(ModelDefinition definition)
 
         let constructed =
             match schema.Definition with
-            | ModelDefinition constructor ->
+            | ModelDefinition model ->
+                let constructor = model.Constructor
                 test <@ constructor.ArgumentCount = 2 @>
+                test <@ model.Fields |> List.map (fun field -> ExternalFieldName.value field.ExternalName) = [ "name"; "age" ] @>
+                test <@ model.Fields |> List.map (fun field -> FieldOrder.value field.Order) = [ 0; 1 ] @>
                 ConstructorApplication.apply constructor [| box "Ada"; box 37 |]
             | PendingDefinition -> failwith "Expected schema definition to carry a constructor application."
 
         test <@ constructed = { Name = "Ada"; Age = 37 } @>
         raises<ArgumentException> <@ ConstructorApplication.apply application [| box "Ada" |] |> ignore @>
         raises<ArgumentNullException> <@ ConstructorApplication.apply application null |> ignore @>
+
+    [<Fact>]
+    let ``model schema definitions sort fields by explicit field order`` () =
+        let application = ConstructorApplication.create3 (fun name age active -> { Name = name; Age = age; Active = active })
+        let active = schemaField "active" 2 (fun (model: CustomerProfile) -> model.Active) |> schemaFieldDescriptor
+        let age = schemaField "age" 1 (fun (model: CustomerProfile) -> model.Age) |> schemaFieldDescriptor
+        let name = schemaField "name" 0 (fun (model: CustomerProfile) -> model.Name) |> schemaFieldDescriptor
+
+        let definition = ModelSchemaDefinition.create application [ active; name; age ]
+        let values =
+            definition.Fields
+            |> List.map (fun field -> field.Getter { Name = "Ada"; Age = 37; Active = true })
+
+        test <@ definition.Fields |> List.map (fun field -> ExternalFieldName.value field.ExternalName) = [ "name"; "age"; "active" ] @>
+        test <@ definition.Fields |> List.map (fun field -> FieldOrder.value field.Order) = [ 0; 1; 2 ] @>
+        test <@ values = [ box "Ada"; box 37; box true ] @>
+        test <@ ConstructorApplication.apply definition.Constructor (values |> List.toArray) = { Name = "Ada"; Age = 37; Active = true } @>
+
+    [<Fact>]
+    let ``model schema definitions reject ambiguous field order`` () =
+        let application = ConstructorApplication.create2 (fun name age -> { Name = name; Age = age })
+        let duplicateZero =
+            [ schemaField "name" 0 (fun (customer: Customer) -> customer.Name) |> schemaFieldDescriptor
+              schemaField "age" 0 (fun (customer: Customer) -> customer.Age) |> schemaFieldDescriptor ]
+        let gap =
+            [ schemaField "name" 0 (fun (customer: Customer) -> customer.Name) |> schemaFieldDescriptor
+              schemaField "age" 2 (fun (customer: Customer) -> customer.Age) |> schemaFieldDescriptor ]
+        let tooFew =
+            [ schemaField "name" 0 (fun (customer: Customer) -> customer.Name) |> schemaFieldDescriptor ]
+
+        raises<ArgumentException> <@ ModelSchemaDefinition.create application duplicateZero |> ignore @>
+        raises<ArgumentException> <@ ModelSchemaDefinition.create application gap |> ignore @>
+        raises<ArgumentException> <@ ModelSchemaDefinition.create application tooFew |> ignore @>
 
     [<Fact>]
     let ``constructor applications support zero one and three trusted arguments`` () =
@@ -358,6 +418,16 @@ module ApiShapeTests =
         raises<ArgumentException> <@ ExternalFieldName.create "" |> ignore @>
         raises<ArgumentException> <@ ExternalFieldName.create "   " |> ignore @>
         raises<ArgumentNullException> <@ ExternalFieldName.value null |> ignore @>
+
+    [<Fact>]
+    let ``field order preserves zero based positions and rejects negative positions`` () =
+        let first = FieldOrder.create 0
+        let second = FieldOrder.create 1
+
+        test <@ FieldOrder.value first = 0 @>
+        test <@ FieldOrder.value second = 1 @>
+        test <@ string second = "1" @>
+        raises<ArgumentException> <@ FieldOrder.create -1 |> ignore @>
 
     [<Fact>]
     let ``check take binderror diagnostics and ref helpers keep expected public shape`` () =

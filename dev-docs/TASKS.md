@@ -63,7 +63,7 @@ Work this list top to bottom. Each item should be small enough to become an issu
 - [x] Model external field names.
 - [x] Model getters for existing model inspection.
 - [x] Model constructor application for trusted construction.
-- [ ] Model field ordering explicitly and test it heavily.
+- [x] Model field ordering explicitly and test it heavily.
 - [ ] Define primitive value schemas:
   text, int, decimal, bool, date/date-time where supported, and GUID.
 - [ ] Define schema constraints as metadata, not just executable checks.

@@ -46,6 +46,34 @@ module ExternalFieldName =
 
         name.Value
 
+/// <summary>
+/// Represents the zero-based position of a schema field in a model constructor and ordered interpreter output.
+/// </summary>
+/// <remarks>
+/// Field order is explicit schema metadata. It is independent of external field names so interpreters do not need to
+/// infer construction or display order from names, reflection, map ordering, or declaration order.
+/// </remarks>
+[<Struct>]
+type FieldOrder internal (value: int) =
+    /// <summary>Gets the zero-based field position.</summary>
+    member _.Value = value
+
+    override _.ToString() = string value
+
+/// <summary>Functions for creating and inspecting schema field order metadata.</summary>
+[<RequireQualifiedAccess>]
+module FieldOrder =
+    /// <summary>Creates zero-based schema field order metadata.</summary>
+    /// <exception cref="T:System.ArgumentOutOfRangeException">Thrown when <paramref name="value" /> is negative.</exception>
+    let create value =
+        if value < 0 then
+            raise (ArgumentOutOfRangeException(nameof value, value, "Field order must be zero or greater."))
+
+        FieldOrder value
+
+    /// <summary>Returns the zero-based field position.</summary>
+    let value (order: FieldOrder) = order.Value
+
 type internal ConstructorApplication<'model> =
     { ArgumentCount: int
       ApplyTrusted: obj array -> 'model }
@@ -104,17 +132,59 @@ module internal ConstructorApplication =
 
         application.ApplyTrusted arguments
 
-type internal SchemaDefinition<'model> =
-    | PendingDefinition
-    | ModelDefinition of ConstructorApplication<'model>
-
 type internal ValueSchemaDefinition =
     | PendingValueDefinition
 
+type internal FieldDescriptor<'model> =
+    { ExternalName: ExternalFieldName
+      Order: FieldOrder
+      Getter: 'model -> obj
+      ValueSchema: ValueSchemaDefinition }
+
+type internal ModelSchemaDefinition<'model> =
+    { Constructor: ConstructorApplication<'model>
+      Fields: FieldDescriptor<'model> list }
+
+type internal SchemaDefinition<'model> =
+    | PendingDefinition
+    | ModelDefinition of ModelSchemaDefinition<'model>
+
 type internal FieldDefinition<'model, 'value> =
     { ExternalName: ExternalFieldName
+      Order: FieldOrder
       Getter: 'model -> 'value
       ValueSchema: ValueSchemaDefinition }
+
+module internal ModelSchemaDefinition =
+    let private ensureContiguousOrders (fields: FieldDescriptor<'model> list) =
+        let orders = fields |> List.map (fun field -> field.Order.Value) |> List.sort
+
+        let expected = [ 0 .. (List.length fields - 1) ]
+
+        if orders <> expected then
+            invalidArg (nameof fields) "Model schema fields must use contiguous zero-based field order."
+
+    let create (constructor: ConstructorApplication<'model>) (fields: FieldDescriptor<'model> list) =
+        if isNull (box constructor) then
+            nullArg (nameof constructor)
+
+        if isNull (box fields) then
+            nullArg (nameof fields)
+
+        fields
+        |> List.iter (fun field ->
+            if isNull (box field) then
+                nullArg (nameof fields))
+
+        if fields.Length <> constructor.ArgumentCount then
+            invalidArg
+                (nameof fields)
+                $"Expected {constructor.ArgumentCount} ordered field(s), but received {fields.Length}."
+
+        ensureContiguousOrders fields
+
+        { Constructor = constructor
+          Fields = fields |> List.sortBy (fun field -> field.Order.Value) }
 
 /// <summary>
 /// Describes the portable structure of a trusted model for schema interpreters.
@@ -170,6 +240,16 @@ type ValueSchema<'value> internal (definition: ValueSchemaDefinition) =
 type Field<'model, 'value> internal (definition: FieldDefinition<'model, 'value>) =
     member internal _.Definition = definition
 
+module internal FieldDescriptorOps =
+    let fromField (field: Field<'model, 'value>) : FieldDescriptor<'model> =
+        if isNull (box field) then
+            nullArg (nameof field)
+
+        { FieldDescriptor.ExternalName = field.Definition.ExternalName
+          Order = field.Definition.Order
+          Getter = fun model -> field.Definition.Getter model |> box
+          ValueSchema = field.Definition.ValueSchema }
+
 /// <summary>Functions for inspecting schema field metadata.</summary>
 [<RequireQualifiedAccess>]
 module Field =
@@ -179,6 +259,13 @@ module Field =
             nullArg (nameof field)
 
         field.Definition.ExternalName
+
+    /// <summary>Returns the zero-based field order used for trusted construction and ordered interpreter output.</summary>
+    let order (field: Field<'model, 'value>) =
+        if isNull (box field) then
+            nullArg (nameof field)
+
+        field.Definition.Order
 
     /// <summary>Reads a schema field value from an existing trusted model.</summary>
     let getValue (field: Field<'model, 'value>) (model: 'model) =
