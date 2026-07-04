@@ -36,11 +36,15 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 - `Axial.Schema` starts as its own package and project as soon as schema source work begins. Do not incubate schema
   definitions inside `Axial.Validation`; keep schema definitions independent and put input, validation, diagnostics, and
   rules integration in `Axial.Validation.Schema`.
-- Hand-written `Schema.mapN` stops at `Schema.map2` and `Schema.map3`; that pair already proves constructor/getter
-  alignment and field ordering. Do not add `Schema.map4` or higher by hand. Models needing more fields go through the
-  `schema create { }` computation expression (using `and!` for extra fields) once it exists, or, if boilerplate remains
-  painful after the DSL ships, a future `[<Schema>]` source generator; either path builds on the same explicit core
-  rather than growing the hand-written mapN family.
+- The explicit schema core is a CodecMapper-style progressive typed builder:
+  `Schema.record ctor |> Schema.field "name" _.Name Value.text |> ... |> Schema.build`. Each field application peels
+  one curried constructor argument and `Schema.build` requires a fully applied constructor, so constructor/getter
+  alignment is compiler-checked by argument position and authoring scales to any field count. Do not grow a
+  hand-written `Schema.mapN` family (`map2`/`map3` were transitional proofs of the metadata model); do not make the
+  `schema create { }` computation expression or a `[<Schema>]` source generator the required path past three fields —
+  both are optional sugar over the builder. The built schema must keep its typed field chain reachable alongside the
+  type-erased descriptor view so codec interpreters can compile constructor-specialized plans from a `Schema<'model>`
+  value alone, without `obj array` constructor application.
 - `Bind` is only for assigning or mapping a source error immediately before `flow { }` binds it. In pure code, use
   `Result.require`, `Result.mapError`, or `Validation.mapError`.
 - Generated reference docs come from XML comments and generator inputs. Do not hand-edit generated reference pages as the

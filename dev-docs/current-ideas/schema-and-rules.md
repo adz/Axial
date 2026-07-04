@@ -837,17 +837,20 @@ Core modules:
 
 ```fsharp
 module Schema =
-    val map2:
-        constructor: ('a -> 'b -> 'model) ->
-        Field<'model, 'a> ->
-        Field<'model, 'b> ->
-        Schema<'model>
+    // Progressive typed builder: `record` starts from a curried constructor, each `field`
+    // peels one constructor argument, and `build` only type-checks once the constructor is
+    // fully applied. Field order = pipeline order = constructor argument order, checked by
+    // the compiler. Scales to any field count without mapN, a CE, or a source generator.
+    val record: ctor: 'ctor -> SchemaBuilder<'model, 'ctor, 'ctor>
 
     val field:
         externalName: string ->
         getter: ('model -> 'value) ->
         value: ValueSchema<'value> ->
-        Field<'model, 'value>
+        SchemaBuilder<'model, 'ctor, 'value -> 'next> ->
+        SchemaBuilder<'model, 'ctor, 'next>
+
+    val build: SchemaBuilder<'model, 'ctor, 'model> -> Schema<'model>
 
 module Value =
     val text: ValueSchema<string>
@@ -877,17 +880,19 @@ module Rules =
         Result<'model, Diagnostics<'error>>
 ```
 
-If computation expression syntax is hard to implement first, start explicit:
+The explicit builder pipeline is the core authoring style and works at any field count:
 
 ```fsharp
 let schema =
-    Schema.map3 create
-        (Schema.field "name" _.Name (Value.text |> Value.required |> Value.maxLength 20))
-        (Schema.field "email" _.Email (Email.schema |> Value.required))
-        (Schema.field "message" _.Message (Value.text |> Value.required |> Value.minLength 10))
+    Schema.record create
+    |> Schema.field "name" _.Name (Value.text |> Value.required |> Value.maxLength 20)
+    |> Schema.field "email" _.Email (Email.schema |> Value.required)
+    |> Schema.field "message" _.Message (Value.text |> Value.required |> Value.minLength 10)
+    |> Schema.build
 ```
 
-Then add the DSL.
+The `schema create { ... }` computation expression is optional sugar over this builder. Ship it only if it beats the
+pipeline on readability and compile-error quality for constraint blocks.
 
 ## Current Codebase Recommendations
 

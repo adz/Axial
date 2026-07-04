@@ -143,6 +143,8 @@ Schema constraints should lower onto the tightened `Check` shape, not the verbos
 - [x] Decide how many `mapN` helpers are acceptable before requiring generator support: stop at `Schema.map2` and
   `Schema.map3`; do not hand-write `map4` or higher, and route larger models through the future schema computation
   expression or `[<Schema>]` source generator instead.
+  (Superseded by Phase 5b: a CodecMapper-style progressive typed builder replaces the `mapN` cap, so neither the
+  computation expression nor the source generator is required to author models with more than three fields.)
 - [x] Add tests proving constructor/getter alignment behavior.
 - [x] Add tests proving schema constraints are inspectable without running validation.
 - [x] Prove `Schema` can lower to a high-performance compiled record plan before codec work starts:
@@ -168,6 +170,46 @@ Schema constraints should lower onto the tightened `Check` shape, not the verbos
   maxLength constraint metadata, lowering that metadata to an executable `Check`, metadata inspection without running
   validation, constructor/getter alignment under reversed declaration order, and a compiled record plan built from the
   same typed `Field` values.
+
+## Phase 5b: Progressive Typed Builder As The Explicit Core
+
+CodecMapper's authoring pipeline is both the target DSL shape and the mechanism the performance goal requires: the
+typed field chain that scales authoring to any arity is the same structure a codec compiler walks to emit
+constructor-specialized decoders. The current core erases that typing at authoring time: `Schema.map2`/`map3`
+immediately lower into `ConstructorApplication` (`obj array -> 'model` with per-field `unbox`) and box every getter
+into `FieldDescriptor.Getter : 'model -> obj`. The compiled-record-plan proofs only pass because the tests re-supply
+the typed `Field` values and the constructor lambda from the test side; a codec consumer holding just a
+`Schema<'model>` cannot do that. Fix this before Phase 7 builds more interpreters against the erased-only view.
+
+- [ ] Replace the `Schema.map2` / `Schema.map3` cap with a CodecMapper-style progressive typed builder:
+  `Schema.record ctor |> Schema.field "id" _.Id Value.int |> ... |> Schema.build`, where each field application peels
+  one curried constructor argument and `Schema.build` only type-checks when the constructor is fully applied.
+  Constructor/getter alignment stays compiler-checked by argument position, with no `mapN` family, no computation
+  expression, and no source generator required for any field count. Compare
+  `../../CodecMapper/main/src/CodecMapper/ContractsCore.fs` (`SchemaBuilder`, `IChainNode`, `FieldsAppend`, and
+  `Schema.record` / `Schema.fieldWith` / `Schema.build`) before accepting the API.
+- [ ] Resolve the `Schema.field` naming collision: today `Schema.field` builds a standalone `Field<'model, 'value>`
+  consumed by `mapN`, while the pipeline step needs a different signature and F# modules cannot overload. Decide the
+  primary name and whether the standalone field constructor survives (for example as `Field.create` for interpreter
+  tests and advanced composition) or is removed together with `mapN`.
+- [ ] Keep the typed field chain reachable from the built `Schema<'model>` alongside the type-erased
+  `FieldDescriptor` view, following CodecMapper's dual-view pattern
+  (`MappingDefinition<'Record, 'Ctor, 'Chain>` with erased `IMappingDefinition<'Record>` plus
+  `Specialize : IChainFactory<'Record> -> Codec<'Record>`). A generic-method visitor such as `IChainFactory` lets
+  `Schema<'model>` stay single-parameter while still letting codec interpreters compile constructor-specialized plans
+  from a schema value alone — no `obj array` constructor application and no caller re-supplying the constructor or
+  typed fields.
+- [ ] Re-prove the compiled-record-plan slice from the `Schema<'model>` value itself; update
+  `SchemaCompiledRecordPlanProofTests` and `SchemaVerticalSliceProofTests` so the plan is derived from the built
+  schema, not from test-side pre-erasure ingredients.
+- [ ] Update the vertical-slice proof and constructor/getter alignment tests to author through the builder, keeping
+  the reversed-declaration-order alignment scenario.
+- [ ] Keep the builder Fable-compatible and AOT/trimming-safe; the chain must not rely on runtime reflection.
+- [ ] Evaluate and document builder compile-error quality: what the compiler reports when a getter type mismatches its
+  constructor position and when `Schema.build` is called on a partially applied constructor. Record representative
+  error text in doc comments or dev-docs so DSL work can compare against it.
+- [ ] Update `dev-docs/decisions/README.md`, `dev-docs/PLAN.md`, and source comments (for example the `Schema.map3`
+  remark that routes larger models through the CE/generator) once the builder replaces the `mapN` cap.
 
 ## Phase 6: Add Refined Value Schemas
 
@@ -291,7 +333,12 @@ Schema constraints should lower onto the tightened `Check` shape, not the verbos
 
 ## Phase 15: Computation Expression DSL
 
-- [ ] Design `schema create { ... }` over the explicit core.
+The progressive typed builder from Phase 5b is the explicit core and already scales to any field count, so the
+computation expression is optional sugar, not the path past three fields. Ship it only if it beats the pipeline on
+readability and compile-error quality for constraint blocks.
+
+- [ ] Design `schema create { ... }` as sugar over the Phase 5b builder core; compare CE ergonomics and compile-error
+  quality against the plain pipeline before committing to ship it.
 - [ ] Implement primitive field operations:
   `text`, `int`, `decimal`, `bool`, `date`, and `guid`.
 - [ ] Implement generic `field "email" _.Email Email.schema { ... }`.

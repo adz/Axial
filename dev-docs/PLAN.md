@@ -49,16 +49,34 @@ Axial's data-boundary direction splits concerns like this:
 Core schema definitions live in `Axial.Schema`. Schema interpreters live in `Axial.Validation.Schema`, so `Axial.Schema`
 stays independent of diagnostics, raw input, validation, refined values, and flow execution.
 
-Schema work should prove the portable metadata model before growing broad interpreters. The next implementation slice is
-field ordering, primitive value schemas, schema constraints as inspectable metadata, lowering those constraints to
-`Check`, and enough explicit `Schema.field` / `Schema.mapN` API to prove constructor/getter alignment. Raw input,
-schema validation, rules, and DSL work should build on that explicit core rather than bypass it.
+Schema work should prove the portable metadata model before growing broad interpreters. The metadata slice — field
+ordering, primitive value schemas, schema constraints as inspectable metadata, lowering those constraints to `Check`,
+and constructor/getter alignment — is proven. The explicit core API is a CodecMapper-style progressive typed builder:
+
+```fsharp
+Schema.record ctor
+|> Schema.field "id" _.Id Value.int
+|> Schema.field "name" _.Name Value.text
+|> Schema.build
+```
+
+Each field application peels one curried constructor argument and `Schema.build` only type-checks when the constructor
+is fully applied, so constructor/getter alignment is compiler-checked by argument position and authoring scales to any
+field count without a hand-written `mapN` family, computation expression, or source generator. The `schema create { }`
+computation expression is optional sugar over this builder, not the required path for larger models. Raw input, schema
+validation, rules, and DSL work should build on that explicit builder core rather than bypass it.
 
 Schema must also preserve a high-performance codec lowering path. The inspectable schema model may contain rich metadata,
 but JSON codecs should not interpret that metadata tree directly on the hot path. A codec interpreter must be able to
 compile schemas into direct record plans: ordered field descriptors, cached wire-name bytes, indexed field slots,
 typed field decoders, and constructor application that does not require per-value reflection or `obj array` dispatch.
 CodecMapper is the performance reference for this shape.
+
+The built `Schema<'model>` value itself must retain typed constructor and field information sufficient for that codec
+specialization: type erasure at authoring time must not force interpreters onto boxed `obj array` dispatch or require
+callers to re-supply the constructor and typed fields alongside the schema. The typed field chain that powers the
+authoring builder is the same structure codec compilers walk to emit constructor-specialized plans (CodecMapper's
+`MappingDefinition` / `Specialize` dual-view pattern).
 
 Runtime reflection must not be the foundation for schema construction, constructor binding, validation, or codec
 execution. Reflection can be an optional import/tooling path on .NET, but the core authored schema path must remain AOT-
