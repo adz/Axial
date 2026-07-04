@@ -74,8 +74,8 @@ type Check<'value> = 'value -> Result<unit, CheckFailure list>
 /// </summary>
 /// <remarks>
 /// The nested modules such as <c>Check.String</c>, <c>Check.Number</c>, and <c>Check.Seq</c> return
-/// <see cref="T:Axial.ErrorHandling.Check`1" /> programs. Top-level helpers such as <c>notBlank</c> and
-/// <c>greaterThan</c> remain boolean predicates for code that only needs a local fact.
+/// <see cref="T:Axial.ErrorHandling.Check`1" /> programs. Common top-level helpers such as
+/// <c>lengthBetween</c>, <c>between</c>, and <c>countBetween</c> are structured checks for single-target values.
 /// </remarks>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Check =
@@ -188,34 +188,6 @@ module Check =
     let isAlphaNumeric (value: string) : bool =
         not (isNull value) && value |> Seq.forall Char.IsLetterOrDigit
 
-    /// <summary>Returns true when the actual value equals the expected value.</summary>
-    let equalTo (expected: 'value) (actual: 'value) : bool =
-        actual = expected
-
-    /// <summary>Returns true when the actual value does not equal the expected value.</summary>
-    let notEqualTo (expected: 'value) (actual: 'value) : bool =
-        actual <> expected
-
-    /// <summary>Returns true when the value is greater than the supplied exclusive lower bound.</summary>
-    let inline greaterThan minimum value =
-        value > minimum
-
-    /// <summary>Returns true when the value is less than the supplied exclusive upper bound.</summary>
-    let inline lessThan maximum value =
-        value < maximum
-
-    /// <summary>Returns true when the value is greater than or equal to the supplied lower bound.</summary>
-    let inline atLeast minimum value =
-        value >= minimum
-
-    /// <summary>Returns true when the value is less than or equal to the supplied upper bound.</summary>
-    let inline atMost maximum value =
-        value <= maximum
-
-    /// <summary>Returns true when the value lies between the supplied inclusive bounds.</summary>
-    let inline between minimum maximum value =
-        value >= minimum && value <= maximum
-
     /// <summary>Returns true when the numeric value is greater than zero.</summary>
     let inline positive value =
         value > LanguagePrimitives.GenericZero
@@ -240,10 +212,6 @@ module Check =
     let notEmpty (values: seq<'value>) : bool =
         not (Seq.isEmpty values)
 
-    /// <summary>Returns true when the sequence contains the expected value.</summary>
-    let contains (expected: 'value) (values: seq<'value>) : bool =
-        Seq.contains expected values
-
     /// <summary>Returns true when the sequence count equals the expected count.</summary>
     let hasCount (expected: int) (values: seq<'value>) : bool =
         Seq.length values = expected
@@ -261,20 +229,6 @@ module Check =
     let isSingle (values: seq<'value>) : bool =
         use enumerator = values.GetEnumerator()
         enumerator.MoveNext() && not (enumerator.MoveNext())
-
-    /// <summary>Returns true when the sequence contains zero or one item.</summary>
-    let atMostOne (values: seq<'value>) : bool =
-        use enumerator = values.GetEnumerator()
-        not (enumerator.MoveNext()) || not (enumerator.MoveNext())
-
-    /// <summary>Returns true when the sequence contains at least one item.</summary>
-    let atLeastOne (values: seq<'value>) : bool =
-        not (Seq.isEmpty values)
-
-    /// <summary>Returns true when the sequence contains more than one item.</summary>
-    let moreThanOne (values: seq<'value>) : bool =
-        use enumerator = values.GetEnumerator()
-        enumerator.MoveNext() && enumerator.MoveNext()
 
     /// <summary>Inverts a predicate.</summary>
     let negate (predicate: 'input -> bool) (input: 'input) : bool =
@@ -510,6 +464,127 @@ module Check =
                 match value with
                 | Error _ -> pass
                 | Ok _ -> fail (Equality(EqualTo "Error", Some "Ok"))
+
+    let private pass : Result<unit, CheckFailure list> = Ok ()
+
+    let private fail failure : Result<unit, CheckFailure list> =
+        Error [ failure ]
+
+    let private actualValue value =
+        if Object.ReferenceEquals(box value, null) then None else Some(string value)
+
+    let private actualCount (values: #seq<'value>) =
+        if Object.ReferenceEquals(values, null) then None
+        else Some(Microsoft.FSharp.Collections.Seq.length values)
+
+    /// <summary>Requires an already parsed string value to have exactly the supplied length.</summary>
+    let length (expected: int) : Check<string> =
+        String.exactLength expected
+
+    /// <summary>Requires an already parsed string value to have at least the supplied length.</summary>
+    let minLength (minimum: int) : Check<string> =
+        String.minLength minimum
+
+    /// <summary>Requires an already parsed string value to have at most the supplied length.</summary>
+    let maxLength (maximum: int) : Check<string> =
+        String.maxLength maximum
+
+    /// <summary>Requires an already parsed string value length to lie inside the supplied inclusive bounds.</summary>
+    let lengthBetween (minimum: int) (maximum: int) : Check<string> =
+        String.lengthBetween minimum maximum
+
+    /// <summary>Requires an already parsed string value to match Axial's pragmatic email format.</summary>
+    let email (value: string) : Result<unit, CheckFailure list> =
+        String.email value
+
+    /// <summary>Requires an already parsed string value to match the supplied regular expression pattern.</summary>
+    let matches (pattern: string) : Check<string> =
+        String.matches pattern
+
+    /// <summary>Requires an already parsed string value to equal one of the supplied choices.</summary>
+    let oneOf (choices: string seq) : Check<string> =
+        String.oneOf choices
+
+    /// <summary>Requires a value to lie inside the supplied inclusive bounds.</summary>
+    let inline between minimum maximum : Check<'value> =
+        Number.between minimum maximum
+
+    /// <summary>Requires a value to be greater than the supplied exclusive lower bound.</summary>
+    let inline greaterThan minimum : Check<'value> =
+        Number.greaterThan minimum
+
+    /// <summary>Requires a value to be less than the supplied exclusive upper bound.</summary>
+    let inline lessThan maximum : Check<'value> =
+        Number.lessThan maximum
+
+    /// <summary>Requires a value to be greater than or equal to the supplied lower bound.</summary>
+    let inline atLeast minimum : Check<'value> =
+        Number.atLeast minimum
+
+    /// <summary>Requires a value to be less than or equal to the supplied upper bound.</summary>
+    let inline atMost maximum : Check<'value> =
+        Number.atMost maximum
+
+    /// <summary>Requires an already parsed sequence-shaped value to contain exactly the supplied count.</summary>
+    let count (expected: int) : Check<#seq<'value>> =
+        fun values ->
+            match actualCount values with
+            | Some count when count = expected -> pass
+            | actual -> fail (Count(ExactCount expected, actual))
+
+    /// <summary>Requires an already parsed sequence-shaped value to contain at least the supplied count.</summary>
+    let minCount (minimum: int) : Check<#seq<'value>> =
+        Seq.minCount minimum
+
+    /// <summary>Requires an already parsed sequence-shaped value to contain at most the supplied count.</summary>
+    let maxCount (maximum: int) : Check<#seq<'value>> =
+        Seq.maxCount maximum
+
+    /// <summary>Requires an already parsed sequence-shaped value count to lie inside the supplied inclusive bounds.</summary>
+    let countBetween (minimum: int) (maximum: int) : Check<#seq<'value>> =
+        Seq.countBetween minimum maximum
+
+    /// <summary>Requires an already parsed sequence-shaped value to contain no duplicate values.</summary>
+    let distinct (values: #seq<'value>) : Result<unit, CheckFailure list> =
+        Seq.distinct values
+
+    /// <summary>Requires an already parsed sequence-shaped value to contain the supplied value.</summary>
+    let contains (expected: 'value) : Check<#seq<'value>> =
+        fun values ->
+            if Object.ReferenceEquals(values, null) then
+                fail Missing
+            elif values |> Microsoft.FSharp.Collections.Seq.contains expected then
+                pass
+            else
+                fail (Equality(EqualTo(string expected), None))
+
+    /// <summary>Requires an already parsed sequence-shaped value to contain exactly one item.</summary>
+    let single (values: #seq<'value>) : Result<unit, CheckFailure list> =
+        count 1 values
+
+    /// <summary>Requires an already parsed sequence-shaped value to contain zero or one item.</summary>
+    let atMostOne (values: #seq<'value>) : Result<unit, CheckFailure list> =
+        maxCount 1 values
+
+    /// <summary>Requires an already parsed sequence-shaped value to contain at least one item.</summary>
+    let atLeastOne (values: #seq<'value>) : Result<unit, CheckFailure list> =
+        minCount 1 values
+
+    /// <summary>Requires an already parsed sequence-shaped value to contain more than one item.</summary>
+    let moreThanOne (values: #seq<'value>) : Result<unit, CheckFailure list> =
+        minCount 2 values
+
+    /// <summary>Requires the actual value to equal the supplied expected value.</summary>
+    let equalTo (expected: 'value) : Check<'value> =
+        fun actual ->
+            if actual = expected then pass
+            else fail (Equality(EqualTo(string expected), actualValue actual))
+
+    /// <summary>Requires the actual value not to equal the supplied unexpected value.</summary>
+    let notEqualTo (unexpected: 'value) : Check<'value> =
+        fun actual ->
+            if actual <> unexpected then pass
+            else fail (Equality(NotEqualTo(string unexpected), actualValue actual))
 
     /// <summary>Combines checks conjunctively by running every check against the value and accumulating all failures. An empty list succeeds.</summary>
     let all (checks: Check<'value> list) : Check<'value> =

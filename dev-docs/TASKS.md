@@ -87,7 +87,7 @@ Schema constraints should lower onto the tightened `Check` shape, not the verbos
 - [x] Keep direct implementation modules:
   `Check.String`, `Check.Number`, `Check.Seq`, `Check.Option`, `Check.ValueOption`, `Check.Nullable`, and
   `Check.Result`.
-- [ ] Add top-level concrete structured check aliases for common single-target checks:
+- [x] Add top-level concrete structured check aliases for common single-target checks:
   `length`, `minLength`, `maxLength`, `lengthBetween`, `email`, `matches`, `oneOf`, `between`, `greaterThan`,
   `lessThan`, `atLeast`, `atMost`, `count`, `minCount`, `maxCount`, `countBetween`, `distinct`, `contains`,
   `single`, `atMostOne`, `atLeastOne`, `moreThanOne`, `equalTo`, and `notEqualTo`.

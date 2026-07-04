@@ -295,6 +295,48 @@ module ValidationTests =
             test <@ Check.Seq.distinct nullValues = Error [ Missing ] @>
 
         [<Fact>]
+        let ``Check exposes top-level concrete structured checks`` () =
+            let nullString: string = null
+            let nullValues: seq<int> = null
+
+            test <@ Check.length 3 "Ada" = Ok () @>
+            test <@ Check.length 3 "Axial" = Error [ Length(ExactLength 3, Some 5) ] @>
+            test <@ Check.length 3 nullString = Error [ Length(ExactLength 3, None) ] @>
+            test <@ Check.minLength 3 "Ada" = Ok () @>
+            test <@ Check.maxLength 3 "Axial" = Error [ Length(MaximumLength 3, Some 5) ] @>
+            test <@ Check.lengthBetween 2 4 "Ada" = Ok () @>
+            test <@ Check.email "ada@example.com" = Ok () @>
+            test <@ Check.matches "^[a-z]+$" "Ada" = Error [ InvalidFormat "^[a-z]+$" ] @>
+            test <@ Check.oneOf [ "draft"; "published" ] "archived" = Error [ Equality(EqualTo "draft|published", Some "archived") ] @>
+
+            test <@ Check.between 1 10 5 = Ok () @>
+            test <@ Check.greaterThan 3 3 = Error [ Range(GreaterThan "3", Some "3") ] @>
+            test <@ Check.lessThan 3 3 = Error [ Range(LessThan "3", Some "3") ] @>
+            test <@ Check.atLeast 3 2 = Error [ Range(AtLeast "3", Some "2") ] @>
+            test <@ Check.atMost 3 4 = Error [ Range(AtMost "3", Some "4") ] @>
+
+            test <@ Check.count 2 [ 1; 2 ] = Ok () @>
+            test <@ Check.count 2 [ 1 ] = Error [ Count(ExactCount 2, Some 1) ] @>
+            test <@ Check.count 2 nullValues = Error [ Count(ExactCount 2, None) ] @>
+            test <@ Check.minCount 2 [ 1 ] = Error [ Count(MinimumCount 2, Some 1) ] @>
+            test <@ Check.maxCount 2 [ 1; 2; 3 ] = Error [ Count(MaximumCount 2, Some 3) ] @>
+            test <@ Check.countBetween 2 4 [ 1; 2; 3 ] = Ok () @>
+            test <@ Check.distinct [ 1; 2; 3 ] = Ok () @>
+            test <@ Check.contains 2 [ 1; 2 ] = Ok () @>
+            test <@ Check.contains 3 [ 1; 2 ] = Error [ Equality(EqualTo "3", None) ] @>
+            test <@ Check.contains 3 nullValues = Error [ Missing ] @>
+            test <@ Check.single [ 1 ] = Ok () @>
+            test <@ Check.single [ 1; 2 ] = Error [ Count(ExactCount 1, Some 2) ] @>
+            test <@ Check.atMostOne [ 1; 2 ] = Error [ Count(MaximumCount 1, Some 2) ] @>
+            test <@ Check.atLeastOne [] = Error [ Count(MinimumCount 1, Some 0) ] @>
+            test <@ Check.moreThanOne [ 1 ] = Error [ Count(MinimumCount 2, Some 1) ] @>
+
+            test <@ Check.equalTo 3 3 = Ok () @>
+            test <@ Check.equalTo 3 4 = Error [ Equality(EqualTo "3", Some "4") ] @>
+            test <@ Check.notEqualTo 3 4 = Ok () @>
+            test <@ Check.notEqualTo 3 3 = Error [ Equality(NotEqualTo "3", Some "3") ] @>
+
+        [<Fact>]
         let ``Check Option exposes executable option value checks`` () =
             test <@ Check.Option.some (Some 1) = Ok () @>
             test <@ Check.Option.some None = Error [ Missing ] @>
@@ -349,27 +391,16 @@ module ValidationTests =
             test <@ Check.isEmail "ada@example.com" @>
             test <@ Check.isNumeric "12345" @>
             test <@ Check.isAlphaNumeric "abc123" @>
-            test <@ Check.equalTo 3 3 @>
-            test <@ Check.notEqualTo 3 4 @>
-            test <@ Check.greaterThan 3 4 @>
-            test <@ Check.lessThan 3 2 @>
-            test <@ Check.atLeast 3 3 @>
-            test <@ Check.atMost 3 3 @>
-            test <@ Check.between 3 5 4 @>
             test <@ Check.positive 1 @>
             test <@ Check.nonNegative 0 @>
             test <@ Check.negative -1 @>
             test <@ Check.nonPositive 0 @>
             test <@ Check.notEmpty [ 1; 2 ] @>
             test <@ Check.isEmpty Seq.empty<int> @>
-            test <@ Check.contains 2 [ 1; 2 ] @>
             test <@ Check.hasCount 2 [ 1; 2 ] @>
             test <@ Check.hasDuplicates [ 1; 2; 1 ] @>
             test <@ Check.hasNoDuplicates [ 1; 2; 3 ] @>
             test <@ Check.isSingle [ 5 ] @>
-            test <@ Check.atMostOne [ 5 ] @>
-            test <@ Check.atLeastOne [ 5 ] @>
-            test <@ Check.moreThanOne [ 1; 2 ] @>
             test <@ Check.negate Check.notBlank "" @>
 
         [<Fact>]
@@ -415,7 +446,7 @@ module ValidationTests =
             test <@ ("Ada" |> Result.keepIf Check.notBlank "required") = Ok "Ada" @>
             test <@ ("Ada" |> Result.keepIf Check.notNull "required") = Ok "Ada" @>
             test <@ ([ 1; 2 ] |> Result.keepIf Check.notEmpty "required") = Ok [ 1; 2 ] @>
-            test <@ ([ 1; 2 ] |> Result.keepIf (Check.contains 2) "missing") = Ok [ 1; 2 ] @>
+            test <@ ([ 1; 2 ] |> Result.keepIf (Seq.contains 2) "missing") = Ok [ 1; 2 ] @>
             test <@ ([ 1; 2; 3 ] |> Result.keepIf Check.hasNoDuplicates "duplicate") = Ok [ 1; 2; 3 ] @>
             test <@ ("ab" |> Result.minLength 3) = Error [ Length(MinimumLength 3, Some 2) ] @>
             test <@ ("abcd" |> Result.maxLength 3) = Error [ Length(MaximumLength 3, Some 4) ] @>
