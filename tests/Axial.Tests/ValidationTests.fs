@@ -487,6 +487,74 @@ module ValidationTests =
             test <@ Check.Result.error (Ok 1) = Error [ Equality(EqualTo "Error", Some "Ok") ] @>
 
         [<Fact>]
+        let ``Predicate exposes boolean helpers outside structured Check`` () =
+            let nullString: string = null
+            let nullValues: seq<int> = null
+
+            test <@ Predicate.Option.isSome (Some 1) @>
+            test <@ Predicate.Option.isNone (None: int option) @>
+            test <@ Predicate.Option.present (Some 1) @>
+            test <@ Predicate.Option.empty (None: int option) @>
+            test <@ Predicate.Option.notEmpty (Some 1) @>
+
+            test <@ Predicate.ValueOption.isSome (ValueSome 1) @>
+            test <@ Predicate.ValueOption.isNone (ValueNone: int voption) @>
+            test <@ Predicate.ValueOption.present (ValueSome 1) @>
+            test <@ Predicate.ValueOption.empty (ValueNone: int voption) @>
+            test <@ Predicate.ValueOption.notEmpty (ValueSome 1) @>
+
+            test <@ Predicate.Nullable.hasValue (System.Nullable 1) @>
+            test <@ Predicate.Nullable.hasNoValue (System.Nullable<int>()) @>
+            test <@ Predicate.Nullable.present (System.Nullable 1) @>
+            test <@ Predicate.Nullable.empty (System.Nullable<int>()) @>
+            test <@ Predicate.Nullable.notEmpty (System.Nullable 1) @>
+
+            test <@ Predicate.Result.isOk (Ok 1) @>
+            test <@ Predicate.Result.isError (Error "missing") @>
+
+            test <@ Predicate.Reference.isNull nullString @>
+            test <@ Predicate.Reference.notNull "Ada" @>
+
+            test <@ Predicate.String.isEmpty "" @>
+            test <@ not (Predicate.String.isEmpty nullString) @>
+            test <@ Predicate.String.isNotEmpty " " @>
+            test <@ Predicate.String.isBlank "   " @>
+            test <@ Predicate.String.isBlank nullString @>
+            test <@ Predicate.String.isNotBlank "Ada" @>
+            test <@ Predicate.String.hasMinLength 3 "Ada" @>
+            test <@ Predicate.String.hasMaxLength 3 "Ada" @>
+            test <@ Predicate.String.hasLength 3 "Ada" @>
+            test <@ Predicate.String.matches "^[a-z]+$" "ada" @>
+            test <@ Predicate.String.isEmail "ada@example.com" @>
+            test <@ Predicate.String.isNumeric "123" @>
+            test <@ Predicate.String.isAlphaNumeric "Ada123" @>
+            test <@ not (Predicate.String.isAlphaNumeric "Ada-123") @>
+
+            test <@ Predicate.Seq.isEmpty [] @>
+            test <@ not (Predicate.Seq.isEmpty nullValues) @>
+            test <@ Predicate.Seq.isNotEmpty [ 1 ] @>
+            test <@ Predicate.Seq.contains 2 [ 1; 2 ] @>
+            test <@ Predicate.Seq.hasCount 2 [ 1; 2 ] @>
+            test <@ Predicate.Seq.isSingle [ 1 ] @>
+            test <@ Predicate.Seq.atMostOne [] @>
+            test <@ Predicate.Seq.atLeastOne [ 1 ] @>
+            test <@ Predicate.Seq.moreThanOne [ 1; 2 ] @>
+            test <@ Predicate.Seq.hasDuplicates [ 1; 2; 1 ] @>
+            test <@ Predicate.Seq.isDistinct [ 1; 2; 3 ] @>
+            test <@ not (Predicate.Seq.isDistinct [ 1; 2; 1 ]) @>
+            test <@ not (Predicate.Seq.isDistinct nullValues) @>
+
+            test <@ Predicate.Compare.greaterThan 3 4 @>
+            test <@ Predicate.Compare.lessThan 3 2 @>
+            test <@ Predicate.Compare.atLeast 3 3 @>
+            test <@ Predicate.Compare.atMost 3 3 @>
+            test <@ Predicate.Compare.between 1 3 2 @>
+            test <@ Predicate.Compare.positive 1 @>
+            test <@ Predicate.Compare.nonNegative 0 @>
+            test <@ Predicate.Compare.negative -1 @>
+            test <@ Predicate.Compare.nonPositive 0 @>
+
+        [<Fact>]
         let ``Check top-level facade exposes structured checks`` () =
             let nullString: string = null
 

@@ -115,7 +115,7 @@ Schema constraints should lower onto the tightened `Check` shape, not the verbos
   equality checks in the first pass.
 - [x] Move or remove top-level boolean predicates from `Check` so top-level `Check.*` consistently means structured
   `Result<unit, CheckFailure list>`.
-- [ ] Add or relocate boolean predicates outside structured `Check.*`, using type-specific predicate modules or
+- [x] Add or relocate boolean predicates outside structured `Check.*`, using type-specific predicate modules or
   extensions such as `Seq.isDistinct`, `String.isBlank`, `Result.isOk`, and nullable/option presence helpers.
 - [ ] Do not add `Seq.distinct` as a boolean predicate or structured check; it collides with FSharp.Core's sequence
   transformation.

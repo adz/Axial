@@ -116,6 +116,19 @@ module ApiShapeTests =
 
         loop returnType
 
+    let private returnsBoolShape (returnType: Type) =
+        let checkFunctionType = typedefof<FSharpFunc<_, _>>
+
+        let rec loop (returnType: Type) =
+            if returnType = typeof<bool> then
+                true
+            elif returnType.IsGenericType && returnType.GetGenericTypeDefinition() = checkFunctionType then
+                returnType.GetGenericArguments()[1] |> loop
+            else
+                false
+
+        loop returnType
+
     let private assertCheckAliasShape<'value> () =
         let checkType = typeof<Check<'value>>
 
@@ -140,6 +153,27 @@ module ApiShapeTests =
                 |> Array.tryFind (fun methodInfo -> methodInfo.Name = name)
                 |> Option.bind (fun methodInfo ->
                     if returnsCheckResultShape methodInfo.ReturnType then
+                        None
+                    else
+                        Some(name, methodInfo.ReturnType.FullName)))
+
+        test <@ List.isEmpty missing @>
+        test <@ List.isEmpty wrongReturnType @>
+
+    let private assertMethodsReturnBool methodNames (targetType: Type) =
+        let methods = targetType |> publicStaticMethods
+
+        let missing =
+            methodNames
+            |> List.filter (fun name -> methods |> Array.exists (fun methodInfo -> methodInfo.Name = name) |> not)
+
+        let wrongReturnType =
+            methodNames
+            |> List.choose (fun name ->
+                methods
+                |> Array.tryFind (fun methodInfo -> methodInfo.Name = name)
+                |> Option.bind (fun methodInfo ->
+                    if returnsBoolShape methodInfo.ReturnType then
                         None
                     else
                         Some(name, methodInfo.ReturnType.FullName)))
@@ -821,6 +855,71 @@ module ApiShapeTests =
               "whenNotBlank"
               "takeSome"
               "orError" ]
+
+        let predicateModule =
+            moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.Predicate"
+
+        predicateModule
+        |> publicStaticMemberNames
+        |> assertContainsNone [ "distinct" ]
+
+        moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.PredicateModule+Option"
+        |> assertMethodsReturnBool [ "isSome"; "isNone"; "present"; "empty"; "notEmpty" ]
+
+        moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.PredicateModule+ValueOption"
+        |> assertMethodsReturnBool [ "isSome"; "isNone"; "present"; "empty"; "notEmpty" ]
+
+        moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.PredicateModule+Nullable"
+        |> assertMethodsReturnBool [ "hasValue"; "hasNoValue"; "present"; "empty"; "notEmpty" ]
+
+        moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.PredicateModule+Result"
+        |> assertMethodsReturnBool [ "isOk"; "isError" ]
+
+        moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.PredicateModule+Reference"
+        |> assertMethodsReturnBool [ "isNull"; "notNull" ]
+
+        moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.PredicateModule+String"
+        |> assertMethodsReturnBool
+            [ "isEmpty"
+              "isNotEmpty"
+              "isBlank"
+              "isNotBlank"
+              "hasMinLength"
+              "hasMaxLength"
+              "hasLength"
+              "matches"
+              "isEmail"
+              "isNumeric"
+              "isAlphaNumeric" ]
+
+        moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.PredicateModule+Seq"
+        |> assertMethodsReturnBool
+            [ "isEmpty"
+              "isNotEmpty"
+              "contains"
+              "hasCount"
+              "isSingle"
+              "atMostOne"
+              "atLeastOne"
+              "moreThanOne"
+              "hasDuplicates"
+              "isDistinct" ]
+
+        moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.PredicateModule+Seq"
+        |> publicStaticMemberNames
+        |> assertContainsNone [ "distinct" ]
+
+        moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.PredicateModule+Compare"
+        |> assertMethodsReturnBool
+            [ "greaterThan"
+              "lessThan"
+              "atLeast"
+              "atMost"
+              "between"
+              "positive"
+              "nonNegative"
+              "negative"
+              "nonPositive" ]
 
         let resultMembers =
             moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.Result"
