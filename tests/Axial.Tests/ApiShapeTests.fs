@@ -765,6 +765,8 @@ module ApiShapeTests =
         checkMembers
         |> assertContainsNone
             [ "isTrue"
+              "ok"
+              "error"
               "isFalse"
               "fromPredicate"
               "fromTry"
