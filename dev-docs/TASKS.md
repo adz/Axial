@@ -199,7 +199,7 @@ the typed `Field` values and the constructor lambda from the test side; a codec 
   `Schema<'model>` stay single-parameter while still letting codec interpreters compile constructor-specialized plans
   from a schema value alone — no `obj array` constructor application and no caller re-supplying the constructor or
   typed fields.
-- [ ] Re-prove the compiled-record-plan slice from the `Schema<'model>` value itself; update
+- [x] Re-prove the compiled-record-plan slice from the `Schema<'model>` value itself; update
   `SchemaCompiledRecordPlanProofTests` and `SchemaVerticalSliceProofTests` so the plan is derived from the built
   schema, not from test-side pre-erasure ingredients.
 - [ ] Update the vertical-slice proof and constructor/getter alignment tests to author through the builder, keeping

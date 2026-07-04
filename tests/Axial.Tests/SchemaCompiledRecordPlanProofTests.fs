@@ -15,13 +15,12 @@ open Xunit
 /// call, but built from portable functions instead of runtime reflection or `Expression.Compile`.
 /// </summary>
 /// <remarks>
-/// This lives as a test-only prototype rather than new `Axial.Schema` source. Task line 148 of `dev-docs/TASKS.md`
-/// asks for proof the lowering is possible before codec work starts and before `Axial.Schema` commits to a codec
-/// package boundary (see Phase 14). The key finding this test records: a zero-boxing compiled plan must be built
-/// from the typed field chain appended by `Schema.field`, not from
-/// the type-erased `Schema&lt;'model&gt;.Definition` that metadata interpreters use. That erased shape stores fields
-/// as `'model -> obj` getters and applies constructors through `obj array`, which is the right trade for
-/// arity-independent inspection but is exactly the `obj array` dispatch a codec hot path must avoid.
+/// This lives as a test-only prototype rather than new `Axial.Schema` source. The key finding this test records: a
+/// zero-boxing compiled plan can be built from the typed field chain retained by the built
+/// <c>Schema&lt;'model&gt;</c> value itself, not from caller-supplied fields and constructors and not from the
+/// type-erased <c>Schema&lt;'model&gt;.Definition</c> that metadata interpreters use. That erased shape stores fields as
+/// <c>'model -> obj</c> getters and applies constructors through <c>obj array</c>, which is the right trade for
+/// arity-independent inspection but is exactly the <c>obj array</c> dispatch a codec hot path must avoid.
 /// </remarks>
 module SchemaCompiledRecordPlanProofTests =
 

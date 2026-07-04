@@ -46,38 +46,108 @@ module SchemaVerticalSliceProofTests =
           GetValue = Field.getValue field
           Codec = codec }
 
-    type private CompiledRecordPlan2<'model, 'a, 'b>
-        (field1: CompiledField<'model, 'a>, field2: CompiledField<'model, 'b>, construct: 'a -> 'b -> 'model) =
+    type private ICompiledPlan<'model> =
+        abstract member Slots: (int * string * byte[]) array
+        abstract member Encode: 'model -> (string * string) array
+        abstract member Decode: (string * string) array -> 'model
 
-        member _.Slots: (int * string * byte[]) array =
-            [| field1.Order, field1.ExternalName, field1.ExternalNameUtf8
-               field2.Order, field2.ExternalName, field2.ExternalNameUtf8 |]
+    type private ICompiledChain<'model, 'constructorIn, 'constructorOut> =
+        abstract member Slots: (int * string * byte[]) list
+        abstract member Encode: 'model -> (string * string) list
+        abstract member Reset: unit -> unit
+        abstract member TryCollect: name: string * raw: string -> bool
+        abstract member ApplyCollected: 'constructorIn -> 'constructorOut
 
-        member _.Encode(model: 'model) : (string * string) array =
-            [| field1.ExternalName, field1.Codec.Encode(field1.GetValue model)
-               field2.ExternalName, field2.Codec.Encode(field2.GetValue model) |]
+    type private CompiledFieldsEnd<'model, 'constructor>() =
+        interface ICompiledChain<'model, 'constructor, 'constructor> with
+            member _.Slots = []
+            member _.Encode(_) = []
+            member _.Reset() = ()
+            member _.TryCollect(_, _) = false
+            member _.ApplyCollected(constructor) = constructor
 
-        member _.Decode(values: (string * string) array) : 'model =
-            let mutable value1 = Unchecked.defaultof<'a>
-            let mutable value2 = Unchecked.defaultof<'b>
-            let mutable seen1 = false
-            let mutable seen2 = false
+    type private CompiledFieldsAppend<'model, 'constructorIn, 'field, 'next, 'head
+        when 'head :> ICompiledChain<'model, 'constructorIn, 'field -> 'next>>
+        (
+            head: 'head,
+            field: CompiledField<'model, 'field>
+        ) =
 
-            for name, raw in values do
-                if name = field1.ExternalName then
-                    value1 <- field1.Codec.Decode raw
-                    seen1 <- true
-                elif name = field2.ExternalName then
-                    value2 <- field2.Codec.Decode raw
-                    seen2 <- true
+        let mutable collectedValue: 'field voption = ValueNone
 
-            if not seen1 then
-                invalidArg (nameof values) $"Missing required field '{field1.ExternalName}'."
+        interface ICompiledChain<'model, 'constructorIn, 'next> with
+            member _.Slots = head.Slots @ [ field.Order, field.ExternalName, field.ExternalNameUtf8 ]
+            member _.Encode(model) = head.Encode model @ [ field.ExternalName, field.Codec.Encode(field.GetValue model) ]
 
-            if not seen2 then
-                invalidArg (nameof values) $"Missing required field '{field2.ExternalName}'."
+            member _.Reset() =
+                head.Reset()
+                collectedValue <- ValueNone
 
-            construct value1 value2
+            member _.TryCollect(name, raw) =
+                if name = field.ExternalName then
+                    collectedValue <- ValueSome(field.Codec.Decode raw)
+                    true
+                else
+                    head.TryCollect(name, raw)
+
+            member _.ApplyCollected(constructor) =
+                let constructorForField = head.ApplyCollected constructor
+
+                match collectedValue with
+                | ValueSome value -> constructorForField value
+                | ValueNone -> invalidArg "values" $"Missing required field '{field.ExternalName}'."
+
+    type private CompiledRecordPlan<'model, 'constructor>
+        (constructor: 'constructor, chain: ICompiledChain<'model, 'constructor, 'model>) =
+
+        interface ICompiledPlan<'model> with
+            member _.Slots = chain.Slots |> List.toArray
+            member _.Encode(model) = chain.Encode model |> List.toArray
+
+            member _.Decode(values) =
+                chain.Reset()
+
+                for name, raw in values do
+                    chain.TryCollect(name, raw) |> ignore
+
+                chain.ApplyCollected constructor
+
+    type private PlanChainResult<'model, 'constructorIn, 'constructorOut>(value: obj) =
+        interface IFieldChainResult<'model, 'constructorIn, 'constructorOut> with
+            member _.Value = value
+
+    module private FieldCodecs =
+        let forField<'value> () : FieldCodec<'value> =
+            if typeof<'value> = typeof<string> then
+                box { Encode = id; Decode = id } :?> FieldCodec<'value>
+            else
+                invalidArg "field" $"No proof codec registered for field type {typeof<'value>.FullName}."
+
+    type private CompiledRecordPlanFactory<'model>() =
+        interface IFieldChainFactory<'model, ICompiledPlan<'model>> with
+            member _.OnEnd() =
+                let chain = CompiledFieldsEnd<'model, 'constructor>() :> ICompiledChain<'model, 'constructor, 'constructor>
+                PlanChainResult<'model, 'constructor, 'constructor>(box chain) :> IFieldChainResult<_, _, _>
+
+            member _.OnField(order, field: Field<'model, 'field>, head) =
+                let headChain = head.Value :?> ICompiledChain<'model, 'constructorIn, 'field -> 'next>
+                let right = compile order field (FieldCodecs.forField<'field> ())
+                let chain =
+                    CompiledFieldsAppend<'model, 'constructorIn, 'field, 'next, _>(headChain, right)
+                    :> ICompiledChain<'model, 'constructorIn, 'next>
+
+                PlanChainResult<'model, 'constructorIn, 'next>(box chain) :> IFieldChainResult<_, _, _>
+
+            member _.OnComplete<'constructor>
+                (
+                    constructor: 'constructor,
+                    chain: IFieldChainResult<'model, 'constructor, 'model>
+                ) =
+                let compiledChain = chain.Value :?> ICompiledChain<'model, 'constructor, 'model>
+                CompiledRecordPlan<'model, 'constructor>(constructor, compiledChain) :> ICompiledPlan<'model>
+
+    let private compileFromSchema (schema: Schema<'model>) =
+        Schema.specialize (CompiledRecordPlanFactory<'model>()) schema
 
     [<Fact>]
     let ``one authored schema proves ordering, primitive value schema, required/maxLength metadata, Check lowering, inspection, alignment, and a compiled plan together`` () =
@@ -87,9 +157,6 @@ module SchemaVerticalSliceProofTests =
             Value.text |> Value.withConstraints [ SchemaConstraint.required; SchemaConstraint.maxLength 254 ]
 
         let displayNameValue = Value.text |> Value.withConstraint SchemaConstraint.required
-
-        let emailField = Field.create "email" (fun (signup: Signup) -> signup.Email) emailValue
-        let displayNameField = Field.create "displayName" (fun (signup: Signup) -> signup.DisplayName) displayNameValue
 
         // Declare fields in reverse of the record's own field order to prove constructor/getter alignment
         // follows declared argument position, not field name or a field's own pre-assigned default order.
@@ -103,9 +170,6 @@ module SchemaVerticalSliceProofTests =
 
         // Constructor/getter alignment: each getter still reads its own field from the trusted model regardless of
         // declaration position.
-        test <@ Field.getValue displayNameField source = "Ada" @>
-        test <@ Field.getValue emailField source = "ada@example.com" @>
-
         let model = modelDefinition schema
         let values = model.Fields |> List.map (fun field -> field.Getter source)
 
@@ -137,17 +201,10 @@ module SchemaVerticalSliceProofTests =
         test <@ emailCheck "" = Error [ Blank ] @>
         test <@ emailCheck (String.replicate 255 "a") = Error [ Length(MaximumLength 254, Some 255) ] @>
 
-        // Compiled-record-plan proof: the same typed `Field<'model, 'value>` values used above compile into an
-        // ordered, cached-name, typed-hook plan with direct constructor application -- no `obj array`, no per-value
-        // reflection.
-        let textCodec: FieldCodec<string> = { Encode = id; Decode = id }
-
-        let plan =
-            CompiledRecordPlan2(
-                compile 0 displayNameField textCodec,
-                compile 1 emailField textCodec,
-                fun displayName email -> { Email = email; DisplayName = displayName }
-            )
+        // Compiled-record-plan proof: the same built `Schema<'model>` value compiles into an ordered, cached-name,
+        // typed-hook plan with direct constructor application -- no `obj array`, no per-value reflection, and no
+        // caller re-supplying the constructor or standalone typed fields.
+        let plan = compileFromSchema schema
 
         test <@ plan.Slots |> Array.map (fun (order, name, _) -> order, name) = [| 0, "displayName"; 1, "email" |] @>
         test <@ plan.Slots |> Array.map (fun (_, _, utf8) -> Encoding.UTF8.GetString utf8) = [| "displayName"; "email" |] @>
