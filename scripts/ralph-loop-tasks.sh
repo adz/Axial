@@ -59,38 +59,34 @@ require_clean_tree() {
 
 next_task() {
   awk '
+    /^[[:space:]]*([0-9]+\.|[-*+]) \[[ xX]\] / {
+      task_number += 1
+    }
     match($0, /^[[:space:]]*([0-9]+)\. \[ \] (.*)$/, m) {
-      print NR "\tnumbered\t" m[1] "\t" m[2]
+      print NR "\t" task_number "\tnumbered\t" m[1] "\t" m[2]
       exit
     }
     match($0, /^[[:space:]]*[-*+] \[ \] (.*)$/, m) {
-      print NR "\tbullet\t-\t" m[1]
+      print NR "\t" task_number "\tbullet\t-\t" m[1]
       exit
     }
   ' "$TASKS_FILE"
 }
 
 task_is_checked() {
-  local line_number="$1"
-  local task_kind="$2"
-  local task_marker="$3"
-  local task_text="$4"
+  local task_number="$1"
 
   awk \
-    -v line_number="$line_number" \
-    -v task_kind="$task_kind" \
-    -v task_marker="$task_marker" \
-    -v task_text="$task_text" '
-      NR == line_number {
-        if (task_kind == "numbered" && $0 ~ "^[[:space:]]*" task_marker "\\. \\[x\\] " && index($0, "[x] " task_text) > 0) {
-          found = 1
-        }
-        if (task_kind == "bullet" && $0 ~ "^[[:space:]]*[-*+] \\[x\\] " && index($0, "[x] " task_text) > 0) {
-          found = 1
+    -v task_number="$task_number" '
+      /^[[:space:]]*([0-9]+\.|[-*+]) \[[ xX]\] / {
+        seen += 1
+        if (seen == task_number && $0 ~ /^[[:space:]]*([0-9]+\.|[-*+]) \[[xX]\] /) {
+          checked = 1
+          exit
         }
       }
       END {
-        exit(found ? 0 : 1)
+        exit(checked ? 0 : 1)
       }
     ' "$TASKS_FILE"
 }
@@ -101,9 +97,10 @@ count_remaining_tasks() {
 
 run_task() {
   local task_line_number="$1"
-  local task_kind="$2"
-  local task_marker="$3"
-  local task_text="$4"
+  local task_number="$2"
+  local task_kind="$3"
+  local task_marker="$4"
+  local task_text="$5"
   local before_head
   local after_head
   local prompt
@@ -116,7 +113,7 @@ run_task() {
     task_ref="$task_marker"
     task_line="${task_marker}. [ ] ${task_text}"
   else
-    task_ref="line ${task_line_number}"
+    task_ref="item ${task_number} (line ${task_line_number})"
     task_line="- [ ] ${task_text}"
   fi
 
@@ -153,8 +150,8 @@ EOF
       ;;
   esac
 
-  if ! task_is_checked "$task_line_number" "$task_kind" "$task_marker" "$task_text"; then
-    echo "Task ${task_ref} is still unchecked in TASKS.md. Stopping." >&2
+  if ! task_is_checked "$task_number"; then
+    echo "Task ${task_ref} was not marked checked in TASKS.md. Stopping." >&2
     exit 1
   fi
 
@@ -185,6 +182,7 @@ main() {
   local once="false"
   local task_line
   local task_line_number
+  local task_number
   local task_kind
   local task_marker
   local task_text
@@ -247,8 +245,8 @@ main() {
       exit 0
     fi
 
-    IFS=$'\t' read -r task_line_number task_kind task_marker task_text <<<"$task_line"
-    run_task "$task_line_number" "$task_kind" "$task_marker" "$task_text"
+    IFS=$'\t' read -r task_line_number task_number task_kind task_marker task_text <<<"$task_line"
+    run_task "$task_line_number" "$task_number" "$task_kind" "$task_marker" "$task_text"
 
     if [[ "$once" == "true" ]]; then
       exit 0
