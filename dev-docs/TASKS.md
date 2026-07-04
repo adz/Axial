@@ -144,7 +144,7 @@ Schema constraints should lower onto the tightened `Check` shape, not the verbos
   `Schema.map3`; do not hand-write `map4` or higher, and route larger models through the future schema computation
   expression or `[<Schema>]` source generator instead.
 - [x] Add tests proving constructor/getter alignment behavior.
-- [ ] Add tests proving schema constraints are inspectable without running validation.
+- [x] Add tests proving schema constraints are inspectable without running validation.
 - [ ] Prove `Schema` can lower to a high-performance compiled record plan before codec work starts:
   - Reasoning: CodecMapper gets its JSON performance by compiling authored schemas into direct record codecs, not by
     interpreting a rich metadata tree for every value. Its hot path uses ordered field chains, cached field-name bytes,
