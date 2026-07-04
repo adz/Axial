@@ -119,7 +119,7 @@ Schema constraints should lower onto the tightened `Check` shape, not the verbos
   extensions such as `Seq.isDistinct`, `String.isBlank`, `Result.isOk`, and nullable/option presence helpers.
 - [x] Do not add `Seq.distinct` as a boolean predicate or structured check; it collides with FSharp.Core's sequence
   transformation.
-- [ ] Decide null semantics before implementation:
+- [x] Decide null semantics before implementation:
   `Check.String.empty null`, `Check.Seq.empty null`, and whether `Check.Seq.notEmpty null` keeps current
   `Count(MinimumCount 1, None)` behavior.
 - [ ] Update API shape tests so top-level `Check` contains structured check names, not the old predicate-only surface.

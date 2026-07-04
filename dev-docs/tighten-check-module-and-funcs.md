@@ -259,11 +259,11 @@ Check.notEmpty value
 
 String semantics:
 
-- `Check.String.empty null` should probably fail with `Missing`, not pass.
+- `Check.String.empty null` -> `Error [ Missing ]`
 - `Check.String.empty ""` -> `Ok ()`
 - `Check.String.empty " "` -> failure unless a separate `blank` check is used.
 - `Check.String.notEmpty null` -> `Error [ Missing ]`
-- `Check.String.notEmpty ""` -> length/count failure or `Blank`; choose one and be consistent.
+- `Check.String.notEmpty ""` -> `Error [ Length(MinimumLength 1, Some 0) ]`
 
 Recommendation:
 
@@ -273,9 +273,10 @@ Recommendation:
 
 Sequence semantics:
 
-- `Check.Seq.empty null` -> `Error [ Missing ]` or `Count(ExactCount 0, None)`.
+- `Check.Seq.empty null` -> `Error [ Count(ExactCount 0, None) ]`
 - `Check.Seq.notEmpty null` -> `Error [ Count(MinimumCount 1, None) ]`.
-- Existing behavior for `notEmpty` already uses `Count(MinimumCount 1, None)` for null. Keep that unless there is a strong reason to normalize all null values to `Missing`.
+- Sequence count checks treat null as an unknown observed count, not as `Missing`. Keep the current `notEmpty`
+  behavior so sequence-shaped checks consistently report `Count(..., None)` for null values.
 
 Option/value option/nullable semantics:
 
@@ -1269,14 +1270,11 @@ API shape:
 
 ## Open Decisions
 
-1. Should `Check.String.empty null` fail with `Missing` or `Length(ExactLength 0, None)`?
-2. Should `Check.Seq.empty null` fail with `Missing` or `Count(ExactCount 0, None)`?
-3. Should `Check.notEmpty nullSeq` keep current `Count(MinimumCount 1, None)` behavior?
-4. Should `Check.Option.present` replace `Check.Option.some` in examples, or should both be documented?
-5. Should top-level `Check.ok` and `Check.error` exist, or remain only under `Check.Result`?
-6. Should exact sequence count be named `count` or `hasCount` in structured result space? Recommendation: `count`.
-7. Should exact string length be named `length` or `hasLength` in structured result space? Recommendation: `length`.
-8. Should bool predicates be extension methods, modules, or both?
+1. Should `Check.Option.present` replace `Check.Option.some` in examples, or should both be documented?
+2. Should top-level `Check.ok` and `Check.error` exist, or remain only under `Check.Result`?
+3. Should exact sequence count be named `count` or `hasCount` in structured result space? Recommendation: `count`.
+4. Should exact string length be named `length` or `hasLength` in structured result space? Recommendation: `length`.
+5. Should bool predicates be extension methods, modules, or both?
 
 ## Recommendation
 
