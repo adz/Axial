@@ -7,6 +7,8 @@ module Runner =
         DiagnosticsExample.run()
         printfn ""
         RefinedCatalogExample.run()
+        printfn ""
+        RefinedValueSchemaExample.run()
 
 [<EntryPoint>]
 let main _ =
@@ -14,5 +16,6 @@ let main _ =
     | "request-boundary" -> RequestBoundaryExample.run()
     | "diagnostics" -> DiagnosticsExample.run()
     | "refined-catalog" -> RefinedCatalogExample.run()
+    | "refined-value-schema" -> RefinedValueSchemaExample.run()
     | _ -> Runner.run()
     0

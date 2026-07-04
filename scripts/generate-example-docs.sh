@@ -98,6 +98,15 @@ render_example_section \
   "refined-catalog"
 
 render_example_section \
+  "Refined Value Schema Example" \
+  "This example shows schema-level refined values (Email, ContactName, a positive Quantity, and a non-negative Balance) built with Value.refined, composed into a record schema, and checked with ValueSchemaCheck." \
+  "$root_dir/examples/Axial.Examples/Axial.Examples.fsproj" \
+  "$root_dir/examples/Axial.Examples/RefinedValueSchemaExample.fs" \
+  "https://github.com/adz/Axial/blob/main/examples/Axial.Examples/RefinedValueSchemaExample.fs" \
+  "AXIAL_EXAMPLE=refined-value-schema dotnet run --project examples/Axial.Examples/Axial.Examples.fsproj --nologo" \
+  "refined-value-schema"
+
+render_example_section \
   'Playground Example' \
   "This example shows the same core boundary across Flow using the normal direct-bind style inside each computation expression." \
   "$root_dir/examples/Axial.Playground/Axial.Playground.fsproj" \

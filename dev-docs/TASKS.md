@@ -276,7 +276,7 @@ the typed `Field` values and the constructor lambda from the test side; a codec 
 - [x] Support `format` metadata such as `email`.
 - [x] Ensure refined value schemas can run `Check` programs.
 - [x] Ensure model schemas can use `field "email" _.Email Email.schema { required }`.
-- [ ] Add examples for `Email`, `ContactName`, positive/non-negative numbers, and bounded strings.
+- [x] Add examples for `Email`, `ContactName`, positive/non-negative numbers, and bounded strings.
 - [x] Decide which refined schemas ship in `Axial.Refined` versus examples only: examples/user code only unless the
   package-boundary invariant changes.
 
