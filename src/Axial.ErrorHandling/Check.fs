@@ -65,16 +65,22 @@ type CheckFailure =
     | CustomCode of code: string
 
 /// <summary>
-/// An executable, path-free value constraint that succeeds with <c>unit</c> or returns structured check failures.
+/// An executable, path-free value constraint over an already parsed value.
 /// </summary>
+/// <remarks>
+/// A check succeeds with <c>Ok ()</c> or returns one or more structured <see cref="T:Axial.ErrorHandling.CheckFailure" />
+/// values. Checks do not carry input paths, raw input, schema metadata, or refined-value construction; keep those concerns
+/// in validation, parsing, schema, or refinement layers.
+/// </remarks>
 type Check<'value> = 'value -> Result<unit, CheckFailure list>
 
 /// <summary>
 /// Lightweight boolean predicates for local structural facts.
 /// </summary>
 /// <remarks>
-/// These helpers return <c>bool</c> and intentionally live outside <c>Check</c>, where public helpers return
-/// structured <see cref="T:Axial.ErrorHandling.Check`1" /> results.
+/// These helpers return <c>bool</c> and intentionally live outside the <c>Check</c> module, where public helpers return
+/// structured <see cref="T:Axial.ErrorHandling.Check`1" /> results. Use predicates for local branching and
+/// <c>Check</c> programs when callers need typed failure details.
 /// </remarks>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Predicate =
@@ -323,9 +329,11 @@ module Predicate =
 /// Typed value-check programs for local structural facts.
 /// </summary>
 /// <remarks>
-/// The nested modules such as <c>Check.String</c>, <c>Check.Number</c>, and <c>Check.Seq</c> return
-/// <see cref="T:Axial.ErrorHandling.Check`1" /> programs. Common top-level helpers such as
-/// <c>lengthBetween</c>, <c>between</c>, and <c>countBetween</c> are structured checks for single-target values.
+/// Top-level <c>Check.*</c> helpers return structured results, not booleans. Direct modules such as
+/// <c>Check.String</c>, <c>Check.Number</c>, <c>Check.Seq</c>, <c>Check.Option</c>, <c>Check.ValueOption</c>,
+/// <c>Check.Nullable</c>, and <c>Check.Result</c> contain the type-specific implementations. Top-level helpers such
+/// as <c>lengthBetween</c>, <c>between</c>, and <c>countBetween</c> are aliases for common single-target checks, while
+/// <c>present</c>, <c>empty</c>, and <c>notEmpty</c> are the small type-directed facade.
 /// </remarks>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Check =
@@ -413,13 +421,13 @@ module Check =
                 if not (isNull value) && Regex.IsMatch(value, pattern) then pass
                 else fail (InvalidFormat pattern)
 
-        /// <summary>Requires an already parsed string value to contain only numeric characters.</summary>
+        /// <summary>Requires an already parsed string value to contain one or more numeric characters.</summary>
         let numeric : Check<string> =
             fun value ->
                 if not (isNull value) && numericRegex.IsMatch value then pass
                 else fail (InvalidFormat "numeric")
 
-        /// <summary>Requires an already parsed string value to contain only letter or digit characters.</summary>
+        /// <summary>Requires an already parsed string value to contain one or more letter or digit characters.</summary>
         let alphaNumeric : Check<string> =
             fun value ->
                 if not (isNull value) && value.Length > 0 && value |> Seq.forall Char.IsLetterOrDigit then pass
@@ -483,6 +491,10 @@ module Check =
             atMost LanguagePrimitives.GenericZero value
 
     /// <summary>Executable, path-free value checks for already parsed sequence-shaped values.</summary>
+    /// <remarks>
+    /// Use <c>Check.Seq</c> for sequence-shaped checks. The earlier <c>Check.Collection</c> surface is intentionally not
+    /// retained in this pre-1.0 API.
+    /// </remarks>
     module Seq =
         let private pass : Result<unit, CheckFailure list> = Ok ()
 
@@ -696,107 +708,107 @@ module Check =
     let private actualValue value =
         if Object.ReferenceEquals(box value, null) then None else Some(string value)
 
-    /// <summary>Requires an already parsed string value to have exactly the supplied length.</summary>
+    /// <summary>Returns a string check requiring exactly the supplied length.</summary>
     let length (expected: int) : Check<string> =
         String.length expected
 
-    /// <summary>Requires an already parsed string value to have at least the supplied length.</summary>
+    /// <summary>Returns a string check requiring at least the supplied length.</summary>
     let minLength (minimum: int) : Check<string> =
         String.minLength minimum
 
-    /// <summary>Requires an already parsed string value to have at most the supplied length.</summary>
+    /// <summary>Returns a string check requiring at most the supplied length.</summary>
     let maxLength (maximum: int) : Check<string> =
         String.maxLength maximum
 
-    /// <summary>Requires an already parsed string value length to lie inside the supplied inclusive bounds.</summary>
+    /// <summary>Returns a string check requiring a length inside the supplied inclusive bounds.</summary>
     let lengthBetween (minimum: int) (maximum: int) : Check<string> =
         String.lengthBetween minimum maximum
 
-    /// <summary>Requires an already parsed string value to match Axial's pragmatic email format.</summary>
+    /// <summary>Runs Axial's pragmatic email-format check against an already parsed string value.</summary>
     let email (value: string) : Result<unit, CheckFailure list> =
         String.email value
 
-    /// <summary>Requires an already parsed string value to match the supplied regular expression pattern.</summary>
+    /// <summary>Returns a string check requiring a match for the supplied regular expression pattern.</summary>
     let matches (pattern: string) : Check<string> =
         String.matches pattern
 
-    /// <summary>Requires an already parsed string value to equal one of the supplied choices.</summary>
+    /// <summary>Returns a string check requiring equality with one of the supplied choices.</summary>
     let oneOf (choices: string seq) : Check<string> =
         String.oneOf choices
 
-    /// <summary>Requires a value to lie inside the supplied inclusive bounds.</summary>
+    /// <summary>Returns an ordered-value check requiring a value inside the supplied inclusive bounds.</summary>
     let inline between minimum maximum : Check<'value> =
         Number.between minimum maximum
 
-    /// <summary>Requires a value to be greater than the supplied exclusive lower bound.</summary>
+    /// <summary>Returns an ordered-value check requiring a value greater than the supplied exclusive lower bound.</summary>
     let inline greaterThan minimum : Check<'value> =
         Number.greaterThan minimum
 
-    /// <summary>Requires a value to be less than the supplied exclusive upper bound.</summary>
+    /// <summary>Returns an ordered-value check requiring a value less than the supplied exclusive upper bound.</summary>
     let inline lessThan maximum : Check<'value> =
         Number.lessThan maximum
 
-    /// <summary>Requires a value to be greater than or equal to the supplied lower bound.</summary>
+    /// <summary>Returns an ordered-value check requiring a value greater than or equal to the supplied lower bound.</summary>
     let inline atLeast minimum : Check<'value> =
         Number.atLeast minimum
 
-    /// <summary>Requires a value to be less than or equal to the supplied upper bound.</summary>
+    /// <summary>Returns an ordered-value check requiring a value less than or equal to the supplied upper bound.</summary>
     let inline atMost maximum : Check<'value> =
         Number.atMost maximum
 
-    /// <summary>Requires a value to be greater than zero.</summary>
+    /// <summary>Runs an ordered-value check requiring a value greater than zero.</summary>
     let inline positive value =
         Number.positive value
 
-    /// <summary>Requires a value to be greater than or equal to zero.</summary>
+    /// <summary>Runs an ordered-value check requiring a value greater than or equal to zero.</summary>
     let inline nonNegative value =
         Number.nonNegative value
 
-    /// <summary>Requires a value to be less than zero.</summary>
+    /// <summary>Runs an ordered-value check requiring a value less than zero.</summary>
     let inline negative value =
         Number.negative value
 
-    /// <summary>Requires a value to be less than or equal to zero.</summary>
+    /// <summary>Runs an ordered-value check requiring a value less than or equal to zero.</summary>
     let inline nonPositive value =
         Number.nonPositive value
 
-    /// <summary>Requires an already parsed sequence-shaped value to contain exactly the supplied count.</summary>
+    /// <summary>Returns a sequence-shaped check requiring exactly the supplied count.</summary>
     let count (expected: int) : Check<#seq<'value>> =
         Seq.count expected
 
-    /// <summary>Requires an already parsed sequence-shaped value to contain at least the supplied count.</summary>
+    /// <summary>Returns a sequence-shaped check requiring at least the supplied count.</summary>
     let minCount (minimum: int) : Check<#seq<'value>> =
         Seq.minCount minimum
 
-    /// <summary>Requires an already parsed sequence-shaped value to contain at most the supplied count.</summary>
+    /// <summary>Returns a sequence-shaped check requiring at most the supplied count.</summary>
     let maxCount (maximum: int) : Check<#seq<'value>> =
         Seq.maxCount maximum
 
-    /// <summary>Requires an already parsed sequence-shaped value count to lie inside the supplied inclusive bounds.</summary>
+    /// <summary>Returns a sequence-shaped check requiring a count inside the supplied inclusive bounds.</summary>
     let countBetween (minimum: int) (maximum: int) : Check<#seq<'value>> =
         Seq.countBetween minimum maximum
 
-    /// <summary>Requires an already parsed sequence-shaped value to contain no duplicate values.</summary>
+    /// <summary>Runs a sequence-shaped check requiring no duplicate values.</summary>
     let distinct (values: #seq<'value>) : Result<unit, CheckFailure list> =
         Seq.noDuplicates values
 
-    /// <summary>Requires an already parsed sequence-shaped value to contain the supplied value.</summary>
+    /// <summary>Returns a sequence-shaped check requiring the supplied value to be present.</summary>
     let contains (expected: 'value) : Check<#seq<'value>> =
         fun values -> Seq.contains expected values
 
-    /// <summary>Requires an already parsed sequence-shaped value to contain exactly one item.</summary>
+    /// <summary>Runs a sequence-shaped check requiring exactly one item.</summary>
     let single (values: #seq<'value>) : Result<unit, CheckFailure list> =
         Seq.single values
 
-    /// <summary>Requires an already parsed sequence-shaped value to contain zero or one item.</summary>
+    /// <summary>Runs a sequence-shaped check requiring zero or one item.</summary>
     let atMostOne (values: #seq<'value>) : Result<unit, CheckFailure list> =
         Seq.atMostOne values
 
-    /// <summary>Requires an already parsed sequence-shaped value to contain at least one item.</summary>
+    /// <summary>Runs a sequence-shaped check requiring at least one item.</summary>
     let atLeastOne (values: #seq<'value>) : Result<unit, CheckFailure list> =
         Seq.atLeastOne values
 
-    /// <summary>Requires an already parsed sequence-shaped value to contain more than one item.</summary>
+    /// <summary>Runs a sequence-shaped check requiring more than one item.</summary>
     let moreThanOne (values: #seq<'value>) : Result<unit, CheckFailure list> =
         Seq.moreThanOne values
 
@@ -866,25 +878,29 @@ module Check =
             ((^value or NotEmpty): (static member Apply: ^value * 'result * NotEmpty -> 'result)
                 (value, Unchecked.defaultof<'result>, Unchecked.defaultof<NotEmpty>))
 
-    /// <summary>Requires an already parsed optional, nullable, or text value to be present.</summary>
+    /// <summary>Runs the type-directed presence check for an already parsed optional, nullable, or text value.</summary>
     let inline present value : Result<unit, CheckFailure list> =
         Present.Invoke value
 
-    /// <summary>Requires an already parsed optional, nullable, text, or supported sequence-shaped value to be empty.</summary>
+    /// <summary>
+    /// Runs the type-directed empty check for an already parsed optional, nullable, text, or supported sequence-shaped value.
+    /// </summary>
     let inline empty value : Result<unit, CheckFailure list> =
         Empty.Invoke value
 
-    /// <summary>Requires an already parsed optional, nullable, text, or supported sequence-shaped value to be non-empty.</summary>
+    /// <summary>
+    /// Runs the type-directed non-empty check for an already parsed optional, nullable, text, or supported sequence-shaped value.
+    /// </summary>
     let inline notEmpty value : Result<unit, CheckFailure list> =
         NotEmpty.Invoke value
 
-    /// <summary>Requires the actual value to equal the supplied expected value.</summary>
+    /// <summary>Returns a value check requiring equality with the supplied expected value.</summary>
     let equalTo (expected: 'value) : Check<'value> =
         fun actual ->
             if actual = expected then pass
             else fail (Equality(EqualTo(string expected), actualValue actual))
 
-    /// <summary>Requires the actual value not to equal the supplied unexpected value.</summary>
+    /// <summary>Returns a value check requiring inequality with the supplied unexpected value.</summary>
     let notEqualTo (unexpected: 'value) : Check<'value> =
         fun actual ->
             if actual <> unexpected then pass
