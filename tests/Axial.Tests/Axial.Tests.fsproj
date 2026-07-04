@@ -24,6 +24,7 @@
     <Compile Include="SchemaConstraintInspectionTests.fs" />
     <Compile Include="SchemaCompiledRecordPlanProofTests.fs" />
     <Compile Include="SchemaVerticalSliceProofTests.fs" />
+    <Compile Include="SchemaRefinedValueTests.fs" />
     <Compile Include="FlowRuntimeMetadataTests.fs" />
     <Compile Include="RuntimeSemanticsTests.fs" />
     <Compile Include="WorkflowBasicTests.fs" />

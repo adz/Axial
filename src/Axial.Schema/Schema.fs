@@ -479,12 +479,26 @@ type PrimitiveValueKind =
     /// <summary>A globally unique identifier represented as <see cref="T:System.Guid" />.</summary>
     | Guid
 
+/// <summary>
+/// Holds the type-erased construction and inspection functions for a refined/domain value schema.
+/// </summary>
+/// <remarks>
+/// This is a plain reference type rather than a record so it keeps reference equality: the boxed functions it wraps
+/// cannot support structural equality, and reference equality is enough for <see cref="T:Axial.Schema.ValueSchemaShape" />
+/// to remain an ordinary comparable union.
+/// </remarks>
+type internal RefinedValueOps(construct: obj -> obj, inspect: obj -> obj) =
+    member _.Construct = construct
+    member _.Inspect = inspect
+
 type internal ValueSchemaDefinition =
     { Shape: ValueSchemaShape
       Constraints: SchemaConstraint list }
 
 and internal ValueSchemaShape =
     | PrimitiveValueDefinition of PrimitiveValueKind
+    /// <summary>A named refined/domain value built from a raw value schema plus construction and inspection functions.</summary>
+    | RefinedValueDefinition of raw: ValueSchemaDefinition * ops: RefinedValueOps
 
 type internal FieldDescriptor<'model> =
     { ExternalName: ExternalFieldName
@@ -606,12 +620,56 @@ module Value =
     let guid : ValueSchema<Guid> = primitive PrimitiveValueKind.Guid
 
     /// <summary>Returns the intrinsic primitive kind for a primitive value schema.</summary>
+    /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="schema" /> is a refined value schema.</exception>
     let primitiveKind (schema: ValueSchema<'value>) =
         if isNull (box schema) then
             nullArg (nameof schema)
 
         match schema.Definition.Shape with
         | PrimitiveValueDefinition kind -> kind
+        | RefinedValueDefinition _ ->
+            invalidArg (nameof schema) "Expected a primitive value schema, but the schema is a refined value schema."
+
+    /// <summary>
+    /// Describes a named refined/domain value schema by pairing a raw value schema with a value-preserving
+    /// construction function and an inspection function that recovers the raw representation.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <paramref name="construct" /> is expected to run only after the raw value has already satisfied whatever
+    /// checks or constraints an interpreter attaches to the raw value schema; it is not itself expected to fail.
+    /// <paramref name="inspect" /> lets interpreters that only understand the raw representation, such as codecs,
+    /// diagnostics, JSON Schema, UI, and documentation generators, still operate over the refined value.
+    /// </para>
+    /// <para>
+    /// Refined value schemas built this way are portable metadata, matching primitive value schemas: they can be
+    /// combined with <see cref="M:Axial.Schema.Value.withConstraint``1" /> and used as the value schema for
+    /// <see cref="M:Axial.Schema.Schema.field``2" /> like any other <see cref="T:Axial.Schema.ValueSchema`1" />.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException">
+    /// Thrown when <paramref name="construct" />, <paramref name="inspect" />, or <paramref name="raw" /> is null.
+    /// </exception>
+    let refined (construct: 'raw -> 'value) (inspect: 'value -> 'raw) (raw: ValueSchema<'raw>) : ValueSchema<'value> =
+        if isNull (box construct) then
+            nullArg (nameof construct)
+
+        if isNull (box inspect) then
+            nullArg (nameof inspect)
+
+        if isNull (box raw) then
+            nullArg (nameof raw)
+
+        let ops =
+            RefinedValueOps(
+                (fun value -> value |> unbox<'raw> |> construct |> box),
+                (fun value -> value |> unbox<'value> |> inspect |> box)
+            )
+
+        ValueSchema(
+            { Shape = RefinedValueDefinition(raw.Definition, ops)
+              Constraints = [] }
+        )
 
     /// <summary>Returns the portable constraint metadata attached to a value schema.</summary>
     let constraints (schema: ValueSchema<'value>) =
