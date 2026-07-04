@@ -832,6 +832,12 @@ module Check =
         static member Apply(value: System.Nullable<'value>, _: 'result, _: Empty) : 'result =
             Nullable.empty value |> box :?> 'result
 
+        static member Apply(value: 'value list, _: 'result, _: Empty) : 'result =
+            Seq.empty value |> box :?> 'result
+
+        static member Apply(value: 'value array, _: 'result, _: Empty) : 'result =
+            Seq.empty value |> box :?> 'result
+
         static member inline Invoke(value: ^value) : 'result =
             ((^value or Empty): (static member Apply: ^value * 'result * Empty -> 'result)
                 (value, Unchecked.defaultof<'result>, Unchecked.defaultof<Empty>))
@@ -850,6 +856,12 @@ module Check =
         static member Apply(value: System.Nullable<'value>, _: 'result, _: NotEmpty) : 'result =
             Nullable.notEmpty value |> box :?> 'result
 
+        static member Apply(value: 'value list, _: 'result, _: NotEmpty) : 'result =
+            Seq.notEmpty value |> box :?> 'result
+
+        static member Apply(value: 'value array, _: 'result, _: NotEmpty) : 'result =
+            Seq.notEmpty value |> box :?> 'result
+
         static member inline Invoke(value: ^value) : 'result =
             ((^value or NotEmpty): (static member Apply: ^value * 'result * NotEmpty -> 'result)
                 (value, Unchecked.defaultof<'result>, Unchecked.defaultof<NotEmpty>))
@@ -858,11 +870,11 @@ module Check =
     let inline present value : Result<unit, CheckFailure list> =
         Present.Invoke value
 
-    /// <summary>Requires an already parsed optional, nullable, or text value to be empty.</summary>
+    /// <summary>Requires an already parsed optional, nullable, text, or supported sequence-shaped value to be empty.</summary>
     let inline empty value : Result<unit, CheckFailure list> =
         Empty.Invoke value
 
-    /// <summary>Requires an already parsed optional, nullable, or text value to be non-empty.</summary>
+    /// <summary>Requires an already parsed optional, nullable, text, or supported sequence-shaped value to be non-empty.</summary>
     let inline notEmpty value : Result<unit, CheckFailure list> =
         NotEmpty.Invoke value
 

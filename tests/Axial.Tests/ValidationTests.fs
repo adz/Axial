@@ -449,6 +449,9 @@ module ValidationTests =
         [<Fact>]
         let ``Check top-level presence facade delegates to direct modules`` () =
             let nullString: string = null
+            let emptyValues: int list = []
+            let values: int list = [ 1 ]
+            let nullValues: int array = null
 
             Assert.Equal<Result<unit, CheckFailure list>>(Check.String.present "Ada", Check.present "Ada")
             Assert.Equal<Result<unit, CheckFailure list>>(Check.String.present nullString, Check.present nullString)
@@ -468,6 +471,9 @@ module ValidationTests =
             Assert.Equal<Result<unit, CheckFailure list>>(Check.ValueOption.empty (ValueSome 1), Check.empty (ValueSome 1))
             Assert.Equal<Result<unit, CheckFailure list>>(Check.Nullable.empty (System.Nullable<int>()), Check.empty (System.Nullable<int>()))
             Assert.Equal<Result<unit, CheckFailure list>>(Check.Nullable.empty (System.Nullable 1), Check.empty (System.Nullable 1))
+            Assert.Equal<Result<unit, CheckFailure list>>(Check.Seq.empty emptyValues, Check.empty emptyValues)
+            Assert.Equal<Result<unit, CheckFailure list>>(Check.Seq.empty values, Check.empty values)
+            Assert.Equal<Result<unit, CheckFailure list>>(Check.Seq.empty nullValues, Check.empty nullValues)
 
             Assert.Equal<Result<unit, CheckFailure list>>(Check.String.notEmpty " ", Check.notEmpty " ")
             Assert.Equal<Result<unit, CheckFailure list>>(Check.String.notEmpty "", Check.notEmpty "")
@@ -477,6 +483,9 @@ module ValidationTests =
             Assert.Equal<Result<unit, CheckFailure list>>(Check.ValueOption.notEmpty (ValueNone: int voption), Check.notEmpty (ValueNone: int voption))
             Assert.Equal<Result<unit, CheckFailure list>>(Check.Nullable.notEmpty (System.Nullable 1), Check.notEmpty (System.Nullable 1))
             Assert.Equal<Result<unit, CheckFailure list>>(Check.Nullable.notEmpty (System.Nullable<int>()), Check.notEmpty (System.Nullable<int>()))
+            Assert.Equal<Result<unit, CheckFailure list>>(Check.Seq.notEmpty values, Check.notEmpty values)
+            Assert.Equal<Result<unit, CheckFailure list>>(Check.Seq.notEmpty emptyValues, Check.notEmpty emptyValues)
+            Assert.Equal<Result<unit, CheckFailure list>>(Check.Seq.notEmpty nullValues, Check.notEmpty nullValues)
 
         [<Fact>]
         let ``Check Option exposes executable option value checks`` () =
