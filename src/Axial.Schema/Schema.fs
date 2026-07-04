@@ -111,6 +111,14 @@ module SchemaConstraint =
         if String.IsNullOrWhiteSpace value then
             invalidArg parameterName "Schema constraint names must not be empty or whitespace."
 
+    let private ensureNonNegative parameterName value =
+        if value < 0 then
+            raise (ArgumentOutOfRangeException(parameterName, value, "Schema constraint bounds must be zero or greater."))
+
+    let private ensureOrderedBounds parameterName minimum maximum =
+        if minimum > maximum then
+            invalidArg parameterName "Schema constraint minimum bounds must be less than or equal to maximum bounds."
+
     let private emptyArguments =
         ReadOnlyDictionary<string, obj>(Dictionary<string, obj>()) :> IReadOnlyDictionary<string, obj>
 
@@ -144,6 +152,115 @@ module SchemaConstraint =
             values.Add(name, value))
 
         SchemaConstraint(code, ReadOnlyDictionary<string, obj>(values) :> IReadOnlyDictionary<string, obj>)
+
+    /// <summary>Requires a value to be supplied by boundary interpreters.</summary>
+    let required = create "required"
+
+    /// <summary>Marks a value as optional for boundary interpreters.</summary>
+    let optional = create "optional"
+
+    /// <summary>Requires a text value to have at least the supplied length.</summary>
+    /// <exception cref="T:System.ArgumentOutOfRangeException">Thrown when <paramref name="minimum" /> is negative.</exception>
+    let minLength minimum =
+        ensureNonNegative (nameof minimum) minimum
+        createWithArguments "minLength" [ "minimum", box minimum ]
+
+    /// <summary>Requires a text value to have at most the supplied length.</summary>
+    /// <exception cref="T:System.ArgumentOutOfRangeException">Thrown when <paramref name="maximum" /> is negative.</exception>
+    let maxLength maximum =
+        ensureNonNegative (nameof maximum) maximum
+        createWithArguments "maxLength" [ "maximum", box maximum ]
+
+    /// <summary>Requires a text value to have a length inside the supplied inclusive bounds.</summary>
+    /// <exception cref="T:System.ArgumentOutOfRangeException">
+    /// Thrown when <paramref name="minimum" /> or <paramref name="maximum" /> is negative.
+    /// </exception>
+    /// <exception cref="T:System.ArgumentException">
+    /// Thrown when <paramref name="minimum" /> is greater than <paramref name="maximum" />.
+    /// </exception>
+    let lengthBetween minimum maximum =
+        ensureNonNegative (nameof minimum) minimum
+        ensureNonNegative (nameof maximum) maximum
+        ensureOrderedBounds (nameof minimum) minimum maximum
+        createWithArguments "lengthBetween" [ "minimum", box minimum; "maximum", box maximum ]
+
+    /// <summary>Requires a text value to match Axial's pragmatic email format.</summary>
+    let email = create "email"
+
+    /// <summary>Requires a text value to match the supplied regular expression pattern.</summary>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="pattern" /> is null.</exception>
+    /// <exception cref="T:System.ArgumentException">
+    /// Thrown when <paramref name="pattern" /> is empty or contains only whitespace.
+    /// </exception>
+    let pattern pattern =
+        ensureName (nameof pattern) pattern
+        createWithArguments "pattern" [ "pattern", box pattern ]
+
+    /// <summary>Requires a text value to equal one of the supplied choices.</summary>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="choices" /> is null.</exception>
+    let oneOf (choices: string seq) =
+        if isNull (box choices) then
+            nullArg (nameof choices)
+
+        createWithArguments "oneOf" [ "choices", choices |> Seq.toArray |> box ]
+
+    /// <summary>Requires a value to be inside the supplied inclusive numeric bounds.</summary>
+    /// <exception cref="T:System.ArgumentException">
+    /// Thrown when <paramref name="minimum" /> is greater than <paramref name="maximum" />.
+    /// </exception>
+    let between minimum maximum =
+        ensureOrderedBounds (nameof minimum) minimum maximum
+        createWithArguments "between" [ "minimum", box minimum; "maximum", box maximum ]
+
+    /// <summary>Requires a value to be greater than the supplied exclusive numeric lower bound.</summary>
+    let greaterThan minimum =
+        createWithArguments "greaterThan" [ "minimum", box minimum ]
+
+    /// <summary>Requires a value to be less than the supplied exclusive numeric upper bound.</summary>
+    let lessThan maximum =
+        createWithArguments "lessThan" [ "maximum", box maximum ]
+
+    /// <summary>Requires a value to be greater than or equal to the supplied numeric lower bound.</summary>
+    let atLeast minimum =
+        createWithArguments "atLeast" [ "minimum", box minimum ]
+
+    /// <summary>Requires a value to be less than or equal to the supplied numeric upper bound.</summary>
+    let atMost maximum =
+        createWithArguments "atMost" [ "maximum", box maximum ]
+
+    /// <summary>Requires a collection value to contain exactly the supplied count.</summary>
+    /// <exception cref="T:System.ArgumentOutOfRangeException">Thrown when <paramref name="expected" /> is negative.</exception>
+    let count expected =
+        ensureNonNegative (nameof expected) expected
+        createWithArguments "count" [ "expected", box expected ]
+
+    /// <summary>Requires a collection value to contain at least the supplied count.</summary>
+    /// <exception cref="T:System.ArgumentOutOfRangeException">Thrown when <paramref name="minimum" /> is negative.</exception>
+    let minCount minimum =
+        ensureNonNegative (nameof minimum) minimum
+        createWithArguments "minCount" [ "minimum", box minimum ]
+
+    /// <summary>Requires a collection value to contain at most the supplied count.</summary>
+    /// <exception cref="T:System.ArgumentOutOfRangeException">Thrown when <paramref name="maximum" /> is negative.</exception>
+    let maxCount maximum =
+        ensureNonNegative (nameof maximum) maximum
+        createWithArguments "maxCount" [ "maximum", box maximum ]
+
+    /// <summary>Requires a collection value to contain a count inside the supplied inclusive bounds.</summary>
+    /// <exception cref="T:System.ArgumentOutOfRangeException">
+    /// Thrown when <paramref name="minimum" /> or <paramref name="maximum" /> is negative.
+    /// </exception>
+    /// <exception cref="T:System.ArgumentException">
+    /// Thrown when <paramref name="minimum" /> is greater than <paramref name="maximum" />.
+    /// </exception>
+    let countBetween minimum maximum =
+        ensureNonNegative (nameof minimum) minimum
+        ensureNonNegative (nameof maximum) maximum
+        ensureOrderedBounds (nameof minimum) minimum maximum
+        createWithArguments "countBetween" [ "minimum", box minimum; "maximum", box maximum ]
+
+    /// <summary>Requires a collection value to contain no duplicate items.</summary>
+    let distinct = create "distinct"
 
     /// <summary>Returns the stable interpreter-facing constraint code.</summary>
     let code (constraint': SchemaConstraint) =

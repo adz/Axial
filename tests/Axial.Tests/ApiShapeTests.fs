@@ -383,7 +383,30 @@ module ApiShapeTests =
         |> assertContainsAll [ "text"; "int"; "decimal"; "bool"; "date"; "dateTime"; "guid"; "primitiveKind"; "constraints"; "withConstraint"; "withConstraints" ]
         schemaConstraintModule
         |> publicStaticMemberNames
-        |> assertContainsAll [ "create"; "createWithArguments"; "code"; "arguments"; "tryFindArgument" ]
+        |> assertContainsAll
+            [ "create"
+              "createWithArguments"
+              "required"
+              "optional"
+              "minLength"
+              "maxLength"
+              "lengthBetween"
+              "email"
+              "pattern"
+              "oneOf"
+              "between"
+              "greaterThan"
+              "lessThan"
+              "atLeast"
+              "atMost"
+              "count"
+              "minCount"
+              "maxCount"
+              "countBetween"
+              "distinct"
+              "code"
+              "arguments"
+              "tryFindArgument" ]
         primitiveValueKindType
         |> publicUnionCaseNames
         |> assertContainsAll [ "Text"; "Int"; "Decimal"; "Bool"; "Date"; "DateTime"; "Guid" ]
@@ -433,8 +456,8 @@ module ApiShapeTests =
 
     [<Fact>]
     let ``schema constraints are inspectable metadata independent of executable checks`` () =
-        let required = SchemaConstraint.create "required"
-        let maxLength = SchemaConstraint.createWithArguments "maxLength" [ "maximum", box 20 ]
+        let required = SchemaConstraint.required
+        let maxLength = SchemaConstraint.maxLength 20
         let text = Value.text |> Value.withConstraints [ required; maxLength ]
         let field =
             schemaField "name" 0 (fun (model: Customer) -> model.Name)
@@ -456,6 +479,72 @@ module ApiShapeTests =
         raises<ArgumentException> <@ SchemaConstraint.createWithArguments "maxLength" [ "maximum", box 20; "maximum", box 30 ] |> ignore @>
         raises<ArgumentNullException> <@ Value.withConstraint null Value.text |> ignore @>
         raises<ArgumentNullException> <@ Field.constraints Unchecked.defaultof<Field<Customer, string>> |> ignore @>
+
+    [<Fact>]
+    let ``named schema constraints expose stable codes and structured arguments`` () =
+        let codes =
+            [ SchemaConstraint.required
+              SchemaConstraint.optional
+              SchemaConstraint.minLength 2
+              SchemaConstraint.maxLength 20
+              SchemaConstraint.lengthBetween 2 20
+              SchemaConstraint.email
+              SchemaConstraint.pattern "^[a-z]+$"
+              SchemaConstraint.oneOf [ "draft"; "published" ]
+              SchemaConstraint.between 1 10
+              SchemaConstraint.greaterThan 0
+              SchemaConstraint.lessThan 100
+              SchemaConstraint.atLeast 1
+              SchemaConstraint.atMost 10
+              SchemaConstraint.count 2
+              SchemaConstraint.minCount 1
+              SchemaConstraint.maxCount 5
+              SchemaConstraint.countBetween 1 5
+              SchemaConstraint.distinct ]
+            |> List.map SchemaConstraint.code
+
+        let length = SchemaConstraint.lengthBetween 2 20
+        let pattern = SchemaConstraint.pattern "^[a-z]+$"
+        let choices = SchemaConstraint.oneOf [ "draft"; "published" ]
+        let range = SchemaConstraint.between 1.5m 3.5m
+        let count = SchemaConstraint.countBetween 1 5
+
+        test <@
+            codes =
+                [ "required"
+                  "optional"
+                  "minLength"
+                  "maxLength"
+                  "lengthBetween"
+                  "email"
+                  "pattern"
+                  "oneOf"
+                  "between"
+                  "greaterThan"
+                  "lessThan"
+                  "atLeast"
+                  "atMost"
+                  "count"
+                  "minCount"
+                  "maxCount"
+                  "countBetween"
+                  "distinct" ]
+        @>
+        test <@ SchemaConstraint.tryFindArgument "minimum" length = Some(box 2) @>
+        test <@ SchemaConstraint.tryFindArgument "maximum" length = Some(box 20) @>
+        test <@ SchemaConstraint.tryFindArgument "pattern" pattern = Some(box "^[a-z]+$") @>
+        test <@ SchemaConstraint.tryFindArgument "choices" choices |> Option.map unbox<string array> = Some [| "draft"; "published" |] @>
+        test <@ SchemaConstraint.tryFindArgument "minimum" range = Some(box 1.5m) @>
+        test <@ SchemaConstraint.tryFindArgument "maximum" range = Some(box 3.5m) @>
+        test <@ SchemaConstraint.tryFindArgument "minimum" count = Some(box 1) @>
+        test <@ SchemaConstraint.tryFindArgument "maximum" count = Some(box 5) @>
+        raises<ArgumentOutOfRangeException> <@ SchemaConstraint.minLength -1 |> ignore @>
+        raises<ArgumentOutOfRangeException> <@ SchemaConstraint.count -1 |> ignore @>
+        raises<ArgumentException> <@ SchemaConstraint.lengthBetween 5 2 |> ignore @>
+        raises<ArgumentException> <@ SchemaConstraint.countBetween 5 2 |> ignore @>
+        raises<ArgumentException> <@ SchemaConstraint.between 10 1 |> ignore @>
+        raises<ArgumentException> <@ SchemaConstraint.pattern "" |> ignore @>
+        raises<ArgumentNullException> <@ SchemaConstraint.oneOf null |> ignore @>
 
     [<Fact>]
     let ``schema fields inspect existing trusted models through typed getters`` () =

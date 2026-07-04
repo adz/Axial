@@ -133,7 +133,7 @@ Schema constraints should lower onto the tightened `Check` shape, not the verbos
 
 ## Phase 5: Continue Schema Core Constraints And Lowering
 
-- [ ] Implement schema constraints for:
+- [x] Implement schema constraints for:
   `required`, `optional`, `minLength`, `maxLength`, `lengthBetween`, `email`, `pattern`, `oneOf`, numeric ranges,
   collection counts, and distinctness.
 - [ ] Ensure schema constraints can lower to executable `Check` programs.
