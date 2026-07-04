@@ -4,23 +4,22 @@ linkTitle: "greaterThan"
 weight: 3002
 ---
 
-Returns true when the value is greater than the supplied exclusive lower bound.
+Requires a value to be greater than the supplied exclusive lower bound.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>ErrorHandling.Check.greaterThan&#32;<span>minimum&#32;value</span></span></code>
+<code><span>ErrorHandling.Check.greaterThan&#32;<span>minimum</span></span></code>
 </div>
 
 ## Parameters
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `minimum` | <code>'a</code> |  |
-| `value` | <code>'a</code> |  |
+| `minimum` | <code>'value</code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code>bool</code> |  |
+| <code><span><a href="/reference/Axial/axial-errorhandling-check-1.html">Check</a>&lt;'value&gt;</span></code> |  |

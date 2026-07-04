@@ -91,8 +91,8 @@ Schema constraints should lower onto the tightened `Check` shape, not the verbos
   `length`, `minLength`, `maxLength`, `lengthBetween`, `email`, `matches`, `oneOf`, `between`, `greaterThan`,
   `lessThan`, `atLeast`, `atMost`, `count`, `minCount`, `maxCount`, `countBetween`, `distinct`, `contains`,
   `single`, `atMostOne`, `atLeastOne`, `moreThanOne`, `equalTo`, and `notEqualTo`.
-- [ ] Add `Check.String.length` for exact string length.
-- [ ] Add `Check.Seq.count` for exact sequence count.
+- [x] Add `Check.String.length` for exact string length.
+- [x] Add `Check.Seq.count` for exact sequence count.
 - [ ] Add structured string checks missing from the direct module:
   `empty`, `notEmpty`, `numeric`, and `alphaNumeric`.
 - [ ] Add structured numeric sign checks to `Check.Number` and top-level `Check`:

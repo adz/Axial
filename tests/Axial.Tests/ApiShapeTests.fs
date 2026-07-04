@@ -667,10 +667,10 @@ module ApiShapeTests =
 
         checkStringModule
         |> publicStaticMemberNames
-        |> assertContainsAll [ "present"; "minLength"; "maxLength"; "lengthBetween"; "exactLength"; "email"; "matches"; "oneOf" ]
+        |> assertContainsAll [ "present"; "minLength"; "maxLength"; "lengthBetween"; "length"; "exactLength"; "email"; "matches"; "oneOf" ]
 
         checkStringModule
-        |> assertMethodsReturnCheckResult [ "present"; "minLength"; "maxLength"; "lengthBetween"; "exactLength"; "email"; "matches"; "oneOf" ]
+        |> assertMethodsReturnCheckResult [ "present"; "minLength"; "maxLength"; "lengthBetween"; "length"; "exactLength"; "email"; "matches"; "oneOf" ]
 
         let checkNumberModule =
             moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.CheckModule+Number"
@@ -687,10 +687,10 @@ module ApiShapeTests =
 
         checkSeqModule
         |> publicStaticMemberNames
-        |> assertContainsAll [ "notEmpty"; "minCount"; "maxCount"; "countBetween"; "distinct" ]
+        |> assertContainsAll [ "notEmpty"; "count"; "minCount"; "maxCount"; "countBetween"; "distinct" ]
 
         checkSeqModule
-        |> assertMethodsReturnCheckResult [ "notEmpty"; "minCount"; "maxCount"; "countBetween"; "distinct" ]
+        |> assertMethodsReturnCheckResult [ "notEmpty"; "count"; "minCount"; "maxCount"; "countBetween"; "distinct" ]
 
         assertModuleAbsentFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.CheckModule+Collection"
 

@@ -236,6 +236,11 @@ module ValidationTests =
             test <@ Check.String.lengthBetween 2 4 "Axial" = Error [ Length(LengthBetween(2, 4), Some 5) ] @>
             test <@ Check.String.lengthBetween 2 4 nullString = Error [ Length(LengthBetween(2, 4), None) ] @>
 
+            test <@ Check.String.length 3 "Ada" = Ok () @>
+            test <@ Check.String.length 3 "Axial" = Error [ Length(ExactLength 3, Some 5) ] @>
+            test <@ Check.String.length 3 nullString = Error [ Length(ExactLength 3, None) ] @>
+            test <@ Check.String.exactLength 3 "Ada" = Ok () @>
+
             test <@ Check.String.email "ada@example.com" = Ok () @>
             test <@ Check.String.email "Ada" = Error [ InvalidFormat "email" ] @>
             test <@ Check.String.email nullString = Error [ InvalidFormat "email" ] @>
@@ -276,6 +281,10 @@ module ValidationTests =
             test <@ Check.Seq.notEmpty [ 1 ] = Ok () @>
             test <@ Check.Seq.notEmpty [] = Error [ Count(MinimumCount 1, Some 0) ] @>
             test <@ Check.Seq.notEmpty nullValues = Error [ Count(MinimumCount 1, None) ] @>
+
+            test <@ Check.Seq.count 2 [ 1; 2 ] = Ok () @>
+            test <@ Check.Seq.count 2 [ 1 ] = Error [ Count(ExactCount 2, Some 1) ] @>
+            test <@ Check.Seq.count 2 nullValues = Error [ Count(ExactCount 2, None) ] @>
 
             test <@ Check.Seq.minCount 2 [ 1; 2 ] = Ok () @>
             test <@ Check.Seq.minCount 2 [ 1 ] = Error [ Count(MinimumCount 2, Some 1) ] @>

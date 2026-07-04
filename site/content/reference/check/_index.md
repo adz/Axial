@@ -98,24 +98,24 @@ This page shows the `Check` surface for reusable, path-free value constraints. E
 
 ## Collection predicates
 
-- [`ErrorHandling.Check.contains`](./m-errorhandling-check-contains.md): Returns true when the sequence contains the expected value.
+- [`ErrorHandling.Check.contains`](./m-errorhandling-check-contains.md): Requires an already parsed sequence-shaped value to contain the supplied value.
 - [`ErrorHandling.Check.hasCount`](./m-errorhandling-check-hascount.md): Returns true when the sequence count equals the expected count.
 - [`ErrorHandling.Check.hasDuplicates`](./m-errorhandling-check-hasduplicates.md): Returns true when the sequence contains duplicate values.
 - [`ErrorHandling.Check.hasNoDuplicates`](./m-errorhandling-check-hasnoduplicates.md): Returns true when the sequence contains no duplicate values.
 - [`ErrorHandling.Check.isSingle`](./m-errorhandling-check-issingle.md): Returns true when the sequence contains exactly one item.
-- [`ErrorHandling.Check.atMostOne`](./m-errorhandling-check-atmostone.md): Returns true when the sequence contains zero or one item.
-- [`ErrorHandling.Check.atLeastOne`](./m-errorhandling-check-atleastone.md): Returns true when the sequence contains at least one item.
-- [`ErrorHandling.Check.moreThanOne`](./m-errorhandling-check-morethanone.md): Returns true when the sequence contains more than one item.
+- [`ErrorHandling.Check.atMostOne`](./m-errorhandling-check-atmostone.md): Requires an already parsed sequence-shaped value to contain zero or one item.
+- [`ErrorHandling.Check.atLeastOne`](./m-errorhandling-check-atleastone.md): Requires an already parsed sequence-shaped value to contain at least one item.
+- [`ErrorHandling.Check.moreThanOne`](./m-errorhandling-check-morethanone.md): Requires an already parsed sequence-shaped value to contain more than one item.
 
 ## Equality and range predicates
 
-- [`ErrorHandling.Check.equalTo`](./m-errorhandling-check-equalto.md): Returns true when the actual value equals the expected value.
-- [`ErrorHandling.Check.notEqualTo`](./m-errorhandling-check-notequalto.md): Returns true when the actual value does not equal the expected value.
-- [`ErrorHandling.Check.greaterThan`](./m-errorhandling-check-greaterthan.md): Returns true when the value is greater than the supplied exclusive lower bound.
-- [`ErrorHandling.Check.lessThan`](./m-errorhandling-check-lessthan.md): Returns true when the value is less than the supplied exclusive upper bound.
-- [`ErrorHandling.Check.atLeast`](./m-errorhandling-check-atleast.md): Returns true when the value is greater than or equal to the supplied lower bound.
-- [`ErrorHandling.Check.atMost`](./m-errorhandling-check-atmost.md): Returns true when the value is less than or equal to the supplied upper bound.
-- [`ErrorHandling.Check.between`](./m-errorhandling-check-between.md): Returns true when the value lies between the supplied inclusive bounds.
+- [`ErrorHandling.Check.equalTo`](./m-errorhandling-check-equalto.md): Requires the actual value to equal the supplied expected value.
+- [`ErrorHandling.Check.notEqualTo`](./m-errorhandling-check-notequalto.md): Requires the actual value not to equal the supplied unexpected value.
+- [`ErrorHandling.Check.greaterThan`](./m-errorhandling-check-greaterthan.md): Requires a value to be greater than the supplied exclusive lower bound.
+- [`ErrorHandling.Check.lessThan`](./m-errorhandling-check-lessthan.md): Requires a value to be less than the supplied exclusive upper bound.
+- [`ErrorHandling.Check.atLeast`](./m-errorhandling-check-atleast.md): Requires a value to be greater than or equal to the supplied lower bound.
+- [`ErrorHandling.Check.atMost`](./m-errorhandling-check-atmost.md): Requires a value to be less than or equal to the supplied upper bound.
+- [`ErrorHandling.Check.between`](./m-errorhandling-check-between.md): Requires a value to lie inside the supplied inclusive bounds.
 - [`ErrorHandling.Check.positive`](./m-errorhandling-check-positive.md): Returns true when the numeric value is greater than zero.
 - [`ErrorHandling.Check.nonNegative`](./m-errorhandling-check-nonnegative.md): Returns true when the numeric value is greater than or equal to zero.
 - [`ErrorHandling.Check.negative`](./m-errorhandling-check-negative.md): Returns true when the numeric value is less than zero.

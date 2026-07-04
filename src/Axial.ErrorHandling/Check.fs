@@ -276,11 +276,15 @@ module Check =
                 | actual -> fail (Length(LengthBetween(minimum, maximum), actual))
 
         /// <summary>Requires an already parsed string value to have exactly the supplied length. Null fails with an unknown actual length.</summary>
-        let exactLength (expected: int) : Check<string> =
+        let length (expected: int) : Check<string> =
             fun value ->
                 match actualLength value with
                 | Some length when length = expected -> pass
                 | actual -> fail (Length(ExactLength expected, actual))
+
+        /// <summary>Requires an already parsed string value to have exactly the supplied length. Null fails with an unknown actual length.</summary>
+        let exactLength (expected: int) : Check<string> =
+            length expected
 
         /// <summary>Requires an already parsed string value to match Axial's pragmatic email format.</summary>
         let email : Check<string> =
@@ -352,6 +356,13 @@ module Check =
                 match actualCount values with
                 | Some count when count > 0 -> pass
                 | actual -> fail (Count(MinimumCount 1, actual))
+
+        /// <summary>Requires an already parsed sequence-shaped value to contain exactly the supplied count. Null fails with an unknown actual count.</summary>
+        let count (expected: int) : Check<#seq<'value>> =
+            fun values ->
+                match actualCount values with
+                | Some count when count = expected -> pass
+                | actual -> fail (Count(ExactCount expected, actual))
 
         /// <summary>Requires an already parsed sequence-shaped value to contain at least the supplied count. Null fails with an unknown actual count.</summary>
         let minCount (minimum: int) : Check<#seq<'value>> =
@@ -479,7 +490,7 @@ module Check =
 
     /// <summary>Requires an already parsed string value to have exactly the supplied length.</summary>
     let length (expected: int) : Check<string> =
-        String.exactLength expected
+        String.length expected
 
     /// <summary>Requires an already parsed string value to have at least the supplied length.</summary>
     let minLength (minimum: int) : Check<string> =
@@ -527,10 +538,7 @@ module Check =
 
     /// <summary>Requires an already parsed sequence-shaped value to contain exactly the supplied count.</summary>
     let count (expected: int) : Check<#seq<'value>> =
-        fun values ->
-            match actualCount values with
-            | Some count when count = expected -> pass
-            | actual -> fail (Count(ExactCount expected, actual))
+        Seq.count expected
 
     /// <summary>Requires an already parsed sequence-shaped value to contain at least the supplied count.</summary>
     let minCount (minimum: int) : Check<#seq<'value>> =
