@@ -1,0 +1,10 @@
+# Keep default ripgrep discovery focused on authored source and active docs.
+# Generated reference output and vendor/site artifacts can be searched explicitly
+# with `rg -u` or by targeting the path directly.
+site/_vendor/**
+site/content/reference/**
+docs/reference/**
+site/public/**
+BenchmarkDotNet.Artifacts/**
+.fsdocs/**
+output/**

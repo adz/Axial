@@ -1,288 +1,26 @@
-# Axial Schema/Input/Check/Rules/Policy TODO
+# Axial Tasks
 
-This is the implementation loop for the consolidated data-boundary direction in
-`dev-docs/current-ideas/schema-and-rules.md`.
+This is the active development queue. Keep completed work out of this file because loop scripts consume it directly.
+Keep live architecture direction in `dev-docs/PLAN.md`.
+Keep speculative design sketches in `dev-docs/current-ideas/` and high-level durable decisions in
+`dev-docs/decisions/`.
 
-Work this list top to bottom. Each item should be small enough to become an issue or a focused implementation pass.
+Work this queue from top to bottom.
 
-## Phase 0: Align The Architecture Docs
+## Active Surface Work
 
-- [x] Update `AGENTS.md` architecture invariants so `Check` is no longer defined as pure `bool` predicates.
-- [x] Update `dev-docs/decisions/README.md` to record the new direction:
-  `Check<'value> = 'value -> Result<unit, CheckFailure list>`.
-- [x] Update `dev-docs/project-split.md` so package responsibilities include complete typed `Check`, `Axial.Schema`,
-  schema interpreters, and `Policy`.
-- [x] Remove or rewrite stale current-ideas notes that still require predicate-only `Check`, especially
-  `dev-docs/current-ideas/check-and-result-splits.md`.
-- [x] Reconcile `dev-docs/TASKS.md` with this plan, including the package-boundary test split already listed there.
-- [x] Decide whether `Axial.Schema` starts as a new project immediately or begins inside `Axial.Validation` behind the
-  future package boundary: start `Axial.Schema` as a separate project immediately when schema source work begins.
-- [x] Record the package-boundary decision before any source work starts.
-- [x] Promote the accepted schema/input/rules direction into `dev-docs/PLAN.md` so it is not only a current-ideas sketch.
-- [x] Create the `Axial.Validation.Schema` integration project before raw input, schema diagnostics, schema validation,
-  or schema rules source work begins.
-- [x] Decide refined schema ownership: `Axial.Refined` must not ship schema-valued APIs while it remains independent of
-  `Axial.Schema`; refined schemas belong in examples, user code, or a future integration package.
+- [ ] Split tests into package-specific projects, with each test project building only against its own target package boundary.
 
-## Phase 1: Redesign Check As A Complete Subsystem
+- [ ] Decide whether the canonical validation bridge is `Validation.fromResult` or `Validation.ofResult`, then align source comments, docs, examples, and generated reference pages.
 
-- [x] Define `Check<'value> = 'value -> Result<unit, CheckFailure list>`.
-- [x] Define `CheckFailure` with at least missing/blank, invalid format, length, range, count, equality, and custom-code
-  cases.
-- [x] Implement top-level composition:
-  `Check.all`, `Check.any`, `Check.not`, and `Check.mapFailure`.
-- [x] Decide and document whether `Check.all []` succeeds and whether `Check.any []` fails.
-- [x] Implement `Check.String`:
-  `present`, `minLength`, `maxLength`, `lengthBetween`, `email`, `matches`, `oneOf`, and null/blank behavior.
-- [x] Implement `Check.Number`:
-  `between`, `greaterThan`, `lessThan`, `atLeast`, and `atMost`.
-- [x] Decide whether numeric helpers need separate modules for `int`, `decimal`, `float`, date/time, or generic
-  comparison is enough for the first pass.
-- [x] Implement `Check.Collection`:
-  `notEmpty`, `minCount`, `maxCount`, `countBetween`, and `distinct`.
-- [x] Implement `Check.Option`:
-  `some` and `none`.
-- [x] Implement `Check.Result`:
-  `ok` and `error`.
-- [x] Decide whether nullable/value-option checks belong in first pass: include both as first-pass typed checks.
-- [x] Update or replace current API shape tests that assert `Check` returns `bool`.
-- [x] Add behavior tests for composition, error accumulation, short-circuit policy if any, null-sensitive strings, ranges,
-  collections, options, and results.
-- [x] Update source comments for the new `Check` model.
+- [ ] Refresh `dev-docs/API_BASELINE.md` after package-boundary test projects exist.
 
-## Phase 2: Stabilize Result/Parse/Refine Around New Check
+- [ ] Finish the remaining reference cleanup in `dev-docs/REFERENCE_AUDIT.md`.
 
-- [x] Decide which existing `Result` helpers remain as fail-fast guards over `Check`.
-- [x] Align `Result.guard`, `Result.require`, and type-preserving guards with `Check<'value>`.
-- [x] Ensure `Parse` remains in `Axial.Refined` for text-to-primitive conversion.
-- [x] Ensure refined constructors can use `Check` programs without depending on schema.
-- [x] Add examples of refined/domain types using `Check.String.*` and `Check.Number.*`.
-- [x] Confirm `Axial.Refined` does not depend on `Axial.Validation` or `Axial.Schema`.
-- [x] Update affected tests and API baselines.
-
-## Phase 3: Introduce Schema Core Foundation
-
-- [x] Define `Schema<'model>`.
-- [x] Define `ValueSchema<'value>`.
-- [x] Define `Field<'model, 'value>` metadata.
-- [x] Model external field names.
-- [x] Model getters for existing model inspection.
-- [x] Model constructor application for trusted construction.
-- [x] Model field ordering explicitly and test it heavily.
-- [x] Define primitive value schemas:
-  text, int, decimal, bool, date/date-time where supported, and GUID.
-- [x] Define schema constraints as metadata, not just executable checks.
-
-## Phase 4: Tighten Check Module Ergonomics
-
-Lift the design in `dev-docs/tighten-check-module-and-funcs.md` into source before continuing the next schema slice.
-Schema constraints should lower onto the tightened `Check` shape, not the verbose transitional one.
-
-- [x] Keep `Check<'value> = 'value -> Result<unit, CheckFailure list>` as the public structured check model.
-- [x] Keep `CheckFailure` path-free and raw-input-free; do not move schema/input diagnostics into `CheckFailure`.
-- [x] Keep `Check.all`, `Check.any`, `Check.not`, and `Check.mapFailure` as top-level structured check combinators.
-- [x] Rename or replace `Check.Collection` with `Check.Seq` for direct sequence-shaped checks.
-- [x] Decide whether to retain `Check.Collection` as a short-lived compatibility alias; because Axial is pre-1.0,
-  prefer removing it once call sites and docs are updated.
-- [x] Keep direct implementation modules:
-  `Check.String`, `Check.Number`, `Check.Seq`, `Check.Option`, `Check.ValueOption`, `Check.Nullable`, and
-  `Check.Result`.
-- [x] Add top-level concrete structured check aliases for common single-target checks:
-  `length`, `minLength`, `maxLength`, `lengthBetween`, `email`, `matches`, `oneOf`, `between`, `greaterThan`,
-  `lessThan`, `atLeast`, `atMost`, `count`, `minCount`, `maxCount`, `countBetween`, `distinct`, `contains`,
-  `single`, `atMostOne`, `atLeastOne`, `moreThanOne`, `equalTo`, and `notEqualTo`.
-- [x] Add `Check.String.length` for exact string length.
-- [x] Add `Check.Seq.count` for exact sequence count.
-- [x] Add structured string checks missing from the direct module:
-  `empty`, `notEmpty`, `numeric`, and `alphaNumeric`.
-- [x] Add structured numeric sign checks to `Check.Number` and top-level `Check`:
-  `positive`, `nonNegative`, `negative`, and `nonPositive`.
-- [x] Add structured sequence checks missing from the direct module:
-  `empty`, `count`, `contains`, `single`, `atMostOne`, `atLeastOne`, and `moreThanOne`.
-- [x] Add option presence aliases:
-  `Check.Option.present`, `Check.Option.empty`, `Check.Option.notEmpty`.
-- [x] Add value-option presence aliases:
-  `Check.ValueOption.present`, `Check.ValueOption.empty`, `Check.ValueOption.notEmpty`.
-- [x] Add nullable presence aliases:
-  `Check.Nullable.present`, `Check.Nullable.empty`, `Check.Nullable.notEmpty`.
-- [x] Keep `Check.Result.ok` and `Check.Result.error` direct-only for now; do not add top-level `Check.ok` or
-  `Check.error` unless the constructor-like names prove useful enough.
-- [x] Add only a very small SRTP top-level facade at first:
-  `Check.present`, `Check.empty`, and `Check.notEmpty`.
-- [x] Ensure SRTP facade functions only delegate to direct module implementations; do not make SRTP the semantic source
-  of truth.
-- [x] Do not use SRTP for `distinct`, count checks, length checks, format checks, numeric ranges, result checks, or
-  equality checks in the first pass.
-- [x] Move or remove top-level boolean predicates from `Check` so top-level `Check.*` consistently means structured
-  `Result<unit, CheckFailure list>`.
-- [x] Add or relocate boolean predicates outside structured `Check.*`, using type-specific predicate modules or
-  extensions such as `Seq.isDistinct`, `String.isBlank`, `Result.isOk`, and nullable/option presence helpers.
-- [x] Do not add `Seq.distinct` as a boolean predicate or structured check; it collides with FSharp.Core's sequence
-  transformation.
-- [x] Decide null semantics before implementation:
-  `Check.String.empty null`, `Check.Seq.empty null`, and whether `Check.Seq.notEmpty null` keeps current
-  `Count(MinimumCount 1, None)` behavior.
-- [x] Update API shape tests so top-level `Check` contains structured check names, not the old predicate-only surface.
-- [x] Add behavior tests for both direct modules and top-level facade functions.
-- [x] Add tests proving `Check.present`, `Check.empty`, and `Check.notEmpty` work for string, option, value option,
-  nullable, and sequence values where applicable.
-- [x] Add composition tests using tightened top-level checks, including function-list use such as
-  `Check.all [ Check.present; Check.lengthBetween 2 40 ]`.
-- [x] Update source comments for the tightened `Check` model.
-- [x] Regenerate reference docs only after source comments and public APIs are updated.
-
-## Phase 5: Continue Schema Core Constraints And Lowering
-
-- [x] Implement schema constraints for:
-  `required`, `optional`, `minLength`, `maxLength`, `lengthBetween`, `email`, `pattern`, `oneOf`, numeric ranges,
-  collection counts, and distinctness.
-- [x] Ensure schema constraints can lower to executable `Check` programs.
-- [x] Ensure schema constraints retain metadata for diagnostics, JSON Schema, UI, and docs.
-- [x] Define an explicit core API before computation expressions:
-  `Schema.field`, `Schema.map2`, `Schema.map3`, and enough `mapN` helpers to prove the model.
-- [x] Decide how many `mapN` helpers are acceptable before requiring generator support: stop at `Schema.map2` and
-  `Schema.map3`; do not hand-write `map4` or higher, and route larger models through the future schema computation
-  expression or `[<Schema>]` source generator instead.
-  (Superseded by Phase 5b: a CodecMapper-style progressive typed builder replaces the `mapN` cap, so neither the
-  computation expression nor the source generator is required to author models with more than three fields.)
-- [x] Add tests proving constructor/getter alignment behavior.
-- [x] Add tests proving schema constraints are inspectable without running validation.
-- [x] Prove `Schema` can lower to a high-performance compiled record plan before codec work starts:
-  - Reasoning: CodecMapper gets its JSON performance by compiling authored schemas into direct record codecs, not by
-    interpreting a rich metadata tree for every value. Its hot path uses ordered field chains, cached field-name bytes,
-    indexed field storage, typed field decoders, and constructor-specialized record decoders. Axial schema must preserve
-    enough typed information for an equivalent lowering.
-  - The proof should compile at least one flat record schema into a plan with ordered fields, cached UTF-8 external
-    names, typed per-field decode/encode hooks, indexed field slots, and direct constructor application.
-  - The plan must not require per-value runtime reflection, generic dictionary dispatch, or `obj array` constructor
-    application on the hot path.
-  - The authored schema path must be AOT- and trimming-safe: no runtime reflection as the foundation for constructor
-    binding, field discovery, validation, or codec execution.
-  - The authored schema path must remain Fable-compatible. Any .NET-only acceleration may use conditional compilation,
-    but there must be a portable fallback that keeps the same explicit schema semantics.
-  - Compare the intended lowering shape against `../../CodecMapper/main` before accepting the API. Use CodecMapper's
-    benchmark scenarios as the performance reference once an Axial JSON codec prototype exists.
-- [x] Do not start RawInput, schema validation, rules, or DSL work until Phase 5 proves a vertical schema metadata slice:
-  ordered fields, primitive value schema, at least required and maxLength metadata, lowering to `Check`, metadata
-  inspection, constructor/getter alignment, and the compiled-record-plan proof above. Proven by
-  `tests/Axial.Tests/SchemaVerticalSliceProofTests.fs`, which authors one `Schema<'model>` (via `Schema.field` /
-  `Schema.map2`) and, from that single schema, proves ordered fields, a primitive `Value.text` schema, required and
-  maxLength constraint metadata, lowering that metadata to an executable `Check`, metadata inspection without running
-  validation, constructor/getter alignment under reversed declaration order, and a compiled record plan built from the
-  same typed `Field` values.
-
-## Phase 5b: Progressive Typed Builder As The Explicit Core
-
-CodecMapper's authoring pipeline is both the target DSL shape and the mechanism the performance goal requires: the
-typed field chain that scales authoring to any arity is the same structure a codec compiler walks to emit
-constructor-specialized decoders. The current core erases that typing at authoring time: `Schema.map2`/`map3`
-immediately lower into `ConstructorApplication` (`obj array -> 'model` with per-field `unbox`) and box every getter
-into `FieldDescriptor.Getter : 'model -> obj`. The compiled-record-plan proofs only pass because the tests re-supply
-the typed `Field` values and the constructor lambda from the test side; a codec consumer holding just a
-`Schema<'model>` cannot do that. Fix this before Phase 7 builds more interpreters against the erased-only view.
-
-- [x] Replace the `Schema.map2` / `Schema.map3` cap with a CodecMapper-style progressive typed builder:
-  `Schema.recordFor<Customer, _> ctor |> Schema.field "id" _.Id Value.int |> ... |> Schema.build`, where each field
-  application peels one curried constructor argument and `Schema.build` only type-checks when the constructor is fully
-  applied.
-  Constructor/getter alignment stays compiler-checked by argument position, with no `mapN` family, no computation
-  expression, and no source generator required for any field count. Compare
-  `../../CodecMapper/main/src/CodecMapper/ContractsCore.fs` (`SchemaBuilder`, `IChainNode`, `FieldsAppend`, and
-  `Schema.record` / `Schema.fieldWith` / `Schema.build`) before accepting the API.
-- [x] Resolve the `Schema.field` naming collision: today `Schema.field` builds a standalone `Field<'model, 'value>`
-  consumed by `mapN`, while the pipeline step needs a different signature and F# modules cannot overload. Decide the
-  primary name and whether the standalone field constructor survives (for example as `Field.create` for interpreter
-  tests and advanced composition) or is removed together with `mapN`.
-- [x] Keep the typed field chain reachable from the built `Schema<'model>` alongside the type-erased
-  `FieldDescriptor` view, following CodecMapper's dual-view pattern
-  (`MappingDefinition<'Record, 'Ctor, 'Chain>` with erased `IMappingDefinition<'Record>` plus
-  `Specialize : IChainFactory<'Record> -> Codec<'Record>`). A generic-method visitor such as `IChainFactory` lets
-  `Schema<'model>` stay single-parameter while still letting codec interpreters compile constructor-specialized plans
-  from a schema value alone — no `obj array` constructor application and no caller re-supplying the constructor or
-  typed fields.
-- [x] Re-prove the compiled-record-plan slice from the `Schema<'model>` value itself; update
-  `SchemaCompiledRecordPlanProofTests` and `SchemaVerticalSliceProofTests` so the plan is derived from the built
-  schema, not from test-side pre-erasure ingredients.
-- [x] Update the vertical-slice proof and constructor/getter alignment tests to author through the builder, keeping
-  the reversed-declaration-order alignment scenario.
-- [x] Keep the builder Fable-compatible and AOT/trimming-safe; the chain must not rely on runtime reflection.
-- [x] Evaluate and document builder compile-error quality: what the compiler reports when a getter type mismatches its
-  constructor position and when `Schema.build` is called on a partially applied constructor. Record representative
-  error text in doc comments or dev-docs so DSL work can compare against it.
-  Captured with `dotnet fsi` 15.2.300.0 / F# 10.0 against the current `Axial.Schema` `net8.0` debug build:
-
-  Getter/constructor mismatch example:
-
-  ```fsharp
-  type Customer = { Name: string; Age: int }
-
-  Schema.record (fun name age -> { Name = name; Age = age })
-  |> Schema.field "name" (fun (customer: Customer) -> customer.Age) Value.text
-  |> Schema.field "age" (fun (customer: Customer) -> customer.Name) Value.``int``
-  |> Schema.build
-  ```
-
-  Representative diagnostic:
-
-  ```text
-  error FS0001: This expression was expected to have type
-      'string'
-  but here has type
-      'int'
-  ```
-
-  Partial-constructor build example:
-
-  ```fsharp
-  type Customer = { Name: string; Age: int }
-
-  Schema.record (fun name age -> { Name = name; Age = age })
-  |> Schema.field "name" (fun (customer: Customer) -> customer.Name) Value.text
-  |> Schema.build
-  ```
-
-  Representative diagnostic:
-
-  ```text
-  error FS0001: Type mismatch. Expecting a
-      'SchemaBuilder<Customer,(string -> int -> Customer),(int -> Customer),FieldsAppend<Customer,(string -> int -> Customer),string,(int -> Customer),FieldsEnd<Customer,(string -> int -> Customer)>>> -> 'a'
-  but given a
-      'SchemaBuilder<Customer,(string -> int -> Customer),(int -> Customer),FieldsAppend<Customer,(string -> int -> Customer),string,(int -> Customer),FieldsEnd<Customer,(string -> int -> Customer)>>> -> Schema<Customer>'
-  The type 'Customer' does not match the type 'int -> Customer'
-  ```
-- [x] Update `dev-docs/decisions/README.md`, `dev-docs/PLAN.md`, and source comments (for example the `Schema.map3`
-  remark that routes larger models through the CE/generator) once the builder replaces the `mapN` cap.
-- [x] Close the builder ergonomics gap before treating Phase 5b as complete in user-facing examples: add an explicit
-  model-type anchor, `Schema.recordFor<Customer, _> create`, so field getters can use
-  shorthand member access without annotating every lambda:
-  `Schema.recordFor<Customer, _> create |> Schema.field "name" _.Name Value.text |> Schema.build`. Add compile/API shape
-  tests proving the shorthand works, and update `dev-docs/PLAN.md`, `dev-docs/decisions/README.md`, source comments,
-  and any examples so they do not present `Schema.record ctor |> Schema.field "name" _.Name Value.text` as already
-  supported unless that exact form compiles.
-- [x] Decide and document the public authoring vocabulary for primitive field shorthands before RawInput or the CE DSL
-  grows around the wrong names. The target direction is that primitive helpers such as
-  `text "name" _.Name { ... }`, `int "age" _.Age { ... }`, `decimal`, `bool`, `date`, and `guid` are the everyday
-  schema-authoring surface, while generic `field "email" _.Email Email.schema { ... }` / `Schema.field "email" _.Email
-  Email.schema` is reserved for explicit or custom `ValueSchema<'value>` values.
-- [x] Update public schema API tests so the examples readers see use the expected end-user pipeline form. Keep
-  lower-level or transitional forms only in tests that are explicitly about those lower-level APIs, and add compile/API
-  shape coverage for the intended shorthand forms before marking the ergonomics work complete.
-
-## Phase 6: Add Refined Value Schemas
-
-- [x] Define `Value.refined` or equivalent for named refined/domain types.
-- [x] Require both construction and inspection functions for refined value schemas.
-- [x] Support refined schemas over primitive schemas, especially text.
-- [x] Support `format` metadata such as `email`.
-- [x] Ensure refined value schemas can run `Check` programs.
-- [x] Ensure model schemas can use `field "email" _.Email Email.schema { required }`.
-- [x] Add examples for `Email`, `ContactName`, positive/non-negative numbers, and bounded strings.
-- [x] Decide which refined schemas ship in `Axial.Refined` versus examples only: examples/user code only unless the
-  package-boundary invariant changes.
+- [ ] Promote, reject, or delete each sketch in `dev-docs/current-ideas/` before implementation work starts.
 
 ## Phase 7: Build RawInput And Input Parsing
 
-- [x] Keep all schema input parsing source in `Axial.Validation.Schema`, not `Axial.Validation` or `Axial.Schema`.
 - [ ] Define source-agnostic `RawInput`:
   `Missing`, `Scalar`, `Many`, and `Object`.
 - [ ] Implement path addressing for names and indexes.
@@ -447,3 +185,16 @@ readability and compile-error quality for constraint blocks.
 - [ ] Ensure generated docs and examples do not teach old predicate-only `Check`.
 - [ ] Ensure docs do not present schema as only validation.
 - [ ] Ensure docs do not present invalid domain objects as normal.
+
+## Acceptance Checks
+
+The current architecture is coherent when the following are true:
+
+- public docs describe services as explicit and the runtime as executor-only
+- user-facing workflow signatures show real service requirements in `'env`
+- app/domain dependency examples start with records and `Flow.read`
+- reusable service examples use `Service<'service>.get()`
+- host-edge examples use `Service<'service>.resolve()` or provider-backed layers
+- `Layer` is the documented provisioning mechanism
+- registry-backed runtime is gone from both code and docs
+- generated reference docs match source comments

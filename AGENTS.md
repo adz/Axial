@@ -11,7 +11,11 @@ Do not put agent guidance in `README.md` or under `docs/`.
 
 When writing or editing user-facing docs, follow the documentation guide in [`dev-docs/DOCS.md`](dev-docs/DOCS.md).
 
-Refer to [`dev-docs/PLAN.md`](dev-docs/PLAN.md) for architectural direction and [`dev-docs/TASKS.md`](dev-docs/TASKS.md) for the active backlog.
+Before broad repository search, read [`dev-docs/AGENT_INDEX.md`](dev-docs/AGENT_INDEX.md) for the compact maintainer
+map, generated-path rules, and task routing.
+
+Refer to [`dev-docs/PLAN.md`](dev-docs/PLAN.md) for architectural direction and
+[`dev-docs/TASKS.md`](dev-docs/TASKS.md) for the active queue.
 
 ## Architecture Invariants
 
@@ -25,7 +29,9 @@ Refer to [`dev-docs/PLAN.md`](dev-docs/PLAN.md) for architectural direction and 
 
 ## Dev Doc Organization
 
-- Keep active architecture in `dev-docs/PLAN.md`, active work in `dev-docs/TASKS.md`, and high-level durable decisions in `dev-docs/decisions/README.md`.
+- Keep active architecture in `dev-docs/PLAN.md`, active work in `dev-docs/TASKS.md`, and high-level durable
+  decisions in `dev-docs/decisions/README.md`.
+- Keep completed work out of `dev-docs/TASKS.md`; keep the remaining active queue there for loop scripts.
 - Keep speculative or pre-idea work in `dev-docs/current-ideas/`.
 - Do not retain detailed historical specs after their useful decisions have been folded into current instructions. Delete stale specs instead of archiving large files that no longer match the codebase.
 
