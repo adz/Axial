@@ -108,6 +108,29 @@ module SchemaRefinedValueTests =
         | PendingDefinition -> failwith "Expected public schema API to create a model definition."
 
     [<Fact>]
+    let ``model schemas can attach required to a refined field's value schema, matching field "email" _.Email Email.schema { required }`` () =
+        let requiredEmail = Email.schema |> Value.withConstraint SchemaConstraint.required
+
+        let schema =
+            Schema.recordFor<Contact, _> (fun email name -> { Email = email; Name = name })
+            |> Schema.field "email" _.Email requiredEmail
+            |> Schema.text "name" _.Name
+            |> Schema.build
+
+        match schema.Definition with
+        | ModelDefinition model ->
+            let email = model.Fields |> List.find (fun field -> ExternalFieldName.value field.ExternalName = "email")
+            test <@ email.ValueSchema.Constraints |> List.map SchemaConstraint.code = [ "required" ] @>
+
+            match email.ValueSchema.Shape with
+            | RefinedValueDefinition _ -> ()
+            | PrimitiveValueDefinition _ -> failwith "Expected the email field to keep its refined value schema shape."
+
+            let contact = { Email = Email.create "ada@example.com"; Name = "Ada" }
+            test <@ ConstructorApplication.apply model.Constructor [| box contact.Email; box contact.Name |] = contact @>
+        | PendingDefinition -> failwith "Expected public schema API to create a model definition."
+
+    [<Fact>]
     let ``refined value schemas can layer over every primitive value schema`` () =
         let kinds =
             [ Value.refined Email.create Email.value Value.text |> Value.underlyingPrimitiveKind
