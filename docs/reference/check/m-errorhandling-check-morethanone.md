@@ -1,10 +1,10 @@
 ---
 title: "ErrorHandling.Check.moreThanOne"
 linkTitle: "moreThanOne"
-weight: 2907
+weight: 2228
 ---
 
-Requires an already parsed sequence-shaped value to contain more than one item.
+Runs a sequence-shaped check requiring more than one item.
 
 ## Signature
 

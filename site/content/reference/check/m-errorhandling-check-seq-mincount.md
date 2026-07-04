@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.Seq.minCount"
 linkTitle: "minCount"
-weight: 2401
+weight: 2503
 type: docs
 ---
 

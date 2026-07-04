@@ -1,10 +1,10 @@
 ---
 title: "ErrorHandling.Check.contains"
 linkTitle: "contains"
-weight: 2900
+weight: 2224
 ---
 
-Requires an already parsed sequence-shaped value to contain the supplied value.
+Returns a sequence-shaped check requiring the supplied value to be present.
 
 ## Signature
 

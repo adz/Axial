@@ -1,11 +1,11 @@
 ---
 title: "ErrorHandling.Check.equalTo"
 linkTitle: "equalTo"
-weight: 3000
+weight: 2229
 type: docs
 ---
 
-Requires the actual value to equal the supplied expected value.
+Returns a value check requiring equality with the supplied expected value.
 
 ## Signature
 

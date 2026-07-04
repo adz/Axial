@@ -1,10 +1,10 @@
 ---
 title: "ErrorHandling.Check.positive"
 linkTitle: "positive"
-weight: 3007
+weight: 2215
 ---
 
-Requires a value to be greater than zero.
+Runs an ordered-value check requiring a value greater than zero.
 
 ## Signature
 

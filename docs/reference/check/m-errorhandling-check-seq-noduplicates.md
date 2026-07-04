@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.Seq.noDuplicates"
 linkTitle: "noDuplicates"
-weight: 2406
+weight: 2506
 ---
 
 Requires an already parsed sequence-shaped value to contain no duplicate values.

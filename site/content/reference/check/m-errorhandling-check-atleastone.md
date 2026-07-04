@@ -1,11 +1,11 @@
 ---
 title: "ErrorHandling.Check.atLeastOne"
 linkTitle: "atLeastOne"
-weight: 2906
+weight: 2227
 type: docs
 ---
 
-Requires an already parsed sequence-shaped value to contain at least one item.
+Runs a sequence-shaped check requiring at least one item.
 
 ## Signature
 

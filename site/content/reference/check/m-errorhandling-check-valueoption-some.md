@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.ValueOption.some"
 linkTitle: "some"
-weight: 2502
+weight: 2602
 type: docs
 ---
 

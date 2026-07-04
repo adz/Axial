@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.Seq.maxCount"
 linkTitle: "maxCount"
-weight: 2404
+weight: 2504
 ---
 
 Requires an already parsed sequence-shaped value to contain at most the supplied count. Null fails with an unknown actual count.

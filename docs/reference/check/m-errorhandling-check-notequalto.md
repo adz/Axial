@@ -1,10 +1,10 @@
 ---
 title: "ErrorHandling.Check.notEqualTo"
 linkTitle: "notEqualTo"
-weight: 3001
+weight: 2230
 ---
 
-Requires the actual value not to equal the supplied unexpected value.
+Returns a value check requiring inequality with the supplied unexpected value.
 
 ## Signature
 

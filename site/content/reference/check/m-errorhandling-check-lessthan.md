@@ -1,11 +1,11 @@
 ---
 title: "ErrorHandling.Check.lessThan"
 linkTitle: "lessThan"
-weight: 3003
+weight: 2212
 type: docs
 ---
 
-Requires a value to be less than the supplied exclusive upper bound.
+Returns an ordered-value check requiring a value less than the supplied exclusive upper bound.
 
 ## Signature
 

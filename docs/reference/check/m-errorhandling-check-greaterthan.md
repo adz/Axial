@@ -1,10 +1,10 @@
 ---
 title: "ErrorHandling.Check.greaterThan"
 linkTitle: "greaterThan"
-weight: 3002
+weight: 2211
 ---
 
-Requires a value to be greater than the supplied exclusive lower bound.
+Returns an ordered-value check requiring a value greater than the supplied exclusive lower bound.
 
 ## Signature
 

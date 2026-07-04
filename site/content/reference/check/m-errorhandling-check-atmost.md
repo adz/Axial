@@ -1,11 +1,11 @@
 ---
 title: "ErrorHandling.Check.atMost"
 linkTitle: "atMost"
-weight: 3005
+weight: 2214
 type: docs
 ---
 
-Requires a value to be less than or equal to the supplied upper bound.
+Returns an ordered-value check requiring a value less than or equal to the supplied upper bound.
 
 ## Signature
 

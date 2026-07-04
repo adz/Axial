@@ -1,11 +1,11 @@
 ---
 title: "ErrorHandling.Check.nonNegative"
 linkTitle: "nonNegative"
-weight: 3008
+weight: 2216
 type: docs
 ---
 
-Requires a value to be greater than or equal to zero.
+Runs an ordered-value check requiring a value greater than or equal to zero.
 
 ## Signature
 

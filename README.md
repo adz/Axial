@@ -11,7 +11,7 @@
 
 Axial provides **structured composition over normal F#/.NET code**. It is an application architecture model for F# on .NET.
 
-Starting in `Axial.ErrorHandling` write small predicate checks with `Check`, keep fail-fast logic in standard `Result`,
+Starting in `Axial.ErrorHandling` write small structured checks with `Check`, keep fail-fast logic in standard `Result`,
 or accumulate a graph of errors in `Validation` using `validate {}`. Accumulated errors are described by `Diagnostics`.
 
 However, the stronger goal of Axial is to preference 'parse' over 'error handling'. That is supported by `Refine`

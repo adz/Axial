@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.Number.nonPositive"
 linkTitle: "nonPositive"
-weight: 2308
+weight: 2408
 ---
 
 Requires a value to be less than or equal to zero.

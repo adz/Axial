@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.Seq.count"
 linkTitle: "count"
-weight: 2402
+weight: 2502
 ---
 
 Requires an already parsed sequence-shaped value to contain exactly the supplied count. Null fails with an unknown actual count.

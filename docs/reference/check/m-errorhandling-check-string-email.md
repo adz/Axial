@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.String.email"
 linkTitle: "email"
-weight: 2207
+weight: 2307
 ---
 
 Requires an already parsed string value to match Axial's pragmatic email format.

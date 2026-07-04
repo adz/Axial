@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.String.matches"
 linkTitle: "matches"
-weight: 2208
+weight: 2308
 ---
 
 Requires an already parsed string value to match the supplied regular expression pattern.

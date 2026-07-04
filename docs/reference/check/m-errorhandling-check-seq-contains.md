@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.Seq.contains"
 linkTitle: "contains"
-weight: 2407
+weight: 2507
 ---
 
 Requires an already parsed sequence-shaped value to contain the supplied value.

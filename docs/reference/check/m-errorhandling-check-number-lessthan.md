@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.Number.lessThan"
 linkTitle: "lessThan"
-weight: 2302
+weight: 2402
 ---
 
 Requires a value to be less than the supplied exclusive upper bound.

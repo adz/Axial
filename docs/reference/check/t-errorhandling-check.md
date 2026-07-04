@@ -5,7 +5,7 @@ weight: 1000
 ---
 
 
- Typed value-check programs and common boolean predicates for local structural facts.
+ Typed value-check programs for local structural facts.
 
 
 ## Signature
@@ -17,6 +17,8 @@ weight: 1000
 ## Remarks
 
 
- The nested modules such as <code>Check.String</code>, <code>Check.Number</code>, and <code>Check.Seq</code> return
- <a href="/reference/Axial/axial-errorhandling-check-1.html">Check</a> programs. Common top-level helpers such as
- <code>lengthBetween</code>, <code>between</code>, and <code>countBetween</code> are structured checks for single-target values.
+ Top-level <code>Check.*</code> helpers return structured results, not booleans. Direct modules such as
+ <code>Check.String</code>, <code>Check.Number</code>, <code>Check.Seq</code>, <code>Check.Option</code>, <code>Check.ValueOption</code>,
+ <code>Check.Nullable</code>, and <code>Check.Result</code> contain the type-specific implementations. Top-level helpers such
+ as <code>lengthBetween</code>, <code>between</code>, and <code>countBetween</code> are aliases for common single-target checks, while
+ <code>present</code>, <code>empty</code>, and <code>notEmpty</code> are the small type-directed facade.

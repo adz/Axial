@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.String.exactLength"
 linkTitle: "exactLength"
-weight: 2206
+weight: 2306
 ---
 
 Requires an already parsed string value to have exactly the supplied length. Null fails with an unknown actual length.

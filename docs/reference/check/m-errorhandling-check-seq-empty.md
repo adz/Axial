@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.Seq.empty"
 linkTitle: "empty"
-weight: 2400
+weight: 2500
 ---
 
 Requires an already parsed sequence-shaped value to contain no items. Null fails with an unknown actual count.

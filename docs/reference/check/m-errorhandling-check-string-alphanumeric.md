@@ -1,10 +1,10 @@
 ---
 title: "ErrorHandling.Check.String.alphaNumeric"
 linkTitle: "alphaNumeric"
-weight: 2210
+weight: 2310
 ---
 
-Requires an already parsed string value to contain only letter or digit characters.
+Requires an already parsed string value to contain one or more letter or digit characters.
 
 ## Signature
 

@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.String.minLength"
 linkTitle: "minLength"
-weight: 2203
+weight: 2303
 ---
 
 Requires an already parsed string value to have at least the supplied length. Null fails with an unknown actual length.

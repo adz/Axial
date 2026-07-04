@@ -129,7 +129,7 @@ Schema constraints should lower onto the tightened `Check` shape, not the verbos
 - [x] Add composition tests using tightened top-level checks, including function-list use such as
   `Check.all [ Check.present; Check.lengthBetween 2 40 ]`.
 - [x] Update source comments for the tightened `Check` model.
-- [ ] Regenerate reference docs only after source comments and public APIs are updated.
+- [x] Regenerate reference docs only after source comments and public APIs are updated.
 
 ## Phase 5: Continue Schema Core Constraints And Lowering
 

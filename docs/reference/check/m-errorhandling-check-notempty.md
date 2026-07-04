@@ -1,10 +1,10 @@
 ---
 title: "ErrorHandling.Check.notEmpty"
 linkTitle: "notEmpty"
-weight: 2704
+weight: 2202
 ---
 
-Requires an already parsed optional, nullable, or text value to be non-empty.
+ Runs the type-directed non-empty check for an already parsed optional, nullable, text, or supported sequence-shaped value.
 
 ## Signature
 

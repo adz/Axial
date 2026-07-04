@@ -16,7 +16,7 @@ If you are an AI assistant, prioritize the patterns in the **Dependency Guidance
 Use these patterns unless local code shows a different convention.
 
 ### 1. Handling Failures
-Use `Check` for executable value constraints and local predicates, and `Result` for fail-fast values. Executable `Check.*` helpers return `Result<unit, CheckFailure list>`; `Result.guard`, named `Result.*` guards, and extraction helpers preserve values or change the success shape.
+Use `Check` for executable value constraints, `Predicate` for local boolean tests, and `Result` for fail-fast values. `Check.*` helpers return `Result<unit, CheckFailure list>`; `Result.guard`, named `Result.*` guards, and extraction helpers preserve values or change the success shape.
 
 | Source Type | Idiomatic Pattern |
 | :--- | :--- |
@@ -106,7 +106,7 @@ Translate common patterns from other libraries into idiomatic Axial.
 
 Later types can bind earlier types directly within their computation expressions.
 
-1. **Check**: Executable value constraints (`'T -> Result<unit, CheckFailure list>`) plus local predicates.
+1. **Check**: Executable value constraints (`'T -> Result<unit, CheckFailure list>`). Use `Predicate` for raw boolean tests.
 2. **Result**: Fail-fast typed errors (`Result<'T, 'E>`).
 3. **Refined**: Parsing and structural refined values.
 4. **Validation**: Accumulating diagnostics.

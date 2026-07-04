@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.Seq.countBetween"
 linkTitle: "countBetween"
-weight: 2405
+weight: 2505
 ---
 
 Requires an already parsed sequence-shaped value count to lie inside the supplied inclusive bounds. Null fails with an unknown actual count.

@@ -1,11 +1,11 @@
 ---
 title: "ErrorHandling.Check.negative"
 linkTitle: "negative"
-weight: 3009
+weight: 2217
 type: docs
 ---
 
-Requires a value to be less than zero.
+Runs an ordered-value check requiring a value less than zero.
 
 ## Signature
 

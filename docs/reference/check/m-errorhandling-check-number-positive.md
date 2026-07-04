@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.Number.positive"
 linkTitle: "positive"
-weight: 2305
+weight: 2405
 ---
 
 Requires a value to be greater than zero.

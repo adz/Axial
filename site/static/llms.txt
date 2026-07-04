@@ -52,7 +52,7 @@ Workflows result in one of three `Exit` outcomes:
 - Keep `IServiceProvider` interop and host-specific adapters at the outer boundary.
 
 ## Core Patterns (Idiomatic Way)
-Use `Check` for executable value constraints and local predicates, and `Result` for fail-fast boundary values:
+Use `Check` for executable value constraints, `Predicate` for local boolean tests, and `Result` for fail-fast boundary values:
 
 - `name |> Result.notBlank |> Result.mapError (fun _ -> InvalidName)`
 - `condition |> Result.checkOr Disabled`

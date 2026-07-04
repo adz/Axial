@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.ValueOption.some"
 linkTitle: "some"
-weight: 2502
+weight: 2602
 ---
 
 Requires a value option to contain a value.

@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.Option.none"
 linkTitle: "none"
-weight: 2501
+weight: 2601
 type: docs
 ---
 

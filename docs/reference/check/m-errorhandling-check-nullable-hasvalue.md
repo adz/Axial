@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.Nullable.hasValue"
 linkTitle: "hasValue"
-weight: 2504
+weight: 2604
 ---
 
 Requires a nullable value to contain a value.

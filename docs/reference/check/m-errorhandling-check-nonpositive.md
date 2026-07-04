@@ -1,10 +1,10 @@
 ---
 title: "ErrorHandling.Check.nonPositive"
 linkTitle: "nonPositive"
-weight: 3010
+weight: 2218
 ---
 
-Requires a value to be less than or equal to zero.
+Runs an ordered-value check requiring a value less than or equal to zero.
 
 ## Signature
 

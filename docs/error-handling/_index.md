@@ -19,12 +19,12 @@ Use this section when the code is still pure and one failure is enough to stop t
 Check -> Result
 ```
 
-`Check` gives reusable predicates. `Result` preserves inputs, extracts inner values, adds typed failures, and composes fail-fast steps. The output is still ordinary `Result`, so the rest of your domain code stays plain F#.
+`Check` gives reusable structured value checks. `Result` preserves inputs, extracts inner values, adds typed failures, and composes fail-fast steps. The output is still ordinary `Result`, so the rest of your domain code stays plain F#.
 
 ## Start Here
 
 - [Tutorials](./tutorials/): build typed `Result` values from pure checks.
-- [Checks](./checks/): predicate helpers and how to move into typed `Result` values.
+- [Checks](./checks/): structured checks and how to move into typed `Result` values.
 - [Result Builder](./result-builder/): fail-fast composition over standard `Result`.
 
 ## Move On When

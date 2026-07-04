@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.Seq.single"
 linkTitle: "single"
-weight: 2408
+weight: 2508
 ---
 
 Requires an already parsed sequence-shaped value to contain exactly one item.

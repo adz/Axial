@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.Seq.atMostOne"
 linkTitle: "atMostOne"
-weight: 2409
+weight: 2509
 ---
 
 Requires an already parsed sequence-shaped value to contain zero or one item.

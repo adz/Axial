@@ -1,10 +1,10 @@
 ---
 title: "ErrorHandling.Check.String.numeric"
 linkTitle: "numeric"
-weight: 2209
+weight: 2309
 ---
 
-Requires an already parsed string value to contain only numeric characters.
+Requires an already parsed string value to contain one or more numeric characters.
 
 ## Signature
 

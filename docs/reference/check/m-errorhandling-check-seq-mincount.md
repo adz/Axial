@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.Seq.minCount"
 linkTitle: "minCount"
-weight: 2403
+weight: 2503
 ---
 
 Requires an already parsed sequence-shaped value to contain at least the supplied count. Null fails with an unknown actual count.

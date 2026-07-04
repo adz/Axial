@@ -1,11 +1,11 @@
 ---
 title: "ErrorHandling.Check.between"
 linkTitle: "between"
-weight: 3006
+weight: 2210
 type: docs
 ---
 
-Requires a value to lie inside the supplied inclusive bounds.
+Returns an ordered-value check requiring a value inside the supplied inclusive bounds.
 
 ## Signature
 

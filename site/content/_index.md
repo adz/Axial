@@ -16,7 +16,7 @@ Structured composition over normal F#/.NET code
 </h1>
 
 <div class="lede">
-Axial is a model for Result-based programs. Write predicate checks with <code>Check</code>, keep fail-fast logic in <code>Result</code>, compile untrusted values with <a href="{{< relref "/reference/refined/" >}}"><code>Refined</code></a>, accumulate sibling failures with <a href="{{< relref "/reference/validation/" >}}"><code>Validation</code></a>, then lift boundary policy into <a href="{{< relref "/reference/flow/" >}}"><code>Flow</code></a> when the boundary needs environment access, async work, task interop, cancellation, or runtime policy.
+Axial is a model for Result-based programs. Write structured checks with <code>Check</code>, keep fail-fast logic in <code>Result</code>, compile untrusted values with <a href="{{< relref "/reference/refined/" >}}"><code>Refined</code></a>, accumulate sibling failures with <a href="{{< relref "/reference/validation/" >}}"><code>Validation</code></a>, then lift boundary policy into <a href="{{< relref "/reference/flow/" >}}"><code>Flow</code></a> when the boundary needs environment access, async work, task interop, cancellation, or runtime policy.
 </div>
 
 <div class="docs-home-meta">
