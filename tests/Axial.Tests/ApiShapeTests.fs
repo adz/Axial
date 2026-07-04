@@ -484,6 +484,40 @@ module ApiShapeTests =
         raises<ArgumentNullException> <@ Value.primitiveKind Unchecked.defaultof<ValueSchema<string>> |> ignore @>
 
     [<Fact>]
+    let ``refined value schemas require both construction and inspection functions`` () =
+        let valueModule = moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.Value"
+
+        let refinedOverloads =
+            publicStaticMethods valueModule
+            |> Array.filter (fun methodInfo -> methodInfo.Name.Equals("refined", StringComparison.OrdinalIgnoreCase))
+
+        test <@ refinedOverloads.Length = 1 @>
+
+        let refined = refinedOverloads[0]
+        let parameters = refined.GetParameters()
+        let parameterNames = parameters |> Array.map _.Name
+
+        test <@ parameterNames = [| "construct"; "inspect"; "raw" |] @>
+
+        let constructArguments = parameters[0].ParameterType.GetGenericArguments()
+        let inspectArguments = parameters[1].ParameterType.GetGenericArguments()
+        let constructIsFunction = parameters[0].ParameterType.GetGenericTypeDefinition() = typedefof<FSharpFunc<_, _>>
+        let inspectIsFunction = parameters[1].ParameterType.GetGenericTypeDefinition() = typedefof<FSharpFunc<_, _>>
+        let rawIsValueSchema = parameters[2].ParameterType.GetGenericTypeDefinition() = typedefof<ValueSchema<_>>
+        let returnsValueSchema = refined.ReturnType.GetGenericTypeDefinition() = typedefof<ValueSchema<_>>
+        let inspectReversesConstruct = inspectArguments = Array.rev constructArguments
+        let rawMatchesConstructInput = parameters[2].ParameterType.GetGenericArguments()[0] = constructArguments[0]
+        let returnMatchesConstructOutput = refined.ReturnType.GetGenericArguments()[0] = constructArguments[1]
+
+        test <@ constructIsFunction @>
+        test <@ inspectIsFunction @>
+        test <@ rawIsValueSchema @>
+        test <@ returnsValueSchema @>
+        test <@ inspectReversesConstruct @>
+        test <@ rawMatchesConstructInput @>
+        test <@ returnMatchesConstructOutput @>
+
+    [<Fact>]
     let ``schema constraints are inspectable metadata independent of executable checks`` () =
         let required = SchemaConstraint.required
         let maxLength = SchemaConstraint.maxLength 20

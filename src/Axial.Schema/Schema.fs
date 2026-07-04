@@ -483,11 +483,27 @@ type PrimitiveValueKind =
 /// Holds the type-erased construction and inspection functions for a refined/domain value schema.
 /// </summary>
 /// <remarks>
+/// <para>
+/// Both functions are mandatory. Construction interpreters such as input parsing and codec decoding need
+/// <see cref="P:Axial.Schema.RefinedValueOps.Construct" />, while inspection interpreters such as validation of
+/// existing models, codec encoding, JSON Schema, UI, and documentation generation need
+/// <see cref="P:Axial.Schema.RefinedValueOps.Inspect" />. Enforcing the pairing here means no construction path can
+/// create a construct-only or inspect-only refined value schema.
+/// </para>
+/// <para>
 /// This is a plain reference type rather than a record so it keeps reference equality: the boxed functions it wraps
 /// cannot support structural equality, and reference equality is enough for <see cref="T:Axial.Schema.ValueSchemaShape" />
 /// to remain an ordinary comparable union.
+/// </para>
 /// </remarks>
 type internal RefinedValueOps(construct: obj -> obj, inspect: obj -> obj) =
+    do
+        if isNull (box construct) then
+            nullArg (nameof construct)
+
+        if isNull (box inspect) then
+            nullArg (nameof inspect)
+
     member _.Construct = construct
     member _.Inspect = inspect
 
@@ -635,6 +651,12 @@ module Value =
     /// construction function and an inspection function that recovers the raw representation.
     /// </summary>
     /// <remarks>
+    /// <para>
+    /// Both functions are required, and this is deliberately the only way to author a refined value schema: a
+    /// construct-only schema would hide refined values from inspection interpreters that read existing trusted models,
+    /// and an inspect-only schema would leave construction interpreters unable to produce the refined value from
+    /// parsed raw input.
+    /// </para>
     /// <para>
     /// <paramref name="construct" /> is expected to run only after the raw value has already satisfied whatever
     /// checks or constraints an interpreter attaches to the raw value schema; it is not itself expected to fail.

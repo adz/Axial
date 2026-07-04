@@ -172,7 +172,7 @@ Schema constraints should lower onto the tightened `Check` shape, not the verbos
 ## Phase 6: Add Refined Value Schemas
 
 - [x] Define `Value.refined` or equivalent for named refined/domain types.
-- [ ] Require both construction and inspection functions for refined value schemas.
+- [x] Require both construction and inspection functions for refined value schemas.
 - [ ] Support refined schemas over primitive schemas, especially text.
 - [ ] Support `format` metadata such as `email`.
 - [ ] Ensure refined value schemas can run `Check` programs.

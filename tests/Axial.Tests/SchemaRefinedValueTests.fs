@@ -77,3 +77,16 @@ module SchemaRefinedValueTests =
         raises<ArgumentNullException> <@ Value.refined Unchecked.defaultof<string -> Email> Email.value Value.text |> ignore @>
         raises<ArgumentNullException> <@ Value.refined Email.create Unchecked.defaultof<Email -> string> Value.text |> ignore @>
         raises<ArgumentNullException> <@ Value.refined Email.create Email.value Unchecked.defaultof<ValueSchema<string>> |> ignore @>
+
+    [<Fact>]
+    let ``every refined value schema carries both construction and inspection operations`` () =
+        match Email.schema.Definition.Shape with
+        | RefinedValueDefinition(_, ops) ->
+            test <@ not (isNull (box ops.Construct)) @>
+            test <@ not (isNull (box ops.Inspect)) @>
+        | PrimitiveValueDefinition _ -> failwith "Expected a refined value schema shape."
+
+    [<Fact>]
+    let ``refined value operations reject a missing construction or inspection function`` () =
+        raises<ArgumentNullException> <@ RefinedValueOps(Unchecked.defaultof<obj -> obj>, id) |> ignore @>
+        raises<ArgumentNullException> <@ RefinedValueOps(id, Unchecked.defaultof<obj -> obj>) |> ignore @>
