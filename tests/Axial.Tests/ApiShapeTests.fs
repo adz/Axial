@@ -461,8 +461,10 @@ module ApiShapeTests =
               "refined"
               "isRefined"
               "underlyingPrimitiveKind"
+              "inspectUnderlying"
               "rawConstraints"
               "constraints"
+              "allConstraints"
               "withConstraint"
               "withConstraints" ]
         schemaConstraintModule

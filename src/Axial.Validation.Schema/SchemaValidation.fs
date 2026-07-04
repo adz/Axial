@@ -158,3 +158,74 @@ module SchemaConstraintCheck =
         |> Seq.choose trySequence<'value>
         |> Seq.toList
         |> Check.all
+
+/// <summary>Functions for running executable value checks against refined and primitive value schemas.</summary>
+/// <remarks>
+/// <para>
+/// Refined value schemas describe named domain values, such as an <c>Email</c> refined over raw text, while their
+/// executable constraints are expressed against the underlying primitive representation. This interpreter runs
+/// <see cref="T:Axial.ErrorHandling.Check`1" /> programs against a schema's values by projecting each trusted value
+/// through the schema's refinement layers with <see cref="M:Axial.Schema.Value.inspectUnderlying``2" /> and running
+/// the primitive-level check on the result. Primitive value schemas work the same way with an identity projection.
+/// </para>
+/// <para>
+/// The metadata lowerers gather constraint metadata from every refinement layer with
+/// <see cref="M:Axial.Schema.Value.allConstraints``1" /> and lower it through
+/// <see cref="T:Axial.Validation.Schema.SchemaConstraintCheck" />, so raw-layer and refined-layer constraints run as
+/// one check program.
+/// </para>
+/// </remarks>
+[<RequireQualifiedAccess>]
+module ValueSchemaCheck =
+    /// <summary>
+    /// Adapts a check over a schema's underlying primitive representation into a check over the schema's values.
+    /// </summary>
+    /// <remarks>
+    /// This is the general adapter for arbitrary <see cref="T:Axial.ErrorHandling.Check`1" /> programs, including
+    /// programs composed with <c>Check.all</c>, <c>Check.any</c>, and <c>Check.not</c>. The projection to the
+    /// underlying primitive representation is created eagerly, so a projection type that does not match the schema's
+    /// underlying primitive kind fails here rather than on each checked value.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException">
+    /// Thrown when <paramref name="check" /> or <paramref name="schema" /> is null.
+    /// </exception>
+    /// <exception cref="T:System.ArgumentException">
+    /// Thrown when the check's value type does not match the schema's underlying primitive kind.
+    /// </exception>
+    let fromUnderlying (check: Check<'primitive>) (schema: ValueSchema<'value>) : Check<'value> =
+        if isNull (box check) then
+            nullArg (nameof check)
+
+        if isNull (box schema) then
+            nullArg (nameof schema)
+
+        let inspect = Value.inspectUnderlying<'value, 'primitive> schema
+        fun value -> check (inspect value)
+
+    /// <summary>
+    /// Lowers the text-meaning constraint metadata carried by every layer of a value schema into one executable check
+    /// over the schema's values.
+    /// </summary>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
+    /// <exception cref="T:System.ArgumentException">
+    /// Thrown when the schema's underlying primitive kind is not text.
+    /// </exception>
+    let text (schema: ValueSchema<'value>) : Check<'value> =
+        if isNull (box schema) then
+            nullArg (nameof schema)
+
+        fromUnderlying (SchemaConstraintCheck.text (Value.allConstraints schema)) schema
+
+    /// <summary>
+    /// Lowers the range-meaning constraint metadata carried by every layer of a value schema into one executable check
+    /// over the schema's values.
+    /// </summary>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
+    /// <exception cref="T:System.ArgumentException">
+    /// Thrown when the ordered primitive type does not match the schema's underlying primitive kind.
+    /// </exception>
+    let ordered<'primitive, 'value when 'primitive: comparison> (schema: ValueSchema<'value>) : Check<'value> =
+        if isNull (box schema) then
+            nullArg (nameof schema)
+
+        fromUnderlying (SchemaConstraintCheck.ordered<'primitive> (Value.allConstraints schema)) schema

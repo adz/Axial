@@ -969,6 +969,61 @@ module Value =
         | PrimitiveValueDefinition _ ->
             invalidArg (nameof schema) "Expected a refined value schema, but the schema is a primitive value schema."
 
+    let private underlyingClrType kind =
+        match kind with
+        | PrimitiveValueKind.Text -> typeof<string>
+        | PrimitiveValueKind.Int -> typeof<int>
+        | PrimitiveValueKind.Decimal -> typeof<decimal>
+        | PrimitiveValueKind.Bool -> typeof<bool>
+#if NET6_0_OR_GREATER
+        | PrimitiveValueKind.Date -> typeof<DateOnly>
+#else
+        | PrimitiveValueKind.Date ->
+            invalidOp "Calendar date value schemas are not available on this target framework."
+#endif
+        | PrimitiveValueKind.DateTime -> typeof<DateTimeOffset>
+        | PrimitiveValueKind.Guid -> typeof<Guid>
+
+    /// <summary>
+    /// Returns a function that projects a trusted value through all refinement layers to its underlying primitive
+    /// representation.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Like <see cref="M:Axial.Schema.Value.underlyingPrimitiveKind``1" />, this accessor is total over value schemas:
+    /// for a primitive value schema the projection returns the value itself, and for a refined value schema it applies
+    /// the inspection function of every refinement layer, including refined values layered over other refined values,
+    /// until it reaches the primitive foundation. Interpreters use it to observe the raw representation of an already
+    /// trusted refined value — running executable value checks, encoding through codecs, producing diagnostics, and
+    /// redisplaying values — without reflection and without access to the refined type's internals.
+    /// </para>
+    /// <para>
+    /// The requested projection type is validated eagerly against the schema's underlying primitive kind, so a
+    /// mismatched projection fails when the projection is created rather than on each projected value.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
+    /// <exception cref="T:System.ArgumentException">
+    /// Thrown when the requested projection type does not match the schema's underlying primitive kind.
+    /// </exception>
+    let inspectUnderlying<'value, 'primitive> (schema: ValueSchema<'value>) : 'value -> 'primitive =
+        if isNull (box schema) then
+            nullArg (nameof schema)
+
+        let expected = underlyingClrType (underlyingPrimitiveKind schema)
+
+        if typeof<'primitive> <> expected then
+            invalidArg
+                (nameof schema)
+                $"Expected the underlying primitive type {expected.Name}, but the requested projection type is {typeof<'primitive>.Name}."
+
+        let rec project (definition: ValueSchemaDefinition) (value: obj) =
+            match definition.Shape with
+            | PrimitiveValueDefinition _ -> value
+            | RefinedValueDefinition(raw, ops) -> project raw (ops.Inspect value)
+
+        fun value -> project schema.Definition (box value) |> unbox<'primitive>
+
     /// <summary>Returns a value schema carrying the supplied portable format metadata.</summary>
     /// <remarks>
     /// <para>
@@ -1024,6 +1079,34 @@ module Value =
             nullArg (nameof schema)
 
         schema.Definition.Constraints
+
+    /// <summary>Returns the portable constraint metadata carried by every layer of a value schema.</summary>
+    /// <remarks>
+    /// <para>
+    /// Constraints are returned foundation-first: the primitive foundation's constraints come first, then each
+    /// refinement layer outward, ending with the constraints attached to the schema itself. This matches authoring
+    /// order, where raw constraints are declared before the schema is refined. For a primitive value schema the
+    /// result equals <see cref="M:Axial.Schema.Value.constraints``1" />.
+    /// </para>
+    /// <para>
+    /// Interpreters that lower a value schema's complete constraint metadata to one executable program — such as a
+    /// check over the underlying primitive representation obtained with
+    /// <see cref="M:Axial.Schema.Value.inspectUnderlying``2" /> — use this accessor so constraints declared on raw
+    /// layers and on the refined schema are honored together. Per-layer inspection remains available through
+    /// <see cref="M:Axial.Schema.Value.constraints``1" /> and <see cref="M:Axial.Schema.Value.rawConstraints``1" />.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
+    let allConstraints (schema: ValueSchema<'value>) =
+        if isNull (box schema) then
+            nullArg (nameof schema)
+
+        let rec gather (definition: ValueSchemaDefinition) =
+            match definition.Shape with
+            | PrimitiveValueDefinition _ -> definition.Constraints
+            | RefinedValueDefinition(raw, _) -> gather raw @ definition.Constraints
+
+        gather schema.Definition
 
     /// <summary>Returns a value schema with additional portable constraint metadata appended in declaration order.</summary>
     let withConstraint (constraint': SchemaConstraint) (schema: ValueSchema<'value>) =
