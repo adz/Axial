@@ -241,3 +241,34 @@ type RawInput =
     | Many of items: RawInput list
     /// <summary>A named collection of raw input fields.</summary>
     | Object of fields: Map<string, RawInput>
+
+/// <summary>Helpers for inspecting source-agnostic raw input.</summary>
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+[<RequireQualifiedAccess>]
+module RawInput =
+    /// <summary>Attempts to find a raw input value at a parsed input path.</summary>
+    let tryFind (path: InputPath) (input: RawInput) : RawInput option =
+        let path = InputPath.ofSegments path
+
+        let rec loop current remaining =
+            match remaining, current with
+            | [], _ -> Some current
+            | InputPathSegment.Name name :: rest, RawInput.Object fields ->
+                fields |> Map.tryFind name |> Option.bind (fun field -> loop field rest)
+            | InputPathSegment.Index index :: rest, RawInput.Many items ->
+                items |> List.tryItem index |> Option.bind (fun item -> loop item rest)
+            | _ -> None
+
+        loop input path
+
+    /// <summary>Looks up a raw input value at a parsed input path, returning <c>Missing</c> when the path is absent.</summary>
+    let lookup (path: InputPath) (input: RawInput) : RawInput =
+        tryFind path input |> Option.defaultValue RawInput.Missing
+
+    /// <summary>Attempts to parse an input path and find the addressed raw input value.</summary>
+    let tryFindPath (path: string) (input: RawInput) : RawInput option =
+        InputPath.tryParse path |> Option.bind (fun parsedPath -> tryFind parsedPath input)
+
+    /// <summary>Parses an input path and looks up the addressed raw input value.</summary>
+    let lookupPath (path: string) (input: RawInput) : RawInput =
+        InputPath.parse path |> fun parsedPath -> lookup parsedPath input

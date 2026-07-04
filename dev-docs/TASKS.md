@@ -12,7 +12,7 @@ Work this queue from top to bottom.
 - [x] Define source-agnostic `RawInput`:
   `Missing`, `Scalar`, `Many`, and `Object`.
 - [x] Implement path addressing for names and indexes.
-- [ ] Implement raw value lookup by paths like `contacts[1].value`.
+- [x] Implement raw value lookup by paths like `contacts[1].value`.
 - [ ] Implement raw redisplay helpers.
 - [ ] Implement adapters:
   map, name-value collection, CLI args, JSON-like value, and configuration.

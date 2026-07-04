@@ -101,3 +101,58 @@ module RawInputTests =
         test <@ InputPath.tryParse "contacts[1" = None @>
         raises<ArgumentException> <@ InputPath.name "" |> ignore @>
         raises<ArgumentException> <@ InputPath.index -1 |> ignore @>
+
+    [<Fact>]
+    let ``raw input finds nested values by parsed path`` () =
+        let input =
+            RawInput.Object(
+                Map.ofList
+                    [ "contacts",
+                      RawInput.Many
+                          [ RawInput.Object(Map.ofList [ "value", RawInput.Scalar "ada@example.com" ])
+                            RawInput.Object(Map.ofList [ "value", RawInput.Scalar "+61 400 000 000" ]) ] ]
+            )
+
+        let path = InputPath.parse "contacts[1].value"
+
+        test <@ RawInput.tryFind path input = Some(RawInput.Scalar "+61 400 000 000") @>
+        test <@ RawInput.lookup path input = RawInput.Scalar "+61 400 000 000" @>
+
+    [<Fact>]
+    let ``raw input finds root value by empty path`` () =
+        let input = RawInput.Scalar "Ada"
+
+        test <@ RawInput.tryFind InputPath.empty input = Some input @>
+        test <@ RawInput.lookupPath "" input = input @>
+
+    [<Fact>]
+    let ``raw input lookup returns missing when path is absent`` () =
+        let input =
+            RawInput.Object(
+                Map.ofList
+                    [ "contacts",
+                      RawInput.Many [ RawInput.Object(Map.ofList [ "value", RawInput.Scalar "ada@example.com" ]) ] ]
+            )
+
+        test <@ RawInput.tryFindPath "contacts[1].value" input = None @>
+        test <@ RawInput.lookupPath "contacts[1].value" input = RawInput.Missing @>
+        test <@ RawInput.lookupPath "contacts[0].label" input = RawInput.Missing @>
+
+    [<Fact>]
+    let ``raw input lookup returns missing when path shape does not match`` () =
+        let input =
+            RawInput.Object(
+                Map.ofList
+                    [ "name", RawInput.Scalar "Ada"
+                      "contacts", RawInput.Object(Map.ofList [ "primary", RawInput.Scalar "email" ]) ]
+            )
+
+        test <@ RawInput.tryFindPath "name.value" input = None @>
+        test <@ RawInput.lookupPath "contacts[0]" input = RawInput.Missing @>
+
+    [<Fact>]
+    let ``raw input text path lookup rejects invalid addresses`` () =
+        let input = RawInput.Object Map.empty
+
+        test <@ RawInput.tryFindPath "contacts[]" input = None @>
+        raises<FormatException> <@ RawInput.lookupPath "contacts[]" input |> ignore @>
