@@ -282,7 +282,7 @@ the typed `Field` values and the constructor lambda from the test side; a codec 
 
 ## Phase 7: Build RawInput And Input Parsing
 
-- [ ] Keep all schema input parsing source in `Axial.Validation.Schema`, not `Axial.Validation` or `Axial.Schema`.
+- [x] Keep all schema input parsing source in `Axial.Validation.Schema`, not `Axial.Validation` or `Axial.Schema`.
 - [ ] Define source-agnostic `RawInput`:
   `Missing`, `Scalar`, `Many`, and `Object`.
 - [ ] Implement path addressing for names and indexes.
