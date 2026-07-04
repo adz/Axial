@@ -332,6 +332,7 @@ module ApiShapeTests =
         let schemaConstraintType = typeof<SchemaConstraint>
         let externalFieldNameType = typeof<ExternalFieldName>
         let fieldOrderType = typeof<FieldOrder>
+        let schemaModule = moduleType schemaType "Axial.Schema.Schema"
         let fieldModule = moduleType fieldType "Axial.Schema.Field"
         let valueModule = moduleType valueSchemaType "Axial.Schema.Value"
         let schemaConstraintModule = moduleType schemaConstraintType "Axial.Schema.SchemaConstraintModule"
@@ -376,6 +377,9 @@ module ApiShapeTests =
         test <@ publicFieldConstructors.Length = 0 @>
         test <@ publicSchemaConstraintConstructors.Length = 0 @>
         test <@ publicExternalFieldNameConstructors.Length = 0 @>
+        schemaModule
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "field"; "map2"; "map3" ]
         fieldModule
         |> publicStaticMemberNames
         |> assertContainsAll [ "externalName"; "order"; "getValue"; "constraints"; "withConstraint"; "withConstraints" ]
@@ -698,8 +702,8 @@ module ApiShapeTests =
 
     [<Fact>]
     let ``schema fields inspect existing trusted models through typed getters`` () =
-        let nameField = schemaField "name" 0 (fun (model: Customer) -> model.Name)
-        let ageField = schemaField "age" 1 (fun (model: Customer) -> model.Age)
+        let nameField = Schema.field "name" (fun (model: Customer) -> model.Name) Value.text
+        let ageField = Schema.field "age" (fun (model: Customer) -> model.Age) Value.``int``
         let customer = { Name = "Ada"; Age = 37 }
         let missingField = Unchecked.defaultof<Field<Customer, string>>
 
@@ -709,6 +713,64 @@ module ApiShapeTests =
         test <@ Field.getValue ageField customer = 37 @>
         raises<ArgumentNullException> <@ Field.getValue missingField customer |> ignore @>
         raises<ArgumentNullException> <@ Field.order missingField |> ignore @>
+
+    [<Fact>]
+    let ``schema field rejects invalid public construction arguments`` () =
+        raises<ArgumentNullException> <@ Schema.field null (fun (model: Customer) -> model.Name) Value.text |> ignore @>
+        raises<ArgumentException> <@ Schema.field " " (fun (model: Customer) -> model.Name) Value.text |> ignore @>
+        raises<ArgumentNullException> <@ Schema.field "name" Unchecked.defaultof<Customer -> string> Value.text |> ignore @>
+        raises<ArgumentNullException> <@ Schema.field "name" (fun (model: Customer) -> model.Name) Unchecked.defaultof<ValueSchema<string>> |> ignore @>
+
+    [<Fact>]
+    let ``schema map2 builds explicit ordered model schema from public fields`` () =
+        let requiredText = Value.text |> Value.withConstraint SchemaConstraint.required
+        let name =
+            Schema.field "name" (fun (customer: Customer) -> customer.Name) requiredText
+            |> Field.withConstraint SchemaConstraint.required
+
+        let age = Schema.field "age" (fun (customer: Customer) -> customer.Age) Value.``int``
+
+        let schema = Schema.map2 (fun name age -> { Name = name; Age = age }) name age
+
+        let constructed =
+            match schema.Definition with
+            | ModelDefinition model ->
+                let values =
+                    model.Fields
+                    |> List.map (fun field -> field.Getter { Name = "Ada"; Age = 37 })
+
+                test <@ model.Constructor.ArgumentCount = 2 @>
+                test <@ model.Fields |> List.map (fun field -> ExternalFieldName.value field.ExternalName) = [ "name"; "age" ] @>
+                test <@ model.Fields |> List.map (fun field -> FieldOrder.value field.Order) = [ 0; 1 ] @>
+                test <@ model.Fields[0].ValueSchema.Constraints |> List.map SchemaConstraint.code = [ "required" ] @>
+                test <@ model.Fields[0].Constraints |> List.map SchemaConstraint.code = [ "required" ] @>
+                ConstructorApplication.apply model.Constructor (values |> List.toArray)
+            | PendingDefinition -> failwith "Expected public schema API to create a model definition."
+
+        test <@ constructed = { Name = "Ada"; Age = 37 } @>
+        raises<ArgumentNullException> <@ Schema.map2 (fun name age -> { Name = name; Age = age }) Unchecked.defaultof<Field<Customer, string>> age |> ignore @>
+
+    [<Fact>]
+    let ``schema map3 builds explicit ordered model schema from public fields`` () =
+        let create name age active = { Name = name; Age = age; Active = active }
+        let schema =
+            Schema.map3
+                create
+                (Schema.field "name" (fun (model: CustomerProfile) -> model.Name) Value.text)
+                (Schema.field "age" (fun (model: CustomerProfile) -> model.Age) Value.``int``)
+                (Schema.field "active" (fun (model: CustomerProfile) -> model.Active) Value.``bool``)
+
+        match schema.Definition with
+        | ModelDefinition model ->
+            let source = { Name = "Ada"; Age = 37; Active = true }
+            let values = model.Fields |> List.map (fun field -> field.Getter source)
+
+            test <@ model.Constructor.ArgumentCount = 3 @>
+            test <@ model.Fields |> List.map (fun field -> ExternalFieldName.value field.ExternalName) = [ "name"; "age"; "active" ] @>
+            test <@ model.Fields |> List.map (fun field -> FieldOrder.value field.Order) = [ 0; 1; 2 ] @>
+            test <@ values = [ box "Ada"; box 37; box true ] @>
+            test <@ ConstructorApplication.apply model.Constructor (values |> List.toArray) = source @>
+        | PendingDefinition -> failwith "Expected public schema API to create a model definition."
 
     [<Fact>]
     let ``schema definitions carry trusted constructor application`` () =

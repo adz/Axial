@@ -682,6 +682,16 @@ module internal FieldDescriptorOps =
           ValueSchema = field.Definition.ValueSchema
           Constraints = field.Definition.Constraints }
 
+    let fromOrderedField order (field: Field<'model, 'value>) : FieldDescriptor<'model> =
+        if isNull (box field) then
+            nullArg (nameof field)
+
+        { FieldDescriptor.ExternalName = field.Definition.ExternalName
+          Order = FieldOrder.create order
+          Getter = fun model -> field.Definition.Getter model |> box
+          ValueSchema = field.Definition.ValueSchema
+          Constraints = field.Definition.Constraints }
+
 /// <summary>Functions for inspecting schema field metadata.</summary>
 [<RequireQualifiedAccess>]
 module Field =
@@ -743,3 +753,99 @@ module Field =
             { field.Definition with
                 Constraints = field.Definition.Constraints @ constraints }
         )
+
+/// <summary>Functions for creating and inspecting model schemas.</summary>
+[<RequireQualifiedAccess>]
+module Schema =
+    /// <summary>
+    /// Creates a typed schema field from a boundary-facing name, a trusted-model getter, and a trusted value schema.
+    /// </summary>
+    /// <remarks>
+    /// The field's constructor order is assigned by <see cref="M:Axial.Schema.Schema.map2``3" /> or
+    /// <see cref="M:Axial.Schema.Schema.map3``4" /> from the field's argument position. Interpreters can still inspect
+    /// the external name, getter, value schema, and field constraints without using reflection.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException">
+    /// Thrown when <paramref name="externalName" />, <paramref name="getter" />, or <paramref name="value" /> is null.
+    /// </exception>
+    /// <exception cref="T:System.ArgumentException">
+    /// Thrown when <paramref name="externalName" /> is empty or contains only whitespace.
+    /// </exception>
+    let field externalName (getter: 'model -> 'value) (value: ValueSchema<'value>) : Field<'model, 'value> =
+        if isNull (box getter) then
+            nullArg (nameof getter)
+
+        if isNull (box value) then
+            nullArg (nameof value)
+
+        Field(
+            { ExternalName = ExternalFieldName.create externalName
+              Order = FieldOrder.create 0
+              Getter = getter
+              ValueSchema = value.Definition
+              Constraints = [] }
+        )
+
+    /// <summary>
+    /// Builds a model schema from a two-argument trusted constructor and two explicitly declared fields.
+    /// </summary>
+    /// <remarks>
+    /// Field argument position defines constructor order. This keeps authored schemas explicit and AOT-safe while
+    /// preserving enough typed metadata for later validation, codec, UI, and documentation interpreters.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException">
+    /// Thrown when <paramref name="constructor" />, <paramref name="left" />, or <paramref name="right" /> is null.
+    /// </exception>
+    let map2
+        (constructor: 'a -> 'b -> 'model)
+        (left: Field<'model, 'a>)
+        (right: Field<'model, 'b>)
+        : Schema<'model> =
+        if isNull (box left) then
+            nullArg (nameof left)
+
+        if isNull (box right) then
+            nullArg (nameof right)
+
+        let definition =
+            ModelSchemaDefinition.create
+                (ConstructorApplication.create2 constructor)
+                [ FieldDescriptorOps.fromOrderedField 0 left
+                  FieldDescriptorOps.fromOrderedField 1 right ]
+
+        Schema(ModelDefinition definition)
+
+    /// <summary>
+    /// Builds a model schema from a three-argument trusted constructor and three explicitly declared fields.
+    /// </summary>
+    /// <remarks>
+    /// Field argument position defines constructor order. This is the first explicit mapN shape used to prove
+    /// constructor/getter alignment before adding schema computation expressions or broader generated helpers.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException">
+    /// Thrown when <paramref name="constructor" />, <paramref name="left" />, <paramref name="middle" />, or
+    /// <paramref name="right" /> is null.
+    /// </exception>
+    let map3
+        (constructor: 'a -> 'b -> 'c -> 'model)
+        (left: Field<'model, 'a>)
+        (middle: Field<'model, 'b>)
+        (right: Field<'model, 'c>)
+        : Schema<'model> =
+        if isNull (box left) then
+            nullArg (nameof left)
+
+        if isNull (box middle) then
+            nullArg (nameof middle)
+
+        if isNull (box right) then
+            nullArg (nameof right)
+
+        let definition =
+            ModelSchemaDefinition.create
+                (ConstructorApplication.create3 constructor)
+                [ FieldDescriptorOps.fromOrderedField 0 left
+                  FieldDescriptorOps.fromOrderedField 1 middle
+                  FieldDescriptorOps.fromOrderedField 2 right ]
+
+        Schema(ModelDefinition definition)
