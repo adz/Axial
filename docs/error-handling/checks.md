@@ -1,7 +1,7 @@
 ---
 weight: 10
 title: Check
-description: Use pure Check predicates before shaping failures with Result, Validation, or Flow.
+description: Use structured Check programs before shaping failures with Result, Validation, or Flow.
 aliases:
   - /docs/validation-results/checks/
 ---
@@ -9,8 +9,8 @@ aliases:
 # Check
 
 `Check` contains reusable value constraints. Executable checks such as `Check.String.present` return
-`Result<unit, CheckFailure list>`. Top-level helpers such as `Check.notBlank` remain lightweight boolean predicates for
-local structural facts.
+`Result<unit, CheckFailure list>`. Top-level `Check.*` helpers are structured checks; use ordinary F# predicates when a
+raw boolean is enough.
 
 Use `Check` when success only proves a fact. Use `Result` when success should preserve, extract, or reshape a value.
 
@@ -80,7 +80,7 @@ type RegistrationError =
     | PasswordRequired
 
 let validatePassword password : Result<unit, RegistrationError> =
-    Check.notBlank password
+    not (System.String.IsNullOrWhiteSpace password)
     |> Result.checkOr PasswordRequired
 ```
 
@@ -141,13 +141,13 @@ let requireExistingUser maybeUser : Result<User, LookupError> =
 | `Check.Option.some` | `Result.someOr` |
 | `Check.ValueOption.some` | `Result.valueSomeOr` |
 | `Check.Nullable.hasValue` | `Result.nullableOr` |
-| `Check.notNull` | `Result.notNullOr` |
+| ordinary non-null predicate | `Result.notNullOr` |
 | `Check.Result.ok` | `Result.okOr` |
 | `Check.Result.error` | `Result.errorOr` |
 | `Check.Seq.notEmpty` | `Result.atLeastOne` or `Result.headOr` |
-| `Check.isSingle` | `Result.single` |
+| `Check.single` | `Result.single` |
 | `Check.atMostOne` | `Result.atMostOne` |
-| `Check.notBlank` | `Result.notBlank` |
+| `Check.String.present` | `Result.notBlank` |
 | `Check.positive` | `Result.greaterThan 0` |
 
 ## Cardinality
@@ -155,12 +155,12 @@ let requireExistingUser maybeUser : Result<User, LookupError> =
 Cardinality helpers keep `CardinalityFailure` because the count is useful diagnostic information.
 
 ```fsharp
-ids |> Check.isSingle
+ids |> Check.single
 ids |> Result.single
 ids |> Result.atMostOne
 ```
 
-Use `Check.isSingle` when you only need to know the fact. Use `Result.single` when the next step needs the single element.
+Use `Check.single` when you only need to know the fact. Use `Result.single` when the next step needs the single element.
 
 ## Flow Bind Sites
 

@@ -113,7 +113,7 @@ Schema constraints should lower onto the tightened `Check` shape, not the verbos
   of truth.
 - [x] Do not use SRTP for `distinct`, count checks, length checks, format checks, numeric ranges, result checks, or
   equality checks in the first pass.
-- [ ] Move or remove top-level boolean predicates from `Check` so top-level `Check.*` consistently means structured
+- [x] Move or remove top-level boolean predicates from `Check` so top-level `Check.*` consistently means structured
   `Result<unit, CheckFailure list>`.
 - [ ] Add or relocate boolean predicates outside structured `Check.*`, using type-specific predicate modules or
   extensions such as `Seq.isDistinct`, `String.isBlank`, `Result.isOk`, and nullable/option presence helpers.

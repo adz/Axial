@@ -1,5 +1,6 @@
 namespace Axial.Tests
 
+open System
 open Microsoft.FSharp.Core
 open Axial.Flow
 open Axial.ErrorHandling
@@ -486,35 +487,19 @@ module ValidationTests =
             test <@ Check.Result.error (Ok 1) = Error [ Equality(EqualTo "Error", Some "Ok") ] @>
 
         [<Fact>]
-        let ``Check exposes pure predicates`` () =
+        let ``Check top-level facade exposes structured checks`` () =
             let nullString: string = null
 
-            test <@ Check.isSome (Some 10) @>
-            test <@ Check.isNone None @>
-            test <@ Check.isValueSome (ValueSome 11) @>
-            test <@ Check.isValueNone ValueNone @>
-            test <@ Check.hasValue (System.Nullable 12) @>
-            test <@ Check.hasNoValue (System.Nullable<int>()) @>
-            test <@ Check.notNull "axial" @>
-            test <@ Check.isNull nullString @>
-            test <@ Check.isOk (Ok 3) @>
-            test <@ Check.isError (Error "missing") @>
-            test <@ Check.notBlank "  x  " @>
-            test <@ Check.blank nullString @>
-            test <@ Check.hasMinLength 3 "abcd" @>
-            test <@ Check.hasMaxLength 3 nullString @>
-            test <@ Check.hasExactLength 3 "abc" @>
-            test <@ Check.matchesRegex "^[a-z]+$" "abc" @>
-            test <@ Check.isEmail "ada@example.com" @>
-            test <@ Check.isNumeric "12345" @>
-            test <@ Check.isAlphaNumeric "abc123" @>
-            test <@ [ 1; 2 ] |> Seq.isEmpty |> not @>
-            test <@ Check.isEmpty Seq.empty<int> @>
-            test <@ Check.hasCount 2 [ 1; 2 ] @>
-            test <@ Check.hasDuplicates [ 1; 2; 1 ] @>
-            test <@ Check.hasNoDuplicates [ 1; 2; 3 ] @>
-            test <@ Check.isSingle [ 5 ] @>
-            test <@ Check.negate Check.notBlank "" @>
+            Assert.Equal<Result<unit, CheckFailure list>>(Ok (), Check.present "Ada")
+            Assert.Equal<Result<unit, CheckFailure list>>(Error [ Missing ], Check.present nullString)
+            Assert.Equal<Result<unit, CheckFailure list>>(Ok (), Check.empty "")
+            Assert.Equal<Result<unit, CheckFailure list>>(Ok (), Check.notEmpty "  ")
+            test <@ Check.length 3 "abc" = Ok () @>
+            test <@ Check.email "ada@example.com" = Ok () @>
+            test <@ Check.matches "^[a-z]+$" "abc" = Ok () @>
+            test <@ Check.count 2 [ 1; 2 ] = Ok () @>
+            test <@ Check.distinct [ 1; 2; 3 ] = Ok () @>
+            test <@ Check.single [ 5 ] = Ok () @>
 
         [<Fact>]
         let ``Result covers fail-fast helpers and the result computation expression`` () =
@@ -535,8 +520,8 @@ module ValidationTests =
             test <@ ("" |> Result.guard Check.String.present) = Error [ Blank ] @>
             test <@ ("Ada" |> Result.notBlank) = Ok "Ada" @>
             test <@ ("" |> Result.notBlank) = Error [ Blank ] @>
-            test <@ ("Ada" |> Result.keepIf Check.notBlank "required") = Ok "Ada" @>
-            test <@ ("" |> Result.keepIf Check.notBlank "required") = Error "required" @>
+            test <@ ("Ada" |> Result.keepIf (String.IsNullOrWhiteSpace >> not) "required") = Ok "Ada" @>
+            test <@ ("" |> Result.keepIf (String.IsNullOrWhiteSpace >> not) "required") = Error "required" @>
             test <@ (true |> Result.checkOr "invalid") = Ok () @>
             test <@ (false |> Result.checkOr "invalid") = Error "invalid" @>
             test <@ (Error () |> Result.withError "typed") = Error "typed" @>
@@ -556,11 +541,11 @@ module ValidationTests =
             test <@ (Ok 3 |> Result.okOr "missing") = Ok 3 @>
             test <@ (Error "failed" |> Result.errorOr "missing") = Ok "failed" @>
             test <@ ([ 1; 2 ] |> Result.headOr "missing") = Ok 1 @>
-            test <@ ("Ada" |> Result.keepIf Check.notBlank "required") = Ok "Ada" @>
-            test <@ ("Ada" |> Result.keepIf Check.notNull "required") = Ok "Ada" @>
+            test <@ ("Ada" |> Result.keepIf (String.IsNullOrWhiteSpace >> not) "required") = Ok "Ada" @>
+            test <@ ("Ada" |> Result.keepIf (fun value -> not (obj.ReferenceEquals(value, null))) "required") = Ok "Ada" @>
             test <@ ([ 1; 2 ] |> Result.keepIf (Seq.isEmpty >> not) "required") = Ok [ 1; 2 ] @>
             test <@ ([ 1; 2 ] |> Result.keepIf (Seq.contains 2) "missing") = Ok [ 1; 2 ] @>
-            test <@ ([ 1; 2; 3 ] |> Result.keepIf Check.hasNoDuplicates "duplicate") = Ok [ 1; 2; 3 ] @>
+            test <@ ([ 1; 2; 3 ] |> Result.keepIf (fun values -> (Check.distinct values).IsOk) "duplicate") = Ok [ 1; 2; 3 ] @>
             test <@ ("ab" |> Result.minLength 3) = Error [ Length(MinimumLength 3, Some 2) ] @>
             test <@ ("abcd" |> Result.maxLength 3) = Error [ Length(MaximumLength 3, Some 4) ] @>
             test <@ ("ab" |> Result.exactLength 3) = Error [ Length(ExactLength 3, Some 2) ] @>
@@ -581,7 +566,7 @@ module ValidationTests =
         [<Fact>]
         let ``Policy adapts result functions to flow verification`` () =
             let requireNonBlank value =
-                value |> Result.keepIf Check.notBlank ()
+                value |> Result.keepIf (String.IsNullOrWhiteSpace >> not) ()
 
             let requireName =
                 Policy.withError requireNonBlank Required
@@ -763,7 +748,7 @@ module ValidationTests =
                 validate.key "address" {
                     let! city =
                         validate.name "City" {
-                            return! address.City |> Result.keepIf Check.notBlank "City required"
+                            return! address.City |> Result.keepIf (String.IsNullOrWhiteSpace >> not) "City required"
                         }
 
                     return { address with City = city }
@@ -773,7 +758,7 @@ module ValidationTests =
                 validate.key "customer" {
                     let! name =
                         validate.name "Name" {
-                            return! customer.Name |> Result.keepIf Check.notBlank "Name required"
+                            return! customer.Name |> Result.keepIf (String.IsNullOrWhiteSpace >> not) "Name required"
                         }
 
                     and! address = validateAddress customer.Address
@@ -783,7 +768,7 @@ module ValidationTests =
                             customer.Lines
                             |> Validation.traverseIndexed (fun index line ->
                                 validate.name "Name" {
-                                    return! line |> Result.keepIf Check.notBlank $"Line {index} name required"
+                                    return! line |> Result.keepIf (String.IsNullOrWhiteSpace >> not) $"Line {index} name required"
                                 }
                             )
                         )

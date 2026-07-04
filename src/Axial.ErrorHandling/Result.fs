@@ -132,7 +132,7 @@ module Result =
 
     /// <summary>Keeps a non-null reference, or returns the supplied error.</summary>
     let notNullOr (failure: 'error) (value: 'value when 'value: null) : Result<'value, 'error> =
-        keepIf Check.notNull failure value
+        keepIf (fun value -> not (obj.ReferenceEquals(value, null))) failure value
 
     /// <summary>Takes the successful value from a result, or returns the supplied error.</summary>
     let okOr (failure: 'nextError) (result: Result<'value, 'error>) : Result<'value, 'nextError> =
