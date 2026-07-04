@@ -538,14 +538,71 @@ type internal FieldDefinition<'model, 'value> =
       ValueSchema: ValueSchemaDefinition
       Constraints: SchemaConstraint list }
 
+/// <summary>
+/// Describes one typed field of a trusted model for schema interpreters.
+/// </summary>
+/// <remarks>
+/// <para>
+/// A field definition records typed field metadata without tying that metadata to input parsing, diagnostics,
+/// validation, codecs, UI generation, or workflow execution. The field's external name is the portable boundary-facing
+/// name interpreters use for raw input lookup, diagnostic paths, codecs, generated documentation, and UI metadata.
+/// Its getter reads the field value from an already trusted model so inspection interpreters can observe existing
+/// values without using reflection.
+/// </para>
+/// <para>
+/// Constructor application, ordering, and public construction helpers are introduced by the schema operations that
+/// follow this core type.
+/// </para>
+/// </remarks>
+[<Sealed>]
+type Field<'model, 'value> internal (definition: FieldDefinition<'model, 'value>) =
+    member internal _.Definition = definition
+
+/// <summary>Holds an interpreter-specific typed chain fragment while specializing a schema field chain.</summary>
+/// <remarks>
+/// Schema interpreters use this as the typed accumulator returned by
+/// <see cref="T:Axial.Schema.IFieldChainFactory`2" />. The value is intentionally opaque to <c>Axial.Schema</c>;
+/// each interpreter owns the concrete chain shape it stores here.
+/// </remarks>
+type IFieldChainResult<'model, 'constructorIn, 'constructorOut> =
+    /// <summary>Gets the interpreter-owned typed chain fragment.</summary>
+    abstract member Value: obj
+
+/// <summary>
+/// Builds an interpreter-specific typed view of a model schema's authored field chain.
+/// </summary>
+/// <remarks>
+/// The built <see cref="T:Axial.Schema.Schema`1" /> keeps this typed chain alongside its type-erased
+/// <c>FieldDescriptor</c> metadata. Interpreters that need constructor-specialized plans, such as codecs, can walk the
+/// typed chain through this factory without asking callers to re-supply fields or constructors and without lowering
+/// construction to <c>obj array</c> dispatch.
+/// </remarks>
+type IFieldChainFactory<'model, 'result> =
+    /// <summary>Starts a specialized chain for a constructor with no consumed fields.</summary>
+    abstract member OnEnd<'constructor> : unit -> IFieldChainResult<'model, 'constructor, 'constructor>
+
+    /// <summary>Appends one typed field to an interpreter-specific chain.</summary>
+    abstract member OnField<'constructorIn, 'field, 'next> :
+        order: int *
+        field: Field<'model, 'field> *
+        head: IFieldChainResult<'model, 'constructorIn, 'field -> 'next> ->
+            IFieldChainResult<'model, 'constructorIn, 'next>
+
+    /// <summary>Completes a specialized chain with the original typed constructor.</summary>
+    abstract member OnComplete<'constructor> :
+        constructor: 'constructor * chain: IFieldChainResult<'model, 'constructor, 'model> -> 'result
+
 type IFieldChain<'model, 'constructor, 'remaining> =
     abstract member GetFields: int -> obj list * int
     abstract member Apply: constructor: obj * arguments: obj array -> obj
+    abstract member Build<'result> :
+        factory: IFieldChainFactory<'model, 'result> -> IFieldChainResult<'model, 'constructor, 'remaining>
 
 type FieldsEnd<'model, 'constructor>() =
     interface IFieldChain<'model, 'constructor, 'constructor> with
         member _.GetFields(index) = [], index
         member _.Apply(constructor, _) = constructor
+        member _.Build(factory) = factory.OnEnd()
 
 type FieldsAppend<'model, 'constructor, 'field, 'next, 'head
     when 'head :> IFieldChain<'model, 'constructor, 'field -> 'next>>
@@ -576,6 +633,19 @@ type FieldsAppend<'model, 'constructor, 'field, 'next, 'head
             let typedConstructor = unbox<'field -> 'next> appliedHead
             typedConstructor (unbox<'field> arguments[fieldIndex]) |> box
 
+        member _.Build(factory) =
+            let headNode = head :> IFieldChain<'model, 'constructor, 'field -> 'next>
+            let headResult = headNode.Build(factory)
+            let order = headNode.GetFields(0) |> snd
+
+            let typedField =
+                Field(
+                    { field with
+                        Order = FieldOrder.create order }
+                )
+
+            factory.OnField(order, typedField, headResult)
+
 /// <summary>
 /// Carries a trusted model constructor and a typed field chain while a model schema is being authored.
 /// </summary>
@@ -593,6 +663,24 @@ type SchemaBuilder<'model, 'constructor, 'remaining, 'chain
     ) =
     member internal _.Constructor = constructor
     member internal _.Chain = chain
+
+type internal ISchemaSpecialization<'model> =
+    abstract member Specialize<'result> : factory: IFieldChainFactory<'model, 'result> -> 'result
+
+type internal SchemaSpecialization<'model, 'constructor, 'chain
+    when 'chain :> IFieldChain<'model, 'constructor, 'model>>
+    (
+        constructor: 'constructor,
+        chain: 'chain
+    ) =
+
+    interface ISchemaSpecialization<'model> with
+        member _.Specialize(factory) =
+            if isNull (box factory) then
+                nullArg (nameof factory)
+
+            let result = chain.Build(factory)
+            factory.OnComplete(constructor, result)
 
 module internal ModelSchemaDefinition =
     let private ensureContiguousOrders (fields: FieldDescriptor<'model> list) =
@@ -639,8 +727,11 @@ module internal ModelSchemaDefinition =
 /// </para>
 /// </remarks>
 [<Sealed>]
-type Schema<'model> internal (definition: SchemaDefinition<'model>) =
+type Schema<'model> internal (definition: SchemaDefinition<'model>, specialization: ISchemaSpecialization<'model> option) =
+    internal new(definition: SchemaDefinition<'model>) = Schema(definition, None)
+
     member internal _.Definition = definition
+    member internal _.Specialization = specialization
 
 /// <summary>
 /// Describes the portable shape of a trusted value for schema interpreters.
@@ -786,26 +877,6 @@ module Value =
             { schema.Definition with
                 Constraints = schema.Definition.Constraints @ constraints }
         )
-
-/// <summary>
-/// Describes one typed field of a trusted model for schema interpreters.
-/// </summary>
-/// <remarks>
-/// <para>
-/// A field definition records typed field metadata without tying that metadata to input parsing, diagnostics,
-/// validation, codecs, UI generation, or workflow execution. The field's external name is the portable boundary-facing
-/// name interpreters use for raw input lookup, diagnostic paths, codecs, generated documentation, and UI metadata.
-/// Its getter reads the field value from an already trusted model so inspection interpreters can observe existing
-/// values without using reflection.
-/// </para>
-/// <para>
-/// Constructor application, ordering, and public construction helpers are introduced by the schema operations that
-/// follow this core type.
-/// </para>
-/// </remarks>
-[<Sealed>]
-type Field<'model, 'value> internal (definition: FieldDefinition<'model, 'value>) =
-    member internal _.Definition = definition
 
 module internal FieldDescriptorOps =
     let fromField (field: Field<'model, 'value>) : FieldDescriptor<'model> =
@@ -1040,4 +1111,31 @@ module Schema =
                     ConstructorApplication.ensureArgumentCount count arguments
                     chain.Apply(box builder.Constructor, arguments) |> unbox<'model> }
 
-        Schema(ModelDefinition(ModelSchemaDefinition.create constructor fields))
+        let specialization =
+            SchemaSpecialization<'model, 'constructor, 'chain>(builder.Constructor, builder.Chain) :> ISchemaSpecialization<'model>
+
+        Schema(ModelDefinition(ModelSchemaDefinition.create constructor fields), Some specialization)
+
+    /// <summary>
+    /// Specializes a built model schema's retained typed field chain into an interpreter-specific result.
+    /// </summary>
+    /// <remarks>
+    /// This is the constructor-specialized companion to the type-erased schema metadata exposed through ordinary
+    /// schema inspection. It is intended for interpreters such as codecs that need to compile direct record plans from
+    /// a <c>Schema&lt;'model&gt;</c> value without asking callers to re-supply the constructor or typed fields.
+    /// Schemas produced by <see cref="M:Axial.Schema.Schema.build``4" /> carry this typed view.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="factory" /> or
+    /// <paramref name="schema" /> is null.</exception>
+    /// <exception cref="T:System.ArgumentException">Thrown when the schema was not produced by the progressive typed
+    /// builder and therefore has no retained typed field chain.</exception>
+    let specialize (factory: IFieldChainFactory<'model, 'result>) (schema: Schema<'model>) : 'result =
+        if isNull (box factory) then
+            nullArg (nameof factory)
+
+        if isNull (box schema) then
+            nullArg (nameof schema)
+
+        match schema.Specialization with
+        | Some specialization -> specialization.Specialize factory
+        | None -> invalidArg (nameof schema) "The schema does not carry a typed field chain."

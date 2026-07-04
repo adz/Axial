@@ -192,7 +192,7 @@ the typed `Field` values and the constructor lambda from the test side; a codec 
   consumed by `mapN`, while the pipeline step needs a different signature and F# modules cannot overload. Decide the
   primary name and whether the standalone field constructor survives (for example as `Field.create` for interpreter
   tests and advanced composition) or is removed together with `mapN`.
-- [ ] Keep the typed field chain reachable from the built `Schema<'model>` alongside the type-erased
+- [x] Keep the typed field chain reachable from the built `Schema<'model>` alongside the type-erased
   `FieldDescriptor` view, following CodecMapper's dual-view pattern
   (`MappingDefinition<'Record, 'Ctor, 'Chain>` with erased `IMappingDefinition<'Record>` plus
   `Specialize : IChainFactory<'Record> -> Codec<'Record>`). A generic-method visitor such as `IChainFactory` lets

@@ -31,9 +31,14 @@ module SchemaCompiledRecordPlanProofTests =
         { Encode: 'value -> string
           Decode: string -> 'value }
 
-    module private FieldCodec =
+    module private FieldCodecValues =
         let text: FieldCodec<string> = { Encode = id; Decode = id }
         let int: FieldCodec<int> = { Encode = string; Decode = Int32.Parse }
+
+    type private ICompiledPlan<'model> =
+        abstract member Slots: (int * string * byte[]) array
+        abstract member Encode: 'model -> (string * string) array
+        abstract member Decode: (string * string) array -> 'model
 
     /// One compiled field slot: order-indexed metadata plus the typed getter/codec hot-path hooks. Caching the
     /// UTF-8 external name here is the one piece that is genuinely .NET-only; a Fable target would keep the plain
@@ -54,56 +59,111 @@ module SchemaCompiledRecordPlanProofTests =
           GetValue = Field.getValue field
           Codec = codec }
 
-    /// A compiled plan for a flat two-field record. Field slots stay strongly typed as distinct members -- mirroring
-    /// CodecMapper's `RecordDecoder2<'T,'A,'B>` -- so `Decode` walks an ordered field chain and calls the two-argument
-    /// constructor directly with typed locals. There is no `obj array`, no per-value reflection, and no generic
-    /// dictionary keyed by field name on the decode path.
-    type private CompiledRecordPlan2<'model, 'a, 'b>
-        (field1: CompiledField<'model, 'a>, field2: CompiledField<'model, 'b>, construct: 'a -> 'b -> 'model) =
+    module private FieldCodecs =
+        let forField<'value> () : FieldCodec<'value> =
+            if typeof<'value> = typeof<string> then
+                box FieldCodecValues.text :?> FieldCodec<'value>
+            elif typeof<'value> = typeof<int> then
+                box FieldCodecValues.int :?> FieldCodec<'value>
+            else
+                invalidArg "field" $"No proof codec registered for field type {typeof<'value>.FullName}."
 
-        /// Order-indexed slots for interpreters that only need name/order/UTF-8 bytes (docs, JSON Schema).
-        member _.Slots: (int * string * byte[]) array =
-            [| field1.Order, field1.ExternalName, field1.ExternalNameUtf8
-               field2.Order, field2.ExternalName, field2.ExternalNameUtf8 |]
+    type private ICompiledChain<'model, 'constructorIn, 'constructorOut> =
+        abstract member Slots: (int * string * byte[]) list
+        abstract member Encode: 'model -> (string * string) list
+        abstract member Reset: unit -> unit
+        abstract member TryCollect: name: string * raw: string -> bool
+        abstract member ApplyCollected: 'constructorIn -> 'constructorOut
 
-        member _.Encode(model: 'model) : (string * string) array =
-            [| field1.ExternalName, field1.Codec.Encode(field1.GetValue model)
-               field2.ExternalName, field2.Codec.Encode(field2.GetValue model) |]
+    type private CompiledFieldsEnd<'model, 'constructor>() =
+        interface ICompiledChain<'model, 'constructor, 'constructor> with
+            member _.Slots = []
+            member _.Encode(_) = []
+            member _.Reset() = ()
+            member _.TryCollect(_, _) = false
+            member _.ApplyCollected(constructor) = constructor
 
-        /// Ordered field-name chain, exactly like CodecMapper's byte-level property match chain, followed by one
-        /// direct typed constructor call.
-        member _.Decode(values: (string * string) array) : 'model =
-            let mutable value1 = Unchecked.defaultof<'a>
-            let mutable value2 = Unchecked.defaultof<'b>
-            let mutable seen1 = false
-            let mutable seen2 = false
+    type private CompiledFieldsAppend<'model, 'constructorIn, 'field, 'next, 'head
+        when 'head :> ICompiledChain<'model, 'constructorIn, 'field -> 'next>>
+        (
+            head: 'head,
+            field: CompiledField<'model, 'field>
+        ) =
 
-            for name, raw in values do
-                if name = field1.ExternalName then
-                    value1 <- field1.Codec.Decode raw
-                    seen1 <- true
-                elif name = field2.ExternalName then
-                    value2 <- field2.Codec.Decode raw
-                    seen2 <- true
+        let mutable collectedValue: 'field voption = ValueNone
 
-            if not seen1 then
-                invalidArg (nameof values) $"Missing required field '{field1.ExternalName}'."
+        interface ICompiledChain<'model, 'constructorIn, 'next> with
+            member _.Slots = head.Slots @ [ field.Order, field.ExternalName, field.ExternalNameUtf8 ]
+            member _.Encode(model) = head.Encode model @ [ field.ExternalName, field.Codec.Encode(field.GetValue model) ]
 
-            if not seen2 then
-                invalidArg (nameof values) $"Missing required field '{field2.ExternalName}'."
+            member _.Reset() =
+                head.Reset()
+                collectedValue <- ValueNone
 
-            construct value1 value2
+            member _.TryCollect(name, raw) =
+                if name = field.ExternalName then
+                    collectedValue <- ValueSome(field.Codec.Decode raw)
+                    true
+                else
+                    head.TryCollect(name, raw)
 
-    /// Compiles a plan from typed `Field<'model, 'value>` values matching the builder-declared schema --
-    /// proving the lowering reuses existing public schema metadata rather than a parallel schema representation.
-    let private compileMap2
-        (construct: 'a -> 'b -> 'model)
-        (left: Field<'model, 'a>)
-        (leftCodec: FieldCodec<'a>)
-        (right: Field<'model, 'b>)
-        (rightCodec: FieldCodec<'b>)
-        =
-        CompiledRecordPlan2(compile 0 left leftCodec, compile 1 right rightCodec, construct)
+            member _.ApplyCollected(constructor) =
+                let constructorForField = head.ApplyCollected constructor
+
+                match collectedValue with
+                | ValueSome value -> constructorForField value
+                | ValueNone -> invalidArg "values" $"Missing required field '{field.ExternalName}'."
+
+    /// A compiled plan for a flat record. Field slots stay strongly typed in the compiled chain, so `Decode` walks an
+    /// ordered field-name chain and then applies the original curried constructor directly. There is no `obj array`, no
+    /// per-value reflection, and no generic dictionary keyed by field name on the decode path.
+    type private CompiledRecordPlan<'model, 'constructor>
+        (constructor: 'constructor, chain: ICompiledChain<'model, 'constructor, 'model>) =
+
+        interface ICompiledPlan<'model> with
+            member _.Slots = chain.Slots |> List.toArray
+            member _.Encode(model) = chain.Encode model |> List.toArray
+
+            member _.Decode(values) =
+                chain.Reset()
+
+                for name, raw in values do
+                    chain.TryCollect(name, raw) |> ignore
+
+                chain.ApplyCollected constructor
+
+    type private PlanChainResult<'model, 'constructorIn, 'constructorOut>(value: obj) =
+        interface IFieldChainResult<'model, 'constructorIn, 'constructorOut> with
+            member _.Value = value
+
+    /// Compiles a plan from the typed field chain retained by the built `Schema<'model>`. The generic factory methods
+    /// see each field's real value type and the original curried constructor, so the resulting decode path applies the
+    /// constructor directly through typed chain nodes rather than through `obj array`.
+    type private CompiledRecordPlanFactory<'model>() =
+        interface IFieldChainFactory<'model, ICompiledPlan<'model>> with
+            member _.OnEnd() =
+                let chain = CompiledFieldsEnd<'model, 'constructor>() :> ICompiledChain<'model, 'constructor, 'constructor>
+                PlanChainResult<'model, 'constructor, 'constructor>(box chain) :> IFieldChainResult<_, _, _>
+
+            member _.OnField(order, field: Field<'model, 'field>, head) =
+                let headChain = head.Value :?> ICompiledChain<'model, 'constructorIn, 'field -> 'next>
+                let right = compile order field (FieldCodecs.forField<'field> ())
+                let chain =
+                    CompiledFieldsAppend<'model, 'constructorIn, 'field, 'next, _>(headChain, right)
+                    :> ICompiledChain<'model, 'constructorIn, 'next>
+
+                PlanChainResult<'model, 'constructorIn, 'next>(box chain) :> IFieldChainResult<_, _, _>
+
+            member _.OnComplete<'constructor>
+                (
+                    constructor: 'constructor,
+                    chain: IFieldChainResult<'model, 'constructor, 'model>
+                ) =
+                let compiledChain = chain.Value :?> ICompiledChain<'model, 'constructor, 'model>
+                CompiledRecordPlan<'model, 'constructor>(constructor, compiledChain) :> ICompiledPlan<'model>
+
+    let private compileFromSchema (schema: Schema<'model>) =
+        Schema.specialize (CompiledRecordPlanFactory<'model>()) schema
 
     type private Contact = { Name: string; Age: int }
 
@@ -114,17 +174,13 @@ module SchemaCompiledRecordPlanProofTests =
 
     [<Fact>]
     let ``flat record schema lowers to a compiled plan with ordered fields, cached UTF-8 names, and typed hooks`` () =
-        let nameField = Field.create "name" (fun (contact: Contact) -> contact.Name) Value.text
-        let ageField = Field.create "age" (fun (contact: Contact) -> contact.Age) Value.``int``
-
         let schema =
             Schema.record (fun name age -> { Name = name; Age = age })
             |> Schema.field "name" (fun (contact: Contact) -> contact.Name) Value.text
             |> Schema.field "age" (fun (contact: Contact) -> contact.Age) Value.``int``
             |> Schema.build
 
-        let plan =
-            compileMap2 (fun name age -> { Name = name; Age = age }) nameField FieldCodec.text ageField FieldCodec.int
+        let plan = compileFromSchema schema
 
         let contact = { Name = "Ada"; Age = 36 }
 
@@ -150,10 +206,12 @@ module SchemaCompiledRecordPlanProofTests =
 
     [<Fact>]
     let ``decode raises when a required field is missing instead of partially applying the constructor`` () =
-        let nameField = Field.create "name" (fun (contact: Contact) -> contact.Name) Value.text
-        let ageField = Field.create "age" (fun (contact: Contact) -> contact.Age) Value.``int``
+        let schema =
+            Schema.record (fun name age -> { Name = name; Age = age })
+            |> Schema.field "name" (fun (contact: Contact) -> contact.Name) Value.text
+            |> Schema.field "age" (fun (contact: Contact) -> contact.Age) Value.``int``
+            |> Schema.build
 
-        let plan =
-            compileMap2 (fun name age -> { Name = name; Age = age }) nameField FieldCodec.text ageField FieldCodec.int
+        let plan = compileFromSchema schema
 
         raises<ArgumentException> <@ plan.Decode [| "name", "Ada" |] @>
