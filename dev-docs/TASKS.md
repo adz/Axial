@@ -145,7 +145,7 @@ Schema constraints should lower onto the tightened `Check` shape, not the verbos
   expression or `[<Schema>]` source generator instead.
 - [x] Add tests proving constructor/getter alignment behavior.
 - [x] Add tests proving schema constraints are inspectable without running validation.
-- [ ] Prove `Schema` can lower to a high-performance compiled record plan before codec work starts:
+- [x] Prove `Schema` can lower to a high-performance compiled record plan before codec work starts:
   - Reasoning: CodecMapper gets its JSON performance by compiling authored schemas into direct record codecs, not by
     interpreting a rich metadata tree for every value. Its hot path uses ordered field chains, cached field-name bytes,
     indexed field storage, typed field decoders, and constructor-specialized record decoders. Axial schema must preserve
