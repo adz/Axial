@@ -1,6 +1,7 @@
 namespace Axial.Validation.Schema
 
 open System
+open System.Collections.Specialized
 open System.Text
 open Axial.Validation
 
@@ -242,16 +243,260 @@ type RawInput =
     /// <summary>A named collection of raw input fields.</summary>
     | Object of fields: Map<string, RawInput>
 
+/// <summary>A small dependency-free value model for adapting JSON-shaped data into <see cref="T:Axial.Validation.Schema.RawInput" />.</summary>
+[<RequireQualifiedAccess>]
+type JsonLikeValue =
+    /// <summary>A JSON null value.</summary>
+    | Null
+    /// <summary>A JSON string value.</summary>
+    | String of string
+    /// <summary>A JSON number, preserved in its boundary-facing text form.</summary>
+    | Number of string
+    /// <summary>A JSON boolean value.</summary>
+    | Bool of bool
+    /// <summary>A JSON array value.</summary>
+    | Array of JsonLikeValue list
+    /// <summary>A JSON object value.</summary>
+    | Object of Map<string, JsonLikeValue>
+
 /// <summary>Helpers for inspecting source-agnostic raw input.</summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
 module RawInput =
+    type private ConfigurationNode =
+        | Value of RawInput
+        | Branch of Map<string, ConfigurationNode>
+
     let private tryRedisplayValue (input: RawInput) =
         match input with
         | RawInput.Missing -> Some ""
         | RawInput.Scalar value -> Some value
         | RawInput.Many _
         | RawInput.Object _ -> None
+
+    let private ensureName (name: string) =
+        if isNull name then
+            nullArg (nameof name)
+
+        if name = "" then
+            invalidArg (nameof name) "Raw input field names cannot be empty."
+
+        name
+
+    let private ensureValues name values =
+        if isNull (box values) then
+            nullArg name
+
+        values
+
+    let private scalarOrMissing (value: string) =
+        if isNull value then RawInput.Missing else RawInput.Scalar value
+
+    let private fieldValue (values: string list) =
+        match values with
+        | [] -> RawInput.Missing
+        | [ value ] -> scalarOrMissing value
+        | values -> values |> List.map scalarOrMissing |> RawInput.Many
+
+    let private objectFromGroupedValues (values: seq<string * string list>) =
+        values
+        |> Seq.map (fun (name, values) -> ensureName name, fieldValue values)
+        |> Map.ofSeq
+        |> RawInput.Object
+
+    let private addField name value fields =
+        let name = ensureName name
+
+        let append existing =
+            match existing with
+            | None -> Some value
+            | Some(RawInput.Many values) -> Some(RawInput.Many(values @ [ value ]))
+            | Some existing -> Some(RawInput.Many [ existing; value ])
+
+        fields |> Map.change name append
+
+    let private tryNonNegativeInt (text: string) =
+        match Int32.TryParse text with
+        | true, value when value >= 0 -> Some value
+        | _ -> None
+
+    let private insertConfigurationValue (segments: string list) value node =
+        let rec insert remaining current =
+            match remaining with
+            | [] -> Value value
+            | segment :: rest ->
+                let segment = ensureName segment
+
+                let children =
+                    match current with
+                    | Branch children -> children
+                    | Value _ -> Map.empty
+
+                let child = children |> Map.tryFind segment |> Option.defaultValue (Branch Map.empty)
+                Branch(children |> Map.add segment (insert rest child))
+
+        insert segments node
+
+    let private configurationNodeToRawInput node =
+        let rec convert node =
+            match node with
+            | Value value -> value
+            | Branch children when children.IsEmpty -> RawInput.Object Map.empty
+            | Branch children ->
+                let indexed =
+                    children
+                    |> Map.toList
+                    |> List.map (fun (key, child) -> tryNonNegativeInt key |> Option.map (fun index -> index, child))
+
+                if indexed |> List.forall Option.isSome then
+                    let byIndex = indexed |> List.choose id |> Map.ofList
+                    let maximum = byIndex |> Map.toSeq |> Seq.map fst |> Seq.max
+
+                    [ for index in 0..maximum ->
+                          byIndex
+                          |> Map.tryFind index
+                          |> Option.map convert
+                          |> Option.defaultValue RawInput.Missing ]
+                    |> RawInput.Many
+                else
+                    children
+                    |> Map.map (fun _ child -> convert child)
+                    |> RawInput.Object
+
+        convert node
+
+    /// <summary>Builds object-shaped raw input from a map of scalar field values.</summary>
+    let ofMap (values: Map<string, string>) : RawInput =
+        if isNull (box values) then
+            nullArg (nameof values)
+
+        values
+        |> Map.toSeq
+        |> Seq.map (fun (name, value) -> ensureName name, scalarOrMissing value)
+        |> Map.ofSeq
+        |> RawInput.Object
+
+    /// <summary>Builds object-shaped raw input from name/value pairs, grouping repeated names into <c>Many</c>.</summary>
+    let ofNameValues (values: seq<string * string>) : RawInput =
+        ensureValues (nameof values) values
+        |> Seq.groupBy fst
+        |> Seq.map (fun (name, grouped) -> name, grouped |> Seq.map snd |> Seq.toList)
+        |> objectFromGroupedValues
+
+    /// <summary>Builds object-shaped raw input from a .NET name-value collection.</summary>
+    let ofNameValueCollection (values: NameValueCollection) : RawInput =
+        if isNull values then
+            nullArg (nameof values)
+
+        values.AllKeys
+        |> Seq.map (fun name ->
+            let name = ensureName name
+
+            let fieldValues =
+                match values.GetValues name with
+                | null -> []
+                | fieldValues -> fieldValues |> Array.toList
+
+            name, fieldValues)
+        |> objectFromGroupedValues
+
+    /// <summary>
+    /// Builds raw input from command-line arguments.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Supports <c>--name value</c>, <c>--name=value</c>, <c>-n value</c>, boolean flags, <c>--no-name</c>, and repeated
+    /// options. Positional arguments are stored under the <c>_</c> field as a collection.
+    /// </para>
+    /// </remarks>
+    let ofCliArgs (args: seq<string>) : RawInput =
+        let args = ensureValues (nameof args) args |> Seq.toList
+
+        let rec loop remaining fields positionals =
+            match remaining with
+            | [] ->
+                let fields =
+                    match List.rev positionals with
+                    | [] -> fields
+                    | positionals -> fields |> addField "_" (positionals |> List.map RawInput.Scalar |> RawInput.Many)
+
+                RawInput.Object fields
+            | "--" :: rest ->
+                loop [] fields (List.rev rest @ positionals)
+            | arg :: rest when isNull arg ->
+                nullArg (nameof args)
+            | arg :: rest when arg.StartsWith("--no-", StringComparison.Ordinal) && arg.Length > 5 ->
+                let name = arg.Substring 5
+                loop rest (fields |> addField name (RawInput.Scalar "false")) positionals
+            | arg :: rest when arg.StartsWith("--", StringComparison.Ordinal) && arg.Length > 2 ->
+                let optionText = arg.Substring 2
+                let equalsIndex = optionText.IndexOf('=')
+
+                if equalsIndex >= 0 then
+                    let name = optionText.Substring(0, equalsIndex)
+                    let value = optionText.Substring(equalsIndex + 1)
+                    loop rest (fields |> addField name (RawInput.Scalar value)) positionals
+                else
+                    match rest with
+                    | value :: tail when not (isNull value) && not (value.StartsWith("-", StringComparison.Ordinal)) ->
+                        loop tail (fields |> addField optionText (RawInput.Scalar value)) positionals
+                    | _ -> loop rest (fields |> addField optionText (RawInput.Scalar "true")) positionals
+            | arg :: rest when arg.StartsWith("-", StringComparison.Ordinal) && arg.Length > 1 ->
+                let optionText = arg.Substring 1
+                let equalsIndex = optionText.IndexOf('=')
+
+                if equalsIndex >= 0 then
+                    let name = optionText.Substring(0, equalsIndex)
+                    let value = optionText.Substring(equalsIndex + 1)
+                    loop rest (fields |> addField name (RawInput.Scalar value)) positionals
+                else
+                    match rest with
+                    | value :: tail when not (isNull value) && not (value.StartsWith("-", StringComparison.Ordinal)) ->
+                        loop tail (fields |> addField optionText (RawInput.Scalar value)) positionals
+                    | _ -> loop rest (fields |> addField optionText (RawInput.Scalar "true")) positionals
+            | arg :: rest -> loop rest fields (arg :: positionals)
+
+        loop args Map.empty []
+
+    /// <summary>Builds raw input from dependency-free JSON-shaped values.</summary>
+    let rec ofJsonLikeValue (value: JsonLikeValue) : RawInput =
+        match value with
+        | JsonLikeValue.Null -> RawInput.Missing
+        | JsonLikeValue.String value -> scalarOrMissing value
+        | JsonLikeValue.Number value -> scalarOrMissing value
+        | JsonLikeValue.Bool value -> RawInput.Scalar(if value then "true" else "false")
+        | JsonLikeValue.Array values -> values |> List.map ofJsonLikeValue |> RawInput.Many
+        | JsonLikeValue.Object fields ->
+            fields
+            |> Map.toSeq
+            |> Seq.map (fun (name, value) -> ensureName name, ofJsonLikeValue value)
+            |> Map.ofSeq
+            |> RawInput.Object
+
+    /// <summary>
+    /// Builds raw input from flattened configuration keys using <c>:</c> as the path separator.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Numeric path segments are interpreted as collection indexes, matching the common .NET configuration convention
+    /// for arrays such as <c>contacts:0:value</c>.
+    /// </para>
+    /// </remarks>
+    let ofConfiguration (values: seq<string * string>) : RawInput =
+        let values = ensureValues (nameof values) values
+
+        values
+        |> Seq.fold
+            (fun node (key, value) ->
+                let key = ensureName key
+                let segments = key.Split([| ':' |], StringSplitOptions.None) |> Array.toList
+
+                if segments |> List.exists ((=) "") then
+                    invalidArg (nameof values) $"Configuration key cannot contain an empty segment: {key}"
+
+                insertConfigurationValue segments (scalarOrMissing value) node)
+            (Branch Map.empty)
+        |> configurationNodeToRawInput
 
     /// <summary>Attempts to find a raw input value at a parsed input path.</summary>
     let tryFind (path: InputPath) (input: RawInput) : RawInput option =

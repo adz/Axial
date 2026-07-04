@@ -1,6 +1,7 @@
 namespace Axial.Tests
 
 open System
+open System.Collections.Specialized
 open Axial.Validation
 open Axial.Validation.Schema
 open Swensen.Unquote
@@ -36,6 +37,98 @@ module RawInputTests =
             test <@ fields |> Map.containsKey "displayName" @>
             test <@ fields["empty"] = RawInput.Missing @>
         | _ -> failwith "Expected object input."
+
+    [<Fact>]
+    let ``raw input adapts maps to object-shaped scalar fields`` () =
+        let input =
+            RawInput.ofMap (
+                Map.ofList
+                    [ "displayName", "Ada"
+                      "email", "ada@example.com" ]
+            )
+
+        test <@ RawInput.lookupPath "displayName" input = RawInput.Scalar "Ada" @>
+        test <@ RawInput.lookupPath "email" input = RawInput.Scalar "ada@example.com" @>
+
+    [<Fact>]
+    let ``raw input adapts name values and preserves repeated names`` () =
+        let input =
+            RawInput.ofNameValues
+                [ "tag", "fsharp"
+                  "tag", "validation"
+                  "name", "Ada" ]
+
+        test <@ RawInput.lookupPath "name" input = RawInput.Scalar "Ada" @>
+        test <@ RawInput.lookupPath "tag" input = RawInput.Many [ RawInput.Scalar "fsharp"; RawInput.Scalar "validation" ] @>
+
+    [<Fact>]
+    let ``raw input adapts name value collections`` () =
+        let values = NameValueCollection()
+        values.Add("tag", "fsharp")
+        values.Add("tag", "validation")
+        values.Add("name", "Ada")
+
+        let input = RawInput.ofNameValueCollection values
+
+        test <@ RawInput.lookupPath "name" input = RawInput.Scalar "Ada" @>
+        test <@ RawInput.lookupPath "tag" input = RawInput.Many [ RawInput.Scalar "fsharp"; RawInput.Scalar "validation" ] @>
+
+    [<Fact>]
+    let ``raw input adapts CLI args to named fields flags and positionals`` () =
+        let input =
+            RawInput.ofCliArgs
+                [ "--name"
+                  "Ada"
+                  "--tag=fsharp"
+                  "--tag"
+                  "validation"
+                  "--active"
+                  "--no-archived"
+                  "import.csv"
+                  "--"
+                  "--literal" ]
+
+        test <@ RawInput.lookupPath "name" input = RawInput.Scalar "Ada" @>
+        test <@ RawInput.lookupPath "active" input = RawInput.Scalar "true" @>
+        test <@ RawInput.lookupPath "archived" input = RawInput.Scalar "false" @>
+        test <@ RawInput.lookupPath "tag" input = RawInput.Many [ RawInput.Scalar "fsharp"; RawInput.Scalar "validation" ] @>
+        test <@ RawInput.lookupPath "_" input = RawInput.Many [ RawInput.Scalar "import.csv"; RawInput.Scalar "--literal" ] @>
+
+    [<Fact>]
+    let ``raw input adapts JSON-like values`` () =
+        let input =
+            JsonLikeValue.Object(
+                Map.ofList
+                    [ "name", JsonLikeValue.String "Ada"
+                      "active", JsonLikeValue.Bool true
+                      "score", JsonLikeValue.Number "42.5"
+                      "middleName", JsonLikeValue.Null
+                      "contacts",
+                      JsonLikeValue.Array
+                          [ JsonLikeValue.Object(Map.ofList [ "value", JsonLikeValue.String "ada@example.com" ])
+                            JsonLikeValue.Object(Map.ofList [ "value", JsonLikeValue.String "+61 400 000 000" ]) ] ]
+            )
+            |> RawInput.ofJsonLikeValue
+
+        test <@ RawInput.lookupPath "name" input = RawInput.Scalar "Ada" @>
+        test <@ RawInput.lookupPath "active" input = RawInput.Scalar "true" @>
+        test <@ RawInput.lookupPath "score" input = RawInput.Scalar "42.5" @>
+        test <@ RawInput.lookupPath "middleName" input = RawInput.Missing @>
+        test <@ RawInput.lookupPath "contacts[1].value" input = RawInput.Scalar "+61 400 000 000" @>
+
+    [<Fact>]
+    let ``raw input adapts flattened configuration keys`` () =
+        let input =
+            RawInput.ofConfiguration
+                [ "displayName", "Ada"
+                  "contacts:0:value", "ada@example.com"
+                  "contacts:1:value", "+61 400 000 000"
+                  "features:email", "true" ]
+
+        test <@ RawInput.lookupPath "displayName" input = RawInput.Scalar "Ada" @>
+        test <@ RawInput.lookupPath "contacts[0].value" input = RawInput.Scalar "ada@example.com" @>
+        test <@ RawInput.lookupPath "contacts[1].value" input = RawInput.Scalar "+61 400 000 000" @>
+        test <@ RawInput.lookupPath "features.email" input = RawInput.Scalar "true" @>
 
     [<Fact>]
     let ``input path constructs names and indexes`` () =
