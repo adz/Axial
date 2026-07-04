@@ -415,7 +415,7 @@ module ApiShapeTests =
         test <@ publicExternalFieldNameConstructors.Length = 0 @>
         schemaModule
         |> publicStaticMemberNames
-        |> assertContainsAll [ "record"; "field"; "fieldWith"; "build" ]
+        |> assertContainsAll [ "record"; "recordFor"; "field"; "fieldWith"; "build" ]
         fieldModule
         |> publicStaticMemberNames
         |> assertContainsAll [ "create"; "externalName"; "order"; "getValue"; "constraints"; "withConstraint"; "withConstraints" ]
@@ -799,6 +799,7 @@ module ApiShapeTests =
         raises<ArgumentNullException> <@ Schema.field "name" Unchecked.defaultof<Customer -> string> Value.text builder |> ignore @>
         raises<ArgumentNullException> <@ Schema.field "name" (fun (model: Customer) -> model.Name) Unchecked.defaultof<ValueSchema<string>> builder |> ignore @>
         raises<ArgumentNullException> <@ Schema.record Unchecked.defaultof<string -> Customer> |> ignore @>
+        raises<ArgumentNullException> <@ Schema.recordFor<Customer, _> Unchecked.defaultof<string -> Customer> |> ignore @>
 
     [<Fact>]
     let ``schema builder builds explicit ordered model schema from public fields`` () =
@@ -845,6 +846,27 @@ module ApiShapeTests =
             test <@ model.Constructor.ArgumentCount = 3 @>
             test <@ model.Fields |> List.map (fun field -> ExternalFieldName.value field.ExternalName) = [ "name"; "age"; "active" ] @>
             test <@ model.Fields |> List.map (fun field -> FieldOrder.value field.Order) = [ 0; 1; 2 ] @>
+            test <@ values = [ box "Ada"; box 37; box true ] @>
+            test <@ ConstructorApplication.apply model.Constructor (values |> List.toArray) = source @>
+        | PendingDefinition -> failwith "Expected public schema API to create a model definition."
+
+    [<Fact>]
+    let ``schema recordFor anchors model type for shorthand getters`` () =
+        let create name age active = { Name = name; Age = age; Active = active }
+        let schema =
+            Schema.recordFor<CustomerProfile, _> create
+            |> Schema.field "name" _.Name Value.text
+            |> Schema.field "age" _.Age Value.``int``
+            |> Schema.field "active" _.Active Value.``bool``
+            |> Schema.build
+
+        match schema.Definition with
+        | ModelDefinition model ->
+            let source = { Name = "Ada"; Age = 37; Active = true }
+            let values = model.Fields |> List.map (fun field -> field.Getter source)
+
+            test <@ model.Constructor.ArgumentCount = 3 @>
+            test <@ model.Fields |> List.map (fun field -> ExternalFieldName.value field.ExternalName) = [ "name"; "age"; "active" ] @>
             test <@ values = [ box "Ada"; box 37; box true ] @>
             test <@ ConstructorApplication.apply model.Constructor (values |> List.toArray) = source @>
         | PendingDefinition -> failwith "Expected public schema API to create a model definition."

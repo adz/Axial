@@ -737,9 +737,11 @@ module internal ModelSchemaDefinition =
 /// diagnostics, validation, codecs, UI generation, or workflow execution.
 /// </para>
 /// <para>
-/// The public construction path is the progressive typed builder: start with <c>Schema.record</c>, append
-/// <c>Schema.field</c> steps, and finish with <c>Schema.build</c>. Computation expressions and source generators can
-/// layer over that builder later, but they are not required for larger models.
+/// The public construction path is the progressive typed builder: start with <c>Schema.recordFor&lt;'model, _&gt;</c>,
+/// append <c>Schema.field</c> steps, and finish with <c>Schema.build</c>. The model-type anchor lets field getters use
+/// shorthand member access such as <c>_.Name</c>. <c>Schema.record</c> remains available when the model type is already
+/// clear or getters are annotated explicitly. Computation expressions and source generators can layer over that builder
+/// later, but they are not required for larger models.
 /// </para>
 /// </remarks>
 [<Sealed>]
@@ -924,8 +926,8 @@ module Field =
     /// </summary>
     /// <remarks>
     /// Standalone fields are useful for advanced composition and tests that need to inspect a <c>Field</c> value
-    /// directly. Ordinary record schemas should use <c>Schema.record</c>, pipeline <c>Schema.field</c> steps, and
-    /// <c>Schema.build</c>.
+    /// directly. Ordinary record schemas should use <c>Schema.recordFor&lt;'model, _&gt;</c>, pipeline
+    /// <c>Schema.field</c> steps, and <c>Schema.build</c>.
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">
     /// Thrown when <paramref name="externalName" />, <paramref name="getter" />, or <paramref name="value" /> is null.
@@ -1016,11 +1018,35 @@ module Schema =
     /// <remarks>
     /// Each following <c>Schema.field</c> step consumes one argument from the constructor type. A partially-applied
     /// builder will not type-check with <c>Schema.build</c>; the final remaining type must be the model. This builder
-    /// replaces the earlier fixed-arity <c>Schema.map2</c>/<c>Schema.map3</c> proof shape, so models with more fields
-    /// continue through the same pipeline rather than switching to a required computation expression or generator.
+    /// replaces the earlier fixed-arity <c>Schema.map2</c>/<c>Schema.map3</c> proof shape. Use
+    /// <c>Schema.recordFor&lt;'model, _&gt;</c> when field getters need shorthand member access such as <c>_.Name</c>; plain
+    /// <c>Schema.record</c> often requires annotating getter lambdas so F# can infer the model type.
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="constructor" /> is null.</exception>
     let record (constructor: 'constructor) : SchemaBuilder<'model, 'constructor, 'constructor, FieldsEnd<'model, 'constructor>> =
+        if isNull (box constructor) then
+            nullArg (nameof constructor)
+
+        SchemaBuilder(constructor, FieldsEnd<'model, 'constructor>())
+
+    /// <summary>
+    /// Starts a progressive typed model schema builder while explicitly anchoring the model type.
+    /// </summary>
+    /// <remarks>
+    /// This is the everyday builder entry point for record schemas because the model-type anchor lets following field
+    /// getters use shorthand member access:
+    /// <code>
+    /// Schema.recordFor&lt;Customer, _&gt; create
+    /// |&gt; Schema.field "name" _.Name Value.text
+    /// |&gt; Schema.build
+    /// </code>
+    /// It preserves the same typed field chain as <c>Schema.record</c>; each field still consumes one constructor
+    /// argument and <c>Schema.build</c> still requires the constructor to be fully applied.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="constructor" /> is null.</exception>
+    let recordFor<'model, 'constructor>
+        (constructor: 'constructor)
+        : SchemaBuilder<'model, 'constructor, 'constructor, FieldsEnd<'model, 'constructor>> =
         if isNull (box constructor) then
             nullArg (nameof constructor)
 

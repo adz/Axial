@@ -54,19 +54,21 @@ ordering, primitive value schemas, schema constraints as inspectable metadata, l
 and constructor/getter alignment — is proven. The explicit core API is a CodecMapper-style progressive typed builder:
 
 ```fsharp
-Schema.record ctor
+Schema.recordFor<Customer, _> ctor
 |> Schema.field "id" _.Id Value.int
 |> Schema.field "name" _.Name Value.text
 |> Schema.build
 ```
 
-Each field application peels one curried constructor argument and `Schema.build` only type-checks when the constructor
-is fully applied, so constructor/getter alignment is compiler-checked by argument position and authoring scales to any
-field count without a hand-written `mapN` family, computation expression, or source generator. The earlier
-`Schema.map2`/`Schema.map3` API was only a transitional proof of the metadata model. The `schema create { }`
-computation expression and any `[<Schema>]` source generator are optional sugar over the builder, not the required path
-for larger models. Raw input, schema validation, rules, and DSL work should build on that explicit builder core rather
-than bypass it.
+`Schema.recordFor<'model, _>` is the everyday entry point because it anchors the model type before the first field, letting
+field getters use shorthand member access. Plain `Schema.record ctor` remains available when the model type is already
+clear or getters are annotated explicitly. Each field application peels one curried constructor argument and
+`Schema.build` only type-checks when the constructor is fully applied, so constructor/getter alignment is
+compiler-checked by argument position and authoring scales to any field count without a hand-written `mapN` family,
+computation expression, or source generator. The earlier `Schema.map2`/`Schema.map3` API was only a transitional proof
+of the metadata model. The `schema create { }` computation expression and any `[<Schema>]` source generator are optional
+sugar over the builder, not the required path for larger models. Raw input, schema validation, rules, and DSL work
+should build on that explicit builder core rather than bypass it.
 
 Schema must also preserve a high-performance codec lowering path. The inspectable schema model may contain rich metadata,
 but JSON codecs should not interpret that metadata tree directly on the hot path. A codec interpreter must be able to

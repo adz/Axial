@@ -37,14 +37,17 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
   definitions inside `Axial.Validation`; keep schema definitions independent and put input, validation, diagnostics, and
   rules integration in `Axial.Validation.Schema`.
 - The explicit schema core is a CodecMapper-style progressive typed builder:
-  `Schema.record ctor |> Schema.field "name" _.Name Value.text |> ... |> Schema.build`. Each field application peels
-  one curried constructor argument and `Schema.build` requires a fully applied constructor, so constructor/getter
-  alignment is compiler-checked by argument position and authoring scales to any field count. The former
-  `Schema.map2`/`Schema.map3` proof shape is not the public authoring direction, and Axial should not grow a
-  hand-written `Schema.mapN` family. Do not route larger models through a required `schema create { }` computation
-  expression or `[<Schema>]` source generator; both are optional sugar over the progressive builder. The built schema
-  must keep its typed field chain reachable alongside the type-erased descriptor view so codec interpreters can compile
-  constructor-specialized plans from a `Schema<'model>` value alone, without `obj array` constructor application.
+  `Schema.recordFor<Customer, _> ctor |> Schema.field "name" _.Name Value.text |> ... |> Schema.build`.
+  `Schema.recordFor<'model, _>` is the everyday entry point because it anchors the model type before the first field,
+  allowing shorthand member getters. Plain `Schema.record ctor` remains available when the model type is already clear
+  or getters are annotated explicitly. Each field application peels one curried constructor argument and `Schema.build`
+  requires a fully applied constructor, so constructor/getter alignment is compiler-checked by argument position and
+  authoring scales to any field count. The former `Schema.map2`/`Schema.map3` proof shape is not the public authoring
+  direction, and Axial should not grow a hand-written `Schema.mapN` family. Do not route larger models through a
+  required `schema create { }` computation expression or `[<Schema>]` source generator; both are optional sugar over the
+  progressive builder. The built schema must keep its typed field chain reachable alongside the type-erased descriptor
+  view so codec interpreters can compile constructor-specialized plans from a `Schema<'model>` value alone, without
+  `obj array` constructor application.
 - `Bind` is only for assigning or mapping a source error immediately before `flow { }` binds it. In pure code, use
   `Result.require`, `Result.mapError`, or `Validation.mapError`.
 - Generated reference docs come from XML comments and generator inputs. Do not hand-edit generated reference pages as the

@@ -182,8 +182,9 @@ the typed `Field` values and the constructor lambda from the test side; a codec 
 `Schema<'model>` cannot do that. Fix this before Phase 7 builds more interpreters against the erased-only view.
 
 - [x] Replace the `Schema.map2` / `Schema.map3` cap with a CodecMapper-style progressive typed builder:
-  `Schema.record ctor |> Schema.field "id" _.Id Value.int |> ... |> Schema.build`, where each field application peels
-  one curried constructor argument and `Schema.build` only type-checks when the constructor is fully applied.
+  `Schema.recordFor<Customer, _> ctor |> Schema.field "id" _.Id Value.int |> ... |> Schema.build`, where each field
+  application peels one curried constructor argument and `Schema.build` only type-checks when the constructor is fully
+  applied.
   Constructor/getter alignment stays compiler-checked by argument position, with no `mapN` family, no computation
   expression, and no source generator required for any field count. Compare
   `../../CodecMapper/main/src/CodecMapper/ContractsCore.fs` (`SchemaBuilder`, `IChainNode`, `FieldsAppend`, and
@@ -251,10 +252,10 @@ the typed `Field` values and the constructor lambda from the test side; a codec 
   ```
 - [x] Update `dev-docs/decisions/README.md`, `dev-docs/PLAN.md`, and source comments (for example the `Schema.map3`
   remark that routes larger models through the CE/generator) once the builder replaces the `mapN` cap.
-- [ ] Close the builder ergonomics gap before treating Phase 5b as complete in user-facing examples: add an explicit
-  model-type anchor, such as `Schema.recordFor<Customer> create`, or an equivalent API, so field getters can use
+- [x] Close the builder ergonomics gap before treating Phase 5b as complete in user-facing examples: add an explicit
+  model-type anchor, `Schema.recordFor<Customer, _> create`, so field getters can use
   shorthand member access without annotating every lambda:
-  `Schema.recordFor<Customer> create |> Schema.field "name" _.Name Value.text |> Schema.build`. Add compile/API shape
+  `Schema.recordFor<Customer, _> create |> Schema.field "name" _.Name Value.text |> Schema.build`. Add compile/API shape
   tests proving the shorthand works, and update `dev-docs/PLAN.md`, `dev-docs/decisions/README.md`, source comments,
   and any examples so they do not present `Schema.record ctor |> Schema.field "name" _.Name Value.text` as already
   supported unless that exact form compiles.
