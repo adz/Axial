@@ -9,7 +9,7 @@ Work this queue from top to bottom.
 
 ## Phase 7: Build RawInput And Input Parsing
 
-- [ ] Define source-agnostic `RawInput`:
+- [x] Define source-agnostic `RawInput`:
   `Missing`, `Scalar`, `Many`, and `Object`.
 - [ ] Implement path addressing for names and indexes.
 - [ ] Implement raw value lookup by paths like `contacts[1].value`.
