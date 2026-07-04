@@ -1,6 +1,7 @@
 open System
 open Axial.Flow
 open Axial.ErrorHandling
+open Axial.Schema
 open Axial.Validation
 
 type ProbeFailure(message: string) =
@@ -37,6 +38,39 @@ type ProbeError =
     | CityRequired
     | LineNameRequired of index: int
     | LineQuantityInvalid of index: int
+
+type SchemaContact =
+    {
+        Name: string
+        Age: int
+    }
+
+type SchemaFieldSummary =
+    {
+        Order: int
+        ExternalName: string
+    }
+
+type SummaryChainResult<'model, 'constructorIn, 'constructorOut>(value: obj) =
+    interface IFieldChainResult<'model, 'constructorIn, 'constructorOut> with
+        member _.Value = value
+
+type SummaryFactory<'model>() =
+    interface IFieldChainFactory<'model, SchemaFieldSummary list> with
+        member _.OnEnd() =
+            SummaryChainResult<'model, 'constructor, 'constructor>(box ([]: SchemaFieldSummary list))
+            :> IFieldChainResult<_, _, _>
+
+        member _.OnField(order, field: Axial.Schema.Field<'model, 'field>, head) =
+            let fields = head.Value :?> SchemaFieldSummary list
+            let name = Axial.Schema.Field.externalName field |> ExternalFieldName.value
+            let fieldSummary = { Order = order; ExternalName = name }
+
+            SummaryChainResult<'model, 'constructorIn, 'next>(box (fields @ [ fieldSummary ]))
+            :> IFieldChainResult<_, _, _>
+
+        member _.OnComplete(_, chain) =
+            chain.Value :?> SchemaFieldSummary list
 
 type Field<'root, 'value> =
     {
@@ -170,6 +204,15 @@ let renderUserForm user =
             yield Form.renderField prefix line lineQuantity
     ]
 
+let probeSchemaBuilder () =
+    let schema =
+        Schema.record (fun name age -> { Name = name; Age = age })
+        |> Schema.field "name" (fun (contact: SchemaContact) -> contact.Name) Value.text
+        |> Schema.field "age" (fun (contact: SchemaContact) -> contact.Age) Value.``int``
+        |> Schema.build
+
+    Schema.specialize (SummaryFactory<SchemaContact>()) schema
+
 let probe () =
     let user =
         {
@@ -206,6 +249,13 @@ let probe () =
             "Lines[0].Quantity = 1"
             "Lines[1].Name = \"Widget\""
             "Lines[1].Quantity = 0"
+        ]
+
+    probeSchemaBuilder ()
+    |> Assert.equal
+        [
+            { Order = 0; ExternalName = "name" }
+            { Order = 1; ExternalName = "age" }
         ]
 
 [<EntryPoint>]

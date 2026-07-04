@@ -2,7 +2,6 @@ namespace Axial.Schema
 
 open System
 open System.Collections.Generic
-open System.Collections.ObjectModel
 
 /// <summary>
 /// Represents the source-facing name of a schema field.
@@ -69,7 +68,11 @@ module FieldOrder =
     /// <exception cref="T:System.ArgumentOutOfRangeException">Thrown when <paramref name="value" /> is negative.</exception>
     let create value =
         if value < 0 then
+#if FABLE_COMPILER
+            invalidArg (nameof value) "Field order must be zero or greater."
+#else
             raise (ArgumentOutOfRangeException(nameof value, value, "Field order must be zero or greater."))
+#endif
 
         FieldOrder value
 
@@ -170,14 +173,25 @@ module SchemaConstraint =
 
     let private ensureNonNegative parameterName value =
         if value < 0 then
+#if FABLE_COMPILER
+            invalidArg parameterName "Schema constraint bounds must be zero or greater."
+#else
             raise (ArgumentOutOfRangeException(parameterName, value, "Schema constraint bounds must be zero or greater."))
+#endif
 
     let private ensureOrderedBounds parameterName minimum maximum =
         if minimum > maximum then
             invalidArg parameterName "Schema constraint minimum bounds must be less than or equal to maximum bounds."
 
+    let private freezeArguments (values: Dictionary<string, obj>) =
+#if FABLE_COMPILER
+        values :> IReadOnlyDictionary<string, obj>
+#else
+        System.Collections.ObjectModel.ReadOnlyDictionary<string, obj>(values) :> IReadOnlyDictionary<string, obj>
+#endif
+
     let private emptyArguments =
-        ReadOnlyDictionary<string, obj>(Dictionary<string, obj>()) :> IReadOnlyDictionary<string, obj>
+        freezeArguments (Dictionary<string, obj>())
 
     let private createKnown code metadata =
         ensureName (nameof code) code
@@ -196,7 +210,7 @@ module SchemaConstraint =
             ensureName (nameof arguments) name
             values.Add(name, value))
 
-        SchemaConstraint(code, metadata, ReadOnlyDictionary<string, obj>(values) :> IReadOnlyDictionary<string, obj>)
+        SchemaConstraint(code, metadata, freezeArguments values)
 
     /// <summary>Creates portable custom schema constraint metadata with no arguments.</summary>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="code" /> is null.</exception>
@@ -230,7 +244,7 @@ module SchemaConstraint =
         SchemaConstraint(
             code,
             SchemaConstraintMetadata.Custom code,
-            ReadOnlyDictionary<string, obj>(values) :> IReadOnlyDictionary<string, obj>
+            freezeArguments values
         )
 
     /// <summary>Requires a value to be supplied by boundary interpreters.</summary>

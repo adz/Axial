@@ -4,6 +4,7 @@ open System
 open System.Threading
 open Axial.Flow
 open Axial.ErrorHandling
+open Axial.Schema
 open Axial.Validation
 
 [<RequireQualifiedAccess>]
@@ -21,6 +22,41 @@ module Shared =
         {
             Prefix: string
         }
+
+    type SchemaContact =
+        {
+            Name: string
+            Age: int
+        }
+
+    type private SchemaFieldSummary =
+        {
+            Order: int
+            ExternalName: string
+        }
+
+    type private SummaryChainResult<'model, 'constructorIn, 'constructorOut>(value: obj) =
+        interface IFieldChainResult<'model, 'constructorIn, 'constructorOut> with
+            member _.Value = value
+
+    type private SummaryFactory<'model>() =
+        interface IFieldChainFactory<'model, string list> with
+            member _.OnEnd() =
+                SummaryChainResult<'model, 'constructor, 'constructor>(box ([]: SchemaFieldSummary list))
+                :> IFieldChainResult<_, _, _>
+
+            member _.OnField(order, field: Field<'model, 'field>, head) =
+                let fields = head.Value :?> SchemaFieldSummary list
+                let name = Field.externalName field |> ExternalFieldName.value
+                let fieldSummary = { Order = order; ExternalName = name }
+
+                SummaryChainResult<'model, 'constructorIn, 'next>(box (fields @ [ fieldSummary ]))
+                :> IFieldChainResult<_, _, _>
+
+            member _.OnComplete(_, chain) =
+                chain.Value
+                :?> SchemaFieldSummary list
+                |> List.map (fun field -> $"{field.Order}:{field.ExternalName}")
 
     let consumeResult (result: Result<int, string>) =
         match result with
@@ -108,6 +144,15 @@ module Shared =
             workflow <- workflow |> Flow.map (fun value -> value + index)
 
         workflow
+
+    let buildSchemaBuilderSummary () =
+        let schema =
+            Schema.record (fun name age -> { Name = name; Age = age })
+            |> Schema.field "name" (fun (contact: SchemaContact) -> contact.Name) Value.text
+            |> Schema.field "age" (fun (contact: SchemaContact) -> contact.Age) Value.``int``
+            |> Schema.build
+
+        Schema.specialize (SummaryFactory<SchemaContact>()) schema
 
     let runAsyncResult (workflow: unit -> Async<Result<int, string>>) =
         let mutable completed = false

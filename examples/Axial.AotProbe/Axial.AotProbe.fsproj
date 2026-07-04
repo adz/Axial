@@ -44,8 +44,16 @@
       <HintPath>..\..\artifacts\bin\Axial\release_net8.0\Axial.Refined.dll</HintPath>
       <Private>true</Private>
     </Reference>
+    <Reference Include="Axial.Schema">
+      <HintPath>..\..\artifacts\bin\Axial\release_net8.0\Axial.Schema.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
     <Reference Include="Axial.Validation">
       <HintPath>..\..\artifacts\bin\Axial\release_net8.0\Axial.Validation.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="Axial.Validation.Schema">
+      <HintPath>..\..\artifacts\bin\Axial\release_net8.0\Axial.Validation.Schema.dll</HintPath>
       <Private>true</Private>
     </Reference>
   </ItemGroup>

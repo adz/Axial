@@ -20,6 +20,11 @@ module Program =
 
         printfn "Target: %s" targetName
 
+        let schemaSummary = Shared.buildSchemaBuilderSummary ()
+
+        if schemaSummary <> [ "0:name"; "1:age" ] then
+            failwith $"Unexpected schema builder summary: %A{schemaSummary}"
+
         Runner.reportSection
             targetName
             ".NET-like sync result"
