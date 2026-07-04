@@ -42,6 +42,7 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="RawInput.fs" />
+    <Compile Include="ParsedInput.fs" />
     <Compile Include="SchemaValidation.fs" />
   </ItemGroup>
 

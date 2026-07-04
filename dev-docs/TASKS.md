@@ -16,7 +16,7 @@ Work this queue from top to bottom.
 - [x] Implement raw redisplay helpers.
 - [x] Implement adapters:
   map, name-value collection, CLI args, JSON-like value, and configuration.
-- [ ] Define `ParsedInput<'model, 'error>`.
+- [x] Define `ParsedInput<'model, 'error>`.
 - [ ] Add helpers:
   `IsValid`, `Model`, `TryModel`, `Errors`, `ErrorsFor`, `Input`, and `Result`.
 - [ ] Implement `Input.parse : Schema<'model> -> RawInput -> ParsedInput<'model, SchemaError>`.
