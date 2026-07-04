@@ -126,7 +126,7 @@ Schema constraints should lower onto the tightened `Check` shape, not the verbos
 - [x] Add behavior tests for both direct modules and top-level facade functions.
 - [x] Add tests proving `Check.present`, `Check.empty`, and `Check.notEmpty` work for string, option, value option,
   nullable, and sequence values where applicable.
-- [ ] Add composition tests using tightened top-level checks, including function-list use such as
+- [x] Add composition tests using tightened top-level checks, including function-list use such as
   `Check.all [ Check.present; Check.lengthBetween 2 40 ]`.
 - [ ] Update source comments for the tightened `Check` model.
 - [ ] Regenerate reference docs only after source comments and public APIs are updated.

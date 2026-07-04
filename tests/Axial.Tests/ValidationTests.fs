@@ -488,6 +488,32 @@ module ValidationTests =
             Assert.Equal<Result<unit, CheckFailure list>>(Check.Seq.notEmpty nullValues, Check.notEmpty nullValues)
 
         [<Fact>]
+        let ``Check composition accepts tightened top-level checks`` () =
+            let requiredName =
+                Check.all [ Check.present; Check.lengthBetween 2 40 ]
+
+            test <@ requiredName "Ada" = Ok () @>
+            test <@ requiredName "" = Error [ Blank; Length(LengthBetween(2, 40), Some 0) ] @>
+
+            let nullString: string = null
+
+            test <@ requiredName nullString = Error [ Missing; Length(LengthBetween(2, 40), None) ] @>
+
+            let shortCode =
+                Check.any [ Check.length 2; Check.length 3 ]
+
+            test <@ shortCode "US" = Ok () @>
+            test <@ shortCode "USA" = Ok () @>
+            test <@ shortCode "United States" = Error [ Length(ExactLength 2, Some 13); Length(ExactLength 3, Some 13) ] @>
+
+            let requiredDistinctIds =
+                Check.all [ Check.notEmpty; Check.distinct; Check.maxCount 3 ]
+
+            test <@ requiredDistinctIds [ 1; 2; 3 ] = Ok () @>
+            test <@ requiredDistinctIds [] = Error [ Count(MinimumCount 1, Some 0) ] @>
+            test <@ requiredDistinctIds [ 1; 2; 1; 3 ] = Error [ CustomCode "seq.distinct"; Count(MaximumCount 3, Some 4) ] @>
+
+        [<Fact>]
         let ``Check Option exposes executable option value checks`` () =
             test <@ Check.Option.some (Some 1) = Ok () @>
             test <@ Check.Option.some None = Error [ Missing ] @>
