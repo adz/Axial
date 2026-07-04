@@ -99,7 +99,7 @@ Schema constraints should lower onto the tightened `Check` shape, not the verbos
   `positive`, `nonNegative`, `negative`, and `nonPositive`.
 - [x] Add structured sequence checks missing from the direct module:
   `empty`, `count`, `contains`, `single`, `atMostOne`, `atLeastOne`, and `moreThanOne`.
-- [ ] Add option presence aliases:
+- [x] Add option presence aliases:
   `Check.Option.present`, `Check.Option.empty`, `Check.Option.notEmpty`.
 - [ ] Add value-option presence aliases:
   `Check.ValueOption.present`, `Check.ValueOption.empty`, `Check.ValueOption.notEmpty`.

@@ -402,6 +402,15 @@ module ValidationTests =
             test <@ Check.Option.none None = Ok () @>
             test <@ Check.Option.none (Some 1) = Error [ Equality(EqualTo "None", Some "Some") ] @>
 
+            test <@ Check.Option.present (Some 1) = Ok () @>
+            test <@ Check.Option.present None = Error [ Missing ] @>
+
+            test <@ Check.Option.empty None = Ok () @>
+            test <@ Check.Option.empty (Some 1) = Error [ Equality(EqualTo "None", Some "Some") ] @>
+
+            test <@ Check.Option.notEmpty (Some 1) = Ok () @>
+            test <@ Check.Option.notEmpty None = Error [ Missing ] @>
+
         [<Fact>]
         let ``Check ValueOption exposes executable value option checks`` () =
             test <@ Check.ValueOption.some (ValueSome 1) = Ok () @>

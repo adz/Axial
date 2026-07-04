@@ -471,12 +471,24 @@ module Check =
                 | Some _ -> pass
                 | None -> fail Missing
 
+        /// <summary>Alias for <c>some</c>; requires an option to contain a value.</summary>
+        let present : Check<'value option> =
+            some
+
         /// <summary>Requires an option to contain no value.</summary>
         let none : Check<'value option> =
             fun value ->
                 match value with
                 | None -> pass
                 | Some _ -> fail (Equality(EqualTo "None", Some "Some"))
+
+        /// <summary>Alias for <c>none</c>; requires an option to contain no value.</summary>
+        let empty : Check<'value option> =
+            none
+
+        /// <summary>Alias for <c>some</c>; requires an option to contain a value.</summary>
+        let notEmpty : Check<'value option> =
+            some
 
     /// <summary>Executable, path-free value checks for already parsed value option values.</summary>
     module ValueOption =
