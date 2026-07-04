@@ -159,7 +159,7 @@ module SchemaVerticalSliceProofTests =
         let displayNameValue = Value.text |> Value.withConstraint SchemaConstraint.required
 
         // Declare fields in reverse of the record's own field order to prove constructor/getter alignment
-        // follows declared argument position, not field name or a field's own pre-assigned default order.
+        // follows declared argument position, not the record's source order or external field name.
         let schema =
             Schema.record (fun displayName email -> { Email = email; DisplayName = displayName })
             |> Schema.field "displayName" (fun (signup: Signup) -> signup.DisplayName) displayNameValue

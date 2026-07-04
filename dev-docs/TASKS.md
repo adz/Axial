@@ -202,7 +202,7 @@ the typed `Field` values and the constructor lambda from the test side; a codec 
 - [x] Re-prove the compiled-record-plan slice from the `Schema<'model>` value itself; update
   `SchemaCompiledRecordPlanProofTests` and `SchemaVerticalSliceProofTests` so the plan is derived from the built
   schema, not from test-side pre-erasure ingredients.
-- [ ] Update the vertical-slice proof and constructor/getter alignment tests to author through the builder, keeping
+- [x] Update the vertical-slice proof and constructor/getter alignment tests to author through the builder, keeping
   the reversed-declaration-order alignment scenario.
 - [ ] Keep the builder Fable-compatible and AOT/trimming-safe; the chain must not rely on runtime reflection.
 - [ ] Evaluate and document builder compile-error quality: what the compiler reports when a getter type mismatches its
