@@ -1341,36 +1341,36 @@ module ApiShapeTests =
 
         moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.PredicateModule+String"
         |> assertMethodsReturnBool
-            [ "isEmpty"
-              "isNotEmpty"
-              "isBlank"
-              "isNotBlank"
-              "hasMinLength"
-              "hasMaxLength"
-              "hasLength"
+            [ "empty"
+              "notEmpty"
+              "blank"
+              "notBlank"
+              "minLength"
+              "maxLength"
+              "lengthBetween"
+              "length"
               "matches"
-              "isEmail"
-              "isNumeric"
-              "isAlphaNumeric" ]
+              "email"
+              "numeric"
+              "alphaNumeric" ]
 
         moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.PredicateModule+Seq"
         |> assertMethodsReturnBool
-            [ "isEmpty"
-              "isNotEmpty"
+            [ "empty"
+              "notEmpty"
               "contains"
-              "hasCount"
-              "isSingle"
+              "count"
+              "minCount"
+              "maxCount"
+              "countBetween"
+              "single"
               "atMostOne"
               "atLeastOne"
               "moreThanOne"
-              "hasDuplicates"
-              "isDistinct" ]
+              "duplicates"
+              "distinct" ]
 
-        moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.PredicateModule+Seq"
-        |> publicStaticMemberNames
-        |> assertContainsNone [ "distinct" ]
-
-        moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.PredicateModule+Compare"
+        moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.PredicateModule+Number"
         |> assertMethodsReturnBool
             [ "greaterThan"
               "lessThan"

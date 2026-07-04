@@ -352,74 +352,34 @@ type UnitPrice = private UnitPrice of decimal
 module ContactEmail =
     let value (ContactEmail value) = value
 
-    let private describe failures =
-        failures
-        |> List.map (sprintf "%A")
-        |> String.concat "; "
-
     let create value : Result<ContactEmail, RefinementError> =
-        Refine.withCheck
+        Refine.withChecks
             "ContactEmail"
-            (Check.all [
-                Check.String.present
-                Check.String.email
-                Check.String.maxLength 254
-            ])
-            (fun target failures -> RefinementError.InvalidFormat(target, describe failures))
+            [ Check.String.present; Check.String.email; Check.String.maxLength 254 ]
             ContactEmail
             value
 
 module Sku =
     let value (Sku value) = value
 
-    let private describe failures =
-        failures
-        |> List.map (sprintf "%A")
-        |> String.concat "; "
-
     let create value : Result<Sku, RefinementError> =
-        Refine.withCheck
+        Refine.withChecks
             "Sku"
-            (Check.all [
-                Check.String.present
-                Check.String.lengthBetween 3 12
-                Check.String.matches "^[A-Z0-9-]+$"
-            ])
-            (fun target failures -> RefinementError.InvalidFormat(target, describe failures))
+            [ Check.String.present; Check.String.lengthBetween 3 12; Check.String.matches "^[A-Z0-9-]+$" ]
             Sku
             value
 
 module Rating =
     let value (Rating value) = value
 
-    let private describe failures =
-        failures
-        |> List.map (sprintf "%A")
-        |> String.concat "; "
-
     let create value : Result<Rating, RefinementError> =
-        Refine.withCheck
-            "Rating"
-            (Check.Number.between 1 5)
-            (fun target failures -> RefinementError.OutOfRange(target, describe failures))
-            Rating
-            value
+        Refine.withCheck "Rating" (Check.Number.between 1 5) Rating value
 
 module UnitPrice =
     let value (UnitPrice value) = value
 
-    let private describe failures =
-        failures
-        |> List.map (sprintf "%A")
-        |> String.concat "; "
-
     let create value : Result<UnitPrice, RefinementError> =
-        Refine.withCheck
-            "UnitPrice"
-            (Check.Number.greaterThan 0m)
-            (fun target failures -> RefinementError.OutOfRange(target, describe failures))
-            UnitPrice
-            value
+        Refine.withCheck "UnitPrice" (Check.Number.greaterThan 0m) UnitPrice value
 
 type Discount =
     | Percent of PositiveInt
@@ -463,7 +423,7 @@ let parseDiscount (raw: string) : Result<Discount, RefinementError> =
         parsePercent
         Code
         Refine.slug
-        (RefinementError.InvalidFormat("Discount", "Expected a positive integer percent or slug code."))
+        (RefinementError.CheckFailed("Discount", [ CheckFailure.InvalidFormat "positive integer percent or slug code" ]))
         raw
 
 let createProductRequest

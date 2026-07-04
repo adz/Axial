@@ -33,6 +33,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Axial.ErrorHandling\Axial.ErrorHandling.fsproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="Errors.fs" />
     <Compile Include="Parse.fs" />
     <Compile Include="Refine.fs" />

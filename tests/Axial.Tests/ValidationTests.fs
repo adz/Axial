@@ -182,13 +182,13 @@ module ValidationTests =
             test <@ Check.Number.atLeast 1 1 = Ok () @>
             test <@ Check.Number.atMost 3 3 = Ok () @>
             test <@ Check.Number.positive 1 = Ok () @>
-            test <@ Check.Number.positive 0 = Error [ Range(GreaterThan "0", Some "0") ] @>
+            test <@ Check.Number.positive 0 = Error [ Positive(Some "0") ] @>
             test <@ Check.Number.nonNegative 0 = Ok () @>
-            test <@ Check.Number.nonNegative -1 = Error [ Range(AtLeast "0", Some "-1") ] @>
+            test <@ Check.Number.nonNegative -1 = Error [ NonNegative(Some "-1") ] @>
             test <@ Check.Number.negative -1 = Ok () @>
-            test <@ Check.Number.negative 0 = Error [ Range(LessThan "0", Some "0") ] @>
+            test <@ Check.Number.negative 0 = Error [ Negative(Some "0") ] @>
             test <@ Check.Number.nonPositive 0 = Ok () @>
-            test <@ Check.Number.nonPositive 1 = Error [ Range(AtMost "0", Some "1") ] @>
+            test <@ Check.Number.nonPositive 1 = Error [ NonPositive(Some "1") ] @>
 
         [<Fact>]
         let ``Check Seq behavior accumulates count and distinct failures`` () =
@@ -301,15 +301,15 @@ module ValidationTests =
             test <@ Check.Number.between 1.5m 2.5m 2.0m = Ok () @>
             test <@ Check.Number.atLeast 1.5m 1.0m = Error [ Range(AtLeast "1.5", Some "1.0") ] @>
             test <@ Check.Number.positive 0.1m = Ok () @>
-            test <@ Check.Number.nonPositive 0.1m = Error [ Range(AtMost "0", Some "0.1") ] @>
+            test <@ Check.Number.nonPositive 0.1m = Error [ NonPositive(Some "0.1") ] @>
 
         [<Fact>]
         let ``Check Seq exposes executable sequence value checks`` () =
             let nullValues: seq<int> = null
 
             test <@ Check.Seq.notEmpty [ 1 ] = Ok () @>
-            test <@ Check.Seq.notEmpty [] = Error [ Count(MinimumCount 1, Some 0) ] @>
-            test <@ Check.Seq.notEmpty nullValues = Error [ Count(MinimumCount 1, None) ] @>
+            test <@ Check.Seq.notEmpty [] = Error [ NonEmpty(Some 0) ] @>
+            test <@ Check.Seq.notEmpty nullValues = Error [ NonEmpty None ] @>
 
             test <@ Check.Seq.empty [] = Ok () @>
             test <@ Check.Seq.empty [ 1 ] = Error [ Count(ExactCount 0, Some 1) ] @>
@@ -342,7 +342,7 @@ module ValidationTests =
             test <@ Check.Seq.single [ 1 ] = Ok () @>
             test <@ Check.Seq.single [ 1; 2 ] = Error [ Count(ExactCount 1, Some 2) ] @>
             test <@ Check.Seq.atMostOne [ 1; 2 ] = Error [ Count(MaximumCount 1, Some 2) ] @>
-            test <@ Check.Seq.atLeastOne [] = Error [ Count(MinimumCount 1, Some 0) ] @>
+            test <@ Check.Seq.atLeastOne [] = Error [ NonEmpty(Some 0) ] @>
             test <@ Check.Seq.moreThanOne [ 1 ] = Error [ Count(MinimumCount 2, Some 1) ] @>
 
         [<Fact>]
@@ -366,13 +366,13 @@ module ValidationTests =
             test <@ Check.atLeast 3 2 = Error [ Range(AtLeast "3", Some "2") ] @>
             test <@ Check.atMost 3 4 = Error [ Range(AtMost "3", Some "4") ] @>
             test <@ Check.positive 1 = Ok () @>
-            test <@ Check.positive 0 = Error [ Range(GreaterThan "0", Some "0") ] @>
+            test <@ Check.positive 0 = Error [ Positive(Some "0") ] @>
             test <@ Check.nonNegative 0 = Ok () @>
-            test <@ Check.nonNegative -1 = Error [ Range(AtLeast "0", Some "-1") ] @>
+            test <@ Check.nonNegative -1 = Error [ NonNegative(Some "-1") ] @>
             test <@ Check.negative -1 = Ok () @>
-            test <@ Check.negative 0 = Error [ Range(LessThan "0", Some "0") ] @>
+            test <@ Check.negative 0 = Error [ Negative(Some "0") ] @>
             test <@ Check.nonPositive 0 = Ok () @>
-            test <@ Check.nonPositive 1 = Error [ Range(AtMost "0", Some "1") ] @>
+            test <@ Check.nonPositive 1 = Error [ NonPositive(Some "1") ] @>
 
             test <@ Check.count 2 [ 1; 2 ] = Ok () @>
             test <@ Check.count 2 [ 1 ] = Error [ Count(ExactCount 2, Some 1) ] @>
@@ -387,7 +387,7 @@ module ValidationTests =
             test <@ Check.single [ 1 ] = Ok () @>
             test <@ Check.single [ 1; 2 ] = Error [ Count(ExactCount 1, Some 2) ] @>
             test <@ Check.atMostOne [ 1; 2 ] = Error [ Count(MaximumCount 1, Some 2) ] @>
-            test <@ Check.atLeastOne [] = Error [ Count(MinimumCount 1, Some 0) ] @>
+            test <@ Check.atLeastOne [] = Error [ NonEmpty(Some 0) ] @>
             test <@ Check.moreThanOne [ 1 ] = Error [ Count(MinimumCount 2, Some 1) ] @>
 
             test <@ Check.equalTo 3 3 = Ok () @>
@@ -510,7 +510,7 @@ module ValidationTests =
                 Check.all [ Check.notEmpty; Check.distinct; Check.maxCount 3 ]
 
             test <@ requiredDistinctIds [ 1; 2; 3 ] = Ok () @>
-            test <@ requiredDistinctIds [] = Error [ Count(MinimumCount 1, Some 0) ] @>
+            test <@ requiredDistinctIds [] = Error [ NonEmpty(Some 0) ] @>
             test <@ requiredDistinctIds [ 1; 2; 1; 3 ] = Error [ CustomCode "seq.distinct"; Count(MaximumCount 3, Some 4) ] @>
 
         [<Fact>]
@@ -601,44 +601,48 @@ module ValidationTests =
             test <@ Predicate.Reference.isNull nullString @>
             test <@ Predicate.Reference.notNull "Ada" @>
 
-            test <@ Predicate.String.isEmpty "" @>
-            test <@ not (Predicate.String.isEmpty nullString) @>
-            test <@ Predicate.String.isNotEmpty " " @>
-            test <@ Predicate.String.isBlank "   " @>
-            test <@ Predicate.String.isBlank nullString @>
-            test <@ Predicate.String.isNotBlank "Ada" @>
-            test <@ Predicate.String.hasMinLength 3 "Ada" @>
-            test <@ Predicate.String.hasMaxLength 3 "Ada" @>
-            test <@ Predicate.String.hasLength 3 "Ada" @>
+            test <@ Predicate.String.empty "" @>
+            test <@ not (Predicate.String.empty nullString) @>
+            test <@ Predicate.String.notEmpty " " @>
+            test <@ Predicate.String.blank "   " @>
+            test <@ Predicate.String.blank nullString @>
+            test <@ Predicate.String.notBlank "Ada" @>
+            test <@ Predicate.String.minLength 3 "Ada" @>
+            test <@ Predicate.String.maxLength 3 "Ada" @>
+            test <@ Predicate.String.length 3 "Ada" @>
+            test <@ Predicate.String.lengthBetween 2 4 "Ada" @>
             test <@ Predicate.String.matches "^[a-z]+$" "ada" @>
-            test <@ Predicate.String.isEmail "ada@example.com" @>
-            test <@ Predicate.String.isNumeric "123" @>
-            test <@ Predicate.String.isAlphaNumeric "Ada123" @>
-            test <@ not (Predicate.String.isAlphaNumeric "Ada-123") @>
+            test <@ Predicate.String.email "ada@example.com" @>
+            test <@ Predicate.String.numeric "123" @>
+            test <@ Predicate.String.alphaNumeric "Ada123" @>
+            test <@ not (Predicate.String.alphaNumeric "Ada-123") @>
 
-            test <@ Predicate.Seq.isEmpty [] @>
-            test <@ not (Predicate.Seq.isEmpty nullValues) @>
-            test <@ Predicate.Seq.isNotEmpty [ 1 ] @>
+            test <@ Predicate.Seq.empty [] @>
+            test <@ not (Predicate.Seq.empty nullValues) @>
+            test <@ Predicate.Seq.notEmpty [ 1 ] @>
             test <@ Predicate.Seq.contains 2 [ 1; 2 ] @>
-            test <@ Predicate.Seq.hasCount 2 [ 1; 2 ] @>
-            test <@ Predicate.Seq.isSingle [ 1 ] @>
+            test <@ Predicate.Seq.count 2 [ 1; 2 ] @>
+            test <@ Predicate.Seq.minCount 2 [ 1; 2 ] @>
+            test <@ Predicate.Seq.maxCount 2 [ 1; 2 ] @>
+            test <@ Predicate.Seq.countBetween 1 3 [ 1; 2 ] @>
+            test <@ Predicate.Seq.single [ 1 ] @>
             test <@ Predicate.Seq.atMostOne [] @>
             test <@ Predicate.Seq.atLeastOne [ 1 ] @>
             test <@ Predicate.Seq.moreThanOne [ 1; 2 ] @>
-            test <@ Predicate.Seq.hasDuplicates [ 1; 2; 1 ] @>
-            test <@ Predicate.Seq.isDistinct [ 1; 2; 3 ] @>
-            test <@ not (Predicate.Seq.isDistinct [ 1; 2; 1 ]) @>
-            test <@ not (Predicate.Seq.isDistinct nullValues) @>
+            test <@ Predicate.Seq.duplicates [ 1; 2; 1 ] @>
+            test <@ Predicate.Seq.distinct [ 1; 2; 3 ] @>
+            test <@ not (Predicate.Seq.distinct [ 1; 2; 1 ]) @>
+            test <@ not (Predicate.Seq.distinct nullValues) @>
 
-            test <@ Predicate.Compare.greaterThan 3 4 @>
-            test <@ Predicate.Compare.lessThan 3 2 @>
-            test <@ Predicate.Compare.atLeast 3 3 @>
-            test <@ Predicate.Compare.atMost 3 3 @>
-            test <@ Predicate.Compare.between 1 3 2 @>
-            test <@ Predicate.Compare.positive 1 @>
-            test <@ Predicate.Compare.nonNegative 0 @>
-            test <@ Predicate.Compare.negative -1 @>
-            test <@ Predicate.Compare.nonPositive 0 @>
+            test <@ Predicate.Number.greaterThan 3 4 @>
+            test <@ Predicate.Number.lessThan 3 2 @>
+            test <@ Predicate.Number.atLeast 3 3 @>
+            test <@ Predicate.Number.atMost 3 3 @>
+            test <@ Predicate.Number.between 1 3 2 @>
+            test <@ Predicate.Number.positive 1 @>
+            test <@ Predicate.Number.nonNegative 0 @>
+            test <@ Predicate.Number.negative -1 @>
+            test <@ Predicate.Number.nonPositive 0 @>
 
         [<Fact>]
         let ``Check top-level facade exposes structured checks`` () =
@@ -711,7 +715,7 @@ module ValidationTests =
             test <@ ([ 5 ] |> Result.single) = Ok 5 @>
             test <@ ([] |> Result.single) = Error(ExpectedSingle 0) @>
             test <@ ([ 5 ] |> Result.atMostOne) = Ok(Some 5) @>
-            test <@ ([] |> Result.atLeastOne) = Error [ Count(MinimumCount 1, Some 0) ] @>
+            test <@ ([] |> Result.atLeastOne) = Error [ NonEmpty(Some 0) ] @>
             test <@ ([ 5 ] |> Result.moreThanOne) = Error [ Count(MinimumCount 2, Some 1) ] @>
             test <@ Collection.traverseResult (fun value -> if value < 3 then Ok(value * 2) else Error value) [ 1; 2 ] = Ok [ 2; 4 ] @>
             test <@ Collection.sequenceResult [ Ok 1; Error "missing"; Ok 3 ] = Error "missing" @>

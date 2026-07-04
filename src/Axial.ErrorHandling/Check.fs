@@ -14,7 +14,10 @@ type CheckLengthExpectation =
     /// <summary>The value was expected to have a length inside the inclusive bounds.</summary>
     | LengthBetween of minimum: int * maximum: int
 
-/// <summary>Describes the ordering requirement that a value check expected a comparable value to satisfy.</summary>
+/// <summary>Describes the ordering requirement that a value check expected a comparable value to satisfy against a
+/// caller-supplied bound. Zero-relative requirements (positive, negative, and their non-strict variants) are not
+/// modeled here since they carry no bound to report; they are their own top-level
+/// <see cref="T:Axial.ErrorHandling.CheckFailure" /> cases instead.</summary>
 type CheckRangeExpectation =
     /// <summary>The value was expected to be greater than the supplied exclusive lower bound.</summary>
     | GreaterThan of minimumExclusive: string
@@ -27,7 +30,9 @@ type CheckRangeExpectation =
     /// <summary>The value was expected to be between the supplied inclusive bounds.</summary>
     | Between of minimumInclusive: string * maximumInclusive: string
 
-/// <summary>Describes the count requirement that a value check expected a sequence-shaped value to satisfy.</summary>
+/// <summary>Describes the count requirement that a value check expected a sequence-shaped value to satisfy against a
+/// caller-supplied count. Non-emptiness is not modeled here since it carries no count to report; it is its own
+/// top-level <see cref="T:Axial.ErrorHandling.CheckFailure" /> case instead.</summary>
 type CheckCountExpectation =
     /// <summary>The sequence was expected to contain at least the supplied count.</summary>
     | MinimumCount of minimum: int
@@ -55,14 +60,175 @@ type CheckFailure =
     | InvalidFormat of expected: string
     /// <summary>The value length did not match the expected length constraint.</summary>
     | Length of expectation: CheckLengthExpectation * actualLength: int option
+    /// <summary>The value was expected to be greater than zero.</summary>
+    | Positive of actual: string option
+    /// <summary>The value was expected to be greater than or equal to zero.</summary>
+    | NonNegative of actual: string option
+    /// <summary>The value was expected to be less than zero.</summary>
+    | Negative of actual: string option
+    /// <summary>The value was expected to be less than or equal to zero.</summary>
+    | NonPositive of actual: string option
     /// <summary>The value did not match the expected ordered range constraint.</summary>
     | Range of expectation: CheckRangeExpectation * actual: string option
+    /// <summary>The sequence was expected to contain at least one item.</summary>
+    | NonEmpty of actualCount: int option
     /// <summary>The sequence count did not match the expected count constraint.</summary>
     | Count of expectation: CheckCountExpectation * actualCount: int option
     /// <summary>The value did not match the expected equality constraint.</summary>
     | Equality of expectation: CheckEqualityExpectation * actual: string option
     /// <summary>A custom value check identified by an application-defined code failed.</summary>
     | CustomCode of code: string
+
+/// <summary>
+/// A localizable set of message templates for rendering <see cref="T:Axial.ErrorHandling.CheckFailure" /> values.
+/// </summary>
+/// <remarks>
+/// Each function receives only the already-formatted operand(s) (a length, a count, a bound, an actual value) and
+/// returns the complete phrase for that piece of the message. A translation supplies grammar and word order; it
+/// never needs to reimplement the traversal over every <c>CheckFailure</c>/expectation case, since
+/// <see cref="M:Axial.ErrorHandling.CheckFailure.describeWith" /> owns that traversal and calls into these functions.
+/// </remarks>
+type CheckFailureResources =
+    { /// <summary>Renders a length expectation, e.g. "at least 3 characters".</summary>
+      Length: CheckLengthExpectation -> string
+      /// <summary>Renders a range expectation, e.g. "greater than zero".</summary>
+      Range: CheckRangeExpectation -> string
+      /// <summary>Renders a count expectation, e.g. "at least one item".</summary>
+      Count: CheckCountExpectation -> string
+      /// <summary>Renders an equality expectation, e.g. "equal to expected".</summary>
+      Equality: CheckEqualityExpectation -> string
+      /// <summary>Renders a missing-value failure.</summary>
+      Missing: string
+      /// <summary>Renders a blank-value failure.</summary>
+      Blank: string
+      /// <summary>Renders an invalid-format failure given the expected format name.</summary>
+      InvalidFormat: string -> string
+      /// <summary>Renders a length failure given the rendered expectation and the actual length, if known.</summary>
+      LengthFailure: string -> int option -> string
+      /// <summary>Renders a "must be positive" failure given the actual value, if known.</summary>
+      PositiveFailure: string option -> string
+      /// <summary>Renders a "must be zero or greater" failure given the actual value, if known.</summary>
+      NonNegativeFailure: string option -> string
+      /// <summary>Renders a "must be negative" failure given the actual value, if known.</summary>
+      NegativeFailure: string option -> string
+      /// <summary>Renders a "must be zero or less" failure given the actual value, if known.</summary>
+      NonPositiveFailure: string option -> string
+      /// <summary>Renders a range failure given the rendered expectation and the actual value, if known.</summary>
+      RangeFailure: string -> string option -> string
+      /// <summary>Renders a "must not be empty" failure given the actual count, if known.</summary>
+      NonEmptyFailure: int option -> string
+      /// <summary>Renders a count failure given the rendered expectation and the actual count, if known.</summary>
+      CountFailure: string -> int option -> string
+      /// <summary>Renders an equality failure given the rendered expectation and the actual value, if known.</summary>
+      EqualityFailure: string -> string option -> string
+      /// <summary>Renders a custom-code failure given the application-defined code.</summary>
+      CustomCode: string -> string }
+
+/// <summary>Renders <see cref="T:Axial.ErrorHandling.CheckFailure" /> values as human-readable sentence fragments.</summary>
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module CheckFailure =
+    /// <summary>The default English <see cref="T:Axial.ErrorHandling.CheckFailureResources" />, used by
+    /// <see cref="M:Axial.ErrorHandling.CheckFailure.describe" /> and
+    /// <see cref="M:Axial.ErrorHandling.CheckFailure.describeAll" />.</summary>
+    let english : CheckFailureResources =
+        { Length =
+            function
+            | MinimumLength minimum -> $"at least {minimum} character(s)"
+            | MaximumLength maximum -> $"at most {maximum} character(s)"
+            | ExactLength expected -> $"exactly {expected} character(s)"
+            | LengthBetween(minimum, maximum) -> $"between {minimum} and {maximum} characters"
+          Range =
+            function
+            | GreaterThan minimum -> $"greater than {minimum}"
+            | LessThan maximum -> $"less than {maximum}"
+            | AtLeast minimum -> $"at least {minimum}"
+            | AtMost maximum -> $"at most {maximum}"
+            | Between(minimum, maximum) -> $"between {minimum} and {maximum}"
+          Count =
+            function
+            | MinimumCount minimum -> $"at least {minimum} item(s)"
+            | MaximumCount maximum -> $"at most {maximum} item(s)"
+            | ExactCount expected -> $"exactly {expected} item(s)"
+            | CountBetween(minimum, maximum) -> $"between {minimum} and {maximum} items"
+          Equality =
+            function
+            | EqualTo expected -> $"equal to {expected}"
+            | NotEqualTo unexpected -> $"not equal to {unexpected}"
+          Missing = "value is required"
+          Blank = "value must not be blank"
+          InvalidFormat = fun expected -> $"value must match the expected {expected} format"
+          LengthFailure =
+            fun expectation actual ->
+                match actual with
+                | Some length -> $"expected length {expectation}, but was {length}"
+                | None -> $"expected length {expectation}"
+          PositiveFailure =
+            function
+            | Some value -> $"expected a value greater than zero, but was {value}"
+            | None -> "expected a value greater than zero"
+          NonNegativeFailure =
+            function
+            | Some value -> $"expected a value zero or greater, but was {value}"
+            | None -> "expected a value zero or greater"
+          NegativeFailure =
+            function
+            | Some value -> $"expected a value less than zero, but was {value}"
+            | None -> "expected a value less than zero"
+          NonPositiveFailure =
+            function
+            | Some value -> $"expected a value zero or less, but was {value}"
+            | None -> "expected a value zero or less"
+          RangeFailure =
+            fun expectation actual ->
+                match actual with
+                | Some value -> $"expected a value {expectation}, but was {value}"
+                | None -> $"expected a value {expectation}"
+          NonEmptyFailure =
+            function
+            | Some count -> $"expected at least one item, but found {count}"
+            | None -> "expected at least one item"
+          CountFailure =
+            fun expectation actual ->
+                match actual with
+                | Some count -> $"expected {expectation}, but found {count}"
+                | None -> $"expected {expectation}"
+          EqualityFailure =
+            fun expectation actual ->
+                match actual with
+                | Some value -> $"expected a value {expectation}, but was {value}"
+                | None -> $"expected a value {expectation}"
+          CustomCode = fun code -> $"failed custom check '{code}'" }
+
+    /// <summary>Renders a single check failure using the supplied <see cref="T:Axial.ErrorHandling.CheckFailureResources" />,
+    /// with no trailing punctuation, e.g. <c>"expected a value greater than zero, but was 0"</c>.</summary>
+    let describeWith (resources: CheckFailureResources) (failure: CheckFailure) : string =
+        match failure with
+        | Missing -> resources.Missing
+        | Blank -> resources.Blank
+        | InvalidFormat expected -> resources.InvalidFormat expected
+        | Length(expectation, actual) -> resources.LengthFailure (resources.Length expectation) actual
+        | Positive actual -> resources.PositiveFailure actual
+        | NonNegative actual -> resources.NonNegativeFailure actual
+        | Negative actual -> resources.NegativeFailure actual
+        | NonPositive actual -> resources.NonPositiveFailure actual
+        | Range(expectation, actual) -> resources.RangeFailure (resources.Range expectation) actual
+        | NonEmpty actual -> resources.NonEmptyFailure actual
+        | Count(expectation, actual) -> resources.CountFailure (resources.Count expectation) actual
+        | Equality(expectation, actual) -> resources.EqualityFailure (resources.Equality expectation) actual
+        | CustomCode code -> resources.CustomCode code
+
+    /// <summary>Joins multiple check failures, rendered with the supplied resources, into one semicolon-separated message.</summary>
+    let describeAllWith (resources: CheckFailureResources) (failures: CheckFailure list) : string =
+        failures |> List.map (describeWith resources) |> String.concat "; "
+
+    /// <summary>Renders a single check failure using <see cref="P:Axial.ErrorHandling.CheckFailure.english" />.</summary>
+    let describe (failure: CheckFailure) : string =
+        describeWith english failure
+
+    /// <summary>Joins multiple check failures into one semicolon-separated message using
+    /// <see cref="P:Axial.ErrorHandling.CheckFailure.english" />.</summary>
+    let describeAll (failures: CheckFailure list) : string =
+        describeAllWith english failures
 
 /// <summary>
 /// An executable, path-free value constraint over an already parsed value.
@@ -73,257 +239,6 @@ type CheckFailure =
 /// in validation, parsing, schema, or refinement layers.
 /// </remarks>
 type Check<'value> = 'value -> Result<unit, CheckFailure list>
-
-/// <summary>
-/// Lightweight boolean predicates for local structural facts.
-/// </summary>
-/// <remarks>
-/// These helpers return <c>bool</c> and intentionally live outside the <c>Check</c> module, where public helpers return
-/// structured <see cref="T:Axial.ErrorHandling.Check`1" /> results. Use predicates for local branching and
-/// <c>Check</c> programs when callers need typed failure details.
-/// </remarks>
-[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module Predicate =
-    let private emailRegex =
-        Regex(@"^[^@]+@[^@]+$", RegexOptions.Compiled ||| RegexOptions.IgnoreCase)
-
-    let private numericRegex =
-        Regex(@"^\d+$", RegexOptions.Compiled)
-
-    /// <summary>Boolean predicates for option values.</summary>
-    module Option =
-        /// <summary>Returns true when the option contains a value.</summary>
-        let isSome value =
-            Microsoft.FSharp.Core.Option.isSome value
-
-        /// <summary>Returns true when the option contains no value.</summary>
-        let isNone value =
-            Microsoft.FSharp.Core.Option.isNone value
-
-        /// <summary>Returns true when the option contains a value.</summary>
-        let present value =
-            isSome value
-
-        /// <summary>Returns true when the option contains no value.</summary>
-        let empty value =
-            isNone value
-
-        /// <summary>Returns true when the option contains a value.</summary>
-        let notEmpty value =
-            isSome value
-
-    /// <summary>Boolean predicates for value option values.</summary>
-    module ValueOption =
-        /// <summary>Returns true when the value option contains a value.</summary>
-        let isSome value =
-            match value with
-            | ValueSome _ -> true
-            | ValueNone -> false
-
-        /// <summary>Returns true when the value option contains no value.</summary>
-        let isNone value =
-            match value with
-            | ValueNone -> true
-            | ValueSome _ -> false
-
-        /// <summary>Returns true when the value option contains a value.</summary>
-        let present value =
-            isSome value
-
-        /// <summary>Returns true when the value option contains no value.</summary>
-        let empty value =
-            isNone value
-
-        /// <summary>Returns true when the value option contains a value.</summary>
-        let notEmpty value =
-            isSome value
-
-    /// <summary>Boolean predicates for nullable values.</summary>
-    module Nullable =
-        /// <summary>Returns true when the nullable value contains a value.</summary>
-        let hasValue (value: System.Nullable<'value>) =
-            value.HasValue
-
-        /// <summary>Returns true when the nullable value contains no value.</summary>
-        let hasNoValue (value: System.Nullable<'value>) =
-            not value.HasValue
-
-        /// <summary>Returns true when the nullable value contains a value.</summary>
-        let present value =
-            hasValue value
-
-        /// <summary>Returns true when the nullable value contains no value.</summary>
-        let empty value =
-            hasNoValue value
-
-        /// <summary>Returns true when the nullable value contains a value.</summary>
-        let notEmpty value =
-            hasValue value
-
-    /// <summary>Boolean predicates for result values.</summary>
-    module Result =
-        /// <summary>Returns true when the result is successful.</summary>
-        let isOk result =
-            match result with
-            | Ok _ -> true
-            | Error _ -> false
-
-        /// <summary>Returns true when the result is failed.</summary>
-        let isError result =
-            match result with
-            | Error _ -> true
-            | Ok _ -> false
-
-    /// <summary>Boolean predicates for reference values.</summary>
-    module Reference =
-        /// <summary>Returns true when the reference is null.</summary>
-        let isNull (value: 'value when 'value: null) =
-            Object.ReferenceEquals(value, null)
-
-        /// <summary>Returns true when the reference is not null.</summary>
-        let notNull (value: 'value when 'value: null) =
-            not (isNull value)
-
-    /// <summary>Boolean predicates for strings.</summary>
-    module String =
-        /// <summary>Returns true when the string is exactly empty and non-null.</summary>
-        let isEmpty (value: string) =
-            not (isNull value) && value.Length = 0
-
-        /// <summary>Returns true when the string has at least one character and is non-null.</summary>
-        let isNotEmpty (value: string) =
-            not (isNull value) && value.Length > 0
-
-        /// <summary>Returns true when the string is null, empty, or whitespace.</summary>
-        let isBlank (value: string) =
-            global.System.String.IsNullOrWhiteSpace value
-
-        /// <summary>Returns true when the string is non-null and contains at least one non-whitespace character.</summary>
-        let isNotBlank value =
-            not (isBlank value)
-
-        /// <summary>Returns true when the string length is at least the supplied minimum.</summary>
-        let hasMinLength minimum (value: string) =
-            not (isNull value) && value.Length >= minimum
-
-        /// <summary>Returns true when the string length is at most the supplied maximum.</summary>
-        let hasMaxLength maximum (value: string) =
-            not (isNull value) && value.Length <= maximum
-
-        /// <summary>Returns true when the string length equals the supplied expected length.</summary>
-        let hasLength expected (value: string) =
-            not (isNull value) && value.Length = expected
-
-        /// <summary>Returns true when the string matches the supplied regular expression pattern.</summary>
-        let matches pattern (value: string) =
-            not (isNull value) && Regex.IsMatch(value, pattern)
-
-        /// <summary>Returns true when the string matches Axial's pragmatic email format.</summary>
-        let isEmail (value: string) =
-            not (isNull value) && emailRegex.IsMatch value
-
-        /// <summary>Returns true when the string contains only numeric characters.</summary>
-        let isNumeric (value: string) =
-            not (isNull value) && numericRegex.IsMatch value
-
-        /// <summary>Returns true when the string contains only letter or digit characters.</summary>
-        let isAlphaNumeric (value: string) =
-            not (isNull value) && value.Length > 0 && value |> Seq.forall Char.IsLetterOrDigit
-
-    /// <summary>Boolean predicates for sequence-shaped values.</summary>
-    module Seq =
-        let private tryCount (values: #seq<'value>) =
-            if Object.ReferenceEquals(values, null) then None
-            else Some(Microsoft.FSharp.Collections.Seq.length values)
-
-        /// <summary>Returns true when the sequence is non-null and empty.</summary>
-        let isEmpty values =
-            tryCount values = Some 0
-
-        /// <summary>Returns true when the sequence is non-null and contains at least one item.</summary>
-        let isNotEmpty values =
-            match tryCount values with
-            | Some count -> count > 0
-            | None -> false
-
-        /// <summary>Returns true when the sequence is non-null and contains the supplied value.</summary>
-        let contains expected (values: #seq<'value>) =
-            not (Object.ReferenceEquals(values, null))
-            && values |> Microsoft.FSharp.Collections.Seq.contains expected
-
-        /// <summary>Returns true when the sequence is non-null and contains exactly the supplied count.</summary>
-        let hasCount expected values =
-            tryCount values = Some expected
-
-        /// <summary>Returns true when the sequence is non-null and contains exactly one item.</summary>
-        let isSingle values =
-            hasCount 1 values
-
-        /// <summary>Returns true when the sequence is non-null and contains zero or one item.</summary>
-        let atMostOne values =
-            match tryCount values with
-            | Some count -> count <= 1
-            | None -> false
-
-        /// <summary>Returns true when the sequence is non-null and contains at least one item.</summary>
-        let atLeastOne values =
-            isNotEmpty values
-
-        /// <summary>Returns true when the sequence is non-null and contains more than one item.</summary>
-        let moreThanOne values =
-            match tryCount values with
-            | Some count -> count > 1
-            | None -> false
-
-        /// <summary>Returns true when the sequence is non-null and contains duplicate values.</summary>
-        let hasDuplicates (values: #seq<'value>) =
-            if Object.ReferenceEquals(values, null) then
-                false
-            else
-                let seen = Collections.Generic.HashSet<'value>()
-                values |> Microsoft.FSharp.Collections.Seq.exists (seen.Add >> not)
-
-        /// <summary>Returns true when the sequence is non-null and contains no duplicate values.</summary>
-        let isDistinct values =
-            not (Object.ReferenceEquals(values, null)) && not (hasDuplicates values)
-
-    /// <summary>Boolean predicates for comparable values.</summary>
-    module Compare =
-        /// <summary>Returns true when the value is greater than the supplied exclusive lower bound.</summary>
-        let inline greaterThan minimum value =
-            value > minimum
-
-        /// <summary>Returns true when the value is less than the supplied exclusive upper bound.</summary>
-        let inline lessThan maximum value =
-            value < maximum
-
-        /// <summary>Returns true when the value is greater than or equal to the supplied lower bound.</summary>
-        let inline atLeast minimum value =
-            value >= minimum
-
-        /// <summary>Returns true when the value is less than or equal to the supplied upper bound.</summary>
-        let inline atMost maximum value =
-            value <= maximum
-
-        /// <summary>Returns true when the value lies inside the supplied inclusive bounds.</summary>
-        let inline between minimum maximum value =
-            value >= minimum && value <= maximum
-
-        /// <summary>Returns true when the value is greater than zero.</summary>
-        let inline positive value =
-            value > LanguagePrimitives.GenericZero
-
-        /// <summary>Returns true when the value is greater than or equal to zero.</summary>
-        let inline nonNegative value =
-            value >= LanguagePrimitives.GenericZero
-
-        /// <summary>Returns true when the value is less than zero.</summary>
-        let inline negative value =
-            value < LanguagePrimitives.GenericZero
-
-        /// <summary>Returns true when the value is less than or equal to zero.</summary>
-        let inline nonPositive value =
-            value <= LanguagePrimitives.GenericZero
 
 /// <summary>
 /// Typed value-check programs for local structural facts.
@@ -337,12 +252,6 @@ module Predicate =
 /// </remarks>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Check =
-    let private emailRegex =
-        Regex(@"^[^@]+@[^@]+$", RegexOptions.Compiled ||| RegexOptions.IgnoreCase)
-
-    let private numericRegex =
-        Regex(@"^\d+$", RegexOptions.Compiled)
-
     /// <summary>Executable, path-free value checks for already parsed strings.</summary>
     module String =
         let private pass : Result<unit, CheckFailure list> = Ok ()
@@ -360,50 +269,46 @@ module Check =
         let present : Check<string> =
             fun value ->
                 if isNull value then fail Missing
-                elif global.System.String.IsNullOrWhiteSpace value then fail Blank
+                elif Predicate.String.blank value then fail Blank
                 else pass
 
         /// <summary>Requires an already parsed string value to be exactly empty. Null fails as a missing value.</summary>
         let empty : Check<string> =
             fun value ->
                 if isNull value then fail Missing
-                elif value.Length = 0 then pass
-                else fail (Length(ExactLength 0, Some value.Length))
+                elif Predicate.String.empty value then pass
+                else fail (Length(ExactLength 0, actualLength value))
 
         /// <summary>Requires an already parsed string value to contain at least one character. Whitespace counts as present text.</summary>
         let notEmpty : Check<string> =
             fun value ->
                 if isNull value then fail Missing
-                elif value.Length > 0 then pass
+                elif Predicate.String.notEmpty value then pass
                 else fail (Length(MinimumLength 1, Some 0))
 
         /// <summary>Requires an already parsed string value to have at least the supplied length. Null fails with an unknown actual length.</summary>
         let minLength (minimum: int) : Check<string> =
             fun value ->
-                match actualLength value with
-                | Some length when length >= minimum -> pass
-                | actual -> fail (Length(MinimumLength minimum, actual))
+                if Predicate.String.minLength minimum value then pass
+                else fail (Length(MinimumLength minimum, actualLength value))
 
         /// <summary>Requires an already parsed string value to have at most the supplied length. Null fails with an unknown actual length.</summary>
         let maxLength (maximum: int) : Check<string> =
             fun value ->
-                match actualLength value with
-                | Some length when length <= maximum -> pass
-                | actual -> fail (Length(MaximumLength maximum, actual))
+                if Predicate.String.maxLength maximum value then pass
+                else fail (Length(MaximumLength maximum, actualLength value))
 
         /// <summary>Requires an already parsed string value length to lie inside the supplied inclusive bounds. Null fails with an unknown actual length.</summary>
         let lengthBetween (minimum: int) (maximum: int) : Check<string> =
             fun value ->
-                match actualLength value with
-                | Some length when length >= minimum && length <= maximum -> pass
-                | actual -> fail (Length(LengthBetween(minimum, maximum), actual))
+                if Predicate.String.lengthBetween minimum maximum value then pass
+                else fail (Length(LengthBetween(minimum, maximum), actualLength value))
 
         /// <summary>Requires an already parsed string value to have exactly the supplied length. Null fails with an unknown actual length.</summary>
         let length (expected: int) : Check<string> =
             fun value ->
-                match actualLength value with
-                | Some length when length = expected -> pass
-                | actual -> fail (Length(ExactLength expected, actual))
+                if Predicate.String.length expected value then pass
+                else fail (Length(ExactLength expected, actualLength value))
 
         /// <summary>Requires an already parsed string value to have exactly the supplied length. Null fails with an unknown actual length.</summary>
         let exactLength (expected: int) : Check<string> =
@@ -412,31 +317,31 @@ module Check =
         /// <summary>Requires an already parsed string value to match Axial's pragmatic email format.</summary>
         let email : Check<string> =
             fun value ->
-                if not (isNull value) && emailRegex.IsMatch value then pass
+                if Predicate.String.email value then pass
                 else fail (InvalidFormat "email")
 
         /// <summary>Requires an already parsed string value to match the supplied regular expression pattern.</summary>
         let matches (pattern: string) : Check<string> =
             fun value ->
-                if not (isNull value) && Regex.IsMatch(value, pattern) then pass
+                if Predicate.String.matches pattern value then pass
                 else fail (InvalidFormat pattern)
 
         /// <summary>Requires an already parsed string value to contain one or more numeric characters.</summary>
         let numeric : Check<string> =
             fun value ->
-                if not (isNull value) && numericRegex.IsMatch value then pass
+                if Predicate.String.numeric value then pass
                 else fail (InvalidFormat "numeric")
 
         /// <summary>Requires an already parsed string value to contain one or more letter or digit characters.</summary>
         let alphaNumeric : Check<string> =
             fun value ->
-                if not (isNull value) && value.Length > 0 && value |> Seq.forall Char.IsLetterOrDigit then pass
+                if Predicate.String.alphaNumeric value then pass
                 else fail (InvalidFormat "alphaNumeric")
 
         /// <summary>Requires an already parsed string value to equal one of the supplied choices. Null fails with an unknown actual value.</summary>
         let oneOf (choices: string seq) : Check<string> =
             let choices = choices |> Seq.toList
-            let expected = global.System.String.Join("|", choices)
+            let expected = System.String.Join("|", choices)
 
             fun value ->
                 if not (isNull value) && List.contains value choices then pass
@@ -447,48 +352,52 @@ module Check =
         /// <summary>Requires a value to lie inside the supplied inclusive bounds.</summary>
         let inline between minimum maximum : Check<'value> =
             fun value ->
-                if value >= minimum && value <= maximum then Ok ()
+                if Predicate.Number.between minimum maximum value then Ok ()
                 else Error [ Range(Between(string minimum, string maximum), Some(string value)) ]
 
         /// <summary>Requires a value to be greater than the supplied exclusive lower bound.</summary>
         let inline greaterThan minimum : Check<'value> =
             fun value ->
-                if value > minimum then Ok ()
+                if Predicate.Number.greaterThan minimum value then Ok ()
                 else Error [ Range(GreaterThan(string minimum), Some(string value)) ]
 
         /// <summary>Requires a value to be less than the supplied exclusive upper bound.</summary>
         let inline lessThan maximum : Check<'value> =
             fun value ->
-                if value < maximum then Ok ()
+                if Predicate.Number.lessThan maximum value then Ok ()
                 else Error [ Range(LessThan(string maximum), Some(string value)) ]
 
         /// <summary>Requires a value to be greater than or equal to the supplied lower bound.</summary>
         let inline atLeast minimum : Check<'value> =
             fun value ->
-                if value >= minimum then Ok ()
+                if Predicate.Number.atLeast minimum value then Ok ()
                 else Error [ Range(AtLeast(string minimum), Some(string value)) ]
 
         /// <summary>Requires a value to be less than or equal to the supplied upper bound.</summary>
         let inline atMost maximum : Check<'value> =
             fun value ->
-                if value <= maximum then Ok ()
+                if Predicate.Number.atMost maximum value then Ok ()
                 else Error [ Range(AtMost(string maximum), Some(string value)) ]
 
         /// <summary>Requires a value to be greater than zero.</summary>
-        let inline positive value =
-            greaterThan LanguagePrimitives.GenericZero value
+        let inline positive (value: 'value) : Result<unit, CheckFailure list> =
+            if Predicate.Number.positive value then Ok ()
+            else Error [ Positive(Some(string value)) ]
 
         /// <summary>Requires a value to be greater than or equal to zero.</summary>
-        let inline nonNegative value =
-            atLeast LanguagePrimitives.GenericZero value
+        let inline nonNegative (value: 'value) : Result<unit, CheckFailure list> =
+            if Predicate.Number.nonNegative value then Ok ()
+            else Error [ NonNegative(Some(string value)) ]
 
         /// <summary>Requires a value to be less than zero.</summary>
-        let inline negative value =
-            lessThan LanguagePrimitives.GenericZero value
+        let inline negative (value: 'value) : Result<unit, CheckFailure list> =
+            if Predicate.Number.negative value then Ok ()
+            else Error [ Negative(Some(string value)) ]
 
         /// <summary>Requires a value to be less than or equal to zero.</summary>
-        let inline nonPositive value =
-            atMost LanguagePrimitives.GenericZero value
+        let inline nonPositive (value: 'value) : Result<unit, CheckFailure list> =
+            if Predicate.Number.nonPositive value then Ok ()
+            else Error [ NonPositive(Some(string value)) ]
 
     /// <summary>Executable, path-free value checks for already parsed sequence-shaped values.</summary>
     /// <remarks>
@@ -508,67 +417,52 @@ module Check =
         /// <summary>Requires an already parsed sequence-shaped value to contain at least one item. Null fails with an unknown actual count.</summary>
         let notEmpty : Check<#seq<'value>> =
             fun values ->
-                match actualCount values with
-                | Some count when count > 0 -> pass
-                | actual -> fail (Count(MinimumCount 1, actual))
+                if Predicate.Seq.notEmpty values then pass
+                else fail (NonEmpty(actualCount values))
 
         /// <summary>Requires an already parsed sequence-shaped value to contain no items. Null fails with an unknown actual count.</summary>
         let empty : Check<#seq<'value>> =
             fun values ->
-                match actualCount values with
-                | Some 0 -> pass
-                | actual -> fail (Count(ExactCount 0, actual))
+                if Predicate.Seq.empty values then pass
+                else fail (Count(ExactCount 0, actualCount values))
 
         /// <summary>Requires an already parsed sequence-shaped value to contain exactly the supplied count. Null fails with an unknown actual count.</summary>
         let count (expected: int) : Check<#seq<'value>> =
             fun values ->
-                match actualCount values with
-                | Some count when count = expected -> pass
-                | actual -> fail (Count(ExactCount expected, actual))
+                if Predicate.Seq.count expected values then pass
+                else fail (Count(ExactCount expected, actualCount values))
 
         /// <summary>Requires an already parsed sequence-shaped value to contain at least the supplied count. Null fails with an unknown actual count.</summary>
         let minCount (minimum: int) : Check<#seq<'value>> =
             fun values ->
-                match actualCount values with
-                | Some count when count >= minimum -> pass
-                | actual -> fail (Count(MinimumCount minimum, actual))
+                if Predicate.Seq.minCount minimum values then pass
+                else fail (Count(MinimumCount minimum, actualCount values))
 
         /// <summary>Requires an already parsed sequence-shaped value to contain at most the supplied count. Null fails with an unknown actual count.</summary>
         let maxCount (maximum: int) : Check<#seq<'value>> =
             fun values ->
-                match actualCount values with
-                | Some count when count <= maximum -> pass
-                | actual -> fail (Count(MaximumCount maximum, actual))
+                if Predicate.Seq.maxCount maximum values then pass
+                else fail (Count(MaximumCount maximum, actualCount values))
 
         /// <summary>Requires an already parsed sequence-shaped value count to lie inside the supplied inclusive bounds. Null fails with an unknown actual count.</summary>
         let countBetween (minimum: int) (maximum: int) : Check<#seq<'value>> =
             fun values ->
-                match actualCount values with
-                | Some count when count >= minimum && count <= maximum -> pass
-                | actual -> fail (Count(CountBetween(minimum, maximum), actual))
+                if Predicate.Seq.countBetween minimum maximum values then pass
+                else fail (Count(CountBetween(minimum, maximum), actualCount values))
 
         /// <summary>Requires an already parsed sequence-shaped value to contain no duplicate values.</summary>
         let noDuplicates : Check<#seq<'value>> =
             fun values ->
-                if Object.ReferenceEquals(values, null) then
-                    fail Missing
-                else
-                    let seen = Collections.Generic.HashSet<'value>()
-
-                    if values |> Microsoft.FSharp.Collections.Seq.forall seen.Add then
-                        pass
-                    else
-                        fail (CustomCode "seq.distinct")
+                if Object.ReferenceEquals(values, null) then fail Missing
+                elif Predicate.Seq.distinct values then pass
+                else fail (CustomCode "seq.distinct")
 
         /// <summary>Requires an already parsed sequence-shaped value to contain the supplied value.</summary>
         let contains (expected: 'value) : Check<#seq<'value>> =
             fun values ->
-                if Object.ReferenceEquals(values, null) then
-                    fail Missing
-                elif values |> Microsoft.FSharp.Collections.Seq.contains expected then
-                    pass
-                else
-                    fail (Equality(EqualTo(string expected), None))
+                if Object.ReferenceEquals(values, null) then fail Missing
+                elif Predicate.Seq.contains expected values then pass
+                else fail (Equality(EqualTo(string expected), None))
 
         /// <summary>Requires an already parsed sequence-shaped value to contain exactly one item.</summary>
         let single (values: #seq<'value>) : Result<unit, CheckFailure list> =
@@ -580,7 +474,7 @@ module Check =
 
         /// <summary>Requires an already parsed sequence-shaped value to contain at least one item.</summary>
         let atLeastOne (values: #seq<'value>) : Result<unit, CheckFailure list> =
-            minCount 1 values
+            notEmpty values
 
         /// <summary>Requires an already parsed sequence-shaped value to contain more than one item.</summary>
         let moreThanOne (values: #seq<'value>) : Result<unit, CheckFailure list> =

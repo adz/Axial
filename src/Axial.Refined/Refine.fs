@@ -2,6 +2,7 @@ namespace Axial.Refined
 
 open System
 open System.Collections.Generic
+open Axial.ErrorHandling
 
 /// <summary>A string that is not null, empty, or whitespace.</summary>
 type NonBlankString =
@@ -286,60 +287,50 @@ type DateOnlyRange =
         this.EndValue
 #endif
 
+/// <summary>Runs an executable <see cref="T:Axial.ErrorHandling.Check`1" /> program before calling a refined value
+/// constructor, reusing <see cref="T:Axial.ErrorHandling.CheckFailure" /> as the sole failure vocabulary so refined
+/// constructors never reimplement the small checks <c>Axial.ErrorHandling.Check</c> already provides.</summary>
+module private Checked =
+    let withCheck (target: string) (check: Check<'raw>) (construct: 'raw -> 'refined) (value: 'raw) : Result<'refined, RefinementError> =
+        match check value with
+        | Ok() -> Ok(construct value)
+        | Error failures -> Error(RefinementError.CheckFailed(target, failures))
+
+    let withChecks (target: string) (checks: Check<'raw> list) (construct: 'raw -> 'refined) (value: 'raw) : Result<'refined, RefinementError> =
+        withCheck target (Check.all checks) construct value
+
 module private Bounds =
+    /// <summary>Validates the caller-supplied bounds themselves, before any value is checked against them.</summary>
     let validateRange target minLength maxLength =
         if minLength < 0 then
-            Error(RefinementError.OutOfRange(target, "Expected minimum length to be greater than or equal to zero."))
+            Error(RefinementError.InvalidStructure(target, "Expected minimum length to be greater than or equal to zero."))
         elif maxLength < minLength then
             Error(RefinementError.InvalidStructure(target, "Expected minimum length to be less than or equal to maximum length."))
         else
             Ok()
-
-    let validateLength target minLength maxLength length =
-        validateRange target minLength maxLength
-        |> Result.bind (fun () ->
-            if length < minLength || length > maxLength then
-                Error(RefinementError.OutOfRange(target, $"Expected length between {minLength} and {maxLength}."))
-            else
-                Ok())
 
 /// <summary>Numeric refined value constructors and helpers.</summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Numeric =
     /// <summary>Builds a positive integer.</summary>
     let positiveInt (value: int) : Result<PositiveInt, RefinementError> =
-        if value > 0 then
-            Ok(PositiveInt value)
-        else
-            Error(RefinementError.OutOfRange("PositiveInt", "Expected a value greater than zero."))
+        Checked.withCheck "PositiveInt" Check.Number.positive PositiveInt value
 
     /// <summary>Builds a non-negative integer.</summary>
     let nonNegativeInt (value: int) : Result<NonNegativeInt, RefinementError> =
-        if value >= 0 then
-            Ok(NonNegativeInt value)
-        else
-            Error(RefinementError.OutOfRange("NonNegativeInt", "Expected a value greater than or equal to zero."))
+        Checked.withCheck "NonNegativeInt" Check.Number.nonNegative NonNegativeInt value
 
     /// <summary>Builds a non-zero integer.</summary>
     let nonZeroInt (value: int) : Result<NonZeroInt, RefinementError> =
-        if value <> 0 then
-            Ok(NonZeroInt value)
-        else
-            Error(RefinementError.OutOfRange("NonZeroInt", "Expected a non-zero value."))
+        Checked.withCheck "NonZeroInt" (Check.notEqualTo 0) NonZeroInt value
 
     /// <summary>Builds a negative integer.</summary>
     let negativeInt (value: int) : Result<NegativeInt, RefinementError> =
-        if value < 0 then
-            Ok(NegativeInt value)
-        else
-            Error(RefinementError.OutOfRange("NegativeInt", "Expected a value less than zero."))
+        Checked.withCheck "NegativeInt" Check.Number.negative NegativeInt value
 
     /// <summary>Builds a non-positive integer.</summary>
     let nonPositiveInt (value: int) : Result<NonPositiveInt, RefinementError> =
-        if value <= 0 then
-            Ok(NonPositiveInt value)
-        else
-            Error(RefinementError.OutOfRange("NonPositiveInt", "Expected a value less than or equal to zero."))
+        Checked.withCheck "NonPositiveInt" Check.Number.nonPositive NonPositiveInt value
 
 /// <summary>Operations over <see cref="PositiveInt" />.</summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -365,49 +356,35 @@ module PositiveInt =
 /// <summary>Text refined value constructors and helpers.</summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Text =
-    let private isAsciiLower value =
-        value >= 'a' && value <= 'z'
+    let private notTrimmed : Check<string> =
+        fun value ->
+            if isNull value then Error [ Missing ]
+            elif value.Trim() <> value then Error [ InvalidFormat "trimmed" ]
+            else Ok()
 
-    let private isAsciiDigit value =
-        value >= '0' && value <= '9'
-
-    let private isSlugChar value =
-        isAsciiLower value || isAsciiDigit value || value = '-'
+    let private slugPattern = "^[a-z0-9]+(-[a-z0-9]+)*$"
 
     /// <summary>Builds a non-blank string.</summary>
     let nonBlankString (value: string) : Result<NonBlankString, RefinementError> =
-        if String.IsNullOrWhiteSpace value then
-            Error(RefinementError.MissingValue "NonBlankString")
-        else
-            Ok(NonBlankString value)
+        Checked.withCheck "NonBlankString" Check.String.present NonBlankString value
 
     /// <summary>Builds a string that has no leading or trailing whitespace.</summary>
     let trimmedString (value: string) : Result<TrimmedString, RefinementError> =
-        if isNull value then
-            Error(RefinementError.MissingValue "TrimmedString")
-        elif value.Trim() <> value then
-            Error(RefinementError.InvalidFormat("TrimmedString", "Expected no leading or trailing whitespace."))
-        else
-            Ok(TrimmedString value)
+        Checked.withCheck "TrimmedString" notTrimmed TrimmedString value
 
     /// <summary>Builds a string whose length is within an inclusive range.</summary>
     let boundedString minLength maxLength (value: string) : Result<BoundedString, RefinementError> =
-        if isNull value then
-            Error(RefinementError.MissingValue "BoundedString")
-        else
-            Bounds.validateLength "BoundedString" minLength maxLength value.Length
-            |> Result.map (fun () -> BoundedString(value, minLength, maxLength))
+        Bounds.validateRange "BoundedString" minLength maxLength
+        |> Result.bind (fun () ->
+            Checked.withChecks
+                "BoundedString"
+                [ Check.String.present; Check.String.lengthBetween minLength maxLength ]
+                (fun value -> BoundedString(value, minLength, maxLength))
+                value)
 
     /// <summary>Builds an ASCII slug made of lowercase letters, digits, and hyphens.</summary>
     let slug (value: string) : Result<Slug, RefinementError> =
-        if String.IsNullOrWhiteSpace value then
-            Error(RefinementError.MissingValue "Slug")
-        elif value |> Seq.forall isSlugChar |> not then
-            Error(RefinementError.InvalidFormat("Slug", "Expected only ASCII lowercase letters, digits, and hyphens."))
-        elif value.StartsWith "-" || value.EndsWith "-" || value.Contains "--" then
-            Error(RefinementError.InvalidFormat("Slug", "Expected no leading, trailing, or repeated hyphen."))
-        else
-            Ok(Slug value)
+        Checked.withChecks "Slug" [ Check.String.present; Check.String.matches slugPattern ] Slug value
 
 /// <summary>Operations over <see cref="NonBlankString" />.</summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -464,53 +441,42 @@ module Character =
 module Collection =
     /// <summary>Builds a non-empty list from a sequence.</summary>
     let nonEmptyList (values: seq<'value>) : Result<NonEmptyList<'value>, RefinementError> =
-        if isNull (box values) then
-            Error(RefinementError.MissingValue "NonEmptyList")
-        else
-            match values |> Seq.toList with
-            | [] -> Error(RefinementError.InvalidStructure("NonEmptyList", "Expected at least one item."))
-            | head :: tail -> Ok(NonEmptyList(head, tail))
+        Checked.withCheck
+            "NonEmptyList"
+            Check.Seq.notEmpty
+            (fun values ->
+                match values |> Seq.toList with
+                | head :: tail -> NonEmptyList(head, tail)
+                | [] -> failwith "NonEmptyList: unreachable, Check.Seq.notEmpty already guaranteed at least one item")
+            values
 
     /// <summary>Builds a non-empty array from a sequence.</summary>
     let nonEmptyArray (values: seq<'value>) : Result<NonEmptyArray<'value>, RefinementError> =
-        if isNull (box values) then
-            Error(RefinementError.MissingValue "NonEmptyArray")
-        else
-            match values |> Seq.toArray with
-            | [||] -> Error(RefinementError.InvalidStructure("NonEmptyArray", "Expected at least one item."))
-            | values -> Ok(NonEmptyArray(Array.copy values))
+        Checked.withCheck "NonEmptyArray" Check.Seq.notEmpty (Seq.toArray >> NonEmptyArray) values
 
     /// <summary>Builds a list that contains no duplicate items.</summary>
     let distinctList (values: seq<'value>) : Result<DistinctList<'value>, RefinementError> =
-        if isNull (box values) then
-            Error(RefinementError.MissingValue "DistinctList")
-        else
-            let list = values |> Seq.toList
-
-            if list.Length = (list |> List.distinct).Length then
-                Ok(DistinctList list)
-            else
-                Error(RefinementError.InvalidStructure("DistinctList", "Expected no duplicate items."))
+        Checked.withCheck "DistinctList" Check.Seq.noDuplicates (Seq.toList >> DistinctList) values
 
     /// <summary>Builds a list whose length is within an inclusive range.</summary>
     let boundedList minLength maxLength (values: seq<'value>) : Result<BoundedList<'value>, RefinementError> =
-        if isNull (box values) then
-            Error(RefinementError.MissingValue "BoundedList")
-        else
-            let list = values |> Seq.toList
-
-            Bounds.validateLength "BoundedList" minLength maxLength list.Length
-            |> Result.map (fun () -> BoundedList(list, minLength, maxLength))
+        Bounds.validateRange "BoundedList" minLength maxLength
+        |> Result.bind (fun () ->
+            Checked.withCheck
+                "BoundedList"
+                (Check.Seq.countBetween minLength maxLength)
+                (fun values -> BoundedList(Seq.toList values, minLength, maxLength))
+                values)
 
     /// <summary>Builds an array whose length is within an inclusive range.</summary>
     let boundedArray minLength maxLength (values: seq<'value>) : Result<BoundedArray<'value>, RefinementError> =
-        if isNull (box values) then
-            Error(RefinementError.MissingValue "BoundedArray")
-        else
-            let array = values |> Seq.toArray
-
-            Bounds.validateLength "BoundedArray" minLength maxLength array.Length
-            |> Result.map (fun () -> BoundedArray(Array.copy array, minLength, maxLength))
+        Bounds.validateRange "BoundedArray" minLength maxLength
+        |> Result.bind (fun () ->
+            Checked.withCheck
+                "BoundedArray"
+                (Check.Seq.countBetween minLength maxLength)
+                (fun values -> BoundedArray(Seq.toArray values, minLength, maxLength))
+                values)
 
 /// <summary>Operations over <see cref="NonEmptyList{value}" />.</summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -605,17 +571,16 @@ module Choice =
 /// <summary>Smart constructors for built-in structural refined values.</summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Refine =
-    /// <summary>Builds a refined value by running a reusable check-shaped program before calling the constructor.</summary>
-    let withCheck
-        (target: string)
-        (check: 'raw -> Result<unit, 'failure list>)
-        (mapFailures: string -> 'failure list -> RefinementError)
-        (construct: 'raw -> 'refined)
-        (value: 'raw)
-        : Result<'refined, RefinementError> =
-        match check value with
-        | Ok () -> Ok(construct value)
-        | Error failures -> Error(mapFailures target failures)
+    /// <summary>Builds a refined value by running a reusable <see cref="T:Axial.ErrorHandling.Check`1" /> program
+    /// before calling the constructor. Failures carry the check's own <see cref="T:Axial.ErrorHandling.CheckFailure" />
+    /// values, so callers never need to reinterpret or re-describe them.</summary>
+    let withCheck (target: string) (check: Check<'raw>) (construct: 'raw -> 'refined) (value: 'raw) : Result<'refined, RefinementError> =
+        Checked.withCheck target check construct value
+
+    /// <summary>Builds a refined value by running every supplied <see cref="T:Axial.ErrorHandling.Check`1" /> program
+    /// before calling the constructor, accumulating all failures via <c>Check.all</c>.</summary>
+    let withChecks (target: string) (checks: Check<'raw> list) (construct: 'raw -> 'refined) (value: 'raw) : Result<'refined, RefinementError> =
+        Checked.withChecks target checks construct value
 
     /// <summary>Builds a non-blank string.</summary>
     let nonBlankString value =

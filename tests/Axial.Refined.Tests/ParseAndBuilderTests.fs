@@ -1,6 +1,7 @@
 namespace Axial.Refined.Tests
 
 open System
+open Axial.ErrorHandling
 open Axial.Refined
 open Swensen.Unquote
 open Xunit
@@ -79,11 +80,11 @@ module ParseAndBuilderTests =
             |> Result.map _.ToList()
 
         test <@ nonBlank = Ok "Ada" @>
-        test <@ Refine.nonBlankString "" = Error(MissingValue "NonBlankString") @>
+        test <@ Refine.nonBlankString "" = Error(CheckFailed("NonBlankString", [ Blank ])) @>
         test <@ positive = Ok 42 @>
-        test <@ Refine.positiveInt 0 = Error(OutOfRange("PositiveInt", "Expected a value greater than zero.")) @>
+        test <@ Refine.positiveInt 0 = Error(CheckFailed("PositiveInt", [ Positive(Some "0") ])) @>
         test <@ nonEmpty = Ok [ 1; 2; 3 ] @>
-        test <@ Refine.nonEmptyList [] = Error(InvalidStructure("NonEmptyList", "Expected at least one item.")) @>
+        test <@ Refine.nonEmptyList [] = Error(CheckFailed("NonEmptyList", [ NonEmpty(Some 0) ])) @>
 
     [<Fact>]
     let ``refine computation expression binds explicit results and annotated raw values`` () =
