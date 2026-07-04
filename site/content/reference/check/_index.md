@@ -53,7 +53,7 @@ This page shows the `Check` surface for reusable, path-free value constraints. E
 - [`ErrorHandling.Check.Seq.minCount`](./m-errorhandling-check-seq-mincount.md): Requires an already parsed sequence-shaped value to contain at least the supplied count. Null fails with an unknown actual count.
 - [`ErrorHandling.Check.Seq.maxCount`](./m-errorhandling-check-seq-maxcount.md): Requires an already parsed sequence-shaped value to contain at most the supplied count. Null fails with an unknown actual count.
 - [`ErrorHandling.Check.Seq.countBetween`](./m-errorhandling-check-seq-countbetween.md): Requires an already parsed sequence-shaped value count to lie inside the supplied inclusive bounds. Null fails with an unknown actual count.
-- [`ErrorHandling.Check.Seq.distinct`](./m-errorhandling-check-seq-distinct.md): Requires an already parsed sequence-shaped value to contain no duplicate values.
+- [`ErrorHandling.Check.Seq.noDuplicates`](./m-errorhandling-check-seq-noduplicates.md): Requires an already parsed sequence-shaped value to contain no duplicate values.
 
 ## Executable optional checks
 

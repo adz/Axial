@@ -117,7 +117,7 @@ Schema constraints should lower onto the tightened `Check` shape, not the verbos
   `Result<unit, CheckFailure list>`.
 - [x] Add or relocate boolean predicates outside structured `Check.*`, using type-specific predicate modules or
   extensions such as `Seq.isDistinct`, `String.isBlank`, `Result.isOk`, and nullable/option presence helpers.
-- [ ] Do not add `Seq.distinct` as a boolean predicate or structured check; it collides with FSharp.Core's sequence
+- [x] Do not add `Seq.distinct` as a boolean predicate or structured check; it collides with FSharp.Core's sequence
   transformation.
 - [ ] Decide null semantics before implementation:
   `Check.String.empty null`, `Check.Seq.empty null`, and whether `Check.Seq.notEmpty null` keeps current

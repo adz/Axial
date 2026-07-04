@@ -536,7 +536,7 @@ module Check =
                 | actual -> fail (Count(CountBetween(minimum, maximum), actual))
 
         /// <summary>Requires an already parsed sequence-shaped value to contain no duplicate values.</summary>
-        let distinct : Check<#seq<'value>> =
+        let noDuplicates : Check<#seq<'value>> =
             fun values ->
                 if Object.ReferenceEquals(values, null) then
                     fail Missing
@@ -778,7 +778,7 @@ module Check =
 
     /// <summary>Requires an already parsed sequence-shaped value to contain no duplicate values.</summary>
     let distinct (values: #seq<'value>) : Result<unit, CheckFailure list> =
-        Seq.distinct values
+        Seq.noDuplicates values
 
     /// <summary>Requires an already parsed sequence-shaped value to contain the supplied value.</summary>
     let contains (expected: 'value) : Check<#seq<'value>> =

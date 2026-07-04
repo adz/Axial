@@ -1,6 +1,6 @@
 ---
-title: "ErrorHandling.Check.Seq.distinct"
-linkTitle: "distinct"
+title: "ErrorHandling.Check.Seq.noDuplicates"
+linkTitle: "noDuplicates"
 weight: 2404
 type: docs
 ---
@@ -10,7 +10,7 @@ Requires an already parsed sequence-shaped value to contain no duplicate values.
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>ErrorHandling.Check.Seq.distinct&#32;<span>values</span></span></code>
+<code><span>ErrorHandling.Check.Seq.noDuplicates&#32;<span>values</span></span></code>
 </div>
 
 ## Parameters

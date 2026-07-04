@@ -708,12 +708,16 @@ module ApiShapeTests =
               "minCount"
               "maxCount"
               "countBetween"
-              "distinct"
+              "noDuplicates"
               "contains"
               "single"
               "atMostOne"
               "atLeastOne"
               "moreThanOne" ]
+
+        checkSeqModule
+        |> publicStaticMemberNames
+        |> assertContainsNone [ "distinct" ]
 
         checkSeqModule
         |> assertMethodsReturnCheckResult
@@ -723,7 +727,7 @@ module ApiShapeTests =
               "minCount"
               "maxCount"
               "countBetween"
-              "distinct"
+              "noDuplicates"
               "contains"
               "single"
               "atMostOne"

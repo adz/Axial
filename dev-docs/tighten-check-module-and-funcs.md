@@ -43,7 +43,7 @@ The desired direction is:
 
    ```fsharp
    Check.String.present text
-   Check.Seq.distinct values
+   Check.Seq.noDuplicates values
    Check.Option.some maybeValue
    Check.ValueOption.some maybeValue
    Check.Nullable.hasValue nullableValue
@@ -93,7 +93,8 @@ Reasoning:
 - The functions accept `#seq<'value>`, not arbitrary collection-specific interfaces.
 - `Seq` is the common F# vocabulary for sequence-shaped values.
 - The module name does not imply mutation, indexing, dictionary semantics, or collection construction.
-- `Check.Seq.distinct` is safe because the `Check` prefix makes result-check semantics explicit.
+- Use `Check.Seq.noDuplicates` for the direct sequence check so no `Seq.distinct` member competes with FSharp.Core's
+  sequence transformation name.
 
 `Check.Collection` can remain as a temporary compatibility alias while pre-1.0 cleanup is happening, but because Axial is pre-1.0, the cleaner move is to replace it outright if the other agent's branch has not committed public docs yet.
 
@@ -287,7 +288,7 @@ Use:
 
 ```fsharp
 Check.distinct values
-Check.Seq.distinct values
+Check.Seq.noDuplicates values
 ```
 
 Do not use:
@@ -860,7 +861,7 @@ Check.Seq.count
 Check.Seq.minCount
 Check.Seq.maxCount
 Check.Seq.countBetween
-Check.Seq.distinct
+Check.Seq.noDuplicates
 Check.Seq.contains
 Check.Seq.single
 Check.Seq.atMostOne
@@ -1032,7 +1033,7 @@ Explicit fallback:
 
 ```fsharp
 Check.String.present "Ada"
-Check.Seq.distinct [ 1; 2; 3 ]
+Check.Seq.noDuplicates [ 1; 2; 3 ]
 Check.Option.some (Some 1)
 Check.Nullable.hasValue (Nullable 1)
 Check.Result.ok (Ok 1)
@@ -1198,7 +1199,7 @@ Check.Seq.count
 Check.Seq.minCount
 Check.Seq.maxCount
 Check.Seq.countBetween
-Check.Seq.distinct
+Check.Seq.noDuplicates
 Check.Seq.contains
 Check.Seq.single
 Check.Seq.atMostOne
@@ -1301,6 +1302,6 @@ And it keeps an explicit escape hatch for type inference, docs, and debugging:
 
 ```fsharp
 Check.String.present name
-Check.Seq.distinct tags
+Check.Seq.noDuplicates tags
 Check.Number.between 1 10 quantity
 ```

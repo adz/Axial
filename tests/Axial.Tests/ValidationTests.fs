@@ -199,7 +199,7 @@ module ValidationTests =
                     [
                         Check.Seq.minCount 2
                         Check.Seq.maxCount 3
-                        Check.Seq.distinct
+                        Check.Seq.noDuplicates
                     ]
 
             test <@ seqCheck [ 1; 2; 3 ] = Ok () @>
@@ -332,9 +332,9 @@ module ValidationTests =
             test <@ Check.Seq.countBetween 2 4 [ 1; 2; 3; 4; 5 ] = Error [ Count(CountBetween(2, 4), Some 5) ] @>
             test <@ Check.Seq.countBetween 2 4 nullValues = Error [ Count(CountBetween(2, 4), None) ] @>
 
-            test <@ Check.Seq.distinct [ 1; 2; 3 ] = Ok () @>
-            test <@ Check.Seq.distinct [ 1; 2; 1 ] = Error [ CustomCode "seq.distinct" ] @>
-            test <@ Check.Seq.distinct nullValues = Error [ Missing ] @>
+            test <@ Check.Seq.noDuplicates [ 1; 2; 3 ] = Ok () @>
+            test <@ Check.Seq.noDuplicates [ 1; 2; 1 ] = Error [ CustomCode "seq.distinct" ] @>
+            test <@ Check.Seq.noDuplicates nullValues = Error [ Missing ] @>
 
             test <@ Check.Seq.contains 2 [ 1; 2 ] = Ok () @>
             test <@ Check.Seq.contains 3 [ 1; 2 ] = Error [ Equality(EqualTo "3", None) ] @>
