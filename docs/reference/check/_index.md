@@ -52,11 +52,18 @@ This page shows the `Check` surface for reusable, path-free value constraints. E
 
 ## Executable sequence checks
 
+- [`ErrorHandling.Check.Seq.empty`](./m-errorhandling-check-seq-empty.md): Requires an already parsed sequence-shaped value to contain no items. Null fails with an unknown actual count.
 - [`ErrorHandling.Check.Seq.notEmpty`](./m-errorhandling-check-seq-notempty.md): Requires an already parsed sequence-shaped value to contain at least one item. Null fails with an unknown actual count.
+- [`ErrorHandling.Check.Seq.count`](./m-errorhandling-check-seq-count.md): Requires an already parsed sequence-shaped value to contain exactly the supplied count. Null fails with an unknown actual count.
 - [`ErrorHandling.Check.Seq.minCount`](./m-errorhandling-check-seq-mincount.md): Requires an already parsed sequence-shaped value to contain at least the supplied count. Null fails with an unknown actual count.
 - [`ErrorHandling.Check.Seq.maxCount`](./m-errorhandling-check-seq-maxcount.md): Requires an already parsed sequence-shaped value to contain at most the supplied count. Null fails with an unknown actual count.
 - [`ErrorHandling.Check.Seq.countBetween`](./m-errorhandling-check-seq-countbetween.md): Requires an already parsed sequence-shaped value count to lie inside the supplied inclusive bounds. Null fails with an unknown actual count.
 - [`ErrorHandling.Check.Seq.distinct`](./m-errorhandling-check-seq-distinct.md): Requires an already parsed sequence-shaped value to contain no duplicate values.
+- [`ErrorHandling.Check.Seq.contains`](./m-errorhandling-check-seq-contains.md): Requires an already parsed sequence-shaped value to contain the supplied value.
+- [`ErrorHandling.Check.Seq.single`](./m-errorhandling-check-seq-single.md): Requires an already parsed sequence-shaped value to contain exactly one item.
+- [`ErrorHandling.Check.Seq.atMostOne`](./m-errorhandling-check-seq-atmostone.md): Requires an already parsed sequence-shaped value to contain zero or one item.
+- [`ErrorHandling.Check.Seq.atLeastOne`](./m-errorhandling-check-seq-atleastone.md): Requires an already parsed sequence-shaped value to contain at least one item.
+- [`ErrorHandling.Check.Seq.moreThanOne`](./m-errorhandling-check-seq-morethanone.md): Requires an already parsed sequence-shaped value to contain more than one item.
 
 ## Executable optional checks
 

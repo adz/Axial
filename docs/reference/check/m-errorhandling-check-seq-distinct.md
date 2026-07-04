@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.Seq.distinct"
 linkTitle: "distinct"
-weight: 2404
+weight: 2406
 ---
 
 Requires an already parsed sequence-shaped value to contain no duplicate values.

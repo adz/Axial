@@ -691,10 +691,34 @@ module ApiShapeTests =
 
         checkSeqModule
         |> publicStaticMemberNames
-        |> assertContainsAll [ "notEmpty"; "count"; "minCount"; "maxCount"; "countBetween"; "distinct" ]
+        |> assertContainsAll
+            [ "empty"
+              "notEmpty"
+              "count"
+              "minCount"
+              "maxCount"
+              "countBetween"
+              "distinct"
+              "contains"
+              "single"
+              "atMostOne"
+              "atLeastOne"
+              "moreThanOne" ]
 
         checkSeqModule
-        |> assertMethodsReturnCheckResult [ "notEmpty"; "count"; "minCount"; "maxCount"; "countBetween"; "distinct" ]
+        |> assertMethodsReturnCheckResult
+            [ "empty"
+              "notEmpty"
+              "count"
+              "minCount"
+              "maxCount"
+              "countBetween"
+              "distinct"
+              "contains"
+              "single"
+              "atMostOne"
+              "atLeastOne"
+              "moreThanOne" ]
 
         assertModuleAbsentFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.CheckModule+Collection"
 

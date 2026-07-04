@@ -97,7 +97,7 @@ Schema constraints should lower onto the tightened `Check` shape, not the verbos
   `empty`, `notEmpty`, `numeric`, and `alphaNumeric`.
 - [x] Add structured numeric sign checks to `Check.Number` and top-level `Check`:
   `positive`, `nonNegative`, `negative`, and `nonPositive`.
-- [ ] Add structured sequence checks missing from the direct module:
+- [x] Add structured sequence checks missing from the direct module:
   `empty`, `count`, `contains`, `single`, `atMostOne`, `atLeastOne`, and `moreThanOne`.
 - [ ] Add option presence aliases:
   `Check.Option.present`, `Check.Option.empty`, `Check.Option.notEmpty`.

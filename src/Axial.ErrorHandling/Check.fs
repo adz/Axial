@@ -383,6 +383,13 @@ module Check =
                 | Some count when count > 0 -> pass
                 | actual -> fail (Count(MinimumCount 1, actual))
 
+        /// <summary>Requires an already parsed sequence-shaped value to contain no items. Null fails with an unknown actual count.</summary>
+        let empty : Check<#seq<'value>> =
+            fun values ->
+                match actualCount values with
+                | Some 0 -> pass
+                | actual -> fail (Count(ExactCount 0, actual))
+
         /// <summary>Requires an already parsed sequence-shaped value to contain exactly the supplied count. Null fails with an unknown actual count.</summary>
         let count (expected: int) : Check<#seq<'value>> =
             fun values ->
@@ -423,6 +430,32 @@ module Check =
                         pass
                     else
                         fail (CustomCode "seq.distinct")
+
+        /// <summary>Requires an already parsed sequence-shaped value to contain the supplied value.</summary>
+        let contains (expected: 'value) : Check<#seq<'value>> =
+            fun values ->
+                if Object.ReferenceEquals(values, null) then
+                    fail Missing
+                elif values |> Microsoft.FSharp.Collections.Seq.contains expected then
+                    pass
+                else
+                    fail (Equality(EqualTo(string expected), None))
+
+        /// <summary>Requires an already parsed sequence-shaped value to contain exactly one item.</summary>
+        let single (values: #seq<'value>) : Result<unit, CheckFailure list> =
+            count 1 values
+
+        /// <summary>Requires an already parsed sequence-shaped value to contain zero or one item.</summary>
+        let atMostOne (values: #seq<'value>) : Result<unit, CheckFailure list> =
+            maxCount 1 values
+
+        /// <summary>Requires an already parsed sequence-shaped value to contain at least one item.</summary>
+        let atLeastOne (values: #seq<'value>) : Result<unit, CheckFailure list> =
+            minCount 1 values
+
+        /// <summary>Requires an already parsed sequence-shaped value to contain more than one item.</summary>
+        let moreThanOne (values: #seq<'value>) : Result<unit, CheckFailure list> =
+            minCount 2 values
 
     /// <summary>Executable, path-free value checks for already parsed optional values.</summary>
     module Option =
@@ -600,29 +633,23 @@ module Check =
 
     /// <summary>Requires an already parsed sequence-shaped value to contain the supplied value.</summary>
     let contains (expected: 'value) : Check<#seq<'value>> =
-        fun values ->
-            if Object.ReferenceEquals(values, null) then
-                fail Missing
-            elif values |> Microsoft.FSharp.Collections.Seq.contains expected then
-                pass
-            else
-                fail (Equality(EqualTo(string expected), None))
+        fun values -> Seq.contains expected values
 
     /// <summary>Requires an already parsed sequence-shaped value to contain exactly one item.</summary>
     let single (values: #seq<'value>) : Result<unit, CheckFailure list> =
-        count 1 values
+        Seq.single values
 
     /// <summary>Requires an already parsed sequence-shaped value to contain zero or one item.</summary>
     let atMostOne (values: #seq<'value>) : Result<unit, CheckFailure list> =
-        maxCount 1 values
+        Seq.atMostOne values
 
     /// <summary>Requires an already parsed sequence-shaped value to contain at least one item.</summary>
     let atLeastOne (values: #seq<'value>) : Result<unit, CheckFailure list> =
-        minCount 1 values
+        Seq.atLeastOne values
 
     /// <summary>Requires an already parsed sequence-shaped value to contain more than one item.</summary>
     let moreThanOne (values: #seq<'value>) : Result<unit, CheckFailure list> =
-        minCount 2 values
+        Seq.moreThanOne values
 
     /// <summary>Requires the actual value to equal the supplied expected value.</summary>
     let equalTo (expected: 'value) : Check<'value> =

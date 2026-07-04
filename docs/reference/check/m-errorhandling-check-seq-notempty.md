@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.Seq.notEmpty"
 linkTitle: "notEmpty"
-weight: 2400
+weight: 2401
 ---
 
 Requires an already parsed sequence-shaped value to contain at least one item. Null fails with an unknown actual count.

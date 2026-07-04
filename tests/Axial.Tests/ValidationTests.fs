@@ -310,6 +310,10 @@ module ValidationTests =
             test <@ Check.Seq.notEmpty [] = Error [ Count(MinimumCount 1, Some 0) ] @>
             test <@ Check.Seq.notEmpty nullValues = Error [ Count(MinimumCount 1, None) ] @>
 
+            test <@ Check.Seq.empty [] = Ok () @>
+            test <@ Check.Seq.empty [ 1 ] = Error [ Count(ExactCount 0, Some 1) ] @>
+            test <@ Check.Seq.empty nullValues = Error [ Count(ExactCount 0, None) ] @>
+
             test <@ Check.Seq.count 2 [ 1; 2 ] = Ok () @>
             test <@ Check.Seq.count 2 [ 1 ] = Error [ Count(ExactCount 2, Some 1) ] @>
             test <@ Check.Seq.count 2 nullValues = Error [ Count(ExactCount 2, None) ] @>
@@ -330,6 +334,15 @@ module ValidationTests =
             test <@ Check.Seq.distinct [ 1; 2; 3 ] = Ok () @>
             test <@ Check.Seq.distinct [ 1; 2; 1 ] = Error [ CustomCode "seq.distinct" ] @>
             test <@ Check.Seq.distinct nullValues = Error [ Missing ] @>
+
+            test <@ Check.Seq.contains 2 [ 1; 2 ] = Ok () @>
+            test <@ Check.Seq.contains 3 [ 1; 2 ] = Error [ Equality(EqualTo "3", None) ] @>
+            test <@ Check.Seq.contains 3 nullValues = Error [ Missing ] @>
+            test <@ Check.Seq.single [ 1 ] = Ok () @>
+            test <@ Check.Seq.single [ 1; 2 ] = Error [ Count(ExactCount 1, Some 2) ] @>
+            test <@ Check.Seq.atMostOne [ 1; 2 ] = Error [ Count(MaximumCount 1, Some 2) ] @>
+            test <@ Check.Seq.atLeastOne [] = Error [ Count(MinimumCount 1, Some 0) ] @>
+            test <@ Check.Seq.moreThanOne [ 1 ] = Error [ Count(MinimumCount 2, Some 1) ] @>
 
         [<Fact>]
         let ``Check exposes top-level concrete structured checks`` () =
