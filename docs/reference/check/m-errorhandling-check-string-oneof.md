@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Check.String.oneOf"
 linkTitle: "oneOf"
-weight: 2207
+weight: 2211
 ---
 
 Requires an already parsed string value to equal one of the supplied choices. Null fails with an unknown actual value.

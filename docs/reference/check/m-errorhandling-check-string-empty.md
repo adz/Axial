@@ -1,22 +1,21 @@
 ---
-title: "ErrorHandling.Check.String.matches"
-linkTitle: "matches"
-weight: 2208
+title: "ErrorHandling.Check.String.empty"
+linkTitle: "empty"
+weight: 2201
 ---
 
-Requires an already parsed string value to match the supplied regular expression pattern.
+Requires an already parsed string value to be exactly empty. Null fails as a missing value.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>ErrorHandling.Check.String.matches&#32;<span>pattern&#32;value</span></span></code>
+<code><span>ErrorHandling.Check.String.empty&#32;<span>value</span></span></code>
 </div>
 
 ## Parameters
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `pattern` | <code>string</code> |  |
 | `value` | <code>string</code> |  |
 
 ## Returns

@@ -1,22 +1,21 @@
 ---
-title: "ErrorHandling.Check.String.matches"
-linkTitle: "matches"
-weight: 2208
+title: "ErrorHandling.Check.String.alphaNumeric"
+linkTitle: "alphaNumeric"
+weight: 2210
 ---
 
-Requires an already parsed string value to match the supplied regular expression pattern.
+Requires an already parsed string value to contain only letter or digit characters.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>ErrorHandling.Check.String.matches&#32;<span>pattern&#32;value</span></span></code>
+<code><span>ErrorHandling.Check.String.alphaNumeric&#32;<span>value</span></span></code>
 </div>
 
 ## Parameters
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `pattern` | <code>string</code> |  |
 | `value` | <code>string</code> |  |
 
 ## Returns

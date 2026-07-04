@@ -26,12 +26,16 @@ This page shows the `Check` surface for reusable, path-free value constraints. E
 ## Executable string checks
 
 - [`ErrorHandling.Check.String.present`](./m-errorhandling-check-string-present.md): Requires an already parsed string value to be non-null and contain at least one non-whitespace character.
+- [`ErrorHandling.Check.String.empty`](./m-errorhandling-check-string-empty.md): Requires an already parsed string value to be exactly empty. Null fails as a missing value.
+- [`ErrorHandling.Check.String.notEmpty`](./m-errorhandling-check-string-notempty.md): Requires an already parsed string value to contain at least one character. Whitespace counts as present text.
 - [`ErrorHandling.Check.String.minLength`](./m-errorhandling-check-string-minlength.md): Requires an already parsed string value to have at least the supplied length. Null fails with an unknown actual length.
 - [`ErrorHandling.Check.String.maxLength`](./m-errorhandling-check-string-maxlength.md): Requires an already parsed string value to have at most the supplied length. Null fails with an unknown actual length.
 - [`ErrorHandling.Check.String.lengthBetween`](./m-errorhandling-check-string-lengthbetween.md): Requires an already parsed string value length to lie inside the supplied inclusive bounds. Null fails with an unknown actual length.
 - [`ErrorHandling.Check.String.exactLength`](./m-errorhandling-check-string-exactlength.md): Requires an already parsed string value to have exactly the supplied length. Null fails with an unknown actual length.
 - [`ErrorHandling.Check.String.email`](./m-errorhandling-check-string-email.md): Requires an already parsed string value to match Axial's pragmatic email format.
 - [`ErrorHandling.Check.String.matches`](./m-errorhandling-check-string-matches.md): Requires an already parsed string value to match the supplied regular expression pattern.
+- [`ErrorHandling.Check.String.numeric`](./m-errorhandling-check-string-numeric.md): Requires an already parsed string value to contain only numeric characters.
+- [`ErrorHandling.Check.String.alphaNumeric`](./m-errorhandling-check-string-alphanumeric.md): Requires an already parsed string value to contain only letter or digit characters.
 - [`ErrorHandling.Check.String.oneOf`](./m-errorhandling-check-string-oneof.md): Requires an already parsed string value to equal one of the supplied choices. Null fails with an unknown actual value.
 
 ## Executable number checks

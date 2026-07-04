@@ -254,6 +254,20 @@ module Check =
                 elif global.System.String.IsNullOrWhiteSpace value then fail Blank
                 else pass
 
+        /// <summary>Requires an already parsed string value to be exactly empty. Null fails as a missing value.</summary>
+        let empty : Check<string> =
+            fun value ->
+                if isNull value then fail Missing
+                elif value.Length = 0 then pass
+                else fail (Length(ExactLength 0, Some value.Length))
+
+        /// <summary>Requires an already parsed string value to contain at least one character. Whitespace counts as present text.</summary>
+        let notEmpty : Check<string> =
+            fun value ->
+                if isNull value then fail Missing
+                elif value.Length > 0 then pass
+                else fail (Length(MinimumLength 1, Some 0))
+
         /// <summary>Requires an already parsed string value to have at least the supplied length. Null fails with an unknown actual length.</summary>
         let minLength (minimum: int) : Check<string> =
             fun value ->
@@ -297,6 +311,18 @@ module Check =
             fun value ->
                 if not (isNull value) && Regex.IsMatch(value, pattern) then pass
                 else fail (InvalidFormat pattern)
+
+        /// <summary>Requires an already parsed string value to contain only numeric characters.</summary>
+        let numeric : Check<string> =
+            fun value ->
+                if not (isNull value) && numericRegex.IsMatch value then pass
+                else fail (InvalidFormat "numeric")
+
+        /// <summary>Requires an already parsed string value to contain only letter or digit characters.</summary>
+        let alphaNumeric : Check<string> =
+            fun value ->
+                if not (isNull value) && value.Length > 0 && value |> Seq.forall Char.IsLetterOrDigit then pass
+                else fail (InvalidFormat "alphaNumeric")
 
         /// <summary>Requires an already parsed string value to equal one of the supplied choices. Null fails with an unknown actual value.</summary>
         let oneOf (choices: string seq) : Check<string> =

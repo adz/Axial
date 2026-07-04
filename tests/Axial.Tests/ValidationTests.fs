@@ -223,6 +223,14 @@ module ValidationTests =
             test <@ Check.String.present "" = Error [ Blank ] @>
             test <@ Check.String.present "   " = Error [ Blank ] @>
 
+            test <@ Check.String.empty "" = Ok () @>
+            test <@ Check.String.empty " " = Error [ Length(ExactLength 0, Some 1) ] @>
+            test <@ Check.String.empty nullString = Error [ Missing ] @>
+
+            test <@ Check.String.notEmpty " " = Ok () @>
+            test <@ Check.String.notEmpty "" = Error [ Length(MinimumLength 1, Some 0) ] @>
+            test <@ Check.String.notEmpty nullString = Error [ Missing ] @>
+
             test <@ Check.String.minLength 3 "Ada" = Ok () @>
             test <@ Check.String.minLength 3 "Al" = Error [ Length(MinimumLength 3, Some 2) ] @>
             test <@ Check.String.minLength 3 nullString = Error [ Length(MinimumLength 3, None) ] @>
@@ -248,6 +256,16 @@ module ValidationTests =
             test <@ Check.String.matches "^[a-z]+$" "ada" = Ok () @>
             test <@ Check.String.matches "^[a-z]+$" "Ada" = Error [ InvalidFormat "^[a-z]+$" ] @>
             test <@ Check.String.matches "^[a-z]+$" nullString = Error [ InvalidFormat "^[a-z]+$" ] @>
+
+            test <@ Check.String.numeric "12345" = Ok () @>
+            test <@ Check.String.numeric "12a45" = Error [ InvalidFormat "numeric" ] @>
+            test <@ Check.String.numeric "" = Error [ InvalidFormat "numeric" ] @>
+            test <@ Check.String.numeric nullString = Error [ InvalidFormat "numeric" ] @>
+
+            test <@ Check.String.alphaNumeric "Ada123" = Ok () @>
+            test <@ Check.String.alphaNumeric "Ada-123" = Error [ InvalidFormat "alphaNumeric" ] @>
+            test <@ Check.String.alphaNumeric "" = Error [ InvalidFormat "alphaNumeric" ] @>
+            test <@ Check.String.alphaNumeric nullString = Error [ InvalidFormat "alphaNumeric" ] @>
 
             test <@ Check.String.oneOf [ "draft"; "published" ] "draft" = Ok () @>
             test <@ Check.String.oneOf [ "draft"; "published" ] "archived" = Error [ Equality(EqualTo "draft|published", Some "archived") ] @>
