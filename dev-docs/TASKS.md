@@ -160,9 +160,14 @@ Schema constraints should lower onto the tightened `Check` shape, not the verbos
     but there must be a portable fallback that keeps the same explicit schema semantics.
   - Compare the intended lowering shape against `../../CodecMapper/main` before accepting the API. Use CodecMapper's
     benchmark scenarios as the performance reference once an Axial JSON codec prototype exists.
-- [ ] Do not start RawInput, schema validation, rules, or DSL work until Phase 5 proves a vertical schema metadata slice:
+- [x] Do not start RawInput, schema validation, rules, or DSL work until Phase 5 proves a vertical schema metadata slice:
   ordered fields, primitive value schema, at least required and maxLength metadata, lowering to `Check`, metadata
-  inspection, constructor/getter alignment, and the compiled-record-plan proof above.
+  inspection, constructor/getter alignment, and the compiled-record-plan proof above. Proven by
+  `tests/Axial.Tests/SchemaVerticalSliceProofTests.fs`, which authors one `Schema<'model>` (via `Schema.field` /
+  `Schema.map2`) and, from that single schema, proves ordered fields, a primitive `Value.text` schema, required and
+  maxLength constraint metadata, lowering that metadata to an executable `Check`, metadata inspection without running
+  validation, constructor/getter alignment under reversed declaration order, and a compiled record plan built from the
+  same typed `Field` values.
 
 ## Phase 6: Add Refined Value Schemas
 
