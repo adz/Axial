@@ -140,7 +140,9 @@ Schema constraints should lower onto the tightened `Check` shape, not the verbos
 - [x] Ensure schema constraints retain metadata for diagnostics, JSON Schema, UI, and docs.
 - [x] Define an explicit core API before computation expressions:
   `Schema.field`, `Schema.map2`, `Schema.map3`, and enough `mapN` helpers to prove the model.
-- [ ] Decide how many `mapN` helpers are acceptable before requiring generator support.
+- [x] Decide how many `mapN` helpers are acceptable before requiring generator support: stop at `Schema.map2` and
+  `Schema.map3`; do not hand-write `map4` or higher, and route larger models through the future schema computation
+  expression or `[<Schema>]` source generator instead.
 - [ ] Add tests proving constructor/getter alignment behavior.
 - [ ] Add tests proving schema constraints are inspectable without running validation.
 - [ ] Prove `Schema` can lower to a high-performance compiled record plan before codec work starts:

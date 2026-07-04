@@ -819,8 +819,10 @@ module Schema =
     /// Builds a model schema from a three-argument trusted constructor and three explicitly declared fields.
     /// </summary>
     /// <remarks>
-    /// Field argument position defines constructor order. This is the first explicit mapN shape used to prove
-    /// constructor/getter alignment before adding schema computation expressions or broader generated helpers.
+    /// Field argument position defines constructor order. Hand-written <c>mapN</c> stops here: <c>map2</c> and
+    /// <c>map3</c> are enough to prove constructor/getter alignment and field ordering. Models with more fields use
+    /// the schema computation expression (with <c>and!</c> for extra fields) once it exists, or a future
+    /// <c>[&lt;Schema&gt;]</c> source generator, rather than additional hand-written <c>mapN</c> overloads.
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">
     /// Thrown when <paramref name="constructor" />, <paramref name="left" />, <paramref name="middle" />, or

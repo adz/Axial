@@ -36,6 +36,11 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 - `Axial.Schema` starts as its own package and project as soon as schema source work begins. Do not incubate schema
   definitions inside `Axial.Validation`; keep schema definitions independent and put input, validation, diagnostics, and
   rules integration in `Axial.Validation.Schema`.
+- Hand-written `Schema.mapN` stops at `Schema.map2` and `Schema.map3`; that pair already proves constructor/getter
+  alignment and field ordering. Do not add `Schema.map4` or higher by hand. Models needing more fields go through the
+  `schema create { }` computation expression (using `and!` for extra fields) once it exists, or, if boilerplate remains
+  painful after the DSL ships, a future `[<Schema>]` source generator; either path builds on the same explicit core
+  rather than growing the hand-written mapN family.
 - `Bind` is only for assigning or mapping a source error immediately before `flow { }` binds it. In pure code, use
   `Result.require`, `Result.mapError`, or `Validation.mapError`.
 - Generated reference docs come from XML comments and generator inputs. Do not hand-edit generated reference pages as the
