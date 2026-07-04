@@ -5,35 +5,70 @@ documentation.
 
 ## Current Baseline
 
-- Recorded: `2026-06-03T14:05:45Z`
-- Baseline commit before this update: `7870a67f`
+- Recorded: `2026-07-04T23:23:23Z`
+- Baseline commit before this update: `36eb545b`
 - .NET SDK: `10.0.300`
 - Node.js used locally: `v26.1.0`
 
-Validated commands:
+Validated commands for this refresh:
 
 ```text
 bash scripts/check-source-inventory.sh
 => Source inventory covers src/tests .fs and .fsproj files.
 
-dotnet build tests/Axial.Tests/Axial.Tests.fsproj --nologo -v minimal
-=> Build succeeded.
-
-timeout 300s dotnet test tests/Axial.Tests/Axial.Tests.fsproj --no-build --nologo -v minimal
-=> Passed: 130, Failed: 0, Skipped: 0.
-
-dotnet run --project tests/Axial.Tests/Axial.Tests.fsproj --nologo
-=> Exit code 0.
-
-bash scripts/check-fable-js-surface.sh
-=> Fable JavaScript surface compiles and excludes .NET-only ColdTask.
+dotnet build tests/Axial.ApiShape.Tests/Axial.ApiShape.Tests.fsproj --no-restore --nologo -v minimal
+dotnet build tests/Axial.ErrorHandling.Tests/Axial.ErrorHandling.Tests.fsproj --no-restore --nologo -v minimal
+dotnet build tests/Axial.Flow.FileSystem.Tests/Axial.Flow.FileSystem.Tests.fsproj --no-restore --nologo -v minimal
+dotnet build tests/Axial.Flow.Hosting.Tests/Axial.Flow.Hosting.Tests.fsproj --no-restore --nologo -v minimal
+dotnet build tests/Axial.Flow.Integration.Tests/Axial.Flow.Integration.Tests.fsproj --no-restore --nologo -v minimal
+dotnet build tests/Axial.Flow.PlatformService.Tests/Axial.Flow.PlatformService.Tests.fsproj --no-restore --nologo -v minimal
+dotnet build tests/Axial.Flow.Telemetry.Tests/Axial.Flow.Telemetry.Tests.fsproj --no-restore --nologo -v minimal
+dotnet build tests/Axial.Flow.Tests/Axial.Flow.Tests.fsproj --no-restore --nologo -v minimal
+dotnet build tests/Axial.Refined.Tests/Axial.Refined.Tests.fsproj --no-restore --nologo -v minimal
+dotnet build tests/Axial.Schema.Tests/Axial.Schema.Tests.fsproj --no-restore --nologo -v minimal
+dotnet build tests/Axial.Validation.Schema.Tests/Axial.Validation.Schema.Tests.fsproj --no-restore --nologo -v minimal
+dotnet build tests/Axial.Validation.Tests/Axial.Validation.Tests.fsproj --no-restore --nologo -v minimal
+=> Build succeeded for each package-boundary test project.
 
 bash scripts/run-aot-probe.sh
 => Exit code 0.
 ```
 
-The full solution build, generated API docs, docs preview, and production site build are required before committing any
-baseline/API-surface update. Record their result in the commit summary when they are run.
+Known validation gaps observed during this refresh:
+
+```text
+dotnet test tests/Axial.ApiShape.Tests/Axial.ApiShape.Tests.fsproj --no-build --nologo -v minimal
+=> Blocked in the local sandbox because VSTest could not start its socket listener:
+   System.Net.Sockets.SocketException (13): Permission denied.
+
+dotnet build Axial.slnx --nologo -v minimal
+=> Fails in benchmarks/Axial.Benchmarks.Fable with Fable compile errors in Check.fs.
+
+bash scripts/check-fable-js-surface.sh
+=> Fails in benchmarks/Axial.Benchmarks.Fable with the same Check.fs Predicate.String/Number/Seq errors, plus
+   Schema.fs generic type-info errors.
+```
+
+The full solution build, generated API docs, docs preview, production site build, and an unrestricted `dotnet test` run
+are required before committing any release/API-surface update. Record their result in the commit summary when they are
+run.
+
+## Package-Boundary Test Projects
+
+The old monolithic `tests/Axial.Tests/Axial.Tests.fsproj` harness has been replaced by package-boundary test projects:
+
+- `tests/Axial.ApiShape.Tests/Axial.ApiShape.Tests.fsproj`
+- `tests/Axial.ErrorHandling.Tests/Axial.ErrorHandling.Tests.fsproj`
+- `tests/Axial.Flow.FileSystem.Tests/Axial.Flow.FileSystem.Tests.fsproj`
+- `tests/Axial.Flow.Hosting.Tests/Axial.Flow.Hosting.Tests.fsproj`
+- `tests/Axial.Flow.Integration.Tests/Axial.Flow.Integration.Tests.fsproj`
+- `tests/Axial.Flow.PlatformService.Tests/Axial.Flow.PlatformService.Tests.fsproj`
+- `tests/Axial.Flow.Telemetry.Tests/Axial.Flow.Telemetry.Tests.fsproj`
+- `tests/Axial.Flow.Tests/Axial.Flow.Tests.fsproj`
+- `tests/Axial.Refined.Tests/Axial.Refined.Tests.fsproj`
+- `tests/Axial.Schema.Tests/Axial.Schema.Tests.fsproj`
+- `tests/Axial.Validation.Schema.Tests/Axial.Validation.Schema.Tests.fsproj`
+- `tests/Axial.Validation.Tests/Axial.Validation.Tests.fsproj`
 
 ## CI Baseline Gates
 
@@ -41,7 +76,8 @@ CI currently proves:
 
 - every `src/**/*.fsproj` and `tests/**/*.fsproj` project is listed by `Axial.slnx`
 - every `src/**/*.fs` and `tests/**/*.fs` file is explicitly compiled by a `src` or `tests` project
-- the Axial test harness runs
+- the package-boundary test projects run
+- `tests/Axial.ApiShape.Tests` compiles the public API surface expected by users and examples
 - the intended Fable JavaScript surface compiles and excludes .NET-only `ColdTask`
 - examples run
 - the NativeAOT probe publishes and runs
@@ -55,17 +91,18 @@ must be deliberate.
 
 Required checks for public API changes:
 
-1. Update or extend `tests/Axial.Tests/ApiShapeTests.fs` in the same change.
+1. Update or extend `tests/Axial.ApiShape.Tests/ApiShapeTests.fs` in the same change.
 2. Update XML docs on the changed public members.
 3. Regenerate API docs with `bash scripts/generate-api-docs.sh`.
 4. Build the docs site with `npm run build` in `site`.
-5. Update `TODO.md` and `RELEASE_NOTES.md` when a change affects v1 scope or release notes.
+5. Update `dev-docs/TASKS.md`, `dev-docs/PLAN.md`, and `RELEASE_NOTES.md` when a change affects v1 scope or release
+   notes.
 
 Public API removals and renames are acceptable before v1 only when they are intentional and reflected in:
 
 - API-shape tests
 - generated reference docs
-- `TODO.md` or the relevant `dev-docs` plan/spec
+- the relevant `dev-docs` plan/spec
 
 After v1, compatibility aliases and deprecation windows should replace immediate removals unless a security or
 correctness issue requires a hard break.
