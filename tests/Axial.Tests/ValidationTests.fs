@@ -396,6 +396,57 @@ module ValidationTests =
             test <@ Check.notEqualTo 3 3 = Error [ Equality(NotEqualTo "3", Some "3") ] @>
 
         [<Fact>]
+        let ``Check top-level string facades match direct module behavior`` () =
+            let nullString: string = null
+
+            let assertSame (direct: Check<string>) (facade: Check<string>) samples =
+                for sample in samples do
+                    Assert.Equal<Result<unit, CheckFailure list>>(direct sample, facade sample)
+
+            assertSame (Check.String.length 3) (Check.length 3) [ "Ada"; "Axial"; nullString ]
+            assertSame (Check.String.minLength 3) (Check.minLength 3) [ "Ada"; "Al"; nullString ]
+            assertSame (Check.String.maxLength 3) (Check.maxLength 3) [ "Ada"; "Axial"; nullString ]
+            assertSame (Check.String.lengthBetween 2 4) (Check.lengthBetween 2 4) [ "Ada"; "A"; "Axial"; nullString ]
+            assertSame Check.String.email Check.email [ "ada@example.com"; "Ada"; nullString ]
+            assertSame (Check.String.matches "^[a-z]+$") (Check.matches "^[a-z]+$") [ "ada"; "Ada"; nullString ]
+            assertSame (Check.String.oneOf [ "draft"; "published" ]) (Check.oneOf [ "draft"; "published" ]) [ "draft"; "archived"; nullString ]
+
+        [<Fact>]
+        let ``Check top-level numeric facades match direct module behavior`` () =
+            let assertSame (direct: Check<int>) (facade: Check<int>) samples =
+                for sample in samples do
+                    Assert.Equal<Result<unit, CheckFailure list>>(direct sample, facade sample)
+
+            assertSame (Check.Number.between 1 3) (Check.between 1 3) [ 0; 1; 3; 4 ]
+            assertSame (Check.Number.greaterThan 1) (Check.greaterThan 1) [ 1; 2 ]
+            assertSame (Check.Number.lessThan 3) (Check.lessThan 3) [ 2; 3 ]
+            assertSame (Check.Number.atLeast 3) (Check.atLeast 3) [ 2; 3 ]
+            assertSame (Check.Number.atMost 3) (Check.atMost 3) [ 3; 4 ]
+            assertSame Check.Number.positive Check.positive [ 0; 1 ]
+            assertSame Check.Number.nonNegative Check.nonNegative [ -1; 0 ]
+            assertSame Check.Number.negative Check.negative [ -1; 0 ]
+            assertSame Check.Number.nonPositive Check.nonPositive [ 0; 1 ]
+
+        [<Fact>]
+        let ``Check top-level sequence facades match direct module behavior`` () =
+            let nullValues: seq<int> = null
+
+            let assertSame (direct: Check<seq<int>>) (facade: Check<seq<int>>) samples =
+                for sample in samples do
+                    Assert.Equal<Result<unit, CheckFailure list>>(direct sample, facade sample)
+
+            assertSame (Check.Seq.count 2) (Check.count 2) [ seq [ 1; 2 ]; seq [ 1 ]; nullValues ]
+            assertSame (Check.Seq.minCount 2) (Check.minCount 2) [ seq [ 1; 2 ]; seq [ 1 ]; nullValues ]
+            assertSame (Check.Seq.maxCount 2) (Check.maxCount 2) [ seq [ 1; 2 ]; seq [ 1; 2; 3 ]; nullValues ]
+            assertSame (Check.Seq.countBetween 2 4) (Check.countBetween 2 4) [ seq [ 1; 2; 3 ]; seq [ 1 ]; nullValues ]
+            assertSame Check.Seq.noDuplicates Check.distinct [ seq [ 1; 2; 3 ]; seq [ 1; 2; 1 ]; nullValues ]
+            assertSame (Check.Seq.contains 2) (Check.contains 2) [ seq [ 1; 2 ]; seq [ 1; 3 ]; nullValues ]
+            assertSame Check.Seq.single Check.single [ seq [ 1 ]; seq []; seq [ 1; 2 ]; nullValues ]
+            assertSame Check.Seq.atMostOne Check.atMostOne [ seq []; seq [ 1 ]; seq [ 1; 2 ]; nullValues ]
+            assertSame Check.Seq.atLeastOne Check.atLeastOne [ seq []; seq [ 1 ]; nullValues ]
+            assertSame Check.Seq.moreThanOne Check.moreThanOne [ seq [ 1 ]; seq [ 1; 2 ]; nullValues ]
+
+        [<Fact>]
         let ``Check top-level presence facade delegates to direct modules`` () =
             let nullString: string = null
 
