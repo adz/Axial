@@ -11,7 +11,7 @@ Work this queue from top to bottom.
 
 - [x] Define source-agnostic `RawInput`:
   `Missing`, `Scalar`, `Many`, and `Object`.
-- [ ] Implement path addressing for names and indexes.
+- [x] Implement path addressing for names and indexes.
 - [ ] Implement raw value lookup by paths like `contacts[1].value`.
 - [ ] Implement raw redisplay helpers.
 - [ ] Implement adapters:
