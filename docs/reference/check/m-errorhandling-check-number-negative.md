@@ -1,15 +1,15 @@
 ---
-title: "ErrorHandling.Check.nonPositive"
-linkTitle: "nonPositive"
-weight: 3010
+title: "ErrorHandling.Check.Number.negative"
+linkTitle: "negative"
+weight: 2307
 ---
 
-Requires a value to be less than or equal to zero.
+Requires a value to be less than zero.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>ErrorHandling.Check.nonPositive&#32;<span>value</span></span></code>
+<code><span>ErrorHandling.Check.Number.negative&#32;<span>value</span></span></code>
 </div>
 
 ## Parameters

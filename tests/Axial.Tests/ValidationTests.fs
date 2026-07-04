@@ -180,6 +180,14 @@ module ValidationTests =
             test <@ Check.Number.lessThan 3 2 = Ok () @>
             test <@ Check.Number.atLeast 1 1 = Ok () @>
             test <@ Check.Number.atMost 3 3 = Ok () @>
+            test <@ Check.Number.positive 1 = Ok () @>
+            test <@ Check.Number.positive 0 = Error [ Range(GreaterThan "0", Some "0") ] @>
+            test <@ Check.Number.nonNegative 0 = Ok () @>
+            test <@ Check.Number.nonNegative -1 = Error [ Range(AtLeast "0", Some "-1") ] @>
+            test <@ Check.Number.negative -1 = Ok () @>
+            test <@ Check.Number.negative 0 = Error [ Range(LessThan "0", Some "0") ] @>
+            test <@ Check.Number.nonPositive 0 = Ok () @>
+            test <@ Check.Number.nonPositive 1 = Error [ Range(AtMost "0", Some "1") ] @>
 
         [<Fact>]
         let ``Check Seq behavior accumulates count and distinct failures`` () =
@@ -291,6 +299,8 @@ module ValidationTests =
 
             test <@ Check.Number.between 1.5m 2.5m 2.0m = Ok () @>
             test <@ Check.Number.atLeast 1.5m 1.0m = Error [ Range(AtLeast "1.5", Some "1.0") ] @>
+            test <@ Check.Number.positive 0.1m = Ok () @>
+            test <@ Check.Number.nonPositive 0.1m = Error [ Range(AtMost "0", Some "0.1") ] @>
 
         [<Fact>]
         let ``Check Seq exposes executable sequence value checks`` () =
@@ -341,6 +351,14 @@ module ValidationTests =
             test <@ Check.lessThan 3 3 = Error [ Range(LessThan "3", Some "3") ] @>
             test <@ Check.atLeast 3 2 = Error [ Range(AtLeast "3", Some "2") ] @>
             test <@ Check.atMost 3 4 = Error [ Range(AtMost "3", Some "4") ] @>
+            test <@ Check.positive 1 = Ok () @>
+            test <@ Check.positive 0 = Error [ Range(GreaterThan "0", Some "0") ] @>
+            test <@ Check.nonNegative 0 = Ok () @>
+            test <@ Check.nonNegative -1 = Error [ Range(AtLeast "0", Some "-1") ] @>
+            test <@ Check.negative -1 = Ok () @>
+            test <@ Check.negative 0 = Error [ Range(LessThan "0", Some "0") ] @>
+            test <@ Check.nonPositive 0 = Ok () @>
+            test <@ Check.nonPositive 1 = Error [ Range(AtMost "0", Some "1") ] @>
 
             test <@ Check.count 2 [ 1; 2 ] = Ok () @>
             test <@ Check.count 2 [ 1 ] = Error [ Count(ExactCount 2, Some 1) ] @>
@@ -418,10 +436,6 @@ module ValidationTests =
             test <@ Check.isEmail "ada@example.com" @>
             test <@ Check.isNumeric "12345" @>
             test <@ Check.isAlphaNumeric "abc123" @>
-            test <@ Check.positive 1 @>
-            test <@ Check.nonNegative 0 @>
-            test <@ Check.negative -1 @>
-            test <@ Check.nonPositive 0 @>
             test <@ Check.notEmpty [ 1; 2 ] @>
             test <@ Check.isEmpty Seq.empty<int> @>
             test <@ Check.hasCount 2 [ 1; 2 ] @>

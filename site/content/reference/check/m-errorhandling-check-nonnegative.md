@@ -5,7 +5,7 @@ weight: 3008
 type: docs
 ---
 
-Returns true when the numeric value is greater than or equal to zero.
+Requires a value to be greater than or equal to zero.
 
 ## Signature
 
@@ -23,4 +23,4 @@ Returns true when the numeric value is greater than or equal to zero.
 
 | Type | Description |
 | --- | --- |
-| <code>bool</code> |  |
+| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>unit,&#32;<span><a href="/reference/Axial/axial-errorhandling-checkfailure.html">CheckFailure</a>&#32;list</span></span>&gt;</span></code> |  |

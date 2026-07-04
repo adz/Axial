@@ -649,6 +649,10 @@ module ApiShapeTests =
               "lessThan"
               "atLeast"
               "atMost"
+              "positive"
+              "nonNegative"
+              "negative"
+              "nonPositive"
               "count"
               "minCount"
               "maxCount"
@@ -677,10 +681,10 @@ module ApiShapeTests =
 
         checkNumberModule
         |> publicStaticMemberNames
-        |> assertContainsAll [ "between"; "greaterThan"; "lessThan"; "atLeast"; "atMost" ]
+        |> assertContainsAll [ "between"; "greaterThan"; "lessThan"; "atLeast"; "atMost"; "positive"; "nonNegative"; "negative"; "nonPositive" ]
 
         checkNumberModule
-        |> assertMethodsReturnCheckResult [ "between"; "greaterThan"; "lessThan"; "atLeast"; "atMost" ]
+        |> assertMethodsReturnCheckResult [ "between"; "greaterThan"; "lessThan"; "atLeast"; "atMost"; "positive"; "nonNegative"; "negative"; "nonPositive" ]
 
         let checkSeqModule =
             moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.CheckModule+Seq"

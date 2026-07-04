@@ -45,6 +45,10 @@ This page shows the `Check` surface for reusable, path-free value constraints. E
 - [`ErrorHandling.Check.Number.lessThan`](./m-errorhandling-check-number-lessthan.md): Requires a value to be less than the supplied exclusive upper bound.
 - [`ErrorHandling.Check.Number.atLeast`](./m-errorhandling-check-number-atleast.md): Requires a value to be greater than or equal to the supplied lower bound.
 - [`ErrorHandling.Check.Number.atMost`](./m-errorhandling-check-number-atmost.md): Requires a value to be less than or equal to the supplied upper bound.
+- [`ErrorHandling.Check.Number.positive`](./m-errorhandling-check-number-positive.md): Requires a value to be greater than zero.
+- [`ErrorHandling.Check.Number.nonNegative`](./m-errorhandling-check-number-nonnegative.md): Requires a value to be greater than or equal to zero.
+- [`ErrorHandling.Check.Number.negative`](./m-errorhandling-check-number-negative.md): Requires a value to be less than zero.
+- [`ErrorHandling.Check.Number.nonPositive`](./m-errorhandling-check-number-nonpositive.md): Requires a value to be less than or equal to zero.
 
 ## Executable sequence checks
 
@@ -110,7 +114,7 @@ This page shows the `Check` surface for reusable, path-free value constraints. E
 - [`ErrorHandling.Check.atLeastOne`](./m-errorhandling-check-atleastone.md): Requires an already parsed sequence-shaped value to contain at least one item.
 - [`ErrorHandling.Check.moreThanOne`](./m-errorhandling-check-morethanone.md): Requires an already parsed sequence-shaped value to contain more than one item.
 
-## Equality and range predicates
+## Equality and range checks
 
 - [`ErrorHandling.Check.equalTo`](./m-errorhandling-check-equalto.md): Requires the actual value to equal the supplied expected value.
 - [`ErrorHandling.Check.notEqualTo`](./m-errorhandling-check-notequalto.md): Requires the actual value not to equal the supplied unexpected value.
@@ -119,10 +123,10 @@ This page shows the `Check` surface for reusable, path-free value constraints. E
 - [`ErrorHandling.Check.atLeast`](./m-errorhandling-check-atleast.md): Requires a value to be greater than or equal to the supplied lower bound.
 - [`ErrorHandling.Check.atMost`](./m-errorhandling-check-atmost.md): Requires a value to be less than or equal to the supplied upper bound.
 - [`ErrorHandling.Check.between`](./m-errorhandling-check-between.md): Requires a value to lie inside the supplied inclusive bounds.
-- [`ErrorHandling.Check.positive`](./m-errorhandling-check-positive.md): Returns true when the numeric value is greater than zero.
-- [`ErrorHandling.Check.nonNegative`](./m-errorhandling-check-nonnegative.md): Returns true when the numeric value is greater than or equal to zero.
-- [`ErrorHandling.Check.negative`](./m-errorhandling-check-negative.md): Returns true when the numeric value is less than zero.
-- [`ErrorHandling.Check.nonPositive`](./m-errorhandling-check-nonpositive.md): Returns true when the numeric value is less than or equal to zero.
+- [`ErrorHandling.Check.positive`](./m-errorhandling-check-positive.md): Requires a value to be greater than zero.
+- [`ErrorHandling.Check.nonNegative`](./m-errorhandling-check-nonnegative.md): Requires a value to be greater than or equal to zero.
+- [`ErrorHandling.Check.negative`](./m-errorhandling-check-negative.md): Requires a value to be less than zero.
+- [`ErrorHandling.Check.nonPositive`](./m-errorhandling-check-nonpositive.md): Requires a value to be less than or equal to zero.
 
 ## Predicate composition
 

@@ -4,7 +4,7 @@ linkTitle: "positive"
 weight: 3007
 ---
 
-Returns true when the numeric value is greater than zero.
+Requires a value to be greater than zero.
 
 ## Signature
 
@@ -22,4 +22,4 @@ Returns true when the numeric value is greater than zero.
 
 | Type | Description |
 | --- | --- |
-| <code>bool</code> |  |
+| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>unit,&#32;<span><a href="/reference/Axial/axial-errorhandling-checkfailure.html">CheckFailure</a>&#32;list</span></span>&gt;</span></code> |  |

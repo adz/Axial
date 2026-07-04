@@ -188,22 +188,6 @@ module Check =
     let isAlphaNumeric (value: string) : bool =
         not (isNull value) && value |> Seq.forall Char.IsLetterOrDigit
 
-    /// <summary>Returns true when the numeric value is greater than zero.</summary>
-    let inline positive value =
-        value > LanguagePrimitives.GenericZero
-
-    /// <summary>Returns true when the numeric value is greater than or equal to zero.</summary>
-    let inline nonNegative value =
-        value >= LanguagePrimitives.GenericZero
-
-    /// <summary>Returns true when the numeric value is less than zero.</summary>
-    let inline negative value =
-        value < LanguagePrimitives.GenericZero
-
-    /// <summary>Returns true when the numeric value is less than or equal to zero.</summary>
-    let inline nonPositive value =
-        value <= LanguagePrimitives.GenericZero
-
     /// <summary>Returns true when the sequence is empty.</summary>
     let isEmpty (values: seq<'value>) : bool =
         Seq.isEmpty values
@@ -364,6 +348,22 @@ module Check =
             fun value ->
                 if value <= maximum then Ok ()
                 else Error [ Range(AtMost(string maximum), Some(string value)) ]
+
+        /// <summary>Requires a value to be greater than zero.</summary>
+        let inline positive value =
+            greaterThan LanguagePrimitives.GenericZero value
+
+        /// <summary>Requires a value to be greater than or equal to zero.</summary>
+        let inline nonNegative value =
+            atLeast LanguagePrimitives.GenericZero value
+
+        /// <summary>Requires a value to be less than zero.</summary>
+        let inline negative value =
+            lessThan LanguagePrimitives.GenericZero value
+
+        /// <summary>Requires a value to be less than or equal to zero.</summary>
+        let inline nonPositive value =
+            atMost LanguagePrimitives.GenericZero value
 
     /// <summary>Executable, path-free value checks for already parsed sequence-shaped values.</summary>
     module Seq =
@@ -561,6 +561,22 @@ module Check =
     /// <summary>Requires a value to be less than or equal to the supplied upper bound.</summary>
     let inline atMost maximum : Check<'value> =
         Number.atMost maximum
+
+    /// <summary>Requires a value to be greater than zero.</summary>
+    let inline positive value =
+        Number.positive value
+
+    /// <summary>Requires a value to be greater than or equal to zero.</summary>
+    let inline nonNegative value =
+        Number.nonNegative value
+
+    /// <summary>Requires a value to be less than zero.</summary>
+    let inline negative value =
+        Number.negative value
+
+    /// <summary>Requires a value to be less than or equal to zero.</summary>
+    let inline nonPositive value =
+        Number.nonPositive value
 
     /// <summary>Requires an already parsed sequence-shaped value to contain exactly the supplied count.</summary>
     let count (expected: int) : Check<#seq<'value>> =
