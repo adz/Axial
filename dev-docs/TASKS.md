@@ -205,9 +205,50 @@ the typed `Field` values and the constructor lambda from the test side; a codec 
 - [x] Update the vertical-slice proof and constructor/getter alignment tests to author through the builder, keeping
   the reversed-declaration-order alignment scenario.
 - [x] Keep the builder Fable-compatible and AOT/trimming-safe; the chain must not rely on runtime reflection.
-- [ ] Evaluate and document builder compile-error quality: what the compiler reports when a getter type mismatches its
+- [x] Evaluate and document builder compile-error quality: what the compiler reports when a getter type mismatches its
   constructor position and when `Schema.build` is called on a partially applied constructor. Record representative
   error text in doc comments or dev-docs so DSL work can compare against it.
+  Captured with `dotnet fsi` 15.2.300.0 / F# 10.0 against the current `Axial.Schema` `net8.0` debug build:
+
+  Getter/constructor mismatch example:
+
+  ```fsharp
+  type Customer = { Name: string; Age: int }
+
+  Schema.record (fun name age -> { Name = name; Age = age })
+  |> Schema.field "name" (fun (customer: Customer) -> customer.Age) Value.text
+  |> Schema.field "age" (fun (customer: Customer) -> customer.Name) Value.``int``
+  |> Schema.build
+  ```
+
+  Representative diagnostic:
+
+  ```text
+  error FS0001: This expression was expected to have type
+      'string'
+  but here has type
+      'int'
+  ```
+
+  Partial-constructor build example:
+
+  ```fsharp
+  type Customer = { Name: string; Age: int }
+
+  Schema.record (fun name age -> { Name = name; Age = age })
+  |> Schema.field "name" (fun (customer: Customer) -> customer.Name) Value.text
+  |> Schema.build
+  ```
+
+  Representative diagnostic:
+
+  ```text
+  error FS0001: Type mismatch. Expecting a
+      'SchemaBuilder<Customer,(string -> int -> Customer),(int -> Customer),FieldsAppend<Customer,(string -> int -> Customer),string,(int -> Customer),FieldsEnd<Customer,(string -> int -> Customer)>>> -> 'a'
+  but given a
+      'SchemaBuilder<Customer,(string -> int -> Customer),(int -> Customer),FieldsAppend<Customer,(string -> int -> Customer),string,(int -> Customer),FieldsEnd<Customer,(string -> int -> Customer)>>> -> Schema<Customer>'
+  The type 'Customer' does not match the type 'int -> Customer'
+  ```
 - [ ] Update `dev-docs/decisions/README.md`, `dev-docs/PLAN.md`, and source comments (for example the `Schema.map3`
   remark that routes larger models through the CE/generator) once the builder replaces the `mapN` cap.
 
