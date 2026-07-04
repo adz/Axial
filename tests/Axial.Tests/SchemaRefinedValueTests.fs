@@ -60,9 +60,9 @@ module SchemaRefinedValueTests =
         let nameField = Field.create "name" (fun (contact: Contact) -> contact.Name) Value.text
 
         let schema =
-            Schema.record (fun email name -> { Email = email; Name = name })
-            |> Schema.fieldWith [ SchemaConstraint.required ] "email" (fun (contact: Contact) -> contact.Email) Email.schema
-            |> Schema.field "name" (fun (contact: Contact) -> contact.Name) Value.text
+            Schema.recordFor<Contact, _> (fun email name -> { Email = email; Name = name })
+            |> Schema.fieldWith [ SchemaConstraint.required ] "email" _.Email Email.schema
+            |> Schema.text "name" _.Name
             |> Schema.build
 
         let contact = { Email = Email.create "ada@example.com"; Name = "Ada" }

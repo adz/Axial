@@ -161,9 +161,9 @@ module SchemaVerticalSliceProofTests =
         // Declare fields in reverse of the record's own field order to prove constructor/getter alignment
         // follows declared argument position, not the record's source order or external field name.
         let schema =
-            Schema.record (fun displayName email -> { Email = email; DisplayName = displayName })
-            |> Schema.field "displayName" (fun (signup: Signup) -> signup.DisplayName) displayNameValue
-            |> Schema.field "email" (fun (signup: Signup) -> signup.Email) emailValue
+            Schema.recordFor<Signup, _> (fun displayName email -> { Email = email; DisplayName = displayName })
+            |> Schema.field "displayName" _.DisplayName displayNameValue
+            |> Schema.field "email" _.Email emailValue
             |> Schema.build
 
         let source = { Email = "ada@example.com"; DisplayName = "Ada" }

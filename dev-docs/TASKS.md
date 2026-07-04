@@ -264,7 +264,7 @@ the typed `Field` values and the constructor lambda from the test side; a codec 
   `text "name" _.Name { ... }`, `int "age" _.Age { ... }`, `decimal`, `bool`, `date`, and `guid` are the everyday
   schema-authoring surface, while generic `field "email" _.Email Email.schema { ... }` / `Schema.field "email" _.Email
   Email.schema` is reserved for explicit or custom `ValueSchema<'value>` values.
-- [ ] Update public schema API tests so the examples readers see use the expected end-user pipeline form. Keep
+- [x] Update public schema API tests so the examples readers see use the expected end-user pipeline form. Keep
   lower-level or transitional forms only in tests that are explicitly about those lower-level APIs, and add compile/API
   shape coverage for the intended shorthand forms before marking the ergonomics work complete.
 

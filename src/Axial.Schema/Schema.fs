@@ -738,10 +738,11 @@ module internal ModelSchemaDefinition =
 /// </para>
 /// <para>
 /// The public construction path is the progressive typed builder: start with <c>Schema.recordFor&lt;'model, _&gt;</c>,
-/// append <c>Schema.field</c> steps, and finish with <c>Schema.build</c>. The model-type anchor lets field getters use
-/// shorthand member access such as <c>_.Name</c>. <c>Schema.record</c> remains available when the model type is already
-/// clear or getters are annotated explicitly. Computation expressions and source generators can layer over that builder
-/// later, but they are not required for larger models.
+/// append primitive field steps such as <c>Schema.text "name" _.Name</c>, and finish with <c>Schema.build</c>. The
+/// model-type anchor lets field getters use shorthand member access such as <c>_.Name</c>. <c>Schema.field</c> remains
+/// available for explicit or custom value schemas, and <c>Schema.record</c> remains available when the model type is
+/// already clear or getters are annotated explicitly. Computation expressions and source generators can layer over that
+/// builder later, but they are not required for larger models.
 /// </para>
 /// </remarks>
 [<Sealed>]
@@ -1130,6 +1131,64 @@ module Schema =
               Constraints = constraints }
 
         SchemaBuilder(builder.Constructor, FieldsAppend(builder.Chain, definition))
+
+    /// <summary>Appends a text field represented as <see cref="T:System.String" /> to a progressive schema builder.</summary>
+    let text
+        externalName
+        (getter: 'model -> string)
+        (builder: SchemaBuilder<'model, 'constructor, string -> 'next, 'chain>)
+        : SchemaBuilder<'model, 'constructor, 'next, FieldsAppend<'model, 'constructor, string, 'next, 'chain>> =
+        field externalName getter Value.text builder
+
+    /// <summary>Appends a 32-bit signed integer field represented as <see cref="T:System.Int32" /> to a progressive schema builder.</summary>
+    let ``int``
+        externalName
+        (getter: 'model -> int)
+        (builder: SchemaBuilder<'model, 'constructor, int -> 'next, 'chain>)
+        : SchemaBuilder<'model, 'constructor, 'next, FieldsAppend<'model, 'constructor, int, 'next, 'chain>> =
+        field externalName getter Value.``int`` builder
+
+    /// <summary>Appends a decimal field represented as <see cref="T:System.Decimal" /> to a progressive schema builder.</summary>
+    let ``decimal``
+        externalName
+        (getter: 'model -> decimal)
+        (builder: SchemaBuilder<'model, 'constructor, decimal -> 'next, 'chain>)
+        : SchemaBuilder<'model, 'constructor, 'next, FieldsAppend<'model, 'constructor, decimal, 'next, 'chain>> =
+        field externalName getter Value.``decimal`` builder
+
+    /// <summary>Appends a Boolean field represented as <see cref="T:System.Boolean" /> to a progressive schema builder.</summary>
+    let ``bool``
+        externalName
+        (getter: 'model -> bool)
+        (builder: SchemaBuilder<'model, 'constructor, bool -> 'next, 'chain>)
+        : SchemaBuilder<'model, 'constructor, 'next, FieldsAppend<'model, 'constructor, bool, 'next, 'chain>> =
+        field externalName getter Value.``bool`` builder
+
+#if NET6_0_OR_GREATER
+    /// <summary>Appends a calendar date field represented as <see cref="T:System.DateOnly" /> to a progressive schema builder.</summary>
+    let date
+        externalName
+        (getter: 'model -> DateOnly)
+        (builder: SchemaBuilder<'model, 'constructor, DateOnly -> 'next, 'chain>)
+        : SchemaBuilder<'model, 'constructor, 'next, FieldsAppend<'model, 'constructor, DateOnly, 'next, 'chain>> =
+        field externalName getter Value.date builder
+#endif
+
+    /// <summary>Appends an instant-like date and time field represented as <see cref="T:System.DateTimeOffset" /> to a progressive schema builder.</summary>
+    let dateTime
+        externalName
+        (getter: 'model -> DateTimeOffset)
+        (builder: SchemaBuilder<'model, 'constructor, DateTimeOffset -> 'next, 'chain>)
+        : SchemaBuilder<'model, 'constructor, 'next, FieldsAppend<'model, 'constructor, DateTimeOffset, 'next, 'chain>> =
+        field externalName getter Value.dateTime builder
+
+    /// <summary>Appends a globally unique identifier field represented as <see cref="T:System.Guid" /> to a progressive schema builder.</summary>
+    let guid
+        externalName
+        (getter: 'model -> Guid)
+        (builder: SchemaBuilder<'model, 'constructor, Guid -> 'next, 'chain>)
+        : SchemaBuilder<'model, 'constructor, 'next, FieldsAppend<'model, 'constructor, Guid, 'next, 'chain>> =
+        field externalName getter Value.guid builder
 
     /// <summary>
     /// Builds a model schema from a progressive typed builder whose constructor has been fully applied by fields.

@@ -174,9 +174,9 @@ module SchemaCompiledRecordPlanProofTests =
     [<Fact>]
     let ``flat record schema lowers to a compiled plan with ordered fields, cached UTF-8 names, and typed hooks`` () =
         let schema =
-            Schema.record (fun name age -> { Name = name; Age = age })
-            |> Schema.field "name" (fun (contact: Contact) -> contact.Name) Value.text
-            |> Schema.field "age" (fun (contact: Contact) -> contact.Age) Value.``int``
+            Schema.recordFor<Contact, _> (fun name age -> { Name = name; Age = age })
+            |> Schema.text "name" _.Name
+            |> Schema.``int`` "age" _.Age
             |> Schema.build
 
         let plan = compileFromSchema schema
@@ -206,9 +206,9 @@ module SchemaCompiledRecordPlanProofTests =
     [<Fact>]
     let ``decode raises when a required field is missing instead of partially applying the constructor`` () =
         let schema =
-            Schema.record (fun name age -> { Name = name; Age = age })
-            |> Schema.field "name" (fun (contact: Contact) -> contact.Name) Value.text
-            |> Schema.field "age" (fun (contact: Contact) -> contact.Age) Value.``int``
+            Schema.recordFor<Contact, _> (fun name age -> { Name = name; Age = age })
+            |> Schema.text "name" _.Name
+            |> Schema.``int`` "age" _.Age
             |> Schema.build
 
         let plan = compileFromSchema schema

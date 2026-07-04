@@ -27,8 +27,9 @@ weight: 1000
  diagnostics, validation, codecs, UI generation, or workflow execution.
  </p><p class='fsdocs-para'>
  The public construction path is the progressive typed builder: start with <code>Schema.recordFor&lt;&#39;model, _&gt;</code>,
- append <code>Schema.field</code> steps, and finish with <code>Schema.build</code>. The model-type anchor lets field getters use
- shorthand member access such as <code>_.Name</code>. <code>Schema.record</code> remains available when the model type is already
- clear or getters are annotated explicitly. Computation expressions and source generators can layer over that builder
- later, but they are not required for larger models.
+ append primitive field steps such as <code>Schema.text &quot;name&quot; _.Name</code>, and finish with <code>Schema.build</code>. The
+ model-type anchor lets field getters use shorthand member access such as <code>_.Name</code>. <code>Schema.field</code> remains
+ available for explicit or custom value schemas, and <code>Schema.record</code> remains available when the model type is
+ already clear or getters are annotated explicitly. Computation expressions and source generators can layer over that
+ builder later, but they are not required for larger models.
  </p>

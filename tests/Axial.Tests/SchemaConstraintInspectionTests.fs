@@ -33,9 +33,9 @@ module SchemaConstraintInspectionTests =
         let ageValue = Value.``int`` |> Value.withConstraint (SchemaConstraint.between 13 120)
 
         let schema =
-            Schema.record (fun email age -> { Email = email; Age = age })
-            |> Schema.fieldWith [ SchemaConstraint.required ] "email" (fun (signup: Signup) -> signup.Email) emailValue
-            |> Schema.field "age" (fun (signup: Signup) -> signup.Age) ageValue
+            Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
+            |> Schema.fieldWith [ SchemaConstraint.required ] "email" _.Email emailValue
+            |> Schema.field "age" _.Age ageValue
             |> Schema.build
 
         // Everything below reads metadata off `schema` alone: no `Signup` value is constructed, and no `Check` or
@@ -75,18 +75,21 @@ module SchemaConstraintInspectionTests =
     [<Fact>]
     let ``builder schema constraints preserve per field ordering and metadata independent of a model instance`` () =
         let schema =
-            Schema.record (fun street city postalCode -> { Street = street; City = city; PostalCode = postalCode })
+            Schema.recordFor<Address, _> (fun street city postalCode ->
+                { Street = street
+                  City = city
+                  PostalCode = postalCode })
             |> Schema.field
                 "street"
-                (fun (address: Address) -> address.Street)
+                _.Street
                 (Value.text |> Value.withConstraint SchemaConstraint.required)
             |> Schema.field
                 "city"
-                (fun (address: Address) -> address.City)
+                _.City
                 (Value.text |> Value.withConstraint (SchemaConstraint.lengthBetween 1 100))
             |> Schema.field
                 "postalCode"
-                (fun (address: Address) -> address.PostalCode)
+                _.PostalCode
                 (Value.text
                  |> Value.withConstraints [ SchemaConstraint.required; SchemaConstraint.pattern "^[0-9]{5}$" ])
             |> Schema.build

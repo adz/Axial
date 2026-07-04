@@ -25,9 +25,9 @@ module SchemaConstructorGetterAlignmentTests =
     [<Fact>]
     let ``builder aligns each field's getter with its constructor argument position`` () =
         let schema =
-            Schema.record (fun first last -> { First = first; Last = last })
-            |> Schema.field "first" (fun (name: FullName) -> name.First) Value.text
-            |> Schema.field "last" (fun (name: FullName) -> name.Last) Value.text
+            Schema.recordFor<FullName, _> (fun first last -> { First = first; Last = last })
+            |> Schema.text "first" _.First
+            |> Schema.text "last" _.Last
             |> Schema.build
         let source = { First = "Ada"; Last = "Lovelace" }
 
@@ -42,9 +42,9 @@ module SchemaConstructorGetterAlignmentTests =
     [<Fact>]
     let ``builder binds argument position to declaration order, not external field name`` () =
         let swapped =
-            Schema.record (fun a b -> { First = a; Last = b })
-            |> Schema.field "last" (fun (name: FullName) -> name.Last) Value.text
-            |> Schema.field "first" (fun (name: FullName) -> name.First) Value.text
+            Schema.recordFor<FullName, _> (fun a b -> { First = a; Last = b })
+            |> Schema.text "last" _.Last
+            |> Schema.text "first" _.First
             |> Schema.build
         let source = { First = "Ada"; Last = "Lovelace" }
 
@@ -59,10 +59,10 @@ module SchemaConstructorGetterAlignmentTests =
     [<Fact>]
     let ``builder aligns each of three same-typed fields with its constructor argument position`` () =
         let schema =
-            Schema.record (fun line1 line2 city -> { Line1 = line1; Line2 = line2; City = city })
-            |> Schema.field "line1" (fun (address: Address) -> address.Line1) Value.text
-            |> Schema.field "line2" (fun (address: Address) -> address.Line2) Value.text
-            |> Schema.field "city" (fun (address: Address) -> address.City) Value.text
+            Schema.recordFor<Address, _> (fun line1 line2 city -> { Line1 = line1; Line2 = line2; City = city })
+            |> Schema.text "line1" _.Line1
+            |> Schema.text "line2" _.Line2
+            |> Schema.text "city" _.City
             |> Schema.build
 
         let source = { Line1 = "221B Baker Street"; Line2 = "Flat 2"; City = "London" }
@@ -83,10 +83,10 @@ module SchemaConstructorGetterAlignmentTests =
         // Declare city first and construct the record accordingly; each getter must still land on the argument
         // matching its declared position rather than the record's source order or external field name.
         let reordered =
-            Schema.record (fun city line1 line2 -> { Line1 = line1; Line2 = line2; City = city })
-            |> Schema.field "city" (fun (address: Address) -> address.City) Value.text
-            |> Schema.field "line1" (fun (address: Address) -> address.Line1) Value.text
-            |> Schema.field "line2" (fun (address: Address) -> address.Line2) Value.text
+            Schema.recordFor<Address, _> (fun city line1 line2 -> { Line1 = line1; Line2 = line2; City = city })
+            |> Schema.text "city" _.City
+            |> Schema.text "line1" _.Line1
+            |> Schema.text "line2" _.Line2
             |> Schema.build
 
         let source = { Line1 = "221B Baker Street"; Line2 = "Flat 2"; City = "London" }
