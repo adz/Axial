@@ -192,10 +192,6 @@ module Check =
     let isEmpty (values: seq<'value>) : bool =
         Seq.isEmpty values
 
-    /// <summary>Returns true when the sequence contains at least one item.</summary>
-    let notEmpty (values: seq<'value>) : bool =
-        not (Seq.isEmpty values)
-
     /// <summary>Returns true when the sequence count equals the expected count.</summary>
     let hasCount (expected: int) (values: seq<'value>) : bool =
         Seq.length values = expected
@@ -686,6 +682,72 @@ module Check =
     /// <summary>Requires an already parsed sequence-shaped value to contain more than one item.</summary>
     let moreThanOne (values: #seq<'value>) : Result<unit, CheckFailure list> =
         Seq.moreThanOne values
+
+    [<System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>]
+    type Present =
+        static member Apply(value: string, _: 'result, _: Present) : 'result =
+            String.present value |> box :?> 'result
+
+        static member Apply(value: 'value option, _: 'result, _: Present) : 'result =
+            Option.present value |> box :?> 'result
+
+        static member Apply(value: 'value voption, _: 'result, _: Present) : 'result =
+            ValueOption.present value |> box :?> 'result
+
+        static member Apply(value: System.Nullable<'value>, _: 'result, _: Present) : 'result =
+            Nullable.present value |> box :?> 'result
+
+        static member inline Invoke(value: ^value) : 'result =
+            ((^value or Present): (static member Apply: ^value * 'result * Present -> 'result)
+                (value, Unchecked.defaultof<'result>, Unchecked.defaultof<Present>))
+
+    [<System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>]
+    type Empty =
+        static member Apply(value: string, _: 'result, _: Empty) : 'result =
+            String.empty value |> box :?> 'result
+
+        static member Apply(value: 'value option, _: 'result, _: Empty) : 'result =
+            Option.empty value |> box :?> 'result
+
+        static member Apply(value: 'value voption, _: 'result, _: Empty) : 'result =
+            ValueOption.empty value |> box :?> 'result
+
+        static member Apply(value: System.Nullable<'value>, _: 'result, _: Empty) : 'result =
+            Nullable.empty value |> box :?> 'result
+
+        static member inline Invoke(value: ^value) : 'result =
+            ((^value or Empty): (static member Apply: ^value * 'result * Empty -> 'result)
+                (value, Unchecked.defaultof<'result>, Unchecked.defaultof<Empty>))
+
+    [<System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>]
+    type NotEmpty =
+        static member Apply(value: string, _: 'result, _: NotEmpty) : 'result =
+            String.notEmpty value |> box :?> 'result
+
+        static member Apply(value: 'value option, _: 'result, _: NotEmpty) : 'result =
+            Option.notEmpty value |> box :?> 'result
+
+        static member Apply(value: 'value voption, _: 'result, _: NotEmpty) : 'result =
+            ValueOption.notEmpty value |> box :?> 'result
+
+        static member Apply(value: System.Nullable<'value>, _: 'result, _: NotEmpty) : 'result =
+            Nullable.notEmpty value |> box :?> 'result
+
+        static member inline Invoke(value: ^value) : 'result =
+            ((^value or NotEmpty): (static member Apply: ^value * 'result * NotEmpty -> 'result)
+                (value, Unchecked.defaultof<'result>, Unchecked.defaultof<NotEmpty>))
+
+    /// <summary>Requires an already parsed optional, nullable, or text value to be present.</summary>
+    let inline present value : Result<unit, CheckFailure list> =
+        Present.Invoke value
+
+    /// <summary>Requires an already parsed optional, nullable, or text value to be empty.</summary>
+    let inline empty value : Result<unit, CheckFailure list> =
+        Empty.Invoke value
+
+    /// <summary>Requires an already parsed optional, nullable, or text value to be non-empty.</summary>
+    let inline notEmpty value : Result<unit, CheckFailure list> =
+        NotEmpty.Invoke value
 
     /// <summary>Requires the actual value to equal the supplied expected value.</summary>
     let equalTo (expected: 'value) : Check<'value> =

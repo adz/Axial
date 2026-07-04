@@ -395,6 +395,38 @@ module ValidationTests =
             test <@ Check.notEqualTo 3 3 = Error [ Equality(NotEqualTo "3", Some "3") ] @>
 
         [<Fact>]
+        let ``Check exposes small top-level presence facade`` () =
+            let nullString: string = null
+
+            Assert.Equal<Result<unit, CheckFailure list>>(Ok (), Check.present "Ada")
+            Assert.Equal<Result<unit, CheckFailure list>>(Error [ Missing ], Check.present nullString)
+            Assert.Equal<Result<unit, CheckFailure list>>(Error [ Blank ], Check.present "")
+            Assert.Equal<Result<unit, CheckFailure list>>(Ok (), Check.present (Some 1))
+            Assert.Equal<Result<unit, CheckFailure list>>(Error [ Missing ], Check.present (None: int option))
+            Assert.Equal<Result<unit, CheckFailure list>>(Ok (), Check.present (ValueSome 1))
+            Assert.Equal<Result<unit, CheckFailure list>>(Error [ Missing ], Check.present (ValueNone: int voption))
+            Assert.Equal<Result<unit, CheckFailure list>>(Ok (), Check.present (System.Nullable 1))
+            Assert.Equal<Result<unit, CheckFailure list>>(Error [ Missing ], Check.present (System.Nullable<int>()))
+
+            Assert.Equal<Result<unit, CheckFailure list>>(Ok (), Check.empty "")
+            Assert.Equal<Result<unit, CheckFailure list>>(Error [ Length(ExactLength 0, Some 1) ], Check.empty " ")
+            Assert.Equal<Result<unit, CheckFailure list>>(Ok (), Check.empty (None: int option))
+            Assert.Equal<Result<unit, CheckFailure list>>(Error [ Equality(EqualTo "None", Some "Some") ], Check.empty (Some 1))
+            Assert.Equal<Result<unit, CheckFailure list>>(Ok (), Check.empty (ValueNone: int voption))
+            Assert.Equal<Result<unit, CheckFailure list>>(Error [ Equality(EqualTo "ValueNone", Some "ValueSome") ], Check.empty (ValueSome 1))
+            Assert.Equal<Result<unit, CheckFailure list>>(Ok (), Check.empty (System.Nullable<int>()))
+            Assert.Equal<Result<unit, CheckFailure list>>(Error [ Equality(EqualTo "null", Some "value") ], Check.empty (System.Nullable 1))
+
+            Assert.Equal<Result<unit, CheckFailure list>>(Ok (), Check.notEmpty " ")
+            Assert.Equal<Result<unit, CheckFailure list>>(Error [ Length(MinimumLength 1, Some 0) ], Check.notEmpty "")
+            Assert.Equal<Result<unit, CheckFailure list>>(Ok (), Check.notEmpty (Some 1))
+            Assert.Equal<Result<unit, CheckFailure list>>(Error [ Missing ], Check.notEmpty (None: int option))
+            Assert.Equal<Result<unit, CheckFailure list>>(Ok (), Check.notEmpty (ValueSome 1))
+            Assert.Equal<Result<unit, CheckFailure list>>(Error [ Missing ], Check.notEmpty (ValueNone: int voption))
+            Assert.Equal<Result<unit, CheckFailure list>>(Ok (), Check.notEmpty (System.Nullable 1))
+            Assert.Equal<Result<unit, CheckFailure list>>(Error [ Missing ], Check.notEmpty (System.Nullable<int>()))
+
+        [<Fact>]
         let ``Check Option exposes executable option value checks`` () =
             test <@ Check.Option.some (Some 1) = Ok () @>
             test <@ Check.Option.some None = Error [ Missing ] @>
@@ -476,7 +508,7 @@ module ValidationTests =
             test <@ Check.isEmail "ada@example.com" @>
             test <@ Check.isNumeric "12345" @>
             test <@ Check.isAlphaNumeric "abc123" @>
-            test <@ Check.notEmpty [ 1; 2 ] @>
+            test <@ [ 1; 2 ] |> Seq.isEmpty |> not @>
             test <@ Check.isEmpty Seq.empty<int> @>
             test <@ Check.hasCount 2 [ 1; 2 ] @>
             test <@ Check.hasDuplicates [ 1; 2; 1 ] @>
@@ -526,7 +558,7 @@ module ValidationTests =
             test <@ ([ 1; 2 ] |> Result.headOr "missing") = Ok 1 @>
             test <@ ("Ada" |> Result.keepIf Check.notBlank "required") = Ok "Ada" @>
             test <@ ("Ada" |> Result.keepIf Check.notNull "required") = Ok "Ada" @>
-            test <@ ([ 1; 2 ] |> Result.keepIf Check.notEmpty "required") = Ok [ 1; 2 ] @>
+            test <@ ([ 1; 2 ] |> Result.keepIf (Seq.isEmpty >> not) "required") = Ok [ 1; 2 ] @>
             test <@ ([ 1; 2 ] |> Result.keepIf (Seq.contains 2) "missing") = Ok [ 1; 2 ] @>
             test <@ ([ 1; 2; 3 ] |> Result.keepIf Check.hasNoDuplicates "duplicate") = Ok [ 1; 2; 3 ] @>
             test <@ ("ab" |> Result.minLength 3) = Error [ Length(MinimumLength 3, Some 2) ] @>

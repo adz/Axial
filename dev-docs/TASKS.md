@@ -107,7 +107,7 @@ Schema constraints should lower onto the tightened `Check` shape, not the verbos
   `Check.Nullable.present`, `Check.Nullable.empty`, `Check.Nullable.notEmpty`.
 - [x] Keep `Check.Result.ok` and `Check.Result.error` direct-only for now; do not add top-level `Check.ok` or
   `Check.error` unless the constructor-like names prove useful enough.
-- [ ] Add only a very small SRTP top-level facade at first:
+- [x] Add only a very small SRTP top-level facade at first:
   `Check.present`, `Check.empty`, and `Check.notEmpty`.
 - [ ] Ensure SRTP facade functions only delegate to direct module implementations; do not make SRTP the semantic source
   of truth.

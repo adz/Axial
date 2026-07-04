@@ -91,7 +91,7 @@ This page shows the `Check` surface for reusable, path-free value constraints. E
 - [`ErrorHandling.Check.hasNoValue`](./m-errorhandling-check-hasnovalue.md): Returns true when the nullable is empty.
 - [`ErrorHandling.Check.notNull`](./m-errorhandling-check-notnull.md): Returns true when the reference is not null.
 - [`ErrorHandling.Check.isNull`](./m-errorhandling-check-isnull.md): Returns true when the reference is null.
-- [`ErrorHandling.Check.notEmpty`](./m-errorhandling-check-notempty.md): Returns true when the sequence contains at least one item.
+- [`ErrorHandling.Check.notEmpty`](./m-errorhandling-check-notempty.md): Requires an already parsed optional, nullable, or text value to be non-empty.
 - [`ErrorHandling.Check.isEmpty`](./m-errorhandling-check-isempty.md): Returns true when the sequence is empty.
 
 ## String predicates
