@@ -1048,6 +1048,7 @@ let main argv =
         Path.Combine(artifactsDir, "Axial.Refined/debug_net8.0/Axial.Refined.dll")
         Path.Combine(artifactsDir, "Axial.Schema/debug_netstandard2.1/Axial.Schema.dll")
         Path.Combine(artifactsDir, "Axial.Validation/debug_netstandard2.1/Axial.Validation.dll")
+        Path.Combine(artifactsDir, "Axial.Validation.Schema/debug_netstandard2.1/Axial.Validation.Schema.dll")
         Path.Combine(artifactsDir, "Axial.Flow.PlatformService/debug_netstandard2.1/Axial.Flow.PlatformService.dll")
         Path.Combine(artifactsDir, "Axial.Flow.Console/debug_netstandard2.1/Axial.Flow.Console.dll")
         Path.Combine(artifactsDir, "Axial.Flow.FileSystem/debug_netstandard2.1/Axial.Flow.FileSystem.dll")
