@@ -7,10 +7,6 @@ Keep speculative design sketches in `dev-docs/current-ideas/` and high-level dur
 
 Work this queue from top to bottom.
 
-## Active Surface Work
-
-- [ ] Promote, reject, or delete each sketch in `dev-docs/current-ideas/` before implementation work starts.
-
 ## Phase 7: Build RawInput And Input Parsing
 
 - [ ] Define source-agnostic `RawInput`:
