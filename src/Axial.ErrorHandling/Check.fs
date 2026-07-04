@@ -575,10 +575,6 @@ module Check =
     let private actualValue value =
         if Object.ReferenceEquals(box value, null) then None else Some(string value)
 
-    let private actualCount (values: #seq<'value>) =
-        if Object.ReferenceEquals(values, null) then None
-        else Some(Microsoft.FSharp.Collections.Seq.length values)
-
     /// <summary>Requires an already parsed string value to have exactly the supplied length.</summary>
     let length (expected: int) : Check<string> =
         String.length expected

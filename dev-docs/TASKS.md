@@ -109,7 +109,7 @@ Schema constraints should lower onto the tightened `Check` shape, not the verbos
   `Check.error` unless the constructor-like names prove useful enough.
 - [x] Add only a very small SRTP top-level facade at first:
   `Check.present`, `Check.empty`, and `Check.notEmpty`.
-- [ ] Ensure SRTP facade functions only delegate to direct module implementations; do not make SRTP the semantic source
+- [x] Ensure SRTP facade functions only delegate to direct module implementations; do not make SRTP the semantic source
   of truth.
 - [ ] Do not use SRTP for `distinct`, count checks, length checks, format checks, numeric ranges, result checks, or
   equality checks in the first pass.

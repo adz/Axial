@@ -395,36 +395,36 @@ module ValidationTests =
             test <@ Check.notEqualTo 3 3 = Error [ Equality(NotEqualTo "3", Some "3") ] @>
 
         [<Fact>]
-        let ``Check exposes small top-level presence facade`` () =
+        let ``Check top-level presence facade delegates to direct modules`` () =
             let nullString: string = null
 
-            Assert.Equal<Result<unit, CheckFailure list>>(Ok (), Check.present "Ada")
-            Assert.Equal<Result<unit, CheckFailure list>>(Error [ Missing ], Check.present nullString)
-            Assert.Equal<Result<unit, CheckFailure list>>(Error [ Blank ], Check.present "")
-            Assert.Equal<Result<unit, CheckFailure list>>(Ok (), Check.present (Some 1))
-            Assert.Equal<Result<unit, CheckFailure list>>(Error [ Missing ], Check.present (None: int option))
-            Assert.Equal<Result<unit, CheckFailure list>>(Ok (), Check.present (ValueSome 1))
-            Assert.Equal<Result<unit, CheckFailure list>>(Error [ Missing ], Check.present (ValueNone: int voption))
-            Assert.Equal<Result<unit, CheckFailure list>>(Ok (), Check.present (System.Nullable 1))
-            Assert.Equal<Result<unit, CheckFailure list>>(Error [ Missing ], Check.present (System.Nullable<int>()))
+            Assert.Equal<Result<unit, CheckFailure list>>(Check.String.present "Ada", Check.present "Ada")
+            Assert.Equal<Result<unit, CheckFailure list>>(Check.String.present nullString, Check.present nullString)
+            Assert.Equal<Result<unit, CheckFailure list>>(Check.String.present "", Check.present "")
+            Assert.Equal<Result<unit, CheckFailure list>>(Check.Option.present (Some 1), Check.present (Some 1))
+            Assert.Equal<Result<unit, CheckFailure list>>(Check.Option.present (None: int option), Check.present (None: int option))
+            Assert.Equal<Result<unit, CheckFailure list>>(Check.ValueOption.present (ValueSome 1), Check.present (ValueSome 1))
+            Assert.Equal<Result<unit, CheckFailure list>>(Check.ValueOption.present (ValueNone: int voption), Check.present (ValueNone: int voption))
+            Assert.Equal<Result<unit, CheckFailure list>>(Check.Nullable.present (System.Nullable 1), Check.present (System.Nullable 1))
+            Assert.Equal<Result<unit, CheckFailure list>>(Check.Nullable.present (System.Nullable<int>()), Check.present (System.Nullable<int>()))
 
-            Assert.Equal<Result<unit, CheckFailure list>>(Ok (), Check.empty "")
-            Assert.Equal<Result<unit, CheckFailure list>>(Error [ Length(ExactLength 0, Some 1) ], Check.empty " ")
-            Assert.Equal<Result<unit, CheckFailure list>>(Ok (), Check.empty (None: int option))
-            Assert.Equal<Result<unit, CheckFailure list>>(Error [ Equality(EqualTo "None", Some "Some") ], Check.empty (Some 1))
-            Assert.Equal<Result<unit, CheckFailure list>>(Ok (), Check.empty (ValueNone: int voption))
-            Assert.Equal<Result<unit, CheckFailure list>>(Error [ Equality(EqualTo "ValueNone", Some "ValueSome") ], Check.empty (ValueSome 1))
-            Assert.Equal<Result<unit, CheckFailure list>>(Ok (), Check.empty (System.Nullable<int>()))
-            Assert.Equal<Result<unit, CheckFailure list>>(Error [ Equality(EqualTo "null", Some "value") ], Check.empty (System.Nullable 1))
+            Assert.Equal<Result<unit, CheckFailure list>>(Check.String.empty "", Check.empty "")
+            Assert.Equal<Result<unit, CheckFailure list>>(Check.String.empty " ", Check.empty " ")
+            Assert.Equal<Result<unit, CheckFailure list>>(Check.Option.empty (None: int option), Check.empty (None: int option))
+            Assert.Equal<Result<unit, CheckFailure list>>(Check.Option.empty (Some 1), Check.empty (Some 1))
+            Assert.Equal<Result<unit, CheckFailure list>>(Check.ValueOption.empty (ValueNone: int voption), Check.empty (ValueNone: int voption))
+            Assert.Equal<Result<unit, CheckFailure list>>(Check.ValueOption.empty (ValueSome 1), Check.empty (ValueSome 1))
+            Assert.Equal<Result<unit, CheckFailure list>>(Check.Nullable.empty (System.Nullable<int>()), Check.empty (System.Nullable<int>()))
+            Assert.Equal<Result<unit, CheckFailure list>>(Check.Nullable.empty (System.Nullable 1), Check.empty (System.Nullable 1))
 
-            Assert.Equal<Result<unit, CheckFailure list>>(Ok (), Check.notEmpty " ")
-            Assert.Equal<Result<unit, CheckFailure list>>(Error [ Length(MinimumLength 1, Some 0) ], Check.notEmpty "")
-            Assert.Equal<Result<unit, CheckFailure list>>(Ok (), Check.notEmpty (Some 1))
-            Assert.Equal<Result<unit, CheckFailure list>>(Error [ Missing ], Check.notEmpty (None: int option))
-            Assert.Equal<Result<unit, CheckFailure list>>(Ok (), Check.notEmpty (ValueSome 1))
-            Assert.Equal<Result<unit, CheckFailure list>>(Error [ Missing ], Check.notEmpty (ValueNone: int voption))
-            Assert.Equal<Result<unit, CheckFailure list>>(Ok (), Check.notEmpty (System.Nullable 1))
-            Assert.Equal<Result<unit, CheckFailure list>>(Error [ Missing ], Check.notEmpty (System.Nullable<int>()))
+            Assert.Equal<Result<unit, CheckFailure list>>(Check.String.notEmpty " ", Check.notEmpty " ")
+            Assert.Equal<Result<unit, CheckFailure list>>(Check.String.notEmpty "", Check.notEmpty "")
+            Assert.Equal<Result<unit, CheckFailure list>>(Check.Option.notEmpty (Some 1), Check.notEmpty (Some 1))
+            Assert.Equal<Result<unit, CheckFailure list>>(Check.Option.notEmpty (None: int option), Check.notEmpty (None: int option))
+            Assert.Equal<Result<unit, CheckFailure list>>(Check.ValueOption.notEmpty (ValueSome 1), Check.notEmpty (ValueSome 1))
+            Assert.Equal<Result<unit, CheckFailure list>>(Check.ValueOption.notEmpty (ValueNone: int voption), Check.notEmpty (ValueNone: int voption))
+            Assert.Equal<Result<unit, CheckFailure list>>(Check.Nullable.notEmpty (System.Nullable 1), Check.notEmpty (System.Nullable 1))
+            Assert.Equal<Result<unit, CheckFailure list>>(Check.Nullable.notEmpty (System.Nullable<int>()), Check.notEmpty (System.Nullable<int>()))
 
         [<Fact>]
         let ``Check Option exposes executable option value checks`` () =
