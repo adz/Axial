@@ -181,6 +181,15 @@ module ApiShapeTests =
         test <@ List.isEmpty missing @>
         test <@ List.isEmpty wrongReturnType @>
 
+    let private assertNoMethodsReturnBool (targetType: Type) =
+        let boolMethodNames =
+            targetType
+            |> publicStaticMethods
+            |> Array.choose (fun methodInfo ->
+                if returnsBoolShape methodInfo.ReturnType then Some methodInfo.Name else None)
+
+        test <@ Array.isEmpty boolMethodNames @>
+
     [<Fact>]
     let ``core Flow module keeps expected public shape`` () =
         moduleType typeof<Flow<unit, unit, unit>> "Axial.Flow.Flow"
@@ -600,8 +609,7 @@ module ApiShapeTests =
             checkModule
             |> publicStaticMemberNames
 
-        checkMembers
-        |> assertContainsAll
+        let topLevelStructuredCheckNames =
             [ "all"
               "any"
               "not"
@@ -609,41 +617,6 @@ module ApiShapeTests =
               "present"
               "empty"
               "notEmpty"
-              "length"
-              "minLength"
-              "maxLength"
-              "lengthBetween"
-              "email"
-              "matches"
-              "oneOf"
-              "equalTo"
-              "notEqualTo"
-              "contains"
-              "count"
-              "minCount"
-              "maxCount"
-              "countBetween"
-              "distinct"
-              "single"
-              "atMostOne"
-              "atLeastOne"
-              "moreThanOne"
-              "greaterThan"
-              "lessThan"
-              "atLeast"
-              "atMost"
-              "between"
-              "positive"
-              "nonNegative"
-              "negative"
-              "nonPositive" ]
-
-        checkModule
-        |> assertMethodsReturnCheckResult
-            [ "all"
-              "any"
-              "not"
-              "mapFailure"
               "length"
               "minLength"
               "maxLength"
@@ -660,9 +633,6 @@ module ApiShapeTests =
               "nonNegative"
               "negative"
               "nonPositive"
-              "present"
-              "empty"
-              "notEmpty"
               "count"
               "minCount"
               "maxCount"
@@ -675,6 +645,15 @@ module ApiShapeTests =
               "moreThanOne"
               "equalTo"
               "notEqualTo" ]
+
+        checkMembers
+        |> assertContainsAll topLevelStructuredCheckNames
+
+        checkModule
+        |> assertMethodsReturnCheckResult topLevelStructuredCheckNames
+
+        checkModule
+        |> assertNoMethodsReturnBool
 
         let checkStringModule =
             moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.CheckModule+String"

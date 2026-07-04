@@ -122,7 +122,7 @@ Schema constraints should lower onto the tightened `Check` shape, not the verbos
 - [x] Decide null semantics before implementation:
   `Check.String.empty null`, `Check.Seq.empty null`, and whether `Check.Seq.notEmpty null` keeps current
   `Count(MinimumCount 1, None)` behavior.
-- [ ] Update API shape tests so top-level `Check` contains structured check names, not the old predicate-only surface.
+- [x] Update API shape tests so top-level `Check` contains structured check names, not the old predicate-only surface.
 - [ ] Add behavior tests for both direct modules and top-level facade functions.
 - [ ] Add tests proving `Check.present`, `Check.empty`, and `Check.notEmpty` work for string, option, value option,
   nullable, and sequence values where applicable.
