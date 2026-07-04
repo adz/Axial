@@ -504,12 +504,24 @@ module Check =
                 | ValueSome _ -> pass
                 | ValueNone -> fail Missing
 
+        /// <summary>Alias for <c>some</c>; requires a value option to contain a value.</summary>
+        let present : Check<'value voption> =
+            some
+
         /// <summary>Requires a value option to contain no value.</summary>
         let none : Check<'value voption> =
             fun value ->
                 match value with
                 | ValueNone -> pass
                 | ValueSome _ -> fail (Equality(EqualTo "ValueNone", Some "ValueSome"))
+
+        /// <summary>Alias for <c>none</c>; requires a value option to contain no value.</summary>
+        let empty : Check<'value voption> =
+            none
+
+        /// <summary>Alias for <c>some</c>; requires a value option to contain a value.</summary>
+        let notEmpty : Check<'value voption> =
+            some
 
     /// <summary>Executable, path-free value checks for already parsed nullable values.</summary>
     module Nullable =

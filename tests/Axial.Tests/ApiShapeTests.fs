@@ -737,10 +737,10 @@ module ApiShapeTests =
 
         checkValueOptionModule
         |> publicStaticMemberNames
-        |> assertContainsAll [ "some"; "none" ]
+        |> assertContainsAll [ "some"; "none"; "present"; "empty"; "notEmpty" ]
 
         checkValueOptionModule
-        |> assertMethodsReturnCheckResult [ "some"; "none" ]
+        |> assertMethodsReturnCheckResult [ "some"; "none"; "present"; "empty"; "notEmpty" ]
 
         let checkNullableModule =
             moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.CheckModule+Nullable"

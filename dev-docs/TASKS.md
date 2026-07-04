@@ -101,7 +101,7 @@ Schema constraints should lower onto the tightened `Check` shape, not the verbos
   `empty`, `count`, `contains`, `single`, `atMostOne`, `atLeastOne`, and `moreThanOne`.
 - [x] Add option presence aliases:
   `Check.Option.present`, `Check.Option.empty`, `Check.Option.notEmpty`.
-- [ ] Add value-option presence aliases:
+- [x] Add value-option presence aliases:
   `Check.ValueOption.present`, `Check.ValueOption.empty`, `Check.ValueOption.notEmpty`.
 - [ ] Add nullable presence aliases:
   `Check.Nullable.present`, `Check.Nullable.empty`, `Check.Nullable.notEmpty`.
