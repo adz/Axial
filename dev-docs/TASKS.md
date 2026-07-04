@@ -272,7 +272,7 @@ the typed `Field` values and the constructor lambda from the test side; a codec 
 
 - [x] Define `Value.refined` or equivalent for named refined/domain types.
 - [x] Require both construction and inspection functions for refined value schemas.
-- [ ] Support refined schemas over primitive schemas, especially text.
+- [x] Support refined schemas over primitive schemas, especially text.
 - [ ] Support `format` metadata such as `email`.
 - [ ] Ensure refined value schemas can run `Check` programs.
 - [ ] Ensure model schemas can use `field "email" _.Email Email.schema { required }`.

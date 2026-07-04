@@ -802,6 +802,11 @@ module Value =
     let guid : ValueSchema<Guid> = primitive PrimitiveValueKind.Guid
 
     /// <summary>Returns the intrinsic primitive kind for a primitive value schema.</summary>
+    /// <remarks>
+    /// This accessor is intentionally strict about the schema being primitive itself. Use
+    /// <see cref="M:Axial.Schema.Value.underlyingPrimitiveKind``1" /> to see through refinement layers to the primitive
+    /// foundation of a refined value schema.
+    /// </remarks>
     /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="schema" /> is a refined value schema.</exception>
     let primitiveKind (schema: ValueSchema<'value>) =
         if isNull (box schema) then
@@ -834,6 +839,14 @@ module Value =
     /// combined with <see cref="M:Axial.Schema.Value.withConstraint``1" /> and used as the value schema for
     /// <see cref="M:Axial.Schema.Schema.field``2" /> like any other <see cref="T:Axial.Schema.ValueSchema`1" />.
     /// </para>
+    /// <para>
+    /// The everyday raw schema is a primitive value schema, especially <see cref="P:Axial.Schema.Value.text" /> for
+    /// domain values such as email addresses and names. The primitive foundation stays inspectable through the
+    /// refinement: <see cref="M:Axial.Schema.Value.underlyingPrimitiveKind``1" /> reports the intrinsic primitive kind
+    /// beneath any number of refinement layers, and <see cref="M:Axial.Schema.Value.rawConstraints``1" /> returns the
+    /// constraint metadata carried by the raw schema, so interpreters can parse, render, and document the raw
+    /// representation before constructing the refined value.
+    /// </para>
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">
     /// Thrown when <paramref name="construct" />, <paramref name="inspect" />, or <paramref name="raw" /> is null.
@@ -858,6 +871,55 @@ module Value =
             { Shape = RefinedValueDefinition(raw.Definition, ops)
               Constraints = [] }
         )
+
+    /// <summary>Returns whether a value schema is a refined/domain value schema.</summary>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
+    let isRefined (schema: ValueSchema<'value>) =
+        if isNull (box schema) then
+            nullArg (nameof schema)
+
+        match schema.Definition.Shape with
+        | RefinedValueDefinition _ -> true
+        | PrimitiveValueDefinition _ -> false
+
+    /// <summary>Returns the intrinsic primitive kind beneath any refinement layers of a value schema.</summary>
+    /// <remarks>
+    /// Every value schema bottoms out on a primitive value schema, so this accessor is total: it returns the kind of a
+    /// primitive value schema directly and walks the raw schemas of refined value schemas, including refined values
+    /// layered over other refined values, until it reaches the primitive foundation. Interpreters that only understand
+    /// raw representations, such as input parsers, codecs, JSON Schema emitters, UI renderers, and documentation
+    /// generators, use this to treat a refined value like its primitive representation at the boundary.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
+    let underlyingPrimitiveKind (schema: ValueSchema<'value>) =
+        if isNull (box schema) then
+            nullArg (nameof schema)
+
+        let rec kindOf (definition: ValueSchemaDefinition) =
+            match definition.Shape with
+            | PrimitiveValueDefinition kind -> kind
+            | RefinedValueDefinition(raw, _) -> kindOf raw
+
+        kindOf schema.Definition
+
+    /// <summary>Returns the constraint metadata carried by the raw value schema of a refined value schema.</summary>
+    /// <remarks>
+    /// Raw constraints describe the underlying representation that boundary interpreters see before the refined value
+    /// is constructed, such as length bounds on the raw text of an email address. They are retained separately from
+    /// constraints attached to the refined value schema itself with
+    /// <see cref="M:Axial.Schema.Value.withConstraint``1" />, which
+    /// <see cref="M:Axial.Schema.Value.constraints``1" /> continues to return.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
+    /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="schema" /> is a primitive value schema.</exception>
+    let rawConstraints (schema: ValueSchema<'value>) =
+        if isNull (box schema) then
+            nullArg (nameof schema)
+
+        match schema.Definition.Shape with
+        | RefinedValueDefinition(raw, _) -> raw.Constraints
+        | PrimitiveValueDefinition _ ->
+            invalidArg (nameof schema) "Expected a refined value schema, but the schema is a primitive value schema."
 
     /// <summary>Returns the portable constraint metadata attached to a value schema.</summary>
     let constraints (schema: ValueSchema<'value>) =

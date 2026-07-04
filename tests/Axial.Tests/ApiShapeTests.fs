@@ -449,7 +449,22 @@ module ApiShapeTests =
         test <@ fieldCreateReturnType = fieldTypeDefinition @>
         valueModule
         |> publicStaticMemberNames
-        |> assertContainsAll [ "text"; "int"; "decimal"; "bool"; "date"; "dateTime"; "guid"; "primitiveKind"; "constraints"; "withConstraint"; "withConstraints" ]
+        |> assertContainsAll
+            [ "text"
+              "int"
+              "decimal"
+              "bool"
+              "date"
+              "dateTime"
+              "guid"
+              "primitiveKind"
+              "refined"
+              "isRefined"
+              "underlyingPrimitiveKind"
+              "rawConstraints"
+              "constraints"
+              "withConstraint"
+              "withConstraints" ]
         schemaConstraintModule
         |> publicStaticMemberNames
         |> assertContainsAll
