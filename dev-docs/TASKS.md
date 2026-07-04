@@ -13,7 +13,7 @@ Work this queue from top to bottom.
   `Missing`, `Scalar`, `Many`, and `Object`.
 - [x] Implement path addressing for names and indexes.
 - [x] Implement raw value lookup by paths like `contacts[1].value`.
-- [ ] Implement raw redisplay helpers.
+- [x] Implement raw redisplay helpers.
 - [ ] Implement adapters:
   map, name-value collection, CLI args, JSON-like value, and configuration.
 - [ ] Define `ParsedInput<'model, 'error>`.

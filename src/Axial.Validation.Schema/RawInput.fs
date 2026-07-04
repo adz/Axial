@@ -246,6 +246,13 @@ type RawInput =
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
 module RawInput =
+    let private tryRedisplayValue (input: RawInput) =
+        match input with
+        | RawInput.Missing -> Some ""
+        | RawInput.Scalar value -> Some value
+        | RawInput.Many _
+        | RawInput.Object _ -> None
+
     /// <summary>Attempts to find a raw input value at a parsed input path.</summary>
     let tryFind (path: InputPath) (input: RawInput) : RawInput option =
         let path = InputPath.ofSegments path
@@ -272,3 +279,34 @@ module RawInput =
     /// <summary>Parses an input path and looks up the addressed raw input value.</summary>
     let lookupPath (path: string) (input: RawInput) : RawInput =
         InputPath.parse path |> fun parsedPath -> lookup parsedPath input
+
+    /// <summary>
+    /// Attempts to redisplay a scalar raw input value, returning blank text for explicitly missing input.
+    /// </summary>
+    let tryRedisplay (input: RawInput) : string option =
+        tryRedisplayValue input
+
+    /// <summary>
+    /// Redisplays a scalar raw input value, returning blank text for missing, object-shaped, or collection-shaped input.
+    /// </summary>
+    let redisplay (input: RawInput) : string =
+        tryRedisplay input |> Option.defaultValue ""
+
+    /// <summary>Attempts to redisplay the scalar raw input value at a parsed input path.</summary>
+    let tryRedisplayAt (path: InputPath) (input: RawInput) : string option =
+        lookup path input |> tryRedisplayValue
+
+    /// <summary>
+    /// Redisplays the scalar raw input value at a parsed input path, returning blank text when the value cannot be
+    /// redisplayed as a scalar.
+    /// </summary>
+    let redisplayAt (path: InputPath) (input: RawInput) : string =
+        tryRedisplayAt path input |> Option.defaultValue ""
+
+    /// <summary>Attempts to parse an input path and redisplay the addressed scalar raw input value.</summary>
+    let tryRedisplayPath (path: string) (input: RawInput) : string option =
+        InputPath.tryParse path |> Option.bind (fun parsedPath -> tryRedisplayAt parsedPath input)
+
+    /// <summary>Parses an input path and redisplays the addressed scalar raw input value.</summary>
+    let redisplayPath (path: string) (input: RawInput) : string =
+        InputPath.parse path |> fun parsedPath -> redisplayAt parsedPath input

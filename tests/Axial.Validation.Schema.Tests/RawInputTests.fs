@@ -156,3 +156,62 @@ module RawInputTests =
 
         test <@ RawInput.tryFindPath "contacts[]" input = None @>
         raises<FormatException> <@ RawInput.lookupPath "contacts[]" input |> ignore @>
+
+    [<Fact>]
+    let ``raw input redisplays scalar and missing values`` () =
+        test <@ RawInput.tryRedisplay (RawInput.Scalar "Ada") = Some "Ada" @>
+        test <@ RawInput.redisplay (RawInput.Scalar "Ada") = "Ada" @>
+        test <@ RawInput.tryRedisplay RawInput.Missing = Some "" @>
+        test <@ RawInput.redisplay RawInput.Missing = "" @>
+
+    [<Fact>]
+    let ``raw input redisplay ignores object and many values`` () =
+        let objectInput = RawInput.Object(Map.ofList [ "name", RawInput.Scalar "Ada" ])
+        let manyInput = RawInput.Many [ RawInput.Scalar "Ada" ]
+
+        test <@ RawInput.tryRedisplay objectInput = None @>
+        test <@ RawInput.redisplay objectInput = "" @>
+        test <@ RawInput.tryRedisplay manyInput = None @>
+        test <@ RawInput.redisplay manyInput = "" @>
+
+    [<Fact>]
+    let ``raw input redisplays values by parsed and text paths`` () =
+        let input =
+            RawInput.Object(
+                Map.ofList
+                    [ "displayName", RawInput.Scalar "Ada"
+                      "contacts",
+                      RawInput.Many
+                          [ RawInput.Object(Map.ofList [ "value", RawInput.Scalar "ada@example.com" ])
+                            RawInput.Object(Map.ofList [ "value", RawInput.Scalar "+61 400 000 000" ]) ] ]
+            )
+
+        let path = InputPath.parse "contacts[1].value"
+
+        test <@ RawInput.tryRedisplayAt path input = Some "+61 400 000 000" @>
+        test <@ RawInput.redisplayAt path input = "+61 400 000 000" @>
+        test <@ RawInput.tryRedisplayPath "displayName" input = Some "Ada" @>
+        test <@ RawInput.redisplayPath "displayName" input = "Ada" @>
+
+    [<Fact>]
+    let ``raw input redisplay returns blank for absent or non scalar paths`` () =
+        let input =
+            RawInput.Object(
+                Map.ofList
+                    [ "profile", RawInput.Object(Map.ofList [ "name", RawInput.Scalar "Ada" ])
+                      "contacts", RawInput.Many [ RawInput.Scalar "ada@example.com" ] ]
+            )
+
+        test <@ RawInput.tryRedisplayPath "missing" input = Some "" @>
+        test <@ RawInput.redisplayPath "missing" input = "" @>
+        test <@ RawInput.tryRedisplayPath "profile" input = None @>
+        test <@ RawInput.redisplayPath "profile" input = "" @>
+        test <@ RawInput.tryRedisplayPath "contacts" input = None @>
+        test <@ RawInput.redisplayPath "contacts" input = "" @>
+
+    [<Fact>]
+    let ``raw input redisplay text paths reject invalid addresses consistently`` () =
+        let input = RawInput.Object Map.empty
+
+        test <@ RawInput.tryRedisplayPath "contacts[]" input = None @>
+        raises<FormatException> <@ RawInput.redisplayPath "contacts[]" input |> ignore @>
