@@ -111,7 +111,7 @@ Schema constraints should lower onto the tightened `Check` shape, not the verbos
   `Check.present`, `Check.empty`, and `Check.notEmpty`.
 - [x] Ensure SRTP facade functions only delegate to direct module implementations; do not make SRTP the semantic source
   of truth.
-- [ ] Do not use SRTP for `distinct`, count checks, length checks, format checks, numeric ranges, result checks, or
+- [x] Do not use SRTP for `distinct`, count checks, length checks, format checks, numeric ranges, result checks, or
   equality checks in the first pass.
 - [ ] Move or remove top-level boolean predicates from `Check` so top-level `Check.*` consistently means structured
   `Result<unit, CheckFailure list>`.

@@ -762,6 +762,44 @@ module ApiShapeTests =
         checkResultModule
         |> assertMethodsReturnCheckResult [ "ok"; "error" ]
 
+        let checkNestedTypeNames =
+            Assembly.Load "Axial.ErrorHandling"
+            |> _.GetTypes()
+            |> Array.choose (fun targetType ->
+                match targetType.FullName with
+                | null -> None
+                | fullName when fullName.StartsWith("Axial.ErrorHandling.CheckModule+", StringComparison.Ordinal) ->
+                    Some targetType.Name
+                | _ -> None)
+            |> Set.ofArray
+
+        checkNestedTypeNames
+        |> assertContainsAll [ "Present"; "Empty"; "NotEmpty" ]
+
+        checkNestedTypeNames
+        |> assertContainsNone
+            [ "Distinct"
+              "Count"
+              "MinCount"
+              "MaxCount"
+              "CountBetween"
+              "Length"
+              "MinLength"
+              "MaxLength"
+              "LengthBetween"
+              "Email"
+              "Matches"
+              "OneOf"
+              "Between"
+              "GreaterThan"
+              "LessThan"
+              "AtLeast"
+              "AtMost"
+              "Ok"
+              "Error"
+              "EqualTo"
+              "NotEqualTo" ]
+
         checkMembers
         |> assertContainsNone
             [ "isTrue"
