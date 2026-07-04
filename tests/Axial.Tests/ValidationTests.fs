@@ -436,6 +436,15 @@ module ValidationTests =
             test <@ Check.Nullable.hasNoValue (System.Nullable<int>()) = Ok () @>
             test <@ Check.Nullable.hasNoValue (System.Nullable 1) = Error [ Equality(EqualTo "null", Some "value") ] @>
 
+            test <@ Check.Nullable.present (System.Nullable 1) = Ok () @>
+            test <@ Check.Nullable.present (System.Nullable<int>()) = Error [ Missing ] @>
+
+            test <@ Check.Nullable.empty (System.Nullable<int>()) = Ok () @>
+            test <@ Check.Nullable.empty (System.Nullable 1) = Error [ Equality(EqualTo "null", Some "value") ] @>
+
+            test <@ Check.Nullable.notEmpty (System.Nullable 1) = Ok () @>
+            test <@ Check.Nullable.notEmpty (System.Nullable<int>()) = Error [ Missing ] @>
+
         [<Fact>]
         let ``Check Result exposes executable result value checks`` () =
             test <@ Check.Result.ok (Ok 1) = Ok () @>

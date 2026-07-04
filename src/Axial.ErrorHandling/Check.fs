@@ -534,9 +534,21 @@ module Check =
         let hasValue : Check<System.Nullable<'value>> =
             fun value -> if value.HasValue then pass else fail Missing
 
+        /// <summary>Alias for <c>hasValue</c>; requires a nullable value to contain a value.</summary>
+        let present : Check<System.Nullable<'value>> =
+            hasValue
+
         /// <summary>Requires a nullable value to contain no value.</summary>
         let hasNoValue : Check<System.Nullable<'value>> =
             fun value -> if value.HasValue then fail (Equality(EqualTo "null", Some "value")) else pass
+
+        /// <summary>Alias for <c>hasNoValue</c>; requires a nullable value to contain no value.</summary>
+        let empty : Check<System.Nullable<'value>> =
+            hasNoValue
+
+        /// <summary>Alias for <c>hasValue</c>; requires a nullable value to contain a value.</summary>
+        let notEmpty : Check<System.Nullable<'value>> =
+            hasValue
 
     /// <summary>Executable, path-free value checks for result values.</summary>
     module Result =

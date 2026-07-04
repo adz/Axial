@@ -103,7 +103,7 @@ Schema constraints should lower onto the tightened `Check` shape, not the verbos
   `Check.Option.present`, `Check.Option.empty`, `Check.Option.notEmpty`.
 - [x] Add value-option presence aliases:
   `Check.ValueOption.present`, `Check.ValueOption.empty`, `Check.ValueOption.notEmpty`.
-- [ ] Add nullable presence aliases:
+- [x] Add nullable presence aliases:
   `Check.Nullable.present`, `Check.Nullable.empty`, `Check.Nullable.notEmpty`.
 - [ ] Keep `Check.Result.ok` and `Check.Result.error` direct-only for now; do not add top-level `Check.ok` or
   `Check.error` unless the constructor-like names prove useful enough.
