@@ -45,8 +45,8 @@ module SchemaConstraintCheckTests =
         test <@
             check 10 =
                 Error
-                    [ Range(GreaterThan "12", Some "10")
-                      Range(AtLeast "13", Some "10") ]
+                    [ Range(CheckRangeExpectation.GreaterThan "12", Some "10")
+                      Range(CheckRangeExpectation.AtLeast "13", Some "10") ]
         @>
         test <@ SchemaConstraintCheck.tryOrdered<int> (SchemaConstraint.minLength 3) |> Option.isNone @>
 
@@ -62,7 +62,7 @@ module SchemaConstraintCheckTests =
         test <@
             check [ 1; 1; 2; 3 ] =
                 Error
-                    [ Count(MaximumCount 3, Some 4)
+                    [ CheckFailure.Count(CheckCountExpectation.MaximumCount 3, Some 4)
                       CustomCode "seq.distinct" ]
         @>
         test <@ SchemaConstraintCheck.trySequence<int> SchemaConstraint.email |> Option.isNone @>

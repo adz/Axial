@@ -76,6 +76,56 @@ module FieldOrder =
     /// <summary>Returns the zero-based field position.</summary>
     let value (order: FieldOrder) = order.Value
 
+/// <summary>Identifies the portable, typed meaning of a schema constraint.</summary>
+/// <remarks>
+/// <para>
+/// Constraint metadata is the interpreter-facing shape for diagnostics, JSON Schema, UI, and documentation generation.
+/// It keeps well-known constraints pattern-matchable without forcing interpreters to decode stable codes and boxed
+/// argument dictionaries for the common cases. The stable code and argument map remain available for wire formats,
+/// custom constraints, and forward-compatible tooling.
+/// </para>
+/// </remarks>
+[<RequireQualifiedAccess>]
+type SchemaConstraintMetadata =
+    /// <summary>A boundary value must be supplied.</summary>
+    | Required
+    /// <summary>A boundary value may be omitted.</summary>
+    | Optional
+    /// <summary>A text value must have at least the supplied length.</summary>
+    | MinLength of minimum: int
+    /// <summary>A text value must have at most the supplied length.</summary>
+    | MaxLength of maximum: int
+    /// <summary>A text value length must fall inside the supplied inclusive bounds.</summary>
+    | LengthBetween of minimum: int * maximum: int
+    /// <summary>A text value must use Axial's pragmatic email format.</summary>
+    | Email
+    /// <summary>A text value must match the supplied regular expression pattern.</summary>
+    | Pattern of pattern: string
+    /// <summary>A text value must equal one of the supplied choices.</summary>
+    | OneOf of choices: string list
+    /// <summary>An ordered value must fall inside the supplied inclusive bounds.</summary>
+    | Between of minimum: obj * maximum: obj
+    /// <summary>An ordered value must be greater than the supplied exclusive lower bound.</summary>
+    | GreaterThan of minimum: obj
+    /// <summary>An ordered value must be less than the supplied exclusive upper bound.</summary>
+    | LessThan of maximum: obj
+    /// <summary>An ordered value must be greater than or equal to the supplied lower bound.</summary>
+    | AtLeast of minimum: obj
+    /// <summary>An ordered value must be less than or equal to the supplied upper bound.</summary>
+    | AtMost of maximum: obj
+    /// <summary>A collection value must contain exactly the supplied count.</summary>
+    | Count of expected: int
+    /// <summary>A collection value must contain at least the supplied count.</summary>
+    | MinCount of minimum: int
+    /// <summary>A collection value must contain at most the supplied count.</summary>
+    | MaxCount of maximum: int
+    /// <summary>A collection value count must fall inside the supplied inclusive bounds.</summary>
+    | CountBetween of minimum: int * maximum: int
+    /// <summary>A collection value must contain no duplicate items.</summary>
+    | Distinct
+    /// <summary>A custom or not-yet-known constraint identified by its stable code.</summary>
+    | Custom of code: string
+
 /// <summary>
 /// Describes a portable schema constraint as inspectable metadata.
 /// </summary>
@@ -92,9 +142,16 @@ module FieldOrder =
 /// </para>
 /// </remarks>
 [<Sealed; AllowNullLiteral>]
-type SchemaConstraint internal (code: string, arguments: IReadOnlyDictionary<string, obj>) =
+type SchemaConstraint internal (
+    code: string,
+    metadata: SchemaConstraintMetadata,
+    arguments: IReadOnlyDictionary<string, obj>
+) =
     /// <summary>Gets the stable interpreter-facing constraint code.</summary>
     member _.Code = code
+
+    /// <summary>Gets the typed interpreter-facing constraint metadata.</summary>
+    member _.Metadata = metadata
 
     /// <summary>Gets the structured constraint arguments keyed by stable interpreter-facing names.</summary>
     member _.Arguments = arguments
@@ -122,16 +179,35 @@ module SchemaConstraint =
     let private emptyArguments =
         ReadOnlyDictionary<string, obj>(Dictionary<string, obj>()) :> IReadOnlyDictionary<string, obj>
 
-    /// <summary>Creates portable schema constraint metadata with no arguments.</summary>
+    let private createKnown code metadata =
+        ensureName (nameof code) code
+        SchemaConstraint(code, metadata, emptyArguments)
+
+    let private createKnownWithArguments code metadata (arguments: (string * obj) seq) =
+        ensureName (nameof code) code
+
+        if isNull (box arguments) then
+            nullArg (nameof arguments)
+
+        let values = Dictionary<string, obj>()
+
+        arguments
+        |> Seq.iter (fun (name, value) ->
+            ensureName (nameof arguments) name
+            values.Add(name, value))
+
+        SchemaConstraint(code, metadata, ReadOnlyDictionary<string, obj>(values) :> IReadOnlyDictionary<string, obj>)
+
+    /// <summary>Creates portable custom schema constraint metadata with no arguments.</summary>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="code" /> is null.</exception>
     /// <exception cref="T:System.ArgumentException">
     /// Thrown when <paramref name="code" /> is empty or contains only whitespace.
     /// </exception>
     let create code =
         ensureName (nameof code) code
-        SchemaConstraint(code, emptyArguments)
+        SchemaConstraint(code, SchemaConstraintMetadata.Custom code, emptyArguments)
 
-    /// <summary>Creates portable schema constraint metadata with structured arguments.</summary>
+    /// <summary>Creates portable custom schema constraint metadata with structured arguments.</summary>
     /// <exception cref="T:System.ArgumentNullException">
     /// Thrown when <paramref name="code" />, <paramref name="arguments" />, or an argument name is null.
     /// </exception>
@@ -151,25 +227,29 @@ module SchemaConstraint =
             ensureName (nameof arguments) name
             values.Add(name, value))
 
-        SchemaConstraint(code, ReadOnlyDictionary<string, obj>(values) :> IReadOnlyDictionary<string, obj>)
+        SchemaConstraint(
+            code,
+            SchemaConstraintMetadata.Custom code,
+            ReadOnlyDictionary<string, obj>(values) :> IReadOnlyDictionary<string, obj>
+        )
 
     /// <summary>Requires a value to be supplied by boundary interpreters.</summary>
-    let required = create "required"
+    let required = createKnown "required" SchemaConstraintMetadata.Required
 
     /// <summary>Marks a value as optional for boundary interpreters.</summary>
-    let optional = create "optional"
+    let optional = createKnown "optional" SchemaConstraintMetadata.Optional
 
     /// <summary>Requires a text value to have at least the supplied length.</summary>
     /// <exception cref="T:System.ArgumentOutOfRangeException">Thrown when <paramref name="minimum" /> is negative.</exception>
     let minLength minimum =
         ensureNonNegative (nameof minimum) minimum
-        createWithArguments "minLength" [ "minimum", box minimum ]
+        createKnownWithArguments "minLength" (SchemaConstraintMetadata.MinLength minimum) [ "minimum", box minimum ]
 
     /// <summary>Requires a text value to have at most the supplied length.</summary>
     /// <exception cref="T:System.ArgumentOutOfRangeException">Thrown when <paramref name="maximum" /> is negative.</exception>
     let maxLength maximum =
         ensureNonNegative (nameof maximum) maximum
-        createWithArguments "maxLength" [ "maximum", box maximum ]
+        createKnownWithArguments "maxLength" (SchemaConstraintMetadata.MaxLength maximum) [ "maximum", box maximum ]
 
     /// <summary>Requires a text value to have a length inside the supplied inclusive bounds.</summary>
     /// <exception cref="T:System.ArgumentOutOfRangeException">
@@ -182,10 +262,13 @@ module SchemaConstraint =
         ensureNonNegative (nameof minimum) minimum
         ensureNonNegative (nameof maximum) maximum
         ensureOrderedBounds (nameof minimum) minimum maximum
-        createWithArguments "lengthBetween" [ "minimum", box minimum; "maximum", box maximum ]
+        createKnownWithArguments
+            "lengthBetween"
+            (SchemaConstraintMetadata.LengthBetween(minimum, maximum))
+            [ "minimum", box minimum; "maximum", box maximum ]
 
     /// <summary>Requires a text value to match Axial's pragmatic email format.</summary>
-    let email = create "email"
+    let email = createKnown "email" SchemaConstraintMetadata.Email
 
     /// <summary>Requires a text value to match the supplied regular expression pattern.</summary>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="pattern" /> is null.</exception>
@@ -194,7 +277,7 @@ module SchemaConstraint =
     /// </exception>
     let pattern pattern =
         ensureName (nameof pattern) pattern
-        createWithArguments "pattern" [ "pattern", box pattern ]
+        createKnownWithArguments "pattern" (SchemaConstraintMetadata.Pattern pattern) [ "pattern", box pattern ]
 
     /// <summary>Requires a text value to equal one of the supplied choices.</summary>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="choices" /> is null.</exception>
@@ -202,7 +285,11 @@ module SchemaConstraint =
         if isNull (box choices) then
             nullArg (nameof choices)
 
-        createWithArguments "oneOf" [ "choices", choices |> Seq.toArray |> box ]
+        let choices = choices |> Seq.toList
+        createKnownWithArguments
+            "oneOf"
+            (SchemaConstraintMetadata.OneOf choices)
+            [ "choices", choices |> List.toArray |> box ]
 
     /// <summary>Requires a value to be inside the supplied inclusive numeric bounds.</summary>
     /// <exception cref="T:System.ArgumentException">
@@ -210,41 +297,56 @@ module SchemaConstraint =
     /// </exception>
     let between minimum maximum =
         ensureOrderedBounds (nameof minimum) minimum maximum
-        createWithArguments "between" [ "minimum", box minimum; "maximum", box maximum ]
+        createKnownWithArguments
+            "between"
+            (SchemaConstraintMetadata.Between(box minimum, box maximum))
+            [ "minimum", box minimum; "maximum", box maximum ]
 
     /// <summary>Requires a value to be greater than the supplied exclusive numeric lower bound.</summary>
     let greaterThan minimum =
-        createWithArguments "greaterThan" [ "minimum", box minimum ]
+        createKnownWithArguments
+            "greaterThan"
+            (SchemaConstraintMetadata.GreaterThan(box minimum))
+            [ "minimum", box minimum ]
 
     /// <summary>Requires a value to be less than the supplied exclusive numeric upper bound.</summary>
     let lessThan maximum =
-        createWithArguments "lessThan" [ "maximum", box maximum ]
+        createKnownWithArguments
+            "lessThan"
+            (SchemaConstraintMetadata.LessThan(box maximum))
+            [ "maximum", box maximum ]
 
     /// <summary>Requires a value to be greater than or equal to the supplied numeric lower bound.</summary>
     let atLeast minimum =
-        createWithArguments "atLeast" [ "minimum", box minimum ]
+        createKnownWithArguments
+            "atLeast"
+            (SchemaConstraintMetadata.AtLeast(box minimum))
+            [ "minimum", box minimum ]
 
     /// <summary>Requires a value to be less than or equal to the supplied numeric upper bound.</summary>
     let atMost maximum =
-        createWithArguments "atMost" [ "maximum", box maximum ]
+        createKnownWithArguments
+            "atMost"
+            (SchemaConstraintMetadata.AtMost(box maximum))
+            [ "maximum", box maximum ]
 
     /// <summary>Requires a collection value to contain exactly the supplied count.</summary>
     /// <exception cref="T:System.ArgumentOutOfRangeException">Thrown when <paramref name="expected" /> is negative.</exception>
     let count expected =
         ensureNonNegative (nameof expected) expected
-        createWithArguments "count" [ "expected", box expected ]
+        createKnownWithArguments "count" (SchemaConstraintMetadata.Count expected) [ "expected", box expected ]
 
     /// <summary>Requires a collection value to contain at least the supplied count.</summary>
     /// <exception cref="T:System.ArgumentOutOfRangeException">Thrown when <paramref name="minimum" /> is negative.</exception>
     let minCount minimum =
         ensureNonNegative (nameof minimum) minimum
-        createWithArguments "minCount" [ "minimum", box minimum ]
+        createKnownWithArguments "minCount" (SchemaConstraintMetadata.MinCount minimum) [ "minimum", box minimum ]
 
     /// <summary>Requires a collection value to contain at most the supplied count.</summary>
     /// <exception cref="T:System.ArgumentOutOfRangeException">Thrown when <paramref name="maximum" /> is negative.</exception>
     let maxCount maximum =
         ensureNonNegative (nameof maximum) maximum
-        createWithArguments "maxCount" [ "maximum", box maximum ]
+        createKnownWithArguments "maxCount" (SchemaConstraintMetadata.MaxCount maximum) [ "maximum", box maximum ]
 
     /// <summary>Requires a collection value to contain a count inside the supplied inclusive bounds.</summary>
     /// <exception cref="T:System.ArgumentOutOfRangeException">
@@ -257,10 +359,13 @@ module SchemaConstraint =
         ensureNonNegative (nameof minimum) minimum
         ensureNonNegative (nameof maximum) maximum
         ensureOrderedBounds (nameof minimum) minimum maximum
-        createWithArguments "countBetween" [ "minimum", box minimum; "maximum", box maximum ]
+        createKnownWithArguments
+            "countBetween"
+            (SchemaConstraintMetadata.CountBetween(minimum, maximum))
+            [ "minimum", box minimum; "maximum", box maximum ]
 
     /// <summary>Requires a collection value to contain no duplicate items.</summary>
-    let distinct = create "distinct"
+    let distinct = createKnown "distinct" SchemaConstraintMetadata.Distinct
 
     /// <summary>Returns the stable interpreter-facing constraint code.</summary>
     let code (constraint': SchemaConstraint) =
@@ -268,6 +373,13 @@ module SchemaConstraint =
             nullArg (nameof constraint')
 
         constraint'.Code
+
+    /// <summary>Returns the typed interpreter-facing constraint metadata.</summary>
+    let metadata (constraint': SchemaConstraint) =
+        if isNull constraint' then
+            nullArg (nameof constraint')
+
+        constraint'.Metadata
 
     /// <summary>Returns the structured constraint arguments.</summary>
     let arguments (constraint': SchemaConstraint) =

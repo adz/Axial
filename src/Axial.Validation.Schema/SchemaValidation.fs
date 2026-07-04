@@ -87,35 +87,35 @@ module SchemaConstraintCheck =
             if value >= minimum && value <= maximum then
                 Ok ()
             else
-                Error [ Range(Between(string minimum, string maximum), Some(string value)) ]
+                Error [ Range(CheckRangeExpectation.Between(string minimum, string maximum), Some(string value)) ]
 
     let private greaterThanCheck minimum : Check<'value> =
         fun value ->
             if value > minimum then
                 Ok ()
             else
-                Error [ Range(GreaterThan(string minimum), Some(string value)) ]
+                Error [ Range(CheckRangeExpectation.GreaterThan(string minimum), Some(string value)) ]
 
     let private lessThanCheck maximum : Check<'value> =
         fun value ->
             if value < maximum then
                 Ok ()
             else
-                Error [ Range(LessThan(string maximum), Some(string value)) ]
+                Error [ Range(CheckRangeExpectation.LessThan(string maximum), Some(string value)) ]
 
     let private atLeastCheck minimum : Check<'value> =
         fun value ->
             if value >= minimum then
                 Ok ()
             else
-                Error [ Range(AtLeast(string minimum), Some(string value)) ]
+                Error [ Range(CheckRangeExpectation.AtLeast(string minimum), Some(string value)) ]
 
     let private atMostCheck maximum : Check<'value> =
         fun value ->
             if value <= maximum then
                 Ok ()
             else
-                Error [ Range(AtMost(string maximum), Some(string value)) ]
+                Error [ Range(CheckRangeExpectation.AtMost(string maximum), Some(string value)) ]
 
     /// <summary>Lowers one schema constraint to an ordered-value check when the constraint has range-level meaning.</summary>
     let tryOrdered<'value when 'value: comparison> (constraint': SchemaConstraint) : Check<'value> option =

@@ -328,6 +328,7 @@ module ApiShapeTests =
         let valueSchemaType = typedefof<ValueSchema<_>>
         let fieldType = typedefof<Field<_, _>>
         let primitiveValueKindType = typeof<PrimitiveValueKind>
+        let schemaConstraintMetadataType = typeof<SchemaConstraintMetadata>
         let schemaConstraintType = typeof<SchemaConstraint>
         let externalFieldNameType = typeof<ExternalFieldName>
         let fieldOrderType = typeof<FieldOrder>
@@ -405,14 +406,38 @@ module ApiShapeTests =
               "countBetween"
               "distinct"
               "code"
+              "metadata"
               "arguments"
               "tryFindArgument" ]
         primitiveValueKindType
         |> publicUnionCaseNames
         |> assertContainsAll [ "Text"; "Int"; "Decimal"; "Bool"; "Date"; "DateTime"; "Guid" ]
+        schemaConstraintMetadataType
+        |> publicUnionCaseNames
+        |> assertContainsAll
+            [ "Required"
+              "Optional"
+              "MinLength"
+              "MaxLength"
+              "LengthBetween"
+              "Email"
+              "Pattern"
+              "OneOf"
+              "Between"
+              "GreaterThan"
+              "LessThan"
+              "AtLeast"
+              "AtMost"
+              "Count"
+              "MinCount"
+              "MaxCount"
+              "CountBetween"
+              "Distinct"
+              "Custom" ]
         test <@ valueSchemaType.Assembly = schemaAssembly @>
         test <@ fieldType.Assembly = schemaAssembly @>
         test <@ primitiveValueKindType.Assembly = schemaAssembly @>
+        test <@ schemaConstraintMetadataType.Assembly = schemaAssembly @>
         test <@ schemaConstraintType.Assembly = schemaAssembly @>
         test <@ externalFieldNameType.Assembly = schemaAssembly @>
         test <@ fieldOrderType.Assembly = schemaAssembly @>
@@ -466,6 +491,8 @@ module ApiShapeTests =
         let descriptor = field |> schemaFieldDescriptor
 
         test <@ SchemaConstraint.code required = "required" @>
+        test <@ SchemaConstraint.metadata required = SchemaConstraintMetadata.Required @>
+        test <@ SchemaConstraint.metadata maxLength = SchemaConstraintMetadata.MaxLength 20 @>
         test <@ string required = "required" @>
         test <@ SchemaConstraint.arguments required |> Seq.isEmpty @>
         test <@ SchemaConstraint.tryFindArgument "maximum" maxLength = Some(box 20) @>
@@ -538,6 +565,13 @@ module ApiShapeTests =
         test <@ SchemaConstraint.tryFindArgument "maximum" range = Some(box 3.5m) @>
         test <@ SchemaConstraint.tryFindArgument "minimum" count = Some(box 1) @>
         test <@ SchemaConstraint.tryFindArgument "maximum" count = Some(box 5) @>
+        test <@
+            SchemaConstraint.metadata (SchemaConstraint.create "tenantOnly") = SchemaConstraintMetadata.Custom "tenantOnly"
+        @>
+        test <@
+            SchemaConstraint.metadata (SchemaConstraint.createWithArguments "tenantOnly" [ "tenant", box "north" ]) =
+                SchemaConstraintMetadata.Custom "tenantOnly"
+        @>
         raises<ArgumentOutOfRangeException> <@ SchemaConstraint.minLength -1 |> ignore @>
         raises<ArgumentOutOfRangeException> <@ SchemaConstraint.count -1 |> ignore @>
         raises<ArgumentException> <@ SchemaConstraint.lengthBetween 5 2 |> ignore @>
@@ -545,6 +579,122 @@ module ApiShapeTests =
         raises<ArgumentException> <@ SchemaConstraint.between 10 1 |> ignore @>
         raises<ArgumentException> <@ SchemaConstraint.pattern "" |> ignore @>
         raises<ArgumentNullException> <@ SchemaConstraint.oneOf null |> ignore @>
+
+    [<Fact>]
+    let ``schema constraints retain typed metadata for non validation interpreters`` () =
+        let constraints =
+            [ SchemaConstraint.required
+              SchemaConstraint.maxLength 20
+              SchemaConstraint.email
+              SchemaConstraint.pattern "^[^@]+@example.com$"
+              SchemaConstraint.oneOf [ "ada@example.com"; "grace@example.com" ]
+              SchemaConstraint.between 1 10
+              SchemaConstraint.countBetween 1 3
+              SchemaConstraint.distinct ]
+
+        let diagnostics =
+            constraints
+            |> List.choose (SchemaConstraint.metadata >> function
+                | SchemaConstraintMetadata.Required -> Some "SchemaError.Required"
+                | SchemaConstraintMetadata.MaxLength maximum -> Some $"SchemaError.TooLong {maximum}"
+                | SchemaConstraintMetadata.Email -> Some "SchemaError.InvalidFormat email"
+                | SchemaConstraintMetadata.Pattern pattern -> Some $"SchemaError.InvalidFormat {pattern}"
+                | SchemaConstraintMetadata.OneOf choices ->
+                    Some(sprintf "SchemaError.NotOneOf %s" (String.concat "|" choices))
+                | SchemaConstraintMetadata.Between(minimum, maximum) ->
+                    Some $"SchemaError.OutOfRange {minimum}-{maximum}"
+                | SchemaConstraintMetadata.CountBetween(minimum, maximum) ->
+                    Some $"SchemaError.CountOutOfRange {minimum}-{maximum}"
+                | SchemaConstraintMetadata.Distinct -> Some "SchemaError.Duplicate"
+                | _ -> None)
+
+        let jsonSchema =
+            constraints
+            |> List.choose (SchemaConstraint.metadata >> function
+                | SchemaConstraintMetadata.Required -> Some "required"
+                | SchemaConstraintMetadata.MaxLength maximum -> Some $"maxLength={maximum}"
+                | SchemaConstraintMetadata.Email -> Some "format=email"
+                | SchemaConstraintMetadata.Pattern pattern -> Some $"pattern={pattern}"
+                | SchemaConstraintMetadata.OneOf choices -> Some(sprintf "enum=%s" (String.concat "," choices))
+                | SchemaConstraintMetadata.Between(minimum, maximum) ->
+                    Some $"minimum={minimum};maximum={maximum}"
+                | SchemaConstraintMetadata.CountBetween(minimum, maximum) ->
+                    Some $"minItems={minimum};maxItems={maximum}"
+                | SchemaConstraintMetadata.Distinct -> Some "uniqueItems=true"
+                | _ -> None)
+
+        let ui =
+            constraints
+            |> List.choose (SchemaConstraint.metadata >> function
+                | SchemaConstraintMetadata.Required -> Some "required"
+                | SchemaConstraintMetadata.MaxLength maximum -> Some $"maxlength={maximum}"
+                | SchemaConstraintMetadata.Email -> Some "input=email"
+                | SchemaConstraintMetadata.Pattern pattern -> Some $"pattern={pattern}"
+                | SchemaConstraintMetadata.OneOf choices -> Some $"choices={choices.Length}"
+                | SchemaConstraintMetadata.Between(minimum, maximum) ->
+                    Some $"min={minimum};max={maximum}"
+                | SchemaConstraintMetadata.CountBetween(minimum, maximum) ->
+                    Some $"min-items={minimum};max-items={maximum}"
+                | SchemaConstraintMetadata.Distinct -> Some "unique-items"
+                | _ -> None)
+
+        let docs =
+            constraints
+            |> List.map (SchemaConstraint.metadata >> function
+                | SchemaConstraintMetadata.Required -> "Required"
+                | SchemaConstraintMetadata.MaxLength maximum -> $"Maximum length {maximum}"
+                | SchemaConstraintMetadata.Email -> "Email format"
+                | SchemaConstraintMetadata.Pattern pattern -> $"Matches {pattern}"
+                | SchemaConstraintMetadata.OneOf choices -> sprintf "One of %s" (String.concat ", " choices)
+                | SchemaConstraintMetadata.Between(minimum, maximum) -> $"Between {minimum} and {maximum}"
+                | SchemaConstraintMetadata.CountBetween(minimum, maximum) -> $"Between {minimum} and {maximum} items"
+                | SchemaConstraintMetadata.Distinct -> "No duplicates"
+                | other -> string other)
+
+        test <@
+            diagnostics =
+                [ "SchemaError.Required"
+                  "SchemaError.TooLong 20"
+                  "SchemaError.InvalidFormat email"
+                  "SchemaError.InvalidFormat ^[^@]+@example.com$"
+                  "SchemaError.NotOneOf ada@example.com|grace@example.com"
+                  "SchemaError.OutOfRange 1-10"
+                  "SchemaError.CountOutOfRange 1-3"
+                  "SchemaError.Duplicate" ]
+        @>
+        test <@
+            jsonSchema =
+                [ "required"
+                  "maxLength=20"
+                  "format=email"
+                  "pattern=^[^@]+@example.com$"
+                  "enum=ada@example.com,grace@example.com"
+                  "minimum=1;maximum=10"
+                  "minItems=1;maxItems=3"
+                  "uniqueItems=true" ]
+        @>
+        test <@
+            ui =
+                [ "required"
+                  "maxlength=20"
+                  "input=email"
+                  "pattern=^[^@]+@example.com$"
+                  "choices=2"
+                  "min=1;max=10"
+                  "min-items=1;max-items=3"
+                  "unique-items" ]
+        @>
+        test <@
+            docs =
+                [ "Required"
+                  "Maximum length 20"
+                  "Email format"
+                  "Matches ^[^@]+@example.com$"
+                  "One of ada@example.com, grace@example.com"
+                  "Between 1 and 10"
+                  "Between 1 and 3 items"
+                  "No duplicates" ]
+        @>
 
     [<Fact>]
     let ``schema fields inspect existing trusted models through typed getters`` () =

@@ -137,7 +137,7 @@ Schema constraints should lower onto the tightened `Check` shape, not the verbos
   `required`, `optional`, `minLength`, `maxLength`, `lengthBetween`, `email`, `pattern`, `oneOf`, numeric ranges,
   collection counts, and distinctness.
 - [x] Ensure schema constraints can lower to executable `Check` programs.
-- [ ] Ensure schema constraints retain metadata for diagnostics, JSON Schema, UI, and docs.
+- [x] Ensure schema constraints retain metadata for diagnostics, JSON Schema, UI, and docs.
 - [ ] Define an explicit core API before computation expressions:
   `Schema.field`, `Schema.map2`, `Schema.map3`, and enough `mapN` helpers to prove the model.
 - [ ] Decide how many `mapN` helpers are acceptable before requiring generator support.
