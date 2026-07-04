@@ -27,7 +27,7 @@ Result -> Validation
 
 ## Interop
 
-Use `Validation.fromResult` to bring an existing fail-fast result into validation, and `Validation.toResult` when a boundary expects ordinary `Result`.
+Use `Validation.fromResult` to bring an existing fail-fast result into validation, and `Validation.toResult` when a boundary expects ordinary `Result`. `Validation.fromResult` is the canonical result-to-validation bridge; Axial does not also expose `Validation.ofResult`.
 
 Pure `Check` and `Result` helpers usually live in the [Error Handling](../error-handling/) section. `Validation` is the next step when the user needs all sibling errors, not only the first one.
 

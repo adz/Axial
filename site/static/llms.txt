@@ -107,6 +107,7 @@ equivalent, Axial usually expects a different boundary shape rather than a 1:1 h
 ### Validation
 - Axial equivalent type: `Validation<'value, 'error>` is not `Result<'value, 'error list>`; it stores a structured `Diagnostics<'error>` graph
 - Direct equivalents: `Validation.ok` -> `Validation.ok`, `Validation.error` -> `Validation.error`, `Validation.succeed` -> `Validation.succeed`, `Validation.fail` -> `Validation.fail`, `Validation.map` -> `Validation.map`, `Validation.bind` -> `Validation.bind`, `Validation.mapError` -> `Validation.mapError`, `Validation.map2` -> `Validation.map2`, `Validation.map3` -> `Validation.map3`, `Validation.apply` -> `Validation.apply`, `Validation.ignore` -> `Validation.ignore`, `Validation.orElse` -> `Validation.orElse`, `Validation.orElseWith` -> `Validation.orElseWith`, `Validation.sequence` -> `Validation.sequence`, `Validation.zip` -> `Validation.merge`, `Validation.toResult` -> `Validation.toResult`, `Validation.fromResult` -> `Validation.fromResult`
+- Canonical result bridge: use `Validation.fromResult`; Axial does not expose a competing `Validation.ofResult` alias.
 - Axial-only additions: `Validation.at`, `Validation.key`, `Validation.index`, `Validation.name`, `Validation.traverseIndexed`, `Validation.<!>`, `Validation.<*>`
 - Missing as dedicated helpers: `mapErrors` and list-shaped error APIs
 - `Validation.bind` is short-circuiting in Axial just like FsToolkit.Validation.bind; accumulation comes from applicative composition (`validate { and! }`, `map2`, `apply`, `merge`, `traverseIndexed`)

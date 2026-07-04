@@ -28,7 +28,8 @@ Lifts a standard <a href="https://learn.microsoft.com/dotnet/api/system.result-2
 ## Remarks
 
 
- If the result is an error, it is wrapped in a root-level <a href="https://learn.microsoft.com/dotnet/api/axial.diagnostics-1">Diagnostics</a> graph.
+ This is the canonical bridge from fail-fast result code into accumulating validation. If the result is
+ an error, it is wrapped in a root-level <a href="https://learn.microsoft.com/dotnet/api/axial.diagnostics-1">Diagnostics</a> graph.
 
 
 ## Examples

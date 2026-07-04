@@ -346,19 +346,23 @@ module ApiShapeTests =
     let ``validation modules and builders keep expected public shape`` () =
         moduleType typeof<Validation<int, string>> "Axial.Validation.Validation"
         |> publicStaticMemberNames
-        |> assertContainsAll
-            [ "ok"
-              "fail"
-              "fromResult"
-              "toResult"
-              "map"
-              "bind"
-              "map2"
-              "map3"
-              "collect"
-              "sequence"
-              "at"
-              "traverseIndexed" ]
+        |> fun validationMembers ->
+            validationMembers
+            |> assertContainsAll
+                [ "ok"
+                  "fail"
+                  "fromResult"
+                  "toResult"
+                  "map"
+                  "bind"
+                  "map2"
+                  "map3"
+                  "collect"
+                  "sequence"
+                  "at"
+                  "traverseIndexed" ]
+
+            test <@ validationMembers |> Set.contains "ofResult" |> not @>
 
         typeof<ValidateBuilder>
         |> publicInstanceMethodNames

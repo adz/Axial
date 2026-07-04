@@ -9,8 +9,6 @@ Work this queue from top to bottom.
 
 ## Active Surface Work
 
-- [ ] Decide whether the canonical validation bridge is `Validation.fromResult` or `Validation.ofResult`, then align source comments, docs, examples, and generated reference pages.
-
 - [ ] Refresh `dev-docs/API_BASELINE.md` after package-boundary test projects exist.
 
 - [ ] Finish the remaining reference cleanup in `dev-docs/REFERENCE_AUDIT.md`.

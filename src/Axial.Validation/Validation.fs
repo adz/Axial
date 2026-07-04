@@ -71,7 +71,8 @@ module Validation =
 
     /// <summary>Lifts a standard <see cref="T:System.Result`2" /> into the <see cref="T:Axial.Validation`2" /> context.</summary>
     /// <remarks>
-    /// If the result is an error, it is wrapped in a root-level <see cref="T:Axial.Diagnostics`1" /> graph.
+    /// This is the canonical bridge from fail-fast result code into accumulating validation. If the result is
+    /// an error, it is wrapped in a root-level <see cref="T:Axial.Diagnostics`1" /> graph.
     /// </remarks>
     /// <param name="result">The result to lift.</param>
     /// <returns>A <see cref="T:Axial.Validation`2" /> mirroring the result.</returns>
