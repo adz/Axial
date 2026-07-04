@@ -7,7 +7,7 @@ open Swensen.Unquote
 open Xunit
 
 /// <summary>
-/// Proves that today's <c>Field</c> / <c>Schema</c> API already carries enough typed information to lower a flat
+/// Proves that today's progressive <c>Schema</c> builder carries enough typed information to lower a flat
 /// record schema into a CodecMapper-style compiled record plan: ordered fields, cached UTF-8 external names, typed
 /// per-field decode/encode hooks, indexed field slots, and direct constructor application. Compare
 /// <c>CompiledRecordPlan2</c> below against CodecMapper's <c>RecordDecoder2&lt;'T,'A,'B&gt;</c> in
@@ -18,7 +18,7 @@ open Xunit
 /// This lives as a test-only prototype rather than new `Axial.Schema` source. Task line 148 of `dev-docs/TASKS.md`
 /// asks for proof the lowering is possible before codec work starts and before `Axial.Schema` commits to a codec
 /// package boundary (see Phase 14). The key finding this test records: a zero-boxing compiled plan must be built
-/// from the pre-erasure typed `Field&lt;'model, 'value&gt;` values passed to `Schema.map2` / `Schema.map3`, not from
+/// from the typed field chain appended by `Schema.field`, not from
 /// the type-erased `Schema&lt;'model&gt;.Definition` that metadata interpreters use. That erased shape stores fields
 /// as `'model -> obj` getters and applies constructors through `obj array`, which is the right trade for
 /// arity-independent inspection but is exactly the `obj array` dispatch a codec hot path must avoid.
@@ -94,7 +94,7 @@ module SchemaCompiledRecordPlanProofTests =
 
             construct value1 value2
 
-    /// Compiles a plan from the same typed `Field<'model, 'value>` values a caller would pass to `Schema.map2` --
+    /// Compiles a plan from typed `Field<'model, 'value>` values matching the builder-declared schema --
     /// proving the lowering reuses existing public schema metadata rather than a parallel schema representation.
     let private compileMap2
         (construct: 'a -> 'b -> 'model)
@@ -114,10 +114,14 @@ module SchemaCompiledRecordPlanProofTests =
 
     [<Fact>]
     let ``flat record schema lowers to a compiled plan with ordered fields, cached UTF-8 names, and typed hooks`` () =
-        let nameField = Schema.field "name" (fun (contact: Contact) -> contact.Name) Value.text
-        let ageField = Schema.field "age" (fun (contact: Contact) -> contact.Age) Value.``int``
+        let nameField = Field.create "name" (fun (contact: Contact) -> contact.Name) Value.text
+        let ageField = Field.create "age" (fun (contact: Contact) -> contact.Age) Value.``int``
 
-        let schema = Schema.map2 (fun name age -> { Name = name; Age = age }) nameField ageField
+        let schema =
+            Schema.record (fun name age -> { Name = name; Age = age })
+            |> Schema.field "name" (fun (contact: Contact) -> contact.Name) Value.text
+            |> Schema.field "age" (fun (contact: Contact) -> contact.Age) Value.``int``
+            |> Schema.build
 
         let plan =
             compileMap2 (fun name age -> { Name = name; Age = age }) nameField FieldCodec.text ageField FieldCodec.int
@@ -146,8 +150,8 @@ module SchemaCompiledRecordPlanProofTests =
 
     [<Fact>]
     let ``decode raises when a required field is missing instead of partially applying the constructor`` () =
-        let nameField = Schema.field "name" (fun (contact: Contact) -> contact.Name) Value.text
-        let ageField = Schema.field "age" (fun (contact: Contact) -> contact.Age) Value.``int``
+        let nameField = Field.create "name" (fun (contact: Contact) -> contact.Name) Value.text
+        let ageField = Field.create "age" (fun (contact: Contact) -> contact.Age) Value.``int``
 
         let plan =
             compileMap2 (fun name age -> { Name = name; Age = age }) nameField FieldCodec.text ageField FieldCodec.int

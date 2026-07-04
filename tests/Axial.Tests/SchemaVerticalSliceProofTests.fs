@@ -16,7 +16,7 @@ open Xunit
 /// and enough typed information to compile a CodecMapper-style record plan. Earlier tests
 /// (<c>SchemaConstraintCheckTests</c>, <c>SchemaConstraintInspectionTests</c>, <c>SchemaConstructorGetterAlignmentTests</c>,
 /// <c>SchemaCompiledRecordPlanProofTests</c>) prove each capability in isolation; this test proves they compose on the
-/// very same schema and field values rather than only working for narrower, unrelated examples.
+/// very same schema rather than only working for narrower, unrelated examples.
 /// </summary>
 module SchemaVerticalSliceProofTests =
     type private Signup = { Email: string; DisplayName: string }
@@ -82,22 +82,22 @@ module SchemaVerticalSliceProofTests =
     [<Fact>]
     let ``one authored schema proves ordering, primitive value schema, required/maxLength metadata, Check lowering, inspection, alignment, and a compiled plan together`` () =
         // Ordered fields + primitive value schema (`Value.text`) + required and maxLength constraint metadata,
-        // authored through the same explicit `Schema.field` / `Schema.map2` core API Phase 5 settled on.
+        // authored through the progressive typed builder.
         let emailValue =
             Value.text |> Value.withConstraints [ SchemaConstraint.required; SchemaConstraint.maxLength 254 ]
 
         let displayNameValue = Value.text |> Value.withConstraint SchemaConstraint.required
 
-        let emailField = Schema.field "email" (fun (signup: Signup) -> signup.Email) emailValue
-        let displayNameField = Schema.field "displayName" (fun (signup: Signup) -> signup.DisplayName) displayNameValue
+        let emailField = Field.create "email" (fun (signup: Signup) -> signup.Email) emailValue
+        let displayNameField = Field.create "displayName" (fun (signup: Signup) -> signup.DisplayName) displayNameValue
 
-        // Declare fields to `map2` in reverse of the record's own field order to prove constructor/getter alignment
+        // Declare fields in reverse of the record's own field order to prove constructor/getter alignment
         // follows declared argument position, not field name or a field's own pre-assigned default order.
         let schema =
-            Schema.map2
-                (fun displayName email -> { Email = email; DisplayName = displayName })
-                displayNameField
-                emailField
+            Schema.record (fun displayName email -> { Email = email; DisplayName = displayName })
+            |> Schema.field "displayName" (fun (signup: Signup) -> signup.DisplayName) displayNameValue
+            |> Schema.field "email" (fun (signup: Signup) -> signup.Email) emailValue
+            |> Schema.build
 
         let source = { Email = "ada@example.com"; DisplayName = "Ada" }
 

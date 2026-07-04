@@ -404,7 +404,7 @@ type internal ConstructorApplication<'model> =
       ApplyTrusted: obj array -> 'model }
 
 module internal ConstructorApplication =
-    let private ensureArgumentCount expected (arguments: obj array) =
+    let ensureArgumentCount expected (arguments: obj array) =
         if isNull arguments then
             nullArg (nameof arguments)
 
@@ -537,6 +537,62 @@ type internal FieldDefinition<'model, 'value> =
       Getter: 'model -> 'value
       ValueSchema: ValueSchemaDefinition
       Constraints: SchemaConstraint list }
+
+type IFieldChain<'model, 'constructor, 'remaining> =
+    abstract member GetFields: int -> obj list * int
+    abstract member Apply: constructor: obj * arguments: obj array -> obj
+
+type FieldsEnd<'model, 'constructor>() =
+    interface IFieldChain<'model, 'constructor, 'constructor> with
+        member _.GetFields(index) = [], index
+        member _.Apply(constructor, _) = constructor
+
+type FieldsAppend<'model, 'constructor, 'field, 'next, 'head
+    when 'head :> IFieldChain<'model, 'constructor, 'field -> 'next>>
+    internal
+    (
+        head: 'head,
+        field: FieldDefinition<'model, 'field>
+    ) =
+
+    interface IFieldChain<'model, 'constructor, 'next> with
+        member _.GetFields(index) =
+            let fields, nextIndex = (head :> IFieldChain<'model, 'constructor, 'field -> 'next>).GetFields index
+
+            let descriptor =
+                { FieldDescriptor.ExternalName = field.ExternalName
+                  Order = FieldOrder.create nextIndex
+                  Getter = fun model -> field.Getter model |> box
+                  ValueSchema = field.ValueSchema
+                  Constraints = field.Constraints }
+
+            fields @ [ box descriptor ], nextIndex + 1
+
+        member _.Apply(constructor, arguments) =
+            let fieldIndex = (head :> IFieldChain<'model, 'constructor, 'field -> 'next>).GetFields(0) |> snd
+            let appliedHead =
+                (head :> IFieldChain<'model, 'constructor, 'field -> 'next>).Apply(constructor, arguments)
+
+            let typedConstructor = unbox<'field -> 'next> appliedHead
+            typedConstructor (unbox<'field> arguments[fieldIndex]) |> box
+
+/// <summary>
+/// Carries a trusted model constructor and a typed field chain while a model schema is being authored.
+/// </summary>
+/// <remarks>
+/// Each <c>Schema.field</c> application consumes one argument from the remaining constructor type. The builder can
+/// only be passed to <c>Schema.build</c> when the remaining constructor type is the model itself, which keeps
+/// constructor/getter alignment compiler-checked without a hand-written <c>mapN</c> family.
+/// </remarks>
+type SchemaBuilder<'model, 'constructor, 'remaining, 'chain
+    when 'chain :> IFieldChain<'model, 'constructor, 'remaining>>
+    internal
+    (
+        constructor: 'constructor,
+        chain: 'chain
+    ) =
+    member internal _.Constructor = constructor
+    member internal _.Chain = chain
 
 module internal ModelSchemaDefinition =
     let private ensureContiguousOrders (fields: FieldDescriptor<'model> list) =
@@ -775,6 +831,36 @@ module internal FieldDescriptorOps =
 /// <summary>Functions for inspecting schema field metadata.</summary>
 [<RequireQualifiedAccess>]
 module Field =
+    /// <summary>
+    /// Creates a standalone typed schema field from a boundary-facing name, a trusted-model getter, and a trusted
+    /// value schema.
+    /// </summary>
+    /// <remarks>
+    /// Standalone fields are useful for advanced composition and tests that need to inspect a <c>Field</c> value
+    /// directly. Ordinary record schemas should use <c>Schema.record</c>, pipeline <c>Schema.field</c> steps, and
+    /// <c>Schema.build</c>.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException">
+    /// Thrown when <paramref name="externalName" />, <paramref name="getter" />, or <paramref name="value" /> is null.
+    /// </exception>
+    /// <exception cref="T:System.ArgumentException">
+    /// Thrown when <paramref name="externalName" /> is empty or contains only whitespace.
+    /// </exception>
+    let create externalName (getter: 'model -> 'value) (value: ValueSchema<'value>) : Field<'model, 'value> =
+        if isNull (box getter) then
+            nullArg (nameof getter)
+
+        if isNull (box value) then
+            nullArg (nameof value)
+
+        Field(
+            { ExternalName = ExternalFieldName.create externalName
+              Order = FieldOrder.create 0
+              Getter = getter
+              ValueSchema = value.Definition
+              Constraints = [] }
+        )
+
     /// <summary>Returns the boundary-facing name for a schema field.</summary>
     let externalName (field: Field<'model, 'value>) =
         if isNull (box field) then
@@ -838,96 +924,120 @@ module Field =
 [<RequireQualifiedAccess>]
 module Schema =
     /// <summary>
-    /// Creates a typed schema field from a boundary-facing name, a trusted-model getter, and a trusted value schema.
+    /// Starts a progressive typed model schema builder from a trusted curried constructor.
     /// </summary>
     /// <remarks>
-    /// The field's constructor order is assigned by <see cref="M:Axial.Schema.Schema.map2``3" /> or
-    /// <see cref="M:Axial.Schema.Schema.map3``4" /> from the field's argument position. Interpreters can still inspect
-    /// the external name, getter, value schema, and field constraints without using reflection.
+    /// Each following <c>Schema.field</c> step consumes one argument from the constructor type. A partially-applied
+    /// builder will not type-check with <c>Schema.build</c>; the final remaining type must be the model.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="constructor" /> is null.</exception>
+    let record (constructor: 'constructor) : SchemaBuilder<'model, 'constructor, 'constructor, FieldsEnd<'model, 'constructor>> =
+        if isNull (box constructor) then
+            nullArg (nameof constructor)
+
+        SchemaBuilder(constructor, FieldsEnd<'model, 'constructor>())
+
+    /// <summary>
+    /// Appends a typed field to a progressive schema builder.
+    /// </summary>
+    /// <remarks>
+    /// The field value type must match the next constructor argument. The returned builder carries the remaining
+    /// constructor type after that argument has been consumed, so field order and constructor application stay aligned
+    /// by ordinary F# type-checking.
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">
-    /// Thrown when <paramref name="externalName" />, <paramref name="getter" />, or <paramref name="value" /> is null.
+    /// Thrown when <paramref name="externalName" />, <paramref name="getter" />, <paramref name="value" />, or
+    /// <paramref name="builder" /> is null.
     /// </exception>
     /// <exception cref="T:System.ArgumentException">
     /// Thrown when <paramref name="externalName" /> is empty or contains only whitespace.
     /// </exception>
-    let field externalName (getter: 'model -> 'value) (value: ValueSchema<'value>) : Field<'model, 'value> =
+    let field
+        externalName
+        (getter: 'model -> 'field)
+        (value: ValueSchema<'field>)
+        (builder: SchemaBuilder<'model, 'constructor, 'field -> 'next, 'chain>)
+        : SchemaBuilder<'model, 'constructor, 'next, FieldsAppend<'model, 'constructor, 'field, 'next, 'chain>> =
         if isNull (box getter) then
             nullArg (nameof getter)
 
         if isNull (box value) then
             nullArg (nameof value)
 
-        Field(
+        if isNull (box builder) then
+            nullArg (nameof builder)
+
+        let definition =
             { ExternalName = ExternalFieldName.create externalName
               Order = FieldOrder.create 0
               Getter = getter
               ValueSchema = value.Definition
               Constraints = [] }
-        )
+
+        SchemaBuilder(builder.Constructor, FieldsAppend(builder.Chain, definition))
 
     /// <summary>
-    /// Builds a model schema from a two-argument trusted constructor and two explicitly declared fields.
+    /// Appends a typed field with field-level constraint metadata to a progressive schema builder.
     /// </summary>
-    /// <remarks>
-    /// Field argument position defines constructor order. This keeps authored schemas explicit and AOT-safe while
-    /// preserving enough typed metadata for later validation, codec, UI, and documentation interpreters.
-    /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">
-    /// Thrown when <paramref name="constructor" />, <paramref name="left" />, or <paramref name="right" /> is null.
+    /// Thrown when <paramref name="constraints" />, a constraint entry, <paramref name="externalName" />,
+    /// <paramref name="getter" />, <paramref name="value" />, or <paramref name="builder" /> is null.
     /// </exception>
-    let map2
-        (constructor: 'a -> 'b -> 'model)
-        (left: Field<'model, 'a>)
-        (right: Field<'model, 'b>)
-        : Schema<'model> =
-        if isNull (box left) then
-            nullArg (nameof left)
+    let fieldWith
+        (constraints: SchemaConstraint list)
+        externalName
+        (getter: 'model -> 'field)
+        (value: ValueSchema<'field>)
+        (builder: SchemaBuilder<'model, 'constructor, 'field -> 'next, 'chain>)
+        : SchemaBuilder<'model, 'constructor, 'next, FieldsAppend<'model, 'constructor, 'field, 'next, 'chain>> =
+        if isNull (box constraints) then
+            nullArg (nameof constraints)
 
-        if isNull (box right) then
-            nullArg (nameof right)
+        constraints
+        |> List.iter (fun constraint' ->
+            if isNull constraint' then
+                nullArg (nameof constraints))
+
+        if isNull (box getter) then
+            nullArg (nameof getter)
+
+        if isNull (box value) then
+            nullArg (nameof value)
+
+        if isNull (box builder) then
+            nullArg (nameof builder)
 
         let definition =
-            ModelSchemaDefinition.create
-                (ConstructorApplication.create2 constructor)
-                [ FieldDescriptorOps.fromOrderedField 0 left
-                  FieldDescriptorOps.fromOrderedField 1 right ]
+            { ExternalName = ExternalFieldName.create externalName
+              Order = FieldOrder.create 0
+              Getter = getter
+              ValueSchema = value.Definition
+              Constraints = constraints }
 
-        Schema(ModelDefinition definition)
+        SchemaBuilder(builder.Constructor, FieldsAppend(builder.Chain, definition))
 
     /// <summary>
-    /// Builds a model schema from a three-argument trusted constructor and three explicitly declared fields.
+    /// Builds a model schema from a progressive typed builder whose constructor has been fully applied by fields.
     /// </summary>
     /// <remarks>
-    /// Field argument position defines constructor order. Hand-written <c>mapN</c> stops here: <c>map2</c> and
-    /// <c>map3</c> are enough to prove constructor/getter alignment and field ordering. Models with more fields use
-    /// the schema computation expression (with <c>and!</c> for extra fields) once it exists, or a future
-    /// <c>[&lt;Schema&gt;]</c> source generator, rather than additional hand-written <c>mapN</c> overloads.
+    /// This is the arity-independent schema construction path. It preserves the existing type-erased model definition
+    /// for metadata interpreters while deriving constructor application and field ordering from the typed field chain.
     /// </remarks>
-    /// <exception cref="T:System.ArgumentNullException">
-    /// Thrown when <paramref name="constructor" />, <paramref name="left" />, <paramref name="middle" />, or
-    /// <paramref name="right" /> is null.
-    /// </exception>
-    let map3
-        (constructor: 'a -> 'b -> 'c -> 'model)
-        (left: Field<'model, 'a>)
-        (middle: Field<'model, 'b>)
-        (right: Field<'model, 'c>)
-        : Schema<'model> =
-        if isNull (box left) then
-            nullArg (nameof left)
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="builder" /> is null.</exception>
+    let build (builder: SchemaBuilder<'model, 'constructor, 'model, 'chain>) : Schema<'model> =
+        if isNull (box builder) then
+            nullArg (nameof builder)
 
-        if isNull (box middle) then
-            nullArg (nameof middle)
+        let chain = builder.Chain :> IFieldChain<'model, 'constructor, 'model>
+        let fields, count =
+            let fields, count = chain.GetFields 0
+            fields |> List.map unbox<FieldDescriptor<'model>>, count
 
-        if isNull (box right) then
-            nullArg (nameof right)
+        let constructor =
+            { ConstructorApplication.ArgumentCount = count
+              ApplyTrusted =
+                fun arguments ->
+                    ConstructorApplication.ensureArgumentCount count arguments
+                    chain.Apply(box builder.Constructor, arguments) |> unbox<'model> }
 
-        let definition =
-            ModelSchemaDefinition.create
-                (ConstructorApplication.create3 constructor)
-                [ FieldDescriptorOps.fromOrderedField 0 left
-                  FieldDescriptorOps.fromOrderedField 1 middle
-                  FieldDescriptorOps.fromOrderedField 2 right ]
-
-        Schema(ModelDefinition definition)
+        Schema(ModelDefinition(ModelSchemaDefinition.create constructor fields))

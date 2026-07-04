@@ -9,7 +9,7 @@ open Xunit
 /// Proves that <c>Value.refined</c> describes a named refined/domain value as a portable
 /// <c>ValueSchema&lt;'value&gt;</c>: it retains the raw value schema as inspectable metadata, it round-trips a value
 /// through the supplied construction and inspection functions, and the result composes with the rest of the schema
-/// core (constraints, <c>Schema.field</c>, <c>Schema.map2</c>) exactly like a primitive value schema.
+/// core (constraints and the progressive schema builder) exactly like a primitive value schema.
 /// </summary>
 module SchemaRefinedValueTests =
     /// <summary>A minimal named refined/domain type standing in for a real <c>Email</c>-style value.</summary>
@@ -52,14 +52,18 @@ module SchemaRefinedValueTests =
         test <@ Value.constraints required |> List.map SchemaConstraint.code = [ "required" ] @>
 
     [<Fact>]
-    let ``refined value schemas compose with Schema.field and Schema.map2 like a primitive value schema`` () =
+    let ``refined value schemas compose with the schema builder like a primitive value schema`` () =
         let emailField =
-            Schema.field "email" (fun (contact: Contact) -> contact.Email) Email.schema
+            Field.create "email" (fun (contact: Contact) -> contact.Email) Email.schema
             |> Field.withConstraint SchemaConstraint.required
 
-        let nameField = Schema.field "name" (fun (contact: Contact) -> contact.Name) Value.text
+        let nameField = Field.create "name" (fun (contact: Contact) -> contact.Name) Value.text
 
-        let schema = Schema.map2 (fun email name -> { Email = email; Name = name }) emailField nameField
+        let schema =
+            Schema.record (fun email name -> { Email = email; Name = name })
+            |> Schema.fieldWith [ SchemaConstraint.required ] "email" (fun (contact: Contact) -> contact.Email) Email.schema
+            |> Schema.field "name" (fun (contact: Contact) -> contact.Name) Value.text
+            |> Schema.build
 
         let contact = { Email = Email.create "ada@example.com"; Name = "Ada" }
 

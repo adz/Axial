@@ -181,7 +181,7 @@ into `FieldDescriptor.Getter : 'model -> obj`. The compiled-record-plan proofs o
 the typed `Field` values and the constructor lambda from the test side; a codec consumer holding just a
 `Schema<'model>` cannot do that. Fix this before Phase 7 builds more interpreters against the erased-only view.
 
-- [ ] Replace the `Schema.map2` / `Schema.map3` cap with a CodecMapper-style progressive typed builder:
+- [x] Replace the `Schema.map2` / `Schema.map3` cap with a CodecMapper-style progressive typed builder:
   `Schema.record ctor |> Schema.field "id" _.Id Value.int |> ... |> Schema.build`, where each field application peels
   one curried constructor argument and `Schema.build` only type-checks when the constructor is fully applied.
   Constructor/getter alignment stays compiler-checked by argument position, with no `mapN` family, no computation

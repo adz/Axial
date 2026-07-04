@@ -5,7 +5,7 @@ open Swensen.Unquote
 open Xunit
 
 /// <summary>
-/// Proves that `Schema.map2` / `Schema.map3` bind each field's getter to the constructor argument at that field's
+/// Proves that the progressive schema builder binds each field's getter to the constructor argument at that field's
 /// declared position, not to the field's name or its own pre-assigned default order. Fields use same-typed values so a
 /// misaligned implementation would produce a wrong-but-still-typed result instead of a crash.
 /// </summary>
@@ -23,10 +23,14 @@ module SchemaConstructorGetterAlignmentTests =
         | PendingDefinition -> failwith "Expected public schema API to create a model definition."
 
     [<Fact>]
-    let ``map2 aligns each field's getter with its constructor argument position`` () =
-        let first = Schema.field "first" (fun (name: FullName) -> name.First) Value.text
-        let last = Schema.field "last" (fun (name: FullName) -> name.Last) Value.text
-        let schema = Schema.map2 (fun first last -> { First = first; Last = last }) first last
+    let ``builder aligns each field's getter with its constructor argument position`` () =
+        let first = Field.create "first" (fun (name: FullName) -> name.First) Value.text
+        let last = Field.create "last" (fun (name: FullName) -> name.Last) Value.text
+        let schema =
+            Schema.record (fun first last -> { First = first; Last = last })
+            |> Schema.field "first" (fun (name: FullName) -> name.First) Value.text
+            |> Schema.field "last" (fun (name: FullName) -> name.Last) Value.text
+            |> Schema.build
         let source = { First = "Ada"; Last = "Lovelace" }
 
         test <@ Field.getValue first source = "Ada" @>
@@ -41,16 +45,20 @@ module SchemaConstructorGetterAlignmentTests =
         test <@ ConstructorApplication.apply model.Constructor (values |> List.toArray) = source @>
 
     [<Fact>]
-    let ``map2 binds argument position to declaration order, not to a field's own default order`` () =
-        // Both fields start with FieldOrder 0 from Schema.field; passing "last" first to map2 must make it
+    let ``builder binds argument position to declaration order, not to a field's own default order`` () =
+        // Both standalone fields start with FieldOrder 0; declaring "last" first in the builder must make it
         // constructor argument 0, regardless of the field's name or its own pre-assigned order.
-        let first = Schema.field "first" (fun (name: FullName) -> name.First) Value.text
-        let last = Schema.field "last" (fun (name: FullName) -> name.Last) Value.text
+        let first = Field.create "first" (fun (name: FullName) -> name.First) Value.text
+        let last = Field.create "last" (fun (name: FullName) -> name.Last) Value.text
 
         test <@ Field.order first |> FieldOrder.value = 0 @>
         test <@ Field.order last |> FieldOrder.value = 0 @>
 
-        let swapped = Schema.map2 (fun a b -> { First = a; Last = b }) last first
+        let swapped =
+            Schema.record (fun a b -> { First = a; Last = b })
+            |> Schema.field "last" (fun (name: FullName) -> name.Last) Value.text
+            |> Schema.field "first" (fun (name: FullName) -> name.First) Value.text
+            |> Schema.build
         let source = { First = "Ada"; Last = "Lovelace" }
 
         let model = modelDefinition swapped
@@ -62,13 +70,17 @@ module SchemaConstructorGetterAlignmentTests =
         test <@ ConstructorApplication.apply model.Constructor (values |> List.toArray) = { First = "Lovelace"; Last = "Ada" } @>
 
     [<Fact>]
-    let ``map3 aligns each of three same-typed fields with its constructor argument position`` () =
-        let line1 = Schema.field "line1" (fun (address: Address) -> address.Line1) Value.text
-        let line2 = Schema.field "line2" (fun (address: Address) -> address.Line2) Value.text
-        let city = Schema.field "city" (fun (address: Address) -> address.City) Value.text
+    let ``builder aligns each of three same-typed fields with its constructor argument position`` () =
+        let line1 = Field.create "line1" (fun (address: Address) -> address.Line1) Value.text
+        let line2 = Field.create "line2" (fun (address: Address) -> address.Line2) Value.text
+        let city = Field.create "city" (fun (address: Address) -> address.City) Value.text
 
         let schema =
-            Schema.map3 (fun line1 line2 city -> { Line1 = line1; Line2 = line2; City = city }) line1 line2 city
+            Schema.record (fun line1 line2 city -> { Line1 = line1; Line2 = line2; City = city })
+            |> Schema.field "line1" (fun (address: Address) -> address.Line1) Value.text
+            |> Schema.field "line2" (fun (address: Address) -> address.Line2) Value.text
+            |> Schema.field "city" (fun (address: Address) -> address.City) Value.text
+            |> Schema.build
 
         let source = { Line1 = "221B Baker Street"; Line2 = "Flat 2"; City = "London" }
 
@@ -88,15 +100,19 @@ module SchemaConstructorGetterAlignmentTests =
         test <@ ConstructorApplication.apply model.Constructor (values |> List.toArray) = source @>
 
     [<Fact>]
-    let ``map3 preserves alignment under a reordered declaration`` () =
-        let line1 = Schema.field "line1" (fun (address: Address) -> address.Line1) Value.text
-        let line2 = Schema.field "line2" (fun (address: Address) -> address.Line2) Value.text
-        let city = Schema.field "city" (fun (address: Address) -> address.City) Value.text
+    let ``builder preserves alignment under a reordered declaration`` () =
+        let line1 = Field.create "line1" (fun (address: Address) -> address.Line1) Value.text
+        let line2 = Field.create "line2" (fun (address: Address) -> address.Line2) Value.text
+        let city = Field.create "city" (fun (address: Address) -> address.City) Value.text
 
         // Declare city first and construct the record accordingly; each getter must still land on the argument
         // matching its declared position rather than its original field order or name.
         let reordered =
-            Schema.map3 (fun city line1 line2 -> { Line1 = line1; Line2 = line2; City = city }) city line1 line2
+            Schema.record (fun city line1 line2 -> { Line1 = line1; Line2 = line2; City = city })
+            |> Schema.field "city" (fun (address: Address) -> address.City) Value.text
+            |> Schema.field "line1" (fun (address: Address) -> address.Line1) Value.text
+            |> Schema.field "line2" (fun (address: Address) -> address.Line2) Value.text
+            |> Schema.build
 
         let source = { Line1 = "221B Baker Street"; Line2 = "Flat 2"; City = "London" }
 
