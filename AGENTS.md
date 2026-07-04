@@ -29,6 +29,10 @@ Refer to [`dev-docs/PLAN.md`](dev-docs/PLAN.md) for architectural direction and 
 - Keep speculative or pre-idea work in `dev-docs/current-ideas/`.
 - Do not retain detailed historical specs after their useful decisions have been folded into current instructions. Delete stale specs instead of archiving large files that no longer match the codebase.
 
+## Test Authoring
+
+- Tests that demonstrate public APIs should use the expected end-user pipeline form, not a lower-level or transitional shape, unless the test is explicitly covering that lower-level API. Public API tests are examples readers copy from; keep their formatting aligned with the authoring style the library intends to teach.
+
 ## Doc Workflow
 
 - Treat `docs/reference/**`, `docs/examples/README.md`, `llms.txt`, and versioned docs as generated outputs or generator-backed outputs.

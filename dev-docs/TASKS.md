@@ -251,6 +251,21 @@ the typed `Field` values and the constructor lambda from the test side; a codec 
   ```
 - [x] Update `dev-docs/decisions/README.md`, `dev-docs/PLAN.md`, and source comments (for example the `Schema.map3`
   remark that routes larger models through the CE/generator) once the builder replaces the `mapN` cap.
+- [ ] Close the builder ergonomics gap before treating Phase 5b as complete in user-facing examples: add an explicit
+  model-type anchor, such as `Schema.recordFor<Customer> create`, or an equivalent API, so field getters can use
+  shorthand member access without annotating every lambda:
+  `Schema.recordFor<Customer> create |> Schema.field "name" _.Name Value.text |> Schema.build`. Add compile/API shape
+  tests proving the shorthand works, and update `dev-docs/PLAN.md`, `dev-docs/decisions/README.md`, source comments,
+  and any examples so they do not present `Schema.record ctor |> Schema.field "name" _.Name Value.text` as already
+  supported unless that exact form compiles.
+- [ ] Decide and document the public authoring vocabulary for primitive field shorthands before RawInput or the CE DSL
+  grows around the wrong names. The target direction is that primitive helpers such as
+  `text "name" _.Name { ... }`, `int "age" _.Age { ... }`, `decimal`, `bool`, `date`, and `guid` are the everyday
+  schema-authoring surface, while generic `field "email" _.Email Email.schema { ... }` / `Schema.field "email" _.Email
+  Email.schema` is reserved for explicit or custom `ValueSchema<'value>` values.
+- [ ] Update public schema API tests so the examples readers see use the expected end-user pipeline form. Keep
+  lower-level or transitional forms only in tests that are explicitly about those lower-level APIs, and add compile/API
+  shape coverage for the intended shorthand forms before marking the ergonomics work complete.
 
 ## Phase 6: Add Refined Value Schemas
 
