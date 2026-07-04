@@ -16,7 +16,7 @@ Creates an empty diagnostics graph with no errors.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-validation-diagnostics-1.html">Diagnostics</a>&lt;'error&gt;</span></code> | An empty <a href="https://learn.microsoft.com/dotnet/api/axial.diagnostics-1">Diagnostics</a>. |
+| <code><span><a href="t-validation-diagnostics.md">Diagnostics</a>&lt;'error&gt;</span></code> | An empty <a href="https://learn.microsoft.com/dotnet/api/axial.diagnostics-1">Diagnostics</a>. |
 
 ## Examples
 

@@ -16,12 +16,12 @@ Maps every failure produced by a check.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `mapper` | <code><span><a href="/reference/Axial/axial-errorhandling-checkfailure.html">CheckFailure</a>&#32;->&#32;<a href="/reference/Axial/axial-errorhandling-checkfailure.html">CheckFailure</a></span></code> |  |
-| `check` | <code><span><a href="/reference/Axial/axial-errorhandling-check-1.html">Check</a>&lt;'value&gt;</span></code> |  |
+| `mapper` | <code><span><a href="../result/t-errorhandling-checkfailure.md">CheckFailure</a>&#32;->&#32;<a href="../result/t-errorhandling-checkfailure.md">CheckFailure</a></span></code> |  |
+| `check` | <code><span><a href="t-errorhandling-check.md">Check</a>&lt;'value&gt;</span></code> |  |
 | `value` | <code>'value</code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>unit,&#32;<span><a href="/reference/Axial/axial-errorhandling-checkfailure.html">CheckFailure</a>&#32;list</span></span>&gt;</span></code> |  |
+| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>unit,&#32;<span><a href="../result/t-errorhandling-checkfailure.md">CheckFailure</a>&#32;list</span></span>&gt;</span></code> |  |

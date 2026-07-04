@@ -16,4 +16,4 @@ Creates a live GUID service backed by <code>Guid.NewGuid()</code>.
 
 | Type | Description |
 | --- | --- |
-| <code><a href="/reference/Axial/axial-flow-platformservice-iguid.html">IGuid</a></code> |  |
+| <code><a href="../t-flow-platformservice-iguid.md">IGuid</a></code> |  |

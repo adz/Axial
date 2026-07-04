@@ -17,7 +17,7 @@ Returns the underlying integer value.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `input` | <code><a href="/reference/Axial/axial-refined-positiveint.html">PositiveInt</a></code> |  |
+| `input` | <code><a href="t-refined-positiveint.md">PositiveInt</a></code> |  |
 
 ## Returns
 

@@ -17,7 +17,7 @@ Runs a policy only when the environment predicate is true; otherwise returns the
 | Name | Type | Description |
 | --- | --- | --- |
 | `enabled` | <code><span>'env&#32;->&#32;bool</span></code> |  |
-| `policy` | <code><span><a href="/reference/Axial/axial-flow-policy-4.html">Policy</a>&lt;<span>'env,&#32;'error,&#32;'input,&#32;'input</span>&gt;</span></code> |  |
+| `policy` | <code><span><a href="t-flow-policy.md">Policy</a>&lt;<span>'env,&#32;'error,&#32;'input,&#32;'input</span>&gt;</span></code> |  |
 | `environment` | <code>'env</code> |  |
 | `input` | <code>'input</code> |  |
 

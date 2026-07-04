@@ -16,4 +16,4 @@ Builds the live random-number generator as a layer.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-layer-3.html">Layer</a>&lt;<span>unit,&#32;<a href="/reference/Axial/axial-flow-never.html">Never</a>,&#32;<a href="/reference/Axial/axial-flow-platformservice-irandom.html">IRandom</a></span>&gt;</span></code> |  |
+| <code><span><a href="../../../layer/t-flow-layer.md">Layer</a>&lt;<span>unit,&#32;<a href="../../../flow/t-flow-never.md">Never</a>,&#32;<a href="../t-flow-platformservice-irandom.md">IRandom</a></span>&gt;</span></code> |  |

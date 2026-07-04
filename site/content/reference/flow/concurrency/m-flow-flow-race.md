@@ -17,14 +17,14 @@ Runs two flows concurrently and returns the result of the first one to complete.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `left` | <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | The first flow to run. |
-| `right` | <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | The second flow to run. |
+| `left` | <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | The first flow to run. |
+| `right` | <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | The second flow to run. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | A flow containing the result of the first flow to complete. |
+| <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | A flow containing the result of the first flow to complete. |
 
 ## Remarks
 

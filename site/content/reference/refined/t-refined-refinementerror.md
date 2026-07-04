@@ -18,7 +18,9 @@ Structural failures returned by built-in refinement constructors and the <code>r
 | Case | Description |
 | --- | --- |
 | `ParseFailed` | A primitive parse operation failed before refinement. |
-| `InvalidFormat` | The value had an invalid format for the target refined type. |
-| `OutOfRange` | The value was outside the accepted range for the target refined type. |
-| `MissingValue` | The value required for the target refined type was missing. |
-| `InvalidStructure` | The value had an invalid structure for the target refined type. |
+| `CheckFailed` | An executable <a href="../check/t-errorhandling-check.md">Check</a> program run against the target refined type
+ failed. Carries the same structured <a href="../result/t-errorhandling-checkfailure.md">CheckFailure</a> values the check program
+ produced, so callers never need to reinterpret or re-describe them. |
+| `InvalidStructure` | The value had an invalid structure for the target refined type that a single-value
+ <a href="../check/t-errorhandling-check.md">Check</a> program cannot express, such as a cross-field ordering
+ invariant. |

@@ -23,4 +23,4 @@ Builds a live HTTP service as a layer.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-layer-3.html">Layer</a>&lt;<span>unit,&#32;<a href="/reference/Axial/axial-flow-never.html">Never</a>,&#32;<a href="/reference/Axial/axial-flow-http-ihttp.html">IHttp</a></span>&gt;</span></code> |  |
+| <code><span><a href="../../layer/t-flow-layer.md">Layer</a>&lt;<span>unit,&#32;<a href="../../flow/t-flow-never.md">Never</a>,&#32;<a href="t-flow-http-ihttp.md">IHttp</a></span>&gt;</span></code> |  |

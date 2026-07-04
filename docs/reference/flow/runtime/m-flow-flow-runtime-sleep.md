@@ -1,7 +1,7 @@
 ---
 title: "Flow.Flow.Runtime.sleep"
 linkTitle: "sleep"
-weight: 2003
+weight: 2103
 ---
 
 Suspends the flow for the specified duration, observing cancellation.
@@ -22,4 +22,4 @@ Suspends the flow for the specified duration, observing cancellation.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;unit</span>&gt;</span></code> | A flow that completes after the specified delay. |
+| <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;unit</span>&gt;</span></code> | A flow that completes after the specified delay. |

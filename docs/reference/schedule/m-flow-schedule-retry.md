@@ -16,14 +16,14 @@ Retries a failing flow according to the supplied schedule.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `schedule` | <code><span><a href="/reference/Axial/axial-flow-schedule-3.html">Schedule</a>&lt;<span>'env,&#32;'error,&#32;'output</span>&gt;</span></code> | The schedule that determines when and if to retry based on the error. |
-| `flow` | <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | The workflow to retry if it fails. |
+| `schedule` | <code><span><a href="t-flow-schedule.md">Schedule</a>&lt;<span>'env,&#32;'error,&#32;'output</span>&gt;</span></code> | The schedule that determines when and if to retry based on the error. |
+| `flow` | <code><span><a href="../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | The workflow to retry if it fails. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | A flow that will retry the original flow according to the schedule until it succeeds or the schedule stops. |
+| <code><span><a href="../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | A flow that will retry the original flow according to the schedule until it succeeds or the schedule stops. |
 
 ## Examples
 

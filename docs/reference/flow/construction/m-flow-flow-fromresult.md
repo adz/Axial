@@ -22,7 +22,7 @@ Lifts a <a href="https://learn.microsoft.com/dotnet/api/system.result-2">Result<
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | A flow that succeeds or fails based on the result. |
+| <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | A flow that succeeds or fails based on the result. |
 
 ## Examples
 

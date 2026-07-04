@@ -16,10 +16,10 @@ Returns a snapshot of the current fiber metadata.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `fiber` | <code><span><a href="/reference/Axial/axial-flow-fiber-2.html">Fiber</a>&lt;<span>'error,&#32;'value</span>&gt;</span></code> |  |
+| `fiber` | <code><span><a href="t-flow-fiber.md">Fiber</a>&lt;<span>'error,&#32;'value</span>&gt;</span></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><a href="/reference/Axial/axial-flow-fiberdump.html">FiberDump</a></code> |  |
+| <code><a href="t-flow-fiberdump.md">FiberDump</a></code> |  |

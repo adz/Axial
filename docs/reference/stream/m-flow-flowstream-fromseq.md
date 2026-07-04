@@ -22,7 +22,7 @@ Creates a stream from a synchronous sequence of values.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-flowstream-3.html">FlowStream</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | A <a href="https://learn.microsoft.com/dotnet/api/axial.flowstream-3">FlowStream</a> that yields each value from the sequence. |
+| <code><span><a href="t-flow-flowstream.md">FlowStream</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | A <a href="https://learn.microsoft.com/dotnet/api/axial.flowstream-3">FlowStream</a> that yields each value from the sequence. |
 
 ## Examples
 

@@ -17,14 +17,14 @@ Turns a pure validation result into a synchronous flow with environment-provided
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `errorFlow` | <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'error</span>&gt;</span></code> | A flow that reads the environment to produce an error value. |
+| `errorFlow` | <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'error</span>&gt;</span></code> | A flow that reads the environment to produce an error value. |
 | `result` | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'value,&#32;unit</span>&gt;</span></code> | The pure result to bridge. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | A <a href="https://learn.microsoft.com/dotnet/api/axial.flow-3">Flow</a> that mirrors the success of the result or fails with the outcome of the error flow. |
+| <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | A <a href="https://learn.microsoft.com/dotnet/api/axial.flow-3">Flow</a> that mirrors the success of the result or fails with the outcome of the error flow. |
 
 ## Remarks
 

@@ -23,7 +23,7 @@ Creates a diagnostics graph containing exactly one error at the root.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-validation-diagnostics-1.html">Diagnostics</a>&lt;'error&gt;</span></code> | A <a href="https://learn.microsoft.com/dotnet/api/axial.diagnostics-1">Diagnostics</a> with a single error. |
+| <code><span><a href="t-validation-diagnostics.md">Diagnostics</a>&lt;'error&gt;</span></code> | A <a href="https://learn.microsoft.com/dotnet/api/axial.diagnostics-1">Diagnostics</a> with a single error. |
 
 ## Examples
 

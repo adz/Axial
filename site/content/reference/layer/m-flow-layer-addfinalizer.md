@@ -23,4 +23,4 @@ Registers an asynchronous finalizer with the layer scope.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-layer-3.html">Layer</a>&lt;<span>'input,&#32;'error,&#32;unit</span>&gt;</span></code> | A layer that registers the finalizer. |
+| <code><span><a href="t-flow-layer.md">Layer</a>&lt;<span>'input,&#32;'error,&#32;unit</span>&gt;</span></code> | A layer that registers the finalizer. |

@@ -9,8 +9,6 @@ Work this queue from top to bottom.
 
 ## Active Surface Work
 
-- [ ] Finish the remaining reference cleanup in `dev-docs/REFERENCE_AUDIT.md`.
-
 - [ ] Promote, reject, or delete each sketch in `dev-docs/current-ideas/` before implementation work starts.
 
 ## Phase 7: Build RawInput And Input Parsing

@@ -22,7 +22,7 @@ Creates a schedule that recurs with a fixed delay between attempts.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-schedule-3.html">Schedule</a>&lt;<span>'env,&#32;'input,&#32;int</span>&gt;</span></code> | A schedule that recurs indefinitely with the specified fixed delay, emitting the current attempt count. |
+| <code><span><a href="t-flow-schedule.md">Schedule</a>&lt;<span>'env,&#32;'input,&#32;int</span>&gt;</span></code> | A schedule that recurs indefinitely with the specified fixed delay, emitting the current attempt count. |
 
 ## Examples
 

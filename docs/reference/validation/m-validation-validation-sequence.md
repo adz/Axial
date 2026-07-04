@@ -16,13 +16,13 @@ Transforms a sequence of validations into a validation of a list.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `validations` | <code><span><span><a href="/reference/Axial/axial-validation-validation-2.html">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span>&#32;seq</span></code> | The input sequence. |
+| `validations` | <code><span><span><a href="t-validation-validation.md">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span>&#32;seq</span></code> | The input sequence. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-validation-validation-2.html">Validation</a>&lt;<span><span>'value&#32;list</span>,&#32;'error</span>&gt;</span></code> | A validation containing the list of values. |
+| <code><span><a href="t-validation-validation.md">Validation</a>&lt;<span><span>'value&#32;list</span>,&#32;'error</span>&gt;</span></code> | A validation containing the list of values. |
 
 ## Examples
 

@@ -1,27 +1,26 @@
 ---
-title: "ErrorHandling.Predicate.Compare.greaterThan"
+title: "ErrorHandling.Check.greaterThan"
 linkTitle: "greaterThan"
 weight: 3100
 type: docs
 ---
 
-Returns true when the value is greater than the supplied exclusive lower bound.
+Returns an ordered-value check requiring a value greater than the supplied exclusive lower bound.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>ErrorHandling.Predicate.Compare.greaterThan&#32;<span>minimum&#32;value</span></span></code>
+<code><span>ErrorHandling.Check.greaterThan&#32;<span>minimum</span></span></code>
 </div>
 
 ## Parameters
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `minimum` | <code>'a</code> |  |
-| `value` | <code>'a</code> |  |
+| `minimum` | <code>'value</code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code>bool</code> |  |
+| <code><span><a href="t-errorhandling-check.md">Check</a>&lt;'value&gt;</span></code> |  |

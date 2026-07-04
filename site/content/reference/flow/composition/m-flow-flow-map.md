@@ -18,13 +18,13 @@ Transforms the successful value of a flow.
 | Name | Type | Description |
 | --- | --- | --- |
 | `mapper` | <code><span>'value&#32;->&#32;'next</span></code> | A function of type <code>&#39;value -&gt; &#39;next</code> to transform the successful value. |
-| `flow` | <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | The source flow of type <a href="https://learn.microsoft.com/dotnet/api/axial.flow-3">Flow</a> to transform. |
+| `flow` | <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | The source flow of type <a href="https://learn.microsoft.com/dotnet/api/axial.flow-3">Flow</a> to transform. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'next</span>&gt;</span></code> | A new <a href="https://learn.microsoft.com/dotnet/api/axial.flow-3">Flow</a> with the transformed success value of type <code>&#39;next</code>. |
+| <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'next</span>&gt;</span></code> | A new <a href="https://learn.microsoft.com/dotnet/api/axial.flow-3">Flow</a> with the transformed success value of type <code>&#39;next</code>. |
 
 ## Remarks
 

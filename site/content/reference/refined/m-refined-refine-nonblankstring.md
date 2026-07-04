@@ -1,7 +1,7 @@
 ---
 title: "Refined.Refine.nonBlankString"
 linkTitle: "nonBlankString"
-weight: 2901
+weight: 2902
 type: docs
 ---
 
@@ -23,4 +23,4 @@ Builds a non-blank string.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><a href="/reference/Axial/axial-refined-nonblankstring.html">NonBlankString</a>,&#32;<a href="/reference/Axial/axial-refined-refinementerror.html">RefinementError</a></span>&gt;</span></code> |  |
+| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><a href="t-refined-nonblankstring.md">NonBlankString</a>,&#32;<a href="t-refined-refinementerror.md">RefinementError</a></span>&gt;</span></code> |  |

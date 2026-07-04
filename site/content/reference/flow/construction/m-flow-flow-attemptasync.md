@@ -23,7 +23,7 @@ Creates a flow from an async operation and treats thrown exceptions as recoverab
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;exn,&#32;'value</span>&gt;</span></code> |  |
+| <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;exn,&#32;'value</span>&gt;</span></code> |  |
 
 ## Remarks
 

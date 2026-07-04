@@ -25,4 +25,4 @@ Starts the workflow and returns a value-task handle that completes with the fina
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.valuetask-1">ValueTask</a>&lt;<span><a href="/reference/Axial/axial-flow-exit-2.html">Exit</a>&lt;<span>'value,&#32;'error</span>&gt;</span>&gt;</span></code> | A value task that completes with the workflow exit. |
+| <code><span><a href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.valuetask-1">ValueTask</a>&lt;<span><a href="../../exit/t-flow-exit.md">Exit</a>&lt;<span>'value,&#32;'error</span>&gt;</span>&gt;</span></code> | A value task that completes with the workflow exit. |

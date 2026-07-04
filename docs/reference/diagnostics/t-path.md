@@ -4,7 +4,7 @@ linkTitle: "Path"
 weight: 1001
 ---
 
-A path through a validation graph, represented as a list of <a href="https://learn.microsoft.com/dotnet/api/axial.pathsegment">PathSegment</a>.
+A path through a validation graph, represented as a list of <a href="t-validation-pathsegment.md">PathSegment</a>.
 
 ## Signature
 

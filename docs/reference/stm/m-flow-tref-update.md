@@ -17,13 +17,13 @@ Updates the value of the transactional reference within a transaction using the 
 | Name | Type | Description |
 | --- | --- | --- |
 | `f` | <code><span>'T&#32;->&#32;'T</span></code> | The function to apply to the current value to produce the new value. |
-| `tref` | <code><span><a href="/reference/Axial/axial-flow-tref-1.html">TRef</a>&lt;'T&gt;</span></code> | The transactional reference to update. |
+| `tref` | <code><span><a href="t-flow-tref.md">TRef</a>&lt;'T&gt;</span></code> | The transactional reference to update. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-stm-1.html">STM</a>&lt;unit&gt;</span></code> | An STM operation that updates the reference value. |
+| <code><span><a href="t-flow-stm.md">STM</a>&lt;unit&gt;</span></code> | An STM operation that updates the reference value. |
 
 ## Examples
 

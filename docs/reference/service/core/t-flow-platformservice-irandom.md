@@ -1,7 +1,7 @@
 ---
 title: "Flow.IRandom"
 linkTitle: "IRandom"
-weight: 1002
+weight: 1003
 ---
 
 Provides synchronous random-number generation.

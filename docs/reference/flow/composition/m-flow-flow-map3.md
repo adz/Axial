@@ -17,15 +17,15 @@ Combines three flows with a mapping function.
 | Name | Type | Description |
 | --- | --- | --- |
 | `mapper` | <code><span>'left&#32;->&#32;'middle&#32;->&#32;'right&#32;->&#32;'value</span></code> | A function that combines the successful values of all three flows. |
-| `left` | <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'left</span>&gt;</span></code> | The first flow to run. |
-| `middle` | <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'middle</span>&gt;</span></code> | The second flow to run. |
-| `right` | <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'right</span>&gt;</span></code> | The third flow to run. |
+| `left` | <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'left</span>&gt;</span></code> | The first flow to run. |
+| `middle` | <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'middle</span>&gt;</span></code> | The second flow to run. |
+| `right` | <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'right</span>&gt;</span></code> | The third flow to run. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | A flow containing the mapped value. |
+| <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | A flow containing the mapped value. |
 
 ## Examples
 

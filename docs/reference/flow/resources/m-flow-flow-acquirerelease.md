@@ -16,14 +16,14 @@ Acquires a resource and registers its release with the current runtime scope.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `acquire` | <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'resource</span>&gt;</span></code> | The flow that acquires the resource. |
+| `acquire` | <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'resource</span>&gt;</span></code> | The flow that acquires the resource. |
 | `release` | <code><span>'resource&#32;->&#32;<a href="https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken">CancellationToken</a>&#32;->&#32;<a href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.task">Task</a></span></code> | The release action to run when the current scope closes. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'resource</span>&gt;</span></code> | A flow that succeeds with the acquired resource. |
+| <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'resource</span>&gt;</span></code> | A flow that succeeds with the acquired resource. |
 
 ## Remarks
 

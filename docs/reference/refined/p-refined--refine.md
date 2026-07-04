@@ -16,4 +16,4 @@ The fail-fast <code>refine { }</code> computation expression.
 
 | Type | Description |
 | --- | --- |
-| <code><a href="/reference/Axial/axial-refined-refinebuilder.html">RefineBuilder</a></code> |  |
+| <code><a href="p-refined--refine.md">RefineBuilder</a></code> |  |

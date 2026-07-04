@@ -23,4 +23,4 @@ Sends a GET request through an explicit HTTP service and returns the response bo
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;string</span>&gt;</span></code> |  |
+| <code><span><a href="../../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;string</span>&gt;</span></code> |  |

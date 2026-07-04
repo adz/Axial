@@ -5,7 +5,9 @@ weight: 1004
 type: docs
 ---
 
-Describes the count requirement that a value check expected a sequence-shaped value to satisfy.
+Describes the count requirement that a value check expected a sequence-shaped value to satisfy against a
+ caller-supplied count. Non-emptiness is not modeled here since it carries no count to report; it is its own
+ top-level <a href="../result/t-errorhandling-checkfailure.md">CheckFailure</a> case instead.
 
 ## Signature
 

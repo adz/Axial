@@ -22,7 +22,7 @@ Creates a new <a href="https://learn.microsoft.com/dotnet/api/axial.tref-1">TRef
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-stm-1.html">STM</a>&lt;<span><a href="/reference/Axial/axial-flow-tref-1.html">TRef</a>&lt;'T&gt;</span>&gt;</span></code> | An STM operation that, when executed, produces a new transactional reference. |
+| <code><span><a href="t-flow-stm.md">STM</a>&lt;<span><a href="t-flow-tref.md">TRef</a>&lt;'T&gt;</span>&gt;</span></code> | An STM operation that, when executed, produces a new transactional reference. |
 
 ## Examples
 

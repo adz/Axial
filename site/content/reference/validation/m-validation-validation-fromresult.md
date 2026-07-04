@@ -23,7 +23,7 @@ Lifts a standard <a href="https://learn.microsoft.com/dotnet/api/system.result-2
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-validation-validation-2.html">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> | A <a href="https://learn.microsoft.com/dotnet/api/axial.validation-2">Validation</a> mirroring the result. |
+| <code><span><a href="t-validation-validation.md">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> | A <a href="https://learn.microsoft.com/dotnet/api/axial.validation-2">Validation</a> mirroring the result. |
 
 ## Remarks
 

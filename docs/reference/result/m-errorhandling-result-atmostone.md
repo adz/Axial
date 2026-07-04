@@ -22,4 +22,4 @@ Takes zero or one item from a sequence.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><span>'value&#32;option</span>,&#32;<a href="/reference/Axial/axial-errorhandling-cardinalityfailure.html">CardinalityFailure</a></span>&gt;</span></code> |  |
+| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><span>'value&#32;option</span>,&#32;<a href="t-errorhandling-cardinalityfailure.md">CardinalityFailure</a></span>&gt;</span></code> |  |

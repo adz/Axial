@@ -18,7 +18,7 @@ Pretty prints a cause tree for diagnostics.
 | Name | Type | Description |
 | --- | --- | --- |
 | `formatError` | <code><span>'error&#32;->&#32;string</span></code> |  |
-| `cause` | <code><span><a href="/reference/Axial/axial-flow-cause-1.html">Cause</a>&lt;'error&gt;</span></code> |  |
+| `cause` | <code><span><a href="t-flow-cause.md">Cause</a>&lt;'error&gt;</span></code> |  |
 
 ## Returns
 

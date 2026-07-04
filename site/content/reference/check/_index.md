@@ -13,8 +13,13 @@ This page shows the `Check` surface for reusable, path-free value constraints. `
 
 - [`ErrorHandling.CheckFailure`](./t-errorhandling-checkfailure.md): Describes why an executable value check failed, without attaching source paths or raw input.
 - [`ErrorHandling.CheckLengthExpectation`](./t-errorhandling-checklengthexpectation.md): Describes the length requirement that a value check expected a string-like value to satisfy.
-- [`ErrorHandling.CheckRangeExpectation`](./t-errorhandling-checkrangeexpectation.md): Describes the ordering requirement that a value check expected a comparable value to satisfy.
-- [`ErrorHandling.CheckCountExpectation`](./t-errorhandling-checkcountexpectation.md): Describes the count requirement that a value check expected a sequence-shaped value to satisfy.
+- [`ErrorHandling.CheckRangeExpectation`](./t-errorhandling-checkrangeexpectation.md): Describes the ordering requirement that a value check expected a comparable value to satisfy against a
+ caller-supplied bound. Zero-relative requirements (positive, negative, and their non-strict variants) are not
+ modeled here since they carry no bound to report; they are their own top-level
+ <a href="../result/t-errorhandling-checkfailure.md">CheckFailure</a> cases instead.
+- [`ErrorHandling.CheckCountExpectation`](./t-errorhandling-checkcountexpectation.md): Describes the count requirement that a value check expected a sequence-shaped value to satisfy against a
+ caller-supplied count. Non-emptiness is not modeled here since it carries no count to report; it is its own
+ top-level <a href="../result/t-errorhandling-checkfailure.md">CheckFailure</a> case instead.
 - [`ErrorHandling.CheckEqualityExpectation`](./t-errorhandling-checkequalityexpectation.md): Describes the equality requirement that a value check expected a value to satisfy.
 
 ## Executable composition
@@ -138,39 +143,24 @@ This page shows the `Check` surface for reusable, path-free value constraints. `
 
 ## String predicates
 
-- [`ErrorHandling.Predicate.String.isEmpty`](./m-errorhandling-predicate-string-isempty.md): Returns true when the string is exactly empty and non-null.
-- [`ErrorHandling.Predicate.String.isNotEmpty`](./m-errorhandling-predicate-string-isnotempty.md): Returns true when the string has at least one character and is non-null.
-- [`ErrorHandling.Predicate.String.isBlank`](./m-errorhandling-predicate-string-isblank.md): Returns true when the string is null, empty, or whitespace.
-- [`ErrorHandling.Predicate.String.isNotBlank`](./m-errorhandling-predicate-string-isnotblank.md): Returns true when the string is non-null and contains at least one non-whitespace character.
-- [`ErrorHandling.Predicate.String.hasMinLength`](./m-errorhandling-predicate-string-hasminlength.md): Returns true when the string length is at least the supplied minimum.
-- [`ErrorHandling.Predicate.String.hasMaxLength`](./m-errorhandling-predicate-string-hasmaxlength.md): Returns true when the string length is at most the supplied maximum.
-- [`ErrorHandling.Predicate.String.hasLength`](./m-errorhandling-predicate-string-haslength.md): Returns true when the string length equals the supplied expected length.
 - [`ErrorHandling.Predicate.String.matches`](./m-errorhandling-predicate-string-matches.md): Returns true when the string matches the supplied regular expression pattern.
-- [`ErrorHandling.Predicate.String.isEmail`](./m-errorhandling-predicate-string-isemail.md): Returns true when the string matches Axial's pragmatic email format.
-- [`ErrorHandling.Predicate.String.isNumeric`](./m-errorhandling-predicate-string-isnumeric.md): Returns true when the string contains only numeric characters.
-- [`ErrorHandling.Predicate.String.isAlphaNumeric`](./m-errorhandling-predicate-string-isalphanumeric.md): Returns true when the string contains only letter or digit characters.
+- [`Refined.Character.isNumeric`](./m-errorhandling-predicate-string-isnumeric.md): Returns true when the character is numeric according to Unicode character data.
 
 ## Sequence predicates
 
-- [`ErrorHandling.Predicate.Seq.isEmpty`](./m-errorhandling-predicate-seq-isempty.md): Returns true when the sequence is non-null and empty.
-- [`ErrorHandling.Predicate.Seq.isNotEmpty`](./m-errorhandling-predicate-seq-isnotempty.md): Returns true when the sequence is non-null and contains at least one item.
 - [`ErrorHandling.Predicate.Seq.contains`](./m-errorhandling-predicate-seq-contains.md): Returns true when the sequence is non-null and contains the supplied value.
-- [`ErrorHandling.Predicate.Seq.hasCount`](./m-errorhandling-predicate-seq-hascount.md): Returns true when the sequence is non-null and contains exactly the supplied count.
-- [`ErrorHandling.Predicate.Seq.isSingle`](./m-errorhandling-predicate-seq-issingle.md): Returns true when the sequence is non-null and contains exactly one item.
 - [`ErrorHandling.Predicate.Seq.atMostOne`](./m-errorhandling-predicate-seq-atmostone.md): Returns true when the sequence is non-null and contains zero or one item.
 - [`ErrorHandling.Predicate.Seq.atLeastOne`](./m-errorhandling-predicate-seq-atleastone.md): Returns true when the sequence is non-null and contains at least one item.
 - [`ErrorHandling.Predicate.Seq.moreThanOne`](./m-errorhandling-predicate-seq-morethanone.md): Returns true when the sequence is non-null and contains more than one item.
-- [`ErrorHandling.Predicate.Seq.hasDuplicates`](./m-errorhandling-predicate-seq-hasduplicates.md): Returns true when the sequence is non-null and contains duplicate values.
-- [`ErrorHandling.Predicate.Seq.isDistinct`](./m-errorhandling-predicate-seq-isdistinct.md): Returns true when the sequence is non-null and contains no duplicate values.
 
 ## Comparison predicates
 
-- [`ErrorHandling.Predicate.Compare.greaterThan`](./m-errorhandling-predicate-compare-greaterthan.md): Returns true when the value is greater than the supplied exclusive lower bound.
-- [`ErrorHandling.Predicate.Compare.lessThan`](./m-errorhandling-predicate-compare-lessthan.md): Returns true when the value is less than the supplied exclusive upper bound.
-- [`ErrorHandling.Predicate.Compare.atLeast`](./m-errorhandling-predicate-compare-atleast.md): Returns true when the value is greater than or equal to the supplied lower bound.
-- [`ErrorHandling.Predicate.Compare.atMost`](./m-errorhandling-predicate-compare-atmost.md): Returns true when the value is less than or equal to the supplied upper bound.
-- [`ErrorHandling.Predicate.Compare.between`](./m-errorhandling-predicate-compare-between.md): Returns true when the value lies inside the supplied inclusive bounds.
-- [`ErrorHandling.Predicate.Compare.positive`](./m-errorhandling-predicate-compare-positive.md): Returns true when the value is greater than zero.
-- [`ErrorHandling.Predicate.Compare.nonNegative`](./m-errorhandling-predicate-compare-nonnegative.md): Returns true when the value is greater than or equal to zero.
-- [`ErrorHandling.Predicate.Compare.negative`](./m-errorhandling-predicate-compare-negative.md): Returns true when the value is less than zero.
-- [`ErrorHandling.Predicate.Compare.nonPositive`](./m-errorhandling-predicate-compare-nonpositive.md): Returns true when the value is less than or equal to zero.
+- [`ErrorHandling.Check.greaterThan`](./m-errorhandling-predicate-compare-greaterthan.md): Returns an ordered-value check requiring a value greater than the supplied exclusive lower bound.
+- [`ErrorHandling.Check.lessThan`](./m-errorhandling-predicate-compare-lessthan.md): Returns an ordered-value check requiring a value less than the supplied exclusive upper bound.
+- [`ErrorHandling.Check.atLeast`](./m-errorhandling-predicate-compare-atleast.md): Returns an ordered-value check requiring a value greater than or equal to the supplied lower bound.
+- [`ErrorHandling.Check.atMost`](./m-errorhandling-predicate-compare-atmost.md): Returns an ordered-value check requiring a value less than or equal to the supplied upper bound.
+- [`ErrorHandling.Check.between`](./m-errorhandling-predicate-compare-between.md): Returns an ordered-value check requiring a value inside the supplied inclusive bounds.
+- [`ErrorHandling.Check.positive`](./m-errorhandling-predicate-compare-positive.md): Runs an ordered-value check requiring a value greater than zero.
+- [`ErrorHandling.Check.nonNegative`](./m-errorhandling-predicate-compare-nonnegative.md): Runs an ordered-value check requiring a value greater than or equal to zero.
+- [`ErrorHandling.Check.negative`](./m-errorhandling-predicate-compare-negative.md): Runs an ordered-value check requiring a value less than zero.
+- [`ErrorHandling.Check.nonPositive`](./m-errorhandling-predicate-compare-nonpositive.md): Runs an ordered-value check requiring a value less than or equal to zero.

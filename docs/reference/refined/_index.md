@@ -108,7 +108,11 @@ This page shows the `Axial.Refined` surface for turning untrusted boundary data 
 
 ## Refine facade
 
-- [`Refined.Refine.withCheck`](./m-refined-refine-withcheck.md): Builds a refined value by running a reusable check-shaped program before calling the constructor.
+- [`Refined.Refine.withCheck`](./m-refined-refine-withcheck.md): Builds a refined value by running a reusable <a href="../check/t-errorhandling-check.md">Check</a> program
+ before calling the constructor. Failures carry the check&#39;s own <a href="../result/t-errorhandling-checkfailure.md">CheckFailure</a>
+ values, so callers never need to reinterpret or re-describe them.
+- [`Refined.Refine.withChecks`](./m-refined-refine-withchecks.md): Builds a refined value by running every supplied <a href="../check/t-errorhandling-check.md">Check</a> program
+ before calling the constructor, accumulating all failures via <code>Check.all</code>.
 - [`Refined.Refine.nonBlankString`](./m-refined-refine-nonblankstring.md): Builds a non-blank string.
 - [`Refined.Refine.trimmedString`](./m-refined-refine-trimmedstring.md): Builds a string that has no leading or trailing whitespace.
 - [`Refined.Refine.boundedString`](./m-refined-refine-boundedstring.md): Builds a string whose length is within an inclusive range.

@@ -22,4 +22,4 @@ Creates a deterministic GUID service that always returns the supplied value.
 
 | Type | Description |
 | --- | --- |
-| <code><a href="/reference/Axial/axial-flow-platformservice-iguid.html">IGuid</a></code> |  |
+| <code><a href="../t-flow-platformservice-iguid.md">IGuid</a></code> |  |

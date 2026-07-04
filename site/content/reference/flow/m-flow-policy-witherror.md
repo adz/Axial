@@ -24,4 +24,4 @@ Lifts a pure result-returning function and replaces any error with a fixed workf
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-policy-4.html">Policy</a>&lt;<span>'env,&#32;'error,&#32;'input,&#32;'output</span>&gt;</span></code> |  |
+| <code><span><a href="t-flow-policy.md">Policy</a>&lt;<span>'env,&#32;'error,&#32;'input,&#32;'output</span>&gt;</span></code> |  |

@@ -17,4 +17,4 @@ type: docs
 
 | Type | Description |
 | --- | --- |
-| <code><a href="/reference/Axial/axial-flow-scope.html">Scope</a></code> |  |
+| <code><a href="t-flow-scope.md">Scope</a></code> |  |

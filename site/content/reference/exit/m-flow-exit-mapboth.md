@@ -18,11 +18,11 @@ Transforms both success and failure outcomes of an exit using the provided funct
 | Name | Type | Description |
 | --- | --- | --- |
 | `onSuccess` | <code><span>'v&#32;->&#32;'w</span></code> | The function to transform the success value. |
-| `onFailure` | <code><span><span><a href="/reference/Axial/axial-flow-cause-1.html">Cause</a>&lt;'e&gt;</span>&#32;->&#32;<span><a href="/reference/Axial/axial-flow-cause-1.html">Cause</a>&lt;'f&gt;</span></span></code> | The function to transform the failure cause. |
-| `exit` | <code><span><a href="/reference/Axial/axial-flow-exit-2.html">Exit</a>&lt;<span>'v,&#32;'e</span>&gt;</span></code> | The exit outcome to transform. |
+| `onFailure` | <code><span><span><a href="../cause/t-flow-cause.md">Cause</a>&lt;'e&gt;</span>&#32;->&#32;<span><a href="../cause/t-flow-cause.md">Cause</a>&lt;'f&gt;</span></span></code> | The function to transform the failure cause. |
+| `exit` | <code><span><a href="t-flow-exit.md">Exit</a>&lt;<span>'v,&#32;'e</span>&gt;</span></code> | The exit outcome to transform. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-exit-2.html">Exit</a>&lt;<span>'w,&#32;'f</span>&gt;</span></code> | A new exit outcome with transformed values. |
+| <code><span><a href="t-flow-exit.md">Exit</a>&lt;<span>'w,&#32;'f</span>&gt;</span></code> | A new exit outcome with transformed values. |

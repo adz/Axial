@@ -17,11 +17,11 @@ Writes a log message at the requested level through an explicit logging service.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `level` | <code><a href="/reference/Axial/axial-flow-loglevel.html">LogLevel</a></code> |  |
+| `level` | <code><a href="../t-flow-loglevel.md">LogLevel</a></code> |  |
 | `message` | <code>string</code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;unit</span>&gt;</span></code> |  |
+| <code><span><a href="../../../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;unit</span>&gt;</span></code> |  |

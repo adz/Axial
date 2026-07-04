@@ -317,7 +317,7 @@ let pageSpecs = [
         Description = "Source-documented workflow surface in Axial."
         Intro = "This page shows the Flow surface for cold workflow descriptions that only start when you call an execution member such as `workflow.ToTask(env)`, `workflow.ToValueTask(env)`, `workflow.ToAsync(env)`, or `workflow.RunSynchronously(env)`. Start with the smallest useful signature: `Flow<'value>` means no environment and no typed failure, `Flow<'error, 'value>` means no environment with typed failure, `EnvFlow<'env, 'value>` means environment with no typed failure, and `ExnFlow`/`ExnEnvFlow` put recoverable exceptions in the typed error channel. Use the full `Flow<'env, 'error, 'value>` form when a workflow needs both environment and typed failure channels. Use this page as the API map for building fail-fast workflows, reading dependencies from `env`, reshaping environments with `localEnv`, composing typed failures, and introducing concurrency with fibers, `zipPar`, or `race`. Start with `flow { }`, `Flow.read`, `Flow.bind`, and `Flow.map`; reach for [runtime helpers](./runtime/) and parallel orchestration only at the boundary where the workflow actually needs them."
         SymbolIds = [
-            "Core type", ["T:Axial.Flow.Flow`3"; "T:Axial.Flow.Flow`2"; "T:Axial.Flow.Flow`1"; "T:Axial.Flow.EnvFlow`2"; "T:Axial.Flow.ExnFlow`1"; "T:Axial.Flow.ExnEnvFlow`2"]
+            "Core type", ["T:Axial.Flow.Flow`3"; "T:Axial.Flow.Flow`2"; "T:Axial.Flow.Flow`1"; "T:Axial.Flow.EnvFlow`2"; "T:Axial.Flow.ExnFlow`1"; "T:Axial.Flow.ExnEnvFlow`2"; "T:Axial.Flow.Never"]
             "Fiber operations", ["M:Axial.Flow.Flow.fork"; "M:Axial.Flow.Flow.join"; "M:Axial.Flow.Flow.interrupt"]
             "Execution", ["M:Axial.Flow.Flow.ToAsync"; "M:Axial.Flow.Flow.ToTask"; "M:Axial.Flow.Flow.ToValueTask"; "M:Axial.Flow.Flow.RunSynchronously"]
             "Module functions", ["M:Axial.Flow.Flow.ok"; "M:Axial.Flow.Flow.error"; "M:Axial.Flow.Flow.succeed"; "M:Axial.Flow.Flow.value"; "M:Axial.Flow.Flow.fail"; "M:Axial.Flow.Flow.fromResult"; "M:Axial.Flow.Flow.fromOption"; "M:Axial.Flow.Flow.fromValueOption"; "M:Axial.Flow.Flow.fromAsync"; "M:Axial.Flow.Flow.attemptAsync"; "M:Axial.Flow.Flow.fromTask"; "M:Axial.Flow.Flow.attemptTask"; "M:Axial.Flow.Flow.fromValueTask"; "M:Axial.Flow.Flow.attemptValueTask"; "M:Axial.Flow.Flow.verify"; "M:Axial.Flow.Flow.orElseFlow"; "M:Axial.Flow.Flow.env"; "M:Axial.Flow.Flow.read"; "M:Axial.Flow.Flow.map"; "M:Axial.Flow.Flow.bind"; "M:Axial.Flow.Flow.tap"; "M:Axial.Flow.Flow.tapError"; "M:Axial.Flow.Flow.mapError"; "M:Axial.Flow.Flow.catch"; "M:Axial.Flow.Flow.orElseWith"; "M:Axial.Flow.Flow.orElse"; "M:Axial.Flow.Flow.zip"; "M:Axial.Flow.Flow.map2"; "M:Axial.Flow.Flow.map3"; "M:Axial.Flow.Flow.apply"; "M:Axial.Flow.Flow.ignore"; "M:Axial.Flow.Flow.localEnv"; "M:Axial.Flow.Flow.provide"; "M:Axial.Flow.Flow.delay"; "M:Axial.Flow.Flow.traverse"; "M:Axial.Flow.Flow.sequence"]
@@ -378,6 +378,7 @@ let pageSpecs = [
         Description = "Runtime helpers for operational concerns like logging, timeout, retry, and cleanup."
         Intro = "This page shows the `Flow.Runtime` helpers for closed executor mechanics. These functions expose cancellation, scope ownership, runtime annotations, timeout handling, and retry. User-facing resource combinators such as `Flow.acquireRelease` live on the main `Flow` module; `Flow.Runtime.scope` remains available for advanced code that needs direct scope access."
         SymbolIds = [
+            "Runtime types", ["T:Axial.Flow.RetryPolicy`1"]
             "Runtime helpers", ["M:Axial.Flow.Flow.Runtime.cancellationToken"; "M:Axial.Flow.Flow.Runtime.catchCancellation"; "M:Axial.Flow.Flow.Runtime.ensureNotCanceled"; "M:Axial.Flow.Flow.Runtime.sleep"; "M:Axial.Flow.Flow.Runtime.scope"; "M:Axial.Flow.Flow.Runtime.annotations"; "M:Axial.Flow.Flow.Runtime.traceId"; "M:Axial.Flow.Flow.Runtime.timeout"; "M:Axial.Flow.Flow.Runtime.timeoutToOk"; "M:Axial.Flow.Flow.Runtime.timeoutToError"; "M:Axial.Flow.Flow.Runtime.timeoutWith"; "M:Axial.Flow.Flow.Runtime.retry"]
         ]
         Alias = None
@@ -412,7 +413,7 @@ let pageSpecs = [
         SymbolIds = [
             "Core types", ["T:Axial.Flow.TRef`1"; "T:Axial.Flow.STM`1"]
             "Module functions", ["M:Axial.Flow.TRef.make"; "M:Axial.Flow.TRef.get"; "M:Axial.Flow.TRef.set"; "M:Axial.Flow.TRef.update"; "M:Axial.Flow.STM.atomically"]
-            "Builder", ["P:Axial.Flow.StmBuilders.stm"]
+            "Builder", ["T:Axial.Flow.StmBuilder"; "P:Axial.Flow.StmBuilders.stm"]
         ]
         Alias = None
     }
@@ -586,7 +587,7 @@ let pageSpecs = [
         Description = "Source-documented synchronous service primitives for Axial.Flow.PlatformService."
         Intro = "This page shows the core service package: clock, logging, random numbers, GUID generation, and environment-variable lookup. These are explicit services, not ambient runtime slots. Use the helper modules when a workflow needs one of these services, and use `BaseRuntime` or custom environments to supply deterministic or live implementations."
         SymbolIds = [
-            "Service types", ["T:Axial.Flow.PlatformService.IClock"; "T:Axial.Flow.PlatformService.ILog"; "T:Axial.Flow.PlatformService.IRandom"; "T:Axial.Flow.PlatformService.IGuid"; "T:Axial.Flow.PlatformService.IEnvironmentVariables"; "T:Axial.Flow.PlatformService.EnvironmentVariableError"; "T:Axial.Flow.PlatformService.BaseRuntimeError"; "T:Axial.Flow.PlatformService.BaseRuntime"]
+            "Service types", ["T:Axial.Flow.PlatformService.IClock"; "T:Axial.Flow.PlatformService.ILog"; "T:Axial.Flow.LogLevel"; "T:Axial.Flow.PlatformService.IRandom"; "T:Axial.Flow.PlatformService.IGuid"; "T:Axial.Flow.PlatformService.IEnvironmentVariables"; "T:Axial.Flow.PlatformService.EnvironmentVariableError"; "T:Axial.Flow.PlatformService.BaseRuntimeError"; "T:Axial.Flow.PlatformService.BaseRuntime"]
             "Base runtime", ["P:Axial.Flow.PlatformService.BaseRuntimeModule.liveValue"; "P:Axial.Flow.PlatformService.BaseRuntimeModule.live"; "P:Axial.Flow.PlatformService.BaseRuntimeModule.fromServiceProvider"]
             "Clock", ["M:Axial.Flow.PlatformService.Clock.now"; "M:Axial.Flow.PlatformService.Clock.utcDateTime"; "M:Axial.Flow.PlatformService.Clock.unixTimeSeconds"; "M:Axial.Flow.PlatformService.Clock.unixTimeMilliseconds"; "P:Axial.Flow.PlatformService.Clock.live"; "P:Axial.Flow.PlatformService.Clock.layer"; "M:Axial.Flow.PlatformService.Clock.fromValue"]
             "Logging", ["M:Axial.Flow.PlatformService.Log.log"; "M:Axial.Flow.PlatformService.Log.trace"; "M:Axial.Flow.PlatformService.Log.debug"; "M:Axial.Flow.PlatformService.Log.info"; "M:Axial.Flow.PlatformService.Log.warning"; "M:Axial.Flow.PlatformService.Log.error"; "M:Axial.Flow.PlatformService.Log.critical"; "P:Axial.Flow.PlatformService.Log.live"; "P:Axial.Flow.PlatformService.Log.layer"; "M:Axial.Flow.PlatformService.Log.fromSink"]
@@ -960,7 +961,7 @@ let rewriteApiDocHtml (slugMap: IDictionary<string, string>) (filePath: string) 
     let rewritten =
         Regex.Replace(
             content,
-            "https://adz\\.github\\.io/Axial/reference/Axial/([a-z0-9\\-]+)\\.html",
+            "(?:https://adz\\.github\\.io/Axial)?/reference/Axial/([a-z0-9\\-]+)\\.html",
             MatchEvaluator(fun m ->
                 let slug = m.Groups[1].Value
                 match slugMap.TryGetValue slug with
@@ -1115,12 +1116,17 @@ let main argv =
             formatterApiSlug "Axial.ValidateBuilder", Path.Combine(outRoot, "validation", "builders-validate.md")
             formatterApiSlug "Axial.ResultBuilder", Path.Combine(outRoot, "result", "builders-result.md")
             formatterApiSlug "Axial.RefineBuilder", Path.Combine(outRoot, "refined", "p-refined--refine.md")
-            formatterApiSlug "Axial.StmBuilder", Path.Combine(outRoot, "stm", "p-stm-stm.md")
+            formatterApiSlug "Axial.Flow.LayerBuilder", Path.Combine(outRoot, "layer", "p-flow--layer.md")
+            formatterApiSlug "Axial.Flow.FlowBuilder", Path.Combine(outRoot, "flow", "builders-flow.md")
+            formatterApiSlug "Axial.Validation.ValidateBuilder", Path.Combine(outRoot, "validation", "builders-validate.md")
+            formatterApiSlug "Axial.ErrorHandling.ResultBuilder", Path.Combine(outRoot, "result", "builders-result.md")
+            formatterApiSlug "Axial.Refined.RefineBuilder", Path.Combine(outRoot, "refined", "p-refined--refine.md")
+            formatterApiSlug "Axial.StmBuilder", Path.Combine(outRoot, "stm", "t-flow-stmbuilder.md")
             formatterApiSlug "Axial.BindError`3", Path.Combine(outRoot, "bind", "t-binderror.md")
             formatterApiSlug "Axial.Path", Path.Combine(outRoot, "diagnostics", "t-path.md")
-            formatterApiSlug "Axial.LogLevel", Path.Combine(outRoot, "service", "core", "_index.md")
-            formatterApiSlug "Axial.RetryPolicy`1", Path.Combine(outRoot, "flow", "runtime", "_index.md")
-            formatterApiSlug "Axial.Never", Path.Combine(outRoot, "layer", "_index.md")
+            formatterApiSlug "Axial.LogLevel", Path.Combine(outRoot, "service", "core", "t-flow-loglevel.md")
+            formatterApiSlug "Axial.RetryPolicy`1", Path.Combine(outRoot, "flow", "runtime", "t-flow-retrypolicy.md")
+            formatterApiSlug "Axial.Never", Path.Combine(outRoot, "flow", "t-flow-never.md")
             formatterApiSlug "Axial.Flow.PlatformService.Clock", Path.Combine(outRoot, "service", "core", "_index.md")
             formatterApiSlug "Axial.Flow.PlatformService.Log", Path.Combine(outRoot, "service", "core", "_index.md")
             formatterApiSlug "Axial.Flow.PlatformService.Random", Path.Combine(outRoot, "service", "core", "_index.md")

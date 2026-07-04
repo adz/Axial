@@ -17,13 +17,13 @@ Flattens the structured diagnostics graph into a linear list of diagnostics.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `graph` | <code><span><a href="/reference/Axial/axial-validation-diagnostics-1.html">Diagnostics</a>&lt;'error&gt;</span></code> | The <a href="https://learn.microsoft.com/dotnet/api/axial.diagnostics-1">Diagnostics</a> to flatten. |
+| `graph` | <code><span><a href="t-validation-diagnostics.md">Diagnostics</a>&lt;'error&gt;</span></code> | The <a href="https://learn.microsoft.com/dotnet/api/axial.diagnostics-1">Diagnostics</a> to flatten. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><span><a href="/reference/Axial/axial-validation-diagnostic-1.html">Diagnostic</a>&lt;'error&gt;</span>&#32;list</span></code> | A list of type <a href="https://learn.microsoft.com/dotnet/api/axial.diagnostic-1">Diagnostic</a> list. |
+| <code><span><span><a href="t-validation-diagnostic.md">Diagnostic</a>&lt;'error&gt;</span>&#32;list</span></code> | A list of type <a href="https://learn.microsoft.com/dotnet/api/axial.diagnostic-1">Diagnostic</a> list. |
 
 ## Remarks
 

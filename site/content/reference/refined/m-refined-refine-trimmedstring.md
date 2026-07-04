@@ -1,7 +1,7 @@
 ---
 title: "Refined.Refine.trimmedString"
 linkTitle: "trimmedString"
-weight: 2902
+weight: 2903
 type: docs
 ---
 
@@ -23,4 +23,4 @@ Builds a string that has no leading or trailing whitespace.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><a href="/reference/Axial/axial-refined-trimmedstring.html">TrimmedString</a>,&#32;<a href="/reference/Axial/axial-refined-refinementerror.html">RefinementError</a></span>&gt;</span></code> |  |
+| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><a href="t-refined-trimmedstring.md">TrimmedString</a>,&#32;<a href="t-refined-refinementerror.md">RefinementError</a></span>&gt;</span></code> |  |

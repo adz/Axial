@@ -23,4 +23,4 @@ Returns an ordered-value check requiring a value greater than or equal to the su
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-errorhandling-check-1.html">Check</a>&lt;'value&gt;</span></code> |  |
+| <code><span><a href="t-errorhandling-check.md">Check</a>&lt;'value&gt;</span></code> |  |

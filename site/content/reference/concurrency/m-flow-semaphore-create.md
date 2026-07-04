@@ -23,4 +23,4 @@ Alias for <code>make</code>.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;<a href="/reference/Axial/axial-flow-flowsemaphore.html">FlowSemaphore</a></span>&gt;</span></code> |  |
+| <code><span><a href="../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;<a href="t-flow-flowsemaphore.md">FlowSemaphore</a></span>&gt;</span></code> |  |

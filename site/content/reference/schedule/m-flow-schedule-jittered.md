@@ -17,13 +17,13 @@ Adds random jitter to a schedule&#39;s delay.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `arg0` | <code><span><a href="/reference/Axial/axial-flow-schedule-3.html">Schedule</a>&lt;<span>'env,&#32;'input,&#32;'output</span>&gt;</span></code> |  |
+| `arg0` | <code><span><a href="t-flow-schedule.md">Schedule</a>&lt;<span>'env,&#32;'input,&#32;'output</span>&gt;</span></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-schedule-3.html">Schedule</a>&lt;<span>'env,&#32;'input,&#32;'output</span>&gt;</span></code> | A new schedule where each delay is multiplied by a random factor between 0.5 and 1.5. |
+| <code><span><a href="t-flow-schedule.md">Schedule</a>&lt;<span>'env,&#32;'input,&#32;'output</span>&gt;</span></code> | A new schedule where each delay is multiplied by a random factor between 0.5 and 1.5. |
 
 ## Examples
 

@@ -24,4 +24,4 @@ Builds an array whose length is within an inclusive range.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><span><a href="/reference/Axial/axial-refined-boundedarray-1.html">BoundedArray</a>&lt;'value&gt;</span>,&#32;<a href="/reference/Axial/axial-refined-refinementerror.html">RefinementError</a></span>&gt;</span></code> |  |
+| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><span><a href="t-refined-boundedarray.md">BoundedArray</a>&lt;'value&gt;</span>,&#32;<a href="t-refined-refinementerror.md">RefinementError</a></span>&gt;</span></code> |  |

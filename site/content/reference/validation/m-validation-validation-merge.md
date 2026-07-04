@@ -17,14 +17,14 @@ Merges two validations into a validation of a tuple.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `left` | <code><span><a href="/reference/Axial/axial-validation-validation-2.html">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> | The first validation. |
-| `right` | <code><span><a href="/reference/Axial/axial-validation-validation-2.html">Validation</a>&lt;<span>'next,&#32;'error</span>&gt;</span></code> | The second validation. |
+| `left` | <code><span><a href="t-validation-validation.md">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> | The first validation. |
+| `right` | <code><span><a href="t-validation-validation.md">Validation</a>&lt;<span>'next,&#32;'error</span>&gt;</span></code> | The second validation. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-validation-validation-2.html">Validation</a>&lt;<span><span>(<span>'value&#32;*&#32;'next</span>)</span>,&#32;'error</span>&gt;</span></code> | A validation containing a tuple of the results. |
+| <code><span><a href="t-validation-validation.md">Validation</a>&lt;<span><span>(<span>'value&#32;*&#32;'next</span>)</span>,&#32;'error</span>&gt;</span></code> | A validation containing a tuple of the results. |
 
 ## Examples
 

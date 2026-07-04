@@ -1,7 +1,7 @@
 ---
 title: "Refined.Refine.boundedString"
 linkTitle: "boundedString"
-weight: 2903
+weight: 2904
 ---
 
 Builds a string whose length is within an inclusive range.
@@ -24,4 +24,4 @@ Builds a string whose length is within an inclusive range.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><a href="/reference/Axial/axial-refined-boundedstring.html">BoundedString</a>,&#32;<a href="/reference/Axial/axial-refined-refinementerror.html">RefinementError</a></span>&gt;</span></code> |  |
+| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><a href="t-refined-boundedstring.md">BoundedString</a>,&#32;<a href="t-refined-refinementerror.md">RefinementError</a></span>&gt;</span></code> |  |

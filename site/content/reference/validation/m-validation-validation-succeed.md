@@ -23,4 +23,4 @@ Alias for <code>ok</code>.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-validation-validation-2.html">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> | A successful <a href="https://learn.microsoft.com/dotnet/api/axial.validation-2">Validation</a>. |
+| <code><span><a href="t-validation-validation.md">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> | A successful <a href="https://learn.microsoft.com/dotnet/api/axial.validation-2">Validation</a>. |

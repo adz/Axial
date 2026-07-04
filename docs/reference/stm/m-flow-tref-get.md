@@ -16,13 +16,13 @@ Reads the current value of the transactional reference within a transaction.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `tref` | <code><span><a href="/reference/Axial/axial-flow-tref-1.html">TRef</a>&lt;'T&gt;</span></code> | The transactional reference to read. |
+| `tref` | <code><span><a href="t-flow-tref.md">TRef</a>&lt;'T&gt;</span></code> | The transactional reference to read. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-stm-1.html">STM</a>&lt;'T&gt;</span></code> | An STM operation that produces the current value of the reference. |
+| <code><span><a href="t-flow-stm.md">STM</a>&lt;'T&gt;</span></code> | An STM operation that produces the current value of the reference. |
 
 ## Examples
 

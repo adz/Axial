@@ -17,7 +17,7 @@ Returns the underlying string value.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `input` | <code><a href="/reference/Axial/axial-refined-nonblankstring.html">NonBlankString</a></code> |  |
+| `input` | <code><a href="t-refined-nonblankstring.md">NonBlankString</a></code> |  |
 
 ## Returns
 

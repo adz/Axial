@@ -17,13 +17,13 @@ Runs a flow against an environment derived from the outer environment.
 | Name | Type | Description |
 | --- | --- | --- |
 | `mapping` | <code><span>'outerEnvironment&#32;->&#32;'innerEnvironment</span></code> | A function that maps the outer environment to the inner environment. |
-| `flow` | <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'innerEnvironment,&#32;'error,&#32;'value</span>&gt;</span></code> | The flow to run with the inner environment. |
+| `flow` | <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'innerEnvironment,&#32;'error,&#32;'value</span>&gt;</span></code> | The flow to run with the inner environment. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'outerEnvironment,&#32;'error,&#32;'value</span>&gt;</span></code> | A flow that expects the outer environment. |
+| <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'outerEnvironment,&#32;'error,&#32;'value</span>&gt;</span></code> | A flow that expects the outer environment. |
 
 ## Remarks
 

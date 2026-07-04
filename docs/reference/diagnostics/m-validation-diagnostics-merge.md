@@ -16,14 +16,14 @@ Recursively merges two diagnostics graphs, combining shared branches and local e
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `left` | <code><span><a href="/reference/Axial/axial-validation-diagnostics-1.html">Diagnostics</a>&lt;'error&gt;</span></code> | The first graph of type <a href="https://learn.microsoft.com/dotnet/api/axial.diagnostics-1">Diagnostics</a>. |
-| `right` | <code><span><a href="/reference/Axial/axial-validation-diagnostics-1.html">Diagnostics</a>&lt;'error&gt;</span></code> | The second graph of type <a href="https://learn.microsoft.com/dotnet/api/axial.diagnostics-1">Diagnostics</a>. |
+| `left` | <code><span><a href="t-validation-diagnostics.md">Diagnostics</a>&lt;'error&gt;</span></code> | The first graph of type <a href="https://learn.microsoft.com/dotnet/api/axial.diagnostics-1">Diagnostics</a>. |
+| `right` | <code><span><a href="t-validation-diagnostics.md">Diagnostics</a>&lt;'error&gt;</span></code> | The second graph of type <a href="https://learn.microsoft.com/dotnet/api/axial.diagnostics-1">Diagnostics</a>. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-validation-diagnostics-1.html">Diagnostics</a>&lt;'error&gt;</span></code> | A new <a href="https://learn.microsoft.com/dotnet/api/axial.diagnostics-1">Diagnostics</a> containing the union of both inputs. |
+| <code><span><a href="t-validation-diagnostics.md">Diagnostics</a>&lt;'error&gt;</span></code> | A new <a href="https://learn.microsoft.com/dotnet/api/axial.diagnostics-1">Diagnostics</a> containing the union of both inputs. |
 
 ## Remarks
 

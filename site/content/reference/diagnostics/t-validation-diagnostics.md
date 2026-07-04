@@ -26,12 +26,12 @@ type: docs
 | Field | Description |
 | --- | --- |
 | `Errors` | Errors that occurred exactly at this node in the graph. |
-| `Children` | Nested diagnostic branches, keyed by <a href="https://learn.microsoft.com/dotnet/api/axial.pathsegment">PathSegment</a>. |
+| `Children` | Nested diagnostic branches, keyed by <a href="t-validation-pathsegment.md">PathSegment</a>. |
 
 ## Remarks
 
 <p class='fsdocs-para'><code>Errors</code> holds the application errors attached exactly to the current node, while
- <code>Children</code> holds nested branches keyed by <a href="https://learn.microsoft.com/dotnet/api/axial.pathsegment">PathSegment</a>.
+ <code>Children</code> holds nested branches keyed by <a href="t-validation-pathsegment.md">PathSegment</a>.
  </p><p class='fsdocs-para'>
  This structure allows hierarchical validation to stay navigable before flattening.
  Use <a href="https://learn.microsoft.com/dotnet/api/axial.diagnostics.flatten">flatten</a> to convert it into a linear list.

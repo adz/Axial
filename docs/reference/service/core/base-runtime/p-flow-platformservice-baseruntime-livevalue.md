@@ -16,4 +16,4 @@ Creates the standard live base runtime as an explicit service bundle.
 
 | Type | Description |
 | --- | --- |
-| <code><a href="/reference/Axial/axial-flow-platformservice-baseruntime.html">BaseRuntime</a></code> |  |
+| <code><a href="../t-flow-platformservice-baseruntime.md">BaseRuntime</a></code> |  |

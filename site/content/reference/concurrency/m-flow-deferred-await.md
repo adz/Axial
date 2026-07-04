@@ -17,10 +17,10 @@ Waits for the deferred outcome, preserving success, typed failure, defect, or in
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `arg0` | <code><span><a href="/reference/Axial/axial-flow-deferred-2.html">Deferred</a>&lt;<span>'error,&#32;'value</span>&gt;</span></code> |  |
+| `arg0` | <code><span><a href="t-flow-deferred.md">Deferred</a>&lt;<span>'error,&#32;'value</span>&gt;</span></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> |  |
+| <code><span><a href="../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> |  |

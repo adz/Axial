@@ -17,11 +17,11 @@ Runs a workflow while holding one permit and always releases the permit afterwar
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `arg0` | <code><a href="/reference/Axial/axial-flow-flowsemaphore.html">FlowSemaphore</a></code> |  |
-| `flow` | <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> |  |
+| `arg0` | <code><a href="t-flow-flowsemaphore.md">FlowSemaphore</a></code> |  |
+| `flow` | <code><span><a href="../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> |  |
+| <code><span><a href="../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> |  |

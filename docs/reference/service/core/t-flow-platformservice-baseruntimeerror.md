@@ -1,7 +1,7 @@
 ---
 title: "Flow.PlatformService.BaseRuntimeError"
 linkTitle: "BaseRuntimeError"
-weight: 1006
+weight: 1007
 ---
 
 Describes a service-provider bootstrap failure while building the base runtime.

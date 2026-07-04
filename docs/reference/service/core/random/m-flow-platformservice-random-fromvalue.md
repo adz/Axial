@@ -22,4 +22,4 @@ Creates a deterministic random generator that always returns the supplied value.
 
 | Type | Description |
 | --- | --- |
-| <code><a href="/reference/Axial/axial-flow-platformservice-irandom.html">IRandom</a></code> |  |
+| <code><a href="../t-flow-platformservice-irandom.md">IRandom</a></code> |  |

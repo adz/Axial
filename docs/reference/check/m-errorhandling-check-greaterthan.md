@@ -22,4 +22,4 @@ Returns an ordered-value check requiring a value greater than the supplied exclu
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-errorhandling-check-1.html">Check</a>&lt;'value&gt;</span></code> |  |
+| <code><span><a href="t-errorhandling-check.md">Check</a>&lt;'value&gt;</span></code> |  |

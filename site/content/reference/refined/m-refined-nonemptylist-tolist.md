@@ -17,7 +17,7 @@ Returns the refined value as a standard list.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `input` | <code><span><a href="/reference/Axial/axial-refined-nonemptylist-1.html">NonEmptyList</a>&lt;'value&gt;</span></code> |  |
+| `input` | <code><span><a href="t-refined-nonemptylist.md">NonEmptyList</a>&lt;'value&gt;</span></code> |  |
 
 ## Returns
 

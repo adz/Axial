@@ -23,7 +23,7 @@ Assigns an error to a missing or unit-error source before <code>flow { }</code> 
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-binderror-3.html">BindError</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | A bind marker for the flow computation expression. |
+| <code><span><a href="t-flow-binderror.md">BindError</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | A bind marker for the flow computation expression. |
 
 ## Examples
 

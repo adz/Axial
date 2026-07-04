@@ -17,7 +17,7 @@ type PathSegment =
     /// <summary>A descriptive name for a property or field.</summary>
     | Name of string
 
-/// <summary>A path through a validation graph, represented as a list of <see cref="T:Axial.PathSegment" />.</summary>
+/// <summary>A path through a validation graph, represented as a list of <see cref="T:Axial.Validation.PathSegment" />.</summary>
 /// <example>
 /// <code>
 /// let path: Path = [ PathSegment.Name "User"; PathSegment.Index 0; PathSegment.Name "Email" ]
@@ -45,7 +45,7 @@ type Diagnostic<'error> =
 /// <remarks>
 /// <para>
 /// <c>Errors</c> holds the application errors attached exactly to the current node, while
-/// <c>Children</c> holds nested branches keyed by <see cref="T:Axial.PathSegment" />.
+/// <c>Children</c> holds nested branches keyed by <see cref="T:Axial.Validation.PathSegment" />.
 /// </para>
 /// <para>
 /// This structure allows hierarchical validation to stay navigable before flattening.
@@ -61,7 +61,7 @@ type Diagnostics<'error> =
     {
         /// <summary>Errors that occurred exactly at this node in the graph.</summary>
         Errors: 'error list
-        /// <summary>Nested diagnostic branches, keyed by <see cref="T:Axial.PathSegment" />.</summary>
+        /// <summary>Nested diagnostic branches, keyed by <see cref="T:Axial.Validation.PathSegment" />.</summary>
         Children: Map<PathSegment, Diagnostics<'error>>
     }
 

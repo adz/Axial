@@ -24,4 +24,4 @@ Prepends a head item to a list, producing a non-empty list without failure.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-refined-nonemptylist-1.html">NonEmptyList</a>&lt;'a&gt;</span></code> |  |
+| <code><span><a href="t-refined-nonemptylist.md">NonEmptyList</a>&lt;'a&gt;</span></code> |  |

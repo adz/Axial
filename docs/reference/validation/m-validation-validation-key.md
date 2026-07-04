@@ -17,13 +17,13 @@ Prefixes a validation with a keyed branch.
 | Name | Type | Description |
 | --- | --- | --- |
 | `key` | <code>string</code> | The branch key. |
-| `validation` | <code><span><a href="/reference/Axial/axial-validation-validation-2.html">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> | The validation to scope. |
+| `validation` | <code><span><a href="t-validation-validation.md">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> | The validation to scope. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-validation-validation-2.html">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> | A validation whose diagnostics are prefixed with <code>Key key</code>. |
+| <code><span><a href="t-validation-validation.md">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> | A validation whose diagnostics are prefixed with <code>Key key</code>. |
 
 ## Examples
 

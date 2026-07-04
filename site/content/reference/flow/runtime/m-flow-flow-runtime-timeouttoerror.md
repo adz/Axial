@@ -1,7 +1,7 @@
 ---
 title: "Flow.Flow.Runtime.timeoutToError"
 linkTitle: "timeoutToError"
-weight: 2009
+weight: 2109
 type: docs
 ---
 
@@ -19,10 +19,10 @@ Alias for <code>timeout</code> that emphasizes typed failure on timeout.
 | --- | --- | --- |
 | `after` | <code><a href="https://learn.microsoft.com/dotnet/api/system.timespan">TimeSpan</a></code> |  |
 | `error` | <code>'error</code> |  |
-| `flow` | <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> |  |
+| `flow` | <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> |  |
+| <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> |  |

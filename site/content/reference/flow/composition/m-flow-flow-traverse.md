@@ -17,14 +17,14 @@ Transforms a sequence of values into a flow and stops at the first failure.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `mapping` | <code><span>'value&#32;->&#32;<span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'next</span>&gt;</span></span></code> | A function that maps each value to a flow. |
+| `mapping` | <code><span>'value&#32;->&#32;<span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'next</span>&gt;</span></span></code> | A function that maps each value to a flow. |
 | `values` | <code><span>'value&#32;seq</span></code> | The sequence of values to transform. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;<span>'next&#32;list</span></span>&gt;</span></code> | A flow containing a list of the successful mapped values. |
+| <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;<span>'next&#32;list</span></span>&gt;</span></code> | A flow containing a list of the successful mapped values. |
 
 ## Examples
 

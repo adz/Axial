@@ -1,27 +1,26 @@
 ---
-title: "ErrorHandling.Predicate.Compare.between"
+title: "ErrorHandling.Check.between"
 linkTitle: "between"
 weight: 3104
 ---
 
-Returns true when the value lies inside the supplied inclusive bounds.
+Returns an ordered-value check requiring a value inside the supplied inclusive bounds.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>ErrorHandling.Predicate.Compare.between&#32;<span>minimum&#32;maximum&#32;value</span></span></code>
+<code><span>ErrorHandling.Check.between&#32;<span>minimum&#32;maximum</span></span></code>
 </div>
 
 ## Parameters
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `minimum` | <code>'a</code> |  |
-| `maximum` | <code>'a</code> |  |
-| `value` | <code>'a</code> |  |
+| `minimum` | <code>'value</code> |  |
+| `maximum` | <code>'value</code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code>bool</code> |  |
+| <code><span><a href="t-errorhandling-check.md">Check</a>&lt;'value&gt;</span></code> |  |

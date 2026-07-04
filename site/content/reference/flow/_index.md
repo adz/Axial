@@ -17,6 +17,7 @@ This page shows the Flow surface for cold workflow descriptions that only start 
 - [`EnvFlow`](./t-flow-envflow.md): A flow that reads an environment and cannot fail with a typed error.
 - [`ExnFlow`](./t-flow-exnflow.md): A flow that requires no environment and uses exceptions as recoverable typed errors.
 - [`ExnEnvFlow`](./t-flow-exnenvflow.md): A flow that reads an environment and uses exceptions as recoverable typed errors.
+- [`Flow.Never`](./t-flow-never.md):  Represents an error channel that cannot occur.
 
 ## Fiber operations
 

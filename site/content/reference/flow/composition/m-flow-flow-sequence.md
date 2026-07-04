@@ -17,13 +17,13 @@ Transforms a sequence of flows into a flow of a sequence and stops at the first 
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `flows` | <code><span><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span>&#32;seq</span></code> | The sequence of flows to run. |
+| `flows` | <code><span><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span>&#32;seq</span></code> | The sequence of flows to run. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;<span>'value&#32;list</span></span>&gt;</span></code> | A flow containing a list of the successful values. |
+| <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;<span>'value&#32;list</span></span>&gt;</span></code> | A flow containing a list of the successful values. |
 
 ## Examples
 

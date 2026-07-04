@@ -16,14 +16,14 @@ Falls back to another validation when the source validation fails.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `fallback` | <code><span><a href="/reference/Axial/axial-validation-validation-2.html">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> | The validation to use when the source fails. |
-| `validation` | <code><span><a href="/reference/Axial/axial-validation-validation-2.html">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> | The source validation. |
+| `fallback` | <code><span><a href="t-validation-validation.md">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> | The validation to use when the source fails. |
+| `validation` | <code><span><a href="t-validation-validation.md">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> | The source validation. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-validation-validation-2.html">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> | The source validation when it succeeds, otherwise the fallback validation. |
+| <code><span><a href="t-validation-validation.md">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> | The source validation when it succeeds, otherwise the fallback validation. |
 
 ## Remarks
 

@@ -16,4 +16,4 @@ Creates a live clock backed by <a href="https://learn.microsoft.com/dotnet/api/s
 
 | Type | Description |
 | --- | --- |
-| <code><a href="/reference/Axial/axial-flow-platformservice-iclock.html">IClock</a></code> |  |
+| <code><a href="../t-flow-platformservice-iclock.md">IClock</a></code> |  |

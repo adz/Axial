@@ -18,13 +18,13 @@ Sets the value of the transactional reference within a transaction.
 | Name | Type | Description |
 | --- | --- | --- |
 | `value` | <code>'T</code> | The new value to store in the reference. |
-| `tref` | <code><span><a href="/reference/Axial/axial-flow-tref-1.html">TRef</a>&lt;'T&gt;</span></code> | The transactional reference to update. |
+| `tref` | <code><span><a href="t-flow-tref.md">TRef</a>&lt;'T&gt;</span></code> | The transactional reference to update. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-stm-1.html">STM</a>&lt;unit&gt;</span></code> | An STM operation that sets the reference value. |
+| <code><span><a href="t-flow-stm.md">STM</a>&lt;unit&gt;</span></code> | An STM operation that sets the reference value. |
 
 ## Examples
 

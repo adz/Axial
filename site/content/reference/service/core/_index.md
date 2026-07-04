@@ -10,6 +10,7 @@ This page shows the core service package: clock, logging, random numbers, GUID g
 
 - [`Flow.IClock`](./t-flow-platformservice-iclock.md): Provides synchronous access to the current UTC clock.
 - [`Flow.ILog`](./t-flow-platformservice-ilog.md): Provides synchronous access to explicit workflow logging.
+- [`Flow.LogLevel`](./t-flow-loglevel.md):  Log levels used by runtime logging helpers and environment-provided logging functions.
 - [`Flow.IRandom`](./t-flow-platformservice-irandom.md): Provides synchronous random-number generation.
 - [`Flow.IGuid`](./t-flow-platformservice-iguid.md): Provides synchronous GUID generation.
 - [`Flow.IEnvironmentVariables`](./t-flow-platformservice-ienvironmentvariables.md): Provides synchronous environment-variable access.

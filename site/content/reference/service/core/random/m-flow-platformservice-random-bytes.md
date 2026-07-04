@@ -23,4 +23,4 @@ Creates a byte array filled through an explicit random-number service.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;<span>byte&#32;array</span></span>&gt;</span></code> |  |
+| <code><span><a href="../../../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;<span>byte&#32;array</span></span>&gt;</span></code> |  |

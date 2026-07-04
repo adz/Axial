@@ -16,10 +16,10 @@ Alias for <code>error</code>.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `diagnostics` | <code><span><a href="/reference/Axial/axial-validation-diagnostics-1.html">Diagnostics</a>&lt;'error&gt;</span></code> | The <a href="https://learn.microsoft.com/dotnet/api/axial.diagnostics-1">Diagnostics</a> graph. |
+| `diagnostics` | <code><span><a href="../diagnostics/t-validation-diagnostics.md">Diagnostics</a>&lt;'error&gt;</span></code> | The <a href="https://learn.microsoft.com/dotnet/api/axial.diagnostics-1">Diagnostics</a> graph. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-validation-validation-2.html">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> | A failing <a href="https://learn.microsoft.com/dotnet/api/axial.validation-2">Validation</a>. |
+| <code><span><a href="t-validation-validation.md">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> | A failing <a href="https://learn.microsoft.com/dotnet/api/axial.validation-2">Validation</a>. |

@@ -17,13 +17,13 @@ Waits for a fiber to complete and returns its successful value or typed failure.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `fiber` | <code><span><a href="/reference/Axial/axial-flow-fiber-2.html">Fiber</a>&lt;<span>'error,&#32;'value</span>&gt;</span></code> | The fiber to join. |
+| `fiber` | <code><span><a href="../../fiber/t-flow-fiber.md">Fiber</a>&lt;<span>'error,&#32;'value</span>&gt;</span></code> | The fiber to join. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | A flow that completes with the fiber&#39;s outcome. |
+| <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | A flow that completes with the fiber&#39;s outcome. |
 
 ## Remarks
 

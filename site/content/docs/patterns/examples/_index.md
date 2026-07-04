@@ -352,74 +352,34 @@ type UnitPrice = private UnitPrice of decimal
 module ContactEmail =
     let value (ContactEmail value) = value
 
-    let private describe failures =
-        failures
-        |> List.map (sprintf "%A")
-        |> String.concat "; "
-
     let create value : Result<ContactEmail, RefinementError> =
-        Refine.withCheck
+        Refine.withChecks
             "ContactEmail"
-            (Check.all [
-                Check.String.present
-                Check.String.email
-                Check.String.maxLength 254
-            ])
-            (fun target failures -> RefinementError.InvalidFormat(target, describe failures))
+            [ Check.String.present; Check.String.email; Check.String.maxLength 254 ]
             ContactEmail
             value
 
 module Sku =
     let value (Sku value) = value
 
-    let private describe failures =
-        failures
-        |> List.map (sprintf "%A")
-        |> String.concat "; "
-
     let create value : Result<Sku, RefinementError> =
-        Refine.withCheck
+        Refine.withChecks
             "Sku"
-            (Check.all [
-                Check.String.present
-                Check.String.lengthBetween 3 12
-                Check.String.matches "^[A-Z0-9-]+$"
-            ])
-            (fun target failures -> RefinementError.InvalidFormat(target, describe failures))
+            [ Check.String.present; Check.String.lengthBetween 3 12; Check.String.matches "^[A-Z0-9-]+$" ]
             Sku
             value
 
 module Rating =
     let value (Rating value) = value
 
-    let private describe failures =
-        failures
-        |> List.map (sprintf "%A")
-        |> String.concat "; "
-
     let create value : Result<Rating, RefinementError> =
-        Refine.withCheck
-            "Rating"
-            (Check.Number.between 1 5)
-            (fun target failures -> RefinementError.OutOfRange(target, describe failures))
-            Rating
-            value
+        Refine.withCheck "Rating" (Check.Number.between 1 5) Rating value
 
 module UnitPrice =
     let value (UnitPrice value) = value
 
-    let private describe failures =
-        failures
-        |> List.map (sprintf "%A")
-        |> String.concat "; "
-
     let create value : Result<UnitPrice, RefinementError> =
-        Refine.withCheck
-            "UnitPrice"
-            (Check.Number.greaterThan 0m)
-            (fun target failures -> RefinementError.OutOfRange(target, describe failures))
-            UnitPrice
-            value
+        Refine.withCheck "UnitPrice" (Check.Number.greaterThan 0m) UnitPrice value
 
 type Discount =
     | Percent of PositiveInt
@@ -463,7 +423,7 @@ let parseDiscount (raw: string) : Result<Discount, RefinementError> =
         parsePercent
         Code
         Refine.slug
-        (RefinementError.InvalidFormat("Discount", "Expected a positive integer percent or slug code."))
+        (RefinementError.CheckFailed("Discount", [ CheckFailure.InvalidFormat "positive integer percent or slug code" ]))
         raw
 
 let createProductRequest
@@ -549,6 +509,120 @@ let run () =
 
     printfn "Refined product result: %A" valid
     printfn "Refined product error: %A" invalid
+
+```
+
+## Refined Value Schema Example
+
+This example shows schema-level refined values (Email, ContactName, a positive Quantity, and a non-negative Balance) built with Value.refined, composed into a record schema, and checked with ValueSchemaCheck.
+
+Run it:
+
+```bash
+AXIAL_EXAMPLE=refined-value-schema dotnet run --project examples/Axial.Examples/Axial.Examples.fsproj --nologo
+```
+
+Source:
+
+- [RefinedValueSchemaExample.fs](https://github.com/adz/Axial/blob/main/examples/Axial.Examples/RefinedValueSchemaExample.fs)
+
+Source code:
+
+```fsharp
+module RefinedValueSchemaExample
+
+open Axial.Schema
+open Axial.Validation.Schema
+
+/// <summary>An email address refined over Axial's text primitive, carrying the well-known email format.</summary>
+type Email = private Email of string
+
+module Email =
+    let create (value: string) = Email value
+    let value (Email value) = value
+
+    let schema : ValueSchema<Email> =
+        Value.text
+        |> Value.withConstraint SchemaConstraint.required
+        |> Value.refined create value
+        |> Value.withConstraint SchemaConstraint.email
+        |> Value.withFormat SchemaFormat.email
+
+/// <summary>A bounded-text domain value whose length constraints live on the raw text schema.</summary>
+type ContactName = private ContactName of string
+
+module ContactName =
+    let create (value: string) = ContactName value
+    let value (ContactName value) = value
+
+    let schema : ValueSchema<ContactName> =
+        Value.text
+        |> Value.withConstraints [ SchemaConstraint.minLength 2; SchemaConstraint.maxLength 40 ]
+        |> Value.refined create value
+
+/// <summary>A quantity that must always be positive (strictly greater than zero).</summary>
+type Quantity = private Quantity of int
+
+module Quantity =
+    let create (value: int) = Quantity value
+    let value (Quantity value) = value
+
+    let schema : ValueSchema<Quantity> =
+        Value.``int``
+        |> Value.withConstraint (SchemaConstraint.greaterThan 0)
+        |> Value.refined create value
+
+/// <summary>A running total that must never go negative, but zero is allowed.</summary>
+type Balance = private Balance of decimal
+
+module Balance =
+    let create (value: decimal) = Balance value
+    let value (Balance value) = value
+
+    let schema : ValueSchema<Balance> =
+        Value.``decimal``
+        |> Value.withConstraint (SchemaConstraint.atLeast 0m)
+        |> Value.refined create value
+
+type Contact =
+    { Email: Email
+      Name: ContactName
+      Quantity: Quantity
+      Balance: Balance }
+
+let contactSchema =
+    Schema.recordFor<Contact, _> (fun email name quantity balance ->
+        { Email = email
+          Name = name
+          Quantity = quantity
+          Balance = balance })
+    |> Schema.field "email" _.Email Email.schema
+    |> Schema.field "name" _.Name ContactName.schema
+    |> Schema.field "quantity" _.Quantity Quantity.schema
+    |> Schema.field "balance" _.Balance Balance.schema
+    |> Schema.build
+
+let run () =
+    let contact =
+        { Email = Email.create "ada@example.com"
+          Name = ContactName.create "Ada"
+          Quantity = Quantity.create 3
+          Balance = Balance.create 0m }
+
+    let emailCheck = Email.schema |> ValueSchemaCheck.text
+    let nameCheck = ContactName.schema |> ValueSchemaCheck.text
+    let quantityCheck = Quantity.schema |> ValueSchemaCheck.ordered<int, _>
+    let balanceCheck = Balance.schema |> ValueSchemaCheck.ordered<decimal, _>
+
+    printfn "Email check: %A" (emailCheck contact.Email)
+    printfn "Name check: %A" (nameCheck contact.Name)
+    printfn "Quantity check: %A" (quantityCheck contact.Quantity)
+    printfn "Balance check: %A" (balanceCheck contact.Balance)
+
+    printfn "Invalid email check: %A" (emailCheck (Email.create ""))
+    printfn "Invalid name check: %A" (nameCheck (ContactName.create "A"))
+    printfn "Invalid quantity check: %A" (quantityCheck (Quantity.create 0))
+    printfn "Invalid balance check: %A" (balanceCheck (Balance.create -1m))
 
 ```
 

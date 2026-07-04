@@ -16,4 +16,4 @@ The fail-fast <code>result { }</code> computation expression.
 
 | Type | Description |
 | --- | --- |
-| <code><a href="/reference/Axial/axial-errorhandling-resultbuilder.html">ResultBuilder</a></code> |  |
+| <code><a href="builders-result.md">ResultBuilder</a></code> |  |

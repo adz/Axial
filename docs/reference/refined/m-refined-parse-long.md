@@ -22,4 +22,4 @@ Parses a 64-bit integer.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>int64,&#32;<a href="/reference/Axial/axial-refined-parseerror.html">ParseError</a></span>&gt;</span></code> |  |
+| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>int64,&#32;<a href="t-refined-parseerror.md">ParseError</a></span>&gt;</span></code> |  |

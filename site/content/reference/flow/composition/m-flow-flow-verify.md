@@ -17,11 +17,11 @@ Runs an environment-aware policy against an input value inside a workflow.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `policy` | <code><span><a href="/reference/Axial/axial-flow-policy-4.html">Policy</a>&lt;<span>'env,&#32;'error,&#32;'input,&#32;'output</span>&gt;</span></code> | The policy to run. |
+| `policy` | <code><span><a href="../t-flow-policy.md">Policy</a>&lt;<span>'env,&#32;'error,&#32;'input,&#32;'output</span>&gt;</span></code> | The policy to run. |
 | `input` | <code>'input</code> | The input value supplied to the policy. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'output</span>&gt;</span></code> | A flow that succeeds or fails with the policy result. |
+| <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'output</span>&gt;</span></code> | A flow that succeeds or fails with the policy result. |

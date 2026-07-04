@@ -1,7 +1,7 @@
 ---
 title: "Flow.Flow.Runtime.traceId"
 linkTitle: "traceId"
-weight: 2006
+weight: 2106
 ---
 
 Reads the current runtime trace id annotation if one is present.
@@ -16,4 +16,4 @@ Reads the current runtime trace id annotation if one is present.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;<span>string&#32;option</span></span>&gt;</span></code> | A flow that succeeds with the ambient <code>trace_id</code> value, if present. |
+| <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;<span>string&#32;option</span></span>&gt;</span></code> | A flow that succeeds with the ambient <code>trace_id</code> value, if present. |

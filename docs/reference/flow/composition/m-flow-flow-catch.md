@@ -17,13 +17,13 @@ Catches exceptions raised during execution and simple defect outcomes, then maps
 | Name | Type | Description |
 | --- | --- | --- |
 | `handler` | <code><span>exn&#32;->&#32;'error</span></code> | A function of type <code>exn -&gt; &#39;error</code> to map the exception. |
-| `flow` | <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | The source flow of type <a href="https://learn.microsoft.com/dotnet/api/axial.flow-3">Flow</a> to monitor. |
+| `flow` | <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | The source flow of type <a href="https://learn.microsoft.com/dotnet/api/axial.flow-3">Flow</a> to monitor. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | A <a href="https://learn.microsoft.com/dotnet/api/axial.flow-3">Flow</a> that converts recoverable exceptions into typed errors. |
+| <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | A <a href="https://learn.microsoft.com/dotnet/api/axial.flow-3">Flow</a> that converts recoverable exceptions into typed errors. |
 
 ## Remarks
 

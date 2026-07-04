@@ -6,6 +6,10 @@ type: docs
 
 This page shows the `Flow.Runtime` helpers for closed executor mechanics. These functions expose cancellation, scope ownership, runtime annotations, timeout handling, and retry. User-facing resource combinators such as `Flow.acquireRelease` live on the main `Flow` module; `Flow.Runtime.scope` remains available for advanced code that needs direct scope access.
 
+## Runtime types
+
+- [`Flow.RetryPolicy`](./t-flow-retrypolicy.md):  Defines how runtime retry helpers repeat typed failures in a controlled way.
+
 ## Runtime helpers
 
 - [`Flow.Flow.Runtime.cancellationToken`](./m-flow-flow-runtime-cancellationtoken.md): Reads the current runtime cancellation token.

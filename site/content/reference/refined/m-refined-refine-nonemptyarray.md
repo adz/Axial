@@ -1,7 +1,7 @@
 ---
 title: "Refined.Refine.nonEmptyArray"
 linkTitle: "nonEmptyArray"
-weight: 2911
+weight: 2912
 type: docs
 ---
 
@@ -23,4 +23,4 @@ Builds a non-empty array from a sequence.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><span><a href="/reference/Axial/axial-refined-nonemptyarray-1.html">NonEmptyArray</a>&lt;'a&gt;</span>,&#32;<a href="/reference/Axial/axial-refined-refinementerror.html">RefinementError</a></span>&gt;</span></code> |  |
+| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><span><a href="t-refined-nonemptyarray.md">NonEmptyArray</a>&lt;'a&gt;</span>,&#32;<a href="t-refined-refinementerror.md">RefinementError</a></span>&gt;</span></code> |  |

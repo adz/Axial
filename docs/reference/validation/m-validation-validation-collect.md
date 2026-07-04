@@ -16,13 +16,13 @@ Collects a sequence of validations into a single validation of a list.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `validations` | <code><span><span><a href="/reference/Axial/axial-validation-validation-2.html">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span>&#32;seq</span></code> | A sequence of type <code>seq&lt;Validation&lt;&#39;value, &#39;error&gt;&gt;</code>. |
+| `validations` | <code><span><span><a href="t-validation-validation.md">Validation</a>&lt;<span>'value,&#32;'error</span>&gt;</span>&#32;seq</span></code> | A sequence of type <code>seq&lt;Validation&lt;&#39;value, &#39;error&gt;&gt;</code>. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-validation-validation-2.html">Validation</a>&lt;<span><span>'value&#32;list</span>,&#32;'error</span>&gt;</span></code> | A validation containing the list of values or accumulated diagnostics. |
+| <code><span><a href="t-validation-validation.md">Validation</a>&lt;<span><span>'value&#32;list</span>,&#32;'error</span>&gt;</span></code> | A validation containing the list of values or accumulated diagnostics. |
 
 ## Remarks
 

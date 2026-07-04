@@ -16,13 +16,13 @@ Signals a fiber to stop and waits for it to finish its cleanup.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `fiber` | <code><span><a href="/reference/Axial/axial-flow-fiber-2.html">Fiber</a>&lt;<span>'error,&#32;'value</span>&gt;</span></code> | The fiber to interrupt. |
+| `fiber` | <code><span><a href="../../fiber/t-flow-fiber.md">Fiber</a>&lt;<span>'error,&#32;'value</span>&gt;</span></code> | The fiber to interrupt. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'none,&#32;<span><a href="/reference/Axial/axial-flow-exit-2.html">Exit</a>&lt;<span>'value,&#32;'error</span>&gt;</span></span>&gt;</span></code> | A flow that completes with the fiber&#39;s final outcome after interruption. |
+| <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'none,&#32;<span><a href="../../exit/t-flow-exit.md">Exit</a>&lt;<span>'value,&#32;'error</span>&gt;</span></span>&gt;</span></code> | A flow that completes with the fiber&#39;s final outcome after interruption. |
 
 ## Remarks
 

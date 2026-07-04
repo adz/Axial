@@ -1,7 +1,7 @@
 ---
 title: "Flow.Flow.Runtime.timeout"
 linkTitle: "timeout"
-weight: 2007
+weight: 2107
 type: docs
 ---
 
@@ -19,10 +19,10 @@ Fails with the supplied typed error when the flow does not complete before the t
 | --- | --- | --- |
 | `after` | <code><a href="https://learn.microsoft.com/dotnet/api/system.timespan">TimeSpan</a></code> | The timeout duration. |
 | `timeoutError` | <code>'error</code> | The typed error returned when the timeout wins. |
-| `flow` | <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | The source flow. |
+| `flow` | <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | The source flow. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | A flow that returns the source outcome or the timeout error. |
+| <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | A flow that returns the source outcome or the timeout error. |

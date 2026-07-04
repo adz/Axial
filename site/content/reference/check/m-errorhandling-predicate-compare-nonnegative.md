@@ -1,16 +1,16 @@
 ---
-title: "ErrorHandling.Predicate.Compare.nonNegative"
+title: "ErrorHandling.Check.nonNegative"
 linkTitle: "nonNegative"
 weight: 3106
 type: docs
 ---
 
-Returns true when the value is greater than or equal to zero.
+Runs an ordered-value check requiring a value greater than or equal to zero.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>ErrorHandling.Predicate.Compare.nonNegative&#32;<span>value</span></span></code>
+<code><span>ErrorHandling.Check.nonNegative&#32;<span>value</span></span></code>
 </div>
 
 ## Parameters
@@ -23,4 +23,4 @@ Returns true when the value is greater than or equal to zero.
 
 | Type | Description |
 | --- | --- |
-| <code>bool</code> |  |
+| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>unit,&#32;<span><a href="../result/t-errorhandling-checkfailure.md">CheckFailure</a>&#32;list</span></span>&gt;</span></code> |  |

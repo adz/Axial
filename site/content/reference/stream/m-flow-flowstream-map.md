@@ -18,13 +18,13 @@ Transforms the successful values of a stream using the provided function.
 | Name | Type | Description |
 | --- | --- | --- |
 | `f` | <code><span>'v&#32;->&#32;'w</span></code> | The function to transform each value. |
-| `arg1` | <code><span><a href="/reference/Axial/axial-flow-flowstream-3.html">FlowStream</a>&lt;<span>'env,&#32;'error,&#32;'v</span>&gt;</span></code> |  |
+| `arg1` | <code><span><a href="t-flow-flowstream.md">FlowStream</a>&lt;<span>'env,&#32;'error,&#32;'v</span>&gt;</span></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-flowstream-3.html">FlowStream</a>&lt;<span>'env,&#32;'error,&#32;'w</span>&gt;</span></code> | A new stream that yields transformed values. |
+| <code><span><a href="t-flow-flowstream.md">FlowStream</a>&lt;<span>'env,&#32;'error,&#32;'w</span>&gt;</span></code> | A new stream that yields transformed values. |
 
 ## Examples
 

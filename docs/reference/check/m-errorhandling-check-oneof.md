@@ -22,4 +22,4 @@ Returns a string check requiring equality with one of the supplied choices.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-errorhandling-check-1.html">Check</a>&lt;string&gt;</span></code> |  |
+| <code><span><a href="t-errorhandling-check.md">Check</a>&lt;string&gt;</span></code> |  |

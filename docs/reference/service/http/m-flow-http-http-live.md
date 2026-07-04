@@ -22,4 +22,4 @@ Creates a live HTTP service backed by <a href="https://learn.microsoft.com/dotne
 
 | Type | Description |
 | --- | --- |
-| <code><a href="/reference/Axial/axial-flow-http-ihttp.html">IHttp</a></code> |  |
+| <code><a href="t-flow-http-ihttp.md">IHttp</a></code> |  |

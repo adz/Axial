@@ -16,8 +16,8 @@ Composes two policies left to right.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `first` | <code><span><a href="/reference/Axial/axial-flow-policy-4.html">Policy</a>&lt;<span>'env,&#32;'error,&#32;'input,&#32;'middle</span>&gt;</span></code> |  |
-| `second` | <code><span><a href="/reference/Axial/axial-flow-policy-4.html">Policy</a>&lt;<span>'env,&#32;'error,&#32;'middle,&#32;'output</span>&gt;</span></code> |  |
+| `first` | <code><span><a href="t-flow-policy.md">Policy</a>&lt;<span>'env,&#32;'error,&#32;'input,&#32;'middle</span>&gt;</span></code> |  |
+| `second` | <code><span><a href="t-flow-policy.md">Policy</a>&lt;<span>'env,&#32;'error,&#32;'middle,&#32;'output</span>&gt;</span></code> |  |
 | `environment` | <code>'env</code> |  |
 | `input` | <code>'input</code> |  |
 

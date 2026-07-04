@@ -29,5 +29,6 @@ This page shows the STM surface for composable atomic state transitions. STM is 
 
 ## Builder
 
+- [`Flow.StmBuilder`](./t-flow-stmbuilder.md):  Computation expression builder for STM transactions.
 - [`stm`](./p-flow-stm-stm.md):
  The <code>stm { }</code> computation expression for building atomic transactions.

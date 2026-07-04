@@ -17,7 +17,7 @@ Converts an exit outcome to a standard F# <code>Result</code>.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `exit` | <code><span><a href="/reference/Axial/axial-flow-exit-2.html">Exit</a>&lt;<span>'v,&#32;'e</span>&gt;</span></code> | The exit outcome to convert. |
+| `exit` | <code><span><a href="t-flow-exit.md">Exit</a>&lt;<span>'v,&#32;'e</span>&gt;</span></code> | The exit outcome to convert. |
 
 ## Returns
 

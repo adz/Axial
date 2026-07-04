@@ -16,7 +16,7 @@
 
 ## The Flow Hierarchy
 Data flows from left to right. Later stages can bind earlier stages directly.
-`Check` (pure predicates) -> `Result` (typed fail-fast error) -> `Refined` (parse/refine boundary values) -> `Validation` (accumulating diagnostics) -> `Flow` (sync/async/task + env + cancellation)
+`Check<'value>` (`'value -> Result<unit, CheckFailure list>`, path-free value constraints) -> `Result` (typed fail-fast error) -> `Refined` (parse/refine boundary values) -> `Validation` (accumulating diagnostics) -> `Flow` (sync/async/task + env + cancellation)
 
 ## Refined Boundary Values
 - Package/namespace remains `Axial.Refined`, not `Axial.RefinedTypes`.
@@ -93,8 +93,8 @@ equivalent, Axial usually expects a different boundary shape rather than a 1:1 h
 
 ### Result<'T, 'E>
 - Axial uses the standard FSharp.Core `Result<'T, 'E>` directly with helpers in `Axial.ErrorHandling.Result`
-- Axial replacements: use `result {}` for fail-fast sequencing, `Validation` for accumulation, `Check` for pure predicates, `Result` for guards/extractions, and `Bind` when a flow bind source needs error assignment or mapping
-- For predicate checks, use `Result.guard` or `Result.require` to attach a typed error
+- Axial replacements: use `result {}` for fail-fast sequencing, `Validation` for accumulation, `Check` for structured value constraints, `Predicate` for local boolean tests, `Result` for guards/extractions, and `Bind` when a flow bind source needs error assignment or mapping
+- For structured checks, use `Result.guard` or `Result.require` to attach a typed error
 
 ### AsyncResult<'T, 'E>
 - Closest Axial shape: `Flow<'env, 'error, 'value>`

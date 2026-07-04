@@ -17,11 +17,11 @@ Combines causes that happened sequentially.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `left` | <code><span><a href="/reference/Axial/axial-flow-cause-1.html">Cause</a>&lt;'error&gt;</span></code> |  |
-| `right` | <code><span><a href="/reference/Axial/axial-flow-cause-1.html">Cause</a>&lt;'error&gt;</span></code> |  |
+| `left` | <code><span><a href="t-flow-cause.md">Cause</a>&lt;'error&gt;</span></code> |  |
+| `right` | <code><span><a href="t-flow-cause.md">Cause</a>&lt;'error&gt;</span></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-cause-1.html">Cause</a>&lt;'error&gt;</span></code> |  |
+| <code><span><a href="t-flow-cause.md">Cause</a>&lt;'error&gt;</span></code> |  |

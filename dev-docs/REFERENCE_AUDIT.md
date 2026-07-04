@@ -1,10 +1,11 @@
 # Reference Audit
 
-Snapshot after the current docgen cleanup pass.
+Snapshot after the reference cleanup pass.
 
-## Fixed in this pass
+## Fixed
 
-- Legacy `https://adz.github.io/Axial/reference/Axial/*.html` links are no longer emitted into `docs/reference/**`.
+- Legacy `https://adz.github.io/Axial/reference/Axial/*.html` links and root-relative
+  `/reference/Axial/*.html` links are rewritten to local generated reference pages.
 - `Flow` reference pages are grouped into sub-sections:
   - `construction`
   - `environment`
@@ -13,28 +14,17 @@ Snapshot after the current docgen cleanup pass.
   - `resources`
   - `concurrency`
   - `scheduling`
-- Service `*.layer` entries now resolve to the actual service layer values instead of the generic `layer { }` builder page.
+- Service `*.layer` entries resolve to the actual service layer values instead of the generic `layer { }` builder page.
 - `Scope` remains present and linked in the reference tree.
+- The previous aliased targets now have dedicated pages:
+  - `Never`
+  - `LogLevel`
+  - `RetryPolicy<'error>`
+  - `StmBuilder`
+  - `Path`
 
-## Remaining reference gaps
+## Remaining Notes
 
-These are still worth fixing with dedicated pages instead of section-level aliases.
-
-### Missing dedicated member pages
-
-No Check reserved-word pages remain after the surface redesign removed `Check.not`, `Check.and`, and `Check.or`.
-
-### Still aliased to a broader page instead of a dedicated target
-
-- `Never`
-- `LogLevel`
-- `RetryPolicy<'error>`
-- `StmBuilder`
-- `Path`
-
-These no longer leave broken links in the generated markdown, but they should eventually have first-class reference pages or a clearer home.
-
-## Suggested next cleanup
-
-1. Decide whether `Never`, `LogLevel`, and `RetryPolicy<'error>` belong in their own top-level reference section or in an existing section.
-2. Add dedicated builder/type pages where aliases are still carrying the load.
+- No Check reserved-word pages remain after the surface redesign removed `Check.not`, `Check.and`, and `Check.or`.
+- The generator still reports missing `PredicateModule.String.*` and `PredicateModule.Seq.*` entries from the Check page
+  spec. Those are separate stale Check reference entries, not part of the remaining alias cleanup completed here.

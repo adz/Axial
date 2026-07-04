@@ -18,7 +18,7 @@ Filters the list, returning a standard list because filtering can remove every i
 | Name | Type | Description |
 | --- | --- | --- |
 | `predicate` | <code><span>'value&#32;->&#32;bool</span></code> |  |
-| `input` | <code><span><a href="/reference/Axial/axial-refined-nonemptylist-1.html">NonEmptyList</a>&lt;'value&gt;</span></code> |  |
+| `input` | <code><span><a href="t-refined-nonemptylist.md">NonEmptyList</a>&lt;'value&gt;</span></code> |  |
 
 ## Returns
 

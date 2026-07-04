@@ -17,4 +17,4 @@ Creates a live console service backed by <a href="https://learn.microsoft.com/do
 
 | Type | Description |
 | --- | --- |
-| <code><a href="/reference/Axial/axial-flow-console-iconsole.html">IConsole</a></code> |  |
+| <code><a href="t-flow-console-iconsole.md">IConsole</a></code> |  |

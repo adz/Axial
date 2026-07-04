@@ -16,14 +16,14 @@ Applies a flow-wrapped function to a flow-wrapped value.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `flow` | <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;<span>(<span>'value&#32;->&#32;'next</span>)</span></span>&gt;</span></code> | A flow that contains a function to apply. |
-| `value` | <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | A flow that contains the value to apply the function to. |
+| `flow` | <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;<span>(<span>'value&#32;->&#32;'next</span>)</span></span>&gt;</span></code> | A flow that contains a function to apply. |
+| `value` | <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | A flow that contains the value to apply the function to. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'next</span>&gt;</span></code> | A flow containing the result of applying the function to the value. |
+| <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'next</span>&gt;</span></code> | A flow containing the result of applying the function to the value. |
 
 ## Examples
 

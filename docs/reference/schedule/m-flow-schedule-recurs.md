@@ -22,7 +22,7 @@ Creates a schedule that recurs a fixed number of times.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-schedule-3.html">Schedule</a>&lt;<span>'env,&#32;'input,&#32;int</span>&gt;</span></code> | A schedule that recurs up to <span class="fsdocs-param-name">n</span> times, emitting the current attempt count (0 to n-1). |
+| <code><span><a href="t-flow-schedule.md">Schedule</a>&lt;<span>'env,&#32;'input,&#32;int</span>&gt;</span></code> | A schedule that recurs up to <span class="fsdocs-param-name">n</span> times, emitting the current attempt count (0 to n-1). |
 
 ## Examples
 

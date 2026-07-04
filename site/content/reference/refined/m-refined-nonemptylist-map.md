@@ -18,10 +18,10 @@ Transforms each item while preserving non-emptiness.
 | Name | Type | Description |
 | --- | --- | --- |
 | `mapping` | <code><span>'value&#32;->&#32;'next</span></code> |  |
-| `input` | <code><span><a href="/reference/Axial/axial-refined-nonemptylist-1.html">NonEmptyList</a>&lt;'value&gt;</span></code> |  |
+| `input` | <code><span><a href="t-refined-nonemptylist.md">NonEmptyList</a>&lt;'value&gt;</span></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-refined-nonemptylist-1.html">NonEmptyList</a>&lt;'next&gt;</span></code> |  |
+| <code><span><a href="t-refined-nonemptylist.md">NonEmptyList</a>&lt;'next&gt;</span></code> |  |

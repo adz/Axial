@@ -1,7 +1,7 @@
 ---
 title: "Refined.Refine.positiveInt"
 linkTitle: "positiveInt"
-weight: 2905
+weight: 2906
 ---
 
 Builds a positive integer.
@@ -22,4 +22,4 @@ Builds a positive integer.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><a href="/reference/Axial/axial-refined-positiveint.html">PositiveInt</a>,&#32;<a href="/reference/Axial/axial-refined-refinementerror.html">RefinementError</a></span>&gt;</span></code> |  |
+| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><a href="t-refined-positiveint.md">PositiveInt</a>,&#32;<a href="t-refined-refinementerror.md">RefinementError</a></span>&gt;</span></code> |  |

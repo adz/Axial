@@ -24,7 +24,7 @@ Lifts an option into a synchronous flow with the supplied error.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | A flow that succeeds with the option&#39;s value or fails with the provided error. |
+| <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | A flow that succeeds with the option&#39;s value or fails with the provided error. |
 
 ## Examples
 

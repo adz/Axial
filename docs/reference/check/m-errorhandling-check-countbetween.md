@@ -23,4 +23,4 @@ Returns a sequence-shaped check requiring a count inside the supplied inclusive 
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-errorhandling-check-1.html">Check</a>&lt;'a&gt;</span></code> |  |
+| <code><span><a href="t-errorhandling-check.md">Check</a>&lt;'a&gt;</span></code> |  |

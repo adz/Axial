@@ -25,4 +25,4 @@ Creates a deterministic random generator from fixed integer, double, and byte va
 
 | Type | Description |
 | --- | --- |
-| <code><a href="/reference/Axial/axial-flow-platformservice-irandom.html">IRandom</a></code> |  |
+| <code><a href="../t-flow-platformservice-irandom.md">IRandom</a></code> |  |

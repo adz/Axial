@@ -27,4 +27,4 @@ Starts the workflow and blocks until the final exit is available.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-exit-2.html">Exit</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> | The final workflow exit. |
+| <code><span><a href="../../exit/t-flow-exit.md">Exit</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> | The final workflow exit. |

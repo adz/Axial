@@ -23,7 +23,7 @@ Creates a new <a href="https://learn.microsoft.com/dotnet/api/axial.ref-1">Ref</
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'none,&#32;<span><a href="/reference/Axial/axial-flow-ref-1.html">Ref</a>&lt;'T&gt;</span></span>&gt;</span></code> | A flow that creates and returns the reference. |
+| <code><span><a href="../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'none,&#32;<span><a href="t-flow-ref.md">Ref</a>&lt;'T&gt;</span></span>&gt;</span></code> | A flow that creates and returns the reference. |
 
 ## Examples
 

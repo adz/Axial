@@ -23,4 +23,4 @@ Creates a deterministic provider from a fixed set of name/value pairs.
 
 | Type | Description |
 | --- | --- |
-| <code><a href="/reference/Axial/axial-flow-platformservice-ienvironmentvariables.html">IEnvironmentVariables</a></code> |  |
+| <code><a href="../t-flow-platformservice-ienvironmentvariables.md">IEnvironmentVariables</a></code> |  |

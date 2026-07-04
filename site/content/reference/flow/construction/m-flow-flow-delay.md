@@ -17,13 +17,13 @@ Defers flow construction until execution time.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `factory` | <code><span>unit&#32;->&#32;<span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></span></code> | A function that returns the flow to execute. |
+| `factory` | <code><span>unit&#32;->&#32;<span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></span></code> | A function that returns the flow to execute. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | A flow that lazily evaluates the factory when executed. |
+| <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | A flow that lazily evaluates the factory when executed. |
 
 ## Examples
 

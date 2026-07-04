@@ -22,4 +22,4 @@ Creates a deterministic clock that always returns the supplied instant.
 
 | Type | Description |
 | --- | --- |
-| <code><a href="/reference/Axial/axial-flow-platformservice-iclock.html">IClock</a></code> |  |
+| <code><a href="../t-flow-platformservice-iclock.md">IClock</a></code> |  |

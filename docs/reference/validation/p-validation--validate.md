@@ -16,4 +16,4 @@ The accumulating <code>validate { }</code> computation expression.
 
 | Type | Description |
 | --- | --- |
-| <code><a href="/reference/Axial/axial-validation-validatebuilder.html">ValidateBuilder</a></code> |  |
+| <code><a href="builders-validate.md">ValidateBuilder</a></code> |  |

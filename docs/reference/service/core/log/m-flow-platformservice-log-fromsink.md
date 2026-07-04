@@ -16,10 +16,10 @@ Creates a logger from a synchronous sink function.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `sink` | <code><span><a href="/reference/Axial/axial-flow-loglevel.html">LogLevel</a>&#32;->&#32;string&#32;->&#32;unit</span></code> |  |
+| `sink` | <code><span><a href="../t-flow-loglevel.md">LogLevel</a>&#32;->&#32;string&#32;->&#32;unit</span></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><a href="/reference/Axial/axial-flow-platformservice-ilog.html">ILog</a></code> |  |
+| <code><a href="../t-flow-platformservice-ilog.md">ILog</a></code> |  |
