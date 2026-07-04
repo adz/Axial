@@ -40,7 +40,7 @@ The `Axial.Flow.*` add-on packages should depend on `Axial.Flow`, not the umbrel
 
 ```bash
 dotnet build Axial.slnx --configuration Release --nologo -v minimal
-dotnet test tests/Axial.Tests/Axial.Tests.fsproj --configuration Release --no-build --nologo -v minimal
+dotnet test Axial.slnx --configuration Release --no-build --nologo -v minimal
 bash scripts/pack.sh
 bash scripts/validate-docs.sh
 ```
@@ -67,7 +67,7 @@ git push origin v0.7.0
 For a tag build:
 
 - it builds `Axial.slnx`
-- it tests `tests/Axial.Tests/Axial.Tests.fsproj`
+- it tests `Axial.slnx` (every package-scoped test project)
 - it derives the package version from the tag by stripping the leading `v`
 - it runs `bash scripts/pack.sh -v <version>`
 - it builds the docs site

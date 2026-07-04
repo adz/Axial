@@ -9,8 +9,6 @@ Work this queue from top to bottom.
 
 ## Active Surface Work
 
-- [ ] Split tests into package-specific projects, with each test project building only against its own target package boundary.
-
 - [ ] Decide whether the canonical validation bridge is `Validation.fromResult` or `Validation.ofResult`, then align source comments, docs, examples, and generated reference pages.
 
 - [ ] Refresh `dev-docs/API_BASELINE.md` after package-boundary test projects exist.
@@ -170,17 +168,6 @@ readability and compile-error quality for constraint blocks.
 
 - [ ] Delete stale design notes after decisions are promoted.
 - [ ] Refresh `dev-docs/API_BASELINE.md`.
-- [ ] Split tests into package-specific projects that mirror the package boundaries:
-  - `Axial.Flow.Tests` for `Flow`, `Layer`, `Scope`, `BindError`, `Policy`, runtime mechanics, and `Axial.Flow.*`
-    service packages.
-  - `Axial.ErrorHandling.Tests` for `Check`, `CheckFailure`, `Result`, `Collection`, and `result { }`.
-  - `Axial.Refined.Tests` for `Parse`, `Refine`, refined/domain values, and `refine { }`.
-  - `Axial.Validation.Tests` for `Validation`, `Diagnostics`, paths, and `validate { }`.
-  - `Axial.Schema.Tests` for schema/value-schema definitions, field metadata, constructor/getter descriptors,
-    constraint metadata, and field ordering.
-  - `Axial.Validation.Schema.Tests` for input parsing, schema validation, rules, `SchemaError`, and diagnostics
-    interpretation.
-  - `Axial.Tests` only for umbrella-package smoke tests and cross-package integration scenarios.
 - [ ] Ensure package dependency rules are enforced by tests.
 - [ ] Ensure generated docs and examples do not teach old predicate-only `Check`.
 - [ ] Ensure docs do not present schema as only validation.

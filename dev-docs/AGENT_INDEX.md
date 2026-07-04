@@ -26,14 +26,14 @@ task is about promoting, rejecting, or implementing that sketch.
 
 ## Open These First
 
-- Flow/runtime/layers/services: `src/Axial.Flow/**`, relevant `src/Axial.Flow.*/*`, `tests/Axial.Tests/*Workflow*`,
-  `tests/Axial.Tests/*Service*`, and `dev-docs/PLAN.md`.
+- Flow/runtime/layers/services: `src/Axial.Flow/**`, relevant `src/Axial.Flow.*/*`, `tests/Axial.Flow.Tests/*Workflow*`,
+  `tests/Axial.Flow.PlatformService.Tests/**`, and `dev-docs/PLAN.md`.
 - Check/Result: `src/Axial.ErrorHandling/Check.fs`, `src/Axial.ErrorHandling/Result.fs`,
-  `tests/Axial.Tests/ApiShapeTests.fs`, and `dev-docs/PLAN.md`.
+  `tests/Axial.ErrorHandling.Tests/CheckResultTests.fs`, `tests/Axial.ApiShape.Tests/ApiShapeTests.fs`, and `dev-docs/PLAN.md`.
 - Refined values: `src/Axial.Refined/**`, `tests/Axial.Refined.Tests/**`, and the Check/Result files only as needed.
-- Validation/diagnostics: `src/Axial.Validation/**`, `tests/Axial.Tests/ValidationTests.fs`, and
+- Validation/diagnostics: `src/Axial.Validation/**`, `tests/Axial.Validation.Tests/ValidationTests.fs`, and
   `dev-docs/PLAN.md`.
-- Schema metadata/builder: `src/Axial.Schema/Schema.fs`, `tests/Axial.Tests/Schema*Tests.fs`, and the schema section in
+- Schema metadata/builder: `src/Axial.Schema/Schema.fs`, `tests/Axial.Schema.Tests/Schema*Tests.fs`, and the schema section in
   `dev-docs/PLAN.md`.
 - Schema input/rules/interpreters: start with `src/Axial.Validation.Schema/**`,
   `src/Axial.Schema/Schema.fs`, and the active queue.

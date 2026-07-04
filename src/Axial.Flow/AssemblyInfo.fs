@@ -1,6 +1,7 @@
 namespace Axial.Flow
 
-[<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Tests")>]
+[<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Flow.Tests")>]
+[<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Flow.PlatformService.Tests")>]
 [<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Benchmarks")>]
 [<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Examples")>]
 [<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Playground")>]

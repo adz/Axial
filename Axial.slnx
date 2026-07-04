@@ -33,7 +33,17 @@
     <Project Path="src/Axial.Flow.Telemetry/Axial.Flow.Telemetry.fsproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests/Axial.Tests/Axial.Tests.fsproj" />
+    <Project Path="tests/Axial.Flow.Tests/Axial.Flow.Tests.fsproj" />
+    <Project Path="tests/Axial.ErrorHandling.Tests/Axial.ErrorHandling.Tests.fsproj" />
     <Project Path="tests/Axial.Refined.Tests/Axial.Refined.Tests.fsproj" />
+    <Project Path="tests/Axial.Validation.Tests/Axial.Validation.Tests.fsproj" />
+    <Project Path="tests/Axial.Schema.Tests/Axial.Schema.Tests.fsproj" />
+    <Project Path="tests/Axial.Validation.Schema.Tests/Axial.Validation.Schema.Tests.fsproj" />
+    <Project Path="tests/Axial.Flow.PlatformService.Tests/Axial.Flow.PlatformService.Tests.fsproj" />
+    <Project Path="tests/Axial.Flow.Hosting.Tests/Axial.Flow.Hosting.Tests.fsproj" />
+    <Project Path="tests/Axial.Flow.Telemetry.Tests/Axial.Flow.Telemetry.Tests.fsproj" />
+    <Project Path="tests/Axial.Flow.FileSystem.Tests/Axial.Flow.FileSystem.Tests.fsproj" />
+    <Project Path="tests/Axial.Flow.Integration.Tests/Axial.Flow.Integration.Tests.fsproj" />
+    <Project Path="tests/Axial.ApiShape.Tests/Axial.ApiShape.Tests.fsproj" />
   </Folder>
 </Solution>

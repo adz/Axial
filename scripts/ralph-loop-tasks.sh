@@ -14,9 +14,10 @@ Usage: $(basename "$0") [--once] [--engine codex|claude] [-- <extra engine args>
 
 Runs Codex or Claude in a loop against the next unchecked item in dev-docs/TASKS.md.
 If --engine is not given, prompts on startup to choose the engine.
-After each run, the script verifies the task was checked off in dev-docs/TASKS.md,
-commits any remaining changes itself (the engine is not required to commit), and
-confirms the working tree is clean and a new commit exists before continuing.
+After each run, the script verifies the task was checked off or removed from
+dev-docs/TASKS.md, commits any remaining changes itself (the engine is not
+required to commit), and confirms the working tree is clean and a new commit
+exists before continuing.
 
 Environment:
   TASKS_FILE  Override the path to TASKS.md
@@ -73,20 +74,45 @@ next_task() {
   ' "$TASKS_FILE"
 }
 
-task_is_checked() {
-  local task_number="$1"
+task_is_complete() {
+  local task_kind="$1"
+  local task_marker="$2"
+  local task_text="$3"
 
   awk \
-    -v task_number="$task_number" '
-      /^[[:space:]]*([0-9]+\.|[-*+]) \[[ xX]\] / {
-        seen += 1
-        if (seen == task_number && $0 ~ /^[[:space:]]*([0-9]+\.|[-*+]) \[[xX]\] /) {
-          checked = 1
-          exit
+    -v task_kind="$task_kind" \
+    -v task_marker="$task_marker" \
+    -v task_text="$task_text" '
+      task_kind == "numbered" {
+        pattern = "^[[:space:]]*" task_marker "\\. \\[([ xX])\\] (.*)$"
+        if (match($0, pattern, m) && m[2] == task_text) {
+          found = 1
+          if (m[1] == " ") {
+            unchecked = 1
+          } else {
+            checked = 1
+          }
+        }
+        next
+      }
+
+      task_kind == "bullet" {
+        if (match($0, /^[[:space:]]*[-*+] \[([ xX])\] (.*)$/, m) && m[2] == task_text) {
+          found = 1
+          if (m[1] == " ") {
+            unchecked = 1
+          } else {
+            checked = 1
+          }
         }
       }
+
       END {
-        exit(checked ? 0 : 1)
+        if (unchecked) {
+          exit 1
+        }
+
+        exit((checked || !found) ? 0 : 1)
       }
     ' "$TASKS_FILE"
 }
@@ -128,9 +154,10 @@ Repository rules to follow:
 - Read and follow AGENTS.md, dev-docs/PLAN.md, and dev-docs/TASKS.md.
 - Complete this task end-to-end and do not start any later tasks.
 - Keep the repository's Axial architecture direction intact.
-- Update dev-docs/TASKS.md to mark this task complete only if it is actually complete.
+- Update dev-docs/TASKS.md to mark this task complete, or remove it from the active queue,
+  only if it is actually complete.
 - Do not run git commit yourself. Leave your changes uncommitted; the wrapper script commits
-  them automatically once it verifies the task is checked off.
+  them automatically once it verifies the task is checked off or removed.
 - Run the relevant build/tests needed to validate the task.
 
 If you cannot complete the task safely, do not mark it complete and do not create a misleading commit. Instead, stop and explain the blocker clearly.
@@ -150,8 +177,8 @@ EOF
       ;;
   esac
 
-  if ! task_is_checked "$task_number"; then
-    echo "Task ${task_ref} was not marked checked in TASKS.md. Stopping." >&2
+  if ! task_is_complete "$task_kind" "$task_marker" "$task_text"; then
+    echo "Task ${task_ref} was not marked checked or removed from TASKS.md. Stopping." >&2
     exit 1
   fi
 
