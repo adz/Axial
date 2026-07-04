@@ -14,10 +14,9 @@ Usage: $(basename "$0") [--once] [--engine codex|claude] [-- <extra engine args>
 
 Runs Codex or Claude in a loop against the next unchecked item in dev-docs/TASKS.md.
 If --engine is not given, prompts on startup to choose the engine.
-After each run, the script verifies that:
-  1. the task was checked off in dev-docs/TASKS.md
-  2. a new git commit was created
-  3. the working tree is clean before continuing
+After each run, the script verifies the task was checked off in dev-docs/TASKS.md,
+commits any remaining changes itself (the engine is not required to commit), and
+confirms the working tree is clean and a new commit exists before continuing.
 
 Environment:
   TASKS_FILE  Override the path to TASKS.md
@@ -133,8 +132,8 @@ Repository rules to follow:
 - Complete this task end-to-end and do not start any later tasks.
 - Keep the repository's Axial architecture direction intact.
 - Update dev-docs/TASKS.md to mark this task complete only if it is actually complete.
-- After completing this task, create exactly one git commit for it before stopping.
-- Leave the working tree clean when you finish.
+- Do not run git commit yourself. Leave your changes uncommitted; the wrapper script commits
+  them automatically once it verifies the task is checked off.
 - Run the relevant build/tests needed to validate the task.
 
 If you cannot complete the task safely, do not mark it complete and do not create a misleading commit. Instead, stop and explain the blocker clearly.
@@ -154,6 +153,19 @@ EOF
       ;;
   esac
 
+  if ! task_is_checked "$task_line_number" "$task_kind" "$task_marker" "$task_text"; then
+    echo "Task ${task_ref} is still unchecked in TASKS.md. Stopping." >&2
+    exit 1
+  fi
+
+  git -C "$ROOT_DIR" add -A
+
+  if ! git -C "$ROOT_DIR" diff --cached --quiet; then
+    git -C "$ROOT_DIR" commit -F - <<EOF
+Complete task ${task_ref}: ${task_text}
+EOF
+  fi
+
   if ! git -C "$ROOT_DIR" diff --quiet || ! git -C "$ROOT_DIR" diff --cached --quiet; then
     echo "${ENGINE^} left uncommitted changes after task ${task_ref}. Stopping." >&2
     exit 1
@@ -163,11 +175,6 @@ EOF
 
   if [[ "$after_head" == "$before_head" ]]; then
     echo "No new commit was created for task ${task_ref}. Stopping." >&2
-    exit 1
-  fi
-
-  if ! task_is_checked "$task_line_number" "$task_kind" "$task_marker" "$task_text"; then
-    echo "Task ${task_ref} is still unchecked in TASKS.md. Stopping." >&2
     exit 1
   fi
 
