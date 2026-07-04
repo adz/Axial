@@ -5,13 +5,16 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TASKS_FILE="${TASKS_FILE:-$ROOT_DIR/dev-docs/TASKS.md}"
 CODEX_BIN="${CODEX_BIN:-codex}"
+CLAUDE_BIN="${CLAUDE_BIN:-claude}"
+ENGINE="${ENGINE:-}"
 
 usage() {
   cat <<EOF
-Usage: $(basename "$0") [--once] [-- <extra codex exec args>]
+Usage: $(basename "$0") [--once] [--engine codex|claude] [-- <extra engine args>]
 
-Runs Codex in a loop against the next unchecked item in dev-docs/TASKS.md.
-After each Codex run, the script verifies that:
+Runs Codex or Claude in a loop against the next unchecked item in dev-docs/TASKS.md.
+If --engine is not given, prompts on startup to choose the engine.
+After each run, the script verifies that:
   1. the task was checked off in dev-docs/TASKS.md
   2. a new git commit was created
   3. the working tree is clean before continuing
@@ -19,10 +22,33 @@ After each Codex run, the script verifies that:
 Environment:
   TASKS_FILE  Override the path to TASKS.md
   CODEX_BIN   Override the codex executable
+  CLAUDE_BIN  Override the claude executable
+  ENGINE      Preselect the engine (codex|claude), skipping the prompt
 Examples:
   $(basename "$0")
-  $(basename "$0") --once -- -m gpt-5.4
+  $(basename "$0") --engine claude
+  $(basename "$0") --once --engine codex -- -m gpt-5.4
 EOF
+}
+
+prompt_engine() {
+  local choice
+  while true; do
+    read -r -p "Which engine do you want to use? [codex/claude]: " choice
+    case "$choice" in
+      codex|Codex|CODEX)
+        ENGINE="codex"
+        return
+        ;;
+      claude|Claude|CLAUDE)
+        ENGINE="claude"
+        return
+        ;;
+      *)
+        echo "Please answer 'codex' or 'claude'."
+        ;;
+    esac
+  done
 }
 
 require_clean_tree() {
@@ -115,10 +141,21 @@ If you cannot complete the task safely, do not mark it complete and do not creat
 EOF
 )
 
-  "$CODEX_BIN" exec "${CODEX_EXEC_ARGS[@]}" -C "$ROOT_DIR" "$prompt"
+  case "$ENGINE" in
+    codex)
+      "$CODEX_BIN" exec "${ENGINE_EXEC_ARGS[@]}" -C "$ROOT_DIR" "$prompt"
+      ;;
+    claude)
+      (cd "$ROOT_DIR" && "$CLAUDE_BIN" -p "${ENGINE_EXEC_ARGS[@]}" "$prompt")
+      ;;
+    *)
+      echo "Unknown engine: $ENGINE" >&2
+      exit 1
+      ;;
+  esac
 
   if ! git -C "$ROOT_DIR" diff --quiet || ! git -C "$ROOT_DIR" diff --cached --quiet; then
-    echo "Codex left uncommitted changes after task ${task_ref}. Stopping." >&2
+    echo "${ENGINE^} left uncommitted changes after task ${task_ref}. Stopping." >&2
     exit 1
   fi
 
@@ -144,13 +181,18 @@ main() {
   local task_kind
   local task_marker
   local task_text
-  CODEX_EXEC_ARGS=(--full-auto)
+  local extra_args_set="false"
+  ENGINE_EXEC_ARGS=()
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --once)
         once="true"
         shift
+        ;;
+      --engine)
+        ENGINE="${2:-}"
+        shift 2
         ;;
       -h|--help)
         usage
@@ -159,7 +201,8 @@ main() {
       --)
         shift
         if [[ $# -gt 0 ]]; then
-          CODEX_EXEC_ARGS=("$@")
+          ENGINE_EXEC_ARGS=("$@")
+          extra_args_set="true"
         fi
         break
         ;;
@@ -169,6 +212,23 @@ main() {
         ;;
     esac
   done
+
+  case "$ENGINE" in
+    codex|claude) ;;
+    "") prompt_engine ;;
+    *)
+      echo "Unknown engine: $ENGINE (expected 'codex' or 'claude')" >&2
+      exit 1
+      ;;
+  esac
+
+  if [[ "$extra_args_set" == "false" ]]; then
+    if [[ "$ENGINE" == "codex" ]]; then
+      ENGINE_EXEC_ARGS=(--full-auto)
+    else
+      ENGINE_EXEC_ARGS=(--permission-mode bypassPermissions)
+    fi
+  fi
 
   require_clean_tree
 
