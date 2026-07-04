@@ -350,6 +350,42 @@ module ApiShapeTests =
             externalFieldNameType.GetConstructors(BindingFlags.Public ||| BindingFlags.Instance)
         let fieldDefinitionType =
             schemaAssembly.GetType("Axial.Schema.FieldDefinition`2", true)
+        let schemaFieldMethods =
+            publicStaticMethods schemaModule
+            |> Array.filter (fun methodInfo -> methodInfo.Name = "field")
+        let fieldCreateMethods =
+            publicStaticMethods fieldModule
+            |> Array.filter (fun methodInfo -> methodInfo.Name = "create")
+        let schemaBuilderType = typedefof<SchemaBuilder<_, _, _, _>>
+        let fieldTypeDefinition = typedefof<Field<_, _>>
+        let schemaFieldMethod = schemaFieldMethods |> Array.tryExactlyOne
+        let fieldCreateMethod = fieldCreateMethods |> Array.tryExactlyOne
+        let schemaFieldParameterCount =
+            schemaFieldMethod
+            |> Option.map (fun methodInfo -> methodInfo.GetParameters().Length)
+            |> Option.defaultValue -1
+        let schemaFieldBuilderParameterType =
+            schemaFieldMethod
+            |> Option.bind (fun methodInfo ->
+                let parameters = methodInfo.GetParameters()
+
+                if parameters.Length = 4 then
+                    Some(parameters[3].ParameterType.GetGenericTypeDefinition())
+                else
+                    None)
+            |> Option.defaultValue typeof<obj>
+        let schemaFieldReturnType =
+            schemaFieldMethod
+            |> Option.map (fun methodInfo -> methodInfo.ReturnType.GetGenericTypeDefinition())
+            |> Option.defaultValue typeof<obj>
+        let fieldCreateParameterCount =
+            fieldCreateMethod
+            |> Option.map (fun methodInfo -> methodInfo.GetParameters().Length)
+            |> Option.defaultValue -1
+        let fieldCreateReturnType =
+            fieldCreateMethod
+            |> Option.map (fun methodInfo -> methodInfo.ReturnType.GetGenericTypeDefinition())
+            |> Option.defaultValue typeof<obj>
         let externalNameProperty =
             fieldDefinitionType.GetProperty(
                 "ExternalName",
@@ -383,6 +419,13 @@ module ApiShapeTests =
         fieldModule
         |> publicStaticMemberNames
         |> assertContainsAll [ "create"; "externalName"; "order"; "getValue"; "constraints"; "withConstraint"; "withConstraints" ]
+        test <@ schemaFieldMethods.Length = 1 @>
+        test <@ schemaFieldParameterCount = 4 @>
+        test <@ schemaFieldBuilderParameterType = schemaBuilderType @>
+        test <@ schemaFieldReturnType = schemaBuilderType @>
+        test <@ fieldCreateMethods.Length = 1 @>
+        test <@ fieldCreateParameterCount = 3 @>
+        test <@ fieldCreateReturnType = fieldTypeDefinition @>
         valueModule
         |> publicStaticMemberNames
         |> assertContainsAll [ "text"; "int"; "decimal"; "bool"; "date"; "dateTime"; "guid"; "primitiveKind"; "constraints"; "withConstraint"; "withConstraints" ]

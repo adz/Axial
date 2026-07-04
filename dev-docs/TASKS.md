@@ -188,7 +188,7 @@ the typed `Field` values and the constructor lambda from the test side; a codec 
   expression, and no source generator required for any field count. Compare
   `../../CodecMapper/main/src/CodecMapper/ContractsCore.fs` (`SchemaBuilder`, `IChainNode`, `FieldsAppend`, and
   `Schema.record` / `Schema.fieldWith` / `Schema.build`) before accepting the API.
-- [ ] Resolve the `Schema.field` naming collision: today `Schema.field` builds a standalone `Field<'model, 'value>`
+- [x] Resolve the `Schema.field` naming collision: today `Schema.field` builds a standalone `Field<'model, 'value>`
   consumed by `mapN`, while the pipeline step needs a different signature and F# modules cannot overload. Decide the
   primary name and whether the standalone field constructor survives (for example as `Field.create` for interpreter
   tests and advanced composition) or is removed together with `mapN`.
