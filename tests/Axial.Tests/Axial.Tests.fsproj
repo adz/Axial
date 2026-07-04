@@ -20,6 +20,7 @@
     <Compile Include="ServiceRuntimePatternTests.fs" />
     <Compile Include="ApiShapeTests.fs" />
     <Compile Include="SchemaConstraintCheckTests.fs" />
+    <Compile Include="SchemaConstructorGetterAlignmentTests.fs" />
     <Compile Include="FlowRuntimeMetadataTests.fs" />
     <Compile Include="RuntimeSemanticsTests.fs" />
     <Compile Include="WorkflowBasicTests.fs" />
