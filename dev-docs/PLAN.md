@@ -70,6 +70,31 @@ of the metadata model. The `schema create { }` computation expression and any `[
 sugar over the builder, not the required path for larger models. Raw input, schema validation, rules, and DSL work
 should build on that explicit builder core rather than bypass it.
 
+The public schema-authoring vocabulary should make primitive fields the short path and custom value schemas the explicit
+path. The primitive field operations are `text`, `int`, `decimal`, `bool`, `date`, `dateTime`, and `guid`, using the same
+external-name-first, getter-second order as `Schema.field`. In the pipeline surface they should be qualified builder
+steps such as `Schema.text "name" _.Name`; in the optional `schema create { }` computation expression they should be the
+unqualified operations:
+
+```fsharp
+schema create {
+    text "name" _.Name {
+        required
+        maxLength 80
+    }
+
+    int "age" _.Age {
+        atLeast 0
+    }
+}
+```
+
+Reserve generic `Schema.field "email" _.Email Email.schema` and `field "email" _.Email Email.schema { ... }` for
+explicit or custom `ValueSchema<'value>` values, including refined/domain schemas, nested schemas once introduced, and
+advanced composition. Do not introduce competing primitive aliases such as `string`, `integer`, `boolean`, `uuid`,
+`dateOnly`, or `Field.text`. `Value.text`, `Value.``int```, and the other `Value.*` primitives remain the lower-level
+value-schema vocabulary used by generic fields and interpreters, not the everyday field-authoring names.
+
 Schema must also preserve a high-performance codec lowering path. The inspectable schema model may contain rich metadata,
 but JSON codecs should not interpret that metadata tree directly on the hot path. A codec interpreter must be able to
 compile schemas into direct record plans: ordered field descriptors, cached wire-name bytes, indexed field slots,

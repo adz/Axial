@@ -259,7 +259,7 @@ the typed `Field` values and the constructor lambda from the test side; a codec 
   tests proving the shorthand works, and update `dev-docs/PLAN.md`, `dev-docs/decisions/README.md`, source comments,
   and any examples so they do not present `Schema.record ctor |> Schema.field "name" _.Name Value.text` as already
   supported unless that exact form compiles.
-- [ ] Decide and document the public authoring vocabulary for primitive field shorthands before RawInput or the CE DSL
+- [x] Decide and document the public authoring vocabulary for primitive field shorthands before RawInput or the CE DSL
   grows around the wrong names. The target direction is that primitive helpers such as
   `text "name" _.Name { ... }`, `int "age" _.Age { ... }`, `decimal`, `bool`, `date`, and `guid` are the everyday
   schema-authoring surface, while generic `field "email" _.Email Email.schema { ... }` / `Schema.field "email" _.Email

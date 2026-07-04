@@ -48,6 +48,13 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
   progressive builder. The built schema must keep its typed field chain reachable alongside the type-erased descriptor
   view so codec interpreters can compile constructor-specialized plans from a `Schema<'model>` value alone, without
   `obj array` constructor application.
+- Primitive schema field shorthands use the primitive names directly: `text`, `int`, `decimal`, `bool`, `date`,
+  `dateTime`, and `guid`. They are field-authoring operations with external name first and getter second, for example
+  `Schema.text "name" _.Name` in the pipeline surface and `text "name" _.Name { ... }` inside the optional
+  `schema create { }` computation expression. Generic `Schema.field "email" _.Email Email.schema` and
+  `field "email" _.Email Email.schema { ... }` are reserved for explicit or custom `ValueSchema<'value>` values such as
+  refined/domain schemas and advanced composition. Do not add competing aliases such as `string`, `integer`, `boolean`,
+  `uuid`, `dateOnly`, or `Field.text`; `Value.*` remains the lower-level value-schema vocabulary.
 - `Bind` is only for assigning or mapping a source error immediately before `flow { }` binds it. In pure code, use
   `Result.require`, `Result.mapError`, or `Validation.mapError`.
 - Generated reference docs come from XML comments and generator inputs. Do not hand-edit generated reference pages as the
