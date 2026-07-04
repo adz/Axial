@@ -249,7 +249,7 @@ the typed `Field` values and the constructor lambda from the test side; a codec 
       'SchemaBuilder<Customer,(string -> int -> Customer),(int -> Customer),FieldsAppend<Customer,(string -> int -> Customer),string,(int -> Customer),FieldsEnd<Customer,(string -> int -> Customer)>>> -> Schema<Customer>'
   The type 'Customer' does not match the type 'int -> Customer'
   ```
-- [ ] Update `dev-docs/decisions/README.md`, `dev-docs/PLAN.md`, and source comments (for example the `Schema.map3`
+- [x] Update `dev-docs/decisions/README.md`, `dev-docs/PLAN.md`, and source comments (for example the `Schema.map3`
   remark that routes larger models through the CE/generator) once the builder replaces the `mapN` cap.
 
 ## Phase 6: Add Refined Value Schemas

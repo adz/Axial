@@ -26,6 +26,7 @@ weight: 1000
  A schema definition records model structure and construction metadata without tying that metadata to input parsing,
  diagnostics, validation, codecs, UI generation, or workflow execution.
  </p><p class='fsdocs-para'>
- The public construction API is intentionally introduced by the field and value-schema operations that follow this
- core type.
+ The public construction path is the progressive typed builder: start with <code>Schema.record</code>, append
+ <code>Schema.field</code> steps, and finish with <code>Schema.build</code>. Computation expressions and source generators can
+ layer over that builder later, but they are not required for larger models.
  </p>

@@ -62,9 +62,11 @@ Schema.record ctor
 
 Each field application peels one curried constructor argument and `Schema.build` only type-checks when the constructor
 is fully applied, so constructor/getter alignment is compiler-checked by argument position and authoring scales to any
-field count without a hand-written `mapN` family, computation expression, or source generator. The `schema create { }`
-computation expression is optional sugar over this builder, not the required path for larger models. Raw input, schema
-validation, rules, and DSL work should build on that explicit builder core rather than bypass it.
+field count without a hand-written `mapN` family, computation expression, or source generator. The earlier
+`Schema.map2`/`Schema.map3` API was only a transitional proof of the metadata model. The `schema create { }`
+computation expression and any `[<Schema>]` source generator are optional sugar over the builder, not the required path
+for larger models. Raw input, schema validation, rules, and DSL work should build on that explicit builder core rather
+than bypass it.
 
 Schema must also preserve a high-performance codec lowering path. The inspectable schema model may contain rich metadata,
 but JSON codecs should not interpret that metadata tree directly on the hot path. A codec interpreter must be able to

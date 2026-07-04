@@ -666,7 +666,8 @@ type FieldsAppend<'model, 'constructor, 'field, 'next, 'head
 /// <remarks>
 /// Each <c>Schema.field</c> application consumes one argument from the remaining constructor type. The builder can
 /// only be passed to <c>Schema.build</c> when the remaining constructor type is the model itself, which keeps
-/// constructor/getter alignment compiler-checked without a hand-written <c>mapN</c> family.
+/// constructor/getter alignment compiler-checked and scales authoring to any field count without a hand-written
+/// <c>mapN</c> family, computation expression, or source generator.
 /// </remarks>
 type SchemaBuilder<'model, 'constructor, 'remaining, 'chain
     when 'chain :> IFieldChain<'model, 'constructor, 'remaining>>
@@ -736,8 +737,9 @@ module internal ModelSchemaDefinition =
 /// diagnostics, validation, codecs, UI generation, or workflow execution.
 /// </para>
 /// <para>
-/// The public construction API is intentionally introduced by the field and value-schema operations that follow this
-/// core type.
+/// The public construction path is the progressive typed builder: start with <c>Schema.record</c>, append
+/// <c>Schema.field</c> steps, and finish with <c>Schema.build</c>. Computation expressions and source generators can
+/// layer over that builder later, but they are not required for larger models.
 /// </para>
 /// </remarks>
 [<Sealed>]
@@ -1013,7 +1015,9 @@ module Schema =
     /// </summary>
     /// <remarks>
     /// Each following <c>Schema.field</c> step consumes one argument from the constructor type. A partially-applied
-    /// builder will not type-check with <c>Schema.build</c>; the final remaining type must be the model.
+    /// builder will not type-check with <c>Schema.build</c>; the final remaining type must be the model. This builder
+    /// replaces the earlier fixed-arity <c>Schema.map2</c>/<c>Schema.map3</c> proof shape, so models with more fields
+    /// continue through the same pipeline rather than switching to a required computation expression or generator.
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="constructor" /> is null.</exception>
     let record (constructor: 'constructor) : SchemaBuilder<'model, 'constructor, 'constructor, FieldsEnd<'model, 'constructor>> =
@@ -1106,7 +1110,8 @@ module Schema =
     /// </summary>
     /// <remarks>
     /// This is the arity-independent schema construction path. It preserves the existing type-erased model definition
-    /// for metadata interpreters while deriving constructor application and field ordering from the typed field chain.
+    /// for metadata interpreters while deriving constructor application and field ordering from the typed field chain,
+    /// without adding more fixed-arity <c>Schema.mapN</c> helpers.
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="builder" /> is null.</exception>
     let build (builder: SchemaBuilder<'model, 'constructor, 'model, 'chain>) : Schema<'model> =
