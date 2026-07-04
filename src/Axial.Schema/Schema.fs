@@ -493,6 +493,49 @@ type PrimitiveValueKind =
     /// <summary>A globally unique identifier represented as <see cref="T:System.Guid" />.</summary>
     | Guid
 
+/// <summary>Identifies the portable named format of a schema value, such as <c>email</c>.</summary>
+/// <remarks>
+/// <para>
+/// Format metadata names the boundary-facing interpretation of a value beyond its primitive kind. Interpreters use it
+/// without running validation logic: JSON Schema emitters lower it to the <c>format</c> keyword, UI renderers select
+/// input controls from it, and documentation generators describe the expected shape with it.
+/// </para>
+/// <para>
+/// A format is annotation metadata, not a constraint. Declaring a format does not attach any executable check;
+/// validation-facing requirements such as <see cref="P:Axial.Schema.SchemaConstraint.email" /> remain separate
+/// constraint metadata.
+/// </para>
+/// </remarks>
+[<Struct>]
+type SchemaFormat internal (name: string) =
+    /// <summary>Gets the stable interpreter-facing format name.</summary>
+    member _.Name = name
+
+    override _.ToString() = name
+
+/// <summary>Functions for creating and inspecting schema value format metadata.</summary>
+[<RequireQualifiedAccess>]
+module SchemaFormat =
+    /// <summary>Creates portable schema format metadata from a stable interpreter-facing name.</summary>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="name" /> is null.</exception>
+    /// <exception cref="T:System.ArgumentException">
+    /// Thrown when <paramref name="name" /> is empty or contains only whitespace.
+    /// </exception>
+    let create (name: string) =
+        if isNull name then
+            nullArg (nameof name)
+
+        if String.IsNullOrWhiteSpace name then
+            invalidArg (nameof name) "Schema format names must not be empty or whitespace."
+
+        SchemaFormat name
+
+    /// <summary>The well-known email address format.</summary>
+    let email = create "email"
+
+    /// <summary>Returns the stable interpreter-facing format name.</summary>
+    let name (format: SchemaFormat) = format.Name
+
 /// <summary>
 /// Holds the type-erased construction and inspection functions for a refined/domain value schema.
 /// </summary>
@@ -523,6 +566,7 @@ type internal RefinedValueOps(construct: obj -> obj, inspect: obj -> obj) =
 
 type internal ValueSchemaDefinition =
     { Shape: ValueSchemaShape
+      Format: SchemaFormat option
       Constraints: SchemaConstraint list }
 
 and internal ValueSchemaShape =
@@ -775,6 +819,7 @@ module Value =
     let private primitive kind =
         ValueSchema(
             { Shape = PrimitiveValueDefinition kind
+              Format = None
               Constraints = [] }
         )
 
@@ -845,7 +890,9 @@ module Value =
     /// refinement: <see cref="M:Axial.Schema.Value.underlyingPrimitiveKind``1" /> reports the intrinsic primitive kind
     /// beneath any number of refinement layers, and <see cref="M:Axial.Schema.Value.rawConstraints``1" /> returns the
     /// constraint metadata carried by the raw schema, so interpreters can parse, render, and document the raw
-    /// representation before constructing the refined value.
+    /// representation before constructing the refined value. Format metadata declared with
+    /// <see cref="M:Axial.Schema.Value.withFormat``1" /> stays visible the same way:
+    /// <see cref="M:Axial.Schema.Value.format``1" /> reports the nearest declared format through refinement layers.
     /// </para>
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">
@@ -869,6 +916,7 @@ module Value =
 
         ValueSchema(
             { Shape = RefinedValueDefinition(raw.Definition, ops)
+              Format = None
               Constraints = [] }
         )
 
@@ -920,6 +968,55 @@ module Value =
         | RefinedValueDefinition(raw, _) -> raw.Constraints
         | PrimitiveValueDefinition _ ->
             invalidArg (nameof schema) "Expected a refined value schema, but the schema is a primitive value schema."
+
+    /// <summary>Returns a value schema carrying the supplied portable format metadata.</summary>
+    /// <remarks>
+    /// <para>
+    /// The format names the boundary-facing interpretation of the value, such as
+    /// <see cref="P:Axial.Schema.SchemaFormat.email" /> for a refined email address over
+    /// <see cref="P:Axial.Schema.Value.text" />. It is annotation metadata for interpreters — JSON Schema emitters,
+    /// UI renderers, and documentation generators — and attaches no executable check; pair it with constraint
+    /// metadata such as <see cref="P:Axial.Schema.SchemaConstraint.email" /> when validation is also required.
+    /// </para>
+    /// <para>
+    /// A value schema carries at most one format. Applying <c>withFormat</c> again replaces the earlier declaration.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
+    /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="format" /> carries no name.</exception>
+    let withFormat (format: SchemaFormat) (schema: ValueSchema<'value>) =
+        if String.IsNullOrWhiteSpace format.Name then
+            invalidArg (nameof format) "Schema format names must not be empty or whitespace."
+
+        if isNull (box schema) then
+            nullArg (nameof schema)
+
+        ValueSchema(
+            { schema.Definition with
+                Format = Some format }
+        )
+
+    /// <summary>Returns the portable format metadata declared nearest to a value schema, when present.</summary>
+    /// <remarks>
+    /// Like <see cref="M:Axial.Schema.Value.underlyingPrimitiveKind``1" />, this accessor sees through refinement
+    /// layers: a format declared on the refined value schema itself wins, and otherwise the raw value schemas are
+    /// walked toward the primitive foundation until a declaration is found. A format declared on the raw text of a
+    /// refined email address therefore stays visible on the refined schema, while an outer declaration overrides it.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
+    let format (schema: ValueSchema<'value>) =
+        if isNull (box schema) then
+            nullArg (nameof schema)
+
+        let rec formatOf (definition: ValueSchemaDefinition) =
+            match definition.Format with
+            | Some _ as declared -> declared
+            | None ->
+                match definition.Shape with
+                | RefinedValueDefinition(raw, _) -> formatOf raw
+                | PrimitiveValueDefinition _ -> None
+
+        formatOf schema.Definition
 
     /// <summary>Returns the portable constraint metadata attached to a value schema.</summary>
     let constraints (schema: ValueSchema<'value>) =
