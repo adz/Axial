@@ -446,7 +446,8 @@ module SchemaConstraint =
 [<ReferenceEquality>]
 type internal ConstructorApplication<'model> =
     { ArgumentCount: int
-      ApplyTrusted: obj array -> 'model }
+      ApplyTrusted: obj array -> 'model
+      TryApplyTrusted: obj array -> Result<'model, string> }
 
 module internal ConstructorApplication =
     let ensureArgumentCount expected (arguments: obj array) =
@@ -464,7 +465,11 @@ module internal ConstructorApplication =
           ApplyTrusted =
             fun arguments ->
                 ensureArgumentCount 0 arguments
-                construct () }
+                construct ()
+          TryApplyTrusted =
+            fun arguments ->
+                ensureArgumentCount 0 arguments
+                Ok(construct ()) }
 
     let create1 (construct: 'a -> 'model) =
         if isNull (box construct) then
@@ -474,7 +479,11 @@ module internal ConstructorApplication =
           ApplyTrusted =
             fun arguments ->
                 ensureArgumentCount 1 arguments
-                construct (unbox<'a> arguments[0]) }
+                construct (unbox<'a> arguments[0])
+          TryApplyTrusted =
+            fun arguments ->
+                ensureArgumentCount 1 arguments
+                Ok(construct (unbox<'a> arguments[0])) }
 
     let create2 (construct: 'a -> 'b -> 'model) =
         if isNull (box construct) then
@@ -484,7 +493,11 @@ module internal ConstructorApplication =
           ApplyTrusted =
             fun arguments ->
                 ensureArgumentCount 2 arguments
-                construct (unbox<'a> arguments[0]) (unbox<'b> arguments[1]) }
+                construct (unbox<'a> arguments[0]) (unbox<'b> arguments[1])
+          TryApplyTrusted =
+            fun arguments ->
+                ensureArgumentCount 2 arguments
+                Ok(construct (unbox<'a> arguments[0]) (unbox<'b> arguments[1])) }
 
     let create3 (construct: 'a -> 'b -> 'c -> 'model) =
         if isNull (box construct) then
@@ -494,13 +507,23 @@ module internal ConstructorApplication =
           ApplyTrusted =
             fun arguments ->
                 ensureArgumentCount 3 arguments
-                construct (unbox<'a> arguments[0]) (unbox<'b> arguments[1]) (unbox<'c> arguments[2]) }
+                construct (unbox<'a> arguments[0]) (unbox<'b> arguments[1]) (unbox<'c> arguments[2])
+          TryApplyTrusted =
+            fun arguments ->
+                ensureArgumentCount 3 arguments
+                Ok(construct (unbox<'a> arguments[0]) (unbox<'b> arguments[1]) (unbox<'c> arguments[2])) }
 
     let apply (application: ConstructorApplication<'model>) (arguments: obj array) =
         if isNull (box application) then
             nullArg (nameof application)
 
         application.ApplyTrusted arguments
+
+    let tryApply (application: ConstructorApplication<'model>) (arguments: obj array) =
+        if isNull (box application) then
+            nullArg (nameof application)
+
+        application.TryApplyTrusted arguments
 
 /// <summary>Identifies the intrinsic primitive shape of a schema value.</summary>
 /// <remarks>
@@ -641,7 +664,11 @@ module internal ModelSchemaErasure =
     let erase (definition: ModelSchemaDefinition<'model>) : ModelSchemaDefinition<obj> =
         { Constructor =
             { ArgumentCount = definition.Constructor.ArgumentCount
-              ApplyTrusted = fun arguments -> definition.Constructor.ApplyTrusted arguments |> box }
+              ApplyTrusted = fun arguments -> definition.Constructor.ApplyTrusted arguments |> box
+              TryApplyTrusted =
+                fun arguments ->
+                    definition.Constructor.TryApplyTrusted arguments
+                    |> Result.map box }
           Fields =
             definition.Fields
             |> List.map (fun field ->
@@ -1636,12 +1663,75 @@ module Schema =
               ApplyTrusted =
                 fun arguments ->
                     ConstructorApplication.ensureArgumentCount count arguments
-                    chain.Apply(box builder.Constructor, arguments) |> unbox<'model> }
+                    chain.Apply(box builder.Constructor, arguments) |> unbox<'model>
+              TryApplyTrusted =
+                fun arguments ->
+                    ConstructorApplication.ensureArgumentCount count arguments
+                    chain.Apply(box builder.Constructor, arguments) |> unbox<'model> |> Ok }
 
         let specialization =
             SchemaSpecialization<'model, 'constructor, 'chain>(builder.Constructor, builder.Chain) :> ISchemaSpecialization<'model>
 
         Schema(ModelDefinition(ModelSchemaDefinition.create constructor fields), Some specialization)
+
+    /// <summary>
+    /// Builds a model schema from a progressive typed builder whose constructor returns
+    /// <c>Result&lt;'model, 'error&gt;</c>.
+    /// </summary>
+    /// <remarks>
+    /// Use this when field values can parse successfully but the trusted model constructor still enforces intrinsic
+    /// cross-field invariants. The supplied <paramref name="errorMessage" /> function maps constructor errors to a
+    /// portable message that schema interpreters can report without making <c>Axial.Schema</c> depend on diagnostics.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException">
+    /// Thrown when <paramref name="errorMessage" /> or <paramref name="builder" /> is null.
+    /// </exception>
+    let buildResultWith
+        (errorMessage: 'error -> string)
+        (builder: SchemaBuilder<'model, 'constructor, Result<'model, 'error>, 'chain>)
+        : Schema<'model> =
+        if isNull (box errorMessage) then
+            nullArg (nameof errorMessage)
+
+        if isNull (box builder) then
+            nullArg (nameof builder)
+
+        let chain = builder.Chain :> IFieldChain<'model, 'constructor, Result<'model, 'error>>
+        let fields, count =
+            let fields, count = chain.GetFields 0
+            fields |> List.map unbox<FieldDescriptor<'model>>, count
+
+        let tryApply arguments =
+            ConstructorApplication.ensureArgumentCount count arguments
+
+            match chain.Apply(box builder.Constructor, arguments) |> unbox<Result<'model, 'error>> with
+            | Ok model -> Ok model
+            | Error error -> Error(errorMessage error)
+
+        let constructor =
+            { ConstructorApplication.ArgumentCount = count
+              ApplyTrusted =
+                fun arguments ->
+                    match tryApply arguments with
+                    | Ok model -> model
+                    | Error message -> invalidOp message
+              TryApplyTrusted = tryApply }
+
+        Schema(ModelDefinition(ModelSchemaDefinition.create constructor fields), None)
+
+    /// <summary>
+    /// Builds a model schema from a progressive typed builder whose constructor returns
+    /// <c>Result&lt;'model, string&gt;</c>.
+    /// </summary>
+    /// <remarks>
+    /// This is the short path for constructors that already return user-facing intrinsic-invariant messages. Use
+    /// <see cref="M:Axial.Schema.Schema.buildResultWith``5" /> when the constructor uses a domain-specific error type.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="builder" /> is null.</exception>
+    let buildResult
+        (builder: SchemaBuilder<'model, 'constructor, Result<'model, string>, 'chain>)
+        : Schema<'model> =
+        buildResultWith id builder
 
     /// <summary>
     /// Specializes a built model schema's retained typed field chain into an interpreter-specific result.

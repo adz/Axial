@@ -481,7 +481,9 @@ module ApiShapeTests =
               "date"
               "dateTime"
               "guid"
-              "build" ]
+              "build"
+              "buildResult"
+              "buildResultWith" ]
         fieldModule
         |> publicStaticMemberNames
         |> assertContainsAll [ "create"; "externalName"; "order"; "getValue"; "constraints"; "withConstraint"; "withConstraints" ]

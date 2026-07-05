@@ -9,6 +9,29 @@ open Xunit
 module InputParseTests =
     type private Signup = { Email: string; Age: int }
 
+    type private AdultAge =
+        private
+            { Age: int }
+
+        static member Create age =
+            if age >= 18 then
+                Ok { Age = age }
+            else
+                Error "Age must be at least 18."
+
+    type private AgeError =
+        | Underage
+
+    type private MappedAdultAge =
+        private
+            { Age: int }
+
+        static member Create age =
+            if age >= 18 then
+                Ok { Age = age }
+            else
+                Error Underage
+
     let private schema =
         Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
         |> Schema.field "email" _.Email (Value.text |> Value.withConstraint SchemaConstraint.required)
@@ -215,6 +238,60 @@ module InputParseTests =
 
         test <@ parsed.IsValid @>
         test <@ constructorCalls = 1 @>
+
+    [<Fact>]
+    let ``parse builds a model from a constructor returning Ok`` () =
+        let ageSchema =
+            Schema.recordFor<AdultAge, _> AdultAge.Create
+            |> Schema.int "age" _.Age
+            |> Schema.buildResult
+
+        let raw =
+            RawInput.Object(
+                Map.ofList
+                    [ "age", RawInput.Scalar "21" ]
+            )
+
+        let parsed = Input.parse ageSchema raw
+
+        test <@ parsed.IsValid @>
+        test <@ parsed.Model = { Age = 21 } @>
+
+    [<Fact>]
+    let ``parse reports a constructor error from a constructor returning Error`` () =
+        let ageSchema =
+            Schema.recordFor<AdultAge, _> AdultAge.Create
+            |> Schema.int "age" _.Age
+            |> Schema.buildResult
+
+        let raw =
+            RawInput.Object(
+                Map.ofList
+                    [ "age", RawInput.Scalar "17" ]
+            )
+
+        let parsed = Input.parse ageSchema raw
+
+        test <@ not parsed.IsValid @>
+        test <@ parsed.TryModel = None @>
+        test <@ parsed.Errors = [ { Path = []; Error = SchemaError.ConstructorFailed "Age must be at least 18." } ] @>
+
+    [<Fact>]
+    let ``parse maps constructor error values through buildResultWith`` () =
+        let ageSchema =
+            Schema.recordFor<MappedAdultAge, _> MappedAdultAge.Create
+            |> Schema.int "age" _.Age
+            |> Schema.buildResultWith (function Underage -> "Adult age is required.")
+
+        let raw =
+            RawInput.Object(
+                Map.ofList
+                    [ "age", RawInput.Scalar "17" ]
+            )
+
+        let parsed = Input.parse ageSchema raw
+
+        test <@ parsed.Errors = [ { Path = []; Error = SchemaError.ConstructorFailed "Adult age is required." } ] @>
 
     [<Fact>]
     let ``parse retains raw input for redisplay after a failed parse`` () =

@@ -54,7 +54,7 @@ Work this queue from top to bottom.
 
 ## Phase 10: Constructor-Level Intrinsic Errors
 
-- [ ] Support `schemaResult` or equivalent for constructors returning `Result`.
+- [x] Support `schemaResult` or equivalent for constructors returning `Result`.
 - [ ] Attach constructor errors at root by default.
 - [ ] Support attaching constructor errors to a field path with `Input.constructorErrorAt "end"` or equivalent.
 - [ ] Decide how constructor errors compose with field errors.

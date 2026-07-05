@@ -55,6 +55,9 @@ module Input =
     let private errorAt path error =
         Error(diagnosticsAt path error)
 
+    let private constructorErrorAt path message =
+        errorAt path (SchemaError.ConstructorFailed message)
+
     let private mergeErrors diagnostics =
         diagnostics
         |> List.reduce Diagnostics.merge
@@ -294,8 +297,10 @@ module Input =
             parsedFields
             |> List.map (function Ok value -> value | Error _ -> invalidOp "Unexpected parse error.")
             |> List.toArray
-            |> ConstructorApplication.apply model.Constructor
-            |> Ok
+            |> ConstructorApplication.tryApply model.Constructor
+            |> function
+                | Ok model -> Ok model
+                | Error message -> constructorErrorAt path message
         | diagnostics -> Error(mergeErrors diagnostics)
 
     and private parseManyItem path itemModel rawItem =
@@ -356,8 +361,10 @@ module Input =
                     parsedFields
                     |> List.map (function Ok value -> value | Error _ -> invalidOp "Unexpected parse error.")
                     |> List.toArray
-                    |> ConstructorApplication.apply model.Constructor
-                    |> Ok
+                    |> ConstructorApplication.tryApply model.Constructor
+                    |> function
+                        | Ok model -> Ok model
+                        | Error message -> constructorErrorAt [] message
                 | diagnostics -> Error(mergeErrors diagnostics)
 
         { Input = input; Result = result }
