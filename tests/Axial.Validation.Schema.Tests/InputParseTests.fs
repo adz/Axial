@@ -48,6 +48,25 @@ module InputParseTests =
         test <@ parsed.Errors = [ { Path = [ PathSegment.Name "age" ]; Error = SchemaError.InvalidFormat "int" } ] @>
 
     [<Fact>]
+    let ``parse accumulates diagnostics for every failing sibling field`` () =
+        let raw =
+            RawInput.Object(
+                Map.ofList
+                    [ "email", RawInput.Scalar "   "
+                      "age", RawInput.Scalar "not-an-int" ]
+            )
+
+        let parsed = Input.parse schema raw
+
+        test <@ not parsed.IsValid @>
+        test <@ parsed.ErrorsFor "email" = [ SchemaError.Required ] @>
+        test <@ parsed.ErrorsFor "age" = [ SchemaError.InvalidFormat "int" ] @>
+
+        test
+            <@ parsed.Errors = [ { Path = [ PathSegment.Name "age" ]; Error = SchemaError.InvalidFormat "int" }
+                                 { Path = [ PathSegment.Name "email" ]; Error = SchemaError.Required } ] @>
+
+    [<Fact>]
     let ``parse reports root diagnostic when model input is not an object`` () =
         let parsed = Input.parse schema (RawInput.Scalar "ada@example.com")
 
