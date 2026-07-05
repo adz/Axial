@@ -1,7 +1,7 @@
 ---
 title: "Validation.Schema.RefinedSchema.boundedArray"
 linkTitle: "boundedArray"
-weight: 2311
+weight: 2313
 ---
 
 Describes a bounded array as a schema refined value over a collection with inclusive count bounds.

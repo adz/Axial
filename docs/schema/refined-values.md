@@ -38,8 +38,9 @@ let productSchema =
     |> Schema.build
 ```
 
-Available scalar schemas include `RefinedSchema.nonBlankString`, `RefinedSchema.boundedString min max`,
-`RefinedSchema.slug`, `RefinedSchema.positiveInt`, `RefinedSchema.nonNegativeInt`, `RefinedSchema.negativeInt`, and
+Available scalar schemas include `RefinedSchema.nonBlankString`, `RefinedSchema.trimmedString`,
+`RefinedSchema.boundedString min max`, `RefinedSchema.slug`, `RefinedSchema.positiveInt`,
+`RefinedSchema.nonNegativeInt`, `RefinedSchema.nonZeroInt`, `RefinedSchema.negativeInt`, and
 `RefinedSchema.nonPositiveInt`.
 
 Collection catalog schemas take an item value schema:
@@ -60,6 +61,14 @@ let taggedSchema =
 
 Use `Value.manyOf itemSchema` when a collection field contains primitive or refined items. Use `Value.many itemSchema`
 for the older nested-model shortcut where `itemSchema` is a built `Schema<'item>`.
+
+Temporal range schemas are model schemas because they have `start` and `end` fields:
+
+```fsharp
+let windowSchema = RefinedSchema.dateTimeOffsetRange
+```
+
+`RefinedSchema.dateOnlyRange` is available when targeting frameworks that support `DateOnly`.
 
 ## Authoring
 

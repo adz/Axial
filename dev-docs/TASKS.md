@@ -56,10 +56,8 @@ Collapse the failure taxonomies a newcomer meets. Pre-1.0 breaking changes are a
 
 Merge the Refined catalog and schema refined values into a single artifact.
 
-- [ ] Ship ready-made schemas for the Refined catalog types. Scalar schemas now live in
-  `Axial.Validation.Schema.RefinedSchema` to preserve the `Axial.Refined` leaf-package boundary, and collection schemas
-  are available via item-schema helpers such as `RefinedSchema.nonEmptyList RefinedSchema.slug`; remaining work is
-  temporal/domain-range support once schema core can express record-shaped catalog schemas ergonomically.
+- [x] Ship ready-made schemas for the Refined catalog types. Scalar, collection, and temporal range schemas live in
+  `Axial.Validation.Schema.RefinedSchema` to preserve the `Axial.Refined` leaf-package boundary.
 - [ ] Make standalone refinement (`Refine.positiveInt`) and schema-field use the same underlying constraint metadata,
   eliminating the `Refine.positiveInt` vs `SchemaConstraint.greaterThan 0` duplication.
 - [ ] Decide and document the single home for authoring new domain value types (one page: private ctor +

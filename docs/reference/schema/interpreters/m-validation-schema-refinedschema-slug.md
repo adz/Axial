@@ -1,7 +1,7 @@
 ---
 title: "Validation.Schema.RefinedSchema.slug"
 linkTitle: "slug"
-weight: 2302
+weight: 2303
 ---
 
 Describes an ASCII slug as a schema refined value over required text with the built-in slug pattern.

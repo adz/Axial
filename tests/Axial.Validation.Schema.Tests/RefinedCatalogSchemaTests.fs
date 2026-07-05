@@ -1,5 +1,6 @@
 namespace Axial.Tests
 
+open System
 open Axial.Refined
 open Axial.Schema
 open Axial.Validation
@@ -13,6 +14,12 @@ module RefinedCatalogSchemaTests =
             Name: NonBlankString
             Slug: Slug
             Quantity: PositiveInt
+        }
+
+    type private Scalars =
+        {
+            Command: TrimmedString
+            Offset: NonZeroInt
         }
 
     type private Tagged =
@@ -83,6 +90,31 @@ module RefinedCatalogSchemaTests =
         test <@ check value = Ok () @>
 
     [<Fact>]
+    let ``remaining scalar catalog schemas report the same failures as standalone refinement`` () =
+        let schema =
+            Schema.recordFor<Scalars, _> (fun command offset -> { Command = command; Offset = offset })
+            |> Schema.field "command" _.Command RefinedSchema.trimmedString
+            |> Schema.field "offset" _.Offset RefinedSchema.nonZeroInt
+            |> Schema.build
+
+        let raw =
+            RawInput.Object(Map.ofList [ "command", RawInput.Scalar " deploy "; "offset", RawInput.Scalar "0" ])
+
+        let parsed = Input.parse schema raw
+
+        test
+            <@ Refine.trimmedString " deploy " |> Result.mapError SchemaError.ofRefinementError =
+                Error [ SchemaError.InvalidFormat "trimmed" ] @>
+
+        test
+            <@ Refine.nonZeroInt 0 |> Result.mapError SchemaError.ofRefinementError =
+                Error [ SchemaError.Custom("notEqualTo:0", None) ] @>
+
+        test
+            <@ parsed.Errors = [ { Path = [ PathSegment.Name "command" ]; Error = SchemaError.InvalidFormat "trimmed" }
+                                 { Path = [ PathSegment.Name "offset" ]; Error = SchemaError.Custom("notEqualTo:0", None) } ] @>
+
+    [<Fact>]
     let ``refined collection catalog schemas parse trusted values`` () =
         let schema =
             Schema.recordFor<Tagged, _> (fun tags codes -> { Tags = tags; Codes = codes })
@@ -126,3 +158,51 @@ module RefinedCatalogSchemaTests =
                                    Error = SchemaError.Custom("seq.distinct", None) }
                                  { Path = [ PathSegment.Name "tags" ]
                                    Error = SchemaError.CountOutOfRange("minCount 1", Some 0) } ] @>
+
+    [<Fact>]
+    let ``date time range schema parses trusted ranges`` () =
+        let raw =
+            RawInput.Object(
+                Map.ofList
+                    [ "start", RawInput.Scalar "2026-01-01T00:00:00+00:00"
+                      "end", RawInput.Scalar "2026-01-02T00:00:00+00:00" ]
+            )
+
+        let parsed = Input.parse RefinedSchema.dateTimeOffsetRange raw
+
+        test
+            <@ parsed.Result
+               |> Result.map (fun range -> range.Start, range.End) =
+                Ok(
+                    DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                    DateTimeOffset(2026, 1, 2, 0, 0, 0, TimeSpan.Zero)
+                ) @>
+
+    [<Fact>]
+    let ``date time range schema reports constructor failures after fields parse`` () =
+        let raw =
+            RawInput.Object(
+                Map.ofList
+                    [ "start", RawInput.Scalar "2026-01-02T00:00:00+00:00"
+                      "end", RawInput.Scalar "2026-01-01T00:00:00+00:00" ]
+            )
+
+        let parsed = Input.parse RefinedSchema.dateTimeOffsetRange raw
+
+        test
+            <@ parsed.Errors = [ { Path = []
+                                   Error =
+                                     SchemaError.ConstructorFailed
+                                         "DateTimeOffsetRange: Expected Start to be less than or equal to End." } ] @>
+
+    [<Fact>]
+    let ``date only range schema parses trusted ranges`` () =
+        let raw =
+            RawInput.Object(Map.ofList [ "start", RawInput.Scalar "2026-01-01"; "end", RawInput.Scalar "2026-01-02" ])
+
+        let parsed = Input.parse RefinedSchema.dateOnlyRange raw
+
+        test
+            <@ parsed.Result
+               |> Result.map (fun range -> range.Start, range.End) =
+                Ok(DateOnly(2026, 1, 1), DateOnly(2026, 1, 2)) @>

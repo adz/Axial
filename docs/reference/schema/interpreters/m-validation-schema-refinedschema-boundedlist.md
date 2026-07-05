@@ -1,7 +1,7 @@
 ---
 title: "Validation.Schema.RefinedSchema.boundedList"
 linkTitle: "boundedList"
-weight: 2310
+weight: 2312
 ---
 
 Describes a bounded list as a schema refined value over a collection with inclusive count bounds.

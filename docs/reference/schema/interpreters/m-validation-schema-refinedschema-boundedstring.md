@@ -1,7 +1,7 @@
 ---
 title: "Validation.Schema.RefinedSchema.boundedString"
 linkTitle: "boundedString"
-weight: 2301
+weight: 2302
 ---
 
 Describes a bounded string as a schema refined value over required text with inclusive length bounds.

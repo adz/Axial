@@ -1,7 +1,7 @@
 ---
 title: "Validation.Schema.RefinedSchema.nonEmptyArray"
 linkTitle: "nonEmptyArray"
-weight: 2308
+weight: 2310
 ---
 
 Describes a non-empty array as a schema refined value over a collection of item schemas.

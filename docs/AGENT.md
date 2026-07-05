@@ -25,12 +25,15 @@ For schema boundaries, use `SchemaError` as the one interpreter error shape. Low
 
 For built-in scalar refined values in schema fields, use `Axial.Validation.Schema.RefinedSchema`:
 `RefinedSchema.nonBlankString`, `RefinedSchema.boundedString min max`, `RefinedSchema.slug`,
-`RefinedSchema.positiveInt`, `RefinedSchema.nonNegativeInt`, `RefinedSchema.negativeInt`, and
+`RefinedSchema.trimmedString`, `RefinedSchema.positiveInt`, `RefinedSchema.nonNegativeInt`,
+`RefinedSchema.nonZeroInt`, `RefinedSchema.negativeInt`, and
 `RefinedSchema.nonPositiveInt`.
 For refined collections, pass an item value schema:
 `RefinedSchema.nonEmptyList RefinedSchema.slug`, `RefinedSchema.distinctList Value.text`, or
 `RefinedSchema.boundedList min max itemSchema`. Use `Value.manyOf itemSchema` for non-refined primitive/refined
 collections; keep `Value.many nestedSchema` for collections of nested model schemas.
+Use `RefinedSchema.dateTimeOffsetRange` as a record-shaped model schema, not a field value schema. `dateOnlyRange` is
+also available when targeting frameworks that support `DateOnly`.
 
 ### 1. Handling Failures
 Use `Check` for executable value constraints, `Predicate` for local boolean tests, and `Result` for fail-fast values. `Check.*` helpers return `Result<unit, CheckFailure list>`; `Result.guard`, named `Result.*` guards, and extraction helpers preserve values or change the success shape.

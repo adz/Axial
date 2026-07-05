@@ -1,7 +1,7 @@
 ---
 title: "Validation.Schema.RefinedSchema.nonEmptyList"
 linkTitle: "nonEmptyList"
-weight: 2307
+weight: 2309
 ---
 
 Describes a non-empty list as a schema refined value over a collection of item schemas.

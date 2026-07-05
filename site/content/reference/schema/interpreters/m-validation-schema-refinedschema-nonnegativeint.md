@@ -1,7 +1,7 @@
 ---
 title: "Validation.Schema.RefinedSchema.nonNegativeInt"
 linkTitle: "nonNegativeInt"
-weight: 2304
+weight: 2305
 type: docs
 ---
 

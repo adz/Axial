@@ -1,7 +1,7 @@
 ---
 title: "Validation.Schema.RefinedSchema.distinctList"
 linkTitle: "distinctList"
-weight: 2309
+weight: 2311
 ---
 
 Describes a distinct list as a schema refined value over a distinct collection of item schemas.

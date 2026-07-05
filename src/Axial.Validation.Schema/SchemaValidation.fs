@@ -79,7 +79,7 @@ module SchemaError =
         | CheckFailure.Count(CheckCountExpectation.CountBetween _, _) -> Some "countBetween"
         | CheckFailure.NonEmpty _ -> Some "minCount"
         | CheckFailure.Equality(CheckEqualityExpectation.EqualTo _, _) -> Some "oneOf"
-        | CheckFailure.Equality(CheckEqualityExpectation.NotEqualTo _, _) -> None
+        | CheckFailure.Equality(CheckEqualityExpectation.NotEqualTo _, _) -> Some "notEqualTo"
         | CheckFailure.CustomCode code -> Some code
         | CheckFailure.Positive _ -> Some "greaterThan"
         | CheckFailure.NonNegative _ -> Some "atLeast"
@@ -234,10 +234,19 @@ module SchemaConstraintCheck =
             tryBounds<int> constraint'
             |> Option.map (fun (minimum, maximum) -> Check.String.lengthBetween minimum maximum)
         | "email" -> Some Check.String.email
+        | "trimmed" ->
+            Some(fun value ->
+                if isNull value then
+                    Error [ CheckFailure.Missing ]
+                elif value.Trim() = value then
+                    Ok()
+                else
+                    Error [ CheckFailure.InvalidFormat "trimmed" ])
         | "pattern" -> tryArgument<string> "pattern" constraint' |> Option.map Check.String.matches
         | "oneOf" ->
             tryArgument<string array> "choices" constraint'
             |> Option.map (fun choices -> Check.String.oneOf choices)
+        | "notEqualTo" -> tryArgument<string> "unexpected" constraint' |> Option.map Check.notEqualTo
         | _ -> None
 
     /// <summary>Lowers schema constraints with text-level meaning into one string check.</summary>
@@ -294,6 +303,7 @@ module SchemaConstraintCheck =
         | "lessThan" -> tryArgument<'value> "maximum" constraint' |> Option.map lessThanCheck
         | "atLeast" -> tryArgument<'value> "minimum" constraint' |> Option.map atLeastCheck
         | "atMost" -> tryArgument<'value> "maximum" constraint' |> Option.map atMostCheck
+        | "notEqualTo" -> tryArgument<'value> "unexpected" constraint' |> Option.map Check.notEqualTo
         | _ -> None
 
     /// <summary>Lowers schema constraints with range-level meaning into one ordered-value check.</summary>

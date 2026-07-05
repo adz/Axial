@@ -42,10 +42,12 @@ This page shows the `Axial.Validation.Schema` interpreter surface: raw boundary 
 ## Refined catalog schemas
 
 - [`Validation.Schema.RefinedSchema.nonBlankString`](./m-validation-schema-refinedschema-nonblankstring.md): Describes a non-blank string as a schema refined value over required text.
+- [`Validation.Schema.RefinedSchema.trimmedString`](./m-validation-schema-refinedschema-trimmedstring.md): Describes a trimmed string as a schema refined value over text with no leading or trailing whitespace.
 - [`Validation.Schema.RefinedSchema.boundedString`](./m-validation-schema-refinedschema-boundedstring.md): Describes a bounded string as a schema refined value over required text with inclusive length bounds.
 - [`Validation.Schema.RefinedSchema.slug`](./m-validation-schema-refinedschema-slug.md): Describes an ASCII slug as a schema refined value over required text with the built-in slug pattern.
 - [`Validation.Schema.RefinedSchema.positiveInt`](./m-validation-schema-refinedschema-positiveint.md): Describes a positive integer as a schema refined value over an integer greater than zero.
 - [`Validation.Schema.RefinedSchema.nonNegativeInt`](./m-validation-schema-refinedschema-nonnegativeint.md): Describes a non-negative integer as a schema refined value over an integer greater than or equal to zero.
+- [`Validation.Schema.RefinedSchema.nonZeroInt`](./m-validation-schema-refinedschema-nonzeroint.md): Describes a non-zero integer as a schema refined value over an integer not equal to zero.
 - [`Validation.Schema.RefinedSchema.negativeInt`](./m-validation-schema-refinedschema-negativeint.md): Describes a negative integer as a schema refined value over an integer less than zero.
 - [`Validation.Schema.RefinedSchema.nonPositiveInt`](./m-validation-schema-refinedschema-nonpositiveint.md): Describes a non-positive integer as a schema refined value over an integer less than or equal to zero.
 - [`Validation.Schema.RefinedSchema.nonEmptyList`](./m-validation-schema-refinedschema-nonemptylist.md): Describes a non-empty list as a schema refined value over a collection of item schemas.
@@ -53,6 +55,7 @@ This page shows the `Axial.Validation.Schema` interpreter surface: raw boundary 
 - [`Validation.Schema.RefinedSchema.distinctList`](./m-validation-schema-refinedschema-distinctlist.md): Describes a distinct list as a schema refined value over a distinct collection of item schemas.
 - [`Validation.Schema.RefinedSchema.boundedList`](./m-validation-schema-refinedschema-boundedlist.md): Describes a bounded list as a schema refined value over a collection with inclusive count bounds.
 - [`Validation.Schema.RefinedSchema.boundedArray`](./m-validation-schema-refinedschema-boundedarray.md): Describes a bounded array as a schema refined value over a collection with inclusive count bounds.
+- [`Validation.Schema.RefinedSchema.dateTimeOffsetRange`](./m-validation-schema-refinedschema-datetimeoffsetrange.md): Describes a date-time range as a record schema with <code>start</code> and <code>end</code> fields.
 
 ## Model validation
 

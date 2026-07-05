@@ -33,6 +33,14 @@ module RefinedSchema =
             (Refine.boundedString minLength maxLength >> RefinedSchemaConstruction.fromResult "BoundedString")
             (fun value -> value.Value)
 
+    /// <summary>Describes a trimmed string as a schema refined value over text with no leading or trailing whitespace.</summary>
+    let trimmedString : ValueSchema<TrimmedString> =
+        Value.text
+        |> Value.withConstraint SchemaConstraint.trimmed
+        |> Value.refined
+            (Refine.trimmedString >> RefinedSchemaConstruction.fromResult "TrimmedString")
+            (fun value -> value.Value)
+
     /// <summary>Describes an ASCII slug as a schema refined value over required text with the built-in slug pattern.</summary>
     let slug : ValueSchema<Slug> =
         Value.text
@@ -53,6 +61,14 @@ module RefinedSchema =
         |> Value.withConstraint (SchemaConstraint.atLeast 0)
         |> Value.refined
             (Refine.nonNegativeInt >> RefinedSchemaConstruction.fromResult "NonNegativeInt")
+            (fun value -> value.Value)
+
+    /// <summary>Describes a non-zero integer as a schema refined value over an integer not equal to zero.</summary>
+    let nonZeroInt : ValueSchema<NonZeroInt> =
+        Value.``int``
+        |> Value.withConstraint (SchemaConstraint.notEqualTo 0)
+        |> Value.refined
+            (Refine.nonZeroInt >> RefinedSchemaConstruction.fromResult "NonZeroInt")
             (fun value -> value.Value)
 
     /// <summary>Describes a negative integer as a schema refined value over an integer less than zero.</summary>
@@ -112,3 +128,19 @@ module RefinedSchema =
         |> Value.refined
             (Refine.boundedArray minCount maxCount >> RefinedSchemaConstruction.fromResult "BoundedArray")
             (fun value -> value.ToArray() |> Array.toList)
+
+    /// <summary>Describes a date-time range as a record schema with <c>start</c> and <c>end</c> fields.</summary>
+    let dateTimeOffsetRange : Schema<DateTimeOffsetRange> =
+        Schema.recordFor<DateTimeOffsetRange, _> Refine.dateTimeOffsetRange
+        |> Schema.dateTime "start" _.Start
+        |> Schema.dateTime "end" _.End
+        |> Schema.buildResultWith RefinementError.describe
+
+#if NET8_0_OR_GREATER
+    /// <summary>Describes a date-only range as a record schema with <c>start</c> and <c>end</c> fields.</summary>
+    let dateOnlyRange : Schema<DateOnlyRange> =
+        Schema.recordFor<DateOnlyRange, _> Refine.dateOnlyRange
+        |> Schema.date "start" _.Start
+        |> Schema.date "end" _.End
+        |> Schema.buildResultWith RefinementError.describe
+#endif

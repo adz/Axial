@@ -1,7 +1,7 @@
 ---
 title: "Validation.Schema.RefinedSchema.slug"
 linkTitle: "slug"
-weight: 2302
+weight: 2303
 type: docs
 ---
 

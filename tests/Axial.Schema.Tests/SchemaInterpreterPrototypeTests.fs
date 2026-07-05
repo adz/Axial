@@ -50,9 +50,11 @@ module SchemaInterpreterPrototypes =
                 | SchemaConstraintMetadata.LengthBetween(minimum, maximum) ->
                     [ sprintf "\"minLength\":%d" minimum; sprintf "\"maxLength\":%d" maximum ]
                 | SchemaConstraintMetadata.Email -> [ "\"format\":\"email\"" ]
+                | SchemaConstraintMetadata.Trimmed -> []
                 | SchemaConstraintMetadata.Pattern pattern -> [ sprintf "\"pattern\":%s" (literal pattern) ]
                 | SchemaConstraintMetadata.OneOf choices ->
                     [ choices |> List.map literal |> String.concat "," |> sprintf "\"enum\":[%s]" ]
+                | SchemaConstraintMetadata.NotEqualTo _ -> []
                 | SchemaConstraintMetadata.Between(minimum, maximum) ->
                     [ sprintf "\"minimum\":%s" (literal minimum); sprintf "\"maximum\":%s" (literal maximum) ]
                 | SchemaConstraintMetadata.GreaterThan minimum ->

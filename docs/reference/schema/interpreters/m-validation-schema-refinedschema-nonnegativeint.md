@@ -1,7 +1,7 @@
 ---
 title: "Validation.Schema.RefinedSchema.nonNegativeInt"
 linkTitle: "nonNegativeInt"
-weight: 2304
+weight: 2305
 ---
 
 Describes a non-negative integer as a schema refined value over an integer greater than or equal to zero.

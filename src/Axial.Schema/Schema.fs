@@ -102,10 +102,14 @@ type SchemaConstraintMetadata =
     | LengthBetween of minimum: int * maximum: int
     /// <summary>A text value must use Axial's pragmatic email format.</summary>
     | Email
+    /// <summary>A text value must have no leading or trailing whitespace.</summary>
+    | Trimmed
     /// <summary>A text value must match the supplied regular expression pattern.</summary>
     | Pattern of pattern: string
     /// <summary>A text value must equal one of the supplied choices.</summary>
     | OneOf of choices: string list
+    /// <summary>A value must not equal the supplied unexpected value.</summary>
+    | NotEqualTo of unexpected: obj
     /// <summary>An ordered value must fall inside the supplied inclusive bounds.</summary>
     | Between of minimum: obj * maximum: obj
     /// <summary>An ordered value must be greater than the supplied exclusive lower bound.</summary>
@@ -289,6 +293,9 @@ module SchemaConstraint =
     /// <summary>Requires a text value to match Axial's pragmatic email format.</summary>
     let email = createKnown "email" SchemaConstraintMetadata.Email
 
+    /// <summary>Requires a text value to have no leading or trailing whitespace.</summary>
+    let trimmed = createKnown "trimmed" SchemaConstraintMetadata.Trimmed
+
     /// <summary>Requires a text value to match the supplied regular expression pattern.</summary>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="pattern" /> is null.</exception>
     /// <exception cref="T:System.ArgumentException">
@@ -309,6 +316,13 @@ module SchemaConstraint =
             "oneOf"
             (SchemaConstraintMetadata.OneOf choices)
             [ "choices", choices |> List.toArray |> box ]
+
+    /// <summary>Requires a value to not equal the supplied unexpected value.</summary>
+    let notEqualTo unexpected =
+        createKnownWithArguments
+            "notEqualTo"
+            (SchemaConstraintMetadata.NotEqualTo(box unexpected))
+            [ "unexpected", box unexpected ]
 
     /// <summary>Requires a value to be inside the supplied inclusive numeric bounds.</summary>
     /// <exception cref="T:System.ArgumentException">

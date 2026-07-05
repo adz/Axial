@@ -17,6 +17,7 @@ module SchemaConstraintCheckTests =
                   SchemaConstraint.maxLength 20
                   SchemaConstraint.email
                   SchemaConstraint.pattern "^[^@]+@example.com$"
+                  SchemaConstraint.notEqualTo "root@example.com"
                   SchemaConstraint.oneOf [ "ada@example.com"; "grace@example.com" ] ]
 
         test <@ check "ada@example.com" = Ok () @>
@@ -29,6 +30,7 @@ module SchemaConstraintCheckTests =
                       InvalidFormat "^[^@]+@example.com$"
                       Equality(EqualTo "ada@example.com|grace@example.com", Some "") ]
         @>
+        test <@ check "root@example.com" |> Result.mapError (List.contains (Equality(NotEqualTo "root@example.com", Some "root@example.com"))) = Error true @>
         test <@ SchemaConstraintCheck.tryText SchemaConstraint.optional |> Option.isNone @>
 
     [<Fact>]
@@ -39,15 +41,17 @@ module SchemaConstraintCheckTests =
                   SchemaConstraint.greaterThan 12
                   SchemaConstraint.lessThan 18
                   SchemaConstraint.atLeast 13
-                  SchemaConstraint.atMost 17 ]
+                  SchemaConstraint.atMost 17
+                  SchemaConstraint.notEqualTo 15 ]
 
-        test <@ check 15 = Ok () @>
+        test <@ check 16 = Ok () @>
         test <@
             check 10 =
                 Error
                     [ Range(CheckRangeExpectation.GreaterThan "12", Some "10")
                       Range(CheckRangeExpectation.AtLeast "13", Some "10") ]
         @>
+        test <@ check 15 |> Result.mapError (List.contains (Equality(NotEqualTo "15", Some "15"))) = Error true @>
         test <@ SchemaConstraintCheck.tryOrdered<int> (SchemaConstraint.minLength 3) |> Option.isNone @>
 
     [<Fact>]

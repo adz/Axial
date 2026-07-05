@@ -680,8 +680,10 @@ module ApiShapeTests =
               "maxLength"
               "lengthBetween"
               "email"
+              "trimmed"
               "pattern"
               "oneOf"
+              "notEqualTo"
               "between"
               "greaterThan"
               "lessThan"
@@ -837,8 +839,10 @@ module ApiShapeTests =
               SchemaConstraint.maxLength 20
               SchemaConstraint.lengthBetween 2 20
               SchemaConstraint.email
+              SchemaConstraint.trimmed
               SchemaConstraint.pattern "^[a-z]+$"
               SchemaConstraint.oneOf [ "draft"; "published" ]
+              SchemaConstraint.notEqualTo "archived"
               SchemaConstraint.between 1 10
               SchemaConstraint.greaterThan 0
               SchemaConstraint.lessThan 100
@@ -865,8 +869,10 @@ module ApiShapeTests =
                   "maxLength"
                   "lengthBetween"
                   "email"
+                  "trimmed"
                   "pattern"
                   "oneOf"
+                  "notEqualTo"
                   "between"
                   "greaterThan"
                   "lessThan"

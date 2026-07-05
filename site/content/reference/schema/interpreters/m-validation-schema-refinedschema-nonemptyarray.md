@@ -1,7 +1,7 @@
 ---
 title: "Validation.Schema.RefinedSchema.nonEmptyArray"
 linkTitle: "nonEmptyArray"
-weight: 2308
+weight: 2310
 type: docs
 ---
 

@@ -1,7 +1,7 @@
 ---
 title: "Validation.Schema.RefinedSchema.positiveInt"
 linkTitle: "positiveInt"
-weight: 2303
+weight: 2304
 ---
 
 Describes a positive integer as a schema refined value over an integer greater than zero.
