@@ -105,14 +105,14 @@ Work this queue from top to bottom.
 
 ## Phase 14: Non-Validation Interpreters
 
-- [ ] Define an inspection API over `Schema<'model>`.
-- [ ] Prototype `JsonSchema.generate`.
-- [ ] Lower required, max length, min length, pattern, format, enum/oneOf, numeric ranges, and collection counts to JSON
+- [x] Define an inspection API over `Schema<'model>`.
+- [x] Prototype `JsonSchema.generate`.
+- [x] Lower required, max length, min length, pattern, format, enum/oneOf, numeric ranges, and collection counts to JSON
   Schema metadata.
-- [ ] Prototype `Docs.describe`.
-- [ ] Prototype UI metadata description without creating a UI framework.
-- [ ] Decide how CodecMapper should consume schema without taking a dependency cycle.
-- [ ] Add tests that prove schema metadata can be inspected without running validation.
+- [x] Prototype `Docs.describe`.
+- [x] Prototype UI metadata description without creating a UI framework.
+- [x] Decide how CodecMapper should consume schema without taking a dependency cycle.
+- [x] Add tests that prove schema metadata can be inspected without running validation.
 
 ## Phase 15: Computation Expression DSL
 

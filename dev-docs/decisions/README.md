@@ -55,6 +55,14 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
   `field "email" _.Email Email.schema { ... }` are reserved for explicit or custom `ValueSchema<'value>` values such as
   refined/domain schemas and advanced composition. Do not add competing aliases such as `string`, `integer`, `boolean`,
   `uuid`, `dateOnly`, or `Field.text`; `Value.*` remains the lower-level value-schema vocabulary.
+- Non-validation interpreters start from the public `Inspect` API (`Inspect.model`, `Inspect.value`, `Inspect.field`),
+  which describes a built schema as plain metadata trees (`ModelDescription`, `FieldDescription`, `ValueDescription`,
+  `ValueShape`). Inspection never parses input, runs checks, or constructs models. JSON Schema, documentation, and UI
+  metadata generators are prototype interpreters over that read model, not core packages, until a consumer demands one.
+- CodecMapper-style codecs consume schema by referencing `Axial.Schema` only, in their own package: metadata comes from
+  `Inspect`, and hot-path plans come from `Schema.specialize` with an `IFieldChainFactory<'model, 'result>` that walks
+  the typed field chain to compile constructor-specialized record plans. `Axial.Schema` never references a codec
+  package, and codec packages never reference `Axial.Validation.Schema`, so no dependency cycle can form.
 - `Bind` is only for assigning or mapping a source error immediately before `flow { }` binds it. In pure code, use
   `Result.require`, `Result.mapError`, or `Validation.mapError`.
 - Generated reference docs come from XML comments and generator inputs. Do not hand-edit generated reference pages as the

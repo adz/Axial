@@ -1,0 +1,129 @@
+namespace Axial.Schema
+
+/// <summary>
+/// Describes the shape of a value schema as inspectable metadata for non-validation interpreters.
+/// </summary>
+/// <remarks>
+/// <para>
+/// Shape descriptions carry no getters, constructors, or executable checks. JSON Schema emitters, documentation
+/// generators, and UI metadata producers can walk them without parsing raw input or running validation.
+/// </para>
+/// </remarks>
+[<RequireQualifiedAccess>]
+type ValueShape =
+    /// <summary>A primitive value of the supplied kind.</summary>
+    | Primitive of kind: PrimitiveValueKind
+    /// <summary>A refined/domain value whose boundary representation is the supplied underlying description.</summary>
+    | Refined of underlying: ValueDescription
+    /// <summary>A nested model value described by its own field descriptions.</summary>
+    | Nested of model: ModelDescription
+    /// <summary>A collection value whose items share the supplied item description.</summary>
+    | Many of item: ValueDescription
+
+/// <summary>Describes one value schema: its shape, declared format, and portable constraint metadata.</summary>
+and ValueDescription =
+    {
+        /// <summary>The structural shape of the value.</summary>
+        Shape: ValueShape
+        /// <summary>The declared boundary format, when one was attached with <c>Value.withFormat</c>.</summary>
+        Format: SchemaFormat option
+        /// <summary>The portable constraint metadata attached to this value schema layer, in declaration order.</summary>
+        Constraints: SchemaConstraint list
+    }
+
+/// <summary>Describes one field of a model schema for inspection interpreters.</summary>
+and FieldDescription =
+    {
+        /// <summary>The boundary-facing external field name.</summary>
+        Name: string
+        /// <summary>The zero-based field order used for trusted construction and ordered interpreter output.</summary>
+        Order: int
+        /// <summary>The description of the field's value schema.</summary>
+        Value: ValueDescription
+        /// <summary>The portable constraint metadata attached at the field level, in declaration order.</summary>
+        Constraints: SchemaConstraint list
+    }
+
+/// <summary>Describes a built model schema as an ordered list of field descriptions.</summary>
+and ModelDescription =
+    {
+        /// <summary>The field descriptions in declared order.</summary>
+        Fields: FieldDescription list
+    }
+
+/// <summary>The inspection API over built schemas and value schemas.</summary>
+/// <remarks>
+/// <para>
+/// <c>Inspect</c> is the entry point for non-validation interpreters: JSON Schema generation, documentation, UI
+/// metadata, and codec planning all start from the same descriptions. The returned trees are plain immutable data —
+/// inspecting them never parses input, runs checks, or constructs models.
+/// </para>
+/// </remarks>
+[<RequireQualifiedAccess>]
+module Inspect =
+    let rec internal describeValueDefinition (definition: ValueSchemaDefinition) : ValueDescription =
+        let shape =
+            match definition.Shape with
+            | PrimitiveValueDefinition kind -> ValueShape.Primitive kind
+            | RefinedValueDefinition(raw, _) -> ValueShape.Refined(describeValueDefinition raw)
+            | NestedValueDefinition nested ->
+                ValueShape.Nested { Fields = nested.Fields |> List.map describeFieldDescriptor }
+            | ManyValueDefinition collection -> ValueShape.Many(describeValueDefinition collection.Item)
+
+        { Shape = shape
+          Format = definition.Format
+          Constraints = definition.Constraints }
+
+    and internal describeFieldDescriptor (field: FieldDescriptor<obj>) : FieldDescription =
+        { Name = ExternalFieldName.value field.ExternalName
+          Order = FieldOrder.value field.Order
+          Value = describeValueDefinition field.ValueSchema
+          Constraints = field.Constraints }
+
+    let internal describeModelDefinition (definition: ModelSchemaDefinition<'model>) : ModelDescription =
+        { Fields =
+            definition.Fields
+            |> List.map (fun field ->
+                { Name = ExternalFieldName.value field.ExternalName
+                  Order = FieldOrder.value field.Order
+                  Value = describeValueDefinition field.ValueSchema
+                  Constraints = field.Constraints }) }
+
+    /// <summary>Describes a built model schema as inspectable field metadata.</summary>
+    /// <param name="schema">The built model schema to describe.</param>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
+    /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="schema" /> was not produced by <c>Schema.build</c>.</exception>
+    /// <example>
+    /// <code>
+    /// let description = Inspect.model customerSchema
+    /// let names = description.Fields |> List.map _.Name
+    /// </code>
+    /// </example>
+    let model (schema: Schema<'model>) : ModelDescription =
+        if isNull (box schema) then
+            nullArg (nameof schema)
+
+        match schema.Definition with
+        | PendingDefinition -> invalidArg (nameof schema) "Expected a built model schema."
+        | ModelDefinition definition -> describeModelDefinition definition
+
+    /// <summary>Describes a value schema as inspectable shape, format, and constraint metadata.</summary>
+    /// <param name="schema">The value schema to describe.</param>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
+    let value (schema: ValueSchema<'value>) : ValueDescription =
+        if isNull (box schema) then
+            nullArg (nameof schema)
+
+        describeValueDefinition schema.Definition
+
+    /// <summary>Describes a standalone schema field as inspectable field metadata.</summary>
+    /// <param name="field">The schema field to describe.</param>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="field" /> is null.</exception>
+    let field (field: Field<'model, 'value>) : FieldDescription =
+        if isNull (box field) then
+            nullArg (nameof field)
+
+        { Name = ExternalFieldName.value field.Definition.ExternalName
+          Order = FieldOrder.value field.Definition.Order
+          Value = describeValueDefinition field.Definition.ValueSchema
+          Constraints = field.Definition.Constraints }

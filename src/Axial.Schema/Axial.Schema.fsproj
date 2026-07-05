@@ -35,6 +35,7 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Schema.fs" />
+    <Compile Include="Inspection.fs" />
   </ItemGroup>
 
 </Project>
