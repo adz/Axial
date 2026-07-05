@@ -6,4 +6,8 @@ Keep files here short enough for coding agents to scan quickly. When an idea is 
 `AGENTS.md` or `dev-docs/PLAN.md` and delete the detailed sketch. When an idea is rejected or superseded, delete it
 rather than keeping a historical spec that no longer matches the codebase.
 
-There are no active sketches at the moment.
+Active sketches:
+
+- `schema-ce-evaluation.md` — closed evaluation of the `schema create { }` computation expression (decision: not
+  shipped); kept as the record to re-run if F# gains trailing builder-block arguments.
+- `schema-source-generation.md` — pinned `[<Schema>]` generation target and deferral criteria for source generation.

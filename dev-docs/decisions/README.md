@@ -7,8 +7,10 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 
 - `Flow<'env, 'error, 'value>` is the public workflow model. Platform carriers are execution/adaptation boundaries, not
   user-facing workflow types.
-- `Axial.Flow`, `Axial.ErrorHandling`, `Axial.Refined`, and `Axial.Validation` are independent leaf packages. The
-  umbrella `Axial` package may reference them, but leaf packages must not depend on each other.
+- `Axial.Flow`, `Axial.ErrorHandling`, `Axial.Refined`, `Axial.Schema`, and `Axial.Validation` are leaf packages. The
+  umbrella `Axial` package and `Axial.Validation.Schema` may reference them, but leaf packages must not depend on each
+  other, with one deliberate exception: `Axial.Refined` references `Axial.ErrorHandling` because `Check` appears in its
+  public signatures. The `leaf packages stay independent of each other` API-shape test enforces this graph.
 - Explicit dependencies live in `'env`. The ambient runtime is reserved for closed executor mechanics such as
   cancellation, scope, scheduling, interruption, and trace metadata.
 - Operational services are explicit services provisioned through records, nominal `IHas<'service>` contracts, host-edge

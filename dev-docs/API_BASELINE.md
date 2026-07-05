@@ -5,8 +5,8 @@ documentation.
 
 ## Current Baseline
 
-- Recorded: `2026-07-04T23:23:23Z`
-- Baseline commit before this update: `36eb545b`
+- Recorded: `2026-07-05T08:00:19Z`
+- Baseline commit before this update: `abad720d`
 - .NET SDK: `10.0.300`
 - Node.js used locally: `v26.1.0`
 
@@ -34,13 +34,20 @@ bash scripts/run-aot-probe.sh
 => Exit code 0.
 ```
 
+Additional validated commands for this refresh:
+
+```text
+dotnet test tests/Axial.ApiShape.Tests --nologo (34 passed)
+dotnet test tests/Axial.Schema.Tests --nologo (53 passed)
+dotnet test tests/Axial.Validation.Schema.Tests --nologo (119 passed)
+dotnet test tests/Axial.Flow.Tests --nologo (89 passed)
+bash scripts/validate-docs.sh
+=> Docs validation build succeeded, including regenerated reference docs.
+```
+
 Known validation gaps observed during this refresh:
 
 ```text
-dotnet test tests/Axial.ApiShape.Tests/Axial.ApiShape.Tests.fsproj --no-build --nologo -v minimal
-=> Blocked in the local sandbox because VSTest could not start its socket listener:
-   System.Net.Sockets.SocketException (13): Permission denied.
-
 dotnet build Axial.slnx --nologo -v minimal
 => Fails in benchmarks/Axial.Benchmarks.Fable with Fable compile errors in Check.fs.
 
@@ -115,6 +122,10 @@ the named modules, types, and members users and examples are expected to depend 
 - `Flow`, `Flow.Runtime`, `Execution`, `Cause`, `Exit`, `Fiber`, `Scope`
 - computation builders
 - `Check`, `Bind`, `BindError`, `Validation`, `Diagnostics`
+- `Schema`, `Value`, `Field`, `SchemaConstraint`, `Inspect` and its description types
+- `RawInput`, `Input`, `ParsedInput`, `SchemaError`, `Rules`, `RuleSet`, schema `Validation.validate`
+- `Policy` and `Flow.verify`
+- the leaf-package dependency graph (`leaf packages stay independent of each other`)
 - `Schedule`, `FlowStream`, `STM`, `TRef`, `Ref`
 - `Service`, `Layer`, `LayerBuilder`
 - first-party service packages

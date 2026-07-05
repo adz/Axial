@@ -390,6 +390,52 @@ module ApiShapeTests =
         |> assertContainsAll [ "Return"; "ReturnFrom"; "Bind"; "Delay"; "Run"; "Combine" ]
 
     [<Fact>]
+    let ``schema inspection and input interpreter modules expose the expected surface`` () =
+        moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.Inspect"
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "model"; "value"; "field" ]
+
+        moduleTypeFromAssembly "Axial.Validation.Schema" "Axial.Validation.Schema.Input"
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "parse"; "parseWith"; "constructorErrorAt" ]
+
+        moduleTypeFromAssembly "Axial.Validation.Schema" "Axial.Validation.Schema.RawInputModule"
+        |> publicStaticMemberNames
+        |> assertContainsAll
+            [ "ofMap"
+              "ofNameValues"
+              "ofNameValueCollection"
+              "ofCliArgs"
+              "ofJsonLikeValue"
+              "ofConfiguration"
+              "redisplay"
+              "redisplayAt"
+              "redisplayPath" ]
+
+        moduleTypeFromAssembly "Axial.Validation.Schema" "Axial.Validation.Schema.ParsedInput"
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "mapErrors" ]
+
+    [<Fact>]
+    let ``leaf packages stay independent of each other`` () =
+        let leafPackages =
+            [ "Axial.Flow"; "Axial.ErrorHandling"; "Axial.Refined"; "Axial.Schema"; "Axial.Validation" ]
+
+        // Axial.Refined deliberately exposes Check in its signatures, so it may reference Axial.ErrorHandling.
+        let allowedReferences = [ "Axial.Refined", "Axial.ErrorHandling" ]
+
+        for package in leafPackages do
+            let forbidden =
+                leafPackages
+                |> List.filter (fun other ->
+                    other <> package && not (List.contains (package, other) allowedReferences))
+
+            let references = referencedAssemblyNames (Assembly.Load package)
+
+            references |> assertContainsNone forbidden
+            references |> assertContainsNone [ "Axial"; "Axial.Validation.Schema" ]
+
+    [<Fact>]
     let ``policy lives in flow without schema refined or validation dependencies`` () =
         let flowAssembly = Assembly.Load "Axial.Flow"
 

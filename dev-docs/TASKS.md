@@ -164,12 +164,12 @@ readability and compile-error quality for constraint blocks.
 
 ## Phase 18: Cleanup
 
-- [ ] Delete stale design notes after decisions are promoted.
-- [ ] Refresh `dev-docs/API_BASELINE.md`.
-- [ ] Ensure package dependency rules are enforced by tests.
-- [ ] Ensure generated docs and examples do not teach old predicate-only `Check`.
-- [ ] Ensure docs do not present schema as only validation.
-- [ ] Ensure docs do not present invalid domain objects as normal.
+- [x] Delete stale design notes after decisions are promoted.
+- [x] Refresh `dev-docs/API_BASELINE.md`.
+- [x] Ensure package dependency rules are enforced by tests.
+- [x] Ensure generated docs and examples do not teach old predicate-only `Check`.
+- [x] Ensure docs do not present schema as only validation.
+- [x] Ensure docs do not present invalid domain objects as normal.
 
 ## Acceptance Checks
 
