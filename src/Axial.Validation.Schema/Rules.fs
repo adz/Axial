@@ -63,12 +63,14 @@ module Rules =
         if isNull (box ruleSet) then
             nullArg name
 
+        ruleSet
+
     let private ensureRuleSets ruleSets =
         if isNull (box ruleSets) then
             nullArg (nameof ruleSets)
 
         let ruleSets = ruleSets |> Seq.toList
-        ruleSets |> List.iter (ensureRuleSet (nameof ruleSets))
+        ruleSets |> List.iter (ensureRuleSet (nameof ruleSets) >> ignore)
         ruleSets
 
     let private ensureRules rules =
@@ -78,6 +80,9 @@ module Rules =
         let rules = rules |> Seq.toList
         rules |> List.iter ensureRule
         rules
+
+    let private mergeDiagnostics diagnostics =
+        diagnostics |> List.reduce Diagnostics.merge
 
     /// <summary>Creates an empty contextual rule set.</summary>
     let empty<'model, 'error> : RuleSet<'model, 'error> =
@@ -235,8 +240,8 @@ module Rules =
         (left: RuleSet<'model, 'error>)
         (right: RuleSet<'model, 'error>)
         : RuleSet<'model, 'error> =
-        ensureRuleSet (nameof left) left
-        ensureRuleSet (nameof right) right
+        ensureRuleSet (nameof left) left |> ignore
+        ensureRuleSet (nameof right) right |> ignore
         { Rules = left.Rules @ right.Rules }
 
     /// <summary>Combines contextual rule sets in sequence, preserving rule order.</summary>
@@ -248,3 +253,29 @@ module Rules =
                 ruleSets
                 |> List.collect (fun ruleSet -> ruleSet.Rules)
         }
+
+    /// <summary>Evaluates contextual rules over an already-trusted model.</summary>
+    /// <remarks>
+    /// <para>
+    /// The supplied model is not constructed, parsed, or transformed. Every rule is evaluated against the same trusted
+    /// instance and any diagnostics are accumulated.
+    /// </para>
+    /// </remarks>
+    /// <param name="ruleSet">The rule set to evaluate.</param>
+    /// <param name="model">The already-trusted model to check.</param>
+    let validate
+        (ruleSet: RuleSet<'model, 'error>)
+        (model: 'model)
+        : Axial.Validation.Validation<'model, 'error> =
+        let ruleSet = ensureRuleSet (nameof ruleSet) ruleSet
+
+        let diagnostics =
+            ruleSet.Rules
+            |> List.choose (fun rule ->
+                match rule model with
+                | Ok () -> None
+                | Error diagnostics -> Some diagnostics)
+
+        match diagnostics with
+        | [] -> Axial.Validation.Validation.ok model
+        | failures -> failures |> mergeDiagnostics |> Axial.Validation.Validation.error

@@ -17,6 +17,10 @@ module RulesTests =
         | HighPriorityNeedsAssignee
         | ManualReviewRequired
 
+    type private TrustedTicket(priority: int, hasAssignee: bool) =
+        member _.Priority = priority
+        member _.HasAssignee = hasAssignee
+
     let private needsAssignee ticket =
         if ticket.Priority >= 4 && not ticket.HasAssignee then
             Error(Diagnostics.singleton HighPriorityNeedsAssignee)
@@ -34,6 +38,11 @@ module RulesTests =
         | Ok () -> []
         | Error diagnostics -> Diagnostics.flatten diagnostics
 
+    let private validationErrors validation =
+        match Axial.Validation.Validation.toResult validation with
+        | Ok _ -> []
+        | Error diagnostics -> Diagnostics.flatten diagnostics
+
     [<Fact>]
     let ``explicit Rules API creates an empty contextual rule set`` () =
         let ruleSet = Rules.empty<SupportTicket, TicketRuleError>
@@ -48,6 +57,65 @@ module RulesTests =
                   Rules.ofList [ needsReview ] ]
 
         test <@ ruleSet.GetType().Name.StartsWith("RuleSet") @>
+
+    [<Fact>]
+    let ``rules validate accepts an already-trusted model when contextual rules pass`` () =
+        let ruleSet =
+            Rules.concat
+                [ Rules.create needsAssignee
+                  Rules.ofList [ needsReview ] ]
+
+        let ticket =
+            {
+                Priority = 3
+                HasAssignee = false
+            }
+
+        let validation = Rules.validate ruleSet ticket
+
+        test <@ Axial.Validation.Validation.toResult validation = Ok ticket @>
+
+    [<Fact>]
+    let ``rules validate accumulates diagnostics over an already-trusted model`` () =
+        let ruleSet =
+            Rules.concat
+                [ Rules.create (Rules.name "assignee" needsAssignee)
+                  Rules.create (Rules.name "reviewer" needsReview) ]
+
+        let ticket =
+            {
+                Priority = 5
+                HasAssignee = false
+            }
+
+        let validation = Rules.validate ruleSet ticket
+
+        test
+            <@
+                validationErrors validation =
+                    [ { Path = [ PathSegment.Name "assignee" ]
+                        Error = HighPriorityNeedsAssignee }
+                      { Path = [ PathSegment.Name "reviewer" ]
+                        Error = ManualReviewRequired } ]
+            @>
+
+    [<Fact>]
+    let ``rules validate returns the supplied trusted model instance`` () =
+        let ruleSet =
+            Rules.create (fun (ticket: TrustedTicket) ->
+                if ticket.Priority >= 4 && not ticket.HasAssignee then
+                    Rules.failAt [ PathSegment.Name "assignee" ] HighPriorityNeedsAssignee
+                else
+                    Ok ())
+
+        let ticket = TrustedTicket(3, false)
+
+        let validation = Rules.validate ruleSet ticket
+
+        test <@ Axial.Validation.Validation.toResult validation = Ok ticket @>
+        match Axial.Validation.Validation.toResult validation with
+        | Ok trusted -> test <@ Object.ReferenceEquals(trusted, ticket) @>
+        | Error _ -> failwith "Expected rules to accept the trusted ticket."
 
     [<Fact>]
     let ``explicit Rules API creates field-attached failures`` () =

@@ -79,7 +79,7 @@ Work this queue from top to bottom.
 - [x] Implement `rules<'model> { ... }` or explicit core API.
 - [x] Support field/path attachment for rule failures.
 - [x] Support custom code and message.
-- [ ] Support rules over already-trusted models.
+- [x] Support rules over already-trusted models.
 - [ ] Implement `Rules.apply : RuleSet<'model, 'error> -> 'model -> Result<'model, Diagnostics<'error>>`.
 - [ ] Ensure rules do not construct models.
 - [ ] Add examples and tests for support-ticket and approval-style workflow rules.
