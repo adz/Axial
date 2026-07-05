@@ -37,7 +37,7 @@ Work this queue from top to bottom.
 - [x] Keep field names out of `SchemaError` when diagnostics path already carries them.
 - [x] Support custom messages on schema constraints.
 - [x] Support mapping schema/input errors to domain/application errors.
-- [ ] Add tests for path rendering and flattened diagnostics.
+- [x] Add tests for path rendering and flattened diagnostics.
 
 ## Phase 9: Nested Models And Collections
 
