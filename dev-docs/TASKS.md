@@ -23,8 +23,10 @@ minimal-API sample), and positioning/polish (comparison pages, the public AOT/Fa
 
 ## Phase 25: Reiteration Questions
 
-These are open questions produced while completing phases 23–24. Triage each into a concrete task (or delete it with a
-one-line decision note in `dev-docs/decisions/README.md`) before starting new feature phases.
+These are open questions produced while completing phases 23–24. Each is expanded with context, motivation, examples,
+and options in `dev-docs/questions.md` — read that file before triaging. Triage each into a concrete task (or delete it
+with a one-line decision note in `dev-docs/decisions/README.md`) before starting new feature phases; delete the
+matching section in `dev-docs/questions.md` when a question is decided.
 
 - [ ] Codec decode allocations are ~2x `System.Text.Json` (2.84 KB vs 2.01 KB per aggregate) even though speed is at
   parity. Is per-decode slot allocation worth eliminating (pooled slots, struct slots, array-built lists instead of

@@ -7,7 +7,11 @@ type: docs
 
 
 
-This page compares Axial with libraries you may already use, and shows where they fit together in the same codebase.
+Nobody adopts a library into an empty codebase. You likely already have `FsToolkit.ErrorHandling` railway code in
+production, `Validus` rules guarding inputs, or `FSharpPlus` abstractions threaded through helpers — and the real
+question is not "which library wins" but "what does each one own, and where do they meet without fighting". This page
+answers that: it compares Axial with the libraries you may already use and shows where they fit together in the same
+codebase.
 
 The rule of thumb is simple: keep each library on the boundary it already owns, then let Axial take over orchestration where the runtime shape becomes explicit.
 

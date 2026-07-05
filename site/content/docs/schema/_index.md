@@ -6,11 +6,15 @@ description: Portable model schemas for input parsing, validation, and metadata 
 ---
 
 
-This page shows how `Schema<'model>` drives parsing, validation, redisplay, rules, and metadata from one trusted model
-declaration.
+Every application that accepts a form, a JSON payload, or CLI input ends up describing the same model several times:
+once as the F# type, again as validation rules, again as error messages and redisplay logic, again as API
+documentation. Those copies drift, and the classic validator approach makes it worse — it checks an object that
+already exists, which means the invalid object was constructed first and now every code path has to remember whether
+this instance was the checked one.
 
-Use this section for `Schema<'model>`: a portable description of a trusted model's shape, field ordering, construction,
-and constraint metadata.
+`Schema<'model>` collapses those copies into one declaration. A schema is a portable description of a trusted model's
+shape, field ordering, construction, and constraint metadata — and parsing goes through it, so if any constraint
+fails, the model is simply never constructed. Holding a `Signup` value *is* the proof it was valid.
 
 A schema is not only validation. One schema drives several interpreters:
 

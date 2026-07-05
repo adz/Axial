@@ -8,11 +8,16 @@ aliases:
 ---
 
 
-This page shows how plain `Result` and reusable `Check` programs handle simple fail-fast code.
+F# already has the right type for fail-fast logic: `Result<'value, 'error>` with your own error union. The problem is
+what happens around it. Real validation code fills up with the same boilerplate — null and blank guards, option
+unwrapping, boolean conditions hand-rolled into `Error` branches — and each team invents its own helpers for it. Worse,
+the ecosystem often answers this small problem with a big hammer: a validation framework, a custom result type, or an
+effect system, when all you needed was to check a string and stop at the first failure.
 
-This section is one of Axial's two doors: **plain `Result` for simple code**. Standard F# `Result<'value, 'error>`
-with your own error union is idiomatic Axial; `Check`, the focused `Result` helpers, and the `result {}` builder are
-the machinery that keeps it terse. (The other door is [Schema](../schema/), for whole domain models.)
+This section is Axial's answer: **keep plain `Result` and make it terse**. Standard F# `Result` with a small error
+union is idiomatic Axial, not a compromise — `Check`, the focused `Result` helpers, and the `result {}` builder are the
+machinery that removes the boilerplate without changing your signatures. Your domain code stays plain F# that any
+teammate can read. (This is one of Axial's two doors; the other is [Schema](../schema/), for whole domain models.)
 
 Use this section when the code is still pure and one failure is enough to stop the operation. Do not introduce `Flow` just because dependencies might appear later.
 

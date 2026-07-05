@@ -5,7 +5,9 @@ type: docs
 ---
 
 
-This page shows the generated API reference for Axial core and the standard service packages.
+An alphabetical API dump answers "what exists" but not "where do I look first". This page is the generated API
+reference for Axial core and the standard service packages, organised by the question you arrived with: writing a
+workflow, describing a model, checking pure values, wiring dependencies, or reading an outcome.
 
 Start with [`Flow`](./flow/) if you are writing application workflows. It is the central execution
 type: a cold computation that reads `env`, returns a typed failure or success value, and preserves
