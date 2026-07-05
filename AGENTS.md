@@ -38,6 +38,7 @@ Refer to [`dev-docs/PLAN.md`](dev-docs/PLAN.md) for architectural direction and
 ## Test Authoring
 
 - Tests that demonstrate public APIs should use the expected end-user pipeline form, not a lower-level or transitional shape, unless the test is explicitly covering that lower-level API. Public API tests are examples readers copy from; keep their formatting aligned with the authoring style the library intends to teach.
+- Do not define shared fixtures as module-level `let` values in xUnit test modules (schemas, refs, prebuilt inputs). Module-level bindings in test modules can be observed as null before file-level initialization runs, which surfaces as confusing `NullReferenceException`/`ArgumentNullException` failures. Build fixtures inside each test or expose them as functions (`let private mySchema () = ...`).
 
 ## Doc Workflow
 

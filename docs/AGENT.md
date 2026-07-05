@@ -100,6 +100,11 @@ Translate common patterns from other libraries into idiomatic Axial.
 | `Result.mapError` | `let! x = result |> Bind.mapError mapper` in `flow {}` |
 | retry policy | `flow |> Schedule.retry schedule` |
 | repeat policy | `flow |> Schedule.repeat schedule` |
+| ActiveModel / FluentValidation validators | `Schema<'model>` + `Input.parse` — constraints declared once, invalid models never constructed |
+| DTO + manual mapping into domain types | schema fields over refined value schemas (`Value.refined`) |
+| form redisplay with per-field errors | `parsed.Input` + `RawInput.redisplayPath`, `parsed.ErrorsFor "contacts[1].value"` |
+| workflow-specific business rules | `RuleSet` + `Rules.apply` over the already-trusted model |
+| guard clauses at workflow entry | `Policy` + `Flow.verify` |
 
 
 ## Hierarchy of Effects
@@ -110,7 +115,8 @@ Later types can bind earlier types directly within their computation expressions
 2. **Result**: Fail-fast typed errors (`Result<'T, 'E>`).
 3. **Refined**: Parsing and structural refined values.
 4. **Validation**: Accumulating diagnostics.
-5. **Flow**: Environment-aware workflows (`Flow<'Env, 'E, 'T>`) for synchronous, async, and task-based composition.
+5. **Schema**: Portable model metadata (`Schema<'model>`) interpreted by `Input.parse`, `Validation.validate`, `Rules.apply`, and `Inspect`.
+6. **Flow**: Environment-aware workflows (`Flow<'Env, 'E, 'T>`) for synchronous, async, and task-based composition.
 
 ## Machine-Readable Reference
 

@@ -13,12 +13,13 @@ Axial is a toolkit for Result-based programs in F#. It starts with validation he
 Use the smallest tool that fits the code you are writing:
 
 ```text
-Check -> Result & Refined -> Validation -> Flow
+Check -> Result & Refined -> Validation & Schema -> Flow
 ```
 
 - **Pure Checks**: Reusable predicates.
 - **Error Handling & Refined**: Fail-fast domain logic and structural domain values.
 - **Validation**: Error-accumulating input validation.
+- **Schema**: Whole boundary models parsed from raw input into trusted values.
 - **Flow**: The application boundary where you need dependencies, async/task interop, logging, or cancellation.
 
 Use the three guide sections as separate manuals:
@@ -27,6 +28,7 @@ Use the three guide sections as separate manuals:
 | :--- | :--- |
 | Pure fail-fast logic | [Error Handling](../error-handling/) |
 | Accumulating sibling failures | [Validation](../validation/) |
+| Parsing forms, CLI args, JSON, or config into trusted models | [Schema](../schema/) |
 | Async, task work, dependencies, resources, or runtime policy | [Flow](../flow/) |
 
 ## 2. Start with Checks and Results
@@ -47,7 +49,37 @@ let validateName (name: string) : Result<string, UserError> =
 let result = validateName "Ad" // Error NameTooShort
 ```
 
-## 3. Moving to Flow
+## 3. Parse a Form into a Trusted Model
+
+When the input is a whole model rather than one value, declare a schema once and parse raw input through it. If any
+constraint fails, the model is never constructed — you get path-aware errors and the original input for redisplay.
+
+```fsharp
+open Axial.Schema
+open Axial.Validation.Schema
+
+type Signup = { Email: string; Age: int }
+
+let signupSchema =
+    Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
+    |> Schema.fieldWith
+        [ SchemaConstraint.required; SchemaConstraint.email ]
+        "email" _.Email Value.text
+    |> Schema.fieldWith [ SchemaConstraint.atLeast 13 ] "age" _.Age Value.``int``
+    |> Schema.build
+
+let raw = RawInput.ofNameValues [ "email", "ada@example.com"; "age", "36" ]
+let parsed = Input.parse signupSchema raw
+
+match parsed.Result with
+| Ok signup -> printfn "trusted: %A" signup
+| Error _ -> printfn "rejected: %A" parsed.Errors   // path-aware; raw input kept in parsed.Input
+```
+
+The same schema also re-validates existing values, powers contextual rules, and describes itself to JSON Schema, docs,
+and UI interpreters. Start with the [Schema tutorials](../../schema/tutorials/).
+
+## 4. Moving to Flow
 
 When your logic needs to interact with the outside world—by calling a database, reading an environment variable, or performing an async task—you move to `Flow`.
 
@@ -89,7 +121,7 @@ let greetUser (id: int) : Flow<UserError, string> =
 
 The example above has a typed failure channel but no environment, so it uses `Flow<UserError, string>`.
 
-## 4. Execution
+## 5. Execution
 
 Because a `Flow` is a description, you must explicitly **run** it.
 
@@ -124,7 +156,7 @@ match exitValue with
 
 Use `Flow.fail` or `Flow.error` for expected domain failures, `Flow.die` for explicit defects, and `Flow.catch` only when you intentionally want to translate a defect into a typed error. Use `Flow.attemptTask`, `Flow.attemptValueTask`, or `Flow.attemptAsync` when thrown exceptions are expected interop outcomes.
 
-## 5. Running Your First Flow
+## 6. Running Your First Flow
 
 Because `ToTask` and `ToAsync` return deferred execution handles, you must await them to get the final `Exit` outcome. On .NET, `RunSynchronously` is the blocking alternative.
 
@@ -150,7 +182,7 @@ let runOnFable () = async {
 
 For a deeper dive into handling outcomes, cancellation, and combining multiple flows, see **[Execution and Outcomes](../flow/execution-and-outcomes/)**.
 
-## 6. Reading from the Environment
+## 7. Reading from the Environment
 
 Flow can read dependencies from an explicit environment.
 

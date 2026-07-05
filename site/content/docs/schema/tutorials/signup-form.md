@@ -1,0 +1,82 @@
+---
+weight: 10
+title: Signup Form Tutorial
+description: Declare a schema, parse form input, and redisplay errors.
+type: docs
+---
+
+
+This tutorial parses a signup form into a trusted model. If any field fails, no model is constructed and the form can
+be redisplayed with the user's original input and per-field errors.
+
+## Declare The Model And Schema
+
+The schema declares each field once: external name, getter, and constraints.
+
+```fsharp
+open Axial.Schema
+open Axial.Validation.Schema
+
+type Signup = { Email: string; Age: int }
+
+let signupSchema =
+    Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
+    |> Schema.fieldWith
+        [ SchemaConstraint.required; SchemaConstraint.email; SchemaConstraint.maxLength 254 ]
+        "email" _.Email Value.text
+    |> Schema.fieldWith [ SchemaConstraint.atLeast 13 ] "age" _.Age Value.``int``
+    |> Schema.build
+```
+
+`Schema.recordFor<Signup, _>` anchors the model type so getters can use shorthand member access. Each field consumes
+one constructor argument, so a missing or misordered field is a compile error at `Schema.build`.
+
+## Adapt The Raw Input
+
+Form posts are name/value pairs:
+
+```fsharp
+let raw =
+    RawInput.ofNameValues
+        [ "email", "not-an-email"
+          "age", "12" ]
+```
+
+## Parse
+
+```fsharp
+let parsed = Input.parse signupSchema raw
+```
+
+`parsed` is a `ParsedInput<Signup, SchemaError>`. On success `parsed.Result` is `Ok signup` and every constraint
+already holds. Here both fields fail, so no `Signup` exists anywhere:
+
+```fsharp
+parsed.IsValid              // false
+parsed.ErrorsFor "email"    // [ SchemaError.InvalidFormat "email" ]
+parsed.ErrorsFor "age"      // [ SchemaError.RangeOutOfRange ... ]
+```
+
+## Redisplay The Form
+
+The original input is retained on the parsed value, addressed by the same paths:
+
+```fsharp
+RawInput.redisplayPath "email" parsed.Input   // "not-an-email", exactly as typed
+RawInput.redisplayPath "age" parsed.Input     // "12"
+```
+
+A form template needs only `parsed.Input` and `parsed.ErrorsFor` — there is no half-valid model to guard against.
+
+## Use The Trusted Model
+
+```fsharp
+match parsed.Result with
+| Ok signup -> register signup      // constraints already hold; no re-checking downstream
+| Error _ -> renderForm parsed
+```
+
+## Next
+
+- [Nested Models And Collections](../nested-and-collections/) for models inside models.
+- [Redisplay And Field Errors](../../redisplay-and-field-errors/) for the full redisplay guide.
