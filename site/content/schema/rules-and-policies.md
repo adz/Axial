@@ -73,7 +73,7 @@ let acceptLine raw = flow {
 
 `Flow.verify` short-circuits the workflow on the first policy failure, like any other failing bind.
 
-See the runnable [policy example]({{< relref "/patterns/examples/" >}}) for the full set of adapters — parsing,
+See the runnable [policy example]({{< relref "/schema/examples.md" >}}) for the full set of adapters — parsing,
 refined construction, schema input, validation, and rules — composed into one workflow.
 
 ## Choosing Between Them

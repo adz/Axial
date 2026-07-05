@@ -125,6 +125,6 @@ Constraints can attach to either layer, and both stay inspectable:
 - `Value.underlyingPrimitiveKind` sees through any number of refinement layers to the primitive foundation
 - `Value.format` reports the nearest declared format through refinement layers
 
-Metadata interpreters use the same visibility through the [Inspect API]({{< relref "/reference/schema/" >}}):
+Metadata interpreters use the same visibility through the [Inspect API]({{< relref "/schema/reference/schema/" >}}):
 a refined field describes itself as `ValueShape.Refined` wrapping its raw description, so JSON Schema and UI
 interpreters can render the boundary representation without knowing the domain type.

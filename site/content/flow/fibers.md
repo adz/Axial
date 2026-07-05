@@ -8,7 +8,7 @@ type: docs
 
 Fibers represent running child workflows.
 
-In Axial, a **Fiber** is a handle to a running [**`Flow`**]({{< relref "/reference/flow/t-flow.md" >}}). A flow is a cold description of work. A fiber is the hot execution that exists after that work has been started in the background.
+In Axial, a **Fiber** is a handle to a running [**`Flow`**]({{< relref "/flow/reference/flow/t-flow.md" >}}). A flow is a cold description of work. A fiber is the hot execution that exists after that work has been started in the background.
 
 ## The Mental Model
 
@@ -34,9 +34,9 @@ Fibers are the foundation of **Structured Concurrency** in Axial. Unlike "fire-a
 
 The three primary operations for managing fibers are:
 
-- [**`Flow.fork`**]({{< relref "/reference/flow/concurrency/m-flow-fork.md" >}}): starts a flow in the background and returns a `Fiber<'error, 'value>` handle.
-- [**`Flow.join`**]({{< relref "/reference/flow/concurrency/m-flow-join.md" >}}): waits for the fiber and resumes with its successful value or typed failure.
-- [**`Flow.interrupt`**]({{< relref "/reference/flow/concurrency/m-flow-interrupt.md" >}}): asks the fiber to stop, then waits for the child workflow to report its final `Exit`.
+- [**`Flow.fork`**]({{< relref "/flow/reference/flow/concurrency/m-flow-fork.md" >}}): starts a flow in the background and returns a `Fiber<'error, 'value>` handle.
+- [**`Flow.join`**]({{< relref "/flow/reference/flow/concurrency/m-flow-join.md" >}}): waits for the fiber and resumes with its successful value or typed failure.
+- [**`Flow.interrupt`**]({{< relref "/flow/reference/flow/concurrency/m-flow-interrupt.md" >}}): asks the fiber to stop, then waits for the child workflow to report its final `Exit`.
 - `Fiber.dump`: returns a diagnostic snapshot of the fiber id, parent id, start time, and current status.
 
 ## Why Fibers?

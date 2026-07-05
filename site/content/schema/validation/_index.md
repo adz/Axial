@@ -46,5 +46,5 @@ Pure `Check` and `Result` helpers usually live in the [Error Handling]({{< relre
 
 ## Reference
 
-- [Validation API]({{< relref "/reference/validation/" >}})
-- [Diagnostics API]({{< relref "/reference/diagnostics/" >}})
+- [Validation API]({{< relref "/schema/reference/validation/" >}})
+- [Diagnostics API]({{< relref "/schema/reference/diagnostics/" >}})

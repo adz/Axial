@@ -47,9 +47,9 @@ lock-in.</p>
 </div>
 
 <div class="docs-home-meta" style="margin-bottom: 4rem;">
-<a class="docs-chip" href="{{< relref "/docs/start/getting-started.md" >}}">Getting started</a>
-<a class="docs-chip" href="{{< relref "/docs/" >}}">All guides</a>
-<a class="docs-chip" href="{{< relref "/reference/" >}}">API reference</a>
+<a class="docs-chip" href="{{< relref "/error-handling/getting-started.md" >}}">Start with Result</a>
+<a class="docs-chip" href="{{< relref "/schema/getting-started.md" >}}">Start with Schema</a>
+<a class="docs-chip" href="{{< relref "/flow/getting-started.md" >}}">Start with Flow</a>
 <a class="docs-chip" href="https://github.com/adz/Axial">GitHub</a>
 </div>
 

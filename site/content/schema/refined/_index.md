@@ -76,4 +76,4 @@ After this function succeeds, `Product` cannot contain `0` as an id, a malformed
 
 ## Reference
 
-- [Refined API]({{< relref "/reference/refined/" >}})
+- [Refined API]({{< relref "/schema/reference/refined/" >}})
