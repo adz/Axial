@@ -669,3 +669,132 @@ $axial-flow: #6d4fc4;
     font-size: 2.3rem;
   }
 }
+
+// Coordination diagram on the Flow landing page
+.axial-coord {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: stretch;
+  margin: 3rem 0 1rem;
+}
+
+.axial-coord-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.7rem;
+}
+
+.axial-coord-label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.axial-coord-col--left .axial-coord-label { text-align: left; }
+.axial-coord-col--right .axial-coord-label { text-align: right; }
+
+.coord-row {
+  display: flex;
+  align-items: center;
+}
+
+.coord-pill {
+  display: inline-block;
+  padding: 0.45rem 1rem;
+  border: 1px solid rgba(0,0,0,0.12);
+  border-radius: 7px;
+  background: #fff;
+  font-family: $font-family-monospace, monospace;
+  font-size: 0.84rem;
+  color: #334155;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+}
+
+.coord-line {
+  flex: 1;
+  min-width: 1.25rem;
+  border-top: 1px dashed rgba(100, 116, 139, 0.5);
+}
+
+.axial-coord-col--right .coord-row {
+  justify-content: flex-end;
+}
+
+.axial-coord-mid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 2.75rem;
+  border-left: 1px dashed rgba(100, 116, 139, 0.35);
+  border-right: 1px dashed rgba(100, 116, 139, 0.35);
+}
+
+.coord-hub {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 1.6rem 2.1rem;
+  border: 1.5px solid #6d4fc4;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 14px 34px rgba(109, 79, 196, 0.14);
+
+  img {
+    width: 34px;
+    height: 34px;
+  }
+
+  .coord-hub-name {
+    font-family: $font-family-monospace, monospace;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #6d4fc4;
+    white-space: nowrap;
+  }
+}
+
+.axial-coord-caption {
+  margin: 1rem 0 2.5rem;
+  text-align: center;
+  font-size: 0.92rem;
+  color: #64748b;
+}
+
+@media (max-width: 820px) {
+  .axial-coord {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .axial-coord-mid {
+    border-left: 0;
+    border-right: 0;
+    border-top: 1px dashed rgba(100, 116, 139, 0.35);
+    border-bottom: 1px dashed rgba(100, 116, 139, 0.35);
+    padding: 1.5rem 0;
+    order: 2;
+  }
+
+  .axial-coord-col--left { order: 1; }
+  .axial-coord-col--right { order: 3; }
+
+  .coord-line { display: none; }
+
+  .coord-row,
+  .axial-coord-col--right .coord-row {
+    justify-content: center;
+  }
+
+  .axial-coord-col--left .axial-coord-label,
+  .axial-coord-col--right .axial-coord-label {
+    text-align: center;
+  }
+}

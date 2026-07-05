@@ -65,6 +65,44 @@ readVerifiedEmail 42 |> Flow.runSync appEnv
 
 </div>
 
+<section>
+<span class="label" style="color:#6d4fc4">Everything coordinates through Flow</span>
+
+<div class="axial-coord">
+
+<div class="axial-coord-col axial-coord-col--left">
+<span class="axial-coord-label">Your tools</span>
+<div class="coord-row"><span class="coord-pill">Axial.Schema</span><span class="coord-line"></span></div>
+<div class="coord-row"><span class="coord-pill">Axial.ErrorHandling</span><span class="coord-line"></span></div>
+<div class="coord-row"><span class="coord-pill">Axial.Validation</span><span class="coord-line"></span></div>
+<div class="coord-row"><span class="coord-pill">Axial.Refined</span><span class="coord-line"></span></div>
+<div class="coord-row"><span class="coord-pill">Your types</span><span class="coord-line"></span></div>
+<div class="coord-row"><span class="coord-pill">Other libraries</span><span class="coord-line"></span></div>
+</div>
+
+<div class="axial-coord-mid">
+<div class="coord-hub">
+<img src="/content/img/favicon-light.svg" alt="Axial" />
+<span class="coord-hub-name">Axial.Flow</span>
+</div>
+</div>
+
+<div class="axial-coord-col axial-coord-col--right">
+<span class="axial-coord-label">Services &amp; runtimes</span>
+<div class="coord-row"><span class="coord-line"></span><span class="coord-pill">HTTP</span></div>
+<div class="coord-row"><span class="coord-line"></span><span class="coord-pill">Files</span></div>
+<div class="coord-row"><span class="coord-line"></span><span class="coord-pill">Databases</span></div>
+<div class="coord-row"><span class="coord-line"></span><span class="coord-pill">Messaging</span></div>
+<div class="coord-row"><span class="coord-line"></span><span class="coord-pill">Browser APIs</span></div>
+<div class="coord-row"><span class="coord-line"></span><span class="coord-pill">JS ecosystem</span></div>
+</div>
+
+</div>
+
+<p class="axial-coord-caption">Bring your own types and libraries on one side; reach services and runtimes on the
+other. Flow is the seam where structure meets execution &mdash; on .NET, NativeAOT, Fable, browser and server.</p>
+</section>
+
 <ul class="axial-checks axial-checks--flow">
 <li>Explicit dependencies and control flow stay visible</li>
 <li>Cancellation and runtime policy built in</li>
