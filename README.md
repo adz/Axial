@@ -9,25 +9,20 @@
   <img alt="Axial" src="docs/content/img/axial-readme-light.svg" width="160">
 </picture>
 
-Axial provides **structured composition over normal F#/.NET code**. It is an application architecture model for F# on .NET.
+Axial provides **structured composition over normal F#/.NET code**. It is two tools that share one vocabulary:
 
-Starting in `Axial.ErrorHandling` write small structured checks with `Check`, keep fail-fast logic in standard `Result`,
-or accumulate a graph of errors in `Validation` using `validate {}`. Accumulated errors are described by `Diagnostics`.
+**Parse, don't validate.** For domain models, declare a `Schema` once — parsing raw input (HTTP form-like, CLI,
+JSON-like, configuration), validation, redisplay with path-aware field errors, contextual rules, and metadata
+interpreters (JSON Schema, docs, UI) all fall out of that one declaration. An invalid model is never constructed.
+For simple code without a domain model, plain F# `Result` with your own error union is the whole story — `Check`,
+`Validation`, and `Refined` are the machinery behind those two doors, there when you need them directly.
 
-However, the stronger goal of Axial is to preference 'parse' over 'error handling'. That is supported by `Refine`
-and `Parse` in `Axial.Refined`. You'll find these help by providing base parsers for types (like `Parse.int`) but
-also introducing new types to represent the refinement, like `Refined.NonEmptyList`. Use `refine {}` for an
-elegant way of refining.
+**Effects in Flow.** A cold, environment-aware Reader-Async-Result workflow model in the ZIO tradition: explicit
+dependencies in `'env`, direct `Task`/`ValueTask`/`Async` interop, cancellation, layers, scoped resources, fibers,
+STM, and scheduling. `Policy` and `Flow.verify` are where the two sides meet — a parsed model enters a workflow with
+the environment injected. Flow is optional; the parse-don't-validate side works without it.
 
-For whole boundary models, `Axial.Schema` describes a trusted model once — fields, external names, and portable
-constraints — and `Axial.Validation.Schema` interprets that schema to parse raw input (HTTP form-like, CLI, JSON-like,
-configuration) into trusted models with path-aware diagnostics and raw redisplay, re-validate existing values, and run
-contextual rules over already-trusted models. The same schema also drives non-validation interpreters such as JSON
-Schema, documentation, and UI metadata through `Inspect`.
-
-Finally, Axial gives you an orchestrating workflow concept in `Axial.Flow`. It is useful in code at the boundary
-of your app, which often needs environment access, async work, task interop, or runtime policy. `Policy` directly
-brings the `'environment` form the Flow into your `Refine` or `Result` functions. 
+Everything is zero-reflection, AOT- and trimming-safe, and Fable-compatible.
 
 [![ci](https://github.com/adz/Axial/actions/workflows/ci.yml/badge.svg)](https://github.com/adz/Axial/actions/workflows/ci.yml)
 [![NuGet](https://img.shields.io/nuget/v/Axial.svg)](https://www.nuget.org/packages/Axial)

@@ -408,3 +408,264 @@ samp,
     justify-content: flex-start;
   }
 }
+
+// ---------------------------------------------------------------------------
+// Two-group landing pages (/, /parse/, /flow/)
+// ---------------------------------------------------------------------------
+
+$axial-parse: #0b55d9;
+$axial-flow: #6d4fc4;
+
+.axial-doors {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 2rem;
+  margin: 3rem 0;
+}
+
+.axial-door {
+  display: block;
+  padding: 2.25rem 2rem 2rem;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-top: 3px solid #94a3b8;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .axial-door-kicker {
+    display: block;
+    margin-bottom: 0.6rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #64748b;
+  }
+
+  h2 {
+    margin: 0 0 0.9rem;
+    font-size: 1.85rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #0f172a;
+  }
+
+  p {
+    margin: 0 0 1.4rem;
+    color: #475569;
+    line-height: 1.65;
+  }
+
+  .axial-door-cta {
+    font-weight: 700;
+  }
+}
+
+.axial-door--parse {
+  border-top-color: $axial-parse;
+  .axial-door-kicker, .axial-door-cta { color: $axial-parse; }
+}
+
+.axial-door--flow {
+  border-top-color: $axial-flow;
+  .axial-door-kicker, .axial-door-cta { color: $axial-flow; }
+}
+
+.axial-hero-panels {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.axial-panel {
+  padding: 1.1rem 1.25rem;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.05);
+
+  .label {
+    margin-bottom: 0.4rem;
+    font-size: 0.72rem;
+  }
+
+  pre {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    font-size: 0.88rem;
+    line-height: 1.55;
+  }
+}
+
+.axial-diag {
+  font-family: $font-family-monospace, monospace;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: #334155;
+  white-space: pre;
+  overflow-x: auto;
+
+  .diag-err {
+    color: #c02749;
+    font-weight: 600;
+  }
+
+  .diag-ok {
+    color: #178a50;
+  }
+}
+
+.axial-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 2rem;
+  margin: 2.25rem 0;
+  padding: 1.1rem 0;
+  border-top: 1px solid rgba(0,0,0,0.06);
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  list-style: none;
+  padding-left: 0;
+
+  li {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    color: #475569;
+
+    &::before {
+      content: "\2713";
+      font-weight: 800;
+      color: $axial-parse;
+    }
+  }
+}
+
+.axial-checks--flow li::before {
+  color: $axial-flow;
+}
+
+.axial-lanes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+  margin: 1.5rem 0 2.5rem;
+}
+
+.axial-lane {
+  padding: 1.6rem 1.6rem 1.2rem;
+  border: 1px solid rgba(0,0,0,0.07);
+  border-radius: 10px;
+  background: #fff;
+
+  h3 {
+    margin: 0 0 0.4rem;
+    font-size: 1.15rem;
+    font-weight: 750;
+  }
+
+  > p {
+    margin: 0 0 1rem;
+    color: #64748b;
+    line-height: 1.6;
+  }
+
+  pre {
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+}
+
+.axial-machinery {
+  margin: 0 0 2.5rem;
+
+  .label {
+    color: #64748b;
+  }
+
+  p {
+    max-width: 72ch;
+    color: #64748b;
+    font-size: 0.95rem;
+  }
+}
+
+.axial-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 2.5rem 0 3rem;
+  padding: 1.4rem 1.75rem;
+  border-radius: 10px;
+
+  p {
+    margin: 0;
+    max-width: 62ch;
+    color: #334155;
+    line-height: 1.55;
+  }
+
+  a {
+    white-space: nowrap;
+    font-weight: 750;
+  }
+}
+
+.axial-strip--flow {
+  background: rgba(109, 79, 196, 0.07);
+  border: 1px solid rgba(109, 79, 196, 0.18);
+  a { color: $axial-flow; }
+}
+
+.axial-strip--parse {
+  background: rgba(11, 85, 217, 0.06);
+  border: 1px solid rgba(11, 85, 217, 0.16);
+  a { color: $axial-parse; }
+}
+
+.axial-variants {
+  margin: 1rem 0 2.5rem;
+
+  table {
+    width: 100%;
+    font-size: 0.92rem;
+  }
+
+  code {
+    white-space: nowrap;
+  }
+}
+
+.axial-landing h1 {
+  font-size: 3.1rem;
+  font-weight: 850;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  color: #0f172a;
+  margin-bottom: 1.6rem;
+}
+
+.axial-landing .docs-home-hero {
+  align-items: start;
+  padding-top: 3.5rem;
+}
+
+@media (max-width: 900px) {
+  .axial-landing h1 {
+    font-size: 2.3rem;
+  }
+}

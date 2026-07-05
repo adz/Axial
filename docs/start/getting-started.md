@@ -8,32 +8,32 @@ description: The fastest path from Check and Result into Flow.
 
 Axial is a toolkit for Result-based programs in F#. It starts with validation helpers and extends to application boundaries that need dependencies, async work, cancellation, or runtime policy.
 
-## 1. Choose the Smallest Tool
+## 1. The Two-Lane Rule
 
-Use the smallest tool that fits the code you are writing:
+Axial is two tools that share one vocabulary. Pick your lane by asking one question: **am I modelling a domain?**
 
-```text
-Check -> Result & Refined -> Validation & Schema -> Flow
-```
+- **Yes — declare a [Schema](../../schema/).** Parsing raw input, validation, redisplay, contextual rules, and
+  metadata all fall out of one declaration, and an invalid model is never constructed.
+- **No — use plain `Result` with your own error type.** Standard F# `Result` plus a small error union is idiomatic
+  Axial, not a compromise.
 
-- **Pure Checks**: Reusable predicates.
-- **Error Handling & Refined**: Fail-fast domain logic and structural domain values.
-- **Validation**: Error-accumulating input validation.
-- **Schema**: Whole boundary models parsed from raw input into trusted values.
-- **Flow**: The application boundary where you need dependencies, async/task interop, logging, or cancellation.
-
-Use the three guide sections as separate manuals:
+When the code around either lane needs dependencies, async or task work, cancellation, or runtime policy, lift it
+into [Flow](../../flow/) — the effects side of the library. Flow is optional; both lanes work without it.
 
 | Need | Start here |
 | :--- | :--- |
-| Pure fail-fast logic | [Error Handling](../error-handling/) |
-| Accumulating sibling failures | [Validation](../validation/) |
 | Parsing forms, CLI args, JSON, or config into trusted models | [Schema](../schema/) |
+| Pure fail-fast logic with your own error type | [Error Handling](../error-handling/) |
 | Async, task work, dependencies, resources, or runtime policy | [Flow](../flow/) |
 
-## 2. Start with Checks and Results
+Everything else — reusable `Check` constraints, accumulating `Validation` diagnostics, `Refined` single-value parsing
+— is machinery behind those doors. Reach for it directly only when it clearly pays for itself; the
+[Choosing A Tool](../../schema/choosing-a-tool/) guide maps the full ladder when you want it.
 
-Most logic starts pure. Use `Check` for reusable predicates and `Result` for domain logic.
+## 2. Simple Code: Plain Results
+
+Most logic starts pure. Plain `Result` with your own error union is the blessed lane for code without a domain model
+— no Axial types required in your signatures.
 
 ```fsharp
 open Axial

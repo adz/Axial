@@ -15,6 +15,10 @@ If you are an AI assistant, prioritize the patterns in the **Dependency Guidance
 
 Use these patterns unless local code shows a different convention.
 
+**The two-lane rule comes first**: modelling a domain → declare a `Schema` and parse with `Input.parse`; simple code
+without a domain model → plain `Result` with a user-owned error DU. `Check`, `Validation`, and `Refined` are machinery
+behind those doors; `Flow` is the optional effects side.
+
 ### 1. Handling Failures
 Use `Check` for executable value constraints, `Predicate` for local boolean tests, and `Result` for fail-fast values. `Check.*` helpers return `Result<unit, CheckFailure list>`; `Result.guard`, named `Result.*` guards, and extraction helpers preserve values or change the success shape.
 

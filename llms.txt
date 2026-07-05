@@ -2,6 +2,7 @@
 > This file is optimized for AI agents (Claude, Gemini, Codex).
 
 ## Core Model
+- **Two doors**: for domain models, declare a `Schema` and use `Input.parse` (parsing, validation, redisplay, rules, and metadata fall out; invalid models are never constructed). For simple code, plain F# `Result` with a user-owned error DU is idiomatic. `Check`/`Validation`/`Refined` are machinery behind those doors. `Flow` is the optional effects side.
 - **Unified Flow**: `Flow<'env, 'error, 'value>` is a cold, environment-aware effect system.
 - **Flow aliases**: `Flow<'value>` = no env/no typed failure, `Flow<'error, 'value>` = no env with typed failure, `EnvFlow<'env, 'value>` = env with no typed failure, `ExnFlow<'value>` and `ExnEnvFlow<'env, 'value>` = exception-channel interop shapes.
 - **Hybrid Optimization**: On .NET, `flow { }` uses inlined overloads for zero-boilerplate, low-allocation interop with `Task`, `ValueTask`, and `Async`.

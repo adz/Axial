@@ -20,17 +20,22 @@ Axial has two main groups, and everything in this queue serves that split:
 
 Make the two-group story the public story. No new APIs; docs and positioning only.
 
-- [ ] Rewrite the README opening around the two groups: schema-first for domain models, plain `Result` for simple
+Done as a docs restructuring with two landing pages: `/parse/` ("Parse, don't validate", blue) and `/flow/`
+("Structured workflows without framework lock-in", violet), sourced from `docs/landing/`, plus a minimal two-door
+root page. Each landing cross-links the other exactly once via a tinted strip at the boundary moment
+(`Flow.verify` / boundary parsing).
+
+- [x] Rewrite the README opening around the two groups: schema-first for domain models, plain `Result` for simple
   code, Flow as the optional effects group.
-- [ ] Replace the "choose the smallest tool" ladder in `docs/start/getting-started.md` with the two-lane rule; move
+- [x] Replace the "choose the smallest tool" ladder in `docs/start/getting-started.md` with the two-lane rule; move
   the tool-ladder explanation to an advanced/architecture page.
-- [ ] Bless plain `Result` with a user-owned error DU as idiomatic for simple code in docs
+- [x] Bless plain `Result` with a user-owned error DU as idiomatic for simple code in docs
   (not a compromise; `Check` only when structured failure details pay for themselves).
-- [ ] Reframe docs section indexes so Check/Validation/Refined read as machinery chapters
+- [x] Reframe docs section indexes so Check/Validation/Refined read as machinery chapters
   ("how parsing works underneath"), with Schema and Error Handling (plain Result) as the two doors.
-- [ ] Update `llms.txt` and `docs/AGENT.md` to teach the two-lane rule first.
-- [ ] Keep Flow messaging separable: schema/results usable standalone; no Flow types in the results quick starts.
-- [ ] Run `bash scripts/validate-docs.sh`.
+- [x] Update `llms.txt` and `docs/AGENT.md` to teach the two-lane rule first.
+- [x] Keep Flow messaging separable: schema/results usable standalone; no Flow types in the results quick starts.
+- [x] Run `bash scripts/validate-docs.sh`.
 
 ## Phase 20: One Boundary Error
 

@@ -9,6 +9,10 @@ description: Accumulating sibling failures with Validation and Diagnostics.
 
 Use this section for accumulating sibling failures with `Validation<'value, 'error>`, `Diagnostics<'error>`, and the `validate {}` builder.
 
+This is machinery behind the [Schema](../schema/) door: schema input parsing produces `Diagnostics` for you, so most
+applications consume this section's types rather than building them by hand. Come here directly when you are
+accumulating failures over values you already hold without a schema.
+
 Use this section when independent checks should all report their failures together. If one failure should stop the operation, use [Error Handling](../error-handling/). If the work needs async, task interop, dependencies, resources, or runtime policy, use [Flow](../flow/).
 
 ## Mental Model

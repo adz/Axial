@@ -8,7 +8,9 @@ aliases:
 ---
 
 
-Use this section for pure fail-fast logic with standard F# `Result<'value, 'error>`, Axial `Check`, focused `Result` helpers, and the `result {}` builder.
+This section is one of Axial's two doors: **plain `Result` for simple code**. Standard F# `Result<'value, 'error>`
+with your own error union is idiomatic Axial; `Check`, the focused `Result` helpers, and the `result {}` builder are
+the machinery that keeps it terse. (The other door is [Schema](../schema/), for whole domain models.)
 
 Use this section when the code is still pure and one failure is enough to stop the operation. Do not introduce `Flow` just because dependencies might appear later.
 

@@ -5,44 +5,46 @@ type: docs
 weight: 20
 ---
 
-Welcome to the Axial guides. Choose a section from the sidebar or start with [Getting Started](./start/getting-started/).
+Welcome to the Axial guides. Axial has two doors — [Schema](./schema/) for domain models and plain
+[Result](./error-handling/) for simple code — with [Flow](./flow/) as the optional effects side. Start with
+[Getting Started](./start/getting-started/).
 
 <div class="docs-grid docs-index-grid">
 
 <section class="docs-card">
 <span class="label">Getting oriented</span>
 <h2><a href="./start/">Start</a></h2>
-<p>Install the package, run small examples, and choose Result, Validation, or Flow for the work in front of you.</p>
+<p>Install the package, learn the two-lane rule, and run small examples.</p>
 </section>
 
 <section class="docs-card">
-<span class="label">Pure checks and results</span>
-<h2><a href="./error-handling/">Error Handling</a></h2>
-<p>Pure fail-fast logic with Check, standard F# Result, result { }, and Error Handling tutorials.</p>
-</section>
-
-<section class="docs-card">
-<span class="label">Type-safe boundaries</span>
-<h2><a href="./refined/">Refined</a></h2>
-<p>Type-safe boundary logic with Parse, Refine, and the refine { } builder.</p>
-</section>
-
-<section class="docs-card">
-<span class="label">Portable model schemas</span>
+<span class="label">Door one &middot; domain models</span>
 <h2><a href="./schema/">Schema</a></h2>
-<p>Model schemas for input parsing, redisplay, contextual rules, policies, and metadata interpreters.</p>
+<p>Declare the model once: input parsing, validation, redisplay, contextual rules, policies, and metadata interpreters fall out.</p>
 </section>
 
 <section class="docs-card">
-<span class="label">Accumulating validation</span>
-<h2><a href="./validation/">Validation</a></h2>
-<p>Sibling failure accumulation with Validation, Diagnostics, validate { }, and Validation tutorials.</p>
+<span class="label">Door two &middot; simple code</span>
+<h2><a href="./error-handling/">Error Handling</a></h2>
+<p>Plain F# Result with your own error type, kept terse by Check, focused helpers, and result { }.</p>
 </section>
 
 <section class="docs-card">
-<span class="label">Effectful workflows</span>
+<span class="label">Effects</span>
 <h2><a href="./flow/">Flow</a></h2>
 <p>Environment access, async or task work, layers, resources, scheduling, concurrency, and service tutorials.</p>
+</section>
+
+<section class="docs-card">
+<span class="label">Machinery &middot; single values</span>
+<h2><a href="./refined/">Refined</a></h2>
+<p>Parse and refine individual boundary values; the toolkit schemas use for their fields.</p>
+</section>
+
+<section class="docs-card">
+<span class="label">Machinery &middot; diagnostics</span>
+<h2><a href="./validation/">Validation</a></h2>
+<p>Accumulating sibling failures with Validation, Diagnostics, and validate { } — the error trees schema parsing produces.</p>
 </section>
 
 <section class="docs-card">

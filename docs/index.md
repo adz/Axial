@@ -1,79 +1,49 @@
 ---
 title: Home
-description: Axial technical guides, semantics, and API reference.
+description: Axial — parse-don't-validate results and structured effects for F# on .NET.
 ---
 
-<div class="docs-home-container">
+<div class="docs-home-container axial-landing">
 
-<div class="docs-home-hero">
+<div style="max-width: 68ch; padding-top: 3.5rem;">
+<span class="eyebrow">F# on .NET &middot; zero reflection &middot; AOT &amp; Fable safe</span>
 
-<div class="docs-home-copy"><span class="eyebrow">
-A coherent application architecture model for F# on .NET.
-</span>
-
-<h1>
-Structured composition over normal F#/.NET code
-</h1>
+<h1>Structured data. Structured effects.</h1>
 
 <div class="lede">
-Axial is a model for Result-based programs. Write structured checks with <code>Check</code>, keep fail-fast logic in <code>Result</code>, compile untrusted values with <a href="{{< relref "/reference/refined/" >}}"><code>Refined</code></a>, accumulate sibling failures with <a href="{{< relref "/reference/validation/" >}}"><code>Validation</code></a>, then lift boundary policy into <a href="{{< relref "/reference/flow/" >}}"><code>Flow</code></a> when the boundary needs environment access, async work, task interop, cancellation, or runtime policy.
+Axial is two tools that share one vocabulary. A <strong>parse-don't-validate</strong> toolkit that turns untrusted
+input into trusted domain models &mdash; and a <strong>workflow model</strong> for the effects around them. Use either
+alone; they meet exactly where a parsed model enters a workflow.
+</div>
 </div>
 
-<div class="docs-home-meta">
-<a class="docs-chip" href="{{< relref "/docs/start/getting-started.md" >}}">Get Started</a>
-<a class="docs-chip" href="{{< relref "/docs/flow/tutorials/" >}}">Flow Tutorials</a>
-<a class="docs-chip" href="{{< relref "/docs/error-handling/" >}}">Error Handling</a>
-<a class="docs-chip" href="{{< relref "/docs/refined/" >}}">Refined</a>
-<a class="docs-chip" href="{{< relref "/docs/validation/" >}}">Validation</a>
-<a class="docs-chip" href="{{< relref "/docs/schema/" >}}">Schema</a>
-<a class="docs-chip" href="{{< relref "/docs/flow/" >}}">Flow</a>
-<a class="docs-chip" href="{{< relref "/docs/flow/dependencies.md" >}}">Managing dependencies</a>
-<a class="docs-chip" href="{{< relref "/docs/flow/semantics.md" >}}">Cold execution semantics</a>
-</div>
+<div class="axial-doors">
 
-</div>
-
-<div class="docs-home-visual">
-<a class="docs-home-visual-link" href="{{< relref "/docs/start/getting-started.md" >}}">
-<img src="content/img/flow-graphic.png" alt="Axial Model" />
+<a class="axial-door axial-door--parse" href="{{< relref "/parse/" >}}">
+<span class="axial-door-kicker">Modelling a domain?</span>
+<h2>Parse, don't validate</h2>
+<p>Declare the model once with <code>Schema</code>. Parsing, validation, redisplay, rules, and docs fall out &mdash;
+an invalid model is never constructed. For simple code, plain <code>Result</code> with your own error type is the
+whole story.</p>
+<span class="axial-door-cta">Enter &rarr;</span>
 </a>
-<div class="docs-home-visual-cta">
-<a class="docs-home-cta" href="{{< relref "/docs/start/getting-started.md" >}}">Get Started &gt;</a>
+
+<a class="axial-door axial-door--flow" href="{{< relref "/flow/" >}}">
+<span class="axial-door-kicker">Composing effects?</span>
+<h2>Axial.Flow</h2>
+<p>A Reader-Async-Result workflow model in the ZIO tradition: explicit dependencies in <code>'env</code>, direct
+<code>Task</code>/<code>Async</code> interop, cancellation, layers, fibers, and scheduling &mdash; without framework
+lock-in.</p>
+<span class="axial-door-cta">Enter &rarr;</span>
+</a>
+
 </div>
+
+<div class="docs-home-meta" style="margin-bottom: 4rem;">
+<a class="docs-chip" href="{{< relref "/docs/start/getting-started.md" >}}">Getting started</a>
+<a class="docs-chip" href="{{< relref "/docs/" >}}">All guides</a>
+<a class="docs-chip" href="{{< relref "/reference/" >}}">API reference</a>
+<a class="docs-chip" href="https://github.com/adz/Axial">GitHub</a>
 </div>
- 
-</div>
-
-<section class="docs-home-example">
-<span class="label">Check once, lift later</span>
-
-```fsharp
-type RegistrationError =
-    | EmailMissing
-    | UserNotFound
-
-let validateEmail (email: string) : Result<string, RegistrationError> =
-    email
-    |> Result.notBlank
-    |> Result.mapError (fun _ -> EmailMissing)
-
-type User =
-    { Email: string }
-
-type Api =
-    { LoadUser: int -> Task<Result<User, RegistrationError>> }
-
-let readVerifiedEmail userId =
-    flow {
-        let! loadUser = Flow.read _.LoadUser
-        let! user = loadUser userId
-        return! validateEmail user.Email |> Flow.fromResult
-    }
-```
-
-<div class="docs-home-cta-row">
-<a class="docs-home-cta" href="{{< relref "/docs/patterns/examples/" >}}">Examples &gt;</a>
-</div>
-</section>
 
 </div>
