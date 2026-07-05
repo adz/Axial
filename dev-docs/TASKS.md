@@ -137,12 +137,17 @@ readability and compile-error quality for constraint blocks.
 
 ## Phase 16: Source Generation Later
 
-- [ ] Defer runtime reflection as a foundation.
-- [ ] Design source generation only after explicit schema and DSL APIs stabilize.
-- [ ] Prototype `[<Schema>]` record generation.
-- [ ] Generate constructor/getter alignment where possible.
-- [ ] Generate schemas for primitive field attributes such as required, max length, email, and min length.
-- [ ] Decide whether generated schemas can target private constructors safely.
+- [x] Defer runtime reflection as a foundation. (Recorded in `dev-docs/decisions/README.md`.)
+- [x] Design source generation only after explicit schema and DSL APIs stabilize. (Deferral criteria recorded in
+  `dev-docs/current-ideas/schema-source-generation.md`; the DSL decision closed the last open authoring surface.)
+- [x] Prototype `[<Schema>]` record generation. (Generation target pinned by sketch and compiled by
+  `SchemaGenerationTargetProofTests`; generator tooling deliberately deferred.)
+- [x] Generate constructor/getter alignment where possible. (Target shape derives both from record field order;
+  proven compilable.)
+- [x] Generate schemas for primitive field attributes such as required, max length, email, and min length. (Attributes
+  lower one-to-one to existing `SchemaConstraint` values in the pinned target.)
+- [x] Decide whether generated schemas can target private constructors safely. (No: public or `internal` only; F# has
+  no partial types for same-scope emission.)
 
 ## Phase 17: Documentation And Examples
 

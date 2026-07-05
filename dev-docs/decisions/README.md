@@ -67,6 +67,10 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
   evaluated (see `dev-docs/current-ideas/schema-ce-evaluation.md`): the sketched bare-brace constraint blocks are not
   expressible in F#, compile-error quality is a wash, and readability does not improve, so the pipeline builder stays
   the single public authoring surface.
+- Source generation is deferred and reflection stays rejected as a schema foundation. The `[<Schema>]` generation
+  target is pinned by `dev-docs/current-ideas/schema-source-generation.md` and compiled by
+  `tests/Axial.Schema.Tests/SchemaGenerationTargetProofTests.fs`; generated schemas may target public or `internal`
+  record representations, but not `private` ones, because F# has no partial types for same-scope emission.
 - `Bind` is only for assigning or mapping a source error immediately before `flow { }` binds it. In pure code, use
   `Result.require`, `Result.mapError`, or `Validation.mapError`.
 - Generated reference docs come from XML comments and generator inputs. Do not hand-edit generated reference pages as the
