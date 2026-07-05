@@ -73,6 +73,44 @@ let checkBookingWindow context (range: DateRange) =
         Error "Date range is outside the booking window."
 ```
 
+## Schema Constraints Versus Rules
+
+Schema constraints and contextual rules answer different questions:
+
+- a schema constraint is field-local and unconditional: `maxLength 100` on a subject is true for every ticket, in every
+  workflow, and can run during input parsing before a model exists
+- a contextual rule needs the completed, trusted model and describes when that model is acceptable for one workflow
+
+Author contextual rules with `RuleSet` and evaluate them with `Rules.apply`:
+
+```fsharp
+type TicketRuleError =
+    | HighPriorityNeedsAssignee
+    | ManualReviewRequired
+
+let approvalRules =
+    Rules.concat
+        [ Rules.create (fun ticket ->
+              if ticket.Priority >= 4 && not ticket.HasAssignee then
+                  Rules.failAt [ PathSegment.Name "assignee" ] HighPriorityNeedsAssignee
+              else
+                  Ok ())
+          Rules.create (Rules.name "review" (fun ticket ->
+              if ticket.Priority >= 5 then
+                  Rules.fail ManualReviewRequired
+              else
+                  Ok ())) ]
+
+match Rules.apply approvalRules ticket with
+| Ok trusted -> approve trusted
+| Error diagnostics -> reject diagnostics
+```
+
+`Rules.apply` never constructs, parses, or transforms the model. On success it returns the same trusted instance; on
+failure it returns path-aware diagnostics that render exactly like schema input diagnostics, so one error-display layer
+serves both boundaries. Different workflows can apply different rule sets to the same model — triage may only require an
+assignee while approval also requires review — without weakening the model's constructor.
+
 ## Choosing The Boundary
 
 Ask whether the rule needs information that is not part of the model's own fields and meaning.

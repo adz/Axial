@@ -118,6 +118,74 @@ module RulesTests =
         | Error _ -> failwith "Expected rules to accept the trusted ticket."
 
     [<Fact>]
+    let ``rules apply returns the supplied trusted model instance without constructing a new one`` () =
+        let ruleSet =
+            Rules.create (fun (ticket: TrustedTicket) ->
+                if ticket.Priority >= 4 && not ticket.HasAssignee then
+                    Rules.failAt [ PathSegment.Name "assignee" ] HighPriorityNeedsAssignee
+                else
+                    Ok ())
+
+        let ticket = TrustedTicket(3, false)
+
+        match Rules.apply ruleSet ticket with
+        | Ok trusted -> test <@ Object.ReferenceEquals(trusted, ticket) @>
+        | Error _ -> failwith "Expected rules to accept the trusted ticket."
+
+    [<Fact>]
+    let ``rules apply accumulates support-ticket workflow diagnostics`` () =
+        let ruleSet =
+            Rules.concat
+                [ Rules.create (Rules.name "assignee" needsAssignee)
+                  Rules.create (Rules.name "reviewer" needsReview) ]
+
+        let ticket =
+            {
+                Priority = 5
+                HasAssignee = false
+            }
+
+        match Rules.apply ruleSet ticket with
+        | Ok _ -> failwith "Expected support-ticket rules to reject the ticket."
+        | Error diagnostics ->
+            test
+                <@
+                    Diagnostics.flatten diagnostics =
+                        [ { Path = [ PathSegment.Name "assignee" ]
+                            Error = HighPriorityNeedsAssignee }
+                          { Path = [ PathSegment.Name "reviewer" ]
+                            Error = ManualReviewRequired } ]
+                @>
+
+    [<Fact>]
+    let ``rules apply supports approval-style workflow rules over the same trusted model`` () =
+        // The same trusted ticket is acceptable to triage but not to auto-approval.
+        let triageRules = Rules.create needsAssignee
+
+        let approvalRules =
+            Rules.concat
+                [ Rules.create needsAssignee
+                  Rules.create (Rules.name "review" needsReview) ]
+
+        let ticket =
+            {
+                Priority = 5
+                HasAssignee = true
+            }
+
+        test <@ Rules.apply triageRules ticket = Ok ticket @>
+
+        match Rules.apply approvalRules ticket with
+        | Ok _ -> failwith "Expected approval rules to require manual review."
+        | Error diagnostics ->
+            test
+                <@
+                    Diagnostics.flatten diagnostics =
+                        [ { Path = [ PathSegment.Name "review" ]
+                            Error = ManualReviewRequired } ]
+                @>
+
+    [<Fact>]
     let ``explicit Rules API creates field-attached failures`` () =
         let result =
             Rules.failAt [ PathSegment.Name "assignee" ] HighPriorityNeedsAssignee

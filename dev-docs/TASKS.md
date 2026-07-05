@@ -80,10 +80,10 @@ Work this queue from top to bottom.
 - [x] Support field/path attachment for rule failures.
 - [x] Support custom code and message.
 - [x] Support rules over already-trusted models.
-- [ ] Implement `Rules.apply : RuleSet<'model, 'error> -> 'model -> Result<'model, Diagnostics<'error>>`.
-- [ ] Ensure rules do not construct models.
-- [ ] Add examples and tests for support-ticket and approval-style workflow rules.
-- [ ] Document the distinction between schema constraints and rules.
+- [x] Implement `Rules.apply : RuleSet<'model, 'error> -> 'model -> Result<'model, Diagnostics<'error>>`.
+- [x] Ensure rules do not construct models.
+- [x] Add examples and tests for support-ticket and approval-style workflow rules.
+- [x] Document the distinction between schema constraints and rules.
 
 ## Phase 13: Policy And Flow Integration
 

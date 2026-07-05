@@ -279,3 +279,25 @@ module Rules =
         match diagnostics with
         | [] -> Axial.Validation.Validation.ok model
         | failures -> failures |> mergeDiagnostics |> Axial.Validation.Validation.error
+
+    /// <summary>Applies contextual rules to an already-trusted model, returning a plain result.</summary>
+    /// <remarks>
+    /// <para>
+    /// The supplied model is returned unchanged on success. Rules never construct, parse, or transform the model;
+    /// they only decide whether the same trusted instance is acceptable in the current context.
+    /// </para>
+    /// </remarks>
+    /// <param name="ruleSet">The rule set to evaluate.</param>
+    /// <param name="model">The already-trusted model to check.</param>
+    /// <example>
+    /// <code>
+    /// match Rules.apply ticketRules ticket with
+    /// | Ok trusted -> handle trusted
+    /// | Error diagnostics -> reject diagnostics
+    /// </code>
+    /// </example>
+    let apply
+        (ruleSet: RuleSet<'model, 'error>)
+        (model: 'model)
+        : Result<'model, Diagnostics<'error>> =
+        validate ruleSet model |> Axial.Validation.Validation.toResult
