@@ -1,5 +1,7 @@
 namespace Axial.Tests
 
+open Axial.ErrorHandling
+
 open Axial.Schema
 open Axial.Validation
 open Axial.Validation.Schema
@@ -116,7 +118,7 @@ module ManySchemaParseTests =
         test
             <@
                 parsed.Errors = [ { Path = [ PathSegment.Name "contacts" ]
-                                    Error = SchemaError.CountOutOfRange("minCount 1", Some 0) } ]
+                                    Error = SchemaError.InvalidCount(CheckCountExpectation.MinimumCount 1, Some 0) } ]
             @>
 
     [<Fact>]
@@ -138,7 +140,7 @@ module ManySchemaParseTests =
         test
             <@
                 parsed.Errors = [ { Path = [ PathSegment.Name "contacts" ]
-                                    Error = SchemaError.CountOutOfRange("maxCount 2", Some 3) } ]
+                                    Error = SchemaError.InvalidCount(CheckCountExpectation.MaximumCount 2, Some 3) } ]
             @>
 
     [<Fact>]

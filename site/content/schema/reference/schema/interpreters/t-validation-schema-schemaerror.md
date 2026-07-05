@@ -22,12 +22,10 @@ Schema input, model validation, and contextual rule failures attached to diagnos
 | `ExpectedObject` | The raw input value was expected to be an object. |
 | `ExpectedMany` | The raw input value was expected to be a collection. |
 | `InvalidFormat` | The scalar text did not match the expected format. |
-| `OutOfRange` | The scalar text was outside the supported range for the target type. |
-| `TooShort` | The value was shorter than required. |
-| `TooLong` | The value was longer than allowed. |
-| `LengthOutOfRange` | The value length was outside the required inclusive bounds. |
-| `RangeOutOfRange` | The value was outside the required ordered range. |
-| `CountOutOfRange` | The collection count was outside the required count range. |
+| `ParseOutOfRange` | The scalar text was outside the supported range for the target primitive type. |
+| `InvalidLength` | The value length did not match the expected length constraint. |
+| `OutOfRange` | The value was outside the required ordered range. |
+| `InvalidCount` | The collection count was outside the required count range. |
 | `NotOneOf` | The value was not one of the expected choices. |
 | `Duplicate` | A duplicate value was found. |
 | `ConstructorFailed` | A trusted model constructor rejected otherwise-valid field values. |

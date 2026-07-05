@@ -358,7 +358,7 @@ module PositiveInt =
 module Text =
     let private notTrimmed : Check<string> =
         fun value ->
-            if isNull value then Error [ Missing ]
+            if isNull value then Error [ Required ]
             elif value.Trim() <> value then Error [ InvalidFormat "trimmed" ]
             else Ok()
 

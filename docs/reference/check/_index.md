@@ -12,14 +12,10 @@ This page shows the `Check` surface for reusable, path-free value constraints. `
 
 - [`ErrorHandling.CheckFailure`](./t-errorhandling-checkfailure.md): Describes why an executable value check failed, without attaching source paths or raw input.
 - [`ErrorHandling.CheckLengthExpectation`](./t-errorhandling-checklengthexpectation.md): Describes the length requirement that a value check expected a string-like value to satisfy.
-- [`ErrorHandling.CheckRangeExpectation`](./t-errorhandling-checkrangeexpectation.md): Describes the ordering requirement that a value check expected a comparable value to satisfy against a
- caller-supplied bound. Zero-relative requirements (positive, negative, and their non-strict variants) are not
- modeled here since they carry no bound to report; they are their own top-level
- <a href="../result/t-errorhandling-checkfailure.md">CheckFailure</a> cases instead.
-- [`ErrorHandling.CheckCountExpectation`](./t-errorhandling-checkcountexpectation.md): Describes the count requirement that a value check expected a sequence-shaped value to satisfy against a
- caller-supplied count. Non-emptiness is not modeled here since it carries no count to report; it is its own
- top-level <a href="../result/t-errorhandling-checkfailure.md">CheckFailure</a> case instead.
-- [`ErrorHandling.CheckEqualityExpectation`](./t-errorhandling-checkequalityexpectation.md): Describes the equality requirement that a value check expected a value to satisfy.
+- [`ErrorHandling.CheckRangeExpectation`](./t-errorhandling-checkrangeexpectation.md): <pre>Describes the ordering requirement that a value check expected a comparable value to satisfy against a
+ caller-supplied bound.</pre>
+- [`ErrorHandling.CheckCountExpectation`](./t-errorhandling-checkcountexpectation.md): <pre>Describes the count requirement that a value check expected a sequence-shaped value to satisfy against a
+ caller-supplied count.</pre>
 
 ## Executable composition
 

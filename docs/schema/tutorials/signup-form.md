@@ -57,7 +57,7 @@ already holds. Here both fields fail, so no `Signup` exists anywhere:
 ```fsharp
 parsed.IsValid              // false
 parsed.ErrorsFor "email"    // [ SchemaError.InvalidFormat "email" ]
-parsed.ErrorsFor "age"      // [ SchemaError.RangeOutOfRange ... ]
+parsed.ErrorsFor "age"      // [ SchemaError.OutOfRange ... ]
 ```
 
 ## Redisplay The Form

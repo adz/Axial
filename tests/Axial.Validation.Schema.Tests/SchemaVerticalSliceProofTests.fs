@@ -198,8 +198,8 @@ module SchemaVerticalSliceProofTests =
         let emailCheck = SchemaConstraintCheck.text emailDescriptor.ValueSchema.Constraints
 
         test <@ emailCheck "ada@example.com" = Ok () @>
-        test <@ emailCheck "" = Error [ Blank ] @>
-        test <@ emailCheck (String.replicate 255 "a") = Error [ Length(MaximumLength 254, Some 255) ] @>
+        test <@ emailCheck "" = Error [ Required ] @>
+        test <@ emailCheck (String.replicate 255 "a") = Error [ InvalidLength(MaximumLength 254, Some 255) ] @>
 
         // Compiled-record-plan proof: the same built `Schema<'model>` value compiles into an ordered, cached-name,
         // typed-hook plan with direct constructor application -- no `obj array`, no per-value reflection, and no

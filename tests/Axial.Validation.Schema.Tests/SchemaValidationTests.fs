@@ -1,5 +1,7 @@
 namespace Axial.Tests
 
+open Axial.ErrorHandling
+
 open System
 open Axial.Schema
 open Axial.Validation
@@ -150,7 +152,7 @@ module SchemaValidationTests =
                             Children =
                                 Map.ofList
                                     [ PathSegment.Name "age",
-                                      Diagnostics.singleton (SchemaError.RangeOutOfRange("atLeast 18", Some "10"))
+                                      Diagnostics.singleton (SchemaError.OutOfRange(CheckRangeExpectation.AtLeast "18", Some "10"))
                                       PathSegment.Name "email",
                                       {
                                           Errors = [ SchemaError.Required; SchemaError.InvalidFormat "email" ]
@@ -174,7 +176,7 @@ module SchemaValidationTests =
                             Children =
                                 Map.ofList
                                     [ PathSegment.Name "age",
-                                      Diagnostics.singleton (SchemaError.RangeOutOfRange("atLeast 18", Some "16"))
+                                      Diagnostics.singleton (SchemaError.OutOfRange(CheckRangeExpectation.AtLeast "18", Some "16"))
                                       PathSegment.Name "email",
                                       Diagnostics.singleton (SchemaError.InvalidFormat "email") ]
                         }
@@ -353,7 +355,7 @@ module SchemaValidationTests =
                             Children =
                                 Map.ofList
                                     [ PathSegment.Name "contacts",
-                                      Diagnostics.singleton (SchemaError.CountOutOfRange("maxCount 2", Some 3)) ]
+                                      Diagnostics.singleton (SchemaError.InvalidCount(CheckCountExpectation.MaximumCount 2, Some 3)) ]
                         }
             @>
 
@@ -426,7 +428,7 @@ module SchemaValidationTests =
                             Children =
                                 Map.ofList
                                     [ PathSegment.Name "age",
-                                      Diagnostics.singleton (SchemaError.RangeOutOfRange("atLeast 18", Some "17"))
+                                      Diagnostics.singleton (SchemaError.OutOfRange(CheckRangeExpectation.AtLeast "18", Some "17"))
                                       PathSegment.Name "email",
                                       {
                                           Errors = [ SchemaError.Required; SchemaError.InvalidFormat "email" ]

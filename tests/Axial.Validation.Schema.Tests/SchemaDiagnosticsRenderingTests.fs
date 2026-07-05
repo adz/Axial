@@ -1,5 +1,7 @@
 namespace Axial.Tests
 
+open Axial.ErrorHandling
+
 open Axial.Schema
 open Axial.Validation
 open Axial.Validation.Schema

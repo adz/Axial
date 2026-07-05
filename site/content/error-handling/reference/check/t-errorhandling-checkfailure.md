@@ -17,16 +17,11 @@ Describes why an executable value check failed, without attaching source paths o
 
 | Case | Description |
 | --- | --- |
-| `Missing` | A required value was missing. |
-| `Blank` | A required text value was blank. |
+| `Required` | A required value was missing. |
 | `InvalidFormat` | The value did not match the expected format. |
-| `Length` | The value length did not match the expected length constraint. |
-| `Positive` | The value was expected to be greater than zero. |
-| `NonNegative` | The value was expected to be greater than or equal to zero. |
-| `Negative` | The value was expected to be less than zero. |
-| `NonPositive` | The value was expected to be less than or equal to zero. |
-| `Range` | The value did not match the expected ordered range constraint. |
-| `NonEmpty` | The sequence was expected to contain at least one item. |
-| `Count` | The sequence count did not match the expected count constraint. |
-| `Equality` | The value did not match the expected equality constraint. |
-| `CustomCode` | A custom value check identified by an application-defined code failed. |
+| `InvalidLength` | The value length did not match the expected length constraint. |
+| `OutOfRange` | The value did not match the expected ordered range constraint. |
+| `InvalidCount` | The sequence count did not match the expected count constraint. |
+| `NotOneOf` | The value was not one of the expected choices. |
+| `Duplicate` | A duplicate value was found. |
+| `Custom` | A custom value check identified by an application-defined code failed. |

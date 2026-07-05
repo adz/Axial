@@ -1,5 +1,7 @@
 namespace Axial.Tests
 
+open Axial.ErrorHandling
+
 open System
 open Axial.Refined
 open Axial.Schema
@@ -71,11 +73,11 @@ module RefinedCatalogSchemaTests =
 
         test <@ Refine.nonBlankString "   " |> Result.mapError SchemaError.ofRefinementError = Error [ SchemaError.Required ] @>
         test <@ Refine.slug "Ada" |> Result.mapError SchemaError.ofRefinementError = Error [ SchemaError.InvalidFormat "^[a-z0-9]+(-[a-z0-9]+)*$" ] @>
-        test <@ Refine.positiveInt 0 |> Result.mapError SchemaError.ofRefinementError = Error [ SchemaError.RangeOutOfRange("greaterThan 0", Some "0") ] @>
+        test <@ Refine.positiveInt 0 |> Result.mapError SchemaError.ofRefinementError = Error [ SchemaError.OutOfRange(CheckRangeExpectation.GreaterThan "0", Some "0") ] @>
 
         test
             <@ parsed.Errors = [ { Path = [ PathSegment.Name "name" ]; Error = SchemaError.Required }
-                                 { Path = [ PathSegment.Name "quantity" ]; Error = SchemaError.RangeOutOfRange("greaterThan 0", Some "0") }
+                                 { Path = [ PathSegment.Name "quantity" ]; Error = SchemaError.OutOfRange(CheckRangeExpectation.GreaterThan "0", Some "0") }
                                  { Path = [ PathSegment.Name "slug" ]; Error = SchemaError.InvalidFormat "^[a-z0-9]+(-[a-z0-9]+)*$" } ] @>
 
     [<Fact>]
@@ -155,9 +157,9 @@ module RefinedCatalogSchemaTests =
 
         test
             <@ parsed.Errors = [ { Path = [ PathSegment.Name "codes" ]
-                                   Error = SchemaError.Custom("seq.distinct", None) }
+                                   Error = SchemaError.Duplicate }
                                  { Path = [ PathSegment.Name "tags" ]
-                                   Error = SchemaError.CountOutOfRange("minCount 1", Some 0) } ] @>
+                                   Error = SchemaError.InvalidCount(CheckCountExpectation.MinimumCount 1, Some 0) } ] @>
 
     [<Fact>]
     let ``date time range schema parses trusted ranges`` () =

@@ -5,10 +5,8 @@ weight: 1003
 type: docs
 ---
 
-Describes the ordering requirement that a value check expected a comparable value to satisfy against a
- caller-supplied bound. Zero-relative requirements (positive, negative, and their non-strict variants) are not
- modeled here since they carry no bound to report; they are their own top-level
- <a href="../result/t-errorhandling-checkfailure.md">CheckFailure</a> cases instead.
+<pre>Describes the ordering requirement that a value check expected a comparable value to satisfy against a
+ caller-supplied bound.</pre>
 
 ## Signature
 

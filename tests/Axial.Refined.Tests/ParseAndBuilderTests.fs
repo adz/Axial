@@ -80,11 +80,11 @@ module ParseAndBuilderTests =
             |> Result.map _.ToList()
 
         test <@ nonBlank = Ok "Ada" @>
-        test <@ Refine.nonBlankString "" = Error(CheckFailed("NonBlankString", [ Blank ])) @>
+        test <@ Refine.nonBlankString "" = Error(CheckFailed("NonBlankString", [ Required ])) @>
         test <@ positive = Ok 42 @>
-        test <@ Refine.positiveInt 0 = Error(CheckFailed("PositiveInt", [ Positive(Some "0") ])) @>
+        test <@ Refine.positiveInt 0 = Error(CheckFailed("PositiveInt", [ CheckFailure.OutOfRange(GreaterThan "0", Some "0") ])) @>
         test <@ nonEmpty = Ok [ 1; 2; 3 ] @>
-        test <@ Refine.nonEmptyList [] = Error(CheckFailed("NonEmptyList", [ NonEmpty(Some 0) ])) @>
+        test <@ Refine.nonEmptyList [] = Error(CheckFailed("NonEmptyList", [ CheckFailure.InvalidCount(MinimumCount 1, Some 0) ])) @>
 
     [<Fact>]
     let ``refine computation expression binds explicit results and annotated raw values`` () =

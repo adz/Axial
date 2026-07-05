@@ -1,5 +1,7 @@
 namespace Axial.Tests
 
+open Axial.ErrorHandling
+
 open System
 open Axial.Schema
 open Axial.Validation
@@ -333,7 +335,7 @@ module InputParseTests =
         test
             <@
                 parsed.Errors = [ { Path = [ PathSegment.Name "age" ]
-                                    Error = SchemaError.RangeOutOfRange("atLeast 0", Some "-1") } ]
+                                    Error = SchemaError.OutOfRange(CheckRangeExpectation.AtLeast "0", Some "-1") } ]
             @>
 
     [<Fact>]
@@ -476,7 +478,7 @@ module InputParseTests =
         let parsed = Input.parse minLengthSchema raw
 
         test <@ not parsed.IsValid @>
-        test <@ parsed.ErrorsFor "email" = [ SchemaError.TooShort(5, Some 2) ] @>
+        test <@ parsed.ErrorsFor "email" = [ SchemaError.InvalidLength(CheckLengthExpectation.MinimumLength 5, Some 2) ] @>
 
     [<Fact>]
     let ``schema errors are identical across differently named fields, only the diagnostics path differs`` () =

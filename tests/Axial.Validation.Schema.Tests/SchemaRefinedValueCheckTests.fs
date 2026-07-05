@@ -110,17 +110,17 @@ module SchemaRefinedValueCheckTests =
         let check = Email.schema |> ValueSchemaCheck.text
 
         test <@ check (Email.create "ada@example.com") = Ok () @>
-        test <@ check (Email.create "") = Error [ Blank; InvalidFormat "email" ] @>
+        test <@ check (Email.create "") = Error [ Required; InvalidFormat "email" ] @>
 
     [<Fact>]
     let ``raw text constraint metadata checks the refined value's underlying text`` () =
         let check = ContactName.schema |> ValueSchemaCheck.text
 
         test <@ check (ContactName.create "Ada") = Ok () @>
-        test <@ check (ContactName.create "A") = Error [ Length(MinimumLength 2, Some 1) ] @>
+        test <@ check (ContactName.create "A") = Error [ InvalidLength(MinimumLength 2, Some 1) ] @>
         test <@
             check (ContactName.create (String.replicate 41 "a")) =
-                Error [ Length(MaximumLength 40, Some 41) ]
+                Error [ InvalidLength(MaximumLength 40, Some 41) ]
         @>
 
     [<Fact>]
@@ -130,14 +130,14 @@ module SchemaRefinedValueCheckTests =
         test <@ check (NormalizedEmail.create (Email.create "ada@example.com")) = Ok () @>
 
         // The raw text layer's checks fire for blank input; the outer refined layer's maxLength passes at length 0.
-        test <@ check (NormalizedEmail.create (Email.create "")) = Error [ Blank; InvalidFormat "email" ] @>
+        test <@ check (NormalizedEmail.create (Email.create "")) = Error [ Required; InvalidFormat "email" ] @>
 
         // The outer refined layer's own constraint fires once the raw layers pass.
         let overlong = String.replicate 250 "a" + "@example.com"
 
         test <@
             check (NormalizedEmail.create (Email.create overlong)) =
-                Error [ Length(MaximumLength 254, Some 262) ]
+                Error [ InvalidLength(MaximumLength 254, Some 262) ]
         @>
 
     [<Fact>]
@@ -145,8 +145,8 @@ module SchemaRefinedValueCheckTests =
         let check = Age.schema |> ValueSchemaCheck.ordered<int, _>
 
         test <@ check (Age.create 30) = Ok () @>
-        test <@ check (Age.create -1) = Error [ Range(CheckRangeExpectation.AtLeast "0", Some "-1") ] @>
-        test <@ check (Age.create 200) = Error [ Range(CheckRangeExpectation.AtMost "130", Some "200") ] @>
+        test <@ check (Age.create -1) = Error [ OutOfRange(CheckRangeExpectation.AtLeast "0", Some "-1") ] @>
+        test <@ check (Age.create 200) = Error [ OutOfRange(CheckRangeExpectation.AtMost "130", Some "200") ] @>
 
     [<Fact>]
     let ``arbitrary Check programs adapt to refined values through fromUnderlying`` () =
@@ -165,7 +165,7 @@ module SchemaRefinedValueCheckTests =
             |> ValueSchemaCheck.text
 
         test <@ check "Ada" = Ok () @>
-        test <@ check "A" = Error [ Length(MinimumLength 2, Some 1) ] @>
+        test <@ check "A" = Error [ InvalidLength(MinimumLength 2, Some 1) ] @>
 
     [<Fact>]
     let ``value schema check interpreters reject mismatched primitives and null inputs`` () =

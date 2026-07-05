@@ -17,22 +17,22 @@ module SchemaErrorTests =
     let ``parse errors lower into schema boundary errors`` () =
         test <@ SchemaError.ofParseError (ParseError.MissingValue "int") = SchemaError.Required @>
         test <@ SchemaError.ofParseError (ParseError.InvalidFormat("int", "nope")) = SchemaError.InvalidFormat "int" @>
-        test <@ SchemaError.ofParseError (ParseError.OutOfRange("int", "999")) = SchemaError.OutOfRange "int" @>
+        test <@ SchemaError.ofParseError (ParseError.OutOfRange("int", "999")) = SchemaError.ParseOutOfRange "int" @>
 
     [<Fact>]
     let ``check failures lower into schema boundary errors`` () =
-        test <@ SchemaError.ofCheckFailure CheckFailure.Blank = SchemaError.Required @>
+        test <@ SchemaError.ofCheckFailure CheckFailure.Required = SchemaError.Required @>
         test <@ SchemaError.ofCheckFailure (CheckFailure.InvalidFormat "email") = SchemaError.InvalidFormat "email" @>
 
         let lengthError =
-            SchemaError.ofCheckFailure (CheckFailure.Length(CheckLengthExpectation.MinimumLength 3, Some 1))
+            SchemaError.ofCheckFailure (CheckFailure.InvalidLength(CheckLengthExpectation.MinimumLength 3, Some 1))
 
-        test <@ lengthError = SchemaError.TooShort(3, Some 1) @>
+        test <@ lengthError = SchemaError.InvalidLength(CheckLengthExpectation.MinimumLength 3, Some 1) @>
 
     [<Fact>]
     let ``refinement errors lower into schema boundary errors`` () =
         let parseError = RefinementError.ParseFailed(ParseError.InvalidFormat("int", "nope"))
-        let checkError = RefinementError.CheckFailed("Email", [ CheckFailure.Blank; CheckFailure.InvalidFormat "email" ])
+        let checkError = RefinementError.CheckFailed("Email", [ CheckFailure.Required; CheckFailure.InvalidFormat "email" ])
         let structureError = RefinementError.InvalidStructure("DateRange", "End must be on or after start.")
 
         test <@ SchemaError.ofRefinementError parseError = [ SchemaError.InvalidFormat "int" ] @>

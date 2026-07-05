@@ -940,7 +940,7 @@ module ApiShapeTests =
             constraints
             |> List.choose (SchemaConstraint.metadata >> function
                 | SchemaConstraintMetadata.Required -> Some "SchemaError.Required"
-                | SchemaConstraintMetadata.MaxLength maximum -> Some $"SchemaError.TooLong {maximum}"
+                | SchemaConstraintMetadata.MaxLength maximum -> Some $"SchemaError.InvalidLength maxLength {maximum}"
                 | SchemaConstraintMetadata.Email -> Some "SchemaError.InvalidFormat email"
                 | SchemaConstraintMetadata.Pattern pattern -> Some $"SchemaError.InvalidFormat {pattern}"
                 | SchemaConstraintMetadata.OneOf choices ->
@@ -948,7 +948,7 @@ module ApiShapeTests =
                 | SchemaConstraintMetadata.Between(minimum, maximum) ->
                     Some $"SchemaError.OutOfRange {minimum}-{maximum}"
                 | SchemaConstraintMetadata.CountBetween(minimum, maximum) ->
-                    Some $"SchemaError.CountOutOfRange {minimum}-{maximum}"
+                    Some $"SchemaError.InvalidCount {minimum}-{maximum}"
                 | SchemaConstraintMetadata.Distinct -> Some "SchemaError.Duplicate"
                 | _ -> None)
 
@@ -998,12 +998,12 @@ module ApiShapeTests =
         test <@
             diagnostics =
                 [ "SchemaError.Required"
-                  "SchemaError.TooLong 20"
+                  "SchemaError.InvalidLength maxLength 20"
                   "SchemaError.InvalidFormat email"
                   "SchemaError.InvalidFormat ^[^@]+@example.com$"
                   "SchemaError.NotOneOf ada@example.com|grace@example.com"
                   "SchemaError.OutOfRange 1-10"
-                  "SchemaError.CountOutOfRange 1-3"
+                  "SchemaError.InvalidCount 1-3"
                   "SchemaError.Duplicate" ]
         @>
         test <@
@@ -1270,16 +1270,24 @@ module ApiShapeTests =
 
         let checkProgram : Check<string> =
             fun value ->
-                if String.IsNullOrWhiteSpace value then Error [ Blank ]
+                if String.IsNullOrWhiteSpace value then Error [ Required ]
                 else Ok ()
 
         let checkFunction : string -> Result<unit, CheckFailure list> = checkProgram
         test <@ checkFunction "Ada" = Ok () @>
-        test <@ checkFunction "" = Error [ Blank ] @>
+        test <@ checkFunction "" = Error [ Required ] @>
 
         typeof<CheckFailure>
         |> publicUnionCaseNames
-        |> assertContainsAll [ "Missing"; "Blank"; "InvalidFormat"; "Length"; "Range"; "Count"; "Equality"; "CustomCode" ]
+        |> assertContainsAll
+            [ "Required"
+              "InvalidFormat"
+              "InvalidLength"
+              "OutOfRange"
+              "InvalidCount"
+              "NotOneOf"
+              "Duplicate"
+              "Custom" ]
 
         let forbiddenCheckFailureFieldNames =
             set [ "Path"; "Raw"; "RawInput"; "Input"; "Schema"; "Diagnostic"; "Diagnostics" ]

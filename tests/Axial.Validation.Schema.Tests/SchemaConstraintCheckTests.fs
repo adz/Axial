@@ -24,13 +24,13 @@ module SchemaConstraintCheckTests =
         test <@
             check "" =
                 Error
-                    [ Blank
-                      Length(MinimumLength 2, Some 0)
+                    [ Required
+                      InvalidLength(MinimumLength 2, Some 0)
                       InvalidFormat "email"
                       InvalidFormat "^[^@]+@example.com$"
-                      Equality(EqualTo "ada@example.com|grace@example.com", Some "") ]
+                      NotOneOf "ada@example.com|grace@example.com" ]
         @>
-        test <@ check "root@example.com" |> Result.mapError (List.contains (Equality(NotEqualTo "root@example.com", Some "root@example.com"))) = Error true @>
+        test <@ check "root@example.com" |> Result.mapError (List.contains (Custom "notEqualTo:root@example.com")) = Error true @>
         test <@ SchemaConstraintCheck.tryText SchemaConstraint.optional |> Option.isNone @>
 
     [<Fact>]
@@ -48,10 +48,10 @@ module SchemaConstraintCheckTests =
         test <@
             check 10 =
                 Error
-                    [ Range(CheckRangeExpectation.GreaterThan "12", Some "10")
-                      Range(CheckRangeExpectation.AtLeast "13", Some "10") ]
+                    [ OutOfRange(CheckRangeExpectation.GreaterThan "12", Some "10")
+                      OutOfRange(CheckRangeExpectation.AtLeast "13", Some "10") ]
         @>
-        test <@ check 15 |> Result.mapError (List.contains (Equality(NotEqualTo "15", Some "15"))) = Error true @>
+        test <@ check 15 |> Result.mapError (List.contains (Custom "notEqualTo:15")) = Error true @>
         test <@ SchemaConstraintCheck.tryOrdered<int> (SchemaConstraint.minLength 3) |> Option.isNone @>
 
     [<Fact>]
@@ -66,8 +66,8 @@ module SchemaConstraintCheckTests =
         test <@
             check [ 1; 1; 2; 3 ] =
                 Error
-                    [ CheckFailure.Count(CheckCountExpectation.MaximumCount 3, Some 4)
-                      CustomCode "seq.distinct" ]
+                    [ CheckFailure.InvalidCount(CheckCountExpectation.MaximumCount 3, Some 4)
+                      Duplicate ]
         @>
         test <@ SchemaConstraintCheck.trySequence<int> SchemaConstraint.email |> Option.isNone @>
 
