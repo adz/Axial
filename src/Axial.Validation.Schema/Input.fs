@@ -7,40 +7,6 @@ open Axial.Refined
 open Axial.Schema
 open Axial.Validation
 
-/// <summary>Schema input parsing failures attached to diagnostics paths.</summary>
-[<RequireQualifiedAccess>]
-type SchemaError =
-    /// <summary>A required boundary value was missing.</summary>
-    | Required
-    /// <summary>The raw input value was expected to be a scalar.</summary>
-    | ExpectedScalar
-    /// <summary>The raw input value was expected to be an object.</summary>
-    | ExpectedObject
-    /// <summary>The raw input value was expected to be a collection.</summary>
-    | ExpectedMany
-    /// <summary>The scalar text did not match the expected format.</summary>
-    | InvalidFormat of expected: string
-    /// <summary>The scalar text was outside the supported range for the target type.</summary>
-    | OutOfRange of target: string
-    /// <summary>The value was shorter than required.</summary>
-    | TooShort of minimum: int * actual: int option
-    /// <summary>The value was longer than allowed.</summary>
-    | TooLong of maximum: int * actual: int option
-    /// <summary>The value length was outside the required inclusive bounds.</summary>
-    | LengthOutOfRange of minimum: int * maximum: int * actual: int option
-    /// <summary>The value was outside the required ordered range.</summary>
-    | RangeOutOfRange of expectation: string * actual: string option
-    /// <summary>The collection count was outside the required count range.</summary>
-    | CountOutOfRange of expectation: string * actual: int option
-    /// <summary>The value was not one of the expected choices.</summary>
-    | NotOneOf of choices: string
-    /// <summary>A duplicate value was found.</summary>
-    | Duplicate
-    /// <summary>A trusted model constructor rejected otherwise-valid field values.</summary>
-    | ConstructorFailed of message: string
-    /// <summary>A custom schema failure code, with an optional custom message.</summary>
-    | Custom of code: string * message: string option
-
 /// <summary>Functions for parsing raw input through a schema.</summary>
 [<RequireQualifiedAccess>]
 module Input =

@@ -14,6 +14,7 @@
     <Compile Include="InputParseTests.fs" />
     <Compile Include="NestedSchemaParseTests.fs" />
     <Compile Include="ManySchemaParseTests.fs" />
+    <Compile Include="SchemaValidationTests.fs" />
     <Compile Include="SchemaDiagnosticsRenderingTests.fs" />
     <Compile Include="SchemaConstraintCheckTests.fs" />
     <Compile Include="SchemaRefinedValueCheckTests.fs" />

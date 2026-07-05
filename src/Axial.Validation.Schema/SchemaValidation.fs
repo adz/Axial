@@ -3,6 +3,41 @@ namespace Axial.Validation.Schema
 open System
 open Axial.ErrorHandling
 open Axial.Schema
+open Axial.Validation
+
+/// <summary>Schema input and model validation failures attached to diagnostics paths.</summary>
+[<RequireQualifiedAccess>]
+type SchemaError =
+    /// <summary>A required boundary value was missing.</summary>
+    | Required
+    /// <summary>The raw input value was expected to be a scalar.</summary>
+    | ExpectedScalar
+    /// <summary>The raw input value was expected to be an object.</summary>
+    | ExpectedObject
+    /// <summary>The raw input value was expected to be a collection.</summary>
+    | ExpectedMany
+    /// <summary>The scalar text did not match the expected format.</summary>
+    | InvalidFormat of expected: string
+    /// <summary>The scalar text was outside the supported range for the target type.</summary>
+    | OutOfRange of target: string
+    /// <summary>The value was shorter than required.</summary>
+    | TooShort of minimum: int * actual: int option
+    /// <summary>The value was longer than allowed.</summary>
+    | TooLong of maximum: int * actual: int option
+    /// <summary>The value length was outside the required inclusive bounds.</summary>
+    | LengthOutOfRange of minimum: int * maximum: int * actual: int option
+    /// <summary>The value was outside the required ordered range.</summary>
+    | RangeOutOfRange of expectation: string * actual: string option
+    /// <summary>The collection count was outside the required count range.</summary>
+    | CountOutOfRange of expectation: string * actual: int option
+    /// <summary>The value was not one of the expected choices.</summary>
+    | NotOneOf of choices: string
+    /// <summary>A duplicate value was found.</summary>
+    | Duplicate
+    /// <summary>A trusted model constructor rejected otherwise-valid field values.</summary>
+    | ConstructorFailed of message: string
+    /// <summary>A custom schema failure code, with an optional custom message.</summary>
+    | Custom of code: string * message: string option
 
 /// <summary>
 /// Marks the package that owns schema input, diagnostics, validation, and rules interpreters.
@@ -229,3 +264,277 @@ module ValueSchemaCheck =
             nullArg (nameof schema)
 
         fromUnderlying (SchemaConstraintCheck.ordered<'primitive> (Value.allConstraints schema)) schema
+
+/// <summary>Functions for validating existing trusted model values through a schema.</summary>
+[<RequireQualifiedAccess>]
+module Validation =
+    let private diagnosticsAt path error =
+        Axial.Validation.Validation.fail (Diagnostics.singleton error)
+        |> Axial.Validation.Validation.at path
+        |> Axial.Validation.Validation.toResult
+        |> function
+            | Error diagnostics -> diagnostics
+            | Ok _ -> Diagnostics.empty
+
+    let private mergeErrors diagnostics =
+        diagnostics
+        |> List.reduce Diagnostics.merge
+
+    let private rangeText expectation =
+        match expectation with
+        | CheckRangeExpectation.GreaterThan minimum -> $"greaterThan {minimum}"
+        | CheckRangeExpectation.LessThan maximum -> $"lessThan {maximum}"
+        | CheckRangeExpectation.AtLeast minimum -> $"atLeast {minimum}"
+        | CheckRangeExpectation.AtMost maximum -> $"atMost {maximum}"
+        | CheckRangeExpectation.Between(minimum, maximum) -> $"between {minimum} {maximum}"
+
+    let private countText expectation =
+        match expectation with
+        | CheckCountExpectation.MinimumCount minimum -> $"minCount {minimum}"
+        | CheckCountExpectation.MaximumCount maximum -> $"maxCount {maximum}"
+        | CheckCountExpectation.ExactCount expected -> $"count {expected}"
+        | CheckCountExpectation.CountBetween(minimum, maximum) -> $"countBetween {minimum} {maximum}"
+
+    let private constraintCodeFor failure =
+        match failure with
+        | CheckFailure.Missing
+        | CheckFailure.Blank -> Some "required"
+        | CheckFailure.InvalidFormat "email" -> Some "email"
+        | CheckFailure.InvalidFormat _ -> Some "pattern"
+        | CheckFailure.Length(CheckLengthExpectation.MinimumLength _, _) -> Some "minLength"
+        | CheckFailure.Length(CheckLengthExpectation.MaximumLength _, _) -> Some "maxLength"
+        | CheckFailure.Length(CheckLengthExpectation.ExactLength _, _)
+        | CheckFailure.Length(CheckLengthExpectation.LengthBetween _, _) -> Some "lengthBetween"
+        | CheckFailure.Range(CheckRangeExpectation.GreaterThan _, _) -> Some "greaterThan"
+        | CheckFailure.Range(CheckRangeExpectation.LessThan _, _) -> Some "lessThan"
+        | CheckFailure.Range(CheckRangeExpectation.AtLeast _, _) -> Some "atLeast"
+        | CheckFailure.Range(CheckRangeExpectation.AtMost _, _) -> Some "atMost"
+        | CheckFailure.Range(CheckRangeExpectation.Between _, _) -> Some "between"
+        | CheckFailure.Count(CheckCountExpectation.MinimumCount _, _) -> Some "minCount"
+        | CheckFailure.Count(CheckCountExpectation.MaximumCount _, _) -> Some "maxCount"
+        | CheckFailure.Count(CheckCountExpectation.ExactCount _, _) -> Some "count"
+        | CheckFailure.Count(CheckCountExpectation.CountBetween _, _) -> Some "countBetween"
+        | CheckFailure.NonEmpty _ -> Some "minCount"
+        | CheckFailure.Equality(CheckEqualityExpectation.EqualTo _, _) -> Some "oneOf"
+        | CheckFailure.Equality(CheckEqualityExpectation.NotEqualTo _, _) -> None
+        | CheckFailure.CustomCode code -> Some code
+        | CheckFailure.Positive _ -> Some "greaterThan"
+        | CheckFailure.NonNegative _ -> Some "atLeast"
+        | CheckFailure.Negative _ -> Some "lessThan"
+        | CheckFailure.NonPositive _ -> Some "atMost"
+
+    let private tryCustomMessage constraints code =
+        constraints
+        |> List.tryFind (fun constraint' -> SchemaConstraint.code constraint' = code)
+        |> Option.bind SchemaConstraint.message
+
+    let private withCustomMessage constraints code error =
+        match tryCustomMessage constraints code with
+        | Some message -> SchemaError.Custom(code, Some message)
+        | None -> error
+
+    let private checkFailureToSchemaError constraints failure =
+        let error =
+            match failure with
+            | CheckFailure.Missing
+            | CheckFailure.Blank -> SchemaError.Required
+            | CheckFailure.InvalidFormat expected -> SchemaError.InvalidFormat expected
+            | CheckFailure.Length(CheckLengthExpectation.MinimumLength minimum, actual) -> SchemaError.TooShort(minimum, actual)
+            | CheckFailure.Length(CheckLengthExpectation.MaximumLength maximum, actual) -> SchemaError.TooLong(maximum, actual)
+            | CheckFailure.Length(CheckLengthExpectation.ExactLength expected, actual) -> SchemaError.LengthOutOfRange(expected, expected, actual)
+            | CheckFailure.Length(CheckLengthExpectation.LengthBetween(minimum, maximum), actual) ->
+                SchemaError.LengthOutOfRange(minimum, maximum, actual)
+            | CheckFailure.Range(expectation, actual) -> SchemaError.RangeOutOfRange(rangeText expectation, actual)
+            | CheckFailure.Count(expectation, actual) -> SchemaError.CountOutOfRange(countText expectation, actual)
+            | CheckFailure.NonEmpty actual -> SchemaError.CountOutOfRange("minCount 1", actual)
+            | CheckFailure.Equality(CheckEqualityExpectation.EqualTo choices, _) -> SchemaError.NotOneOf choices
+            | CheckFailure.Equality(CheckEqualityExpectation.NotEqualTo unexpected, _) ->
+                SchemaError.Custom($"notEqualTo:{unexpected}", None)
+            | CheckFailure.CustomCode code -> SchemaError.Custom(code, None)
+            | CheckFailure.Positive actual -> SchemaError.RangeOutOfRange("greaterThan 0", actual)
+            | CheckFailure.NonNegative actual -> SchemaError.RangeOutOfRange("atLeast 0", actual)
+            | CheckFailure.Negative actual -> SchemaError.RangeOutOfRange("lessThan 0", actual)
+            | CheckFailure.NonPositive actual -> SchemaError.RangeOutOfRange("atMost 0", actual)
+
+        match constraintCodeFor failure with
+        | Some code -> withCustomMessage constraints code error
+        | None -> error
+
+    let private allConstraints definition =
+        let rec gather valueDefinition =
+            match valueDefinition.Shape with
+            | PrimitiveValueDefinition _ -> valueDefinition.Constraints
+            | RefinedValueDefinition(raw, _) -> gather raw @ valueDefinition.Constraints
+            | NestedValueDefinition _ -> valueDefinition.Constraints
+            | ManyValueDefinition _ -> valueDefinition.Constraints
+
+        gather definition
+
+    let private underlyingPrimitiveKind definition =
+        let rec kindOf valueDefinition =
+            match valueDefinition.Shape with
+            | PrimitiveValueDefinition kind -> kind
+            | RefinedValueDefinition(raw, _) -> kindOf raw
+            | NestedValueDefinition _ -> invalidOp "Nested model value schemas have no underlying primitive kind."
+            | ManyValueDefinition _ -> invalidOp "Collection value schemas have no underlying primitive kind."
+
+        kindOf definition
+
+    let private inspectUnderlying definition value =
+        let rec project valueDefinition current =
+            match valueDefinition.Shape with
+            | PrimitiveValueDefinition _ -> current
+            | RefinedValueDefinition(raw, ops) -> project raw (ops.Inspect current)
+            | NestedValueDefinition _ -> invalidOp "Nested model values have no underlying primitive representation."
+            | ManyValueDefinition _ -> invalidOp "Collection values have no underlying primitive representation."
+
+        project definition value
+
+    let private runCheck constraints check value =
+        match check value with
+        | Ok () -> Ok value
+        | Error failures -> failures |> List.map (checkFailureToSchemaError constraints) |> Error
+
+    let private checkPrimitive kind constraints value =
+        match kind with
+        | PrimitiveValueKind.Text ->
+            value
+            |> unbox<string>
+            |> runCheck constraints (SchemaConstraintCheck.text constraints)
+            |> Result.map box
+        | PrimitiveValueKind.Int ->
+            value
+            |> unbox<int>
+            |> runCheck constraints (SchemaConstraintCheck.ordered<int> constraints)
+            |> Result.map box
+        | PrimitiveValueKind.Decimal ->
+            value
+            |> unbox<decimal>
+            |> runCheck constraints (SchemaConstraintCheck.ordered<decimal> constraints)
+            |> Result.map box
+        | PrimitiveValueKind.Bool -> Ok value
+#if NET6_0_OR_GREATER
+        | PrimitiveValueKind.Date ->
+            value
+            |> unbox<DateOnly>
+            |> runCheck constraints (SchemaConstraintCheck.ordered<DateOnly> constraints)
+            |> Result.map box
+#else
+        | PrimitiveValueKind.Date -> Ok value
+#endif
+        | PrimitiveValueKind.DateTime ->
+            value
+            |> unbox<DateTimeOffset>
+            |> runCheck constraints (SchemaConstraintCheck.ordered<DateTimeOffset> constraints)
+            |> Result.map box
+        | PrimitiveValueKind.Guid -> Ok value
+
+    let rec private validateValue valueSchema fieldConstraints path (value: obj) =
+        let constraints = allConstraints valueSchema @ fieldConstraints
+
+        match valueSchema.Shape with
+        | PrimitiveValueDefinition _
+        | RefinedValueDefinition _ ->
+            let kind = underlyingPrimitiveKind valueSchema
+            let primitive = inspectUnderlying valueSchema value
+
+            match checkPrimitive kind constraints primitive with
+            | Ok _ -> Axial.Validation.Validation.ok value
+            | Error errors ->
+                errors
+                |> List.map (diagnosticsAt path)
+                |> mergeErrors
+                |> Axial.Validation.Validation.error
+        | NestedValueDefinition nestedModel ->
+            validateObject path nestedModel value
+            |> Axial.Validation.Validation.map (fun _ -> value)
+        | ManyValueDefinition collection ->
+            validateMany path collection constraints (value :?> System.Collections.IEnumerable)
+            |> Axial.Validation.Validation.map (fun _ -> value)
+
+    and private validateField basePath model (field: FieldDescriptor<obj>) =
+        let name = ExternalFieldName.value field.ExternalName
+        let path = basePath @ [ PathSegment.Name name ]
+        let value = field.Getter model
+        validateValue field.ValueSchema field.Constraints path value
+
+    and private validateObject path (modelSchema: ModelSchemaDefinition<obj>) model =
+        let validatedFields = modelSchema.Fields |> List.map (validateField path model)
+        let errors =
+            validatedFields
+            |> List.choose (fun validation ->
+                match Axial.Validation.Validation.toResult validation with
+                | Ok _ -> None
+                | Error diagnostics -> Some diagnostics)
+
+        match errors with
+        | [] -> Axial.Validation.Validation.ok model
+        | diagnostics -> diagnostics |> mergeErrors |> Axial.Validation.Validation.error
+
+    and private validateManyItem path itemModel item =
+        validateObject path itemModel item
+
+    and private checkMany constraints path items =
+        match items |> runCheck constraints (SchemaConstraintCheck.sequence<obj> constraints) with
+        | Ok checkedItems -> Axial.Validation.Validation.ok checkedItems
+        | Error errors ->
+            errors
+            |> List.map (diagnosticsAt path)
+            |> mergeErrors
+            |> Axial.Validation.Validation.error
+
+    and private validateMany path (collection: CollectionValueDefinition) constraints (items: System.Collections.IEnumerable) =
+        match collection.Item.Shape with
+        | NestedValueDefinition itemModel ->
+            let items = items |> Seq.cast<obj> |> Seq.toList
+
+            let validatedItems =
+                items
+                |> List.mapi (fun index item -> validateManyItem (path @ [ PathSegment.Index index ]) itemModel item)
+
+            let errors =
+                validatedItems
+                |> List.choose (fun validation ->
+                    match Axial.Validation.Validation.toResult validation with
+                    | Ok _ -> None
+                    | Error diagnostics -> Some diagnostics)
+
+            match errors with
+            | [] -> checkMany constraints path items
+            | diagnostics -> diagnostics |> mergeErrors |> Axial.Validation.Validation.error
+        | PrimitiveValueDefinition _
+        | RefinedValueDefinition _
+        | ManyValueDefinition _ -> invalidOp "Collection item value schemas must be nested model value schemas."
+
+    let private validateRootField model (field: FieldDescriptor<'model>) =
+        let name = ExternalFieldName.value field.ExternalName
+        let path = [ PathSegment.Name name ]
+        let value = field.Getter model
+        validateValue field.ValueSchema field.Constraints path value
+
+    /// <summary>Validates an existing trusted model value through a built model schema.</summary>
+    /// <remarks>
+    /// The validator reads values with schema getters, runs schema constraints through the same executable
+    /// <see cref="T:Axial.ErrorHandling.Check`1" /> lowering used by input parsing, and recursively validates nested
+    /// models and collection items. Successful validation returns the original model value.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
+    /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="schema" /> is not a built model schema.</exception>
+    let validate (schema: Schema<'model>) (model: 'model) : Axial.Validation.Validation<'model, SchemaError> =
+        if isNull (box schema) then
+            nullArg (nameof schema)
+
+        match schema.Definition with
+        | PendingDefinition -> invalidArg (nameof schema) "Expected a built model schema."
+        | ModelDefinition modelSchema ->
+            let validatedFields = modelSchema.Fields |> List.map (validateRootField model)
+            let errors =
+                validatedFields
+                |> List.choose (fun validation ->
+                    match Axial.Validation.Validation.toResult validation with
+                    | Ok _ -> None
+                    | Error diagnostics -> Some diagnostics)
+
+            match errors with
+            | [] -> Axial.Validation.Validation.ok model
+            | diagnostics -> diagnostics |> mergeErrors |> Axial.Validation.Validation.error
