@@ -90,7 +90,7 @@ module SchemaNestedValueTests =
         // An inspection interpreter reads the nested model with the outer field's getter, then reads the nested
         // model's own fields with the nested schema's getters, all without reflection.
         match addressField.ValueSchema.Shape with
-        | NestedValueDefinition nestedModel ->
+        | NestedValueDefinition(nestedModel, _) ->
             let nestedValue = addressField.Getter customer
 
             let street =

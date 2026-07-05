@@ -641,8 +641,12 @@ and internal ValueSchemaShape =
     | PrimitiveValueDefinition of PrimitiveValueKind
     /// <summary>A named refined/domain value built from a raw value schema plus construction and inspection functions.</summary>
     | RefinedValueDefinition of raw: ValueSchemaDefinition * ops: RefinedValueOps
-    /// <summary>A nested model value described by another type-erased model schema.</summary>
-    | NestedValueDefinition of ModelSchemaDefinition<obj>
+    /// <summary>
+    /// A nested model value described by another type-erased model schema, plus the boxed original
+    /// <c>Schema&lt;'nested&gt;</c> so constructor-specialized interpreters such as codecs can recover the typed field
+    /// chain with <c>Schema.specialize</c> instead of falling back to boxed <c>obj array</c> dispatch.
+    /// </summary>
+    | NestedValueDefinition of nested: ModelSchemaDefinition<obj> * source: obj
     /// <summary>A collection value whose items are each described by the same item value schema.</summary>
     | ManyValueDefinition of CollectionValueDefinition
     /// <summary>A tagged union value whose case payloads are each described by explicit value schemas.</summary>
@@ -658,7 +662,24 @@ and internal ValueSchemaShape =
 /// </remarks>
 and [<ReferenceEquality>] internal CollectionValueDefinition =
     { Item: ValueSchemaDefinition
-      BoxItems: obj list -> obj }
+      BoxItems: obj list -> obj
+      /// <summary>
+      /// Reintroduces the statically-known item type to an interpreter. The closure is captured at
+      /// <c>Value.manyOf</c> call sites, so interpreters such as codecs can build typed item plans
+      /// (for example a <c>Decoder&lt;'item list&gt;</c>) without reflection or per-item boxing.
+      /// </summary>
+      AcceptItem: ICollectionItemInterpreter -> obj }
+
+/// <summary>Rebuilds typed collection-item plans from a type-erased collection value schema.</summary>
+/// <remarks>
+/// Implemented by interpreters that need the collection's statically-known item type back, such as codec compilers.
+/// <see cref="P:Axial.Schema.CollectionValueDefinition.AcceptItem" /> invokes
+/// <see cref="M:Axial.Schema.ICollectionItemInterpreter.Item``1" /> with the original <c>'item</c> type argument, and
+/// the interpreter returns its typed plan boxed as <c>obj</c>; callers know the concrete plan type statically because
+/// they know the collection field's own type.
+/// </remarks>
+and internal ICollectionItemInterpreter =
+    abstract member Item<'item> : item: ValueSchemaDefinition -> obj
 
 and [<ReferenceEquality>] internal UnionCaseValueDefinition =
     { Tag: string
@@ -1101,7 +1122,7 @@ module Value =
         | PendingDefinition -> invalidArg (nameof schema) "Expected a built model schema."
         | ModelDefinition model ->
             ValueSchema(
-                { Shape = NestedValueDefinition(ModelSchemaErasure.erase model)
+                { Shape = NestedValueDefinition(ModelSchemaErasure.erase model, box schema)
                   Format = None
                   Constraints = [] }
             )
@@ -1122,8 +1143,15 @@ module Value =
 
         let boxItems (items: obj list) : obj = items |> List.map unbox<'item> |> box
 
+        let acceptItem (interpreter: ICollectionItemInterpreter) =
+            interpreter.Item<'item> itemSchema.Definition
+
         ValueSchema(
-            { Shape = ManyValueDefinition { Item = itemSchema.Definition; BoxItems = boxItems }
+            { Shape =
+                ManyValueDefinition
+                    { Item = itemSchema.Definition
+                      BoxItems = boxItems
+                      AcceptItem = acceptItem }
               Format = None
               Constraints = [] }
         )

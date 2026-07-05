@@ -163,11 +163,11 @@ module Input =
             errorAt path (SchemaCheckFailure.withCustomMessageForCode constraints "required" SchemaError.Required)
         | RawInput.Object fields ->
             match valueSchema.Shape with
-            | NestedValueDefinition nestedModel -> parseObject options path nestedModel fields
+            | NestedValueDefinition(nestedModel, _) -> parseObject options path nestedModel fields
             | UnionValueDefinition union -> parseUnion options path union fields
             | RefinedValueDefinition(raw, _) ->
                 match raw.Shape with
-                | NestedValueDefinition nestedModel ->
+                | NestedValueDefinition(nestedModel, _) ->
                     parseObject options path nestedModel fields
                     |> Result.map (constructValue valueSchema)
                 | UnionValueDefinition union ->

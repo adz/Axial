@@ -88,7 +88,7 @@ module Inspect =
             match definition.Shape with
             | PrimitiveValueDefinition kind -> ValueShape.Primitive kind
             | RefinedValueDefinition(raw, _) -> ValueShape.Refined(describeValueDefinition raw)
-            | NestedValueDefinition nested ->
+            | NestedValueDefinition(nested, _) ->
                 ValueShape.Nested { Fields = nested.Fields |> List.map describeFieldDescriptor }
             | ManyValueDefinition collection -> ValueShape.Many(describeValueDefinition collection.Item)
             | UnionValueDefinition union ->

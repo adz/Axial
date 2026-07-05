@@ -113,7 +113,7 @@ module SchemaManyValueTests =
         match contactsField.ValueSchema.Shape with
         | ManyValueDefinition collectionDefinition ->
             match collectionDefinition.Item.Shape with
-            | NestedValueDefinition itemModel ->
+            | NestedValueDefinition(itemModel, _) ->
                 let items = contactsField.Getter customer |> unbox<ContactMethod list>
 
                 let kind =

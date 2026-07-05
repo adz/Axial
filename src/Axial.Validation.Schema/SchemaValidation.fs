@@ -550,7 +550,7 @@ module Validation =
                 |> List.map (diagnosticsAt path)
                 |> mergeErrors
                 |> Axial.Validation.Validation.error
-        | NestedValueDefinition nestedModel ->
+        | NestedValueDefinition(nestedModel, _) ->
             validateObject path nestedModel value
             |> Axial.Validation.Validation.map (fun _ -> value)
         | ManyValueDefinition collection ->
