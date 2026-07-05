@@ -6,6 +6,9 @@ description: Portable model schemas for input parsing, validation, and metadata 
 ---
 
 
+This page shows how `Schema<'model>` drives parsing, validation, redisplay, rules, and metadata from one trusted model
+declaration.
+
 Use this section for `Schema<'model>`: a portable description of a trusted model's shape, field ordering, construction,
 and constraint metadata.
 
@@ -25,6 +28,11 @@ model    -> Validation.validate schema -> trusted model | Diagnostics
 model    -> Rules.apply ruleSet -> trusted model | Diagnostics
 schema   -> Inspect.model -> metadata (no execution)
 ```
+
+At data boundaries, newcomer-facing failures use one shape: `SchemaError` inside path-aware `Diagnostics`. Primitive
+`ParseError`, refined construction `RefinementError`, and path-free `CheckFailure` values lower into `SchemaError`;
+`SchemaError.render` and `ParsedInput.renderErrors` provide default English display strings, and
+`ParsedInput.mapErrors` maps that boundary shape into your own domain error union.
 
 Schemas are authored with the progressive typed builder:
 

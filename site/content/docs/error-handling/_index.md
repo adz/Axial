@@ -8,6 +8,8 @@ aliases:
 ---
 
 
+This page shows how plain `Result` and reusable `Check` programs handle simple fail-fast code.
+
 This section is one of Axial's two doors: **plain `Result` for simple code**. Standard F# `Result<'value, 'error>`
 with your own error union is idiomatic Axial; `Check`, the focused `Result` helpers, and the `result {}` builder are
 the machinery that keeps it terse. (The other door is [Schema](../schema/), for whole domain models.)
@@ -21,6 +23,10 @@ Check -> Result
 ```
 
 `Check` gives reusable structured value checks. `Result` preserves inputs, extracts inner values, adds typed failures, and composes fail-fast steps. The output is still ordinary `Result`, so the rest of your domain code stays plain F#.
+
+When a check participates in schema boundary parsing, its `CheckFailure` values lower into `SchemaError` and render with
+the same display layer as parse, refinement, validation, and rule failures. For simple application code, keep mapping
+checks into your own error DU with one `Result.mapError` function.
 
 ## Start Here
 

@@ -6,6 +6,8 @@ description: Failed parses that keep the user's input.
 ---
 
 
+This page shows how failed schema parses retain raw input, path-aware field errors, and default display strings.
+
 When boundary input fails to parse, a form should show the user's original text next to each field's errors. Axial's
 `ParsedInput` keeps both: the raw input exactly as submitted, and diagnostics addressed by path.
 
@@ -21,6 +23,9 @@ parsed.Result         // Ok model | Error diagnostics
 parsed.Input          // the original RawInput, always retained
 parsed.Errors         // flattened path-aware errors ([] when valid)
 ```
+
+Schema parsing, schema validation, contextual rules that use `SchemaError`, primitive `Parse` failures, `Refine`
+failures, and path-free `CheckFailure` values all lower to the same boundary taxonomy: `SchemaError`.
 
 ## Field Error Lookup
 
@@ -52,12 +57,19 @@ The typical loop over a failed parse:
 ```fsharp
 for field in formFields do
     let value = RawInput.redisplayPath field.Path parsed.Input
-    let errors = parsed.ErrorsFor field.Path
+    let errors = parsed.ErrorsFor field.Path |> List.map SchemaError.render
     render field value errors
 ```
 
 Because failed parses never construct the model, there is no half-valid object to guard against — the template works
 from raw input and diagnostics only.
+
+For summary output, render every failed diagnostic in one line:
+
+```fsharp
+let messages = ParsedInput.renderErrors parsed
+// [ "email: Expected email format."; "age: Must satisfy atLeast 13; got 12." ]
+```
 
 ## Mapping To Domain Errors
 
@@ -67,3 +79,6 @@ preserving the raw input and paths:
 ```fsharp
 let domainParsed = parsed |> ParsedInput.mapErrors SignupError.ofSchemaError
 ```
+
+That mapping is the boundary between Axial's interpreter errors and your application errors. Keep your user-owned error
+union in the application, and translate `SchemaError` with one function when the parsed result crosses that boundary.

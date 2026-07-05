@@ -83,3 +83,13 @@ module ParsedInput =
             Input = parsed.Input
             Result = parsed.Result |> Result.mapError (Diagnostics.map mapper)
         }
+
+    /// <summary>Renders a failed schema parse as default English display strings, preserving diagnostics paths.</summary>
+    /// <remarks>
+    /// This is the one-line display path for boundary parsing failures. Use <c>ParsedInput.mapErrors</c> when the same
+    /// boundary failures should become an application-owned error type instead.
+    /// </remarks>
+    let renderErrors (parsed: ParsedInput<'model, SchemaError>) : string list =
+        match parsed.Result with
+        | Ok _ -> []
+        | Error diagnostics -> SchemaError.renderDiagnostics diagnostics

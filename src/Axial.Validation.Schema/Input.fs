@@ -61,12 +61,6 @@ module Input =
         diagnostics
         |> List.reduce Diagnostics.merge
 
-    let private parseErrorToSchemaError error =
-        match error with
-        | ParseError.MissingValue _ -> SchemaError.Required
-        | ParseError.InvalidFormat(target, _) -> SchemaError.InvalidFormat target
-        | ParseError.OutOfRange(target, _) -> SchemaError.OutOfRange target
-
     let private allConstraints definition =
         let rec gather valueDefinition =
             match valueDefinition.Shape with
@@ -143,9 +137,9 @@ module Input =
     let private parsePrimitive kind text =
         match kind with
         | PrimitiveValueKind.Text -> Ok(box text)
-        | PrimitiveValueKind.Int -> Parse.int text |> Result.map box |> Result.mapError parseErrorToSchemaError
-        | PrimitiveValueKind.Decimal -> Parse.decimal text |> Result.map box |> Result.mapError parseErrorToSchemaError
-        | PrimitiveValueKind.Bool -> Parse.bool text |> Result.map box |> Result.mapError parseErrorToSchemaError
+        | PrimitiveValueKind.Int -> Parse.int text |> Result.map box |> Result.mapError SchemaError.ofParseError
+        | PrimitiveValueKind.Decimal -> Parse.decimal text |> Result.map box |> Result.mapError SchemaError.ofParseError
+        | PrimitiveValueKind.Bool -> Parse.bool text |> Result.map box |> Result.mapError SchemaError.ofParseError
 #if NET6_0_OR_GREATER
         | PrimitiveValueKind.Date ->
             match DateOnly.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.None) with
@@ -155,8 +149,8 @@ module Input =
 #else
         | PrimitiveValueKind.Date -> Error(SchemaError.InvalidFormat "date")
 #endif
-        | PrimitiveValueKind.DateTime -> Parse.dateTimeOffset text |> Result.map box |> Result.mapError parseErrorToSchemaError
-        | PrimitiveValueKind.Guid -> Parse.guid text |> Result.map box |> Result.mapError parseErrorToSchemaError
+        | PrimitiveValueKind.DateTime -> Parse.dateTimeOffset text |> Result.map box |> Result.mapError SchemaError.ofParseError
+        | PrimitiveValueKind.Guid -> Parse.guid text |> Result.map box |> Result.mapError SchemaError.ofParseError
 
     let rec private parseValue options valueSchema fieldConstraints path raw =
         let constraints = allConstraints valueSchema @ fieldConstraints

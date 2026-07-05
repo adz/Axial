@@ -19,6 +19,10 @@ Use these patterns unless local code shows a different convention.
 without a domain model → plain `Result` with a user-owned error DU. `Check`, `Validation`, and `Refined` are machinery
 behind those doors; `Flow` is the optional effects side.
 
+For schema boundaries, use `SchemaError` as the one interpreter error shape. Lower subsystem failures with
+`SchemaError.ofParseError`, `SchemaError.ofRefinementError`, or `SchemaError.ofCheckFailure`; render with
+`SchemaError.render` or `ParsedInput.renderErrors`; map to application errors with `ParsedInput.mapErrors`.
+
 ### 1. Handling Failures
 Use `Check` for executable value constraints, `Predicate` for local boolean tests, and `Result` for fail-fast values. `Check.*` helpers return `Result<unit, CheckFailure list>`; `Result.guard`, named `Result.*` guards, and extraction helpers preserve values or change the success shape.
 

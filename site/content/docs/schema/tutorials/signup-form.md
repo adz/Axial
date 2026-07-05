@@ -6,6 +6,9 @@ type: docs
 ---
 
 
+This page shows how to declare a schema, parse form input, and redisplay boundary errors without constructing invalid
+models.
+
 This tutorial parses a signup form into a trusted model. If any field fails, no model is constructed and the form can
 be redisplayed with the user's original input and per-field errors.
 
@@ -67,6 +70,7 @@ RawInput.redisplayPath "age" parsed.Input     // "12"
 ```
 
 A form template needs only `parsed.Input` and `parsed.ErrorsFor` — there is no half-valid model to guard against.
+Use `SchemaError.render` for field-level messages or `ParsedInput.renderErrors parsed` for a summary list.
 
 ## Use The Trusted Model
 

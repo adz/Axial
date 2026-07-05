@@ -11,6 +11,7 @@
   <ItemGroup>
     <Compile Include="RawInputTests.fs" />
     <Compile Include="ParsedInputTests.fs" />
+    <Compile Include="SchemaErrorTests.fs" />
     <Compile Include="InputParseTests.fs" />
     <Compile Include="NestedSchemaParseTests.fs" />
     <Compile Include="ManySchemaParseTests.fs" />

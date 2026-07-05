@@ -41,16 +41,16 @@ root page. Each landing cross-links the other exactly once via a tinted strip at
 
 Collapse the failure taxonomies a newcomer meets. Pre-1.0 breaking changes are acceptable here.
 
-- [ ] Design the single boundary error story: `ParseError`, `RefinementError`, and `CheckFailure` lower into one
+- [x] Design the single boundary error story: `ParseError`, `RefinementError`, and `CheckFailure` lower into one
   boundary error shape (either `SchemaError` or a shared type it embeds).
-- [ ] Provide one default English renderer for the boundary error with a one-liner from any failed parse/validation to
+- [x] Provide one default English renderer for the boundary error with a one-liner from any failed parse/validation to
   display strings; keep custom-message overrides.
-- [ ] Ensure `ParsedInput`, `Rules`, refined construction, and `Parse` failures all reach that renderer without
+- [x] Ensure `ParsedInput`, `Rules`, refined construction, and `Parse` failures all reach that renderer without
   per-subsystem mapping ceremony.
-- [ ] Keep user-owned error DUs first-class: mapping from the boundary error into a domain error stays a single
+- [x] Keep user-owned error DUs first-class: mapping from the boundary error into a domain error stays a single
   function application at the boundary.
-- [ ] Update the error-handling and schema docs to present one taxonomy of failure at the boundary.
-- [ ] Add tests covering lowering from each source error type and default rendering.
+- [x] Update the error-handling and schema docs to present one taxonomy of failure at the boundary.
+- [x] Add tests covering lowering from each source error type and default rendering.
 
 ## Phase 21: One Catalog Of Domain Values
 
