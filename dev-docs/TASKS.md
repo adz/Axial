@@ -70,7 +70,7 @@ Work this queue from top to bottom.
 - [x] Validate nested models through nested schemas.
 - [x] Validate collections through item schemas.
 - [x] Ensure values created by `Input.parse` normally pass intrinsic validation.
-- [ ] Add tests for imported/hand-built values and generated-builder values.
+- [x] Add tests for imported/hand-built values and generated-builder values.
 
 ## Phase 12: Contextual Rules
 

@@ -10,6 +10,64 @@ open Xunit
 module SchemaValidationTests =
     type private Signup = { Email: string; Age: int }
 
+    type private IGeneratedBuilder<'model> =
+        abstract member Build: obj array -> 'model
+
+    type private IGeneratedBuildChain<'model, 'constructorIn, 'constructorOut> =
+        abstract member Apply: 'constructorIn -> obj array -> 'constructorOut
+
+    type private GeneratedFieldsEnd<'model, 'constructor>() =
+        interface IGeneratedBuildChain<'model, 'constructor, 'constructor> with
+            member _.Apply constructor _ = constructor
+
+    type private GeneratedFieldsAppend<'model, 'constructorIn, 'field, 'next, 'head
+        when 'head :> IGeneratedBuildChain<'model, 'constructorIn, 'field -> 'next>>
+        (
+            order: int,
+            head: 'head
+        ) =
+
+        interface IGeneratedBuildChain<'model, 'constructorIn, 'next> with
+            member _.Apply constructor values =
+                let constructorForField = head.Apply constructor values
+                constructorForField (unbox<'field> values[order])
+
+    type private GeneratedBuildResult<'model, 'constructorIn, 'constructorOut>(value: obj) =
+        interface IFieldChainResult<'model, 'constructorIn, 'constructorOut> with
+            member _.Value = value
+
+    type private GeneratedBuilder<'model, 'constructor>
+        (constructor: 'constructor, chain: IGeneratedBuildChain<'model, 'constructor, 'model>) =
+
+        interface IGeneratedBuilder<'model> with
+            member _.Build values = chain.Apply constructor values
+
+    type private GeneratedBuilderFactory<'model>() =
+        interface IFieldChainFactory<'model, IGeneratedBuilder<'model>> with
+            member _.OnEnd() =
+                let chain =
+                    GeneratedFieldsEnd<'model, 'constructor>()
+                    :> IGeneratedBuildChain<'model, 'constructor, 'constructor>
+
+                GeneratedBuildResult<'model, 'constructor, 'constructor>(box chain) :> IFieldChainResult<_, _, _>
+
+            member _.OnField(order, _field: Field<'model, 'field>, head) =
+                let headChain = head.Value :?> IGeneratedBuildChain<'model, 'constructorIn, 'field -> 'next>
+
+                let chain =
+                    GeneratedFieldsAppend<'model, 'constructorIn, 'field, 'next, _>(order, headChain)
+                    :> IGeneratedBuildChain<'model, 'constructorIn, 'next>
+
+                GeneratedBuildResult<'model, 'constructorIn, 'next>(box chain) :> IFieldChainResult<_, _, _>
+
+            member _.OnComplete<'constructor>
+                (
+                    constructor: 'constructor,
+                    chain: IFieldChainResult<'model, 'constructor, 'model>
+                ) =
+                let generatedChain = chain.Value :?> IGeneratedBuildChain<'model, 'constructor, 'model>
+                GeneratedBuilder<'model, 'constructor>(constructor, generatedChain) :> IGeneratedBuilder<'model>
+
     type private SwappedFields =
         { Primary: string
           Secondary: string }
@@ -65,6 +123,9 @@ module SchemaValidationTests =
             contactMethodSchema
         |> Schema.build
 
+    let private generatedBuilder schema =
+        Schema.specialize (GeneratedBuilderFactory()) schema
+
     [<Fact>]
     let ``validate returns the original model when schema constraints pass`` () =
         let model = { Email = "ada@example.com"; Age = 42 }
@@ -93,6 +154,27 @@ module SchemaValidationTests =
                                           Errors = [ SchemaError.Required; SchemaError.InvalidFormat "email" ]
                                           Children = Map.empty
                                       } ]
+                        }
+            @>
+
+    [<Fact>]
+    let ``validate reports diagnostics for imported hand-built values that bypass input parsing`` () =
+        let imported = { Email = "not-an-email"; Age = 16 }
+
+        let validation = Axial.Validation.Schema.Validation.validate schema imported
+
+        test
+            <@
+                Axial.Validation.Validation.toResult validation =
+                    Error
+                        {
+                            Errors = []
+                            Children =
+                                Map.ofList
+                                    [ PathSegment.Name "age",
+                                      Diagnostics.singleton (SchemaError.RangeOutOfRange("atLeast 18", Some "16"))
+                                      PathSegment.Name "email",
+                                      Diagnostics.singleton (SchemaError.InvalidFormat "email") ]
                         }
             @>
 
@@ -287,6 +369,41 @@ module SchemaValidationTests =
 
         test <@ parsed.IsValid @>
         test <@ Axial.Validation.Validation.toResult validation = Ok parsed.Model @>
+
+    [<Fact>]
+    let ``values produced by a generated builder validate through the same schema`` () =
+        let builder = generatedBuilder schema
+        let generated = builder.Build [| box "ada@example.com"; box 42 |]
+
+        let validation = Axial.Validation.Schema.Validation.validate schema generated
+
+        test <@ generated = { Email = "ada@example.com"; Age = 42 } @>
+        test <@ Axial.Validation.Validation.toResult validation = Ok generated @>
+
+    [<Fact>]
+    let ``validate reports diagnostics for generated builder values that bypass input parsing`` () =
+        let builder = generatedBuilder schema
+        let generated = builder.Build [| box ""; box 17 |]
+
+        let validation = Axial.Validation.Schema.Validation.validate schema generated
+
+        test
+            <@
+                Axial.Validation.Validation.toResult validation =
+                    Error
+                        {
+                            Errors = []
+                            Children =
+                                Map.ofList
+                                    [ PathSegment.Name "age",
+                                      Diagnostics.singleton (SchemaError.RangeOutOfRange("atLeast 18", Some "17"))
+                                      PathSegment.Name "email",
+                                      {
+                                          Errors = [ SchemaError.Required; SchemaError.InvalidFormat "email" ]
+                                          Children = Map.empty
+                                      } ]
+                        }
+            @>
 
     [<Fact>]
     let ``values produced by input parsing with constructor invariants validate through the same schema`` () =
