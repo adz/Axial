@@ -308,7 +308,9 @@ module Input =
     and private parseMany path (collection: CollectionValueDefinition) rawItems =
         match collection.Item.Shape with
         | NestedValueDefinition itemModel ->
-            let parsedItems = rawItems |> List.map (parseManyItem path itemModel)
+            let parsedItems =
+                rawItems
+                |> List.mapi (fun index rawItem -> parseManyItem (path @ [ PathSegment.Index index ]) itemModel rawItem)
             let errors = parsedItems |> List.choose (function Error diagnostics -> Some diagnostics | Ok _ -> None)
 
             match errors with

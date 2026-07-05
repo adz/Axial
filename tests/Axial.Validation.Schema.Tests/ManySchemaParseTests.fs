@@ -81,7 +81,11 @@ module ManySchemaParseTests =
         let parsed = Input.parse customerSchema raw
 
         test <@ not parsed.IsValid @>
-        test <@ parsed.Errors = [ { Path = [ PathSegment.Name "contacts" ]; Error = SchemaError.ExpectedObject } ] @>
+        test
+            <@
+                parsed.Errors = [ { Path = [ PathSegment.Name "contacts"; PathSegment.Index 0 ]
+                                    Error = SchemaError.ExpectedObject } ]
+            @>
 
     [<Fact>]
     let ``parse accumulates errors from every failing item instead of stopping at the first`` () =
@@ -104,6 +108,35 @@ module ManySchemaParseTests =
                 parsed.Errors
                 |> List.sortBy (fun diagnostic -> diagnostic.Path)
                 |> (=)
-                    [ { Path = [ PathSegment.Name "contacts"; PathSegment.Name "kind" ]; Error = SchemaError.Required }
-                      { Path = [ PathSegment.Name "contacts"; PathSegment.Name "value" ]; Error = SchemaError.Required } ]
+                    [ { Path = [ PathSegment.Name "contacts"; PathSegment.Index 0; PathSegment.Name "kind" ]
+                        Error = SchemaError.Required }
+                      { Path = [ PathSegment.Name "contacts"; PathSegment.Index 1; PathSegment.Name "value" ]
+                        Error = SchemaError.Required } ]
+            @>
+
+    [<Fact>]
+    let ``parse prefixes each item's diagnostics with that item's index`` () =
+        let raw =
+            RawInput.Object(
+                Map.ofList
+                    [ "name", RawInput.Scalar "Ada"
+                      "contacts",
+                      RawInput.Many
+                          [ validContact "email" "ada@example.com"
+                            RawInput.Object(Map.ofList [ "kind", RawInput.Scalar ""; "value", RawInput.Scalar "" ]) ] ]
+            )
+
+        let parsed = Input.parse customerSchema raw
+
+        test <@ not parsed.IsValid @>
+
+        test
+            <@
+                parsed.Errors
+                |> List.sortBy (fun diagnostic -> diagnostic.Path)
+                |> (=)
+                    [ { Path = [ PathSegment.Name "contacts"; PathSegment.Index 1; PathSegment.Name "kind" ]
+                        Error = SchemaError.Required }
+                      { Path = [ PathSegment.Name "contacts"; PathSegment.Index 1; PathSegment.Name "value" ]
+                        Error = SchemaError.Required } ]
             @>
