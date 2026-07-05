@@ -28,7 +28,7 @@ Work this queue from top to bottom.
 
 ## Phase 8: Define Schema Errors And Diagnostics Interpretation
 
-- [ ] Keep `SchemaError` and schema diagnostics interpretation in `Axial.Validation.Schema`, not core `Axial.Schema`.
+- [x] Keep `SchemaError` and schema diagnostics interpretation in `Axial.Validation.Schema`, not core `Axial.Schema`.
 - [ ] Define `SchemaError`.
 - [ ] Include required, expected scalar/object/many, invalid format, too short, too long, out of range, count failures,
   duplicate failures, constructor failures, and custom code/message.
