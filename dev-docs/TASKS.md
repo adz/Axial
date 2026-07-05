@@ -74,7 +74,7 @@ Work this queue from top to bottom.
 
 ## Phase 12: Contextual Rules
 
-- [ ] Keep schema/contextual rules in `Axial.Validation.Schema` unless a separate rules package is deliberately created.
+- [x] Keep schema/contextual rules in `Axial.Validation.Schema` unless a separate rules package is deliberately created.
 - [ ] Define `RuleSet<'model, 'error>`.
 - [ ] Implement `rules<'model> { ... }` or explicit core API.
 - [ ] Support field/path attachment for rule failures.

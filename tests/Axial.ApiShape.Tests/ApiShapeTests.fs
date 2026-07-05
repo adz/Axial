@@ -120,6 +120,12 @@ module ApiShapeTests =
         test <@ isNull found @>
         test <@ isNull foundModule @>
 
+    let private assertTypeAbsentFromAssembly (assemblyName: string) (fullName: string) =
+        let assembly = Assembly.Load assemblyName
+        let found = assembly.GetType(fullName, false)
+
+        test <@ isNull found @>
+
     let private referencedAssemblyNames (assembly: Assembly) =
         assembly.GetReferencedAssemblies()
         |> Array.map _.Name
@@ -409,6 +415,26 @@ module ApiShapeTests =
         moduleTypeFromAssembly "Axial.Validation.Schema" "Axial.Validation.Schema.ValueSchemaCheck"
         |> publicStaticMemberNames
         |> assertContainsAll [ "fromUnderlying"; "text"; "ordered" ]
+
+    [<Fact>]
+    let ``schema contextual rules are reserved for validation schema package`` () =
+        let forbiddenCoreRuleModules =
+            [ "Rules"
+              "SchemaRules"
+              "ContextualRules" ]
+
+        let forbiddenCoreRuleTypes =
+            [ "RuleSet`2"
+              "RuleFailure"
+              "RuleBuilder`2" ]
+
+        for moduleName in forbiddenCoreRuleModules do
+            assertModuleAbsentFromAssembly "Axial.Schema" $"Axial.Schema.{moduleName}"
+            assertModuleAbsentFromAssembly "Axial.Validation" $"Axial.Validation.{moduleName}"
+
+        for typeName in forbiddenCoreRuleTypes do
+            assertTypeAbsentFromAssembly "Axial.Schema" $"Axial.Schema.{typeName}"
+            assertTypeAbsentFromAssembly "Axial.Validation" $"Axial.Validation.{typeName}"
 
     [<Fact>]
     let ``schema types start as independent leaf package`` () =
