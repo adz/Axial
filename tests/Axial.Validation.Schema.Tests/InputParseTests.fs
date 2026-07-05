@@ -277,6 +277,27 @@ module InputParseTests =
         test <@ parsed.Errors = [ { Path = []; Error = SchemaError.ConstructorFailed "Age must be at least 18." } ] @>
 
     [<Fact>]
+    let ``parse can attach a constructor error to a field path`` () =
+        let ageSchema =
+            Schema.recordFor<AdultAge, _> AdultAge.Create
+            |> Schema.int "age" _.Age
+            |> Schema.buildResult
+
+        let raw =
+            RawInput.Object(
+                Map.ofList
+                    [ "age", RawInput.Scalar "17" ]
+            )
+
+        let parsed = Input.parseWith (Input.constructorErrorAt "age") ageSchema raw
+
+        test <@ not parsed.IsValid @>
+        test
+            <@ parsed.Errors = [ { Path = [ PathSegment.Name "age" ]
+                                   Error = SchemaError.ConstructorFailed "Age must be at least 18." } ] @>
+        test <@ parsed.ErrorsFor "age" = [ SchemaError.ConstructorFailed "Age must be at least 18." ] @>
+
+    [<Fact>]
     let ``parse maps constructor error values through buildResultWith`` () =
         let ageSchema =
             Schema.recordFor<MappedAdultAge, _> MappedAdultAge.Create

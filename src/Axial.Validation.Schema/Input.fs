@@ -44,6 +44,34 @@ type SchemaError =
 /// <summary>Functions for parsing raw input through a schema.</summary>
 [<RequireQualifiedAccess>]
 module Input =
+    /// <summary>Options that customize how raw input is parsed through a schema.</summary>
+    type Options =
+        internal
+            {
+                ConstructorErrorPath: Path option
+            }
+
+    /// <summary>The default input parser options.</summary>
+    let defaults =
+        { ConstructorErrorPath = None }
+
+    /// <summary>
+    /// Attaches model constructor errors to the supplied raw input path instead of the current object path.
+    /// </summary>
+    /// <remarks>
+    /// The path is interpreted relative to the model whose constructor failed. For a root model,
+    /// <c>Input.constructorErrorAt "end"</c> attaches the error to <c>end</c>. For a nested model under
+    /// <c>range</c>, the same option attaches the error to <c>range.end</c>.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="path" /> is null.</exception>
+    /// <exception cref="T:System.FormatException">Thrown when <paramref name="path" /> is not a valid raw input path.</exception>
+    let constructorErrorAt (path: string) (options: Options) =
+        if isNull (box options) then
+            nullArg (nameof options)
+
+        { options with
+            ConstructorErrorPath = path |> InputPath.parse |> InputPath.toDiagnosticsPath |> Some }
+
     let private diagnosticsAt path error =
         Validation.fail (Diagnostics.singleton error)
         |> Validation.at path
@@ -55,8 +83,13 @@ module Input =
     let private errorAt path error =
         Error(diagnosticsAt path error)
 
-    let private constructorErrorAt path message =
-        errorAt path (SchemaError.ConstructorFailed message)
+    let private errorAtConstructor options path message =
+        let errorPath =
+            match options.ConstructorErrorPath with
+            | Some relativePath -> path @ relativePath
+            | None -> path
+
+        errorAt errorPath (SchemaError.ConstructorFailed message)
 
     let private mergeErrors diagnostics =
         diagnostics
@@ -244,21 +277,21 @@ module Input =
         | PrimitiveValueKind.DateTime -> Parse.dateTimeOffset text |> Result.map box |> Result.mapError parseErrorToSchemaError
         | PrimitiveValueKind.Guid -> Parse.guid text |> Result.map box |> Result.mapError parseErrorToSchemaError
 
-    let rec private parseValue valueSchema fieldConstraints path raw =
+    let rec private parseValue options valueSchema fieldConstraints path raw =
         let constraints = allConstraints valueSchema @ fieldConstraints
 
         match raw with
         | RawInput.Missing -> errorAt path (withCustomMessage constraints "required" SchemaError.Required)
         | RawInput.Object fields ->
             match valueSchema.Shape with
-            | NestedValueDefinition nestedModel -> parseObject path nestedModel fields
+            | NestedValueDefinition nestedModel -> parseObject options path nestedModel fields
             | ManyValueDefinition _ -> errorAt path SchemaError.ExpectedMany
             | PrimitiveValueDefinition _
             | RefinedValueDefinition _ -> errorAt path SchemaError.ExpectedScalar
         | RawInput.Many rawItems ->
             match valueSchema.Shape with
             | NestedValueDefinition _ -> errorAt path SchemaError.ExpectedObject
-            | ManyValueDefinition collection -> parseMany path collection constraints rawItems
+            | ManyValueDefinition collection -> parseMany options path collection constraints rawItems
             | PrimitiveValueDefinition _
             | RefinedValueDefinition _ -> errorAt path SchemaError.ExpectedScalar
         | RawInput.Scalar text when hasRequiredConstraint constraints && String.IsNullOrWhiteSpace text ->
@@ -282,14 +315,14 @@ module Input =
                         |> Error
                     | Ok checkedPrimitive -> Ok(constructValue valueSchema checkedPrimitive)
 
-    and private parseField basePath (fields: Map<string, RawInput>) (field: FieldDescriptor<'model>) =
+    and private parseNestedField options basePath (fields: Map<string, RawInput>) (field: FieldDescriptor<obj>) =
         let name = ExternalFieldName.value field.ExternalName
         let path = basePath @ [ PathSegment.Name name ]
         let raw = fields |> Map.tryFind name |> Option.defaultValue RawInput.Missing
-        parseValue field.ValueSchema field.Constraints path raw
+        parseValue options field.ValueSchema field.Constraints path raw
 
-    and private parseObject path (model: ModelSchemaDefinition<obj>) (fields: Map<string, RawInput>) =
-        let parsedFields = model.Fields |> List.map (parseField path fields)
+    and private parseObject options path (model: ModelSchemaDefinition<obj>) (fields: Map<string, RawInput>) =
+        let parsedFields = model.Fields |> List.map (parseNestedField options path fields)
         let errors = parsedFields |> List.choose (function Error diagnostics -> Some diagnostics | Ok _ -> None)
 
         match errors with
@@ -300,12 +333,12 @@ module Input =
             |> ConstructorApplication.tryApply model.Constructor
             |> function
                 | Ok model -> Ok model
-                | Error message -> constructorErrorAt path message
+                | Error message -> errorAtConstructor options path message
         | diagnostics -> Error(mergeErrors diagnostics)
 
-    and private parseManyItem path itemModel rawItem =
+    and private parseManyItem options path itemModel rawItem =
         match rawItem with
-        | RawInput.Object fields -> parseObject path itemModel fields
+        | RawInput.Object fields -> parseObject options path itemModel fields
         | RawInput.Missing
         | RawInput.Scalar _
         | RawInput.Many _ -> errorAt path SchemaError.ExpectedObject
@@ -319,12 +352,12 @@ module Input =
             |> mergeErrors
             |> Error
 
-    and private parseMany path (collection: CollectionValueDefinition) constraints rawItems =
+    and private parseMany options path (collection: CollectionValueDefinition) constraints rawItems =
         match collection.Item.Shape with
         | NestedValueDefinition itemModel ->
             let parsedItems =
                 rawItems
-                |> List.mapi (fun index rawItem -> parseManyItem (path @ [ PathSegment.Index index ]) itemModel rawItem)
+                |> List.mapi (fun index rawItem -> parseManyItem options (path @ [ PathSegment.Index index ]) itemModel rawItem)
             let errors = parsedItems |> List.choose (function Error diagnostics -> Some diagnostics | Ok _ -> None)
 
             match errors with
@@ -341,10 +374,24 @@ module Input =
         | RefinedValueDefinition _
         | ManyValueDefinition _ -> invalidOp "Collection item value schemas must be nested model value schemas."
 
-    /// <summary>Parses raw boundary input through a trusted model schema.</summary>
-    let parse (schema: Schema<'model>) (input: RawInput) : ParsedInput<'model, SchemaError> =
+    let private parseRootField options basePath (fields: Map<string, RawInput>) (field: FieldDescriptor<'model>) =
+        let name = ExternalFieldName.value field.ExternalName
+        let path = basePath @ [ PathSegment.Name name ]
+        let raw = fields |> Map.tryFind name |> Option.defaultValue RawInput.Missing
+        parseValue options field.ValueSchema field.Constraints path raw
+
+    /// <summary>Parses raw boundary input through a trusted model schema using custom input parser options.</summary>
+    let parseWith (configure: Options -> Options) (schema: Schema<'model>) (input: RawInput) : ParsedInput<'model, SchemaError> =
+        if isNull (box configure) then
+            nullArg (nameof configure)
+
         if isNull (box schema) then
             nullArg (nameof schema)
+
+        let options = configure defaults
+
+        if isNull (box options) then
+            nullArg (nameof configure)
 
         let result =
             match schema.Definition, input with
@@ -353,7 +400,7 @@ module Input =
             | ModelDefinition _, RawInput.Scalar _ -> Error(diagnosticsAt [] SchemaError.ExpectedObject)
             | ModelDefinition _, RawInput.Many _ -> Error(diagnosticsAt [] SchemaError.ExpectedObject)
             | ModelDefinition model, RawInput.Object fields ->
-                let parsedFields = model.Fields |> List.map (parseField [] fields)
+                let parsedFields = model.Fields |> List.map (parseRootField options [] fields)
                 let errors = parsedFields |> List.choose (function Error diagnostics -> Some diagnostics | Ok _ -> None)
 
                 match errors with
@@ -364,7 +411,11 @@ module Input =
                     |> ConstructorApplication.tryApply model.Constructor
                     |> function
                         | Ok model -> Ok model
-                        | Error message -> constructorErrorAt [] message
+                        | Error message -> errorAtConstructor options [] message
                 | diagnostics -> Error(mergeErrors diagnostics)
 
         { Input = input; Result = result }
+
+    /// <summary>Parses raw boundary input through a trusted model schema.</summary>
+    let parse (schema: Schema<'model>) (input: RawInput) : ParsedInput<'model, SchemaError> =
+        parseWith id schema input
