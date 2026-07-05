@@ -32,7 +32,7 @@ Work this queue from top to bottom.
 - [x] Define `SchemaError`.
 - [x] Include required, expected scalar/object/many, invalid format, too short, too long, out of range, count failures,
   duplicate failures, constructor failures, and custom code/message.
-- [ ] Map `CheckFailure` to `SchemaError`.
+- [x] Map `CheckFailure` to `SchemaError`.
 - [ ] Attach errors to `Diagnostics<'error>` paths.
 - [ ] Keep field names out of `SchemaError` when diagnostics path already carries them.
 - [ ] Support custom messages on schema constraints.

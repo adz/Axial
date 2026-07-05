@@ -194,6 +194,26 @@ module InputParseTests =
         test <@ RawInput.redisplayPath "age" parsed.Input = "not-an-int" @>
 
     [<Fact>]
+    let ``parse maps a check failure from a value constraint to a schema error`` () =
+        let minLengthSchema =
+            Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
+            |> Schema.field "email" _.Email (Value.text |> Value.withConstraint (SchemaConstraint.minLength 5))
+            |> Schema.int "age" _.Age
+            |> Schema.build
+
+        let raw =
+            RawInput.Object(
+                Map.ofList
+                    [ "email", RawInput.Scalar "ab"
+                      "age", RawInput.Scalar "42" ]
+            )
+
+        let parsed = Input.parse minLengthSchema raw
+
+        test <@ not parsed.IsValid @>
+        test <@ parsed.ErrorsFor "email" = [ SchemaError.TooShort(5, Some 2) ] @>
+
+    [<Fact>]
     let ``required reports blank non-text scalar as required`` () =
         let requiredAgeSchema =
             Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
