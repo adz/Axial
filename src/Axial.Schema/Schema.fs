@@ -1036,6 +1036,28 @@ module Value =
                   Constraints = [] }
             )
 
+    /// <summary>Describes a collection of values from an already built item value schema.</summary>
+    /// <remarks>
+    /// <para>
+    /// <c>manyOf</c> is the general collection constructor. Use it when each item is a primitive, refined/domain value,
+    /// nested model value, or another collection value schema. Collection-level constraints such as <c>minCount</c>
+    /// attach to the returned schema; item-level constraints stay on <paramref name="itemSchema" /> and interpreters
+    /// attach their diagnostics to item index paths.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="itemSchema" /> is null.</exception>
+    let manyOf (itemSchema: ValueSchema<'item>) : ValueSchema<'item list> =
+        if isNull (box itemSchema) then
+            nullArg (nameof itemSchema)
+
+        let boxItems (items: obj list) : obj = items |> List.map unbox<'item> |> box
+
+        ValueSchema(
+            { Shape = ManyValueDefinition { Item = itemSchema.Definition; BoxItems = boxItems }
+              Format = None
+              Constraints = [] }
+        )
+
     /// <summary>Describes a collection of nested model values from an already built item model schema.</summary>
     /// <remarks>
     /// Many value schemas let a field carry an ordered collection of another trusted model, such as a customer's
@@ -1048,13 +1070,7 @@ module Value =
     /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="itemSchema" /> was not produced by <c>Schema.build</c>.</exception>
     let many (itemSchema: Schema<'item>) : ValueSchema<'item list> =
         let itemValueSchema = nested itemSchema
-        let boxItems (items: obj list) : obj = items |> List.map unbox<'item> |> box
-
-        ValueSchema(
-            { Shape = ManyValueDefinition { Item = itemValueSchema.Definition; BoxItems = boxItems }
-              Format = None
-              Constraints = [] }
-        )
+        manyOf itemValueSchema
 
     /// <summary>Returns whether a value schema is a refined/domain value schema.</summary>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>

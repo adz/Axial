@@ -47,6 +47,11 @@ This page shows the `Axial.Validation.Schema` interpreter surface: raw boundary 
 - [`Validation.Schema.RefinedSchema.nonNegativeInt`](./m-validation-schema-refinedschema-nonnegativeint.md): Describes a non-negative integer as a schema refined value over an integer greater than or equal to zero.
 - [`Validation.Schema.RefinedSchema.negativeInt`](./m-validation-schema-refinedschema-negativeint.md): Describes a negative integer as a schema refined value over an integer less than zero.
 - [`Validation.Schema.RefinedSchema.nonPositiveInt`](./m-validation-schema-refinedschema-nonpositiveint.md): Describes a non-positive integer as a schema refined value over an integer less than or equal to zero.
+- [`Validation.Schema.RefinedSchema.nonEmptyList`](./m-validation-schema-refinedschema-nonemptylist.md): Describes a non-empty list as a schema refined value over a collection of item schemas.
+- [`Validation.Schema.RefinedSchema.nonEmptyArray`](./m-validation-schema-refinedschema-nonemptyarray.md): Describes a non-empty array as a schema refined value over a collection of item schemas.
+- [`Validation.Schema.RefinedSchema.distinctList`](./m-validation-schema-refinedschema-distinctlist.md): Describes a distinct list as a schema refined value over a distinct collection of item schemas.
+- [`Validation.Schema.RefinedSchema.boundedList`](./m-validation-schema-refinedschema-boundedlist.md): Describes a bounded list as a schema refined value over a collection with inclusive count bounds.
+- [`Validation.Schema.RefinedSchema.boundedArray`](./m-validation-schema-refinedschema-boundedarray.md): Describes a bounded array as a schema refined value over a collection with inclusive count bounds.
 
 ## Model validation
 

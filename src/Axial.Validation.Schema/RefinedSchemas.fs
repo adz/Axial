@@ -9,13 +9,11 @@ module private RefinedSchemaConstruction =
         | Ok value -> value
         | Error error -> failwithf "%s schema construction failed after schema constraints passed: %A" target error
 
-/// <summary>Ready-made schema values for the built-in <c>Axial.Refined</c> scalar catalog.</summary>
+/// <summary>Ready-made schema values for the built-in <c>Axial.Refined</c> catalog.</summary>
 /// <remarks>
-/// <para>
-/// The catalog lives in <c>Axial.Validation.Schema</c> so <c>Axial.Refined</c> can remain independent of
-/// <c>Axial.Schema</c>. Each schema carries the same constraint meaning as the matching standalone
-/// <c>Refine</c> constructor before constructing the refined value.
-/// </para>
+/// <para>The catalog lives in <c>Axial.Validation.Schema</c> so <c>Axial.Refined</c> can remain independent of
+/// <c>Axial.Schema</c>. Each schema carries the same constraint meaning as the matching standalone <c>Refine</c>
+/// constructor before constructing the refined value.</para>
 /// </remarks>
 [<RequireQualifiedAccess>]
 module RefinedSchema =
@@ -72,3 +70,45 @@ module RefinedSchema =
         |> Value.refined
             (Refine.nonPositiveInt >> RefinedSchemaConstruction.fromResult "NonPositiveInt")
             (fun value -> value.Value)
+
+    /// <summary>Describes a non-empty list as a schema refined value over a collection of item schemas.</summary>
+    let nonEmptyList (itemSchema: ValueSchema<'value>) : ValueSchema<NonEmptyList<'value>> =
+        Value.manyOf itemSchema
+        |> Value.withConstraint (SchemaConstraint.minCount 1)
+        |> Value.refined
+            (Refine.nonEmptyList >> RefinedSchemaConstruction.fromResult "NonEmptyList")
+            NonEmptyList.toList
+
+    /// <summary>Describes a non-empty array as a schema refined value over a collection of item schemas.</summary>
+    let nonEmptyArray (itemSchema: ValueSchema<'value>) : ValueSchema<NonEmptyArray<'value>> =
+        Value.manyOf itemSchema
+        |> Value.withConstraint (SchemaConstraint.minCount 1)
+        |> Value.refined
+            (Refine.nonEmptyArray >> RefinedSchemaConstruction.fromResult "NonEmptyArray")
+            (fun value -> value.ToArray() |> Array.toList)
+
+    /// <summary>Describes a distinct list as a schema refined value over a distinct collection of item schemas.</summary>
+    let distinctList<'value when 'value: equality>
+        (itemSchema: ValueSchema<'value>)
+        : ValueSchema<DistinctList<'value>> =
+        Value.manyOf itemSchema
+        |> Value.withConstraint SchemaConstraint.distinct
+        |> Value.refined
+            (Refine.distinctList >> RefinedSchemaConstruction.fromResult "DistinctList")
+            (fun value -> value.ToList())
+
+    /// <summary>Describes a bounded list as a schema refined value over a collection with inclusive count bounds.</summary>
+    let boundedList minCount maxCount (itemSchema: ValueSchema<'value>) : ValueSchema<BoundedList<'value>> =
+        Value.manyOf itemSchema
+        |> Value.withConstraint (SchemaConstraint.countBetween minCount maxCount)
+        |> Value.refined
+            (Refine.boundedList minCount maxCount >> RefinedSchemaConstruction.fromResult "BoundedList")
+            (fun value -> value.ToList())
+
+    /// <summary>Describes a bounded array as a schema refined value over a collection with inclusive count bounds.</summary>
+    let boundedArray minCount maxCount (itemSchema: ValueSchema<'value>) : ValueSchema<BoundedArray<'value>> =
+        Value.manyOf itemSchema
+        |> Value.withConstraint (SchemaConstraint.countBetween minCount maxCount)
+        |> Value.refined
+            (Refine.boundedArray minCount maxCount >> RefinedSchemaConstruction.fromResult "BoundedArray")
+            (fun value -> value.ToArray() |> Array.toList)

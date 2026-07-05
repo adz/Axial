@@ -1,7 +1,7 @@
 ---
 title: "Schema.Inspect.model"
 linkTitle: "model"
-weight: 2104
+weight: 2204
 type: docs
 ---
 

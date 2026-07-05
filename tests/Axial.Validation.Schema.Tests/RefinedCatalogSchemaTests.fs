@@ -15,6 +15,12 @@ module RefinedCatalogSchemaTests =
             Quantity: PositiveInt
         }
 
+    type private Tagged =
+        {
+            Tags: NonEmptyList<Slug>
+            Codes: DistinctList<string>
+        }
+
     let private productSchema () =
         Schema.recordFor<Product, _> (fun name slug quantity ->
             {
@@ -75,3 +81,48 @@ module RefinedCatalogSchemaTests =
         let value = Refine.boundedString 2 4 "Ada" |> Result.defaultWith (fun error -> failwithf "%A" error)
 
         test <@ check value = Ok () @>
+
+    [<Fact>]
+    let ``refined collection catalog schemas parse trusted values`` () =
+        let schema =
+            Schema.recordFor<Tagged, _> (fun tags codes -> { Tags = tags; Codes = codes })
+            |> Schema.field "tags" _.Tags (RefinedSchema.nonEmptyList RefinedSchema.slug)
+            |> Schema.field "codes" _.Codes (RefinedSchema.distinctList Value.text)
+            |> Schema.build
+
+        let raw =
+            RawInput.Object(
+                Map.ofList
+                    [ "tags", RawInput.Many [ RawInput.Scalar "fsharp"; RawInput.Scalar "typed-errors" ]
+                      "codes", RawInput.Many [ RawInput.Scalar "A"; RawInput.Scalar "B" ] ]
+            )
+
+        let parsed = Input.parse schema raw
+
+        test
+            <@ parsed.Result
+               |> Result.map (fun value -> value.Tags.ToList() |> List.map _.Value, value.Codes.ToList()) =
+                Ok([ "fsharp"; "typed-errors" ], [ "A"; "B" ]) @>
+
+    [<Fact>]
+    let ``refined collection catalog schemas report collection and item failures`` () =
+        let schema =
+            Schema.recordFor<Tagged, _> (fun tags codes -> { Tags = tags; Codes = codes })
+            |> Schema.field "tags" _.Tags (RefinedSchema.nonEmptyList RefinedSchema.slug)
+            |> Schema.field "codes" _.Codes (RefinedSchema.distinctList Value.text)
+            |> Schema.build
+
+        let raw =
+            RawInput.Object(
+                Map.ofList
+                    [ "tags", RawInput.Many []
+                      "codes", RawInput.Many [ RawInput.Scalar "A"; RawInput.Scalar "A" ] ]
+            )
+
+        let parsed = Input.parse schema raw
+
+        test
+            <@ parsed.Errors = [ { Path = [ PathSegment.Name "codes" ]
+                                   Error = SchemaError.Custom("seq.distinct", None) }
+                                 { Path = [ PathSegment.Name "tags" ]
+                                   Error = SchemaError.CountOutOfRange("minCount 1", Some 0) } ] @>

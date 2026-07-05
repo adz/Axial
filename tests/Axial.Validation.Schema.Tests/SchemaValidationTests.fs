@@ -86,6 +86,8 @@ module SchemaValidationTests =
         { Name: string
           Contacts: ContactMethod list }
 
+    type private Tags = { Values: string list }
+
     type private DateRange =
         private
             { Start: DateOnly
@@ -352,6 +354,34 @@ module SchemaValidationTests =
                                 Map.ofList
                                     [ PathSegment.Name "contacts",
                                       Diagnostics.singleton (SchemaError.CountOutOfRange("maxCount 2", Some 3)) ]
+                        }
+            @>
+
+    [<Fact>]
+    let ``validate reports primitive collection item constraints at index paths`` () =
+        let schema =
+            Schema.recordFor<Tags, _> (fun values -> { Values = values })
+            |> Schema.field "values" _.Values (Value.manyOf (Value.text |> Value.withConstraint SchemaConstraint.required))
+            |> Schema.build
+
+        let validation =
+            Axial.Validation.Schema.Validation.validate schema { Values = [ "fsharp"; "" ] }
+
+        test
+            <@
+                Axial.Validation.Validation.toResult validation =
+                    Error
+                        {
+                            Errors = []
+                            Children =
+                                Map.ofList
+                                    [ PathSegment.Name "values",
+                                      {
+                                          Errors = []
+                                          Children =
+                                              Map.ofList
+                                                  [ PathSegment.Index 1, Diagnostics.singleton SchemaError.Required ]
+                                      } ]
                         }
             @>
 

@@ -507,8 +507,25 @@ module Validation =
         let constraints = allConstraints valueSchema @ fieldConstraints
 
         match valueSchema.Shape with
-        | PrimitiveValueDefinition _
-        | RefinedValueDefinition _ ->
+        | RefinedValueDefinition(raw, ops) ->
+            match raw.Shape with
+            | NestedValueDefinition _
+            | ManyValueDefinition _ ->
+                validateValue raw (valueSchema.Constraints @ fieldConstraints) path (ops.Inspect value)
+                |> Axial.Validation.Validation.map (fun _ -> value)
+            | PrimitiveValueDefinition _
+            | RefinedValueDefinition _ ->
+                let kind = underlyingPrimitiveKind valueSchema
+                let primitive = inspectUnderlying valueSchema value
+
+                match checkPrimitive kind constraints primitive with
+                | Ok _ -> Axial.Validation.Validation.ok value
+                | Error errors ->
+                    errors
+                    |> List.map (diagnosticsAt path)
+                    |> mergeErrors
+                    |> Axial.Validation.Validation.error
+        | PrimitiveValueDefinition _ ->
             let kind = underlyingPrimitiveKind valueSchema
             let primitive = inspectUnderlying valueSchema value
 
@@ -545,9 +562,6 @@ module Validation =
         | [] -> Axial.Validation.Validation.ok model
         | diagnostics -> diagnostics |> mergeErrors |> Axial.Validation.Validation.error
 
-    and private validateManyItem path itemModel item =
-        validateObject path itemModel item
-
     and private checkMany constraints path items =
         match items |> runCheck constraints (SchemaConstraintCheck.sequence<obj> constraints) with
         | Ok checkedItems -> Axial.Validation.Validation.ok checkedItems
@@ -558,27 +572,22 @@ module Validation =
             |> Axial.Validation.Validation.error
 
     and private validateMany path (collection: CollectionValueDefinition) constraints (items: System.Collections.IEnumerable) =
-        match collection.Item.Shape with
-        | NestedValueDefinition itemModel ->
-            let items = items |> Seq.cast<obj> |> Seq.toList
+        let items = items |> Seq.cast<obj> |> Seq.toList
 
-            let validatedItems =
-                items
-                |> List.mapi (fun index item -> validateManyItem (path @ [ PathSegment.Index index ]) itemModel item)
+        let validatedItems =
+            items
+            |> List.mapi (fun index item -> validateValue collection.Item [] (path @ [ PathSegment.Index index ]) item)
 
-            let errors =
-                validatedItems
-                |> List.choose (fun validation ->
-                    match Axial.Validation.Validation.toResult validation with
-                    | Ok _ -> None
-                    | Error diagnostics -> Some diagnostics)
+        let errors =
+            validatedItems
+            |> List.choose (fun validation ->
+                match Axial.Validation.Validation.toResult validation with
+                | Ok _ -> None
+                | Error diagnostics -> Some diagnostics)
 
-            match errors with
-            | [] -> checkMany constraints path items
-            | diagnostics -> diagnostics |> mergeErrors |> Axial.Validation.Validation.error
-        | PrimitiveValueDefinition _
-        | RefinedValueDefinition _
-        | ManyValueDefinition _ -> invalidOp "Collection item value schemas must be nested model value schemas."
+        match errors with
+        | [] -> checkMany constraints path items
+        | diagnostics -> diagnostics |> mergeErrors |> Axial.Validation.Validation.error
 
     let private validateRootField model (field: FieldDescriptor<'model>) =
         let name = ExternalFieldName.value field.ExternalName

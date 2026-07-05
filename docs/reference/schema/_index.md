@@ -17,6 +17,16 @@ This page shows the core `Schema<'model>`, `ValueSchema<'value>`, and `Field<'mo
  Describes one typed field of a trusted model for schema interpreters.
 
 
+## Value schemas
+
+- [`Schema.Value.text`](./p-schema-value-text.md): Describes text represented as <a href="https://learn.microsoft.com/dotnet/api/system.string">String</a>.
+- [`Schema.Value.int`](./p-schema-value-int.md): Describes a 32-bit signed integer represented as <a href="https://learn.microsoft.com/dotnet/api/system.int32">Int32</a>.
+- [`Schema.Value.decimal`](./p-schema-value-decimal.md): Describes a decimal number represented as <a href="https://learn.microsoft.com/dotnet/api/system.decimal">Decimal</a>.
+- [`Schema.Value.bool`](./p-schema-value-bool.md): Describes a Boolean value represented as <a href="https://learn.microsoft.com/dotnet/api/system.boolean">Boolean</a>.
+- [`Schema.Value.dateTime`](./p-schema-value-datetime.md): Describes an instant-like date and time represented as <a href="https://learn.microsoft.com/dotnet/api/system.datetimeoffset">DateTimeOffset</a>.
+- [`Schema.Value.guid`](./p-schema-value-guid.md): Describes a globally unique identifier represented as <a href="https://learn.microsoft.com/dotnet/api/system.guid">Guid</a>.
+- [`Schema.Value.manyOf`](./m-schema-value-manyof.md): Describes a collection of values from an already built item value schema.
+
 ## Inspection
 
 - [`Schema.ValueShape`](./t-schema-valueshape.md):

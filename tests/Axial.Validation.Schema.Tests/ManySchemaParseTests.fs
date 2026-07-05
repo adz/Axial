@@ -24,6 +24,8 @@ module ManySchemaParseTests =
 
     type private VerifiedCustomer = { Name: string; Contacts: VerifiedContactMethod list }
 
+    type private Tags = { Values: string list }
+
     let private contactMethodSchema =
         Schema.recordFor<ContactMethod, _> (fun kind value -> ({ Kind = kind; Value = value }: ContactMethod))
         |> Schema.field "kind" (fun contact -> contact.Kind) (Value.text |> Value.withConstraint SchemaConstraint.required)
@@ -176,6 +178,36 @@ module ManySchemaParseTests =
                 parsed.Errors = [ { Path = [ PathSegment.Name "contacts"; PathSegment.Index 0 ]
                                     Error = SchemaError.ExpectedObject } ]
             @>
+
+    [<Fact>]
+    let ``parse builds a collection from primitive item schemas`` () =
+        let schema =
+            Schema.recordFor<Tags, _> (fun values -> { Values = values })
+            |> Schema.field "values" _.Values (Value.manyOf (Value.text |> Value.withConstraint SchemaConstraint.required))
+            |> Schema.build
+
+        let raw =
+            RawInput.Object(Map.ofList [ "values", RawInput.Many [ RawInput.Scalar "fsharp"; RawInput.Scalar "typed-errors" ] ])
+
+        let parsed = Input.parse schema raw
+
+        test <@ parsed.Result = Ok { Values = [ "fsharp"; "typed-errors" ] } @>
+
+    [<Fact>]
+    let ``parse reports primitive item failures at collection index paths`` () =
+        let schema =
+            Schema.recordFor<Tags, _> (fun values -> { Values = values })
+            |> Schema.field "values" _.Values (Value.manyOf (Value.text |> Value.withConstraint SchemaConstraint.required))
+            |> Schema.build
+
+        let raw =
+            RawInput.Object(Map.ofList [ "values", RawInput.Many [ RawInput.Scalar "fsharp"; RawInput.Scalar "   " ] ])
+
+        let parsed = Input.parse schema raw
+
+        test
+            <@ parsed.Errors = [ { Path = [ PathSegment.Name "values"; PathSegment.Index 1 ]
+                                   Error = SchemaError.Required } ] @>
 
     [<Fact>]
     let ``parse accumulates errors from every failing item instead of stopping at the first`` () =

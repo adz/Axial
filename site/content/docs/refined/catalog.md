@@ -27,6 +27,8 @@ let productSchema =
 ```
 
 The schema catalog lives outside `Axial.Refined` so the refined-value package stays usable without any schema dependency.
+Collection schema helpers such as `RefinedSchema.nonEmptyList RefinedSchema.slug` and
+`RefinedSchema.distinctList Value.text` take an item value schema, so item parsing and item diagnostics stay explicit.
 
 ## Module Layout
 

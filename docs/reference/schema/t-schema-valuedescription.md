@@ -1,7 +1,7 @@
 ---
 title: "Schema.ValueDescription"
 linkTitle: "ValueDescription"
-weight: 1101
+weight: 1201
 ---
 
 Describes one value schema: its shape, declared format, and portable constraint metadata.

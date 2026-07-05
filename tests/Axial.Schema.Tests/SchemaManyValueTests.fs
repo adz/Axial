@@ -73,6 +73,21 @@ module SchemaManyValueTests =
         test <@ not (Value.isRefined manyValue) @>
 
     [<Fact>]
+    let ``manyOf builds a collection value schema from primitive and refined item schemas`` () =
+        let names = Value.manyOf (Value.text |> Value.withConstraint SchemaConstraint.required)
+
+        match names.Definition.Shape with
+        | ManyValueDefinition collection ->
+            match collection.Item.Shape with
+            | PrimitiveValueDefinition PrimitiveValueKind.Text -> ()
+            | _ -> failwith "Expected the manyOf item to keep the supplied primitive value schema."
+
+            test <@ collection.Item.Constraints |> List.map SchemaConstraint.code = [ "required" ] @>
+        | PrimitiveValueDefinition _
+        | RefinedValueDefinition _
+        | NestedValueDefinition _ -> failwith "Expected a many/collection value schema."
+
+    [<Fact>]
     let ``inspection interpreters can walk into each item of a many value schema using getters, without reflection`` () =
         let contactMethodSchema = buildContactMethodSchema ()
 

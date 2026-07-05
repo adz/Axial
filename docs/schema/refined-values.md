@@ -42,6 +42,25 @@ Available scalar schemas include `RefinedSchema.nonBlankString`, `RefinedSchema.
 `RefinedSchema.slug`, `RefinedSchema.positiveInt`, `RefinedSchema.nonNegativeInt`, `RefinedSchema.negativeInt`, and
 `RefinedSchema.nonPositiveInt`.
 
+Collection catalog schemas take an item value schema:
+
+```fsharp
+type Tagged =
+    {
+        Tags: NonEmptyList<Slug>
+        Codes: DistinctList<string>
+    }
+
+let taggedSchema =
+    Schema.recordFor<Tagged, _> (fun tags codes -> { Tags = tags; Codes = codes })
+    |> Schema.field "tags" _.Tags (RefinedSchema.nonEmptyList RefinedSchema.slug)
+    |> Schema.field "codes" _.Codes (RefinedSchema.distinctList Value.text)
+    |> Schema.build
+```
+
+Use `Value.manyOf itemSchema` when a collection field contains primitive or refined items. Use `Value.many itemSchema`
+for the older nested-model shortcut where `itemSchema` is a built `Schema<'item>`.
+
 ## Authoring
 
 `Value.refined` takes a construction function, an inspection function, and the raw value schema:

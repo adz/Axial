@@ -90,8 +90,8 @@ module Input =
             match valueDefinition.Shape with
             | PrimitiveValueDefinition _ -> value
             | RefinedValueDefinition(raw, ops) -> construct raw value |> ops.Construct
-            | NestedValueDefinition _ -> invalidOp "Nested model values are constructed by parsing, not primitive construction."
-            | ManyValueDefinition _ -> invalidOp "Collection values are constructed by parsing, not primitive construction."
+            | NestedValueDefinition _
+            | ManyValueDefinition _ -> value
 
         construct definition primitive
 
@@ -161,15 +161,29 @@ module Input =
         | RawInput.Object fields ->
             match valueSchema.Shape with
             | NestedValueDefinition nestedModel -> parseObject options path nestedModel fields
+            | RefinedValueDefinition(raw, _) ->
+                match raw.Shape with
+                | NestedValueDefinition nestedModel ->
+                    parseObject options path nestedModel fields
+                    |> Result.map (constructValue valueSchema)
+                | PrimitiveValueDefinition _
+                | RefinedValueDefinition _ -> errorAt path SchemaError.ExpectedScalar
+                | ManyValueDefinition _ -> errorAt path SchemaError.ExpectedMany
             | ManyValueDefinition _ -> errorAt path SchemaError.ExpectedMany
-            | PrimitiveValueDefinition _
-            | RefinedValueDefinition _ -> errorAt path SchemaError.ExpectedScalar
+            | PrimitiveValueDefinition _ -> errorAt path SchemaError.ExpectedScalar
         | RawInput.Many rawItems ->
             match valueSchema.Shape with
             | NestedValueDefinition _ -> errorAt path SchemaError.ExpectedObject
             | ManyValueDefinition collection -> parseMany options path collection constraints rawItems
-            | PrimitiveValueDefinition _
-            | RefinedValueDefinition _ -> errorAt path SchemaError.ExpectedScalar
+            | RefinedValueDefinition(raw, _) ->
+                match raw.Shape with
+                | ManyValueDefinition collection ->
+                    parseMany options path collection constraints rawItems
+                    |> Result.map (constructValue valueSchema)
+                | NestedValueDefinition _ -> errorAt path SchemaError.ExpectedObject
+                | PrimitiveValueDefinition _
+                | RefinedValueDefinition _ -> errorAt path SchemaError.ExpectedScalar
+            | PrimitiveValueDefinition _ -> errorAt path SchemaError.ExpectedScalar
         | RawInput.Scalar text when hasRequiredConstraint constraints && String.IsNullOrWhiteSpace text ->
             errorAt path (SchemaCheckFailure.withCustomMessageForCode constraints "required" SchemaError.Required)
         | RawInput.Scalar text ->
@@ -212,13 +226,6 @@ module Input =
                 | Error message -> errorAtConstructor options path message
         | diagnostics -> Error(mergeErrors diagnostics)
 
-    and private parseManyItem options path itemModel rawItem =
-        match rawItem with
-        | RawInput.Object fields -> parseObject options path itemModel fields
-        | RawInput.Missing
-        | RawInput.Scalar _
-        | RawInput.Many _ -> errorAt path SchemaError.ExpectedObject
-
     and private checkMany constraints path items =
         match items |> runCheck constraints (SchemaConstraintCheck.sequence<obj> constraints) with
         | Ok checkedItems -> Ok checkedItems
@@ -229,26 +236,21 @@ module Input =
             |> Error
 
     and private parseMany options path (collection: CollectionValueDefinition) constraints rawItems =
-        match collection.Item.Shape with
-        | NestedValueDefinition itemModel ->
-            let parsedItems =
-                rawItems
-                |> List.mapi (fun index rawItem -> parseManyItem options (path @ [ PathSegment.Index index ]) itemModel rawItem)
-            let errors = parsedItems |> List.choose (function Error diagnostics -> Some diagnostics | Ok _ -> None)
+        let parsedItems =
+            rawItems
+            |> List.mapi (fun index rawItem -> parseValue options collection.Item [] (path @ [ PathSegment.Index index ]) rawItem)
+        let errors = parsedItems |> List.choose (function Error diagnostics -> Some diagnostics | Ok _ -> None)
 
-            match errors with
-            | [] ->
-                let items =
-                    parsedItems
-                    |> List.map (function Ok value -> value | Error _ -> invalidOp "Unexpected parse error.")
+        match errors with
+        | [] ->
+            let items =
+                parsedItems
+                |> List.map (function Ok value -> value | Error _ -> invalidOp "Unexpected parse error.")
 
-                match checkMany constraints path items with
-                | Ok checkedItems -> checkedItems |> collection.BoxItems |> Ok
-                | Error diagnostics -> Error diagnostics
-            | diagnostics -> Error(mergeErrors diagnostics)
-        | PrimitiveValueDefinition _
-        | RefinedValueDefinition _
-        | ManyValueDefinition _ -> invalidOp "Collection item value schemas must be nested model value schemas."
+            match checkMany constraints path items with
+            | Ok checkedItems -> checkedItems |> collection.BoxItems |> Ok
+            | Error diagnostics -> Error diagnostics
+        | diagnostics -> Error(mergeErrors diagnostics)
 
     let private parseRootField options basePath (fields: Map<string, RawInput>) (field: FieldDescriptor<'model>) =
         let name = ExternalFieldName.value field.ExternalName

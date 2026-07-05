@@ -1,7 +1,7 @@
 ---
 title: "Schema.ValueShape"
 linkTitle: "ValueShape"
-weight: 1100
+weight: 1200
 ---
 
 
