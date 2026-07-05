@@ -59,7 +59,7 @@ Work this queue from top to bottom.
 - [x] Support attaching constructor errors to a field path with `Input.constructorErrorAt "end"` or equivalent.
 - [x] Decide how constructor errors compose with field errors.
 - [x] Add `DateRange`-style tests for cross-field intrinsic invariants.
-- [ ] Document the difference between constructor invariants and contextual rules.
+- [x] Document the difference between constructor invariants and contextual rules.
 
 ## Phase 11: Validation Interpreter For Existing Models
 
