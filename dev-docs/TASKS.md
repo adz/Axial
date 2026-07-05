@@ -34,7 +34,7 @@ Work this queue from top to bottom.
   duplicate failures, constructor failures, and custom code/message.
 - [x] Map `CheckFailure` to `SchemaError`.
 - [x] Attach errors to `Diagnostics<'error>` paths.
-- [ ] Keep field names out of `SchemaError` when diagnostics path already carries them.
+- [x] Keep field names out of `SchemaError` when diagnostics path already carries them.
 - [ ] Support custom messages on schema constraints.
 - [ ] Support mapping schema/input errors to domain/application errors.
 - [ ] Add tests for path rendering and flattened diagnostics.

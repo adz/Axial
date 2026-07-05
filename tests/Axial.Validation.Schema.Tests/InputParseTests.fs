@@ -214,6 +214,23 @@ module InputParseTests =
         test <@ parsed.ErrorsFor "email" = [ SchemaError.TooShort(5, Some 2) ] @>
 
     [<Fact>]
+    let ``schema errors are identical across differently named fields, only the diagnostics path differs`` () =
+        let makeSchema fieldName =
+            Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
+            |> Schema.field fieldName _.Email (Value.text |> Value.withConstraint SchemaConstraint.required)
+            |> Schema.int "age" _.Age
+            |> Schema.build
+
+        let rawFor fieldName =
+            RawInput.Object(Map.ofList [ fieldName, RawInput.Missing; "age", RawInput.Scalar "42" ])
+
+        let shortNameParsed = Input.parse (makeSchema "email") (rawFor "email")
+        let longNameParsed = Input.parse (makeSchema "emailAddress") (rawFor "emailAddress")
+
+        test <@ (shortNameParsed.Errors |> List.map _.Error) = (longNameParsed.Errors |> List.map _.Error) @>
+        test <@ shortNameParsed.Errors <> longNameParsed.Errors @>
+
+    [<Fact>]
     let ``required reports blank non-text scalar as required`` () =
         let requiredAgeSchema =
             Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
