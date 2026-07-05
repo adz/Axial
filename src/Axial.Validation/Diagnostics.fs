@@ -200,3 +200,24 @@ module Diagnostics =
             local @ children
 
         flattenWithPrefix [] graph
+
+    /// <summary>Maps every error in a diagnostics graph to a domain or application error, preserving structure and paths.</summary>
+    /// <remarks>
+    /// This is the boundary-error translation point: schema and input interpreters emit an interpreter-specific error
+    /// type such as <c>SchemaError</c>, and callers use <c>map</c> to translate that into their own domain or
+    /// application error type before the diagnostics graph crosses into application code. The path structure and
+    /// child branches are preserved; only the leaf errors are transformed.
+    /// </remarks>
+    /// <param name="mapper">A function of type <c>'error -> 'nextError</c>.</param>
+    /// <param name="graph">The diagnostics graph to map.</param>
+    /// <returns>A new <see cref="T:Axial.Validation.Diagnostics`1" /> with every error transformed by <paramref name="mapper" />.</returns>
+    /// <example>
+    /// <code>
+    /// let domainDiagnostics = Diagnostics.map SchemaError.toDomainError schemaDiagnostics
+    /// </code>
+    /// </example>
+    let rec map (mapper: 'error -> 'nextError) (graph: Diagnostics<'error>) : Diagnostics<'nextError> =
+        {
+            Errors = graph.Errors |> List.map mapper
+            Children = graph.Children |> Map.map (fun _ child -> map mapper child)
+        }

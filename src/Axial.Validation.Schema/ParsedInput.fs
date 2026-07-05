@@ -60,3 +60,26 @@ type ParsedInput<'model, 'error> =
         |> InputPath.parse
         |> InputPath.toDiagnosticsPath
         |> this.ErrorsFor
+
+/// <summary>Functions for adapting parsed input, most notably to translate interpreter errors into domain errors.</summary>
+[<RequireQualifiedAccess>]
+module ParsedInput =
+    /// <summary>Maps a failed parse's errors to a domain or application error type, preserving the raw input and paths.</summary>
+    /// <remarks>
+    /// Use this at the boundary between schema input parsing and application code, where <c>SchemaError</c> (or any
+    /// other interpreter error type) should become the caller's own domain/application error type before flowing
+    /// further into the system. A successful parse is returned unchanged apart from its error type.
+    /// </remarks>
+    /// <param name="mapper">A function of type <c>'error -> 'nextError</c>.</param>
+    /// <param name="parsed">The parsed input to map.</param>
+    /// <returns>A <see cref="T:Axial.Validation.Schema.ParsedInput`2" /> with the same input and model, and mapped errors.</returns>
+    /// <example>
+    /// <code>
+    /// let domainParsed = parsed |> ParsedInput.mapErrors SignupError.ofSchemaError
+    /// </code>
+    /// </example>
+    let mapErrors (mapper: 'error -> 'nextError) (parsed: ParsedInput<'model, 'error>) : ParsedInput<'model, 'nextError> =
+        {
+            Input = parsed.Input
+            Result = parsed.Result |> Result.mapError (Diagnostics.map mapper)
+        }

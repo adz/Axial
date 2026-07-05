@@ -60,3 +60,48 @@ module ParsedInputTests =
         test <@ parsed.ErrorsFor [ PathSegment.Name "email" ] = [ "Required" ] @>
         test <@ parsed.ErrorsFor "email" = [ "Required" ] @>
         test <@ parsed.ErrorsFor "name" = [] @>
+
+    type private SignupError =
+        | MissingField of string
+
+    [<Fact>]
+    let ``mapErrors translates a failed parse's errors while preserving input and paths`` () =
+        let raw =
+            RawInput.Object(Map.ofList [ "email", RawInput.Scalar "" ])
+
+        let diagnostics =
+            Validation.fail (Diagnostics.singleton "Required")
+            |> Validation.name "email"
+            |> Validation.toResult
+            |> function
+                | Error diagnostics -> diagnostics
+                | Ok _ -> failwith "Expected diagnostics."
+
+        let parsed: ParsedInput<Signup, string> = { Input = raw; Result = Error diagnostics }
+
+        let domainParsed = parsed |> ParsedInput.mapErrors MissingField
+
+        test <@ domainParsed.Input = raw @>
+        test <@ not domainParsed.IsValid @>
+
+        let expectedErrors =
+            [ { Path = [ PathSegment.Name "email" ]; Error = MissingField "Required" } ]
+
+        test <@ domainParsed.Errors = expectedErrors @>
+
+    [<Fact>]
+    let ``mapErrors leaves a successful parse's model unchanged`` () =
+        let raw =
+            RawInput.Object(Map.ofList [ "email", RawInput.Scalar "ada@example.com" ])
+
+        let parsed: ParsedInput<Signup, string> =
+            {
+                Input = raw
+                Result = Ok { Email = "ada@example.com" }
+            }
+
+        let domainParsed = parsed |> ParsedInput.mapErrors MissingField
+
+        test <@ domainParsed.IsValid @>
+        test <@ domainParsed.Model = { Email = "ada@example.com" } @>
+        test <@ domainParsed.Errors = [] @>

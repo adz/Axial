@@ -167,6 +167,32 @@ module ValidationTests =
             test <@ (Diagnostics.toString merged |> fun text -> text.Contains("Errors:") |> not) @>
 
         [<Fact>]
+        let ``diagnostics map translates every error while preserving paths and structure`` () =
+            let graph : Diagnostics<string> =
+                {
+                    Errors = [ "root" ]
+                    Children =
+                        Map.ofList
+                            [
+                                PathSegment.Key "user",
+                                {
+                                    Errors = [ "user-error" ]
+                                    Children = Map.empty
+                                }
+                            ]
+                }
+
+            let mapped = graph |> Diagnostics.map (fun error -> error.ToUpperInvariant())
+
+            let expected =
+                [
+                    { Path = []; Error = "ROOT" }
+                    { Path = [ PathSegment.Key "user" ]; Error = "USER-ERROR" }
+                ]
+
+            test <@ Diagnostics.flatten mapped = expected @>
+
+        [<Fact>]
         let ``scoped validation prefixes nested field and list paths`` () =
             let validateAddress address =
                 validate.key "address" {
