@@ -9,18 +9,43 @@ open Xunit
 module NestedSchemaParseTests =
     type private Address = { Street: string; City: string }
 
+    type private VerifiedAddress =
+        private
+            { Street: string
+              City: string }
+
+        static member Create street city =
+            if street <> city then
+                Ok { Street = street; City = city }
+            else
+                Error "Street and city must differ."
+
     type private Customer = { Name: string; Address: Address }
 
+    type private VerifiedCustomer = { Name: string; Address: VerifiedAddress }
+
     let private addressSchema =
-        Schema.recordFor<Address, _> (fun street city -> { Street = street; City = city })
-        |> Schema.field "street" _.Street (Value.text |> Value.withConstraint SchemaConstraint.required)
-        |> Schema.field "city" _.City (Value.text |> Value.withConstraint SchemaConstraint.required)
+        Schema.recordFor<Address, _> (fun street city -> ({ Street = street; City = city }: Address))
+        |> Schema.field "street" (fun address -> address.Street) (Value.text |> Value.withConstraint SchemaConstraint.required)
+        |> Schema.field "city" (fun address -> address.City) (Value.text |> Value.withConstraint SchemaConstraint.required)
         |> Schema.build
 
     let private customerSchema =
-        Schema.recordFor<Customer, _> (fun name address -> { Name = name; Address = address })
-        |> Schema.field "name" _.Name (Value.text |> Value.withConstraint SchemaConstraint.required)
-        |> Schema.nestedWith [ SchemaConstraint.required ] "address" _.Address addressSchema
+        Schema.recordFor<Customer, _> (fun name address -> ({ Name = name; Address = address }: Customer))
+        |> Schema.field "name" (fun customer -> customer.Name) (Value.text |> Value.withConstraint SchemaConstraint.required)
+        |> Schema.nestedWith [ SchemaConstraint.required ] "address" (fun customer -> customer.Address) addressSchema
+        |> Schema.build
+
+    let private verifiedAddressSchema =
+        Schema.recordFor<VerifiedAddress, _> VerifiedAddress.Create
+        |> Schema.field "street" (fun address -> address.Street) (Value.text |> Value.withConstraint SchemaConstraint.required)
+        |> Schema.field "city" (fun address -> address.City) (Value.text |> Value.withConstraint SchemaConstraint.required)
+        |> Schema.buildResult
+
+    let private verifiedCustomerSchema =
+        Schema.recordFor<VerifiedCustomer, _> (fun name address -> ({ Name = name; Address = address }: VerifiedCustomer))
+        |> Schema.field "name" (fun customer -> customer.Name) (Value.text |> Value.withConstraint SchemaConstraint.required)
+        |> Schema.nestedWith [ SchemaConstraint.required ] "address" (fun customer -> customer.Address) verifiedAddressSchema
         |> Schema.build
 
     let private validAddress =
@@ -49,6 +74,24 @@ module NestedSchemaParseTests =
 
         test <@ not parsed.IsValid @>
         test <@ parsed.Errors = [ { Path = [ PathSegment.Name "address"; PathSegment.Name "city" ]; Error = SchemaError.Required } ] @>
+
+    [<Fact>]
+    let ``parse attaches nested constructor errors to the nested object root by default`` () =
+        let raw =
+            RawInput.Object(
+                Map.ofList
+                    [ "name", RawInput.Scalar "Ada"
+                      "address", RawInput.Object(Map.ofList [ "street", RawInput.Scalar "Same"; "city", RawInput.Scalar "Same" ]) ]
+            )
+
+        let parsed = Input.parse verifiedCustomerSchema raw
+
+        test <@ not parsed.IsValid @>
+        test
+            <@
+                parsed.Errors = [ { Path = [ PathSegment.Name "address" ]
+                                    Error = SchemaError.ConstructorFailed "Street and city must differ." } ]
+            @>
 
     [<Fact>]
     let ``parse reports expected object when nested raw input is a scalar`` () =

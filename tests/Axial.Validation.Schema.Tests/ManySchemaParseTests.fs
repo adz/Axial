@@ -9,24 +9,49 @@ open Xunit
 module ManySchemaParseTests =
     type private ContactMethod = { Kind: string; Value: string }
 
+    type private VerifiedContactMethod =
+        private
+            { Kind: string
+              Value: string }
+
+        static member Create kind value =
+            if kind <> value then
+                Ok { Kind = kind; Value = value }
+            else
+                Error "Kind and value must differ."
+
     type private Customer = { Name: string; Contacts: ContactMethod list }
 
+    type private VerifiedCustomer = { Name: string; Contacts: VerifiedContactMethod list }
+
     let private contactMethodSchema =
-        Schema.recordFor<ContactMethod, _> (fun kind value -> { Kind = kind; Value = value })
-        |> Schema.field "kind" _.Kind (Value.text |> Value.withConstraint SchemaConstraint.required)
-        |> Schema.field "value" _.Value (Value.text |> Value.withConstraint SchemaConstraint.required)
+        Schema.recordFor<ContactMethod, _> (fun kind value -> ({ Kind = kind; Value = value }: ContactMethod))
+        |> Schema.field "kind" (fun contact -> contact.Kind) (Value.text |> Value.withConstraint SchemaConstraint.required)
+        |> Schema.field "value" (fun contact -> contact.Value) (Value.text |> Value.withConstraint SchemaConstraint.required)
         |> Schema.build
 
+    let private verifiedContactMethodSchema =
+        Schema.recordFor<VerifiedContactMethod, _> VerifiedContactMethod.Create
+        |> Schema.field "kind" (fun contact -> contact.Kind) (Value.text |> Value.withConstraint SchemaConstraint.required)
+        |> Schema.field "value" (fun contact -> contact.Value) (Value.text |> Value.withConstraint SchemaConstraint.required)
+        |> Schema.buildResult
+
     let private customerSchema =
-        Schema.recordFor<Customer, _> (fun name contacts -> { Name = name; Contacts = contacts })
-        |> Schema.field "name" _.Name (Value.text |> Value.withConstraint SchemaConstraint.required)
-        |> Schema.many "contacts" _.Contacts contactMethodSchema
+        Schema.recordFor<Customer, _> (fun name contacts -> ({ Name = name; Contacts = contacts }: Customer))
+        |> Schema.field "name" (fun customer -> customer.Name) (Value.text |> Value.withConstraint SchemaConstraint.required)
+        |> Schema.many "contacts" (fun customer -> customer.Contacts) contactMethodSchema
+        |> Schema.build
+
+    let private verifiedCustomerSchema =
+        Schema.recordFor<VerifiedCustomer, _> (fun name contacts -> ({ Name = name; Contacts = contacts }: VerifiedCustomer))
+        |> Schema.field "name" (fun customer -> customer.Name) (Value.text |> Value.withConstraint SchemaConstraint.required)
+        |> Schema.many "contacts" (fun customer -> customer.Contacts) verifiedContactMethodSchema
         |> Schema.build
 
     let private constrainedCustomerSchema =
-        Schema.recordFor<Customer, _> (fun name contacts -> { Name = name; Contacts = contacts })
-        |> Schema.field "name" _.Name (Value.text |> Value.withConstraint SchemaConstraint.required)
-        |> Schema.manyWith [ SchemaConstraint.minCount 1; SchemaConstraint.maxCount 2 ] "contacts" _.Contacts contactMethodSchema
+        Schema.recordFor<Customer, _> (fun name contacts -> ({ Name = name; Contacts = contacts }: Customer))
+        |> Schema.field "name" (fun customer -> customer.Name) (Value.text |> Value.withConstraint SchemaConstraint.required)
+        |> Schema.manyWith [ SchemaConstraint.minCount 1; SchemaConstraint.maxCount 2 ] "contacts" (fun customer -> customer.Contacts) contactMethodSchema
         |> Schema.build
 
     let private validContact kind value =
@@ -177,6 +202,28 @@ module ManySchemaParseTests =
                         Error = SchemaError.Required }
                       { Path = [ PathSegment.Name "contacts"; PathSegment.Index 1; PathSegment.Name "value" ]
                         Error = SchemaError.Required } ]
+            @>
+
+    [<Fact>]
+    let ``parse attaches collection item constructor errors to the item root by default`` () =
+        let raw =
+            RawInput.Object(
+                Map.ofList
+                    [ "name", RawInput.Scalar "Ada"
+                      "contacts",
+                      RawInput.Many
+                          [ validContact "email" "ada@example.com"
+                            RawInput.Object(Map.ofList [ "kind", RawInput.Scalar "same"; "value", RawInput.Scalar "same" ]) ] ]
+            )
+
+        let parsed = Input.parse verifiedCustomerSchema raw
+
+        test <@ not parsed.IsValid @>
+
+        test
+            <@
+                parsed.Errors = [ { Path = [ PathSegment.Name "contacts"; PathSegment.Index 1 ]
+                                    Error = SchemaError.ConstructorFailed "Kind and value must differ." } ]
             @>
 
     [<Fact>]
