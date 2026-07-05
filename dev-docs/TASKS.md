@@ -30,7 +30,7 @@ Work this queue from top to bottom.
 
 - [x] Keep `SchemaError` and schema diagnostics interpretation in `Axial.Validation.Schema`, not core `Axial.Schema`.
 - [x] Define `SchemaError`.
-- [ ] Include required, expected scalar/object/many, invalid format, too short, too long, out of range, count failures,
+- [x] Include required, expected scalar/object/many, invalid format, too short, too long, out of range, count failures,
   duplicate failures, constructor failures, and custom code/message.
 - [ ] Map `CheckFailure` to `SchemaError`.
 - [ ] Attach errors to `Diagnostics<'error>` paths.

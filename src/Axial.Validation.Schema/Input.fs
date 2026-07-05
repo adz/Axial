@@ -36,8 +36,10 @@ type SchemaError =
     | NotOneOf of choices: string
     /// <summary>A duplicate value was found.</summary>
     | Duplicate
-    /// <summary>A custom schema failure code was produced.</summary>
-    | Custom of code: string
+    /// <summary>A trusted model constructor rejected otherwise-valid field values.</summary>
+    | ConstructorFailed of message: string
+    /// <summary>A custom schema failure code, with an optional custom message.</summary>
+    | Custom of code: string * message: string option
 
 /// <summary>Functions for parsing raw input through a schema.</summary>
 [<RequireQualifiedAccess>]
@@ -92,8 +94,9 @@ module Input =
         | CheckFailure.Count(expectation, actual) -> SchemaError.CountOutOfRange(countText expectation, actual)
         | CheckFailure.NonEmpty actual -> SchemaError.CountOutOfRange("minCount 1", actual)
         | CheckFailure.Equality(CheckEqualityExpectation.EqualTo choices, _) -> SchemaError.NotOneOf choices
-        | CheckFailure.Equality(CheckEqualityExpectation.NotEqualTo unexpected, _) -> SchemaError.Custom($"notEqualTo:{unexpected}")
-        | CheckFailure.CustomCode code -> SchemaError.Custom code
+        | CheckFailure.Equality(CheckEqualityExpectation.NotEqualTo unexpected, _) ->
+            SchemaError.Custom($"notEqualTo:{unexpected}", None)
+        | CheckFailure.CustomCode code -> SchemaError.Custom(code, None)
         | CheckFailure.Positive actual -> SchemaError.RangeOutOfRange("greaterThan 0", actual)
         | CheckFailure.NonNegative actual -> SchemaError.RangeOutOfRange("atLeast 0", actual)
         | CheckFailure.Negative actual -> SchemaError.RangeOutOfRange("lessThan 0", actual)
