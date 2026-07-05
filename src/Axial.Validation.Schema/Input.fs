@@ -107,6 +107,10 @@ module Input =
 
         gather definition
 
+    let private hasRequiredConstraint constraints =
+        constraints
+        |> List.exists (fun constraint' -> SchemaConstraint.code constraint' = "required")
+
     let private underlyingPrimitiveKind definition =
         let rec kindOf valueDefinition =
             match valueDefinition.Shape with
@@ -181,13 +185,17 @@ module Input =
         | PrimitiveValueKind.Guid -> Parse.guid text |> Result.map box |> Result.mapError parseErrorToSchemaError
 
     let private parseValue valueSchema fieldConstraints path raw =
+        let constraints = allConstraints valueSchema @ fieldConstraints
+
         match raw with
+        | RawInput.Missing when hasRequiredConstraint constraints -> errorAt path SchemaError.Required
         | RawInput.Missing -> errorAt path SchemaError.Required
         | RawInput.Object _ -> errorAt path SchemaError.ExpectedScalar
         | RawInput.Many _ -> errorAt path SchemaError.ExpectedScalar
+        | RawInput.Scalar text when hasRequiredConstraint constraints && String.IsNullOrWhiteSpace text ->
+            errorAt path SchemaError.Required
         | RawInput.Scalar text ->
             let kind = underlyingPrimitiveKind valueSchema
-            let constraints = allConstraints valueSchema @ fieldConstraints
 
             match parsePrimitive kind text with
             | Error error -> errorAt path error

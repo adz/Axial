@@ -53,3 +53,61 @@ module InputParseTests =
 
         test <@ not parsed.IsValid @>
         test <@ parsed.Errors = [ { Path = []; Error = SchemaError.ExpectedObject } ] @>
+
+    [<Fact>]
+    let ``required reports missing raw field as required`` () =
+        let raw = RawInput.Object(Map.ofList [ "age", RawInput.Scalar "42" ])
+
+        let parsed = Input.parse schema raw
+
+        test <@ not parsed.IsValid @>
+        test <@ parsed.ErrorsFor "email" = [ SchemaError.Required ] @>
+        test <@ parsed.Errors = [ { Path = [ PathSegment.Name "email" ]; Error = SchemaError.Required } ] @>
+
+    [<Fact>]
+    let ``required reports explicit missing raw scalar as required`` () =
+        let raw =
+            RawInput.Object(
+                Map.ofList
+                    [ "email", RawInput.Missing
+                      "age", RawInput.Scalar "42" ]
+            )
+
+        let parsed = Input.parse schema raw
+
+        test <@ not parsed.IsValid @>
+        test <@ parsed.ErrorsFor "email" = [ SchemaError.Required ] @>
+
+    [<Fact>]
+    let ``required reports blank text scalar as required`` () =
+        let raw =
+            RawInput.Object(
+                Map.ofList
+                    [ "email", RawInput.Scalar "   "
+                      "age", RawInput.Scalar "42" ]
+            )
+
+        let parsed = Input.parse schema raw
+
+        test <@ not parsed.IsValid @>
+        test <@ parsed.ErrorsFor "email" = [ SchemaError.Required ] @>
+
+    [<Fact>]
+    let ``required reports blank non-text scalar as required`` () =
+        let requiredAgeSchema =
+            Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
+            |> Schema.text "email" _.Email
+            |> Schema.field "age" _.Age (Value.``int`` |> Value.withConstraint SchemaConstraint.required)
+            |> Schema.build
+
+        let raw =
+            RawInput.Object(
+                Map.ofList
+                    [ "email", RawInput.Scalar "ada@example.com"
+                      "age", RawInput.Scalar "   " ]
+            )
+
+        let parsed = Input.parse requiredAgeSchema raw
+
+        test <@ not parsed.IsValid @>
+        test <@ parsed.ErrorsFor "age" = [ SchemaError.Required ] @>
