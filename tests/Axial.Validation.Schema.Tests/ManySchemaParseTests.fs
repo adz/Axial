@@ -23,6 +23,12 @@ module ManySchemaParseTests =
         |> Schema.many "contacts" _.Contacts contactMethodSchema
         |> Schema.build
 
+    let private constrainedCustomerSchema =
+        Schema.recordFor<Customer, _> (fun name contacts -> { Name = name; Contacts = contacts })
+        |> Schema.field "name" _.Name (Value.text |> Value.withConstraint SchemaConstraint.required)
+        |> Schema.manyWith [ SchemaConstraint.minCount 1; SchemaConstraint.maxCount 2 ] "contacts" _.Contacts contactMethodSchema
+        |> Schema.build
+
     let private validContact kind value =
         RawInput.Object(Map.ofList [ "kind", RawInput.Scalar kind; "value", RawInput.Scalar value ])
 
@@ -48,6 +54,65 @@ module ManySchemaParseTests =
 
         test <@ parsed.IsValid @>
         test <@ parsed.Model = { Name = "Ada"; Contacts = [] } @>
+
+    [<Fact>]
+    let ``parse accepts a collection whose item count satisfies field constraints`` () =
+        let raw =
+            RawInput.Object(
+                Map.ofList
+                    [ "name", RawInput.Scalar "Ada"
+                      "contacts",
+                      RawInput.Many
+                          [ validContact "email" "ada@example.com"
+                            validContact "phone" "+61 400 000 000" ] ]
+            )
+
+        let parsed = Input.parse constrainedCustomerSchema raw
+
+        test <@ parsed.IsValid @>
+        test
+            <@
+                parsed.Model =
+                    { Name = "Ada"
+                      Contacts =
+                        [ { Kind = "email"; Value = "ada@example.com" }
+                          { Kind = "phone"; Value = "+61 400 000 000" } ] }
+            @>
+
+    [<Fact>]
+    let ``parse reports min count constraint failures at the collection field path`` () =
+        let raw = RawInput.Object(Map.ofList [ "name", RawInput.Scalar "Ada"; "contacts", RawInput.Many [] ])
+
+        let parsed = Input.parse constrainedCustomerSchema raw
+
+        test <@ not parsed.IsValid @>
+        test
+            <@
+                parsed.Errors = [ { Path = [ PathSegment.Name "contacts" ]
+                                    Error = SchemaError.CountOutOfRange("minCount 1", Some 0) } ]
+            @>
+
+    [<Fact>]
+    let ``parse reports max count constraint failures at the collection field path`` () =
+        let raw =
+            RawInput.Object(
+                Map.ofList
+                    [ "name", RawInput.Scalar "Ada"
+                      "contacts",
+                      RawInput.Many
+                          [ validContact "email" "ada@example.com"
+                            validContact "phone" "+61 400 000 000"
+                            validContact "sms" "+61 400 000 000" ] ]
+            )
+
+        let parsed = Input.parse constrainedCustomerSchema raw
+
+        test <@ not parsed.IsValid @>
+        test
+            <@
+                parsed.Errors = [ { Path = [ PathSegment.Name "contacts" ]
+                                    Error = SchemaError.CountOutOfRange("maxCount 2", Some 3) } ]
+            @>
 
     [<Fact>]
     let ``parse reports expected collection when the collection field raw input is object-shaped`` () =

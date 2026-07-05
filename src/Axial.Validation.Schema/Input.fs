@@ -255,7 +255,7 @@ module Input =
         | RawInput.Many rawItems ->
             match valueSchema.Shape with
             | NestedValueDefinition _ -> errorAt path SchemaError.ExpectedObject
-            | ManyValueDefinition collection -> parseMany path collection rawItems
+            | ManyValueDefinition collection -> parseMany path collection constraints rawItems
             | PrimitiveValueDefinition _
             | RefinedValueDefinition _ -> errorAt path SchemaError.ExpectedScalar
         | RawInput.Scalar text when hasRequiredConstraint constraints && String.IsNullOrWhiteSpace text ->
@@ -305,7 +305,16 @@ module Input =
         | RawInput.Scalar _
         | RawInput.Many _ -> errorAt path SchemaError.ExpectedObject
 
-    and private parseMany path (collection: CollectionValueDefinition) rawItems =
+    and private checkMany constraints path items =
+        match items |> runCheck constraints (SchemaConstraintCheck.sequence<obj> constraints) with
+        | Ok checkedItems -> Ok checkedItems
+        | Error errors ->
+            errors
+            |> List.map (diagnosticsAt path)
+            |> mergeErrors
+            |> Error
+
+    and private parseMany path (collection: CollectionValueDefinition) constraints rawItems =
         match collection.Item.Shape with
         | NestedValueDefinition itemModel ->
             let parsedItems =
@@ -315,10 +324,13 @@ module Input =
 
             match errors with
             | [] ->
-                parsedItems
-                |> List.map (function Ok value -> value | Error _ -> invalidOp "Unexpected parse error.")
-                |> collection.BoxItems
-                |> Ok
+                let items =
+                    parsedItems
+                    |> List.map (function Ok value -> value | Error _ -> invalidOp "Unexpected parse error.")
+
+                match checkMany constraints path items with
+                | Ok checkedItems -> checkedItems |> collection.BoxItems |> Ok
+                | Error diagnostics -> Error diagnostics
             | diagnostics -> Error(mergeErrors diagnostics)
         | PrimitiveValueDefinition _
         | RefinedValueDefinition _

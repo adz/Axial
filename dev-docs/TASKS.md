@@ -50,7 +50,7 @@ Work this queue from top to bottom.
 - [x] Parse every item and accumulate every item error.
 - [x] Prefix collection diagnostics with `PathSegment.Index`.
 - [x] Support raw redisplay paths such as `contacts[1].value`.
-- [ ] Add tests for nested success, nested failure, collection success, multiple item failures, and count constraints.
+- [x] Add tests for nested success, nested failure, collection success, multiple item failures, and count constraints.
 
 ## Phase 10: Constructor-Level Intrinsic Errors
 
