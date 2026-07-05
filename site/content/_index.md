@@ -25,6 +25,7 @@ Axial is a model for Result-based programs. Write structured checks with <code>C
 <a class="docs-chip" href="{{< relref "/docs/error-handling/" >}}">Error Handling</a>
 <a class="docs-chip" href="{{< relref "/docs/refined/" >}}">Refined</a>
 <a class="docs-chip" href="{{< relref "/docs/validation/" >}}">Validation</a>
+<a class="docs-chip" href="{{< relref "/docs/schema/" >}}">Schema</a>
 <a class="docs-chip" href="{{< relref "/docs/flow/" >}}">Flow</a>
 <a class="docs-chip" href="{{< relref "/docs/flow/dependencies.md" >}}">Managing dependencies</a>
 <a class="docs-chip" href="{{< relref "/docs/flow/semantics.md" >}}">Cold execution semantics</a>

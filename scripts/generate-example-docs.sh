@@ -107,6 +107,15 @@ render_example_section \
   "refined-value-schema"
 
 render_example_section \
+  "Policy Example" \
+  "This example shows Policy adapting every verification boundary — raw parsing, refined construction, schema input parsing, intrinsic validation, and contextual rules — into one workflow error type run with Flow.verify." \
+  "$root_dir/examples/Axial.Examples/Axial.Examples.fsproj" \
+  "$root_dir/examples/Axial.Examples/PolicyExamples.fs" \
+  "https://github.com/adz/Axial/blob/main/examples/Axial.Examples/PolicyExamples.fs" \
+  "AXIAL_EXAMPLE=policy dotnet run --project examples/Axial.Examples/Axial.Examples.fsproj --nologo" \
+  "policy"
+
+render_example_section \
   'Playground Example' \
   "This example shows the same core boundary across Flow using the normal direct-bind style inside each computation expression." \
   "$root_dir/examples/Axial.Playground/Axial.Playground.fsproj" \

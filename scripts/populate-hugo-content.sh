@@ -95,7 +95,7 @@ upsert_frontmatter "$ref_dir/_index.md" "weight" "30"
 # Sync guide directories from docs/ to site/content/docs/
 # We exclude reference, content, and the root AGENT.md/index.md for now
 rm -rf "$docs_dir"
-for dir in ecosystem error-handling flow patterns refined start validation; do
+for dir in ecosystem error-handling flow patterns refined schema start validation; do
   if [ -d "$root_dir/docs/$dir" ]; then
     mkdir -p "$docs_dir/$dir"
     cp -r "$root_dir/docs/$dir/"* "$docs_dir/$dir/"
@@ -148,6 +148,12 @@ Welcome to the Axial guides. Choose a section from the sidebar or start with [Ge
 <span class=\"label\">Type-safe boundaries</span>
 <h2><a href=\"./refined/\">Refined</a></h2>
 <p>Type-safe boundary logic with Parse, Refine, and the refine { } builder.</p>
+</section>
+
+<section class=\"docs-card\">
+<span class=\"label\">Portable model schemas</span>
+<h2><a href=\"./schema/\">Schema</a></h2>
+<p>Model schemas for input parsing, redisplay, contextual rules, policies, and metadata interpreters.</p>
 </section>
 
 <section class=\"docs-card\">

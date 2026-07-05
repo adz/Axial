@@ -308,6 +308,21 @@ let pageSpecs = [
         Intro = "This page shows the core `Schema<'model>`, `ValueSchema<'value>`, and `Field<'model, 'value>` types. Schemas describe trusted model and value structure for interpreters such as input parsing, validation, codecs, JSON Schema, UI, and documentation. The core schema package stays independent of workflow execution, diagnostics, raw input, and validation interpreters."
         SymbolIds = [
             "Core types", ["T:Axial.Schema.Schema`1"; "T:Axial.Schema.ValueSchema`1"; "T:Axial.Schema.Field`2"]
+            "Inspection", ["T:Axial.Schema.ValueShape"; "T:Axial.Schema.ValueDescription"; "T:Axial.Schema.FieldDescription"; "T:Axial.Schema.ModelDescription"; "M:Axial.Schema.Inspect.model"; "M:Axial.Schema.Inspect.value"; "M:Axial.Schema.Inspect.field"]
+        ]
+        Alias = None
+    }
+    {
+        OutPath = ["schema"; "interpreters"; "_index.md"]
+        Title = "Schema Interpreters"
+        Description = "Source-documented schema input parsing, validation, and rules interpreters."
+        Intro = "This page shows the `Axial.Validation.Schema` interpreter surface: raw boundary input, schema input parsing into `ParsedInput`, intrinsic validation of existing models, and contextual rule sets over already-trusted models. Core schema metadata stays in [Schema](../); these interpreters attach diagnostics, raw input, and redisplay behavior to it."
+        SymbolIds = [
+            "Raw input", ["T:Axial.Validation.Schema.RawInput"; "T:Axial.Validation.Schema.JsonLikeValue"; "M:Axial.Validation.Schema.RawInputModule.ofMap"; "M:Axial.Validation.Schema.RawInputModule.ofNameValues"; "M:Axial.Validation.Schema.RawInputModule.ofCliArgs"; "M:Axial.Validation.Schema.RawInputModule.ofJsonLikeValue"; "M:Axial.Validation.Schema.RawInputModule.ofConfiguration"; "M:Axial.Validation.Schema.RawInputModule.redisplay"; "M:Axial.Validation.Schema.RawInputModule.redisplayPath"]
+            "Input parsing", ["T:Axial.Validation.Schema.ParsedInput`2"; "M:Axial.Validation.Schema.Input.parse"; "M:Axial.Validation.Schema.Input.parseWith"; "T:Axial.Validation.Schema.Input.Options"; "M:Axial.Validation.Schema.ParsedInputModule.mapErrors"]
+            "Errors", ["T:Axial.Validation.Schema.SchemaError"]
+            "Model validation", ["M:Axial.Validation.Schema.Validation.validate"]
+            "Rules", ["T:Axial.Validation.Schema.RuleSet`2"; "M:Axial.Validation.Schema.Rules.create"; "M:Axial.Validation.Schema.Rules.concat"; "M:Axial.Validation.Schema.Rules.at"; "M:Axial.Validation.Schema.Rules.failAt"; "M:Axial.Validation.Schema.Rules.custom"; "M:Axial.Validation.Schema.Rules.validate"; "M:Axial.Validation.Schema.Rules.apply"]
         ]
         Alias = None
     }

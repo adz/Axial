@@ -28,6 +28,12 @@ Welcome to the Axial guides. Choose a section from the sidebar or start with [Ge
 </section>
 
 <section class="docs-card">
+<span class="label">Portable model schemas</span>
+<h2><a href="./schema/">Schema</a></h2>
+<p>Model schemas for input parsing, redisplay, contextual rules, policies, and metadata interpreters.</p>
+</section>
+
+<section class="docs-card">
 <span class="label">Accumulating validation</span>
 <h2><a href="./validation/">Validation</a></h2>
 <p>Sibling failure accumulation with Validation, Diagnostics, validate { }, and Validation tutorials.</p>

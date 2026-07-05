@@ -151,16 +151,16 @@ readability and compile-error quality for constraint blocks.
 
 ## Phase 17: Documentation And Examples
 
-- [ ] Update architecture docs after the direction is accepted.
-- [ ] Update source comments for changed public APIs.
-- [ ] Write a guide: ActiveModel ergonomics, F# trusted construction.
-- [ ] Write a guide: Schema vs Input vs Check vs Rules vs Policy.
-- [ ] Write a guide: refined/domain value schemas.
-- [ ] Write a guide: raw redisplay and field errors.
-- [ ] Write a guide: contextual rules and Flow policies.
-- [ ] Write examples for HTTP form-like input, CLI input, JSON/config input, nested models, collections, and workflow policy.
-- [ ] Regenerate reference docs when public APIs exist.
-- [ ] Run `bash scripts/validate-docs.sh` after user-facing docs or API comments change.
+- [x] Update architecture docs after the direction is accepted.
+- [x] Update source comments for changed public APIs.
+- [x] Write a guide: ActiveModel ergonomics, F# trusted construction.
+- [x] Write a guide: Schema vs Input vs Check vs Rules vs Policy.
+- [x] Write a guide: refined/domain value schemas.
+- [x] Write a guide: raw redisplay and field errors.
+- [x] Write a guide: contextual rules and Flow policies.
+- [x] Write examples for HTTP form-like input, CLI input, JSON/config input, nested models, collections, and workflow policy.
+- [x] Regenerate reference docs when public APIs exist.
+- [x] Run `bash scripts/validate-docs.sh` after user-facing docs or API comments change.
 
 ## Phase 18: Cleanup
 

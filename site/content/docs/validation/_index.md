@@ -23,6 +23,7 @@ Result -> Validation
 - [Tutorials](./tutorials/): validate independent fields and return all sibling failures.
 - [Validate Builder](./validate-builder/): accumulating validation with `validate {}` and `and!`.
 - [Schema Boundaries](./schema-boundaries/): choose constructor invariants or contextual rules.
+- [Schema section]({{< relref "/schema/" >}}): portable model schemas, input parsing, redisplay, rules, and policies.
 - [Diagnostics](./diagnostics/): structured error graphs and rendering.
 
 ## Interop
