@@ -425,7 +425,19 @@ module ApiShapeTests =
 
         moduleTypeFromAssembly "Axial.Validation.Schema" "Axial.Validation.Schema.Rules"
         |> publicStaticMemberNames
-        |> assertContainsAll [ "empty"; "create"; "ofSeq"; "ofList"; "append"; "concat" ]
+        |> assertContainsAll
+            [ "empty"
+              "fail"
+              "failAt"
+              "create"
+              "ofSeq"
+              "ofList"
+              "at"
+              "name"
+              "key"
+              "index"
+              "append"
+              "concat" ]
 
     [<Fact>]
     let ``schema contextual rules are reserved for validation schema package`` () =

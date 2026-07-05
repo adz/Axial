@@ -31,9 +31,27 @@ type RuleSet<'model, 'error> =
 /// </remarks>
 [<RequireQualifiedAccess>]
 module Rules =
+    let private diagnosticsAt path diagnostics =
+        let rec attach path graph =
+            match path with
+            | [] -> graph
+            | segment :: rest ->
+                {
+                    Errors = []
+                    Children = Map.add segment (attach rest graph) Map.empty
+                }
+
+        attach path diagnostics
+
     let private ensureRule rule =
         if isNull (box rule) then
             nullArg (nameof rule)
+
+    let private ensurePath path =
+        if isNull (box path) then
+            nullArg (nameof path)
+
+        path
 
     let private ensureRuleSet name (ruleSet: RuleSet<'model, 'error>) =
         if isNull (box ruleSet) then
@@ -59,6 +77,27 @@ module Rules =
     let empty<'model, 'error> : RuleSet<'model, 'error> =
         { Rules = [] }
 
+    /// <summary>Creates a rule failure attached to the current diagnostics node.</summary>
+    /// <param name="error">The rule error to attach.</param>
+    /// <example>
+    /// <code>
+    /// let result = Rules.fail HighPriorityNeedsAssignee
+    /// </code>
+    /// </example>
+    let fail (error: 'error) : Result<unit, Diagnostics<'error>> =
+        Error(Diagnostics.singleton error)
+
+    /// <summary>Creates a rule failure attached to the supplied diagnostics path.</summary>
+    /// <param name="path">The diagnostics path that should receive the failure.</param>
+    /// <param name="error">The rule error to attach.</param>
+    /// <example>
+    /// <code>
+    /// let result = Rules.failAt [ PathSegment.Name "assignee" ] HighPriorityNeedsAssignee
+    /// </code>
+    /// </example>
+    let failAt (path: Path) (error: 'error) : Result<unit, Diagnostics<'error>> =
+        Error(Diagnostics.singleton error |> diagnosticsAt (ensurePath path))
+
     /// <summary>Creates a contextual rule set from one executable model rule.</summary>
     /// <param name="rule">A rule that accepts the model or returns path-aware diagnostics.</param>
     let create
@@ -80,6 +119,68 @@ module Rules =
         (rules: ('model -> Result<unit, Diagnostics<'error>>) list)
         : RuleSet<'model, 'error> =
         ofSeq rules
+
+    /// <summary>Scopes a rule's diagnostics under the supplied path when the rule fails.</summary>
+    /// <param name="path">The path segments to prefix to the rule's diagnostics.</param>
+    /// <param name="rule">The rule whose failures should be scoped.</param>
+    /// <example>
+    /// <code>
+    /// let scoped = needsReview |> Rules.at [ PathSegment.Name "approval"; PathSegment.Name "reviewer" ]
+    /// </code>
+    /// </example>
+    let at
+        (path: Path)
+        (rule: 'model -> Result<unit, Diagnostics<'error>>)
+        : 'model -> Result<unit, Diagnostics<'error>> =
+        let path = ensurePath path
+        ensureRule rule
+
+        fun model ->
+            match rule model with
+            | Ok () -> Ok ()
+            | Error diagnostics -> Error(diagnosticsAt path diagnostics)
+
+    /// <summary>Scopes a rule's diagnostics under a named field when the rule fails.</summary>
+    /// <param name="name">The field name to prefix to the rule's diagnostics.</param>
+    /// <param name="rule">The rule whose failures should be scoped.</param>
+    /// <example>
+    /// <code>
+    /// let scoped = needsAssignee |> Rules.name "assignee"
+    /// </code>
+    /// </example>
+    let name
+        (name: string)
+        (rule: 'model -> Result<unit, Diagnostics<'error>>)
+        : 'model -> Result<unit, Diagnostics<'error>> =
+        at [ PathSegment.Name name ] rule
+
+    /// <summary>Scopes a rule's diagnostics under a keyed branch when the rule fails.</summary>
+    /// <param name="key">The branch key to prefix to the rule's diagnostics.</param>
+    /// <param name="rule">The rule whose failures should be scoped.</param>
+    /// <example>
+    /// <code>
+    /// let scoped = needsReview |> Rules.key "regional"
+    /// </code>
+    /// </example>
+    let key
+        (key: string)
+        (rule: 'model -> Result<unit, Diagnostics<'error>>)
+        : 'model -> Result<unit, Diagnostics<'error>> =
+        at [ PathSegment.Key key ] rule
+
+    /// <summary>Scopes a rule's diagnostics under an indexed branch when the rule fails.</summary>
+    /// <param name="index">The branch index to prefix to the rule's diagnostics.</param>
+    /// <param name="rule">The rule whose failures should be scoped.</param>
+    /// <example>
+    /// <code>
+    /// let scoped = needsReview |> Rules.index 0
+    /// </code>
+    /// </example>
+    let index
+        (index: int)
+        (rule: 'model -> Result<unit, Diagnostics<'error>>)
+        : 'model -> Result<unit, Diagnostics<'error>> =
+        at [ PathSegment.Index index ] rule
 
     /// <summary>Appends two contextual rule sets, preserving left-to-right rule order.</summary>
     let append

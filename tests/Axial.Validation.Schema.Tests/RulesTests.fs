@@ -29,6 +29,11 @@ module RulesTests =
         else
             Ok ()
 
+    let private flattenedErrors result =
+        match result with
+        | Ok () -> []
+        | Error diagnostics -> Diagnostics.flatten diagnostics
+
     [<Fact>]
     let ``explicit Rules API creates an empty contextual rule set`` () =
         let ruleSet = Rules.empty<SupportTicket, TicketRuleError>
@@ -43,6 +48,60 @@ module RulesTests =
                   Rules.ofList [ needsReview ] ]
 
         test <@ ruleSet.GetType().Name.StartsWith("RuleSet") @>
+
+    [<Fact>]
+    let ``explicit Rules API creates field-attached failures`` () =
+        let result =
+            Rules.failAt [ PathSegment.Name "assignee" ] HighPriorityNeedsAssignee
+
+        test
+            <@
+                flattenedErrors result =
+                    [ { Path = [ PathSegment.Name "assignee" ]
+                        Error = HighPriorityNeedsAssignee } ]
+            @>
+
+    [<Fact>]
+    let ``explicit Rules API scopes rule failures under a path`` () =
+        let scopedRule =
+            Rules.at [ PathSegment.Name "approval"; PathSegment.Name "reviewer" ] needsReview
+
+        let ticket =
+            {
+                Priority = 5
+                HasAssignee = true
+            }
+
+        test
+            <@
+                flattenedErrors (scopedRule ticket) =
+                    [ { Path = [ PathSegment.Name "approval"; PathSegment.Name "reviewer" ]
+                        Error = ManualReviewRequired } ]
+            @>
+
+    [<Fact>]
+    let ``explicit Rules API scopes rule failures under field key and index segments`` () =
+        let scopedRule =
+            needsReview
+            |> Rules.index 0
+            |> Rules.key "regional"
+            |> Rules.name "approvals"
+
+        let ticket =
+            {
+                Priority = 5
+                HasAssignee = true
+            }
+
+        test
+            <@
+                flattenedErrors (scopedRule ticket) =
+                    [ { Path =
+                            [ PathSegment.Name "approvals"
+                              PathSegment.Key "regional"
+                              PathSegment.Index 0 ]
+                        Error = ManualReviewRequired } ]
+            @>
 
     [<Fact>]
     let ``explicit Rules API rejects null rule functions`` () =
