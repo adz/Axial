@@ -23,6 +23,11 @@ For schema boundaries, use `SchemaError` as the one interpreter error shape. Low
 `SchemaError.ofParseError`, `SchemaError.ofRefinementError`, or `SchemaError.ofCheckFailure`; render with
 `SchemaError.render` or `ParsedInput.renderErrors`; map to application errors with `ParsedInput.mapErrors`.
 
+For built-in scalar refined values in schema fields, use `Axial.Validation.Schema.RefinedSchema`:
+`RefinedSchema.nonBlankString`, `RefinedSchema.boundedString min max`, `RefinedSchema.slug`,
+`RefinedSchema.positiveInt`, `RefinedSchema.nonNegativeInt`, `RefinedSchema.negativeInt`, and
+`RefinedSchema.nonPositiveInt`.
+
 ### 1. Handling Failures
 Use `Check` for executable value constraints, `Predicate` for local boolean tests, and `Result` for fail-fast values. `Check.*` helpers return `Result<unit, CheckFailure list>`; `Result.guard`, named `Result.*` guards, and extraction helpers preserve values or change the success shape.
 

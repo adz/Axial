@@ -33,10 +33,21 @@ This page shows the `Axial.Validation.Schema` interpreter surface: raw boundary 
 - [`Validation.Schema.Input.parseWith`](./m-validation-schema-input-parsewith.md): Parses raw boundary input through a trusted model schema using custom input parser options.
 - [`Validation.Schema.Input.Options`](./t-validation-schema-input-options.md): Options that customize how raw input is parsed through a schema.
 - [`Validation.Schema.ParsedInput.mapErrors`](./m-validation-schema-parsedinput-maperrors.md): Maps a failed parse&#39;s errors to a domain or application error type, preserving the raw input and paths.
+- [`Validation.Schema.ParsedInput.renderErrors`](./m-validation-schema-parsedinput-rendererrors.md): Renders a failed schema parse as default English display strings, preserving diagnostics paths.
 
 ## Errors
 
 - [`Validation.Schema.SchemaError`](./t-validation-schema-schemaerror.md): Schema input, model validation, and contextual rule failures attached to diagnostics paths.
+
+## Refined catalog schemas
+
+- [`Validation.Schema.RefinedSchema.nonBlankString`](./m-validation-schema-refinedschema-nonblankstring.md): Describes a non-blank string as a schema refined value over required text.
+- [`Validation.Schema.RefinedSchema.boundedString`](./m-validation-schema-refinedschema-boundedstring.md): Describes a bounded string as a schema refined value over required text with inclusive length bounds.
+- [`Validation.Schema.RefinedSchema.slug`](./m-validation-schema-refinedschema-slug.md): Describes an ASCII slug as a schema refined value over required text with the built-in slug pattern.
+- [`Validation.Schema.RefinedSchema.positiveInt`](./m-validation-schema-refinedschema-positiveint.md): Describes a positive integer as a schema refined value over an integer greater than zero.
+- [`Validation.Schema.RefinedSchema.nonNegativeInt`](./m-validation-schema-refinedschema-nonnegativeint.md): Describes a non-negative integer as a schema refined value over an integer greater than or equal to zero.
+- [`Validation.Schema.RefinedSchema.negativeInt`](./m-validation-schema-refinedschema-negativeint.md): Describes a negative integer as a schema refined value over an integer less than zero.
+- [`Validation.Schema.RefinedSchema.nonPositiveInt`](./m-validation-schema-refinedschema-nonpositiveint.md): Describes a non-positive integer as a schema refined value over an integer less than or equal to zero.
 
 ## Model validation
 

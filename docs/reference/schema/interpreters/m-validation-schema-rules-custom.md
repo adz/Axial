@@ -1,7 +1,7 @@
 ---
 title: "Validation.Schema.Rules.custom"
 linkTitle: "custom"
-weight: 2405
+weight: 2505
 ---
 
 Creates a custom schema rule error with a stable code and display message.

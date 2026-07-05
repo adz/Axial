@@ -10,6 +10,24 @@ This page shows the built-in refined values available from `Axial.Refined` and h
 
 The package stays named `Axial.Refined`. It is not only a type catalog: it also owns primitive parsing, smart constructors, the `refine {}` builder, and parser-choice helpers.
 
+When the same scalar catalog value is used as a schema field, use the schema integration catalog in
+`Axial.Validation.Schema`:
+
+```fsharp
+open Axial.Schema
+open Axial.Validation.Schema
+
+let productSchema =
+    Schema.recordFor<Product, _> (fun name slug quantity ->
+        { Name = name; Slug = slug; Quantity = quantity })
+    |> Schema.field "name" _.Name RefinedSchema.nonBlankString
+    |> Schema.field "slug" _.Slug RefinedSchema.slug
+    |> Schema.field "quantity" _.Quantity RefinedSchema.positiveInt
+    |> Schema.build
+```
+
+The schema catalog lives outside `Axial.Refined` so the refined-value package stays usable without any schema dependency.
+
 ## Module Layout
 
 Open `Axial.Refined` for common type names and use submodules for discovery:

@@ -1,7 +1,7 @@
 ---
 title: "Validation.Schema.Rules.failAt"
 linkTitle: "failAt"
-weight: 2404
+weight: 2504
 ---
 
 Creates a rule failure attached to the supplied diagnostics path.

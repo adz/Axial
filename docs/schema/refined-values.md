@@ -7,8 +7,40 @@ description: Domain values like Email as portable field schemas.
 
 # Refined Value Schemas
 
+This page shows how domain values such as `Email`, `Quantity`, and `ContactName` become portable schema fields.
+
 A refined value schema pairs a raw representation with a domain type, so fields can carry real domain values — `Email`,
 `Quantity`, `ContactName` — while boundary interpreters keep working with the raw representation.
+
+## Built-In Refined Catalog Schemas
+
+`Axial.Validation.Schema` includes schema values for the scalar `Axial.Refined` catalog. They live in this integration
+package so `Axial.Refined` stays independent of `Axial.Schema`.
+
+```fsharp
+open Axial.Refined
+open Axial.Schema
+open Axial.Validation.Schema
+
+type Product =
+    {
+        Name: NonBlankString
+        Slug: Slug
+        Quantity: PositiveInt
+    }
+
+let productSchema =
+    Schema.recordFor<Product, _> (fun name slug quantity ->
+        { Name = name; Slug = slug; Quantity = quantity })
+    |> Schema.field "name" _.Name RefinedSchema.nonBlankString
+    |> Schema.field "slug" _.Slug RefinedSchema.slug
+    |> Schema.field "quantity" _.Quantity RefinedSchema.positiveInt
+    |> Schema.build
+```
+
+Available scalar schemas include `RefinedSchema.nonBlankString`, `RefinedSchema.boundedString min max`,
+`RefinedSchema.slug`, `RefinedSchema.positiveInt`, `RefinedSchema.nonNegativeInt`, `RefinedSchema.negativeInt`, and
+`RefinedSchema.nonPositiveInt`.
 
 ## Authoring
 

@@ -1,7 +1,7 @@
 ---
 title: "Validation.Schema.Rules.concat"
 linkTitle: "concat"
-weight: 2402
+weight: 2502
 ---
 
 Combines contextual rule sets in sequence, preserving rule order.

@@ -1,7 +1,7 @@
 ---
 title: "Validation.Schema.Rules.at"
 linkTitle: "at"
-weight: 2403
+weight: 2503
 ---
 
 Scopes a rule&#39;s diagnostics under the supplied path when the rule fails.
