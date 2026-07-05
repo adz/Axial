@@ -423,6 +423,10 @@ module ApiShapeTests =
         |> publicStaticMemberNames
         |> assertContainsAll [ "fromUnderlying"; "text"; "ordered" ]
 
+        moduleTypeFromAssembly "Axial.Validation.Schema" "Axial.Validation.Schema.Rules"
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "empty"; "create"; "ofSeq"; "ofList"; "append"; "concat" ]
+
     [<Fact>]
     let ``schema contextual rules are reserved for validation schema package`` () =
         let forbiddenCoreRuleModules =

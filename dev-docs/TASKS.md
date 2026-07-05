@@ -76,7 +76,7 @@ Work this queue from top to bottom.
 
 - [x] Keep schema/contextual rules in `Axial.Validation.Schema` unless a separate rules package is deliberately created.
 - [x] Define `RuleSet<'model, 'error>`.
-- [ ] Implement `rules<'model> { ... }` or explicit core API.
+- [x] Implement `rules<'model> { ... }` or explicit core API.
 - [ ] Support field/path attachment for rule failures.
 - [ ] Support custom code and message.
 - [ ] Support rules over already-trusted models.
