@@ -2,8 +2,6 @@
 weight: 40
 title: Stream (FlowStream)
 description: Effectful, pull-based asynchronous streams in Axial.
-aliases:
-  - /docs/state-concurrency/stream/
 type: docs
 ---
 

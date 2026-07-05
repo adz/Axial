@@ -2,8 +2,6 @@
 weight: 40
 title: Building a Base Runtime
 description: Supplying clock, logging, random, GUID, and environment-variable services explicitly.
-aliases:
-  - /docs/managing-dependencies/building-a-base-runtime/
 type: docs
 ---
 

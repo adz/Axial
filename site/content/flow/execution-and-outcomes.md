@@ -2,8 +2,6 @@
 weight: 20
 title: Execution and Outcomes
 description: How to start flows and handle Exit values.
-aliases:
-  - /docs/start/execution-and-outcomes/
 type: docs
 ---
 

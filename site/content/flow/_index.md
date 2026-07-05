@@ -6,11 +6,6 @@ weight: 10
 menu:
   main:
     weight: 6
-aliases:
-  - /docs/flow/
-  - /docs/core-model/
-  - /docs/managing-dependencies/
-  - /docs/state-concurrency/
 ---
 
 <div class="docs-home-container axial-landing">

@@ -2,8 +2,6 @@
 weight: 5
 title: "Tutorial: Explicit Dependencies First"
 description: Start with plain function arguments and interfaces before introducing an environment.
-aliases:
-  - /docs/tutorials/explicit-dependencies/
 type: docs
 ---
 

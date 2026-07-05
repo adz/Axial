@@ -2,8 +2,6 @@
 weight: 50
 title: Service Provider Boundaries
 description: Keeping IServiceProvider at the host edge.
-aliases:
-  - /docs/managing-dependencies/service-provider-boundaries/
 type: docs
 ---
 

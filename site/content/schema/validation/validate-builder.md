@@ -2,8 +2,6 @@
 weight: 30
 title: Validate CE
 description: Accumulating validation with the validate { } builder.
-aliases:
-  - /docs/validation-results/validate-ce/
 type: docs
 ---
 

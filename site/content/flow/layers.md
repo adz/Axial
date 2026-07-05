@@ -2,8 +2,6 @@
 weight: 20
 title: Layers
 description: Provisioning explicit environments with Layer and Flow.provide.
-aliases:
-  - /docs/managing-dependencies/layers/
 type: docs
 ---
 

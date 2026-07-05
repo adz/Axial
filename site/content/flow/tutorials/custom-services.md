@@ -2,8 +2,6 @@
 weight: 40
 title: "Tutorial: Creating Reusable Services"
 description: Define your own named service contracts and consume them through IHas and Service.get.
-aliases:
-  - /docs/tutorials/custom-services/
 type: docs
 ---
 

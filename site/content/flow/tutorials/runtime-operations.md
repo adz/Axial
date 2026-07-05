@@ -2,8 +2,6 @@
 weight: 20
 title: "Tutorial: Runtime Operations"
 description: Timeout, retry, cancellation, and runtime annotations.
-aliases:
-  - /docs/tutorials/runtime-operations/
 type: docs
 ---
 

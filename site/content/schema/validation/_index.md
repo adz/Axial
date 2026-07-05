@@ -3,9 +3,6 @@ weight: 30
 title: Validation
 type: docs
 description: Accumulating sibling failures with Validation and Diagnostics.
-aliases:
-  - /docs/validation/
-  - /parse/validation/
 ---
 
 

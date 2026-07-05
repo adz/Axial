@@ -3,9 +3,6 @@ weight: 25
 title: Refined
 type: docs
 description: Type-safe boundaries with Parse, Refine, and the refine {} builder.
-aliases:
-  - /docs/refined/
-  - /parse/refined/
 ---
 
 

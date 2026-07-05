@@ -2,8 +2,6 @@
 weight: 30
 title: Scopes and Resources
 description: Deterministic cleanup with Scope.
-aliases:
-  - /docs/managing-dependencies/scopes-and-resources/
 type: docs
 ---
 

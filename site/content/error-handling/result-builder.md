@@ -2,8 +2,6 @@
 weight: 20
 title: Result CE
 description: Fail-fast composition with the result { } builder.
-aliases:
-  - /docs/validation-results/result-ce/
 type: docs
 ---
 

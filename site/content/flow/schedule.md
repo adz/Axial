@@ -2,8 +2,6 @@
 weight: 20
 title: Schedule (Retry & Repeat)
 description: Declarative policies for retrying failures and repeating successes in Axial.
-aliases:
-  - /docs/state-concurrency/schedule/
 type: docs
 ---
 

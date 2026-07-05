@@ -2,8 +2,6 @@
 weight: 10
 title: Explicit Services
 description: Choosing between records, IHas service contracts, and Service accessors.
-aliases:
-  - /docs/managing-dependencies/explicit-services/
 type: docs
 ---
 

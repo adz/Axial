@@ -2,8 +2,6 @@
 weight: 20
 title: Execution Semantics
 description: Exact execution rules for Flow.
-aliases:
-  - /docs/core-model/semantics/
 type: docs
 ---
 

@@ -2,8 +2,6 @@
 weight: 30
 title: Task and Async Interop
 description: Direct binding rules for async and task work in Axial.
-aliases:
-  - /docs/core-model/task-async-interop/
 type: docs
 ---
 
