@@ -13,6 +13,14 @@ module SchemaValidationTests =
         { Primary: string
           Secondary: string }
 
+    type private Address =
+        { Street: string
+          City: string }
+
+    type private Customer =
+        { Name: string
+          Address: Address }
+
     let private schema =
         Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
         |> Schema.field
@@ -120,6 +128,45 @@ module SchemaValidationTests =
                                 Map.ofList
                                     [ PathSegment.Name "primary-on-wire",
                                       Diagnostics.singleton (SchemaError.NotOneOf "secondary-value") ]
+                        }
+            @>
+
+    [<Fact>]
+    let ``validate checks nested model values through their nested schema`` () =
+        let addressSchema =
+            Schema.recordFor<Address, _> (fun street city -> { Street = street; City = city })
+            |> Schema.field "street" _.Street (Value.text |> Value.withConstraint SchemaConstraint.required)
+            |> Schema.field "city" _.City (Value.text |> Value.withConstraint SchemaConstraint.required)
+            |> Schema.build
+
+        let customerSchema =
+            Schema.recordFor<Customer, _> (fun name address -> { Name = name; Address = address })
+            |> Schema.field "name" _.Name (Value.text |> Value.withConstraint SchemaConstraint.required)
+            |> Schema.nested "address" _.Address addressSchema
+            |> Schema.build
+
+        let validation =
+            Axial.Validation.Schema.Validation.validate
+                customerSchema
+                { Name = "Ada"
+                  Address = { Street = "1 Main Street"; City = "" } }
+
+        test
+            <@
+                Axial.Validation.Validation.toResult validation =
+                    Error
+                        {
+                            Errors = []
+                            Children =
+                                Map.ofList
+                                    [ PathSegment.Name "address",
+                                      {
+                                          Errors = []
+                                          Children =
+                                              Map.ofList
+                                                  [ PathSegment.Name "city",
+                                                    Diagnostics.singleton SchemaError.Required ]
+                                      } ]
                         }
             @>
 
