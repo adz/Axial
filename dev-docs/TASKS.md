@@ -19,7 +19,7 @@ Work this queue from top to bottom.
 - [x] Define `ParsedInput<'model, 'error>`.
 - [x] Add helpers:
   `IsValid`, `Model`, `TryModel`, `Errors`, `ErrorsFor`, `Input`, and `Result`.
-- [ ] Implement `Input.parse : Schema<'model> -> RawInput -> ParsedInput<'model, SchemaError>`.
+- [x] Implement `Input.parse : Schema<'model> -> RawInput -> ParsedInput<'model, SchemaError>`.
 - [ ] Make `required` reject missing raw fields and missing/blank scalar values.
 - [ ] Ensure field errors accumulate applicatively.
 - [ ] Ensure failed parses retain raw input.
