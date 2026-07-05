@@ -1,7 +1,7 @@
 # Axial
 
 > [!WARNING]
-> Axial 0.7.0 is the first planned release under the Axial name as split packages, renamed from monolithic FsFlow. The new package line continues in `Axial.Flow`, `Axial.ErrorHandling`, `Axial.Refined`, `Axial.Validation`, and the umbrella `Axial` package. The direction is designed to keep parts usable independently and reduce cognitive load.
+> Axial 0.7.0 is the first planned release under the Axial name as split packages, renamed from monolithic FsFlow. The new package line continues in `Axial.Flow`, `Axial.ErrorHandling`, `Axial.Refined`, `Axial.Schema`, `Axial.Validation`, `Axial.Validation.Schema`, and the umbrella `Axial` package. The direction is designed to keep parts usable independently and reduce cognitive load.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/content/img/axial-readme-dark.svg">
@@ -18,6 +18,12 @@ However, the stronger goal of Axial is to preference 'parse' over 'error handlin
 and `Parse` in `Axial.Refined`. You'll find these help by providing base parsers for types (like `Parse.int`) but
 also introducing new types to represent the refinement, like `Refined.NonEmptyList`. Use `refine {}` for an
 elegant way of refining.
+
+For whole boundary models, `Axial.Schema` describes a trusted model once — fields, external names, and portable
+constraints — and `Axial.Validation.Schema` interprets that schema to parse raw input (HTTP form-like, CLI, JSON-like,
+configuration) into trusted models with path-aware diagnostics and raw redisplay, re-validate existing values, and run
+contextual rules over already-trusted models. The same schema also drives non-validation interpreters such as JSON
+Schema, documentation, and UI metadata through `Inspect`.
 
 Finally, Axial gives you an orchestrating workflow concept in `Axial.Flow`. It is useful in code at the boundary
 of your app, which often needs environment access, async work, task interop, or runtime policy. `Policy` directly
@@ -88,6 +94,7 @@ Axial stays close to standard F# and .NET:
 - On .Net, `flow { ... }` also binds to `Task`, `ValueTask`, `Task<_>`, `ValueTask<_>`, and `ColdTask`
 - `result {}` keeps fail-fast pure code readable
 - `validate {}` keeps sibling validation accumulation explicit
+- `Schema` + `Input.parse` turn raw boundary input into trusted models or path-aware diagnostics — invalid models are never constructed
 
 Because tasks are hot, Axial includes `ColdTask`: a small wrapper around `CancellationToken -> Task`.
 `flow` handles token passing for you and keeps reruns explicit.

@@ -5,6 +5,10 @@
 - Renamed the fail-fast package from `Axial.Result` to `Axial.ErrorHandling`, keeping `Check`, focused `Result` helpers, collection traversal, and `result {}` together.
 - Added `Axial.Refined` for parse helpers, initial refined value types, and `refine {}`.
 - Added environment-aware `Policy` helpers and `Flow.verify` for running pure checks at workflow boundaries.
+- Added `Axial.Schema`: portable `Schema<'model>` metadata authored with the progressive typed builder (`Schema.recordFor ... |> Schema.field ... |> Schema.build`), primitive field shorthands, refined/domain value schemas via `Value.refined`, nested models, collections, formats, and inspectable `SchemaConstraint` metadata.
+- Added the public `Inspect` API (`Inspect.model`, `Inspect.value`, `Inspect.field`) describing built schemas as metadata trees for JSON Schema, documentation, and UI interpreters without running validation.
+- Added `Axial.Validation.Schema`: source-agnostic `RawInput` with adapters (map, name/value, CLI args, JSON-like, configuration), `Input.parse` into `ParsedInput` with raw redisplay and field error lookup, `SchemaError` diagnostics, constructor-level intrinsic errors, `Validation.validate` for existing models, and contextual `RuleSet`/`Rules.apply` over already-trusted models.
+- Added a Schema docs section (trusted construction, choosing a tool, refined values, redisplay and field errors, rules and policies, input sources) and a runnable policy example.
 
 ## 0.7.0 - 2026-06-21
 
