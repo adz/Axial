@@ -131,6 +131,54 @@ module InputParseTests =
         test <@ parsed.ErrorsFor "email" = [ SchemaError.Required ] @>
 
     [<Fact>]
+    let ``parse does not call the model constructor when a field fails to parse`` () =
+        let mutable constructorCalls = 0
+
+        let countingSchema =
+            Schema.recordFor<Signup, _> (fun email age ->
+                constructorCalls <- constructorCalls + 1
+                { Email = email; Age = age })
+            |> Schema.field "email" _.Email (Value.text |> Value.withConstraint SchemaConstraint.required)
+            |> Schema.int "age" _.Age
+            |> Schema.build
+
+        let raw =
+            RawInput.Object(
+                Map.ofList
+                    [ "email", RawInput.Scalar "ada@example.com"
+                      "age", RawInput.Scalar "not-an-int" ]
+            )
+
+        let parsed = Input.parse countingSchema raw
+
+        test <@ not parsed.IsValid @>
+        test <@ constructorCalls = 0 @>
+
+    [<Fact>]
+    let ``parse calls the model constructor exactly once when every field parses`` () =
+        let mutable constructorCalls = 0
+
+        let countingSchema =
+            Schema.recordFor<Signup, _> (fun email age ->
+                constructorCalls <- constructorCalls + 1
+                { Email = email; Age = age })
+            |> Schema.field "email" _.Email (Value.text |> Value.withConstraint SchemaConstraint.required)
+            |> Schema.int "age" _.Age
+            |> Schema.build
+
+        let raw =
+            RawInput.Object(
+                Map.ofList
+                    [ "email", RawInput.Scalar "ada@example.com"
+                      "age", RawInput.Scalar "42" ]
+            )
+
+        let parsed = Input.parse countingSchema raw
+
+        test <@ parsed.IsValid @>
+        test <@ constructorCalls = 1 @>
+
+    [<Fact>]
     let ``required reports blank non-text scalar as required`` () =
         let requiredAgeSchema =
             Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
