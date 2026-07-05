@@ -37,7 +37,7 @@ let signupSchema =
     |> Schema.fieldWith
         [ SchemaConstraint.required; SchemaConstraint.maxLength 254; SchemaConstraint.email ]
         "email" _.Email Value.text
-    |> Schema.fieldWith [ SchemaConstraint.atLeast 13 ] "age" _.Age Value.``int``
+    |> Schema.fieldWith [ SchemaConstraint.atLeast 13 ] "age" _.Age Value.int
     |> Schema.build
 
 let parsed = Input.parse signupSchema raw

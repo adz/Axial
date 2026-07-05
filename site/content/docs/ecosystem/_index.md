@@ -52,6 +52,20 @@ This is the closest migration path for existing railway-oriented code:
 
 Go to [`Replacing FsToolkit.ErrorHandling`](./integrations-fstoolkit/) for the migration shape and coexistence patterns.
 
+## FluentValidation Comparison
+
+FluentValidation validates objects that already exist; Axial parses input into objects that cannot exist in an
+invalid state, and its constraints are inspectable metadata rather than lambdas inside validator classes.
+
+Go to [`vs FluentValidation`](./fluentvalidation-comparison/) for the model comparison.
+
+## zod Comparison
+
+Axial's schema group is the same parse-don't-validate philosophy zod made mainstream in TypeScript — declared
+against your own types, with no reflection, NativeAOT and trimming safety, and Fable support.
+
+Go to [`vs zod`](./zod-comparison/) for the mapping between the two.
+
 ## Validus Integration
 
 Use `Validus` when your codebase already has richer input validation rules or value-object style guards.

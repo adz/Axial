@@ -120,6 +120,37 @@ The tables below are taken from the joined BenchmarkDotNet report for the curren
 
 The practical read is unchanged: `Flow` stays competitive with the direct baselines, and the extra cost is a fixed orchestration cost rather than a function of the actual business logic.
 
+### Schema JSON Codec
+
+The codec suites measure `Axial.Codec` — the JSON codec compiled from a `Schema<'model>` declaration — on a realistic aggregate (seven primitive fields, one nested record, and two collections) against `System.Text.Json` on the same model. Both suites live in [benchmarks/Axial.Benchmarks/CodecSuites.fs](https://github.com/adz/Axial/blob/main/benchmarks/Axial.Benchmarks/CodecSuites.fs).
+
+Run them:
+
+```bash
+dotnet run -c Release --project benchmarks/Axial.Benchmarks -- --filter "*JsonCodecBenchmarks*" "*BoundaryParseBenchmarks*"
+```
+
+Measured with a BenchmarkDotNet short job on the recorded toolchain:
+
+| Method | Mean | Allocated |
+| --- | --- | --- |
+| `System.Text.Json Serialize` | 1.44 us | 1.11 KB |
+| `Axial Json.serialize` | 1.55 us | 1.44 KB |
+| `Axial Json.deserializeBytes` | 2.85 us | 2.46 KB |
+| `Axial Json.deserialize` | 3.10 us | 2.84 KB |
+| `System.Text.Json Deserialize` | 3.11 us | 2.01 KB |
+
+The codec compiles once per schema and runs with no reflection, so it stays on par with `System.Text.Json`'s reflection-based serializer while remaining AOT- and trimming-safe by construction. `deserializeBytes` skips the string-to-UTF-8 conversion and is the faster decode entry point when the payload already arrives as bytes.
+
+The boundary suite compares the trusted codec lane against full boundary parsing — `JsonDocument` to `RawInput` to `Input.parse` with complete path-aware diagnostics:
+
+| Method | Mean | Allocated |
+| --- | --- | --- |
+| `Axial Json.deserialize (trusted lane)` | 3.15 us | 2.84 KB |
+| `JsonDocument + RawInput + Input.parse (boundary lane)` | 19.78 us | 27.71 KB |
+
+That gap is the price of diagnostics, redisplayable raw input, and constraint checking, and it is why the two lanes exist: parse untrusted input where the diagnostics pay for themselves, and use the compiled codec for trusted payloads such as internal services, storage, and queues.
+
 ## Fable Results
 
 The Fable runner is built from the source-included benchmark project in [benchmarks/Axial.Benchmarks.Fable/Axial.Benchmarks.Fable.fsproj](https://github.com/adz/Axial/blob/main/benchmarks/Axial.Benchmarks.Fable/Axial.Benchmarks.Fable.fsproj) and uses the toolchain pins in [benchmarks/mise.toml](https://github.com/adz/Axial/blob/main/benchmarks/mise.toml) plus [benchmarks/Axial.Benchmarks.Fable/mise.toml](https://github.com/adz/Axial/blob/main/benchmarks/Axial.Benchmarks.Fable/mise.toml).
@@ -193,5 +224,7 @@ The actual benchmark suites and the method pairs they compare are:
 - `CancellationFlowBenchmarks`: `ExplicitTokenTaskResult` vs `Flow task adapter`
 - `CancellableTaskBenchmarks`: `ManualTokenTask` vs `CancellableTask`
 - `SynchronousCompletionBenchmarks`: `CandidateValueTaskFlow` vs `Flow task adapter`
+- `JsonCodecBenchmarks`: `Axial Json.serialize`/`Json.deserialize` vs `System.Text.Json`
+- `BoundaryParseBenchmarks`: trusted codec lane vs `RawInput` + `Input.parse` boundary lane
 
 The .NET benchmark report is generated from `Axial.Benchmarks`; the Fable runner is separate and uses the same comparison vocabulary without pretending the runtime shape is the same.

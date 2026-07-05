@@ -5,8 +5,8 @@ documentation.
 
 ## Current Baseline
 
-- Recorded: `2026-07-05T08:00:19Z`
-- Baseline commit before this update: `abad720d`
+- Recorded: `2026-07-05T12:57:15Z`
+- Baseline commit before this update: `95e95c97`
 - .NET SDK: `10.0.300`
 - Node.js used locally: `v26.1.0`
 
@@ -37,9 +37,10 @@ bash scripts/run-aot-probe.sh
 Additional validated commands for this refresh:
 
 ```text
-dotnet test tests/Axial.ApiShape.Tests --nologo (34 passed)
-dotnet test tests/Axial.Schema.Tests --nologo (53 passed)
-dotnet test tests/Axial.Validation.Schema.Tests --nologo (119 passed)
+dotnet test tests/Axial.ApiShape.Tests --nologo (36 passed)
+dotnet test tests/Axial.Schema.Tests --nologo (56 passed)
+dotnet test tests/Axial.Codec.Tests --nologo (13 passed)
+dotnet test tests/Axial.Validation.Schema.Tests --nologo (144 passed)
 dotnet test tests/Axial.Flow.Tests --nologo (89 passed)
 bash scripts/validate-docs.sh
 => Docs validation build succeeded, including regenerated reference docs.
@@ -59,6 +60,7 @@ run.
 The old monolithic `tests/Axial.Tests/Axial.Tests.fsproj` harness has been replaced by package-boundary test projects:
 
 - `tests/Axial.ApiShape.Tests/Axial.ApiShape.Tests.fsproj`
+- `tests/Axial.Codec.Tests/Axial.Codec.Tests.fsproj`
 - `tests/Axial.ErrorHandling.Tests/Axial.ErrorHandling.Tests.fsproj`
 - `tests/Axial.Flow.FileSystem.Tests/Axial.Flow.FileSystem.Tests.fsproj`
 - `tests/Axial.Flow.Hosting.Tests/Axial.Flow.Hosting.Tests.fsproj`
@@ -116,7 +118,8 @@ the named modules, types, and members users and examples are expected to depend 
 - `Flow`, `Flow.Runtime`, `Execution`, `Cause`, `Exit`, `Fiber`, `Scope`
 - computation builders
 - `Check`, `Bind`, `BindError`, `Validation`, `Diagnostics`
-- `Schema`, `Value`, `Field`, `SchemaConstraint`, `Inspect` and its description types
+- `Schema`, `Value`, `Field`, `SchemaConstraint`, `Inspect` and its description types, `JsonSchema`
+- `Axial.Codec` `Json` module and `JsonCodec`
 - `RawInput`, `Input`, `ParsedInput`, `SchemaError`, `Rules`, `RuleSet`, schema `Validation.validate`
 - `Policy` and `Flow.verify`
 - the leaf-package dependency graph (`leaf packages stay independent of each other`)

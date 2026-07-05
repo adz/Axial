@@ -16,95 +16,45 @@ Axial has two main groups, and everything in this queue serves that split:
 - **Effects in Flow**: the ZIO-style Reader-Async-Result workflow model. Useful with or without schemas, and never part
   of the entry price for the results group.
 
-## Phase 19: Narrative Inversion
+Phases 19–24 are complete: the two-door narrative, one boundary error, one domain-value catalog, union schemas,
+boundary utility packages (`Axial.Codec`, `JsonSchema.generate`, `RawInput.ofJsonDocument`, the `examples/Axial.Api`
+minimal-API sample), and positioning/polish (comparison pages, the public AOT/Fable story, the backtick audit with
+`Policy.lift`). The `dotnet new axial-api` template is evaluated and deferred in `dev-docs/decisions/README.md`.
 
-Make the two-group story the public story. No new APIs; docs and positioning only.
+## Phase 25: Reiteration Questions
 
-Done as a docs restructuring with two landing pages: `/parse/` ("Parse, don't validate", blue) and `/flow/`
-("Structured workflows without framework lock-in", violet), sourced from `docs/landing/`, plus a minimal two-door
-root page. Each landing cross-links the other exactly once via a tinted strip at the boundary moment
-(`Flow.verify` / boundary parsing).
+These are open questions produced while completing phases 23–24. Triage each into a concrete task (or delete it with a
+one-line decision note in `dev-docs/decisions/README.md`) before starting new feature phases.
 
-- [x] Rewrite the README opening around the two groups: schema-first for domain models, plain `Result` for simple
-  code, Flow as the optional effects group.
-- [x] Replace the "choose the smallest tool" ladder in `docs/start/getting-started.md` with the two-lane rule; move
-  the tool-ladder explanation to an advanced/architecture page.
-- [x] Bless plain `Result` with a user-owned error DU as idiomatic for simple code in docs
-  (not a compromise; `Check` only when structured failure details pay for themselves).
-- [x] Reframe docs section indexes so Check/Validation/Refined read as machinery chapters
-  ("how parsing works underneath"), with Schema and Error Handling (plain Result) as the two doors.
-- [x] Update `llms.txt` and `docs/AGENT.md` to teach the two-lane rule first.
-- [x] Keep Flow messaging separable: schema/results usable standalone; no Flow types in the results quick starts.
-- [x] Run `bash scripts/validate-docs.sh`.
-
-## Phase 20: One Boundary Error
-
-Collapse the failure taxonomies a newcomer meets. Pre-1.0 breaking changes are acceptable here.
-
-- [x] Design the single boundary error story: `ParseError`, `RefinementError`, and `CheckFailure` lower into one
-  boundary error shape (either `SchemaError` or a shared type it embeds).
-- [x] Provide one default English renderer for the boundary error with a one-liner from any failed parse/validation to
-  display strings; keep custom-message overrides.
-- [x] Ensure `ParsedInput`, `Rules`, refined construction, and `Parse` failures all reach that renderer without
-  per-subsystem mapping ceremony.
-- [x] Keep user-owned error DUs first-class: mapping from the boundary error into a domain error stays a single
-  function application at the boundary.
-- [x] Update the error-handling and schema docs to present one taxonomy of failure at the boundary.
-- [x] Add tests covering lowering from each source error type and default rendering.
-
-## Phase 21: One Catalog Of Domain Values
-
-Merge the Refined catalog and schema refined values into a single artifact.
-
-- [x] Ship ready-made schemas for the Refined catalog types. Scalar, collection, and temporal range schemas live in
-  `Axial.Validation.Schema.RefinedSchema` to preserve the `Axial.Refined` leaf-package boundary.
-- [x] Resolve standalone/schema constraint sharing through the integration catalog: standalone refinement keeps using
-  executable `Check` programs, schema-field helpers mirror the same facts as `SchemaConstraint` metadata, and the
-  package-boundary decision is documented in `dev-docs/decisions/README.md`.
-- [x] Decide and document the single home for authoring new domain value types (one page: private ctor +
-  `Value.refined` + optional standalone helpers).
-- [x] Update the Refined catalog docs and schema refined-values guide to point at one catalog.
-- [x] Add tests proving a catalog type behaves identically standalone and as a schema field.
-
-## Phase 22: Union Schemas
-
-Discriminated unions are how F# users model domains; schema must express them.
-
-- [x] Design a tagged/choice schema shape for discriminated unions
-  (e.g. `Payment = Card of CardDetails | Invoice of InvoiceDetails`), including the raw-input discriminator
-  convention (tag field, wrapper object, or configurable).
-- [x] Support case payloads that are nested model schemas, refined values, or primitives.
-- [x] Parse union input with path-aware diagnostics (wrong tag, missing payload, payload field errors under the case
-  path).
-- [x] Validate existing union values through case getters.
-- [x] Expose unions through `Inspect` (case names, per-case descriptions) and lower to JSON Schema `oneOf` in the
-  prototype interpreter.
-- [x] Add tutorials and tests for a union-heavy domain model.
-
-## Phase 23: Boundary Utility Packages
-
-Convert the "one schema drives everything" pitch from prototypes into shippable utility.
-
-- [ ] Add a `System.Text.Json` adapter: `RawInput.ofJsonElement` / `ofJsonDocument` (own package or gated module so
-  core stays dependency-free and Fable-safe).
-- [ ] Promote `JsonSchema.generate` from test prototype to a real module/package over `Inspect`.
-- [ ] Build a complete ASP.NET Core minimal-API sample: JSON body in, 400-with-path-diagnostics or trusted model out,
-  OpenAPI/JSON Schema served from the same schema declaration, plus a form redisplay page.
-- [ ] Evaluate a `dotnet new` template (`axial-api`) seeded from that sample.
-- [ ] Keep the sample buildable in CI and mirrored into the runnable-examples docs page.
-
-## Phase 24: Positioning And Polish
-
-Answer the incumbents by name and remove newcomer friction.
-
-- [ ] Write comparison pages: vs FsToolkit.ErrorHandling (combinators are functions; schema is inspectable data),
-  vs FluentValidation (validators check existing objects; Axial never constructs the invalid object),
-  vs zod (same philosophy; AOT/Fable-safe, no reflection).
-- [ ] Surface the zero-reflection / AOT / trimming / Fable story in public docs (currently buried in dev-docs).
-- [ ] Audit backtick names out of the recommended public surface and docs samples
-  (`Value.``int```, `Policy.``pure```; provide non-keyword aliases or adjust guidance).
-- [ ] Review recommended samples for C#-reader friendliness (symbol noise, inference failures, error-message quality).
-- [ ] Run `bash scripts/validate-docs.sh` and refresh `dev-docs/API_BASELINE.md` after any surface changes.
+- [ ] Codec decode allocations are ~2x `System.Text.Json` (2.84 KB vs 2.01 KB per aggregate) even though speed is at
+  parity. Is per-decode slot allocation worth eliminating (pooled slots, struct slots, array-built lists instead of
+  cons+rev), aiming to beat STJ the way CodecMapper does?
+- [ ] Should `Axial.Codec` grow stream/`PipeWriter`/async entry points (and an ASP.NET Core content-negotiation
+  helper) so the sample's `Results.Text(Json.serialize ...)` becomes a one-liner without intermediate strings?
+- [ ] Is there a case for a "checked codec" mode that also runs constraint metadata on decode — cheaper than the
+  RawInput boundary lane but defensive against misbehaving internal producers?
+- [ ] Union wire shape is fixed to `{discriminator, payload}` wrapper objects. Should internally-tagged objects
+  (payload fields merged beside the tag) or bare-string enum cases be expressible, and how does that lower to
+  JSON Schema?
+- [ ] Schema has no optional-field concept: every field is constructor-required, and `optional` is only metadata.
+  Should `Value.optionOf`/`Schema.optional` exist so `'field option` models parse and encode (JSON null/absent)
+  without workarounds?
+- [ ] `JsonSchema.generate` emits a compact, draft-agnostic document. Should it pin `$schema` (2020-12), attach
+  titles/descriptions from schema metadata, and hoist repeated nested models into `$defs`?
+- [ ] The API sample hand-rolls its HTML form from `Inspect` metadata, duplicating the UiMetadata prototype in tests.
+  Promote a small shipped UI-metadata interpreter, or keep form rendering an application concern?
+- [ ] `Axial.Codec` carries `FABLE_COMPILER` gates but is not compiled by `scripts/check-fable-js-surface.sh`. Should
+  the codec be part of the supported Fable surface, and if so, benchmarked there?
+- [ ] The boundary lane costs ~6x the codec (JsonDocument → RawInput → Input.parse). Is a fused fast path worth it —
+  parsing straight from `Utf8JsonReader` into diagnostics without materializing `RawInput` — or does redisplay make
+  materialization essential by design?
+- [ ] `RawInput.ofJsonElement` is net8.0-gated inside `Axial.Validation.Schema`. If netstandard2.1 consumers ask for
+  it, add a `System.Text.Json` package reference behind a TFM condition, or split an adapter package?
+- [ ] C#-reader friendliness: the recommended samples are clean F#, but should key pages add a short "calling this
+  from C#" snippet (compiled codec + parse from C#), given `JsonCodec<'model>`/`ParsedInput` are C#-usable?
+- [ ] Docgen now reads `Axial.Validation.Schema` from the net8.0 build so the STJ adapters document; `Axial.Schema`
+  still documents from netstandard2.1, hiding `Value.date`/`Schema.date`. Should reference docs standardize on the
+  net8.0 surface with "netstandard2.1: unavailable" notes?
 
 ## Acceptance Checks
 
@@ -115,6 +65,7 @@ The two-group direction is coherent when the following are true:
 - domain value types exist in one catalog usable standalone and as schema fields
 - discriminated unions are expressible as schemas with path-aware diagnostics
 - a runnable ASP.NET Core sample serves parsing, error responses, and OpenAPI from one schema declaration
+- one schema declaration also compiles to a trusted-lane JSON codec with benchmarked performance
 - Flow is never required by the results-group quick starts
 - comparison pages answer FsToolkit.ErrorHandling, FluentValidation, and zod by name
 - generated reference docs match source comments

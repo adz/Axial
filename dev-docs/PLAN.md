@@ -109,14 +109,16 @@ schema create {
 Reserve generic `Schema.field "email" _.Email Email.schema` and `field "email" _.Email Email.schema { ... }` for
 explicit or custom `ValueSchema<'value>` values, including refined/domain schemas, nested schemas once introduced, and
 advanced composition. Do not introduce competing primitive aliases such as `string`, `integer`, `boolean`, `uuid`,
-`dateOnly`, or `Field.text`. `Value.text`, `Value.``int```, and the other `Value.*` primitives remain the lower-level
+`dateOnly`, or `Field.text`. `Value.text`, `Value.int`, and the other `Value.*` primitives remain the lower-level
 value-schema vocabulary used by generic fields and interpreters, not the everyday field-authoring names.
 
 Schema must also preserve a high-performance codec lowering path. The inspectable schema model may contain rich metadata,
 but JSON codecs should not interpret that metadata tree directly on the hot path. A codec interpreter must be able to
 compile schemas into direct record plans: ordered field descriptors, cached wire-name bytes, indexed field slots,
 typed field decoders, and constructor application that does not require per-value reflection or `obj array` dispatch.
-CodecMapper is the performance reference for this shape.
+CodecMapper is the performance reference for this shape. This path now ships as `Axial.Codec` (`Json.compile` over the
+retained typed field chain, benchmarked against `System.Text.Json` in `benchmarks/Axial.Benchmarks/CodecSuites.fs`);
+remaining codec work is optimization and format breadth, not proving the shape.
 
 The built `Schema<'model>` value itself must retain typed constructor and field information sufficient for that codec
 specialization: type erasure at authoring time must not force interpreters onto boxed `obj array` dispatch or require

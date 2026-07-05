@@ -407,6 +407,8 @@ module ApiShapeTests =
               "ofNameValueCollection"
               "ofCliArgs"
               "ofJsonLikeValue"
+              "ofJsonElement"
+              "ofJsonDocument"
               "ofConfiguration"
               "redisplay"
               "redisplayAt"
@@ -415,6 +417,21 @@ module ApiShapeTests =
         moduleTypeFromAssembly "Axial.Validation.Schema" "Axial.Validation.Schema.ParsedInput"
         |> publicStaticMemberNames
         |> assertContainsAll [ "mapErrors" ]
+
+    [<Fact>]
+    let ``codec compiles json codecs from schemas without extra package coupling`` () =
+        moduleTypeFromAssembly "Axial.Codec" "Axial.Codec.Json"
+        |> publicStaticMemberNames
+        |> assertContainsAll
+            [ "compile"; "serialize"; "serializeBytes"; "deserialize"; "deserializeBytes"; "tryDeserialize" ]
+
+        moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.JsonSchema"
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "generate"; "generateValue" ]
+
+        referencedAssemblyNames (Assembly.Load "Axial.Codec")
+        |> assertContainsNone
+            [ "Axial.Flow"; "Axial.ErrorHandling"; "Axial.Refined"; "Axial.Validation"; "Axial.Validation.Schema" ]
 
     [<Fact>]
     let ``leaf packages stay independent of each other`` () =

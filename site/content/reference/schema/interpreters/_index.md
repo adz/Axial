@@ -18,6 +18,8 @@ This page shows the `Axial.Validation.Schema` interpreter surface: raw boundary 
  Builds raw input from command-line arguments.
 
 - [`Validation.Schema.RawInput.ofJsonLikeValue`](./m-validation-schema-rawinput-ofjsonlikevalue.md): Builds raw input from dependency-free JSON-shaped values.
+- [`Validation.Schema.RawInput.ofJsonElement`](./m-validation-schema-rawinput-ofjsonelement.md): Builds raw input from a <a href="https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement">JsonElement</a>.
+- [`Validation.Schema.RawInput.ofJsonDocument`](./m-validation-schema-rawinput-ofjsondocument.md): Builds raw input from the root element of a <a href="https://learn.microsoft.com/dotnet/api/system.text.json.jsondocument">JsonDocument</a>.
 - [`Validation.Schema.RawInput.ofConfiguration`](./m-validation-schema-rawinput-ofconfiguration.md):
  Builds raw input from flattened configuration keys using <code>:</code> as the path separator.
 

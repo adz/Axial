@@ -9,6 +9,13 @@
 - Added the public `Inspect` API (`Inspect.model`, `Inspect.value`, `Inspect.field`) describing built schemas as metadata trees for JSON Schema, documentation, and UI interpreters without running validation.
 - Added `Axial.Validation.Schema`: source-agnostic `RawInput` with adapters (map, name/value, CLI args, JSON-like, configuration), `Input.parse` into `ParsedInput` with raw redisplay and field error lookup, `SchemaError` diagnostics, constructor-level intrinsic errors, `Validation.validate` for existing models, and contextual `RuleSet`/`Rules.apply` over already-trusted models.
 - Added a Schema docs section (trusted construction, choosing a tool, refined values, redisplay and field errors, rules and policies, input sources) and a runnable policy example.
+- Added `Axial.Codec`: compiled, reflection-free JSON codecs over built model schemas. `Json.compile` walks the schema's retained typed field chain into constructor-specialized encode/decode plans (cached wire-name bytes, typed field decoders, no `obj array` dispatch); `Json.serialize`/`serializeBytes`/`deserialize`/`deserializeBytes`/`tryDeserialize` run the trusted lane, and decode failures raise path-aware `JsonCodecException`.
+- Promoted JSON Schema generation into `Axial.Schema` as `JsonSchema.generate`/`generateValue`, lowering shapes, formats, and constraint metadata to JSON Schema keywords, with tagged unions as `oneOf` and `const` discriminators.
+- Added `RawInput.ofJsonElement` and `RawInput.ofJsonDocument` on .NET 8+ targets for adapting System.Text.Json bodies into schema input parsing.
+- Added the runnable ASP.NET Core minimal-API sample (`examples/Axial.Api`): one schema declaration drives JSON parsing with 400 path diagnostics, codec responses, a generated OpenAPI document, and an HTML form with error redisplay; CI smoke-runs it.
+- Added codec benchmarks against `System.Text.Json` plus a trusted-lane vs boundary-lane comparison, recorded in the benchmarks page.
+- Renamed `Policy.pure` to `Policy.lift` so the recommended surface needs no double-backtick identifiers, and removed unnecessary backticks from `Value.int`/`Value.decimal`/`Value.bool` call sites in docs and samples.
+- Added comparison docs (`vs FluentValidation`, `vs zod`, a sharpened FsToolkit.ErrorHandling page) and the public zero-reflection/AOT/trimming/Fable story page.
 
 ## 0.7.0 - 2026-06-21
 

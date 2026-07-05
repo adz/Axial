@@ -73,7 +73,6 @@ This page shows the Flow surface for cold workflow descriptions that only start 
 ## Policies
 
 - [`Flow.Policy`](./t-flow-policy.md): Constructors and combinators for environment-aware workflow requirements.
-- [`Flow.Policy.pure`](./m-flow-policy-pure.md): Lifts a pure result-returning function and maps its error into the workflow error type.
 - [`Flow.Policy.withError`](./m-flow-policy-witherror.md): Lifts a pure result-returning function and replaces any error with a fixed workflow error.
 - [`Flow.Policy.context`](./m-flow-policy-context.md): Lifts an environment-aware result-returning function and maps its error into the workflow error type.
 - [`Flow.Policy.pass`](./p-flow-policy-pass.md): A policy that returns the input unchanged.

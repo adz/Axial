@@ -1,7 +1,7 @@
 ---
 title: "Validation.Schema.RawInput.ofConfiguration"
 linkTitle: "ofConfiguration"
-weight: 2006
+weight: 2008
 type: docs
 ---
 

@@ -47,3 +47,8 @@ This page shows the core `Schema<'model>`, `ValueSchema<'value>`, and `Field<'mo
 - [`Schema.Inspect.model`](./m-schema-inspect-model.md): Describes a built model schema as inspectable field metadata.
 - [`Schema.Inspect.value`](./m-schema-inspect-value.md): Describes a value schema as inspectable shape, format, and constraint metadata.
 - [`Schema.Inspect.field`](./m-schema-inspect-field.md): Describes a standalone schema field as inspectable field metadata.
+
+## JSON Schema generation
+
+- [`Schema.JsonSchema.generate`](./m-schema-jsonschema-generate.md): Generates a compact JSON Schema document from a built model schema&#39;s metadata.
+- [`Schema.JsonSchema.generateValue`](./m-schema-jsonschema-generatevalue.md): Generates a compact JSON Schema document for a standalone value schema.

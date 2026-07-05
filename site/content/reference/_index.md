@@ -13,6 +13,10 @@ interruption and defects. Use [`flow { }`](./flow/builders-flow/) for normal orc
 Use [`Fiber`](./fiber/) when you need the handle returned by `Flow.fork`: it represents running child
 work that can be joined or interrupted.
 
+Use [`Schema`](./schema/) for domain-model boundaries: one declaration drives input parsing
+([`Schema Interpreters`](./schema/interpreters/)), compiled JSON codecs ([`Codec`](./codec/)), JSON Schema
+generation, and metadata inspection.
+
 Use [`Check`](./check/) and [`Validation`](./validation/) before reaching for `Flow` when the code is
 still pure. `Check` is for reusable boolean-like predicates; `Validation` is for accumulating
 field-level diagnostics. Use [`Diagnostics`](./diagnostics/) when you need to inspect, merge, or
