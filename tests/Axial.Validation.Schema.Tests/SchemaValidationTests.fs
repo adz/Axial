@@ -1,5 +1,6 @@
 namespace Axial.Tests
 
+open System
 open Axial.Schema
 open Axial.Validation
 open Axial.Validation.Schema
@@ -26,6 +27,17 @@ module SchemaValidationTests =
     type private ContactBook =
         { Name: string
           Contacts: ContactMethod list }
+
+    type private DateRange =
+        private
+            { Start: DateOnly
+              End: DateOnly }
+
+        static member Create start endDate =
+            if start <= endDate then
+                Ok { Start = start; End = endDate }
+            else
+                Error "End date must be on or after start date."
 
     let private schema =
         Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
@@ -272,6 +284,27 @@ module SchemaValidationTests =
 
         let parsed = Input.parse schema raw
         let validation = Axial.Validation.Schema.Validation.validate schema parsed.Model
+
+        test <@ parsed.IsValid @>
+        test <@ Axial.Validation.Validation.toResult validation = Ok parsed.Model @>
+
+    [<Fact>]
+    let ``values produced by input parsing with constructor invariants validate through the same schema`` () =
+        let rangeSchema =
+            Schema.recordFor<DateRange, _> DateRange.Create
+            |> Schema.date "start" _.Start
+            |> Schema.date "end" _.End
+            |> Schema.buildResult
+
+        let raw =
+            RawInput.Object(
+                Map.ofList
+                    [ "start", RawInput.Scalar "2026-01-10"
+                      "end", RawInput.Scalar "2026-01-12" ]
+            )
+
+        let parsed = Input.parse rangeSchema raw
+        let validation = Axial.Validation.Schema.Validation.validate rangeSchema parsed.Model
 
         test <@ parsed.IsValid @>
         test <@ Axial.Validation.Validation.toResult validation = Ok parsed.Model @>
