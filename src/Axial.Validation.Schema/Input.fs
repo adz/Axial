@@ -155,6 +155,7 @@ module Input =
             match valueDefinition.Shape with
             | PrimitiveValueDefinition _ -> valueDefinition.Constraints
             | RefinedValueDefinition(raw, _) -> gather raw @ valueDefinition.Constraints
+            | NestedValueDefinition _ -> valueDefinition.Constraints
 
         gather definition
 
@@ -167,6 +168,7 @@ module Input =
             match valueDefinition.Shape with
             | PrimitiveValueDefinition kind -> kind
             | RefinedValueDefinition(raw, _) -> kindOf raw
+            | NestedValueDefinition _ -> invalidOp "Nested model value schemas have no underlying primitive kind."
 
         kindOf definition
 
@@ -175,6 +177,7 @@ module Input =
             match valueDefinition.Shape with
             | PrimitiveValueDefinition _ -> value
             | RefinedValueDefinition(raw, ops) -> construct raw value |> ops.Construct
+            | NestedValueDefinition _ -> invalidOp "Nested model values are constructed by parsing, not primitive construction."
 
         construct definition primitive
 
@@ -235,36 +238,55 @@ module Input =
         | PrimitiveValueKind.DateTime -> Parse.dateTimeOffset text |> Result.map box |> Result.mapError parseErrorToSchemaError
         | PrimitiveValueKind.Guid -> Parse.guid text |> Result.map box |> Result.mapError parseErrorToSchemaError
 
-    let private parseValue valueSchema fieldConstraints path raw =
+    let rec private parseValue valueSchema fieldConstraints path raw =
         let constraints = allConstraints valueSchema @ fieldConstraints
 
         match raw with
-        | RawInput.Missing when hasRequiredConstraint constraints ->
-            errorAt path (withCustomMessage constraints "required" SchemaError.Required)
         | RawInput.Missing -> errorAt path (withCustomMessage constraints "required" SchemaError.Required)
-        | RawInput.Object _ -> errorAt path SchemaError.ExpectedScalar
+        | RawInput.Object fields ->
+            match valueSchema.Shape with
+            | NestedValueDefinition nestedModel -> parseObject path nestedModel fields
+            | PrimitiveValueDefinition _
+            | RefinedValueDefinition _ -> errorAt path SchemaError.ExpectedScalar
         | RawInput.Many _ -> errorAt path SchemaError.ExpectedScalar
         | RawInput.Scalar text when hasRequiredConstraint constraints && String.IsNullOrWhiteSpace text ->
             errorAt path (withCustomMessage constraints "required" SchemaError.Required)
         | RawInput.Scalar text ->
-            let kind = underlyingPrimitiveKind valueSchema
+            match valueSchema.Shape with
+            | NestedValueDefinition _ -> errorAt path SchemaError.ExpectedObject
+            | PrimitiveValueDefinition _
+            | RefinedValueDefinition _ ->
+                let kind = underlyingPrimitiveKind valueSchema
 
-            match parsePrimitive kind text with
-            | Error error -> errorAt path error
-            | Ok primitive ->
-                match checkPrimitive kind constraints primitive with
-                | Error errors ->
-                    errors
-                    |> List.map (diagnosticsAt path)
-                    |> mergeErrors
-                    |> Error
-                | Ok checkedPrimitive -> Ok(constructValue valueSchema checkedPrimitive)
+                match parsePrimitive kind text with
+                | Error error -> errorAt path error
+                | Ok primitive ->
+                    match checkPrimitive kind constraints primitive with
+                    | Error errors ->
+                        errors
+                        |> List.map (diagnosticsAt path)
+                        |> mergeErrors
+                        |> Error
+                    | Ok checkedPrimitive -> Ok(constructValue valueSchema checkedPrimitive)
 
-    let private parseField (fields: Map<string, RawInput>) (field: FieldDescriptor<'model>) =
+    and private parseField basePath (fields: Map<string, RawInput>) (field: FieldDescriptor<'model>) =
         let name = ExternalFieldName.value field.ExternalName
-        let path = [ PathSegment.Name name ]
+        let path = basePath @ [ PathSegment.Name name ]
         let raw = fields |> Map.tryFind name |> Option.defaultValue RawInput.Missing
         parseValue field.ValueSchema field.Constraints path raw
+
+    and private parseObject path (model: ModelSchemaDefinition<obj>) (fields: Map<string, RawInput>) =
+        let parsedFields = model.Fields |> List.map (parseField path fields)
+        let errors = parsedFields |> List.choose (function Error diagnostics -> Some diagnostics | Ok _ -> None)
+
+        match errors with
+        | [] ->
+            parsedFields
+            |> List.map (function Ok value -> value | Error _ -> invalidOp "Unexpected parse error.")
+            |> List.toArray
+            |> ConstructorApplication.apply model.Constructor
+            |> Ok
+        | diagnostics -> Error(mergeErrors diagnostics)
 
     /// <summary>Parses raw boundary input through a trusted model schema.</summary>
     let parse (schema: Schema<'model>) (input: RawInput) : ParsedInput<'model, SchemaError> =
@@ -278,7 +300,7 @@ module Input =
             | ModelDefinition _, RawInput.Scalar _ -> Error(diagnosticsAt [] SchemaError.ExpectedObject)
             | ModelDefinition _, RawInput.Many _ -> Error(diagnosticsAt [] SchemaError.ExpectedObject)
             | ModelDefinition model, RawInput.Object fields ->
-                let parsedFields = model.Fields |> List.map (parseField fields)
+                let parsedFields = model.Fields |> List.map (parseField [] fields)
                 let errors = parsedFields |> List.choose (function Error diagnostics -> Some diagnostics | Ok _ -> None)
 
                 match errors with

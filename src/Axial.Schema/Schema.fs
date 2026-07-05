@@ -443,6 +443,7 @@ module SchemaConstraint =
 
         SchemaConstraint(constraint'.Code, constraint'.Metadata, constraint'.Arguments, Some message)
 
+[<ReferenceEquality>]
 type internal ConstructorApplication<'model> =
     { ArgumentCount: int
       ApplyTrusted: obj array -> 'model }
@@ -603,21 +604,38 @@ and internal ValueSchemaShape =
     | PrimitiveValueDefinition of PrimitiveValueKind
     /// <summary>A named refined/domain value built from a raw value schema plus construction and inspection functions.</summary>
     | RefinedValueDefinition of raw: ValueSchemaDefinition * ops: RefinedValueOps
+    /// <summary>A nested model value described by another type-erased model schema.</summary>
+    | NestedValueDefinition of ModelSchemaDefinition<obj>
 
-type internal FieldDescriptor<'model> =
+and [<ReferenceEquality>] internal FieldDescriptor<'model> =
     { ExternalName: ExternalFieldName
       Order: FieldOrder
       Getter: 'model -> obj
       ValueSchema: ValueSchemaDefinition
       Constraints: SchemaConstraint list }
 
-type internal ModelSchemaDefinition<'model> =
+and [<ReferenceEquality>] internal ModelSchemaDefinition<'model> =
     { Constructor: ConstructorApplication<'model>
       Fields: FieldDescriptor<'model> list }
 
 type internal SchemaDefinition<'model> =
     | PendingDefinition
     | ModelDefinition of ModelSchemaDefinition<'model>
+
+/// <summary>Type-erases a model schema definition so it can be stored as a nested value schema shape.</summary>
+module internal ModelSchemaErasure =
+    let erase (definition: ModelSchemaDefinition<'model>) : ModelSchemaDefinition<obj> =
+        { Constructor =
+            { ArgumentCount = definition.Constructor.ArgumentCount
+              ApplyTrusted = fun arguments -> definition.Constructor.ApplyTrusted arguments |> box }
+          Fields =
+            definition.Fields
+            |> List.map (fun field ->
+                { ExternalName = field.ExternalName
+                  Order = field.Order
+                  Getter = fun (model: obj) -> field.Getter (unbox<'model> model)
+                  ValueSchema = field.ValueSchema
+                  Constraints = field.Constraints }) }
 
 type internal FieldDefinition<'model, 'value> =
     { ExternalName: ExternalFieldName
@@ -891,6 +909,8 @@ module Value =
         | PrimitiveValueDefinition kind -> kind
         | RefinedValueDefinition _ ->
             invalidArg (nameof schema) "Expected a primitive value schema, but the schema is a refined value schema."
+        | NestedValueDefinition _ ->
+            invalidArg (nameof schema) "Expected a primitive value schema, but the schema is a nested model value schema."
 
     /// <summary>
     /// Describes a named refined/domain value schema by pairing a raw value schema with a value-preserving
@@ -950,6 +970,29 @@ module Value =
               Constraints = [] }
         )
 
+    /// <summary>Describes a nested model value from an already built nested model schema.</summary>
+    /// <remarks>
+    /// Nested value schemas let a field carry another trusted model, such as an address nested inside a customer.
+    /// Interpreters that see through primitive and refined value schema layers, such as
+    /// <see cref="M:Axial.Schema.Value.underlyingPrimitiveKind``1" />, do not see through a nested value schema because a
+    /// nested model has no underlying primitive representation of its own; interpreters that understand nested models,
+    /// such as input parsing, inspect the nested model schema directly instead.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
+    /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="schema" /> was not produced by <c>Schema.build</c>.</exception>
+    let nested (schema: Schema<'nested>) : ValueSchema<'nested> =
+        if isNull (box schema) then
+            nullArg (nameof schema)
+
+        match schema.Definition with
+        | PendingDefinition -> invalidArg (nameof schema) "Expected a built model schema."
+        | ModelDefinition model ->
+            ValueSchema(
+                { Shape = NestedValueDefinition(ModelSchemaErasure.erase model)
+                  Format = None
+                  Constraints = [] }
+            )
+
     /// <summary>Returns whether a value schema is a refined/domain value schema.</summary>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
     let isRefined (schema: ValueSchema<'value>) =
@@ -959,6 +1002,7 @@ module Value =
         match schema.Definition.Shape with
         | RefinedValueDefinition _ -> true
         | PrimitiveValueDefinition _ -> false
+        | NestedValueDefinition _ -> false
 
     /// <summary>Returns the intrinsic primitive kind beneath any refinement layers of a value schema.</summary>
     /// <remarks>
@@ -977,6 +1021,8 @@ module Value =
             match definition.Shape with
             | PrimitiveValueDefinition kind -> kind
             | RefinedValueDefinition(raw, _) -> kindOf raw
+            | NestedValueDefinition _ ->
+                invalidArg (nameof schema) "Nested model value schemas have no underlying primitive kind."
 
         kindOf schema.Definition
 
@@ -998,6 +1044,8 @@ module Value =
         | RefinedValueDefinition(raw, _) -> raw.Constraints
         | PrimitiveValueDefinition _ ->
             invalidArg (nameof schema) "Expected a refined value schema, but the schema is a primitive value schema."
+        | NestedValueDefinition _ ->
+            invalidArg (nameof schema) "Expected a refined value schema, but the schema is a nested model value schema."
 
     let private underlyingClrType kind =
         match kind with
@@ -1051,6 +1099,8 @@ module Value =
             match definition.Shape with
             | PrimitiveValueDefinition _ -> value
             | RefinedValueDefinition(raw, ops) -> project raw (ops.Inspect value)
+            | NestedValueDefinition _ ->
+                invalidArg (nameof schema) "Nested model value schemas have no underlying primitive representation."
 
         fun value -> project schema.Definition (box value) |> unbox<'primitive>
 
@@ -1100,6 +1150,7 @@ module Value =
                 match definition.Shape with
                 | RefinedValueDefinition(raw, _) -> formatOf raw
                 | PrimitiveValueDefinition _ -> None
+                | NestedValueDefinition _ -> None
 
         formatOf schema.Definition
 
@@ -1135,6 +1186,7 @@ module Value =
             match definition.Shape with
             | PrimitiveValueDefinition _ -> definition.Constraints
             | RefinedValueDefinition(raw, _) -> gather raw @ definition.Constraints
+            | NestedValueDefinition _ -> definition.Constraints
 
         gather schema.Definition
 
@@ -1403,6 +1455,33 @@ module Schema =
               Constraints = constraints }
 
         SchemaBuilder(builder.Constructor, FieldsAppend(builder.Chain, definition))
+
+    /// <summary>Appends a nested model field to a progressive schema builder from an already built nested model schema.</summary>
+    /// <exception cref="T:System.ArgumentNullException">
+    /// Thrown when <paramref name="externalName" />, <paramref name="getter" />, <paramref name="nestedSchema" />, or
+    /// <paramref name="builder" /> is null.
+    /// </exception>
+    let nested
+        externalName
+        (getter: 'model -> 'nested)
+        (nestedSchema: Schema<'nested>)
+        (builder: SchemaBuilder<'model, 'constructor, 'nested -> 'next, 'chain>)
+        : SchemaBuilder<'model, 'constructor, 'next, FieldsAppend<'model, 'constructor, 'nested, 'next, 'chain>> =
+        field externalName getter (Value.nested nestedSchema) builder
+
+    /// <summary>Appends a nested model field with field-level constraint metadata, such as <c>required</c>.</summary>
+    /// <exception cref="T:System.ArgumentNullException">
+    /// Thrown when <paramref name="constraints" />, a constraint entry, <paramref name="externalName" />,
+    /// <paramref name="getter" />, <paramref name="nestedSchema" />, or <paramref name="builder" /> is null.
+    /// </exception>
+    let nestedWith
+        (constraints: SchemaConstraint list)
+        externalName
+        (getter: 'model -> 'nested)
+        (nestedSchema: Schema<'nested>)
+        (builder: SchemaBuilder<'model, 'constructor, 'nested -> 'next, 'chain>)
+        : SchemaBuilder<'model, 'constructor, 'next, FieldsAppend<'model, 'constructor, 'nested, 'next, 'chain>> =
+        fieldWith constraints externalName getter (Value.nested nestedSchema) builder
 
     /// <summary>Appends a text field represented as <see cref="T:System.String" /> to a progressive schema builder.</summary>
     let text

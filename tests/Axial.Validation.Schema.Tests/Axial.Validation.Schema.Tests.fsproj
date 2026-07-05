@@ -12,6 +12,7 @@
     <Compile Include="RawInputTests.fs" />
     <Compile Include="ParsedInputTests.fs" />
     <Compile Include="InputParseTests.fs" />
+    <Compile Include="NestedSchemaParseTests.fs" />
     <Compile Include="SchemaDiagnosticsRenderingTests.fs" />
     <Compile Include="SchemaConstraintCheckTests.fs" />
     <Compile Include="SchemaRefinedValueCheckTests.fs" />

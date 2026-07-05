@@ -64,7 +64,7 @@ module SchemaRefinedValueTests =
     let ``refined retains the raw value schema as inspectable metadata`` () =
         match Email.schema.Definition.Shape with
         | RefinedValueDefinition(raw, _) -> test <@ raw = Value.text.Definition @>
-        | PrimitiveValueDefinition _ -> failwith "Expected a refined value schema shape."
+        | _ -> failwith "Expected a refined value schema shape."
 
     [<Fact>]
     let ``refined construct and inspect round-trip through the stored operations`` () =
@@ -73,7 +73,7 @@ module SchemaRefinedValueTests =
             let constructed = ops.Construct(box "ada@example.com") |> unbox<Email>
             test <@ constructed = Email.create "ada@example.com" @>
             test <@ ops.Inspect(box constructed) |> unbox<string> = "ada@example.com" @>
-        | PrimitiveValueDefinition _ -> failwith "Expected a refined value schema shape."
+        | _ -> failwith "Expected a refined value schema shape."
 
     [<Fact>]
     let ``refined value schemas start with no constraints and accept constraints like any value schema`` () =
@@ -124,7 +124,7 @@ module SchemaRefinedValueTests =
 
             match email.ValueSchema.Shape with
             | RefinedValueDefinition _ -> ()
-            | PrimitiveValueDefinition _ -> failwith "Expected the email field to keep its refined value schema shape."
+            | _ -> failwith "Expected the email field to keep its refined value schema shape."
 
             let contact = { Email = Email.create "ada@example.com"; Name = "Ada" }
             test <@ ConstructorApplication.apply model.Constructor [| box contact.Email; box contact.Name |] = contact @>
@@ -160,7 +160,7 @@ module SchemaRefinedValueTests =
             let constructed = ops.Construct(box 42) |> unbox<Age>
             test <@ constructed = Age.create 42 @>
             test <@ ops.Inspect(box constructed) |> unbox<int> = 42 @>
-        | PrimitiveValueDefinition _ -> failwith "Expected a refined value schema shape."
+        | _ -> failwith "Expected a refined value schema shape."
 
     [<Fact>]
     let ``isRefined distinguishes refined value schemas from primitive value schemas`` () =
@@ -185,7 +185,7 @@ module SchemaRefinedValueTests =
             test <@ raw = Email.schema.Definition @>
             let constructed = ops.Construct(box (Email.create "ada@example.com")) |> unbox<NormalizedEmail>
             test <@ constructed = NormalizedEmail.create (Email.create "ada@example.com") @>
-        | PrimitiveValueDefinition _ -> failwith "Expected a refined value schema shape."
+        | _ -> failwith "Expected a refined value schema shape."
 
     [<Fact>]
     let ``refined text value schemas keep raw text constraint metadata inspectable`` () =
@@ -221,7 +221,7 @@ module SchemaRefinedValueTests =
         | RefinedValueDefinition(_, ops) ->
             test <@ not (isNull (box ops.Construct)) @>
             test <@ not (isNull (box ops.Inspect)) @>
-        | PrimitiveValueDefinition _ -> failwith "Expected a refined value schema shape."
+        | _ -> failwith "Expected a refined value schema shape."
 
     [<Fact>]
     let ``refined value operations reject a missing construction or inspection function`` () =
