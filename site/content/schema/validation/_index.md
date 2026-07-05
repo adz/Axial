@@ -5,6 +5,7 @@ type: docs
 description: Accumulating sibling failures with Validation and Diagnostics.
 aliases:
   - /docs/validation/
+  - /parse/validation/
 ---
 
 
@@ -18,11 +19,11 @@ the first, and its error side is `Diagnostics<'error>` — a structured tree tha
 attached to each failure. The `validate {}` builder with `and!` gives you the accumulation without the applicative
 ceremony.
 
-This is machinery behind the [Schema](../schema/) door: schema input parsing produces `Diagnostics` for you, so most
+This is machinery behind [Schema](../): schema input parsing produces `Diagnostics` for you, so most
 applications consume this section's types rather than building them by hand. Come here directly when you are
 accumulating failures over values you already hold without a schema.
 
-Use this section when independent checks should all report their failures together. If one failure should stop the operation, use [Error Handling](../error-handling/). If the work needs async, task interop, dependencies, resources, or runtime policy, use [Flow]({{< relref "/flow/" >}}).
+Use this section when independent checks should all report their failures together. If one failure should stop the operation, use [Error Handling]({{< relref "/error-handling/" >}}). If the work needs async, task interop, dependencies, resources, or runtime policy, use [Flow]({{< relref "/flow/" >}}).
 
 ## Mental Model
 
@@ -44,7 +45,7 @@ Result -> Validation
 
 Use `Validation.fromResult` to bring an existing fail-fast result into validation, and `Validation.toResult` when a boundary expects ordinary `Result`. `Validation.fromResult` is the canonical result-to-validation bridge; Axial does not also expose `Validation.ofResult`.
 
-Pure `Check` and `Result` helpers usually live in the [Error Handling](../error-handling/) section. `Validation` is the next step when the user needs all sibling errors, not only the first one.
+Pure `Check` and `Result` helpers usually live in the [Error Handling]({{< relref "/error-handling/" >}}) section. `Validation` is the next step when the user needs all sibling errors, not only the first one.
 
 ## Reference
 

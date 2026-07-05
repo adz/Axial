@@ -89,4 +89,4 @@ let trustedName =
 - **Parsing Strings**: When reading values from query strings, environment variables, or CLI inputs.
 - **Fail-Fast Boundary Validation**: When constructing values where the type system itself guarantees the invariant (e.g. you cannot have a user record with an empty email).
 
-If you need to collect multiple independent errors across fields without failing fast, use [`validate {}`](../validation/validate-builder/) instead.
+If you need to collect multiple independent errors across fields without failing fast, use [`validate {}`]({{< relref "/schema/validation/validate-builder.md" >}}) instead.

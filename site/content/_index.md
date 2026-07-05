@@ -11,20 +11,27 @@ description: Axial — parse-don't-validate results and structured effects for F
 <h1>Structured data. Structured effects.</h1>
 
 <div class="lede">
-Axial is two tools that share one vocabulary. A <strong>parse-don't-validate</strong> toolkit that turns untrusted
-input into trusted domain models &mdash; and a <strong>workflow model</strong> for the effects around them. Use either
-alone; they meet exactly where a parsed model enters a workflow.
+Axial consists of three areas that can be used independently but work together: plain <strong>Result</strong> error
+handling for simple code, a <strong>parse-don't-validate</strong> toolkit that turns untrusted input into trusted
+domain models, and a <strong>workflow model</strong> for the effects around them.
 </div>
 </div>
 
 <div class="axial-doors">
 
-<a class="axial-door axial-door--parse" href="{{< relref "/parse/" >}}">
+<a class="axial-door axial-door--result" href="{{< relref "/error-handling/" >}}">
+<span class="axial-door-kicker">Simple code?</span>
+<h2>Error Handling</h2>
+<p>Standard F# <code>Result</code> with your own error type is idiomatic Axial &mdash; <code>Check</code>, focused
+helpers, and <code>result { }</code> remove the guard-clause boilerplate without changing your signatures.</p>
+<span class="axial-door-cta">Enter &rarr;</span>
+</a>
+
+<a class="axial-door axial-door--parse" href="{{< relref "/schema/" >}}">
 <span class="axial-door-kicker">Modelling a domain?</span>
-<h2>Parse, don't validate</h2>
+<h2>Schema</h2>
 <p>Declare the model once with <code>Schema</code>. Parsing, validation, redisplay, rules, and docs fall out &mdash;
-an invalid model is never constructed. For simple code, plain <code>Result</code> with your own error type is the
-whole story.</p>
+an invalid model is never constructed.</p>
 <span class="axial-door-cta">Enter &rarr;</span>
 </a>
 

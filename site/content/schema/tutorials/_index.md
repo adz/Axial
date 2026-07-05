@@ -16,5 +16,5 @@ models and collections, apply contextual rules inside a workflow, and read schem
 - [Rules And Policies](./rules-in-a-workflow/): accept a trusted model into one workflow but not another.
 - [Inspecting Schema Metadata](./inspecting-metadata/): walk the same schema as data for docs and JSON Schema.
 
-Use [Validation tutorials](../../validation/tutorials/) for accumulating failures over values you already hold, and
+Use [Validation tutorials]({{< relref "/schema/validation/tutorials/" >}}) for accumulating failures over values you already hold, and
 [Flow tutorials]({{< relref "/flow/tutorials/" >}}) for workflows around the boundary.

@@ -5,6 +5,7 @@ type: docs
 description: Type-safe boundaries with Parse, Refine, and the refine {} builder.
 aliases:
   - /docs/refined/
+  - /parse/refined/
 ---
 
 
@@ -19,7 +20,7 @@ constructed through a check that succeeded, so once your domain model holds one,
 it without re-checking. This section shows how to parse untrusted boundary data into those stronger values before the
 data reaches your domain model.
 
-This is machinery behind the [Schema](../schema/) door: for whole models, refined values usually arrive as schema
+This is machinery behind [Schema](../): for whole models, refined values usually arrive as schema
 fields (`Value.refined`), and `Input.parse` runs the parsing for you. Come here directly for single values or when
 building the domain value types your schemas will use.
 
