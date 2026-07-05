@@ -7,7 +7,16 @@ description: Type-safe boundaries with Parse, Refine, and the refine {} builder.
 
 # Refined
 
-This page shows how to turn untrusted boundary data into stronger F# values before the data reaches your domain model.
+Most domain bugs sneak in through primitives. A `string` that must never be blank, an `int` that must be positive, a
+slug that must match a format — the type system happily accepts the invalid versions of all of them, so every function
+that touches the value re-checks it defensively, or worse, trusts it and breaks later. Validating at the boundary
+helps, but a plain `string` that "was validated somewhere" carries no proof: nothing stops unvalidated data from
+reaching the same code path.
+
+Refined values fix this by making the proof part of the type. A `PositiveInt` or `NonBlankString` can only be
+constructed through a check that succeeded, so once your domain model holds one, every downstream function can trust
+it without re-checking. This section shows how to parse untrusted boundary data into those stronger values before the
+data reaches your domain model.
 
 This is machinery behind the [Schema](../schema/) door: for whole models, refined values usually arrive as schema
 fields (`Value.refined`), and `Input.parse` runs the parsing for you. Come here directly for single values or when

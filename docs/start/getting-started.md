@@ -6,7 +6,20 @@ description: The fastest path from Check and Result into Flow.
 
 # Getting Started
 
-Axial is a toolkit for Result-based programs in F#. It starts with validation helpers and extends to application boundaries that need dependencies, async work, cancellation, or runtime policy.
+F# gives us incredibly powerful tools for modelling data, but real-world production systems expose two architectural
+gaps in the ecosystem:
+
+1. **The validation dilemma.** Standard `Result` pipelines force a choice between fail-fast logic (which drops every
+   error after the first) and applicative validation (which is verbose and detaches errors from the input paths a UI
+   needs for redisplay). Either way, nothing stops an invalid object from being constructed before it is checked.
+2. **The dependency and infrastructure gridlock.** Mixing validated data with asynchronous side effects — database
+   calls, HTTP, telemetry — leads to deeply nested code. Result/async helpers can flatten the nesting, but they still
+   leave you manually plumbing infrastructure through every function argument: connections, configuration, trace ids,
+   cancellation tokens.
+
+Axial closes both gaps. It unifies plain-`Result` validation helpers, schema-based parsing that makes invalid models
+unconstructible, and an environment-aware workflow type (`Flow`) with built-in cancellation, scheduling, and
+structured concurrency — one toolkit with one vocabulary.
 
 ## 1. The Two-Lane Rule
 
@@ -32,8 +45,9 @@ Everything else — reusable `Check` constraints, accumulating `Validation` diag
 
 ## 2. Simple Code: Plain Results
 
-Most logic starts pure. Plain `Result` with your own error union is the blessed lane for code without a domain model
-— no Axial types required in your signatures.
+Most logic starts pure, and most checks don't deserve a framework. Plain `Result` with your own error union is the
+blessed lane for code without a domain model — Axial's helpers remove the guard-clause boilerplate, and no Axial types
+appear in your signatures.
 
 ```fsharp
 open Axial
@@ -51,8 +65,10 @@ let result = validateName "Ad" // Error NameTooShort
 
 ## 3. Parse a Form into a Trusted Model
 
-When the input is a whole model rather than one value, declare a schema once and parse raw input through it. If any
-constraint fails, the model is never constructed — you get path-aware errors and the original input for redisplay.
+When the input is a whole model rather than one value, checking values one by one falls apart: fail-fast drops sibling
+errors, hand-rolled accumulation loses the field paths, and either way the record gets constructed before the checks
+finish. Instead, declare a schema once and parse raw input through it. If any constraint fails, the model is never
+constructed — you get path-aware errors for every failing field, and the original input is retained for redisplay.
 
 ```fsharp
 open Axial.Schema
@@ -81,7 +97,10 @@ and UI interpreters. Start with the [Schema tutorials](../../schema/tutorials/).
 
 ## 4. Moving to Flow
 
-When your logic needs to interact with the outside world—by calling a database, reading an environment variable, or performing an async task—you move to `Flow`.
+Once your data is validated, you inevitably need the outside world — a database call, an environment variable, an
+async task. This is where nesting and manual dependency plumbing usually creep in. `Flow` prevents both: it combines
+async execution, typed error tracking, and an environment channel in a single computation expression, so `Result`,
+`Async`, and `Task` values bind directly and dependencies are declared in the type instead of threaded by hand.
 
 Start with the smallest signature that says what the workflow needs.
 
@@ -123,7 +142,9 @@ The example above has a typed failure channel but no environment, so it uses `Fl
 
 ## 5. Execution
 
-Because a `Flow` is a description, you must explicitly **run** it.
+Because a `Flow` is a description, you must explicitly **run** it. This is deliberate: a running task can only be
+awaited, but a description can be retried, scheduled, raced, forked, or cancelled by the runtime — and it does nothing
+until your application boundary says so.
 
 When you call an execution member such as `ToTask`, `ToAsync`, `ToValueTask`, or `RunSynchronously`, you provide the required **environment** (which can be `()` if none is needed). On .NET, the default cancellation token is `CancellationToken.None`.
 If the flow throws an uncaught exception, the runtime records it as `Cause.Die` in the returned `Exit`.
@@ -184,7 +205,10 @@ For a deeper dive into handling outcomes, cancellation, and combining multiple f
 
 ## 7. Reading from the Environment
 
-Flow can read dependencies from an explicit environment.
+The environment channel is how Flow ends dependency plumbing. Instead of passing connections, configuration, and
+request metadata through every function argument, a workflow declares an `'env` type and reads what it needs; the
+concrete environment is supplied once, at the boundary. Because that boundary is the only place the environment is
+built, tests swap a live environment for a mock one in a single line — no framework, no container.
 
 ```fsharp
 type AppConfig = { ApiUrl: string }

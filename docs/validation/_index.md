@@ -7,7 +7,15 @@ description: Accumulating sibling failures with Validation and Diagnostics.
 
 # Validation
 
-Use this section for accumulating sibling failures with `Validation<'value, 'error>`, `Diagnostics<'error>`, and the `validate {}` builder.
+Standard `Result` pipelines force an ugly choice on anyone validating a form. Fail-fast composition stops at the first
+error, so the user fixes the email, resubmits, and only then learns the age was also wrong. Applicative validation
+fixes that but usually at a cost: verbose `mapN`-style plumbing, and errors that arrive as a flat list detached from
+the field, index, or nested record they came from — useless for redisplaying a form or pointing at `contacts[1].email`.
+
+This section closes that gap. `Validation<'value, 'error>` accumulates every sibling failure instead of stopping at
+the first, and its error side is `Diagnostics<'error>` — a structured tree that keeps paths, indexes, and names
+attached to each failure. The `validate {}` builder with `and!` gives you the accumulation without the applicative
+ceremony.
 
 This is machinery behind the [Schema](../schema/) door: schema input parsing produces `Diagnostics` for you, so most
 applications consume this section's types rather than building them by hand. Come here directly when you are
