@@ -148,7 +148,8 @@ type SchemaConstraintMetadata =
 type SchemaConstraint internal (
     code: string,
     metadata: SchemaConstraintMetadata,
-    arguments: IReadOnlyDictionary<string, obj>
+    arguments: IReadOnlyDictionary<string, obj>,
+    message: string option
 ) =
     /// <summary>Gets the stable interpreter-facing constraint code.</summary>
     member _.Code = code
@@ -158,6 +159,9 @@ type SchemaConstraint internal (
 
     /// <summary>Gets the structured constraint arguments keyed by stable interpreter-facing names.</summary>
     member _.Arguments = arguments
+
+    /// <summary>Gets the author-supplied message override, when one was attached with <see cref="M:Axial.Schema.SchemaConstraint.withMessage" />.</summary>
+    member _.Message = message
 
     override _.ToString() = code
 
@@ -195,7 +199,7 @@ module SchemaConstraint =
 
     let private createKnown code metadata =
         ensureName (nameof code) code
-        SchemaConstraint(code, metadata, emptyArguments)
+        SchemaConstraint(code, metadata, emptyArguments, None)
 
     let private createKnownWithArguments code metadata (arguments: (string * obj) seq) =
         ensureName (nameof code) code
@@ -210,7 +214,7 @@ module SchemaConstraint =
             ensureName (nameof arguments) name
             values.Add(name, value))
 
-        SchemaConstraint(code, metadata, freezeArguments values)
+        SchemaConstraint(code, metadata, freezeArguments values, None)
 
     /// <summary>Creates portable custom schema constraint metadata with no arguments.</summary>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="code" /> is null.</exception>
@@ -219,7 +223,7 @@ module SchemaConstraint =
     /// </exception>
     let create code =
         ensureName (nameof code) code
-        SchemaConstraint(code, SchemaConstraintMetadata.Custom code, emptyArguments)
+        SchemaConstraint(code, SchemaConstraintMetadata.Custom code, emptyArguments, None)
 
     /// <summary>Creates portable custom schema constraint metadata with structured arguments.</summary>
     /// <exception cref="T:System.ArgumentNullException">
@@ -244,7 +248,8 @@ module SchemaConstraint =
         SchemaConstraint(
             code,
             SchemaConstraintMetadata.Custom code,
-            freezeArguments values
+            freezeArguments values,
+            None
         )
 
     /// <summary>Requires a value to be supplied by boundary interpreters.</summary>
@@ -412,6 +417,31 @@ module SchemaConstraint =
         match constraint'.Arguments.TryGetValue name with
         | true, value -> Some value
         | false, _ -> None
+
+    /// <summary>Returns the author-supplied message override, when one was attached with <see cref="M:Axial.Schema.SchemaConstraint.withMessage" />.</summary>
+    let message (constraint': SchemaConstraint) =
+        if isNull constraint' then
+            nullArg (nameof constraint')
+
+        constraint'.Message
+
+    /// <summary>
+    /// Attaches a custom author-supplied message to a schema constraint, overriding the default message an
+    /// interpreter would otherwise produce for it.
+    /// </summary>
+    /// <exception cref="T:System.ArgumentNullException">
+    /// Thrown when <paramref name="message" /> or <paramref name="constraint'" /> is null.
+    /// </exception>
+    /// <exception cref="T:System.ArgumentException">
+    /// Thrown when <paramref name="message" /> is empty or contains only whitespace.
+    /// </exception>
+    let withMessage (message: string) (constraint': SchemaConstraint) =
+        ensureName (nameof message) message
+
+        if isNull constraint' then
+            nullArg (nameof constraint')
+
+        SchemaConstraint(constraint'.Code, constraint'.Metadata, constraint'.Arguments, Some message)
 
 type internal ConstructorApplication<'model> =
     { ArgumentCount: int

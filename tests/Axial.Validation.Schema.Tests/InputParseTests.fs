@@ -69,6 +69,44 @@ module InputParseTests =
                                  { Path = [ PathSegment.Name "email" ]; Error = SchemaError.Required } ] @>
 
     [<Fact>]
+    let ``parse surfaces a constraint's custom message in place of the default error`` () =
+        let messageSchema =
+            Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
+            |> Schema.field
+                "email"
+                _.Email
+                (Value.text
+                 |> Value.withConstraint (SchemaConstraint.required |> SchemaConstraint.withMessage "Email is required."))
+            |> Schema.field
+                "age"
+                _.Age
+                (Value.``int``
+                 |> Value.withConstraint (SchemaConstraint.atLeast 18 |> SchemaConstraint.withMessage "Must be an adult."))
+            |> Schema.build
+
+        let raw =
+            RawInput.Object(Map.ofList [ "email", RawInput.Missing; "age", RawInput.Scalar "10" ])
+
+        let parsed = Input.parse messageSchema raw
+
+        test <@ not parsed.IsValid @>
+        test <@ parsed.ErrorsFor "email" = [ SchemaError.Custom("required", Some "Email is required.") ] @>
+        test <@ parsed.ErrorsFor "age" = [ SchemaError.Custom("atLeast", Some "Must be an adult.") ] @>
+
+    [<Fact>]
+    let ``parse falls back to the default error when a constraint has no custom message`` () =
+        let raw =
+            RawInput.Object(
+                Map.ofList
+                    [ "email", RawInput.Scalar "   "
+                      "age", RawInput.Scalar "42" ]
+            )
+
+        let parsed = Input.parse schema raw
+
+        test <@ parsed.ErrorsFor "email" = [ SchemaError.Required ] @>
+
+    [<Fact>]
     let ``parse reports root diagnostic when model input is not an object`` () =
         let raw = RawInput.Scalar "ada@example.com"
         let parsed = Input.parse schema raw

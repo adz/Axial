@@ -113,3 +113,18 @@ module SchemaConstraintInspectionTests =
 
         test <@ SchemaConstraint.metadata patternConstraint = SchemaConstraintMetadata.Pattern "^[0-9]{5}$" @>
         test <@ SchemaConstraint.tryFindArgument "pattern" patternConstraint = Some(box "^[0-9]{5}$") @>
+
+    [<Fact>]
+    let ``withMessage attaches a custom message without changing code, metadata, or arguments`` () =
+        let required = SchemaConstraint.required
+        let customized = required |> SchemaConstraint.withMessage "Email is required."
+
+        test <@ SchemaConstraint.message required = None @>
+        test <@ SchemaConstraint.message customized = Some "Email is required." @>
+        test <@ SchemaConstraint.code customized = "required" @>
+        test <@ SchemaConstraint.metadata customized = SchemaConstraintMetadata.Required @>
+
+        let maxLength = SchemaConstraint.maxLength 80 |> SchemaConstraint.withMessage "Too long."
+
+        test <@ SchemaConstraint.message maxLength = Some "Too long." @>
+        test <@ SchemaConstraint.tryFindArgument "maximum" maxLength = Some(box 80) @>
