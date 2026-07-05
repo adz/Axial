@@ -6,7 +6,18 @@ Speculative sketches live in `dev-docs/current-ideas/`, but this file is the liv
 
 ## Current Direction
 
-Axial has one fully expanded workflow shape:
+Axial began as a Reader-Async-Result workflow monad in the ZIO tradition; the result side has since expanded into a
+full parse-don't-validate toolkit. The library is therefore two main groups, and public positioning should always
+present them as such:
+
+- **Parse-don't-validate results**: `Schema<'model>` is the front door for domain models — input parsing, intrinsic
+  validation, redisplay, contextual rules, and metadata interpreters all fall out of one declaration. Plain `Result`
+  with a user-owned error DU is the blessed lane for simple code without domain models. `Check`, `Validation`,
+  `Refined`, and interpreter error types are machinery behind those two doors, not peer entry points.
+- **Effects in Flow**: the workflow group below. Useful with or without schemas, and never part of the entry price
+  for the results group.
+
+Within the effects group, Axial has one fully expanded workflow shape:
 
 ```fsharp
 Flow<'env, 'error, 'value>

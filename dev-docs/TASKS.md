@@ -7,179 +7,108 @@ Keep speculative design sketches in `dev-docs/current-ideas/` and high-level dur
 
 Work this queue from top to bottom.
 
-## Phase 7: Build RawInput And Input Parsing
+Axial has two main groups, and everything in this queue serves that split:
 
-- [x] Define source-agnostic `RawInput`:
-  `Missing`, `Scalar`, `Many`, and `Object`.
-- [x] Implement path addressing for names and indexes.
-- [x] Implement raw value lookup by paths like `contacts[1].value`.
-- [x] Implement raw redisplay helpers.
-- [x] Implement adapters:
-  map, name-value collection, CLI args, JSON-like value, and configuration.
-- [x] Define `ParsedInput<'model, 'error>`.
-- [x] Add helpers:
-  `IsValid`, `Model`, `TryModel`, `Errors`, `ErrorsFor`, `Input`, and `Result`.
-- [x] Implement `Input.parse : Schema<'model> -> RawInput -> ParsedInput<'model, SchemaError>`.
-- [x] Make `required` reject missing raw fields and missing/blank scalar values.
-- [x] Ensure field errors accumulate applicatively.
-- [x] Ensure failed parses retain raw input.
-- [x] Ensure constructors are not called when intrinsic field parsing fails.
-- [x] Add tests for successful parse, failed parse, multiple sibling errors, raw redisplay, and field error lookup.
+- **Parse-don't-validate results**: `Schema` is the front door for domain models — parsing, validation, redisplay,
+  rules, and metadata fall out of one declaration. Plain `Result` with the user's own error DU is the blessed lane for
+  simple code. `Check`, `Validation`, `Refined`, and the interpreter error types are machinery behind those two doors,
+  not peer entry points.
+- **Effects in Flow**: the ZIO-style Reader-Async-Result workflow model. Useful with or without schemas, and never part
+  of the entry price for the results group.
 
-## Phase 8: Define Schema Errors And Diagnostics Interpretation
+## Phase 19: Narrative Inversion
 
-- [x] Keep `SchemaError` and schema diagnostics interpretation in `Axial.Validation.Schema`, not core `Axial.Schema`.
-- [x] Define `SchemaError`.
-- [x] Include required, expected scalar/object/many, invalid format, too short, too long, out of range, count failures,
-  duplicate failures, constructor failures, and custom code/message.
-- [x] Map `CheckFailure` to `SchemaError`.
-- [x] Attach errors to `Diagnostics<'error>` paths.
-- [x] Keep field names out of `SchemaError` when diagnostics path already carries them.
-- [x] Support custom messages on schema constraints.
-- [x] Support mapping schema/input errors to domain/application errors.
-- [x] Add tests for path rendering and flattened diagnostics.
+Make the two-group story the public story. No new APIs; docs and positioning only.
 
-## Phase 9: Nested Models And Collections
+- [ ] Rewrite the README opening around the two groups: schema-first for domain models, plain `Result` for simple
+  code, Flow as the optional effects group.
+- [ ] Replace the "choose the smallest tool" ladder in `docs/start/getting-started.md` with the two-lane rule; move
+  the tool-ladder explanation to an advanced/architecture page.
+- [ ] Bless plain `Result` with a user-owned error DU as idiomatic for simple code in docs
+  (not a compromise; `Check` only when structured failure details pay for themselves).
+- [ ] Reframe docs section indexes so Check/Validation/Refined read as machinery chapters
+  ("how parsing works underneath"), with Schema and Error Handling (plain Result) as the two doors.
+- [ ] Update `llms.txt` and `docs/AGENT.md` to teach the two-lane rule first.
+- [ ] Keep Flow messaging separable: schema/results usable standalone; no Flow types in the results quick starts.
+- [ ] Run `bash scripts/validate-docs.sh`.
 
-- [x] Implement `nested "address" _.Address Address.schema { required }`.
-- [x] Ensure nested schemas use getters for inspection interpreters.
-- [x] Ensure nested input expects object-shaped raw input.
-- [x] Prefix nested diagnostics with `PathSegment.Name`.
-- [x] Implement `many "contacts" _.Contacts ContactMethod.schema { minCount 1 }`.
-- [x] Ensure collection input expects `RawInput.Many`.
-- [x] Parse every item and accumulate every item error.
-- [x] Prefix collection diagnostics with `PathSegment.Index`.
-- [x] Support raw redisplay paths such as `contacts[1].value`.
-- [x] Add tests for nested success, nested failure, collection success, multiple item failures, and count constraints.
+## Phase 20: One Boundary Error
 
-## Phase 10: Constructor-Level Intrinsic Errors
+Collapse the failure taxonomies a newcomer meets. Pre-1.0 breaking changes are acceptable here.
 
-- [x] Support `schemaResult` or equivalent for constructors returning `Result`.
-- [x] Attach constructor errors at root by default.
-- [x] Support attaching constructor errors to a field path with `Input.constructorErrorAt "end"` or equivalent.
-- [x] Decide how constructor errors compose with field errors.
-- [x] Add `DateRange`-style tests for cross-field intrinsic invariants.
-- [x] Document the difference between constructor invariants and contextual rules.
+- [ ] Design the single boundary error story: `ParseError`, `RefinementError`, and `CheckFailure` lower into one
+  boundary error shape (either `SchemaError` or a shared type it embeds).
+- [ ] Provide one default English renderer for the boundary error with a one-liner from any failed parse/validation to
+  display strings; keep custom-message overrides.
+- [ ] Ensure `ParsedInput`, `Rules`, refined construction, and `Parse` failures all reach that renderer without
+  per-subsystem mapping ceremony.
+- [ ] Keep user-owned error DUs first-class: mapping from the boundary error into a domain error stays a single
+  function application at the boundary.
+- [ ] Update the error-handling and schema docs to present one taxonomy of failure at the boundary.
+- [ ] Add tests covering lowering from each source error type and default rendering.
 
-## Phase 11: Validation Interpreter For Existing Models
+## Phase 21: One Catalog Of Domain Values
 
-- [x] Keep schema-based validation interpreters in `Axial.Validation.Schema`, not core `Axial.Validation`.
-- [x] Implement `Validation.validate : Schema<'model> -> 'model -> Validation<'model, SchemaError>` or equivalent.
-- [x] Use getters, not raw input.
-- [x] Reuse schema constraints and `Check` lowering.
-- [x] Validate nested models through nested schemas.
-- [x] Validate collections through item schemas.
-- [x] Ensure values created by `Input.parse` normally pass intrinsic validation.
-- [x] Add tests for imported/hand-built values and generated-builder values.
+Merge the Refined catalog and schema refined values into a single artifact.
 
-## Phase 12: Contextual Rules
+- [ ] Ship ready-made `ValueSchema`s for the Refined catalog types (`PositiveInt.schema`, `NonBlankString.schema`,
+  `Slug.schema`, bounded text/collections, temporal types).
+- [ ] Make standalone refinement (`Refine.positiveInt`) and schema-field use the same underlying constraint metadata,
+  eliminating the `Refine.positiveInt` vs `SchemaConstraint.greaterThan 0` duplication.
+- [ ] Decide and document the single home for authoring new domain value types (one page: private ctor +
+  `Value.refined` + optional standalone helpers).
+- [ ] Update the Refined catalog docs and schema refined-values guide to point at one catalog.
+- [ ] Add tests proving a catalog type behaves identically standalone and as a schema field.
 
-- [x] Keep schema/contextual rules in `Axial.Validation.Schema` unless a separate rules package is deliberately created.
-- [x] Define `RuleSet<'model, 'error>`.
-- [x] Implement `rules<'model> { ... }` or explicit core API.
-- [x] Support field/path attachment for rule failures.
-- [x] Support custom code and message.
-- [x] Support rules over already-trusted models.
-- [x] Implement `Rules.apply : RuleSet<'model, 'error> -> 'model -> Result<'model, Diagnostics<'error>>`.
-- [x] Ensure rules do not construct models.
-- [x] Add examples and tests for support-ticket and approval-style workflow rules.
-- [x] Document the distinction between schema constraints and rules.
+## Phase 22: Union Schemas
 
-## Phase 13: Policy And Flow Integration
+Discriminated unions are how F# users model domains; schema must express them.
 
-- [x] Define or update `Policy<'env, 'error, 'input, 'output> =
-  'env -> 'input -> Result<'output, 'error>`.
-- [x] Implement `Policy.pure`.
-- [x] Implement `Policy.withError`.
-- [x] Implement `Policy.context`.
-- [x] Implement `Policy.pass`.
-- [x] Implement `Policy.compose`.
-- [x] Implement `Policy.optional`.
-- [x] Implement `Flow.verify`.
-- [x] Ensure `Policy` lives in `Axial.Flow`.
-- [x] Ensure `Axial.Flow` does not depend on `Axial.Schema`, `Axial.Refined`, or `Axial.Validation`.
-- [x] Add policy examples for parsing, refined construction, schema input result, validation result, and contextual rules.
-- [x] Add tests proving `Flow.verify` injects the current environment and short-circuits on failure.
-- [x] Add tests for context-aware and optional policies.
-- [x] Document when to use `Bind.error`, `Bind.mapError`, and `Policy`.
+- [ ] Design a tagged/choice schema shape for discriminated unions
+  (e.g. `Payment = Card of CardDetails | Invoice of InvoiceDetails`), including the raw-input discriminator
+  convention (tag field, wrapper object, or configurable).
+- [ ] Support case payloads that are nested model schemas, refined values, or primitives.
+- [ ] Parse union input with path-aware diagnostics (wrong tag, missing payload, payload field errors under the case
+  path).
+- [ ] Validate existing union values through case getters.
+- [ ] Expose unions through `Inspect` (case names, per-case descriptions) and lower to JSON Schema `oneOf` in the
+  prototype interpreter.
+- [ ] Add tutorials and tests for a union-heavy domain model.
 
-## Phase 14: Non-Validation Interpreters
+## Phase 23: Boundary Utility Packages
 
-- [x] Define an inspection API over `Schema<'model>`.
-- [x] Prototype `JsonSchema.generate`.
-- [x] Lower required, max length, min length, pattern, format, enum/oneOf, numeric ranges, and collection counts to JSON
-  Schema metadata.
-- [x] Prototype `Docs.describe`.
-- [x] Prototype UI metadata description without creating a UI framework.
-- [x] Decide how CodecMapper should consume schema without taking a dependency cycle.
-- [x] Add tests that prove schema metadata can be inspected without running validation.
+Convert the "one schema drives everything" pitch from prototypes into shippable utility.
 
-## Phase 15: Computation Expression DSL
+- [ ] Add a `System.Text.Json` adapter: `RawInput.ofJsonElement` / `ofJsonDocument` (own package or gated module so
+  core stays dependency-free and Fable-safe).
+- [ ] Promote `JsonSchema.generate` from test prototype to a real module/package over `Inspect`.
+- [ ] Build a complete ASP.NET Core minimal-API sample: JSON body in, 400-with-path-diagnostics or trusted model out,
+  OpenAPI/JSON Schema served from the same schema declaration, plus a form redisplay page.
+- [ ] Evaluate a `dotnet new` template (`axial-api`) seeded from that sample.
+- [ ] Keep the sample buildable in CI and mirrored into the runnable-examples docs page.
 
-The progressive typed builder from Phase 5b is the explicit core and already scales to any field count, so the
-computation expression is optional sugar, not the path past three fields. Ship it only if it beats the pipeline on
-readability and compile-error quality for constraint blocks.
+## Phase 24: Positioning And Polish
 
-- [x] Design `schema create { ... }` as sugar over the Phase 5b builder core; compare CE ergonomics and compile-error
-  quality against the plain pipeline before committing to ship it.
-  Outcome: the CE does not beat the pipeline (see `dev-docs/current-ideas/schema-ce-evaluation.md` and
-  `dev-docs/decisions/README.md`), so the DSL is not shipped and the implementation items below are closed.
-- [x] Implement primitive field operations:
-  `text`, `int`, `decimal`, `bool`, `date`, and `guid`. (Closed by decision: CE not shipped.)
-- [x] Implement generic `field "email" _.Email Email.schema { ... }`. (Closed by decision: CE not shipped.)
-- [x] Implement `nested`. (Closed by decision: CE not shipped.)
-- [x] Implement `many`. (Closed by decision: CE not shipped.)
-- [x] Implement field constraint blocks. (Closed by decision: bare-brace blocks are not expressible in F#.)
-- [x] Confirm external-name-first ordering remains the public style. (Confirmed; pipeline surface unchanged.)
-- [x] Add examples comparing Rails ActiveModel and Axial schema side by side. (Moved to the Phase 17 guide work over
-  the pipeline surface.)
-- [x] Add compile/API shape tests for the DSL. (Closed by decision: CE not shipped.)
+Answer the incumbents by name and remove newcomer friction.
 
-## Phase 16: Source Generation Later
-
-- [x] Defer runtime reflection as a foundation. (Recorded in `dev-docs/decisions/README.md`.)
-- [x] Design source generation only after explicit schema and DSL APIs stabilize. (Deferral criteria recorded in
-  `dev-docs/current-ideas/schema-source-generation.md`; the DSL decision closed the last open authoring surface.)
-- [x] Prototype `[<Schema>]` record generation. (Generation target pinned by sketch and compiled by
-  `SchemaGenerationTargetProofTests`; generator tooling deliberately deferred.)
-- [x] Generate constructor/getter alignment where possible. (Target shape derives both from record field order;
-  proven compilable.)
-- [x] Generate schemas for primitive field attributes such as required, max length, email, and min length. (Attributes
-  lower one-to-one to existing `SchemaConstraint` values in the pinned target.)
-- [x] Decide whether generated schemas can target private constructors safely. (No: public or `internal` only; F# has
-  no partial types for same-scope emission.)
-
-## Phase 17: Documentation And Examples
-
-- [x] Update architecture docs after the direction is accepted.
-- [x] Update source comments for changed public APIs.
-- [x] Write a guide: ActiveModel ergonomics, F# trusted construction.
-- [x] Write a guide: Schema vs Input vs Check vs Rules vs Policy.
-- [x] Write a guide: refined/domain value schemas.
-- [x] Write a guide: raw redisplay and field errors.
-- [x] Write a guide: contextual rules and Flow policies.
-- [x] Write examples for HTTP form-like input, CLI input, JSON/config input, nested models, collections, and workflow policy.
-- [x] Regenerate reference docs when public APIs exist.
-- [x] Run `bash scripts/validate-docs.sh` after user-facing docs or API comments change.
-
-## Phase 18: Cleanup
-
-- [x] Delete stale design notes after decisions are promoted.
-- [x] Refresh `dev-docs/API_BASELINE.md`.
-- [x] Ensure package dependency rules are enforced by tests.
-- [x] Ensure generated docs and examples do not teach old predicate-only `Check`.
-- [x] Ensure docs do not present schema as only validation.
-- [x] Ensure docs do not present invalid domain objects as normal.
+- [ ] Write comparison pages: vs FsToolkit.ErrorHandling (combinators are functions; schema is inspectable data),
+  vs FluentValidation (validators check existing objects; Axial never constructs the invalid object),
+  vs zod (same philosophy; AOT/Fable-safe, no reflection).
+- [ ] Surface the zero-reflection / AOT / trimming / Fable story in public docs (currently buried in dev-docs).
+- [ ] Audit backtick names out of the recommended public surface and docs samples
+  (`Value.``int```, `Policy.``pure```; provide non-keyword aliases or adjust guidance).
+- [ ] Review recommended samples for C#-reader friendliness (symbol noise, inference failures, error-message quality).
+- [ ] Run `bash scripts/validate-docs.sh` and refresh `dev-docs/API_BASELINE.md` after any surface changes.
 
 ## Acceptance Checks
 
-The current architecture is coherent when the following are true:
+The two-group direction is coherent when the following are true:
 
-- public docs describe services as explicit and the runtime as executor-only
-- user-facing workflow signatures show real service requirements in `'env`
-- app/domain dependency examples start with records and `Flow.read`
-- reusable service examples use `Service<'service>.get()`
-- host-edge examples use `Service<'service>.resolve()` or provider-backed layers
-- `Layer` is the documented provisioning mechanism
-- registry-backed runtime is gone from both code and docs
+- the README and getting started teach exactly two doors: Schema for domain models, plain `Result` for simple code
+- a newcomer handles one error shape at the boundary, with one default renderer to display strings
+- domain value types exist in one catalog usable standalone and as schema fields
+- discriminated unions are expressible as schemas with path-aware diagnostics
+- a runnable ASP.NET Core sample serves parsing, error responses, and OpenAPI from one schema declaration
+- Flow is never required by the results-group quick starts
+- comparison pages answer FsToolkit.ErrorHandling, FluentValidation, and zod by name
 - generated reference docs match source comments
