@@ -66,7 +66,7 @@ Work this queue from top to bottom.
 - [x] Keep schema-based validation interpreters in `Axial.Validation.Schema`, not core `Axial.Validation`.
 - [x] Implement `Validation.validate : Schema<'model> -> 'model -> Validation<'model, SchemaError>` or equivalent.
 - [x] Use getters, not raw input.
-- [ ] Reuse schema constraints and `Check` lowering.
+- [x] Reuse schema constraints and `Check` lowering.
 - [ ] Validate nested models through nested schemas.
 - [ ] Validate collections through item schemas.
 - [ ] Ensure values created by `Input.parse` normally pass intrinsic validation.

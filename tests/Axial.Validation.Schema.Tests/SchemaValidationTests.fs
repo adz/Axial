@@ -55,6 +55,40 @@ module SchemaValidationTests =
             @>
 
     [<Fact>]
+    let ``validate surfaces schema constraint custom messages through Check lowering`` () =
+        let messageSchema =
+            Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
+            |> Schema.field
+                "email"
+                _.Email
+                (Value.text
+                 |> Value.withConstraint (SchemaConstraint.required |> SchemaConstraint.withMessage "Email is required."))
+            |> Schema.field
+                "age"
+                _.Age
+                (Value.``int``
+                 |> Value.withConstraint (SchemaConstraint.atLeast 18 |> SchemaConstraint.withMessage "Must be an adult."))
+            |> Schema.build
+
+        let validation =
+            Axial.Validation.Schema.Validation.validate messageSchema { Email = ""; Age = 10 }
+
+        test
+            <@
+                Axial.Validation.Validation.toResult validation =
+                    Error
+                        {
+                            Errors = []
+                            Children =
+                                Map.ofList
+                                    [ PathSegment.Name "age",
+                                      Diagnostics.singleton (SchemaError.Custom("atLeast", Some "Must be an adult."))
+                                      PathSegment.Name "email",
+                                      Diagnostics.singleton (SchemaError.Custom("required", Some "Email is required.")) ]
+                        }
+            @>
+
+    [<Fact>]
     let ``validate reads existing model values through schema getters`` () =
         let swappedSchema =
             Schema.recordFor<SwappedFields, _> (fun primary secondary ->

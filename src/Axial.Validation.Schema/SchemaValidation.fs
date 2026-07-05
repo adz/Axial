@@ -194,6 +194,98 @@ module SchemaConstraintCheck =
         |> Seq.toList
         |> Check.all
 
+module internal SchemaCheckFailure =
+    let private rangeText expectation =
+        match expectation with
+        | CheckRangeExpectation.GreaterThan minimum -> $"greaterThan {minimum}"
+        | CheckRangeExpectation.LessThan maximum -> $"lessThan {maximum}"
+        | CheckRangeExpectation.AtLeast minimum -> $"atLeast {minimum}"
+        | CheckRangeExpectation.AtMost maximum -> $"atMost {maximum}"
+        | CheckRangeExpectation.Between(minimum, maximum) -> $"between {minimum} {maximum}"
+
+    let private countText expectation =
+        match expectation with
+        | CheckCountExpectation.MinimumCount minimum -> $"minCount {minimum}"
+        | CheckCountExpectation.MaximumCount maximum -> $"maxCount {maximum}"
+        | CheckCountExpectation.ExactCount expected -> $"count {expected}"
+        | CheckCountExpectation.CountBetween(minimum, maximum) -> $"countBetween {minimum} {maximum}"
+
+    /// <summary>Identifies the schema constraint code responsible for a check failure, when one is known.</summary>
+    /// <remarks>
+    /// Used only to look up an author-supplied custom message on the originating <see cref="T:Axial.Schema.SchemaConstraint" />;
+    /// it is not part of the default <see cref="T:Axial.Validation.Schema.SchemaError" /> shape.
+    /// </remarks>
+    let private constraintCodeFor failure =
+        match failure with
+        | CheckFailure.Missing
+        | CheckFailure.Blank -> Some "required"
+        | CheckFailure.InvalidFormat "email" -> Some "email"
+        | CheckFailure.InvalidFormat _ -> Some "pattern"
+        | CheckFailure.Length(CheckLengthExpectation.MinimumLength _, _) -> Some "minLength"
+        | CheckFailure.Length(CheckLengthExpectation.MaximumLength _, _) -> Some "maxLength"
+        | CheckFailure.Length(CheckLengthExpectation.ExactLength _, _)
+        | CheckFailure.Length(CheckLengthExpectation.LengthBetween _, _) -> Some "lengthBetween"
+        | CheckFailure.Range(CheckRangeExpectation.GreaterThan _, _) -> Some "greaterThan"
+        | CheckFailure.Range(CheckRangeExpectation.LessThan _, _) -> Some "lessThan"
+        | CheckFailure.Range(CheckRangeExpectation.AtLeast _, _) -> Some "atLeast"
+        | CheckFailure.Range(CheckRangeExpectation.AtMost _, _) -> Some "atMost"
+        | CheckFailure.Range(CheckRangeExpectation.Between _, _) -> Some "between"
+        | CheckFailure.Count(CheckCountExpectation.MinimumCount _, _) -> Some "minCount"
+        | CheckFailure.Count(CheckCountExpectation.MaximumCount _, _) -> Some "maxCount"
+        | CheckFailure.Count(CheckCountExpectation.ExactCount _, _) -> Some "count"
+        | CheckFailure.Count(CheckCountExpectation.CountBetween _, _) -> Some "countBetween"
+        | CheckFailure.NonEmpty _ -> Some "minCount"
+        | CheckFailure.Equality(CheckEqualityExpectation.EqualTo _, _) -> Some "oneOf"
+        | CheckFailure.Equality(CheckEqualityExpectation.NotEqualTo _, _) -> None
+        | CheckFailure.CustomCode code -> Some code
+        | CheckFailure.Positive _ -> Some "greaterThan"
+        | CheckFailure.NonNegative _ -> Some "atLeast"
+        | CheckFailure.Negative _ -> Some "lessThan"
+        | CheckFailure.NonPositive _ -> Some "atMost"
+
+    let private tryCustomMessage constraints code =
+        constraints
+        |> List.tryFind (fun constraint' -> SchemaConstraint.code constraint' = code)
+        |> Option.bind SchemaConstraint.message
+
+    let private withCustomMessage constraints code error =
+        match tryCustomMessage constraints code with
+        | Some message -> SchemaError.Custom(code, Some message)
+        | None -> error
+
+    let withCustomMessageForCode constraints code error =
+        withCustomMessage constraints code error
+
+    let toSchemaError constraints failure =
+        let error =
+            match failure with
+            | CheckFailure.Missing
+            | CheckFailure.Blank -> SchemaError.Required
+            | CheckFailure.InvalidFormat expected -> SchemaError.InvalidFormat expected
+            | CheckFailure.Length(CheckLengthExpectation.MinimumLength minimum, actual) -> SchemaError.TooShort(minimum, actual)
+            | CheckFailure.Length(CheckLengthExpectation.MaximumLength maximum, actual) -> SchemaError.TooLong(maximum, actual)
+            | CheckFailure.Length(CheckLengthExpectation.ExactLength expected, actual) -> SchemaError.LengthOutOfRange(expected, expected, actual)
+            | CheckFailure.Length(CheckLengthExpectation.LengthBetween(minimum, maximum), actual) ->
+                SchemaError.LengthOutOfRange(minimum, maximum, actual)
+            | CheckFailure.Range(expectation, actual) -> SchemaError.RangeOutOfRange(rangeText expectation, actual)
+            | CheckFailure.Count(expectation, actual) -> SchemaError.CountOutOfRange(countText expectation, actual)
+            | CheckFailure.NonEmpty actual -> SchemaError.CountOutOfRange("minCount 1", actual)
+            | CheckFailure.Equality(CheckEqualityExpectation.EqualTo choices, _) -> SchemaError.NotOneOf choices
+            | CheckFailure.Equality(CheckEqualityExpectation.NotEqualTo unexpected, _) ->
+                SchemaError.Custom($"notEqualTo:{unexpected}", None)
+            | CheckFailure.CustomCode code -> SchemaError.Custom(code, None)
+            | CheckFailure.Positive actual -> SchemaError.RangeOutOfRange("greaterThan 0", actual)
+            | CheckFailure.NonNegative actual -> SchemaError.RangeOutOfRange("atLeast 0", actual)
+            | CheckFailure.Negative actual -> SchemaError.RangeOutOfRange("lessThan 0", actual)
+            | CheckFailure.NonPositive actual -> SchemaError.RangeOutOfRange("atMost 0", actual)
+
+        match constraintCodeFor failure with
+        | Some code -> withCustomMessage constraints code error
+        | None -> error
+
+    let toSchemaErrors constraints failures =
+        failures |> List.map (toSchemaError constraints)
+
 /// <summary>Functions for running executable value checks against refined and primitive value schemas.</summary>
 /// <remarks>
 /// <para>
@@ -280,86 +372,6 @@ module Validation =
         diagnostics
         |> List.reduce Diagnostics.merge
 
-    let private rangeText expectation =
-        match expectation with
-        | CheckRangeExpectation.GreaterThan minimum -> $"greaterThan {minimum}"
-        | CheckRangeExpectation.LessThan maximum -> $"lessThan {maximum}"
-        | CheckRangeExpectation.AtLeast minimum -> $"atLeast {minimum}"
-        | CheckRangeExpectation.AtMost maximum -> $"atMost {maximum}"
-        | CheckRangeExpectation.Between(minimum, maximum) -> $"between {minimum} {maximum}"
-
-    let private countText expectation =
-        match expectation with
-        | CheckCountExpectation.MinimumCount minimum -> $"minCount {minimum}"
-        | CheckCountExpectation.MaximumCount maximum -> $"maxCount {maximum}"
-        | CheckCountExpectation.ExactCount expected -> $"count {expected}"
-        | CheckCountExpectation.CountBetween(minimum, maximum) -> $"countBetween {minimum} {maximum}"
-
-    let private constraintCodeFor failure =
-        match failure with
-        | CheckFailure.Missing
-        | CheckFailure.Blank -> Some "required"
-        | CheckFailure.InvalidFormat "email" -> Some "email"
-        | CheckFailure.InvalidFormat _ -> Some "pattern"
-        | CheckFailure.Length(CheckLengthExpectation.MinimumLength _, _) -> Some "minLength"
-        | CheckFailure.Length(CheckLengthExpectation.MaximumLength _, _) -> Some "maxLength"
-        | CheckFailure.Length(CheckLengthExpectation.ExactLength _, _)
-        | CheckFailure.Length(CheckLengthExpectation.LengthBetween _, _) -> Some "lengthBetween"
-        | CheckFailure.Range(CheckRangeExpectation.GreaterThan _, _) -> Some "greaterThan"
-        | CheckFailure.Range(CheckRangeExpectation.LessThan _, _) -> Some "lessThan"
-        | CheckFailure.Range(CheckRangeExpectation.AtLeast _, _) -> Some "atLeast"
-        | CheckFailure.Range(CheckRangeExpectation.AtMost _, _) -> Some "atMost"
-        | CheckFailure.Range(CheckRangeExpectation.Between _, _) -> Some "between"
-        | CheckFailure.Count(CheckCountExpectation.MinimumCount _, _) -> Some "minCount"
-        | CheckFailure.Count(CheckCountExpectation.MaximumCount _, _) -> Some "maxCount"
-        | CheckFailure.Count(CheckCountExpectation.ExactCount _, _) -> Some "count"
-        | CheckFailure.Count(CheckCountExpectation.CountBetween _, _) -> Some "countBetween"
-        | CheckFailure.NonEmpty _ -> Some "minCount"
-        | CheckFailure.Equality(CheckEqualityExpectation.EqualTo _, _) -> Some "oneOf"
-        | CheckFailure.Equality(CheckEqualityExpectation.NotEqualTo _, _) -> None
-        | CheckFailure.CustomCode code -> Some code
-        | CheckFailure.Positive _ -> Some "greaterThan"
-        | CheckFailure.NonNegative _ -> Some "atLeast"
-        | CheckFailure.Negative _ -> Some "lessThan"
-        | CheckFailure.NonPositive _ -> Some "atMost"
-
-    let private tryCustomMessage constraints code =
-        constraints
-        |> List.tryFind (fun constraint' -> SchemaConstraint.code constraint' = code)
-        |> Option.bind SchemaConstraint.message
-
-    let private withCustomMessage constraints code error =
-        match tryCustomMessage constraints code with
-        | Some message -> SchemaError.Custom(code, Some message)
-        | None -> error
-
-    let private checkFailureToSchemaError constraints failure =
-        let error =
-            match failure with
-            | CheckFailure.Missing
-            | CheckFailure.Blank -> SchemaError.Required
-            | CheckFailure.InvalidFormat expected -> SchemaError.InvalidFormat expected
-            | CheckFailure.Length(CheckLengthExpectation.MinimumLength minimum, actual) -> SchemaError.TooShort(minimum, actual)
-            | CheckFailure.Length(CheckLengthExpectation.MaximumLength maximum, actual) -> SchemaError.TooLong(maximum, actual)
-            | CheckFailure.Length(CheckLengthExpectation.ExactLength expected, actual) -> SchemaError.LengthOutOfRange(expected, expected, actual)
-            | CheckFailure.Length(CheckLengthExpectation.LengthBetween(minimum, maximum), actual) ->
-                SchemaError.LengthOutOfRange(minimum, maximum, actual)
-            | CheckFailure.Range(expectation, actual) -> SchemaError.RangeOutOfRange(rangeText expectation, actual)
-            | CheckFailure.Count(expectation, actual) -> SchemaError.CountOutOfRange(countText expectation, actual)
-            | CheckFailure.NonEmpty actual -> SchemaError.CountOutOfRange("minCount 1", actual)
-            | CheckFailure.Equality(CheckEqualityExpectation.EqualTo choices, _) -> SchemaError.NotOneOf choices
-            | CheckFailure.Equality(CheckEqualityExpectation.NotEqualTo unexpected, _) ->
-                SchemaError.Custom($"notEqualTo:{unexpected}", None)
-            | CheckFailure.CustomCode code -> SchemaError.Custom(code, None)
-            | CheckFailure.Positive actual -> SchemaError.RangeOutOfRange("greaterThan 0", actual)
-            | CheckFailure.NonNegative actual -> SchemaError.RangeOutOfRange("atLeast 0", actual)
-            | CheckFailure.Negative actual -> SchemaError.RangeOutOfRange("lessThan 0", actual)
-            | CheckFailure.NonPositive actual -> SchemaError.RangeOutOfRange("atMost 0", actual)
-
-        match constraintCodeFor failure with
-        | Some code -> withCustomMessage constraints code error
-        | None -> error
-
     let private allConstraints definition =
         let rec gather valueDefinition =
             match valueDefinition.Shape with
@@ -393,7 +405,7 @@ module Validation =
     let private runCheck constraints check value =
         match check value with
         | Ok () -> Ok value
-        | Error failures -> failures |> List.map (checkFailureToSchemaError constraints) |> Error
+        | Error failures -> failures |> SchemaCheckFailure.toSchemaErrors constraints |> Error
 
     let private checkPrimitive kind constraints value =
         match kind with
