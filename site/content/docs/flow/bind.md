@@ -90,6 +90,35 @@ let login user =
 - `Task<Result<'value, 'error>>`
 - `ValueTask<Result<'value, 'error>>`
 
+## Bind Versus Policy
+
+`Bind.error`, `Bind.mapError`, and `Policy` all assign workflow errors, but at different altitudes:
+
+- use `Bind.error` when a single bind source fails without a meaningful error — option absence or a `unit` error — and
+  the call site knows which workflow error that absence means
+- use `Bind.mapError` when a single bind source already carries a meaningful error that just needs translating into the
+  surrounding flow's error type
+- use `Policy` when the requirement is a reusable, named verification step — especially when it should read the
+  workflow environment, compose with other requirements, or switch on and off per environment
+
+A `Policy<'env, 'error, 'input, 'output>` is a value you define once and run anywhere with `Flow.verify`:
+
+```fsharp
+let withinLimit =
+    Policy.context
+        (fun env value -> if value <= env.Limit then Ok value else Error ())
+        (fun () -> TooLarge)
+
+let workflow count =
+    flow {
+        let! checkedCount = count |> Flow.verify (Policy.optional _.EnforceLimit withinLimit)
+        return checkedCount
+    }
+```
+
+If the adjustment is a one-off at a single bind site, stay with `Bind`. When the same requirement appears in more than
+one workflow, needs the environment, or reads better with a name, promote it to a `Policy`.
+
 ## When Not To Use It
 
 Do not use `Bind` as a general Result helper. In pure code, use `Result.require`, `Result.mapError`, or `Validation.mapError`.

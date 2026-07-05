@@ -390,6 +390,19 @@ module ApiShapeTests =
         |> assertContainsAll [ "Return"; "ReturnFrom"; "Bind"; "Delay"; "Run"; "Combine" ]
 
     [<Fact>]
+    let ``policy lives in flow without schema refined or validation dependencies`` () =
+        let flowAssembly = Assembly.Load "Axial.Flow"
+
+        test <@ flowAssembly.GetName().Name = "Axial.Flow" @>
+
+        referencedAssemblyNames flowAssembly
+        |> assertContainsNone [ "Axial.Schema"; "Axial.Refined"; "Axial.Validation"; "Axial.Validation.Schema" ]
+
+        moduleTypeFromAssembly "Axial.Flow" "Axial.Flow.PolicyModule"
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "pure"; "withError"; "context"; "pass"; "compose"; "optional" ]
+
+    [<Fact>]
     let ``schema validation interpreters stay out of core validation`` () =
         let validationAssembly = typeof<Validation<int, string>>.Assembly
         let validationReferences = referencedAssemblyNames validationAssembly

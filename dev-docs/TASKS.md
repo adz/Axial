@@ -87,21 +87,21 @@ Work this queue from top to bottom.
 
 ## Phase 13: Policy And Flow Integration
 
-- [ ] Define or update `Policy<'env, 'error, 'input, 'output> =
+- [x] Define or update `Policy<'env, 'error, 'input, 'output> =
   'env -> 'input -> Result<'output, 'error>`.
-- [ ] Implement `Policy.pure`.
-- [ ] Implement `Policy.withError`.
-- [ ] Implement `Policy.context`.
-- [ ] Implement `Policy.pass`.
-- [ ] Implement `Policy.compose`.
-- [ ] Implement `Policy.optional`.
-- [ ] Implement `Flow.verify`.
-- [ ] Ensure `Policy` lives in `Axial.Flow`.
-- [ ] Ensure `Axial.Flow` does not depend on `Axial.Schema`, `Axial.Refined`, or `Axial.Validation`.
-- [ ] Add policy examples for parsing, refined construction, schema input result, validation result, and contextual rules.
-- [ ] Add tests proving `Flow.verify` injects the current environment and short-circuits on failure.
-- [ ] Add tests for context-aware and optional policies.
-- [ ] Document when to use `Bind.error`, `Bind.mapError`, and `Policy`.
+- [x] Implement `Policy.pure`.
+- [x] Implement `Policy.withError`.
+- [x] Implement `Policy.context`.
+- [x] Implement `Policy.pass`.
+- [x] Implement `Policy.compose`.
+- [x] Implement `Policy.optional`.
+- [x] Implement `Flow.verify`.
+- [x] Ensure `Policy` lives in `Axial.Flow`.
+- [x] Ensure `Axial.Flow` does not depend on `Axial.Schema`, `Axial.Refined`, or `Axial.Validation`.
+- [x] Add policy examples for parsing, refined construction, schema input result, validation result, and contextual rules.
+- [x] Add tests proving `Flow.verify` injects the current environment and short-circuits on failure.
+- [x] Add tests for context-aware and optional policies.
+- [x] Document when to use `Bind.error`, `Bind.mapError`, and `Policy`.
 
 ## Phase 14: Non-Validation Interpreters
 
