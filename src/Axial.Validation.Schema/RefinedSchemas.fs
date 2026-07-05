@@ -51,13 +51,13 @@ module RefinedSchema =
 
     /// <summary>Describes a positive integer as a schema refined value over an integer greater than zero.</summary>
     let positiveInt : ValueSchema<PositiveInt> =
-        Value.``int``
+        Value.int
         |> Value.withConstraint (SchemaConstraint.greaterThan 0)
         |> Value.refined (PositiveInt.create >> RefinedSchemaConstruction.fromResult "PositiveInt") PositiveInt.value
 
     /// <summary>Describes a non-negative integer as a schema refined value over an integer greater than or equal to zero.</summary>
     let nonNegativeInt : ValueSchema<NonNegativeInt> =
-        Value.``int``
+        Value.int
         |> Value.withConstraint (SchemaConstraint.atLeast 0)
         |> Value.refined
             (Refine.nonNegativeInt >> RefinedSchemaConstruction.fromResult "NonNegativeInt")
@@ -65,7 +65,7 @@ module RefinedSchema =
 
     /// <summary>Describes a non-zero integer as a schema refined value over an integer not equal to zero.</summary>
     let nonZeroInt : ValueSchema<NonZeroInt> =
-        Value.``int``
+        Value.int
         |> Value.withConstraint (SchemaConstraint.notEqualTo 0)
         |> Value.refined
             (Refine.nonZeroInt >> RefinedSchemaConstruction.fromResult "NonZeroInt")
@@ -73,7 +73,7 @@ module RefinedSchema =
 
     /// <summary>Describes a negative integer as a schema refined value over an integer less than zero.</summary>
     let negativeInt : ValueSchema<NegativeInt> =
-        Value.``int``
+        Value.int
         |> Value.withConstraint (SchemaConstraint.lessThan 0)
         |> Value.refined
             (Refine.negativeInt >> RefinedSchemaConstruction.fromResult "NegativeInt")
@@ -81,7 +81,7 @@ module RefinedSchema =
 
     /// <summary>Describes a non-positive integer as a schema refined value over an integer less than or equal to zero.</summary>
     let nonPositiveInt : ValueSchema<NonPositiveInt> =
-        Value.``int``
+        Value.int
         |> Value.withConstraint (SchemaConstraint.atMost 0)
         |> Value.refined
             (Refine.nonPositiveInt >> RefinedSchemaConstruction.fromResult "NonPositiveInt")

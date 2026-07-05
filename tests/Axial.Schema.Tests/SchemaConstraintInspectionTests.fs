@@ -30,7 +30,7 @@ module SchemaConstraintInspectionTests =
             Value.text
             |> Value.withConstraints [ SchemaConstraint.required; SchemaConstraint.email; SchemaConstraint.maxLength 254 ]
 
-        let ageValue = Value.``int`` |> Value.withConstraint (SchemaConstraint.between 13 120)
+        let ageValue = Value.int |> Value.withConstraint (SchemaConstraint.between 13 120)
 
         let schema =
             Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })

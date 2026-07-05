@@ -106,7 +106,7 @@ module SchemaValidationTests =
             _.Email
             (Value.text
              |> Value.withConstraints [ SchemaConstraint.required; SchemaConstraint.email; SchemaConstraint.maxLength 254 ])
-        |> Schema.field "age" _.Age (Value.``int`` |> Value.withConstraint (SchemaConstraint.atLeast 18))
+        |> Schema.field "age" _.Age (Value.int |> Value.withConstraint (SchemaConstraint.atLeast 18))
         |> Schema.build
 
     let private contactMethodSchema =
@@ -192,7 +192,7 @@ module SchemaValidationTests =
             |> Schema.field
                 "age"
                 _.Age
-                (Value.``int``
+                (Value.int
                  |> Value.withConstraint (SchemaConstraint.atLeast 18 |> SchemaConstraint.withMessage "Must be an adult."))
             |> Schema.build
 

@@ -57,7 +57,7 @@ let underQuantityCap : Policy<OrderEnv, OrderError, OrderLine, OrderLine> =
 
 // schema input parsing
 let parseOrderLine : Policy<OrderEnv, OrderError, RawInput, OrderLine> =
-    Policy.``pure`` (fun raw -> (Input.parse orderLineSchema raw).Result) mapDiagnostics
+    Policy.lift (fun raw -> (Input.parse orderLineSchema raw).Result) mapDiagnostics
 ```
 
 `Policy.compose` chains steps, `Policy.optional` switches a step on and off per environment, and `Flow.verify` runs a

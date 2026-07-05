@@ -37,7 +37,7 @@ module Quantity =
     let value (Quantity value) = value
 
     let schema : ValueSchema<Quantity> =
-        Value.``int``
+        Value.int
         |> Value.withConstraint (SchemaConstraint.greaterThan 0)
         |> Value.refined create value
 
@@ -49,7 +49,7 @@ module Balance =
     let value (Balance value) = value
 
     let schema : ValueSchema<Balance> =
-        Value.``decimal``
+        Value.decimal
         |> Value.withConstraint (SchemaConstraint.atLeast 0m)
         |> Value.refined create value
 

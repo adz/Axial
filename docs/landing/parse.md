@@ -41,7 +41,7 @@ let signupSchema =
         [ SchemaConstraint.required; SchemaConstraint.email ]
         "email" _.Email Value.text
     |> Schema.fieldWith
-        [ SchemaConstraint.atLeast 13 ] "age" _.Age Value.``int``
+        [ SchemaConstraint.atLeast 13 ] "age" _.Age Value.int
     |> Schema.build
 ```
 

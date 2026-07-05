@@ -199,8 +199,8 @@ module SchemaInterpreterPrototypeTests =
             [ SchemaConstraint.between 13 120 ]
             "age"
             _.Age
-            Value.``int``
-        |> Schema.field "newsletter" _.Newsletter Value.``bool``
+            Value.int
+        |> Schema.field "newsletter" _.Newsletter Value.bool
         |> Schema.fieldWith [ SchemaConstraint.required ] "address" _.Address (Value.nested (addressSchema ()))
         |> Schema.fieldWith
             [ SchemaConstraint.minCount 1; SchemaConstraint.distinct ]

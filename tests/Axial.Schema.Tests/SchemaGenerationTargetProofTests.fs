@@ -24,7 +24,7 @@ module SchemaGenerationTargetProofTests =
             "email"
             _.Email
             Value.text
-        |> Schema.fieldWith [ SchemaConstraint.atLeast 13 ] "age" _.Age Value.``int``
+        |> Schema.fieldWith [ SchemaConstraint.atLeast 13 ] "age" _.Age Value.int
         |> Schema.build
 
     [<Fact>]

@@ -16,7 +16,7 @@ module Quantity =
     let value (Quantity value) = value
 
     let schema : ValueSchema<Quantity> =
-        Value.``int``
+        Value.int
         |> Value.withConstraint (SchemaConstraint.greaterThan 0)
         |> Value.refined create value
 
@@ -52,13 +52,13 @@ let refinePositive : Policy<OrderEnv, OrderError, int, PositiveInt> =
 
 // 3. Schema input result: adapt Input.parse over raw boundary input.
 let parseOrderLine : Policy<OrderEnv, OrderError, RawInput, OrderLine> =
-    Policy.``pure``
+    Policy.lift
         (fun raw -> (Input.parse orderLineSchema raw).Result)
         (Diagnostics.flatten >> LineRejected)
 
 // 4. Validation result: adapt intrinsic validation of an existing model.
 let validateOrderLine : Policy<OrderEnv, OrderError, OrderLine, OrderLine> =
-    Policy.``pure``
+    Policy.lift
         (fun line ->
             Axial.Validation.Schema.Validation.validate orderLineSchema line
             |> Axial.Validation.Validation.toResult)

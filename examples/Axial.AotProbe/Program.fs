@@ -208,7 +208,7 @@ let probeSchemaBuilder () =
     let schema =
         Schema.recordFor<SchemaContact, _> (fun name age -> { Name = name; Age = age })
         |> Schema.field "name" _.Name Value.text
-        |> Schema.field "age" _.Age Value.``int``
+        |> Schema.field "age" _.Age Value.int
         |> Schema.build
 
     Schema.specialize (SummaryFactory<SchemaContact>()) schema

@@ -59,7 +59,7 @@ module SchemaRefinedValueCheckTests =
         let value (Age value) = value
 
         let schema : ValueSchema<Age> =
-            Value.``int``
+            Value.int
             |> Value.withConstraints [ SchemaConstraint.atLeast 0; SchemaConstraint.atMost 130 ]
             |> Value.refined create value
 
@@ -81,7 +81,7 @@ module SchemaRefinedValueCheckTests =
         let inspectText = Value.text |> Value.inspectUnderlying<string, string>
         test <@ inspectText "Ada" = "Ada" @>
 
-        let inspectInt = Value.``int`` |> Value.inspectUnderlying<int, int>
+        let inspectInt = Value.int |> Value.inspectUnderlying<int, int>
         test <@ inspectInt 42 = 42 @>
 
     [<Fact>]

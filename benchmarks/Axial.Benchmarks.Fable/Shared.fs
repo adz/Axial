@@ -149,7 +149,7 @@ module Shared =
         let schema =
             Schema.record (fun name age -> { Name = name; Age = age })
             |> Schema.field "name" (fun (contact: SchemaContact) -> contact.Name) Value.text
-            |> Schema.field "age" (fun (contact: SchemaContact) -> contact.Age) Value.``int``
+            |> Schema.field "age" (fun (contact: SchemaContact) -> contact.Age) Value.int
             |> Schema.build
 
         Schema.specialize (SummaryFactory<SchemaContact>()) schema

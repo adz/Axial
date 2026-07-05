@@ -446,7 +446,7 @@ module ApiShapeTests =
 
         moduleTypeFromAssembly "Axial.Flow" "Axial.Flow.PolicyModule"
         |> publicStaticMemberNames
-        |> assertContainsAll [ "pure"; "withError"; "context"; "pass"; "compose"; "optional" ]
+        |> assertContainsAll [ "lift"; "withError"; "context"; "pass"; "compose"; "optional" ]
 
     [<Fact>]
     let ``schema validation interpreters stay out of core validation`` () =
@@ -741,9 +741,9 @@ module ApiShapeTests =
     let ``primitive value schemas carry typed intrinsic metadata`` () =
         let valueSchemas =
             [ Value.primitiveKind Value.text
-              Value.primitiveKind Value.``int``
-              Value.primitiveKind Value.``decimal``
-              Value.primitiveKind Value.``bool``
+              Value.primitiveKind Value.int
+              Value.primitiveKind Value.decimal
+              Value.primitiveKind Value.bool
               Value.primitiveKind Value.date
               Value.primitiveKind Value.dateTime
               Value.primitiveKind Value.guid ]
@@ -759,9 +759,9 @@ module ApiShapeTests =
                   PrimitiveValueKind.Guid ]
         @>
         test <@ Value.text.Definition.Shape = PrimitiveValueDefinition PrimitiveValueKind.Text @>
-        test <@ Value.``int``.Definition.Shape = PrimitiveValueDefinition PrimitiveValueKind.Int @>
-        test <@ Value.``decimal``.Definition.Shape = PrimitiveValueDefinition PrimitiveValueKind.Decimal @>
-        test <@ Value.``bool``.Definition.Shape = PrimitiveValueDefinition PrimitiveValueKind.Bool @>
+        test <@ Value.int.Definition.Shape = PrimitiveValueDefinition PrimitiveValueKind.Int @>
+        test <@ Value.decimal.Definition.Shape = PrimitiveValueDefinition PrimitiveValueKind.Decimal @>
+        test <@ Value.bool.Definition.Shape = PrimitiveValueDefinition PrimitiveValueKind.Bool @>
         test <@ Value.date.Definition.Shape = PrimitiveValueDefinition PrimitiveValueKind.Date @>
         test <@ Value.dateTime.Definition.Shape = PrimitiveValueDefinition PrimitiveValueKind.DateTime @>
         test <@ Value.guid.Definition.Shape = PrimitiveValueDefinition PrimitiveValueKind.Guid @>
@@ -1026,7 +1026,7 @@ module ApiShapeTests =
     [<Fact>]
     let ``schema fields inspect existing trusted models through typed getters`` () =
         let nameField = Field.create "name" (fun (model: Customer) -> model.Name) Value.text
-        let ageField = Field.create "age" (fun (model: Customer) -> model.Age) Value.``int``
+        let ageField = Field.create "age" (fun (model: Customer) -> model.Age) Value.int
         let customer = { Name = "Ada"; Age = 37 }
         let missingField = Unchecked.defaultof<Field<Customer, string>>
 
@@ -1054,7 +1054,7 @@ module ApiShapeTests =
         let schema =
             Schema.recordFor<Customer, _> (fun name age -> { Name = name; Age = age })
             |> Schema.fieldWith [ SchemaConstraint.required ] "name" _.Name requiredText
-            |> Schema.``int`` "age" _.Age
+            |> Schema.int "age" _.Age
             |> Schema.build
 
         let constructed =
@@ -1080,8 +1080,8 @@ module ApiShapeTests =
         let schema =
             Schema.recordFor<CustomerProfile, _> create
             |> Schema.text "name" _.Name
-            |> Schema.``int`` "age" _.Age
-            |> Schema.``bool`` "active" _.Active
+            |> Schema.int "age" _.Age
+            |> Schema.bool "active" _.Active
             |> Schema.build
 
         match schema.Definition with
@@ -1102,8 +1102,8 @@ module ApiShapeTests =
         let schema =
             Schema.recordFor<CustomerProfile, _> create
             |> Schema.text "name" _.Name
-            |> Schema.``int`` "age" _.Age
-            |> Schema.``bool`` "active" _.Active
+            |> Schema.int "age" _.Age
+            |> Schema.bool "active" _.Active
             |> Schema.build
 
         match schema.Definition with
@@ -1131,9 +1131,9 @@ module ApiShapeTests =
         let schema =
             Schema.recordFor<PrimitiveProfile, _> create
             |> Schema.text "name" _.Name
-            |> Schema.``int`` "age" _.Age
-            |> Schema.``decimal`` "balance" _.Balance
-            |> Schema.``bool`` "active" _.Active
+            |> Schema.int "age" _.Age
+            |> Schema.decimal "balance" _.Balance
+            |> Schema.bool "active" _.Active
             |> Schema.date "birthDate" _.BirthDate
             |> Schema.dateTime "lastSeen" _.LastSeen
             |> Schema.guid "id" _.Id

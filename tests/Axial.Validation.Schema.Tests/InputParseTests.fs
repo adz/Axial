@@ -115,7 +115,7 @@ module InputParseTests =
             |> Schema.field
                 "age"
                 _.Age
-                (Value.``int``
+                (Value.int
                  |> Value.withConstraint (SchemaConstraint.atLeast 18 |> SchemaConstraint.withMessage "Must be an adult."))
             |> Schema.build
 
@@ -317,7 +317,7 @@ module InputParseTests =
             Schema.recordFor<AdultAge, _> (fun age ->
                 constructorCalls <- constructorCalls + 1
                 AdultAge.Create age)
-            |> Schema.field "age" _.Age (Value.``int`` |> Value.withConstraint (SchemaConstraint.atLeast 0))
+            |> Schema.field "age" _.Age (Value.int |> Value.withConstraint (SchemaConstraint.atLeast 0))
             |> Schema.buildResult
 
         let raw =
@@ -500,7 +500,7 @@ module InputParseTests =
         let requiredAgeSchema =
             Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
             |> Schema.text "email" _.Email
-            |> Schema.field "age" _.Age (Value.``int`` |> Value.withConstraint SchemaConstraint.required)
+            |> Schema.field "age" _.Age (Value.int |> Value.withConstraint SchemaConstraint.required)
             |> Schema.build
 
         let raw =

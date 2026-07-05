@@ -56,7 +56,7 @@ module SchemaRefinedValueTests =
         let create (value: int) = Age value
         let value (Age value) = value
 
-        let schema : ValueSchema<Age> = Value.refined create value Value.``int``
+        let schema : ValueSchema<Age> = Value.refined create value Value.int
 
     type private Contact = { Email: Email; Name: string }
 
@@ -134,9 +134,9 @@ module SchemaRefinedValueTests =
     let ``refined value schemas can layer over every primitive value schema`` () =
         let kinds =
             [ Value.refined Email.create Email.value Value.text |> Value.underlyingPrimitiveKind
-              Value.refined Age.create Age.value Value.``int`` |> Value.underlyingPrimitiveKind
-              Value.refined (fun (value: decimal) -> value) id Value.``decimal`` |> Value.underlyingPrimitiveKind
-              Value.refined (fun (value: bool) -> value) id Value.``bool`` |> Value.underlyingPrimitiveKind
+              Value.refined Age.create Age.value Value.int |> Value.underlyingPrimitiveKind
+              Value.refined (fun (value: decimal) -> value) id Value.decimal |> Value.underlyingPrimitiveKind
+              Value.refined (fun (value: bool) -> value) id Value.bool |> Value.underlyingPrimitiveKind
               Value.refined (fun (value: DateOnly) -> value) id Value.date |> Value.underlyingPrimitiveKind
               Value.refined (fun (value: DateTimeOffset) -> value) id Value.dateTime |> Value.underlyingPrimitiveKind
               Value.refined (fun (value: Guid) -> value) id Value.guid |> Value.underlyingPrimitiveKind ]
@@ -156,7 +156,7 @@ module SchemaRefinedValueTests =
     let ``refined value schemas over non-text primitives round-trip like text-based ones`` () =
         match Age.schema.Definition.Shape with
         | RefinedValueDefinition(raw, ops) ->
-            test <@ raw = Value.``int``.Definition @>
+            test <@ raw = Value.int.Definition @>
             let constructed = ops.Construct(box 42) |> unbox<Age>
             test <@ constructed = Age.create 42 @>
             test <@ ops.Inspect(box constructed) |> unbox<int> = 42 @>
@@ -167,12 +167,12 @@ module SchemaRefinedValueTests =
         test <@ Value.isRefined Email.schema @>
         test <@ Value.isRefined Age.schema @>
         test <@ not (Value.isRefined Value.text) @>
-        test <@ not (Value.isRefined Value.``int``) @>
+        test <@ not (Value.isRefined Value.int) @>
 
     [<Fact>]
     let ``underlyingPrimitiveKind matches primitiveKind for primitive value schemas`` () =
         test <@ Value.underlyingPrimitiveKind Value.text = Value.primitiveKind Value.text @>
-        test <@ Value.underlyingPrimitiveKind Value.``int`` = Value.primitiveKind Value.``int`` @>
+        test <@ Value.underlyingPrimitiveKind Value.int = Value.primitiveKind Value.int @>
         test <@ Value.underlyingPrimitiveKind Value.guid = Value.primitiveKind Value.guid @>
 
     [<Fact>]

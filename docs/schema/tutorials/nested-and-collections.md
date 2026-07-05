@@ -31,7 +31,7 @@ let addressSchema =
 let itemSchema =
     Schema.recordFor<Item, _> (fun sku quantity -> { Sku = sku; Quantity = quantity })
     |> Schema.fieldWith [ SchemaConstraint.required ] "sku" _.Sku Value.text
-    |> Schema.fieldWith [ SchemaConstraint.greaterThan 0 ] "quantity" _.Quantity Value.``int``
+    |> Schema.fieldWith [ SchemaConstraint.greaterThan 0 ] "quantity" _.Quantity Value.int
     |> Schema.build
 
 let orderSchema =

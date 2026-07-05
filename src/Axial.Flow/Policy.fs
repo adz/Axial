@@ -14,7 +14,7 @@ type Policy<'env, 'error, 'input, 'output> =
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Policy =
     /// <summary>Lifts a pure result-returning function and maps its error into the workflow error type.</summary>
-    let ``pure``
+    let lift
         (operation: 'input -> Result<'output, 'innerError>)
         (mapError: 'innerError -> 'error)
         : Policy<'env, 'error, 'input, 'output> =
@@ -28,7 +28,7 @@ module Policy =
         (operation: 'input -> Result<'output, 'innerError>)
         (error: 'error)
         : Policy<'env, 'error, 'input, 'output> =
-        ``pure`` operation (fun _ -> error)
+        lift operation (fun _ -> error)
 
     /// <summary>Lifts an environment-aware result-returning function and maps its error into the workflow error type.</summary>
     let context

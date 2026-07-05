@@ -29,7 +29,7 @@ module SchemaFormatTests =
     [<Fact>]
     let ``value schemas carry no format metadata by default`` () =
         test <@ Value.format Value.text = None @>
-        test <@ Value.format Value.``int`` = None @>
+        test <@ Value.format Value.int = None @>
         test <@ Value.format (Value.text |> Value.refined Email.create Email.value) = None @>
 
     [<Fact>]

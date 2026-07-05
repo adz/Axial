@@ -176,7 +176,7 @@ module SchemaCompiledRecordPlanProofTests =
         let schema =
             Schema.recordFor<Contact, _> (fun name age -> { Name = name; Age = age })
             |> Schema.text "name" _.Name
-            |> Schema.``int`` "age" _.Age
+            |> Schema.int "age" _.Age
             |> Schema.build
 
         let plan = compileFromSchema schema
@@ -208,7 +208,7 @@ module SchemaCompiledRecordPlanProofTests =
         let schema =
             Schema.recordFor<Contact, _> (fun name age -> { Name = name; Age = age })
             |> Schema.text "name" _.Name
-            |> Schema.``int`` "age" _.Age
+            |> Schema.int "age" _.Age
             |> Schema.build
 
         let plan = compileFromSchema schema
