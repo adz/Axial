@@ -46,7 +46,7 @@ Work this queue from top to bottom.
 - [x] Ensure nested input expects object-shaped raw input.
 - [x] Prefix nested diagnostics with `PathSegment.Name`.
 - [x] Implement `many "contacts" _.Contacts ContactMethod.schema { minCount 1 }`.
-- [ ] Ensure collection input expects `RawInput.Many`.
+- [x] Ensure collection input expects `RawInput.Many`.
 - [ ] Parse every item and accumulate every item error.
 - [ ] Prefix collection diagnostics with `PathSegment.Index`.
 - [ ] Support raw redisplay paths such as `contacts[1].value`.

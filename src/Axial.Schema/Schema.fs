@@ -607,7 +607,19 @@ and internal ValueSchemaShape =
     /// <summary>A nested model value described by another type-erased model schema.</summary>
     | NestedValueDefinition of ModelSchemaDefinition<obj>
     /// <summary>A collection value whose items are each described by the same item value schema.</summary>
-    | ManyValueDefinition of item: ValueSchemaDefinition
+    | ManyValueDefinition of CollectionValueDefinition
+
+/// <summary>
+/// Holds the type-erased item value schema for a collection value, plus a closure that boxes a list of parsed,
+/// type-erased items back into the collection's original CLR item list type.
+/// </summary>
+/// <remarks>
+/// The boxing closure is captured at <c>Value.many</c> call sites where the item CLR type is still statically known,
+/// so interpreters such as input parsing can build a correctly-typed <c>'item list</c> without runtime reflection.
+/// </remarks>
+and [<ReferenceEquality>] internal CollectionValueDefinition =
+    { Item: ValueSchemaDefinition
+      BoxItems: obj list -> obj }
 
 and [<ReferenceEquality>] internal FieldDescriptor<'model> =
     { ExternalName: ExternalFieldName
@@ -1009,9 +1021,10 @@ module Value =
     /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="itemSchema" /> was not produced by <c>Schema.build</c>.</exception>
     let many (itemSchema: Schema<'item>) : ValueSchema<'item list> =
         let itemValueSchema = nested itemSchema
+        let boxItems (items: obj list) : obj = items |> List.map unbox<'item> |> box
 
         ValueSchema(
-            { Shape = ManyValueDefinition itemValueSchema.Definition
+            { Shape = ManyValueDefinition { Item = itemValueSchema.Definition; BoxItems = boxItems }
               Format = None
               Constraints = [] }
         )

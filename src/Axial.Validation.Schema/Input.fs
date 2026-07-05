@@ -252,10 +252,10 @@ module Input =
             | ManyValueDefinition _ -> errorAt path SchemaError.ExpectedMany
             | PrimitiveValueDefinition _
             | RefinedValueDefinition _ -> errorAt path SchemaError.ExpectedScalar
-        | RawInput.Many _ ->
+        | RawInput.Many rawItems ->
             match valueSchema.Shape with
             | NestedValueDefinition _ -> errorAt path SchemaError.ExpectedObject
-            | ManyValueDefinition _ -> invalidOp "Collection input parsing is not yet implemented."
+            | ManyValueDefinition collection -> parseMany path collection rawItems
             | PrimitiveValueDefinition _
             | RefinedValueDefinition _ -> errorAt path SchemaError.ExpectedScalar
         | RawInput.Scalar text when hasRequiredConstraint constraints && String.IsNullOrWhiteSpace text ->
@@ -297,6 +297,30 @@ module Input =
             |> ConstructorApplication.apply model.Constructor
             |> Ok
         | diagnostics -> Error(mergeErrors diagnostics)
+
+    and private parseManyItem path itemModel rawItem =
+        match rawItem with
+        | RawInput.Object fields -> parseObject path itemModel fields
+        | RawInput.Missing
+        | RawInput.Scalar _
+        | RawInput.Many _ -> errorAt path SchemaError.ExpectedObject
+
+    and private parseMany path (collection: CollectionValueDefinition) rawItems =
+        match collection.Item.Shape with
+        | NestedValueDefinition itemModel ->
+            let parsedItems = rawItems |> List.map (parseManyItem path itemModel)
+            let errors = parsedItems |> List.choose (function Error diagnostics -> Some diagnostics | Ok _ -> None)
+
+            match errors with
+            | [] ->
+                parsedItems
+                |> List.map (function Ok value -> value | Error _ -> invalidOp "Unexpected parse error.")
+                |> collection.BoxItems
+                |> Ok
+            | diagnostics -> Error(mergeErrors diagnostics)
+        | PrimitiveValueDefinition _
+        | RefinedValueDefinition _
+        | ManyValueDefinition _ -> invalidOp "Collection item value schemas must be nested model value schemas."
 
     /// <summary>Parses raw boundary input through a trusted model schema.</summary>
     let parse (schema: Schema<'model>) (input: RawInput) : ParsedInput<'model, SchemaError> =

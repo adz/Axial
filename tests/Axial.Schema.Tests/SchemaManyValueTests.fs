@@ -95,8 +95,8 @@ module SchemaManyValueTests =
         // An inspection interpreter reads the item collection with the outer field's getter, then reads each item's
         // own fields with the item schema's getters, all without reflection.
         match contactsField.ValueSchema.Shape with
-        | ManyValueDefinition itemValueSchema ->
-            match itemValueSchema.Shape with
+        | ManyValueDefinition collectionDefinition ->
+            match collectionDefinition.Item.Shape with
             | NestedValueDefinition itemModel ->
                 let items = contactsField.Getter customer |> unbox<ContactMethod list>
 
