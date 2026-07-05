@@ -1,5 +1,6 @@
 namespace Axial.Tests
 
+open System
 open Axial.Schema
 open Axial.Validation
 open Axial.Validation.Schema
@@ -31,6 +32,17 @@ module InputParseTests =
                 Ok { Age = age }
             else
                 Error Underage
+
+    type private DateRange =
+        private
+            { Start: DateOnly
+              End: DateOnly }
+
+        static member Create start endDate =
+            if start <= endDate then
+                Ok { Start = start; End = endDate }
+            else
+                Error "End date must be on or after start date."
 
     let private schema =
         Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
@@ -340,6 +352,96 @@ module InputParseTests =
         let parsed = Input.parse ageSchema raw
 
         test <@ parsed.Errors = [ { Path = []; Error = SchemaError.ConstructorFailed "Adult age is required." } ] @>
+
+    [<Fact>]
+    let ``parse builds a DateRange when cross-field constructor invariant passes`` () =
+        let rangeSchema =
+            Schema.recordFor<DateRange, _> DateRange.Create
+            |> Schema.date "start" _.Start
+            |> Schema.date "end" _.End
+            |> Schema.buildResult
+
+        let raw =
+            RawInput.Object(
+                Map.ofList
+                    [ "start", RawInput.Scalar "2026-01-10"
+                      "end", RawInput.Scalar "2026-01-12" ]
+            )
+
+        let parsed = Input.parse rangeSchema raw
+
+        test <@ parsed.IsValid @>
+        test <@ parsed.Model.Start = DateOnly(2026, 1, 10) @>
+        test <@ parsed.Model.End = DateOnly(2026, 1, 12) @>
+
+    [<Fact>]
+    let ``parse reports DateRange constructor invariant errors at root by default`` () =
+        let rangeSchema =
+            Schema.recordFor<DateRange, _> DateRange.Create
+            |> Schema.date "start" _.Start
+            |> Schema.date "end" _.End
+            |> Schema.buildResult
+
+        let raw =
+            RawInput.Object(
+                Map.ofList
+                    [ "start", RawInput.Scalar "2026-01-12"
+                      "end", RawInput.Scalar "2026-01-10" ]
+            )
+
+        let parsed = Input.parse rangeSchema raw
+
+        test <@ not parsed.IsValid @>
+        test <@ parsed.TryModel = None @>
+        test <@ parsed.Errors = [ { Path = []; Error = SchemaError.ConstructorFailed "End date must be on or after start date." } ] @>
+
+    [<Fact>]
+    let ``parse can attach DateRange constructor invariant errors to the end field`` () =
+        let rangeSchema =
+            Schema.recordFor<DateRange, _> DateRange.Create
+            |> Schema.date "start" _.Start
+            |> Schema.date "end" _.End
+            |> Schema.buildResult
+
+        let raw =
+            RawInput.Object(
+                Map.ofList
+                    [ "start", RawInput.Scalar "2026-01-12"
+                      "end", RawInput.Scalar "2026-01-10" ]
+            )
+
+        let parsed = Input.parseWith (Input.constructorErrorAt "end") rangeSchema raw
+
+        test <@ not parsed.IsValid @>
+        test
+            <@ parsed.Errors = [ { Path = [ PathSegment.Name "end" ]
+                                   Error = SchemaError.ConstructorFailed "End date must be on or after start date." } ] @>
+        test <@ parsed.ErrorsFor "end" = [ SchemaError.ConstructorFailed "End date must be on or after start date." ] @>
+
+    [<Fact>]
+    let ``DateRange field diagnostics gate cross-field constructor invariant errors`` () =
+        let mutable constructorCalls = 0
+
+        let rangeSchema =
+            Schema.recordFor<DateRange, _> (fun start endDate ->
+                constructorCalls <- constructorCalls + 1
+                DateRange.Create start endDate)
+            |> Schema.date "start" _.Start
+            |> Schema.date "end" _.End
+            |> Schema.buildResult
+
+        let raw =
+            RawInput.Object(
+                Map.ofList
+                    [ "start", RawInput.Scalar "not-a-date"
+                      "end", RawInput.Scalar "2026-01-10" ]
+            )
+
+        let parsed = Input.parse rangeSchema raw
+
+        test <@ not parsed.IsValid @>
+        test <@ constructorCalls = 0 @>
+        test <@ parsed.Errors = [ { Path = [ PathSegment.Name "start" ]; Error = SchemaError.InvalidFormat "date" } ] @>
 
     [<Fact>]
     let ``parse retains raw input for redisplay after a failed parse`` () =
