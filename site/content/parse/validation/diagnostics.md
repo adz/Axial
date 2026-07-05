@@ -74,6 +74,6 @@ Diagnostics are generic over the `'error` type. You can use `Validation.mapError
 
 ## Example
 
-For a runnable example with nested validation, path rendering, and JSON API error formatting, see the [Diagnostics Example](../patterns/examples/#diagnostics-example) in the examples gallery.
+For a runnable example with nested validation, path rendering, and JSON API error formatting, see the [Diagnostics Example]({{< relref "/patterns/examples/" >}}#diagnostics-example) in the examples gallery.
 
 You can also view the [source code directly on GitHub](https://github.com/adz/Axial/blob/main/examples/Axial.Examples/DiagnosticsExample.fs).
