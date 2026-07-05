@@ -307,9 +307,9 @@ let pageSpecs = [
         Description = "Source-documented model schema definitions for Axial."
         Intro = "This page shows the core `Schema<'model>`, `ValueSchema<'value>`, and `Field<'model, 'value>` types. Schemas describe trusted model and value structure for interpreters such as input parsing, validation, codecs, JSON Schema, UI, and documentation. The core schema package stays independent of workflow execution, diagnostics, raw input, and validation interpreters."
         SymbolIds = [
-            "Core types", ["T:Axial.Schema.Schema`1"; "T:Axial.Schema.ValueSchema`1"; "T:Axial.Schema.Field`2"]
-            "Value schemas", ["P:Axial.Schema.Value.text"; "P:Axial.Schema.Value.int"; "P:Axial.Schema.Value.decimal"; "P:Axial.Schema.Value.bool"; "P:Axial.Schema.Value.dateTime"; "P:Axial.Schema.Value.guid"; "M:Axial.Schema.Value.manyOf"]
-            "Inspection", ["T:Axial.Schema.ValueShape"; "T:Axial.Schema.ValueDescription"; "T:Axial.Schema.FieldDescription"; "T:Axial.Schema.ModelDescription"; "M:Axial.Schema.Inspect.model"; "M:Axial.Schema.Inspect.value"; "M:Axial.Schema.Inspect.field"]
+            "Core types", ["T:Axial.Schema.Schema`1"; "T:Axial.Schema.ValueSchema`1"; "T:Axial.Schema.Field`2"; "T:Axial.Schema.UnionCase`1"]
+            "Value schemas", ["P:Axial.Schema.Value.text"; "P:Axial.Schema.Value.int"; "P:Axial.Schema.Value.decimal"; "P:Axial.Schema.Value.bool"; "P:Axial.Schema.Value.dateTime"; "P:Axial.Schema.Value.guid"; "M:Axial.Schema.Value.manyOf"; "M:Axial.Schema.Value.union"; "M:Axial.Schema.UnionCase.create"]
+            "Inspection", ["T:Axial.Schema.ValueShape"; "T:Axial.Schema.ValueDescription"; "T:Axial.Schema.FieldDescription"; "T:Axial.Schema.ModelDescription"; "T:Axial.Schema.UnionDescription"; "T:Axial.Schema.UnionCaseDescription"; "M:Axial.Schema.Inspect.model"; "M:Axial.Schema.Inspect.value"; "M:Axial.Schema.Inspect.field"]
         ]
         Alias = None
     }

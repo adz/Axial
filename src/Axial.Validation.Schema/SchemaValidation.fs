@@ -451,6 +451,7 @@ module Validation =
             | RefinedValueDefinition(raw, _) -> gather raw @ valueDefinition.Constraints
             | NestedValueDefinition _ -> valueDefinition.Constraints
             | ManyValueDefinition _ -> valueDefinition.Constraints
+            | UnionValueDefinition _ -> valueDefinition.Constraints
 
         gather definition
 
@@ -461,6 +462,7 @@ module Validation =
             | RefinedValueDefinition(raw, _) -> kindOf raw
             | NestedValueDefinition _ -> invalidOp "Nested model value schemas have no underlying primitive kind."
             | ManyValueDefinition _ -> invalidOp "Collection value schemas have no underlying primitive kind."
+            | UnionValueDefinition _ -> invalidOp "Union value schemas have no underlying primitive kind."
 
         kindOf definition
 
@@ -471,6 +473,7 @@ module Validation =
             | RefinedValueDefinition(raw, ops) -> project raw (ops.Inspect current)
             | NestedValueDefinition _ -> invalidOp "Nested model values have no underlying primitive representation."
             | ManyValueDefinition _ -> invalidOp "Collection values have no underlying primitive representation."
+            | UnionValueDefinition _ -> invalidOp "Union values have no underlying primitive representation."
 
         project definition value
 
@@ -520,7 +523,8 @@ module Validation =
         | RefinedValueDefinition(raw, ops) ->
             match raw.Shape with
             | NestedValueDefinition _
-            | ManyValueDefinition _ ->
+            | ManyValueDefinition _
+            | UnionValueDefinition _ ->
                 validateValue raw (valueSchema.Constraints @ fieldConstraints) path (ops.Inspect value)
                 |> Axial.Validation.Validation.map (fun _ -> value)
             | PrimitiveValueDefinition _
@@ -551,6 +555,9 @@ module Validation =
             |> Axial.Validation.Validation.map (fun _ -> value)
         | ManyValueDefinition collection ->
             validateMany path collection constraints (value :?> System.Collections.IEnumerable)
+            |> Axial.Validation.Validation.map (fun _ -> value)
+        | UnionValueDefinition union ->
+            validateUnion path union value
             |> Axial.Validation.Validation.map (fun _ -> value)
 
     and private validateField basePath model (field: FieldDescriptor<obj>) =
@@ -598,6 +605,18 @@ module Validation =
         match errors with
         | [] -> checkMany constraints path items
         | diagnostics -> diagnostics |> mergeErrors |> Axial.Validation.Validation.error
+
+    and private validateUnion path (union: TaggedUnionValueDefinition) value =
+        let payloadName = ExternalFieldName.value union.PayloadField
+        let payloadPath = path @ [ PathSegment.Name payloadName ]
+
+        match union.Cases |> List.tryPick (fun case -> case.TryInspect value |> Option.map (fun payload -> case, payload)) with
+        | Some(case, payload) ->
+            validateValue case.Payload [] payloadPath payload
+        | None ->
+            SchemaError.Custom("union.case", Some "The value did not match any configured union case.")
+            |> diagnosticsAt path
+            |> Axial.Validation.Validation.error
 
     let private validateRootField model (field: FieldDescriptor<'model>) =
         let name = ExternalFieldName.value field.ExternalName

@@ -32,6 +32,9 @@ For refined collections, pass an item value schema:
 `RefinedSchema.nonEmptyList RefinedSchema.slug`, `RefinedSchema.distinctList Value.text`, or
 `RefinedSchema.boundedList min max itemSchema`. Use `Value.manyOf itemSchema` for non-refined primitive/refined
 collections; keep `Value.many nestedSchema` for collections of nested model schemas.
+Use `Value.union discriminatorField payloadField [ UnionCase.create tag construct tryPayload payloadSchema ]` for tagged
+F# discriminated unions. The raw input convention is an object with the discriminator field and payload field; wrong tags
+diagnose at the discriminator path and payload failures diagnose under the payload path.
 Use `RefinedSchema.dateTimeOffsetRange` as a record-shaped model schema, not a field value schema. `dateOnlyRange` is
 also available when targeting frameworks that support `DateOnly`.
 

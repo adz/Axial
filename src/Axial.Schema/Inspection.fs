@@ -19,6 +19,8 @@ type ValueShape =
     | Nested of model: ModelDescription
     /// <summary>A collection value whose items share the supplied item description.</summary>
     | Many of item: ValueDescription
+    /// <summary>A tagged union value with explicit discriminator, payload field, and case descriptions.</summary>
+    | Union of union: UnionDescription
 
 /// <summary>Describes one value schema: its shape, declared format, and portable constraint metadata.</summary>
 and ValueDescription =
@@ -51,6 +53,26 @@ and ModelDescription =
         Fields: FieldDescription list
     }
 
+/// <summary>Describes one case in a tagged union value schema.</summary>
+and UnionCaseDescription =
+    {
+        /// <summary>The raw discriminator tag for this union case.</summary>
+        Tag: string
+        /// <summary>The schema description of this case's payload.</summary>
+        Payload: ValueDescription
+    }
+
+/// <summary>Describes a tagged union value schema.</summary>
+and UnionDescription =
+    {
+        /// <summary>The raw input field name that carries the case tag.</summary>
+        DiscriminatorField: string
+        /// <summary>The raw input field name that carries the case payload.</summary>
+        PayloadField: string
+        /// <summary>The union cases in declaration order.</summary>
+        Cases: UnionCaseDescription list
+    }
+
 /// <summary>The inspection API over built schemas and value schemas.</summary>
 /// <remarks>
 /// <para>
@@ -69,6 +91,15 @@ module Inspect =
             | NestedValueDefinition nested ->
                 ValueShape.Nested { Fields = nested.Fields |> List.map describeFieldDescriptor }
             | ManyValueDefinition collection -> ValueShape.Many(describeValueDefinition collection.Item)
+            | UnionValueDefinition union ->
+                ValueShape.Union
+                    { DiscriminatorField = ExternalFieldName.value union.DiscriminatorField
+                      PayloadField = ExternalFieldName.value union.PayloadField
+                      Cases =
+                        union.Cases
+                        |> List.map (fun case ->
+                            { Tag = case.Tag
+                              Payload = describeValueDefinition case.Payload }) }
 
         { Shape = shape
           Format = definition.Format

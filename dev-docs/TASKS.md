@@ -70,16 +70,16 @@ Merge the Refined catalog and schema refined values into a single artifact.
 
 Discriminated unions are how F# users model domains; schema must express them.
 
-- [ ] Design a tagged/choice schema shape for discriminated unions
+- [x] Design a tagged/choice schema shape for discriminated unions
   (e.g. `Payment = Card of CardDetails | Invoice of InvoiceDetails`), including the raw-input discriminator
   convention (tag field, wrapper object, or configurable).
-- [ ] Support case payloads that are nested model schemas, refined values, or primitives.
-- [ ] Parse union input with path-aware diagnostics (wrong tag, missing payload, payload field errors under the case
+- [x] Support case payloads that are nested model schemas, refined values, or primitives.
+- [x] Parse union input with path-aware diagnostics (wrong tag, missing payload, payload field errors under the case
   path).
-- [ ] Validate existing union values through case getters.
-- [ ] Expose unions through `Inspect` (case names, per-case descriptions) and lower to JSON Schema `oneOf` in the
+- [x] Validate existing union values through case getters.
+- [x] Expose unions through `Inspect` (case names, per-case descriptions) and lower to JSON Schema `oneOf` in the
   prototype interpreter.
-- [ ] Add tutorials and tests for a union-heavy domain model.
+- [x] Add tutorials and tests for a union-heavy domain model.
 
 ## Phase 23: Boundary Utility Packages
 

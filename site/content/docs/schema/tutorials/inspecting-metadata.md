@@ -39,6 +39,7 @@ match email.Value.Shape with
 | ValueShape.Refined underlying -> printfn "refined over %A" underlying.Shape
 | ValueShape.Nested model -> printfn "nested with %d fields" model.Fields.Length
 | ValueShape.Many item -> printfn "collection of %A" item.Shape
+| ValueShape.Union union -> printfn "union with cases %A" (union.Cases |> List.map _.Tag)
 ```
 
 Refined values expose their raw representation through `ValueShape.Refined`, so a boundary interpreter can render an

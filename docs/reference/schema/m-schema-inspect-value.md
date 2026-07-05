@@ -1,7 +1,7 @@
 ---
 title: "Schema.Inspect.value"
 linkTitle: "value"
-weight: 2205
+weight: 2207
 ---
 
 Describes a value schema as inspectable shape, format, and constraint metadata.

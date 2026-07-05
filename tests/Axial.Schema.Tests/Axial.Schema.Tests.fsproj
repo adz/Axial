@@ -16,6 +16,7 @@
     <Compile Include="SchemaFormatTests.fs" />
     <Compile Include="SchemaNestedValueTests.fs" />
     <Compile Include="SchemaManyValueTests.fs" />
+    <Compile Include="SchemaUnionValueTests.fs" />
     <Compile Include="SchemaInterpreterPrototypeTests.fs" />
     <Compile Include="SchemaGenerationTargetProofTests.fs" />
   </ItemGroup>

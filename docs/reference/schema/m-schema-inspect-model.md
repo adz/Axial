@@ -1,7 +1,7 @@
 ---
 title: "Schema.Inspect.model"
 linkTitle: "model"
-weight: 2204
+weight: 2206
 ---
 
 Describes a built model schema as inspectable field metadata.

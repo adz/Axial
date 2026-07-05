@@ -101,6 +101,13 @@ module SchemaInterpreterPrototypes =
                 [ "\"type\":\"array\""
                   sprintf "\"items\":{%s}" (valueKeywords [] item |> String.concat ",") ]
                 @ constraintKeywords constraints
+            | ValueShape.Union union ->
+                let cases =
+                    union.Cases
+                    |> List.map (fun case -> sprintf "{%s}" (valueKeywords [] case.Payload |> String.concat ","))
+                    |> String.concat ","
+
+                [ sprintf "\"oneOf\":[%s]" cases ]
             | ValueShape.Refined _ -> failwith "underlyingShape never returns a refined shape."
 
         and private modelKeywords (model: ModelDescription) =
@@ -132,6 +139,7 @@ module SchemaInterpreterPrototypes =
             | ValueShape.Primitive kind -> (sprintf "%A" kind).ToLowerInvariant()
             | ValueShape.Nested _ -> "object"
             | ValueShape.Many _ -> "list"
+            | ValueShape.Union _ -> "union"
             | ValueShape.Refined _ -> failwith "underlyingShape never returns a refined shape."
 
         let private constraintSummary metadata =
@@ -163,6 +171,12 @@ module SchemaInterpreterPrototypes =
                         match underlyingShape item with
                         | ValueShape.Nested nested -> fieldLines (indent + "  ") nested
                         | _ -> []
+                    | ValueShape.Union union ->
+                        union.Cases
+                        |> List.collect (fun case ->
+                            match underlyingShape case.Payload with
+                            | ValueShape.Nested nested -> fieldLines (indent + "  ") nested
+                            | _ -> [])
                     | _ -> []
 
                 line :: children)
@@ -205,6 +219,7 @@ module SchemaInterpreterPrototypes =
             | ValueShape.Primitive PrimitiveValueKind.Guid -> IdentifierBox
             | ValueShape.Nested model -> Group(fieldsFor model)
             | ValueShape.Many item -> Repeater(controlFor item)
+            | ValueShape.Union _ -> Group []
             | ValueShape.Refined _ -> failwith "underlyingShape never returns a refined shape."
 
         and private fieldsFor (model: ModelDescription) =

@@ -85,7 +85,8 @@ module SchemaManyValueTests =
             test <@ collection.Item.Constraints |> List.map SchemaConstraint.code = [ "required" ] @>
         | PrimitiveValueDefinition _
         | RefinedValueDefinition _
-        | NestedValueDefinition _ -> failwith "Expected a many/collection value schema."
+        | NestedValueDefinition _
+        | UnionValueDefinition _ -> failwith "Expected a many/collection value schema."
 
     [<Fact>]
     let ``inspection interpreters can walk into each item of a many value schema using getters, without reflection`` () =
@@ -127,7 +128,9 @@ module SchemaManyValueTests =
                 test <@ items |> List.map (fun item -> value.Getter (box item)) = (customer.Contacts |> List.map (fun c -> box c.Value)) @>
             | PrimitiveValueDefinition _
             | RefinedValueDefinition _
-            | ManyValueDefinition _ -> failwith "Expected the many value schema's item to be a nested model value schema."
+            | ManyValueDefinition _
+            | UnionValueDefinition _ -> failwith "Expected the many value schema's item to be a nested model value schema."
         | PrimitiveValueDefinition _
         | RefinedValueDefinition _
-        | NestedValueDefinition _ -> failwith "Expected a many/collection value schema."
+        | NestedValueDefinition _
+        | UnionValueDefinition _ -> failwith "Expected a many/collection value schema."

@@ -68,6 +68,7 @@ module Input =
             | RefinedValueDefinition(raw, _) -> gather raw @ valueDefinition.Constraints
             | NestedValueDefinition _ -> valueDefinition.Constraints
             | ManyValueDefinition _ -> valueDefinition.Constraints
+            | UnionValueDefinition _ -> valueDefinition.Constraints
 
         gather definition
 
@@ -82,6 +83,7 @@ module Input =
             | RefinedValueDefinition(raw, _) -> kindOf raw
             | NestedValueDefinition _ -> invalidOp "Nested model value schemas have no underlying primitive kind."
             | ManyValueDefinition _ -> invalidOp "Collection value schemas have no underlying primitive kind."
+            | UnionValueDefinition _ -> invalidOp "Union value schemas have no underlying primitive kind."
 
         kindOf definition
 
@@ -91,7 +93,8 @@ module Input =
             | PrimitiveValueDefinition _ -> value
             | RefinedValueDefinition(raw, ops) -> construct raw value |> ops.Construct
             | NestedValueDefinition _
-            | ManyValueDefinition _ -> value
+            | ManyValueDefinition _
+            | UnionValueDefinition _ -> value
 
         construct definition primitive
 
@@ -161,10 +164,14 @@ module Input =
         | RawInput.Object fields ->
             match valueSchema.Shape with
             | NestedValueDefinition nestedModel -> parseObject options path nestedModel fields
+            | UnionValueDefinition union -> parseUnion options path union fields
             | RefinedValueDefinition(raw, _) ->
                 match raw.Shape with
                 | NestedValueDefinition nestedModel ->
                     parseObject options path nestedModel fields
+                    |> Result.map (constructValue valueSchema)
+                | UnionValueDefinition union ->
+                    parseUnion options path union fields
                     |> Result.map (constructValue valueSchema)
                 | PrimitiveValueDefinition _
                 | RefinedValueDefinition _ -> errorAt path SchemaError.ExpectedScalar
@@ -173,14 +180,16 @@ module Input =
             | PrimitiveValueDefinition _ -> errorAt path SchemaError.ExpectedScalar
         | RawInput.Many rawItems ->
             match valueSchema.Shape with
-            | NestedValueDefinition _ -> errorAt path SchemaError.ExpectedObject
+            | NestedValueDefinition _
+            | UnionValueDefinition _ -> errorAt path SchemaError.ExpectedObject
             | ManyValueDefinition collection -> parseMany options path collection constraints rawItems
             | RefinedValueDefinition(raw, _) ->
                 match raw.Shape with
                 | ManyValueDefinition collection ->
                     parseMany options path collection constraints rawItems
                     |> Result.map (constructValue valueSchema)
-                | NestedValueDefinition _ -> errorAt path SchemaError.ExpectedObject
+                | NestedValueDefinition _
+                | UnionValueDefinition _ -> errorAt path SchemaError.ExpectedObject
                 | PrimitiveValueDefinition _
                 | RefinedValueDefinition _ -> errorAt path SchemaError.ExpectedScalar
             | PrimitiveValueDefinition _ -> errorAt path SchemaError.ExpectedScalar
@@ -188,10 +197,29 @@ module Input =
             errorAt path (SchemaCheckFailure.withCustomMessageForCode constraints "required" SchemaError.Required)
         | RawInput.Scalar text ->
             match valueSchema.Shape with
-            | NestedValueDefinition _ -> errorAt path SchemaError.ExpectedObject
+            | NestedValueDefinition _
+            | UnionValueDefinition _ -> errorAt path SchemaError.ExpectedObject
             | ManyValueDefinition _ -> errorAt path SchemaError.ExpectedMany
-            | PrimitiveValueDefinition _
-            | RefinedValueDefinition _ ->
+            | RefinedValueDefinition(raw, _) ->
+                match raw.Shape with
+                | NestedValueDefinition _
+                | UnionValueDefinition _ -> errorAt path SchemaError.ExpectedObject
+                | ManyValueDefinition _ -> errorAt path SchemaError.ExpectedMany
+                | PrimitiveValueDefinition _
+                | RefinedValueDefinition _ ->
+                    let kind = underlyingPrimitiveKind valueSchema
+
+                    match parsePrimitive kind text with
+                    | Error error -> errorAt path error
+                    | Ok primitive ->
+                        match checkPrimitive kind constraints primitive with
+                        | Error errors ->
+                            errors
+                            |> List.map (diagnosticsAt path)
+                            |> mergeErrors
+                            |> Error
+                        | Ok checkedPrimitive -> Ok(constructValue valueSchema checkedPrimitive)
+            | PrimitiveValueDefinition _ ->
                 let kind = underlyingPrimitiveKind valueSchema
 
                 match parsePrimitive kind text with
@@ -204,6 +232,30 @@ module Input =
                         |> mergeErrors
                         |> Error
                     | Ok checkedPrimitive -> Ok(constructValue valueSchema checkedPrimitive)
+
+    and private parseUnion options path (union: TaggedUnionValueDefinition) (fields: Map<string, RawInput>) =
+        let discriminatorName = ExternalFieldName.value union.DiscriminatorField
+        let payloadName = ExternalFieldName.value union.PayloadField
+        let discriminatorPath = path @ [ PathSegment.Name discriminatorName ]
+        let payloadPath = path @ [ PathSegment.Name payloadName ]
+
+        match fields |> Map.tryFind discriminatorName |> Option.defaultValue RawInput.Missing with
+        | RawInput.Missing -> errorAt discriminatorPath SchemaError.Required
+        | RawInput.Scalar tag ->
+            match union.Cases |> List.tryFind (fun case -> case.Tag = tag) with
+            | None ->
+                union.Cases
+                |> List.map _.Tag
+                |> String.concat "|"
+                |> SchemaError.NotOneOf
+                |> errorAt discriminatorPath
+            | Some case ->
+                let payloadRaw = fields |> Map.tryFind payloadName |> Option.defaultValue RawInput.Missing
+
+                parseValue options case.Payload [] payloadPath payloadRaw
+                |> Result.map case.Construct
+        | RawInput.Object _
+        | RawInput.Many _ -> errorAt discriminatorPath SchemaError.ExpectedScalar
 
     and private parseNestedField options basePath (fields: Map<string, RawInput>) (field: FieldDescriptor<obj>) =
         let name = ExternalFieldName.value field.ExternalName

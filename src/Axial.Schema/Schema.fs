@@ -645,6 +645,8 @@ and internal ValueSchemaShape =
     | NestedValueDefinition of ModelSchemaDefinition<obj>
     /// <summary>A collection value whose items are each described by the same item value schema.</summary>
     | ManyValueDefinition of CollectionValueDefinition
+    /// <summary>A tagged union value whose case payloads are each described by explicit value schemas.</summary>
+    | UnionValueDefinition of TaggedUnionValueDefinition
 
 /// <summary>
 /// Holds the type-erased item value schema for a collection value, plus a closure that boxes a list of parsed,
@@ -658,6 +660,17 @@ and [<ReferenceEquality>] internal CollectionValueDefinition =
     { Item: ValueSchemaDefinition
       BoxItems: obj list -> obj }
 
+and [<ReferenceEquality>] internal UnionCaseValueDefinition =
+    { Tag: string
+      Payload: ValueSchemaDefinition
+      Construct: obj -> obj
+      TryInspect: obj -> obj option }
+
+and [<ReferenceEquality>] internal TaggedUnionValueDefinition =
+    { DiscriminatorField: ExternalFieldName
+      PayloadField: ExternalFieldName
+      Cases: UnionCaseValueDefinition list }
+
 and [<ReferenceEquality>] internal FieldDescriptor<'model> =
     { ExternalName: ExternalFieldName
       Order: FieldOrder
@@ -668,6 +681,11 @@ and [<ReferenceEquality>] internal FieldDescriptor<'model> =
 and [<ReferenceEquality>] internal ModelSchemaDefinition<'model> =
     { Constructor: ConstructorApplication<'model>
       Fields: FieldDescriptor<'model> list }
+
+/// <summary>Describes one tagged union case for <c>Value.union</c>.</summary>
+[<Sealed>]
+type UnionCase<'union> internal (definition: UnionCaseValueDefinition) =
+    member internal _.Definition = definition
 
 type internal SchemaDefinition<'model> =
     | PendingDefinition
@@ -916,6 +934,42 @@ type Schema<'model> internal (definition: SchemaDefinition<'model>, specializati
 type ValueSchema<'value> internal (definition: ValueSchemaDefinition) =
     member internal _.Definition = definition
 
+/// <summary>Functions for defining explicit tagged union schema cases.</summary>
+[<RequireQualifiedAccess>]
+module UnionCase =
+    /// <summary>
+    /// Describes one tagged union case from a tag, a payload constructor, a payload extractor, and a payload schema.
+    /// </summary>
+    /// <remarks>
+    /// Union schemas are explicit and reflection-free. The constructor builds the union case after the payload parses,
+    /// while the extractor lets validation and encoding-oriented interpreters identify the active case of an existing
+    /// trusted union value.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="tag" /> is empty or whitespace.</exception>
+    /// <exception cref="T:System.ArgumentNullException">
+    /// Thrown when <paramref name="tag" />, <paramref name="construct" />, <paramref name="tryPayload" />, or
+    /// <paramref name="payload" /> is null.
+    /// </exception>
+    let create tag (construct: 'payload -> 'union) (tryPayload: 'union -> 'payload option) (payload: ValueSchema<'payload>) : UnionCase<'union> =
+        if isNull tag then
+            nullArg (nameof tag)
+
+        if isNull (box construct) then
+            nullArg (nameof construct)
+
+        if isNull (box tryPayload) then
+            nullArg (nameof tryPayload)
+
+        if isNull (box payload) then
+            nullArg (nameof payload)
+
+        UnionCase(
+            { Tag = ExternalFieldName.create tag |> ExternalFieldName.value
+              Payload = payload.Definition
+              Construct = fun value -> value |> unbox<'payload> |> construct |> box
+              TryInspect = fun value -> value |> unbox<'union> |> tryPayload |> Option.map box }
+        )
+
 /// <summary>Functions for creating and inspecting value schemas.</summary>
 [<RequireQualifiedAccess>]
 module Value =
@@ -968,6 +1022,8 @@ module Value =
             invalidArg (nameof schema) "Expected a primitive value schema, but the schema is a nested model value schema."
         | ManyValueDefinition _ ->
             invalidArg (nameof schema) "Expected a primitive value schema, but the schema is a collection value schema."
+        | UnionValueDefinition _ ->
+            invalidArg (nameof schema) "Expected a primitive value schema, but the schema is a union value schema."
 
     /// <summary>
     /// Describes a named refined/domain value schema by pairing a raw value schema with a value-preserving
@@ -1086,6 +1142,50 @@ module Value =
         let itemValueSchema = nested itemSchema
         manyOf itemValueSchema
 
+    /// <summary>
+    /// Describes a tagged union value using explicit cases and object input with discriminator and payload fields.
+    /// </summary>
+    /// <remarks>
+    /// Input interpreters expect an object with <paramref name="discriminatorField" /> containing the case tag and
+    /// <paramref name="payloadField" /> containing the case payload, such as
+    /// <c>{ type = "card"; value = { ... } }</c>. Payload schemas may be primitive, refined, nested model,
+    /// collection, or another union value schema.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException">
+    /// Thrown when <paramref name="discriminatorField" />, <paramref name="payloadField" />, or
+    /// <paramref name="cases" /> is null.
+    /// </exception>
+    /// <exception cref="T:System.ArgumentException">
+    /// Thrown when a field name is empty, no cases are supplied, or case tags are duplicated.
+    /// </exception>
+    let union discriminatorField payloadField (cases: UnionCase<'union> list) : ValueSchema<'union> =
+        if isNull (box cases) then
+            nullArg (nameof cases)
+
+        cases
+        |> List.iter (fun case ->
+            if isNull (box case) then
+                nullArg (nameof cases))
+
+        if List.isEmpty cases then
+            invalidArg (nameof cases) "Union schemas must contain at least one case."
+
+        let tags = cases |> List.map (fun case -> case.Definition.Tag)
+        let duplicates = tags |> List.countBy id |> List.filter (fun (_, count) -> count > 1)
+
+        if not (List.isEmpty duplicates) then
+            invalidArg (nameof cases) "Union case tags must be unique."
+
+        ValueSchema(
+            { Shape =
+                UnionValueDefinition
+                    { DiscriminatorField = ExternalFieldName.create discriminatorField
+                      PayloadField = ExternalFieldName.create payloadField
+                      Cases = cases |> List.map _.Definition }
+              Format = None
+              Constraints = [] }
+        )
+
     /// <summary>Returns whether a value schema is a refined/domain value schema.</summary>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
     let isRefined (schema: ValueSchema<'value>) =
@@ -1097,6 +1197,7 @@ module Value =
         | PrimitiveValueDefinition _ -> false
         | NestedValueDefinition _ -> false
         | ManyValueDefinition _ -> false
+        | UnionValueDefinition _ -> false
 
     /// <summary>Returns the intrinsic primitive kind beneath any refinement layers of a value schema.</summary>
     /// <remarks>
@@ -1119,6 +1220,8 @@ module Value =
                 invalidArg (nameof schema) "Nested model value schemas have no underlying primitive kind."
             | ManyValueDefinition _ ->
                 invalidArg (nameof schema) "Collection value schemas have no underlying primitive kind."
+            | UnionValueDefinition _ ->
+                invalidArg (nameof schema) "Union value schemas have no underlying primitive kind."
 
         kindOf schema.Definition
 
@@ -1144,6 +1247,8 @@ module Value =
             invalidArg (nameof schema) "Expected a refined value schema, but the schema is a nested model value schema."
         | ManyValueDefinition _ ->
             invalidArg (nameof schema) "Expected a refined value schema, but the schema is a collection value schema."
+        | UnionValueDefinition _ ->
+            invalidArg (nameof schema) "Expected a refined value schema, but the schema is a union value schema."
 
     let private underlyingClrType kind =
         match kind with
@@ -1207,6 +1312,8 @@ module Value =
                 invalidArg (nameof schema) "Nested model value schemas have no underlying primitive representation."
             | ManyValueDefinition _ ->
                 invalidArg (nameof schema) "Collection value schemas have no underlying primitive representation."
+            | UnionValueDefinition _ ->
+                invalidArg (nameof schema) "Union value schemas have no underlying primitive representation."
 
         fun value -> project schema.Definition (box value) |> unbox<'primitive>
 
@@ -1258,6 +1365,7 @@ module Value =
                 | PrimitiveValueDefinition _ -> None
                 | NestedValueDefinition _ -> None
                 | ManyValueDefinition _ -> None
+                | UnionValueDefinition _ -> None
 
         formatOf schema.Definition
 
@@ -1295,6 +1403,7 @@ module Value =
             | RefinedValueDefinition(raw, _) -> gather raw @ definition.Constraints
             | NestedValueDefinition _ -> definition.Constraints
             | ManyValueDefinition _ -> definition.Constraints
+            | UnionValueDefinition _ -> definition.Constraints
 
         gather schema.Definition
 
