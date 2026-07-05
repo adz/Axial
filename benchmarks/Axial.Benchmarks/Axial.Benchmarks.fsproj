@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <Compile Include="Common.fs" />
+    <Compile Include="CodecSuites.fs" />
     <Compile Include="CandidateValueTaskFlow.fs" />
     <Compile Include="Suites.fs" />
     <Compile Include="Program.fs" />

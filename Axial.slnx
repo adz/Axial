@@ -6,6 +6,7 @@
   </Configurations>
   <Folder Name="/examples/">
     <Project Path="examples/Axial.AotProbe/Axial.AotProbe.fsproj" />
+    <Project Path="examples/Axial.Api/Axial.Api.fsproj" />
     <Project Path="examples/Axial.Examples/Axial.Examples.fsproj" />
     <Project Path="examples/Axial.ReadmeExample/Axial.ReadmeExample.fsproj" />
     <Project Path="examples/Axial.MaintenanceExamples/Axial.MaintenanceExamples.fsproj" />

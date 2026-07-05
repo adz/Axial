@@ -43,19 +43,6 @@ module internal JsonRuntime =
         | :? JsonCodecException as ex ->
             raise (JsonCodecException("." + name + (if ex.Path = "$" then "" else ex.Path.Substring 1), ex.Detail, ex))
 
-    let withIndexPath (index: int) (decode: unit -> 'result) : 'result =
-        try
-            decode ()
-        with
-        | :? JsonCodecException as ex ->
-            raise (
-                JsonCodecException(
-                    "[" + string index + "]" + (if ex.Path = "$" then "" else ex.Path.Substring 1),
-                    ex.Detail,
-                    ex
-                )
-            )
-
     let inline isWhitespaceByte (b: byte) =
         b = byte ' ' || b = byte '\n' || b = byte '\r' || b = byte '\t'
 

@@ -32,6 +32,13 @@ Playground example:
 dotnet run --project examples/Axial.Playground/Axial.Playground.fsproj --nologo
 ```
 
+Minimal API sample (browse to /signup, or run the smoke pass below):
+
+```bash
+dotnet run --project examples/Axial.Api/Axial.Api.fsproj
+AXIAL_EXAMPLE=smoke dotnet run --project examples/Axial.Api/Axial.Api.fsproj --nologo
+```
+
 NativeAOT probe:
 
 ```bash
@@ -73,6 +80,21 @@ The playground example in [`examples/Axial.Playground/Program.fs`](./Axial.Playg
 - a small `flow {}` workflow
 - projected environment reads through `Flow.read`
 - one `.NET` boundary through `taskFlow {}`
+
+## Minimal API Sample
+
+The API sample in [`examples/Axial.Api/Program.fs`](./Axial.Api/Program.fs) is a complete ASP.NET Core minimal API
+where one schema declaration drives everything at the boundary:
+
+- `POST /signups` parses the JSON body through the schema (`RawInput.ofJsonDocument` + `Input.parse`); invalid input
+  gets a 400 with path diagnostics, valid input becomes a trusted model serialized back through the compiled
+  `Axial.Codec` JSON codec
+- `GET /openapi.json` serves an OpenAPI document whose request schema comes from `JsonSchema.generate`
+- `GET /signup` renders an HTML form from `Inspect` metadata, and `POST /signup` redisplays submitted values next to
+  their errors
+
+Set `AXIAL_EXAMPLE=smoke` to start the server on an ephemeral port, exercise every endpoint, and exit; CI runs that
+mode on every push.
 
 ## Smallest Docs-First Examples
 

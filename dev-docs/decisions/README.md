@@ -82,6 +82,17 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
   `Result.require`, `Result.mapError`, or `Validation.mapError`.
 - Generated reference docs come from XML comments and generator inputs. Do not hand-edit generated reference pages as the
   primary source of truth.
+- Compiled JSON codecs live in `Axial.Codec`, a package that references only `Axial.Schema` (through
+  `InternalsVisibleTo` for the type-erased definitions) and mirrors CodecMapper's byte-level runtime. The codec is the
+  trusted hot path: it enforces wire shape and required fields but does not run constraint metadata. Untrusted boundary
+  input keeps going through `RawInput` + `Input.parse` for complete path-aware diagnostics. Do not fold codecs into
+  `Axial.Validation.Schema` (they must not pull in diagnostics) or into `Axial.Schema` (the schema core stays free of
+  any wire runtime).
+- A `dotnet new axial-api` template is evaluated and deferred until the public surface stabilizes (at or near 1.0).
+  The seed exists as `examples/Axial.Api`, which CI smoke-runs on every push, so the template would only add packaging
+  around a sample that still changes with the pre-1.0 API. Revisit when (a) the schema/codec/boundary surface has been
+  stable for two consecutive releases, and (b) at least one external user asks for a scaffold; then package the sample
+  as a template repo folder with `dotnet new` metadata rather than a separate NuGet-first workflow.
 
 ## Open Ideas
 

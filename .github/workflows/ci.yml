@@ -54,6 +54,9 @@ jobs:
       - name: Run main example
         run: dotnet run --project examples/Axial.Examples/Axial.Examples.fsproj --configuration Release --no-build --nologo
 
+      - name: Run API sample smoke pass
+        run: AXIAL_EXAMPLE=smoke dotnet run --project examples/Axial.Api/Axial.Api.fsproj --configuration Release --no-build --nologo
+
       - name: Run maintenance example
         run: dotnet run --project examples/Axial.MaintenanceExamples/Axial.MaintenanceExamples.fsproj --configuration Release --no-build --nologo
 

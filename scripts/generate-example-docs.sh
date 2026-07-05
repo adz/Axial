@@ -107,6 +107,15 @@ render_example_section \
   "refined-value-schema"
 
 render_example_section \
+  "Minimal API Boundary Example" \
+  "This example is a complete ASP.NET Core minimal API where one schema declaration drives JSON body parsing with 400 path diagnostics, trusted-model serialization through the compiled codec, a generated OpenAPI document, and an HTML form with redisplay. Running it with AXIAL_EXAMPLE=smoke starts the server and exercises every endpoint." \
+  "$root_dir/examples/Axial.Api/Axial.Api.fsproj" \
+  "$root_dir/examples/Axial.Api/Program.fs" \
+  "https://github.com/adz/Axial/blob/main/examples/Axial.Api/Program.fs" \
+  "AXIAL_EXAMPLE=smoke dotnet run --project examples/Axial.Api/Axial.Api.fsproj --nologo" \
+  "smoke"
+
+render_example_section \
   "Policy Example" \
   "This example shows Policy adapting every verification boundary — raw parsing, refined construction, schema input parsing, intrinsic validation, and contextual rules — into one workflow error type run with Flow.verify." \
   "$root_dir/examples/Axial.Examples/Axial.Examples.fsproj" \

@@ -8,7 +8,7 @@
     <AssemblyName>Axial</AssemblyName>
     <RootNamespace>Axial</RootNamespace>
     <Authors>Adam Davies</Authors>
-    <Description>Umbrella package for Axial.Flow, Axial.ErrorHandling, Axial.Refined, Axial.Schema, Axial.Validation, and Axial.Validation.Schema.</Description>
+    <Description>Umbrella package for Axial.Flow, Axial.ErrorHandling, Axial.Refined, Axial.Schema, Axial.Codec, Axial.Validation, and Axial.Validation.Schema.</Description>
     <PackageProjectUrl>https://github.com/adz/Axial</PackageProjectUrl>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
@@ -32,6 +32,7 @@
     <ProjectReference Include="..\Axial.ErrorHandling\Axial.ErrorHandling.fsproj" />
     <ProjectReference Include="..\Axial.Refined\Axial.Refined.fsproj" />
     <ProjectReference Include="..\Axial.Schema\Axial.Schema.fsproj" />
+    <ProjectReference Include="..\Axial.Codec\Axial.Codec.fsproj" />
     <ProjectReference Include="..\Axial.Validation\Axial.Validation.fsproj" />
     <ProjectReference Include="..\Axial.Validation.Schema\Axial.Validation.Schema.fsproj" />
   </ItemGroup>

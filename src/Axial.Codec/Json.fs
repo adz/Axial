@@ -91,8 +91,18 @@ module rec Json =
 
                 let afterValue =
                     if matched >= 0 then
-                        let matcher = matchers[matched]
-                        withFieldPath matcher.NameText (fun () -> slots[matched].Decode afterColon)
+                        try
+                            slots[matched].Decode afterColon
+                        with
+                        | :? JsonCodecException as ex ->
+                            raise (
+                                JsonCodecException(
+                                    "." + matchers[matched].NameText
+                                    + (if ex.Path = "$" then "" else ex.Path.Substring 1),
+                                    ex.Detail,
+                                    ex
+                                )
+                            )
                     else
                         skipValue afterColon
 
@@ -125,8 +135,19 @@ module rec Json =
                 continueLoop <- false
 
             while continueLoop do
-                let index = count
-                let struct (item, afterItem) = withIndexPath index (fun () -> decodeItem current)
+                let struct (item, afterItem) =
+                    try
+                        decodeItem current
+                    with
+                    | :? JsonCodecException as ex ->
+                        raise (
+                            JsonCodecException(
+                                "[" + string count + "]" + (if ex.Path = "$" then "" else ex.Path.Substring 1),
+                                ex.Detail,
+                                ex
+                            )
+                        )
+
                 items <- item :: items
                 count <- count + 1
                 let struct (next, hasMore) = readSeparatorOrClose (byte ']') "]" afterItem
