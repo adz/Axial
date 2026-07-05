@@ -126,6 +126,13 @@ module ApiShapeTests =
 
         test <@ isNull found @>
 
+    let private assertTypePresentInAssembly (assemblyName: string) (fullName: string) =
+        let assembly = Assembly.Load assemblyName
+        let found = assembly.GetType(fullName, true)
+
+        test <@ not (isNull found) @>
+        found
+
     let private referencedAssemblyNames (assembly: Assembly) =
         assembly.GetReferencedAssemblies()
         |> Array.map _.Name
@@ -435,6 +442,16 @@ module ApiShapeTests =
         for typeName in forbiddenCoreRuleTypes do
             assertTypeAbsentFromAssembly "Axial.Schema" $"Axial.Schema.{typeName}"
             assertTypeAbsentFromAssembly "Axial.Validation" $"Axial.Validation.{typeName}"
+
+        let ruleSetType =
+            assertTypePresentInAssembly "Axial.Validation.Schema" "Axial.Validation.Schema.RuleSet`2"
+
+        let publicRuleSetConstructors =
+            ruleSetType.GetConstructors(BindingFlags.Public ||| BindingFlags.Instance)
+
+        test <@ ruleSetType.IsGenericTypeDefinition @>
+        test <@ ruleSetType.GetGenericArguments().Length = 2 @>
+        test <@ publicRuleSetConstructors.Length = 0 @>
 
     [<Fact>]
     let ``schema types start as independent leaf package`` () =
