@@ -42,6 +42,7 @@ module InputParseTests =
 
         let parsed = Input.parse schema raw
 
+        test <@ parsed.Input = raw @>
         test <@ not parsed.IsValid @>
         test <@ parsed.TryModel = None @>
         test <@ parsed.ErrorsFor "age" = [ SchemaError.InvalidFormat "int" ] @>
@@ -58,6 +59,7 @@ module InputParseTests =
 
         let parsed = Input.parse schema raw
 
+        test <@ parsed.Input = raw @>
         test <@ not parsed.IsValid @>
         test <@ parsed.ErrorsFor "email" = [ SchemaError.Required ] @>
         test <@ parsed.ErrorsFor "age" = [ SchemaError.InvalidFormat "int" ] @>
@@ -68,8 +70,10 @@ module InputParseTests =
 
     [<Fact>]
     let ``parse reports root diagnostic when model input is not an object`` () =
-        let parsed = Input.parse schema (RawInput.Scalar "ada@example.com")
+        let raw = RawInput.Scalar "ada@example.com"
+        let parsed = Input.parse schema raw
 
+        test <@ parsed.Input = raw @>
         test <@ not parsed.IsValid @>
         test <@ parsed.Errors = [ { Path = []; Error = SchemaError.ExpectedObject } ] @>
 
@@ -79,9 +83,24 @@ module InputParseTests =
 
         let parsed = Input.parse schema raw
 
+        test <@ parsed.Input = raw @>
         test <@ not parsed.IsValid @>
         test <@ parsed.ErrorsFor "email" = [ SchemaError.Required ] @>
         test <@ parsed.Errors = [ { Path = [ PathSegment.Name "email" ]; Error = SchemaError.Required } ] @>
+
+    [<Fact>]
+    let ``parse retains raw input on failure`` () =
+        let raw =
+            RawInput.Object(
+                Map.ofList
+                    [ "email", RawInput.Scalar "   "
+                      "age", RawInput.Scalar "not-an-int" ]
+            )
+
+        let parsed = Input.parse schema raw
+
+        test <@ not parsed.IsValid @>
+        test <@ parsed.Input = raw @>
 
     [<Fact>]
     let ``required reports explicit missing raw scalar as required`` () =

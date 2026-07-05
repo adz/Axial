@@ -22,7 +22,7 @@ Work this queue from top to bottom.
 - [x] Implement `Input.parse : Schema<'model> -> RawInput -> ParsedInput<'model, SchemaError>`.
 - [x] Make `required` reject missing raw fields and missing/blank scalar values.
 - [x] Ensure field errors accumulate applicatively.
-- [ ] Ensure failed parses retain raw input.
+- [x] Ensure failed parses retain raw input.
 - [ ] Ensure constructors are not called when intrinsic field parsing fails.
 - [ ] Add tests for successful parse, failed parse, multiple sibling errors, raw redisplay, and field error lookup.
 
