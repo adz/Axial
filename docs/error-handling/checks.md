@@ -2,8 +2,6 @@
 weight: 10
 title: Check
 description: Use structured Check programs before shaping failures with Result, Validation, or Flow.
-aliases:
-  - /docs/validation-results/checks/
 ---
 
 # Check

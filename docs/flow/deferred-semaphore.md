@@ -2,8 +2,6 @@
 weight: 12
 title: Deferred and Semaphore
 description: One-shot typed coordination and scoped concurrency limits.
-aliases:
-  - /docs/state-concurrency/deferred-semaphore/
 ---
 
 # Deferred and Semaphore

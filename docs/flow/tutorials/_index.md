@@ -2,8 +2,6 @@
 weight: 15
 title: Flow Tutorials
 description: Service, runtime, layer, and environment tutorials for Flow.
-aliases:
-  - /docs/tutorials/
 ---
 
 # Flow Tutorials

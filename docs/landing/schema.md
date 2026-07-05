@@ -6,10 +6,6 @@ weight: 8
 menu:
   main:
     weight: 5
-aliases:
-  - /parse/
-  - /parse/schema/
-  - /docs/schema/
 ---
 
 <div class="docs-home-container axial-landing">

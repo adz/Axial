@@ -2,8 +2,6 @@
 weight: 50
 title: "Tutorial: Layers"
 description: Provision environments, manage resources, and keep startup concerns out of workflow code.
-aliases:
-  - /docs/tutorials/layers/
 ---
 
 # Tutorial: Layers

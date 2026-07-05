@@ -2,8 +2,6 @@
 weight: 40
 title: Diagnostics Graph
 description: Structured validation diagnostics.
-aliases:
-  - /docs/validation-results/diagnostics/
 ---
 
 # Diagnostics Graph

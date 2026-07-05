@@ -2,8 +2,6 @@
 weight: 10
 title: "Tutorial: App Record"
 description: Move from explicit dependency parameters to a reusable environment record.
-aliases:
-  - /docs/tutorials/app-record/
 ---
 
 # Tutorial: App Record

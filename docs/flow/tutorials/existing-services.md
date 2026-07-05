@@ -2,8 +2,6 @@
 weight: 30
 title: "Tutorial: Using Existing Services"
 description: Consume the standard Axial service packages from an explicit environment.
-aliases:
-  - /docs/tutorials/existing-services/
 ---
 
 # Tutorial: Using Existing Services

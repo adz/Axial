@@ -2,8 +2,6 @@
 weight: 22
 title: Fibers
 description: Lightweight logical threads and structured concurrency in Axial.
-aliases:
-  - /docs/core-model/fibers/
 ---
 
 # Fibers

@@ -3,8 +3,6 @@ weight: 25
 title: Bind
 type: docs
 description: Flow bind-site error assignment and mapping.
-aliases:
-  - /docs/validation-results/bind-error/
 ---
 
 # Bind

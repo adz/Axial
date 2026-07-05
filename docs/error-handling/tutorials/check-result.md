@@ -2,9 +2,6 @@
 weight: 10
 title: Check and Result Tutorial
 description: Build typed fail-fast results from pure Check helpers.
-aliases:
-  - /docs/result/tutorial/
-  - /docs/validation-results/check-result-tutorial/
 ---
 
 # Check and Result Tutorial

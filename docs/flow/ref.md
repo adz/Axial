@@ -2,8 +2,6 @@
 weight: 10
 title: Ref (Atomic References)
 description: Shared mutable state with atomic updates in Axial.
-aliases:
-  - /docs/state-concurrency/ref/
 ---
 
 # Ref (Atomic References)

@@ -2,8 +2,6 @@
 weight: 30
 title: STM (Software Transactional Memory)
 description: Composable atomic transactions across multiple variables in Axial.
-aliases:
-  - /docs/state-concurrency/stm/
 ---
 
 # STM (Software Transactional Memory)

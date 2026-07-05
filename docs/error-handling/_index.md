@@ -6,10 +6,6 @@ description: Pure fail-fast logic with Check and standard F# Result.
 menu:
   main:
     weight: 4
-aliases:
-  - /parse/error-handling/
-  - /docs/validation-results/
-  - /docs/error-handling/
 ---
 
 # Error Handling

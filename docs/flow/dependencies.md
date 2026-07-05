@@ -2,8 +2,6 @@
 weight: 40
 title: Managing Dependencies
 description: How Axial models records, services, layers, scopes, and host-provider boundaries.
-aliases:
-  - /docs/managing-dependencies/
 ---
 
 # Managing Dependencies

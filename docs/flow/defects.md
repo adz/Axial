@@ -2,8 +2,6 @@
 weight: 25
 title: Defects and Exceptions
 description: Why Axial separates domain failures, interruptions, and defects.
-aliases:
-  - /docs/core-model/defects/
 ---
 
 # Defects and Exceptions
