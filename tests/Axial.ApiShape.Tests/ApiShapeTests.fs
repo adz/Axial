@@ -428,7 +428,10 @@ module ApiShapeTests =
         |> assertContainsAll
             [ "empty"
               "fail"
+              "custom"
+              "failCustom"
               "failAt"
+              "failCustomAt"
               "create"
               "ofSeq"
               "ofList"

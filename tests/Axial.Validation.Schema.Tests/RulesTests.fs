@@ -62,6 +62,39 @@ module RulesTests =
             @>
 
     [<Fact>]
+    let ``explicit Rules API creates custom code and message failures`` () =
+        let result =
+            Rules.failCustomAt
+                [ PathSegment.Name "assignee" ]
+                "ticket.assignee.required"
+                "High-priority tickets need an assignee."
+
+        test
+            <@
+                flattenedErrors result =
+                    [ { Path = [ PathSegment.Name "assignee" ]
+                        Error =
+                            SchemaError.Custom(
+                                "ticket.assignee.required",
+                                Some "High-priority tickets need an assignee."
+                            ) } ]
+            @>
+
+    [<Fact>]
+    let ``explicit Rules API creates custom SchemaError values for domain rule adapters`` () =
+        let error =
+            Rules.custom "ticket.review.required" "Priority 5 tickets require manual review."
+
+        test
+            <@
+                error =
+                    SchemaError.Custom(
+                        "ticket.review.required",
+                        Some "Priority 5 tickets require manual review."
+                    )
+            @>
+
+    [<Fact>]
     let ``explicit Rules API scopes rule failures under a path`` () =
         let scopedRule =
             Rules.at [ PathSegment.Name "approval"; PathSegment.Name "reviewer" ] needsReview

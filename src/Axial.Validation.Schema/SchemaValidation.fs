@@ -5,7 +5,7 @@ open Axial.ErrorHandling
 open Axial.Schema
 open Axial.Validation
 
-/// <summary>Schema input and model validation failures attached to diagnostics paths.</summary>
+/// <summary>Schema input, model validation, and contextual rule failures attached to diagnostics paths.</summary>
 [<RequireQualifiedAccess>]
 type SchemaError =
     /// <summary>A required boundary value was missing.</summary>

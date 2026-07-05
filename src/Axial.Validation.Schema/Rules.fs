@@ -31,6 +31,12 @@ type RuleSet<'model, 'error> =
 /// </remarks>
 [<RequireQualifiedAccess>]
 module Rules =
+    let private ensureString name value =
+        if isNull value then
+            nullArg name
+
+        value
+
     let private diagnosticsAt path diagnostics =
         let rec attach path graph =
             match path with
@@ -87,6 +93,28 @@ module Rules =
     let fail (error: 'error) : Result<unit, Diagnostics<'error>> =
         Error(Diagnostics.singleton error)
 
+    /// <summary>Creates a custom schema rule error with a stable code and display message.</summary>
+    /// <param name="code">The stable machine-readable rule code.</param>
+    /// <param name="message">The human-readable rule message.</param>
+    /// <example>
+    /// <code>
+    /// let error = Rules.custom "ticket.assignee.required" "High-priority tickets need an assignee."
+    /// </code>
+    /// </example>
+    let custom (code: string) (message: string) : SchemaError =
+        SchemaError.Custom(ensureString (nameof code) code, Some(ensureString (nameof message) message))
+
+    /// <summary>Creates a custom schema rule failure attached to the current diagnostics node.</summary>
+    /// <param name="code">The stable machine-readable rule code.</param>
+    /// <param name="message">The human-readable rule message.</param>
+    /// <example>
+    /// <code>
+    /// let result = Rules.failCustom "ticket.assignee.required" "High-priority tickets need an assignee."
+    /// </code>
+    /// </example>
+    let failCustom (code: string) (message: string) : Result<unit, Diagnostics<SchemaError>> =
+        fail (custom code message)
+
     /// <summary>Creates a rule failure attached to the supplied diagnostics path.</summary>
     /// <param name="path">The diagnostics path that should receive the failure.</param>
     /// <param name="error">The rule error to attach.</param>
@@ -97,6 +125,26 @@ module Rules =
     /// </example>
     let failAt (path: Path) (error: 'error) : Result<unit, Diagnostics<'error>> =
         Error(Diagnostics.singleton error |> diagnosticsAt (ensurePath path))
+
+    /// <summary>Creates a custom schema rule failure attached to the supplied diagnostics path.</summary>
+    /// <param name="path">The diagnostics path that should receive the failure.</param>
+    /// <param name="code">The stable machine-readable rule code.</param>
+    /// <param name="message">The human-readable rule message.</param>
+    /// <example>
+    /// <code>
+    /// let result =
+    ///     Rules.failCustomAt
+    ///         [ PathSegment.Name "assignee" ]
+    ///         "ticket.assignee.required"
+    ///         "High-priority tickets need an assignee."
+    /// </code>
+    /// </example>
+    let failCustomAt
+        (path: Path)
+        (code: string)
+        (message: string)
+        : Result<unit, Diagnostics<SchemaError>> =
+        failAt path (custom code message)
 
     /// <summary>Creates a contextual rule set from one executable model rule.</summary>
     /// <param name="rule">A rule that accepts the model or returns path-aware diagnostics.</param>

@@ -78,7 +78,7 @@ Work this queue from top to bottom.
 - [x] Define `RuleSet<'model, 'error>`.
 - [x] Implement `rules<'model> { ... }` or explicit core API.
 - [x] Support field/path attachment for rule failures.
-- [ ] Support custom code and message.
+- [x] Support custom code and message.
 - [ ] Support rules over already-trusted models.
 - [ ] Implement `Rules.apply : RuleSet<'model, 'error> -> 'model -> Result<'model, Diagnostics<'error>>`.
 - [ ] Ensure rules do not construct models.
