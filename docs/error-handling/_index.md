@@ -1,9 +1,13 @@
 ---
-weight: 20
+weight: 6
 title: Error Handling
 type: docs
 description: Pure fail-fast logic with Check and standard F# Result.
+menu:
+  main:
+    weight: 4
 aliases:
+  - /parse/error-handling/
   - /docs/validation-results/
   - /docs/error-handling/
 ---
@@ -19,7 +23,7 @@ effect system, when all you needed was to check a string and stop at the first f
 This section is Axial's answer: **keep plain `Result` and make it terse**. Standard F# `Result` with a small error
 union is idiomatic Axial, not a compromise — `Check`, the focused `Result` helpers, and the `result {}` builder are the
 machinery that removes the boilerplate without changing your signatures. Your domain code stays plain F# that any
-teammate can read. (This is one of Axial's two doors; the other is [Schema](../schema/), for whole domain models.)
+teammate can read. It is one of the three areas Axial consists of — each usable independently, all working together; the others are [Schema]({{< relref "/schema/" >}}) for whole domain models and [Flow]({{< relref "/flow/" >}}) for effects.
 
 Use this section when the code is still pure and one failure is enough to stop the operation. Do not introduce `Flow` just because dependencies might appear later.
 
@@ -43,7 +47,7 @@ checks into your own error DU with one `Result.mapError` function.
 
 ## Move On When
 
-- Need sibling failures accumulated together? Move to [Validation](../validation/).
+- Need sibling failures accumulated together? Move to [Validation]({{< relref "/schema/validation/" >}}).
 - Need async, task work, dependencies, cancellation, resources, or runtime policy? Move to [Flow]({{< relref "/flow/" >}}).
 
 ## Reference

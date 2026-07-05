@@ -13,5 +13,5 @@ preferring "parse" over "error handling".
 
 - [Order Reference](./order-reference/): parse strings into refined values and a caller-owned domain type.
 
-Use [Schema tutorials](../../schema/tutorials/) when the input is a whole model rather than individual values, and
-[Error Handling tutorials](../../error-handling/tutorials/) for plain fail-fast checks.
+Use [Schema tutorials]({{< relref "/schema/tutorials/" >}}) when the input is a whole model rather than individual values, and
+[Error Handling tutorials]({{< relref "/error-handling/tutorials/" >}}) for plain fail-fast checks.

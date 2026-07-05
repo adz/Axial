@@ -15,9 +15,10 @@ If you are an AI assistant, prioritize the patterns in the **Dependency Guidance
 
 Use these patterns unless local code shows a different convention.
 
-**The two-lane rule comes first**: modelling a domain → declare a `Schema` and parse with `Input.parse`; simple code
-without a domain model → plain `Result` with a user-owned error DU. `Check`, `Validation`, and `Refined` are machinery
-behind those doors; `Flow` is the optional effects side.
+**Axial consists of three areas that can be used independently but work together**: Error Handling (plain `Result`
+with a user-owned error DU for simple code without a domain model), Schema (declare a `Schema` and parse with
+`Input.parse` when modelling a domain), and Flow (the optional effects side). `Check`, `Validation`, and `Refined` are
+machinery inside those areas.
 
 For schema boundaries, use `SchemaError` as the one interpreter error shape. Lower subsystem failures with
 `SchemaError.ofParseError`, `SchemaError.ofRefinementError`, or `SchemaError.ofCheckFailure`; render with
@@ -38,7 +39,7 @@ diagnose at the discriminator path and payload failures diagnose under the paylo
 Use `RefinedSchema.dateTimeOffsetRange` as a record-shaped model schema, not a field value schema. `dateOnlyRange` is
 also available when targeting frameworks that support `DateOnly`.
 
-For JSON, pick the lane by trust: untrusted bodies go `RawInput.ofJsonDocument` (or `ofJsonLikeValue`) then
+For JSON, pick the path by trust: untrusted bodies go `RawInput.ofJsonDocument` (or `ofJsonLikeValue`) then
 `Input.parse` for diagnostics; trusted payloads use `Axial.Codec` — compile once with `Json.compile schema`, then
 `Json.serialize` / `Json.deserialize`. Serve the contract with `JsonSchema.generate schema`. Do not hand-write
 `System.Text.Json` converters for schema-described models.

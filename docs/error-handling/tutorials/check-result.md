@@ -118,4 +118,4 @@ Choose the smallest shape that matches the problem:
 
 That keeps validation code independent from `Flow`, so it can move into an application boundary later.
 
-When independent fields should report all sibling failures together, move to the [Validation tutorial](../../../validation/tutorials/registration-form/).
+When independent fields should report all sibling failures together, move to the [Validation tutorial]({{< relref "/schema/validation/tutorials/registration-form.md" >}}).

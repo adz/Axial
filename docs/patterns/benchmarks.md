@@ -146,10 +146,10 @@ The boundary suite compares the trusted codec lane against full boundary parsing
 
 | Method | Mean | Allocated |
 | --- | --- | --- |
-| `Axial Json.deserialize (trusted lane)` | 3.15 us | 2.84 KB |
+| `Axial Json.deserialize (trusted path)` | 3.15 us | 2.84 KB |
 | `JsonDocument + RawInput + Input.parse (boundary lane)` | 19.78 us | 27.71 KB |
 
-That gap is the price of diagnostics, redisplayable raw input, and constraint checking, and it is why the two lanes exist: parse untrusted input where the diagnostics pay for themselves, and use the compiled codec for trusted payloads such as internal services, storage, and queues.
+That gap is the price of diagnostics, redisplayable raw input, and constraint checking, and it is why the two paths exist: parse untrusted input where the diagnostics pay for themselves, and use the compiled codec for trusted payloads such as internal services, storage, and queues.
 
 ## Fable Results
 

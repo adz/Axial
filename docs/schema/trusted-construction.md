@@ -62,5 +62,5 @@ system carries the guarantee forward: every `Signup` in the program passed its s
 
 - value requirements that always hold → schema constraints (this page)
 - invariants across fields that define the model's meaning → constructor results with `Schema.buildResult`
-  (see [Schema Boundaries]({{< relref "/validation/schema-boundaries/" >}}))
+  (see [Schema Boundaries]({{< relref "/schema/validation/schema-boundaries.md" >}}))
 - workflow-dependent requirements → [Rules And Policies](../rules-and-policies/)

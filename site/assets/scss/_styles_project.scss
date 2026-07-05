@@ -415,6 +415,7 @@ samp,
 
 $axial-parse: #0b55d9;
 $axial-flow: #6d4fc4;
+$axial-result: #0a7d62;
 
 .axial-doors {
   display: grid;
@@ -479,6 +480,11 @@ $axial-flow: #6d4fc4;
 .axial-door--flow {
   border-top-color: $axial-flow;
   .axial-door-kicker, .axial-door-cta { color: $axial-flow; }
+}
+
+.axial-door--result {
+  border-top-color: $axial-result;
+  .axial-door-kicker, .axial-door-cta { color: $axial-result; }
 }
 
 .axial-hero-panels {

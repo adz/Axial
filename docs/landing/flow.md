@@ -71,8 +71,9 @@ you.
 - [STM](./stm/) — transactional memory.
 - [Stream](./stream/) — effectful pull-based streams.
 
-If the code is still pure, start in [Parse, don't validate](../parse/) instead — Flow is optional, and both doors
-work without it.
+Flow is one of the three areas Axial consists of — each usable independently, all working together. If the code is
+still pure, start in [Error Handling]({{< relref "/error-handling/" >}}) or [Schema]({{< relref "/schema/" >}})
+instead; both work without Flow.
 
 </div>
 

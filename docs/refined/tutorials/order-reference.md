@@ -56,7 +56,7 @@ createOrderReference "many" "acme-north" // Error (ParseFailed) — not an int
 ```
 
 The first failure stops the pipeline. When several independent fields should all report their failures together, lift
-the same helpers into `validate {}` — see the [Validation tutorials](../../validation/tutorials/).
+the same helpers into `validate {}` — see the [Validation tutorials]({{< relref "/schema/validation/tutorials/" >}}).
 
 ## Read The Value Back Out
 

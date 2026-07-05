@@ -9,11 +9,11 @@ description: Compile a schema into a reflection-free JSON codec for trusted hot-
 This page shows how `Axial.Codec` turns the schema you already declared into a compiled JSON codec, so trusted
 serialization and boundary parsing come from one declaration.
 
-Axial has two lanes for JSON, and they exist because they optimize for different things:
+Axial has two paths for JSON, and they exist because they optimize for different things:
 
 - **Boundary lane** — `RawInput` + `Input.parse`: for untrusted input. It runs constraint metadata, accumulates
   path-aware diagnostics, and keeps the raw input for redisplay.
-- **Trusted lane** — `Json.compile` + `Json.serialize`/`Json.deserialize`: for payloads whose producer you trust, such
+- **Trusted path** — `Json.compile` + `Json.serialize`/`Json.deserialize`: for payloads whose producer you trust, such
   as internal services, storage, caches, and queues. It enforces the wire shape and required fields, skips constraint
   checking, and runs about 6x faster with a fraction of the allocations (see the
   [benchmarks]({{< relref "/patterns/benchmarks.md#schema-json-codec" >}})).
@@ -99,11 +99,11 @@ let roundTripped = Json.deserializeBytes codec bytes
 
 - It does not run constraint metadata such as `maxLength` or `between` — those belong to boundary parsing and
   validation. A value that only ever passes through trusted systems does not pay for checks it already passed.
-- Constructors from `Schema.buildResult` still run, so intrinsic cross-field invariants hold even on the trusted lane;
+- Constructors from `Schema.buildResult` still run, so intrinsic cross-field invariants hold even on the trusted path;
   their errors surface as `JsonCodecException`.
 
 ## Next
 
 - Serve the same declaration as a contract with [`JsonSchema.generate`]({{< relref "/reference/schema" >}}).
-- See the two lanes together in the runnable
+- See the two paths together in the runnable
   [minimal API sample]({{< relref "/patterns/examples#minimal-api-boundary-example" >}}).

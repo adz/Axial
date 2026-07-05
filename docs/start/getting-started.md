@@ -21,32 +21,33 @@ Axial closes both gaps. It unifies plain-`Result` validation helpers, schema-bas
 unconstructible, and an environment-aware workflow type (`Flow`) with built-in cancellation, scheduling, and
 structured concurrency — one toolkit with one vocabulary.
 
-## 1. The Two-Lane Rule
+## 1. What Axial Consists Of
 
-Axial is two tools that share one vocabulary. Pick your lane by asking one question: **am I modelling a domain?**
+Axial consists of three areas that can be used independently but work together, and they share one vocabulary:
 
-- **Yes — declare a [Schema]({{< relref "/parse/schema/" >}}).** Parsing raw input, validation, redisplay, contextual rules, and
-  metadata all fall out of one declaration, and an invalid model is never constructed.
-- **No — use plain `Result` with your own error type.** Standard F# `Result` plus a small error union is idiomatic
-  Axial, not a compromise.
+- **[Error Handling]({{< relref "/error-handling/" >}})** — plain `Result` with your own error type for simple,
+  pure code. Standard F# `Result` plus a small error union is idiomatic Axial, not a compromise.
+- **[Schema]({{< relref "/schema/" >}})** — declare a domain model once; parsing raw input, validation, redisplay,
+  contextual rules, and metadata all fall out of that declaration, and an invalid model is never constructed.
+- **[Flow]({{< relref "/flow/" >}})** — the effects around them: dependencies, async or task work, cancellation,
+  resources, and runtime policy. Flow is optional; the other two areas work without it.
 
-When the code around either lane needs dependencies, async or task work, cancellation, or runtime policy, lift it
-into [Flow]({{< relref "/flow/" >}}) — the effects side of the library. Flow is optional; both lanes work without it.
+Pick the area that matches the work in front of you:
 
 | Need | Start here |
 | :--- | :--- |
-| Parsing forms, CLI args, JSON, or config into trusted models | [Schema]({{< relref "/parse/schema/" >}}) |
-| Pure fail-fast logic with your own error type | [Error Handling]({{< relref "/parse/error-handling/" >}}) |
+| Pure fail-fast logic with your own error type | [Error Handling]({{< relref "/error-handling/" >}}) |
+| Parsing forms, CLI args, JSON, or config into trusted models | [Schema]({{< relref "/schema/" >}}) |
 | Async, task work, dependencies, resources, or runtime policy | [Flow]({{< relref "/flow/" >}}) |
 
 Everything else — reusable `Check` constraints, accumulating `Validation` diagnostics, `Refined` single-value parsing
-— is machinery behind those doors. Reach for it directly only when it clearly pays for itself; the
-[Choosing A Tool]({{< relref "/parse/schema/choosing-a-tool/" >}}) guide maps the full ladder when you want it.
+— is machinery inside those areas. Reach for it directly only when it clearly pays for itself; the
+[Choosing A Tool]({{< relref "/schema/choosing-a-tool/" >}}) guide maps the full ladder when you want it.
 
 ## 2. Simple Code: Plain Results
 
 Most logic starts pure, and most checks don't deserve a framework. Plain `Result` with your own error union is the
-blessed lane for code without a domain model — Axial's helpers remove the guard-clause boilerplate, and no Axial types
+blessed approach for code without a domain model — Axial's helpers remove the guard-clause boilerplate, and no Axial types
 appear in your signatures.
 
 ```fsharp
@@ -93,7 +94,7 @@ match parsed.Result with
 ```
 
 The same schema also re-validates existing values, powers contextual rules, and describes itself to JSON Schema, docs,
-and UI interpreters. Start with the [Schema tutorials]({{< relref "/parse/schema/tutorials/" >}}).
+and UI interpreters. Start with the [Schema tutorials]({{< relref "/schema/tutorials/" >}}).
 
 ## 4. Moving to Flow
 
