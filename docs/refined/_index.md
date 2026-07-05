@@ -64,6 +64,7 @@ After this function succeeds, `Product` cannot contain `0` as an id, a malformed
 - [Tutorials](./tutorials/): parse strings into refined values and a caller-owned domain type.
 - [Refine Builder](./refine-builder/): fail-fast parsing and refinement with `refine {}`.
 - [Refined Catalog](./catalog/): built-in numeric, text, collection, temporal, character, and choice helpers.
+- [Domain Values](./domain-values/): author caller-owned refined values for standalone use and schema fields.
 
 ## Reference
 

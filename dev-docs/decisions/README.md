@@ -22,6 +22,11 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
   `Check<'value> = 'value -> Result<unit, CheckFailure list>`. Checks are path-free, raw-input-free value programs;
   value-preserving guards and extraction helpers belong in `Result`, and parsing and refined value construction belong in
   `Axial.Refined`.
+- Built-in refined schema helpers live in `Axial.Validation.Schema.RefinedSchema`, not `Axial.Refined`, so the refined
+  package stays independent of schema metadata. Standalone refined constructors continue to use executable `Check`
+  programs; the integration catalog mirrors those same constraints as `SchemaConstraint` metadata and tests the lowered
+  boundary failures. Do not move `SchemaConstraint` into `Axial.Refined` or add an extra shared metadata package unless a
+  second integration package needs that abstraction.
 - `Result` keeps fail-fast adapters around `Check`, not a second accumulating constraint language. The retained helper
   families are:
   - generic Result combinators and conversions (`ok`, `error`, `map`, `bind`, `mapError`, `withError`, `fromTry`,

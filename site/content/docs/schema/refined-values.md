@@ -11,6 +11,9 @@ This page shows how domain values such as `Email`, `Quantity`, and `ContactName`
 A refined value schema pairs a raw representation with a domain type, so fields can carry real domain values — `Email`,
 `Quantity`, `ContactName` — while boundary interpreters keep working with the raw representation.
 
+For caller-owned domain values, author the type in one place using the [Domain Values](../refined/domain-values/) pattern:
+private constructor, smart constructor, optional standalone helper, and `Value.refined` schema.
+
 ## Built-In Refined Catalog Schemas
 
 `Axial.Validation.Schema` includes schema values for the scalar `Axial.Refined` catalog. They live in this integration
@@ -71,7 +74,8 @@ let windowSchema = RefinedSchema.dateTimeOffsetRange
 
 ## Authoring
 
-`Value.refined` takes a construction function, an inspection function, and the raw value schema:
+Put `Value.refined` in the same module as the private constructor and smart constructor. `Value.refined` takes a
+construction function, an inspection function, and the raw value schema:
 
 ```fsharp
 type Email = private Email of string

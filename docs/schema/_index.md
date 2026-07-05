@@ -54,6 +54,7 @@ authoring scales to any field count without a `mapN` family or code generation.
 - [Trusted Construction](./trusted-construction/): ActiveModel ergonomics with F# trusted construction.
 - [Choosing A Tool](./choosing-a-tool/): Schema vs Input vs Check vs Rules vs Policy.
 - [Refined Value Schemas](./refined-values/): domain values like `Email` as portable field schemas.
+- [Domain Values](../refined/domain-values/): author caller-owned refined values in one module.
 - [Redisplay And Field Errors](./redisplay-and-field-errors/): failed parses that keep the user's input.
 - [Rules And Policies](./rules-and-policies/): contextual rules and environment-aware Flow policies.
 - [Input Sources](./input-sources/): HTTP form-like, CLI, JSON-like, and configuration input.
