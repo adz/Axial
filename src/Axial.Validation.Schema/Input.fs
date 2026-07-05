@@ -156,6 +156,7 @@ module Input =
             | PrimitiveValueDefinition _ -> valueDefinition.Constraints
             | RefinedValueDefinition(raw, _) -> gather raw @ valueDefinition.Constraints
             | NestedValueDefinition _ -> valueDefinition.Constraints
+            | ManyValueDefinition _ -> valueDefinition.Constraints
 
         gather definition
 
@@ -169,6 +170,7 @@ module Input =
             | PrimitiveValueDefinition kind -> kind
             | RefinedValueDefinition(raw, _) -> kindOf raw
             | NestedValueDefinition _ -> invalidOp "Nested model value schemas have no underlying primitive kind."
+            | ManyValueDefinition _ -> invalidOp "Collection value schemas have no underlying primitive kind."
 
         kindOf definition
 
@@ -178,6 +180,7 @@ module Input =
             | PrimitiveValueDefinition _ -> value
             | RefinedValueDefinition(raw, ops) -> construct raw value |> ops.Construct
             | NestedValueDefinition _ -> invalidOp "Nested model values are constructed by parsing, not primitive construction."
+            | ManyValueDefinition _ -> invalidOp "Collection values are constructed by parsing, not primitive construction."
 
         construct definition primitive
 
@@ -246,11 +249,13 @@ module Input =
         | RawInput.Object fields ->
             match valueSchema.Shape with
             | NestedValueDefinition nestedModel -> parseObject path nestedModel fields
+            | ManyValueDefinition _ -> errorAt path SchemaError.ExpectedMany
             | PrimitiveValueDefinition _
             | RefinedValueDefinition _ -> errorAt path SchemaError.ExpectedScalar
         | RawInput.Many _ ->
             match valueSchema.Shape with
             | NestedValueDefinition _ -> errorAt path SchemaError.ExpectedObject
+            | ManyValueDefinition _ -> invalidOp "Collection input parsing is not yet implemented."
             | PrimitiveValueDefinition _
             | RefinedValueDefinition _ -> errorAt path SchemaError.ExpectedScalar
         | RawInput.Scalar text when hasRequiredConstraint constraints && String.IsNullOrWhiteSpace text ->
@@ -258,6 +263,7 @@ module Input =
         | RawInput.Scalar text ->
             match valueSchema.Shape with
             | NestedValueDefinition _ -> errorAt path SchemaError.ExpectedObject
+            | ManyValueDefinition _ -> errorAt path SchemaError.ExpectedMany
             | PrimitiveValueDefinition _
             | RefinedValueDefinition _ ->
                 let kind = underlyingPrimitiveKind valueSchema

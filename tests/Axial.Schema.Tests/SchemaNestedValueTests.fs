@@ -104,4 +104,5 @@ module SchemaNestedValueTests =
             test <@ street.Getter nestedValue = box customer.Address.Street @>
             test <@ city.Getter nestedValue = box customer.Address.City @>
         | PrimitiveValueDefinition _
-        | RefinedValueDefinition _ -> failwith "Expected a nested model value schema."
+        | RefinedValueDefinition _
+        | ManyValueDefinition _ -> failwith "Expected a nested model value schema."

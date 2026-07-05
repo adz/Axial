@@ -15,6 +15,7 @@
     <Compile Include="SchemaRefinedValueTests.fs" />
     <Compile Include="SchemaFormatTests.fs" />
     <Compile Include="SchemaNestedValueTests.fs" />
+    <Compile Include="SchemaManyValueTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

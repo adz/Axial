@@ -606,6 +606,8 @@ and internal ValueSchemaShape =
     | RefinedValueDefinition of raw: ValueSchemaDefinition * ops: RefinedValueOps
     /// <summary>A nested model value described by another type-erased model schema.</summary>
     | NestedValueDefinition of ModelSchemaDefinition<obj>
+    /// <summary>A collection value whose items are each described by the same item value schema.</summary>
+    | ManyValueDefinition of item: ValueSchemaDefinition
 
 and [<ReferenceEquality>] internal FieldDescriptor<'model> =
     { ExternalName: ExternalFieldName
@@ -911,6 +913,8 @@ module Value =
             invalidArg (nameof schema) "Expected a primitive value schema, but the schema is a refined value schema."
         | NestedValueDefinition _ ->
             invalidArg (nameof schema) "Expected a primitive value schema, but the schema is a nested model value schema."
+        | ManyValueDefinition _ ->
+            invalidArg (nameof schema) "Expected a primitive value schema, but the schema is a collection value schema."
 
     /// <summary>
     /// Describes a named refined/domain value schema by pairing a raw value schema with a value-preserving
@@ -993,6 +997,25 @@ module Value =
                   Constraints = [] }
             )
 
+    /// <summary>Describes a collection of nested model values from an already built item model schema.</summary>
+    /// <remarks>
+    /// Many value schemas let a field carry an ordered collection of another trusted model, such as a customer's
+    /// contact methods. Interpreters that see through primitive and refined value schema layers, such as
+    /// <see cref="M:Axial.Schema.Value.underlyingPrimitiveKind``1" />, do not see through a many value schema because a
+    /// collection has no underlying primitive representation of its own; interpreters that understand collections,
+    /// such as input parsing, inspect the item model schema directly instead.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="itemSchema" /> is null.</exception>
+    /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="itemSchema" /> was not produced by <c>Schema.build</c>.</exception>
+    let many (itemSchema: Schema<'item>) : ValueSchema<'item list> =
+        let itemValueSchema = nested itemSchema
+
+        ValueSchema(
+            { Shape = ManyValueDefinition itemValueSchema.Definition
+              Format = None
+              Constraints = [] }
+        )
+
     /// <summary>Returns whether a value schema is a refined/domain value schema.</summary>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
     let isRefined (schema: ValueSchema<'value>) =
@@ -1003,6 +1026,7 @@ module Value =
         | RefinedValueDefinition _ -> true
         | PrimitiveValueDefinition _ -> false
         | NestedValueDefinition _ -> false
+        | ManyValueDefinition _ -> false
 
     /// <summary>Returns the intrinsic primitive kind beneath any refinement layers of a value schema.</summary>
     /// <remarks>
@@ -1023,6 +1047,8 @@ module Value =
             | RefinedValueDefinition(raw, _) -> kindOf raw
             | NestedValueDefinition _ ->
                 invalidArg (nameof schema) "Nested model value schemas have no underlying primitive kind."
+            | ManyValueDefinition _ ->
+                invalidArg (nameof schema) "Collection value schemas have no underlying primitive kind."
 
         kindOf schema.Definition
 
@@ -1046,6 +1072,8 @@ module Value =
             invalidArg (nameof schema) "Expected a refined value schema, but the schema is a primitive value schema."
         | NestedValueDefinition _ ->
             invalidArg (nameof schema) "Expected a refined value schema, but the schema is a nested model value schema."
+        | ManyValueDefinition _ ->
+            invalidArg (nameof schema) "Expected a refined value schema, but the schema is a collection value schema."
 
     let private underlyingClrType kind =
         match kind with
@@ -1101,6 +1129,8 @@ module Value =
             | RefinedValueDefinition(raw, ops) -> project raw (ops.Inspect value)
             | NestedValueDefinition _ ->
                 invalidArg (nameof schema) "Nested model value schemas have no underlying primitive representation."
+            | ManyValueDefinition _ ->
+                invalidArg (nameof schema) "Collection value schemas have no underlying primitive representation."
 
         fun value -> project schema.Definition (box value) |> unbox<'primitive>
 
@@ -1151,6 +1181,7 @@ module Value =
                 | RefinedValueDefinition(raw, _) -> formatOf raw
                 | PrimitiveValueDefinition _ -> None
                 | NestedValueDefinition _ -> None
+                | ManyValueDefinition _ -> None
 
         formatOf schema.Definition
 
@@ -1187,6 +1218,7 @@ module Value =
             | PrimitiveValueDefinition _ -> definition.Constraints
             | RefinedValueDefinition(raw, _) -> gather raw @ definition.Constraints
             | NestedValueDefinition _ -> definition.Constraints
+            | ManyValueDefinition _ -> definition.Constraints
 
         gather schema.Definition
 
@@ -1482,6 +1514,33 @@ module Schema =
         (builder: SchemaBuilder<'model, 'constructor, 'nested -> 'next, 'chain>)
         : SchemaBuilder<'model, 'constructor, 'next, FieldsAppend<'model, 'constructor, 'nested, 'next, 'chain>> =
         fieldWith constraints externalName getter (Value.nested nestedSchema) builder
+
+    /// <summary>Appends a collection field to a progressive schema builder from an already built item model schema.</summary>
+    /// <exception cref="T:System.ArgumentNullException">
+    /// Thrown when <paramref name="externalName" />, <paramref name="getter" />, <paramref name="itemSchema" />, or
+    /// <paramref name="builder" /> is null.
+    /// </exception>
+    let many
+        externalName
+        (getter: 'model -> 'item list)
+        (itemSchema: Schema<'item>)
+        (builder: SchemaBuilder<'model, 'constructor, 'item list -> 'next, 'chain>)
+        : SchemaBuilder<'model, 'constructor, 'next, FieldsAppend<'model, 'constructor, 'item list, 'next, 'chain>> =
+        field externalName getter (Value.many itemSchema) builder
+
+    /// <summary>Appends a collection field with field-level constraint metadata, such as <c>minCount</c>.</summary>
+    /// <exception cref="T:System.ArgumentNullException">
+    /// Thrown when <paramref name="constraints" />, a constraint entry, <paramref name="externalName" />,
+    /// <paramref name="getter" />, <paramref name="itemSchema" />, or <paramref name="builder" /> is null.
+    /// </exception>
+    let manyWith
+        (constraints: SchemaConstraint list)
+        externalName
+        (getter: 'model -> 'item list)
+        (itemSchema: Schema<'item>)
+        (builder: SchemaBuilder<'model, 'constructor, 'item list -> 'next, 'chain>)
+        : SchemaBuilder<'model, 'constructor, 'next, FieldsAppend<'model, 'constructor, 'item list, 'next, 'chain>> =
+        fieldWith constraints externalName getter (Value.many itemSchema) builder
 
     /// <summary>Appends a text field represented as <see cref="T:System.String" /> to a progressive schema builder.</summary>
     let text
