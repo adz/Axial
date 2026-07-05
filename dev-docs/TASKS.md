@@ -42,7 +42,7 @@ Work this queue from top to bottom.
 ## Phase 9: Nested Models And Collections
 
 - [x] Implement `nested "address" _.Address Address.schema { required }`.
-- [ ] Ensure nested schemas use getters for inspection interpreters.
+- [x] Ensure nested schemas use getters for inspection interpreters.
 - [ ] Ensure nested input expects object-shaped raw input.
 - [ ] Prefix nested diagnostics with `PathSegment.Name`.
 - [ ] Implement `many "contacts" _.Contacts ContactMethod.schema { minCount 1 }`.

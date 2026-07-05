@@ -68,3 +68,40 @@ module SchemaNestedValueTests =
         let nestedValue = Value.nested addressSchema
 
         test <@ not (Value.isRefined nestedValue) @>
+
+    [<Fact>]
+    let ``inspection interpreters can walk into a nested value schema using getters, without reflection`` () =
+        let addressSchema = buildAddressSchema ()
+
+        let schema =
+            Schema.recordFor<Customer, _> (fun name address -> { Name = name; Address = address })
+            |> Schema.field "name" _.Name (Value.text |> Value.withConstraint SchemaConstraint.required)
+            |> Schema.nested "address" _.Address addressSchema
+            |> Schema.build
+
+        let model = modelDefinition schema
+
+        let addressField =
+            model.Fields
+            |> List.find (fun field -> ExternalFieldName.value field.ExternalName = "address")
+
+        let customer = { Name = "Ada"; Address = { Street = "1 Infinite Loop"; City = "Cupertino" } }
+
+        // An inspection interpreter reads the nested model with the outer field's getter, then reads the nested
+        // model's own fields with the nested schema's getters, all without reflection.
+        match addressField.ValueSchema.Shape with
+        | NestedValueDefinition nestedModel ->
+            let nestedValue = addressField.Getter customer
+
+            let street =
+                nestedModel.Fields
+                |> List.find (fun field -> ExternalFieldName.value field.ExternalName = "street")
+
+            let city =
+                nestedModel.Fields
+                |> List.find (fun field -> ExternalFieldName.value field.ExternalName = "city")
+
+            test <@ street.Getter nestedValue = box customer.Address.Street @>
+            test <@ city.Getter nestedValue = box customer.Address.City @>
+        | PrimitiveValueDefinition _
+        | RefinedValueDefinition _ -> failwith "Expected a nested model value schema."
