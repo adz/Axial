@@ -310,6 +310,7 @@ let pageSpecs = [
             "Core types", ["T:Axial.Schema.Schema`1"; "T:Axial.Schema.ValueSchema`1"; "T:Axial.Schema.Field`2"; "T:Axial.Schema.UnionCase`1"]
             "Value schemas", ["P:Axial.Schema.Value.text"; "P:Axial.Schema.Value.int"; "P:Axial.Schema.Value.decimal"; "P:Axial.Schema.Value.bool"; "P:Axial.Schema.Value.dateTime"; "P:Axial.Schema.Value.guid"; "M:Axial.Schema.Value.manyOf"; "M:Axial.Schema.Value.union"; "M:Axial.Schema.UnionCase.create"]
             "Inspection", ["T:Axial.Schema.ValueShape"; "T:Axial.Schema.ValueDescription"; "T:Axial.Schema.FieldDescription"; "T:Axial.Schema.ModelDescription"; "T:Axial.Schema.UnionDescription"; "T:Axial.Schema.UnionCaseDescription"; "M:Axial.Schema.Inspect.model"; "M:Axial.Schema.Inspect.value"; "M:Axial.Schema.Inspect.field"]
+            "JSON Schema generation", ["M:Axial.Schema.JsonSchema.generate"; "M:Axial.Schema.JsonSchema.generateValue"]
         ]
         Alias = None
     }
@@ -319,12 +320,23 @@ let pageSpecs = [
         Description = "Source-documented schema input parsing, validation, and rules interpreters."
         Intro = "This page shows the `Axial.Validation.Schema` interpreter surface: raw boundary input, schema input parsing into `ParsedInput`, intrinsic validation of existing models, and contextual rule sets over already-trusted models. Core schema metadata stays in [Schema](../); these interpreters attach diagnostics, raw input, and redisplay behavior to it."
         SymbolIds = [
-            "Raw input", ["T:Axial.Validation.Schema.RawInput"; "T:Axial.Validation.Schema.JsonLikeValue"; "M:Axial.Validation.Schema.RawInputModule.ofMap"; "M:Axial.Validation.Schema.RawInputModule.ofNameValues"; "M:Axial.Validation.Schema.RawInputModule.ofCliArgs"; "M:Axial.Validation.Schema.RawInputModule.ofJsonLikeValue"; "M:Axial.Validation.Schema.RawInputModule.ofConfiguration"; "M:Axial.Validation.Schema.RawInputModule.redisplay"; "M:Axial.Validation.Schema.RawInputModule.redisplayPath"]
+            "Raw input", ["T:Axial.Validation.Schema.RawInput"; "T:Axial.Validation.Schema.JsonLikeValue"; "M:Axial.Validation.Schema.RawInputModule.ofMap"; "M:Axial.Validation.Schema.RawInputModule.ofNameValues"; "M:Axial.Validation.Schema.RawInputModule.ofCliArgs"; "M:Axial.Validation.Schema.RawInputModule.ofJsonLikeValue"; "M:Axial.Validation.Schema.RawInputModule.ofJsonElement"; "M:Axial.Validation.Schema.RawInputModule.ofJsonDocument"; "M:Axial.Validation.Schema.RawInputModule.ofConfiguration"; "M:Axial.Validation.Schema.RawInputModule.redisplay"; "M:Axial.Validation.Schema.RawInputModule.redisplayPath"]
             "Input parsing", ["T:Axial.Validation.Schema.ParsedInput`2"; "M:Axial.Validation.Schema.Input.parse"; "M:Axial.Validation.Schema.Input.parseWith"; "T:Axial.Validation.Schema.Input.Options"; "M:Axial.Validation.Schema.ParsedInputModule.mapErrors"; "M:Axial.Validation.Schema.ParsedInputModule.renderErrors"]
             "Errors", ["T:Axial.Validation.Schema.SchemaError"]
             "Refined catalog schemas", ["M:Axial.Validation.Schema.RefinedSchema.nonBlankString"; "M:Axial.Validation.Schema.RefinedSchema.trimmedString"; "M:Axial.Validation.Schema.RefinedSchema.boundedString"; "M:Axial.Validation.Schema.RefinedSchema.slug"; "M:Axial.Validation.Schema.RefinedSchema.positiveInt"; "M:Axial.Validation.Schema.RefinedSchema.nonNegativeInt"; "M:Axial.Validation.Schema.RefinedSchema.nonZeroInt"; "M:Axial.Validation.Schema.RefinedSchema.negativeInt"; "M:Axial.Validation.Schema.RefinedSchema.nonPositiveInt"; "M:Axial.Validation.Schema.RefinedSchema.nonEmptyList"; "M:Axial.Validation.Schema.RefinedSchema.nonEmptyArray"; "M:Axial.Validation.Schema.RefinedSchema.distinctList"; "M:Axial.Validation.Schema.RefinedSchema.boundedList"; "M:Axial.Validation.Schema.RefinedSchema.boundedArray"; "M:Axial.Validation.Schema.RefinedSchema.dateTimeOffsetRange"]
             "Model validation", ["M:Axial.Validation.Schema.Validation.validate"]
             "Rules", ["T:Axial.Validation.Schema.RuleSet`2"; "M:Axial.Validation.Schema.Rules.create"; "M:Axial.Validation.Schema.Rules.concat"; "M:Axial.Validation.Schema.Rules.at"; "M:Axial.Validation.Schema.Rules.failAt"; "M:Axial.Validation.Schema.Rules.custom"; "M:Axial.Validation.Schema.Rules.validate"; "M:Axial.Validation.Schema.Rules.apply"]
+        ]
+        Alias = None
+    }
+    {
+        OutPath = ["codec"; "_index.md"]
+        Title = "Codec"
+        Description = "Source-documented compiled JSON codecs over built model schemas."
+        Intro = "This page shows the `Axial.Codec` surface: `Json.compile` turns a built `Schema<'model>` into a reusable `JsonCodec<'model>` with reflection-free, constructor-specialized encode and decode plans. The codec is the trusted hot path for serialization; parse untrusted boundary input with [schema input parsing](../schema/interpreters/) when path-aware diagnostics matter."
+        SymbolIds = [
+            "Core types", ["T:Axial.Codec.JsonCodec`1"; "T:Axial.Codec.JsonCodecException"]
+            "Module functions", ["M:Axial.Codec.Json.compile"; "M:Axial.Codec.Json.serialize"; "M:Axial.Codec.Json.serializeBytes"; "M:Axial.Codec.Json.deserialize"; "M:Axial.Codec.Json.deserializeBytes"; "M:Axial.Codec.Json.tryDeserialize"]
         ]
         Alias = None
     }
@@ -1065,8 +1077,9 @@ let main argv =
         Path.Combine(artifactsDir, "Axial.ErrorHandling/debug_netstandard2.1/Axial.ErrorHandling.dll")
         Path.Combine(artifactsDir, "Axial.Refined/debug_net8.0/Axial.Refined.dll")
         Path.Combine(artifactsDir, "Axial.Schema/debug_netstandard2.1/Axial.Schema.dll")
+        Path.Combine(artifactsDir, "Axial.Codec/debug_net8.0/Axial.Codec.dll")
         Path.Combine(artifactsDir, "Axial.Validation/debug_netstandard2.1/Axial.Validation.dll")
-        Path.Combine(artifactsDir, "Axial.Validation.Schema/debug_netstandard2.1/Axial.Validation.Schema.dll")
+        Path.Combine(artifactsDir, "Axial.Validation.Schema/debug_net8.0/Axial.Validation.Schema.dll")
         Path.Combine(artifactsDir, "Axial.Flow.PlatformService/debug_netstandard2.1/Axial.Flow.PlatformService.dll")
         Path.Combine(artifactsDir, "Axial.Flow.Console/debug_netstandard2.1/Axial.Flow.Console.dll")
         Path.Combine(artifactsDir, "Axial.Flow.FileSystem/debug_netstandard2.1/Axial.Flow.FileSystem.dll")

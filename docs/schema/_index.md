@@ -28,6 +28,8 @@ RawInput -> Input.parse schema -> trusted model | Diagnostics
 model    -> Validation.validate schema -> trusted model | Diagnostics
 model    -> Rules.apply ruleSet -> trusted model | Diagnostics
 schema   -> Inspect.model -> metadata (no execution)
+schema   -> Json.compile -> compiled JSON codec (trusted hot path)
+schema   -> JsonSchema.generate -> JSON Schema document
 ```
 
 At data boundaries, newcomer-facing failures use one shape: `SchemaError` inside path-aware `Diagnostics`. Primitive
@@ -58,6 +60,7 @@ authoring scales to any field count without a `mapN` family or code generation.
 - [Domain Values](../refined/domain-values/): author caller-owned refined values in one module.
 - [Redisplay And Field Errors](./redisplay-and-field-errors/): failed parses that keep the user's input.
 - [Rules And Policies](./rules-and-policies/): contextual rules and environment-aware Flow policies.
+- [JSON Codec](./json-codec/): compile the same declaration into a reflection-free JSON codec for trusted payloads.
 - [Input Sources](./input-sources/): HTTP form-like, CLI, JSON-like, and configuration input.
 
 ## Package Layout

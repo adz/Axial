@@ -11,6 +11,15 @@ If you are coming from `FsToolkit.ErrorHandling`, you will find that Axial is or
 than a direct replacement. While both libraries help with result-based programming, Axial
 focuses on a unified execution model that carries environments and runtime policies.
 
+The deepest difference is at data boundaries. FsToolkit combinators are functions: they run, produce a
+`Result`, and are gone — nothing else can read what was required. An Axial `Schema<'model>` is inspectable
+data: the same declaration that parses input also emits the JSON Schema/OpenAPI contract
+(`JsonSchema.generate`), compiles a JSON codec (`Json.compile`), drives UI metadata (`Inspect.model`), and
+redisplays failed form input with path-aware errors. If your validation only ever needs to run, combinators
+are enough — and plain `Result` with your own error union is the blessed Axial lane for that too. When the
+same facts must also be published, rendered, or serialized, a schema stops that knowledge from being
+re-implemented per consumer.
+
 ## The Model Difference
 
 `FsToolkit.ErrorHandling` provides a broad toolbox of helpers for working with Result, 

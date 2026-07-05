@@ -57,9 +57,22 @@ let raw = RawInput.ofCliArgs [ "--name"; "Ada Lovelace"; "--verbose"; "--no-colo
 `--name value`, `--name=value`, `-n value`, boolean flags, `--no-name`, and repeated options are supported; positional
 arguments collect under the `_` field.
 
+## JSON Bodies With System.Text.Json
+
+On .NET 8+ targets, adapt a parsed `JsonDocument` or `JsonElement` directly — the natural fit for ASP.NET Core
+request bodies:
+
+```fsharp
+use! document = JsonDocument.ParseAsync request.Body
+let raw = RawInput.ofJsonDocument document
+```
+
+JSON null becomes `Missing`, numbers keep their exact boundary text, and arrays and objects map to `Many` and
+`Object`. The adapter uses the in-box `System.Text.Json`, so the package stays dependency-free.
+
 ## JSON-Like Input
 
-Deserialize with any JSON library into `JsonLikeValue`, then adapt:
+On other targets (including Fable), deserialize with any JSON library into `JsonLikeValue`, then adapt:
 
 ```fsharp
 let raw = RawInput.ofJsonLikeValue jsonValue   // objects, arrays, scalars, null

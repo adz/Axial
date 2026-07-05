@@ -38,6 +38,11 @@ diagnose at the discriminator path and payload failures diagnose under the paylo
 Use `RefinedSchema.dateTimeOffsetRange` as a record-shaped model schema, not a field value schema. `dateOnlyRange` is
 also available when targeting frameworks that support `DateOnly`.
 
+For JSON, pick the lane by trust: untrusted bodies go `RawInput.ofJsonDocument` (or `ofJsonLikeValue`) then
+`Input.parse` for diagnostics; trusted payloads use `Axial.Codec` — compile once with `Json.compile schema`, then
+`Json.serialize` / `Json.deserialize`. Serve the contract with `JsonSchema.generate schema`. Do not hand-write
+`System.Text.Json` converters for schema-described models.
+
 ### 1. Handling Failures
 Use `Check` for executable value constraints, `Predicate` for local boolean tests, and `Result` for fail-fast values. `Check.*` helpers return `Result<unit, CheckFailure list>`; `Result.guard`, named `Result.*` guards, and extraction helpers preserve values or change the success shape.
 
