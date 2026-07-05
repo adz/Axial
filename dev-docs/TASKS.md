@@ -120,17 +120,20 @@ The progressive typed builder from Phase 5b is the explicit core and already sca
 computation expression is optional sugar, not the path past three fields. Ship it only if it beats the pipeline on
 readability and compile-error quality for constraint blocks.
 
-- [ ] Design `schema create { ... }` as sugar over the Phase 5b builder core; compare CE ergonomics and compile-error
+- [x] Design `schema create { ... }` as sugar over the Phase 5b builder core; compare CE ergonomics and compile-error
   quality against the plain pipeline before committing to ship it.
-- [ ] Implement primitive field operations:
-  `text`, `int`, `decimal`, `bool`, `date`, and `guid`.
-- [ ] Implement generic `field "email" _.Email Email.schema { ... }`.
-- [ ] Implement `nested`.
-- [ ] Implement `many`.
-- [ ] Implement field constraint blocks.
-- [ ] Confirm external-name-first ordering remains the public style.
-- [ ] Add examples comparing Rails ActiveModel and Axial schema side by side.
-- [ ] Add compile/API shape tests for the DSL.
+  Outcome: the CE does not beat the pipeline (see `dev-docs/current-ideas/schema-ce-evaluation.md` and
+  `dev-docs/decisions/README.md`), so the DSL is not shipped and the implementation items below are closed.
+- [x] Implement primitive field operations:
+  `text`, `int`, `decimal`, `bool`, `date`, and `guid`. (Closed by decision: CE not shipped.)
+- [x] Implement generic `field "email" _.Email Email.schema { ... }`. (Closed by decision: CE not shipped.)
+- [x] Implement `nested`. (Closed by decision: CE not shipped.)
+- [x] Implement `many`. (Closed by decision: CE not shipped.)
+- [x] Implement field constraint blocks. (Closed by decision: bare-brace blocks are not expressible in F#.)
+- [x] Confirm external-name-first ordering remains the public style. (Confirmed; pipeline surface unchanged.)
+- [x] Add examples comparing Rails ActiveModel and Axial schema side by side. (Moved to the Phase 17 guide work over
+  the pipeline surface.)
+- [x] Add compile/API shape tests for the DSL. (Closed by decision: CE not shipped.)
 
 ## Phase 16: Source Generation Later
 

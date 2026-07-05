@@ -63,6 +63,10 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
   `Inspect`, and hot-path plans come from `Schema.specialize` with an `IFieldChainFactory<'model, 'result>` that walks
   the typed field chain to compile constructor-specialized record plans. `Axial.Schema` never references a codec
   package, and codec packages never reference `Axial.Validation.Schema`, so no dependency cycle can form.
+- The `schema create { ... }` computation expression is not shipped. A prototype over the progressive builder was
+  evaluated (see `dev-docs/current-ideas/schema-ce-evaluation.md`): the sketched bare-brace constraint blocks are not
+  expressible in F#, compile-error quality is a wash, and readability does not improve, so the pipeline builder stays
+  the single public authoring surface.
 - `Bind` is only for assigning or mapping a source error immediately before `flow { }` binds it. In pure code, use
   `Result.require`, `Result.mapError`, or `Validation.mapError`.
 - Generated reference docs come from XML comments and generator inputs. Do not hand-edit generated reference pages as the
