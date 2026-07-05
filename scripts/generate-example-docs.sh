@@ -3,9 +3,10 @@
 set -euo pipefail
 
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-output_file="${DOCS_EXAMPLES_OUTPUT:-$root_dir/docs/patterns/examples/_index.md}"
+schema_output="${DOCS_SCHEMA_EXAMPLES_OUTPUT:-$root_dir/docs/schema/examples.md}"
+flow_output="${DOCS_FLOW_EXAMPLES_OUTPUT:-$root_dir/docs/flow/examples.md}"
 
-mkdir -p "$(dirname "$output_file")"
+mkdir -p "$(dirname "$schema_output")" "$(dirname "$flow_output")"
 
 render_code_block() {
   local language="$1"
@@ -53,23 +54,28 @@ render_example_section() {
   } >> "$output_file"
 }
 
-cat > "$output_file" <<'EOF'
----
-title: Runnable Examples
-description: Application-shaped examples that are executed during docs generation and mirrored back into the site.
----
+write_page_header() {
+  local file="$1"
+  local description="$2"
 
-# Runnable Examples
+  {
+    printf -- '---\n'
+    printf 'weight: 85\n'
+    printf 'title: Runnable Examples\n'
+    printf 'description: %s\n' "$description"
+    printf -- '---\n\n'
+    printf '# Runnable Examples\n\n'
+    printf 'This page shows the examples that are executed during the docs build, so the public docs stay tied to real code and observed output.\n\n'
+    printf 'The examples below are built from the repository projects, run with the current source, and then written back into this page.\n\n'
+    printf 'The code blocks keep the important API calls on the same lines as the values they bind, with trailing comments where that makes the signature easier to read.\n'
+    printf 'The examples prefer the normal direct-bind style inside computation expressions, so the docs reflect the recommended day-to-day usage.\n\n'
+  } > "$file"
+}
 
-This page shows the examples that are executed during the docs build, so the public docs stay tied to real code and observed output.
+write_page_header "$schema_output" "Executable schema, refined, diagnostics, and policy examples mirrored back into the docs."
+write_page_header "$flow_output" "Executable workflow boundary examples mirrored back into the docs."
 
-The examples below are built from the repository projects, run with the current source, and then written back into this page.
-
-The code blocks keep the important API calls on the same lines as the values they bind, with trailing comments where that makes the signature easier to read.
-The examples prefer the normal direct-bind style inside computation expressions, so the docs reflect the recommended day-to-day usage.
-
-EOF
-
+output_file="$flow_output"
 render_example_section \
   "Request Boundary Example" \
   "This example shows a request boundary that pulls a user from a database-like environment, threads a trace id through the request context, and reuses the same validation shape across Flow." \
@@ -79,6 +85,7 @@ render_example_section \
   "AXIAL_EXAMPLE=request-boundary dotnet run --project examples/Axial.Examples/Axial.Examples.fsproj --nologo" \
   "request-boundary"
 
+output_file="$schema_output"
 render_example_section \
   "Diagnostics Example" \
   "This example shows a JSON-shaped request boundary with a root-level error, nested child branches, and a display-friendly diagnostics tree." \
@@ -124,6 +131,7 @@ render_example_section \
   "AXIAL_EXAMPLE=policy dotnet run --project examples/Axial.Examples/Axial.Examples.fsproj --nologo" \
   "policy"
 
+output_file="$flow_output"
 render_example_section \
   'Playground Example' \
   "This example shows the same core boundary across Flow using the normal direct-bind style inside each computation expression." \

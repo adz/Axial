@@ -1,5 +1,5 @@
 ---
-weight: 20
+weight: 80
 title: Troubleshooting Types
 ---
 

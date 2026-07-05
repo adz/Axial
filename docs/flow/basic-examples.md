@@ -1,5 +1,5 @@
 ---
-weight: 30
+weight: 3
 title: Straightforward Examples
 description: Quick, practical examples of Axial in action.
 ---

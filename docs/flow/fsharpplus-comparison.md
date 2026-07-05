@@ -1,5 +1,5 @@
 ---
-weight: 40
+weight: 90
 title: FSharpPlus Integration
 description: How Axial fits beside FSharpPlus-based codebases.
 ---

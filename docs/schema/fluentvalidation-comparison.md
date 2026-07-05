@@ -1,5 +1,5 @@
 ---
-weight: 25
+weight: 91
 title: vs FluentValidation
 description: Validators check existing objects; Axial schemas never construct the invalid object.
 ---

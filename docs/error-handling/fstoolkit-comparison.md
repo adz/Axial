@@ -1,5 +1,5 @@
 ---
-weight: 10
+weight: 90
 title: FsToolkit.ErrorHandling
 description: Comparing Axial and FsToolkit.ErrorHandling models and how they work together.
 ---

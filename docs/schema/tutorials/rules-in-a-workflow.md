@@ -89,4 +89,4 @@ let approve ticket = flow {
 ## Next
 
 - [Rules And Policies](../../rules-and-policies/) for the full guide, including custom codes and scoping combinators.
-- The runnable [policy example]({{< relref "/patterns/examples/" >}}) adapting all five verification boundaries.
+- The runnable [policy example]({{< relref "/schema/examples.md" >}}) adapting all five verification boundaries.

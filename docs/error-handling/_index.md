@@ -2,6 +2,7 @@
 weight: 6
 title: Error Handling
 type: docs
+notoc: true
 description: Pure fail-fast logic with Check and standard F# Result.
 menu:
   main:
@@ -37,6 +38,7 @@ checks into your own error DU with one `Result.mapError` function.
 
 ## Start Here
 
+- [Getting Started](./getting-started/): plain `Result` with your own error type, without the boilerplate.
 - [Tutorials](./tutorials/): build typed `Result` values from pure checks.
 - [Checks](./checks/): structured checks and how to move into typed `Result` values.
 - [Result Builder](./result-builder/): fail-fast composition over standard `Result`.
@@ -45,6 +47,10 @@ checks into your own error DU with one `Result.mapError` function.
 
 - Need sibling failures accumulated together? Move to [Validation]({{< relref "/schema/validation/" >}}).
 - Need async, task work, dependencies, cancellation, resources, or runtime policy? Move to [Flow]({{< relref "/flow/" >}}).
+
+## Comparisons
+
+- [Replacing FsToolkit.ErrorHandling](./fstoolkit-comparison/): the migration path for existing railway-oriented code.
 
 ## Reference
 

@@ -1,5 +1,5 @@
 ---
-weight: 50
+weight: 91
 title: Effect-TS Comparison
 description: Where Axial overlaps with Effect-TS and where it stays intentionally smaller.
 ---

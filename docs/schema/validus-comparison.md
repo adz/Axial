@@ -1,5 +1,5 @@
 ---
-weight: 20
+weight: 90
 title: Validus Integration
 description: How Axial fits beside Validus validation pipelines.
 ---

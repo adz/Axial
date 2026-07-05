@@ -220,4 +220,4 @@ Prefer this style over exposing a generic `Or<'Left, 'Right>` in domain models. 
 
 ## Runnable Example
 
-The generated [Runnable Examples]({{< relref "/patterns/examples/" >}}) page includes a refined catalog example that is built and executed during docs validation.
+The generated [Runnable Examples]({{< relref "/schema/examples.md" >}}) page includes a refined catalog example that is built and executed during docs validation.

@@ -16,7 +16,7 @@ Axial has two paths for JSON, and they exist because they optimize for different
 - **Trusted path** — `Json.compile` + `Json.serialize`/`Json.deserialize`: for payloads whose producer you trust, such
   as internal services, storage, caches, and queues. It enforces the wire shape and required fields, skips constraint
   checking, and runs about 6x faster with a fraction of the allocations (see the
-  [benchmarks]({{< relref "/patterns/benchmarks.md#schema-json-codec" >}})).
+  [benchmarks]({{< relref "/schema/benchmarks.md#schema-json-codec" >}})).
 
 ## Compile Once, Reuse Everywhere
 
@@ -106,4 +106,4 @@ let roundTripped = Json.deserializeBytes codec bytes
 
 - Serve the same declaration as a contract with [`JsonSchema.generate`]({{< relref "/reference/schema" >}}).
 - See the two paths together in the runnable
-  [minimal API sample]({{< relref "/patterns/examples#minimal-api-boundary-example" >}}).
+  [minimal API sample]({{< relref "/schema/examples.md#minimal-api-boundary-example" >}}).

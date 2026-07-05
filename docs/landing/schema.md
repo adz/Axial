@@ -2,6 +2,8 @@
 title: "Schema: parse, don't validate"
 linkTitle: Schema
 description: Turn untrusted input into trusted domain models — invalid models are never constructed.
+type: docs
+notoc: true
 weight: 8
 menu:
   main:
@@ -29,8 +31,8 @@ raw input kept for redisplay, contextual rules, JSON codecs, and documentation.
 
 <div class="docs-home-meta">
 <a class="docs-home-cta" href="{{< relref "/schema/tutorials/" >}}">Get started &gt;</a>
-<a class="docs-chip" href="{{< relref "/docs/start/getting-started.md" >}}">Getting started guide</a>
-<a class="docs-chip" href="{{< relref "/docs/patterns/examples/" >}}">Examples</a>
+<a class="docs-chip" href="{{< relref "/schema/getting-started.md" >}}">Getting started guide</a>
+<a class="docs-chip" href="{{< relref "/schema/examples.md" >}}">Examples</a>
 </div>
 </div>
 
@@ -51,6 +53,7 @@ schema   -> JsonSchema.generate -> JSON Schema document
 
 ## Guides
 
+- [Getting Started](./getting-started/) — declare a schema once and parse raw input into a trusted model.
 - [Tutorials](./tutorials/) — parse a signup form, nest models, apply rules, and inspect metadata.
 - [Trusted Construction](./trusted-construction/) — ActiveModel ergonomics with F# trusted construction.
 - [Choosing A Tool](./choosing-a-tool/) — Schema vs Input vs Check vs Rules vs Policy.
@@ -60,6 +63,14 @@ schema   -> JsonSchema.generate -> JSON Schema document
 - [Rules And Policies](./rules-and-policies/) — contextual rules and environment-aware Flow policies.
 - [JSON Codec](./json-codec/) — compile the same declaration into a reflection-free JSON codec for trusted payloads.
 - [Input Sources](./input-sources/) — HTTP form-like, CLI, JSON-like, and configuration input.
+
+## In Practice
+
+- [Runnable Examples](./examples/) — executed during the docs build, mirrored back into the site.
+- [Benchmarks](./benchmarks/) — measured parse and codec numbers on .NET and Fable.
+- [Zero Reflection, AOT, and Fable](./aot-trimming-fable/) — why the guarantees hold by construction.
+- Comparisons: [vs zod](./zod-comparison/), [vs FluentValidation](./fluentvalidation-comparison/),
+  [Validus integration](./validus-comparison/).
 
 ## The Machinery
 
