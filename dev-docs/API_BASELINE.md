@@ -45,16 +45,10 @@ bash scripts/validate-docs.sh
 => Docs validation build succeeded, including regenerated reference docs.
 ```
 
-Known validation gaps observed during this refresh:
-
-```text
-dotnet build Axial.slnx --nologo -v minimal
-=> Fails in benchmarks/Axial.Benchmarks.Fable with Fable compile errors in Check.fs.
-
-bash scripts/check-fable-js-surface.sh
-=> Fails in benchmarks/Axial.Benchmarks.Fable with the same Check.fs Predicate.String/Number/Seq errors, plus
-   Schema.fs generic type-info errors.
-```
+Known validation gaps observed during this refresh: none. The previous Fable gaps are fixed:
+`benchmarks/Axial.Benchmarks.Fable` now compiles `Predicate.fs` before `Check.fs`, and
+`Value.inspectUnderlying` guards its .NET-only generic projection-type validation with `#if !FABLE_COMPILER`, so
+`dotnet build Axial.slnx` and `bash scripts/check-fable-js-surface.sh` both pass.
 
 The full solution build, generated API docs, docs preview, production site build, and an unrestricted `dotnet test` run
 are required before committing any release/API-surface update. Record their result in the commit summary when they are

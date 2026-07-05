@@ -15,6 +15,7 @@
     <Compile Include="..\..\src\Axial.Flow\Foundation.fs" />
     <Compile Include="..\..\src\Axial.Validation\Diagnostics.fs" />
     <Compile Include="..\..\src\Axial.Validation\Validation.fs" />
+    <Compile Include="..\..\src\Axial.ErrorHandling\Predicate.fs" />
     <Compile Include="..\..\src\Axial.ErrorHandling\Check.fs" />
     <Compile Include="..\..\src\Axial.ErrorHandling\Result.fs" />
     <Compile Include="..\..\src\Axial.ErrorHandling\Collection.fs" />

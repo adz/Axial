@@ -1156,12 +1156,18 @@ module Value =
         if isNull (box schema) then
             nullArg (nameof schema)
 
+        // Fable erases generics at runtime, so the eager projection-type validation is .NET-only; the projection
+        // itself stays reflection-free on both targets.
+        #if !FABLE_COMPILER
         let expected = underlyingClrType (underlyingPrimitiveKind schema)
 
         if typeof<'primitive> <> expected then
             invalidArg
                 (nameof schema)
                 $"Expected the underlying primitive type {expected.Name}, but the requested projection type is {typeof<'primitive>.Name}."
+        #else
+        underlyingPrimitiveKind schema |> ignore
+        #endif
 
         let rec project (definition: ValueSchemaDefinition) (value: obj) =
             match definition.Shape with
