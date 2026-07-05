@@ -377,6 +377,40 @@ module ApiShapeTests =
         |> assertContainsAll [ "Return"; "ReturnFrom"; "Bind"; "Delay"; "Run"; "Combine" ]
 
     [<Fact>]
+    let ``schema validation interpreters stay out of core validation`` () =
+        let validationAssembly = typeof<Validation<int, string>>.Assembly
+        let validationReferences = referencedAssemblyNames validationAssembly
+        let schemaValidationAssembly = Assembly.Load "Axial.Validation.Schema"
+        let schemaValidationReferences = referencedAssemblyNames schemaValidationAssembly
+
+        test <@ validationAssembly.GetName().Name = "Axial.Validation" @>
+
+        validationReferences
+        |> assertContainsNone [ "Axial.Schema"; "Axial.Validation.Schema"; "Axial.ErrorHandling"; "Axial.Refined"; "Axial.Flow" ]
+
+        assertModuleAbsentFromAssembly "Axial.Validation" "Axial.Validation.SchemaValidation"
+        assertModuleAbsentFromAssembly "Axial.Validation" "Axial.Validation.SchemaConstraintCheck"
+        assertModuleAbsentFromAssembly "Axial.Validation" "Axial.Validation.ValueSchemaCheck"
+        assertModuleAbsentFromAssembly "Axial.Validation" "Axial.Validation.Input"
+
+        test <@ schemaValidationAssembly.GetName().Name = "Axial.Validation.Schema" @>
+
+        schemaValidationReferences
+        |> assertContainsAll [ "Axial.Schema"; "Axial.Validation"; "Axial.ErrorHandling"; "Axial.Refined" ]
+
+        moduleTypeFromAssembly "Axial.Validation.Schema" "Axial.Validation.Schema.SchemaValidation"
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "packageName" ]
+
+        moduleTypeFromAssembly "Axial.Validation.Schema" "Axial.Validation.Schema.SchemaConstraintCheck"
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "tryText"; "text"; "tryOrdered"; "ordered"; "trySequence"; "sequence" ]
+
+        moduleTypeFromAssembly "Axial.Validation.Schema" "Axial.Validation.Schema.ValueSchemaCheck"
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "fromUnderlying"; "text"; "ordered" ]
+
+    [<Fact>]
     let ``schema types start as independent leaf package`` () =
         let schemaType = typedefof<Schema<_>>
         let valueSchemaType = typedefof<ValueSchema<_>>
