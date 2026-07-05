@@ -9,6 +9,10 @@ open Xunit
 module SchemaValidationTests =
     type private Signup = { Email: string; Age: int }
 
+    type private SwappedFields =
+        { Primary: string
+          Secondary: string }
+
     let private schema =
         Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
         |> Schema.field
@@ -47,6 +51,41 @@ module SchemaValidationTests =
                                           Errors = [ SchemaError.Required; SchemaError.InvalidFormat "email" ]
                                           Children = Map.empty
                                       } ]
+                        }
+            @>
+
+    [<Fact>]
+    let ``validate reads existing model values through schema getters`` () =
+        let swappedSchema =
+            Schema.recordFor<SwappedFields, _> (fun primary secondary ->
+                { Primary = primary
+                  Secondary = secondary })
+            |> Schema.field
+                "secondary-on-wire"
+                _.Primary
+                (Value.text |> Value.withConstraint (SchemaConstraint.oneOf [ "primary-value" ]))
+            |> Schema.field
+                "primary-on-wire"
+                _.Secondary
+                (Value.text |> Value.withConstraint (SchemaConstraint.oneOf [ "secondary-value" ]))
+            |> Schema.build
+
+        let validation =
+            Axial.Validation.Schema.Validation.validate
+                swappedSchema
+                { Primary = "primary-value"
+                  Secondary = "wrong-secondary" }
+
+        test
+            <@
+                Axial.Validation.Validation.toResult validation =
+                    Error
+                        {
+                            Errors = []
+                            Children =
+                                Map.ofList
+                                    [ PathSegment.Name "primary-on-wire",
+                                      Diagnostics.singleton (SchemaError.NotOneOf "secondary-value") ]
                         }
             @>
 
