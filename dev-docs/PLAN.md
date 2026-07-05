@@ -49,6 +49,12 @@ Axial's data-boundary direction splits concerns like this:
 Core schema definitions live in `Axial.Schema`. Schema interpreters live in `Axial.Validation.Schema`, so `Axial.Schema`
 stays independent of diagnostics, raw input, validation, refined values, and flow execution.
 
+Constructor-level intrinsic errors are a second stage after field parsing and field constraints, not an error source that
+runs alongside invalid fields. If any field or nested item has intrinsic diagnostics, interpreters must not apply the
+model constructor; constructor errors are reported only when every constructor argument is already trusted. By default
+constructor errors attach to the current object path, and input parsing may expose an option to attach them to a relative
+field path when that gives better boundary feedback.
+
 Schema work should prove the portable metadata model before growing broad interpreters. The metadata slice — field
 ordering, primitive value schemas, schema constraints as inspectable metadata, lowering those constraints to `Check`,
 and constructor/getter alignment — is proven. The explicit core API is a CodecMapper-style progressive typed builder:

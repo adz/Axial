@@ -1682,6 +1682,9 @@ module Schema =
     /// Use this when field values can parse successfully but the trusted model constructor still enforces intrinsic
     /// cross-field invariants. The supplied <paramref name="errorMessage" /> function maps constructor errors to a
     /// portable message that schema interpreters can report without making <c>Axial.Schema</c> depend on diagnostics.
+    /// Schema input interpreters report constructor errors only after every field has parsed and passed intrinsic
+    /// field constraints; field diagnostics gate constructor application rather than composing with constructor
+    /// diagnostics from partially trusted values.
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">
     /// Thrown when <paramref name="errorMessage" /> or <paramref name="builder" /> is null.

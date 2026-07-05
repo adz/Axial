@@ -298,6 +298,33 @@ module InputParseTests =
         test <@ parsed.ErrorsFor "age" = [ SchemaError.ConstructorFailed "Age must be at least 18." ] @>
 
     [<Fact>]
+    let ``field diagnostics gate constructor diagnostics`` () =
+        let mutable constructorCalls = 0
+
+        let gatedSchema =
+            Schema.recordFor<AdultAge, _> (fun age ->
+                constructorCalls <- constructorCalls + 1
+                AdultAge.Create age)
+            |> Schema.field "age" _.Age (Value.``int`` |> Value.withConstraint (SchemaConstraint.atLeast 0))
+            |> Schema.buildResult
+
+        let raw =
+            RawInput.Object(
+                Map.ofList
+                    [ "age", RawInput.Scalar "-1" ]
+            )
+
+        let parsed = Input.parse gatedSchema raw
+
+        test <@ not parsed.IsValid @>
+        test <@ constructorCalls = 0 @>
+        test
+            <@
+                parsed.Errors = [ { Path = [ PathSegment.Name "age" ]
+                                    Error = SchemaError.RangeOutOfRange("atLeast 0", Some "-1") } ]
+            @>
+
+    [<Fact>]
     let ``parse maps constructor error values through buildResultWith`` () =
         let ageSchema =
             Schema.recordFor<MappedAdultAge, _> MappedAdultAge.Create

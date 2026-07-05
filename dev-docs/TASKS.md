@@ -57,7 +57,7 @@ Work this queue from top to bottom.
 - [x] Support `schemaResult` or equivalent for constructors returning `Result`.
 - [x] Attach constructor errors at root by default.
 - [x] Support attaching constructor errors to a field path with `Input.constructorErrorAt "end"` or equivalent.
-- [ ] Decide how constructor errors compose with field errors.
+- [x] Decide how constructor errors compose with field errors.
 - [ ] Add `DateRange`-style tests for cross-field intrinsic invariants.
 - [ ] Document the difference between constructor invariants and contextual rules.
 
