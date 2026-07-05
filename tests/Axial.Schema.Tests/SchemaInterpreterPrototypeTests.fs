@@ -7,10 +7,10 @@ open Swensen.Unquote
 open Xunit
 
 /// <summary>
-/// Prototype non-validation interpreters over the public <c>Inspect</c> API: a JSON Schema emitter, a documentation
-/// describer, and a UI metadata producer. They exist to prove that schema metadata alone — shapes, formats, and
-/// portable constraints — is sufficient for these consumers, without parsing raw input, running checks, or
-/// constructing models.
+/// Prototype non-validation interpreters over the public <c>Inspect</c> API: a documentation describer and a UI
+/// metadata producer. They exist to prove that schema metadata alone — shapes, formats, and portable constraints — is
+/// sufficient for these consumers, without parsing raw input, running checks, or constructing models. The JSON Schema
+/// emitter that started here has been promoted to the shipped <c>Axial.Schema.JsonSchema</c> module.
 /// </summary>
 module SchemaInterpreterPrototypes =
     /// Collects the constraint metadata visible at a boundary: field-level constraints plus every value-schema layer
@@ -32,105 +32,6 @@ module SchemaInterpreterPrototypes =
         match description.Shape with
         | ValueShape.Refined underlying -> underlyingShape underlying
         | shape -> shape
-
-    [<RequireQualifiedAccess>]
-    module JsonSchema =
-        let private literal (value: obj) =
-            match value with
-            | :? string as text -> sprintf "\"%s\"" text
-            | :? bool as flag -> if flag then "true" else "false"
-            | other -> Convert.ToString(other, CultureInfo.InvariantCulture)
-
-        let private constraintKeywords (constraints: SchemaConstraintMetadata list) =
-            constraints
-            |> List.collect (fun metadata ->
-                match metadata with
-                | SchemaConstraintMetadata.MinLength minimum -> [ sprintf "\"minLength\":%d" minimum ]
-                | SchemaConstraintMetadata.MaxLength maximum -> [ sprintf "\"maxLength\":%d" maximum ]
-                | SchemaConstraintMetadata.LengthBetween(minimum, maximum) ->
-                    [ sprintf "\"minLength\":%d" minimum; sprintf "\"maxLength\":%d" maximum ]
-                | SchemaConstraintMetadata.Email -> [ "\"format\":\"email\"" ]
-                | SchemaConstraintMetadata.Trimmed -> []
-                | SchemaConstraintMetadata.Pattern pattern -> [ sprintf "\"pattern\":%s" (literal pattern) ]
-                | SchemaConstraintMetadata.OneOf choices ->
-                    [ choices |> List.map literal |> String.concat "," |> sprintf "\"enum\":[%s]" ]
-                | SchemaConstraintMetadata.NotEqualTo _ -> []
-                | SchemaConstraintMetadata.Between(minimum, maximum) ->
-                    [ sprintf "\"minimum\":%s" (literal minimum); sprintf "\"maximum\":%s" (literal maximum) ]
-                | SchemaConstraintMetadata.GreaterThan minimum ->
-                    [ sprintf "\"exclusiveMinimum\":%s" (literal minimum) ]
-                | SchemaConstraintMetadata.LessThan maximum ->
-                    [ sprintf "\"exclusiveMaximum\":%s" (literal maximum) ]
-                | SchemaConstraintMetadata.AtLeast minimum -> [ sprintf "\"minimum\":%s" (literal minimum) ]
-                | SchemaConstraintMetadata.AtMost maximum -> [ sprintf "\"maximum\":%s" (literal maximum) ]
-                | SchemaConstraintMetadata.Count expected ->
-                    [ sprintf "\"minItems\":%d" expected; sprintf "\"maxItems\":%d" expected ]
-                | SchemaConstraintMetadata.MinCount minimum -> [ sprintf "\"minItems\":%d" minimum ]
-                | SchemaConstraintMetadata.MaxCount maximum -> [ sprintf "\"maxItems\":%d" maximum ]
-                | SchemaConstraintMetadata.CountBetween(minimum, maximum) ->
-                    [ sprintf "\"minItems\":%d" minimum; sprintf "\"maxItems\":%d" maximum ]
-                | SchemaConstraintMetadata.Distinct -> [ "\"uniqueItems\":true" ]
-                | SchemaConstraintMetadata.Required
-                | SchemaConstraintMetadata.Optional
-                | SchemaConstraintMetadata.Custom _ -> [])
-
-        let private primitiveKeywords kind =
-            match kind with
-            | PrimitiveValueKind.Text -> [ "\"type\":\"string\"" ]
-            | PrimitiveValueKind.Int -> [ "\"type\":\"integer\"" ]
-            | PrimitiveValueKind.Decimal -> [ "\"type\":\"number\"" ]
-            | PrimitiveValueKind.Bool -> [ "\"type\":\"boolean\"" ]
-            | PrimitiveValueKind.Date -> [ "\"type\":\"string\""; "\"format\":\"date\"" ]
-            | PrimitiveValueKind.DateTime -> [ "\"type\":\"string\""; "\"format\":\"date-time\"" ]
-            | PrimitiveValueKind.Guid -> [ "\"type\":\"string\""; "\"format\":\"uuid\"" ]
-
-        let rec private valueKeywords (fieldConstraints: SchemaConstraintMetadata list) (description: ValueDescription) =
-            let constraints = fieldConstraints @ boundaryConstraints description
-
-            let formatKeyword =
-                match boundaryFormat description with
-                | Some format when constraints |> List.contains SchemaConstraintMetadata.Email |> not ->
-                    [ sprintf "\"format\":\"%s\"" format.Name ]
-                | _ -> []
-
-            match underlyingShape description with
-            | ValueShape.Primitive kind ->
-                primitiveKeywords kind @ formatKeyword @ constraintKeywords constraints |> List.distinct
-            | ValueShape.Nested model -> modelKeywords model
-            | ValueShape.Many item ->
-                [ "\"type\":\"array\""
-                  sprintf "\"items\":{%s}" (valueKeywords [] item |> String.concat ",") ]
-                @ constraintKeywords constraints
-            | ValueShape.Union union ->
-                let cases =
-                    union.Cases
-                    |> List.map (fun case -> sprintf "{%s}" (valueKeywords [] case.Payload |> String.concat ","))
-                    |> String.concat ","
-
-                [ sprintf "\"oneOf\":[%s]" cases ]
-            | ValueShape.Refined _ -> failwith "underlyingShape never returns a refined shape."
-
-        and private modelKeywords (model: ModelDescription) =
-            let properties =
-                model.Fields
-                |> List.map (fun field ->
-                    let constraints = field.Constraints |> List.map _.Metadata
-                    sprintf "\"%s\":{%s}" field.Name (valueKeywords constraints field.Value |> String.concat ","))
-                |> String.concat ","
-
-            let required =
-                model.Fields
-                |> List.filter (fun field ->
-                    (field.Constraints |> List.map _.Metadata) @ boundaryConstraints field.Value
-                    |> List.contains SchemaConstraintMetadata.Required)
-                |> List.map (fun field -> sprintf "\"%s\"" field.Name)
-
-            [ "\"type\":\"object\""; sprintf "\"properties\":{%s}" properties ]
-            @ (if List.isEmpty required then [] else [ sprintf "\"required\":[%s]" (String.concat "," required) ])
-
-        /// <summary>Generates a compact JSON Schema document from a built model schema's metadata.</summary>
-        let generate<'model> (schema: Schema<'model>) : string =
-            sprintf "{%s}" (modelKeywords (Inspect.model schema) |> String.concat ",")
 
     [<RequireQualifiedAccess>]
     module Docs =

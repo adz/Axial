@@ -308,3 +308,21 @@ module RawInputTests =
 
         test <@ RawInput.tryRedisplayPath "contacts[]" input = None @>
         raises<FormatException> <@ RawInput.redisplayPath "contacts[]" input |> ignore @>
+
+    [<Fact>]
+    let ``raw input adapts system text json documents and elements`` () =
+        use document =
+            System.Text.Json.JsonDocument.Parse(
+                """{"name":"Ada","age":36,"balance":12.50,"newsletter":true,"nickname":null,"tags":["vip","early"],"address":{"city":"London"}}"""
+            )
+
+        let input = RawInput.ofJsonDocument document
+
+        test <@ RawInput.lookupPath "name" input = RawInput.Scalar "Ada" @>
+        test <@ RawInput.lookupPath "age" input = RawInput.Scalar "36" @>
+        test <@ RawInput.lookupPath "balance" input = RawInput.Scalar "12.50" @>
+        test <@ RawInput.lookupPath "newsletter" input = RawInput.Scalar "true" @>
+        test <@ RawInput.lookupPath "nickname" input = RawInput.Missing @>
+        test <@ RawInput.lookupPath "tags[1]" input = RawInput.Scalar "early" @>
+        test <@ RawInput.lookupPath "address.city" input = RawInput.Scalar "London" @>
+        test <@ RawInput.ofJsonElement (document.RootElement.GetProperty "tags") = RawInput.Many [ RawInput.Scalar "vip"; RawInput.Scalar "early" ] @>

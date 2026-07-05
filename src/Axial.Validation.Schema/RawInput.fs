@@ -473,6 +473,46 @@ module RawInput =
             |> Map.ofSeq
             |> RawInput.Object
 
+#if NET8_0_OR_GREATER && !FABLE_COMPILER
+    /// <summary>Builds raw input from a <see cref="T:System.Text.Json.JsonElement" />.</summary>
+    /// <remarks>
+    /// <para>
+    /// This is the boundary adapter for JSON bodies parsed with <c>System.Text.Json</c>, such as ASP.NET Core request
+    /// payloads: convert the element once, then parse it with <c>Input.parse</c> to get path-aware diagnostics or a
+    /// trusted model. JSON null and undefined become <c>Missing</c>, numbers keep their exact boundary text, and
+    /// booleans become <c>"true"</c>/<c>"false"</c> scalars.
+    /// </para>
+    /// <para>
+    /// The adapter is available on .NET 8+ targets where <c>System.Text.Json</c> ships in-box, keeping the package
+    /// dependency-free and Fable-safe on other targets. Fable and .NET Standard callers can adapt JSON-shaped data
+    /// through <see cref="M:Axial.Validation.Schema.RawInputModule.ofJsonLikeValue" /> instead.
+    /// </para>
+    /// </remarks>
+    let rec ofJsonElement (element: System.Text.Json.JsonElement) : RawInput =
+        match element.ValueKind with
+        | System.Text.Json.JsonValueKind.Null
+        | System.Text.Json.JsonValueKind.Undefined -> RawInput.Missing
+        | System.Text.Json.JsonValueKind.String -> scalarOrMissing (element.GetString())
+        | System.Text.Json.JsonValueKind.Number -> RawInput.Scalar(element.GetRawText())
+        | System.Text.Json.JsonValueKind.True -> RawInput.Scalar "true"
+        | System.Text.Json.JsonValueKind.False -> RawInput.Scalar "false"
+        | System.Text.Json.JsonValueKind.Array ->
+            element.EnumerateArray() |> Seq.map ofJsonElement |> Seq.toList |> RawInput.Many
+        | _ ->
+            element.EnumerateObject()
+            |> Seq.map (fun property -> ensureName property.Name, ofJsonElement property.Value)
+            |> Map.ofSeq
+            |> RawInput.Object
+
+    /// <summary>Builds raw input from the root element of a <see cref="T:System.Text.Json.JsonDocument" />.</summary>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="document" /> is null.</exception>
+    let ofJsonDocument (document: System.Text.Json.JsonDocument) : RawInput =
+        if isNull document then
+            nullArg (nameof document)
+
+        ofJsonElement document.RootElement
+#endif
+
     /// <summary>
     /// Builds raw input from flattened configuration keys using <c>:</c> as the path separator.
     /// </summary>

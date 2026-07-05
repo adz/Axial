@@ -51,3 +51,16 @@ module SchemaUnionValueTests =
             | ValueShape.Primitive PrimitiveValueKind.Text -> ()
             | _ -> failwith "Expected invoice payload to be text."
         | _ -> failwith "Expected a union value shape."
+
+    [<Fact>]
+    let ``union value schemas lower to json schema oneOf with const discriminators`` () =
+        let schema =
+            Schema.recordFor<Checkout, _> (fun payment -> { Payment = payment })
+            |> Schema.field "payment" _.Payment (paymentSchema ())
+            |> Schema.build
+
+        let generated = JsonSchema.generate schema
+
+        test <@ generated.Contains "\"payment\":{\"oneOf\":[" @>
+        test <@ generated.Contains "{\"type\":\"object\",\"properties\":{\"type\":{\"const\":\"card\"},\"value\":{\"type\":\"object\",\"properties\":{\"number\":{\"type\":\"string\"}},\"required\":[\"number\"]}},\"required\":[\"type\",\"value\"]}" @>
+        test <@ generated.Contains "{\"type\":\"object\",\"properties\":{\"type\":{\"const\":\"invoice\"},\"value\":{\"type\":\"string\"}},\"required\":[\"type\",\"value\"]}" @>

@@ -36,6 +36,7 @@
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Schema.fs" />
     <Compile Include="Inspection.fs" />
+    <Compile Include="JsonSchema.fs" />
   </ItemGroup>
 
 </Project>
