@@ -43,7 +43,7 @@ Work this queue from top to bottom.
 
 - [x] Implement `nested "address" _.Address Address.schema { required }`.
 - [x] Ensure nested schemas use getters for inspection interpreters.
-- [ ] Ensure nested input expects object-shaped raw input.
+- [x] Ensure nested input expects object-shaped raw input.
 - [ ] Prefix nested diagnostics with `PathSegment.Name`.
 - [ ] Implement `many "contacts" _.Contacts ContactMethod.schema { minCount 1 }`.
 - [ ] Ensure collection input expects `RawInput.Many`.

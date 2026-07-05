@@ -61,6 +61,18 @@ module NestedSchemaParseTests =
         test <@ parsed.Errors = [ { Path = [ PathSegment.Name "address" ]; Error = SchemaError.ExpectedObject } ] @>
 
     [<Fact>]
+    let ``parse reports expected object when nested raw input is a collection`` () =
+        let raw =
+            RawInput.Object(
+                Map.ofList [ "name", RawInput.Scalar "Ada"; "address", RawInput.Many [ RawInput.Scalar "not-an-object" ] ]
+            )
+
+        let parsed = Input.parse customerSchema raw
+
+        test <@ not parsed.IsValid @>
+        test <@ parsed.Errors = [ { Path = [ PathSegment.Name "address" ]; Error = SchemaError.ExpectedObject } ] @>
+
+    [<Fact>]
     let ``parse reports required when the nested raw field is missing`` () =
         let raw = RawInput.Object(Map.ofList [ "name", RawInput.Scalar "Ada" ])
 

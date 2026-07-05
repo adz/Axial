@@ -248,7 +248,11 @@ module Input =
             | NestedValueDefinition nestedModel -> parseObject path nestedModel fields
             | PrimitiveValueDefinition _
             | RefinedValueDefinition _ -> errorAt path SchemaError.ExpectedScalar
-        | RawInput.Many _ -> errorAt path SchemaError.ExpectedScalar
+        | RawInput.Many _ ->
+            match valueSchema.Shape with
+            | NestedValueDefinition _ -> errorAt path SchemaError.ExpectedObject
+            | PrimitiveValueDefinition _
+            | RefinedValueDefinition _ -> errorAt path SchemaError.ExpectedScalar
         | RawInput.Scalar text when hasRequiredConstraint constraints && String.IsNullOrWhiteSpace text ->
             errorAt path (withCustomMessage constraints "required" SchemaError.Required)
         | RawInput.Scalar text ->
