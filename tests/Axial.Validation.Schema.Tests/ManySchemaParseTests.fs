@@ -82,3 +82,28 @@ module ManySchemaParseTests =
 
         test <@ not parsed.IsValid @>
         test <@ parsed.Errors = [ { Path = [ PathSegment.Name "contacts" ]; Error = SchemaError.ExpectedObject } ] @>
+
+    [<Fact>]
+    let ``parse accumulates errors from every failing item instead of stopping at the first`` () =
+        let raw =
+            RawInput.Object(
+                Map.ofList
+                    [ "name", RawInput.Scalar "Ada"
+                      "contacts",
+                      RawInput.Many
+                          [ RawInput.Object(Map.ofList [ "kind", RawInput.Scalar ""; "value", RawInput.Scalar "ada@example.com" ])
+                            RawInput.Object(Map.ofList [ "kind", RawInput.Scalar "email"; "value", RawInput.Scalar "" ]) ] ]
+            )
+
+        let parsed = Input.parse customerSchema raw
+
+        test <@ not parsed.IsValid @>
+
+        test
+            <@
+                parsed.Errors
+                |> List.sortBy (fun diagnostic -> diagnostic.Path)
+                |> (=)
+                    [ { Path = [ PathSegment.Name "contacts"; PathSegment.Name "kind" ]; Error = SchemaError.Required }
+                      { Path = [ PathSegment.Name "contacts"; PathSegment.Name "value" ]; Error = SchemaError.Required } ]
+            @>
