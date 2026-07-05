@@ -25,23 +25,23 @@ structured concurrency — one toolkit with one vocabulary.
 
 Axial is two tools that share one vocabulary. Pick your lane by asking one question: **am I modelling a domain?**
 
-- **Yes — declare a [Schema](../../schema/).** Parsing raw input, validation, redisplay, contextual rules, and
+- **Yes — declare a [Schema]({{< relref "/parse/schema/" >}}).** Parsing raw input, validation, redisplay, contextual rules, and
   metadata all fall out of one declaration, and an invalid model is never constructed.
 - **No — use plain `Result` with your own error type.** Standard F# `Result` plus a small error union is idiomatic
   Axial, not a compromise.
 
 When the code around either lane needs dependencies, async or task work, cancellation, or runtime policy, lift it
-into [Flow](../../flow/) — the effects side of the library. Flow is optional; both lanes work without it.
+into [Flow]({{< relref "/flow/" >}}) — the effects side of the library. Flow is optional; both lanes work without it.
 
 | Need | Start here |
 | :--- | :--- |
-| Parsing forms, CLI args, JSON, or config into trusted models | [Schema](../schema/) |
-| Pure fail-fast logic with your own error type | [Error Handling](../error-handling/) |
-| Async, task work, dependencies, resources, or runtime policy | [Flow](../flow/) |
+| Parsing forms, CLI args, JSON, or config into trusted models | [Schema]({{< relref "/parse/schema/" >}}) |
+| Pure fail-fast logic with your own error type | [Error Handling]({{< relref "/parse/error-handling/" >}}) |
+| Async, task work, dependencies, resources, or runtime policy | [Flow]({{< relref "/flow/" >}}) |
 
 Everything else — reusable `Check` constraints, accumulating `Validation` diagnostics, `Refined` single-value parsing
 — is machinery behind those doors. Reach for it directly only when it clearly pays for itself; the
-[Choosing A Tool](../../schema/choosing-a-tool/) guide maps the full ladder when you want it.
+[Choosing A Tool]({{< relref "/parse/schema/choosing-a-tool/" >}}) guide maps the full ladder when you want it.
 
 ## 2. Simple Code: Plain Results
 
@@ -93,7 +93,7 @@ match parsed.Result with
 ```
 
 The same schema also re-validates existing values, powers contextual rules, and describes itself to JSON Schema, docs,
-and UI interpreters. Start with the [Schema tutorials](../../schema/tutorials/).
+and UI interpreters. Start with the [Schema tutorials]({{< relref "/parse/schema/tutorials/" >}}).
 
 ## 4. Moving to Flow
 
@@ -201,7 +201,7 @@ let runOnFable () = async {
 }
 ```
 
-For a deeper dive into handling outcomes, cancellation, and combining multiple flows, see **[Execution and Outcomes](../flow/execution-and-outcomes/)**.
+For a deeper dive into handling outcomes, cancellation, and combining multiple flows, see **[Execution and Outcomes]({{< relref "/flow/execution-and-outcomes/" >}})**.
 
 ## 7. Reading from the Environment
 

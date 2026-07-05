@@ -3,6 +3,8 @@ weight: 28
 title: Schema
 type: docs
 description: Portable model schemas for input parsing, validation, and metadata interpreters.
+aliases:
+  - /docs/schema/
 ---
 
 # Schema

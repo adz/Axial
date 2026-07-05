@@ -5,6 +5,7 @@ type: docs
 description: Pure fail-fast logic with Check and standard F# Result.
 aliases:
   - /docs/validation-results/
+  - /docs/error-handling/
 ---
 
 # Error Handling
@@ -43,7 +44,7 @@ checks into your own error DU with one `Result.mapError` function.
 ## Move On When
 
 - Need sibling failures accumulated together? Move to [Validation](../validation/).
-- Need async, task work, dependencies, cancellation, resources, or runtime policy? Move to [Flow](../flow/).
+- Need async, task work, dependencies, cancellation, resources, or runtime policy? Move to [Flow]({{< relref "/flow/" >}}).
 
 ## Reference
 

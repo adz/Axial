@@ -92,22 +92,43 @@ cp "$root_dir/docs/reference/_index.md" "$ref_dir/_index.md"
 upsert_frontmatter "$ref_dir/_index.md" "type" "docs"
 upsert_frontmatter "$ref_dir/_index.md" "weight" "30"
 
-# Sync guide directories from docs/ to site/content/docs/
-# We exclude reference, content, and the root AGENT.md/index.md for now
-rm -rf "$docs_dir"
-for dir in ecosystem error-handling flow patterns refined schema start validation; do
+# Guides live under the two doors: parse-side sections under /parse/, flow
+# guides under /flow/. Cross-cutting sections stay under /docs/.
+parse_dir="$root_dir/site/content/parse"
+flow_dir="$root_dir/site/content/flow"
+rm -rf "$docs_dir" "$parse_dir" "$flow_dir"
+mkdir -p "$docs_dir" "$parse_dir" "$flow_dir"
+
+for dir in ecosystem patterns start; do
   if [ -d "$root_dir/docs/$dir" ]; then
     mkdir -p "$docs_dir/$dir"
     cp -r "$root_dir/docs/$dir/"* "$docs_dir/$dir/"
   fi
 done
 
-# Fix all files: remove body titles to avoid double headings in Hugo
-find "$ref_dir" "$docs_dir" -name "*.md" -type f -exec sed -i '/^# /d' {} \;
+for dir in error-handling refined schema validation; do
+  if [ -d "$root_dir/docs/$dir" ]; then
+    mkdir -p "$parse_dir/$dir"
+    cp -r "$root_dir/docs/$dir/"* "$parse_dir/$dir/"
+  fi
+done
 
-# Ensure all guide pages are marked as docs type
-find "$docs_dir" -type f -name "*.md" -print0 |
+cp -r "$root_dir/docs/flow/"* "$flow_dir/"
+
+# The landing pages are the section indexes for the two doors
+cp "$root_dir/docs/landing/parse.md" "$parse_dir/_index.md"
+cp "$root_dir/docs/landing/flow.md" "$flow_dir/_index.md"
+
+# Fix all files: remove body titles to avoid double headings in Hugo
+find "$ref_dir" "$docs_dir" "$parse_dir" "$flow_dir" -name "*.md" -type f -exec sed -i '/^# /d' {} \;
+
+# Ensure all guide pages are marked as docs type (landing indexes keep their
+# own layout)
+find "$docs_dir" "$parse_dir" "$flow_dir" -type f -name "*.md" -print0 |
   while IFS= read -r -d '' page; do
+    case "$page" in
+      "$parse_dir/_index.md" | "$flow_dir/_index.md") continue ;;
+    esac
     upsert_frontmatter "$page" "type" "docs"
   done
 
@@ -119,11 +140,6 @@ cp -r "$root_dir/docs/content/"* "$root_dir/site/static/content/" 2>/dev/null ||
 # Copy root homepage
 cp "$root_dir/docs/index.md" "$root_dir/site/content/_index.md"
 
-# Copy the two group landing pages
-mkdir -p "$root_dir/site/content/parse" "$root_dir/site/content/flow"
-cp "$root_dir/docs/landing/parse.md" "$root_dir/site/content/parse/_index.md"
-cp "$root_dir/docs/landing/flow.md" "$root_dir/site/content/flow/_index.md"
-
 # Fixed 'Docs' landing page - avoid flat list
 mkdir -p "$docs_dir"
 echo "---
@@ -133,8 +149,8 @@ type: docs
 weight: 20
 ---
 
-Welcome to the Axial guides. Axial has two doors — [Schema](./schema/) for domain models and plain
-[Result](./error-handling/) for simple code — with [Flow](./flow/) as the optional effects side. Start with
+Welcome to the Axial guides. Axial has two doors — [Parse, don't validate]({{< relref \"/parse/\" >}}) for domain models and data
+boundaries, and [Flow]({{< relref \"/flow/\" >}}) for the effects around them. Start with
 [Getting Started](./start/getting-started/).
 
 <div class=\"docs-grid docs-index-grid\">
@@ -147,31 +163,31 @@ Welcome to the Axial guides. Axial has two doors — [Schema](./schema/) for dom
 
 <section class=\"docs-card\">
 <span class=\"label\">Door one &middot; domain models</span>
-<h2><a href=\"./schema/\">Schema</a></h2>
+<h2><a href=\"{{< relref \"/parse/schema/\" >}}\">Schema</a></h2>
 <p>Declare the model once: input parsing, validation, redisplay, contextual rules, policies, and metadata interpreters fall out.</p>
 </section>
 
 <section class=\"docs-card\">
 <span class=\"label\">Door two &middot; simple code</span>
-<h2><a href=\"./error-handling/\">Error Handling</a></h2>
+<h2><a href=\"{{< relref \"/parse/error-handling/\" >}}\">Error Handling</a></h2>
 <p>Plain F# Result with your own error type, kept terse by Check, focused helpers, and result { }.</p>
 </section>
 
 <section class=\"docs-card\">
 <span class=\"label\">Effects</span>
-<h2><a href=\"./flow/\">Flow</a></h2>
+<h2><a href=\"{{< relref \"/flow/\" >}}\">Flow</a></h2>
 <p>Environment access, async or task work, layers, resources, scheduling, concurrency, and service tutorials.</p>
 </section>
 
 <section class=\"docs-card\">
 <span class=\"label\">Machinery &middot; single values</span>
-<h2><a href=\"./refined/\">Refined</a></h2>
+<h2><a href=\"{{< relref \"/parse/refined/\" >}}\">Refined</a></h2>
 <p>Parse and refine individual boundary values; the toolkit schemas use for their fields.</p>
 </section>
 
 <section class=\"docs-card\">
 <span class=\"label\">Machinery &middot; diagnostics</span>
-<h2><a href=\"./validation/\">Validation</a></h2>
+<h2><a href=\"{{< relref \"/parse/validation/\" >}}\">Validation</a></h2>
 <p>Accumulating sibling failures with Validation, Diagnostics, and validate { } — the error trees schema parsing produces.</p>
 </section>
 

@@ -17,4 +17,4 @@ models and collections, apply contextual rules inside a workflow, and read schem
 - [Inspecting Schema Metadata](./inspecting-metadata/): walk the same schema as data for docs and JSON Schema.
 
 Use [Validation tutorials](../../validation/tutorials/) for accumulating failures over values you already hold, and
-[Flow tutorials](../../flow/tutorials/) for workflows around the boundary.
+[Flow tutorials]({{< relref "/flow/tutorials/" >}}) for workflows around the boundary.
