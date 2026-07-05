@@ -24,7 +24,7 @@ Work this queue from top to bottom.
 - [x] Ensure field errors accumulate applicatively.
 - [x] Ensure failed parses retain raw input.
 - [x] Ensure constructors are not called when intrinsic field parsing fails.
-- [ ] Add tests for successful parse, failed parse, multiple sibling errors, raw redisplay, and field error lookup.
+- [x] Add tests for successful parse, failed parse, multiple sibling errors, raw redisplay, and field error lookup.
 
 ## Phase 8: Define Schema Errors And Diagnostics Interpretation
 

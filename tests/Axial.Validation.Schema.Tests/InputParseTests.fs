@@ -179,6 +179,21 @@ module InputParseTests =
         test <@ constructorCalls = 1 @>
 
     [<Fact>]
+    let ``parse retains raw input for redisplay after a failed parse`` () =
+        let raw =
+            RawInput.Object(
+                Map.ofList
+                    [ "email", RawInput.Scalar "ada@example.com"
+                      "age", RawInput.Scalar "not-an-int" ]
+            )
+
+        let parsed = Input.parse schema raw
+
+        test <@ not parsed.IsValid @>
+        test <@ RawInput.redisplayPath "email" parsed.Input = "ada@example.com" @>
+        test <@ RawInput.redisplayPath "age" parsed.Input = "not-an-int" @>
+
+    [<Fact>]
     let ``required reports blank non-text scalar as required`` () =
         let requiredAgeSchema =
             Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
