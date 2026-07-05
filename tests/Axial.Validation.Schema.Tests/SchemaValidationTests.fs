@@ -21,6 +21,12 @@ module SchemaValidationTests =
         { Name: string
           Address: Address }
 
+    type private ContactMethod = { Kind: string; Value: string }
+
+    type private ContactBook =
+        { Name: string
+          Contacts: ContactMethod list }
+
     let private schema =
         Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
         |> Schema.field
@@ -29,6 +35,22 @@ module SchemaValidationTests =
             (Value.text
              |> Value.withConstraints [ SchemaConstraint.required; SchemaConstraint.email; SchemaConstraint.maxLength 254 ])
         |> Schema.field "age" _.Age (Value.``int`` |> Value.withConstraint (SchemaConstraint.atLeast 18))
+        |> Schema.build
+
+    let private contactMethodSchema =
+        Schema.recordFor<ContactMethod, _> (fun kind value -> { Kind = kind; Value = value })
+        |> Schema.field "kind" _.Kind (Value.text |> Value.withConstraint SchemaConstraint.required)
+        |> Schema.field "value" _.Value (Value.text |> Value.withConstraint SchemaConstraint.required)
+        |> Schema.build
+
+    let private contactBookSchema =
+        Schema.recordFor<ContactBook, _> (fun name contacts -> { Name = name; Contacts = contacts })
+        |> Schema.field "name" _.Name (Value.text |> Value.withConstraint SchemaConstraint.required)
+        |> Schema.manyWith
+            [ SchemaConstraint.minCount 1; SchemaConstraint.maxCount 2 ]
+            "contacts"
+            _.Contacts
+            contactMethodSchema
         |> Schema.build
 
     [<Fact>]
@@ -167,6 +189,75 @@ module SchemaValidationTests =
                                                   [ PathSegment.Name "city",
                                                     Diagnostics.singleton SchemaError.Required ]
                                       } ]
+                        }
+            @>
+
+    [<Fact>]
+    let ``validate checks collection item values through their item schema`` () =
+        let model =
+            { Name = "Ada"
+              Contacts =
+                [ { Kind = ""; Value = "ada@example.com" }
+                  { Kind = "phone"; Value = "" } ] }
+
+        let validation =
+            Axial.Validation.Schema.Validation.validate contactBookSchema model
+
+        test
+            <@
+                Axial.Validation.Validation.toResult validation =
+                    Error
+                        {
+                            Errors = []
+                            Children =
+                                Map.ofList
+                                    [ PathSegment.Name "contacts",
+                                      {
+                                          Errors = []
+                                          Children =
+                                              Map.ofList
+                                                  [ PathSegment.Index 0,
+                                                    {
+                                                        Errors = []
+                                                        Children =
+                                                            Map.ofList
+                                                                [ PathSegment.Name "kind",
+                                                                  Diagnostics.singleton SchemaError.Required ]
+                                                    }
+                                                    PathSegment.Index 1,
+                                                    {
+                                                        Errors = []
+                                                        Children =
+                                                            Map.ofList
+                                                                [ PathSegment.Name "value",
+                                                                  Diagnostics.singleton SchemaError.Required ]
+                                                    } ]
+                                      } ]
+                        }
+            @>
+
+    [<Fact>]
+    let ``validate reports collection count constraints at the collection field path`` () =
+        let model =
+            { Name = "Ada"
+              Contacts =
+                [ { Kind = "email"; Value = "ada@example.com" }
+                  { Kind = "phone"; Value = "+61 400 000 000" }
+                  { Kind = "sms"; Value = "+61 400 000 000" } ] }
+
+        let validation =
+            Axial.Validation.Schema.Validation.validate contactBookSchema model
+
+        test
+            <@
+                Axial.Validation.Validation.toResult validation =
+                    Error
+                        {
+                            Errors = []
+                            Children =
+                                Map.ofList
+                                    [ PathSegment.Name "contacts",
+                                      Diagnostics.singleton (SchemaError.CountOutOfRange("maxCount 2", Some 3)) ]
                         }
             @>
 

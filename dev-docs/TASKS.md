@@ -68,7 +68,7 @@ Work this queue from top to bottom.
 - [x] Use getters, not raw input.
 - [x] Reuse schema constraints and `Check` lowering.
 - [x] Validate nested models through nested schemas.
-- [ ] Validate collections through item schemas.
+- [x] Validate collections through item schemas.
 - [ ] Ensure values created by `Input.parse` normally pass intrinsic validation.
 - [ ] Add tests for imported/hand-built values and generated-builder values.
 
