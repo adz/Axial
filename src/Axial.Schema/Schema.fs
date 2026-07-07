@@ -68,11 +68,7 @@ module FieldOrder =
     /// <exception cref="T:System.ArgumentOutOfRangeException">Thrown when <paramref name="value" /> is negative.</exception>
     let create value =
         if value < 0 then
-#if FABLE_COMPILER
-            invalidArg (nameof value) "Field order must be zero or greater."
-#else
-            raise (ArgumentOutOfRangeException(nameof value, value, "Field order must be zero or greater."))
-#endif
+            Platform.argumentOutOfRange (nameof value) (box value) "Field order must be zero or greater."
 
         FieldOrder value
 
@@ -181,22 +177,13 @@ module SchemaConstraint =
 
     let private ensureNonNegative parameterName value =
         if value < 0 then
-#if FABLE_COMPILER
-            invalidArg parameterName "Schema constraint bounds must be zero or greater."
-#else
-            raise (ArgumentOutOfRangeException(parameterName, value, "Schema constraint bounds must be zero or greater."))
-#endif
+            Platform.argumentOutOfRange parameterName (box value) "Schema constraint bounds must be zero or greater."
 
     let private ensureOrderedBounds parameterName minimum maximum =
         if minimum > maximum then
             invalidArg parameterName "Schema constraint minimum bounds must be less than or equal to maximum bounds."
 
-    let private freezeArguments (values: Dictionary<string, obj>) =
-#if FABLE_COMPILER
-        values :> IReadOnlyDictionary<string, obj>
-#else
-        System.Collections.ObjectModel.ReadOnlyDictionary<string, obj>(values) :> IReadOnlyDictionary<string, obj>
-#endif
+    let private freezeArguments (values: Dictionary<string, obj>) = Platform.freezeDictionary values
 
     let private emptyArguments =
         freezeArguments (Dictionary<string, obj>())
@@ -1319,18 +1306,10 @@ module Value =
         if isNull (box schema) then
             nullArg (nameof schema)
 
-        // Fable erases generics at runtime, so the eager projection-type validation is .NET-only; the projection
-        // itself stays reflection-free on both targets.
-        #if !FABLE_COMPILER
-        let expected = underlyingClrType (underlyingPrimitiveKind schema)
-
-        if typeof<'primitive> <> expected then
-            invalidArg
-                (nameof schema)
-                $"Expected the underlying primitive type {expected.Name}, but the requested projection type is {typeof<'primitive>.Name}."
-        #else
-        underlyingPrimitiveKind schema |> ignore
-        #endif
+        // Both targets validate that the schema is primitive-backed; the eager projection-type check is .NET-only
+        // because Fable erases generics at runtime. The projection itself stays reflection-free on both targets.
+        let kind = underlyingPrimitiveKind schema
+        Platform.checkUnderlyingProjection<'primitive> (fun () -> underlyingClrType kind) (nameof schema)
 
         let rec project (definition: ValueSchemaDefinition) (value: obj) =
             match definition.Shape with

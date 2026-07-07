@@ -19,6 +19,7 @@
     <Compile Include="..\..\src\Axial.ErrorHandling\Check.fs" />
     <Compile Include="..\..\src\Axial.ErrorHandling\Result.fs" />
     <Compile Include="..\..\src\Axial.ErrorHandling\Collection.fs" />
+    <Compile Include="..\..\src\Axial.Schema\Platform.fs" />
     <Compile Include="..\..\src\Axial.Schema\Schema.fs" />
     <Compile Include="..\..\src\Axial.Flow\Runtime.fs" />
     <Compile Include="..\..\src\Axial.Flow\RuntimeLayer.fs" />

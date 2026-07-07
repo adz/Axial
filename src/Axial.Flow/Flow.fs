@@ -64,7 +64,7 @@ module Flow =
         | Exit.Success _ ->
             Exit.Failure firstCause
 
-    let inline private runEffect
+    let private runEffect
         (environment: 'env)
         (cancellationToken: CancellationToken)
         (flow: Flow<'env, 'error, 'value>)

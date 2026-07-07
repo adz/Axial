@@ -34,6 +34,7 @@
 
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="Platform.fs" />
     <Compile Include="Schema.fs" />
     <Compile Include="DSL.fs" />
     <Compile Include="Inspection.fs" />
