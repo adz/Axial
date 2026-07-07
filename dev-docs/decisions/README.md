@@ -71,9 +71,14 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
   the typed field chain to compile constructor-specialized record plans. `Axial.Schema` never references a codec
   package, and codec packages never reference `Axial.Validation.Schema`, so no dependency cycle can form.
 - The `schema create { ... }` computation expression is not shipped. A prototype over the progressive builder was
-  evaluated (see `dev-docs/current-ideas/schema-ce-evaluation.md`): the sketched bare-brace constraint blocks are not
+  evaluated (see `schema-ce-evaluation.md` in this folder): the sketched bare-brace constraint blocks are not
   expressible in F#, compile-error quality is a wash, and readability does not improve, so the pipeline builder stays
-  the single public authoring surface.
+  the single public authoring surface. `Axial.Schema.DSL` later delivered the CE's prefix-elimination motivation as a
+  curated open module over the same pipeline, further closing the case for a second authoring surface.
+- `Axial.Schema.DSL` is the one non-`RequireQualifiedAccess` schema module, designed to be opened inside a schema
+  definition module only. Field combinators take the constraint list first with `[]` for unconstrained fields;
+  `int`/`decimal`/`bool` deliberately shadow the core conversion functions within that scope. Do not add bare-name
+  aliases to other modules; curation lives in `DSL` alone.
 - Source generation is deferred and reflection stays rejected as a schema foundation. The `[<Schema>]` generation
   target is pinned by `dev-docs/current-ideas/schema-source-generation.md` and compiled by
   `tests/Axial.Schema.Tests/SchemaGenerationTargetProofTests.fs`; generated schemas may target public or `internal`

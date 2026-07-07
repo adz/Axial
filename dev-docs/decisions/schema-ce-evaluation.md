@@ -43,3 +43,8 @@ guide work in Phase 17 using the pipeline surface.
 
 If a future F# version makes trailing builder-block arguments expressible, re-run this evaluation before reopening the
 design.
+
+**2026-07-07 addendum:** `Axial.Schema.DSL` (a curated non-`RequireQualifiedAccess` module opened inside schema
+definition modules) now delivers the prefix elimination that was the CE's main readability claim, over the same
+pipeline with no second vocabulary. The bar for reopening the CE is therefore higher than at evaluation time: it would
+need to beat `text [ required; email ] "email" _.Email`, not the fully qualified pipeline.

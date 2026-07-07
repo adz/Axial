@@ -20,6 +20,11 @@ with a user-owned error DU for simple code without a domain model), Schema (decl
 `Input.parse` when modelling a domain), and Flow (the optional effects side). `Check`, `Validation`, and `Refined` are
 machinery inside those areas.
 
+When a schema lives in its own definition module, `open Axial.Schema.DSL` there and write the pipeline bare:
+`recordFor<Signup, _> create |> text [ required; email ] "email" _.Email |> int [ atLeast 13 ] "age" _.Age |> build`.
+DSL field combinators take the constraint list first (`[]` when unconstrained). `int`/`decimal`/`bool` shadow the core
+conversion functions, so never open `DSL` at file or namespace level — only inside the schema module.
+
 For schema boundaries, use `SchemaError` as the one interpreter error shape. Lower subsystem failures with
 `SchemaError.ofParseError`, `SchemaError.ofRefinementError`, or `SchemaError.ofCheckFailure`; render with
 `SchemaError.render` or `ParsedInput.renderErrors`; map to application errors with `ParsedInput.mapErrors`.

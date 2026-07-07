@@ -98,21 +98,30 @@ module WorkflowBasicTests =
     [<Fact>]
     let ``Runnable example docs are generated from executable example projects`` () =
         let repoRoot = Path.GetFullPath(Path.Combine(__SOURCE_DIRECTORY__, "..", ".."))
-        let docsExamplesPath = Path.Combine(repoRoot, "docs", "patterns", "examples", "_index.md")
+        let schemaDocsPath = Path.Combine(repoRoot, "docs", "schema", "examples.md")
+        let flowDocsPath = Path.Combine(repoRoot, "docs", "flow", "examples.md")
         let generatorPath = Path.Combine(repoRoot, "scripts", "generate-example-docs.sh")
-        let generatedPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.md")
+        let generatedSchemaPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}-schema.md")
+        let generatedFlowPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}-flow.md")
 
         try
             let exitCode, output =
-                runBashScript generatorPath [ "DOCS_EXAMPLES_OUTPUT", generatedPath ]
+                runBashScript
+                    generatorPath
+                    [ "DOCS_SCHEMA_EXAMPLES_OUTPUT", generatedSchemaPath
+                      "DOCS_FLOW_EXAMPLES_OUTPUT", generatedFlowPath ]
 
             if exitCode <> 0 then
                 failwithf "generate-example-docs.sh failed with exit code %d:%s%s" exitCode Environment.NewLine output
 
-            test <@ File.ReadAllText generatedPath = File.ReadAllText docsExamplesPath @>
+            test <@ File.ReadAllText generatedSchemaPath = File.ReadAllText schemaDocsPath @>
+            test <@ File.ReadAllText generatedFlowPath = File.ReadAllText flowDocsPath @>
         finally
-            if File.Exists generatedPath then
-                File.Delete generatedPath
+            if File.Exists generatedSchemaPath then
+                File.Delete generatedSchemaPath
+
+            if File.Exists generatedFlowPath then
+                File.Delete generatedFlowPath
 
     [<Fact>]
     let ``Flow delay reruns from scratch even for async work`` () =

@@ -56,6 +56,7 @@ schema   -> JsonSchema.generate -> JSON Schema document
 - [Getting Started](./getting-started/) — declare a schema once and parse raw input into a trusted model.
 - [Tutorials](./tutorials/) — parse a signup form, nest models, apply rules, and inspect metadata.
 - [Trusted Construction](./trusted-construction/) — ActiveModel ergonomics with F# trusted construction.
+- [The Schema DSL](./dsl/) — open one module inside a schema definition and drop the qualified prefixes.
 - [Choosing A Tool](./choosing-a-tool/) — Schema vs Input vs Check vs Rules vs Policy.
 - [Refined Value Schemas](./refined-values/) — domain values like `Email` as portable field schemas.
 - [Union Schemas](./union-schemas/) — tagged discriminated unions as schema fields.

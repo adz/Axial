@@ -8,6 +8,6 @@ rather than keeping a historical spec that no longer matches the codebase.
 
 Active sketches:
 
-- `schema-ce-evaluation.md` — closed evaluation of the `schema create { }` computation expression (decision: not
-  shipped); kept as the record to re-run if F# gains trailing builder-block arguments.
+- `schema-contract-versioning.md` — Contract sketch: versioned boundary schemas with manual typed migrations for
+  config files, messages, events, and eventually database records.
 - `schema-source-generation.md` — pinned `[<Schema>]` generation target and deferral criteria for source generation.

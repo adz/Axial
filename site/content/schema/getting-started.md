@@ -37,6 +37,9 @@ The same schema also re-validates existing values, powers contextual rules, and 
 and UI interpreters. Continue with the [tutorials](./tutorials/) — they build up nested models, collections, rules,
 and metadata inspection step by step.
 
+Once schemas live in their own modules, [the Schema DSL](./dsl/) drops the qualified prefixes — the same schema above
+becomes `text [ required; email ] "email" _.Email` after one `open Axial.Schema.DSL`.
+
 ## Where To Go Next
 
 - For a single value rather than a whole model, use [Refined](./refined/) types or plain `Result` in

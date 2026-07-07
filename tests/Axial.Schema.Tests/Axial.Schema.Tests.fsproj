@@ -19,6 +19,7 @@
     <Compile Include="SchemaUnionValueTests.fs" />
     <Compile Include="SchemaInterpreterPrototypeTests.fs" />
     <Compile Include="SchemaGenerationTargetProofTests.fs" />
+    <Compile Include="SchemaDslTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
