@@ -4,6 +4,12 @@ Status: pre-idea (2026-07-07). Not accepted architecture. This sketches a **Cont
 family of frozen schemas with manually written, typed migrations. Motivating boundaries: config files, messages,
 event-sourced events, and (later) database records.
 
+## Fundamental Principle
+
+**The domain model is never versioned.** External contracts are versioned; the current contract constructs the
+domain (where refined types enter), and rules/flows see only the domain. Business logic stays independent of
+representation evolution.
+
 ## The Idea
 
 A schema stops being "the description of my current type" and becomes a version chain:
@@ -71,6 +77,26 @@ A central editor sets desired config; devices ingest, attempt to apply, and repo
   config, device-local state prevented applying it — expected operational case). Schema constraints can never capture
   device-local state.
 
+## What The Author Writes (resolved 2026-07-07)
+
+The "contract declaration" question — should a richer declaration generate the representation record? — resolves
+against generation: a version module (plain record + DSL schema pipeline) already expresses everything a declaration
+would (wire names, constraints, optionality, nesting, docs) and already derives codec, JSON Schema, docs, and
+inspection. Generation would only remove the record restatement, on frozen code written once per version cut, at the
+price of checked-in generated files (F# has no partial types; TPs cannot emit records). So:
+
+- The contract declaration **is** the version module: record + DSL schema. Explicit records are the design, not the
+  fallback. The pinned `[<Schema>]` generation sketch remains available later as head-version sugar within this
+  design.
+- **Migrations are plain F# functions**, not structured data. Structured migrations need escape hatches, which
+  collapse back into arbitrary code with worse ergonomics. Middle path kept open: optional advisory metadata beside
+  the function (`Renamed`, `Derived from`, external dependencies, purity) to power lineage reports and upgrade docs —
+  add that vocabulary only when a consumer wants the reports.
+
+Per-boundary lifecycle notes: config is often rewritten to latest on save; messages/integration events emit latest
+and upcast old on read; event stores upcast on replay forever; database rows use ordinary DB migrations, with
+contract migrations only for serialized blobs.
+
 ## Rejected Alternatives
 
 - **External schema language + type provider.** Generative TPs cannot emit F# records (the models would stop being
@@ -78,6 +104,11 @@ A central editor sets desired config; devices ingest, attempt to apply, and repo
   inverts ownership of the domain types and adds a parser/diagnostics/editor-support burden.
 - **Attribute-driven generation as the versioning surface.** See above; generation (per
   `schema-source-generation.md`) remains a possible sugar for the *head* version only.
+- **Contract-declaration-first generation ("Option 1").** Declaration would be no more expressive than record +
+  schema; generation buys only the record restatement on frozen once-written code. See "What The Author Writes".
+- **Migrations as structured data ("contract AST").** Only pays off if migration stops being arbitrary code, but
+  custom migrations always need escape hatches; advisory metadata beside plain functions captures the inspectability
+  benefits incrementally.
 
 ## Promotion Criteria
 
