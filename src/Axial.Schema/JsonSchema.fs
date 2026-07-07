@@ -142,7 +142,19 @@ module JsonSchema =
                 |> String.concat ","
 
             [ sprintf "\"oneOf\":[%s]" cases ]
+        | ValueShape.Optional payload -> valueKeywords constraints payload
         | ValueShape.Refined _ -> failwith "underlyingShape never returns a refined shape."
+
+    /// An optional field stays out of the object's `required` list; every other field is required, matching the
+    /// parser, which requires every non-optional field regardless of the `required` constraint.
+    and private isOptionalDescription (description: ValueDescription) =
+        match description.Shape with
+        | ValueShape.Optional _ -> true
+        | ValueShape.Refined underlying -> isOptionalDescription underlying
+        | ValueShape.Primitive _
+        | ValueShape.Nested _
+        | ValueShape.Many _
+        | ValueShape.Union _ -> false
 
     and private modelKeywords (model: ModelDescription) =
         let properties =
@@ -155,9 +167,7 @@ module JsonSchema =
 
         let required =
             model.Fields
-            |> List.filter (fun field ->
-                (field.Constraints |> List.map _.Metadata) @ boundaryConstraints field.Value
-                |> List.contains SchemaConstraintMetadata.Required)
+            |> List.filter (fun field -> not (isOptionalDescription field.Value))
             |> List.map (fun field -> sprintf "\"%s\"" (escape field.Name))
 
         [ "\"type\":\"object\""; sprintf "\"properties\":{%s}" properties ]

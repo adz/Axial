@@ -86,7 +86,8 @@ module SchemaManyValueTests =
         | PrimitiveValueDefinition _
         | RefinedValueDefinition _
         | NestedValueDefinition _
-        | UnionValueDefinition _ -> failwith "Expected a many/collection value schema."
+        | UnionValueDefinition _
+        | OptionValueDefinition _ -> failwith "Expected a many/collection value schema."
 
     [<Fact>]
     let ``inspection interpreters can walk into each item of a many value schema using getters, without reflection`` () =
@@ -129,8 +130,10 @@ module SchemaManyValueTests =
             | PrimitiveValueDefinition _
             | RefinedValueDefinition _
             | ManyValueDefinition _
-            | UnionValueDefinition _ -> failwith "Expected the many value schema's item to be a nested model value schema."
+            | UnionValueDefinition _
+            | OptionValueDefinition _ -> failwith "Expected the many value schema's item to be a nested model value schema."
         | PrimitiveValueDefinition _
         | RefinedValueDefinition _
         | NestedValueDefinition _
-        | UnionValueDefinition _ -> failwith "Expected a many/collection value schema."
+        | UnionValueDefinition _
+        | OptionValueDefinition _ -> failwith "Expected a many/collection value schema."

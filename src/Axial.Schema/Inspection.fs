@@ -21,6 +21,8 @@ type ValueShape =
     | Many of item: ValueDescription
     /// <summary>A tagged union value with explicit discriminator, payload field, and case descriptions.</summary>
     | Union of union: UnionDescription
+    /// <summary>An optional value whose present payload is described by the supplied payload description.</summary>
+    | Optional of payload: ValueDescription
 
 /// <summary>Describes one value schema: its shape, declared format, and portable constraint metadata.</summary>
 and ValueDescription =
@@ -100,6 +102,7 @@ module Inspect =
                         |> List.map (fun case ->
                             { Tag = case.Tag
                               Payload = describeValueDefinition case.Payload }) }
+            | OptionValueDefinition optional -> ValueShape.Optional(describeValueDefinition optional.Payload)
 
         { Shape = shape
           Format = definition.Format

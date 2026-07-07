@@ -69,6 +69,7 @@ module Input =
             | NestedValueDefinition _ -> valueDefinition.Constraints
             | ManyValueDefinition _ -> valueDefinition.Constraints
             | UnionValueDefinition _ -> valueDefinition.Constraints
+            | OptionValueDefinition _ -> valueDefinition.Constraints
 
         gather definition
 
@@ -84,6 +85,7 @@ module Input =
             | NestedValueDefinition _ -> invalidOp "Nested model value schemas have no underlying primitive kind."
             | ManyValueDefinition _ -> invalidOp "Collection value schemas have no underlying primitive kind."
             | UnionValueDefinition _ -> invalidOp "Union value schemas have no underlying primitive kind."
+            | OptionValueDefinition _ -> invalidOp "Optional value schemas have no underlying primitive kind."
 
         kindOf definition
 
@@ -94,7 +96,8 @@ module Input =
             | RefinedValueDefinition(raw, ops) -> construct raw value |> ops.Construct
             | NestedValueDefinition _
             | ManyValueDefinition _
-            | UnionValueDefinition _ -> value
+            | UnionValueDefinition _
+            | OptionValueDefinition _ -> value
 
         construct definition primitive
 
@@ -156,6 +159,25 @@ module Input =
         | PrimitiveValueKind.Guid -> Parse.guid text |> Result.map box |> Result.mapError SchemaError.ofParseError
 
     let rec private parseValue options valueSchema fieldConstraints path raw =
+        match valueSchema.Shape with
+        | OptionValueDefinition optional ->
+            // Absence is a legal parse result for optional values: missing (and JSON null, which raw input adapters
+            // lower to Missing) becomes None, while present input parses through the payload schema into Some. The
+            // constraints attached to the optional layer and the field run against the payload.
+            match raw with
+            | RawInput.Missing -> Ok optional.NoneValue
+            | RawInput.Scalar _
+            | RawInput.Object _
+            | RawInput.Many _ ->
+                parseValue options optional.Payload (valueSchema.Constraints @ fieldConstraints) path raw
+                |> Result.map optional.WrapSome
+        | PrimitiveValueDefinition _
+        | RefinedValueDefinition _
+        | NestedValueDefinition _
+        | ManyValueDefinition _
+        | UnionValueDefinition _ -> parsePresentValue options valueSchema fieldConstraints path raw
+
+    and private parsePresentValue options valueSchema fieldConstraints path raw =
         let constraints = allConstraints valueSchema @ fieldConstraints
 
         match raw with
@@ -173,10 +195,14 @@ module Input =
                 | UnionValueDefinition union ->
                     parseUnion options path union fields
                     |> Result.map (constructValue valueSchema)
+                | OptionValueDefinition _ ->
+                    parseValue options raw [] path (RawInput.Object fields)
+                    |> Result.map (constructValue valueSchema)
                 | PrimitiveValueDefinition _
                 | RefinedValueDefinition _ -> errorAt path SchemaError.ExpectedScalar
                 | ManyValueDefinition _ -> errorAt path SchemaError.ExpectedMany
             | ManyValueDefinition _ -> errorAt path SchemaError.ExpectedMany
+            | OptionValueDefinition _ -> invalidOp "Optional value schemas are parsed before raw input dispatch."
             | PrimitiveValueDefinition _ -> errorAt path SchemaError.ExpectedScalar
         | RawInput.Many rawItems ->
             match valueSchema.Shape with
@@ -188,10 +214,14 @@ module Input =
                 | ManyValueDefinition collection ->
                     parseMany options path collection constraints rawItems
                     |> Result.map (constructValue valueSchema)
+                | OptionValueDefinition _ ->
+                    parseValue options raw [] path (RawInput.Many rawItems)
+                    |> Result.map (constructValue valueSchema)
                 | NestedValueDefinition _
                 | UnionValueDefinition _ -> errorAt path SchemaError.ExpectedObject
                 | PrimitiveValueDefinition _
                 | RefinedValueDefinition _ -> errorAt path SchemaError.ExpectedScalar
+            | OptionValueDefinition _ -> invalidOp "Optional value schemas are parsed before raw input dispatch."
             | PrimitiveValueDefinition _ -> errorAt path SchemaError.ExpectedScalar
         | RawInput.Scalar text when hasRequiredConstraint constraints && String.IsNullOrWhiteSpace text ->
             errorAt path (SchemaCheckFailure.withCustomMessageForCode constraints "required" SchemaError.Required)
@@ -200,11 +230,15 @@ module Input =
             | NestedValueDefinition _
             | UnionValueDefinition _ -> errorAt path SchemaError.ExpectedObject
             | ManyValueDefinition _ -> errorAt path SchemaError.ExpectedMany
+            | OptionValueDefinition _ -> invalidOp "Optional value schemas are parsed before raw input dispatch."
             | RefinedValueDefinition(raw, _) ->
                 match raw.Shape with
                 | NestedValueDefinition _
                 | UnionValueDefinition _ -> errorAt path SchemaError.ExpectedObject
                 | ManyValueDefinition _ -> errorAt path SchemaError.ExpectedMany
+                | OptionValueDefinition _ ->
+                    parseValue options raw [] path (RawInput.Scalar text)
+                    |> Result.map (constructValue valueSchema)
                 | PrimitiveValueDefinition _
                 | RefinedValueDefinition _ ->
                     let kind = underlyingPrimitiveKind valueSchema

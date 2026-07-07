@@ -638,6 +638,23 @@ and internal ValueSchemaShape =
     | ManyValueDefinition of CollectionValueDefinition
     /// <summary>A tagged union value whose case payloads are each described by explicit value schemas.</summary>
     | UnionValueDefinition of TaggedUnionValueDefinition
+    /// <summary>An optional value: absent input is a legal <c>None</c>, present input parses through the payload schema.</summary>
+    | OptionValueDefinition of OptionalValueDefinition
+
+/// <summary>
+/// Holds the type-erased payload value schema for an optional value, plus closures that move between the boxed
+/// payload representation and the boxed <c>'value option</c> the model field carries.
+/// </summary>
+/// <remarks>
+/// The closures are captured at <c>Value.optionOf</c> call sites where the payload CLR type is still statically known,
+/// so interpreters such as input parsing and codecs can wrap parsed payloads into <c>Some</c> and unwrap existing
+/// trusted options without runtime reflection.
+/// </remarks>
+and [<ReferenceEquality>] internal OptionalValueDefinition =
+    { Payload: ValueSchemaDefinition
+      WrapSome: obj -> obj
+      NoneValue: obj
+      TryUnwrap: obj -> obj option }
 
 /// <summary>
 /// Holds the type-erased item value schema for a collection value, plus a closure that boxes a list of parsed,
@@ -898,6 +915,16 @@ module internal ModelSchemaDefinition =
 
         ensureContiguousOrders fields
 
+        fields
+        |> List.iter (fun field ->
+            match field.ValueSchema.Shape with
+            | OptionValueDefinition _ when
+                field.Constraints
+                |> List.exists (fun constraint' -> constraint'.Code = "required")
+                ->
+                invalidArg (nameof fields) "Optional fields cannot carry the required constraint."
+            | _ -> ())
+
         { Constructor = constructor
           Fields = fields |> List.sortBy (fun field -> field.Order.Value) }
 
@@ -1032,6 +1059,8 @@ module Value =
             invalidArg (nameof schema) "Expected a primitive value schema, but the schema is a collection value schema."
         | UnionValueDefinition _ ->
             invalidArg (nameof schema) "Expected a primitive value schema, but the schema is a union value schema."
+        | OptionValueDefinition _ ->
+            invalidArg (nameof schema) "Expected a primitive value schema, but the schema is an optional value schema."
 
     /// <summary>
     /// Describes a named refined/domain value schema by pairing a raw value schema with a value-preserving
@@ -1201,6 +1230,69 @@ module Value =
               Constraints = [] }
         )
 
+    /// <summary>Describes an optional value so <c>'field option</c> models are schema-describable.</summary>
+    /// <remarks>
+    /// <para>
+    /// Optional value schemas make absence a legal parse result rather than a diagnostic: input parsing maps missing
+    /// or null raw input to <c>None</c> and parses present input through <paramref name="payload" /> into <c>Some</c>,
+    /// with the payload schema's constraints running on the payload. Codecs decode an absent or <c>null</c> JSON field
+    /// to <c>None</c> and omit <c>None</c> fields when encoding, and JSON Schema generation leaves optional fields out
+    /// of the object's <c>required</c> list.
+    /// </para>
+    /// <para>
+    /// Optionality is a single boundary layer, not a nestable wrapper: <c>optionOf (optionOf ...)</c> is rejected
+    /// because absent input could not distinguish <c>None</c> from <c>Some None</c>. Combining <c>optionOf</c> with
+    /// the <c>required</c> constraint is contradictory and is rejected here when the payload carries it, by
+    /// <c>Value.withConstraint</c> when attached to the optional schema itself, and by <c>Schema.build</c> when
+    /// attached at the field level.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="payload" /> is null.</exception>
+    /// <exception cref="T:System.ArgumentException">
+    /// Thrown when <paramref name="payload" /> is itself an optional value schema or carries the <c>required</c>
+    /// constraint on any layer.
+    /// </exception>
+    let optionOf (payload: ValueSchema<'value>) : ValueSchema<'value option> =
+        if isNull (box payload) then
+            nullArg (nameof payload)
+
+        match payload.Definition.Shape with
+        | OptionValueDefinition _ ->
+            invalidArg (nameof payload) "Optional value schemas cannot be nested inside another optional value schema."
+        | PrimitiveValueDefinition _
+        | RefinedValueDefinition _
+        | NestedValueDefinition _
+        | ManyValueDefinition _
+        | UnionValueDefinition _ -> ()
+
+        let rec carriesRequired (definition: ValueSchemaDefinition) =
+            let ownRequired =
+                definition.Constraints
+                |> List.exists (fun constraint' -> constraint'.Code = "required")
+
+            ownRequired
+            || match definition.Shape with
+               | RefinedValueDefinition(raw, _) -> carriesRequired raw
+               | PrimitiveValueDefinition _
+               | NestedValueDefinition _
+               | ManyValueDefinition _
+               | UnionValueDefinition _
+               | OptionValueDefinition _ -> false
+
+        if carriesRequired payload.Definition then
+            invalidArg (nameof payload) "Optional value schemas cannot carry the required constraint."
+
+        ValueSchema(
+            { Shape =
+                OptionValueDefinition
+                    { Payload = payload.Definition
+                      WrapSome = fun value -> value |> unbox<'value> |> Some |> box
+                      NoneValue = box (None: 'value option)
+                      TryUnwrap = fun value -> value |> unbox<'value option> |> Option.map box }
+              Format = None
+              Constraints = [] }
+        )
+
     /// <summary>Returns whether a value schema is a refined/domain value schema.</summary>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
     let isRefined (schema: ValueSchema<'value>) =
@@ -1213,6 +1305,7 @@ module Value =
         | NestedValueDefinition _ -> false
         | ManyValueDefinition _ -> false
         | UnionValueDefinition _ -> false
+        | OptionValueDefinition _ -> false
 
     /// <summary>Returns the intrinsic primitive kind beneath any refinement layers of a value schema.</summary>
     /// <remarks>
@@ -1237,6 +1330,8 @@ module Value =
                 invalidArg (nameof schema) "Collection value schemas have no underlying primitive kind."
             | UnionValueDefinition _ ->
                 invalidArg (nameof schema) "Union value schemas have no underlying primitive kind."
+            | OptionValueDefinition _ ->
+                invalidArg (nameof schema) "Optional value schemas have no underlying primitive kind."
 
         kindOf schema.Definition
 
@@ -1264,6 +1359,8 @@ module Value =
             invalidArg (nameof schema) "Expected a refined value schema, but the schema is a collection value schema."
         | UnionValueDefinition _ ->
             invalidArg (nameof schema) "Expected a refined value schema, but the schema is a union value schema."
+        | OptionValueDefinition _ ->
+            invalidArg (nameof schema) "Expected a refined value schema, but the schema is an optional value schema."
 
     let private underlyingClrType kind =
         match kind with
@@ -1321,6 +1418,8 @@ module Value =
                 invalidArg (nameof schema) "Collection value schemas have no underlying primitive representation."
             | UnionValueDefinition _ ->
                 invalidArg (nameof schema) "Union value schemas have no underlying primitive representation."
+            | OptionValueDefinition _ ->
+                invalidArg (nameof schema) "Optional value schemas have no underlying primitive representation."
 
         fun value -> project schema.Definition (box value) |> unbox<'primitive>
 
@@ -1373,6 +1472,7 @@ module Value =
                 | NestedValueDefinition _ -> None
                 | ManyValueDefinition _ -> None
                 | UnionValueDefinition _ -> None
+                | OptionValueDefinition _ -> None
 
         formatOf schema.Definition
 
@@ -1411,10 +1511,20 @@ module Value =
             | NestedValueDefinition _ -> definition.Constraints
             | ManyValueDefinition _ -> definition.Constraints
             | UnionValueDefinition _ -> definition.Constraints
+            | OptionValueDefinition _ -> definition.Constraints
 
         gather schema.Definition
 
+    let private ensureNotRequiredOnOptional parameterName (constraint': SchemaConstraint) (schema: ValueSchema<'value>) =
+        match schema.Definition.Shape with
+        | OptionValueDefinition _ when constraint'.Code = "required" ->
+            invalidArg parameterName "Optional value schemas cannot carry the required constraint."
+        | _ -> ()
+
     /// <summary>Returns a value schema with additional portable constraint metadata appended in declaration order.</summary>
+    /// <exception cref="T:System.ArgumentException">
+    /// Thrown when the <c>required</c> constraint is attached to an optional value schema.
+    /// </exception>
     let withConstraint (constraint': SchemaConstraint) (schema: ValueSchema<'value>) =
         if isNull constraint' then
             nullArg (nameof constraint')
@@ -1422,12 +1532,17 @@ module Value =
         if isNull (box schema) then
             nullArg (nameof schema)
 
+        ensureNotRequiredOnOptional (nameof constraint') constraint' schema
+
         ValueSchema(
             { schema.Definition with
                 Constraints = schema.Definition.Constraints @ [ constraint' ] }
         )
 
     /// <summary>Returns a value schema with additional portable constraint metadata appended in declaration order.</summary>
+    /// <exception cref="T:System.ArgumentException">
+    /// Thrown when the <c>required</c> constraint is attached to an optional value schema.
+    /// </exception>
     let withConstraints (constraints: SchemaConstraint list) (schema: ValueSchema<'value>) =
         if isNull (box constraints) then
             nullArg (nameof constraints)
@@ -1439,6 +1554,9 @@ module Value =
 
         if isNull (box schema) then
             nullArg (nameof schema)
+
+        constraints
+        |> List.iter (fun constraint' -> ensureNotRequiredOnOptional (nameof constraints) constraint' schema)
 
         ValueSchema(
             { schema.Definition with

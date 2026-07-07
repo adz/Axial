@@ -106,4 +106,5 @@ module SchemaNestedValueTests =
         | PrimitiveValueDefinition _
         | RefinedValueDefinition _
         | ManyValueDefinition _
-        | UnionValueDefinition _ -> failwith "Expected a nested model value schema."
+        | UnionValueDefinition _
+        | OptionValueDefinition _ -> failwith "Expected a nested model value schema."

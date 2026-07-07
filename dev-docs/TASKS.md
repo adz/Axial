@@ -30,12 +30,6 @@ STJ adapter) are recorded with their pre-chosen answers in `dev-docs/decisions/R
 Ordered cheap-and-high-leverage first. Items 1–3 are also prerequisites for the contract grammar
 (`dev-docs/current-ideas/contract-grammar.md`).
 
-- [ ] Optional fields: add `Value.optionOf : ValueSchema<'value> -> ValueSchema<'value option>` so `'field option`
-  models are schema-describable. `Input.parse`: missing/null → `Ok None`, present → `Some` (constraints run on the
-  payload). Codec: absent/null decodes to `None`; `None` encodes as *omitted* (no `null` policy pre-1.0). JSON Schema:
-  optional fields drop out of `required` — this also fixes the existing mismatch where `required` lists only fields
-  carrying the `required` constraint while the parser requires everything. Forbid `optionOf (optionOf ...)` and
-  combining `optionOf` with the `required` constraint at build time.
 - [ ] Union wire shapes: add `Value.enumOf` (bare-string enums for payload-less DU cases, lowering to JSON Schema
   `enum`) and `Value.unionInline` (internally-tagged objects, serde/zod style — valid only when every payload is an
   object whose field names don't collide with the discriminator, checked at construction; lowers to `oneOf` members

@@ -433,6 +433,7 @@ module Validation =
             | NestedValueDefinition _ -> valueDefinition.Constraints
             | ManyValueDefinition _ -> valueDefinition.Constraints
             | UnionValueDefinition _ -> valueDefinition.Constraints
+            | OptionValueDefinition _ -> valueDefinition.Constraints
 
         gather definition
 
@@ -444,6 +445,7 @@ module Validation =
             | NestedValueDefinition _ -> invalidOp "Nested model value schemas have no underlying primitive kind."
             | ManyValueDefinition _ -> invalidOp "Collection value schemas have no underlying primitive kind."
             | UnionValueDefinition _ -> invalidOp "Union value schemas have no underlying primitive kind."
+            | OptionValueDefinition _ -> invalidOp "Optional value schemas have no underlying primitive kind."
 
         kindOf definition
 
@@ -455,6 +457,7 @@ module Validation =
             | NestedValueDefinition _ -> invalidOp "Nested model values have no underlying primitive representation."
             | ManyValueDefinition _ -> invalidOp "Collection values have no underlying primitive representation."
             | UnionValueDefinition _ -> invalidOp "Union values have no underlying primitive representation."
+            | OptionValueDefinition _ -> invalidOp "Optional values have no underlying primitive representation."
 
         project definition value
 
@@ -505,7 +508,8 @@ module Validation =
             match raw.Shape with
             | NestedValueDefinition _
             | ManyValueDefinition _
-            | UnionValueDefinition _ ->
+            | UnionValueDefinition _
+            | OptionValueDefinition _ ->
                 validateValue raw (valueSchema.Constraints @ fieldConstraints) path (ops.Inspect value)
                 |> Axial.Validation.Validation.map (fun _ -> value)
             | PrimitiveValueDefinition _
@@ -540,6 +544,12 @@ module Validation =
         | UnionValueDefinition union ->
             validateUnion path union value
             |> Axial.Validation.Validation.map (fun _ -> value)
+        | OptionValueDefinition optional ->
+            match optional.TryUnwrap value with
+            | None -> Axial.Validation.Validation.ok value
+            | Some payload ->
+                validateValue optional.Payload (valueSchema.Constraints @ fieldConstraints) path payload
+                |> Axial.Validation.Validation.map (fun _ -> value)
 
     and private validateField basePath model (field: FieldDescriptor<obj>) =
         let name = ExternalFieldName.value field.ExternalName

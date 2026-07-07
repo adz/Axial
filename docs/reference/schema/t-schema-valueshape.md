@@ -23,6 +23,7 @@ weight: 1200
 | `Nested` | A nested model value described by its own field descriptions. |
 | `Many` | A collection value whose items share the supplied item description. |
 | `Union` | A tagged union value with explicit discriminator, payload field, and case descriptions. |
+| `Optional` | An optional value whose present payload is described by the supplied payload description. |
 
 ## Remarks
 

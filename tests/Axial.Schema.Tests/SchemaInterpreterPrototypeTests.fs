@@ -41,6 +41,7 @@ module SchemaInterpreterPrototypes =
             | ValueShape.Nested _ -> "object"
             | ValueShape.Many _ -> "list"
             | ValueShape.Union _ -> "union"
+            | ValueShape.Optional payload -> sprintf "optional %s" (valueSummary payload)
             | ValueShape.Refined _ -> failwith "underlyingShape never returns a refined shape."
 
         let private constraintSummary metadata =
@@ -121,6 +122,7 @@ module SchemaInterpreterPrototypes =
             | ValueShape.Nested model -> Group(fieldsFor model)
             | ValueShape.Many item -> Repeater(controlFor item)
             | ValueShape.Union _ -> Group []
+            | ValueShape.Optional payload -> controlFor payload
             | ValueShape.Refined _ -> failwith "underlyingShape never returns a refined shape."
 
         and private fieldsFor (model: ModelDescription) =
@@ -219,9 +221,10 @@ module SchemaInterpreterPrototypeTests =
         test <@ generated.Contains "\"email\":{\"type\":\"string\",\"format\":\"email\",\"maxLength\":254}" @>
         test <@ generated.Contains "\"age\":{\"type\":\"integer\",\"minimum\":13,\"maximum\":120}" @>
         test <@ generated.Contains "\"newsletter\":{\"type\":\"boolean\"}" @>
-        test <@ generated.Contains "\"address\":{\"type\":\"object\",\"properties\":{\"street\":{\"type\":\"string\"},\"city\":{\"type\":\"string\"}}}" @>
-        test <@ generated.Contains "\"tags\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"label\":{\"type\":\"string\"}}},\"minItems\":1,\"uniqueItems\":true" @>
-        test <@ generated.Contains "\"required\":[\"email\",\"address\"]" @>
+        test <@ generated.Contains "\"address\":{\"type\":\"object\",\"properties\":{\"street\":{\"type\":\"string\"},\"city\":{\"type\":\"string\"}},\"required\":[\"street\",\"city\"]}" @>
+        test <@ generated.Contains "\"tags\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"label\":{\"type\":\"string\"}},\"required\":[\"label\"]},\"minItems\":1,\"uniqueItems\":true" @>
+        // Every non-optional field is required, matching the parser; only Value.optionOf fields drop out.
+        test <@ generated.Contains "\"required\":[\"email\",\"age\",\"newsletter\",\"address\",\"tags\"]" @>
         test <@ constructions.Value = 0 @>
         test <@ getterReads.Value = 0 @>
 

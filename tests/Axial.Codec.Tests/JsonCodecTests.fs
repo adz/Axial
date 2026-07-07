@@ -303,3 +303,67 @@ module JsonCodecTests =
         let tag = { Label = "line1\nline2\ttab \"quoted\" \\slash  ünïcødé" }
 
         test <@ Json.deserialize codec (Json.serialize codec tag) = tag @>
+
+    type private OptionalProfile =
+        { Nickname: string option
+          Name: string
+          Age: int option
+          Ratings: int option list }
+
+    let private optionalProfileSchema () =
+        Schema.recordFor<OptionalProfile, _> (fun nickname name age ratings ->
+            { Nickname = nickname
+              Name = name
+              Age = age
+              Ratings = ratings })
+        |> Schema.field "nickname" _.Nickname (Value.optionOf Value.text)
+        |> Schema.text "name" _.Name
+        |> Schema.field "age" _.Age (Value.optionOf Value.int)
+        |> Schema.field "ratings" _.Ratings (Value.manyOf (Value.optionOf Value.int))
+        |> Schema.build
+
+    [<Fact>]
+    let ``encodes None optional fields as omitted even in first position`` () =
+        let codec = Json.compile (optionalProfileSchema ())
+
+        let json =
+            Json.serialize codec { Nickname = None; Name = "Ada"; Age = None; Ratings = [] }
+
+        test <@ json = "{\"name\":\"Ada\",\"ratings\":[]}" @>
+
+    [<Fact>]
+    let ``encodes Some optional fields as their payload`` () =
+        let codec = Json.compile (optionalProfileSchema ())
+
+        let json =
+            Json.serialize codec { Nickname = Some "Lady A"; Name = "Ada"; Age = Some 36; Ratings = [ Some 5; None ] }
+
+        test <@ json = "{\"nickname\":\"Lady A\",\"name\":\"Ada\",\"age\":36,\"ratings\":[5,null]}" @>
+
+    [<Fact>]
+    let ``decodes absent and null optional fields to None`` () =
+        let codec = Json.compile (optionalProfileSchema ())
+
+        let decoded = Json.deserialize codec "{\"name\":\"Ada\",\"age\":null,\"ratings\":[null,2]}"
+
+        test <@ decoded = { Nickname = None; Name = "Ada"; Age = None; Ratings = [ None; Some 2 ] } @>
+
+    [<Fact>]
+    let ``round trips optional fields through one schema declaration`` () =
+        let codec = Json.compile (optionalProfileSchema ())
+
+        let profile =
+            { Nickname = Some "Lady A"
+              Name = "Ada"
+              Age = None
+              Ratings = [ Some 1; None; Some 3 ] }
+
+        test <@ Json.deserialize codec (Json.serialize codec profile) = profile @>
+
+    [<Fact>]
+    let ``still requires non-optional fields when optional fields are absent`` () =
+        let codec = Json.compile (optionalProfileSchema ())
+
+        raisesWith<JsonCodecException>
+            <@ Json.deserialize codec "{\"ratings\":[]}" @>
+            (fun ex -> <@ ex.Message.Contains "name" @>)

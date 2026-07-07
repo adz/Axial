@@ -324,6 +324,17 @@ module rec Json =
                 let struct (items, next) = decodeItems src
                 struct (collection.BoxItems items, next)
         | UnionValueDefinition union -> compileUnionDecoderObj union
+        | OptionValueDefinition optional ->
+            let payloadDecoder = compileValueDecoderObj optional.Payload
+
+            fun src ->
+                let src = skipWhitespace src
+
+                if src.Offset < src.Data.Length && src.Data[src.Offset] = byte 'n' then
+                    struct (optional.NoneValue, skipValue src)
+                else
+                    let struct (payload, next) = payloadDecoder src
+                    struct (optional.WrapSome payload, next)
 
     let private compileErasedModelDecoder (model: ModelSchemaDefinition<obj>) : Decoder<obj> =
         let matchers =
@@ -332,9 +343,21 @@ module rec Json =
                 let name = ExternalFieldName.value field.ExternalName
                 let fieldDecoder = compileValueDecoderObj field.ValueSchema
 
+                let createSlot =
+                    match field.ValueSchema.Shape with
+                    | OptionValueDefinition optional ->
+                        // An absent optional field is a legal None, so its slot starts filled instead of
+                        // failing the missing-required-field check.
+                        fun () ->
+                            let slot = Slot<obj>(fieldDecoder)
+                            slot.Value <- optional.NoneValue
+                            slot.HasValue <- true
+                            slot :> ISlot
+                    | _ -> fun () -> Slot<obj>(fieldDecoder) :> ISlot
+
                 { NameText = name
                   NameUtf8 = utf8 name
-                  CreateSlot = fun () -> Slot<obj>(fieldDecoder) :> ISlot })
+                  CreateSlot = createSlot })
             |> Array.ofList
 
         let apply (slots: ISlot[]) =
@@ -442,24 +465,59 @@ module rec Json =
 
                 writer.WriteByte(byte ']')
         | UnionValueDefinition union -> compileUnionEncoderObj union
+        | OptionValueDefinition optional ->
+            // Options in non-field positions (collection items, union payloads, refined raw layers) have no
+            // "absent" representation, so None encodes as JSON null there; field-level None omission is handled
+            // by the model encoders.
+            let payloadEncoder = compileValueEncoderObj optional.Payload
+
+            fun writer value ->
+                match optional.TryUnwrap value with
+                | Some payload -> payloadEncoder writer payload
+                | None -> writer.WriteString "null"
+
+    /// Writes one model field, choosing the leading-comma prefix from whether an earlier field was written,
+    /// and reports whether it wrote anything so None-valued optional fields can be omitted.
+    type private FieldWriter<'model> = IByteWriter -> bool -> 'model -> bool
+
+    let private fieldPrefixes name =
+        utf8 ("\"" + name + "\":"), utf8 (",\"" + name + "\":")
 
     let private compileErasedModelEncoder (model: ModelSchemaDefinition<obj>) : Encoder<obj> =
         let fields =
             model.Fields
-            |> List.mapi (fun index field ->
-                let prefix =
-                    let name = ExternalFieldName.value field.ExternalName
-                    utf8 ((if index = 0 then "\"" else ",\"") + name + "\":")
+            |> List.map (fun field ->
+                let firstPrefix, restPrefix = fieldPrefixes (ExternalFieldName.value field.ExternalName)
+                let getter = field.Getter
 
-                prefix, field.Getter, compileValueEncoderObj field.ValueSchema)
+                match field.ValueSchema.Shape with
+                | OptionValueDefinition optional ->
+                    let payloadEncoder = compileValueEncoderObj optional.Payload
+
+                    (fun (writer: IByteWriter) needsComma value ->
+                        match optional.TryUnwrap (getter value) with
+                        | Some payload ->
+                            writer.WriteBytes(if needsComma then restPrefix else firstPrefix)
+                            payloadEncoder writer payload
+                            true
+                        | None -> false)
+                    : FieldWriter<obj>
+                | _ ->
+                    let encodeField = compileValueEncoderObj field.ValueSchema
+
+                    fun writer needsComma value ->
+                        writer.WriteBytes(if needsComma then restPrefix else firstPrefix)
+                        encodeField writer (getter value)
+                        true)
             |> Array.ofList
 
         fun writer value ->
             writer.WriteByte(byte '{')
+            let mutable needsComma = false
 
-            for (prefix, getter, encodeField) in fields do
-                writer.WriteBytes prefix
-                encodeField writer (getter value)
+            for writeField in fields do
+                if writeField writer needsComma value then
+                    needsComma <- true
 
             writer.WriteByte(byte '}')
 
@@ -522,7 +580,8 @@ module rec Json =
                     member _.Item<'item>(item: ValueSchemaDefinition) =
                         box (listDecoder (compileValueDecoder<'item> item)) }
             |> unbox<Decoder<'field>>
-        | UnionValueDefinition _ ->
+        | UnionValueDefinition _
+        | OptionValueDefinition _ ->
             let objDecoder = compileValueDecoderObj definition
 
             fun src ->
@@ -546,7 +605,8 @@ module rec Json =
                         box (listEncoder (compileValueEncoder<'item> item)) }
             |> unbox<Encoder<'field>>
         | RefinedValueDefinition _
-        | UnionValueDefinition _ ->
+        | UnionValueDefinition _
+        | OptionValueDefinition _ ->
             let objEncoder = compileValueEncoderObj definition
             fun writer value -> objEncoder writer (box value)
 
@@ -580,10 +640,21 @@ module rec Json =
                 let name = field |> Field.externalName |> ExternalFieldName.value
                 let fieldDecoder = compileValueDecoder<'field> field.Definition.ValueSchema
 
+                let createSlot =
+                    match field.Definition.ValueSchema.Shape with
+                    | OptionValueDefinition _ ->
+                        // An absent optional field is a legal None ('field is an option type, whose default
+                        // representation is None), so its slot starts filled.
+                        fun () ->
+                            let slot = Slot<'field>(fieldDecoder)
+                            slot.HasValue <- true
+                            slot :> ISlot
+                    | _ -> fun () -> Slot<'field>(fieldDecoder) :> ISlot
+
                 let matcher =
                     { NameText = name
                       NameUtf8 = utf8 name
-                      CreateSlot = fun () -> Slot<'field>(fieldDecoder) :> ISlot }
+                      CreateSlot = createSlot }
 
                 DecodeChainResult<'model, 'constructorIn, 'next>(
                     { Matchers = headLink.Matchers @ [ matcher ]
@@ -603,7 +674,7 @@ module rec Json =
 
     // The typed encode chain: each field contributes cached wire-name bytes
     // plus a writer over the typed getter.
-    type private EncodeChainResult<'model, 'constructorIn, 'constructorOut>(fields: (byte[] * Encoder<'model>) list) =
+    type private EncodeChainResult<'model, 'constructorIn, 'constructorOut>(fields: FieldWriter<'model> list) =
         interface IFieldChainResult<'model, 'constructorIn, 'constructorOut> with
             member _.Value = box fields
 
@@ -619,29 +690,47 @@ module rec Json =
                     field: Field<'model, 'field>,
                     head: IFieldChainResult<'model, 'constructorIn, 'field -> 'next>
                 ) : IFieldChainResult<'model, 'constructorIn, 'next> =
-                let headFields = unbox<(byte[] * Encoder<'model>) list> head.Value
+                ignore order
+                let headFields = unbox<FieldWriter<'model> list> head.Value
                 let name = field |> Field.externalName |> ExternalFieldName.value
-                let prefix = utf8 ((if order = 0 then "\"" else ",\"") + name + "\":")
+                let firstPrefix, restPrefix = fieldPrefixes name
                 let getter = field.Definition.Getter
-                let encodeValue = compileValueEncoder<'field> field.Definition.ValueSchema
 
-                let writeField: Encoder<'model> =
-                    fun writer model -> encodeValue writer (getter model)
+                let writeField: FieldWriter<'model> =
+                    match field.Definition.ValueSchema.Shape with
+                    | OptionValueDefinition optional ->
+                        let payloadEncoder = compileValueEncoderObj optional.Payload
 
-                EncodeChainResult<'model, 'constructorIn, 'next>(headFields @ [ prefix, writeField ])
+                        fun writer needsComma model ->
+                            match optional.TryUnwrap(box (getter model)) with
+                            | Some payload ->
+                                writer.WriteBytes(if needsComma then restPrefix else firstPrefix)
+                                payloadEncoder writer payload
+                                true
+                            | None -> false
+                    | _ ->
+                        let encodeValue = compileValueEncoder<'field> field.Definition.ValueSchema
+
+                        fun writer needsComma model ->
+                            writer.WriteBytes(if needsComma then restPrefix else firstPrefix)
+                            encodeValue writer (getter model)
+                            true
+
+                EncodeChainResult<'model, 'constructorIn, 'next>(headFields @ [ writeField ])
                 :> IFieldChainResult<'model, 'constructorIn, 'next>
 
             member _.OnComplete<'constructor>(_: 'constructor, chain) =
                 let fields =
-                    unbox<(byte[] * Encoder<'model>) list> (chain :> IFieldChainResult<_, _, _>).Value
+                    unbox<FieldWriter<'model> list> (chain :> IFieldChainResult<_, _, _>).Value
                     |> Array.ofList
 
                 fun writer model ->
                     writer.WriteByte(byte '{')
+                    let mutable needsComma = false
 
-                    for (prefix, writeField) in fields do
-                        writer.WriteBytes prefix
-                        writeField writer model
+                    for writeField in fields do
+                        if writeField writer needsComma model then
+                            needsComma <- true
 
                     writer.WriteByte(byte '}')
 
