@@ -90,13 +90,26 @@ scale-dependent, not settled against generation:
   real hazard: positional alignment is type-checked but not name-checked, so swapping two adjacent same-typed fields
   compiles and silently transposes data. Generating record + constructor + schema from one field list eliminates both
   the volume and the swap hazard. This justifies declaration-first generation at scale.
-- **The declaration input should be an F# data value, not an external language.** The shape freedom comes from the
-  declaration being *data* (no record to reference, so no getters/constructor to restate), not from leaving F#. An
-  in-F# contract DSL (`contract "Config" 3 [ field "deviceId" text [ required ]; fieldList "tanks" (contractRef
-  tankV2) [] ]`) keeps compiler checking of the declaration itself, free editor support, and no parser/diagnostics
-  burden; the generator reads the value and emits checked-in ordinary F# (version record, `create`, typed schema), so
-  AOT/Fable/tooling are untouched and downstream machinery still consumes plain record + schema. The earlier TP
-  objections do not apply to this route.
+- **The declaration input is a minimal external grammar, not an F# data value.** An F# data DSL was considered and
+  dropped: evaluated F# cannot give identifier-as-field-name with preserved declaration order (anonymous records
+  alphabetize; strings bring quotes and per-line keyword ceremony), so it pays generation's costs without the
+  authoring win. The grammar is deliberately tiny and line-oriented:
+
+  ```text
+  contract Config.3 {
+    deviceId:    text [ required ]
+    pollSeconds: int  [ atLeast 1 ]
+    tanks:       list Tank.2
+  }
+  ```
+
+  No expressions ever: constraint arguments are literals; refined types, custom value schemas, migrations, and domain
+  construction stay in F# and are referenced by name. That keeps the parser ~small with line-precise diagnostics and
+  "it's a text file" editor support. Out-of-file references resolve at generation time rather than typecheck time —
+  errors still fail the build (generated F# will not compile), one step removed. The generator emits checked-in
+  ordinary F# (version record, `create`, typed schema), so AOT/Fable/tooling are untouched and downstream machinery
+  still consumes plain record + schema. The earlier TP objections do not apply to this route; the moment the grammar
+  grows expressions, they do.
 - **Migrations are plain F# functions**, not structured data. Structured migrations need escape hatches, which
   collapse back into arbitrary code with worse ergonomics. Middle path kept open: optional advisory metadata beside
   the function (`Renamed`, `Derived from`, external dependencies, purity) to power lineage reports and upgrade docs —
@@ -113,10 +126,10 @@ contract migrations only for serialized blobs.
   inverts ownership of the domain types and adds a parser/diagnostics/editor-support burden.
 - **Attribute-driven generation as the versioning surface.** See above; generation (per
   `schema-source-generation.md`) remains a possible sugar for the *head* version only.
-- **Contract-declaration-first generation via an external (non-F#) contract language.** The data-shape freedom is
-  available inside F#; an external format adds a parser/diagnostics/editor burden and loses compiler checking of the
-  declaration. Declaration-first generation itself is *not* rejected — see "What The Author Writes"; its input should
-  be F# data.
+- **A rich external contract language.** Anything with expressions, computation, or embedded logic rebuilds a
+  language and its tooling burden. Only the minimal shape-only grammar above is in scope.
+- **An F# data DSL as the declaration input.** Names become string literals and field lines carry keyword ceremony;
+  order-preserving identifier names are not expressible in evaluated F# data. Worst of both worlds at scale.
 - **Migrations as structured data ("contract AST").** Only pays off if migration stops being arbitrary code, but
   custom migrations always need escape hatches; advisory metadata beside plain functions captures the inspectability
   benefits incrementally.
