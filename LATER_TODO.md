@@ -1,10 +1,18 @@
-# Axial TODO
+# Axial Flow-Group and Platform Backlog
 
-This TODO is for Axial in this repository. It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Native reference material should be used as behavioral and compatibility input only, not as target platforms for .NET.
+This is the Flow-group and platform-track backlog, kept demand-driven per the release strategy in `prd.md`: the
+boundary stack (`dev-docs/TASKS.md`) is the 1.0 gate, and items here are pulled forward when a concrete application
+needs them, not worked top to bottom. Section numbering and the v1.0/post-v1.0 labels are preserved from the original
+ZIO-delta roadmap for continuity; "v1.0" sections describe what a full Flow 1.0 would require, not the current gate.
+One ordering rule survives from the original PRD: runtime foundation before broad module expansion — rich
+`Cause`/`Exit`, fiber identity, scope, and environment/layer semantics (sections 3–4, done) stay prerequisites for
+faithful concurrency, STM, streams, metrics, and tracing work.
+
+It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Native reference material should be used as behavioral and compatibility input only, not as target platforms for .NET.
 
 ## References
 
-- Delta PRD: `prd.md`
+- Product PRD: `prd.md`
 - Reference PRD: external ZIO reference corpus, `specs/prd.md`
 - Reference TODO: external ZIO reference corpus, `TODO.md`
 - Reference source/test specs: external ZIO reference corpus, `specs/*.md`

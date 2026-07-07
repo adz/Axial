@@ -4,6 +4,14 @@ This file tracks current product and architecture direction.
 High-level durable decisions live in `dev-docs/decisions/`.
 Speculative sketches live in `dev-docs/current-ideas/`, but this file is the live direction.
 
+## Release Strategy
+
+Per `prd.md`: the boundary stack (`Axial.ErrorHandling`, `Axial.Refined`, `Axial.Schema`, `Axial.Validation`,
+`Axial.Validation.Schema`, `Axial.Codec`) is the 1.0 gate, driven by a real adoption target (a ~100-variant versioned
+config system). The Flow group's remaining pre-1.0 scope in `LATER_TODO.md` is demand-driven — pulled forward when a
+concrete application needs it. The contract-declaration thread sequences as: versioning/migration machinery → grammar
+and generator → dogfood → LSP.
+
 ## Current Direction
 
 Axial began as a Reader-Async-Result workflow monad in the ZIO tradition; the result side has since expanded into a

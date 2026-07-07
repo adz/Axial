@@ -1,164 +1,100 @@
-# FsFlow Delta PRD
+# Axial Product Requirements
 
 ## Purpose
 
-This document records the delta between the current FsFlow implementation and the reference roadmap in `/home/adam/projects/zio_fsflow_docs/zio`. FsFlow is an F#/.NET effect library. The implementation target is .NET first, with JavaScript support through Fable-generated JavaScript. .NET does not target the JVM, and this roadmap must not imply a JVM runtime target.
+This document defines what Axial is, what its 1.0 must contain, and in what order the work ships. Live architecture
+direction is `dev-docs/PLAN.md`; the active queue is `dev-docs/TASKS.md`; durable decisions are
+`dev-docs/decisions/README.md`. This file changes only when the product definition changes.
 
-The ZIO JVM/JS/Native files in `/home/adam/projects/zio_fsflow_docs/zio` are reference lenses for behavior, naming, constraints, and module shape. They are not platform commitments for FsFlow.
+Axial is an F#/.NET library with two groups, presented in this order:
 
-## Reference Inputs
+- **Parse-don't-validate results.** `Schema<'model>` is the front door for domain models: one declaration drives input
+  parsing, intrinsic validation, redisplay, contextual rules, JSON codecs, JSON Schema output, and metadata
+  interpreters. Plain `Result` with a user-owned error DU is the blessed lane for simple code without domain models.
+- **Effects in Flow.** `Flow<'env, 'error, 'value>`, a ZIO-inspired Reader-Async-Result workflow model with typed
+  errors, explicit services and layers, scoped resources, and cancellation semantics. Useful with or without schemas,
+  and never part of the entry price for the results group.
 
-- Reference PRD: `/home/adam/projects/zio_fsflow_docs/zio/specs/prd.md`
-- Reference TODO: `/home/adam/projects/zio_fsflow_docs/zio/TODO.md`
-- ZIO source/test specs: `/home/adam/projects/zio_fsflow_docs/zio/specs/*.md`
-- FsFlow source: `/home/adam/projects/FsFlow/main/src`
-- FsFlow tests: `/home/adam/projects/FsFlow/main/tests/FsFlow.Tests`
+## Release Strategy
 
-## Current FsFlow Product Shape
+The boundary stack ships 1.0 first; the Flow group follows demand.
 
-FsFlow already provides a compact typed effect model:
+- **The 1.0 gate is the boundary stack**: `Axial.ErrorHandling`, `Axial.Refined`, `Axial.Schema`, `Axial.Validation`,
+  `Axial.Validation.Schema`, and `Axial.Codec`. Scope: the Phase 26 queue in `dev-docs/TASKS.md` (optional fields,
+  union wire shapes, JSON Schema fidelity, stream entry points, Fable codec surface, C# ergonomics) plus its
+  acceptance checks.
+- **The Flow group's remaining pre-1.0 scope is demand-driven**, tracked in `LATER_TODO.md`. Its current surface
+  (typed errors, services/layers, scoped resources, fibers, retry/timeout) is already useful and stays
+  source-compatible; deeper runtime work (queues, schedule composition, observability depth, fiber runtime) is pulled
+  forward only when a concrete application needs it.
+- Whether Flow ships 1.0 simultaneously at its current surface or stays 0.x while the boundary stack goes stable is an
+  open decision; packages currently share one coordinated version from `Directory.Build.props`.
 
-- `src/FsFlow/Core.fs` defines `Cause<'error>`, `Exit<'value,'error>`, `Flow<'env,'error,'value>`, `Fiber<'error,'value>`, runtime service contracts, retry policy, and .NET/Fable conditional effect representation.
-- `src/FsFlow/Flow.fs` provides construction, execution, conversion to `Async`/`Task`/`ValueTask`, environment access, mapping/binding, typed recovery, `fork`/`join`/`interrupt`, `zipPar`, .NET `race`, timeouts, retry, sleep, logging, clock/random/GUID/environment-variable access, and acquire/release.
-- `src/FsFlow/FlowBuilder.fs`, `BindError.fs`, `ResultBuilder.fs`, `ValidateBuilder.fs`, and `Builders.fs` provide computation expressions and interop for `Result`, `Async`, `Task`, `ValueTask`, `option`, `voption`, and flow bind-site error adaptation.
-- `src/FsFlow/Runtime*.fs` provides internal registry, tagged service lookup, nominal runtime adaptation, simple layer composition, and deterministic scope finalization.
-- `src/FsFlow/Ref.fs`, `Stm.fs`, `Stream.fs`, and `Schedule.fs` provide initial state, STM, streaming, and scheduling primitives on .NET.
-- `src/FsFlow/Diagnostics.fs`, `Validation.fs`, and `Check.fs` provide structured validation diagnostics and applicative validation support.
-- Capability packages cover core runtime services, console, filesystem, HTTP, and process effects.
-- `src/FsFlow.Hosting/Hosting.fs` integrates with `Microsoft.Extensions.DependencyInjection` and logging.
-- `src/FsFlow.Runtime.Telemetry/Telemetry.fs` adds activity-based telemetry helpers.
+## Adoption Driver
 
-The main package currently targets `netstandard2.1` and `net8.0`, references `Fable.Core`, and marks the `net8.0` build as AOT compatible. The tests target `net10.0`.
+The concrete target shaping priorities is a real configuration system: ~100 config variants stored as flat records
+with discriminator fields inspected at runtime to select which other fields apply, most fields nullable depending on
+variant, produced by a wizard UI whose shape mutates over time, with breakage today caught by scrutiny rather than
+systematically. Axial's answer, in dependency order:
 
-## Source Inventory Covered
+1. **Model the variants honestly**: internally tagged unions (`Value.unionInline`) for discriminator-beside-fields
+   records, `Value.optionOf` for the genuinely optional remainder, `Value.enumOf` for payload-less cases. Most
+   "nullable" fields become required-within-their-variant.
+2. **Version the boundary**: explicit `Config.vN` schemas with manual migrations, so reading any stored config is
+   detect version → migrate forward → parse against one current schema with path-aware diagnostics
+   (`dev-docs/current-ideas/schema-contract-versioning.md`).
+3. **Validate at write time**: generated JSON Schema lets the wizard reject broken configs before they enter storage.
+4. **Generate at scale**: the `.contract` declaration grammar and generator
+   (`dev-docs/current-ideas/contract-grammar.md`) make authoring ~100 versioned contracts tolerable. The generator
+   emits ordinary checked-in F# builder code, so the grammar is never required reading for someone maintaining the
+   codebase.
 
-Core package files reviewed:
+Within the contract thread the order is: versioning/migration machinery → grammar + generator → dogfood on the real
+config system → LSP and public positioning informed by that experience.
 
-- `AssemblyInfo.fs`: assembly metadata.
-- `Core.fs`, `Foundation.fs`, `Flow.fs`: the core `Flow` representation, effect helpers, execution, construction, environment access, runtime helpers, fibers, parallel composition, and transformations.
-- `FlowBuilder.fs`, `Builders.fs`, `ResultBuilder.fs`, `ValidateBuilder.fs`: computation expressions and public builder values.
-- `AsyncAdapter.fs`, `TaskAdapter.fs`: .NET-only adapter flow families for async/task-oriented composition.
-- `Check.fs`, `BindError.fs`, `Diagnostics.fs`, `Validation.fs`: pure predicates, value-preserving gates, extracting checks, flow bind-site error adaptation, structured diagnostics, and accumulating validation.
-- `Runtime.fs`, `RuntimeScope.fs`, `RuntimeRegistry.fs`, `RuntimeAdapter.fs`, `RuntimeLayer.fs`: ambient runtime services, service registry, scoped finalizers, adapter projection, and internal layer composition.
-- `Ref.fs`, `Stm.fs`, `Stream.fs`, `Schedule.fs`: .NET-only state, transactional memory, stream, and schedule primitives.
-- `FsFlow.fsproj`: `netstandard2.1;net8.0` target configuration, Fable dependency, and `net8.0` AOT compatibility marker.
+## Positioning
 
-Extension package files reviewed:
+The public story is a ladder, not three doors:
 
-- `FsFlow.Capabilities.Core/Core.fs`: clock, log, random, GUID, environment variables, deterministic test providers, live providers, and typed environment variable parsing errors.
-- `FsFlow.Capabilities.Console/Console.fs`: console read/write capability with live implementation guarded for non-Fable.
-- `FsFlow.Capabilities.FileSystem/FileSystem.fs`: file read/write/exists capability with live filesystem implementation.
-- `FsFlow.Capabilities.Http/Http.fs`: HTTP string fetch capability over `HttpClient`.
-- `FsFlow.Capabilities.Process/Process.fs`: process execution capability with live implementation guarded for non-Fable.
-- `FsFlow.Hosting/Hosting.fs`: DI/logging runtime creation and startup environment validation.
-- `FsFlow.Runtime.Telemetry/Telemetry.fs`: `ActivitySource` tracing wrapper with request/correlation/tenant tags.
-- Each extension `.fsproj`: package boundaries for the capability, hosting, and telemetry modules.
+1. Plain `Result` with your own error DU — simple code.
+2. The `Schema.recordFor` builder — domain models; this is what newcomers learn, and the only authoring surface.
+3. `.contract` files and generation — for teams with many versioned boundaries. Positioning sentence: contracts
+   generate the same Schema code you would write by hand; reading the generated file is understanding the system.
 
-## Test Coverage Observed
-
-The current tests exercise the library as a pragmatic .NET workflow toolkit:
-
-- `TestSupport.fs`: shared domain fixtures, reflection helpers for builder overload checks, FSI/bash script runners, and single-consumption value-task source.
-- `WorkflowBasicTests.fs`: constructors, combinators, delays, environment access, layers, DI injection, service access, traversal/sequence, builder overload shape, examples generation.
-- `ExecutionTests.fs`: `Async`/`Task` result conversion and cancellation behavior.
-- `WorkflowConcurrencyTests.fs`, `WorkflowParallelTests.fs`: fibers, interruption, parallel zip, and race-style behavior.
-- `WorkflowErrorTests.fs`: typed failures, defects, option/value-option adapters, guard helpers, builder overload constraints, and error mapping.
-- `WorkflowSchedulingTests.fs`: schedules, retry, timeout, and cancellation helpers.
-- `WorkflowResourceTests.fs`: acquire/release cleanup on success and defects.
-- `WorkflowStateTests.fs`: `Ref`, `STM.atomically`, `STM.retry`, and `STM.orElse`.
-- `WorkflowStreamTests.fs`: minimal stream consumption and mapping.
-- `ValidationTests.fs`: checks, result builder, diagnostics graph rendering/flattening, scoped validation, accumulation, and fallback helpers.
-- `RuntimeFoundationTests.fs`: service registry, tagged lookup, scope finalizers, runtime adapter, ambient runtime overrides, and environment variable parsing.
-- `CapsCoreTests.fs`, `CapsUnifiedTests.fs`, `CapsRuntimePatternTests.fs`, `HostingTests.fs`, `TelemetryTests.fs`: capability abstractions, hosting, runtime patterns, and telemetry.
-- `FsFlow.Tests.fsproj`: `net10.0` test project referencing all FsFlow source, capability, hosting, and telemetry projects.
-
-## Delta Against Reference Roadmap
-
-FsFlow has a useful foundation but is not yet a full F#/.NET analogue of the referenced ZIO surface.
-
-Implemented or partially implemented:
-
-- Typed effect shape with environment, error, and success channels.
-- Basic `Cause`/`Exit` model for expected failure, defect, and interruption.
-- Runtime helpers for clock, logging, random, GUID, environment variables, sleep, timeout, retry, cancellation, and acquire/release.
-- F# computation expression support and .NET interop with `Async`, `Task`, `ValueTask`, `Result`, `option`, and `voption`.
-- Internal async/task adapter flow families for workflows that need adapter-specific composition before returning to `Flow`.
-- Basic fibers with cooperative cancellation.
-- Basic parallel composition through `zipPar` and .NET `race`.
-- Minimal runtime registry, layer, adapter, and scope internals.
-- Basic `Ref`, `STM`, `FlowStream`, and `Schedule`.
-- Structured validation and diagnostics.
-- Capability packages, hosting integration, and `ActivitySource` telemetry.
-
-Major gaps:
-
-- No rich fiber runtime: missing `FiberId`, fiber status, fiber refs, supervision, runtime flags, execution strategy, interruption status, structured fiber dumps, and full cooperative interruption semantics.
-- `Cause` is minimal: missing parallel/sequential cause composition, trace attachment, pretty printing, defect accumulation, and stronger conversions.
-- Environment/layer support is small: no public `ZEnvironment`-like typed environment, no full `ZLayer` graph composition, memoization, reloadable services, or scope-safe resource graph.
-- Scope/resource management is internal and simple: no public managed resource abstraction equivalent to `ZManaged`, no release map, no finalizer exit semantics, and no scope hierarchy.
-- STM is minimal: missing ZIO-style `TArray`, `TMap`, `TQueue`, `THub`, `TPromise`, `TPriorityQueue`, `TRandom`, `TReentrantLock`, `TSemaphore`, `TSet`, advanced retry coordination, and richer transactional combinators.
-- Streams are minimal: missing `ZChannel`, `ZSink`, `ZPipeline`, `ZStream` constructors/operators, `Take`, subscription refs, chunked pull model, buffering, async boundaries, encoding/compression, resource/file/socket constructors, and test-kit style sinks.
-- Concurrency primitives are sparse: missing queues, hubs, latches, barriers, promises, semaphores, async locks, reentrant locks, and concurrent maps/sets.
-- Observability is initial only: missing log annotations/spans/aspects, metrics labels/listeners/connectors, tracer model, parsed stack traces, and source locations.
-- Collections and internal infrastructure are absent or thin: missing chunk/non-empty chunk, differ/patch support, ring buffers, versioned/atomic hub strategies, and reloadable references.
-- Fable support exists as conditional compilation and API shape pressure, but needs explicit Fable build/test gates for the intended JavaScript output.
-- Several live capabilities and modules are currently non-Fable only or partially unavailable under Fable, including process, live console, `Ref`, STM, stream, schedule, and adapter paths that depend on .NET task/value-task APIs.
-- AOT/trimming support is marked for `net8.0` but needs analyzer gates, compatibility tests, and reflection review.
-
-## v1.0 Release Scope
-
-FsFlow v1.0 should not attempt full ZIO parity. The first stable release should be a coherent F#/.NET effect library with production-grade typed errors, resource safety, cancellation semantics, dependency ergonomics, and honest compatibility boundaries.
-
-Required for v1.0:
-
-- Stable `Flow<'env,'error,'value>` API with construction, map/bind/fold, typed recovery, environment access, and `Result`/`Async`/`Task`/`ValueTask` interop.
-- `Cause` and `Exit` rich enough for production debugging: typed failure, defect, interrupt, sequential/parallel composition, readable rendering, and lossless conversion where possible.
-- Defined interruption semantics for cancellation tokens, fibers, `fork`/`join`/`interrupt`, `zipPar`, `race`, timeouts, resource finalizers, and parallel failure/interruption composition.
-- Public scoped resource model for acquire/use/release, finalizer ordering, and release on success, typed failure, defect, and interruption.
-- Runtime services for clock, logging, random, GUID, and environment variables, with deterministic test providers and local overrides.
-- Environment/layer story that fits F# records/interfaces and .NET DI without requiring a full clone of ZIO's layer machinery.
-- Existing validation, check, diagnostics, guard, and builder ergonomics preserved and documented.
-- Scheduling basics for retry, repeat, timeout, spaced/exponential/jittered schedules, and deterministic clock-driven tests.
-- Core concurrency basics: `Ref`, promise/deferred, semaphore, and bounded/unbounded queue. Hubs, barriers, reentrant locks, and concurrent maps/sets may wait unless needed by the v1.0 runtime.
-- Observability basics through structured logging context and `ActivitySource` integration with success/failure/defect/interruption tags.
-- Compatibility gates for .NET tests, Fable compilation of the supported JavaScript surface, and trimming/NativeAOT smoke coverage for the .NET deployment surface.
-- Documentation and examples showing dependency access, resource safety, cancellation, parallel composition, retry/timeout, validation, hosting, and compatibility limits.
-
-Explicitly post-v1.0 unless a concrete application need pulls them forward:
-
-- Full STM ecosystem beyond the minimal v1.0 state/concurrency need.
-- Full stream/channel/sink/pipeline stack.
-- Full fiber runtime with supervisors, dumps, runtime flags, detailed fiber refs, and execution strategies.
-- Macro/source-generator parity for accessor and reloadable service APIs.
-- Metrics subsystem beyond basic logging/activity integration.
-- Complete ZIO API parity.
+Contracts must never be presented as an entry point or a requirement. A team with three models and no version churn
+should never encounter them. Docs follow the three-area, problem-first framing already in place.
 
 ## Product Requirements
 
-1. Keep FsFlow .NET-first.
-   - Primary runtime targets should remain .NET TFMs.
-   - JavaScript support must mean Fable-generated JavaScript.
-   - JVM and ZIO Native material should be cited only as reference semantics.
-
-2. Preserve the current small, idiomatic F# surface while expanding capability.
-   - Existing `Flow<'env,'error,'value>` workflows and computation expressions must remain source compatible unless a breaking change is explicitly accepted.
-   - Add richer runtime features behind coherent F# APIs rather than copying Scala names mechanically where they hurt F# usage.
-
-3. Build the runtime foundation before broad module expansion.
-   - Rich `Cause`, `Exit`, fiber identity, fiber-local state, scope, and environment/layer semantics are prerequisites for faithful concurrency, STM, streams, metrics, and tracing.
-
-4. Treat .NET, Fable, and AOT as separate compatibility tracks.
-   - .NET is the implementation baseline.
-   - Fable is a compile/runtime compatibility track for JavaScript output.
-   - NativeAOT/trimming is a .NET deployment compatibility track.
-
-5. Expand tests from current user-facing workflows into parity-driven behavior suites.
-   - Continue using the existing FsFlow tests as regression anchors.
-   - Add focused tests for each reference-inspired feature, especially cancellation, finalization, concurrent races, stream resource safety, STM retry behavior, Fable compilation, and AOT/trimming.
+1. Axial is .NET-first. Primary targets are .NET TFMs; JavaScript support means Fable-generated JavaScript; JVM and
+   ZIO Native material is reference semantics only, never a platform commitment.
+2. The small, idiomatic F# surface is preserved while capability expands. Existing workflows and computation
+   expressions stay source-compatible unless a breaking change is explicitly accepted; Scala names are not copied
+   mechanically where they hurt F# usage.
+3. One declaration, many interpreters. Schema definitions stay independent of diagnostics, raw input, and flow
+   execution; interpreters (parsing, validation, codec, JSON Schema, inspection) consume the same declaration. No
+   interpreter duplicates another's lowering rules.
+4. Reflection is never the foundation. The authored schema path stays AOT-, trimming-, and Fable-compatible;
+   boilerplate relief comes from build-time generation over explicit schemas, not runtime discovery.
+5. .NET, Fable, and AOT are separate compatibility tracks with explicit gates: .NET tests are the baseline, the
+   supported Fable surface is compiled and tested (including `Axial.Codec` with a Node round-trip), and
+   trimming/NativeAOT smoke coverage guards the .NET deployment surface.
+6. Tests grow with features: cancellation, finalization, concurrent races, boundary diagnostics, codec round-trips,
+   and migration paths each get focused suites; existing tests are regression anchors.
 
 ## Non-Goals
 
-- Do not target JVM from .NET.
-- Do not promise direct execution on ZIO Native.
-- Do not port Scala implementation details that are irrelevant to .NET, F#, Fable, or NativeAOT behavior.
-- Do not replace FsFlow’s existing F#-friendly API with a mechanically translated Scala API.
+- No JVM target and no direct execution on ZIO Native.
+- No full ZIO API parity; the external ZIO corpus is a behavior/naming reference lens only.
+- No mechanically translated Scala API replacing the F#-friendly surface.
+- No reflection-based schema construction, binding, validation, or codec execution.
+- No second schema-authoring surface (the `schema create { }` CE stays rejected); the grammar generates the one
+  existing surface.
+
+## References
+
+- Flow-group and platform backlog: `LATER_TODO.md` (kept demand-driven; references the external ZIO corpus at
+  `/home/adam/projects/zio_fsflow_docs/zio` — reference PRD `specs/prd.md`, reference TODO `TODO.md`, source/test
+  specs `specs/*.md`).
+- The pre-schema, effects-only version of this PRD (the FsFlow delta PRD, including its source/test inventory and
+  delta-against-ZIO analysis) is preserved in git history at commit `a8f7d906` and earlier.
