@@ -99,6 +99,38 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
   stable for two consecutive releases, and (b) at least one external user asks for a scaffold; then package the sample
   as a template repo folder with `dotnet new` metadata rather than a separate NuGet-first workflow.
 
+- Codec decode allocation work (beating STJ the way CodecMapper does) is deferred until performance becomes a pitch
+  line; parity on speed with the 6x boundary-lane gap is the current story. If pursued, the pre-chosen approach is
+  fixed-arity typed decoders for arities 1..8 with the slot decoder as fallback — no reflection, dispatch on field
+  count from the typed chain in `Schema.specialize` — with a target of ≤ 2.0 µs / ≤ 1.5 KB on the benchmark aggregate.
+- There is no "checked codec" compile option. `Axial.Codec` enforces wire shape only; a consumer who wants constraint
+  enforcement on trusted-lane decode composes `Json.deserialize` then `Validation.validate` (one extra model walk). If
+  that composition proves too slow for a real consumer, the pre-chosen answer is a `Json.deserializeValidated` helper
+  in `Axial.Validation.Schema` (interpreters may reference Codec, never the reverse). Duplicating constraint lowering
+  inside `Axial.Codec` stays rejected.
+- Unions support three wire shapes: the externally-wrapped `{discriminator, payload}` object (`Value.union`, the
+  default), internally-tagged objects (`Value.unionInline` — valid only when every payload is an object whose field
+  names don't collide with the discriminator, checked at construction), and bare-string enums (`Value.enumOf`) for
+  payload-less cases. The latter two are queued work; the contract grammar's literal unions (`"a" | "b"`) lower to
+  `Value.enumOf`. No untagged unions — discriminators are required.
+- `JsonSchema.generate` pins `$schema` to draft 2020-12 and carries description metadata into `title`/`description`
+  (both queued work). `$defs` hoisting is deferred until a sample has real nested reuse; recursion is not expressible
+  in the builder today, so inlining cannot fail to terminate. Draft selection waits for a real consumer.
+- The UI-metadata interpreter stays a prototype. Promotion waits for an external consumer; if promoted, the API sample
+  must consume the shipped module, otherwise the duplication just moves. UI scope stays field list + control kinds —
+  layout, localization, and widget options are application concerns.
+- `Axial.Codec` is part of the supported Fable surface: the package compiles in `check-fable-js-surface.sh` and a Node
+  round-trip test exercises it (queued work). The `FABLE_COMPILER` gates are load-bearing, and every future codec
+  optimization must keep the JS branch working. This completes the zod-comparison story — one declaration shared
+  between server and browser covers serialization as well as parsing.
+- No fused fast boundary path for now: the 20 µs boundary-lane cost is not a reported problem, and `Input.parse` keeps
+  its raw-retaining redisplay contract. If demand appears, the pre-chosen shape is a separate entry point
+  (`Input.parseUtf8` — diagnostics-on-failure, no redisplay, API bodies), prototyped in the benchmarks project first,
+  exactly how the codec earned promotion. Never an optimization flag on `Input.parse`.
+- `RawInput.ofJsonElement`/`ofJsonDocument` stay gated to `net8.0 && !FABLE_COMPILER`. If a netstandard2.1 consumer
+  ever asks, the pre-chosen answer is a TFM-conditional `System.Text.Json` package reference on netstandard2.1 only —
+  not a split adapter package, which would force a different module name.
+
 ## Open Ideas
 
 Pre-ideas and proposals live in [`../current-ideas/`](../current-ideas/). When accepted, keep only the durable rule here

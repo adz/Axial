@@ -21,42 +21,54 @@ boundary utility packages (`Axial.Codec`, `JsonSchema.generate`, `RawInput.ofJso
 minimal-API sample), and positioning/polish (comparison pages, the public AOT/Fable story, the backtick audit with
 `Policy.lift`). The `dotnet new axial-api` template is evaluated and deferred in `dev-docs/decisions/README.md`.
 
-## Phase 25: Reiteration Questions
+Phase 25 (reiteration-question triage) is complete: all twelve questions from `dev-docs/questions.md` were decided.
+Deferred items (codec decode allocations, checked-codec mode, UI-metadata promotion, fused boundary path, netstandard2.1
+STJ adapter) are recorded with their pre-chosen answers in `dev-docs/decisions/README.md`; the rest became Phase 26.
 
-These are open questions produced while completing phases 23–24. Each is expanded with context, motivation, examples,
-and options in `dev-docs/questions.md` — read that file before triaging. Triage each into a concrete task (or delete it
-with a one-line decision note in `dev-docs/decisions/README.md`) before starting new feature phases; delete the
-matching section in `dev-docs/questions.md` when a question is decided.
+## Phase 26: Triaged Boundary Work
 
-- [ ] Codec decode allocations are ~2x `System.Text.Json` (2.84 KB vs 2.01 KB per aggregate) even though speed is at
-  parity. Is per-decode slot allocation worth eliminating (pooled slots, struct slots, array-built lists instead of
-  cons+rev), aiming to beat STJ the way CodecMapper does?
-- [ ] Should `Axial.Codec` grow stream/`PipeWriter`/async entry points (and an ASP.NET Core content-negotiation
-  helper) so the sample's `Results.Text(Json.serialize ...)` becomes a one-liner without intermediate strings?
-- [ ] Is there a case for a "checked codec" mode that also runs constraint metadata on decode — cheaper than the
-  RawInput boundary lane but defensive against misbehaving internal producers?
-- [ ] Union wire shape is fixed to `{discriminator, payload}` wrapper objects. Should internally-tagged objects
-  (payload fields merged beside the tag) or bare-string enum cases be expressible, and how does that lower to
-  JSON Schema?
-- [ ] Schema has no optional-field concept: every field is constructor-required, and `optional` is only metadata.
-  Should `Value.optionOf`/`Schema.optional` exist so `'field option` models parse and encode (JSON null/absent)
-  without workarounds?
-- [ ] `JsonSchema.generate` emits a compact, draft-agnostic document. Should it pin `$schema` (2020-12), attach
-  titles/descriptions from schema metadata, and hoist repeated nested models into `$defs`?
-- [ ] The API sample hand-rolls its HTML form from `Inspect` metadata, duplicating the UiMetadata prototype in tests.
-  Promote a small shipped UI-metadata interpreter, or keep form rendering an application concern?
-- [ ] `Axial.Codec` carries `FABLE_COMPILER` gates but is not compiled by `scripts/check-fable-js-surface.sh`. Should
-  the codec be part of the supported Fable surface, and if so, benchmarked there?
-- [ ] The boundary lane costs ~6x the codec (JsonDocument → RawInput → Input.parse). Is a fused fast path worth it —
-  parsing straight from `Utf8JsonReader` into diagnostics without materializing `RawInput` — or does redisplay make
-  materialization essential by design?
-- [ ] `RawInput.ofJsonElement` is net8.0-gated inside `Axial.Validation.Schema`. If netstandard2.1 consumers ask for
-  it, add a `System.Text.Json` package reference behind a TFM condition, or split an adapter package?
-- [ ] C#-reader friendliness: the recommended samples are clean F#, but should key pages add a short "calling this
-  from C#" snippet (compiled codec + parse from C#), given `JsonCodec<'model>`/`ParsedInput` are C#-usable?
-- [ ] Docgen now reads `Axial.Validation.Schema` from the net8.0 build so the STJ adapters document; `Axial.Schema`
-  still documents from netstandard2.1, hiding `Value.date`/`Schema.date`. Should reference docs standardize on the
-  net8.0 surface with "netstandard2.1: unavailable" notes?
+Ordered cheap-and-high-leverage first. Items 1–3 are also prerequisites for the contract grammar
+(`dev-docs/current-ideas/contract-grammar.md`).
+
+- [ ] Optional fields: add `Value.optionOf : ValueSchema<'value> -> ValueSchema<'value option>` so `'field option`
+  models are schema-describable. `Input.parse`: missing/null → `Ok None`, present → `Some` (constraints run on the
+  payload). Codec: absent/null decodes to `None`; `None` encodes as *omitted* (no `null` policy pre-1.0). JSON Schema:
+  optional fields drop out of `required` — this also fixes the existing mismatch where `required` lists only fields
+  carrying the `required` constraint while the parser requires everything. Forbid `optionOf (optionOf ...)` and
+  combining `optionOf` with the `required` constraint at build time.
+- [ ] Union wire shapes: add `Value.enumOf` (bare-string enums for payload-less DU cases, lowering to JSON Schema
+  `enum`) and `Value.unionInline` (internally-tagged objects, serde/zod style — valid only when every payload is an
+  object whose field names don't collide with the discriminator, checked at construction; lowers to `oneOf` members
+  with a `const` discriminator beside payload properties). Cover all three interpreters (Input.parse, Codec,
+  JsonSchema) plus Inspect descriptions.
+- [ ] JSON Schema fidelity: pin `"$schema"` to draft 2020-12, add description metadata (`Value.describe` /
+  `Schema.describe` authoring surface), and emit it as `title`/`description`. `$defs` hoisting stays deferred (see
+  decisions).
+- [ ] Docgen target skew: standardize all docgen inputs on `net8.0` builds; audit TFM-gated members
+  (`Value.date`/`Schema.date`, STJ adapters) and add "netstandard2.1: not available" lines to their XML remarks so the
+  reference describes one coherent surface.
+- [ ] Codec stream entry points: `Json.serializeToStream` (sync, flushed once) and `Json.deserializeStreamAsync`
+  (read-to-end into a pooled buffer, then decode — no incremental streaming pre-1.0). `Axial.Codec` stays
+  dependency-free; ASP.NET Core conveniences stay in the `examples/Axial.Api` sample. Update the sample so the
+  response path no longer materializes an intermediate string.
+- [ ] Fable codec surface: add `Axial.Codec` to `scripts/check-fable-js-surface.sh` and add a Node round-trip
+  (encode → decode) test so the `FABLE_COMPILER` gates are exercised, then claim codec-on-Fable in the zod comparison
+  ("one declaration shared between server and browser" now includes serialization).
+- [ ] C# ergonomics audit: verify which `Json.*`/`Input.*` entry points surface as clean static methods from C# versus
+  `FSharpFunc` chains; add `[<CompiledName>]`/tupled overloads or members (e.g. `JsonCodec.Deserialize(string)`) where
+  needed, then add a short "From C#" section to the codec and input-sources pages. Consume-don't-author is the story:
+  F# declares schemas, C# compiles codecs, parses, and reads diagnostics.
+
+## Phase 27: Contract Grammar Prerequisites
+
+From `dev-docs/current-ideas/contract-grammar.md` sequencing step 1 — each useful independently of the grammar. Do
+these after Phase 26 items 1–3, which the grammar also needs (`?` optionality, literal unions, `///` doc comments).
+
+- [ ] Add `Value.map : ValueSchema<'value> -> ValueSchema<Map<string,'value>>` (JSON objects as dictionaries; keys are
+  always text) across Input.parse, Codec, JsonSchema (`additionalProperties`), and Inspect.
+- [ ] Add default-value metadata (`= literal` in the grammar; also wanted by the config-editor story) as schema
+  metadata with JSON Schema `default` lowering.
+- [ ] Add a `multipleOf` schema constraint lowering to the existing constraint machinery.
 
 ## Acceptance Checks
 
