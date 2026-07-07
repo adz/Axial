@@ -10,4 +10,6 @@ Active sketches:
 
 - `schema-contract-versioning.md` — Contract sketch: versioned boundary schemas with manual typed migrations for
   config files, messages, events, and eventually database records.
+- `contract-grammar.md` — companion grammar sketch for `.contract` declarations (JSON Schema coverage, five design
+  rules, generator + LSP plan). Actively being worked; nothing accepted.
 - `schema-source-generation.md` — pinned `[<Schema>]` generation target and deferral criteria for source generation.
