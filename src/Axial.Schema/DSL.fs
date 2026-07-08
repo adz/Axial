@@ -214,8 +214,9 @@ module DSL =
         : SchemaBuilder<'model, 'constructor, 'next, FieldsAppend<'model, 'constructor, bool, 'next, 'chain>> =
         Schema.fieldWith constraints externalName getter Value.``bool`` builder
 
-#if NET6_0_OR_GREATER
+#if NET8_0_OR_GREATER
     /// <summary>Appends a calendar date field represented as <see cref="T:System.DateOnly" />. Pass <c>[]</c> when unconstrained.</summary>
+    /// <remarks>netstandard2.1: not available.</remarks>
     let date
         (constraints: SchemaConstraint list)
         externalName

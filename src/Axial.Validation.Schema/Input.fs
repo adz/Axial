@@ -130,7 +130,7 @@ module Input =
             |> runCheck constraints (SchemaConstraintCheck.ordered<decimal> constraints)
             |> Result.map box
         | PrimitiveValueKind.Bool -> Ok value
-#if NET6_0_OR_GREATER
+#if NET8_0_OR_GREATER
         | PrimitiveValueKind.Date ->
             value
             |> unbox<DateOnly>
@@ -152,7 +152,7 @@ module Input =
         | PrimitiveValueKind.Int -> Parse.int text |> Result.map box |> Result.mapError SchemaError.ofParseError
         | PrimitiveValueKind.Decimal -> Parse.decimal text |> Result.map box |> Result.mapError SchemaError.ofParseError
         | PrimitiveValueKind.Bool -> Parse.bool text |> Result.map box |> Result.mapError SchemaError.ofParseError
-#if NET6_0_OR_GREATER
+#if NET8_0_OR_GREATER
         | PrimitiveValueKind.Date ->
             match DateOnly.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.None) with
             | true, value -> Ok(box value)

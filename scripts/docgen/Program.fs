@@ -1073,19 +1073,22 @@ let main argv =
     else
         Directory.CreateDirectory(outRoot) |> ignore
 
+    // All inputs load their net8.0 build so the reference always reflects the widest TFM-gated
+    // surface (e.g. Value.date, Value.dateOnly, ofJsonElement); netstandard2.1-only builds would
+    // silently drop those members from the docs instead of describing them as unavailable there.
     let dllPaths = [
-        Path.Combine(artifactsDir, "Axial.Flow/debug_netstandard2.1/Axial.Flow.dll")
-        Path.Combine(artifactsDir, "Axial.ErrorHandling/debug_netstandard2.1/Axial.ErrorHandling.dll")
+        Path.Combine(artifactsDir, "Axial.Flow/debug_net8.0/Axial.Flow.dll")
+        Path.Combine(artifactsDir, "Axial.ErrorHandling/debug_net8.0/Axial.ErrorHandling.dll")
         Path.Combine(artifactsDir, "Axial.Refined/debug_net8.0/Axial.Refined.dll")
-        Path.Combine(artifactsDir, "Axial.Schema/debug_netstandard2.1/Axial.Schema.dll")
+        Path.Combine(artifactsDir, "Axial.Schema/debug_net8.0/Axial.Schema.dll")
         Path.Combine(artifactsDir, "Axial.Codec/debug_net8.0/Axial.Codec.dll")
-        Path.Combine(artifactsDir, "Axial.Validation/debug_netstandard2.1/Axial.Validation.dll")
+        Path.Combine(artifactsDir, "Axial.Validation/debug_net8.0/Axial.Validation.dll")
         Path.Combine(artifactsDir, "Axial.Validation.Schema/debug_net8.0/Axial.Validation.Schema.dll")
-        Path.Combine(artifactsDir, "Axial.Flow.PlatformService/debug_netstandard2.1/Axial.Flow.PlatformService.dll")
-        Path.Combine(artifactsDir, "Axial.Flow.Console/debug_netstandard2.1/Axial.Flow.Console.dll")
-        Path.Combine(artifactsDir, "Axial.Flow.FileSystem/debug_netstandard2.1/Axial.Flow.FileSystem.dll")
-        Path.Combine(artifactsDir, "Axial.Flow.Http/debug_netstandard2.1/Axial.Flow.Http.dll")
-        Path.Combine(artifactsDir, "Axial.Flow.Process/debug_netstandard2.1/Axial.Flow.Process.dll")
+        Path.Combine(artifactsDir, "Axial.Flow.PlatformService/debug_net8.0/Axial.Flow.PlatformService.dll")
+        Path.Combine(artifactsDir, "Axial.Flow.Console/debug_net8.0/Axial.Flow.Console.dll")
+        Path.Combine(artifactsDir, "Axial.Flow.FileSystem/debug_net8.0/Axial.Flow.FileSystem.dll")
+        Path.Combine(artifactsDir, "Axial.Flow.Http/debug_net8.0/Axial.Flow.Http.dll")
+        Path.Combine(artifactsDir, "Axial.Flow.Process/debug_net8.0/Axial.Flow.Process.dll")
     ]
 
     let apiDocInputs = [

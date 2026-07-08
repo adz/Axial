@@ -23,3 +23,7 @@ Builds raw input from the root element of a <a href="https://learn.microsoft.com
 | Type | Description |
 | --- | --- |
 | <code><a href="t-validation-schema-rawinput.md">RawInput</a></code> |  |
+
+## Remarks
+
+netstandard2.1: not available.

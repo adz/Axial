@@ -491,7 +491,7 @@ module Validation =
             |> runCheck constraints (SchemaConstraintCheck.ordered<decimal> constraints)
             |> Result.map box
         | PrimitiveValueKind.Bool -> Ok value
-#if NET6_0_OR_GREATER
+#if NET8_0_OR_GREATER
         | PrimitiveValueKind.Date ->
             value
             |> unbox<DateOnly>

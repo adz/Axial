@@ -487,6 +487,7 @@ module RawInput =
     /// dependency-free and Fable-safe on other targets. Fable and .NET Standard callers can adapt JSON-shaped data
     /// through <see cref="M:Axial.Validation.Schema.RawInputModule.ofJsonLikeValue" /> instead.
     /// </para>
+    /// <para>netstandard2.1: not available.</para>
     /// </remarks>
     let rec ofJsonElement (element: System.Text.Json.JsonElement) : RawInput =
         match element.ValueKind with
@@ -505,6 +506,7 @@ module RawInput =
             |> RawInput.Object
 
     /// <summary>Builds raw input from the root element of a <see cref="T:System.Text.Json.JsonDocument" />.</summary>
+    /// <remarks>netstandard2.1: not available.</remarks>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="document" /> is null.</exception>
     let ofJsonDocument (document: System.Text.Json.JsonDocument) : RawInput =
         if isNull document then

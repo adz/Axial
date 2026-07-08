@@ -18,3 +18,7 @@ A date-only range where <code>Start &lt;= End</code>.
 | --- | --- |
 | `StartValue` |  |
 | `EndValue` |  |
+
+## Remarks
+
+netstandard2.1: not available.

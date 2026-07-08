@@ -138,6 +138,7 @@ module RefinedSchema =
 
 #if NET8_0_OR_GREATER
     /// <summary>Describes a date-only range as a record schema with <c>start</c> and <c>end</c> fields.</summary>
+    /// <remarks>netstandard2.1: not available.</remarks>
     let dateOnlyRange : Schema<DateOnlyRange> =
         Schema.recordFor<DateOnlyRange, _> Refine.dateOnlyRange
         |> Schema.date "start" _.Start

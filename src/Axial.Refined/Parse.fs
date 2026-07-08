@@ -64,12 +64,14 @@ module Parse =
 
 #if NET8_0_OR_GREATER
     /// <summary>Parses a date-only value.</summary>
+    /// <remarks>netstandard2.1: not available.</remarks>
     let dateOnly (text: string) : Result<DateOnly, ParseError> =
         match DateOnly.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.None) with
         | true, value -> Ok value
         | false, _ -> Error(parseFailure "DateOnly" text)
 
     /// <summary>Parses a time-only value.</summary>
+    /// <remarks>netstandard2.1: not available.</remarks>
     let timeOnly (text: string) : Result<TimeOnly, ParseError> =
         match TimeOnly.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.None) with
         | true, value -> Ok value

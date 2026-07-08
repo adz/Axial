@@ -1087,8 +1087,9 @@ module Value =
     /// <summary>Describes a Boolean value represented as <see cref="T:System.Boolean" />.</summary>
     let ``bool`` : ValueSchema<bool> = primitive PrimitiveValueKind.Bool
 
-#if NET6_0_OR_GREATER
+#if NET8_0_OR_GREATER
     /// <summary>Describes a calendar date represented as <see cref="T:System.DateOnly" />.</summary>
+    /// <remarks>netstandard2.1: not available.</remarks>
     let date : ValueSchema<DateOnly> = primitive PrimitiveValueKind.Date
 #endif
 
@@ -1551,7 +1552,7 @@ module Value =
         | PrimitiveValueKind.Int -> typeof<int>
         | PrimitiveValueKind.Decimal -> typeof<decimal>
         | PrimitiveValueKind.Bool -> typeof<bool>
-#if NET6_0_OR_GREATER
+#if NET8_0_OR_GREATER
         | PrimitiveValueKind.Date -> typeof<DateOnly>
 #else
         | PrimitiveValueKind.Date ->
@@ -2128,7 +2129,7 @@ module Schema =
         : SchemaBuilder<'model, 'constructor, 'next, FieldsAppend<'model, 'constructor, bool, 'next, 'chain>> =
         field externalName getter Value.``bool`` builder
 
-#if NET6_0_OR_GREATER
+#if NET8_0_OR_GREATER
     /// <summary>Appends a calendar date field represented as <see cref="T:System.DateOnly" /> to a progressive schema builder.</summary>
     let date
         externalName

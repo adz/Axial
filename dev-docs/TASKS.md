@@ -31,9 +31,6 @@ Ordered cheap-and-high-leverage first. Items 1–2 are also prerequisites for th
 (`dev-docs/current-ideas/contract-grammar.md`). Union wire shapes (`Value.enumOf`, `Value.unionInline`) are complete
 across Input.parse, Codec, JsonSchema, and Inspect.
 
-- [ ] Docgen target skew: standardize all docgen inputs on `net8.0` builds; audit TFM-gated members
-  (`Value.date`/`Schema.date`, STJ adapters) and add "netstandard2.1: not available" lines to their XML remarks so the
-  reference describes one coherent surface.
 - [ ] Codec stream entry points: `Json.serializeToStream` (sync, flushed once) and `Json.deserializeStreamAsync`
   (read-to-end into a pooled buffer, then decode — no incremental streaming pre-1.0). `Axial.Codec` stays
   dependency-free; ASP.NET Core conveniences stay in the `examples/Axial.Api` sample. Update the sample so the

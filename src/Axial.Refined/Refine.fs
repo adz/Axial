@@ -272,6 +272,7 @@ type DateTimeOffsetRange =
 
 #if NET8_0_OR_GREATER
 /// <summary>A date-only range where <c>Start &lt;= End</c>.</summary>
+/// <remarks>netstandard2.1: not available.</remarks>
 type DateOnlyRange =
     private {
         StartValue: DateOnly
@@ -524,6 +525,7 @@ module Temporal =
 
 #if NET8_0_OR_GREATER
     /// <summary>Builds a date-only range where <c>Start &lt;= End</c>.</summary>
+    /// <remarks>netstandard2.1: not available.</remarks>
     let dateOnlyRange start finish : Result<DateOnlyRange, RefinementError> =
         if start <= finish then
             Ok { StartValue = start; EndValue = finish }
@@ -644,6 +646,7 @@ module Refine =
 
 #if NET8_0_OR_GREATER
     /// <summary>Builds a date-only range where <c>Start &lt;= End</c>.</summary>
+    /// <remarks>netstandard2.1: not available.</remarks>
     let dateOnlyRange start finish =
         Temporal.dateOnlyRange start finish
 #endif

@@ -23,3 +23,7 @@ Parses a date-only value.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><a href="https://learn.microsoft.com/dotnet/api/system.dateonly">DateOnly</a>,&#32;<a href="t-refined-parseerror.md">ParseError</a></span>&gt;</span></code> |  |
+
+## Remarks
+
+netstandard2.1: not available.

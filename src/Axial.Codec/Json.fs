@@ -189,7 +189,7 @@ module rec Json =
             | true, value -> struct (value, next)
             | false, _ -> decodeFailure (sprintf "invalid uuid value: %s" text)
 
-#if NET6_0_OR_GREATER
+#if NET8_0_OR_GREATER
     let private dateDecoder: Decoder<DateOnly> =
         fun src ->
             let struct (text, next) = stringDecoder src
@@ -206,7 +206,7 @@ module rec Json =
         | PrimitiveValueKind.Int -> box intDecoder
         | PrimitiveValueKind.Decimal -> box decimalDecoder
         | PrimitiveValueKind.Bool -> box boolDecoder
-#if NET6_0_OR_GREATER
+#if NET8_0_OR_GREATER
         | PrimitiveValueKind.Date -> box dateDecoder
 #else
         | PrimitiveValueKind.Date ->
@@ -233,7 +233,7 @@ module rec Json =
             fun src ->
                 let struct (value, next) = boolDecoder src
                 struct (box value, next)
-#if NET6_0_OR_GREATER
+#if NET8_0_OR_GREATER
         | PrimitiveValueKind.Date ->
             fun src ->
                 let struct (value, next) = dateDecoder src
@@ -265,7 +265,7 @@ module rec Json =
     let private encodeGuid: Encoder<Guid> =
         fun writer value -> writeQuoted writer (value.ToString("D"))
 
-#if NET6_0_OR_GREATER
+#if NET8_0_OR_GREATER
     let private encodeDate: Encoder<DateOnly> =
         fun writer value -> writeQuoted writer (value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture))
 #endif
@@ -277,7 +277,7 @@ module rec Json =
         | PrimitiveValueKind.Int -> box (fun (writer: IByteWriter) (value: int) -> writer.WriteInt value)
         | PrimitiveValueKind.Decimal -> box (fun (writer: IByteWriter) (value: decimal) -> writer.WriteDecimal value)
         | PrimitiveValueKind.Bool -> box encodeBool
-#if NET6_0_OR_GREATER
+#if NET8_0_OR_GREATER
         | PrimitiveValueKind.Date -> box encodeDate
 #else
         | PrimitiveValueKind.Date ->
@@ -292,7 +292,7 @@ module rec Json =
         | PrimitiveValueKind.Int -> fun writer value -> writer.WriteInt(unbox<int> value)
         | PrimitiveValueKind.Decimal -> fun writer value -> writer.WriteDecimal(unbox<decimal> value)
         | PrimitiveValueKind.Bool -> fun writer value -> encodeBool writer (unbox<bool> value)
-#if NET6_0_OR_GREATER
+#if NET8_0_OR_GREATER
         | PrimitiveValueKind.Date -> fun writer value -> encodeDate writer (unbox<DateOnly> value)
 #else
         | PrimitiveValueKind.Date ->
