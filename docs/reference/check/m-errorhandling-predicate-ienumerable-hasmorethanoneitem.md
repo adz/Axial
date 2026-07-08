@@ -1,15 +1,15 @@
 ---
-title: "Microsoft.FSharp.Core.FSharpResult.IsError"
-linkTitle: "IsError"
-weight: 2805
+title: "System.Collections.Generic.IEnumerable.HasMoreThanOneItem"
+linkTitle: "HasMoreThanOneItem"
+weight: 3109
 ---
 
-True when the result is failed.
+True when the sequence is non-null and contains more than one item.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>this.IsError</span></code>
+<code><span>this.HasMoreThanOneItem</span></code>
 </div>
 
 ## Parameters

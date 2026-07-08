@@ -1,15 +1,15 @@
 ---
-title: "Microsoft.FSharp.Core.FSharpResult.IsError"
-linkTitle: "IsError"
-weight: 2805
+title: "System.String.IsBlank"
+linkTitle: "IsBlank"
+weight: 3002
 ---
 
-True when the result is failed.
+True when the string is null, empty, or whitespace.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>this.IsError</span></code>
+<code><span>this.IsBlank</span></code>
 </div>
 
 ## Parameters

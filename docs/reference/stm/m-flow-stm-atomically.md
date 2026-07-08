@@ -29,9 +29,11 @@ weight: 2104
 ## Remarks
 
 
- Axial Flow&#39;s STM uses a global synchronizing lock to ensure atomicity and coordinate retries.
- While this avoids complex optimistic concurrency control, it means that transactions
- are mutually exclusive and high contention can impact throughput.
+ Axial Flow&#39;s STM uses a single mutual-exclusion section around the commit/read step to ensure atomicity
+ and coordinate retries. While this avoids complex optimistic concurrency control, it means that
+ transactions are mutually exclusive and high contention can impact throughput. A transaction that
+ retries does not block the calling thread (or, on Fable, the single JS thread) while it waits: it
+ suspends on a broadcast signal that every successful commit resolves, then re-runs from the start.
 
 
 ## Examples

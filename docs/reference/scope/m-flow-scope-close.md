@@ -22,4 +22,4 @@ weight: 2104
 
 | Type | Description |
 | --- | --- |
-| <code><a href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.task">Task</a></code> |  |
+| <code><a href="/reference/Axial/axial-flow-platform-deed.html">Deed</a></code> |  |

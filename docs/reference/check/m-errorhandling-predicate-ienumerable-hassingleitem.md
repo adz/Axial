@@ -1,15 +1,15 @@
 ---
-title: "Microsoft.FSharp.Core.FSharpResult.IsError"
-linkTitle: "IsError"
-weight: 2805
+title: "System.Collections.Generic.IEnumerable.HasSingleItem"
+linkTitle: "HasSingleItem"
+weight: 3107
 ---
 
-True when the result is failed.
+True when the sequence is non-null and contains exactly one item.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>this.IsError</span></code>
+<code><span>this.HasSingleItem</span></code>
 </div>
 
 ## Parameters

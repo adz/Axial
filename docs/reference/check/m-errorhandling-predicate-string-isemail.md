@@ -1,15 +1,15 @@
 ---
-title: "Microsoft.FSharp.Core.FSharpResult.IsError"
-linkTitle: "IsError"
-weight: 2805
+title: "System.String.IsEmail"
+linkTitle: "IsEmail"
+weight: 3009
 ---
 
-True when the result is failed.
+True when the string matches Axial's pragmatic email format.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>this.IsError</span></code>
+<code><span>this.IsEmail</span></code>
 </div>
 
 ## Parameters

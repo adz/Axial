@@ -1,22 +1,22 @@
 ---
-title: "Refined.Character.isNumeric"
-linkTitle: "isNumeric"
-weight: 2909
+title: "System.String.IsNumeric"
+linkTitle: "IsNumeric"
+weight: 3010
 ---
 
-Returns true when the character is numeric according to Unicode character data.
+True when the string contains only numeric characters.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Refined.Character.isNumeric&#32;<span>value</span></span></code>
+<code><span>this.IsNumeric</span></code>
 </div>
 
 ## Parameters
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `value` | <code>char</code> |  |
+| `()` | <code>unit</code> |  |
 
 ## Returns
 

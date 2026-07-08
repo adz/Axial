@@ -1,15 +1,15 @@
 ---
-title: "Microsoft.FSharp.Core.FSharpResult.IsError"
-linkTitle: "IsError"
-weight: 2805
+title: "Microsoft.FSharp.Core.FSharpValueOption.IsPresent"
+linkTitle: "IsPresent"
+weight: 2802
 ---
 
-True when the result is failed.
+True when the value option contains a value.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>this.IsError</span></code>
+<code><span>this.IsPresent</span></code>
 </div>
 
 ## Parameters

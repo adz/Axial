@@ -16,7 +16,7 @@ Registers an asynchronous finalizer with the layer scope.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `finalizer` | <code><span><a href="https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken">CancellationToken</a>&#32;->&#32;<a href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.task">Task</a></span></code> | The finalizer to run when the layer scope closes. |
+| `finalizer` | <code><a href="/reference/Axial/axial-flow-platform-finalizer.html">Finalizer</a></code> | The finalizer to run when the layer scope closes. |
 
 ## Returns
 

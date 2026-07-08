@@ -1,15 +1,15 @@
 ---
-title: "Microsoft.FSharp.Core.FSharpResult.IsError"
-linkTitle: "IsError"
-weight: 2805
+title: "System.Collections.Generic.IEnumerable.IsDistinct"
+linkTitle: "IsDistinct"
+weight: 3111
 ---
 
-True when the result is failed.
+True when the sequence is non-null and contains no duplicate values.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>this.IsError</span></code>
+<code><span>this.IsDistinct</span></code>
 </div>
 
 ## Parameters

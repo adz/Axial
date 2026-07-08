@@ -24,6 +24,6 @@ weight: 1000
 ## Remarks
 
 
- Use <code>Deferred</code> when fibers need to coordinate through Axial Flow outcomes rather than raw
- <a href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.taskcompletionsource-1">TaskCompletionSource</a> values. Completion functions are idempotent and
- return <code>true</code> only to the caller that won the completion race.
+ Use <code>Deferred</code> when fibers need to coordinate through Axial Flow outcomes rather than raw platform-native
+ primitives. Completion functions are idempotent and return <code>true</code> only to the caller that won the
+ completion race.

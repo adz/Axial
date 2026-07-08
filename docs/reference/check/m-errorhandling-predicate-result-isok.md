@@ -1,22 +1,22 @@
 ---
-title: "ErrorHandling.Predicate.Result.isOk"
-linkTitle: "isOk"
-weight: 2710
+title: "Microsoft.FSharp.Core.FSharpResult.IsOk"
+linkTitle: "IsOk"
+weight: 2804
 ---
 
-Returns true when the result is successful.
+True when the result is successful.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>ErrorHandling.Predicate.Result.isOk&#32;<span>result</span></span></code>
+<code><span>this.IsOk</span></code>
 </div>
 
 ## Parameters
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `result` | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'a,&#32;'b</span>&gt;</span></code> |  |
+| `()` | <code>unit</code> |  |
 
 ## Returns
 

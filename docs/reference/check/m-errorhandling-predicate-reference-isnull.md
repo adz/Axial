@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Predicate.Reference.isNull"
 linkTitle: "isNull"
-weight: 2806
+weight: 2903
 ---
 
 Returns true when the reference is null.

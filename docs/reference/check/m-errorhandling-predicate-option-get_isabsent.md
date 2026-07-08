@@ -1,15 +1,15 @@
 ---
-title: "Microsoft.FSharp.Core.FSharpResult.IsError"
-linkTitle: "IsError"
-weight: 2805
+title: "Microsoft.FSharp.Core.FSharpOption.IsAbsent"
+linkTitle: "IsAbsent"
+weight: 2801
 ---
 
-True when the result is failed.
+True when the option contains no value.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>this.IsError</span></code>
+<code><span>this.IsAbsent</span></code>
 </div>
 
 ## Parameters

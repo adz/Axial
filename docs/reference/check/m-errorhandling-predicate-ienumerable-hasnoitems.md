@@ -1,15 +1,15 @@
 ---
-title: "Microsoft.FSharp.Core.FSharpResult.IsError"
-linkTitle: "IsError"
-weight: 2805
+title: "System.Collections.Generic.IEnumerable.HasNoItems"
+linkTitle: "HasNoItems"
+weight: 3100
 ---
 
-True when the result is failed.
+True when the sequence is non-null and empty.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>this.IsError</span></code>
+<code><span>this.HasNoItems</span></code>
 </div>
 
 ## Parameters
