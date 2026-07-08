@@ -1,10 +1,5 @@
 namespace Axial.Flow
 
-#if !FABLE_COMPILER
-open System
-open System.Threading
-open System.Threading.Tasks
-
 /// <summary>
 /// Represents a handle to a mutable reference that can be updated atomically.
 /// </summary>
@@ -46,7 +41,7 @@ module Ref =
     /// </code>
     /// </example>
     let get (Ref (cell, gate) as reference) : Flow<'env, 'none, 'T> =
-        Flow.read (fun _ -> lock gate (fun () -> cell.Value))
+        Flow.read (fun _ -> Platform.lock gate (fun () -> cell.Value))
 
     /// <summary>Sets the value of the reference to the specified value.</summary>
     /// <param name="value">The new value to set.</param>
@@ -58,7 +53,7 @@ module Ref =
     /// </code>
     /// </example>
     let set (value: 'T) (Ref (cell, gate) as reference) : Flow<'env, 'none, unit> =
-        Flow.read (fun _ -> lock gate (fun () -> cell.Value <- value))
+        Flow.read (fun _ -> Platform.lock gate (fun () -> cell.Value <- value))
 
     /// <summary>Updates the value of the reference using the supplied function.</summary>
     /// <param name="f">The update function of type <c>'T -> 'T</c>.</param>
@@ -70,7 +65,7 @@ module Ref =
     /// </code>
     /// </example>
     let update (f: 'T -> 'T) (Ref (cell, gate) as reference) : Flow<'env, 'none, unit> =
-        Flow.read (fun _ -> lock gate (fun () -> cell.Value <- f cell.Value))
+        Flow.read (fun _ -> Platform.lock gate (fun () -> cell.Value <- f cell.Value))
 
     /// <summary>Updates the value of the reference using the supplied function and returns a derived value.</summary>
     /// <param name="f">The update function of type <c>'T -> 'T * 'v</c>.</param>
@@ -82,9 +77,8 @@ module Ref =
     /// </code>
     /// </example>
     let modify (f: 'T -> 'T * 'v) (Ref (cell, gate) as reference) : Flow<'env, 'none, 'v> =
-        Flow.read (fun _ -> 
-            lock gate (fun () -> 
+        Flow.read (fun _ ->
+            Platform.lock gate (fun () ->
                 let next, result = f cell.Value
                 cell.Value <- next
                 result))
-#endif

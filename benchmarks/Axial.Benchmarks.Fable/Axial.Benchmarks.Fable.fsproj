@@ -28,6 +28,7 @@
     <Compile Include="..\..\src\Axial.Flow\Policy.fs" />
     <Compile Include="..\..\src\Axial.Flow\Flow.fs" />
     <Compile Include="..\..\src\Axial.Flow\BindError.fs" />
+    <Compile Include="..\..\src\Axial.Flow\Concurrency.fs" />
     <Compile Include="..\..\src\Axial.Flow\Ref.fs" />
     <Compile Include="..\..\src\Axial.Flow\Stm.fs" />
     <Compile Include="..\..\src\Axial.Flow\Stream.fs" />

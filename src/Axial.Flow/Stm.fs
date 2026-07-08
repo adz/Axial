@@ -1,10 +1,8 @@
 namespace Axial.Flow
 
-#if !FABLE_COMPILER
 open System
 open System.Collections.Generic
 open System.Threading
-open System.Threading.Tasks
 
 /// <summary>
 /// Internal interface for transactional references used by the STM engine.
@@ -19,8 +17,8 @@ type ITRef =
 /// </summary>
 /// <typeparam name="T">The type of the value stored in the reference.</typeparam>
 type TRef<'T>(initialValue: 'T) =
-    static let mutable idCounter = 0L
-    let id = Interlocked.Increment(&idCounter)
+    static let idCounter = ref 0L
+    let id = Platform.nextId idCounter
     let mutable value = initialValue
     
     interface ITRef with
@@ -181,6 +179,7 @@ module StmBuilders =
 module STM =
     let private stmLock = obj()
     let mutable private version = 0L
+    let private waiters = ResizeArray<Platform.Signal<unit>>()
 
     let private snapshot (context: TContext) =
         {
@@ -197,8 +196,8 @@ module STM =
     /// <summary>Signals that the current branch should retry once observed state changes.</summary>
     /// <returns>An STM operation that triggers a retry.</returns>
     /// <remarks>
-    /// In Axial Flow's current implementation, this blocks the calling thread using a synchronizing lock 
-    /// until another transaction commits a change.
+    /// In Axial Flow's current implementation, this suspends the transaction (without blocking the calling
+    /// thread) until another transaction commits a change, then re-runs it from the start.
     /// </remarks>
     let retry<'T> : STM<'T> =
         STM(fun _ -> Retry)
@@ -222,9 +221,11 @@ module STM =
     /// <param name="transaction">The STM transaction to execute.</param>
     /// <returns>A flow that performs the transaction and returns its result.</returns>
     /// <remarks>
-    /// Axial Flow's STM uses a global synchronizing lock to ensure atomicity and coordinate retries.
-    /// While this avoids complex optimistic concurrency control, it means that transactions
-    /// are mutually exclusive and high contention can impact throughput.
+    /// Axial Flow's STM uses a single mutual-exclusion section around the commit/read step to ensure atomicity
+    /// and coordinate retries. While this avoids complex optimistic concurrency control, it means that
+    /// transactions are mutually exclusive and high contention can impact throughput. A transaction that
+    /// retries does not block the calling thread (or, on Fable, the single JS thread) while it waits: it
+    /// suspends on a broadcast signal that every successful commit resolves, then re-runs from the start.
     /// </remarks>
     /// <example>
     /// <code>
@@ -235,14 +236,14 @@ module STM =
     ///         do! TRef.set (bal - amount) fromAcc
     ///         do! TRef.update (fun b -> b + amount) toAcc
     ///     }
-    /// 
+    ///
     /// let flow = STM.atomically (transfer acc1 acc2 100)
     /// </code>
     /// </example>
     let atomically (transaction: STM<'T>) : Flow<'env, 'none, 'T> =
-        let rec run () =
-            let outcome, _ =
-                lock stmLock (fun () ->
+        let rec run (cancellationToken: CancellationToken) : Execution<'T, 'none> =
+            let outcome =
+                Platform.lock stmLock (fun () ->
                     let (STM op) = transaction
                     let context = freshContext ()
 
@@ -252,20 +253,21 @@ module STM =
                             tref.Commit(v)
 
                         version <- version + 1L
-                        Monitor.PulseAll stmLock
-                        Choice1Of2 result, 0L
+                        let pending = waiters.ToArray()
+                        waiters.Clear()
+                        Choice1Of2(result, pending)
                     | Retry ->
-                        Choice2Of2 version, version)
+                        let signal = Platform.newSignal ()
+                        waiters.Add signal
+                        Choice2Of2 signal)
 
             match outcome with
-            | Choice1Of2 result ->
+            | Choice1Of2(result, pending) ->
+                for signal in pending do
+                    Platform.resolveSignal signal () |> ignore
+
                 Execution.ofValue result
-            | Choice2Of2 versionToWaitFor ->
-                lock stmLock (fun () ->
-                    while version = versionToWaitFor do
-                        Monitor.Wait stmLock |> ignore)
+            | Choice2Of2 signal ->
+                Execution.bind (fun () -> run cancellationToken) (Platform.awaitSignal signal cancellationToken)
 
-                run ()
-
-        Flow(fun _ _ -> run ())
-#endif
+        Flow(fun _ cancellationToken -> run cancellationToken)

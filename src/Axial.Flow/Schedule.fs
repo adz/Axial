@@ -1,9 +1,6 @@
 namespace Axial.Flow
 
-#if !FABLE_COMPILER
 open System
-open System.Threading
-open System.Threading.Tasks
 
 /// <summary>
 /// Represents a stateful schedule that can decide whether to continue and how long to delay.
@@ -146,4 +143,3 @@ module Schedule =
                     (Execution.mapError (fun () -> Unchecked.defaultof<'error>) (FlowInternal.invoke (op lastValue attempt) env ct)))
 
         flow |> Flow.bind (loop 0)
-#endif

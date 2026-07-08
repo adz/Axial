@@ -4,15 +4,28 @@
 /// cracker does not expose FABLE_COMPILER as an MSBuild property, so the variants live in one conditionally-halved
 /// file rather than two conditionally-included ones; split them if Fable restores the property.)
 ///
-/// Not every FABLE_COMPILER directive in the package before this file existed was a true platform swap. Several
-/// files (Concurrency.fs, Ref.fs, Stm.fs, Stream.fs, Schedule.fs) are wrapped end-to-end in
-/// <c>#if !FABLE_COMPILER</c> with no Fable-side implementation at all -- those modules simply do not exist on
-/// Fable (they lean on synchronous blocking, IAsyncEnumerable, or other constructs that have no meaningful
-/// Fable equivalent). The same is true of a handful of members inside otherwise dual-bodied files (BindError.fs's
-/// Task/ValueTask overloads, FlowBuilder.fs's ColdTask/Task/ValueTask overloads). Moving those into this module
-/// would bloat Platform.fs with business logic that never varies -- it would just be "the .NET body" with an
-/// empty Fable twin -- so per this module's purpose (isolating genuine platform variance) they are left as
-/// `#if !FABLE_COMPILER` guarded declarations in their original files.
+/// Not every FABLE_COMPILER directive in the package is a true platform swap. A handful of members inside
+/// otherwise dual-bodied files (BindError.fs's Task/ValueTask overloads, FlowBuilder.fs's ColdTask/Task/ValueTask
+/// overloads) have no Fable-side counterpart at all. Moving those into this module would bloat Platform.fs with
+/// business logic that never varies -- it would just be "the .NET body" with an empty Fable twin -- so per this
+/// module's purpose (isolating genuine platform variance) they are left as `#if !FABLE_COMPILER` guarded
+/// declarations in their original files.
+///
+/// <remarks>
+/// <b>Scope of the "Fable" half below: Fable's JavaScript target specifically, not Fable in general.</b> Fable
+/// also compiles to Python, Rust, Dart, PHP, and (as of this writing, newly) Erlang, each with a genuinely
+/// different concurrency model -- Python has real OS threads and a GIL that does not prevent races between
+/// bytecode instructions, Rust has real parallel shared-memory threads, Erlang has no shared mutable state to
+/// race on in the first place (isolated processes, message passing). Every branch below guarded only by
+/// <c>FABLE_COMPILER</c> -- not a more specific check -- is implicitly a "no preemption, single JS thread,
+/// shared mutable state is safe to touch unsynchronized" assumption. That assumption holds for both of Fable's
+/// current JS-hosted runtimes (browser and Node.js: single-threaded event loop, no <c>SharedArrayBuffer</c>-style
+/// shared memory by default) but would be UNSOUND if this package ever targeted Fable.Python or Fable.Rust, and
+/// moot-but-differently-shaped on Fable.Erlang (no shared state to guard, so the primitive would need a
+/// message-passing shape rather than a no-op lock). These call sites are marked <c>[JS-only assumption]</c> in
+/// their doc comments so a future non-JS Fable target can be grepped for and re-audited rather than silently
+/// inheriting a no-op that only made sense for JS.
+/// </remarks>
 module internal Axial.Flow.Platform
 
 open System
@@ -32,6 +45,51 @@ type Execution<'value, 'error> = Async<Exit<'value, 'error>>
 type Execution<'value, 'error> = ValueTask<Exit<'value, 'error>>
 #endif
 
+// ---------------------------------------------------------------------------------------------
+// The shared computation expression. `async` and `task` are both ordinary F# values (builder
+// instances resolved statically per compiled branch), so most of the CE *bodies* below need not be
+// duplicated at all -- only the builder they run against, and the final wrap into `Execution`,
+// differ.
+//
+// A custom builder that produces `ValueTask` directly (so even that final wrap could be dropped) was
+// tried and rejected: FSharp.Core's `TaskBuilderBase`, the extension point IcedTasks/Ply use for their
+// own `valueTask { }` builders, has no constructor usable from outside FSharp.Core itself on the
+// FSharp.Core version this repo builds against (confirmed with a throwaway `dotnet fsi` probe --
+// `inherit TaskBuilderBase()` fails with `FS1133: No constructors are available for the type
+// 'TaskBuilderBase'`), so it cannot be subclassed here. `Execution<'value, 'error>` therefore stays
+// `ValueTask`-shaped on .NET exactly as before; only the handful of steps *inside* a single
+// primitive's body now run on a plain `Task` there, wrapped into a `ValueTask` once at the end via
+// `ofAwaitable`. F#'s `task` builder already awaits `ValueTask`-typed sub-expressions natively (no
+// `.AsTask()` needed), so the shared body can freely `let!`/`return!` against `Execution<_, _>` values.
+//
+// Where the platforms' bodies differ for a real reason -- a different concurrency primitive
+// (Async.Parallel vs. Task.WhenAny), not just the CE keyword -- the function is still fully gated
+// (see zipParExecution, raceExecution, startFiber, timeoutExecution, and the two async-conversion
+// primitives below that need an explicit CancellationToken threaded through `Async.StartAsTask`).
+// ---------------------------------------------------------------------------------------------
+
+#if FABLE_COMPILER
+/// The platform's bare (non-`Exit`-wrapped) awaitable, i.e. what `execution { }` produces.
+type Awaitable<'value> = Async<'value>
+/// The computation expression shared by every Platform primitive whose body is otherwise identical
+/// on both platforms.
+let execution = async
+#else
+/// The platform's bare (non-`Exit`-wrapped) awaitable, i.e. what `execution { }` produces.
+type Awaitable<'value> = Task<'value>
+/// The computation expression shared by every Platform primitive whose body is otherwise identical
+/// on both platforms.
+let execution = task
+#endif
+
+/// Wraps the result of an <c>execution { }</c> block as an <c>Execution</c>.
+let ofAwaitable (awaitable: Awaitable<Exit<'value, 'error>>) : Execution<'value, 'error> =
+#if FABLE_COMPILER
+    awaitable
+#else
+    ValueTask<Exit<'value, 'error>>(awaitable)
+#endif
+
 /// Lifts an already-known exit outcome into an execution.
 let ofExit (exit: Exit<'value, 'error>) : Execution<'value, 'error> =
 #if FABLE_COMPILER
@@ -46,24 +104,14 @@ let fold
     (onFailure: Cause<'error> -> Execution<'next, 'nextError>)
     (effect: Execution<'value, 'error>)
     : Execution<'next, 'nextError> =
-#if FABLE_COMPILER
-    async {
+    execution {
         let! exit = effect
 
         match exit with
         | Exit.Success value -> return! onSuccess value
         | Exit.Failure cause -> return! onFailure cause
     }
-#else
-    ValueTask<Exit<'next, 'nextError>>(
-        task {
-            let! exit = effect
-
-            match exit with
-            | Exit.Success value -> return! onSuccess value
-            | Exit.Failure cause -> return! onFailure cause
-        })
-#endif
+    |> ofAwaitable
 
 /// Transforms both channels of an already-known exit outcome. A private mirror of <c>Exit.mapBoth</c> (defined
 /// later, in Core.fs) so this file does not need to depend on modules compiled after it.
@@ -82,18 +130,11 @@ let mapBoth
     (onFailure: Cause<'error> -> Cause<'nextError>)
     (effect: Execution<'value, 'error>)
     : Execution<'next, 'nextError> =
-#if FABLE_COMPILER
-    async {
+    execution {
         let! exit = effect
         return mapBothExit onSuccess onFailure exit
     }
-#else
-    ValueTask<Exit<'next, 'nextError>>(
-        task {
-            let! exit = effect
-            return mapBothExit onSuccess onFailure exit
-        })
-#endif
+    |> ofAwaitable
 
 /// Runs a thunk that produces an execution and routes both synchronous and asynchronous exceptions raised while
 /// producing or awaiting it through <paramref name="onError" />, exactly as a bare <c>try/with</c> around a
@@ -103,26 +144,23 @@ let tryExecution
     (thunk: unit -> Execution<'value, 'error>)
     (onError: exn -> Execution<'value, 'error>)
     : Execution<'value, 'error> =
-#if FABLE_COMPILER
-    async {
+    execution {
         try
             return! thunk ()
         with error ->
             return! onError error
     }
-#else
-    ValueTask<Exit<'value, 'error>>(
-        task {
-            try
-                return! thunk ()
-            with error ->
-                return! onError error
-        })
-#endif
+    |> ofAwaitable
 
 /// Converts a raw async operation into an execution, mapping its produced value into an exit outcome. Thrown
 /// exceptions are not caught; they propagate as a faulted execution for the caller to handle (typically with
 /// <c>tryExecution</c>).
+/// <remarks>
+/// Kept fully gated rather than sharing <c>execution { }</c>: <c>task { }</c>'s built-in support for binding a
+/// bare <c>Async&lt;'a&gt;</c> observes <c>Async.DefaultCancellationToken</c>, not the token this primitive was
+/// given, which would silently drop cancellation for every caller. <c>Async.StartAsTask</c> is used instead so
+/// the supplied token is the one actually observed.
+/// </remarks>
 let executionOfAsyncUnguarded
     (cancellationToken: CancellationToken)
     (mapResult: 'value -> Exit<'v, 'e>)
@@ -150,6 +188,7 @@ let executionToAsync (execution: Execution<'value, 'error>) : Async<Exit<'value,
 #endif
 
 /// Converts a raw async operation that already produces an exit outcome into an execution.
+/// <remarks>Kept fully gated for the same reason as <c>executionOfAsyncUnguarded</c>.</remarks>
 let executionOfAsyncExit
     (cancellationToken: CancellationToken)
     (operation: Async<Exit<'value, 'error>>)
@@ -195,36 +234,40 @@ let disposeAsyncDeed (resource: IAsyncDisposable) : Deed =
 /// Runs a scope's finalizers in reverse registration order, collecting and re-raising any failures as a single
 /// exception or an <see cref="T:System.AggregateException" />.
 let runFinalizers (finalizers: Finalizer[]) (cancellationToken: CancellationToken) : Deed =
+    execution {
+        let errors = ResizeArray<exn>()
+
+        for index = finalizers.Length - 1 downto 0 do
+            try
+                do! finalizers[index] cancellationToken
+            with error ->
+                errors.Add error
+
+        match errors.Count with
+        | 0 -> ()
+        | 1 -> raise errors[0]
+        | _ -> raise (AggregateException("One or more scope finalizers failed.", errors))
+    }
+
+// ---------------------------------------------------------------------------------------------
+// Mutual exclusion.
+// ---------------------------------------------------------------------------------------------
+
+/// Runs <paramref name="f" /> while holding <paramref name="gate" />. [JS-only assumption] Fable's JavaScript
+/// target has no preemption within a single thread, so there is nothing to guard against there and the gate is
+/// unused; .NET uses <see cref="T:System.Threading.Monitor" />. A non-JS Fable target with real shared-memory
+/// threads (e.g. Fable.Rust) would need this to be a real lock, not a no-op.
+let lock (gate: obj) (f: unit -> 'a) : 'a =
 #if FABLE_COMPILER
-    async {
-        let errors = ResizeArray<exn>()
-
-        for index = finalizers.Length - 1 downto 0 do
-            try
-                do! finalizers[index] cancellationToken
-            with error ->
-                errors.Add error
-
-        match errors.Count with
-        | 0 -> ()
-        | 1 -> raise errors[0]
-        | _ -> raise (AggregateException("One or more scope finalizers failed.", errors))
-    }
+    ignore gate
+    f ()
 #else
-    task {
-        let errors = ResizeArray<exn>()
+    Monitor.Enter gate
 
-        for index = finalizers.Length - 1 downto 0 do
-            try
-                do! finalizers[index] cancellationToken
-            with error ->
-                errors.Add error
-
-        match errors.Count with
-        | 0 -> ()
-        | 1 -> raise errors[0]
-        | _ -> raise (AggregateException("One or more scope finalizers failed.", errors))
-    }
+    try
+        f ()
+    finally
+        Monitor.Exit gate
 #endif
 
 // ---------------------------------------------------------------------------------------------
@@ -269,8 +312,10 @@ let serviceResolutionUnavailable<'service, 'error> () : Execution<'service, 'err
 // Fiber id allocation.
 // ---------------------------------------------------------------------------------------------
 
-/// Allocates the next value from a shared counter. Fable is single-threaded, so a plain increment is safe there;
-/// .NET uses an interlocked increment to stay correct under concurrent fiber creation.
+/// Allocates the next value from a shared counter. [JS-only assumption] Fable's JavaScript target has no
+/// preemption within a single thread, so a plain increment is safe there; .NET uses an interlocked increment to
+/// stay correct under concurrent fiber creation. A non-JS Fable target with real threads would need an atomic
+/// increment here too.
 let nextId (counter: int64 ref) : int64 =
 #if FABLE_COMPILER
     counter.Value <- counter.Value + 1L
@@ -297,8 +342,10 @@ let dieDescription (error: exn) : string =
 // ---------------------------------------------------------------------------------------------
 
 #if FABLE_COMPILER
-/// An ambient cell holding the current runtime context. Fable is single-threaded, so a plain mutable field
-/// suffices.
+/// An ambient cell holding the current runtime context. [JS-only assumption] Fable's JavaScript target has no
+/// preemption within a single thread, so a plain mutable field suffices. A non-JS Fable target with real threads
+/// would need a thread-local (or equivalent per-strand) cell instead, and one with no shared state at all (e.g.
+/// Fable.Erlang) likely would not need this primitive in this shape in the first place.
 type RuntimeCell<'value> =
     { mutable Current: 'value }
 #else
@@ -364,8 +411,7 @@ let inline runScoped
     (body: unit -> Execution<'value, 'error>)
     (combine: exn option -> exn option -> Exit<'value, 'error> option -> Exit<'value, 'error>)
     : Execution<'value, 'error> =
-#if FABLE_COMPILER
-    async {
+    execution {
         let mutable exit: Exit<'value, 'error> option = None
         let mutable executionError: exn option = None
 
@@ -384,28 +430,7 @@ let inline runScoped
 
         return combine cleanupError executionError exit
     }
-#else
-    ValueTask<Exit<'value, 'error>>(
-        task {
-            let mutable exit: Exit<'value, 'error> option = None
-            let mutable executionError: exn option = None
-
-            try
-                let! result = body ()
-                exit <- Some result
-            with error ->
-                executionError <- Some error
-
-            let mutable cleanupError: exn option = None
-
-            try
-                do! closeScope cancellationToken
-            with error ->
-                cleanupError <- Some error
-
-            return combine cleanupError executionError exit
-        })
-#endif
+    |> ofAwaitable
 
 // ---------------------------------------------------------------------------------------------
 // Sleep and timeout.
@@ -474,20 +499,21 @@ let delayThenExecution
     (continuation: unit -> Execution<'value, 'error>)
     : Execution<'value, 'error> =
 #if FABLE_COMPILER
-    async {
+    execution {
         if delay > TimeSpan.Zero then
             do! Async.Sleep(int delay.TotalMilliseconds)
 
         return! continuation ()
     }
+    |> ofAwaitable
 #else
-    ValueTask<Exit<'value, 'error>>(
-        task {
-            if delay > TimeSpan.Zero then
-                do! Task.Delay(delay, cancellationToken)
+    execution {
+        if delay > TimeSpan.Zero then
+            do! Task.Delay(delay, cancellationToken)
 
-            return! continuation ()
-        })
+        return! continuation ()
+    }
+    |> ofAwaitable
 #endif
 
 // ---------------------------------------------------------------------------------------------
@@ -747,15 +773,98 @@ let joinExitTask (exitTask: ExitTask<'value, 'error>) : Execution<'value, 'error
 /// Awaits a fiber's exit task and wraps it as an always-successful execution, used by <c>Flow.interrupt</c> to
 /// report the fiber's final outcome without itself being able to fail.
 let awaitExitTaskAsSuccess (exitTask: ExitTask<'value, 'error>) : Execution<Exit<'value, 'error>, 'none> =
-#if FABLE_COMPILER
-    async {
+    execution {
         let! exit = exitTask
         return Exit.Success exit
     }
+    |> ofAwaitable
+
+// ---------------------------------------------------------------------------------------------
+// Signal: a single-assignment async rendezvous cell shared by Concurrency.fs (Deferred, Semaphore)
+// and Stm.fs (the retry/commit wait).
+// ---------------------------------------------------------------------------------------------
+
+#if FABLE_COMPILER
+/// A single-assignment async rendezvous cell. [JS-only assumption] Fable's JavaScript target backs this with a
+/// resolved-value option plus a list of pending waiter continuations, woken in registration order once the
+/// signal resolves. A non-JS Fable target with real threads would need the resolve/register race itself
+/// synchronized, not just the waiter list built portably.
+type Signal<'value> =
+    { mutable Value: 'value option
+      mutable Waiters: ('value -> unit) list }
 #else
-    ValueTask<Exit<Exit<'value, 'error>, 'none>>(
+/// A single-assignment async rendezvous cell. .NET backs this with a
+/// <see cref="T:System.Threading.Tasks.TaskCompletionSource`1" />.
+type Signal<'value> = TaskCompletionSource<'value>
+#endif
+
+/// Creates a new, unresolved signal.
+let newSignal<'value> () : Signal<'value> =
+#if FABLE_COMPILER
+    { Value = None; Waiters = [] }
+#else
+    TaskCompletionSource<'value>(TaskCreationOptions.RunContinuationsAsynchronously)
+#endif
+
+/// Resolves the signal with a value. Idempotent: returns <c>true</c> only to the caller that won the race to
+/// resolve it first, and wakes every waiter registered so far.
+let resolveSignal (signal: Signal<'value>) (value: 'value) : bool =
+#if FABLE_COMPILER
+    match signal.Value with
+    | Some _ -> false
+    | None ->
+        signal.Value <- Some value
+        let waiters = List.rev signal.Waiters
+        signal.Waiters <- []
+
+        for waiter in waiters do
+            waiter value
+
+        true
+#else
+    signal.TrySetResult value
+#endif
+
+/// Awaits the signal's value as an execution, observing cancellation as an interruption. Multiple callers may
+/// await the same signal concurrently; cancelling one caller's wait does not affect the others or the signal
+/// itself.
+let awaitSignal (signal: Signal<'value>) (cancellationToken: CancellationToken) : Execution<'value, 'error> =
+#if FABLE_COMPILER
+    match signal.Value with
+    | Some value -> ofExit (Exit.Success value)
+    | None ->
+        if cancellationToken.IsCancellationRequested then
+            ofExit (Exit.Failure Cause.Interrupt)
+        else
+            async {
+                return!
+                    Async.FromContinuations(fun (resolveContinuation, _, _) ->
+                        let mutable settled = false
+
+                        let settle (exit: Exit<'value, 'error>) =
+                            if not settled then
+                                settled <- true
+                                resolveContinuation exit
+
+                        signal.Waiters <- (fun value -> settle (Exit.Success value)) :: signal.Waiters
+                        cancellationToken.Register(fun () -> settle (Exit.Failure Cause.Interrupt)) |> ignore)
+            }
+#else
+    ValueTask<Exit<'value, 'error>>(
         task {
-            let! exit = exitTask
-            return Exit.Success exit
+            if cancellationToken.IsCancellationRequested then
+                return Exit.Failure Cause.Interrupt
+            else
+                let cancellation = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+
+                use _registration =
+                    cancellationToken.Register(fun () -> cancellation.TrySetResult() |> ignore)
+
+                let! completed = Task.WhenAny(signal.Task :> Task, cancellation.Task :> Task)
+
+                if obj.ReferenceEquals(completed, signal.Task :> Task) then
+                    return Exit.Success signal.Task.Result
+                else
+                    return Exit.Failure Cause.Interrupt
         })
 #endif
