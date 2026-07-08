@@ -567,62 +567,62 @@ module CheckResultTests =
             let nullString: string = null
             let nullValues: seq<int> = null
 
-            test <@ Predicate.Option.isSome (Some 1) @>
-            test <@ Predicate.Option.isNone (None: int option) @>
-            test <@ Predicate.Option.present (Some 1) @>
-            test <@ Predicate.Option.empty (None: int option) @>
-            test <@ Predicate.Option.notEmpty (Some 1) @>
+            test <@ (Some 1).IsPresent @>
+            test <@ (None: int option).IsAbsent @>
+            Assert.True(Predicate.present (Some 1))
+            Assert.True(Predicate.empty (None: int option))
+            Assert.True(Predicate.notEmpty (Some 1))
 
-            test <@ Predicate.ValueOption.isSome (ValueSome 1) @>
-            test <@ Predicate.ValueOption.isNone (ValueNone: int voption) @>
-            test <@ Predicate.ValueOption.present (ValueSome 1) @>
-            test <@ Predicate.ValueOption.empty (ValueNone: int voption) @>
-            test <@ Predicate.ValueOption.notEmpty (ValueSome 1) @>
+            test <@ (ValueSome 1).IsPresent @>
+            test <@ (ValueNone: int voption).IsAbsent @>
+            Assert.True(Predicate.present (ValueSome 1))
+            Assert.True(Predicate.empty (ValueNone: int voption))
+            Assert.True(Predicate.notEmpty (ValueSome 1))
 
-            test <@ Predicate.Nullable.hasValue (System.Nullable 1) @>
-            test <@ Predicate.Nullable.hasNoValue (System.Nullable<int>()) @>
-            test <@ Predicate.Nullable.present (System.Nullable 1) @>
-            test <@ Predicate.Nullable.empty (System.Nullable<int>()) @>
-            test <@ Predicate.Nullable.notEmpty (System.Nullable 1) @>
+            test <@ (System.Nullable 1).IsPresent @>
+            test <@ (System.Nullable<int>()).IsAbsent @>
+            Assert.True(Predicate.present (System.Nullable 1))
+            Assert.True(Predicate.empty (System.Nullable<int>()))
+            Assert.True(Predicate.notEmpty (System.Nullable 1))
 
-            test <@ Predicate.Result.isOk (Ok 1) @>
-            test <@ Predicate.Result.isError (Error "missing") @>
+            test <@ (Ok 1).IsOk @>
+            test <@ (Error "missing").IsError @>
 
             test <@ Predicate.Reference.isNull nullString @>
             test <@ Predicate.Reference.notNull "Ada" @>
 
-            test <@ Predicate.String.empty "" @>
-            test <@ not (Predicate.String.empty nullString) @>
-            test <@ Predicate.String.notEmpty " " @>
-            test <@ Predicate.String.blank "   " @>
-            test <@ Predicate.String.blank nullString @>
-            test <@ Predicate.String.notBlank "Ada" @>
-            test <@ Predicate.String.minLength 3 "Ada" @>
-            test <@ Predicate.String.maxLength 3 "Ada" @>
-            test <@ Predicate.String.length 3 "Ada" @>
-            test <@ Predicate.String.lengthBetween 2 4 "Ada" @>
-            test <@ Predicate.String.matches "^[a-z]+$" "ada" @>
-            test <@ Predicate.String.email "ada@example.com" @>
-            test <@ Predicate.String.numeric "123" @>
-            test <@ Predicate.String.alphaNumeric "Ada123" @>
-            test <@ not (Predicate.String.alphaNumeric "Ada-123") @>
+            test <@ "".IsEmpty @>
+            test <@ not nullString.IsEmpty @>
+            test <@ " ".IsNotEmpty @>
+            test <@ "   ".IsBlank @>
+            test <@ nullString.IsBlank @>
+            test <@ "Ada".IsNotBlank @>
+            test <@ "Ada".HasMinLength 3 @>
+            test <@ "Ada".HasMaxLength 3 @>
+            test <@ "Ada".HasLength 3 @>
+            test <@ "Ada".HasLengthBetween(2, 4) @>
+            test <@ "ada".MatchesPattern "^[a-z]+$" @>
+            test <@ "ada@example.com".IsEmail @>
+            test <@ "123".IsNumeric @>
+            test <@ "Ada123".IsAlphaNumeric @>
+            test <@ not ("Ada-123").IsAlphaNumeric @>
 
-            test <@ Predicate.Seq.empty [] @>
-            test <@ not (Predicate.Seq.empty nullValues) @>
-            test <@ Predicate.Seq.notEmpty [ 1 ] @>
-            test <@ Predicate.Seq.contains 2 [ 1; 2 ] @>
-            test <@ Predicate.Seq.count 2 [ 1; 2 ] @>
-            test <@ Predicate.Seq.minCount 2 [ 1; 2 ] @>
-            test <@ Predicate.Seq.maxCount 2 [ 1; 2 ] @>
-            test <@ Predicate.Seq.countBetween 1 3 [ 1; 2 ] @>
-            test <@ Predicate.Seq.single [ 1 ] @>
-            test <@ Predicate.Seq.atMostOne [] @>
-            test <@ Predicate.Seq.atLeastOne [ 1 ] @>
-            test <@ Predicate.Seq.moreThanOne [ 1; 2 ] @>
-            test <@ Predicate.Seq.duplicates [ 1; 2; 1 ] @>
-            test <@ Predicate.Seq.distinct [ 1; 2; 3 ] @>
-            test <@ not (Predicate.Seq.distinct [ 1; 2; 1 ]) @>
-            test <@ not (Predicate.Seq.distinct nullValues) @>
+            test <@ ([]: int list).HasNoItems @>
+            test <@ not nullValues.HasNoItems @>
+            test <@ [ 1 ].HasItems @>
+            test <@ [ 1; 2 ].HasItem 2 @>
+            test <@ [ 1; 2 ].HasCount 2 @>
+            test <@ [ 1; 2 ].HasMinCount 2 @>
+            test <@ [ 1; 2 ].HasMaxCount 2 @>
+            test <@ [ 1; 2 ].HasCountBetween(1, 3) @>
+            test <@ [ 1 ].HasSingleItem @>
+            test <@ ([]: int list).HasAtMostOneItem @>
+            test <@ [ 1 ].HasItems @>
+            test <@ [ 1; 2 ].HasMoreThanOneItem @>
+            test <@ [ 1; 2; 1 ].HasDuplicates @>
+            test <@ [ 1; 2; 3 ].IsDistinct @>
+            test <@ not [ 1; 2; 1 ].IsDistinct @>
+            test <@ not nullValues.IsDistinct @>
 
             test <@ Predicate.Number.greaterThan 3 4 @>
             test <@ Predicate.Number.lessThan 3 2 @>

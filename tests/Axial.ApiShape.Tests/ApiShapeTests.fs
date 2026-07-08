@@ -1557,51 +1557,11 @@ module ApiShapeTests =
         |> publicStaticMemberNames
         |> assertContainsNone [ "distinct" ]
 
-        moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.PredicateModule+Option"
-        |> assertMethodsReturnBool [ "isSome"; "isNone"; "present"; "empty"; "notEmpty" ]
-
-        moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.PredicateModule+ValueOption"
-        |> assertMethodsReturnBool [ "isSome"; "isNone"; "present"; "empty"; "notEmpty" ]
-
-        moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.PredicateModule+Nullable"
-        |> assertMethodsReturnBool [ "hasValue"; "hasNoValue"; "present"; "empty"; "notEmpty" ]
-
-        moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.PredicateModule+Result"
-        |> assertMethodsReturnBool [ "isOk"; "isError" ]
+        predicateModule
+        |> assertMethodsReturnBool [ "present"; "empty"; "notEmpty" ]
 
         moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.PredicateModule+Reference"
         |> assertMethodsReturnBool [ "isNull"; "notNull" ]
-
-        moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.PredicateModule+String"
-        |> assertMethodsReturnBool
-            [ "empty"
-              "notEmpty"
-              "blank"
-              "notBlank"
-              "minLength"
-              "maxLength"
-              "lengthBetween"
-              "length"
-              "matches"
-              "email"
-              "numeric"
-              "alphaNumeric" ]
-
-        moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.PredicateModule+Seq"
-        |> assertMethodsReturnBool
-            [ "empty"
-              "notEmpty"
-              "contains"
-              "count"
-              "minCount"
-              "maxCount"
-              "countBetween"
-              "single"
-              "atMostOne"
-              "atLeastOne"
-              "moreThanOne"
-              "duplicates"
-              "distinct" ]
 
         moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.PredicateModule+Number"
         |> assertMethodsReturnBool
@@ -1614,6 +1574,9 @@ module ApiShapeTests =
               "nonNegative"
               "negative"
               "nonPositive" ]
+
+        // String, Option, ValueOption, Nullable, Result, and sequence predicates are exposed as extension
+        // members directly on those types (see PredicateExtensions), not as PredicateModule submodules.
 
         let resultMembers =
             moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.Result"

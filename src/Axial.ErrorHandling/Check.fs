@@ -204,45 +204,45 @@ module Check =
         let present : Check<string> =
             fun value ->
                 if isNull value then fail Required
-                elif Predicate.String.blank value then fail Required
+                elif value.IsBlank then fail Required
                 else pass
 
         /// <summary>Requires an already parsed string value to be exactly empty. Null fails as a missing value.</summary>
         let empty : Check<string> =
             fun value ->
                 if isNull value then fail Required
-                elif Predicate.String.empty value then pass
+                elif value.IsEmpty then pass
                 else fail (InvalidLength(ExactLength 0, actualLength value))
 
         /// <summary>Requires an already parsed string value to contain at least one character. Whitespace counts as present text.</summary>
         let notEmpty : Check<string> =
             fun value ->
                 if isNull value then fail Required
-                elif Predicate.String.notEmpty value then pass
+                elif value.IsNotEmpty then pass
                 else fail (InvalidLength(MinimumLength 1, Some 0))
 
         /// <summary>Requires an already parsed string value to have at least the supplied length. Null fails with an unknown actual length.</summary>
         let minLength (minimum: int) : Check<string> =
             fun value ->
-                if Predicate.String.minLength minimum value then pass
+                if value.HasMinLength minimum then pass
                 else fail (InvalidLength(MinimumLength minimum, actualLength value))
 
         /// <summary>Requires an already parsed string value to have at most the supplied length. Null fails with an unknown actual length.</summary>
         let maxLength (maximum: int) : Check<string> =
             fun value ->
-                if Predicate.String.maxLength maximum value then pass
+                if value.HasMaxLength maximum then pass
                 else fail (InvalidLength(MaximumLength maximum, actualLength value))
 
         /// <summary>Requires an already parsed string value length to lie inside the supplied inclusive bounds. Null fails with an unknown actual length.</summary>
         let lengthBetween (minimum: int) (maximum: int) : Check<string> =
             fun value ->
-                if Predicate.String.lengthBetween minimum maximum value then pass
+                if value.HasLengthBetween(minimum, maximum) then pass
                 else fail (InvalidLength(LengthBetween(minimum, maximum), actualLength value))
 
         /// <summary>Requires an already parsed string value to have exactly the supplied length. Null fails with an unknown actual length.</summary>
         let length (expected: int) : Check<string> =
             fun value ->
-                if Predicate.String.length expected value then pass
+                if value.HasLength expected then pass
                 else fail (InvalidLength(ExactLength expected, actualLength value))
 
         /// <summary>Requires an already parsed string value to have exactly the supplied length. Null fails with an unknown actual length.</summary>
@@ -252,25 +252,25 @@ module Check =
         /// <summary>Requires an already parsed string value to match Axial's pragmatic email format.</summary>
         let email : Check<string> =
             fun value ->
-                if Predicate.String.email value then pass
+                if value.IsEmail then pass
                 else fail (InvalidFormat "email")
 
         /// <summary>Requires an already parsed string value to match the supplied regular expression pattern.</summary>
         let matches (pattern: string) : Check<string> =
             fun value ->
-                if Predicate.String.matches pattern value then pass
+                if value.MatchesPattern pattern then pass
                 else fail (InvalidFormat pattern)
 
         /// <summary>Requires an already parsed string value to contain one or more numeric characters.</summary>
         let numeric : Check<string> =
             fun value ->
-                if Predicate.String.numeric value then pass
+                if value.IsNumeric then pass
                 else fail (InvalidFormat "numeric")
 
         /// <summary>Requires an already parsed string value to contain one or more letter or digit characters.</summary>
         let alphaNumeric : Check<string> =
             fun value ->
-                if Predicate.String.alphaNumeric value then pass
+                if value.IsAlphaNumeric then pass
                 else fail (InvalidFormat "alphaNumeric")
 
         /// <summary>Requires an already parsed string value to equal one of the supplied choices. Null fails with an unknown actual value.</summary>
@@ -352,51 +352,51 @@ module Check =
         /// <summary>Requires an already parsed sequence-shaped value to contain at least one item. Null fails with an unknown actual count.</summary>
         let notEmpty : Check<#seq<'value>> =
             fun values ->
-                if Predicate.Seq.notEmpty values then pass
+                if values.HasItems then pass
                 else fail (InvalidCount(MinimumCount 1, actualCount values))
 
         /// <summary>Requires an already parsed sequence-shaped value to contain no items. Null fails with an unknown actual count.</summary>
         let empty : Check<#seq<'value>> =
             fun values ->
-                if Predicate.Seq.empty values then pass
+                if values.HasNoItems then pass
                 else fail (InvalidCount(ExactCount 0, actualCount values))
 
         /// <summary>Requires an already parsed sequence-shaped value to contain exactly the supplied count. Null fails with an unknown actual count.</summary>
         let count (expected: int) : Check<#seq<'value>> =
             fun values ->
-                if Predicate.Seq.count expected values then pass
+                if values.HasCount expected then pass
                 else fail (InvalidCount(ExactCount expected, actualCount values))
 
         /// <summary>Requires an already parsed sequence-shaped value to contain at least the supplied count. Null fails with an unknown actual count.</summary>
         let minCount (minimum: int) : Check<#seq<'value>> =
             fun values ->
-                if Predicate.Seq.minCount minimum values then pass
+                if values.HasMinCount minimum then pass
                 else fail (InvalidCount(MinimumCount minimum, actualCount values))
 
         /// <summary>Requires an already parsed sequence-shaped value to contain at most the supplied count. Null fails with an unknown actual count.</summary>
         let maxCount (maximum: int) : Check<#seq<'value>> =
             fun values ->
-                if Predicate.Seq.maxCount maximum values then pass
+                if values.HasMaxCount maximum then pass
                 else fail (InvalidCount(MaximumCount maximum, actualCount values))
 
         /// <summary>Requires an already parsed sequence-shaped value count to lie inside the supplied inclusive bounds. Null fails with an unknown actual count.</summary>
         let countBetween (minimum: int) (maximum: int) : Check<#seq<'value>> =
             fun values ->
-                if Predicate.Seq.countBetween minimum maximum values then pass
+                if values.HasCountBetween(minimum, maximum) then pass
                 else fail (InvalidCount(CountBetween(minimum, maximum), actualCount values))
 
         /// <summary>Requires an already parsed sequence-shaped value to contain no duplicate values.</summary>
         let noDuplicates : Check<#seq<'value>> =
             fun values ->
                 if Object.ReferenceEquals(values, null) then fail Required
-                elif Predicate.Seq.distinct values then pass
+                elif values.IsDistinct then pass
                 else fail Duplicate
 
         /// <summary>Requires an already parsed sequence-shaped value to contain the supplied value.</summary>
         let contains (expected: 'value) : Check<#seq<'value>> =
             fun values ->
                 if Object.ReferenceEquals(values, null) then fail Required
-                elif Predicate.Seq.contains expected values then pass
+                elif values.HasItem expected then pass
                 else fail (NotOneOf(string expected))
 
         /// <summary>Requires an already parsed sequence-shaped value to contain exactly one item.</summary>
