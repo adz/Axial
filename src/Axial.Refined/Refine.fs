@@ -201,20 +201,20 @@ type DistinctList<'value when 'value: equality> =
         member this.GetEnumerator() =
             (this.ToList() :> System.Collections.IEnumerable).GetEnumerator()
 
-/// <summary>A list whose length is within a caller-supplied inclusive range.</summary>
+/// <summary>A list whose count is within a caller-supplied inclusive range.</summary>
 type BoundedList<'value> =
     private
-    | BoundedList of values: 'value list * minLength: int * maxLength: int
+    | BoundedList of values: 'value list * minCount: int * maxCount: int
 
-    /// <summary>Returns the minimum accepted length used when this value was refined.</summary>
-    member this.MinLength =
-        let (BoundedList(_, minLength, _)) = this
-        minLength
+    /// <summary>Returns the minimum accepted count used when this value was refined.</summary>
+    member this.MinCount =
+        let (BoundedList(_, minCount, _)) = this
+        minCount
 
-    /// <summary>Returns the maximum accepted length used when this value was refined.</summary>
-    member this.MaxLength =
-        let (BoundedList(_, _, maxLength)) = this
-        maxLength
+    /// <summary>Returns the maximum accepted count used when this value was refined.</summary>
+    member this.MaxCount =
+        let (BoundedList(_, _, maxCount)) = this
+        maxCount
 
     /// <summary>Returns the refined value as a standard list.</summary>
     member this.ToList() =
@@ -228,20 +228,20 @@ type BoundedList<'value> =
         member this.GetEnumerator() =
             (this.ToList() :> System.Collections.IEnumerable).GetEnumerator()
 
-/// <summary>An array whose length is within a caller-supplied inclusive range.</summary>
+/// <summary>An array whose count is within a caller-supplied inclusive range.</summary>
 type BoundedArray<'value> =
     private
-    | BoundedArray of values: 'value array * minLength: int * maxLength: int
+    | BoundedArray of values: 'value array * minCount: int * maxCount: int
 
-    /// <summary>Returns the minimum accepted length used when this value was refined.</summary>
-    member this.MinLength =
-        let (BoundedArray(_, minLength, _)) = this
-        minLength
+    /// <summary>Returns the minimum accepted count used when this value was refined.</summary>
+    member this.MinCount =
+        let (BoundedArray(_, minCount, _)) = this
+        minCount
 
-    /// <summary>Returns the maximum accepted length used when this value was refined.</summary>
-    member this.MaxLength =
-        let (BoundedArray(_, _, maxLength)) = this
-        maxLength
+    /// <summary>Returns the maximum accepted count used when this value was refined.</summary>
+    member this.MaxCount =
+        let (BoundedArray(_, _, maxCount)) = this
+        maxCount
 
     /// <summary>Returns a copy of the refined value as a standard array.</summary>
     member this.ToArray() =
@@ -458,24 +458,24 @@ module Collection =
     let distinctList (values: seq<'value>) : Result<DistinctList<'value>, RefinementError> =
         Checked.withCheck "DistinctList" Check.Seq.noDuplicates (Seq.toList >> DistinctList) values
 
-    /// <summary>Builds a list whose length is within an inclusive range.</summary>
-    let boundedList minLength maxLength (values: seq<'value>) : Result<BoundedList<'value>, RefinementError> =
-        Bounds.validateRange "BoundedList" minLength maxLength
+    /// <summary>Builds a list whose count is within an inclusive range.</summary>
+    let boundedList minCount maxCount (values: seq<'value>) : Result<BoundedList<'value>, RefinementError> =
+        Bounds.validateRange "BoundedList" minCount maxCount
         |> Result.bind (fun () ->
             Checked.withCheck
                 "BoundedList"
-                (Check.Seq.countBetween minLength maxLength)
-                (fun values -> BoundedList(Seq.toList values, minLength, maxLength))
+                (Check.Seq.countBetween minCount maxCount)
+                (fun values -> BoundedList(Seq.toList values, minCount, maxCount))
                 values)
 
-    /// <summary>Builds an array whose length is within an inclusive range.</summary>
-    let boundedArray minLength maxLength (values: seq<'value>) : Result<BoundedArray<'value>, RefinementError> =
-        Bounds.validateRange "BoundedArray" minLength maxLength
+    /// <summary>Builds an array whose count is within an inclusive range.</summary>
+    let boundedArray minCount maxCount (values: seq<'value>) : Result<BoundedArray<'value>, RefinementError> =
+        Bounds.validateRange "BoundedArray" minCount maxCount
         |> Result.bind (fun () ->
             Checked.withCheck
                 "BoundedArray"
-                (Check.Seq.countBetween minLength maxLength)
-                (fun values -> BoundedArray(Seq.toArray values, minLength, maxLength))
+                (Check.Seq.countBetween minCount maxCount)
+                (fun values -> BoundedArray(Seq.toArray values, minCount, maxCount))
                 values)
 
 /// <summary>Operations over <see cref="NonEmptyList{value}" />.</summary>
@@ -631,12 +631,12 @@ module Refine =
         Collection.distinctList values
 
     /// <summary>Builds a bounded list from a sequence.</summary>
-    let boundedList minLength maxLength values =
-        Collection.boundedList minLength maxLength values
+    let boundedList minCount maxCount values =
+        Collection.boundedList minCount maxCount values
 
     /// <summary>Builds a bounded array from a sequence.</summary>
-    let boundedArray minLength maxLength values =
-        Collection.boundedArray minLength maxLength values
+    let boundedArray minCount maxCount values =
+        Collection.boundedArray minCount maxCount values
 
     /// <summary>Builds a date and time range where <c>Start &lt;= End</c>.</summary>
     let dateTimeOffsetRange start finish =

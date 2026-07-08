@@ -62,9 +62,9 @@ module CatalogTests =
         test <@ Refine.nonEmptyArray [] = Error(CheckFailed("NonEmptyArray", [ CheckFailure.InvalidCount(MinimumCount 1, Some 0) ])) @>
         test <@ Refine.distinctList [ 1; 2; 3 ] |> Result.map _.ToList() = Ok [ 1; 2; 3 ] @>
         test <@ Refine.distinctList [ 1; 2; 1 ] = Error(CheckFailed("DistinctList", [ CheckFailure.Duplicate ])) @>
-        test <@ Refine.boundedList 2 3 [ 1; 2 ] |> Result.map (fun values -> values.ToList(), values.MinLength, values.MaxLength) = Ok([ 1; 2 ], 2, 3) @>
+        test <@ Refine.boundedList 2 3 [ 1; 2 ] |> Result.map (fun values -> values.ToList(), values.MinCount, values.MaxCount) = Ok([ 1; 2 ], 2, 3) @>
         test <@ Refine.boundedList 2 3 [ 1 ] = Error(CheckFailed("BoundedList", [ CheckFailure.InvalidCount(CountBetween(2, 3), Some 1) ])) @>
-        test <@ Refine.boundedArray 1 2 [ 1; 2 ] |> Result.map (fun values -> values.ToArray(), values.MinLength, values.MaxLength) = Ok([| 1; 2 |], 1, 2) @>
+        test <@ Refine.boundedArray 1 2 [ 1; 2 ] |> Result.map (fun values -> values.ToArray(), values.MinCount, values.MaxCount) = Ok([| 1; 2 |], 1, 2) @>
         test <@ Refine.boundedArray 1 2 [ 1; 2; 3 ] = Error(CheckFailed("BoundedArray", [ CheckFailure.InvalidCount(CountBetween(1, 2), Some 3) ])) @>
 
     [<Fact>]
