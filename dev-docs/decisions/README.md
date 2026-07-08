@@ -113,9 +113,10 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
   names don't collide with the discriminator, checked at construction), and bare-string enums (`Value.enumOf`) for
   payload-less cases. All three are implemented across Input.parse, Codec, JsonSchema, and Inspect; the contract
   grammar's literal unions (`"a" | "b"`) lower to `Value.enumOf`. No untagged unions — discriminators are required.
-- `JsonSchema.generate` pins `$schema` to draft 2020-12 and carries description metadata into `title`/`description`
-  (both queued work). `$defs` hoisting is deferred until a sample has real nested reuse; recursion is not expressible
-  in the builder today, so inlining cannot fail to terminate. Draft selection waits for a real consumer.
+- `JsonSchema.generate`/`generateValue` pin `$schema` to draft 2020-12 and carry description metadata
+  (`Value.describe`/`Schema.describe`) into `description` (field/value level) and `title` (model root). `$defs`
+  hoisting is deferred until a sample has real nested reuse; recursion is not expressible in the builder today, so
+  inlining cannot fail to terminate.
 - The UI-metadata interpreter stays a prototype. Promotion waits for an external consumer; if promoted, the API sample
   must consume the shipped module, otherwise the duplication just moves. UI scope stays field list + control kinds —
   layout, localization, and widget options are application concerns.

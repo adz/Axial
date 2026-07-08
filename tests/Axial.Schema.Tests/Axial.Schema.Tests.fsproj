@@ -14,6 +14,7 @@
     <Compile Include="SchemaCompiledRecordPlanProofTests.fs" />
     <Compile Include="SchemaRefinedValueTests.fs" />
     <Compile Include="SchemaFormatTests.fs" />
+    <Compile Include="SchemaDescriptionTests.fs" />
     <Compile Include="SchemaNestedValueTests.fs" />
     <Compile Include="SchemaManyValueTests.fs" />
     <Compile Include="SchemaUnionValueTests.fs" />

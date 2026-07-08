@@ -110,6 +110,12 @@ module JsonSchema =
         | PrimitiveValueKind.DateTime -> [ "\"type\":\"string\""; "\"format\":\"date-time\"" ]
         | PrimitiveValueKind.Guid -> [ "\"type\":\"string\""; "\"format\":\"uuid\"" ]
 
+    let rec private boundaryDescription (description: ValueDescription) : string option =
+        match description.Description, description.Shape with
+        | Some text, _ -> Some text
+        | None, ValueShape.Refined underlying -> boundaryDescription underlying
+        | None, _ -> None
+
     let rec private valueKeywords (fieldConstraints: SchemaConstraintMetadata list) (description: ValueDescription) =
         let constraints = fieldConstraints @ boundaryConstraints description
 
@@ -119,43 +125,51 @@ module JsonSchema =
                 [ sprintf "\"format\":\"%s\"" (escape format.Name) ]
             | _ -> []
 
-        match underlyingShape description with
-        | ValueShape.Primitive kind ->
-            primitiveKeywords kind @ formatKeyword @ constraintKeywords constraints |> List.distinct
-        | ValueShape.Nested model -> modelKeywords model
-        | ValueShape.Many item ->
-            [ "\"type\":\"array\""
-              sprintf "\"items\":{%s}" (valueKeywords [] item |> String.concat ",") ]
-            @ constraintKeywords constraints
-        | ValueShape.Union union ->
-            let cases =
-                union.Cases
-                |> List.map (fun case ->
-                    let payload = valueKeywords [] case.Payload |> String.concat ","
+        let descriptionKeyword =
+            match boundaryDescription description with
+            | Some text -> [ sprintf "\"description\":%s" (literal text) ]
+            | None -> []
 
-                    sprintf
-                        "{\"type\":\"object\",\"properties\":{\"%s\":{\"const\":%s},\"%s\":{%s}},\"required\":[\"%s\",\"%s\"]}"
-                        (escape union.DiscriminatorField)
-                        (literal case.Tag)
-                        (escape union.PayloadField)
-                        payload
-                        (escape union.DiscriminatorField)
-                        (escape union.PayloadField))
-                |> String.concat ","
+        let shapeKeywords =
+            match underlyingShape description with
+            | ValueShape.Primitive kind ->
+                primitiveKeywords kind @ formatKeyword @ constraintKeywords constraints |> List.distinct
+            | ValueShape.Nested model -> modelKeywords model
+            | ValueShape.Many item ->
+                [ "\"type\":\"array\""
+                  sprintf "\"items\":{%s}" (valueKeywords [] item |> String.concat ",") ]
+                @ constraintKeywords constraints
+            | ValueShape.Union union ->
+                let cases =
+                    union.Cases
+                    |> List.map (fun case ->
+                        let payload = valueKeywords [] case.Payload |> String.concat ","
 
-            [ sprintf "\"oneOf\":[%s]" cases ]
-        | ValueShape.UnionInline union ->
-            let cases =
-                union.Cases
-                |> List.map (fun case -> inlineCaseKeywords union.DiscriminatorField case.Tag case.Payload)
-                |> String.concat ","
+                        sprintf
+                            "{\"type\":\"object\",\"properties\":{\"%s\":{\"const\":%s},\"%s\":{%s}},\"required\":[\"%s\",\"%s\"]}"
+                            (escape union.DiscriminatorField)
+                            (literal case.Tag)
+                            (escape union.PayloadField)
+                            payload
+                            (escape union.DiscriminatorField)
+                            (escape union.PayloadField))
+                    |> String.concat ","
 
-            [ sprintf "\"oneOf\":[%s]" cases ]
-        | ValueShape.Enum enum ->
-            let tags = enum.Cases |> List.map (fun case -> literal case.Tag) |> String.concat ","
-            [ "\"type\":\"string\""; sprintf "\"enum\":[%s]" tags ] @ constraintKeywords constraints
-        | ValueShape.Optional payload -> valueKeywords constraints payload
-        | ValueShape.Refined _ -> failwith "underlyingShape never returns a refined shape."
+                [ sprintf "\"oneOf\":[%s]" cases ]
+            | ValueShape.UnionInline union ->
+                let cases =
+                    union.Cases
+                    |> List.map (fun case -> inlineCaseKeywords union.DiscriminatorField case.Tag case.Payload)
+                    |> String.concat ","
+
+                [ sprintf "\"oneOf\":[%s]" cases ]
+            | ValueShape.Enum enum ->
+                let tags = enum.Cases |> List.map (fun case -> literal case.Tag) |> String.concat ","
+                [ "\"type\":\"string\""; sprintf "\"enum\":[%s]" tags ] @ constraintKeywords constraints
+            | ValueShape.Optional payload -> valueKeywords constraints payload
+            | ValueShape.Refined _ -> failwith "underlyingShape never returns a refined shape."
+
+        descriptionKeyword @ shapeKeywords
 
     /// An optional field stays out of the object's `required` list; every other field is required, matching the
     /// parser, which requires every non-optional field regardless of the `required` constraint.
@@ -205,11 +219,18 @@ module JsonSchema =
             |> List.filter (fun field -> not (isOptionalDescription field.Value))
             |> List.map (fun field -> sprintf "\"%s\"" (escape field.Name))
 
-        [ "\"type\":\"object\""; sprintf "\"properties\":{%s}" properties ]
+        (match model.Description with
+         | Some text -> [ sprintf "\"title\":%s" (literal text) ]
+         | None -> [])
+        @ [ "\"type\":\"object\""; sprintf "\"properties\":{%s}" properties ]
         @ (if List.isEmpty required then
                []
            else
                [ sprintf "\"required\":[%s]" (String.concat "," required) ])
+
+    /// <summary>The JSON Schema draft 2020-12 meta-schema URI pinned as every generated document's <c>$schema</c>.</summary>
+    [<Literal>]
+    let private draft2020_12 = "https://json-schema.org/draft/2020-12/schema"
 
     /// <summary>Generates a compact JSON Schema document from a built model schema's metadata.</summary>
     /// <param name="schema">The built model schema to lower.</param>
@@ -218,14 +239,20 @@ module JsonSchema =
     /// <example>
     /// <code>
     /// let document = JsonSchema.generate customerSchema
-    /// // {"type":"object","properties":{...},"required":[...]}
+    /// // {"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{...},"required":[...]}
     /// </code>
     /// </example>
     let generate (schema: Schema<'model>) : string =
-        sprintf "{%s}" (modelKeywords (Inspect.model schema) |> String.concat ",")
+        sprintf
+            "{%s}"
+            (sprintf "\"$schema\":%s" (literal draft2020_12) :: modelKeywords (Inspect.model schema)
+             |> String.concat ",")
 
     /// <summary>Generates a compact JSON Schema document for a standalone value schema.</summary>
     /// <param name="schema">The value schema to lower.</param>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
     let generateValue (schema: ValueSchema<'value>) : string =
-        sprintf "{%s}" (valueKeywords [] (Inspect.value schema) |> String.concat ",")
+        sprintf
+            "{%s}"
+            (sprintf "\"$schema\":%s" (literal draft2020_12) :: valueKeywords [] (Inspect.value schema)
+             |> String.concat ",")

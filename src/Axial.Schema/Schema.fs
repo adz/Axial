@@ -644,7 +644,8 @@ type internal RefinedValueOps(construct: obj -> obj, inspect: obj -> obj) =
 type internal ValueSchemaDefinition =
     { Shape: ValueSchemaShape
       Format: SchemaFormat option
-      Constraints: SchemaConstraint list }
+      Constraints: SchemaConstraint list
+      Description: string option }
 
 and internal ValueSchemaShape =
     | PrimitiveValueDefinition of PrimitiveValueKind
@@ -743,7 +744,8 @@ and [<ReferenceEquality>] internal FieldDescriptor<'model> =
 
 and [<ReferenceEquality>] internal ModelSchemaDefinition<'model> =
     { Constructor: ConstructorApplication<'model>
-      Fields: FieldDescriptor<'model> list }
+      Fields: FieldDescriptor<'model> list
+      Description: string option }
 
 /// <summary>Describes one tagged union case for <c>Value.union</c>.</summary>
 [<Sealed>]
@@ -776,7 +778,8 @@ module internal ModelSchemaErasure =
                   Order = field.Order
                   Getter = fun (model: obj) -> field.Getter (unbox<'model> model)
                   ValueSchema = field.ValueSchema
-                  Constraints = field.Constraints }) }
+                  Constraints = field.Constraints })
+          Description = definition.Description }
 
 type internal FieldDefinition<'model, 'value> =
     { ExternalName: ExternalFieldName
@@ -969,7 +972,8 @@ module internal ModelSchemaDefinition =
             | _ -> ())
 
         { Constructor = constructor
-          Fields = fields |> List.sortBy (fun field -> field.Order.Value) }
+          Fields = fields |> List.sortBy (fun field -> field.Order.Value)
+          Description = None }
 
 /// <summary>
 /// Describes the portable structure of a trusted model for schema interpreters.
@@ -1067,7 +1071,8 @@ module Value =
         ValueSchema(
             { Shape = PrimitiveValueDefinition kind
               Format = None
-              Constraints = [] }
+              Constraints = []
+              Description = None }
         )
 
     /// <summary>Describes text represented as <see cref="T:System.String" />.</summary>
@@ -1176,7 +1181,8 @@ module Value =
         ValueSchema(
             { Shape = RefinedValueDefinition(raw.Definition, ops)
               Format = None
-              Constraints = [] }
+              Constraints = []
+              Description = None }
         )
 
     /// <summary>Describes a nested model value from an already built nested model schema.</summary>
@@ -1199,7 +1205,8 @@ module Value =
             ValueSchema(
                 { Shape = NestedValueDefinition(ModelSchemaErasure.erase model, box schema)
                   Format = None
-                  Constraints = [] }
+                  Constraints = []
+                  Description = None }
             )
 
     /// <summary>Describes a collection of values from an already built item value schema.</summary>
@@ -1228,7 +1235,8 @@ module Value =
                       BoxItems = boxItems
                       AcceptItem = acceptItem }
               Format = None
-              Constraints = [] }
+              Constraints = []
+              Description = None }
         )
 
     /// <summary>Describes a collection of nested model values from an already built item model schema.</summary>
@@ -1286,7 +1294,8 @@ module Value =
                       PayloadField = ExternalFieldName.create payloadField
                       Cases = cases |> List.map _.Definition }
               Format = None
-              Constraints = [] }
+              Constraints = []
+              Description = None }
         )
 
     /// <summary>
@@ -1355,7 +1364,8 @@ module Value =
                     { DiscriminatorField = discriminatorName
                       Cases = cases |> List.map _.Definition }
               Format = None
-              Constraints = [] }
+              Constraints = []
+              Description = None }
         )
 
     /// <summary>Describes a bare-string enum value for payload-less union cases, lowering to JSON Schema <c>enum</c>.</summary>
@@ -1384,7 +1394,8 @@ module Value =
         ValueSchema(
             { Shape = EnumValueDefinition { Cases = cases |> List.map _.Definition }
               Format = None
-              Constraints = [] }
+              Constraints = []
+              Description = None }
         )
 
     /// <summary>Describes an optional value so <c>'field option</c> models are schema-describable.</summary>
@@ -1451,7 +1462,8 @@ module Value =
                       NoneValue = box (None: 'value option)
                       TryUnwrap = fun value -> value |> unbox<'value option> |> Option.map box }
               Format = None
-              Constraints = [] }
+              Constraints = []
+              Description = None }
         )
 
     /// <summary>Returns whether a value schema is a refined/domain value schema.</summary>
@@ -1652,6 +1664,59 @@ module Value =
                 | OptionValueDefinition _ -> None
 
         formatOf schema.Definition
+
+    /// <summary>Returns a value schema carrying the supplied description metadata.</summary>
+    /// <remarks>
+    /// <para>
+    /// The description is annotation metadata for interpreters: JSON Schema generation lowers it to the
+    /// <c>description</c> keyword at the point the value schema is used, whether as a standalone value schema or as a
+    /// model field. It attaches no executable check.
+    /// </para>
+    /// <para>
+    /// A value schema carries at most one description. Applying <c>describe</c> again replaces the earlier
+    /// declaration.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
+    /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="text" /> is null, empty, or whitespace.</exception>
+    let describe (text: string) (schema: ValueSchema<'value>) =
+        if String.IsNullOrWhiteSpace text then
+            invalidArg (nameof text) "Descriptions must not be empty or whitespace."
+
+        if isNull (box schema) then
+            nullArg (nameof schema)
+
+        ValueSchema(
+            { schema.Definition with
+                Description = Some text }
+        )
+
+    /// <summary>Returns the description metadata declared nearest to a value schema, when present.</summary>
+    /// <remarks>
+    /// Like <see cref="M:Axial.Schema.Value.format``1" />, this accessor sees through refinement layers: a description
+    /// declared on the refined value schema itself wins, and otherwise the raw value schemas are walked toward the
+    /// primitive foundation until a declaration is found.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
+    let description (schema: ValueSchema<'value>) =
+        if isNull (box schema) then
+            nullArg (nameof schema)
+
+        let rec descriptionOf (definition: ValueSchemaDefinition) =
+            match definition.Description with
+            | Some _ as declared -> declared
+            | None ->
+                match definition.Shape with
+                | RefinedValueDefinition(raw, _) -> descriptionOf raw
+                | PrimitiveValueDefinition _ -> None
+                | NestedValueDefinition _ -> None
+                | ManyValueDefinition _ -> None
+                | UnionValueDefinition _ -> None
+                | UnionInlineValueDefinition _ -> None
+                | EnumValueDefinition _ -> None
+                | OptionValueDefinition _ -> None
+
+        descriptionOf schema.Definition
 
     /// <summary>Returns the portable constraint metadata attached to a value schema.</summary>
     let constraints (schema: ValueSchema<'value>) =
@@ -2208,3 +2273,26 @@ module Schema =
         match schema.Specialization with
         | Some specialization -> specialization.Specialize factory
         | None -> invalidArg (nameof schema) "The schema does not carry a typed field chain."
+
+    /// <summary>Returns a built model schema carrying the supplied description metadata.</summary>
+    /// <remarks>
+    /// The description is annotation metadata for interpreters: JSON Schema generation lowers it to the document's
+    /// root <c>title</c> keyword. It attaches no executable check. A model schema carries at most one description;
+    /// applying <c>describe</c> again replaces the earlier declaration.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
+    /// <exception cref="T:System.ArgumentException">
+    /// Thrown when <paramref name="text" /> is null, empty, or whitespace, or when <paramref name="schema" /> was not
+    /// produced by <c>Schema.build</c>.
+    /// </exception>
+    let describe (text: string) (schema: Schema<'model>) : Schema<'model> =
+        if String.IsNullOrWhiteSpace text then
+            invalidArg (nameof text) "Descriptions must not be empty or whitespace."
+
+        if isNull (box schema) then
+            nullArg (nameof schema)
+
+        match schema.Definition with
+        | PendingDefinition -> invalidArg (nameof schema) "Expected a built model schema."
+        | ModelDefinition definition ->
+            Schema(ModelDefinition { definition with Description = Some text }, schema.Specialization)

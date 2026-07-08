@@ -37,6 +37,8 @@ and ValueDescription =
         Format: SchemaFormat option
         /// <summary>The portable constraint metadata attached to this value schema layer, in declaration order.</summary>
         Constraints: SchemaConstraint list
+        /// <summary>The description metadata, when one was attached with <c>Value.describe</c>.</summary>
+        Description: string option
     }
 
 /// <summary>Describes one field of a model schema for inspection interpreters.</summary>
@@ -57,6 +59,8 @@ and ModelDescription =
     {
         /// <summary>The field descriptions in declared order.</summary>
         Fields: FieldDescription list
+        /// <summary>The description metadata, when one was attached with <c>Schema.describe</c>.</summary>
+        Description: string option
     }
 
 /// <summary>Describes one case in a tagged union value schema.</summary>
@@ -127,7 +131,9 @@ module Inspect =
             | PrimitiveValueDefinition kind -> ValueShape.Primitive kind
             | RefinedValueDefinition(raw, _) -> ValueShape.Refined(describeValueDefinition raw)
             | NestedValueDefinition(nested, _) ->
-                ValueShape.Nested { Fields = nested.Fields |> List.map describeFieldDescriptor }
+                ValueShape.Nested
+                    { Fields = nested.Fields |> List.map describeFieldDescriptor
+                      Description = nested.Description }
             | ManyValueDefinition collection -> ValueShape.Many(describeValueDefinition collection.Item)
             | UnionValueDefinition union ->
                 ValueShape.Union
@@ -147,7 +153,9 @@ module Inspect =
                             match case.Payload.Shape with
                             | NestedValueDefinition(nested, _) ->
                                 { Tag = case.Tag
-                                  Payload = { Fields = nested.Fields |> List.map describeFieldDescriptor } }
+                                  Payload =
+                                    { Fields = nested.Fields |> List.map describeFieldDescriptor
+                                      Description = nested.Description } }
                             | _ -> invalidOp "Union-inline case payloads must be nested model schemas.") }
             | EnumValueDefinition enum ->
                 ValueShape.Enum { Cases = enum.Cases |> List.map (fun case -> { Tag = case.Tag }) }
@@ -155,7 +163,8 @@ module Inspect =
 
         { Shape = shape
           Format = definition.Format
-          Constraints = definition.Constraints }
+          Constraints = definition.Constraints
+          Description = definition.Description }
 
     and internal describeFieldDescriptor (field: FieldDescriptor<obj>) : FieldDescription =
         { Name = ExternalFieldName.value field.ExternalName
@@ -170,7 +179,8 @@ module Inspect =
                 { Name = ExternalFieldName.value field.ExternalName
                   Order = FieldOrder.value field.Order
                   Value = describeValueDefinition field.ValueSchema
-                  Constraints = field.Constraints }) }
+                  Constraints = field.Constraints })
+          Description = definition.Description }
 
     /// <summary>Describes a built model schema as inspectable field metadata.</summary>
     /// <param name="schema">The built model schema to describe.</param>

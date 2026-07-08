@@ -31,9 +31,6 @@ Ordered cheap-and-high-leverage first. Items 1–2 are also prerequisites for th
 (`dev-docs/current-ideas/contract-grammar.md`). Union wire shapes (`Value.enumOf`, `Value.unionInline`) are complete
 across Input.parse, Codec, JsonSchema, and Inspect.
 
-- [ ] JSON Schema fidelity: pin `"$schema"` to draft 2020-12, add description metadata (`Value.describe` /
-  `Schema.describe` authoring surface), and emit it as `title`/`description`. `$defs` hoisting stays deferred (see
-  decisions).
 - [ ] Docgen target skew: standardize all docgen inputs on `net8.0` builds; audit TFM-gated members
   (`Value.date`/`Schema.date`, STJ adapters) and add "netstandard2.1: not available" lines to their XML remarks so the
   reference describes one coherent surface.
