@@ -434,6 +434,8 @@ module Validation =
             | NestedValueDefinition _ -> valueDefinition.Constraints
             | ManyValueDefinition _ -> valueDefinition.Constraints
             | UnionValueDefinition _ -> valueDefinition.Constraints
+            | UnionInlineValueDefinition _ -> valueDefinition.Constraints
+            | EnumValueDefinition _ -> valueDefinition.Constraints
             | OptionValueDefinition _ -> valueDefinition.Constraints
 
         gather definition
@@ -446,6 +448,8 @@ module Validation =
             | NestedValueDefinition _ -> invalidOp "Nested model value schemas have no underlying primitive kind."
             | ManyValueDefinition _ -> invalidOp "Collection value schemas have no underlying primitive kind."
             | UnionValueDefinition _ -> invalidOp "Union value schemas have no underlying primitive kind."
+            | UnionInlineValueDefinition _ -> invalidOp "Union-inline value schemas have no underlying primitive kind."
+            | EnumValueDefinition _ -> invalidOp "Enum value schemas have no underlying primitive kind."
             | OptionValueDefinition _ -> invalidOp "Optional value schemas have no underlying primitive kind."
 
         kindOf definition
@@ -458,6 +462,8 @@ module Validation =
             | NestedValueDefinition _ -> invalidOp "Nested model values have no underlying primitive representation."
             | ManyValueDefinition _ -> invalidOp "Collection values have no underlying primitive representation."
             | UnionValueDefinition _ -> invalidOp "Union values have no underlying primitive representation."
+            | UnionInlineValueDefinition _ -> invalidOp "Union-inline values have no underlying primitive representation."
+            | EnumValueDefinition _ -> invalidOp "Enum values have no underlying primitive representation."
             | OptionValueDefinition _ -> invalidOp "Optional values have no underlying primitive representation."
 
         project definition value
@@ -510,6 +516,8 @@ module Validation =
             | NestedValueDefinition _
             | ManyValueDefinition _
             | UnionValueDefinition _
+            | UnionInlineValueDefinition _
+            | EnumValueDefinition _
             | OptionValueDefinition _ ->
                 validateValue raw (valueSchema.Constraints @ fieldConstraints) path (ops.Inspect value)
                 |> Axial.Validation.Validation.map (fun _ -> value)
@@ -544,6 +552,12 @@ module Validation =
             |> Axial.Validation.Validation.map (fun _ -> value)
         | UnionValueDefinition union ->
             validateUnion path union value
+            |> Axial.Validation.Validation.map (fun _ -> value)
+        | UnionInlineValueDefinition union ->
+            validateUnionInline path union value
+            |> Axial.Validation.Validation.map (fun _ -> value)
+        | EnumValueDefinition enum ->
+            validateEnum path enum value
             |> Axial.Validation.Validation.map (fun _ -> value)
         | OptionValueDefinition optional ->
             match optional.TryUnwrap value with
@@ -607,6 +621,22 @@ module Validation =
             validateValue case.Payload [] payloadPath payload
         | None ->
             SchemaError.Custom("union.case", Some "The value did not match any configured union case.")
+            |> diagnosticsAt path
+            |> Axial.Validation.Validation.error
+
+    and private validateUnionInline path (union: InlineTaggedUnionValueDefinition) value =
+        match union.Cases |> List.tryPick (fun case -> case.TryInspect value |> Option.map (fun payload -> case, payload)) with
+        | Some(case, payload) -> validateValue case.Payload [] path payload
+        | None ->
+            SchemaError.Custom("union.case", Some "The value did not match any configured union case.")
+            |> diagnosticsAt path
+            |> Axial.Validation.Validation.error
+
+    and private validateEnum path (enum: TaggedEnumValueDefinition) (value: obj) =
+        if enum.Cases |> List.exists (fun case -> case.Value.Equals value) then
+            Axial.Validation.Validation.ok value
+        else
+            SchemaError.Custom("enum.case", Some "The value did not match any configured enum case.")
             |> diagnosticsAt path
             |> Axial.Validation.Validation.error
 

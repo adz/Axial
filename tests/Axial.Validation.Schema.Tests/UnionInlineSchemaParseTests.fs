@@ -1,0 +1,88 @@
+namespace Axial.Tests
+
+open Axial.Schema
+open Axial.Validation
+open Axial.Validation.Schema
+open Swensen.Unquote
+open Xunit
+
+module UnionInlineSchemaParseTests =
+    type private CardDetails = { Number: string }
+    type private InvoiceDetails = { Reference: string }
+
+    type private Payment =
+        | Card of CardDetails
+        | Invoice of InvoiceDetails
+
+    type private Checkout = { Payment: Payment }
+
+    let private cardSchema () =
+        Schema.recordFor<CardDetails, _> (fun number -> { Number = number })
+        |> Schema.field "number" _.Number (Value.text |> Value.withConstraint SchemaConstraint.required)
+        |> Schema.build
+
+    let private invoiceSchema () =
+        Schema.recordFor<InvoiceDetails, _> (fun reference -> { Reference = reference })
+        |> Schema.text "reference" _.Reference
+        |> Schema.build
+
+    let private paymentValue () =
+        Value.unionInline
+            "type"
+            [ UnionCase.create "card" Card (function Card details -> Some details | _ -> None) (Value.nested (cardSchema ()))
+              UnionCase.create
+                  "invoice"
+                  Invoice
+                  (function Invoice details -> Some details | _ -> None)
+                  (Value.nested (invoiceSchema ())) ]
+
+    let private checkoutSchema () =
+        Schema.recordFor<Checkout, _> (fun payment -> { Payment = payment })
+        |> Schema.field "payment" _.Payment (paymentValue ())
+        |> Schema.build
+
+    [<Fact>]
+    let ``parse builds the case matching the discriminator from spliced fields`` () =
+        let raw =
+            RawInput.Object(
+                Map.ofList
+                    [ "payment",
+                      RawInput.Object(Map.ofList [ "type", RawInput.Scalar "card"; "number", RawInput.Scalar "4242" ]) ]
+            )
+
+        let parsed = Input.parse (checkoutSchema ()) raw
+
+        test <@ parsed.Result = Ok { Payment = Card { Number = "4242" } } @>
+
+    [<Fact>]
+    let ``parse reports an unknown tag at the discriminator field`` () =
+        let raw =
+            RawInput.Object(
+                Map.ofList
+                    [ "payment", RawInput.Object(Map.ofList [ "type", RawInput.Scalar "cash"; "number", RawInput.Scalar "4242" ]) ]
+            )
+
+        let parsed = Input.parse (checkoutSchema ()) raw
+
+        test
+            <@ parsed.Errors = [ { Path = [ PathSegment.Name "payment"; PathSegment.Name "type" ]
+                                   Error = SchemaError.NotOneOf "card|invoice" } ] @>
+
+    [<Fact>]
+    let ``parse reports missing spliced payload fields at their own path`` () =
+        let raw =
+            RawInput.Object(Map.ofList [ "payment", RawInput.Object(Map.ofList [ "type", RawInput.Scalar "card" ]) ])
+
+        let parsed = Input.parse (checkoutSchema ()) raw
+
+        test
+            <@ parsed.Errors = [ { Path = [ PathSegment.Name "payment"; PathSegment.Name "number" ]
+                                   Error = SchemaError.Required } ] @>
+
+    [<Fact>]
+    let ``validate checks existing union-inline values through case extractors`` () =
+        let model = { Payment = Invoice { Reference = "inv-42" } }
+
+        let result = Validation.validate (checkoutSchema ()) model |> Validation.toResult
+
+        test <@ result = Ok model @>

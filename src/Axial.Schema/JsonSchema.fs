@@ -144,6 +144,16 @@ module JsonSchema =
                 |> String.concat ","
 
             [ sprintf "\"oneOf\":[%s]" cases ]
+        | ValueShape.UnionInline union ->
+            let cases =
+                union.Cases
+                |> List.map (fun case -> inlineCaseKeywords union.DiscriminatorField case.Tag case.Payload)
+                |> String.concat ","
+
+            [ sprintf "\"oneOf\":[%s]" cases ]
+        | ValueShape.Enum enum ->
+            let tags = enum.Cases |> List.map (fun case -> literal case.Tag) |> String.concat ","
+            [ "\"type\":\"string\""; sprintf "\"enum\":[%s]" tags ] @ constraintKeywords constraints
         | ValueShape.Optional payload -> valueKeywords constraints payload
         | ValueShape.Refined _ -> failwith "underlyingShape never returns a refined shape."
 
@@ -156,7 +166,30 @@ module JsonSchema =
         | ValueShape.Primitive _
         | ValueShape.Nested _
         | ValueShape.Many _
-        | ValueShape.Union _ -> false
+        | ValueShape.Union _
+        | ValueShape.UnionInline _
+        | ValueShape.Enum _ -> false
+
+    and private inlineCaseKeywords (discriminatorField: string) (tag: string) (model: ModelDescription) =
+        let discriminatorProperty = sprintf "\"%s\":{\"const\":%s}" (escape discriminatorField) (literal tag)
+
+        let payloadProperties =
+            model.Fields
+            |> List.map (fun field ->
+                let constraints = field.Constraints |> List.map _.Metadata
+                sprintf "\"%s\":{%s}" (escape field.Name) (valueKeywords constraints field.Value |> String.concat ","))
+
+        let properties = discriminatorProperty :: payloadProperties |> String.concat ","
+
+        let required =
+            escape discriminatorField
+            :: (model.Fields
+                |> List.filter (fun field -> not (isOptionalDescription field.Value))
+                |> List.map (fun field -> escape field.Name))
+            |> List.map (sprintf "\"%s\"")
+            |> String.concat ","
+
+        sprintf "{\"type\":\"object\",\"properties\":{%s},\"required\":[%s]}" properties required
 
     and private modelKeywords (model: ModelDescription) =
         let properties =

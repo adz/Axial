@@ -660,6 +660,10 @@ and internal ValueSchemaShape =
     | ManyValueDefinition of CollectionValueDefinition
     /// <summary>A tagged union value whose case payloads are each described by explicit value schemas.</summary>
     | UnionValueDefinition of TaggedUnionValueDefinition
+    /// <summary>An internally-tagged union value whose case payloads are spliced beside the discriminator field.</summary>
+    | UnionInlineValueDefinition of InlineTaggedUnionValueDefinition
+    /// <summary>A bare-string enum value for payload-less union cases.</summary>
+    | EnumValueDefinition of TaggedEnumValueDefinition
     /// <summary>An optional value: absent input is a legal <c>None</c>, present input parses through the payload schema.</summary>
     | OptionValueDefinition of OptionalValueDefinition
 
@@ -718,6 +722,18 @@ and [<ReferenceEquality>] internal TaggedUnionValueDefinition =
       PayloadField: ExternalFieldName
       Cases: UnionCaseValueDefinition list }
 
+/// <summary>
+/// A tagged union case whose payload is spliced beside the discriminator field rather than nested under a
+/// separate payload field. The payload must be a nested model value schema so its fields are known upfront.
+/// </summary>
+and [<ReferenceEquality>] internal InlineTaggedUnionValueDefinition =
+    { DiscriminatorField: ExternalFieldName
+      Cases: UnionCaseValueDefinition list }
+
+and [<ReferenceEquality>] internal EnumCaseValueDefinition = { Tag: string; Value: obj }
+
+and [<ReferenceEquality>] internal TaggedEnumValueDefinition = { Cases: EnumCaseValueDefinition list }
+
 and [<ReferenceEquality>] internal FieldDescriptor<'model> =
     { ExternalName: ExternalFieldName
       Order: FieldOrder
@@ -732,6 +748,11 @@ and [<ReferenceEquality>] internal ModelSchemaDefinition<'model> =
 /// <summary>Describes one tagged union case for <c>Value.union</c>.</summary>
 [<Sealed>]
 type UnionCase<'union> internal (definition: UnionCaseValueDefinition) =
+    member internal _.Definition = definition
+
+/// <summary>Describes one payload-less case for <c>Value.enumOf</c>.</summary>
+[<Sealed>]
+type EnumCase<'enum> internal (definition: EnumCaseValueDefinition) =
     member internal _.Definition = definition
 
 type internal SchemaDefinition<'model> =
@@ -1027,6 +1048,18 @@ module UnionCase =
               TryInspect = fun value -> value |> unbox<'union> |> tryPayload |> Option.map box }
         )
 
+/// <summary>Functions for defining explicit payload-less enum schema cases.</summary>
+[<RequireQualifiedAccess>]
+module EnumCase =
+    /// <summary>Describes one payload-less enum case from a tag and the union case value it represents.</summary>
+    /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="tag" /> is empty or whitespace.</exception>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="tag" /> is null.</exception>
+    let create tag (value: 'enum) : EnumCase<'enum> =
+        if isNull tag then
+            nullArg (nameof tag)
+
+        EnumCase({ Tag = ExternalFieldName.create tag |> ExternalFieldName.value; Value = box value })
+
 /// <summary>Functions for creating and inspecting value schemas.</summary>
 [<RequireQualifiedAccess>]
 module Value =
@@ -1081,6 +1114,10 @@ module Value =
             invalidArg (nameof schema) "Expected a primitive value schema, but the schema is a collection value schema."
         | UnionValueDefinition _ ->
             invalidArg (nameof schema) "Expected a primitive value schema, but the schema is a union value schema."
+        | UnionInlineValueDefinition _ ->
+            invalidArg (nameof schema) "Expected a primitive value schema, but the schema is a union-inline value schema."
+        | EnumValueDefinition _ ->
+            invalidArg (nameof schema) "Expected a primitive value schema, but the schema is an enum value schema."
         | OptionValueDefinition _ ->
             invalidArg (nameof schema) "Expected a primitive value schema, but the schema is an optional value schema."
 
@@ -1252,6 +1289,104 @@ module Value =
               Constraints = [] }
         )
 
+    /// <summary>
+    /// Describes a tagged union value using explicit cases whose payload fields are spliced beside the discriminator
+    /// field in the same object, serde/zod style — for example <c>{ type = "card"; number = "..." }</c> instead of
+    /// <c>Value.union</c>'s externally-wrapped <c>{ type = "card"; value = { number = "..." } }</c>.
+    /// </summary>
+    /// <remarks>
+    /// Every case payload must be built with <see cref="M:Axial.Schema.Value.nested``1" /> so its field names are known
+    /// upfront, and no payload field name may collide with <paramref name="discriminatorField" />; both are checked at
+    /// construction time so the ambiguity can never reach input parsing or codec compilation.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException">
+    /// Thrown when <paramref name="discriminatorField" /> or <paramref name="cases" /> is null.
+    /// </exception>
+    /// <exception cref="T:System.ArgumentException">
+    /// Thrown when a field name is empty, no cases are supplied, case tags are duplicated, a case payload is not a
+    /// nested model value schema, or a case payload field name collides with <paramref name="discriminatorField" />.
+    /// </exception>
+    let unionInline discriminatorField (cases: UnionCase<'union> list) : ValueSchema<'union> =
+        if isNull (box cases) then
+            nullArg (nameof cases)
+
+        cases
+        |> List.iter (fun case ->
+            if isNull (box case) then
+                nullArg (nameof cases))
+
+        if List.isEmpty cases then
+            invalidArg (nameof cases) "Union schemas must contain at least one case."
+
+        let tags = cases |> List.map (fun case -> case.Definition.Tag)
+        let duplicates = tags |> List.countBy id |> List.filter (fun (_, count) -> count > 1)
+
+        if not (List.isEmpty duplicates) then
+            invalidArg (nameof cases) "Union case tags must be unique."
+
+        let discriminatorName = ExternalFieldName.create discriminatorField
+        let discriminatorText = ExternalFieldName.value discriminatorName
+
+        cases
+        |> List.iter (fun case ->
+            match case.Definition.Payload.Shape with
+            | NestedValueDefinition(model, _) ->
+                if model.Fields |> List.exists (fun field -> ExternalFieldName.value field.ExternalName = discriminatorText) then
+                    invalidArg
+                        (nameof cases)
+                        (sprintf
+                            "Union-inline case \"%s\" payload field names must not collide with the discriminator field \"%s\"."
+                            case.Definition.Tag
+                            discriminatorText)
+            | PrimitiveValueDefinition _
+            | RefinedValueDefinition _
+            | ManyValueDefinition _
+            | UnionValueDefinition _
+            | UnionInlineValueDefinition _
+            | EnumValueDefinition _
+            | OptionValueDefinition _ ->
+                invalidArg
+                    (nameof cases)
+                    (sprintf "Union-inline case \"%s\" payload must be an object schema built with Value.nested." case.Definition.Tag))
+
+        ValueSchema(
+            { Shape =
+                UnionInlineValueDefinition
+                    { DiscriminatorField = discriminatorName
+                      Cases = cases |> List.map _.Definition }
+              Format = None
+              Constraints = [] }
+        )
+
+    /// <summary>Describes a bare-string enum value for payload-less union cases, lowering to JSON Schema <c>enum</c>.</summary>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="cases" /> is null.</exception>
+    /// <exception cref="T:System.ArgumentException">
+    /// Thrown when no cases are supplied or case tags are duplicated.
+    /// </exception>
+    let enumOf (cases: EnumCase<'enum> list) : ValueSchema<'enum> =
+        if isNull (box cases) then
+            nullArg (nameof cases)
+
+        cases
+        |> List.iter (fun case ->
+            if isNull (box case) then
+                nullArg (nameof cases))
+
+        if List.isEmpty cases then
+            invalidArg (nameof cases) "Enum schemas must contain at least one case."
+
+        let tags = cases |> List.map (fun case -> case.Definition.Tag)
+        let duplicates = tags |> List.countBy id |> List.filter (fun (_, count) -> count > 1)
+
+        if not (List.isEmpty duplicates) then
+            invalidArg (nameof cases) "Enum case tags must be unique."
+
+        ValueSchema(
+            { Shape = EnumValueDefinition { Cases = cases |> List.map _.Definition }
+              Format = None
+              Constraints = [] }
+        )
+
     /// <summary>Describes an optional value so <c>'field option</c> models are schema-describable.</summary>
     /// <remarks>
     /// <para>
@@ -1285,7 +1420,9 @@ module Value =
         | RefinedValueDefinition _
         | NestedValueDefinition _
         | ManyValueDefinition _
-        | UnionValueDefinition _ -> ()
+        | UnionValueDefinition _
+        | UnionInlineValueDefinition _
+        | EnumValueDefinition _ -> ()
 
         let rec carriesRequired (definition: ValueSchemaDefinition) =
             let ownRequired =
@@ -1299,6 +1436,8 @@ module Value =
                | NestedValueDefinition _
                | ManyValueDefinition _
                | UnionValueDefinition _
+               | UnionInlineValueDefinition _
+               | EnumValueDefinition _
                | OptionValueDefinition _ -> false
 
         if carriesRequired payload.Definition then
@@ -1327,6 +1466,8 @@ module Value =
         | NestedValueDefinition _ -> false
         | ManyValueDefinition _ -> false
         | UnionValueDefinition _ -> false
+        | UnionInlineValueDefinition _ -> false
+        | EnumValueDefinition _ -> false
         | OptionValueDefinition _ -> false
 
     /// <summary>Returns the intrinsic primitive kind beneath any refinement layers of a value schema.</summary>
@@ -1352,6 +1493,10 @@ module Value =
                 invalidArg (nameof schema) "Collection value schemas have no underlying primitive kind."
             | UnionValueDefinition _ ->
                 invalidArg (nameof schema) "Union value schemas have no underlying primitive kind."
+            | UnionInlineValueDefinition _ ->
+                invalidArg (nameof schema) "Union-inline value schemas have no underlying primitive kind."
+            | EnumValueDefinition _ ->
+                invalidArg (nameof schema) "Enum value schemas have no underlying primitive kind."
             | OptionValueDefinition _ ->
                 invalidArg (nameof schema) "Optional value schemas have no underlying primitive kind."
 
@@ -1381,6 +1526,10 @@ module Value =
             invalidArg (nameof schema) "Expected a refined value schema, but the schema is a collection value schema."
         | UnionValueDefinition _ ->
             invalidArg (nameof schema) "Expected a refined value schema, but the schema is a union value schema."
+        | UnionInlineValueDefinition _ ->
+            invalidArg (nameof schema) "Expected a refined value schema, but the schema is a union-inline value schema."
+        | EnumValueDefinition _ ->
+            invalidArg (nameof schema) "Expected a refined value schema, but the schema is an enum value schema."
         | OptionValueDefinition _ ->
             invalidArg (nameof schema) "Expected a refined value schema, but the schema is an optional value schema."
 
@@ -1440,6 +1589,10 @@ module Value =
                 invalidArg (nameof schema) "Collection value schemas have no underlying primitive representation."
             | UnionValueDefinition _ ->
                 invalidArg (nameof schema) "Union value schemas have no underlying primitive representation."
+            | UnionInlineValueDefinition _ ->
+                invalidArg (nameof schema) "Union-inline value schemas have no underlying primitive representation."
+            | EnumValueDefinition _ ->
+                invalidArg (nameof schema) "Enum value schemas have no underlying primitive representation."
             | OptionValueDefinition _ ->
                 invalidArg (nameof schema) "Optional value schemas have no underlying primitive representation."
 
@@ -1494,6 +1647,8 @@ module Value =
                 | NestedValueDefinition _ -> None
                 | ManyValueDefinition _ -> None
                 | UnionValueDefinition _ -> None
+                | UnionInlineValueDefinition _ -> None
+                | EnumValueDefinition _ -> None
                 | OptionValueDefinition _ -> None
 
         formatOf schema.Definition
@@ -1533,6 +1688,8 @@ module Value =
             | NestedValueDefinition _ -> definition.Constraints
             | ManyValueDefinition _ -> definition.Constraints
             | UnionValueDefinition _ -> definition.Constraints
+            | UnionInlineValueDefinition _ -> definition.Constraints
+            | EnumValueDefinition _ -> definition.Constraints
             | OptionValueDefinition _ -> definition.Constraints
 
         gather schema.Definition

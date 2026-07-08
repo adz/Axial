@@ -69,6 +69,8 @@ module Input =
             | NestedValueDefinition _ -> valueDefinition.Constraints
             | ManyValueDefinition _ -> valueDefinition.Constraints
             | UnionValueDefinition _ -> valueDefinition.Constraints
+            | UnionInlineValueDefinition _ -> valueDefinition.Constraints
+            | EnumValueDefinition _ -> valueDefinition.Constraints
             | OptionValueDefinition _ -> valueDefinition.Constraints
 
         gather definition
@@ -85,6 +87,8 @@ module Input =
             | NestedValueDefinition _ -> invalidOp "Nested model value schemas have no underlying primitive kind."
             | ManyValueDefinition _ -> invalidOp "Collection value schemas have no underlying primitive kind."
             | UnionValueDefinition _ -> invalidOp "Union value schemas have no underlying primitive kind."
+            | UnionInlineValueDefinition _ -> invalidOp "Union-inline value schemas have no underlying primitive kind."
+            | EnumValueDefinition _ -> invalidOp "Enum value schemas have no underlying primitive kind."
             | OptionValueDefinition _ -> invalidOp "Optional value schemas have no underlying primitive kind."
 
         kindOf definition
@@ -97,6 +101,8 @@ module Input =
             | NestedValueDefinition _
             | ManyValueDefinition _
             | UnionValueDefinition _
+            | UnionInlineValueDefinition _
+            | EnumValueDefinition _
             | OptionValueDefinition _ -> value
 
         construct definition primitive
@@ -175,7 +181,9 @@ module Input =
         | RefinedValueDefinition _
         | NestedValueDefinition _
         | ManyValueDefinition _
-        | UnionValueDefinition _ -> parsePresentValue options valueSchema fieldConstraints path raw
+        | UnionValueDefinition _
+        | UnionInlineValueDefinition _
+        | EnumValueDefinition _ -> parsePresentValue options valueSchema fieldConstraints path raw
 
     and private parsePresentValue options valueSchema fieldConstraints path raw =
         let constraints = allConstraints valueSchema @ fieldConstraints
@@ -187,6 +195,7 @@ module Input =
             match valueSchema.Shape with
             | NestedValueDefinition(nestedModel, _) -> parseObject options path nestedModel fields
             | UnionValueDefinition union -> parseUnion options path union fields
+            | UnionInlineValueDefinition union -> parseUnionInline options path union fields
             | RefinedValueDefinition(raw, _) ->
                 match raw.Shape with
                 | NestedValueDefinition(nestedModel, _) ->
@@ -195,19 +204,25 @@ module Input =
                 | UnionValueDefinition union ->
                     parseUnion options path union fields
                     |> Result.map (constructValue valueSchema)
+                | UnionInlineValueDefinition union ->
+                    parseUnionInline options path union fields
+                    |> Result.map (constructValue valueSchema)
                 | OptionValueDefinition _ ->
                     parseValue options raw [] path (RawInput.Object fields)
                     |> Result.map (constructValue valueSchema)
                 | PrimitiveValueDefinition _
-                | RefinedValueDefinition _ -> errorAt path SchemaError.ExpectedScalar
+                | RefinedValueDefinition _
+                | EnumValueDefinition _ -> errorAt path SchemaError.ExpectedScalar
                 | ManyValueDefinition _ -> errorAt path SchemaError.ExpectedMany
             | ManyValueDefinition _ -> errorAt path SchemaError.ExpectedMany
             | OptionValueDefinition _ -> invalidOp "Optional value schemas are parsed before raw input dispatch."
-            | PrimitiveValueDefinition _ -> errorAt path SchemaError.ExpectedScalar
+            | PrimitiveValueDefinition _
+            | EnumValueDefinition _ -> errorAt path SchemaError.ExpectedScalar
         | RawInput.Many rawItems ->
             match valueSchema.Shape with
             | NestedValueDefinition _
-            | UnionValueDefinition _ -> errorAt path SchemaError.ExpectedObject
+            | UnionValueDefinition _
+            | UnionInlineValueDefinition _ -> errorAt path SchemaError.ExpectedObject
             | ManyValueDefinition collection -> parseMany options path collection constraints rawItems
             | RefinedValueDefinition(raw, _) ->
                 match raw.Shape with
@@ -218,27 +233,35 @@ module Input =
                     parseValue options raw [] path (RawInput.Many rawItems)
                     |> Result.map (constructValue valueSchema)
                 | NestedValueDefinition _
-                | UnionValueDefinition _ -> errorAt path SchemaError.ExpectedObject
+                | UnionValueDefinition _
+                | UnionInlineValueDefinition _ -> errorAt path SchemaError.ExpectedObject
                 | PrimitiveValueDefinition _
-                | RefinedValueDefinition _ -> errorAt path SchemaError.ExpectedScalar
+                | RefinedValueDefinition _
+                | EnumValueDefinition _ -> errorAt path SchemaError.ExpectedScalar
             | OptionValueDefinition _ -> invalidOp "Optional value schemas are parsed before raw input dispatch."
-            | PrimitiveValueDefinition _ -> errorAt path SchemaError.ExpectedScalar
+            | PrimitiveValueDefinition _
+            | EnumValueDefinition _ -> errorAt path SchemaError.ExpectedScalar
         | RawInput.Scalar text when hasRequiredConstraint constraints && String.IsNullOrWhiteSpace text ->
             errorAt path (SchemaCheckFailure.withCustomMessageForCode constraints "required" SchemaError.Required)
         | RawInput.Scalar text ->
             match valueSchema.Shape with
             | NestedValueDefinition _
-            | UnionValueDefinition _ -> errorAt path SchemaError.ExpectedObject
+            | UnionValueDefinition _
+            | UnionInlineValueDefinition _ -> errorAt path SchemaError.ExpectedObject
             | ManyValueDefinition _ -> errorAt path SchemaError.ExpectedMany
             | OptionValueDefinition _ -> invalidOp "Optional value schemas are parsed before raw input dispatch."
+            | EnumValueDefinition enum -> parseEnum path enum text
             | RefinedValueDefinition(raw, _) ->
                 match raw.Shape with
                 | NestedValueDefinition _
-                | UnionValueDefinition _ -> errorAt path SchemaError.ExpectedObject
+                | UnionValueDefinition _
+                | UnionInlineValueDefinition _ -> errorAt path SchemaError.ExpectedObject
                 | ManyValueDefinition _ -> errorAt path SchemaError.ExpectedMany
                 | OptionValueDefinition _ ->
                     parseValue options raw [] path (RawInput.Scalar text)
                     |> Result.map (constructValue valueSchema)
+                | EnumValueDefinition enum ->
+                    parseEnum path enum text |> Result.map (constructValue valueSchema)
                 | PrimitiveValueDefinition _
                 | RefinedValueDefinition _ ->
                     let kind = underlyingPrimitiveKind valueSchema
@@ -290,6 +313,38 @@ module Input =
                 |> Result.map case.Construct
         | RawInput.Object _
         | RawInput.Many _ -> errorAt discriminatorPath SchemaError.ExpectedScalar
+
+    and private parseUnionInline options path (union: InlineTaggedUnionValueDefinition) (fields: Map<string, RawInput>) =
+        let discriminatorName = ExternalFieldName.value union.DiscriminatorField
+        let discriminatorPath = path @ [ PathSegment.Name discriminatorName ]
+
+        match fields |> Map.tryFind discriminatorName |> Option.defaultValue RawInput.Missing with
+        | RawInput.Missing -> errorAt discriminatorPath SchemaError.Required
+        | RawInput.Scalar tag ->
+            match union.Cases |> List.tryFind (fun case -> case.Tag = tag) with
+            | None ->
+                union.Cases
+                |> List.map _.Tag
+                |> String.concat "|"
+                |> SchemaError.NotOneOf
+                |> errorAt discriminatorPath
+            | Some case ->
+                match case.Payload.Shape with
+                | NestedValueDefinition(nestedModel, _) ->
+                    parseObject options path nestedModel fields |> Result.map case.Construct
+                | _ -> invalidOp "Union-inline case payloads must be nested model schemas."
+        | RawInput.Object _
+        | RawInput.Many _ -> errorAt discriminatorPath SchemaError.ExpectedScalar
+
+    and private parseEnum path (enum: TaggedEnumValueDefinition) (text: string) =
+        match enum.Cases |> List.tryFind (fun case -> case.Tag = text) with
+        | Some case -> Ok case.Value
+        | None ->
+            enum.Cases
+            |> List.map _.Tag
+            |> String.concat "|"
+            |> SchemaError.NotOneOf
+            |> errorAt path
 
     and private parseNestedField options basePath (fields: Map<string, RawInput>) (field: FieldDescriptor<obj>) =
         let name = ExternalFieldName.value field.ExternalName

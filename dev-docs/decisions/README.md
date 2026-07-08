@@ -111,8 +111,8 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 - Unions support three wire shapes: the externally-wrapped `{discriminator, payload}` object (`Value.union`, the
   default), internally-tagged objects (`Value.unionInline` — valid only when every payload is an object whose field
   names don't collide with the discriminator, checked at construction), and bare-string enums (`Value.enumOf`) for
-  payload-less cases. The latter two are queued work; the contract grammar's literal unions (`"a" | "b"`) lower to
-  `Value.enumOf`. No untagged unions — discriminators are required.
+  payload-less cases. All three are implemented across Input.parse, Codec, JsonSchema, and Inspect; the contract
+  grammar's literal unions (`"a" | "b"`) lower to `Value.enumOf`. No untagged unions — discriminators are required.
 - `JsonSchema.generate` pins `$schema` to draft 2020-12 and carries description metadata into `title`/`description`
   (both queued work). `$defs` hoisting is deferred until a sample has real nested reuse; recursion is not expressible
   in the builder today, so inlining cannot fail to terminate. Draft selection waits for a real consumer.

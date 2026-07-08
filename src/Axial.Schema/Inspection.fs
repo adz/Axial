@@ -21,6 +21,10 @@ type ValueShape =
     | Many of item: ValueDescription
     /// <summary>A tagged union value with explicit discriminator, payload field, and case descriptions.</summary>
     | Union of union: UnionDescription
+    /// <summary>An internally-tagged union value whose case payload fields sit beside the discriminator field.</summary>
+    | UnionInline of union: UnionInlineDescription
+    /// <summary>A bare-string enum value with explicit case tags.</summary>
+    | Enum of enum: EnumDescription
     /// <summary>An optional value whose present payload is described by the supplied payload description.</summary>
     | Optional of payload: ValueDescription
 
@@ -75,6 +79,38 @@ and UnionDescription =
         Cases: UnionCaseDescription list
     }
 
+/// <summary>Describes one case in an internally-tagged union value schema.</summary>
+and UnionInlineCaseDescription =
+    {
+        /// <summary>The raw discriminator tag for this union case.</summary>
+        Tag: string
+        /// <summary>The field descriptions of this case's spliced-in payload.</summary>
+        Payload: ModelDescription
+    }
+
+/// <summary>Describes an internally-tagged union value schema.</summary>
+and UnionInlineDescription =
+    {
+        /// <summary>The raw input field name that carries the case tag.</summary>
+        DiscriminatorField: string
+        /// <summary>The union cases in declaration order.</summary>
+        Cases: UnionInlineCaseDescription list
+    }
+
+/// <summary>Describes one case in a bare-string enum value schema.</summary>
+and EnumCaseDescription =
+    {
+        /// <summary>The raw tag for this enum case.</summary>
+        Tag: string
+    }
+
+/// <summary>Describes a bare-string enum value schema.</summary>
+and EnumDescription =
+    {
+        /// <summary>The enum cases in declaration order.</summary>
+        Cases: EnumCaseDescription list
+    }
+
 /// <summary>The inspection API over built schemas and value schemas.</summary>
 /// <remarks>
 /// <para>
@@ -102,6 +138,19 @@ module Inspect =
                         |> List.map (fun case ->
                             { Tag = case.Tag
                               Payload = describeValueDefinition case.Payload }) }
+            | UnionInlineValueDefinition union ->
+                ValueShape.UnionInline
+                    { DiscriminatorField = ExternalFieldName.value union.DiscriminatorField
+                      Cases =
+                        union.Cases
+                        |> List.map (fun case ->
+                            match case.Payload.Shape with
+                            | NestedValueDefinition(nested, _) ->
+                                { Tag = case.Tag
+                                  Payload = { Fields = nested.Fields |> List.map describeFieldDescriptor } }
+                            | _ -> invalidOp "Union-inline case payloads must be nested model schemas.") }
+            | EnumValueDefinition enum ->
+                ValueShape.Enum { Cases = enum.Cases |> List.map (fun case -> { Tag = case.Tag }) }
             | OptionValueDefinition optional -> ValueShape.Optional(describeValueDefinition optional.Payload)
 
         { Shape = shape

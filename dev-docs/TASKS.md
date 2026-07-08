@@ -27,14 +27,10 @@ STJ adapter) are recorded with their pre-chosen answers in `dev-docs/decisions/R
 
 ## Phase 26: Triaged Boundary Work
 
-Ordered cheap-and-high-leverage first. Items 1–3 are also prerequisites for the contract grammar
-(`dev-docs/current-ideas/contract-grammar.md`).
+Ordered cheap-and-high-leverage first. Items 1–2 are also prerequisites for the contract grammar
+(`dev-docs/current-ideas/contract-grammar.md`). Union wire shapes (`Value.enumOf`, `Value.unionInline`) are complete
+across Input.parse, Codec, JsonSchema, and Inspect.
 
-- [ ] Union wire shapes: add `Value.enumOf` (bare-string enums for payload-less DU cases, lowering to JSON Schema
-  `enum`) and `Value.unionInline` (internally-tagged objects, serde/zod style — valid only when every payload is an
-  object whose field names don't collide with the discriminator, checked at construction; lowers to `oneOf` members
-  with a `const` discriminator beside payload properties). Cover all three interpreters (Input.parse, Codec,
-  JsonSchema) plus Inspect descriptions.
 - [ ] JSON Schema fidelity: pin `"$schema"` to draft 2020-12, add description metadata (`Value.describe` /
   `Schema.describe` authoring surface), and emit it as `title`/`description`. `$defs` hoisting stays deferred (see
   decisions).
@@ -56,7 +52,7 @@ Ordered cheap-and-high-leverage first. Items 1–3 are also prerequisites for th
 ## Phase 27: Contract Grammar Prerequisites
 
 From `dev-docs/current-ideas/contract-grammar.md` sequencing step 1 — each useful independently of the grammar. Do
-these after Phase 26 items 1–3, which the grammar also needs (`?` optionality, literal unions, `///` doc comments).
+these after Phase 26 items 1–2, which the grammar also needs (`?` optionality, literal unions, `///` doc comments).
 
 - [ ] Add `Value.map : ValueSchema<'value> -> ValueSchema<Map<string,'value>>` (JSON objects as dictionaries; keys are
   always text) across Input.parse, Codec, JsonSchema (`additionalProperties`), and Inspect.

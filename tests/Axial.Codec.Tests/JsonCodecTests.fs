@@ -128,9 +128,64 @@ module JsonCodecTests =
           Payment: Payment }
 
     let private orderSchema () =
-        Schema.recordFor<Order, _> (fun reference payment -> { Reference = reference; Payment = payment })
+        Schema.recordFor<Order, _> (fun reference payment -> { Order.Reference = reference; Payment = payment })
         |> Schema.text "reference" _.Reference
         |> Schema.field "payment" _.Payment (paymentSchema ())
+        |> Schema.build
+
+    let private paymentInlineSchema () =
+        let cardSchema =
+            Schema.recordFor<CardDetails, _> (fun number expiry -> { Number = number; Expiry = expiry })
+            |> Schema.text "number" _.Number
+            |> Schema.text "expiry" _.Expiry
+            |> Schema.build
+
+        let invoiceSchema =
+            Schema.recordFor<InvoiceDetails, _> (fun reference -> { Reference = reference })
+            |> Schema.text "reference" _.Reference
+            |> Schema.build
+
+        Value.unionInline
+            "type"
+            [ UnionCase.create
+                  "card"
+                  Card
+                  (function
+                  | Card details -> Some details
+                  | _ -> None)
+                  (Value.nested cardSchema)
+              UnionCase.create
+                  "invoice"
+                  Invoice
+                  (function
+                  | Invoice details -> Some details
+                  | _ -> None)
+                  (Value.nested invoiceSchema) ]
+
+    type private InlineOrder =
+        { Reference: string
+          Payment: Payment }
+
+    let private inlineOrderSchema () =
+        Schema.recordFor<InlineOrder, _> (fun reference payment ->
+            { InlineOrder.Reference = reference; Payment = payment })
+        |> Schema.text "reference" _.Reference
+        |> Schema.field "payment" _.Payment (paymentInlineSchema ())
+        |> Schema.build
+
+    type private Color =
+        | Red
+        | Green
+        | Blue
+
+    type private Swatch = { Color: Color }
+
+    let private swatchSchema () =
+        Schema.recordFor<Swatch, _> (fun color -> { Color = color })
+        |> Schema.field
+            "color"
+            _.Color
+            (Value.enumOf [ EnumCase.create "red" Red; EnumCase.create "green" Green; EnumCase.create "blue" Blue ])
         |> Schema.build
 
     [<Fact>]
@@ -180,11 +235,11 @@ module JsonCodecTests =
     let ``round trips tagged unions and accepts payload before discriminator`` () =
         let codec = Json.compile (orderSchema ())
 
-        let cardOrder =
+        let cardOrder: Order =
             { Reference = "ord-1"
               Payment = Card { Number = "4111"; Expiry = "12/28" } }
 
-        let invoiceOrder =
+        let invoiceOrder: Order =
             { Reference = "ord-2"
               Payment = Invoice { Reference = "inv-42" } }
 
@@ -367,3 +422,36 @@ module JsonCodecTests =
         raisesWith<JsonCodecException>
             <@ Json.deserialize codec "{\"ratings\":[]}" @>
             (fun ex -> <@ ex.Message.Contains "name" @>)
+
+    [<Fact>]
+    let ``round trips union-inline payments with spliced fields beside the discriminator`` () =
+        let codec = Json.compile (inlineOrderSchema ())
+
+        let cardOrder: InlineOrder =
+            { Reference = "ord-1"
+              Payment = Card { Number = "4111"; Expiry = "12/28" } }
+
+        let json = Json.serialize codec cardOrder
+        test <@ json.Contains "\"payment\":{\"type\":\"card\",\"number\":\"4111\",\"expiry\":\"12/28\"}" @>
+        test <@ Json.deserialize codec json = cardOrder @>
+
+        let invoiceOrder: InlineOrder =
+            { Reference = "ord-2"
+              Payment = Invoice { Reference = "inv-42" } }
+
+        test <@ Json.deserialize codec (Json.serialize codec invoiceOrder) = invoiceOrder @>
+
+        let discriminatorLast =
+            """{"reference":"ord-1","payment":{"number":"4111","expiry":"12/28","type":"card"}}"""
+
+        test <@ Json.deserialize codec discriminatorLast = cardOrder @>
+
+    [<Fact>]
+    let ``round trips bare-string enum values`` () =
+        let codec = Json.compile (swatchSchema ())
+
+        let swatch = { Color = Green }
+        let json = Json.serialize codec swatch
+
+        test <@ json = "{\"color\":\"green\"}" @>
+        test <@ Json.deserialize codec json = swatch @>

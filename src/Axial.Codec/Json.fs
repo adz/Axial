@@ -324,6 +324,8 @@ module rec Json =
                 let struct (items, next) = decodeItems src
                 struct (collection.BoxItems items, next)
         | UnionValueDefinition union -> compileUnionDecoderObj union
+        | UnionInlineValueDefinition union -> compileUnionInlineDecoderObj union
+        | EnumValueDefinition enum -> compileEnumDecoderObj enum
         | OptionValueDefinition optional ->
             let payloadDecoder = compileValueDecoderObj optional.Payload
 
@@ -465,6 +467,8 @@ module rec Json =
 
                 writer.WriteByte(byte ']')
         | UnionValueDefinition union -> compileUnionEncoderObj union
+        | UnionInlineValueDefinition union -> compileUnionInlineEncoderObj union
+        | EnumValueDefinition enum -> compileEnumEncoderObj enum
         | OptionValueDefinition optional ->
             // Options in non-field positions (collection items, union payloads, refined raw layers) have no
             // "absent" representation, so None encodes as JSON null there; field-level None omission is handled
@@ -483,33 +487,35 @@ module rec Json =
     let private fieldPrefixes name =
         utf8 ("\"" + name + "\":"), utf8 (",\"" + name + "\":")
 
-    let private compileErasedModelEncoder (model: ModelSchemaDefinition<obj>) : Encoder<obj> =
-        let fields =
-            model.Fields
-            |> List.map (fun field ->
-                let firstPrefix, restPrefix = fieldPrefixes (ExternalFieldName.value field.ExternalName)
-                let getter = field.Getter
+    let private compileModelFieldWriters (model: ModelSchemaDefinition<obj>) : FieldWriter<obj>[] =
+        model.Fields
+        |> List.map (fun field ->
+            let firstPrefix, restPrefix = fieldPrefixes (ExternalFieldName.value field.ExternalName)
+            let getter = field.Getter
 
-                match field.ValueSchema.Shape with
-                | OptionValueDefinition optional ->
-                    let payloadEncoder = compileValueEncoderObj optional.Payload
+            match field.ValueSchema.Shape with
+            | OptionValueDefinition optional ->
+                let payloadEncoder = compileValueEncoderObj optional.Payload
 
-                    (fun (writer: IByteWriter) needsComma value ->
-                        match optional.TryUnwrap (getter value) with
-                        | Some payload ->
-                            writer.WriteBytes(if needsComma then restPrefix else firstPrefix)
-                            payloadEncoder writer payload
-                            true
-                        | None -> false)
-                    : FieldWriter<obj>
-                | _ ->
-                    let encodeField = compileValueEncoderObj field.ValueSchema
-
-                    fun writer needsComma value ->
+                (fun (writer: IByteWriter) needsComma value ->
+                    match optional.TryUnwrap (getter value) with
+                    | Some payload ->
                         writer.WriteBytes(if needsComma then restPrefix else firstPrefix)
-                        encodeField writer (getter value)
-                        true)
-            |> Array.ofList
+                        payloadEncoder writer payload
+                        true
+                    | None -> false)
+                : FieldWriter<obj>
+            | _ ->
+                let encodeField = compileValueEncoderObj field.ValueSchema
+
+                fun writer needsComma value ->
+                    writer.WriteBytes(if needsComma then restPrefix else firstPrefix)
+                    encodeField writer (getter value)
+                    true)
+        |> Array.ofList
+
+    let private compileErasedModelEncoder (model: ModelSchemaDefinition<obj>) : Encoder<obj> =
+        let fields = compileModelFieldWriters model
 
         fun writer value ->
             writer.WriteByte(byte '{')
@@ -551,6 +557,116 @@ module rec Json =
             if not written then
                 invalidOp "No union case matched the value being encoded."
 
+    let private compileEnumDecoderObj (enum: TaggedEnumValueDefinition) : Decoder<obj> =
+        let cases = enum.Cases |> List.map (fun case -> case.Tag, case.Value) |> Array.ofList
+
+        fun src ->
+            let struct (tag, next) = stringDecoder src
+
+            match cases |> Array.tryFind (fun (caseTag, _) -> caseTag = tag) with
+            | Some(_, value) -> struct (value, next)
+            | None -> raise (JsonCodecException("$", sprintf "unknown enum case tag: %s" tag))
+
+    let private compileEnumEncoderObj (enum: TaggedEnumValueDefinition) : Encoder<obj> =
+        let cases = enum.Cases |> List.map (fun case -> case.Value, case.Tag) |> Array.ofList
+
+        fun writer value ->
+            match cases |> Array.tryFind (fun (caseValue, _) -> caseValue.Equals value) with
+            | Some(_, tag) -> writeEscapedString writer tag
+            | None -> invalidOp "No enum case matched the value being encoded."
+
+    /// Union-inline payloads are nested model schemas whose fields are spliced beside the discriminator field, so
+    /// decoding independently rescans the object once to find the tag and once through the matched case's own model
+    /// decoder (which tolerates the discriminator key as just another unrecognized, skipped field).
+    let private compileUnionInlineDecoderObj (union: InlineTaggedUnionValueDefinition) : Decoder<obj> =
+        let discriminatorName = ExternalFieldName.value union.DiscriminatorField
+        let discriminatorUtf8 = utf8 discriminatorName
+
+        let cases =
+            union.Cases
+            |> List.map (fun case ->
+                match case.Payload.Shape with
+                | NestedValueDefinition(model, _) -> case.Tag, compileErasedModelDecoder model, case.Construct
+                | _ -> invalidOp "Union-inline case payloads must be nested model schemas.")
+            |> Array.ofList
+
+        fun src ->
+            let mutable current = expectByte (byte '{') "{" src
+            let data = current.Data
+            let mutable continueLoop = true
+            let mutable tag: string = null
+
+            if current.Offset < data.Length && data[current.Offset] = byte '}' then
+                current <- current.Advance 1
+                continueLoop <- false
+
+            while continueLoop do
+                let struct (keyStart, keyLength, keyHadEscapes, afterKey) = stringRaw current
+                let afterColon = advancePastColon afterKey
+
+                let matches (expected: byte[]) (expectedText: string) =
+                    if keyHadEscapes then
+                        materializeString data keyStart keyLength true = expectedText
+                    else
+                        bytesEqual expected data keyStart keyLength
+
+                let afterValue =
+                    if isNull tag && matches discriminatorUtf8 discriminatorName then
+                        let struct (value, next) =
+                            withFieldPath discriminatorName (fun () -> stringDecoder afterColon)
+
+                        tag <- value
+                        next
+                    else
+                        skipValue afterColon
+
+                let struct (next, hasMore) = readSeparatorOrClose (byte '}') "}" afterValue
+                current <- next
+                continueLoop <- hasMore
+
+            if isNull tag then
+                raise (JsonCodecException("." + discriminatorName, "missing union discriminator field"))
+
+            match cases |> Array.tryFind (fun (caseTag, _, _) -> caseTag = tag) with
+            | None -> raise (JsonCodecException("." + discriminatorName, sprintf "unknown union case tag: %s" tag))
+            | Some(_, decodePayload, construct) ->
+                let struct (value, _) = decodePayload src
+                struct (construct value, current)
+
+    let private compileUnionInlineEncoderObj (union: InlineTaggedUnionValueDefinition) : Encoder<obj> =
+        let discriminatorPrefix = utf8 ("\"" + ExternalFieldName.value union.DiscriminatorField + "\":")
+
+        let cases =
+            union.Cases
+            |> List.map (fun case ->
+                match case.Payload.Shape with
+                | NestedValueDefinition(model, _) -> case.Tag, case.TryInspect, compileModelFieldWriters model
+                | _ -> invalidOp "Union-inline case payloads must be nested model schemas.")
+            |> Array.ofList
+
+        fun writer value ->
+            let mutable written = false
+            let mutable index = 0
+
+            while not written && index < cases.Length do
+                let (tag, tryInspect, fields) = cases[index]
+
+                match tryInspect value with
+                | Some payload ->
+                    writer.WriteByte(byte '{')
+                    writer.WriteBytes discriminatorPrefix
+                    writeEscapedString writer tag
+
+                    for writeField in fields do
+                        writeField writer true payload |> ignore
+
+                    writer.WriteByte(byte '}')
+                    written <- true
+                | None -> index <- index + 1
+
+            if not written then
+                invalidOp "No union-inline case matched the value being encoded."
+
     // ---------------------------------------------------------------------
     // Typed value codecs over the retained field chain
     // ---------------------------------------------------------------------
@@ -581,6 +697,8 @@ module rec Json =
                         box (listDecoder (compileValueDecoder<'item> item)) }
             |> unbox<Decoder<'field>>
         | UnionValueDefinition _
+        | UnionInlineValueDefinition _
+        | EnumValueDefinition _
         | OptionValueDefinition _ ->
             let objDecoder = compileValueDecoderObj definition
 
@@ -606,6 +724,8 @@ module rec Json =
             |> unbox<Encoder<'field>>
         | RefinedValueDefinition _
         | UnionValueDefinition _
+        | UnionInlineValueDefinition _
+        | EnumValueDefinition _
         | OptionValueDefinition _ ->
             let objEncoder = compileValueEncoderObj definition
             fun writer value -> objEncoder writer (box value)
