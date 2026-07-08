@@ -9,18 +9,23 @@
   <img alt="Axial" src="docs/content/img/axial-readme-light.svg" width="160">
 </picture>
 
-Axial provides **structured composition over normal F#/.NET code**. It is two tools that share one vocabulary:
+Checking a model field by field falls apart once there's more than one field: fail-fast drops sibling errors,
+hand-rolled accumulation loses the field paths, and either way the record gets built before the checks finish. Add
+async work on top and a second problem shows up — dependencies and cancellation get threaded through every call by
+hand. Axial is three areas that share one vocabulary and can be used independently:
 
-**Parse, don't validate.** For domain models, declare a `Schema` once — parsing raw input (HTTP form-like, CLI,
-JSON-like, configuration), validation, redisplay with path-aware field errors, contextual rules, and metadata
-interpreters (JSON Schema, docs, UI) all fall out of that one declaration. An invalid model is never constructed.
-For simple code without a domain model, plain F# `Result` with your own error union is the whole story — `Check`,
-`Validation`, and `Refined` are the machinery behind those two doors, there when you need them directly.
+**Error handling.** For simple code, plain F# `Result<'value, 'error>` with your own error union is the whole story,
+no Axial types in your signatures. `Check` and `Validation` are the reusable constraints and accumulation behind it.
 
-**Effects in Flow.** A cold, environment-aware Reader-Async-Result workflow model in the ZIO tradition: explicit
-dependencies in `'env`, direct `Task`/`ValueTask`/`Async` interop, cancellation, layers, scoped resources, fibers,
-STM, and scheduling. `Policy` and `Flow.verify` are where the two sides meet — a parsed model enters a workflow with
-the environment injected. Flow is optional; the parse-don't-validate side works without it.
+**Schema.** For a whole domain model, declare a `Schema` once: parsing raw input (HTTP form-like, CLI, JSON-like,
+configuration), validation, redisplay with path-aware field errors, contextual rules, and metadata interpreters (JSON
+Schema, docs, UI) all fall out of that one declaration. An invalid model is never constructed. `Refined` types are the
+machinery behind individual schema fields, there when you need them directly.
+
+**Flow.** A cold, environment-aware Reader-Async-Result workflow model in the ZIO tradition: explicit dependencies in
+`'env`, direct `Task`/`ValueTask`/`Async` interop, cancellation, layers, scoped resources, fibers, STM, and
+scheduling. `Policy` and `Flow.verify` are where Schema and Flow meet — a parsed model enters a workflow with the
+environment injected. Flow is optional; error handling and Schema work without it.
 
 Everything is zero-reflection, AOT- and trimming-safe, and Fable-compatible.
 
