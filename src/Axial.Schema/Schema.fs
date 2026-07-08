@@ -126,6 +126,8 @@ type SchemaConstraintMetadata =
     | CountBetween of minimum: int * maximum: int
     /// <summary>A collection value must contain no duplicate items.</summary>
     | Distinct
+    /// <summary>A collection value must contain the supplied item.</summary>
+    | Contains of item: obj
     /// <summary>A custom or not-yet-known constraint identified by its stable code.</summary>
     | Custom of code: string
 
@@ -386,6 +388,26 @@ module SchemaConstraint =
 
     /// <summary>Requires a collection value to contain no duplicate items.</summary>
     let distinct = createKnown "distinct" SchemaConstraintMetadata.Distinct
+
+    /// <summary>Requires a collection value to contain the supplied item.</summary>
+    let contains (item: 'value) =
+        createKnownWithArguments "contains" (SchemaConstraintMetadata.Contains(box item)) [ "item", box item ]
+
+    /// <summary>Requires a value to be greater than zero. Alias for <see cref="M:Axial.Schema.SchemaConstraint.greaterThan" /> with a generic zero bound.</summary>
+    let inline positive<'value when 'value: (static member Zero: 'value)> () =
+        greaterThan LanguagePrimitives.GenericZero<'value>
+
+    /// <summary>Requires a value to be greater than or equal to zero. Alias for <see cref="M:Axial.Schema.SchemaConstraint.atLeast" /> with a generic zero bound.</summary>
+    let inline nonNegative<'value when 'value: (static member Zero: 'value)> () =
+        atLeast LanguagePrimitives.GenericZero<'value>
+
+    /// <summary>Requires a value to be less than zero. Alias for <see cref="M:Axial.Schema.SchemaConstraint.lessThan" /> with a generic zero bound.</summary>
+    let inline negative<'value when 'value: (static member Zero: 'value)> () =
+        lessThan LanguagePrimitives.GenericZero<'value>
+
+    /// <summary>Requires a value to be less than or equal to zero. Alias for <see cref="M:Axial.Schema.SchemaConstraint.atMost" /> with a generic zero bound.</summary>
+    let inline nonPositive<'value when 'value: (static member Zero: 'value)> () =
+        atMost LanguagePrimitives.GenericZero<'value>
 
     /// <summary>Returns the stable interpreter-facing constraint code.</summary>
     let code (constraint': SchemaConstraint) =

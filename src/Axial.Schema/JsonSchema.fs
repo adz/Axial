@@ -94,6 +94,8 @@ module JsonSchema =
             | SchemaConstraintMetadata.CountBetween(minimum, maximum) ->
                 [ sprintf "\"minItems\":%d" minimum; sprintf "\"maxItems\":%d" maximum ]
             | SchemaConstraintMetadata.Distinct -> [ "\"uniqueItems\":true" ]
+            | SchemaConstraintMetadata.Contains item ->
+                [ sprintf "\"contains\":{\"const\":%s}" (literal item) ]
             | SchemaConstraintMetadata.Required
             | SchemaConstraintMetadata.Optional
             | SchemaConstraintMetadata.Custom _ -> [])

@@ -55,6 +55,29 @@ module SchemaConstraintCheckTests =
         test <@ SchemaConstraintCheck.tryOrdered<int> (SchemaConstraint.minLength 3) |> Option.isNone @>
 
     [<Fact>]
+    let ``zero-relative schema constraints lower to executable Check programs`` () =
+        test <@ SchemaConstraintCheck.ordered<int> [ SchemaConstraint.positive<int> () ] 1 = Ok () @>
+        test <@
+            SchemaConstraintCheck.ordered<int> [ SchemaConstraint.positive<int> () ] 0 =
+                Error [ OutOfRange(CheckRangeExpectation.GreaterThan "0", Some "0") ]
+        @>
+        test <@ SchemaConstraintCheck.ordered<int> [ SchemaConstraint.nonNegative<int> () ] 0 = Ok () @>
+        test <@
+            SchemaConstraintCheck.ordered<int> [ SchemaConstraint.nonNegative<int> () ] -1 =
+                Error [ OutOfRange(CheckRangeExpectation.AtLeast "0", Some "-1") ]
+        @>
+        test <@ SchemaConstraintCheck.ordered<int> [ SchemaConstraint.negative<int> () ] -1 = Ok () @>
+        test <@
+            SchemaConstraintCheck.ordered<int> [ SchemaConstraint.negative<int> () ] 0 =
+                Error [ OutOfRange(CheckRangeExpectation.LessThan "0", Some "0") ]
+        @>
+        test <@ SchemaConstraintCheck.ordered<int> [ SchemaConstraint.nonPositive<int> () ] 0 = Ok () @>
+        test <@
+            SchemaConstraintCheck.ordered<int> [ SchemaConstraint.nonPositive<int> () ] 1 =
+                Error [ OutOfRange(CheckRangeExpectation.AtMost "0", Some "1") ]
+        @>
+
+    [<Fact>]
     let ``sequence schema constraints lower to executable Check programs`` () =
         let check =
             SchemaConstraintCheck.sequence<int>
@@ -70,6 +93,13 @@ module SchemaConstraintCheckTests =
                       Duplicate ]
         @>
         test <@ SchemaConstraintCheck.trySequence<int> SchemaConstraint.email |> Option.isNone @>
+
+    [<Fact>]
+    let ``contains schema constraint lowers to an executable Check program`` () =
+        let check = SchemaConstraintCheck.sequence<int> [ SchemaConstraint.contains 2 ]
+
+        test <@ check [ 1; 2; 3 ] = Ok () @>
+        test <@ check [ 1; 3 ] = Error [ NotOneOf "2" ] @>
 
     [<Fact>]
     let ``schema constraint lowerers ignore unsupported metadata and reject null inputs`` () =

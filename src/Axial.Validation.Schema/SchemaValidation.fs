@@ -306,6 +306,7 @@ module SchemaConstraintCheck =
             tryBounds<int> constraint'
             |> Option.map (fun (minimum, maximum) -> Check.Seq.countBetween minimum maximum)
         | "distinct" -> Some Check.Seq.noDuplicates
+        | "contains" -> tryArgument<'value> "item" constraint' |> Option.map Check.Seq.contains
         | _ -> None
 
     /// <summary>Lowers schema constraints with sequence-level meaning into one sequence check.</summary>

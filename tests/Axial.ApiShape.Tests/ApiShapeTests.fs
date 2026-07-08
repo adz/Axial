@@ -706,11 +706,16 @@ module ApiShapeTests =
               "lessThan"
               "atLeast"
               "atMost"
+              "positive"
+              "nonNegative"
+              "negative"
+              "nonPositive"
               "count"
               "minCount"
               "maxCount"
               "countBetween"
               "distinct"
+              "contains"
               "code"
               "metadata"
               "arguments"
@@ -739,6 +744,7 @@ module ApiShapeTests =
               "MaxCount"
               "CountBetween"
               "Distinct"
+              "Contains"
               "Custom" ]
         test <@ valueSchemaType.Assembly = schemaAssembly @>
         test <@ fieldType.Assembly = schemaAssembly @>

@@ -83,6 +83,22 @@ module DSL =
     /// <summary>Requires a numeric value less than or equal to a bound. Alias for <see cref="M:Axial.Schema.SchemaConstraint.atMost" />.</summary>
     let atMost maximum = SchemaConstraint.atMost maximum
 
+    /// <summary>Requires a numeric value greater than zero. Alias for <see cref="M:Axial.Schema.SchemaConstraint.positive``1" />.</summary>
+    let inline positive<'value when 'value: (static member Zero: 'value)> () =
+        SchemaConstraint.positive<'value> ()
+
+    /// <summary>Requires a numeric value greater than or equal to zero. Alias for <see cref="M:Axial.Schema.SchemaConstraint.nonNegative``1" />.</summary>
+    let inline nonNegative<'value when 'value: (static member Zero: 'value)> () =
+        SchemaConstraint.nonNegative<'value> ()
+
+    /// <summary>Requires a numeric value less than zero. Alias for <see cref="M:Axial.Schema.SchemaConstraint.negative``1" />.</summary>
+    let inline negative<'value when 'value: (static member Zero: 'value)> () =
+        SchemaConstraint.negative<'value> ()
+
+    /// <summary>Requires a numeric value less than or equal to zero. Alias for <see cref="M:Axial.Schema.SchemaConstraint.nonPositive``1" />.</summary>
+    let inline nonPositive<'value when 'value: (static member Zero: 'value)> () =
+        SchemaConstraint.nonPositive<'value> ()
+
     /// <summary>Requires an exact collection item count. Alias for <see cref="M:Axial.Schema.SchemaConstraint.count" />.</summary>
     let count expected = SchemaConstraint.count expected
 
@@ -98,6 +114,9 @@ module DSL =
 
     /// <summary>Requires collection items to be distinct. Alias for <see cref="M:Axial.Schema.SchemaConstraint.distinct" />.</summary>
     let distinct = SchemaConstraint.distinct
+
+    /// <summary>Requires a collection to contain a specific item. Alias for <see cref="M:Axial.Schema.SchemaConstraint.contains``1" />.</summary>
+    let contains item = SchemaConstraint.contains item
 
     /// <summary>Attaches an author-supplied message override to a constraint. Alias for <see cref="M:Axial.Schema.SchemaConstraint.withMessage" />.</summary>
     let withMessage message constraint' =
