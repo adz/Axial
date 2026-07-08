@@ -21,8 +21,8 @@ This page shows the `Axial.Refined` surface for turning untrusted boundary data 
 - [`Refined.NonEmptyList`](./t-refined-nonemptylist.md): A list that contains at least one item.
 - [`Refined.NonEmptyArray`](./t-refined-nonemptyarray.md): An array that contains at least one item.
 - [`Refined.DistinctList`](./t-refined-distinctlist.md): A list with no duplicate items, preserving first-seen order.
-- [`Refined.BoundedList`](./t-refined-boundedlist.md): A list whose length is within a caller-supplied inclusive range.
-- [`Refined.BoundedArray`](./t-refined-boundedarray.md): An array whose length is within a caller-supplied inclusive range.
+- [`Refined.BoundedList`](./t-refined-boundedlist.md): A list whose count is within a caller-supplied inclusive range.
+- [`Refined.BoundedArray`](./t-refined-boundedarray.md): An array whose count is within a caller-supplied inclusive range.
 - [`Refined.DateTimeOffsetRange`](./t-refined-datetimeoffsetrange.md): A date and time range where <code>Start &lt;= End</code>.
 - [`Refined.DateOnlyRange`](./t-refined-dateonlyrange.md): A date-only range where <code>Start &lt;= End</code>.
 
@@ -67,8 +67,8 @@ This page shows the `Axial.Refined` surface for turning untrusted boundary data 
 - [`Refined.Collection.nonEmptyList`](./m-refined-collection-nonemptylist.md): Builds a non-empty list from a sequence.
 - [`Refined.Collection.nonEmptyArray`](./m-refined-collection-nonemptyarray.md): Builds a non-empty array from a sequence.
 - [`Refined.Collection.distinctList`](./m-refined-collection-distinctlist.md): Builds a list that contains no duplicate items.
-- [`Refined.Collection.boundedList`](./m-refined-collection-boundedlist.md): Builds a list whose length is within an inclusive range.
-- [`Refined.Collection.boundedArray`](./m-refined-collection-boundedarray.md): Builds an array whose length is within an inclusive range.
+- [`Refined.Collection.boundedList`](./m-refined-collection-boundedlist.md): Builds a list whose count is within an inclusive range.
+- [`Refined.Collection.boundedArray`](./m-refined-collection-boundedarray.md): Builds an array whose count is within an inclusive range.
 
 ## Temporal
 

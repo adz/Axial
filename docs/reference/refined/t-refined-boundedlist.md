@@ -4,7 +4,7 @@ linkTitle: "BoundedList<value>"
 weight: 1014
 ---
 
-A list whose length is within a caller-supplied inclusive range.
+A list whose count is within a caller-supplied inclusive range.
 
 ## Signature
 
