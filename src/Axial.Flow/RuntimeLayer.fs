@@ -30,14 +30,15 @@ module Layer =
         : Layer<'input, 'error, 'output> =
         Layer operation
 
-#if FABLE_COMPILER
     /// <summary>Creates a layer from a raw async provisioning function.</summary>
     /// <platforms>Fable compatible</platforms>
     let fromAsync
         (operation: ('input * Scope) -> CancellationToken -> Async<Exit<'output, 'error>>)
         : Layer<'input, 'error, 'output> =
-        Layer operation
-#else
+        Layer(fun input cancellationToken ->
+            Platform.executionOfAsyncExit cancellationToken (operation input cancellationToken))
+
+#if !FABLE_COMPILER
     /// <summary>Creates a layer from a raw value task provisioning function.</summary>
     /// <platforms>.NET only</platforms>
     let fromValueTask
@@ -52,15 +53,6 @@ module Layer =
         : Layer<'input, 'error, 'output> =
         Layer(fun input cancellationToken ->
             ValueTask<Exit<'output, 'error>>(operation input cancellationToken))
-
-    /// <summary>Creates a layer from a raw async provisioning function.</summary>
-    /// <platforms>Fable compatible</platforms>
-    let fromAsync
-        (operation: ('input * Scope) -> CancellationToken -> Async<Exit<'output, 'error>>)
-        : Layer<'input, 'error, 'output> =
-        Layer(fun input cancellationToken ->
-            ValueTask<Exit<'output, 'error>>(
-                Async.StartAsTask(operation input cancellationToken, cancellationToken = cancellationToken)))
 #endif
 
     /// <summary>Creates a layer that succeeds with a fixed output value.</summary>
@@ -75,11 +67,7 @@ module Layer =
     /// <param name="finalizer">The finalizer to run when the layer scope closes.</param>
     /// <returns>A layer that registers the finalizer.</returns>
     let addFinalizer
-#if FABLE_COMPILER
-        (finalizer: CancellationToken -> Async<unit>)
-#else
-        (finalizer: CancellationToken -> Task)
-#endif
+        (finalizer: Platform.Finalizer)
         : Layer<'input, 'error, unit> =
         Layer(fun (_, scope) _ ->
             scope.AddFinalizer finalizer
@@ -95,11 +83,7 @@ module Layer =
     /// </remarks>
     let acquireRelease
         (acquire: Layer<'input, 'error, 'resource>)
-#if FABLE_COMPILER
-        (release: 'resource -> CancellationToken -> Async<unit>)
-#else
-        (release: 'resource -> CancellationToken -> Task)
-#endif
+        (release: 'resource -> Platform.Finalizer)
         : Layer<'input, 'error, 'resource> =
         Layer(fun (input, scope) cancellationToken ->
             invoke acquire input scope cancellationToken
@@ -179,50 +163,11 @@ module Layer =
             let rightScope = scope.AddChild()
             let leftScope = scope.AddChild()
 
-            #if FABLE_COMPILER
-            let runBranch layer branchScope =
-                async {
-                    try
-                        return! invoke layer input branchScope cancellationToken
-                    with error ->
-                        return Exit.Failure (Execution.causeOfException error)
-                }
-
-            async {
-                let! exits =
-                    [| async {
-                           let! exit = runBranch left leftScope
-                           return box exit
-                       }
-                       async {
-                           let! exit = runBranch right rightScope
-                           return box exit
-                       } |]
-                    |> Async.Parallel
-
-                let leftExit = unbox<Exit<'left, 'error>> exits[0]
-                let rightExit = unbox<Exit<'right, 'error>> exits[1]
-                return chooseParallelExit leftExit rightExit
-            }
-            #else
-            ValueTask<Exit<'left * 'right, 'error>>(
-                task {
-                    let runBranch layer branchScope =
-                        task {
-                            try
-                                return! invoke layer input branchScope cancellationToken |> _.AsTask()
-                            with error ->
-                                return Exit.Failure (Execution.causeOfException error)
-                        }
-
-                    let leftTask = runBranch left leftScope
-                    let rightTask = runBranch right rightScope
-
-                    do! Task.WhenAll(leftTask :> Task, rightTask :> Task)
-
-                    return chooseParallelExit leftTask.Result rightTask.Result
-                })
-            #endif
+            Platform.zipParAllExecution
+                (fun () -> invoke left input leftScope cancellationToken)
+                (fun () -> invoke right input rightScope cancellationToken)
+                Execution.causeOfException
+                chooseParallelExit
         )
 
     /// <summary>Merges two independent service layers in parallel.</summary>

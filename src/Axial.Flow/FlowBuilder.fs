@@ -16,37 +16,13 @@ module FlowBuilderRuntime =
 
     let fromAsync<'env, 'error, 'value> (operation: Async<'value>) : Flow<'env, 'error, 'value> =
         Flow(fun _ cancellationToken ->
-            #if FABLE_COMPILER
-            async {
-                let! value = operation
-                return Exit.Success value
-            }
-            #else
-            ValueTask<Exit<'value, 'error>>(
-                task {
-                    let! value = Async.StartAsTask(operation, cancellationToken = cancellationToken)
-                    return Exit.Success value
-                })
-            #endif
-        )
+            operation |> Platform.executionOfAsyncUnguarded cancellationToken Exit.Success)
 
     let fromAsyncResult<'env, 'error, 'value>
         (operation: Async<Result<'value, 'error>>)
         : Flow<'env, 'error, 'value> =
         Flow(fun _ cancellationToken ->
-            #if FABLE_COMPILER
-            async {
-                let! result = operation
-                return Exit.fromResult result
-            }
-            #else
-            ValueTask<Exit<'value, 'error>>(
-                task {
-                    let! result = Async.StartAsTask(operation, cancellationToken = cancellationToken)
-                    return Exit.fromResult result
-                })
-            #endif
-        )
+            operation |> Platform.executionOfAsyncUnguarded cancellationToken Exit.fromResult)
 
 #if !FABLE_COMPILER
     let fromColdTask<'env, 'error, 'value> (ColdTask operation: ColdTask<'value>) : Flow<'env, 'error, 'value> =

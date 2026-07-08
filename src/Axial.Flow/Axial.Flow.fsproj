@@ -33,6 +33,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="Outcome.fs" />
+    <Compile Include="Platform.fs" />
     <Compile Include="Core.fs" />
     <Compile Include="Foundation.fs" />
     <Compile Include="Runtime.fs" />

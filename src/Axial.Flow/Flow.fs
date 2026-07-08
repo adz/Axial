@@ -32,12 +32,6 @@ module Flow =
         | None, result ->
             result
 
-    let private statusFromExit (exit: Exit<'value, 'error>) =
-        match exit with
-        | Exit.Success _ -> FiberStatus.Succeeded
-        | Exit.Failure cause when Cause.isInterrupted cause -> FiberStatus.Interrupted
-        | Exit.Failure _ -> FiberStatus.Failed
-
     let private chooseParallelExit
         (leftExit: Exit<'left, 'error>)
         (rightExit: Exit<'right, 'error>)
@@ -52,18 +46,6 @@ module Flow =
         | Exit.Success _, Exit.Failure cause ->
             Exit.Failure cause
 
-    let private chooseExitAfterCancel
-        (firstCause: Cause<'error>)
-        (otherExit: Exit<'other, 'error>)
-        : Exit<'value, 'error> =
-        match otherExit with
-        | Exit.Failure Cause.Interrupt ->
-            Exit.Failure firstCause
-        | Exit.Failure otherCause ->
-            Exit.Failure(Cause.both firstCause otherCause)
-        | Exit.Success _ ->
-            Exit.Failure firstCause
-
     let private runEffect
         (environment: 'env)
         (cancellationToken: CancellationToken)
@@ -72,54 +54,12 @@ module Flow =
         let scope = new Scope()
         let runtime = RuntimeContext.create scope
 
-        #if FABLE_COMPILER
-        async {
-            let mutable exit: Exit<'value, 'error> option = None
-            let mutable executionError: exn option = None
-
-            try
-                let! result =
-                    RuntimeState.withRuntime runtime (fun () ->
-                        invoke flow environment cancellationToken)
-
-                exit <- Some result
-            with error ->
-                executionError <- Some error
-
-            let mutable cleanupError: exn option = None
-
-            try
-                do! scope.Close(cancellationToken)
-            with error ->
-                cleanupError <- Some error
-
-            return combineCleanup cleanupError executionError exit "Flow execution produced no outcome."
-        }
-        #else
-        ValueTask<Exit<'value, 'error>>(
-            task {
-                let mutable exit: Exit<'value, 'error> option = None
-                let mutable executionError: exn option = None
-
-                try
-                    let! result =
-                        RuntimeState.withRuntime runtime (fun () ->
-                            invoke flow environment cancellationToken |> _.AsTask())
-
-                    exit <- Some result
-                with error ->
-                    executionError <- Some error
-
-                let mutable cleanupError: exn option = None
-
-                try
-                    do! scope.Close(cancellationToken)
-                with error ->
-                    cleanupError <- Some error
-
-                return combineCleanup cleanupError executionError exit "Flow execution produced no outcome."
-            })
-        #endif
+        Platform.runScoped
+            scope.Close
+            cancellationToken
+            (fun () -> RuntimeState.withRuntime runtime (fun () -> invoke flow environment cancellationToken))
+            (fun cleanupError executionError exit ->
+                combineCleanup cleanupError executionError exit "Flow execution produced no outcome.")
 
     /// <summary>Creates a flow from an execution outcome.</summary>
     let ofExit (exit: Exit<'value, 'error>) : Flow<'env, 'error, 'value> =
@@ -143,11 +83,7 @@ module Flow =
                 | Some token -> async.Return token
                 | None -> Async.CancellationToken
 
-            #if FABLE_COMPILER
-            return! toExecution environment token flow
-            #else
-            return! (toExecution environment token flow).AsTask() |> Async.AwaitTask
-            #endif
+            return! toExecution environment token flow |> Platform.executionToAsync
         }
 
     #if !FABLE_COMPILER
@@ -280,71 +216,28 @@ module Flow =
                 }))
 #endif
 
-#if FABLE_COMPILER
-    /// <summary>Creates a flow from a raw async operation.</summary>
-    /// <remarks>Thrown exceptions are recorded as defects (<c>Cause.Die</c>), while cancellation is recorded as interruption. Use <c>attemptAsync</c> when expected exceptions should enter the typed error channel.</remarks>
-    /// <platforms>Fable compatible</platforms>
-    let fromAsync (operation: Async<'value>) : Flow<'env, 'error, 'value> =
-        Flow(fun _ _ ->
-            async {
-                try
-                    let! value = operation
-                    return Exit.Success value
-                with error ->
-                    return Exit.Failure (Execution.causeOfException error)
-            })
-
-    /// <summary>Creates a flow from an async operation and treats thrown exceptions as recoverable typed errors.</summary>
-    /// <remarks>Successful completion returns <c>Exit.Success</c>. <c>OperationCanceledException</c> returns <c>Cause.Interrupt</c>. Other exceptions return <c>Cause.Fail exn</c>.</remarks>
-    /// <platforms>Fable compatible</platforms>
-    let attemptAsync (operation: Async<'value>) : Flow<'env, exn, 'value> =
-        Flow(fun _ _ ->
-            async {
-                try
-                    let! value = operation
-                    return Exit.Success value
-                with
-                | :? OperationCanceledException ->
-                    return Exit.Failure Cause.Interrupt
-                | error ->
-                    return Exit.Failure (Cause.Fail error)
-            })
-#else
     /// <summary>Creates a flow from a raw async operation.</summary>
     /// <remarks>Thrown exceptions are recorded as defects (<c>Cause.Die</c>), while cancellation is recorded as interruption. Use <c>attemptAsync</c> when expected exceptions should enter the typed error channel.</remarks>
     /// <platforms>Fable compatible</platforms>
     let fromAsync (operation: Async<'value>) : Flow<'env, 'error, 'value> =
         Flow(fun _ cancellationToken ->
-            ValueTask<Exit<'value, 'error>>(
-                task {
-                    try
-                        let! value =
-                            Async.StartAsTask(operation, cancellationToken = cancellationToken)
-
-                        return Exit.Success value
-                    with error ->
-                        return Exit.Failure (Execution.causeOfException error)
-                }))
+            Platform.tryExecution
+                (fun () -> operation |> Platform.executionOfAsyncUnguarded cancellationToken Exit.Success)
+                (fun error -> Platform.ofExit (Exit.Failure(Execution.causeOfException error))))
 
     /// <summary>Creates a flow from an async operation and treats thrown exceptions as recoverable typed errors.</summary>
     /// <remarks>Successful completion returns <c>Exit.Success</c>. <c>OperationCanceledException</c> returns <c>Cause.Interrupt</c>. Other exceptions return <c>Cause.Fail exn</c>.</remarks>
     /// <platforms>Fable compatible</platforms>
     let attemptAsync (operation: Async<'value>) : Flow<'env, exn, 'value> =
         Flow(fun _ cancellationToken ->
-            ValueTask<Exit<'value, exn>>(
-                task {
-                    try
-                        let! value =
-                            Async.StartAsTask(operation, cancellationToken = cancellationToken)
+            Platform.tryExecution
+                (fun () -> operation |> Platform.executionOfAsyncUnguarded cancellationToken Exit.Success)
+                (fun error ->
+                    match error with
+                    | :? OperationCanceledException -> Platform.ofExit (Exit.Failure Cause.Interrupt)
+                    | error -> Platform.ofExit (Exit.Failure(Cause.Fail error))))
 
-                        return Exit.Success value
-                    with
-                    | :? OperationCanceledException ->
-                        return Exit.Failure Cause.Interrupt
-                    | error ->
-                        return Exit.Failure (Cause.Fail error)
-                }))
-
+#if !FABLE_COMPILER
     /// <summary>Creates a flow from a raw task operation.</summary>
     /// <remarks>Thrown exceptions are recorded as defects (<c>Cause.Die</c>), while cancellation is recorded as interruption. Use <c>attemptTask</c> when expected exceptions should enter the typed error channel.</remarks>
     /// <platforms>.NET only</platforms>
@@ -496,21 +389,7 @@ module Flow =
         Flow(fun environment cancellationToken ->
             let runtime = mapper (RuntimeState.current())
 
-            #if FABLE_COMPILER
-            async {
-                return!
-                    RuntimeState.withRuntime runtime (fun () ->
-                        invoke flow environment cancellationToken)
-            }
-            #else
-            ValueTask<Exit<'value, 'error>>(
-                task {
-                    return!
-                        RuntimeState.withRuntime runtime (fun () ->
-                            invoke flow environment cancellationToken |> _.AsTask())
-                })
-            #endif
-        )
+            RuntimeState.withRuntime runtime (fun () -> invoke flow environment cancellationToken))
 
     /// <summary>Installs a runtime annotation sink for integration packages.</summary>
     [<System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>]
@@ -539,21 +418,7 @@ module Flow =
             currentRuntime.AnnotationSink name value
             let runtime = currentRuntime |> RuntimeContext.withAnnotation name value
 
-            #if FABLE_COMPILER
-            async {
-                return!
-                    RuntimeState.withRuntime runtime (fun () ->
-                        invoke flow environment cancellationToken)
-            }
-            #else
-            ValueTask<Exit<'value, 'error>>(
-                task {
-                    return!
-                        RuntimeState.withRuntime runtime (fun () ->
-                            invoke flow environment cancellationToken |> _.AsTask())
-                })
-            #endif
-        )
+            RuntimeState.withRuntime runtime (fun () -> invoke flow environment cancellationToken))
 
     /// <summary>Adds the standard <c>trace_id</c> runtime annotation for the duration of the supplied flow.</summary>
     /// <param name="traceId">The trace identifier.</param>
@@ -586,23 +451,12 @@ module Flow =
             (flow: Flow<'env, 'error, 'value>)
             : Flow<'env, 'error, 'value> =
             Flow(fun environment cancellationToken ->
-                #if FABLE_COMPILER
-                async {
-                    try
-                        return! invoke flow environment cancellationToken
-                    with :? OperationCanceledException as error ->
-                        return Exit.Failure (Cause.Fail (handler error))
-                }
-                #else
-                ValueTask<Exit<'value, 'error>>(
-                    task {
-                        try
-                            return! invoke flow environment cancellationToken
-                        with :? OperationCanceledException as error ->
-                            return Exit.Failure (Cause.Fail (handler error))
-                    })
-                #endif
-            )
+                Platform.tryExecution
+                    (fun () -> invoke flow environment cancellationToken)
+                    (fun error ->
+                        match error with
+                        | :? OperationCanceledException as error -> Platform.ofExit (Exit.Failure(Cause.Fail(handler error)))
+                        | error -> raise error))
 
         /// <summary>Returns a typed error immediately when the runtime token is already canceled.</summary>
         /// <param name="canceledError">The error to return when cancellation has been requested.</param>
@@ -618,26 +472,7 @@ module Flow =
         /// <param name="delay">The duration to sleep.</param>
         /// <returns>A flow that completes after the specified delay.</returns>
         let sleep (delay: TimeSpan) : Flow<'env, 'error, unit> =
-            Flow(fun _ cancellationToken ->
-                #if FABLE_COMPILER
-                async {
-                    try
-                        do! Async.Sleep(int delay.TotalMilliseconds)
-                        return Exit.Success ()
-                    with :? OperationCanceledException ->
-                        return Exit.Failure Cause.Interrupt
-                }
-                #else
-                ValueTask<Exit<unit, 'error>>(
-                    task {
-                        try
-                            do! Task.Delay(delay, cancellationToken)
-                            return Exit.Success ()
-                        with :? OperationCanceledException ->
-                            return Exit.Failure Cause.Interrupt
-                    })
-                #endif
-            )
+            Flow(fun _ cancellationToken -> Platform.sleepExecution delay cancellationToken)
 
         /// <summary>Reads the current runtime scope.</summary>
         /// <returns>A flow that succeeds with the scope owned by the current execution boundary.</returns>
@@ -665,33 +500,11 @@ module Flow =
             (flow: Flow<'env, 'error, 'value>)
             : Flow<'env, 'error, 'value> =
             Flow(fun environment cancellationToken ->
-                #if FABLE_COMPILER
-                async {
-                    try
-                        let! child =
-                            Async.StartChild(
-                                invoke flow environment cancellationToken,
-                                millisecondsTimeout = int after.TotalMilliseconds
-                            )
-
-                        return! child
-                    with :? TimeoutException ->
-                        return Exit.Failure (Cause.Fail timeoutError)
-                }
-                #else
-                ValueTask<Exit<'value, 'error>>(
-                    task {
-                        let operation = invoke flow environment cancellationToken |> _.AsTask()
-                        let timeoutTask = Task.Delay after
-                        let! completed = Task.WhenAny([| operation :> Task; timeoutTask |])
-
-                        if obj.ReferenceEquals(completed, timeoutTask) then
-                            return Exit.Failure (Cause.Fail timeoutError)
-                        else
-                            return! operation
-                    })
-                #endif
-            )
+                Platform.timeoutExecution
+                    after
+                    (invoke flow environment)
+                    cancellationToken
+                    (fun () -> Platform.ofExit (Exit.Failure(Cause.Fail timeoutError))))
 
         /// <summary>Returns the supplied success value when the flow does not complete before the timeout.</summary>
         /// <param name="after">The timeout duration.</param>
@@ -704,33 +517,11 @@ module Flow =
             (flow: Flow<'env, 'error, 'value>)
             : Flow<'env, 'error, 'value> =
             Flow(fun environment cancellationToken ->
-                #if FABLE_COMPILER
-                async {
-                    try
-                        let! child =
-                            Async.StartChild(
-                                invoke flow environment cancellationToken,
-                                millisecondsTimeout = int after.TotalMilliseconds
-                            )
-
-                        return! child
-                    with :? TimeoutException ->
-                        return Exit.Success value
-                }
-                #else
-                ValueTask<Exit<'value, 'error>>(
-                    task {
-                        let operation = invoke flow environment cancellationToken |> _.AsTask()
-                        let timeoutTask = Task.Delay after
-                        let! completed = Task.WhenAny([| operation :> Task; timeoutTask |])
-
-                        if obj.ReferenceEquals(completed, timeoutTask) then
-                            return Exit.Success value
-                        else
-                            return! operation
-                    })
-                #endif
-            )
+                Platform.timeoutExecution
+                    after
+                    (invoke flow environment)
+                    cancellationToken
+                    (fun () -> Platform.ofExit (Exit.Success value)))
 
         /// <summary>Alias for <c>timeout</c> that emphasizes typed failure on timeout.</summary>
         let timeoutToError
@@ -751,33 +542,11 @@ module Flow =
             (flow: Flow<'env, 'error, 'value>)
             : Flow<'env, 'error, 'value> =
             Flow(fun environment cancellationToken ->
-                #if FABLE_COMPILER
-                async {
-                    try
-                        let! child =
-                            Async.StartChild(
-                                invoke flow environment cancellationToken,
-                                millisecondsTimeout = int after.TotalMilliseconds
-                            )
-
-                        return! child
-                    with :? TimeoutException ->
-                        return! invoke (fallback ()) environment cancellationToken
-                }
-                #else
-                ValueTask<Exit<'value, 'error>>(
-                    task {
-                        let operation = invoke flow environment cancellationToken |> _.AsTask()
-                        let timeoutTask = Task.Delay after
-                        let! completed = Task.WhenAny([| operation :> Task; timeoutTask |])
-
-                        if obj.ReferenceEquals(completed, timeoutTask) then
-                            return! invoke (fallback ()) environment cancellationToken
-                        else
-                            return! operation
-                    })
-                #endif
-            )
+                Platform.timeoutExecution
+                    after
+                    (invoke flow environment)
+                    cancellationToken
+                    (fun () -> invoke (fallback ()) environment cancellationToken))
 
         /// <summary>Retries typed failures according to the specified policy.</summary>
         /// <param name="policy">The retry policy.</param>
@@ -800,22 +569,9 @@ module Flow =
                             match cause with
                             | Cause.Fail error when attempt < policy.MaxAttempts && policy.ShouldRetry error ->
                                 let delay = policy.Delay attempt
-                                #if FABLE_COMPILER
-                                async {
-                                    if delay > TimeSpan.Zero then
-                                        do! Async.Sleep(int delay.TotalMilliseconds)
 
-                                    return! invoke (loop (attempt + 1)) environment cancellationToken
-                                }
-                                #else
-                                ValueTask<Exit<'value, 'error>>(
-                                    task {
-                                        if delay > TimeSpan.Zero then
-                                            do! Task.Delay(delay, cancellationToken)
-
-                                        return! invoke (loop (attempt + 1)) environment cancellationToken
-                                    })
-                                #endif
+                                Platform.delayThenExecution delay cancellationToken (fun () ->
+                                    invoke (loop (attempt + 1)) environment cancellationToken)
                             | _ ->
                                 Execution.ofCause cause))
 
@@ -831,78 +587,33 @@ module Flow =
     /// <returns>A flow that produces a <see cref="T:Axial.Fiber`2" /> handle.</returns>
     let fork (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'none, Fiber<'error, 'value>> =
         Flow(fun environment cancellationToken ->
-            #if FABLE_COMPILER
-            async {
-                let parentRuntime = RuntimeState.current()
-                let cts = new CancellationTokenSource()
-                let metadata : FiberMetadata =
-                    {
-                        Id = FiberId.next ()
-                        ParentId = Some parentRuntime.FiberId
-                        StartedAt = DateTimeOffset.UtcNow
-                        Status = FiberStatus.Running
-                    }
-                let childRuntime = parentRuntime |> RuntimeContext.withFiberId metadata.Id
-                let operation =
-                    async {
-                        try
-                            let! exit =
-                                RuntimeState.withRuntime childRuntime (fun () ->
-                                    invoke flow environment cts.Token)
-
-                            metadata.Status <- statusFromExit exit
-                            return exit
-                        with error ->
-                            let exit = Exit.Failure (Execution.causeOfException error)
-                            metadata.Status <- statusFromExit exit
-                            return exit
-                    }
-                
-                let! childToken = Async.StartChild(operation)
-                let fiber =
-                    {
-                        Metadata = metadata
-                        ExitTask = childToken
-                        InterruptSource = cts
-                    }
-                return Exit.Success fiber
-            }
-            #else
             let parentRuntime = RuntimeState.current()
-            let cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken)
-            let metadata : FiberMetadata =
+
+            let metadata: FiberMetadata =
                 {
                     Id = FiberId.next ()
                     ParentId = Some parentRuntime.FiberId
                     StartedAt = DateTimeOffset.UtcNow
                     Status = FiberStatus.Running
                 }
-            let childRuntime = parentRuntime |> RuntimeContext.withFiberId metadata.Id
-            let (Flow operation) = flow
-            let exitTask =
-                task {
-                    try
-                        let! exit =
-                            RuntimeState.withRuntime childRuntime (fun () ->
-                                operation environment cts.Token |> _.AsTask())
 
-                        metadata.Status <- statusFromExit exit
-                        return exit
-                    with error ->
-                        let exit = Exit.Failure (Execution.causeOfException error)
-                        metadata.Status <- statusFromExit exit
-                        return exit
-                }
-            
+            let childRuntime = parentRuntime |> RuntimeContext.withFiberId metadata.Id
+
+            let cts, exitTask =
+                Platform.startFiber
+                    cancellationToken
+                    (fun status -> metadata.Status <- status)
+                    (fun childToken ->
+                        RuntimeState.withRuntime childRuntime (fun () -> invoke flow environment childToken))
+
             let fiber =
                 {
                     Metadata = metadata
                     ExitTask = exitTask
                     InterruptSource = cts
                 }
-            Execution.ofValue fiber
-            #endif
-        )
+
+            Execution.ofValue fiber)
 
     /// <summary>Waits for a fiber to complete and returns its successful value or typed failure.</summary>
     /// <remarks>
@@ -913,13 +624,7 @@ module Flow =
     /// <param name="fiber">The fiber to join.</param>
     /// <returns>A flow that completes with the fiber's outcome.</returns>
     let join (fiber: Fiber<'error, 'value>) : Flow<'env, 'error, 'value> =
-        Flow(fun _ _ ->
-            #if FABLE_COMPILER
-            fiber.ExitTask
-            #else
-            ValueTask<Exit<'value, 'error>>(fiber.ExitTask)
-            #endif
-        )
+        Flow(fun _ _ -> Platform.joinExitTask fiber.ExitTask)
 
     /// <summary>Signals a fiber to stop and waits for it to finish its cleanup.</summary>
     /// <remarks>
@@ -931,21 +636,8 @@ module Flow =
     /// <returns>A flow that completes with the fiber's final outcome after interruption.</returns>
     let interrupt (fiber: Fiber<'error, 'value>) : Flow<'env, 'none, Exit<'value, 'error>> =
         Flow(fun _ _ ->
-            #if FABLE_COMPILER
-            async {
-                fiber.InterruptSource.Cancel()
-                let! exit = fiber.ExitTask
-                return Exit.Success exit
-            }
-            #else
-            ValueTask<Exit<Exit<'value, 'error>, 'none>>(
-                task {
-                    fiber.InterruptSource.Cancel()
-                    let! exit = fiber.ExitTask
-                    return Exit.Success exit
-                })
-            #endif
-        )
+            fiber.InterruptSource.Cancel()
+            Platform.awaitExitTaskAsSuccess fiber.ExitTask)
 
     /// <summary>Combines two flows into a tuple of their values, running them concurrently.</summary>
     /// <remarks>
@@ -964,67 +656,11 @@ module Flow =
         (right: Flow<'env, 'error, 'right>)
         : Flow<'env, 'error, 'left * 'right> =
         Flow(fun environment cancellationToken ->
-            #if FABLE_COMPILER
-            async {
-                let leftOp = async {
-                    let! x = invoke left environment cancellationToken
-                    return box x
-                }
-                let rightOp = async {
-                    let! x = invoke right environment cancellationToken
-                    return box x
-                }
-                let! results = Async.Parallel [| leftOp; rightOp |]
-                let leftRes = unbox<Exit<'left, 'error>> results[0]
-                let rightRes = unbox<Exit<'right, 'error>> results[1]
-                return chooseParallelExit leftRes rightRes
-            }
-            #else
-            ValueTask<Exit<'left * 'right, 'error>>(
-                task {
-                    let cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken)
-                    
-                    let (Flow leftOp) = left
-                    let (Flow rightOp) = right
-                    
-                    let leftFiberTask = leftOp environment cts.Token |> _.AsTask()
-                    let rightFiberTask = rightOp environment cts.Token |> _.AsTask()
-                    
-                    let! completed = Task.WhenAny(leftFiberTask, rightFiberTask)
-
-                    if obj.ReferenceEquals(completed, leftFiberTask) then
-                        match leftFiberTask.GetAwaiter().GetResult() with
-                        | Exit.Failure cause ->
-                            cts.Cancel()
-                            let! rightExit = rightFiberTask
-                            return chooseExitAfterCancel cause rightExit
-                        | Exit.Success leftValue ->
-                            let! rightExit = rightFiberTask
-
-                            match rightExit with
-                            | Exit.Success rightValue -> return Exit.Success (leftValue, rightValue)
-                            | Exit.Failure cause -> return Exit.Failure cause
-                    else
-                        match rightFiberTask.GetAwaiter().GetResult() with
-                        | Exit.Failure cause ->
-                            cts.Cancel()
-                            let! leftExit = leftFiberTask
-                            match leftExit with
-                            | Exit.Failure Cause.Interrupt ->
-                                return Exit.Failure cause
-                            | Exit.Failure leftCause ->
-                                return chooseParallelExit (Exit.Failure leftCause) (Exit.Failure cause)
-                            | Exit.Success _ ->
-                                return Exit.Failure cause
-                        | Exit.Success rightValue ->
-                            let! leftExit = leftFiberTask
-
-                            match leftExit with
-                            | Exit.Success leftValue -> return Exit.Success (leftValue, rightValue)
-                            | Exit.Failure cause -> return Exit.Failure cause
-                })
-            #endif
-        )
+            Platform.zipParExecution
+                (invoke left environment)
+                (invoke right environment)
+                cancellationToken
+                chooseParallelExit)
 
     /// <summary>Runs two flows concurrently and returns the result of the first one to complete.</summary>
     /// <remarks>
@@ -1043,26 +679,7 @@ module Flow =
         (right: Flow<'env, 'error, 'value>)
         : Flow<'env, 'error, 'value> =
         Flow(fun environment cancellationToken ->
-            #if FABLE_COMPILER
-            async { return failwith "Flow.race is not supported on Fable." }
-            #else
-            ValueTask<Exit<'value, 'error>>(
-                task {
-                    let cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken)
-                    
-                    let (Flow leftOp) = left
-                    let (Flow rightOp) = right
-                    
-                    let leftFiberTask = leftOp environment cts.Token |> _.AsTask()
-                    let rightFiberTask = rightOp environment cts.Token |> _.AsTask()
-                    
-                    let! completed = Task.WhenAny(leftFiberTask, rightFiberTask)
-                    cts.Cancel()
-                    
-                    return completed.GetAwaiter().GetResult()
-                })
-            #endif
-        )
+            Platform.raceExecution (invoke left environment) (invoke right environment) cancellationToken)
 
     /// <summary>Lifts an option into a synchronous flow with the supplied error.</summary>
     /// <param name="error">The error to return if the option is <c>None</c>.</param>
@@ -1336,34 +953,16 @@ module Flow =
         (flow: Flow<'env, 'error, 'value>)
         : Flow<'env, 'error, 'value> =
         Flow(fun environment cancellationToken ->
-            #if FABLE_COMPILER
-            async {
-                try
-                    let! exit = invoke flow environment cancellationToken
-
-                    match exit with
-                    | Exit.Failure (Cause.Die error) ->
-                        return Exit.Failure (Cause.Fail (handler error))
-                    | other ->
-                        return other
-                with error ->
-                    return Exit.Failure (Cause.Fail (handler error))
-            }
-            #else
-            task {
-                try
-                    let! exit = invoke flow environment cancellationToken
-
-                    match exit with
-                    | Exit.Failure (Cause.Die error) ->
-                        return Exit.Failure (Cause.Fail (handler error))
-                    | other ->
-                        return other
-                with error ->
-                    return Exit.Failure (Cause.Fail (handler error))
-            } |> ValueTask<Exit<'value, 'error>>
-            #endif
-        )
+            Platform.tryExecution
+                (fun () ->
+                    invoke flow environment cancellationToken
+                    |> Execution.fold
+                        (fun value -> Execution.ofValue value)
+                        (fun cause ->
+                            match cause with
+                            | Cause.Die error -> Execution.ofCause (Cause.Fail(handler error))
+                            | other -> Execution.ofCause other))
+                (fun error -> Platform.ofExit (Exit.Failure(Cause.Fail(handler error)))))
 
     /// <summary>Computes a fallback flow from the typed error when the source flow fails.</summary>
     /// <remarks>
@@ -1533,65 +1132,16 @@ module Flow =
             let scope = new Scope()
             let runtime = RuntimeState.current() |> RuntimeContext.withScope scope
 
-            #if FABLE_COMPILER
-            async {
-                let mutable exit: Exit<'value, 'error> option = None
-                let mutable executionError: exn option = None
-
-                try
-                    let! result =
-                        RuntimeState.withRuntime runtime (fun () ->
-                            Layer.invoke layer environment scope cancellationToken
-                            |> Execution.bind (fun innerEnvironment ->
-                                invoke flow innerEnvironment cancellationToken))
-
-                    exit <- Some result
-                with error ->
-                    executionError <- Some error
-
-                let mutable cleanupError: exn option = None
-
-                try
-                    do! scope.Close(cancellationToken)
-                with error ->
-                    cleanupError <- Some error
-
-                return combineCleanup cleanupError executionError exit "Layer provisioning produced no outcome."
-            }
-            #else
-            ValueTask<Exit<'value, 'error>>(
-                task {
-                    let mutable exit: Exit<'value, 'error> option = None
-                    let mutable executionError: exn option = None
-
-                    try
-                        let! result =
-                            RuntimeState.withRuntime runtime (fun () ->
-                                Layer.invoke layer environment scope cancellationToken |> _.AsTask())
-
-                        match result with
-                        | Exit.Success innerEnvironment ->
-                            let! next =
-                                RuntimeState.withRuntime runtime (fun () ->
-                                    invoke flow innerEnvironment cancellationToken |> _.AsTask())
-
-                            exit <- Some next
-                        | Exit.Failure cause ->
-                            exit <- Some (Exit.Failure cause)
-                    with error ->
-                        executionError <- Some error
-
-                    let mutable cleanupError: exn option = None
-
-                    try
-                        do! scope.Close(cancellationToken)
-                    with error ->
-                        cleanupError <- Some error
-
-                    return combineCleanup cleanupError executionError exit "Layer provisioning produced no outcome."
-                })
-            #endif
-        )
+            Platform.runScoped
+                scope.Close
+                cancellationToken
+                (fun () ->
+                    RuntimeState.withRuntime runtime (fun () ->
+                        Layer.invoke layer environment scope cancellationToken
+                        |> Execution.bind (fun innerEnvironment ->
+                            invoke flow innerEnvironment cancellationToken)))
+                (fun cleanupError executionError exit ->
+                    combineCleanup cleanupError executionError exit "Layer provisioning produced no outcome."))
 
     /// <summary>Defers flow construction until execution time.</summary>
     /// <param name="factory">A function that returns the flow to execute.</param>

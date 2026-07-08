@@ -53,18 +53,7 @@ module internal Execution =
         (onFailure: Cause<'error> -> Cause<'nextError>)
         (effect: Execution<'value, 'error>)
         : Execution<'next, 'nextError> =
-#if FABLE_COMPILER
-        async {
-            let! exit = effect
-            return Exit.mapBoth onSuccess onFailure exit
-        }
-#else
-        ValueTask<Exit<'next, 'nextError>>(
-            task {
-                let! exit = effect
-                return Exit.mapBoth onSuccess onFailure exit
-            })
-#endif
+        Platform.mapBoth onSuccess onFailure effect
 
     let causeOfException (exn: exn) : Cause<'error> =
         if exn :? OperationCanceledException then
@@ -73,11 +62,7 @@ module internal Execution =
             Cause.Die exn
 
     let ofExit (exit: Exit<'value, 'error>) : Execution<'value, 'error> =
-#if FABLE_COMPILER
-        async.Return exit
-#else
-        ValueTask<Exit<'value, 'error>>(exit)
-#endif
+        Platform.ofExit exit
 
     let ofValue (value: 'value) : Execution<'value, 'error> =
         ofExit (Exit.Success value)
@@ -107,23 +92,7 @@ module internal Execution =
         (onFailure: Cause<'error> -> Execution<'next, 'nextError>)
         (effect: Execution<'value, 'error>)
         : Execution<'next, 'nextError> =
-#if FABLE_COMPILER
-        async {
-            let! exit = effect
-            match exit with
-            | Exit.Success value -> return! onSuccess value
-            | Exit.Failure cause -> return! onFailure cause
-        }
-#else
-        ValueTask<Exit<'next, 'nextError>>(
-            task {
-                let! exit = effect
-
-                match exit with
-                | Exit.Success value -> return! onSuccess value
-                | Exit.Failure cause -> return! onFailure cause
-            })
-#endif
+        Platform.fold onSuccess onFailure effect
 
     let map
         (mapper: 'value -> 'next)

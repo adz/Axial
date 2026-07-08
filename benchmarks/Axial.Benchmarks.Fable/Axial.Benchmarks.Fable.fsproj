@@ -11,6 +11,8 @@
 
   <ItemGroup>
     <Compile Include="..\..\src\Axial.Flow\AssemblyInfo.fs" />
+    <Compile Include="..\..\src\Axial.Flow\Outcome.fs" />
+    <Compile Include="..\..\src\Axial.Flow\Platform.fs" />
     <Compile Include="..\..\src\Axial.Flow\Core.fs" />
     <Compile Include="..\..\src\Axial.Flow\Foundation.fs" />
     <Compile Include="..\..\src\Axial.Validation\Diagnostics.fs" />

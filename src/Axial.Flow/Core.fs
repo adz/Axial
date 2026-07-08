@@ -5,41 +5,6 @@ open System.ComponentModel
 open System.Threading
 open System.Threading.Tasks
 
-#if FABLE_COMPILER
-open Fable.Core
-#endif
-
-/// <summary>
-/// Represents the cause of a failed workflow.
-/// </summary>
-/// <typeparam name="error">The type of the domain-specific failure value.</typeparam>
-[<RequireQualifiedAccess>]
-type Cause<'error> =
-    /// <summary>An expected domain-specific failure.</summary>
-    | Fail of 'error
-    /// <summary>An unexpected defect or panic (e.g., an exception).</summary>
-    | Die of exn
-    /// <summary>An administrative signal to stop the workflow (e.g., cancellation).</summary>
-    | Interrupt
-    /// <summary>Two causes happened sequentially; the left cause happened before the right cause.</summary>
-    | Then of Cause<'error> * Cause<'error>
-    /// <summary>Two causes happened concurrently; neither cause is ordered before the other.</summary>
-    | Both of Cause<'error> * Cause<'error>
-    /// <summary>A cause annotated with diagnostic trace text.</summary>
-    | Traced of Cause<'error> * trace: string
-
-/// <summary>
-/// Represents the final outcome of a workflow execution.
-/// </summary>
-/// <typeparam name="value">The type of the success value.</typeparam>
-/// <typeparam name="error">The type of the domain-specific failure value.</typeparam>
-[<RequireQualifiedAccess>]
-type Exit<'value, 'error> =
-    /// <summary>The workflow completed successfully.</summary>
-    | Success of 'value
-    /// <summary>The workflow failed due to a specific cause.</summary>
-    | Failure of Cause<'error>
-
 [<RequireQualifiedAccess>]
 module Cause =
     /// <summary>Transforms the error value of a failure cause using the provided function.</summary>
@@ -105,11 +70,7 @@ module Cause =
             match current with
             | Cause.Fail error -> $"{padding}Fail({formatError error})"
             | Cause.Die error ->
-#if FABLE_COMPILER
-                $"{padding}Die(Exception: {error.Message})"
-#else
-                $"{padding}Die({error.GetType().Name}: {error.Message})"
-#endif
+                $"{padding}Die({Platform.dieDescription error})"
             | Cause.Interrupt -> $"{padding}Interrupt"
             | Cause.Then(left, right) ->
                 $"{padding}Then\n{loop (indent + 2) left}\n{loop (indent + 2) right}"
@@ -199,18 +160,6 @@ type FiberId =
         let (FiberId value) = this
         value
 
-/// <summary>Describes the current lifecycle state of a fiber.</summary>
-[<RequireQualifiedAccess>]
-type FiberStatus =
-    /// <summary>The fiber is currently running.</summary>
-    | Running
-    /// <summary>The fiber completed with a successful value.</summary>
-    | Succeeded
-    /// <summary>The fiber completed with a typed failure or defect.</summary>
-    | Failed
-    /// <summary>The fiber completed with an interruption cause.</summary>
-    | Interrupted
-
 /// <summary>Diagnostic metadata for a running fiber.</summary>
 type FiberMetadata =
     {
@@ -253,11 +202,7 @@ type Fiber<'error, 'value> =
         /// <summary>Diagnostic metadata for the running fiber.</summary>
         Metadata: FiberMetadata
         /// <summary>The asynchronous operation that completes with the workflow's final exit outcome.</summary>
-#if FABLE_COMPILER
-        ExitTask: Async<Exit<'value, 'error>>
-#else
-        ExitTask: Task<Exit<'value, 'error>>
-#endif
+        ExitTask: Platform.ExitTask<'value, 'error>
         /// <summary>The cancellation source used by <c>Flow.interrupt</c> to signal interruption.</summary>
         InterruptSource: CancellationTokenSource
     }
@@ -315,24 +260,15 @@ module internal ColdTask =
         operation cancellationToken
 #endif
 
-#if FABLE_COMPILER
-type internal Execution<'value, 'error> = Async<Exit<'value, 'error>>
-#else
-type internal Execution<'value, 'error> = ValueTask<Exit<'value, 'error>>
-#endif
+type internal Execution<'value, 'error> = Platform.Execution<'value, 'error>
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
 module internal FiberId =
-    let mutable private nextValue = 0L
+    let private nextValue = ref 0L
 
     let next () =
-#if FABLE_COMPILER
-        nextValue <- nextValue + 1L
-        FiberId(nextValue)
-#else
-        FiberId(Interlocked.Increment(&nextValue))
-#endif
+        FiberId(Platform.nextId nextValue)
 
 /// <summary>
 /// Owns finalizers for resources acquired during provisioning or runtime execution.
@@ -343,18 +279,10 @@ module internal FiberId =
 /// </remarks>
 type Scope() =
     let gate = obj()
-#if FABLE_COMPILER
-    let finalizers = ResizeArray<CancellationToken -> Async<unit>>()
-#else
-    let finalizers = ResizeArray<CancellationToken -> Task>()
-#endif
+    let finalizers = ResizeArray<Platform.Finalizer>()
     let mutable closed = false
 
-#if FABLE_COMPILER
-    member _.AddFinalizer(finalizer: CancellationToken -> Async<unit>) =
-#else
-    member _.AddFinalizer(finalizer: CancellationToken -> Task) =
-#endif
+    member _.AddFinalizer(finalizer: Platform.Finalizer) =
         if isNull (box finalizer) then
             nullArg (nameof finalizer)
 
@@ -370,21 +298,13 @@ type Scope() =
 
         this.AddFinalizer(fun _ ->
             resource.Dispose()
-#if FABLE_COMPILER
-            async.Return())
-#else
-            Task.CompletedTask)
-#endif
+            Platform.completedDeed ())
 
     member this.AddAsyncDisposable(resource: IAsyncDisposable) =
         if isNull (box resource) then
             nullArg (nameof resource)
 
-#if FABLE_COMPILER
-        this.AddFinalizer(fun _ -> async.Return())
-#else
-        this.AddFinalizer(fun _ -> resource.DisposeAsync().AsTask())
-#endif
+        this.AddFinalizer(fun _ -> Platform.disposeAsyncDeed resource)
 
     member this.AddChild() =
         let child = new Scope()
@@ -393,58 +313,16 @@ type Scope() =
 
         child
 
-#if FABLE_COMPILER
-    member _.Close(cancellationToken: CancellationToken) : Async<unit> =
-#else
-    member _.Close(cancellationToken: CancellationToken) : Task =
-#endif
-#if FABLE_COMPILER
-        async {
-            let snapshot =
-                lock gate (fun () ->
-                    if closed then
-                        [||]
-                    else
-                        closed <- true
-                        finalizers.ToArray())
+    member _.Close(cancellationToken: CancellationToken) : Platform.Deed =
+        let snapshot =
+            lock gate (fun () ->
+                if closed then
+                    [||]
+                else
+                    closed <- true
+                    finalizers.ToArray())
 
-            let errors = ResizeArray<exn>()
-
-            for index = snapshot.Length - 1 downto 0 do
-                try
-                    do! snapshot[index] cancellationToken
-                with error ->
-                    errors.Add error
-
-            match errors.Count with
-            | 0 -> ()
-            | 1 -> raise errors[0]
-            | _ -> raise (AggregateException("One or more scope finalizers failed.", errors))
-        }
-#else
-        task {
-            let snapshot =
-                lock gate (fun () ->
-                    if closed then
-                        [||]
-                    else
-                        closed <- true
-                        finalizers.ToArray())
-
-            let errors = ResizeArray<exn>()
-
-            for index = snapshot.Length - 1 downto 0 do
-                try
-                    do! snapshot[index] cancellationToken
-                with error ->
-                    errors.Add error
-
-            match errors.Count with
-            | 0 -> ()
-            | 1 -> raise errors[0]
-            | _ -> raise (AggregateException("One or more scope finalizers failed.", errors))
-        }
-#endif
+        Platform.runFinalizers snapshot cancellationToken
 
 #if !FABLE_COMPILER
     interface IAsyncDisposable with
@@ -493,36 +371,13 @@ module internal RuntimeContext =
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
 module internal RuntimeState =
-#if FABLE_COMPILER
-    let mutable private currentRuntime = RuntimeContext.detached
-
-    let current () : RuntimeContext = currentRuntime
-
-    let withRuntime (runtime: RuntimeContext) (operation: unit -> 'value) : 'value =
-        let previous = currentRuntime
-        currentRuntime <- runtime
-
-        try
-            operation ()
-        finally
-            currentRuntime <- previous
-#else
-    let private currentRuntime = AsyncLocal<RuntimeContext>()
+    let private currentRuntime = Platform.newCell RuntimeContext.detached
 
     let current () : RuntimeContext =
-        match box currentRuntime.Value with
-        | null -> RuntimeContext.detached
-        | _ -> currentRuntime.Value
+        currentRuntime |> Platform.getCellOrDefault (fun () -> RuntimeContext.detached)
 
     let withRuntime (runtime: RuntimeContext) (operation: unit -> 'value) : 'value =
-        let previous = currentRuntime.Value
-        currentRuntime.Value <- runtime
-
-        try
-            operation ()
-        finally
-            currentRuntime.Value <- previous
-#endif
+        Platform.withCell currentRuntime runtime operation
 
 /// <summary>
 /// Represents a cold workflow that reads an environment, returns a typed result, and is executed
@@ -536,85 +391,31 @@ type Flow<'env, 'error, 'value> =
     | Flow of ('env -> CancellationToken -> Execution<'value, 'error>)
 
     member private this.ToExecution(environment: 'env, cancellationToken: CancellationToken) : Execution<'value, 'error> =
-        let causeOfException (exn: exn) : Cause<'error> =
-            if exn :? OperationCanceledException then
-                Cause.Interrupt
-            else
-                Cause.Die exn
-
-        let combineCleanup cleanupError executionError exit missingOutcomeMessage =
-            let primary =
-                match executionError, exit with
-                | Some error, _ -> Exit.Failure (causeOfException error)
-                | None, Some result -> result
-                | None, None -> Exit.Failure (Cause.Die (InvalidOperationException missingOutcomeMessage))
-
-            match cleanupError, primary with
-            | Some error, Exit.Failure cause ->
-                Exit.Failure (Cause.thenCause cause (causeOfException error))
-            | Some error, Exit.Success _ ->
-                Exit.Failure (causeOfException error)
-            | None, result ->
-                result
-
         let (Flow operation) = this
         let scope = new Scope()
         let runtime = RuntimeContext.create scope
 
-#if FABLE_COMPILER
-        async {
-            let mutable exit: Exit<'value, 'error> option = None
-            let mutable executionError: exn option = None
+        Platform.runScoped
+            scope.Close
+            cancellationToken
+            (fun () -> RuntimeState.withRuntime runtime (fun () -> operation environment cancellationToken))
+            (fun cleanupError executionError exit ->
+                let causeOf (error: exn) : Cause<'error> =
+                    if error :? OperationCanceledException then Cause.Interrupt else Cause.Die error
 
-            try
-                let! result =
-                    try
-                        RuntimeState.withRuntime runtime (fun () ->
-                            operation environment cancellationToken)
-                    with error ->
-                        async { return raise error }
+                let primary =
+                    match executionError, exit with
+                    | Some error, _ -> Exit.Failure (causeOf error)
+                    | None, Some result -> result
+                    | None, None -> Exit.Failure (Cause.Die (InvalidOperationException "Flow execution produced no outcome."))
 
-                exit <- Some result
-            with error ->
-                executionError <- Some error
-
-            let mutable cleanupError: exn option = None
-
-            try
-                do! scope.Close(cancellationToken)
-            with error ->
-                cleanupError <- Some error
-
-            return combineCleanup cleanupError executionError exit "Flow execution produced no outcome."
-        }
-#else
-        ValueTask<Exit<'value, 'error>>(
-            task {
-                let mutable exit: Exit<'value, 'error> option = None
-                let mutable executionError: exn option = None
-
-                try
-                    let! result =
-                        try
-                            RuntimeState.withRuntime runtime (fun () ->
-                                operation environment cancellationToken |> _.AsTask())
-                        with error ->
-                            Task.FromException<Exit<'value, 'error>>(error)
-
-                    exit <- Some result
-                with error ->
-                    executionError <- Some error
-
-                let mutable cleanupError: exn option = None
-
-                try
-                    do! scope.Close(cancellationToken)
-                with error ->
-                    cleanupError <- Some error
-
-                return combineCleanup cleanupError executionError exit "Flow execution produced no outcome."
-            })
-#endif
+                match cleanupError, primary with
+                | Some error, Exit.Failure cause ->
+                    Exit.Failure (Cause.thenCause cause (causeOf error))
+                | Some error, Exit.Success _ ->
+                    Exit.Failure (causeOf error)
+                | None, result ->
+                    result)
 
     /// <summary>Starts the workflow and returns an F# async handle that completes with the final exit.</summary>
     /// <param name="environment">The environment used by the workflow.</param>
@@ -628,11 +429,7 @@ type Flow<'env, 'error, 'value> =
                 | Some token -> async.Return token
                 | None -> Async.CancellationToken
 
-#if FABLE_COMPILER
-            return! this.ToExecution(environment, token)
-#else
-            return! this.ToExecution(environment, token).AsTask() |> Async.AwaitTask
-#endif
+            return! Platform.executionToAsync (this.ToExecution(environment, token))
         }
 
 #if !FABLE_COMPILER
@@ -772,11 +569,7 @@ type IHas<'service> =
 /// <typeparam name="service">The service type being requested.</typeparam>
 type Service<'service> private () =
     static member private succeed<'error> (value: 'service) : Execution<'service, 'error> =
-        #if FABLE_COMPILER
-        async.Return(Exit.Success value)
-        #else
-        ValueTask<Exit<'service, 'error>>(Exit.Success value)
-        #endif
+        Platform.ofExit (Exit.Success value)
 
     /// <summary>Reads a statically declared service from an environment that implements <c>IHas&lt;'service&gt;</c>.</summary>
     /// <typeparam name="env">The environment type.</typeparam>
@@ -796,19 +589,7 @@ type Service<'service> private () =
     /// <c>Cause.Die</c> rather than the typed error channel.
     /// </remarks>
     static member resolve<'env, 'error when 'env :> IServiceProvider> () : Flow<'env, 'error, 'service> =
-#if FABLE_COMPILER
-        Flow(fun _ _ ->
-            async.Return(
-                Exit.Failure(
-                    Cause.Die(PlatformNotSupportedException("IServiceProvider service resolution is not supported on Fable."))
-                )))
-#else
         Flow(fun environment _ ->
-            let env = environment :> IServiceProvider
-            let service = env.GetService(typeof<'service>)
-
-            if isNull (box service) then
-                failwith $"Service {typeof<'service>.Name} was not registered in the IServiceProvider."
-            else
-                Service<'service>.succeed (unbox<'service> service))
-#endif
+            match Platform.resolveService<'service> (environment :> IServiceProvider) with
+            | Some service -> Service<'service>.succeed service
+            | None -> Platform.serviceResolutionUnavailable<'service, 'error> ())
