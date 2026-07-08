@@ -353,6 +353,22 @@ module JsonCodecTests =
         test <@ Json.deserializeBytes codec bytes = customer @>
 
     [<Fact>]
+    let ``serializeToStream and deserializeStreamAsync round trip through a stream`` () =
+        task {
+            let codec = Json.compile (customerSchema ())
+            let customer = sampleCustomer ()
+
+            use stream = new IO.MemoryStream()
+            Json.serializeToStream codec stream customer
+            test <@ stream.Position = int64 stream.Length @>
+
+            stream.Position <- 0L
+            let! roundTripped = Json.deserializeStreamAsync codec stream
+
+            test <@ roundTripped = customer @>
+        }
+
+    [<Fact>]
     let ``escaped strings round trip control characters and unicode`` () =
         let codec = Json.compile (tagSchema ())
         let tag = { Label = "line1\nline2\ttab \"quoted\" \\slash  ünïcødé" }

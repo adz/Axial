@@ -31,10 +31,6 @@ Ordered cheap-and-high-leverage first. Items 1–2 are also prerequisites for th
 (`dev-docs/current-ideas/contract-grammar.md`). Union wire shapes (`Value.enumOf`, `Value.unionInline`) are complete
 across Input.parse, Codec, JsonSchema, and Inspect.
 
-- [ ] Codec stream entry points: `Json.serializeToStream` (sync, flushed once) and `Json.deserializeStreamAsync`
-  (read-to-end into a pooled buffer, then decode — no incremental streaming pre-1.0). `Axial.Codec` stays
-  dependency-free; ASP.NET Core conveniences stay in the `examples/Axial.Api` sample. Update the sample so the
-  response path no longer materializes an intermediate string.
 - [ ] Fable codec surface: add `Axial.Codec` to `scripts/check-fable-js-surface.sh` and add a Node round-trip
   (encode → decode) test so the `FABLE_COMPILER` gates are exercised, then claim codec-on-Fable in the zod comparison
   ("one declaration shared between server and browser" now includes serialization).

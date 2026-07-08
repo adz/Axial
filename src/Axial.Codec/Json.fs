@@ -977,3 +977,70 @@ module rec Json =
             Ok(deserialize codec json)
         with :? JsonCodecException as ex ->
             Error ex.Message
+
+#if !FABLE_COMPILER
+    /// <summary>Serializes a trusted model as UTF-8 JSON directly to a stream through a compiled codec, flushing once when complete.</summary>
+    /// <remarks>
+    /// Encodes into a pooled buffer and writes it to <paramref name="stream" /> in one call, so the response path never
+    /// materializes an intermediate string. Not available on Fable.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="codec" /> or <paramref name="stream" /> is null.</exception>
+    let serializeToStream (codec: JsonCodec<'model>) (stream: System.IO.Stream) (value: 'model) : unit =
+        if isNull (box codec) then
+            nullArg (nameof codec)
+
+        if isNull stream then
+            nullArg (nameof stream)
+
+        let buffer = ResizableBuffer.Create(4096)
+
+        try
+            codec.Encoder (buffer :> IByteWriter) value
+            stream.Write(buffer.InternalData, 0, buffer.InternalCount)
+            stream.Flush()
+        finally
+            buffer.Release()
+
+    /// <summary>Reads a stream to end into a pooled buffer, then deserializes it as UTF-8 JSON through a compiled codec.</summary>
+    /// <remarks>
+    /// This reads the whole stream before decoding; there is no incremental/streaming JSON parser pre-1.0. Not available
+    /// on Fable.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="codec" /> or <paramref name="stream" /> is null.</exception>
+    /// <exception cref="T:Axial.Codec.JsonCodecException">Thrown when the JSON does not match the schema's wire shape.</exception>
+    let deserializeStreamAsync
+        (codec: JsonCodec<'model>)
+        (stream: System.IO.Stream)
+        : System.Threading.Tasks.Task<'model> =
+        task {
+            if isNull (box codec) then
+                nullArg (nameof codec)
+
+            if isNull stream then
+                nullArg (nameof stream)
+
+            let buffer = ResizableBuffer.Create(4096)
+
+            try
+                let mutable bytesRead = -1
+
+                while bytesRead <> 0 do
+                    (buffer :> IByteWriter).Ensure(4096)
+
+                    let! read =
+                        stream.ReadAsync(
+                            buffer.InternalData,
+                            buffer.InternalCount,
+                            buffer.InternalData.Length - buffer.InternalCount
+                        )
+
+                    bytesRead <- read
+                    buffer.InternalCount <- buffer.InternalCount + read
+
+                let data = Array.zeroCreate buffer.InternalCount
+                Array.blit buffer.InternalData 0 data 0 buffer.InternalCount
+                return decodeRoot codec data
+            finally
+                buffer.Release()
+        }
+#endif

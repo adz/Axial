@@ -336,7 +336,7 @@ let pageSpecs = [
         Intro = "This page shows the `Axial.Codec` surface: `Json.compile` turns a built `Schema<'model>` into a reusable `JsonCodec<'model>` with reflection-free, constructor-specialized encode and decode plans. The codec is the trusted hot path for serialization; parse untrusted boundary input with [schema input parsing](../schema/interpreters/) when path-aware diagnostics matter."
         SymbolIds = [
             "Core types", ["T:Axial.Codec.JsonCodec`1"; "T:Axial.Codec.JsonCodecException"]
-            "Module functions", ["M:Axial.Codec.Json.compile"; "M:Axial.Codec.Json.serialize"; "M:Axial.Codec.Json.serializeBytes"; "M:Axial.Codec.Json.deserialize"; "M:Axial.Codec.Json.deserializeBytes"; "M:Axial.Codec.Json.tryDeserialize"]
+            "Module functions", ["M:Axial.Codec.Json.compile"; "M:Axial.Codec.Json.serialize"; "M:Axial.Codec.Json.serializeBytes"; "M:Axial.Codec.Json.serializeToStream"; "M:Axial.Codec.Json.deserialize"; "M:Axial.Codec.Json.deserializeBytes"; "M:Axial.Codec.Json.deserializeStreamAsync"; "M:Axial.Codec.Json.tryDeserialize"]
         ]
         Alias = None
     }

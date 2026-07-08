@@ -1,7 +1,7 @@
 ---
 title: "Codec.Json.deserialize"
 linkTitle: "deserialize"
-weight: 2103
+weight: 2104
 ---
 
 Deserializes a JSON string to a trusted model through a compiled codec.

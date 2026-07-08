@@ -208,6 +208,21 @@ input {{ width: 100%%; padding: 0.4rem; }}
 // The minimal API host.
 // ---------------------------------------------------------------------------
 
+/// Writes a trusted model straight to the response body through the compiled codec, so the response path never
+/// materializes an intermediate JSON string.
+type private CodecResult<'model>(codec: JsonCodec<'model>, value: 'model, statusCode: int) =
+    interface IResult with
+        member _.ExecuteAsync(context: HttpContext) =
+            context.Response.StatusCode <- statusCode
+            context.Response.ContentType <- "application/json"
+
+            match context.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpBodyControlFeature>() with
+            | null -> ()
+            | feature -> feature.AllowSynchronousIO <- true
+
+            Json.serializeToStream codec context.Response.Body value
+            System.Threading.Tasks.Task.CompletedTask
+
 let private formToRawInput (form: IFormCollection) =
     // Dotted form field names such as address.street become nested raw input
     // through the configuration-style path builder.
@@ -229,9 +244,9 @@ let buildApp (args: string[]) =
 
                 match parsed.Result with
                 | Ok signup ->
-                    // The trusted model round-trips through the compiled codec, proving
-                    // the same declaration drives serialization too.
-                    return Results.Text(Json.serialize Boundary.codec signup, "application/json", statusCode = 201)
+                    // The trusted model round-trips through the compiled codec, proving the same declaration
+                    // drives serialization too, streamed straight to the response body.
+                    return CodecResult(Boundary.codec, signup, 201) :> IResult
                 | Error _ -> return Results.Json(Boundary.errorBody parsed, statusCode = 400)
             })
     )
