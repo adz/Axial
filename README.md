@@ -123,9 +123,9 @@ dotnet run --project examples/Axial.ReadmeExample/Axial.ReadmeExample.fsproj
 let readTextFile (path: string) : Flow<ReadmeEnv, FileReadError, string> =
     flow {
         // In production, map access and path exceptions separately at the boundary.
-        do! File.Exists path |> Result.checkOr () |> Bind.error (NotFound path)
+        do! Result.checkOr (NotFound path) (File.Exists path)
 
-        // Wrap in ColdTask for later exeuction
+        // Wrap in ColdTask for later execution
         return! ColdTask(fun ct -> File.ReadAllTextAsync(path, ct))
     }
 
