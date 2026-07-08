@@ -23,6 +23,10 @@
     <Compile Include="..\..\src\Axial.ErrorHandling\Collection.fs" />
     <Compile Include="..\..\src\Axial.Schema\Platform.fs" />
     <Compile Include="..\..\src\Axial.Schema\Schema.fs" />
+    <Compile Include="..\..\src\Axial.Codec\AssemblyInfo.fs" />
+    <Compile Include="..\..\src\Axial.Codec\Buffers.fs" />
+    <Compile Include="..\..\src\Axial.Codec\JsonRuntime.fs" />
+    <Compile Include="..\..\src\Axial.Codec\Json.fs" />
     <Compile Include="..\..\src\Axial.Flow\Runtime.fs" />
     <Compile Include="..\..\src\Axial.Flow\RuntimeLayer.fs" />
     <Compile Include="..\..\src\Axial.Flow\Policy.fs" />

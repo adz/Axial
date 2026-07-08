@@ -6,6 +6,7 @@ open Axial.Flow
 open Axial.ErrorHandling
 open Axial.Schema
 open Axial.Validation
+open Axial.Codec
 
 [<RequireQualifiedAccess>]
 module Shared =
@@ -145,14 +146,20 @@ module Shared =
 
         workflow
 
-    let buildSchemaBuilderSummary () =
-        let schema =
-            Schema.record (fun name age -> { Name = name; Age = age })
-            |> Schema.field "name" (fun (contact: SchemaContact) -> contact.Name) Value.text
-            |> Schema.field "age" (fun (contact: SchemaContact) -> contact.Age) Value.int
-            |> Schema.build
+    let private contactSchema =
+        Schema.record (fun name age -> { Name = name; Age = age })
+        |> Schema.field "name" (fun (contact: SchemaContact) -> contact.Name) Value.text
+        |> Schema.field "age" (fun (contact: SchemaContact) -> contact.Age) Value.int
+        |> Schema.build
 
-        Schema.specialize (SummaryFactory<SchemaContact>()) schema
+    let buildSchemaBuilderSummary () =
+        Schema.specialize (SummaryFactory<SchemaContact>()) contactSchema
+
+    let runCodecRoundTrip () =
+        let codec = Json.compile contactSchema
+        let original = { Name = "Ada"; Age = 37 }
+        let json = Json.serialize codec original
+        Json.deserialize codec json
 
     let runAsyncResult (workflow: unit -> Async<Result<int, string>>) =
         let mutable completed = false

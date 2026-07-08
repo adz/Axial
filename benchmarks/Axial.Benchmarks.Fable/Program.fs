@@ -25,6 +25,13 @@ module Program =
         if schemaSummary <> [ "0:name"; "1:age" ] then
             failwith $"Unexpected schema builder summary: %A{schemaSummary}"
 
+        let roundTripped = Shared.runCodecRoundTrip ()
+
+        if roundTripped <> ({ Name = "Ada"; Age = 37 }: Shared.SchemaContact) then
+            failwith $"Unexpected codec round-trip result: %A{roundTripped}"
+
+        printfn "Codec round-trip: ok"
+
         Runner.reportSection
             targetName
             ".NET-like sync result"

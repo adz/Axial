@@ -728,22 +728,44 @@ let startFiber
 
 #if FABLE_COMPILER
     // Fable has no cooperative CancellationTokenSource linking, so a forked fiber gets an independent source.
+    // Fable does not support Async.RunSynchronously, so the fiber's completion is published through a
+    // hand-rolled rendezvous cell (mirroring the Signal type below) rather than Async.StartChild.
     let cts = new CancellationTokenSource()
 
-    let operation =
+    let mutable settled: Exit<'value, 'error> option = None
+    let mutable waiters: (Exit<'value, 'error> -> unit) list = []
+
+    let settle (exit: Exit<'value, 'error>) =
+        if settled.IsNone then
+            settled <- Some exit
+            let toNotify = List.rev waiters
+            waiters <- []
+
+            for waiter in toNotify do
+                waiter exit
+
+    Async.StartImmediate(
         async {
             try
                 let! exit = run cts.Token
                 setStatus (statusFromExit exit)
-                return exit
+                settle exit
             with error ->
                 let exit = Exit.Failure(causeOfException error)
                 setStatus (statusFromExit exit)
-                return exit
-        }
+                settle exit
+        })
 
     ignore parentCancellationToken
-    cts, Async.StartChild(operation) |> Async.RunSynchronously
+
+    let exitTask =
+        async {
+            match settled with
+            | Some exit -> return exit
+            | None -> return! Async.FromContinuations(fun (resolve, _, _) -> waiters <- resolve :: waiters)
+        }
+
+    cts, exitTask
 #else
     let cts = CancellationTokenSource.CreateLinkedTokenSource(parentCancellationToken)
 

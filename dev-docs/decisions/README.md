@@ -121,9 +121,9 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
   must consume the shipped module, otherwise the duplication just moves. UI scope stays field list + control kinds —
   layout, localization, and widget options are application concerns.
 - `Axial.Codec` is part of the supported Fable surface: the package compiles in `check-fable-js-surface.sh` and a Node
-  round-trip test exercises it (queued work). The `FABLE_COMPILER` gates are load-bearing, and every future codec
-  optimization must keep the JS branch working. This completes the zod-comparison story — one declaration shared
-  between server and browser covers serialization as well as parsing.
+  round-trip test exercises it. The `FABLE_COMPILER` gates are load-bearing, and every future codec optimization must
+  keep the JS branch working. This completes the zod-comparison story — one declaration shared between server and
+  browser covers serialization as well as parsing.
 - No fused fast boundary path for now: the 20 µs boundary-lane cost is not a reported problem, and `Input.parse` keeps
   its raw-retaining redisplay contract. If demand appears, the pre-chosen shape is a separate entry point
   (`Input.parseUtf8` — diagnostics-on-failure, no redisplay, API bodies), prototyped in the benchmarks project first,
