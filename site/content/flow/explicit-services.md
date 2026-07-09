@@ -9,7 +9,7 @@ type: docs
 Axial workflows declare what they need through `Flow<'env, 'error, 'value>`. The environment is an ordinary F# value.
 That value can be a small record, a larger application record, or an object that implements named service contracts.
 
-## Start With Records
+## Plain Records For Feature-Local Code
 
 For feature-local code, prefer records and `Flow.read`.
 

@@ -2,29 +2,18 @@
 weight: 15
 title: Choosing A Tool
 type: docs
-description: Schema vs Input vs Check vs Rules vs Policy.
+description: Schema vs Input vs Rules — the three tools inside Axial.Schema.
 ---
 
 # Choosing A Tool
 
-Axial splits data-boundary work into five small tools. Each answers one question.
+`Axial.Schema` splits data-boundary work into three tools. Each answers one question about the same model.
 
-| Tool | Question it answers | Package |
-| :--- | :--- | :--- |
-| `Check<'value>` | Does this single value satisfy a reusable constraint? | `Axial.ErrorHandling` |
-| `Schema<'model>` | What is the model's shape, order, construction, and constraint metadata? | `Axial.Schema` |
-| `Input.parse` | Can this raw boundary input become a trusted model? | `Axial.Validation.Schema` |
-| `Rules.apply` | Is this already-trusted model acceptable in this context? | `Axial.Validation.Schema` |
-| `Policy` + `Flow.verify` | How does a verification step run inside a workflow with its environment? | `Axial.Flow` |
-
-## Check
-
-A `Check<'value>` is a path-free, raw-input-free executable constraint over one value. Reuse checks anywhere a plain
-value needs guarding; schemas lower their constraint metadata to the same checks during parsing and validation.
-
-```fsharp
-let nameCheck = Check.all [ Check.String.present; Check.String.maxLength 80 ]
-```
+| Tool | Question it answers |
+| :--- | :--- |
+| `Schema<'model>` | What is the model's shape, order, construction, and constraint metadata? |
+| `Input.parse` / `Validation.validate` | Can this raw input, or this already-existing value, become a trusted model? |
+| `Rules.apply` | Is this already-trusted model acceptable in this context? |
 
 ## Schema
 
@@ -37,8 +26,10 @@ constraints. It executes nothing by itself — interpreters decide what it means
 constructor only when every argument is trusted, and returns `ParsedInput` carrying either the model or path-aware
 diagnostics plus the original input for redisplay.
 
-Use `Validation.validate schema model` (from `Axial.Validation.Schema`) when the value already exists — imported rows,
-hand-built values — and needs the same intrinsic constraints re-checked through getters.
+Use `Validation.validate schema model` — the module `Axial.Validation.Schema.Validation`, not to be confused with
+`Axial.Validation.Validation<'value, 'error>` from [Error Handling]({{< relref "/validation/" >}}), the accumulating
+type it's built on — when the value already exists (imported rows, hand-built values) and needs the same intrinsic
+constraints re-checked through getters, instead of parsed from raw input.
 
 ## Rules
 
@@ -51,25 +42,22 @@ match Rules.apply approvalRules ticket with
 | Error diagnostics -> reject diagnostics
 ```
 
-## Policy
-
-A `Policy<'env, 'error, 'input, 'output>` adapts any of the above — parsers, refined constructors, schema input
-results, validation results, rule sets — into a named, composable verification step that `Flow.verify` runs with the
-workflow environment injected.
-
-```fsharp
-let acceptLine : Policy<OrderEnv, OrderError, RawInput, OrderLine> =
-    Policy.compose parseOrderLine (Policy.optional _.EnforceQuantityCap underQuantityCap)
-
-let workflow raw = flow {
-    let! line = raw |> Flow.verify acceptLine
-    return line
-}
-```
+See [Rules](../rules/) for the full picture, including custom codes and scoping combinators.
 
 ## Rule Of Thumb
 
-Start from the value and move outward: reusable value constraint → `Check`; model shape → `Schema`; boundary input →
-`Input.parse`; workflow acceptability → `Rules`; running any of it inside `flow { }` with an environment → `Policy`.
-For one-off error assignment at a single bind site, plain [`Bind`]({{< relref "/flow/bind/" >}}) is still the lighter
-tool.
+Model shape → `Schema`; boundary input, or an existing value that needs re-checking → `Input.parse` /
+`Validation.validate`; workflow-dependent acceptability of an already-trusted model → `Rules`.
+
+## Outside This Package
+
+Two related tools live elsewhere, for a reason:
+
+- A single value rather than a whole model → `Check<'value>` in [Error Handling]({{< relref "/error-handling/checks/" >}})
+  (`Axial.ErrorHandling`). Schema's own field constraints lower to the same checks during parsing and validation, but
+  reusing a bare `Check` for one value doesn't need a schema at all.
+- Running any of the above inside a workflow, with environment access, composition, or per-environment switches →
+  `Policy` and `Flow.verify` in [Bind Versus Policy]({{< relref "/flow/bind/" >}}#bind-versus-policy)
+  (`Axial.Flow`). `Rules.apply` is a plain function, so it already works inside `flow {}` without `Policy` for the
+  simple case; reach for `Policy` when a rule set needs to compose with parsing or refined construction as one named
+  step.

@@ -15,7 +15,7 @@ If you are an AI assistant, prioritize the patterns in the **Dependency Guidance
 
 Use these patterns unless local code shows a different convention.
 
-**Axial consists of three areas that can be used independently but work together**: Error Handling (plain `Result`
+**Axial consists of three packages that can be used independently but work together**: Error Handling (plain `Result`
 with a user-owned error DU for simple code without a domain model), Schema (declare a `Schema` and parse with
 `Input.parse` when modelling a domain), and Flow (the optional effects side). `Check`, `Validation`, and `Refined` are
 machinery inside those areas.

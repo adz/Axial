@@ -344,7 +344,7 @@ let pageSpecs = [
         OutPath = ["flow"; "_index.md"]
         Title = "Flow"
         Description = "Source-documented workflow surface in Axial."
-        Intro = "This page shows the Flow surface for cold workflow descriptions that only start when you call an execution member such as `workflow.ToTask(env)`, `workflow.ToValueTask(env)`, `workflow.ToAsync(env)`, or `workflow.RunSynchronously(env)`. Start with the smallest useful signature: `Flow<'value>` means no environment and no typed failure, `Flow<'error, 'value>` means no environment with typed failure, `EnvFlow<'env, 'value>` means environment with no typed failure, and `ExnFlow`/`ExnEnvFlow` put recoverable exceptions in the typed error channel. Use the full `Flow<'env, 'error, 'value>` form when a workflow needs both environment and typed failure channels. Use this page as the API map for building fail-fast workflows, reading dependencies from `env`, reshaping environments with `localEnv`, composing typed failures, and introducing concurrency with fibers, `zipPar`, or `race`. Start with `flow { }`, `Flow.read`, `Flow.bind`, and `Flow.map`; reach for [runtime helpers](./runtime/) and parallel orchestration only at the boundary where the workflow actually needs them."
+        Intro = "This page shows the Flow surface for cold workflow descriptions that only start when you call an execution member such as `workflow.ToTask(env)`, `workflow.ToValueTask(env)`, `workflow.ToAsync(env)`, or `workflow.RunSynchronously(env)`. The smallest useful signature is `Flow<'value>`: no environment and no typed failure. `Flow<'error, 'value>` adds typed failure with no environment; `EnvFlow<'env, 'value>` adds an environment with no typed failure; `ExnFlow`/`ExnEnvFlow` put recoverable exceptions in the typed error channel; the full `Flow<'env, 'error, 'value>` form carries both. Use this page as the API map for building fail-fast workflows with `flow { }`, `Flow.read`, `Flow.bind`, and `Flow.map`; reading dependencies from `env`; reshaping environments with `localEnv`; composing typed failures; and introducing concurrency with fibers, `zipPar`, or `race`. Reach for [runtime helpers](./runtime/) and parallel orchestration only at the boundary where the workflow actually needs them."
         SymbolIds = [
             "Core type", ["T:Axial.Flow.Flow`3"; "T:Axial.Flow.Flow`2"; "T:Axial.Flow.Flow`1"; "T:Axial.Flow.EnvFlow`2"; "T:Axial.Flow.ExnFlow`1"; "T:Axial.Flow.ExnEnvFlow`2"; "T:Axial.Flow.Never"]
             "Fiber operations", ["M:Axial.Flow.Flow.fork"; "M:Axial.Flow.Flow.join"; "M:Axial.Flow.Flow.interrupt"]
@@ -416,7 +416,7 @@ let pageSpecs = [
         OutPath = ["schedule"; "_index.md"]
         Title = "Schedule"
         Description = "Source-documented retry and repeat logic for Axial."
-        Intro = "This page shows the `Schedule` surface for describing retry and repeat policies as values. A schedule decides when a workflow should run again, what delay should be used, and what output should be accumulated for each step. Use schedules when retry behavior is part of the workflow boundary and must stay explicit, testable, and separate from the domain operation being retried. The common entry points are `recurs` for bounded repetition, `spaced` for fixed delays, `exponential` for backoff, `jittered` when several callers should not retry in lockstep, `retry` for typed failures, and `repeat` for successful values."
+        Intro = "This page shows the `Schedule` surface for describing retry and repeat policies as values. A `Schedule` on its own does nothing — it is a definition of when to run again (recur or stop) and how long to wait, not an action. Build one with `recurs` (bounded repetition), `spaced` (fixed delay), `exponential` (backoff), and `jittered` (randomized delay, so callers don't retry in lockstep), then apply it to a flow with `Schedule.retry` (rerun on a typed failure) or `Schedule.repeat` (rerun on a success) — nothing happens until one of those two runs the schedule against an actual workflow. Use schedules when retry behavior is part of the workflow boundary and must stay explicit, testable, and separate from the domain operation being retried."
         SymbolIds = [
             "Core type", ["T:Axial.Flow.Schedule`3"]
             "Module functions", ["M:Axial.Flow.ScheduleModule.recurs"; "M:Axial.Flow.ScheduleModule.spaced"; "M:Axial.Flow.ScheduleModule.exponential"; "M:Axial.Flow.ScheduleModule.jittered"; "M:Axial.Flow.ScheduleModule.retry"; "M:Axial.Flow.ScheduleModule.repeat"]
@@ -471,7 +471,7 @@ let pageSpecs = [
         OutPath = ["check"; "_index.md"]
         Title = "Check"
         Description = "Source-documented pure validation helpers for Axial."
-        Intro = "This page shows the `Check` surface for reusable, path-free value constraints. `Check.*` helpers return `Result<'value, CheckFailure list>`: a passing check hands back the same value unchanged, so it pipes directly into the next step. They compose with `Check.all`, `Check.any`, `Check.not`, and `Check.mapFailure`. Use `Predicate.*` helpers when a local branch needs a raw boolean instead of a structured result. `Axial.ErrorHandling.CheckDSL` opens the deduplicated root names unqualified for use inside a validation module; `not`, `contains`, `distinct`, `all`, `any`, `length`, and `between` stay reachable only as `Check.___` there, since they shadow FSharp.Core names."
+        Intro = "This page shows the `Check` surface for reusable, path-free value constraints. `Check.*` helpers return `Result<'value, CheckFailure list>`: a passing check hands back the same value unchanged, so it pipes directly into the next step. They compose with `Check.all`, `Check.any`, `Check.not`, and `Check.mapFailure`. Use [`Predicate`](../predicate/) when a local branch needs a raw boolean instead of a structured result. `Axial.ErrorHandling.CheckDSL` opens the deduplicated root names unqualified for use inside a validation module; `not`, `contains`, `distinct`, `all`, `any`, `length`, and `between` stay reachable only as `Check.___` there, since they shadow FSharp.Core names."
         SymbolIds = [
             "Core types", ["T:Axial.ErrorHandling.Check`1"; "T:Axial.ErrorHandling.CheckFailure"; "T:Axial.ErrorHandling.CheckLengthExpectation"; "T:Axial.ErrorHandling.CheckRangeExpectation"; "T:Axial.ErrorHandling.CheckCountExpectation"]
             "Executable composition", ["M:Axial.ErrorHandling.CheckModule.all"; "M:Axial.ErrorHandling.CheckModule.any"; "M:Axial.ErrorHandling.CheckModule.not"; "M:Axial.ErrorHandling.CheckModule.mapFailure"]
@@ -480,6 +480,15 @@ let pageSpecs = [
             "Executable number checks", ["M:Axial.ErrorHandling.CheckModule.Number.between"; "M:Axial.ErrorHandling.CheckModule.Number.greaterThan"; "M:Axial.ErrorHandling.CheckModule.Number.lessThan"; "M:Axial.ErrorHandling.CheckModule.Number.atLeast"; "M:Axial.ErrorHandling.CheckModule.Number.atMost"; "M:Axial.ErrorHandling.CheckModule.Number.positive"; "M:Axial.ErrorHandling.CheckModule.Number.nonNegative"; "M:Axial.ErrorHandling.CheckModule.Number.negative"; "M:Axial.ErrorHandling.CheckModule.Number.nonPositive"]
             "Executable sequence checks", ["M:Axial.ErrorHandling.CheckModule.Seq.empty"; "M:Axial.ErrorHandling.CheckModule.Seq.notEmpty"; "M:Axial.ErrorHandling.CheckModule.Seq.count"; "M:Axial.ErrorHandling.CheckModule.Seq.minCount"; "M:Axial.ErrorHandling.CheckModule.Seq.maxCount"; "M:Axial.ErrorHandling.CheckModule.Seq.countBetween"; "M:Axial.ErrorHandling.CheckModule.Seq.noDuplicates"; "M:Axial.ErrorHandling.CheckModule.Seq.contains"; "M:Axial.ErrorHandling.CheckModule.Seq.single"; "M:Axial.ErrorHandling.CheckModule.Seq.atMostOne"; "M:Axial.ErrorHandling.CheckModule.Seq.atLeastOne"; "M:Axial.ErrorHandling.CheckModule.Seq.moreThanOne"]
             "Executable optional checks", ["M:Axial.ErrorHandling.CheckModule.Option.some"; "M:Axial.ErrorHandling.CheckModule.Option.none"; "M:Axial.ErrorHandling.CheckModule.ValueOption.some"; "M:Axial.ErrorHandling.CheckModule.ValueOption.none"; "M:Axial.ErrorHandling.CheckModule.Nullable.hasValue"; "M:Axial.ErrorHandling.CheckModule.Nullable.hasNoValue"; "M:Axial.ErrorHandling.CheckModule.Result.ok"; "M:Axial.ErrorHandling.CheckModule.Result.error"]
+        ]
+        Alias = None
+    }
+    {
+        OutPath = ["predicate"; "_index.md"]
+        Title = "Predicate"
+        Description = "Source-documented boolean predicates for Axial."
+        Intro = "This page shows the `Predicate` and `PredicateExtensions` surface: plain `bool` facts for local branching (`if`, `match`, guard clauses), as opposed to [`Check`](../check/), which returns a structured `Result`. `PredicateExtensions` is `AutoOpen`, adding members such as `IsBlank`, `IsPresent`, and `HasItems` directly onto the types they describe. `Predicate.present`, `Predicate.empty`, and `Predicate.notEmpty` are the `bool`-returning counterparts to `Check.present`/`Check.empty`/`Check.notEmpty`, using the same type-directed SRTP dispatch."
+        SymbolIds = [
             "Type-directed presence facade", ["M:Axial.ErrorHandling.PredicateModule.present"; "M:Axial.ErrorHandling.PredicateModule.empty"; "M:Axial.ErrorHandling.PredicateModule.notEmpty"]
             "Option and result predicates", ["M:Axial.ErrorHandling.PredicateExtensions.Option`1.get_IsPresent``1(Microsoft.FSharp.Core.FSharpOption{``0})"; "M:Axial.ErrorHandling.PredicateExtensions.Option`1.get_IsAbsent``1(Microsoft.FSharp.Core.FSharpOption{``0})"; "M:Axial.ErrorHandling.PredicateExtensions.ValueOption`1.get_IsPresent``1(Microsoft.FSharp.Core.FSharpValueOption{``0})"; "M:Axial.ErrorHandling.PredicateExtensions.ValueOption`1.get_IsAbsent``1(Microsoft.FSharp.Core.FSharpValueOption{``0})"; "M:Axial.ErrorHandling.PredicateExtensions.Result.IsOk"; "M:Axial.ErrorHandling.PredicateExtensions.Result.IsError"]
             "Presence predicates", ["M:Axial.ErrorHandling.PredicateExtensions.Nullable`1.get_IsPresent``1(System.Nullable{``0})"; "M:Axial.ErrorHandling.PredicateExtensions.Nullable`1.get_IsAbsent``1(System.Nullable{``0})"; "M:Axial.ErrorHandling.PredicateModule.Reference.notNull"; "M:Axial.ErrorHandling.PredicateModule.Reference.isNull"]
@@ -1024,6 +1033,7 @@ let pageWeight (spec: PageSpec) =
     | ["effect"; "_index.md"] -> 50
     | ["result"; "_index.md"] -> 60
     | ["check"; "_index.md"] -> 70
+    | ["predicate"; "_index.md"] -> 72
     | ["take"; "_index.md"] -> 75
     | ["bind"; "_index.md"] -> 76
     | ["validation"; "_index.md"] -> 80
@@ -1078,11 +1088,8 @@ let main argv =
     let dllPaths = [
         Path.Combine(artifactsDir, "Axial.Flow/debug_net8.0/Axial.Flow.dll")
         Path.Combine(artifactsDir, "Axial.ErrorHandling/debug_net8.0/Axial.ErrorHandling.dll")
-        Path.Combine(artifactsDir, "Axial.Refined/debug_net8.0/Axial.Refined.dll")
         Path.Combine(artifactsDir, "Axial.Schema/debug_net8.0/Axial.Schema.dll")
         Path.Combine(artifactsDir, "Axial.Codec/debug_net8.0/Axial.Codec.dll")
-        Path.Combine(artifactsDir, "Axial.Validation/debug_net8.0/Axial.Validation.dll")
-        Path.Combine(artifactsDir, "Axial.Validation.Schema/debug_net8.0/Axial.Validation.Schema.dll")
         Path.Combine(artifactsDir, "Axial.Flow.PlatformService/debug_net8.0/Axial.Flow.PlatformService.dll")
         Path.Combine(artifactsDir, "Axial.Flow.Console/debug_net8.0/Axial.Flow.Console.dll")
         Path.Combine(artifactsDir, "Axial.Flow.FileSystem/debug_net8.0/Axial.Flow.FileSystem.dll")

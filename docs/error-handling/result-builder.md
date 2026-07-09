@@ -60,4 +60,4 @@ let login username password =
 - **Fail-Fast**: When continuing after an error makes no sense (e.g., you can't save a user if the email is invalid).
 - **Simple Logic**: When you only need to return a single error value to the caller.
 
-If you need to collect *multiple* independent errors at once, use [`validate {}`]({{< relref "/schema/validation/validate-builder.md" >}}) instead.
+If you need to collect *multiple* independent errors at once, use [`validate {}`]({{< relref "/error-handling/validation/validate-builder.md" >}}) instead.

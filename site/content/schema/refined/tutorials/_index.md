@@ -9,7 +9,7 @@ type: docs
 These tutorials use `Parse`, `Refine`, and `refine {}` to turn untrusted boundary values into typed domain values,
 preferring "parse" over "error handling".
 
-## Start Here
+## Guides
 
 - [Order Reference](./order-reference/): parse strings into refined values and a caller-owned domain type.
 

@@ -23,6 +23,24 @@
     <Compile Include="SchemaInterpreterPrototypeTests.fs" />
     <Compile Include="SchemaGenerationTargetProofTests.fs" />
     <Compile Include="SchemaDslTests.fs" />
+    <Compile Include="ParseAndBuilderTests.fs" />
+    <Compile Include="CatalogTests.fs" />
+    <Compile Include="RawInputTests.fs" />
+    <Compile Include="ParsedInputTests.fs" />
+    <Compile Include="SchemaErrorTests.fs" />
+    <Compile Include="InputParseTests.fs" />
+    <Compile Include="NestedSchemaParseTests.fs" />
+    <Compile Include="ManySchemaParseTests.fs" />
+    <Compile Include="MapSchemaParseTests.fs" />
+    <Compile Include="UnionSchemaParseTests.fs" />
+    <Compile Include="OptionalSchemaParseTests.fs" />
+    <Compile Include="SchemaValidationTests.fs" />
+    <Compile Include="RulesTests.fs" />
+    <Compile Include="SchemaDiagnosticsRenderingTests.fs" />
+    <Compile Include="SchemaConstraintCheckTests.fs" />
+    <Compile Include="SchemaRefinedValueCheckTests.fs" />
+    <Compile Include="RefinedCatalogSchemaTests.fs" />
+    <Compile Include="SchemaVerticalSliceProofTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

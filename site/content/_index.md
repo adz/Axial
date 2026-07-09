@@ -11,9 +11,9 @@ description: Axial — parse-don't-validate results and structured effects for F
 <h1>Structured data. Structured effects.</h1>
 
 <div class="lede">
-Axial consists of three areas that can be used independently but work together: plain <strong>Result</strong> error
-handling for simple code, a <strong>parse-don't-validate</strong> toolkit that turns untrusted input into trusted
-domain models, and a <strong>workflow model</strong> for the effects around them.
+Axial consists of three packages that can be used independently but work together: plain <strong>Result</strong>
+error handling for simple code, a <strong>parse-don't-validate</strong> toolkit that turns untrusted input into
+trusted domain models, and a <strong>workflow model</strong> for the effects around them.
 </div>
 </div>
 

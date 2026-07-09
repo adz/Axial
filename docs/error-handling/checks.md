@@ -1,15 +1,45 @@
 ---
 weight: 10
 title: Check
-description: Use structured Check programs before shaping failures with Result, Validation, or Flow.
+description: Reusable, named structural checks that attach to Result.
 ---
 
 # Check
 
-`Check` contains reusable value constraints. A passing check hands back the same value unchanged, so it pipes
-directly into the next step — no separate "keep the input" wrapper is needed.
+A `Check<'value>` is a function from a value to itself-or-a-failure:
 
-## Start With The DSL
+```fsharp
+type Check<'value> = 'value -> Result<'value, CheckFailure list>
+```
+
+That's the whole shape. What makes it worth reaching for instead of writing the same `if`/`Error` by hand is that a
+`Check` is **named** and **reusable** — `Check.present`, `Check.atLeast 18`, `Check.email` are each written once and
+called from everywhere that fact matters — and its failure side is **structured**, not a bare `unit` or `string`.
+
+### The `CheckFailure` Type
+
+Every `Check` that fails produces one or more [`CheckFailure`]({{< relref "/reference/check/t-errorhandling-checkfailure.md" >}})
+values — a closed set of describable reasons, not free-form text:
+
+```fsharp
+type CheckFailure =
+    | Required                                                  // a required value was missing
+    | InvalidFormat of expected: string                         // didn't match an expected format (e.g. email)
+    | InvalidLength of expectation: CheckLengthExpectation * actualLength: int option
+    | OutOfRange of expectation: CheckRangeExpectation * actual: string option
+    | InvalidCount of expectation: CheckCountExpectation * actualCount: int option
+    | NotOneOf of choices: string
+    | Duplicate
+    | Custom of code: string
+```
+
+Because the reason is a real value instead of a string, it can be rendered (`CheckFailure.describe`/`describeAll`,
+with a swappable [`CheckFailureResources`]({{< relref "/reference/check/" >}}) for localization), pattern-matched
+on, or lowered into a `SchemaError` when the check runs as part of schema input parsing. Most application code just
+maps the whole list to a domain error, which is what the rest of this page shows — but the structure is there when
+you need more than "it failed."
+
+## The CheckDSL
 
 Open `Axial.ErrorHandling.CheckDSL` inside a module that runs several checks, and write them bare:
 
@@ -21,9 +51,11 @@ module SignupChecks =
     let validateEmail : Check<string> = Check.all [ present; email ]
 ```
 
-`present`, `atLeast`, `email`, `minLength`, and the rest of the deduplicated root names are all here. `Check.all`,
-`Check.any`, `Check.not`, and `Check.mapFailure` stay qualified even with the DSL open — they, along with `contains`,
-`distinct`, `length`, and `between`, shadow FSharp.Core names, so the DSL deliberately leaves them off its surface.
+`present`, `atLeast`, `email`, `minLength`, `maxLength`, `lengthBetween`, `exactLength`, `matches`, `oneOf`,
+`greaterThan`, `lessThan`, `atMost`, `positive`, `nonNegative`, `negative`, `nonPositive`, `minCount`, `maxCount`,
+`countBetween`, `equalTo`, `notEqualTo`, `empty`, `notEmpty`, and `mapFailure` are all here unqualified. `Check.all`,
+`Check.any`, and `Check.``not``` stay qualified even with the DSL open — they, along with `contains`, `distinct`,
+`length`, and `between`, shadow FSharp.Core names, so the DSL deliberately leaves them off its surface.
 
 Only open this inside the module that runs the checks, the same way `Schema.DSL` is scoped to schema definition
 modules — it isn't worth it for a single check call; reach for the qualified `Check.present value` form instead.
@@ -58,17 +90,19 @@ let quantity value : Result<int, OrderError> =
     |> Result.mapError InvalidQuantity
 ```
 
-## Check Versus Result's Generic Helpers
+## Check Is Not Result
 
-Use `Check` for anything with a name and a reusable shape. Use `Result`'s generic helpers for one-off conditions that
-don't need a named, reusable check:
+`Check` and `Result`'s generic helpers are not two ways to do the same thing — they answer different questions, and
+neither is a drop-in substitute for the other:
 
-| Intent | Use |
-| --- | --- |
-| A reusable, named constraint | `Check.present value` |
-| A bare `bool` condition | `Result.requireTrue error condition` |
-| An ad-hoc predicate over the value | `value \|> Result.okIf predicate \|> Result.orError error` |
-| Extract an inner value | `Result.someOr error value` |
+- `Check` proves a **named, reusable structural fact about a value** — "this string is present," "this number is at
+  least 18" — and hands the same value back unchanged on success. It exists so the fact can be written once, given a
+  name, and reused across every place that needs it.
+- `Result`'s generic helpers (`Result.requireTrue`, `Result.okIf`, `Result.someOr`, and friends) exist for everything
+  a `Check` doesn't cover: one-off conditions that don't deserve a name, extracting an inner value from an `option`
+  or `Nullable`, or shaping a success value differently from its source.
+
+Reach for `Result.requireTrue` when the condition is bespoke to one call site, not a reusable fact:
 
 ```fsharp
 type RegistrationError = PasswordRequired
@@ -78,31 +112,24 @@ let validatePassword password : Result<unit, RegistrationError> =
     |> Result.requireTrue PasswordRequired
 ```
 
-Use `Result` helpers when success exposes an inner value or a deliberately different success shape than the source —
-`Result.someOr` checks that an option is `Some` and returns the unwrapped value, for example.
-
-## Flow Bind Sites
-
-Outside `flow {}`, keep pure code in `Result` with `Check.*` calls, `Result.orError`/`Result.mapError`, or the
-extracting helpers. Inside `flow {}`, use `Bind.error` only when a source needs an error assigned immediately before
-binding.
+Reach for `Result.someOr` when success means unwrapping a different shape than the input, not merely re-affirming it:
 
 ```fsharp
-type LoginError = MissingPassword
-
-let login password =
-    flow {
-        do!
-            password
-            |> Check.present
-            |> Result.orError MissingPassword
-            |> Result.map ignore
-
-        return ()
-    }
+let user : Result<User, LoginError> =
+    tryFindUser username |> Result.someOr UserNotFound
 ```
 
-## Going Deeper: The Full Check Surface
+If you find yourself writing the same `Result.requireTrue`/`Result.okIf` condition in more than one place, that's the
+signal to promote it to a `Check` instead, so it gets a name and composes with `Check.all`/`Check.any`.
+
+For a raw `bool` that never needs to become a `Result` at all — an `if` guard, a `match` condition — see
+[Predicates](./predicates/); that's a third, separate concern from both of these.
+
+A `Check` piped into `Result.orError`/`Result.mapError` is already a plain `Result`, so it binds directly inside
+`flow {}` (a separate package — see [Flow]({{< relref "/flow/" >}})) the same way it does in a `result {}`; no
+adapter is needed either direction.
+
+## The Full Check Surface
 
 Everything above uses the deduplicated root names. The full picture underneath:
 
@@ -163,4 +190,4 @@ let requiredName =
 failures only if every alternative fails; `Check.not` inverts a check; `Check.mapFailure` transforms the failures a
 check produces without changing what it checks.
 
-Use `Predicate.*` helpers instead when a local branch needs a raw `bool` rather than a structured result.
+Use [`Predicate`](./predicates/) instead when a local branch needs a raw `bool` rather than a structured result.

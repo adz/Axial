@@ -106,7 +106,7 @@ match parsed.Result with
 ```
 
 For running the parse inside a workflow — including workflow-specific acceptance rules — see
-[Rules And Policies](../rules-and-policies/).
+[Rules](../rules/).
 
 ## From C#
 

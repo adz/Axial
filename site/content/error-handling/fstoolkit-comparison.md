@@ -27,7 +27,7 @@ re-implemented per consumer.
 
 Axial provides a single, scalable progression:
 
-[Check]({{< relref "/error-handling/reference/check/" >}}) -> [Result]({{< relref "/error-handling/reference/result/" >}}) -> [Refined]({{< relref "/schema/reference/refined/" >}}) -> [Validation]({{< relref "/schema/reference/validation/" >}}) -> [Flow]({{< relref "/flow/reference/flow/" >}})
+[Check]({{< relref "/error-handling/reference/check/" >}}) -> [Result]({{< relref "/error-handling/reference/result/" >}}) -> [Refined]({{< relref "/schema/reference/refined/" >}}) -> [Validation]({{< relref "/error-handling/reference/validation/" >}}) -> [Flow]({{< relref "/flow/reference/flow/" >}})
 
 In Axial, the environment and runtime concerns are baked into the computation, allowing you to
 write orchestration logic that remains agnostic of whether the underlying work is sync or async
@@ -43,7 +43,7 @@ If you use these FsToolkit patterns, here is how they correspond to Axial:
 | [Result]({{< relref "/error-handling/reference/result/" >}}).requireSome | `opt |> Result.someOr error` |
 | `asyncResult { }` | `flow {}` |
 | `taskResult { }` | `flow {}` |
-| [Validation]({{< relref "/schema/reference/validation/" >}}) helpers | [Validation]({{< relref "/schema/reference/validation/" >}}) and [`validate {}`]({{< relref "/schema/reference/validation/builders-validate.md" >}}) |
+| [Validation]({{< relref "/error-handling/reference/validation/" >}}) helpers | [Validation]({{< relref "/error-handling/reference/validation/" >}}) and [`validate {}`]({{< relref "/error-handling/reference/validation/builders-validate.md" >}}) |
 
 ## New Things You Get
 
@@ -71,8 +71,8 @@ functions.
 ## Semantic Boundary
 
 Axial flows are short-circuiting by default. If your current FsToolkit usage leans on
-independent validation that should report multiple errors, use [`Validation`]({{< relref "/schema/reference/validation/" >}}) and
-[`validate {}`]({{< relref "/schema/reference/validation/builders-validate.md" >}}) to maintain that explicit concern.
+independent validation that should report multiple errors, use [`Validation`]({{< relref "/error-handling/reference/validation/" >}}) and
+[`validate {}`]({{< relref "/error-handling/reference/validation/builders-validate.md" >}}) to maintain that explicit concern.
 
 ```fsharp
 let validateUser cmd =

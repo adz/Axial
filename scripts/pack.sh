@@ -22,9 +22,8 @@ done
 projects=(
   "src/Axial.Flow/Axial.Flow.fsproj"
   "src/Axial.ErrorHandling/Axial.ErrorHandling.fsproj"
-  "src/Axial.Refined/Axial.Refined.fsproj"
   "src/Axial.Schema/Axial.Schema.fsproj"
-  "src/Axial.Validation/Axial.Validation.fsproj"
+  "src/Axial.Codec/Axial.Codec.fsproj"
   "src/Axial/Axial.fsproj"
   "src/Axial.Flow.Console/Axial.Flow.Console.fsproj"
   "src/Axial.Flow.FileSystem/Axial.Flow.FileSystem.fsproj"

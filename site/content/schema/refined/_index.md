@@ -1,5 +1,5 @@
 ---
-weight: 25
+weight: 22
 title: Refined
 type: docs
 description: Type-safe boundaries with Parse, Refine, and the refine {} builder.
@@ -22,6 +22,14 @@ fields (`Value.refined`), and `Input.parse` runs the parsing for you. Come here 
 building the domain value types your schemas will use.
 
 Use `Parse` for serialized primitive input, `Refine` for built-in refined values, submodules such as `Text`, `Numeric`, `Collection`, `Temporal`, and `Choice` for discoverability, and `refine {}` to sequence fail-fast construction.
+
+## Install
+
+`Refined` ships inside the `Axial.Schema` package — there is no separate package to add:
+
+```sh
+dotnet add package Axial.Schema
+```
 
 ## Mental Model
 
@@ -67,7 +75,7 @@ After this function succeeds, `Product` cannot contain `0` as an id, a malformed
 
 `refine {}` is fail-fast. Use it when later checks depend on earlier values or when the first error is enough. Use `validate {}` from `Axial.Validation` when independent sibling fields should all report diagnostics at once.
 
-## Start Here
+## Guides
 
 - [Tutorials](./tutorials/): parse strings into refined values and a caller-owned domain type.
 - [Refine Builder](./refine-builder/): fail-fast parsing and refinement with `refine {}`.

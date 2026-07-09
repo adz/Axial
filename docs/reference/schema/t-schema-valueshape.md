@@ -26,6 +26,7 @@ weight: 1200
 | `UnionInline` | An internally-tagged union value whose case payload fields sit beside the discriminator field. |
 | `Enum` | A bare-string enum value with explicit case tags. |
 | `Optional` | An optional value whose present payload is described by the supplied payload description. |
+| `MapOf` | A dictionary value, keyed by text, whose entries share the supplied item description. |
 
 ## Remarks
 

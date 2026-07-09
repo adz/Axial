@@ -16,7 +16,7 @@ The problem is not that explicit parameters are wrong. The problem is repetition
 
 An app record solves that by bundling dependencies once at the boundary while keeping the workflow code explicit.
 
-## 1. Start With The Same Interfaces
+## 1. Reuse The Same Interfaces
 
 ```fsharp
 open System

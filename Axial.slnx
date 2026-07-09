@@ -26,22 +26,16 @@
     <Project Path="src/Axial.Flow.Process/Axial.Flow.Process.fsproj" />
     <Project Path="src/Axial.Flow/Axial.Flow.fsproj" />
     <Project Path="src/Axial.ErrorHandling/Axial.ErrorHandling.fsproj" />
-    <Project Path="src/Axial.Refined/Axial.Refined.fsproj" />
     <Project Path="src/Axial.Codec/Axial.Codec.fsproj" />
     <Project Path="src/Axial.Schema/Axial.Schema.fsproj" />
-    <Project Path="src/Axial.Validation/Axial.Validation.fsproj" />
-    <Project Path="src/Axial.Validation.Schema/Axial.Validation.Schema.fsproj" />
     <Project Path="src/Axial.Flow.Hosting/Axial.Flow.Hosting.fsproj" />
     <Project Path="src/Axial.Flow.Telemetry/Axial.Flow.Telemetry.fsproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Axial.Flow.Tests/Axial.Flow.Tests.fsproj" />
     <Project Path="tests/Axial.ErrorHandling.Tests/Axial.ErrorHandling.Tests.fsproj" />
-    <Project Path="tests/Axial.Refined.Tests/Axial.Refined.Tests.fsproj" />
-    <Project Path="tests/Axial.Validation.Tests/Axial.Validation.Tests.fsproj" />
     <Project Path="tests/Axial.Codec.Tests/Axial.Codec.Tests.fsproj" />
     <Project Path="tests/Axial.Schema.Tests/Axial.Schema.Tests.fsproj" />
-    <Project Path="tests/Axial.Validation.Schema.Tests/Axial.Validation.Schema.Tests.fsproj" />
     <Project Path="tests/Axial.Flow.PlatformService.Tests/Axial.Flow.PlatformService.Tests.fsproj" />
     <Project Path="tests/Axial.Flow.Hosting.Tests/Axial.Flow.Hosting.Tests.fsproj" />
     <Project Path="tests/Axial.Flow.Telemetry.Tests/Axial.Flow.Telemetry.Tests.fsproj" />

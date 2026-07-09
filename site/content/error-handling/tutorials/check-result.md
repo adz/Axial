@@ -1,121 +1,151 @@
 ---
 weight: 10
 title: Check and Result Tutorial
-description: Build typed fail-fast results from pure Check helpers.
+description: Validate a signup request end to end with Predicate, Check, and Result.
 type: docs
 ---
 
 
-This tutorial builds pure fail-fast validation without introducing `Flow`.
+This tutorial validates a signup request using all three pieces together: `Predicate` for a cheap local guard,
+`Check` for the reusable named constraints on each field, and `Result` for the one-off condition and the domain
+error that ties it all together.
 
-The example starts with facts about values, turns those facts into typed `Result` values, and composes them with `result {}`.
+## The Shape Of The Problem
 
-## Start With Checks
-
-`Check` helpers answer validation questions before you choose a domain error.
+The raw request is untyped strings and a bool — exactly what arrives from a form post. The goal is a
+`Signup` record that can only exist if every field already passed its constraint.
 
 ```fsharp
 open Axial
+open Axial.ErrorHandling.CheckDSL
 
-Check.present "Ada"              // Ok "Ada"
-Result.someOr "missing" (Some "Ada")    // Ok "Ada"
-```
-
-Use the helper shape that matches the success value you need:
-
-| Need | Shape | Example |
-| --- | --- | --- |
-| A reusable, named check (keeps the input) | `Check.x` | `name |> Check.present` |
-| Extract an inner value | `Result.x` | `maybeUser |> Result.someOr MissingUser` |
-
-`Check` calls fail with `CheckFailure list`, not `unit` — the check failed for a structured, describable reason, but
-no application error has been chosen yet.
-
-## Start From The Core Result Shape
-
-The pure validation stack stays on the standard F# `Result<'value, 'error>` type. `Check` is just the predicate layer over that shape.
-
-```fsharp
-let parsed =
-    "41"
-    |> System.Int32.TryParse
-    |> function
-        | true, value -> Ok value
-        | false, _ -> Error "not an int"
-
-let mapped =
-    parsed
-    |> Result.map ((+) 1)
-```
-
-Once you have a result, use `Result.map`, `Result.bind`, and `Result.mapError` to keep the logic explicit. The code stays testable without a runtime, environment, or flow machinery.
-
-## Attach Domain Errors
-
-`Check` already keeps the input on success, so attaching a domain error is a single `Result.orError` away.
-
-```fsharp
-open Axial.Refined
-
-type RegistrationError =
-    | NameMissing
-    | EmailMissing
-    | PrimaryIdInvalid of RefinementError
-
-let validateName name : Result<string, RegistrationError> =
-    name
-    |> Check.present
-    |> Result.orError NameMissing
-
-let validateEmail email : Result<string, RegistrationError> =
-    email
-    |> Check.present
-    |> Result.orError EmailMissing
-```
-
-Some helpers already carry useful diagnostics. Keep those diagnostics until you map them deliberately.
-`Refine.exactlyOne`/`Refine.atMostOne` extract a single element from a sequence — cardinality is a collection-level
-structural fact, not a value-level `Check`, so it lives in `Refine` alongside the other structural refinements.
-
-```fsharp
-let primaryId ids : Result<int, RegistrationError> =
-    ids
-    |> Refine.exactlyOne
-    |> Result.mapError PrimaryIdInvalid
-```
-
-## Compose With Result
-
-Use `result {}` when later steps depend on earlier successful values and the first failure should stop the workflow.
-
-```fsharp
-type Registration =
+type SignupRequest =
     { Name: string
       Email: string
-      PrimaryId: int }
+      Age: int
+      Password: string
+      ConfirmPassword: string
+      AcceptedTerms: bool }
 
-let validateRegistration name email ids : Result<Registration, RegistrationError> =
-    result {
-        let! validName = validateName name
-        let! validEmail = validateEmail email
-        let! validPrimaryId = primaryId ids
+type SignupError =
+    | EmptyRequest
+    | TermsNotAccepted
+    | NameInvalid
+    | EmailInvalid
+    | AgeInvalid
+    | PasswordMismatch
 
-        return
-            { Name = validName
-              Email = validEmail
-              PrimaryId = validPrimaryId }
-    }
+type Signup =
+    { Name: string
+      Email: string
+      Age: int }
 ```
 
-This is still ordinary pure code. It can be unit-tested without a runtime, environment, cancellation token, task, or service provider.
+## Predicate: A Cheap Guard Before The Real Work
 
-## Use The Smallest Honest Shape
+Before running any `Check`, bail out on the obviously-empty request — someone submitted the form with nothing in
+it. This is a one-off `bool` condition consumed immediately by an `if`, never carried anywhere as a `Result`, so it
+belongs to `Predicate`/`PredicateExtensions`, not `Check`:
 
-Choose the smallest shape that matches the problem:
+```fsharp
+let private isBlankRequest (request: SignupRequest) =
+    request.Name.IsBlank && request.Email.IsBlank
+```
 
-- `Check` for a reusable, named constraint — it already keeps the input value on success
-- `Result` for one-off conditions, extraction, and stopping the workflow at the first failure
+`IsBlank` is a `PredicateExtensions` member on `string` — true for null, empty, or whitespace-only. Nothing here
+needs a structured failure; it's a guard clause, not a validation rule.
 
-That keeps validation code independent from `Flow`, so it can move into an application boundary later.
+## Check: Named Constraints Per Field
 
-When independent fields should report all sibling failures together, move to the [Validation tutorial]({{< relref "/schema/validation/tutorials/registration-form.md" >}}).
+Each field constraint is a reusable fact, so it's a `Check`. Open `Axial.ErrorHandling.CheckDSL` inside the module
+that runs them and combine the ones that apply with `Check.all`:
+
+```fsharp
+let private nameCheck : Check<string> = Check.all [ present; lengthBetween 2 40 ]
+let private emailCheck : Check<string> = Check.all [ present; email ]
+let private ageCheck : Check<int> = atLeast 13
+```
+
+Attach the domain error at the boundary, once per field:
+
+```fsharp
+let private validateName request : Result<string, SignupError> =
+    request.Name |> nameCheck |> Result.orError NameInvalid
+
+let private validateEmail request : Result<string, SignupError> =
+    request.Email |> emailCheck |> Result.orError EmailInvalid
+
+let private validateAge request : Result<int, SignupError> =
+    request.Age |> ageCheck |> Result.orError AgeInvalid
+```
+
+`Result.orError` discards the `CheckFailure list` and replaces it with the domain error — the right choice here
+because `SignupError` doesn't need to describe *which* constraint failed, only that the field did.
+
+## Result: The Condition That Isn't A Check
+
+Password confirmation isn't a reusable, named fact about one value — it's a comparison between two fields, bespoke
+to this call site. That's `Result.requireTrue`, not `Check`:
+
+```fsharp
+let private validatePasswords request : Result<unit, SignupError> =
+    (request.Password = request.ConfirmPassword)
+    |> Result.requireTrue PasswordMismatch
+```
+
+The terms checkbox is the same shape — a bare `bool` already sitting on the request, not something to check the
+structure of:
+
+```fsharp
+let private validateTerms request : Result<unit, SignupError> =
+    request.AcceptedTerms |> Result.requireTrue TermsNotAccepted
+```
+
+## Compose With `result {}`
+
+Every piece above is an independent `Result`. `result {}` sequences them fail-fast — the first failure stops the
+workflow, and later steps never run against a request that already failed:
+
+```fsharp
+let validateSignup (request: SignupRequest) : Result<Signup, SignupError> =
+    if isBlankRequest request then
+        Error EmptyRequest
+    else
+        result {
+            do! validateTerms request
+            let! name = validateName request
+            let! email = validateEmail request
+            let! age = validateAge request
+            do! validatePasswords request
+
+            return { Name = name; Email = email; Age = age }
+        }
+```
+
+```fsharp
+validateSignup
+    { Name = "Ada"
+      Email = "ada@example.com"
+      Age = 12
+      Password = "hunter2"
+      ConfirmPassword = "hunter2"
+      AcceptedTerms = true }
+// Error AgeInvalid — stops here; validatePasswords never runs
+```
+
+This is still ordinary pure code — no runtime, environment, cancellation token, task, or service provider. It can
+be unit-tested by calling `validateSignup` directly.
+
+## Where Each Piece Earned Its Place
+
+- **`Predicate`** (`isBlankRequest`) — a `bool` consumed immediately by an `if`, never became a `Result`.
+- **`Check`** (`nameCheck`, `emailCheck`, `ageCheck`) — reusable, named constraints, combined with `Check.all`,
+  attached to `SignupError` with `Result.orError`.
+- **`Result`** (`validatePasswords`, `validateTerms`) — conditions bespoke to this workflow, via
+  `Result.requireTrue`, composed with the `Check`-backed steps in one `result {}`.
+
+See [Checks](../checks/) and [Predicates](../predicates/) for the full surface each one exposes, and
+[Result Builder](../result-builder/) for more on `result {}`.
+
+When independent fields should report all sibling failures together instead of stopping at the first one, move to
+the [Validation tutorial]({{< relref "/error-handling/validation/tutorials/registration-form.md" >}}).

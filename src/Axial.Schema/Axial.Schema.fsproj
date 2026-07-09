@@ -33,10 +33,25 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Axial.ErrorHandling\Axial.ErrorHandling.fsproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Platform.fs" />
     <Compile Include="Schema.fs" />
     <Compile Include="DSL.fs" />
+    <Compile Include="Errors.fs" />
+    <Compile Include="Parse.fs" />
+    <Compile Include="Refine.fs" />
+    <Compile Include="RefineBuilder.fs" />
+    <Compile Include="RefineBuilders.fs" />
+    <Compile Include="RawInput.fs" />
+    <Compile Include="SchemaValidation.fs" />
+    <Compile Include="ParsedInput.fs" />
+    <Compile Include="Rules.fs" />
+    <Compile Include="Input.fs" />
+    <Compile Include="RefinedSchemas.fs" />
     <Compile Include="Inspection.fs" />
     <Compile Include="JsonSchema.fs" />
   </ItemGroup>

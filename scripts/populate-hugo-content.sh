@@ -42,8 +42,12 @@ upsert_frontmatter() {
   mv "$tmp" "$file"
 }
 
-# Axial's three areas each get a top-level section: /error-handling/,
-# /schema/ (with refined and validation nested as its machinery), and /flow/.
+# Axial's three areas each get a top-level section: /error-handling/
+# (with validation nested as its machinery, since Validation ships in
+# Axial.ErrorHandling), /schema/ (with refined nested as its machinery,
+# since Refined ships in Axial.Schema), and /flow/. Both docs/ and the
+# generated site mirror the same nesting now that the source folders live
+# at docs/error-handling/validation and docs/schema/refined directly.
 # The generated API reference is split across them under <area>/reference/.
 eh_dir="$root_dir/site/content/error-handling"
 schema_dir="$root_dir/site/content/schema"
@@ -54,10 +58,6 @@ mkdir -p "$eh_dir" "$schema_dir" "$flow_dir"
 
 cp -r "$root_dir/docs/error-handling/"* "$eh_dir/"
 cp -r "$root_dir/docs/schema/"* "$schema_dir/"
-for dir in refined validation; do
-  mkdir -p "$schema_dir/$dir"
-  cp -r "$root_dir/docs/$dir/"* "$schema_dir/$dir/"
-done
 cp -r "$root_dir/docs/flow/"* "$flow_dir/"
 
 # The landing pages are the section indexes for schema and flow
@@ -77,10 +77,10 @@ copy_ref_group() {
   cp -r "$root_dir/docs/reference/$group" "$dest/"
 }
 
-for group in check result; do
+for group in check predicate result validation diagnostics; do
   copy_ref_group "$eh_ref" "$group"
 done
-for group in schema codec validation diagnostics refined; do
+for group in schema codec refined; do
   copy_ref_group "$schema_ref" "$group"
 done
 for group in flow fiber exit cause concurrency schedule ref stm stream bind service layer scope; do
@@ -111,18 +111,19 @@ upsert_frontmatter "$flow_ref/service/filesystem/_index.md" "weight" "30"
 upsert_frontmatter "$flow_ref/service/http/_index.md" "weight" "40"
 upsert_frontmatter "$flow_ref/service/process/_index.md" "weight" "50"
 upsert_frontmatter "$eh_ref/check/_index.md" "weight" "10"
+upsert_frontmatter "$eh_ref/predicate/_index.md" "weight" "15"
 upsert_frontmatter "$eh_ref/result/_index.md" "weight" "20"
+upsert_frontmatter "$eh_ref/validation/_index.md" "weight" "30"
+upsert_frontmatter "$eh_ref/diagnostics/_index.md" "weight" "40"
 upsert_frontmatter "$schema_ref/schema/_index.md" "weight" "10"
 upsert_frontmatter "$schema_ref/codec/_index.md" "weight" "20"
 upsert_frontmatter "$schema_ref/refined/_index.md" "weight" "30"
-upsert_frontmatter "$schema_ref/validation/_index.md" "weight" "40"
-upsert_frontmatter "$schema_ref/diagnostics/_index.md" "weight" "50"
 
 # Rewrite absolute /reference/<group> links (in hand-written guides and any
 # generated pages) to the split locations.
 declare -A ref_home=(
-  [check]=error-handling [result]=error-handling
-  [schema]=schema [codec]=schema [validation]=schema [diagnostics]=schema [refined]=schema
+  [check]=error-handling [predicate]=error-handling [result]=error-handling [validation]=error-handling [diagnostics]=error-handling
+  [schema]=schema [codec]=schema [refined]=schema
   [flow]=flow [fiber]=flow [exit]=flow [cause]=flow [concurrency]=flow [schedule]=flow
   [ref]=flow [stm]=flow [stream]=flow [bind]=flow [service]=flow [layer]=flow [scope]=flow
 )

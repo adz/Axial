@@ -10,20 +10,14 @@ API reference for the Schema area, grouped by package.
 ## Axial.Schema
 
 - [`Schema`](./schema/) — the portable model declaration: builders, fields, constraints, and metadata inspection.
+- [`Schema Interpreters`](./schema/interpreters/) — input parsing, model validation, and rules over a schema
+  (namespace `Axial.Validation.Schema`).
+- [`Refined`](./refined/) — parse and refine single values into types that carry their own proof (namespace
+  `Axial.Refined`).
 
-## Axial.Validation.Schema
-
-- [`Schema Interpreters`](./schema/interpreters/) — input parsing, model validation, and rules over a schema.
-
-## Axial.Codec
+## Axial.Codec (optional)
 
 - [`Codec`](./codec/) — compiled JSON codecs and JSON Schema generation from the same declaration.
 
-## Axial.Refined
-
-- [`Refined`](./refined/) — parse and refine single values into types that carry their own proof.
-
-## Axial.Validation
-
-- [`Validation`](./validation/) — accumulating validation and the `validate {}` builder.
-- [`Diagnostics`](./diagnostics/) — path-aware error trees: inspection, merging, and rendering.
+Accumulating validation (`Validation`, `Diagnostics`) ships in `Axial.ErrorHandling`, not this package — see the
+[Error Handling reference]({{< relref "/error-handling/reference/" >}}).

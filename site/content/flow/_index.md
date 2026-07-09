@@ -48,8 +48,6 @@ you.
 <span class="axial-coord-label">Your tools</span>
 <div class="coord-row"><span class="coord-pill">Axial.Schema</span><span class="coord-line"></span></div>
 <div class="coord-row"><span class="coord-pill">Axial.ErrorHandling</span><span class="coord-line"></span></div>
-<div class="coord-row"><span class="coord-pill">Axial.Validation</span><span class="coord-line"></span></div>
-<div class="coord-row"><span class="coord-pill">Axial.Refined</span><span class="coord-line"></span></div>
 <div class="coord-row"><span class="coord-pill">Your types</span><span class="coord-line"></span></div>
 <div class="coord-row"><span class="coord-pill">Other libraries</span><span class="coord-line"></span></div>
 </div>
@@ -78,6 +76,21 @@ other. Flow is the seam where structure meets execution &mdash; on .NET, NativeA
 </section>
 
 <div style="max-width: 68ch;">
+
+## Install
+
+```sh
+dotnet add package Axial.Flow
+```
+
+`Flow<'env, 'error, 'value>`, the `flow {}` builder, and the runtime live in this one package. Reach for a satellite
+package only for the specific integration it wraps — `Axial.Flow.Http`, `Axial.Flow.Console`,
+`Axial.Flow.FileSystem`, `Axial.Flow.Process`, `Axial.Flow.Hosting`, and `Axial.Flow.Telemetry` each add one
+`IHas<'service>`-shaped integration; none of them are required to use `flow {}` itself.
+
+```sh
+dotnet add package Axial.Flow.Http
+```
 
 ## Core Flow
 
@@ -114,8 +127,8 @@ other. Flow is the seam where structure meets execution &mdash; on .NET, NativeA
 - [Troubleshooting Types](./troubleshooting-types/) — the compiler errors that mean a wrapper boundary was crossed.
 - Comparisons: [vs Effect-TS](./effect-ts-comparison/), [FSharpPlus integration](./fsharpplus-comparison/).
 
-Flow is one of the three areas Axial consists of — each usable independently, all working together. If the code is
-still pure, start in [Error Handling]({{< relref "/error-handling/" >}}) or [Schema]({{< relref "/schema/" >}})
+Flow is one of the three packages Axial consists of — each usable independently, all working together. If the code
+is still pure, start in [Error Handling]({{< relref "/error-handling/" >}}) or [Schema]({{< relref "/schema/" >}})
 instead; both work without Flow.
 
 </div>

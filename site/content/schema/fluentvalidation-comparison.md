@@ -62,8 +62,10 @@ errors. With FluentValidation, each of those is a separate artifact to keep in s
 - Validation of objects you genuinely do not construct (third-party types, EF entities mid-flight).
 - Teams that want C#-first fluent syntax rather than F# declarations.
 
-Axial's equivalent of "validate an existing object" exists — `Validation.validate schema model` re-checks a trusted
-model, and `Rules` add contextual requirements — but they run against schema metadata, not a second rulebook.
+Axial's equivalent of "validate an existing object" exists — `Validation.validate schema model` (the
+`Axial.Validation.Schema` module, not [`Axial.Validation.Validation`]({{< relref "/validation/" >}}) from Error
+Handling, which it's built on) re-checks a trusted model, and `Rules` add contextual requirements — but they run
+against schema metadata, not a second rulebook.
 
 ## Side By Side
 

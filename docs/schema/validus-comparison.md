@@ -103,7 +103,8 @@ let createUser (incoming: CreateUserDto) : Flow<AppEnv, ValidationErrors, User> 
     }
 ```
 
-If the validation story is already richer than `Axial.Check` or `Axial.Validation`, keep it richer.
+If the validation story is already richer than `Check` ([Error Handling]({{< relref "/error-handling/" >}})) or
+`Validation` ([accumulating errors]({{< relref "/validation/" >}})), keep it richer.
 Axial can receive the outcome, not fight the validation library.
 
 ## When To Prefer `Axial.Check`

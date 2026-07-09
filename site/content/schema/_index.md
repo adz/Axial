@@ -44,12 +44,18 @@ One schema declaration, several interpreters:
 
 ```text
 RawInput -> Input.parse schema -> trusted model | Diagnostics
-model    -> Validation.validate schema -> trusted model | Diagnostics
+model    -> Validation.validate schema -> trusted model | Diagnostics   (Axial.Validation.Schema.Validation)
 model    -> Rules.apply ruleSet -> trusted model | Diagnostics
 schema   -> Inspect.model -> metadata (no execution)
 schema   -> Json.compile -> compiled JSON codec (trusted hot path)
 schema   -> JsonSchema.generate -> JSON Schema document
 ```
+
+That `Validation.validate` is `Axial.Validation.Schema.Validation` — schema-driven re-validation of an existing
+model. It is not `Axial.Validation.Validation<'value, 'error>`, the general accumulating-error type from
+[Error Handling]({{< relref "/validation/" >}}); the two share a bare name because the schema interpreter is built
+on top of that type, not because they're the same API. Always reach it as `Validation.validate` inside a module that
+opened only `Axial.Validation.Schema`, or fully qualify it, to keep the two apart.
 
 ## Guides
 
@@ -57,11 +63,11 @@ schema   -> JsonSchema.generate -> JSON Schema document
 - [Tutorials](./tutorials/) — parse a signup form, nest models, apply rules, and inspect metadata.
 - [Trusted Construction](./trusted-construction/) — ActiveModel ergonomics with F# trusted construction.
 - [The Schema DSL](./dsl/) — open one module inside a schema definition and drop the qualified prefixes.
-- [Choosing A Tool](./choosing-a-tool/) — Schema vs Input vs Check vs Rules vs Policy.
+- [Choosing A Tool](./choosing-a-tool/) — Schema vs Input vs Rules, the three tools inside this package.
 - [Refined Value Schemas](./refined-values/) — domain values like `Email` as portable field schemas.
 - [Union Schemas](./union-schemas/) — tagged discriminated unions as schema fields.
 - [Redisplay And Field Errors](./redisplay-and-field-errors/) — failed parses that keep the user's input.
-- [Rules And Policies](./rules-and-policies/) — contextual rules and environment-aware Flow policies.
+- [Rules](./rules/) — contextual requirements over an already-trusted model.
 - [JSON Codec](./json-codec/) — compile the same declaration into a reflection-free JSON codec for trusted payloads.
 - [Input Sources](./input-sources/) — HTTP form-like, CLI, JSON-like, and configuration input.
 
@@ -78,17 +84,31 @@ schema   -> JsonSchema.generate -> JSON Schema document
 Two subsections hold the tools schemas are built from — reach for them directly when they pay for themselves:
 
 - [Refined](./refined/) — single values whose types carry their own proof: `PositiveInt`, `NonBlankString`, your own.
-- [Validation](./validation/) — accumulate every sibling failure as a path-aware diagnostics tree.
+- [Validation]({{< relref "/validation/" >}}) — accumulate every sibling failure as a path-aware diagnostics tree
+  (ships in `Axial.ErrorHandling`, not this package — Schema uses it, it isn't Schema-specific).
 
-Axial consists of three parts: [Error Handling]({{< relref "/error-handling/" >}}) for pure fail-fast checks with
+Axial consists of three packages: [Error Handling]({{< relref "/error-handling/" >}}) for pure fail-fast checks with
 plain `Result`, Schema for domain models at data boundaries, and [Flow]({{< relref "/flow/" >}}) for the effects
 around them.
 
-## Package Layout
+## Install
 
-Core schema metadata lives in `Axial.Schema` and depends on nothing else. Interpreters that produce diagnostics —
-input parsing, model validation, and rules — live in `Axial.Validation.Schema`. Policies that adapt those results into
-workflows live in `Axial.Flow`.
+```sh
+dotnet add package Axial.Schema
+```
+
+Model metadata, `Refined`, input parsing, model validation, and rules all live in this one package now — declaring a
+schema, parsing raw input, and inspecting metadata never require a second package.
+
+`Axial.Codec` is separate and optional: add it only if you want a compiled, reflection-free JSON codec generated from
+your schema (`Json.compile`). Everything else — parsing, validation, rules, redisplay, JSON Schema generation — works
+without it.
+
+```sh
+dotnet add package Axial.Codec
+```
+
+See [JSON Codec](./json-codec/) for what that package buys you.
 
 </div>
 

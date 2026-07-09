@@ -20,3 +20,4 @@ Describes one value schema: its shape, declared format, and portable constraint 
 | `Format` | The declared boundary format, when one was attached with <code>Value.withFormat</code>. |
 | `Constraints` | The portable constraint metadata attached to this value schema layer, in declaration order. |
 | `Description` | The description metadata, when one was attached with <code>Value.describe</code>. |
+| `Default` | The default-value metadata, when one was attached with <code>Value.withDefault</code>. |

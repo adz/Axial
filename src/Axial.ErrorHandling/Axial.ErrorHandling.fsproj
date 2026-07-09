@@ -39,7 +39,11 @@
     <Compile Include="Result.fs" />
     <Compile Include="Collection.fs" />
     <Compile Include="ResultBuilder.fs" />
+    <Compile Include="Diagnostics.fs" />
+    <Compile Include="Validation.fs" />
+    <Compile Include="ValidateBuilder.fs" />
     <Compile Include="Builders.fs" />
+    <Compile Include="ValidationBuilders.fs" />
   </ItemGroup>
 
 </Project>

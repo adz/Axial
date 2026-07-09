@@ -22,3 +22,4 @@ weight: 1003
 | `AtLeast` | The value was expected to be greater than or equal to the supplied lower bound. |
 | `AtMost` | The value was expected to be less than or equal to the supplied upper bound. |
 | `Between` | The value was expected to be between the supplied inclusive bounds. |
+| `NotMultipleOf` | The value was expected to be an integer multiple of the supplied divisor. |
