@@ -1,5 +1,5 @@
 ---
-title: "Flow.FileSystem.FileSystem.openFileWithShare"
+title: "Flow.FileSystem.openFileWithShare"
 linkTitle: "openFileWithShare"
 weight: 2307
 type: docs

@@ -1,5 +1,5 @@
 ---
-title: "Flow.Flow.catch"
+title: "Flow.catch"
 linkTitle: "catch"
 weight: 2323
 type: docs

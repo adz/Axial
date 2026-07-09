@@ -1,5 +1,5 @@
 ---
-title: "Flow.FileSystem.FileSystem.getPathRoot"
+title: "Flow.FileSystem.getPathRoot"
 linkTitle: "getPathRoot"
 weight: 2709
 type: docs

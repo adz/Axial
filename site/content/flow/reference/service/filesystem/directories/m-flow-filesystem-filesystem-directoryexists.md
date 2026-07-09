@@ -1,5 +1,5 @@
 ---
-title: "Flow.FileSystem.FileSystem.directoryExists"
+title: "Flow.FileSystem.directoryExists"
 linkTitle: "directoryExists"
 weight: 2500
 type: docs

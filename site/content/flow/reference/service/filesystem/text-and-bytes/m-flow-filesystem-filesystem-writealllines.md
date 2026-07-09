@@ -1,5 +1,5 @@
 ---
-title: "Flow.FileSystem.FileSystem.writeAllLines"
+title: "Flow.FileSystem.writeAllLines"
 linkTitle: "writeAllLines"
 weight: 2211
 type: docs

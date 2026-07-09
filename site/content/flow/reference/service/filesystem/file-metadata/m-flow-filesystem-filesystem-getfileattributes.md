@@ -1,5 +1,5 @@
 ---
-title: "Flow.FileSystem.FileSystem.getFileAttributes"
+title: "Flow.FileSystem.getFileAttributes"
 linkTitle: "getFileAttributes"
 weight: 2400
 type: docs

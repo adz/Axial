@@ -1,5 +1,5 @@
 ---
-title: "Flow.Flow.succeed"
+title: "Flow.succeed"
 linkTitle: "succeed"
 weight: 2302
 type: docs

@@ -1,5 +1,5 @@
 ---
-title: "Flow.FileSystem.FileSystem.hasExtension"
+title: "Flow.FileSystem.hasExtension"
 linkTitle: "hasExtension"
 weight: 2714
 type: docs

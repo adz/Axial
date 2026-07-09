@@ -1,5 +1,5 @@
 ---
-title: "Flow.FileSystem.FileSystem.live"
+title: "Flow.FileSystem.live"
 linkTitle: "live"
 weight: 2800
 type: docs

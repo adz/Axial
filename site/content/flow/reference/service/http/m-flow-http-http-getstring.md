@@ -1,5 +1,5 @@
 ---
-title: "Flow.Http.Http.getString"
+title: "Flow.Http.getString"
 linkTitle: "getString"
 weight: 2100
 type: docs

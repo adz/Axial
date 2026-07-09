@@ -1,5 +1,5 @@
 ---
-title: "Flow.Flow.ToAsync"
+title: "Flow.ToAsync"
 linkTitle: "ToAsync"
 weight: 2200
 type: docs

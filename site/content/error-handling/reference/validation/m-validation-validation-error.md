@@ -1,5 +1,5 @@
 ---
-title: "Validation.Validation.error"
+title: "Validation.error"
 linkTitle: "error"
 weight: 2102
 type: docs

@@ -1,5 +1,5 @@
 ---
-title: "Flow.Flow.Runtime.timeout"
+title: "Flow.Runtime.timeout"
 linkTitle: "timeout"
 weight: 2107
 type: docs

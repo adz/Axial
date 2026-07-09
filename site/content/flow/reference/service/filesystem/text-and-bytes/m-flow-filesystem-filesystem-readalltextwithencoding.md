@@ -1,5 +1,5 @@
 ---
-title: "Flow.FileSystem.FileSystem.readAllTextWithEncoding"
+title: "Flow.FileSystem.readAllTextWithEncoding"
 linkTitle: "readAllTextWithEncoding"
 weight: 2201
 type: docs

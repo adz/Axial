@@ -1,5 +1,5 @@
 ---
-title: "Flow.Http.Http.layer"
+title: "Flow.Http.layer"
 linkTitle: "layer"
 weight: 2102
 type: docs

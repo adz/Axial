@@ -1,5 +1,5 @@
 ---
-title: "Flow.Flow.tapError"
+title: "Flow.tapError"
 linkTitle: "tapError"
 weight: 2321
 type: docs

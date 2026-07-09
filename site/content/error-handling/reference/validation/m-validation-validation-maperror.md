@@ -1,5 +1,5 @@
 ---
-title: "Validation.Validation.mapError"
+title: "Validation.mapError"
 linkTitle: "mapError"
 weight: 2108
 type: docs

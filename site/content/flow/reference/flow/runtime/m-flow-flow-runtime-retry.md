@@ -1,5 +1,5 @@
 ---
-title: "Flow.Flow.Runtime.retry"
+title: "Flow.Runtime.retry"
 linkTitle: "retry"
 weight: 2111
 type: docs

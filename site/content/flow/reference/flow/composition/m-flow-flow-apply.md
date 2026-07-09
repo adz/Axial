@@ -1,5 +1,5 @@
 ---
-title: "Flow.Flow.apply"
+title: "Flow.apply"
 linkTitle: "apply"
 weight: 2329
 type: docs

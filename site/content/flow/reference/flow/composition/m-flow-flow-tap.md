@@ -1,5 +1,5 @@
 ---
-title: "Flow.Flow.tap"
+title: "Flow.tap"
 linkTitle: "tap"
 weight: 2320
 type: docs

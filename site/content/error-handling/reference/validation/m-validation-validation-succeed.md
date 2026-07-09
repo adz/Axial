@@ -1,5 +1,5 @@
 ---
-title: "Validation.Validation.succeed"
+title: "Validation.succeed"
 linkTitle: "succeed"
 weight: 2103
 type: docs

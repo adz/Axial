@@ -1,5 +1,5 @@
 ---
-title: "Flow.FileSystem.FileSystem.openText"
+title: "Flow.FileSystem.openText"
 linkTitle: "openText"
 weight: 2309
 type: docs

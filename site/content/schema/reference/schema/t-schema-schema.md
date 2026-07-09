@@ -1,5 +1,5 @@
 ---
-title: "Schema.Schema"
+title: "Schema"
 linkTitle: "Schema<model>"
 weight: 1000
 type: docs

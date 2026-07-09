@@ -1,5 +1,5 @@
 ---
-title: "Flow.Flow.join"
+title: "Flow.join"
 linkTitle: "join"
 weight: 2101
 type: docs

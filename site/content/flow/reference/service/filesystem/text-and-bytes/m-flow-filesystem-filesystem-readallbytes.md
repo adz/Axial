@@ -1,5 +1,5 @@
 ---
-title: "Flow.FileSystem.FileSystem.readAllBytes"
+title: "Flow.FileSystem.readAllBytes"
 linkTitle: "readAllBytes"
 weight: 2206
 type: docs

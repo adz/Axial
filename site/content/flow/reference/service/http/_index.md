@@ -12,6 +12,6 @@ This page shows the HTTP service package. `IHttp` is intentionally narrow: it mo
 
 ## Helpers
 
-- [`Flow.Http.Http.getString`](./m-flow-http-http-getstring.md): Sends a GET request through an explicit HTTP service and returns the response body.
-- [`Flow.Http.Http.live`](./m-flow-http-http-live.md): Creates a live HTTP service backed by <a href="https://learn.microsoft.com/dotnet/api/system.net.http.httpclient">HttpClient</a>.
-- [`Flow.Http.Http.layer`](./m-flow-http-http-layer.md): Builds a live HTTP service as a layer.
+- [`Flow.Http.getString`](./m-flow-http-http-getstring.md): Sends a GET request through an explicit HTTP service and returns the response body.
+- [`Flow.Http.live`](./m-flow-http-http-live.md): Creates a live HTTP service backed by <a href="https://learn.microsoft.com/dotnet/api/system.net.http.httpclient">HttpClient</a>.
+- [`Flow.Http.layer`](./m-flow-http-http-layer.md): Builds a live HTTP service as a layer.

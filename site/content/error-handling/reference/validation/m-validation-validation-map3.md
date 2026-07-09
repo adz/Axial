@@ -1,5 +1,5 @@
 ---
-title: "Validation.Validation.map3"
+title: "Validation.map3"
 linkTitle: "map3"
 weight: 2110
 type: docs

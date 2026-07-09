@@ -1,5 +1,5 @@
 ---
-title: "Flow.Flow.addDisposable"
+title: "Flow.addDisposable"
 linkTitle: "addDisposable"
 weight: 2501
 type: docs

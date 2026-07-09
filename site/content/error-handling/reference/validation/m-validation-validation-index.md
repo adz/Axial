@@ -1,5 +1,5 @@
 ---
-title: "Validation.Validation.index"
+title: "Validation.index"
 linkTitle: "index"
 weight: 2202
 type: docs

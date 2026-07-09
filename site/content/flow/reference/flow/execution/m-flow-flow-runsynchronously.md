@@ -1,5 +1,5 @@
 ---
-title: "Flow.Flow.RunSynchronously"
+title: "Flow.RunSynchronously"
 linkTitle: "RunSynchronously"
 weight: 2203
 type: docs

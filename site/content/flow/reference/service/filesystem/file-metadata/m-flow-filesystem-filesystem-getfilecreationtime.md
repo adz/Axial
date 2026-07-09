@@ -1,5 +1,5 @@
 ---
-title: "Flow.FileSystem.FileSystem.getFileCreationTime"
+title: "Flow.FileSystem.getFileCreationTime"
 linkTitle: "getFileCreationTime"
 weight: 2402
 type: docs

@@ -1,5 +1,5 @@
 ---
-title: "Flow.FileSystem.FileSystem.writeAllTextWithEncoding"
+title: "Flow.FileSystem.writeAllTextWithEncoding"
 linkTitle: "writeAllTextWithEncoding"
 weight: 2209
 type: docs

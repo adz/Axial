@@ -1,5 +1,5 @@
 ---
-title: "Flow.FileSystem.FileSystem.getFullPath"
+title: "Flow.FileSystem.getFullPath"
 linkTitle: "getFullPath"
 weight: 2708
 type: docs

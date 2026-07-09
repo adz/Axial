@@ -1,5 +1,5 @@
 ---
-title: "Flow.FileSystem.FileSystem.openFileWithAccess"
+title: "Flow.FileSystem.openFileWithAccess"
 linkTitle: "openFileWithAccess"
 weight: 2306
 type: docs

@@ -1,5 +1,5 @@
 ---
-title: "Flow.Flow.sequence"
+title: "Flow.sequence"
 linkTitle: "sequence"
 weight: 2335
 type: docs

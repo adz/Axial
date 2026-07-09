@@ -1,5 +1,5 @@
 ---
-title: "Flow.Flow.attemptAsync"
+title: "Flow.attemptAsync"
 linkTitle: "attemptAsync"
 weight: 2309
 type: docs

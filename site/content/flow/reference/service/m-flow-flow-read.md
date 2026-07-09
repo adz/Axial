@@ -1,5 +1,5 @@
 ---
-title: "Flow.Flow.read"
+title: "Flow.read"
 linkTitle: "read"
 weight: 2200
 type: docs

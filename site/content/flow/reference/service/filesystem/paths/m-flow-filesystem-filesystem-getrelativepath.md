@@ -1,5 +1,5 @@
 ---
-title: "Flow.FileSystem.FileSystem.getRelativePath"
+title: "Flow.FileSystem.getRelativePath"
 linkTitle: "getRelativePath"
 weight: 2710
 type: docs

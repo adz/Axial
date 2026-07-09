@@ -1,5 +1,5 @@
 ---
-title: "Flow.FileSystem.FileSystem.trimEndingDirectorySeparator"
+title: "Flow.FileSystem.trimEndingDirectorySeparator"
 linkTitle: "trimEndingDirectorySeparator"
 weight: 2716
 type: docs

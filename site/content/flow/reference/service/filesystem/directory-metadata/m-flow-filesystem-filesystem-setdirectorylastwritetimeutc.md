@@ -1,5 +1,5 @@
 ---
-title: "Flow.FileSystem.FileSystem.setDirectoryLastWriteTimeUtc"
+title: "Flow.FileSystem.setDirectoryLastWriteTimeUtc"
 linkTitle: "setDirectoryLastWriteTimeUtc"
 weight: 2611
 type: docs

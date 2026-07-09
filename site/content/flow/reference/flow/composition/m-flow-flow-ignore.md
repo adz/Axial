@@ -1,5 +1,5 @@
 ---
-title: "Flow.Flow.ignore"
+title: "Flow.ignore"
 linkTitle: "ignore"
 weight: 2330
 type: docs

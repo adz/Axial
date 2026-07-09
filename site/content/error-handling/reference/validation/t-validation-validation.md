@@ -1,5 +1,5 @@
 ---
-title: "Validation.Validation"
+title: "Validation"
 linkTitle: "Validation<value, error>"
 weight: 1000
 type: docs

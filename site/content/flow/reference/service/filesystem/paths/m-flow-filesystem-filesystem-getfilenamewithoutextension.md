@@ -1,5 +1,5 @@
 ---
-title: "Flow.FileSystem.FileSystem.getFileNameWithoutExtension"
+title: "Flow.FileSystem.getFileNameWithoutExtension"
 linkTitle: "getFileNameWithoutExtension"
 weight: 2707
 type: docs

@@ -1,5 +1,5 @@
 ---
-title: "Flow.Flow.Runtime.scope"
+title: "Flow.Runtime.scope"
 linkTitle: "scope"
 weight: 2104
 type: docs

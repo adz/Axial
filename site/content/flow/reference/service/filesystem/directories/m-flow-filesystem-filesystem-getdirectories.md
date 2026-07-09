@@ -1,5 +1,5 @@
 ---
-title: "Flow.FileSystem.FileSystem.getDirectories"
+title: "Flow.FileSystem.getDirectories"
 linkTitle: "getDirectories"
 weight: 2507
 type: docs

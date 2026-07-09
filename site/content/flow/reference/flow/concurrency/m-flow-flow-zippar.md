@@ -1,5 +1,5 @@
 ---
-title: "Flow.Flow.zipPar"
+title: "Flow.zipPar"
 linkTitle: "zipPar"
 weight: 2600
 type: docs

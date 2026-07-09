@@ -1,5 +1,5 @@
 ---
-title: "Flow.Process.Process.live"
+title: "Flow.Process.live"
 linkTitle: "live"
 weight: 2101
 type: docs

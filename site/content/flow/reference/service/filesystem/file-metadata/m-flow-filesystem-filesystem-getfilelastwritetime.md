@@ -1,5 +1,5 @@
 ---
-title: "Flow.FileSystem.FileSystem.getFileLastWriteTime"
+title: "Flow.FileSystem.getFileLastWriteTime"
 linkTitle: "getFileLastWriteTime"
 weight: 2410
 type: docs

@@ -1,5 +1,5 @@
 ---
-title: "Flow.Flow.fail"
+title: "Flow.fail"
 linkTitle: "fail"
 weight: 2304
 type: docs

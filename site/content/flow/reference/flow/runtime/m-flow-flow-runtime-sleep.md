@@ -1,5 +1,5 @@
 ---
-title: "Flow.Flow.Runtime.sleep"
+title: "Flow.Runtime.sleep"
 linkTitle: "sleep"
 weight: 2103
 type: docs

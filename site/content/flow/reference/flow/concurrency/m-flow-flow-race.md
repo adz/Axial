@@ -1,5 +1,5 @@
 ---
-title: "Flow.Flow.race"
+title: "Flow.race"
 linkTitle: "race"
 weight: 2601
 type: docs

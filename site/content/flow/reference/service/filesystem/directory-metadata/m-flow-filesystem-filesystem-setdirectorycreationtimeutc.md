@@ -1,5 +1,5 @@
 ---
-title: "Flow.FileSystem.FileSystem.setDirectoryCreationTimeUtc"
+title: "Flow.FileSystem.setDirectoryCreationTimeUtc"
 linkTitle: "setDirectoryCreationTimeUtc"
 weight: 2603
 type: docs

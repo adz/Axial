@@ -539,8 +539,26 @@ code {
     content: ">";
 }
 
+/*
+ * This project's baseof.html drops Docsy's `.td-sidebar__inner` wrapper, so Docsy's own
+ * sticky positioning (applied to `__inner`) never takes effect. Docsy's `.td-sidebar-nav`
+ * still gets its own `max-height: calc(100vh - 8.5rem)` scroll box independently of this
+ * outer element, so nesting a second, differently-sized scroll region here left a dead
+ * gap between the inner box's cutoff and the outer container's height. Make `.td-sidebar`
+ * itself the single sticky/scrolling region (matching the `#fsdocs-main-menu` pattern
+ * above) and let the nav fill it without an inner max-height of its own.
+ */
 .td-sidebar {
+    position: sticky;
+    top: 4.8rem;
+    align-self: start;
+    max-height: calc(100vh - 5.75rem);
     overflow-y: auto;
+}
+
+.td-sidebar .td-sidebar-nav {
+    max-height: none;
+    overflow-y: visible;
 }
 
 @media (max-width: 1240px) {

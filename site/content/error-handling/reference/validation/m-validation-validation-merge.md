@@ -1,5 +1,5 @@
 ---
-title: "Validation.Validation.merge"
+title: "Validation.merge"
 linkTitle: "merge"
 weight: 2118
 type: docs

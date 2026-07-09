@@ -1,5 +1,5 @@
 ---
-title: "Flow.FileSystem.FileSystem.getFileSystemEntries"
+title: "Flow.FileSystem.getFileSystemEntries"
 linkTitle: "getFileSystemEntries"
 weight: 2509
 type: docs

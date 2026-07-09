@@ -1,5 +1,5 @@
 ---
-title: "Flow.Console.Console.writeLine"
+title: "Flow.Console.writeLine"
 linkTitle: "writeLine"
 weight: 2101
 type: docs

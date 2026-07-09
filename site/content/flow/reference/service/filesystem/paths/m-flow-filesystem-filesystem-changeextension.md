@@ -1,5 +1,5 @@
 ---
-title: "Flow.FileSystem.FileSystem.changeExtension"
+title: "Flow.FileSystem.changeExtension"
 linkTitle: "changeExtension"
 weight: 2701
 type: docs

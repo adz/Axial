@@ -1,5 +1,5 @@
 ---
-title: "Flow.FileSystem.FileSystem.enumerateFileSystemEntries"
+title: "Flow.FileSystem.enumerateFileSystemEntries"
 linkTitle: "enumerateFileSystemEntries"
 weight: 2508
 type: docs

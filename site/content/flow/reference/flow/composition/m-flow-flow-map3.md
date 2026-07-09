@@ -1,5 +1,5 @@
 ---
-title: "Flow.Flow.map3"
+title: "Flow.map3"
 linkTitle: "map3"
 weight: 2328
 type: docs

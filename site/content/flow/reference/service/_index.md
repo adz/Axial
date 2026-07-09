@@ -20,4 +20,4 @@ See the standard service packages: [Core](./core/), [Console](./console/), [File
 
 ## Environment helpers
 
-- [`Flow.Flow.read`](./m-flow-flow-read.md): Projects one value from the current environment.
+- [`Flow.read`](./m-flow-flow-read.md): Projects one value from the current environment.

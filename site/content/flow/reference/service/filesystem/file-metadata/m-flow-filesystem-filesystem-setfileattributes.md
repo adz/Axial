@@ -1,5 +1,5 @@
 ---
-title: "Flow.FileSystem.FileSystem.setFileAttributes"
+title: "Flow.FileSystem.setFileAttributes"
 linkTitle: "setFileAttributes"
 weight: 2401
 type: docs

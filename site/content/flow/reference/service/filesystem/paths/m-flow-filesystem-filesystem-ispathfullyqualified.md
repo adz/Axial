@@ -1,5 +1,5 @@
 ---
-title: "Flow.FileSystem.FileSystem.isPathFullyQualified"
+title: "Flow.FileSystem.isPathFullyQualified"
 linkTitle: "isPathFullyQualified"
 weight: 2717
 type: docs

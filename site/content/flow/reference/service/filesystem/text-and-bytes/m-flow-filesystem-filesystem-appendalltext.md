@@ -1,5 +1,5 @@
 ---
-title: "Flow.FileSystem.FileSystem.appendAllText"
+title: "Flow.FileSystem.appendAllText"
 linkTitle: "appendAllText"
 weight: 2216
 type: docs

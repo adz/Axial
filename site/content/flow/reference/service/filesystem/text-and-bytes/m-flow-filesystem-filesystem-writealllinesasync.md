@@ -1,5 +1,5 @@
 ---
-title: "Flow.FileSystem.FileSystem.writeAllLinesAsync"
+title: "Flow.FileSystem.writeAllLinesAsync"
 linkTitle: "writeAllLinesAsync"
 weight: 2213
 type: docs

@@ -42,6 +42,19 @@ let cleanName (name: string) =
         |> (fun s -> s.Replace("'", ""))
         |> (fun s -> if s.EndsWith(".Static") then s.Substring(0, s.Length - 7) else s)
 
+/// Collapses consecutive duplicate dotted segments, e.g. "Flow.Flow.ToAsync" -> "Flow.ToAsync",
+/// "Schema.Schema" -> "Schema". Module names frequently coincide with their enclosing namespace's
+/// last segment, which otherwise shows up doubled in generated titles and index links.
+let dedupeAdjacentSegments (name: string) =
+    if String.IsNullOrEmpty name then name
+    else
+        let parts = name.Split('.')
+        let result = ResizeArray<string>()
+        for part in parts do
+            if result.Count = 0 || result.[result.Count - 1] <> part then
+                result.Add part
+        String.Join(".", result)
+
 let sanitizeFilename (name: string) =
     name.Replace("`", "-").Replace("'", "-").Replace(" ", "-").Replace(".", "-").ToLower()
     |> (fun s -> s.Trim('-'))
@@ -160,7 +173,7 @@ let platformLabel (qualifiedName: string) =
 
 let renderMemberPage (rewriteHtml: string -> string) (weight: int) (m: ApiDocMember) =
     let fullName = logicalName m.Symbol
-    let qualifiedName = cleanName fullName
+    let qualifiedName = cleanName fullName |> dedupeAdjacentSegments
     let shortName = cleanName m.Name
     
     // Better link title for CEs
@@ -238,7 +251,7 @@ let renderMemberPage (rewriteHtml: string -> string) (weight: int) (m: ApiDocMem
 
 let renderEntityPage (rewriteHtml: string -> string) (weight: int) (e: ApiDocEntity) =
     let fullName = safeFullName e.Symbol
-    let qualifiedName = cleanName fullName
+    let qualifiedName = cleanName fullName |> dedupeAdjacentSegments
     let shortName = cleanName e.Name
     
     let mutable content = 
@@ -1212,7 +1225,7 @@ let main argv =
                 | Some (ResolvedMember m) ->
                     let pageName = getPageName id
                     let qualifier = memberQualifier m
-                    let linkText = if String.IsNullOrEmpty qualifier then m.Name else qualifier + "." + m.Name
+                    let linkText = (if String.IsNullOrEmpty qualifier then m.Name else qualifier + "." + m.Name) |> dedupeAdjacentSegments
                     let pagePath = Path.Combine(targetDir, pageName)
                     let relativeLink = relativeLinkFrom outPath pagePath
                     let rewriteHtml = rewriteApiDocHtml referenceTargetMap pagePath
@@ -1242,7 +1255,7 @@ let main argv =
                 | Some (ResolvedEntity e) ->
                     let pageName = getPageName id
                     let eFullName = safeFullName e.Symbol
-                    let linkText = cleanName eFullName
+                    let linkText = cleanName eFullName |> dedupeAdjacentSegments
                     let pagePath = Path.Combine(targetDir, pageName)
                     let relativeLink = relativeLinkFrom outPath pagePath
                     let rewriteHtml = rewriteApiDocHtml referenceTargetMap pagePath

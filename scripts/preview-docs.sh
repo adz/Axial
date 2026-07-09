@@ -4,7 +4,7 @@ set -euo pipefail
 
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 port="${AXIAL_DOCS_PREVIEW_PORT:-3000}"
-HUGO_BASEURL="${HUGO_BASEURL:-http://localhost:$port/}"
+HUGO_BASEURL="${HUGO_BASEURL:-http://192.168.86.180:$port/}"
 stop_file="${AXIAL_DOCS_PREVIEW_STOP_FILE:-/tmp/axial-docs-preview.stop}"
 hugo_pid=""
 
@@ -28,7 +28,7 @@ trap 'exit 129' HUP
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
-hugo server --source "$root_dir/site" --bind 127.0.0.1 --port "$port" --baseURL "$HUGO_BASEURL" &
+hugo server --source "$root_dir/site" --bind 0.0.0.0 --port "$port" --baseURL "$HUGO_BASEURL" &
 hugo_pid=$!
 
 echo "Hugo preview starting at $HUGO_BASEURL"

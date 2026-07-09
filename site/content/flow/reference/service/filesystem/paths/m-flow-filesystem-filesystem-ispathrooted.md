@@ -1,5 +1,5 @@
 ---
-title: "Flow.FileSystem.FileSystem.isPathRooted"
+title: "Flow.FileSystem.isPathRooted"
 linkTitle: "isPathRooted"
 weight: 2718
 type: docs

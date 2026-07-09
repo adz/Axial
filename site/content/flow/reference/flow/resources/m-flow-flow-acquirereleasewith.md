@@ -1,5 +1,5 @@
 ---
-title: "Flow.Flow.acquireReleaseWith"
+title: "Flow.acquireReleaseWith"
 linkTitle: "acquireReleaseWith"
 weight: 2504
 type: docs

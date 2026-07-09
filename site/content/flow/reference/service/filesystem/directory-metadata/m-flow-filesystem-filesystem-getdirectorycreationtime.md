@@ -1,5 +1,5 @@
 ---
-title: "Flow.FileSystem.FileSystem.getDirectoryCreationTime"
+title: "Flow.FileSystem.getDirectoryCreationTime"
 linkTitle: "getDirectoryCreationTime"
 weight: 2600
 type: docs

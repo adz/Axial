@@ -1,5 +1,5 @@
 ---
-title: "Flow.Flow.mapError"
+title: "Flow.mapError"
 linkTitle: "mapError"
 weight: 2322
 type: docs

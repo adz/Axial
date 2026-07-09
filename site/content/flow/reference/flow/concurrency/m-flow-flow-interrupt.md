@@ -1,5 +1,5 @@
 ---
-title: "Flow.Flow.interrupt"
+title: "Flow.interrupt"
 linkTitle: "interrupt"
 weight: 2102
 type: docs

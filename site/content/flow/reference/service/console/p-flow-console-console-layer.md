@@ -1,5 +1,5 @@
 ---
-title: "Flow.Console.Console.layer"
+title: "Flow.Console.layer"
 linkTitle: "layer"
 weight: 2103
 type: docs

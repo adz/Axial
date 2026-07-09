@@ -1,5 +1,5 @@
 ---
-title: "Flow.FileSystem.FileSystem.getDirectoryRoot"
+title: "Flow.FileSystem.getDirectoryRoot"
 linkTitle: "getDirectoryRoot"
 weight: 2511
 type: docs

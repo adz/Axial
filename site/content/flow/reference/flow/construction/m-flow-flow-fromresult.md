@@ -1,5 +1,5 @@
 ---
-title: "Flow.Flow.fromResult"
+title: "Flow.fromResult"
 linkTitle: "fromResult"
 weight: 2305
 type: docs

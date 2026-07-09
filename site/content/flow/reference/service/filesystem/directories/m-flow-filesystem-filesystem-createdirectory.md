@@ -1,5 +1,5 @@
 ---
-title: "Flow.FileSystem.FileSystem.createDirectory"
+title: "Flow.FileSystem.createDirectory"
 linkTitle: "createDirectory"
 weight: 2501
 type: docs

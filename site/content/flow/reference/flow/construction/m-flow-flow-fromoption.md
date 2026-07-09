@@ -1,5 +1,5 @@
 ---
-title: "Flow.Flow.fromOption"
+title: "Flow.fromOption"
 linkTitle: "fromOption"
 weight: 2306
 type: docs

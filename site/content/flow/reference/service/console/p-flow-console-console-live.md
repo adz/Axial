@@ -1,5 +1,5 @@
 ---
-title: "Flow.Console.Console.live"
+title: "Flow.Console.live"
 linkTitle: "live"
 weight: 2102
 type: docs

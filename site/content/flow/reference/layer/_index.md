@@ -37,4 +37,4 @@ This page shows the `Layer<'input, 'error, 'output>` surface used to provision e
 
 ## Flow integration
 
-- [`Flow.Flow.provide`](./m-flow-flow-provide.md): Builds an environment with a layer, runs a downstream flow, and always closes the layer scope.
+- [`Flow.provide`](./m-flow-flow-provide.md): Builds an environment with a layer, runs a downstream flow, and always closes the layer scope.

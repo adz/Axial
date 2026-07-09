@@ -1,5 +1,5 @@
 ---
-title: "Validation.Validation.ignore"
+title: "Validation.ignore"
 linkTitle: "ignore"
 weight: 2112
 type: docs

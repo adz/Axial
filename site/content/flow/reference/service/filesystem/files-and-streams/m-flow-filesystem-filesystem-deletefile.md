@@ -1,5 +1,5 @@
 ---
-title: "Flow.FileSystem.FileSystem.deleteFile"
+title: "Flow.FileSystem.deleteFile"
 linkTitle: "deleteFile"
 weight: 2302
 type: docs

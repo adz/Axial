@@ -1,5 +1,5 @@
 ---
-title: "Flow.Flow"
+title: "Flow"
 linkTitle: "Flow"
 weight: 1002
 type: docs

@@ -1,5 +1,5 @@
 ---
-title: "Flow.Flow.verify"
+title: "Flow.verify"
 linkTitle: "verify"
 weight: 2314
 type: docs

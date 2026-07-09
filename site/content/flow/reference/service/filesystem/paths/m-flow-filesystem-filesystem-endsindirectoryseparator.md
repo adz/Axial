@@ -1,5 +1,5 @@
 ---
-title: "Flow.FileSystem.FileSystem.endsInDirectorySeparator"
+title: "Flow.FileSystem.endsInDirectorySeparator"
 linkTitle: "endsInDirectorySeparator"
 weight: 2715
 type: docs

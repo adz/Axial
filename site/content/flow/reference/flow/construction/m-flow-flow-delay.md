@@ -1,5 +1,5 @@
 ---
-title: "Flow.Flow.delay"
+title: "Flow.delay"
 linkTitle: "delay"
 weight: 2333
 type: docs

@@ -1,5 +1,5 @@
 ---
-title: "Flow.FileSystem.FileSystem.getLogicalDrives"
+title: "Flow.FileSystem.getLogicalDrives"
 linkTitle: "getLogicalDrives"
 weight: 2510
 type: docs

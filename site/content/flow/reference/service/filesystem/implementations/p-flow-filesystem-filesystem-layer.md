@@ -1,5 +1,5 @@
 ---
-title: "Flow.FileSystem.FileSystem.layer"
+title: "Flow.FileSystem.layer"
 linkTitle: "layer"
 weight: 2801
 type: docs

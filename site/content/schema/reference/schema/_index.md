@@ -8,7 +8,7 @@ This page shows the core `Schema<'model>`, `ValueSchema<'value>`, and `Field<'mo
 
 ## Core types
 
-- [`Schema.Schema`](./t-schema-schema.md):
+- [`Schema`](./t-schema-schema.md):
  Describes the portable structure of a trusted model for schema interpreters.
 
 - [`Schema.ValueSchema`](./t-schema-valueschema.md):

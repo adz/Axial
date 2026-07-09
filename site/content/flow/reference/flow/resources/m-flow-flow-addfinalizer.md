@@ -1,5 +1,5 @@
 ---
-title: "Flow.Flow.addFinalizer"
+title: "Flow.addFinalizer"
 linkTitle: "addFinalizer"
 weight: 2500
 type: docs

@@ -1,5 +1,5 @@
 ---
-title: "Flow.FileSystem.FileSystem.getInvalidFileNameChars"
+title: "Flow.FileSystem.getInvalidFileNameChars"
 linkTitle: "getInvalidFileNameChars"
 weight: 2703
 type: docs

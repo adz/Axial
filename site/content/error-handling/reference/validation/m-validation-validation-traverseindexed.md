@@ -1,5 +1,5 @@
 ---
-title: "Validation.Validation.traverseIndexed"
+title: "Validation.traverseIndexed"
 linkTitle: "traverseIndexed"
 weight: 2117
 type: docs

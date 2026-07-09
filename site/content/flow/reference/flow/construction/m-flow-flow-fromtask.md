@@ -1,5 +1,5 @@
 ---
-title: "Flow.Flow.fromTask"
+title: "Flow.fromTask"
 linkTitle: "fromTask"
 weight: 2310
 type: docs

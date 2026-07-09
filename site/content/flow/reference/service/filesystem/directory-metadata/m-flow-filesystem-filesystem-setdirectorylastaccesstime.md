@@ -1,5 +1,5 @@
 ---
-title: "Flow.FileSystem.FileSystem.setDirectoryLastAccessTime"
+title: "Flow.FileSystem.setDirectoryLastAccessTime"
 linkTitle: "setDirectoryLastAccessTime"
 weight: 2606
 type: docs

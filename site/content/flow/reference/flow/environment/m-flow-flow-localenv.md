@@ -1,5 +1,5 @@
 ---
-title: "Flow.Flow.localEnv"
+title: "Flow.localEnv"
 linkTitle: "localEnv"
 weight: 2331
 type: docs

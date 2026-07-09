@@ -1,5 +1,5 @@
 ---
-title: "Flow.FileSystem.FileSystem.moveDirectory"
+title: "Flow.FileSystem.moveDirectory"
 linkTitle: "moveDirectory"
 weight: 2503
 type: docs

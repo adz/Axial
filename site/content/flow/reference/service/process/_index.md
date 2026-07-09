@@ -13,6 +13,6 @@ This page shows the external-process service package. `IProcess` models command 
 
 ## Helpers
 
-- [`Flow.Process.Process.execute`](./m-flow-process-process-execute.md): Executes a process through an explicit process service and returns the result.
-- [`Flow.Process.Process.live`](./p-flow-process-process-live.md): Creates a live process service backed by <a href="https://learn.microsoft.com/dotnet/api/system.diagnostics.process">Process</a>.
-- [`Flow.Process.Process.layer`](./p-flow-process-process-layer.md): Builds the live process service as a layer.
+- [`Flow.Process.execute`](./m-flow-process-process-execute.md): Executes a process through an explicit process service and returns the result.
+- [`Flow.Process.live`](./p-flow-process-process-live.md): Creates a live process service backed by <a href="https://learn.microsoft.com/dotnet/api/system.diagnostics.process">Process</a>.
+- [`Flow.Process.layer`](./p-flow-process-process-layer.md): Builds the live process service as a layer.

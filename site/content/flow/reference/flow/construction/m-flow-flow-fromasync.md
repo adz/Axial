@@ -1,5 +1,5 @@
 ---
-title: "Flow.Flow.fromAsync"
+title: "Flow.fromAsync"
 linkTitle: "fromAsync"
 weight: 2308
 type: docs
