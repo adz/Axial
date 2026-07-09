@@ -14,11 +14,12 @@ open System.Text
 /// <para>
 /// Lowering rules: primitives map to <c>type</c> (with <c>format</c> for dates, date-times, and uuids), refined values
 /// lower to their underlying primitive representation, nested models to <c>object</c> with <c>properties</c> and
-/// <c>required</c>, collections to <c>array</c> with <c>items</c>, and tagged unions to <c>oneOf</c> with a
-/// <c>const</c>-constrained discriminator property per case. Constraint metadata lowers to <c>minLength</c>,
-/// <c>maxLength</c>, <c>pattern</c>, <c>enum</c>, <c>minimum</c>/<c>maximum</c> (and exclusive variants),
-/// <c>minItems</c>/<c>maxItems</c>, and <c>uniqueItems</c>; constraints without a JSON Schema equivalent, such as
-/// <c>trimmed</c>, are skipped.
+/// <c>required</c>, collections to <c>array</c> with <c>items</c>, maps to <c>object</c> with
+/// <c>additionalProperties</c>, and tagged unions to <c>oneOf</c> with a <c>const</c>-constrained discriminator
+/// property per case. Constraint metadata lowers to <c>minLength</c>, <c>maxLength</c>, <c>pattern</c>, <c>enum</c>,
+/// <c>minimum</c>/<c>maximum</c> (and exclusive variants), <c>multipleOf</c>, <c>minItems</c>/<c>maxItems</c>, and
+/// <c>uniqueItems</c>; constraints without a JSON Schema equivalent, such as <c>trimmed</c>, are skipped.
+/// Default-value metadata attached with <c>Value.withDefault</c> lowers to <c>default</c>.
 /// </para>
 /// </remarks>
 [<RequireQualifiedAccess>]
@@ -96,6 +97,7 @@ module JsonSchema =
             | SchemaConstraintMetadata.Distinct -> [ "\"uniqueItems\":true" ]
             | SchemaConstraintMetadata.Contains item ->
                 [ sprintf "\"contains\":{\"const\":%s}" (literal item) ]
+            | SchemaConstraintMetadata.MultipleOf divisor -> [ sprintf "\"multipleOf\":%s" (literal divisor) ]
             | SchemaConstraintMetadata.Required
             | SchemaConstraintMetadata.Optional
             | SchemaConstraintMetadata.Custom _ -> [])
@@ -116,6 +118,12 @@ module JsonSchema =
         | None, ValueShape.Refined underlying -> boundaryDescription underlying
         | None, _ -> None
 
+    let rec private boundaryDefault (description: ValueDescription) : obj option =
+        match description.Default, description.Shape with
+        | Some value, _ -> Some value
+        | None, ValueShape.Refined underlying -> boundaryDefault underlying
+        | None, _ -> None
+
     let rec private valueKeywords (fieldConstraints: SchemaConstraintMetadata list) (description: ValueDescription) =
         let constraints = fieldConstraints @ boundaryConstraints description
 
@@ -128,6 +136,11 @@ module JsonSchema =
         let descriptionKeyword =
             match boundaryDescription description with
             | Some text -> [ sprintf "\"description\":%s" (literal text) ]
+            | None -> []
+
+        let defaultKeyword =
+            match boundaryDefault description with
+            | Some value -> [ sprintf "\"default\":%s" (literal value) ]
             | None -> []
 
         let shapeKeywords =
@@ -167,9 +180,13 @@ module JsonSchema =
                 let tags = enum.Cases |> List.map (fun case -> literal case.Tag) |> String.concat ","
                 [ "\"type\":\"string\""; sprintf "\"enum\":[%s]" tags ] @ constraintKeywords constraints
             | ValueShape.Optional payload -> valueKeywords constraints payload
+            | ValueShape.MapOf item ->
+                [ "\"type\":\"object\""
+                  sprintf "\"additionalProperties\":{%s}" (valueKeywords [] item |> String.concat ",") ]
+                @ constraintKeywords constraints
             | ValueShape.Refined _ -> failwith "underlyingShape never returns a refined shape."
 
-        descriptionKeyword @ shapeKeywords
+        descriptionKeyword @ defaultKeyword @ shapeKeywords
 
     /// An optional field stays out of the object's `required` list; every other field is required, matching the
     /// parser, which requires every non-optional field regardless of the `required` constraint.
@@ -182,7 +199,8 @@ module JsonSchema =
         | ValueShape.Many _
         | ValueShape.Union _
         | ValueShape.UnionInline _
-        | ValueShape.Enum _ -> false
+        | ValueShape.Enum _
+        | ValueShape.MapOf _ -> false
 
     and private inlineCaseKeywords (discriminatorField: string) (tag: string) (model: ModelDescription) =
         let discriminatorProperty = sprintf "\"%s\":{\"const\":%s}" (escape discriminatorField) (literal tag)

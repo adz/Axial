@@ -30,15 +30,10 @@ Input.parse, Codec, JsonSchema, and Inspect, and the C# ergonomics audit (`RawIn
 `RawInput.ofConfigurationPairs`, `Input.parseWithOptions`, and "From C#" sections on the codec and input-sources
 pages).
 
-## Phase 27: Contract Grammar Prerequisites
-
-From `dev-docs/current-ideas/contract-grammar.md` sequencing step 1 — each useful independently of the grammar.
-
-- [ ] Add `Value.map : ValueSchema<'value> -> ValueSchema<Map<string,'value>>` (JSON objects as dictionaries; keys are
-  always text) across Input.parse, Codec, JsonSchema (`additionalProperties`), and Inspect.
-- [ ] Add default-value metadata (`= literal` in the grammar; also wanted by the config-editor story) as schema
-  metadata with JSON Schema `default` lowering.
-- [ ] Add a `multipleOf` schema constraint lowering to the existing constraint machinery.
+Phase 27 (contract grammar prerequisites) is complete: `Value.map` (JSON objects as dictionaries, string-keyed) across
+Input.parse, Codec, JsonSchema (`additionalProperties`), and Inspect; default-value metadata (`Value.withDefault` /
+`Value.defaultValue`) with JSON Schema `default` lowering; and a `multipleOf` schema constraint lowered to both
+JSON Schema and an executable check.
 
 ## Acceptance Checks
 

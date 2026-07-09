@@ -27,6 +27,8 @@ type CheckRangeExpectation =
     | AtMost of maximumInclusive: string
     /// <summary>The value was expected to be between the supplied inclusive bounds.</summary>
     | Between of minimumInclusive: string * maximumInclusive: string
+    /// <summary>The value was expected to be an integer multiple of the supplied divisor.</summary>
+    | NotMultipleOf of divisor: string
 
 /// <summary>Describes the count requirement that a value check expected a sequence-shaped value to satisfy against a
 /// caller-supplied count.</summary>
@@ -112,6 +114,7 @@ module CheckFailure =
             | AtLeast minimum -> $"at least {minimum}"
             | AtMost maximum -> $"at most {maximum}"
             | Between(minimum, maximum) -> $"between {minimum} and {maximum}"
+            | NotMultipleOf divisor -> $"a multiple of {divisor}"
           Count =
             function
             | MinimumCount minimum -> $"at least {minimum} item(s)"

@@ -17,6 +17,7 @@
     <Compile Include="SchemaDescriptionTests.fs" />
     <Compile Include="SchemaNestedValueTests.fs" />
     <Compile Include="SchemaManyValueTests.fs" />
+    <Compile Include="SchemaMapValueTests.fs" />
     <Compile Include="SchemaUnionValueTests.fs" />
     <Compile Include="SchemaOptionalValueTests.fs" />
     <Compile Include="SchemaInterpreterPrototypeTests.fs" />

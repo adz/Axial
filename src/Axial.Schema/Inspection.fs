@@ -27,6 +27,8 @@ type ValueShape =
     | Enum of enum: EnumDescription
     /// <summary>An optional value whose present payload is described by the supplied payload description.</summary>
     | Optional of payload: ValueDescription
+    /// <summary>A dictionary value, keyed by text, whose entries share the supplied item description.</summary>
+    | MapOf of item: ValueDescription
 
 /// <summary>Describes one value schema: its shape, declared format, and portable constraint metadata.</summary>
 and ValueDescription =
@@ -39,6 +41,8 @@ and ValueDescription =
         Constraints: SchemaConstraint list
         /// <summary>The description metadata, when one was attached with <c>Value.describe</c>.</summary>
         Description: string option
+        /// <summary>The default-value metadata, when one was attached with <c>Value.withDefault</c>.</summary>
+        Default: obj option
     }
 
 /// <summary>Describes one field of a model schema for inspection interpreters.</summary>
@@ -160,11 +164,13 @@ module Inspect =
             | EnumValueDefinition enum ->
                 ValueShape.Enum { Cases = enum.Cases |> List.map (fun case -> { Tag = case.Tag }) }
             | OptionValueDefinition optional -> ValueShape.Optional(describeValueDefinition optional.Payload)
+            | MapValueDefinition collection -> ValueShape.MapOf(describeValueDefinition collection.Item)
 
         { Shape = shape
           Format = definition.Format
           Constraints = definition.Constraints
-          Description = definition.Description }
+          Description = definition.Description
+          Default = definition.Default }
 
     and internal describeFieldDescriptor (field: FieldDescriptor<obj>) : FieldDescription =
         { Name = ExternalFieldName.value field.ExternalName

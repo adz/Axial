@@ -72,6 +72,7 @@ module Input =
             | UnionInlineValueDefinition _ -> valueDefinition.Constraints
             | EnumValueDefinition _ -> valueDefinition.Constraints
             | OptionValueDefinition _ -> valueDefinition.Constraints
+            | MapValueDefinition _ -> valueDefinition.Constraints
 
         gather definition
 
@@ -90,6 +91,7 @@ module Input =
             | UnionInlineValueDefinition _ -> invalidOp "Union-inline value schemas have no underlying primitive kind."
             | EnumValueDefinition _ -> invalidOp "Enum value schemas have no underlying primitive kind."
             | OptionValueDefinition _ -> invalidOp "Optional value schemas have no underlying primitive kind."
+            | MapValueDefinition _ -> invalidOp "Map value schemas have no underlying primitive kind."
 
         kindOf definition
 
@@ -103,7 +105,8 @@ module Input =
             | UnionValueDefinition _
             | UnionInlineValueDefinition _
             | EnumValueDefinition _
-            | OptionValueDefinition _ -> value
+            | OptionValueDefinition _
+            | MapValueDefinition _ -> value
 
         construct definition primitive
 
@@ -122,12 +125,12 @@ module Input =
         | PrimitiveValueKind.Int ->
             value
             |> unbox<int>
-            |> runCheck constraints (SchemaConstraintCheck.ordered<int> constraints)
+            |> runCheck constraints (fun v -> Check.all [ SchemaConstraintCheck.ordered<int> constraints; SchemaConstraintCheck.multipleOf<int> constraints ] v)
             |> Result.map box
         | PrimitiveValueKind.Decimal ->
             value
             |> unbox<decimal>
-            |> runCheck constraints (SchemaConstraintCheck.ordered<decimal> constraints)
+            |> runCheck constraints (fun v -> Check.all [ SchemaConstraintCheck.ordered<decimal> constraints; SchemaConstraintCheck.multipleOf<decimal> constraints ] v)
             |> Result.map box
         | PrimitiveValueKind.Bool -> Ok value
 #if NET8_0_OR_GREATER
@@ -183,7 +186,8 @@ module Input =
         | ManyValueDefinition _
         | UnionValueDefinition _
         | UnionInlineValueDefinition _
-        | EnumValueDefinition _ -> parsePresentValue options valueSchema fieldConstraints path raw
+        | EnumValueDefinition _
+        | MapValueDefinition _ -> parsePresentValue options valueSchema fieldConstraints path raw
 
     and private parsePresentValue options valueSchema fieldConstraints path raw =
         let constraints = allConstraints valueSchema @ fieldConstraints
@@ -196,6 +200,7 @@ module Input =
             | NestedValueDefinition(nestedModel, _) -> parseObject options path nestedModel fields
             | UnionValueDefinition union -> parseUnion options path union fields
             | UnionInlineValueDefinition union -> parseUnionInline options path union fields
+            | MapValueDefinition collection -> parseMap options path collection constraints fields
             | RefinedValueDefinition(raw, _) ->
                 match raw.Shape with
                 | NestedValueDefinition(nestedModel, _) ->
@@ -206,6 +211,9 @@ module Input =
                     |> Result.map (constructValue valueSchema)
                 | UnionInlineValueDefinition union ->
                     parseUnionInline options path union fields
+                    |> Result.map (constructValue valueSchema)
+                | MapValueDefinition collection ->
+                    parseMap options path collection constraints fields
                     |> Result.map (constructValue valueSchema)
                 | OptionValueDefinition _ ->
                     parseValue options raw [] path (RawInput.Object fields)
@@ -222,7 +230,8 @@ module Input =
             match valueSchema.Shape with
             | NestedValueDefinition _
             | UnionValueDefinition _
-            | UnionInlineValueDefinition _ -> errorAt path SchemaError.ExpectedObject
+            | UnionInlineValueDefinition _
+            | MapValueDefinition _ -> errorAt path SchemaError.ExpectedObject
             | ManyValueDefinition collection -> parseMany options path collection constraints rawItems
             | RefinedValueDefinition(raw, _) ->
                 match raw.Shape with
@@ -234,7 +243,8 @@ module Input =
                     |> Result.map (constructValue valueSchema)
                 | NestedValueDefinition _
                 | UnionValueDefinition _
-                | UnionInlineValueDefinition _ -> errorAt path SchemaError.ExpectedObject
+                | UnionInlineValueDefinition _
+                | MapValueDefinition _ -> errorAt path SchemaError.ExpectedObject
                 | PrimitiveValueDefinition _
                 | RefinedValueDefinition _
                 | EnumValueDefinition _ -> errorAt path SchemaError.ExpectedScalar
@@ -247,7 +257,8 @@ module Input =
             match valueSchema.Shape with
             | NestedValueDefinition _
             | UnionValueDefinition _
-            | UnionInlineValueDefinition _ -> errorAt path SchemaError.ExpectedObject
+            | UnionInlineValueDefinition _
+            | MapValueDefinition _ -> errorAt path SchemaError.ExpectedObject
             | ManyValueDefinition _ -> errorAt path SchemaError.ExpectedMany
             | OptionValueDefinition _ -> invalidOp "Optional value schemas are parsed before raw input dispatch."
             | EnumValueDefinition enum -> parseEnum path enum text
@@ -255,7 +266,8 @@ module Input =
                 match raw.Shape with
                 | NestedValueDefinition _
                 | UnionValueDefinition _
-                | UnionInlineValueDefinition _ -> errorAt path SchemaError.ExpectedObject
+                | UnionInlineValueDefinition _
+                | MapValueDefinition _ -> errorAt path SchemaError.ExpectedObject
                 | ManyValueDefinition _ -> errorAt path SchemaError.ExpectedMany
                 | OptionValueDefinition _ ->
                     parseValue options raw [] path (RawInput.Scalar text)
@@ -390,6 +402,27 @@ module Input =
 
             match checkMany constraints path items with
             | Ok checkedItems -> checkedItems |> collection.BoxItems |> Ok
+            | Error diagnostics -> Error diagnostics
+        | diagnostics -> Error(mergeErrors diagnostics)
+
+    and private parseMap options path (collection: MapValueDefinition) constraints (fields: Map<string, RawInput>) =
+        let entries = fields |> Map.toList
+
+        let parsedEntries =
+            entries
+            |> List.map (fun (key, rawItem) ->
+                key, parseValue options collection.Item [] (path @ [ PathSegment.Key key ]) rawItem)
+
+        let errors =
+            parsedEntries |> List.choose (fun (_, result) -> match result with Error diagnostics -> Some diagnostics | Ok _ -> None)
+
+        match errors with
+        | [] ->
+            let items = parsedEntries |> List.map (fun (_, result) -> match result with Ok value -> value | Error _ -> invalidOp "Unexpected parse error.")
+
+            match checkMany constraints path items with
+            | Ok checkedItems ->
+                List.zip (entries |> List.map fst) checkedItems |> collection.BoxEntries |> Ok
             | Error diagnostics -> Error diagnostics
         | diagnostics -> Error(mergeErrors diagnostics)
 

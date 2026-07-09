@@ -128,6 +128,8 @@ type SchemaConstraintMetadata =
     | Distinct
     /// <summary>A collection value must contain the supplied item.</summary>
     | Contains of item: obj
+    /// <summary>A numeric value must be an integer multiple of the supplied divisor.</summary>
+    | MultipleOf of divisor: obj
     /// <summary>A custom or not-yet-known constraint identified by its stable code.</summary>
     | Custom of code: string
 
@@ -385,6 +387,10 @@ module SchemaConstraint =
             "countBetween"
             (SchemaConstraintMetadata.CountBetween(minimum, maximum))
             [ "minimum", box minimum; "maximum", box maximum ]
+
+    /// <summary>Requires a numeric value to be an integer multiple of the supplied divisor.</summary>
+    let multipleOf divisor =
+        createKnownWithArguments "multipleOf" (SchemaConstraintMetadata.MultipleOf(box divisor)) [ "divisor", box divisor ]
 
     /// <summary>Requires a collection value to contain no duplicate items.</summary>
     let distinct = createKnown "distinct" SchemaConstraintMetadata.Distinct
@@ -645,7 +651,8 @@ type internal ValueSchemaDefinition =
     { Shape: ValueSchemaShape
       Format: SchemaFormat option
       Constraints: SchemaConstraint list
-      Description: string option }
+      Description: string option
+      Default: obj option }
 
 and internal ValueSchemaShape =
     | PrimitiveValueDefinition of PrimitiveValueKind
@@ -667,6 +674,8 @@ and internal ValueSchemaShape =
     | EnumValueDefinition of TaggedEnumValueDefinition
     /// <summary>An optional value: absent input is a legal <c>None</c>, present input parses through the payload schema.</summary>
     | OptionValueDefinition of OptionalValueDefinition
+    /// <summary>A dictionary value whose entries are each described by the same item value schema, keyed by text.</summary>
+    | MapValueDefinition of MapValueDefinition
 
 /// <summary>
 /// Holds the type-erased payload value schema for an optional value, plus closures that move between the boxed
@@ -711,6 +720,32 @@ and [<ReferenceEquality>] internal CollectionValueDefinition =
 /// </remarks>
 and internal ICollectionItemInterpreter =
     abstract member Item<'item> : item: ValueSchemaDefinition -> obj
+
+/// <summary>
+/// Holds the type-erased item value schema for a dictionary/map value, plus a closure that boxes a list of
+/// parsed, type-erased key/value entries back into the map's original CLR <c>Map&lt;string,'item&gt;</c> type.
+/// </summary>
+/// <remarks>
+/// Keys are always text: a JSON object's field names are the map's keys, so there is no separate key schema.
+/// The boxing closure is captured at <c>Value.mapOf</c> call sites where the item CLR type is still statically
+/// known, so interpreters such as input parsing can build a correctly-typed <c>Map&lt;string,'item&gt;</c> without
+/// reflection.
+/// </remarks>
+and [<ReferenceEquality>] internal MapValueDefinition =
+    { Item: ValueSchemaDefinition
+      BoxEntries: (string * obj) list -> obj
+      /// <summary>
+      /// Projects a trusted, boxed <c>Map&lt;string,'item&gt;</c> back into a type-erased key/value entry list.
+      /// Captured at <c>Value.map</c> call sites where the item CLR type is still statically known, so interpreters
+      /// such as model validation and codec encoding can walk entries without reflection.
+      /// </summary>
+      Entries: obj -> (string * obj) list
+      /// <summary>
+      /// Reintroduces the statically-known item type to an interpreter. The closure is captured at
+      /// <c>Value.mapOf</c> call sites, so interpreters such as codecs can build typed item plans without
+      /// reflection or per-item boxing.
+      /// </summary>
+      AcceptItem: ICollectionItemInterpreter -> obj }
 
 and [<ReferenceEquality>] internal UnionCaseValueDefinition =
     { Tag: string
@@ -1072,7 +1107,9 @@ module Value =
             { Shape = PrimitiveValueDefinition kind
               Format = None
               Constraints = []
-              Description = None }
+              Description = None
+
+              Default = None }
         )
 
     /// <summary>Describes text represented as <see cref="T:System.String" />.</summary>
@@ -1126,6 +1163,8 @@ module Value =
             invalidArg (nameof schema) "Expected a primitive value schema, but the schema is an enum value schema."
         | OptionValueDefinition _ ->
             invalidArg (nameof schema) "Expected a primitive value schema, but the schema is an optional value schema."
+        | MapValueDefinition _ ->
+            invalidArg (nameof schema) "Expected a primitive value schema, but the schema is a map value schema."
 
     /// <summary>
     /// Describes a named refined/domain value schema by pairing a raw value schema with a value-preserving
@@ -1183,7 +1222,9 @@ module Value =
             { Shape = RefinedValueDefinition(raw.Definition, ops)
               Format = None
               Constraints = []
-              Description = None }
+              Description = None
+
+              Default = None }
         )
 
     /// <summary>Describes a nested model value from an already built nested model schema.</summary>
@@ -1207,7 +1248,9 @@ module Value =
                 { Shape = NestedValueDefinition(ModelSchemaErasure.erase model, box schema)
                   Format = None
                   Constraints = []
-                  Description = None }
+                  Description = None
+
+                  Default = None }
             )
 
     /// <summary>Describes a collection of values from an already built item value schema.</summary>
@@ -1237,7 +1280,9 @@ module Value =
                       AcceptItem = acceptItem }
               Format = None
               Constraints = []
-              Description = None }
+              Description = None
+
+              Default = None }
         )
 
     /// <summary>Describes a collection of nested model values from an already built item model schema.</summary>
@@ -1253,6 +1298,39 @@ module Value =
     let many (itemSchema: Schema<'item>) : ValueSchema<'item list> =
         let itemValueSchema = nested itemSchema
         manyOf itemValueSchema
+
+    /// <summary>Describes a JSON object as a dictionary from an already built item value schema.</summary>
+    /// <remarks>
+    /// Keys are always text: the object's field names become the map's keys, so there is no separate key schema.
+    /// <c>Value.map</c> is the general dictionary constructor; each entry's value is described by
+    /// <paramref name="itemSchema" />, and interpreters attach diagnostics to entry key paths.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="itemSchema" /> is null.</exception>
+    let map (itemSchema: ValueSchema<'item>) : ValueSchema<Map<string, 'item>> =
+        if isNull (box itemSchema) then
+            nullArg (nameof itemSchema)
+
+        let boxEntries (entries: (string * obj) list) : obj =
+            entries |> List.map (fun (key, value) -> key, unbox<'item> value) |> Map.ofList |> box
+
+        let entries (value: obj) : (string * obj) list =
+            value |> unbox<Map<string, 'item>> |> Map.toList |> List.map (fun (key, item) -> key, box item)
+
+        let acceptItem (interpreter: ICollectionItemInterpreter) =
+            interpreter.Item<'item> itemSchema.Definition
+
+        ValueSchema(
+            { Shape =
+                MapValueDefinition
+                    { Item = itemSchema.Definition
+                      BoxEntries = boxEntries
+                      Entries = entries
+                      AcceptItem = acceptItem }
+              Format = None
+              Constraints = []
+              Description = None
+              Default = None }
+        )
 
     /// <summary>
     /// Describes a tagged union value using explicit cases and object input with discriminator and payload fields.
@@ -1296,7 +1374,9 @@ module Value =
                       Cases = cases |> List.map _.Definition }
               Format = None
               Constraints = []
-              Description = None }
+              Description = None
+
+              Default = None }
         )
 
     /// <summary>
@@ -1354,7 +1434,8 @@ module Value =
             | UnionValueDefinition _
             | UnionInlineValueDefinition _
             | EnumValueDefinition _
-            | OptionValueDefinition _ ->
+            | OptionValueDefinition _
+            | MapValueDefinition _ ->
                 invalidArg
                     (nameof cases)
                     (sprintf "Union-inline case \"%s\" payload must be an object schema built with Value.nested." case.Definition.Tag))
@@ -1366,7 +1447,9 @@ module Value =
                       Cases = cases |> List.map _.Definition }
               Format = None
               Constraints = []
-              Description = None }
+              Description = None
+
+              Default = None }
         )
 
     /// <summary>Describes a bare-string enum value for payload-less union cases, lowering to JSON Schema <c>enum</c>.</summary>
@@ -1396,7 +1479,9 @@ module Value =
             { Shape = EnumValueDefinition { Cases = cases |> List.map _.Definition }
               Format = None
               Constraints = []
-              Description = None }
+              Description = None
+
+              Default = None }
         )
 
     /// <summary>Describes an optional value so <c>'field option</c> models are schema-describable.</summary>
@@ -1434,7 +1519,8 @@ module Value =
         | ManyValueDefinition _
         | UnionValueDefinition _
         | UnionInlineValueDefinition _
-        | EnumValueDefinition _ -> ()
+        | EnumValueDefinition _
+        | MapValueDefinition _ -> ()
 
         let rec carriesRequired (definition: ValueSchemaDefinition) =
             let ownRequired =
@@ -1450,7 +1536,8 @@ module Value =
                | UnionValueDefinition _
                | UnionInlineValueDefinition _
                | EnumValueDefinition _
-               | OptionValueDefinition _ -> false
+               | OptionValueDefinition _
+               | MapValueDefinition _ -> false
 
         if carriesRequired payload.Definition then
             invalidArg (nameof payload) "Optional value schemas cannot carry the required constraint."
@@ -1464,7 +1551,9 @@ module Value =
                       TryUnwrap = fun value -> value |> unbox<'value option> |> Option.map box }
               Format = None
               Constraints = []
-              Description = None }
+              Description = None
+
+              Default = None }
         )
 
     /// <summary>Returns whether a value schema is a refined/domain value schema.</summary>
@@ -1482,6 +1571,7 @@ module Value =
         | UnionInlineValueDefinition _ -> false
         | EnumValueDefinition _ -> false
         | OptionValueDefinition _ -> false
+        | MapValueDefinition _ -> false
 
     /// <summary>Returns the intrinsic primitive kind beneath any refinement layers of a value schema.</summary>
     /// <remarks>
@@ -1512,6 +1602,8 @@ module Value =
                 invalidArg (nameof schema) "Enum value schemas have no underlying primitive kind."
             | OptionValueDefinition _ ->
                 invalidArg (nameof schema) "Optional value schemas have no underlying primitive kind."
+            | MapValueDefinition _ ->
+                invalidArg (nameof schema) "Map value schemas have no underlying primitive kind."
 
         kindOf schema.Definition
 
@@ -1545,6 +1637,8 @@ module Value =
             invalidArg (nameof schema) "Expected a refined value schema, but the schema is an enum value schema."
         | OptionValueDefinition _ ->
             invalidArg (nameof schema) "Expected a refined value schema, but the schema is an optional value schema."
+        | MapValueDefinition _ ->
+            invalidArg (nameof schema) "Expected a refined value schema, but the schema is a map value schema."
 
     let private underlyingClrType kind =
         match kind with
@@ -1608,6 +1702,8 @@ module Value =
                 invalidArg (nameof schema) "Enum value schemas have no underlying primitive representation."
             | OptionValueDefinition _ ->
                 invalidArg (nameof schema) "Optional value schemas have no underlying primitive representation."
+            | MapValueDefinition _ ->
+                invalidArg (nameof schema) "Map value schemas have no underlying primitive representation."
 
         fun value -> project schema.Definition (box value) |> unbox<'primitive>
 
@@ -1663,6 +1759,7 @@ module Value =
                 | UnionInlineValueDefinition _ -> None
                 | EnumValueDefinition _ -> None
                 | OptionValueDefinition _ -> None
+                | MapValueDefinition _ -> None
 
         formatOf schema.Definition
 
@@ -1716,8 +1813,59 @@ module Value =
                 | UnionInlineValueDefinition _ -> None
                 | EnumValueDefinition _ -> None
                 | OptionValueDefinition _ -> None
+                | MapValueDefinition _ -> None
 
         descriptionOf schema.Definition
+
+    /// <summary>Returns a value schema carrying the supplied default-value metadata.</summary>
+    /// <remarks>
+    /// <para>
+    /// The default is annotation metadata for interpreters: JSON Schema generation lowers it to the <c>default</c>
+    /// keyword at the point the value schema is used. It attaches no executable check and does not affect parsing —
+    /// missing input is still a diagnostic unless the value schema is also wrapped with <c>Value.optionOf</c>.
+    /// </para>
+    /// <para>
+    /// A value schema carries at most one default. Applying <c>withDefault</c> again replaces the earlier
+    /// declaration.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
+    let withDefault (value: 'value) (schema: ValueSchema<'value>) =
+        if isNull (box schema) then
+            nullArg (nameof schema)
+
+        ValueSchema(
+            { schema.Definition with
+                Default = Some(box value) }
+        )
+
+    /// <summary>Returns the default-value metadata declared nearest to a value schema, when present.</summary>
+    /// <remarks>
+    /// Like <see cref="M:Axial.Schema.Value.format``1" />, this accessor sees through refinement layers: a default
+    /// declared on the refined value schema itself wins, and otherwise the raw value schemas are walked toward the
+    /// primitive foundation until a declaration is found.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
+    let defaultValue (schema: ValueSchema<'value>) : 'value option =
+        if isNull (box schema) then
+            nullArg (nameof schema)
+
+        let rec defaultOf (definition: ValueSchemaDefinition) =
+            match definition.Default with
+            | Some _ as declared -> declared
+            | None ->
+                match definition.Shape with
+                | RefinedValueDefinition(raw, _) -> defaultOf raw
+                | PrimitiveValueDefinition _ -> None
+                | NestedValueDefinition _ -> None
+                | ManyValueDefinition _ -> None
+                | UnionValueDefinition _ -> None
+                | UnionInlineValueDefinition _ -> None
+                | EnumValueDefinition _ -> None
+                | OptionValueDefinition _ -> None
+                | MapValueDefinition _ -> None
+
+        defaultOf schema.Definition |> Option.map unbox<'value>
 
     /// <summary>Returns the portable constraint metadata attached to a value schema.</summary>
     let constraints (schema: ValueSchema<'value>) =
@@ -1757,6 +1905,7 @@ module Value =
             | UnionInlineValueDefinition _ -> definition.Constraints
             | EnumValueDefinition _ -> definition.Constraints
             | OptionValueDefinition _ -> definition.Constraints
+            | MapValueDefinition _ -> definition.Constraints
 
         gather schema.Definition
 

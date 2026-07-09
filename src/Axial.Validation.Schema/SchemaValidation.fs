@@ -53,6 +53,7 @@ module SchemaError =
         | CheckRangeExpectation.AtLeast minimum -> $"at least {minimum}"
         | CheckRangeExpectation.AtMost maximum -> $"at most {maximum}"
         | CheckRangeExpectation.Between(minimum, maximum) -> $"between {minimum} and {maximum}"
+        | CheckRangeExpectation.NotMultipleOf divisor -> $"a multiple of {divisor}"
 
     let private countText expectation =
         match expectation with
@@ -75,6 +76,7 @@ module SchemaError =
         | CheckFailure.OutOfRange(CheckRangeExpectation.AtLeast _, _) -> Some "atLeast"
         | CheckFailure.OutOfRange(CheckRangeExpectation.AtMost _, _) -> Some "atMost"
         | CheckFailure.OutOfRange(CheckRangeExpectation.Between _, _) -> Some "between"
+        | CheckFailure.OutOfRange(CheckRangeExpectation.NotMultipleOf _, _) -> Some "multipleOf"
         | CheckFailure.InvalidCount(CheckCountExpectation.MinimumCount _, _) -> Some "minCount"
         | CheckFailure.InvalidCount(CheckCountExpectation.MaximumCount _, _) -> Some "maxCount"
         | CheckFailure.InvalidCount(CheckCountExpectation.ExactCount _, _) -> Some "count"
@@ -176,11 +178,11 @@ module SchemaValidation =
 /// </remarks>
 [<RequireQualifiedAccess>]
 module SchemaConstraintCheck =
-    let private ensureConstraint (constraint': SchemaConstraint) =
+    let internal ensureConstraint (constraint': SchemaConstraint) =
         if isNull constraint' then
             nullArg (nameof constraint')
 
-    let private ensureConstraints constraints =
+    let internal ensureConstraints constraints =
         if isNull (box constraints) then
             nullArg (nameof constraints)
 
@@ -193,7 +195,7 @@ module SchemaConstraintCheck =
 
         constraints
 
-    let private tryArgument<'value> name constraint' =
+    let internal tryArgument<'value> name constraint' =
         match SchemaConstraint.tryFindArgument name constraint' with
         | Some (:? 'value as value) -> Some value
         | _ -> None
@@ -291,6 +293,34 @@ module SchemaConstraintCheck =
     let ordered<'value when 'value: comparison> (constraints: SchemaConstraint seq) : Check<'value> =
         ensureConstraints constraints
         |> Seq.choose tryOrdered<'value>
+        |> Seq.toList
+        |> Check.all
+
+    let inline internal multipleOfCheck<'value when 'value: (static member Zero: 'value) and 'value: equality and 'value: (static member (%) : 'value * 'value -> 'value)>
+        (divisor: 'value)
+        : Check<'value> =
+        fun value ->
+            if value % divisor = LanguagePrimitives.GenericZero<'value> then
+                Ok value
+            else
+                Error [ CheckFailure.OutOfRange(CheckRangeExpectation.NotMultipleOf(string divisor), Some(string value)) ]
+
+    /// <summary>Lowers one schema constraint to a multiple-of check when the constraint has that meaning.</summary>
+    let inline internal tryMultipleOf<'value when 'value: (static member Zero: 'value) and 'value: equality and 'value: (static member (%) : 'value * 'value -> 'value)>
+        (constraint': SchemaConstraint)
+        : Check<'value> option =
+        ensureConstraint constraint'
+
+        match SchemaConstraint.code constraint' with
+        | "multipleOf" -> tryArgument<'value> "divisor" constraint' |> Option.map multipleOfCheck<'value>
+        | _ -> None
+
+    /// <summary>Lowers schema constraints with multiple-of meaning into one numeric check.</summary>
+    let inline internal multipleOf<'value when 'value: (static member Zero: 'value) and 'value: equality and 'value: (static member (%) : 'value * 'value -> 'value)>
+        (constraints: SchemaConstraint seq)
+        : Check<'value> =
+        ensureConstraints constraints
+        |> Seq.choose tryMultipleOf<'value>
         |> Seq.toList
         |> Check.all
 
@@ -437,6 +467,7 @@ module Validation =
             | UnionInlineValueDefinition _ -> valueDefinition.Constraints
             | EnumValueDefinition _ -> valueDefinition.Constraints
             | OptionValueDefinition _ -> valueDefinition.Constraints
+            | MapValueDefinition _ -> valueDefinition.Constraints
 
         gather definition
 
@@ -451,6 +482,7 @@ module Validation =
             | UnionInlineValueDefinition _ -> invalidOp "Union-inline value schemas have no underlying primitive kind."
             | EnumValueDefinition _ -> invalidOp "Enum value schemas have no underlying primitive kind."
             | OptionValueDefinition _ -> invalidOp "Optional value schemas have no underlying primitive kind."
+            | MapValueDefinition _ -> invalidOp "Map value schemas have no underlying primitive kind."
 
         kindOf definition
 
@@ -465,6 +497,7 @@ module Validation =
             | UnionInlineValueDefinition _ -> invalidOp "Union-inline values have no underlying primitive representation."
             | EnumValueDefinition _ -> invalidOp "Enum values have no underlying primitive representation."
             | OptionValueDefinition _ -> invalidOp "Optional values have no underlying primitive representation."
+            | MapValueDefinition _ -> invalidOp "Map values have no underlying primitive representation."
 
         project definition value
 
@@ -483,12 +516,12 @@ module Validation =
         | PrimitiveValueKind.Int ->
             value
             |> unbox<int>
-            |> runCheck constraints (SchemaConstraintCheck.ordered<int> constraints)
+            |> runCheck constraints (fun v -> Check.all [ SchemaConstraintCheck.ordered<int> constraints; SchemaConstraintCheck.multipleOf<int> constraints ] v)
             |> Result.map box
         | PrimitiveValueKind.Decimal ->
             value
             |> unbox<decimal>
-            |> runCheck constraints (SchemaConstraintCheck.ordered<decimal> constraints)
+            |> runCheck constraints (fun v -> Check.all [ SchemaConstraintCheck.ordered<decimal> constraints; SchemaConstraintCheck.multipleOf<decimal> constraints ] v)
             |> Result.map box
         | PrimitiveValueKind.Bool -> Ok value
 #if NET8_0_OR_GREATER
@@ -518,7 +551,8 @@ module Validation =
             | UnionValueDefinition _
             | UnionInlineValueDefinition _
             | EnumValueDefinition _
-            | OptionValueDefinition _ ->
+            | OptionValueDefinition _
+            | MapValueDefinition _ ->
                 validateValue raw (valueSchema.Constraints @ fieldConstraints) path (ops.Inspect value)
                 |> Axial.Validation.Validation.map (fun _ -> value)
             | PrimitiveValueDefinition _
@@ -549,6 +583,9 @@ module Validation =
             |> Axial.Validation.Validation.map (fun _ -> value)
         | ManyValueDefinition collection ->
             validateMany path collection constraints (value :?> System.Collections.IEnumerable)
+            |> Axial.Validation.Validation.map (fun _ -> value)
+        | MapValueDefinition collection ->
+            validateMap path collection constraints value
             |> Axial.Validation.Validation.map (fun _ -> value)
         | UnionValueDefinition union ->
             validateUnion path union value
@@ -610,6 +647,24 @@ module Validation =
 
         match errors with
         | [] -> checkMany constraints path items
+        | diagnostics -> diagnostics |> mergeErrors |> Axial.Validation.Validation.error
+
+    and private validateMap path (collection: MapValueDefinition) constraints (value: obj) =
+        let entries = collection.Entries value
+
+        let validatedEntries =
+            entries
+            |> List.map (fun (key, item) -> validateValue collection.Item [] (path @ [ PathSegment.Key key ]) item)
+
+        let errors =
+            validatedEntries
+            |> List.choose (fun validation ->
+                match Axial.Validation.Validation.toResult validation with
+                | Ok _ -> None
+                | Error diagnostics -> Some diagnostics)
+
+        match errors with
+        | [] -> checkMany constraints path (entries |> List.map snd)
         | diagnostics -> diagnostics |> mergeErrors |> Axial.Validation.Validation.error
 
     and private validateUnion path (union: TaggedUnionValueDefinition) value =

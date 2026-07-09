@@ -169,6 +169,58 @@ module rec Json =
 
             writer.WriteByte(byte ']')
 
+    /// Decodes one object with arbitrary text keys, each value decoded by `decodeItem`.
+    let private mapDecoder (decodeItem: Decoder<'item>) : Decoder<(string * 'item) list> =
+        fun src ->
+            let mutable current = expectByte (byte '{') "{" src
+            let data = current.Data
+            let mutable entries = []
+            let mutable continueLoop = true
+
+            if current.Offset < data.Length && data[current.Offset] = byte '}' then
+                current <- current.Advance 1
+                continueLoop <- false
+
+            while continueLoop do
+                let struct (keyStart, keyLength, keyHadEscapes, afterKey) = stringRaw current
+                let key = materializeString data keyStart keyLength keyHadEscapes
+                let afterColon = advancePastColon afterKey
+
+                let struct (item, afterValue) =
+                    try
+                        decodeItem afterColon
+                    with
+                    | :? JsonCodecException as ex ->
+                        raise (
+                            JsonCodecException(
+                                "." + key + (if ex.Path = "$" then "" else ex.Path.Substring 1),
+                                ex.Detail,
+                                ex
+                            )
+                        )
+
+                entries <- (key, item) :: entries
+                let struct (next, hasMore) = readSeparatorOrClose (byte '}') "}" afterValue
+                current <- next
+                continueLoop <- hasMore
+
+            struct (List.rev entries, current)
+
+    let private mapEncoder (encodeItem: Encoder<'item>) : Encoder<(string * 'item) list> =
+        fun writer entries ->
+            writer.WriteByte(byte '{')
+
+            entries
+            |> List.iteri (fun index (key, item) ->
+                if index > 0 then
+                    writer.WriteByte(byte ',')
+
+                writeQuoted writer key
+                writer.WriteByte(byte ':')
+                encodeItem writer item)
+
+            writer.WriteByte(byte '}')
+
     // ---------------------------------------------------------------------
     // Primitive value codecs
     // ---------------------------------------------------------------------
@@ -323,6 +375,13 @@ module rec Json =
             fun src ->
                 let struct (items, next) = decodeItems src
                 struct (collection.BoxItems items, next)
+        | MapValueDefinition collection ->
+            let itemDecoder = compileValueDecoderObj collection.Item
+            let decodeEntries = mapDecoder itemDecoder
+
+            fun src ->
+                let struct (entries, next) = decodeEntries src
+                struct (collection.BoxEntries entries, next)
         | UnionValueDefinition union -> compileUnionDecoderObj union
         | UnionInlineValueDefinition union -> compileUnionInlineDecoderObj union
         | EnumValueDefinition enum -> compileEnumDecoderObj enum
@@ -466,6 +525,11 @@ module rec Json =
                     itemEncoder writer item
 
                 writer.WriteByte(byte ']')
+        | MapValueDefinition collection ->
+            let itemEncoder = compileValueEncoderObj collection.Item
+            let encodeEntries = mapEncoder itemEncoder
+
+            fun writer value -> encodeEntries writer (collection.Entries value)
         | UnionValueDefinition union -> compileUnionEncoderObj union
         | UnionInlineValueDefinition union -> compileUnionInlineEncoderObj union
         | EnumValueDefinition enum -> compileEnumEncoderObj enum
@@ -696,6 +760,16 @@ module rec Json =
                     member _.Item<'item>(item: ValueSchemaDefinition) =
                         box (listDecoder (compileValueDecoder<'item> item)) }
             |> unbox<Decoder<'field>>
+        | MapValueDefinition collection ->
+            collection.AcceptItem
+                { new ICollectionItemInterpreter with
+                    member _.Item<'item>(item: ValueSchemaDefinition) =
+                        let decodeEntries = mapDecoder (compileValueDecoder<'item> item)
+
+                        box (fun src ->
+                            let struct (entries, next) = decodeEntries src
+                            struct (Map.ofList entries, next)) }
+            |> unbox<Decoder<'field>>
         | UnionValueDefinition _
         | UnionInlineValueDefinition _
         | EnumValueDefinition _
@@ -721,6 +795,13 @@ module rec Json =
                 { new ICollectionItemInterpreter with
                     member _.Item<'item>(item: ValueSchemaDefinition) =
                         box (listEncoder (compileValueEncoder<'item> item)) }
+            |> unbox<Encoder<'field>>
+        | MapValueDefinition collection ->
+            collection.AcceptItem
+                { new ICollectionItemInterpreter with
+                    member _.Item<'item>(item: ValueSchemaDefinition) =
+                        let encodeEntries = mapEncoder (compileValueEncoder<'item> item)
+                        box (fun (writer: IByteWriter) (value: Map<string, 'item>) -> encodeEntries writer (Map.toList value)) }
             |> unbox<Encoder<'field>>
         | RefinedValueDefinition _
         | UnionValueDefinition _
