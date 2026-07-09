@@ -25,21 +25,14 @@ Phase 25 (reiteration-question triage) is complete: all twelve questions from `d
 Deferred items (codec decode allocations, checked-codec mode, UI-metadata promotion, fused boundary path, netstandard2.1
 STJ adapter) are recorded with their pre-chosen answers in `dev-docs/decisions/README.md`; the rest became Phase 26.
 
-## Phase 26: Triaged Boundary Work
-
-Ordered cheap-and-high-leverage first. Items 1–2 are also prerequisites for the contract grammar
-(`dev-docs/current-ideas/contract-grammar.md`). Union wire shapes (`Value.enumOf`, `Value.unionInline`) are complete
-across Input.parse, Codec, JsonSchema, and Inspect.
-
-- [ ] C# ergonomics audit: verify which `Json.*`/`Input.*` entry points surface as clean static methods from C# versus
-  `FSharpFunc` chains; add `[<CompiledName>]`/tupled overloads or members (e.g. `JsonCodec.Deserialize(string)`) where
-  needed, then add a short "From C#" section to the codec and input-sources pages. Consume-don't-author is the story:
-  F# declares schemas, C# compiles codecs, parses, and reads diagnostics.
+Phase 26 (triaged boundary work) is complete: union wire shapes (`Value.enumOf`, `Value.unionInline`) across
+Input.parse, Codec, JsonSchema, and Inspect, and the C# ergonomics audit (`RawInput.ofDictionary`,
+`RawInput.ofConfigurationPairs`, `Input.parseWithOptions`, and "From C#" sections on the codec and input-sources
+pages).
 
 ## Phase 27: Contract Grammar Prerequisites
 
-From `dev-docs/current-ideas/contract-grammar.md` sequencing step 1 — each useful independently of the grammar. Do
-these after Phase 26 items 1–2, which the grammar also needs (`?` optionality, literal unions, `///` doc comments).
+From `dev-docs/current-ideas/contract-grammar.md` sequencing step 1 — each useful independently of the grammar.
 
 - [ ] Add `Value.map : ValueSchema<'value> -> ValueSchema<Map<string,'value>>` (JSON objects as dictionaries; keys are
   always text) across Input.parse, Codec, JsonSchema (`additionalProperties`), and Inspect.

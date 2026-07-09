@@ -106,3 +106,38 @@ match parsed.Result with
 
 For running the parse inside a workflow — including workflow-specific acceptance rules — see
 [Rules And Policies](../rules-and-policies/).
+
+## From C#
+
+Consume-don't-author: F# declares the schema, C# parses and reads diagnostics. Most adapters take plain .NET types
+already — `ofNameValueCollection` takes `NameValueCollection`, `ofCliArgs` and `ofJsonLikeValue` take ordinary
+sequences and values — and call as plain static methods. `ofMap` and `ofConfiguration` take F#-only types (`Map` and
+a sequence of F# tuples), so use their C#-friendly equivalents instead:
+
+```csharp
+using Axial.Validation.Schema;
+
+// ofMap's C# equivalent — takes IDictionary<string, string> instead of an F# Map:
+RawInput raw = RawInputModule.ofDictionary(new Dictionary<string, string> { ["name"] = "Ada Lovelace" });
+
+// ofConfiguration's C# equivalent — takes the pairs IConfiguration.AsEnumerable() already returns:
+RawInput fromConfig = RawInputModule.ofConfigurationPairs(configuration.AsEnumerable());
+
+ParsedInput<Customer, SchemaError> parsed = Input.parse(customerSchema, raw);
+
+if (parsed.IsValid)
+{
+    Customer customer = parsed.Model;
+}
+else
+{
+    var errors = parsed.Errors; // FSharpList<Diagnostic<SchemaError>>
+}
+```
+
+`Input.parseWith` takes an F# function for its `configure` parameter, which C# cannot pass a lambda to directly. Use
+`Input.parseWithOptions`, which takes a `Func<Options, Options>` instead:
+
+```csharp
+var parsed = Input.parseWithOptions(o => Input.constructorErrorAt("end", o), dateRangeSchema, raw);
+```

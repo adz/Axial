@@ -102,6 +102,27 @@ let roundTripped = Json.deserializeBytes codec bytes
 - Constructors from `Schema.buildResult` still run, so intrinsic cross-field invariants hold even on the trusted path;
   their errors surface as `JsonCodecException`.
 
+## From C#
+
+Consume-don't-author: F# declares the schema, C# compiles the codec, parses, and reads diagnostics. Every `Json.*`
+function takes plain positional arguments, so it calls as an ordinary static method with no `FSharpFunc` conversion:
+
+```csharp
+using Axial.Schema;
+using Axial.Codec;
+
+JsonCodec<Customer> codec = Json.compile(customerSchema);
+
+string json = Json.serialize(codec, customer);
+Customer roundTripped = Json.deserialize(codec, json);
+
+// Failures raise JsonCodecException instead of a Result, or use tryDeserialize:
+var attempt = Json.tryDeserialize(codec, json); // FSharpResult<Customer, string>
+```
+
+`serializeToStream` and `deserializeStreamAsync` (both `async`/`Task`-based) are also plain static calls, so they work
+directly against `HttpContext.Response.Body` / `Request.Body` in an ASP.NET Core handler.
+
 ## Next
 
 - Serve the same declaration as a contract with [`JsonSchema.generate`]({{< relref "/reference/schema" >}}).

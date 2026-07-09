@@ -376,6 +376,21 @@ module RawInput =
         |> Map.ofSeq
         |> RawInput.Object
 
+    /// <summary>Builds object-shaped raw input from a .NET dictionary of scalar field values.</summary>
+    /// <remarks>
+    /// A C#-friendly equivalent of <c>ofMap</c>: takes <see cref="T:System.Collections.Generic.IDictionary`2" />
+    /// instead of an F# <c>Map</c>, so callers do not need to construct an F# map value.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="values" /> is null.</exception>
+    let ofDictionary (values: System.Collections.Generic.IDictionary<string, string>) : RawInput =
+        if isNull values then
+            nullArg (nameof values)
+
+        values
+        |> Seq.map (fun pair -> ensureName pair.Key, scalarOrMissing pair.Value)
+        |> Map.ofSeq
+        |> RawInput.Object
+
     /// <summary>Builds object-shaped raw input from name/value pairs, grouping repeated names into <c>Many</c>.</summary>
     let ofNameValues (values: seq<string * string>) : RawInput =
         ensureValues (nameof values) values
@@ -539,6 +554,22 @@ module RawInput =
                 insertConfigurationValue segments (scalarOrMissing value) node)
             (Branch Map.empty)
         |> configurationNodeToRawInput
+
+    /// <summary>Builds raw input from configuration key/value pairs, such as .NET <c>IConfiguration.AsEnumerable()</c>.</summary>
+    /// <remarks>
+    /// A C#-friendly equivalent of <c>ofConfiguration</c>: takes
+    /// <see cref="T:System.Collections.Generic.IEnumerable`1" /> of
+    /// <see cref="T:System.Collections.Generic.KeyValuePair`2" /> instead of a sequence of F# tuples, matching what
+    /// <c>Microsoft.Extensions.Configuration</c>'s <c>IConfiguration.AsEnumerable()</c> returns directly.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="values" /> is null.</exception>
+    let ofConfigurationPairs
+        (values: System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>)
+        : RawInput =
+        if isNull values then
+            nullArg (nameof values)
+
+        values |> Seq.map (fun pair -> pair.Key, pair.Value) |> ofConfiguration
 
     /// <summary>Attempts to find a raw input value at a parsed input path.</summary>
     let tryFind (path: InputPath) (input: RawInput) : RawInput option =

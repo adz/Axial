@@ -438,3 +438,22 @@ module Input =
     /// <summary>Parses raw boundary input through a trusted model schema.</summary>
     let parse (schema: Schema<'model>) (input: RawInput) : ParsedInput<'model, SchemaError> =
         parseWith id schema input
+
+    /// <summary>
+    /// Parses raw boundary input through a trusted model schema using custom input parser options, expressed as a
+    /// .NET delegate.
+    /// </summary>
+    /// <remarks>
+    /// A C#-friendly equivalent of <c>parseWith</c>: takes <see cref="T:System.Func`2" /> instead of an F# function
+    /// value, so callers do not need to construct an <c>FSharpFunc</c>.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="configure" /> or <paramref name="schema" /> is null.</exception>
+    let parseWithOptions
+        (configure: System.Func<Options, Options>)
+        (schema: Schema<'model>)
+        (input: RawInput)
+        : ParsedInput<'model, SchemaError> =
+        if isNull (box configure) then
+            nullArg (nameof configure)
+
+        parseWith configure.Invoke schema input
