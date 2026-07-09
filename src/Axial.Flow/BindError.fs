@@ -286,7 +286,7 @@ module Bind =
     /// <code>
     /// flow {
     ///     let! user = maybeUser |> Bind.error InvalidUser
-    ///     do! Result.checkOr () isValid |> Bind.error InvalidInput
+    ///     do! Result.requireTrue () isValid |> Bind.error InvalidInput
     /// }
     /// </code>
     /// </example>

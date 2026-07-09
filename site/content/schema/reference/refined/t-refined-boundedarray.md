@@ -5,7 +5,7 @@ weight: 1015
 type: docs
 ---
 
-An array whose length is within a caller-supplied inclusive range.
+An array whose count is within a caller-supplied inclusive range.
 
 ## Signature
 

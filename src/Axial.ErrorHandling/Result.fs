@@ -1,29 +1,8 @@
 namespace Axial.ErrorHandling
 
-/// <summary>Structured errors returned by sequence cardinality helpers.</summary>
-type CardinalityFailure =
-    /// <summary>The sequence was expected to contain exactly one item.</summary>
-    | ExpectedSingle of observedCount: int
-    /// <summary>The sequence was expected to contain at most one item.</summary>
-    | ExpectedAtMostOne of observedCount: int
-
 /// <summary>Fail-fast helpers over the standard F# <c>Result</c> type.</summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Result =
-    let private cardinalityAtMostTwo (values: seq<'value>) : int * 'value =
-        use enumerator = values.GetEnumerator()
-        let mutable count = 0
-        let mutable first = Unchecked.defaultof<'value>
-
-        if enumerator.MoveNext() then
-            count <- 1
-            first <- enumerator.Current
-
-            if enumerator.MoveNext() then
-                count <- 2
-
-        count, first
-
     /// <summary>Creates an <c>Ok</c> result.</summary>
     let inline ok value =
         Ok value
@@ -50,27 +29,53 @@ module Result =
         | Ok value -> binder value
         | Error failure -> Error failure
 
-    /// <summary>Runs a value check and returns <c>Ok ()</c> or the check failures.</summary>
-    let require (check: Check<'input>) (input: 'input) : Result<unit, CheckFailure list> =
-        check input
+    /// <summary>Computes a fallback result from the source error when the result fails.</summary>
+    /// <remarks>The lazy counterpart to <c>orElse</c>, matching the <c>Flow.orElseWith</c> and
+    /// <c>Validation.orElseWith</c> naming and shape: the fallback runs only on failure, and can inspect the error
+    /// that caused it.</remarks>
+    /// <example>
+    /// <code>
+    /// let result = Error "boom"
+    /// result |> Result.orElseWith (fun error -> Ok (String.length error)) // Ok 4
+    /// </code>
+    /// </example>
+    let orElseWith (fallback: 'error -> Result<'value, 'error>) (result: Result<'value, 'error>) : Result<'value, 'error> =
+        match result with
+        | Ok value -> Ok value
+        | Error failure -> fallback failure
 
-    /// <summary>Runs a value check and keeps the original input when it succeeds.</summary>
-    let guard (check: Check<'input>) (input: 'input) : Result<'input, CheckFailure list> =
-        input
-        |> require check
-        |> map (fun () -> input)
+    /// <summary>Falls back to another result when the source result fails.</summary>
+    /// <example>
+    /// <code>
+    /// let result = Error "boom"
+    /// result |> Result.orElse (Ok 5) // Ok 5
+    /// </code>
+    /// </example>
+    let orElse (fallback: Result<'value, 'error>) (result: Result<'value, 'error>) : Result<'value, 'error> =
+        orElseWith (fun _ -> fallback) result
 
     /// <summary>Returns <c>Ok ()</c> when the condition is true, or the supplied error when it is false.</summary>
-    let inline checkOr (failure: 'error) (condition: bool) : Result<unit, 'error> =
+    /// <remarks>The condition is already computed and stands alone, so there is no subject value to preserve on
+    /// success. Use <c>okIf</c>/<c>failIf</c> instead when the value under test should flow through.</remarks>
+    let inline requireTrue (failure: 'error) (condition: bool) : Result<unit, 'error> =
         if condition then Ok () else Error failure
 
-    /// <summary>Keeps the input value when the predicate is true, or returns the supplied error.</summary>
-    let inline keepIf (predicate: 'input -> bool) (failure: 'error) (input: 'input) : Result<'input, 'error> =
-        if predicate input then Ok input else Error failure
+    /// <summary>Keeps the input value when the predicate holds, or returns the supplied error.</summary>
+    /// <remarks>Mirrors <c>Option.filter</c>: predicate first, subject piped last. The error is attached
+    /// separately with <c>orError</c> so this stays a pure filter, same shape as its <c>Option</c> counterpart.</remarks>
+    let inline okIf (predicate: 'input -> bool) (input: 'input) : Result<'input, unit> =
+        if predicate input then Ok input else Error ()
 
-    /// <summary>Replaces a unit error with the supplied typed error.</summary>
-    let inline withError (failure: 'error) (result: Result<'value, unit>) : Result<'value, 'error> =
-        result |> mapError (fun () -> failure)
+    /// <summary>Keeps the input value when the predicate does not hold, or returns the supplied error.</summary>
+    /// <remarks>The inverse of <c>okIf</c>: fails when the predicate is true, succeeds otherwise.</remarks>
+    let inline failIf (predicate: 'input -> bool) (input: 'input) : Result<'input, unit> =
+        if predicate input then Error () else Ok input
+
+    /// <summary>Replaces whatever error a result carries with the supplied typed error. <c>Ok</c> passes through unchanged.</summary>
+    /// <remarks>The natural follow-up to <c>okIf</c>/<c>failIf</c>, and to any <c>Check</c> call whose
+    /// <c>CheckFailure list</c> should become a domain error: <c>value |> Check.String.present |> Result.orError MyError</c>.</remarks>
+    let inline orError (failure: 'error) (result: Result<'value, 'discardedError>) : Result<'value, 'error> =
+        result |> mapError (fun _ -> failure)
 
     /// <summary>Converts a .NET <c>Try*</c> tuple into a unit-error result.</summary>
     let fromTry (tryResult: bool * 'value) : Result<'value, unit> =
@@ -132,7 +137,9 @@ module Result =
 
     /// <summary>Keeps a non-null reference, or returns the supplied error.</summary>
     let notNullOr (failure: 'error) (value: 'value when 'value: null) : Result<'value, 'error> =
-        keepIf (fun value -> not (obj.ReferenceEquals(value, null))) failure value
+        value
+        |> okIf (fun value -> not (obj.ReferenceEquals(value, null)))
+        |> orError failure
 
     /// <summary>Takes the successful value from a result, or returns the supplied error.</summary>
     let okOr (failure: 'nextError) (result: Result<'value, 'error>) : Result<'value, 'nextError> =
@@ -150,64 +157,3 @@ module Result =
     let headOr (failure: 'error) (values: seq<'value>) : Result<'value, 'error> =
         use enumerator = values.GetEnumerator()
         if enumerator.MoveNext() then Ok enumerator.Current else Error failure
-
-    /// <summary>Keeps a non-null, non-empty, non-whitespace string.</summary>
-    let notBlank value : Result<string, CheckFailure list> =
-        guard Check.String.present value
-
-    /// <summary>Keeps a string whose length lies between the supplied inclusive bounds.</summary>
-    let length minimum maximum value : Result<string, CheckFailure list> =
-        guard (Check.String.lengthBetween minimum maximum) value
-
-    /// <summary>Keeps a string whose length is at least the supplied minimum.</summary>
-    let minLength minimum value : Result<string, CheckFailure list> =
-        guard (Check.String.minLength minimum) value
-
-    /// <summary>Keeps a string whose length is at most the supplied maximum.</summary>
-    let maxLength maximum value : Result<string, CheckFailure list> =
-        guard (Check.String.maxLength maximum) value
-
-    /// <summary>Keeps a string whose length equals the supplied expected length.</summary>
-    let exactLength expected value : Result<string, CheckFailure list> =
-        guard (Check.String.exactLength expected) value
-
-    /// <summary>Keeps a value between the supplied inclusive bounds.</summary>
-    let inline range minimum maximum value =
-        guard (Check.Number.between minimum maximum) value
-
-    /// <summary>Keeps a value greater than the supplied exclusive lower bound.</summary>
-    let inline greaterThan minimum value =
-        guard (Check.Number.greaterThan minimum) value
-
-    /// <summary>Keeps a value less than the supplied exclusive upper bound.</summary>
-    let inline lessThan maximum value =
-        guard (Check.Number.lessThan maximum) value
-
-    /// <summary>Keeps a value greater than or equal to the supplied lower bound.</summary>
-    let inline atLeast minimum value =
-        guard (Check.Number.atLeast minimum) value
-
-    /// <summary>Keeps a value less than or equal to the supplied upper bound.</summary>
-    let inline atMost maximum value =
-        guard (Check.Number.atMost maximum) value
-
-    /// <summary>Takes the only item from a sequence.</summary>
-    let single (values: seq<'value>) : Result<'value, CardinalityFailure> =
-        match cardinalityAtMostTwo values with
-        | 1, value -> Ok value
-        | count, _ -> Error(ExpectedSingle count)
-
-    /// <summary>Takes zero or one item from a sequence.</summary>
-    let atMostOne (values: seq<'value>) : Result<'value option, CardinalityFailure> =
-        match cardinalityAtMostTwo values with
-        | 0, _ -> Ok None
-        | 1, value -> Ok(Some value)
-        | count, _ -> Error(ExpectedAtMostOne count)
-
-    /// <summary>Keeps a sequence that contains at least one item.</summary>
-    let atLeastOne (values: seq<'value>) : Result<seq<'value>, CheckFailure list> =
-        guard Check.Seq.notEmpty values
-
-    /// <summary>Keeps a sequence that contains more than one item.</summary>
-    let moreThanOne (values: seq<'value>) : Result<seq<'value>, CheckFailure list> =
-        guard (Check.Seq.minCount 2) values

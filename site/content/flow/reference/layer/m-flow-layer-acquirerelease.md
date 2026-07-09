@@ -18,7 +18,7 @@ Acquires a resource and registers its release with the layer scope.
 | Name | Type | Description |
 | --- | --- | --- |
 | `acquire` | <code><span><a href="t-flow-layer.md">Layer</a>&lt;<span>'input,&#32;'error,&#32;'resource</span>&gt;</span></code> | The layer that acquires the resource. |
-| `release` | <code><span>'resource&#32;->&#32;<a href="https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken">CancellationToken</a>&#32;->&#32;<a href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.task">Task</a></span></code> | The release action to run when the layer scope closes. |
+| `release` | <code><span>'resource&#32;->&#32;<a href="/reference/Axial/axial-flow-platform-finalizer.html">Finalizer</a></span></code> | The release action to run when the layer scope closes. |
 
 ## Returns
 

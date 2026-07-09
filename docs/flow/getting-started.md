@@ -41,8 +41,8 @@ type UserError = | NameTooShort
 
 let validateName (name: string) : Result<string, UserError> =
     name
-    |> Result.minLength 3
-    |> Result.mapError (fun _ -> NameTooShort)
+    |> Check.minLength 3
+    |> Result.orError NameTooShort
 
 let greetUser (id: int) : Flow<UserError, string> =
     flow {

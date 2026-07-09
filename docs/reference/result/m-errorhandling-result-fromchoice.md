@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Result.fromChoice"
 linkTitle: "fromChoice"
-weight: 2206
+weight: 2205
 ---
 
 Converts an F# <code>Choice</code> into a result.

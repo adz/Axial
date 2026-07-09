@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling..result"
 linkTitle: "result { }"
-weight: 2600
+weight: 2500
 ---
 
 The fail-fast <code>result { }</code> computation expression.

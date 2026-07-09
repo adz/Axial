@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.CheckFailure"
 linkTitle: "CheckFailure"
-weight: 1001
+weight: 1000
 type: docs
 ---
 

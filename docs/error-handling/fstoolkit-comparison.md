@@ -39,7 +39,7 @@ If you use these FsToolkit patterns, here is how they correspond to Axial:
 
 | FsToolkit.ErrorHandling | Axial |
 | --- | --- |
-| [Result]({{< relref "/reference/result/" >}}).requireTrue | `Result.checkOr error condition` |
+| [Result]({{< relref "/reference/result/" >}}).requireTrue | `Result.requireTrue error condition` (same name) |
 | [Result]({{< relref "/reference/result/" >}}).requireSome | `opt |> Result.someOr error` |
 | `asyncResult { }` | `flow {}` |
 | `taskResult { }` | `flow {}` |

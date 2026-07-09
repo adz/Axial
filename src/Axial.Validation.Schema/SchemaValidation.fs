@@ -220,7 +220,7 @@ module SchemaConstraintCheck =
                 if isNull value then
                     Error [ CheckFailure.Required ]
                 elif value.Trim() = value then
-                    Ok()
+                    Ok value
                 else
                     Error [ CheckFailure.InvalidFormat "trimmed" ])
         | "pattern" -> tryArgument<string> "pattern" constraint' |> Option.map Check.String.matches
@@ -240,35 +240,35 @@ module SchemaConstraintCheck =
     let private betweenCheck minimum maximum : Check<'value> =
         fun value ->
             if value >= minimum && value <= maximum then
-                Ok ()
+                Ok value
             else
                 Error [ CheckFailure.OutOfRange(CheckRangeExpectation.Between(string minimum, string maximum), Some(string value)) ]
 
     let private greaterThanCheck minimum : Check<'value> =
         fun value ->
             if value > minimum then
-                Ok ()
+                Ok value
             else
                 Error [ CheckFailure.OutOfRange(CheckRangeExpectation.GreaterThan(string minimum), Some(string value)) ]
 
     let private lessThanCheck maximum : Check<'value> =
         fun value ->
             if value < maximum then
-                Ok ()
+                Ok value
             else
                 Error [ CheckFailure.OutOfRange(CheckRangeExpectation.LessThan(string maximum), Some(string value)) ]
 
     let private atLeastCheck minimum : Check<'value> =
         fun value ->
             if value >= minimum then
-                Ok ()
+                Ok value
             else
                 Error [ CheckFailure.OutOfRange(CheckRangeExpectation.AtLeast(string minimum), Some(string value)) ]
 
     let private atMostCheck maximum : Check<'value> =
         fun value ->
             if value <= maximum then
-                Ok ()
+                Ok value
             else
                 Error [ CheckFailure.OutOfRange(CheckRangeExpectation.AtMost(string maximum), Some(string value)) ]
 
@@ -381,7 +381,7 @@ module ValueSchemaCheck =
             nullArg (nameof schema)
 
         let inspect = Value.inspectUnderlying<'value, 'primitive> schema
-        fun value -> check (inspect value)
+        fun value -> check (inspect value) |> Result.map (fun _ -> value)
 
     /// <summary>
     /// Lowers the text-meaning constraint metadata carried by every layer of a value schema into one executable check
@@ -470,7 +470,7 @@ module Validation =
 
     let private runCheck constraints check value =
         match check value with
-        | Ok () -> Ok value
+        | Ok _ -> Ok value
         | Error failures -> failures |> SchemaCheckFailure.toSchemaErrors constraints |> Error
 
     let private checkPrimitive kind constraints value =

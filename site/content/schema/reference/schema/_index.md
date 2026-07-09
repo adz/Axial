@@ -28,6 +28,7 @@ This page shows the core `Schema<'model>`, `ValueSchema<'value>`, and `Field<'mo
 - [`Schema.Value.dateTime`](./p-schema-value-datetime.md): Describes an instant-like date and time represented as <a href="https://learn.microsoft.com/dotnet/api/system.datetimeoffset">DateTimeOffset</a>.
 - [`Schema.Value.guid`](./p-schema-value-guid.md): Describes a globally unique identifier represented as <a href="https://learn.microsoft.com/dotnet/api/system.guid">Guid</a>.
 - [`Schema.Value.manyOf`](./m-schema-value-manyof.md): Describes a collection of values from an already built item value schema.
+- [`Schema.Value.optionOf`](./m-schema-value-optionof.md): Describes an optional value so <code>&#39;field option</code> models are schema-describable.
 - [`Schema.Value.union`](./m-schema-value-union.md):
  Describes a tagged union value using explicit cases and object input with discriminator and payload fields.
 

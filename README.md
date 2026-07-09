@@ -63,8 +63,8 @@ type RegistrationError =
 
 let validateEmail (email: string) : Result<string, RegistrationError> =
     email
-    |> Result.notBlank
-    |> Result.mapError (fun _ -> EmailMissing)
+    |> Check.present
+    |> Result.orError EmailMissing
 ```
 
 Use the same validation logic directly inside a task-oriented workflow:
@@ -123,7 +123,7 @@ dotnet run --project examples/Axial.ReadmeExample/Axial.ReadmeExample.fsproj
 let readTextFile (path: string) : Flow<ReadmeEnv, FileReadError, string> =
     flow {
         // In production, map access and path exceptions separately at the boundary.
-        do! File.Exists path |> Result.checkOr (NotFound path)
+        do! File.Exists path |> Result.requireTrue (NotFound path)
 
         // Wrap in ColdTask for later execution
         return! ColdTask(fun ct -> File.ReadAllTextAsync(path, ct))

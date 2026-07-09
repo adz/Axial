@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Collection.sequenceResult"
 linkTitle: "sequenceResult"
-weight: 2501
+weight: 2401
 ---
 
 Turns a sequence of results into one fail-fast result containing all successes.

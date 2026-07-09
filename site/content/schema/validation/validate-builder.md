@@ -20,8 +20,8 @@ type RegError = NameRequired | EmailRequired
 
 let validateRegistration input =
     validate {
-        let! name = input.Name |> Result.notBlank |> Result.mapError (fun () -> NameRequired)
-        and! email = input.Email |> Result.notBlank |> Result.mapError (fun () -> EmailRequired)
+        let! name = input.Name |> Check.present |> Result.orError NameRequired
+        and! email = input.Email |> Check.present |> Result.orError EmailRequired
         return { Name = name; Email = email }
     }
 
@@ -44,8 +44,8 @@ validate {
     let! input = input |> Result.notNullOr ObjectMissing
     
     // These run only if input was not null, but they run independently of each other
-    let! name = input.Name |> Result.notBlank |> Result.mapError (fun _ -> NameRequired)
-    and! email = input.Email |> Result.notBlank |> Result.mapError (fun _ -> EmailRequired)
+    let! name = input.Name |> Check.present |> Result.orError NameRequired
+    and! email = input.Email |> Check.present |> Result.orError EmailRequired
     
     return { Name = name; Email = email }
 }
@@ -69,7 +69,7 @@ let validateCustomer customer =
     validate.key "customer" {
         let! name = 
             validate.name "Name" {
-                return! customer.Name |> Result.notBlank |> Result.mapError (fun () -> "Required")
+                return! customer.Name |> Check.present |> Result.orError "Required"
             }
         return name
     }

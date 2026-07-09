@@ -22,7 +22,7 @@ type RequestEnv =
 
 let validateName (name: string) : Result<string, string> =
     name
-    |> Result.notBlank
+    |> Check.String.present
     |> Result.mapError (fun _ -> "name is required")
 
 let loadUser : Flow<RequestEnv, string, User> =

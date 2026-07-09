@@ -21,5 +21,5 @@ type: docs
  Top-level <code>Check.*</code> helpers return structured results, not booleans. Direct modules such as
  <code>Check.String</code>, <code>Check.Number</code>, <code>Check.Seq</code>, <code>Check.Option</code>, <code>Check.ValueOption</code>,
  <code>Check.Nullable</code>, and <code>Check.Result</code> contain the type-specific implementations. Top-level helpers such
- as <code>lengthBetween</code>, <code>between</code>, and <code>countBetween</code> are aliases for common single-target checks, while
- <code>present</code>, <code>empty</code>, and <code>notEmpty</code> are the small type-directed facade.
+ as <code>lengthBetween</code>, <code>between</code>, and <code>countBetween</code> forward to those single implementations, while
+ <code>present</code>, <code>empty</code>, and <code>notEmpty</code> are the type-directed facade that dispatches across all of them.

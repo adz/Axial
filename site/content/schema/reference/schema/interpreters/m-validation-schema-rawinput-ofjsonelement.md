@@ -36,4 +36,4 @@ Builds raw input from a <a href="https://learn.microsoft.com/dotnet/api/system.t
  The adapter is available on .NET 8+ targets where <code>System.Text.Json</code> ships in-box, keeping the package
  dependency-free and Fable-safe on other targets. Fable and .NET Standard callers can adapt JSON-shaped data
  through <a href="/reference/Axial/axial-validation-schema-rawinputmodule.html#ofJsonLikeValue">RawInput.ofJsonLikeValue</a> instead.
- </p>
+ </p><p class='fsdocs-para'>netstandard2.1: not available.</p>

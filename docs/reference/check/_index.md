@@ -3,7 +3,7 @@ title: "Check"
 weight: 70
 ---
 
-This page shows the `Check` surface for reusable, path-free value constraints. `Check.*` helpers return `Result<unit, CheckFailure list>` and can be composed with `Check.all`, `Check.any`, `Check.not`, and `Check.mapFailure`. Use `Predicate.*` helpers when a local branch needs a raw boolean, and use `Result.require` or `Result.guard` when a `Check<'value>` should become a fail-fast result that preserves the checked value.
+This page shows the `Check` surface for reusable, path-free value constraints. `Check.*` helpers return `Result<'value, CheckFailure list>`: a passing check hands back the same value unchanged, so it pipes directly into the next step. They compose with `Check.all`, `Check.any`, `Check.not`, and `Check.mapFailure`. Use `Predicate.*` helpers when a local branch needs a raw boolean instead of a structured result. `Axial.ErrorHandling.CheckDSL` opens the deduplicated root names unqualified for use inside a validation module; `not`, `contains`, `distinct`, `all`, `any`, `length`, and `between` stay reachable only as `Check.___` there, since they shadow FSharp.Core names.
 
 ## Core types
 
@@ -26,7 +26,7 @@ This page shows the `Check` surface for reusable, path-free value constraints. `
 
 ## Top-level executable checks
 
-- [`ErrorHandling.Check.present`](./m-errorhandling-check-present.md): Runs the type-directed presence check for an already parsed optional, nullable, or text value.
+- [`ErrorHandling.Check.present`](./m-errorhandling-check-present.md): Runs the type-directed presence check for an already parsed optional, nullable, text, or sequence-shaped value.
 - [`ErrorHandling.Check.empty`](./m-errorhandling-check-empty.md):  Runs the type-directed empty check for an already parsed optional, nullable, text, or supported sequence-shaped value.
 - [`ErrorHandling.Check.notEmpty`](./m-errorhandling-check-notempty.md):  Runs the type-directed non-empty check for an already parsed optional, nullable, text, or supported sequence-shaped value.
 - [`ErrorHandling.Check.length`](./m-errorhandling-check-length.md): Returns a string check requiring exactly the supplied length.

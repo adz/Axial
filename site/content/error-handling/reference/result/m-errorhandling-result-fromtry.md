@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Result.fromTry"
 linkTitle: "fromTry"
-weight: 2205
+weight: 2204
 type: docs
 ---
 

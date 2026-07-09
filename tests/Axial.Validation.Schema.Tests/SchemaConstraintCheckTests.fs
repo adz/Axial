@@ -20,7 +20,7 @@ module SchemaConstraintCheckTests =
                   SchemaConstraint.notEqualTo "root@example.com"
                   SchemaConstraint.oneOf [ "ada@example.com"; "grace@example.com" ] ]
 
-        test <@ check "ada@example.com" = Ok () @>
+        test <@ check "ada@example.com" = Ok "ada@example.com" @>
         test <@
             check "" =
                 Error
@@ -44,7 +44,7 @@ module SchemaConstraintCheckTests =
                   SchemaConstraint.atMost 17
                   SchemaConstraint.notEqualTo 15 ]
 
-        test <@ check 16 = Ok () @>
+        test <@ check 16 = Ok 16 @>
         test <@
             check 10 =
                 Error
@@ -56,22 +56,22 @@ module SchemaConstraintCheckTests =
 
     [<Fact>]
     let ``zero-relative schema constraints lower to executable Check programs`` () =
-        test <@ SchemaConstraintCheck.ordered<int> [ SchemaConstraint.positive<int> () ] 1 = Ok () @>
+        test <@ SchemaConstraintCheck.ordered<int> [ SchemaConstraint.positive<int> () ] 1 = Ok 1 @>
         test <@
             SchemaConstraintCheck.ordered<int> [ SchemaConstraint.positive<int> () ] 0 =
                 Error [ OutOfRange(CheckRangeExpectation.GreaterThan "0", Some "0") ]
         @>
-        test <@ SchemaConstraintCheck.ordered<int> [ SchemaConstraint.nonNegative<int> () ] 0 = Ok () @>
+        test <@ SchemaConstraintCheck.ordered<int> [ SchemaConstraint.nonNegative<int> () ] 0 = Ok 0 @>
         test <@
             SchemaConstraintCheck.ordered<int> [ SchemaConstraint.nonNegative<int> () ] -1 =
                 Error [ OutOfRange(CheckRangeExpectation.AtLeast "0", Some "-1") ]
         @>
-        test <@ SchemaConstraintCheck.ordered<int> [ SchemaConstraint.negative<int> () ] -1 = Ok () @>
+        test <@ SchemaConstraintCheck.ordered<int> [ SchemaConstraint.negative<int> () ] -1 = Ok -1 @>
         test <@
             SchemaConstraintCheck.ordered<int> [ SchemaConstraint.negative<int> () ] 0 =
                 Error [ OutOfRange(CheckRangeExpectation.LessThan "0", Some "0") ]
         @>
-        test <@ SchemaConstraintCheck.ordered<int> [ SchemaConstraint.nonPositive<int> () ] 0 = Ok () @>
+        test <@ SchemaConstraintCheck.ordered<int> [ SchemaConstraint.nonPositive<int> () ] 0 = Ok 0 @>
         test <@
             SchemaConstraintCheck.ordered<int> [ SchemaConstraint.nonPositive<int> () ] 1 =
                 Error [ OutOfRange(CheckRangeExpectation.AtMost "0", Some "1") ]
@@ -85,7 +85,7 @@ module SchemaConstraintCheckTests =
                   SchemaConstraint.maxCount 3
                   SchemaConstraint.distinct ]
 
-        test <@ check [ 1; 2 ] = Ok () @>
+        test <@ check [ 1; 2 ] = Ok [ 1; 2 ] @>
         test <@
             check [ 1; 1; 2; 3 ] =
                 Error
@@ -98,7 +98,7 @@ module SchemaConstraintCheckTests =
     let ``contains schema constraint lowers to an executable Check program`` () =
         let check = SchemaConstraintCheck.sequence<int> [ SchemaConstraint.contains 2 ]
 
-        test <@ check [ 1; 2; 3 ] = Ok () @>
+        test <@ check [ 1; 2; 3 ] = Ok [ 1; 2; 3 ] @>
         test <@ check [ 1; 3 ] = Error [ NotOneOf "2" ] @>
 
     [<Fact>]
@@ -107,7 +107,7 @@ module SchemaConstraintCheckTests =
             SchemaConstraint.createWithArguments "maxLength" [ "maximum", box "not-an-int" ]
 
         test <@ SchemaConstraintCheck.tryText customMaxLengthWithWrongArgumentType |> Option.isNone @>
-        test <@ SchemaConstraintCheck.text [ SchemaConstraint.optional ] "anything" = Ok () @>
+        test <@ SchemaConstraintCheck.text [ SchemaConstraint.optional ] "anything" = Ok "anything" @>
         raises<ArgumentNullException> <@ SchemaConstraintCheck.tryText null |> ignore @>
         raises<ArgumentNullException> <@ SchemaConstraintCheck.text null |> ignore @>
         raises<ArgumentNullException> <@ SchemaConstraintCheck.text [ null ] |> ignore @>

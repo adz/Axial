@@ -17,8 +17,7 @@ The example starts with facts about values, turns those facts into typed `Result
 ```fsharp
 open Axial
 
-Check.String.present "Ada"              // Ok ()
-Result.notBlank "Ada"                   // Ok "Ada"
+Check.present "Ada"              // Ok "Ada"
 Result.someOr "missing" (Some "Ada")    // Ok "Ada"
 ```
 
@@ -26,11 +25,11 @@ Use the helper shape that matches the success value you need:
 
 | Need | Shape | Example |
 | --- | --- | --- |
-| Only prove a fact | `Check.x` | `name |> Check.String.present` |
-| Keep the original input | `Result.x` | `name |> Result.notBlank` |
+| A reusable, named check (keeps the input) | `Check.x` | `name |> Check.present` |
 | Extract an inner value | `Result.x` | `maybeUser |> Result.someOr MissingUser` |
 
-These simple checks fail with `unit`. That means the check failed, but no application error has been chosen yet.
+`Check` calls fail with `CheckFailure list`, not `unit` — the check failed for a structured, describable reason, but
+no application error has been chosen yet.
 
 ## Start From The Core Result Shape
 
@@ -53,31 +52,35 @@ Once you have a result, use `Result.map`, `Result.bind`, and `Result.mapError` t
 
 ## Attach Domain Errors
 
-Use value-preserving `Result` helpers when success should carry the input.
+`Check` already keeps the input on success, so attaching a domain error is a single `Result.orError` away.
 
 ```fsharp
+open Axial.Refined
+
 type RegistrationError =
     | NameMissing
     | EmailMissing
-    | PrimaryIdInvalid of CardinalityFailure
+    | PrimaryIdInvalid of RefinementError
 
 let validateName name : Result<string, RegistrationError> =
     name
-    |> Result.notBlank
-    |> Result.mapError (fun _ -> NameMissing)
+    |> Check.present
+    |> Result.orError NameMissing
 
 let validateEmail email : Result<string, RegistrationError> =
     email
-    |> Result.notBlank
-    |> Result.mapError (fun _ -> EmailMissing)
+    |> Check.present
+    |> Result.orError EmailMissing
 ```
 
 Some helpers already carry useful diagnostics. Keep those diagnostics until you map them deliberately.
+`Refine.exactlyOne`/`Refine.atMostOne` extract a single element from a sequence — cardinality is a collection-level
+structural fact, not a value-level `Check`, so it lives in `Refine` alongside the other structural refinements.
 
 ```fsharp
 let primaryId ids : Result<int, RegistrationError> =
     ids
-    |> Result.single
+    |> Refine.exactlyOne
     |> Result.mapError PrimaryIdInvalid
 ```
 
@@ -110,8 +113,8 @@ This is still ordinary pure code. It can be unit-tested without a runtime, envir
 
 Choose the smallest shape that matches the problem:
 
-- `Check` when you are still proving a fact
-- `Result` when one failure should stop the workflow
+- `Check` for a reusable, named constraint — it already keeps the input value on success
+- `Result` for one-off conditions, extraction, and stopping the workflow at the first failure
 
 That keeps validation code independent from `Flow`, so it can move into an application boundary later.
 

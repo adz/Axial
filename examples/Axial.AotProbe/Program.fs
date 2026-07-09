@@ -116,28 +116,28 @@ module Rule =
     let whenNotBlank (error: 'error) (field: Field<'root, string>) : Rule<'root, 'error> =
         fun root ->
             field.Get root
-            |> Result.notBlank
+            |> Check.String.present
             |> Result.mapError (fun _ -> error)
             |> lift field.Path root
 
     let whenMinLength (minimum: int) (error: 'error) (field: Field<'root, string>) : Rule<'root, 'error> =
         fun root ->
             field.Get root
-            |> Result.minLength minimum
+            |> Check.String.minLength minimum
             |> Result.mapError (fun _ -> error)
             |> lift field.Path root
 
     let whenMaxLength (maximum: int) (error: 'error) (field: Field<'root, string>) : Rule<'root, 'error> =
         fun root ->
             field.Get root
-            |> Result.maxLength maximum
+            |> Check.String.maxLength maximum
             |> Result.mapError (fun _ -> error)
             |> lift field.Path root
 
     let whenPositive (error: 'error) (field: Field<'root, int>) : Rule<'root, 'error> =
         fun root ->
             field.Get root
-            |> Result.greaterThan 0
+            |> Check.Number.greaterThan 0
             |> Result.mapError (fun _ -> error)
             |> lift field.Path root
 

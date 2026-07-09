@@ -17,7 +17,7 @@ type: docs
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `finalizer` | <code><span><a href="https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken">CancellationToken</a>&#32;->&#32;<a href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.task">Task</a></span></code> |  |
+| `finalizer` | <code><a href="/reference/Axial/axial-flow-platform-finalizer.html">Finalizer</a></code> |  |
 
 ## Returns
 

@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Result.toValueOption"
 linkTitle: "toValueOption"
-weight: 2208
+weight: 2207
 ---
 
 Drops the error channel and returns <code>ValueSome</code> for success.

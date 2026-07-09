@@ -22,18 +22,18 @@ type RegistrationError =
 
 ## Reuse Result Checks
 
-Use `Result` helpers to build typed field results, then let `validate {}` lift them into `Validation`.
+Use `Check` to build typed field results, then let `validate {}` lift them into `Validation`.
 
 ```fsharp
 let validateName name : Result<string, RegistrationError> =
     name
-    |> Result.notBlank
-    |> Result.mapError (fun () -> NameMissing)
+    |> Check.present
+    |> Result.orError NameMissing
 
 let validateEmail email : Result<string, RegistrationError> =
     email
-    |> Result.notBlank
-    |> Result.mapError (fun () -> EmailMissing)
+    |> Check.present
+    |> Result.orError EmailMissing
 ```
 
 ## Accumulate With validate

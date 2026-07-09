@@ -69,6 +69,8 @@ This page shows the `Axial.Refined` surface for turning untrusted boundary data 
 - [`Refined.Collection.distinctList`](./m-refined-collection-distinctlist.md): Builds a list that contains no duplicate items.
 - [`Refined.Collection.boundedList`](./m-refined-collection-boundedlist.md): Builds a list whose count is within an inclusive range.
 - [`Refined.Collection.boundedArray`](./m-refined-collection-boundedarray.md): Builds an array whose count is within an inclusive range.
+- [`Refined.Collection.exactlyOne`](./m-refined-collection-exactlyone.md): Extracts the only item from a sequence.
+- [`Refined.Collection.atMostOne`](./m-refined-collection-atmostone.md): Extracts zero or one item from a sequence.
 
 ## Temporal
 
@@ -129,6 +131,8 @@ This page shows the `Axial.Refined` surface for turning untrusted boundary data 
 - [`Refined.Refine.boundedArray`](./m-refined-refine-boundedarray.md): Builds a bounded array from a sequence.
 - [`Refined.Refine.dateTimeOffsetRange`](./m-refined-refine-datetimeoffsetrange.md): Builds a date and time range where <code>Start &lt;= End</code>.
 - [`Refined.Refine.dateOnlyRange`](./m-refined-refine-dateonlyrange.md): Builds a date-only range where <code>Start &lt;= End</code>.
+- [`Refined.Refine.exactlyOne`](./m-refined-refine-exactlyone.md): Extracts the only item from a sequence.
+- [`Refined.Refine.atMostOne`](./m-refined-refine-atmostone.md): Extracts zero or one item from a sequence.
 
 ## Builder
 

@@ -20,15 +20,16 @@ type UserError = | NameTooShort
 
 let validateName (name: string) : Result<string, UserError> =
     name 
-    |> Result.minLength 3
-    |> Result.mapError (fun _ -> NameTooShort)
+    |> Check.minLength 3
+    |> Result.orError NameTooShort
 
 // This is a standard F# Result.
 let result = validateName "Ad" // Error NameTooShort
 ```
 
-`Result.minLength` is one of many focused helpers; [Checks](./checks/) shows reusable structured constraints, and the
-[Result Builder](./result-builder/) composes fail-fast steps with `result {}`.
+`Check.minLength` is one of many reusable named checks — it already keeps the input value on success, so no
+separate `Result` wrapper is needed; [Checks](./checks/) shows the rest, and the [Result Builder](./result-builder/)
+composes fail-fast steps with `result {}`.
 
 ## Where To Go Next
 

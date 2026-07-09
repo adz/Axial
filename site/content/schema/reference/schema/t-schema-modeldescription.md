@@ -18,3 +18,4 @@ Describes a built model schema as an ordered list of field descriptions.
 | Field | Description |
 | --- | --- |
 | `Fields` | The field descriptions in declared order. |
+| `Description` | The description metadata, when one was attached with <code>Schema.describe</code>. |

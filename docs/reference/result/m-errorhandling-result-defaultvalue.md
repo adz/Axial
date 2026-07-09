@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Result.defaultValue"
 linkTitle: "defaultValue"
-weight: 2209
+weight: 2208
 ---
 
 Returns the success value or the supplied fallback value.

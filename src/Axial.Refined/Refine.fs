@@ -294,7 +294,7 @@ type DateOnlyRange =
 module private Checked =
     let withCheck (target: string) (check: Check<'raw>) (construct: 'raw -> 'refined) (value: 'raw) : Result<'refined, RefinementError> =
         match check value with
-        | Ok() -> Ok(construct value)
+        | Ok value -> Ok(construct value)
         | Error failures -> Error(RefinementError.CheckFailed(target, failures))
 
     let withChecks (target: string) (checks: Check<'raw> list) (construct: 'raw -> 'refined) (value: 'raw) : Result<'refined, RefinementError> =
@@ -361,7 +361,7 @@ module Text =
         fun value ->
             if isNull value then Error [ Required ]
             elif value.Trim() <> value then Error [ InvalidFormat "trimmed" ]
-            else Ok()
+            else Ok value
 
     let private slugPattern = "^[a-z0-9]+(-[a-z0-9]+)*$"
 
@@ -478,6 +478,20 @@ module Collection =
                 (Check.Seq.countBetween minCount maxCount)
                 (fun values -> BoundedArray(Seq.toArray values, minCount, maxCount))
                 values)
+
+    /// <summary>Extracts the only item from a sequence.</summary>
+    /// <remarks>
+    /// Cardinality is a collection-level structural fact, not a value-level constraint on a single element, so this
+    /// lives here rather than as a <c>Check</c>: <c>Check.Seq.count 1</c> proves the fact and keeps the sequence,
+    /// while this extracts the element itself, the same distinction <see cref="M:Axial.Refined.Refine.withCheck" />
+    /// draws between proving and constructing.
+    /// </remarks>
+    let exactlyOne (values: seq<'value>) : Result<'value, RefinementError> =
+        Checked.withCheck "ExactlyOne" (Check.Seq.count 1) Seq.head values
+
+    /// <summary>Extracts zero or one item from a sequence.</summary>
+    let atMostOne (values: seq<'value>) : Result<'value option, RefinementError> =
+        Checked.withCheck "AtMostOne" (Check.Seq.maxCount 1) Seq.tryHead values
 
 /// <summary>Operations over <see cref="NonEmptyList{value}" />.</summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -643,6 +657,14 @@ module Refine =
     /// <summary>Builds a date and time range where <c>Start &lt;= End</c>.</summary>
     let dateTimeOffsetRange start finish =
         Temporal.dateTimeOffsetRange start finish
+
+    /// <summary>Extracts the only item from a sequence.</summary>
+    let exactlyOne values =
+        Collection.exactlyOne values
+
+    /// <summary>Extracts zero or one item from a sequence.</summary>
+    let atMostOne values =
+        Collection.atMostOne values
 
 #if NET8_0_OR_GREATER
     /// <summary>Builds a date-only range where <c>Start &lt;= End</c>.</summary>

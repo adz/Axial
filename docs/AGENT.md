@@ -50,15 +50,15 @@ For JSON, pick the path by trust: untrusted bodies go `RawInput.ofJsonDocument` 
 `System.Text.Json` converters for schema-described models.
 
 ### 1. Handling Failures
-Use `Check` for executable value constraints, `Predicate` for local boolean tests, and `Result` for fail-fast values. `Check.*` helpers return `Result<unit, CheckFailure list>`; `Result.guard`, named `Result.*` guards, and extraction helpers preserve values or change the success shape.
+Use `Check` for executable value constraints, `Predicate` for local boolean tests, and `Result` for fail-fast values. `Check.*` helpers return `Result<'value, CheckFailure list>` — a passing check hands back the same value unchanged, so it pipes directly into the next step with no separate value-preserving wrapper needed. `Result.requireTrue`/`okIf`/`failIf`/`orError` and extraction helpers cover the generic, non-Check cases.
 
 | Source Type | Idiomatic Pattern |
 | :--- | :--- |
-| `bool` | `Result.checkOr e condition` |
-| `string` value | `name |> Result.notBlank |> Result.mapError (fun _ -> e)` |
+| `bool` | `Result.requireTrue e condition` |
+| `string` value | `name |> Check.present |> Result.orError e` |
 | `option<'T>` | `opt |> Result.someOr e` |
 | `voption<'T>` | `vopt |> Result.valueSomeOr e` |
-| check + value | `value |> Result.guard check |> Result.mapError mapper` |
+| check + value | `value |> check |> Result.mapError mapper` |
 
 ### 2. Binding Error-Adapted Sources
 Use `Bind.error` inside `flow {}` when the source fails with option/value-option absence or a `unit` error, and you need to assign the flow's domain error at the bind site.
@@ -69,7 +69,7 @@ Use `Bind.error` inside `flow {}` when the source fails with option/value-option
 | `voption<'T>` | `let! x = vopt |> Bind.error e` |
 | `Async<Option<'T>>` | `let! x = aOpt |> Bind.error e` |
 | `Async<voption<'T>>` | `let! x = aVOpt |> Bind.error e` |
-| `bool` predicate | `do! Result.checkOr () cond |> Bind.error e` |
+| `bool` predicate | `do! Result.requireTrue () cond |> Bind.error e` |
 | `Result<'T, unit>` | `let! x = check |> Bind.error e` |
 | `Flow<'Env, unit, 'T>` | `let! x = flow |> Bind.error e` |
 | `Task<Option<'T>>` | `let! x = tOpt |> Bind.error e` |
@@ -86,7 +86,7 @@ Use `Bind.mapError` inside `flow {}` when the source already carries a meaningfu
 | `Task<Result<'T, 'E1>>` | `let! x = tResult |> Bind.mapError mapper` |
 
 ### 4. Same-Family Fallbacks
-Use `orElse` and `orElseWith` for alternate computations in the same flow family.
+Use `orElse` and `orElseWith` for alternate computations in the same family: `Result.orElse`/`Result.orElseWith`, `Validation.orElse`/`Validation.orElseWith`, and `Flow.orElse`/`Flow.orElseWith` all share this shape — `orElseWith` takes a function from the source error to a fallback of the same type; `orElse` is the eager version that ignores the error and always uses the same fallback.
 
 ### 5. Flow Signatures
 
@@ -125,7 +125,6 @@ Translate common patterns from other libraries into idiomatic Axial.
 | If you use... | Do this in Axial |
 | :--- | :--- |
 | `requireSome` | `let! x = opt |> Bind.error e` in `flow {}` or `opt |> Result.someOr e` in pure code |
-| `requireTrue` | `Result.checkOr e cond` |
 | `Reader.ask` | `let! env = Flow.env` |
 | `Reader.asks` | `let! value = Flow.read projector` |
 | `ZIO.service` | `let! service = Service<IService>.get()` |
@@ -145,7 +144,7 @@ Translate common patterns from other libraries into idiomatic Axial.
 
 Later types can bind earlier types directly within their computation expressions.
 
-1. **Check**: Executable value constraints (`'T -> Result<unit, CheckFailure list>`). Use `Predicate` for raw boolean tests.
+1. **Check**: Executable value constraints (`'T -> Result<'T, CheckFailure list>`; a passing check keeps the value). Use `Predicate` for raw boolean tests.
 2. **Result**: Fail-fast typed errors (`Result<'T, 'E>`).
 3. **Refined**: Parsing and structural refined values.
 4. **Validation**: Accumulating diagnostics.

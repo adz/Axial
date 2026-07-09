@@ -89,7 +89,7 @@ module RefinedCatalogSchemaTests =
         let check = ValueSchemaCheck.text schema
         let value = Refine.boundedString 2 4 "Ada" |> Result.defaultWith (fun error -> failwithf "%A" error)
 
-        test <@ check value = Ok () @>
+        test <@ check value = Ok value @>
 
     [<Fact>]
     let ``remaining scalar catalog schemas report the same failures as standalone refinement`` () =

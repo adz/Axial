@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Result.toOption"
 linkTitle: "toOption"
-weight: 2207
+weight: 2206
 type: docs
 ---
 

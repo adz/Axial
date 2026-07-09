@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Collection.traverseResult"
 linkTitle: "traverseResult"
-weight: 2500
+weight: 2400
 type: docs
 ---
 

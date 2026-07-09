@@ -109,7 +109,7 @@ module Input =
 
     let private runCheck constraints check value =
         match check value with
-        | Ok () -> Ok value
+        | Ok _ -> Ok value
         | Error failures -> failures |> SchemaCheckFailure.toSchemaErrors constraints |> Error
 
     let private checkPrimitive kind constraints value =

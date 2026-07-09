@@ -5,7 +5,7 @@ weight: 1014
 type: docs
 ---
 
-A list whose length is within a caller-supplied inclusive range.
+A list whose count is within a caller-supplied inclusive range.
 
 ## Signature
 

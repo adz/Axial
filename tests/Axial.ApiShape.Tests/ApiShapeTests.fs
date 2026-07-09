@@ -171,7 +171,7 @@ module ApiShapeTests =
         let rec loop (returnType: Type) =
             if returnType.IsGenericType && returnType.GetGenericTypeDefinition() = checkResultType then
                 let arguments = returnType.GetGenericArguments()
-                arguments[0] = typeof<unit> && arguments[1] = typeof<CheckFailure list>
+                arguments[1] = typeof<CheckFailure list>
             elif returnType.IsGenericType && returnType.GetGenericTypeDefinition() = checkFunctionType then
                 returnType.GetGenericArguments()[1] |> loop
             else
@@ -200,7 +200,7 @@ module ApiShapeTests =
 
         let arguments = checkType.GetGenericArguments()
         test <@ arguments[0] = typeof<'value> @>
-        test <@ arguments[1] = typeof<Result<unit, CheckFailure list>> @>
+        test <@ arguments[1] = typeof<Result<'value, CheckFailure list>> @>
 
     let private assertMethodsReturnCheckResult methodNames (targetType: Type) =
         let methods = targetType |> publicStaticMethods
@@ -1277,10 +1277,10 @@ module ApiShapeTests =
         let checkProgram : Check<string> =
             fun value ->
                 if String.IsNullOrWhiteSpace value then Error [ Required ]
-                else Ok ()
+                else Ok value
 
-        let checkFunction : string -> Result<unit, CheckFailure list> = checkProgram
-        test <@ checkFunction "Ada" = Ok () @>
+        let checkFunction : string -> Result<string, CheckFailure list> = checkProgram
+        test <@ checkFunction "Ada" = Ok "Ada" @>
         test <@ checkFunction "" = Error [ Required ] @>
 
         typeof<CheckFailure>
@@ -1595,11 +1595,12 @@ module ApiShapeTests =
               "map"
               "bind"
               "mapError"
-              "require"
-              "guard"
-              "checkOr"
-              "keepIf"
-              "withError"
+              "orElse"
+              "orElseWith"
+              "requireTrue"
+              "okIf"
+              "failIf"
+              "orError"
               "fromTry"
               "fromChoice"
               "toOption"
@@ -1613,21 +1614,7 @@ module ApiShapeTests =
               "notNullOr"
               "okOr"
               "errorOr"
-              "headOr"
-              "notBlank"
-              "length"
-              "minLength"
-              "maxLength"
-              "exactLength"
-              "range"
-              "greaterThan"
-              "lessThan"
-              "atLeast"
-              "atMost"
-              "single"
-              "atMostOne"
-              "atLeastOne"
-              "moreThanOne" ]
+              "headOr" ]
 
         let parseMembers =
             moduleTypeFromAssembly "Axial.Refined" "Axial.Refined.Parse"
@@ -1663,7 +1650,7 @@ module ApiShapeTests =
             |> publicStaticMemberNames
 
         refineMembers
-        |> assertContainsAll [ "nonBlankString"; "positiveInt"; "nonEmptyList" ]
+        |> assertContainsAll [ "nonBlankString"; "positiveInt"; "nonEmptyList"; "exactlyOne"; "atMostOne" ]
 
         moduleType typeof<Flow<unit, unit, unit>> "Axial.Flow.Bind"
         |> publicStaticMemberNames

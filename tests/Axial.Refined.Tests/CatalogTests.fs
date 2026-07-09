@@ -68,6 +68,15 @@ module CatalogTests =
         test <@ Refine.boundedArray 1 2 [ 1; 2; 3 ] = Error(CheckFailed("BoundedArray", [ CheckFailure.InvalidCount(CountBetween(1, 2), Some 3) ])) @>
 
     [<Fact>]
+    let ``Cardinality extraction reuses CheckFailed instead of a bespoke error type`` () =
+        test <@ Refine.exactlyOne [ 5 ] = Ok 5 @>
+        test <@ Refine.exactlyOne ([]: int list) = Error(CheckFailed("ExactlyOne", [ CheckFailure.InvalidCount(ExactCount 1, Some 0) ])) @>
+        test <@ Refine.exactlyOne [ 1; 2 ] = Error(CheckFailed("ExactlyOne", [ CheckFailure.InvalidCount(ExactCount 1, Some 2) ])) @>
+        test <@ Refine.atMostOne ([]: int list) = Ok None @>
+        test <@ Refine.atMostOne [ 5 ] = Ok(Some 5) @>
+        test <@ Refine.atMostOne [ 1; 2 ] = Error(CheckFailed("AtMostOne", [ CheckFailure.InvalidCount(MaximumCount 1, Some 2) ])) @>
+
+    [<Fact>]
     let ``Re-certifying helpers preserve or re-check invariants`` () =
         let positive = Refine.positiveInt 2 |> unwrap
         let name = Refine.nonBlankString "Ada" |> unwrap

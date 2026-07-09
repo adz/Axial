@@ -28,6 +28,6 @@ Generates a compact JSON Schema document from a built model schema&#39;s metadat
 ## Examples
 
 <pre class="fssnip highlighted"><code lang="fsharp"> <span class="k">let</span> <span data-fsdocs-tip="fs1" data-fsdocs-tip-unique="1" class="id">document</span> <span class="o">=</span> <span class="id">JsonSchema</span><span class="pn">.</span><span class="id">generate</span> <span class="id">customerSchema</span>
- <span class="c">// {&quot;type&quot;:&quot;object&quot;,&quot;properties&quot;:{...},&quot;required&quot;:[...]}</span>
+ <span class="c">// {&quot;$schema&quot;:&quot;https://json-schema.org/draft/2020-12/schema&quot;,&quot;type&quot;:&quot;object&quot;,&quot;properties&quot;:{...},&quot;required&quot;:[...]}</span>
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">val document: obj</div>

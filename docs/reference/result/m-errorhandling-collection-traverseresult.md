@@ -1,7 +1,7 @@
 ---
 title: "ErrorHandling.Collection.traverseResult"
 linkTitle: "traverseResult"
-weight: 2500
+weight: 2400
 ---
 
 Maps each value with a result-returning function, stopping at the first error.
