@@ -1,7 +1,6 @@
 module RefinedValueSchemaExample
 
 open Axial.Schema
-open Axial.Validation.Schema
 
 /// <summary>An email address refined over Axial's text primitive, carrying the well-known email format.</summary>
 type Email = private Email of string

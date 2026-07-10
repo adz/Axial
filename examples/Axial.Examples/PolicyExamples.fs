@@ -7,7 +7,6 @@ open Axial.Flow
 open Axial.Refined
 open Axial.Schema
 open Axial.Validation
-open Axial.Validation.Schema
 
 type Quantity = private Quantity of int
 
@@ -60,7 +59,7 @@ let parseOrderLine : Policy<OrderEnv, OrderError, RawInput, OrderLine> =
 let validateOrderLine : Policy<OrderEnv, OrderError, OrderLine, OrderLine> =
     Policy.lift
         (fun line ->
-            Axial.Validation.Schema.Validation.validate orderLineSchema line
+            Axial.Schema.Validation.validate orderLineSchema line
             |> Axial.Validation.Validation.toResult)
         (Diagnostics.flatten >> LineRejected)
 

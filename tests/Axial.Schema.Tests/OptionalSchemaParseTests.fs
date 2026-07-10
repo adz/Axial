@@ -3,7 +3,6 @@ namespace Axial.Tests
 open Axial.ErrorHandling
 open Axial.Schema
 open Axial.Validation
-open Axial.Validation.Schema
 open Swensen.Unquote
 open Xunit
 
@@ -90,7 +89,7 @@ module OptionalSchemaParseTests =
         let schema = profileSchema ()
         let valid = { Name = "Ada"; Nickname = None; Age = None }
 
-        let validation = Axial.Validation.Schema.Validation.validate schema valid
+        let validation = Axial.Schema.Validation.validate schema valid
 
         test <@ Axial.Validation.Validation.toResult validation = Ok valid @>
 
@@ -99,7 +98,7 @@ module OptionalSchemaParseTests =
         let schema = profileSchema ()
         let invalid = { Name = "Ada"; Nickname = Some "A"; Age = None }
 
-        let validation = Axial.Validation.Schema.Validation.validate schema invalid
+        let validation = Axial.Schema.Validation.validate schema invalid
 
         test
             <@

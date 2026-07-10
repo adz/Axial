@@ -4,7 +4,6 @@ open Axial.ErrorHandling
 open Axial.Refined
 open Axial.Schema
 open Axial.Validation
-open Axial.Validation.Schema
 open Swensen.Unquote
 open Xunit
 

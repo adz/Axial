@@ -1,4 +1,4 @@
-namespace Axial.Validation.Schema
+namespace Axial.Schema
 
 open System
 open Axial.ErrorHandling
@@ -163,7 +163,7 @@ module SchemaError =
 [<RequireQualifiedAccess>]
 module SchemaValidation =
     /// <summary>Identifies the schema validation integration package.</summary>
-    let packageName = "Axial.Validation.Schema"
+    let packageName = "Axial.Schema"
 
 /// <summary>Functions for lowering portable schema constraint metadata to executable value checks.</summary>
 /// <remarks>
@@ -382,7 +382,7 @@ module internal SchemaCheckFailure =
 /// <para>
 /// The metadata lowerers gather constraint metadata from every refinement layer with
 /// <see cref="M:Axial.Schema.Value.allConstraints``1" /> and lower it through
-/// <see cref="T:Axial.Validation.Schema.SchemaConstraintCheck" />, so raw-layer and refined-layer constraints run as
+/// <see cref="T:Axial.Schema.SchemaConstraintCheck" />, so raw-layer and refined-layer constraints run as
 /// one check program.
 /// </para>
 /// </remarks>

@@ -1,4 +1,4 @@
-namespace Axial.Validation.Schema
+namespace Axial.Schema
 
 open System
 open System.Globalization

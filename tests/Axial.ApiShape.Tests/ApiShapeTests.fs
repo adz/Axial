@@ -395,11 +395,11 @@ module ApiShapeTests =
         |> publicStaticMemberNames
         |> assertContainsAll [ "model"; "value"; "field" ]
 
-        moduleTypeFromAssembly "Axial.Schema" "Axial.Validation.Schema.Input"
+        moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.Input"
         |> publicStaticMemberNames
         |> assertContainsAll [ "parse"; "parseWith"; "constructorErrorAt" ]
 
-        moduleTypeFromAssembly "Axial.Schema" "Axial.Validation.Schema.RawInputModule"
+        moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.RawInputModule"
         |> publicStaticMemberNames
         |> assertContainsAll
             [ "ofMap"
@@ -414,7 +414,7 @@ module ApiShapeTests =
               "redisplayAt"
               "redisplayPath" ]
 
-        moduleTypeFromAssembly "Axial.Schema" "Axial.Validation.Schema.ParsedInput"
+        moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.ParsedInput"
         |> publicStaticMemberNames
         |> assertContainsAll [ "mapErrors" ]
 
@@ -435,7 +435,7 @@ module ApiShapeTests =
     [<Fact>]
     let ``leaf packages stay independent of each other`` () =
         // Axial consolidated to two leaf packages: Axial.ErrorHandling (no internal Axial dependencies)
-        // and Axial.Schema (which absorbed Axial.Refined and Axial.Validation.Schema, and legitimately
+        // and Axial.Schema (which absorbed Axial.Refined and Axial.Schema, and legitimately
         // depends on Axial.ErrorHandling for refinement/check plumbing). Axial.Flow stays independent of both.
         let leafPackages = [ "Axial.Flow"; "Axial.ErrorHandling"; "Axial.Schema" ]
 
@@ -468,7 +468,7 @@ module ApiShapeTests =
     [<Fact>]
     let ``schema validation interpreters live alongside schema in the consolidated schema package`` () =
         // Axial.ErrorHandling absorbed Axial.Validation, and Axial.Schema absorbed Axial.Refined and
-        // Axial.Validation.Schema. The old cross-package "stays out of core validation" boundary no
+        // Axial.Schema. The old cross-package "stays out of core validation" boundary no
         // longer exists as a package boundary, but the schema-specific interpreter modules should
         // still not leak into the (schema-independent) Axial.ErrorHandling assembly.
         let errorHandlingAssembly = typeof<Validation<int, string>>.Assembly
@@ -477,29 +477,29 @@ module ApiShapeTests =
 
         test <@ errorHandlingAssembly.GetName().Name = "Axial.ErrorHandling" @>
 
-        assertModuleAbsentFromAssembly "Axial.ErrorHandling" "Axial.Validation.Schema.SchemaValidation"
-        assertModuleAbsentFromAssembly "Axial.ErrorHandling" "Axial.Validation.Schema.SchemaConstraintCheck"
-        assertModuleAbsentFromAssembly "Axial.ErrorHandling" "Axial.Validation.Schema.ValueSchemaCheck"
-        assertModuleAbsentFromAssembly "Axial.ErrorHandling" "Axial.Validation.Schema.Input"
+        assertModuleAbsentFromAssembly "Axial.ErrorHandling" "Axial.Schema.SchemaValidation"
+        assertModuleAbsentFromAssembly "Axial.ErrorHandling" "Axial.Schema.SchemaConstraintCheck"
+        assertModuleAbsentFromAssembly "Axial.ErrorHandling" "Axial.Schema.ValueSchemaCheck"
+        assertModuleAbsentFromAssembly "Axial.ErrorHandling" "Axial.Schema.Input"
 
         test <@ schemaAssembly.GetName().Name = "Axial.Schema" @>
 
         schemaReferences
         |> assertContainsAll [ "Axial.ErrorHandling" ]
 
-        moduleTypeFromAssembly "Axial.Schema" "Axial.Validation.Schema.SchemaValidation"
+        moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.SchemaValidation"
         |> publicStaticMemberNames
         |> assertContainsAll [ "packageName" ]
 
-        moduleTypeFromAssembly "Axial.Schema" "Axial.Validation.Schema.SchemaConstraintCheck"
+        moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.SchemaConstraintCheck"
         |> publicStaticMemberNames
         |> assertContainsAll [ "tryText"; "text"; "tryOrdered"; "ordered"; "trySequence"; "sequence" ]
 
-        moduleTypeFromAssembly "Axial.Schema" "Axial.Validation.Schema.ValueSchemaCheck"
+        moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.ValueSchemaCheck"
         |> publicStaticMemberNames
         |> assertContainsAll [ "fromUnderlying"; "text"; "ordered" ]
 
-        moduleTypeFromAssembly "Axial.Schema" "Axial.Validation.Schema.Rules"
+        moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.Rules"
         |> publicStaticMemberNames
         |> assertContainsAll
             [ "empty"
@@ -539,7 +539,7 @@ module ApiShapeTests =
             assertTypeAbsentFromAssembly "Axial.ErrorHandling" $"Axial.Validation.{typeName}"
 
         let ruleSetType =
-            assertTypePresentInAssembly "Axial.Schema" "Axial.Validation.Schema.RuleSet`2"
+            assertTypePresentInAssembly "Axial.Schema" "Axial.Schema.RuleSet`2"
 
         let publicRuleSetConstructors =
             ruleSetType.GetConstructors(BindingFlags.Public ||| BindingFlags.Instance)

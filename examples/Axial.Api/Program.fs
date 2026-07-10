@@ -20,7 +20,6 @@ open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
 open Axial.Schema
 open Axial.Codec
-open Axial.Validation.Schema
 
 // ---------------------------------------------------------------------------
 // Domain model: parse, don't validate. Email can only be constructed by the

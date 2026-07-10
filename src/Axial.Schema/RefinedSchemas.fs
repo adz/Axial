@@ -1,4 +1,4 @@
-namespace Axial.Validation.Schema
+namespace Axial.Schema
 
 open Axial.Refined
 open Axial.Schema
@@ -11,7 +11,7 @@ module private RefinedSchemaConstruction =
 
 /// <summary>Ready-made schema values for the built-in <c>Axial.Refined</c> catalog.</summary>
 /// <remarks>
-/// <para>The catalog lives in <c>Axial.Validation.Schema</c> so <c>Axial.Refined</c> can remain independent of
+/// <para>The catalog lives in <c>Axial.Schema</c> so <c>Axial.Refined</c> can remain independent of
 /// <c>Axial.Schema</c>. Each schema carries the same constraint meaning as the matching standalone <c>Refine</c>
 /// constructor before constructing the refined value.</para>
 /// </remarks>

@@ -5,7 +5,6 @@ open Axial.ErrorHandling
 open System
 open Axial.Schema
 open Axial.Validation
-open Axial.Validation.Schema
 open Swensen.Unquote
 open Xunit
 

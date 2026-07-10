@@ -5,7 +5,6 @@ open Axial.ErrorHandling
 open System
 open Axial.Schema
 open Axial.Validation
-open Axial.Validation.Schema
 open Swensen.Unquote
 open Xunit
 
@@ -134,14 +133,14 @@ module SchemaValidationTests =
     let ``validate returns the original model when schema constraints pass`` () =
         let model = { Email = "ada@example.com"; Age = 42 }
 
-        let validation = Axial.Validation.Schema.Validation.validate schema model
+        let validation = Axial.Schema.Validation.validate schema model
 
         test <@ Axial.Validation.Validation.toResult validation = Ok model @>
 
     [<Fact>]
     let ``validate reports diagnostics for existing model values that violate schema constraints`` () =
         let validation =
-            Axial.Validation.Schema.Validation.validate schema { Email = ""; Age = 10 }
+            Axial.Schema.Validation.validate schema { Email = ""; Age = 10 }
 
         test
             <@
@@ -165,7 +164,7 @@ module SchemaValidationTests =
     let ``validate reports diagnostics for imported hand-built values that bypass input parsing`` () =
         let imported = { Email = "not-an-email"; Age = 16 }
 
-        let validation = Axial.Validation.Schema.Validation.validate schema imported
+        let validation = Axial.Schema.Validation.validate schema imported
 
         test
             <@
@@ -199,7 +198,7 @@ module SchemaValidationTests =
             |> Schema.build
 
         let validation =
-            Axial.Validation.Schema.Validation.validate messageSchema { Email = ""; Age = 10 }
+            Axial.Schema.Validation.validate messageSchema { Email = ""; Age = 10 }
 
         test
             <@
@@ -233,7 +232,7 @@ module SchemaValidationTests =
             |> Schema.build
 
         let validation =
-            Axial.Validation.Schema.Validation.validate
+            Axial.Schema.Validation.validate
                 swappedSchema
                 { Primary = "primary-value"
                   Secondary = "wrong-secondary" }
@@ -266,7 +265,7 @@ module SchemaValidationTests =
             |> Schema.build
 
         let validation =
-            Axial.Validation.Schema.Validation.validate
+            Axial.Schema.Validation.validate
                 customerSchema
                 { Name = "Ada"
                   Address = { Street = "1 Main Street"; City = "" } }
@@ -299,7 +298,7 @@ module SchemaValidationTests =
                   { Kind = "phone"; Value = "" } ] }
 
         let validation =
-            Axial.Validation.Schema.Validation.validate contactBookSchema model
+            Axial.Schema.Validation.validate contactBookSchema model
 
         test
             <@
@@ -344,7 +343,7 @@ module SchemaValidationTests =
                   { Kind = "sms"; Value = "+61 400 000 000" } ] }
 
         let validation =
-            Axial.Validation.Schema.Validation.validate contactBookSchema model
+            Axial.Schema.Validation.validate contactBookSchema model
 
         test
             <@
@@ -367,7 +366,7 @@ module SchemaValidationTests =
             |> Schema.build
 
         let validation =
-            Axial.Validation.Schema.Validation.validate schema { Values = [ "fsharp"; "" ] }
+            Axial.Schema.Validation.validate schema { Values = [ "fsharp"; "" ] }
 
         test
             <@
@@ -397,7 +396,7 @@ module SchemaValidationTests =
             )
 
         let parsed = Input.parse schema raw
-        let validation = Axial.Validation.Schema.Validation.validate schema parsed.Model
+        let validation = Axial.Schema.Validation.validate schema parsed.Model
 
         test <@ parsed.IsValid @>
         test <@ Axial.Validation.Validation.toResult validation = Ok parsed.Model @>
@@ -407,7 +406,7 @@ module SchemaValidationTests =
         let builder = generatedBuilder schema
         let generated = builder.Build [| box "ada@example.com"; box 42 |]
 
-        let validation = Axial.Validation.Schema.Validation.validate schema generated
+        let validation = Axial.Schema.Validation.validate schema generated
 
         test <@ generated = { Email = "ada@example.com"; Age = 42 } @>
         test <@ Axial.Validation.Validation.toResult validation = Ok generated @>
@@ -417,7 +416,7 @@ module SchemaValidationTests =
         let builder = generatedBuilder schema
         let generated = builder.Build [| box ""; box 17 |]
 
-        let validation = Axial.Validation.Schema.Validation.validate schema generated
+        let validation = Axial.Schema.Validation.validate schema generated
 
         test
             <@
@@ -453,7 +452,7 @@ module SchemaValidationTests =
             )
 
         let parsed = Input.parse rangeSchema raw
-        let validation = Axial.Validation.Schema.Validation.validate rangeSchema parsed.Model
+        let validation = Axial.Schema.Validation.validate rangeSchema parsed.Model
 
         test <@ parsed.IsValid @>
         test <@ Axial.Validation.Validation.toResult validation = Ok parsed.Model @>

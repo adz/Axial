@@ -1,4 +1,4 @@
-namespace Axial.Validation.Schema
+namespace Axial.Schema
 
 open Axial.Validation
 
@@ -8,8 +8,8 @@ open Axial.Validation
 /// <remarks>
 /// <para>
 /// <c>ParsedInput</c> is the stable handoff value for schema input parsing. Successful parses carry the trusted model in
-/// <see cref="P:Axial.Validation.Schema.ParsedInput`2.Result" />; failed parses carry path-aware diagnostics while the
-/// original <see cref="T:Axial.Validation.Schema.RawInput" /> remains available for redisplay and error lookup.
+/// <see cref="P:Axial.Schema.ParsedInput`2.Result" />; failed parses carry path-aware diagnostics while the
+/// original <see cref="T:Axial.Schema.RawInput" /> remains available for redisplay and error lookup.
 /// </para>
 /// </remarks>
 type ParsedInput<'model, 'error> =
@@ -72,7 +72,7 @@ module ParsedInput =
     /// </remarks>
     /// <param name="mapper">A function of type <c>'error -> 'nextError</c>.</param>
     /// <param name="parsed">The parsed input to map.</param>
-    /// <returns>A <see cref="T:Axial.Validation.Schema.ParsedInput`2" /> with the same input and model, and mapped errors.</returns>
+    /// <returns>A <see cref="T:Axial.Schema.ParsedInput`2" /> with the same input and model, and mapped errors.</returns>
     /// <example>
     /// <code>
     /// let domainParsed = parsed |> ParsedInput.mapErrors SignupError.ofSchemaError

@@ -1,4 +1,4 @@
-namespace Axial.Validation.Schema
+namespace Axial.Schema
 
 open System
 open System.Collections.Specialized
@@ -243,7 +243,7 @@ type RawInput =
     /// <summary>A named collection of raw input fields.</summary>
     | Object of fields: Map<string, RawInput>
 
-/// <summary>A small dependency-free value model for adapting JSON-shaped data into <see cref="T:Axial.Validation.Schema.RawInput" />.</summary>
+/// <summary>A small dependency-free value model for adapting JSON-shaped data into <see cref="T:Axial.Schema.RawInput" />.</summary>
 [<RequireQualifiedAccess>]
 type JsonLikeValue =
     /// <summary>A JSON null value.</summary>
@@ -500,7 +500,7 @@ module RawInput =
     /// <para>
     /// The adapter is available on .NET 8+ targets where <c>System.Text.Json</c> ships in-box, keeping the package
     /// dependency-free and Fable-safe on other targets. Fable and .NET Standard callers can adapt JSON-shaped data
-    /// through <see cref="M:Axial.Validation.Schema.RawInputModule.ofJsonLikeValue" /> instead.
+    /// through <see cref="M:Axial.Schema.RawInputModule.ofJsonLikeValue" /> instead.
     /// </para>
     /// <para>netstandard2.1: not available.</para>
     /// </remarks>
