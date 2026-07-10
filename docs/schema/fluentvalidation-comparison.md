@@ -41,7 +41,7 @@ let customerSchema =
     |> Schema.fieldWith [ SchemaConstraint.between 13 120 ] "age" _.Age Value.int
     |> Schema.build
 
-match (Input.parse customerSchema raw).Result with
+match (Model.parse customerSchema raw).Result with
 | Ok customer -> customer          // every Customer in the program passed the boundary
 | Error diagnostics -> reject diagnostics
 ```
@@ -62,8 +62,8 @@ errors. With FluentValidation, each of those is a separate artifact to keep in s
 - Validation of objects you genuinely do not construct (third-party types, EF entities mid-flight).
 - Teams that want C#-first fluent syntax rather than F# declarations.
 
-Axial's equivalent of "validate an existing object" exists — `Validation.validate schema model` (the
-`Axial.Validation.Schema` module, not [`Axial.Validation.Validation`]({{< relref "/validation/" >}}) from Error
+Axial's equivalent of "validate an existing object" exists — `Model.reconstruct schema model` (the
+`Axial.Schema` module, not [`Axial.Validation.Validation`]({{< relref "/validation/" >}}) from Error
 Handling, which it's built on) re-checks a trusted model, and `Rules` add contextual requirements — but they run
 against schema metadata, not a second rulebook.
 

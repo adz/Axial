@@ -7,9 +7,9 @@ open Axial.Refined
 open Axial.Schema
 open Axial.Validation
 
-/// <summary>Functions for parsing raw input through a schema.</summary>
+/// <summary>Functions that produce or verify a trusted model, using a schema as authority.</summary>
 [<RequireQualifiedAccess>]
-module Input =
+module Model =
     /// <summary>Options that customize how raw input is parsed through a schema.</summary>
     type Options =
         internal
@@ -26,7 +26,7 @@ module Input =
     /// </summary>
     /// <remarks>
     /// The path is interpreted relative to the model whose constructor failed. For a root model,
-    /// <c>Input.constructorErrorAt "end"</c> attaches the error to <c>end</c>. For a nested model under
+    /// <c>Model.constructorErrorAt "end"</c> attaches the error to <c>end</c>. For a nested model under
     /// <c>range</c>, the same option attaches the error to <c>range.end</c>.
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="path" /> is null.</exception>
@@ -490,3 +490,42 @@ module Input =
             nullArg (nameof configure)
 
         parseWith configure.Invoke schema input
+
+    /// <summary>
+    /// Rebuilds trust in an existing model value that did not come through <c>Model.parse</c> or <c>Model.construct</c>
+    /// — for example a value deserialized directly into the model type, or read back from storage.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Runs every field's schema constraints through the same executable checks <c>Model.parse</c> uses, then
+    /// re-invokes the model's own constructor with the checked field values. This gives <c>Model.reconstruct</c> the
+    /// same trust strength as <c>Model.parse</c> and <c>Model.construct</c> — including cross-field constructor
+    /// invariants such as <c>DateRange.Create</c>'s "start must not be after end" — rather than only re-checking
+    /// individual field constraints.
+    /// </para>
+    /// <para>
+    /// Prefer <c>Model.construct</c> when you have the model's field values but not yet an assembled model; reach
+    /// for <c>Model.reconstruct</c> only for values that already arrived as a fully-built model from outside schema-
+    /// guarded construction.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
+    /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="schema" /> is not a built model schema.</exception>
+    let reconstruct (schema: Schema<'model>) (model: 'model) : Result<'model, Diagnostics<SchemaError>> =
+        if isNull (box schema) then
+            nullArg (nameof schema)
+
+        match schema.Definition with
+        | PendingDefinition -> invalidArg (nameof schema) "Expected a built model schema."
+        | ModelDefinition modelSchema ->
+            match ModelFieldCheck.check schema model |> Axial.Validation.Validation.toResult with
+            | Error diagnostics -> Error diagnostics
+            | Ok checkedModel ->
+                let arguments =
+                    modelSchema.Fields
+                    |> List.map (fun field -> field.Getter checkedModel)
+                    |> List.toArray
+
+                match modelSchema.Constructor.TryApplyTrusted arguments with
+                | Ok reconstructed -> Ok reconstructed
+                | Error message -> errorAtConstructor defaults [] message

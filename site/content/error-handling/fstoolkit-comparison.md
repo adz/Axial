@@ -27,7 +27,7 @@ re-implemented per consumer.
 
 Axial provides a single, scalable progression:
 
-[Check]({{< relref "/error-handling/reference/check/" >}}) -> [Result]({{< relref "/error-handling/reference/result/" >}}) -> [Refined]({{< relref "/schema/reference/refined/" >}}) -> [Validation]({{< relref "/error-handling/reference/validation/" >}}) -> [Flow]({{< relref "/flow/reference/flow/" >}})
+[Check]({{< relref "/error-handling/reference/check/" >}}) -> [Result]({{< relref "/error-handling/reference/result/" >}}) -> [Refined]({{< relref "/error-handling/reference/refined/" >}}) -> [Validation]({{< relref "/error-handling/reference/validation/" >}}) -> [Flow]({{< relref "/flow/reference/flow/" >}})
 
 In Axial, the environment and runtime concerns are baked into the computation, allowing you to
 write orchestration logic that remains agnostic of whether the underlying work is sync or async

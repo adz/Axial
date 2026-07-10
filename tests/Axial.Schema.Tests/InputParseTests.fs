@@ -60,7 +60,7 @@ module InputParseTests =
                       "age", RawInput.Scalar "42" ]
             )
 
-        let parsed = Input.parse schema raw
+        let parsed = Model.parse schema raw
 
         test <@ parsed.Input = raw @>
         test <@ parsed.IsValid @>
@@ -76,7 +76,7 @@ module InputParseTests =
                       "age", RawInput.Scalar "not-an-int" ]
             )
 
-        let parsed = Input.parse schema raw
+        let parsed = Model.parse schema raw
 
         test <@ parsed.Input = raw @>
         test <@ not parsed.IsValid @>
@@ -93,7 +93,7 @@ module InputParseTests =
                       "age", RawInput.Scalar "not-an-int" ]
             )
 
-        let parsed = Input.parse schema raw
+        let parsed = Model.parse schema raw
 
         test <@ parsed.Input = raw @>
         test <@ not parsed.IsValid @>
@@ -123,7 +123,7 @@ module InputParseTests =
         let raw =
             RawInput.Object(Map.ofList [ "email", RawInput.Missing; "age", RawInput.Scalar "10" ])
 
-        let parsed = Input.parse messageSchema raw
+        let parsed = Model.parse messageSchema raw
 
         test <@ not parsed.IsValid @>
         test <@ parsed.ErrorsFor "email" = [ SchemaError.Custom("required", Some "Email is required.") ] @>
@@ -138,14 +138,14 @@ module InputParseTests =
                       "age", RawInput.Scalar "42" ]
             )
 
-        let parsed = Input.parse schema raw
+        let parsed = Model.parse schema raw
 
         test <@ parsed.ErrorsFor "email" = [ SchemaError.Required ] @>
 
     [<Fact>]
     let ``parse reports root diagnostic when model input is not an object`` () =
         let raw = RawInput.Scalar "ada@example.com"
-        let parsed = Input.parse schema raw
+        let parsed = Model.parse schema raw
 
         test <@ parsed.Input = raw @>
         test <@ not parsed.IsValid @>
@@ -155,7 +155,7 @@ module InputParseTests =
     let ``required reports missing raw field as required`` () =
         let raw = RawInput.Object(Map.ofList [ "age", RawInput.Scalar "42" ])
 
-        let parsed = Input.parse schema raw
+        let parsed = Model.parse schema raw
 
         test <@ parsed.Input = raw @>
         test <@ not parsed.IsValid @>
@@ -171,7 +171,7 @@ module InputParseTests =
                       "age", RawInput.Scalar "not-an-int" ]
             )
 
-        let parsed = Input.parse schema raw
+        let parsed = Model.parse schema raw
 
         test <@ not parsed.IsValid @>
         test <@ parsed.Input = raw @>
@@ -185,7 +185,7 @@ module InputParseTests =
                       "age", RawInput.Scalar "42" ]
             )
 
-        let parsed = Input.parse schema raw
+        let parsed = Model.parse schema raw
 
         test <@ not parsed.IsValid @>
         test <@ parsed.ErrorsFor "email" = [ SchemaError.Required ] @>
@@ -199,7 +199,7 @@ module InputParseTests =
                       "age", RawInput.Scalar "42" ]
             )
 
-        let parsed = Input.parse schema raw
+        let parsed = Model.parse schema raw
 
         test <@ not parsed.IsValid @>
         test <@ parsed.ErrorsFor "email" = [ SchemaError.Required ] @>
@@ -223,7 +223,7 @@ module InputParseTests =
                       "age", RawInput.Scalar "not-an-int" ]
             )
 
-        let parsed = Input.parse countingSchema raw
+        let parsed = Model.parse countingSchema raw
 
         test <@ not parsed.IsValid @>
         test <@ constructorCalls = 0 @>
@@ -247,7 +247,7 @@ module InputParseTests =
                       "age", RawInput.Scalar "42" ]
             )
 
-        let parsed = Input.parse countingSchema raw
+        let parsed = Model.parse countingSchema raw
 
         test <@ parsed.IsValid @>
         test <@ constructorCalls = 1 @>
@@ -265,7 +265,7 @@ module InputParseTests =
                     [ "age", RawInput.Scalar "21" ]
             )
 
-        let parsed = Input.parse ageSchema raw
+        let parsed = Model.parse ageSchema raw
 
         test <@ parsed.IsValid @>
         test <@ parsed.Model = { Age = 21 } @>
@@ -283,7 +283,7 @@ module InputParseTests =
                     [ "age", RawInput.Scalar "17" ]
             )
 
-        let parsed = Input.parse ageSchema raw
+        let parsed = Model.parse ageSchema raw
 
         test <@ not parsed.IsValid @>
         test <@ parsed.TryModel = None @>
@@ -302,7 +302,7 @@ module InputParseTests =
                     [ "age", RawInput.Scalar "17" ]
             )
 
-        let parsed = Input.parseWith (Input.constructorErrorAt "age") ageSchema raw
+        let parsed = Model.parseWith (Model.constructorErrorAt "age") ageSchema raw
 
         test <@ not parsed.IsValid @>
         test
@@ -327,7 +327,7 @@ module InputParseTests =
                     [ "age", RawInput.Scalar "-1" ]
             )
 
-        let parsed = Input.parse gatedSchema raw
+        let parsed = Model.parse gatedSchema raw
 
         test <@ not parsed.IsValid @>
         test <@ constructorCalls = 0 @>
@@ -350,7 +350,7 @@ module InputParseTests =
                     [ "age", RawInput.Scalar "17" ]
             )
 
-        let parsed = Input.parse ageSchema raw
+        let parsed = Model.parse ageSchema raw
 
         test <@ parsed.Errors = [ { Path = []; Error = SchemaError.ConstructorFailed "Adult age is required." } ] @>
 
@@ -369,7 +369,7 @@ module InputParseTests =
                       "end", RawInput.Scalar "2026-01-12" ]
             )
 
-        let parsed = Input.parse rangeSchema raw
+        let parsed = Model.parse rangeSchema raw
 
         test <@ parsed.IsValid @>
         test <@ parsed.Model.Start = DateOnly(2026, 1, 10) @>
@@ -390,7 +390,7 @@ module InputParseTests =
                       "end", RawInput.Scalar "2026-01-10" ]
             )
 
-        let parsed = Input.parse rangeSchema raw
+        let parsed = Model.parse rangeSchema raw
 
         test <@ not parsed.IsValid @>
         test <@ parsed.TryModel = None @>
@@ -411,7 +411,7 @@ module InputParseTests =
                       "end", RawInput.Scalar "2026-01-10" ]
             )
 
-        let parsed = Input.parseWith (Input.constructorErrorAt "end") rangeSchema raw
+        let parsed = Model.parseWith (Model.constructorErrorAt "end") rangeSchema raw
 
         test <@ not parsed.IsValid @>
         test
@@ -438,7 +438,7 @@ module InputParseTests =
                       "end", RawInput.Scalar "2026-01-10" ]
             )
 
-        let parsed = Input.parse rangeSchema raw
+        let parsed = Model.parse rangeSchema raw
 
         test <@ not parsed.IsValid @>
         test <@ constructorCalls = 0 @>
@@ -453,7 +453,7 @@ module InputParseTests =
                       "age", RawInput.Scalar "not-an-int" ]
             )
 
-        let parsed = Input.parse schema raw
+        let parsed = Model.parse schema raw
 
         test <@ not parsed.IsValid @>
         test <@ RawInput.redisplayPath "email" parsed.Input = "ada@example.com" @>
@@ -474,7 +474,7 @@ module InputParseTests =
                       "age", RawInput.Scalar "42" ]
             )
 
-        let parsed = Input.parse minLengthSchema raw
+        let parsed = Model.parse minLengthSchema raw
 
         test <@ not parsed.IsValid @>
         test <@ parsed.ErrorsFor "email" = [ SchemaError.InvalidLength(CheckLengthExpectation.MinimumLength 5, Some 2) ] @>
@@ -490,8 +490,8 @@ module InputParseTests =
         let rawFor fieldName =
             RawInput.Object(Map.ofList [ fieldName, RawInput.Missing; "age", RawInput.Scalar "42" ])
 
-        let shortNameParsed = Input.parse (makeSchema "email") (rawFor "email")
-        let longNameParsed = Input.parse (makeSchema "emailAddress") (rawFor "emailAddress")
+        let shortNameParsed = Model.parse (makeSchema "email") (rawFor "email")
+        let longNameParsed = Model.parse (makeSchema "emailAddress") (rawFor "emailAddress")
 
         test <@ (shortNameParsed.Errors |> List.map _.Error) = (longNameParsed.Errors |> List.map _.Error) @>
         test <@ shortNameParsed.Errors <> longNameParsed.Errors @>
@@ -511,7 +511,7 @@ module InputParseTests =
                       "age", RawInput.Scalar "   " ]
             )
 
-        let parsed = Input.parse requiredAgeSchema raw
+        let parsed = Model.parse requiredAgeSchema raw
 
         test <@ not parsed.IsValid @>
         test <@ parsed.ErrorsFor "age" = [ SchemaError.Required ] @>

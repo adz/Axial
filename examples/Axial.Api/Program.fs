@@ -239,7 +239,7 @@ let buildApp (args: string[]) =
         Func<HttpRequest, System.Threading.Tasks.Task<IResult>>(fun request ->
             task {
                 use! document = JsonDocument.ParseAsync request.Body
-                let parsed = Input.parse Signup.schema (RawInput.ofJsonDocument document)
+                let parsed = Model.parse Signup.schema (RawInput.ofJsonDocument document)
 
                 match parsed.Result with
                 | Ok signup ->
@@ -265,7 +265,7 @@ let buildApp (args: string[]) =
         Func<HttpRequest, System.Threading.Tasks.Task<IResult>>(fun request ->
             task {
                 let! form = request.ReadFormAsync()
-                let parsed = Input.parse Signup.schema (formToRawInput form)
+                let parsed = Model.parse Signup.schema (formToRawInput form)
                 return Results.Text(FormPage.render (Some parsed), "text/html")
             })
     )

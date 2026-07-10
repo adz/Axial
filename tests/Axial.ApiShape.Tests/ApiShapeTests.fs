@@ -395,9 +395,9 @@ module ApiShapeTests =
         |> publicStaticMemberNames
         |> assertContainsAll [ "model"; "value"; "field" ]
 
-        moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.Input"
+        moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.Model"
         |> publicStaticMemberNames
-        |> assertContainsAll [ "parse"; "parseWith"; "constructorErrorAt" ]
+        |> assertContainsAll [ "parse"; "parseWith"; "constructorErrorAt"; "reconstruct" ]
 
         moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.RawInputModule"
         |> publicStaticMemberNames
@@ -434,9 +434,9 @@ module ApiShapeTests =
 
     [<Fact>]
     let ``leaf packages stay independent of each other`` () =
-        // Axial consolidated to two leaf packages: Axial.ErrorHandling (no internal Axial dependencies)
-        // and Axial.Schema (which absorbed Axial.Refined and Axial.Schema, and legitimately
-        // depends on Axial.ErrorHandling for refinement/check plumbing). Axial.Flow stays independent of both.
+        // Axial consolidated to two leaf packages: Axial.ErrorHandling (which absorbed Axial.Validation and
+        // Axial.Refined, so it has no internal Axial dependencies) and Axial.Schema (which legitimately depends
+        // on Axial.ErrorHandling for Check plumbing and the Refined bridge). Axial.Flow stays independent of both.
         let leafPackages = [ "Axial.Flow"; "Axial.ErrorHandling"; "Axial.Schema" ]
 
         let allowedReferences = [ "Axial.Schema", "Axial.ErrorHandling" ]
@@ -467,10 +467,10 @@ module ApiShapeTests =
 
     [<Fact>]
     let ``schema validation interpreters live alongside schema in the consolidated schema package`` () =
-        // Axial.ErrorHandling absorbed Axial.Validation, and Axial.Schema absorbed Axial.Refined and
-        // Axial.Schema. The old cross-package "stays out of core validation" boundary no
-        // longer exists as a package boundary, but the schema-specific interpreter modules should
-        // still not leak into the (schema-independent) Axial.ErrorHandling assembly.
+        // Axial.ErrorHandling absorbed Axial.Validation and Axial.Refined. The old cross-package
+        // "stays out of core validation" boundary no longer exists as a package boundary, but the
+        // schema-specific interpreter modules should still not leak into the (schema-independent)
+        // Axial.ErrorHandling assembly.
         let errorHandlingAssembly = typeof<Validation<int, string>>.Assembly
         let schemaAssembly = Assembly.Load "Axial.Schema"
         let schemaReferences = referencedAssemblyNames schemaAssembly
@@ -480,7 +480,7 @@ module ApiShapeTests =
         assertModuleAbsentFromAssembly "Axial.ErrorHandling" "Axial.Schema.SchemaValidation"
         assertModuleAbsentFromAssembly "Axial.ErrorHandling" "Axial.Schema.SchemaConstraintCheck"
         assertModuleAbsentFromAssembly "Axial.ErrorHandling" "Axial.Schema.ValueSchemaCheck"
-        assertModuleAbsentFromAssembly "Axial.ErrorHandling" "Axial.Schema.Input"
+        assertModuleAbsentFromAssembly "Axial.ErrorHandling" "Axial.Schema.Model"
 
         test <@ schemaAssembly.GetName().Name = "Axial.Schema" @>
 
@@ -757,8 +757,8 @@ module ApiShapeTests =
         test <@ orderProperty.PropertyType = fieldOrderType @>
         test <@ getterProperty.PropertyType.GetGenericTypeDefinition() = typedefof<FSharpFunc<_, _>> @>
         test <@ schemaAssembly.GetName().Name = "Axial.Schema" @>
-        // Axial.Schema legitimately depends on Axial.ErrorHandling (it absorbed Axial.Refined, which
-        // exposes Check in its signatures) but must stay independent of Axial.Flow.
+        // Axial.Schema legitimately depends on Axial.ErrorHandling (for Check-based constraint
+        // lowering and the Axial.Refined bridge) but must stay independent of Axial.Flow.
         references
         |> assertContainsNone [ "Axial.Flow" ]
 
@@ -1619,12 +1619,12 @@ module ApiShapeTests =
               "headOr" ]
 
         let parseMembers =
-            moduleTypeFromAssembly "Axial.Schema" "Axial.Refined.Parse"
+            moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.Refined.Parse"
             |> publicStaticMemberNames
 
-        test <@ typeof<ParseError>.Assembly.GetName().Name = "Axial.Schema" @>
+        test <@ typeof<ParseError>.Assembly.GetName().Name = "Axial.ErrorHandling" @>
         assertModuleAbsentFromAssembly "Axial.ErrorHandling" "Axial.ErrorHandling.Parse"
-        assertModuleAbsentFromAssembly "Axial.ErrorHandling" "Axial.Refined.Parse"
+        assertModuleAbsentFromAssembly "Axial.Schema" "Axial.Refined.Parse"
 
         parseMembers
         |> assertContainsAll
@@ -1648,7 +1648,7 @@ module ApiShapeTests =
               "decimalOrDefault" ]
 
         let refineMembers =
-            moduleTypeFromAssembly "Axial.Schema" "Axial.Refined.Refine"
+            moduleTypeFromAssembly "Axial.ErrorHandling" "Axial.Refined.Refine"
             |> publicStaticMemberNames
 
         refineMembers

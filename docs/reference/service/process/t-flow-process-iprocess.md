@@ -4,7 +4,7 @@ linkTitle: "IProcess"
 weight: 1000
 ---
 
-Provides asynchronous access to external process execution.
+Provides asynchronous execution for typed external-process pipelines.
 
 ## Signature
 

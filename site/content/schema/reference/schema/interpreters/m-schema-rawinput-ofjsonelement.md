@@ -29,7 +29,7 @@ Builds raw input from a <a href="https://learn.microsoft.com/dotnet/api/system.t
 
 <p class='fsdocs-para'>
  This is the boundary adapter for JSON bodies parsed with <code>System.Text.Json</code>, such as ASP.NET Core request
- payloads: convert the element once, then parse it with <code>Input.parse</code> to get path-aware diagnostics or a
+ payloads: convert the element once, then parse it with <code>Model.parse</code> to get path-aware diagnostics or a
  trusted model. JSON null and undefined become <code>Missing</code>, numbers keep their exact boundary text, and
  booleans become <code>&quot;true&quot;</code>/<code>&quot;false&quot;</code> scalars.
  </p><p class='fsdocs-para'>

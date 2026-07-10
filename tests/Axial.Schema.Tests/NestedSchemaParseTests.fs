@@ -57,7 +57,7 @@ module NestedSchemaParseTests =
         let raw =
             RawInput.Object(Map.ofList [ "name", RawInput.Scalar "Ada"; "address", validAddress ])
 
-        let parsed = Input.parse customerSchema raw
+        let parsed = Model.parse customerSchema raw
 
         test <@ parsed.IsValid @>
         test <@ parsed.Model = { Name = "Ada"; Address = { Street = "1 Infinite Loop"; City = "Cupertino" } } @>
@@ -71,7 +71,7 @@ module NestedSchemaParseTests =
                       "address", RawInput.Object(Map.ofList [ "street", RawInput.Scalar "1 Infinite Loop"; "city", RawInput.Missing ]) ]
             )
 
-        let parsed = Input.parse customerSchema raw
+        let parsed = Model.parse customerSchema raw
 
         test <@ not parsed.IsValid @>
         test <@ parsed.Errors = [ { Path = [ PathSegment.Name "address"; PathSegment.Name "city" ]; Error = SchemaError.Required } ] @>
@@ -85,7 +85,7 @@ module NestedSchemaParseTests =
                       "address", RawInput.Object(Map.ofList [ "street", RawInput.Scalar "Same"; "city", RawInput.Scalar "Same" ]) ]
             )
 
-        let parsed = Input.parse verifiedCustomerSchema raw
+        let parsed = Model.parse verifiedCustomerSchema raw
 
         test <@ not parsed.IsValid @>
         test
@@ -99,7 +99,7 @@ module NestedSchemaParseTests =
         let raw =
             RawInput.Object(Map.ofList [ "name", RawInput.Scalar "Ada"; "address", RawInput.Scalar "not-an-object" ])
 
-        let parsed = Input.parse customerSchema raw
+        let parsed = Model.parse customerSchema raw
 
         test <@ not parsed.IsValid @>
         test <@ parsed.Errors = [ { Path = [ PathSegment.Name "address" ]; Error = SchemaError.ExpectedObject } ] @>
@@ -111,7 +111,7 @@ module NestedSchemaParseTests =
                 Map.ofList [ "name", RawInput.Scalar "Ada"; "address", RawInput.Many [ RawInput.Scalar "not-an-object" ] ]
             )
 
-        let parsed = Input.parse customerSchema raw
+        let parsed = Model.parse customerSchema raw
 
         test <@ not parsed.IsValid @>
         test <@ parsed.Errors = [ { Path = [ PathSegment.Name "address" ]; Error = SchemaError.ExpectedObject } ] @>
@@ -120,7 +120,7 @@ module NestedSchemaParseTests =
     let ``parse reports required when the nested raw field is missing`` () =
         let raw = RawInput.Object(Map.ofList [ "name", RawInput.Scalar "Ada" ])
 
-        let parsed = Input.parse customerSchema raw
+        let parsed = Model.parse customerSchema raw
 
         test <@ not parsed.IsValid @>
         test <@ parsed.Errors = [ { Path = [ PathSegment.Name "address" ]; Error = SchemaError.Required } ] @>
@@ -134,7 +134,7 @@ module NestedSchemaParseTests =
                       "address", RawInput.Object(Map.ofList [ "street", RawInput.Missing; "city", RawInput.Missing ]) ]
             )
 
-        let parsed = Input.parse customerSchema raw
+        let parsed = Model.parse customerSchema raw
 
         let sortedErrors =
             parsed.Errors

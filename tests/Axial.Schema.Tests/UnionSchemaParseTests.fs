@@ -53,7 +53,7 @@ module UnionSchemaParseTests =
                       ) ]
             )
 
-        let parsed = Input.parse (checkoutSchema ()) raw
+        let parsed = Model.parse (checkoutSchema ()) raw
 
         test
             <@ parsed.Result
@@ -72,7 +72,7 @@ module UnionSchemaParseTests =
                       RawInput.Object(Map.ofList [ "type", RawInput.Scalar "cash"; "value", RawInput.Scalar "ignored" ]) ]
             )
 
-        let parsed = Input.parse (checkoutSchema ()) raw
+        let parsed = Model.parse (checkoutSchema ()) raw
 
         test
             <@ parsed.Errors = [ { Path = [ PathSegment.Name "payment"; PathSegment.Name "type" ]
@@ -91,7 +91,7 @@ module UnionSchemaParseTests =
                       ) ]
             )
 
-        let parsed = Input.parse (checkoutSchema ()) raw
+        let parsed = Model.parse (checkoutSchema ()) raw
 
         test
             <@ parsed.Errors = [ { Path = [ PathSegment.Name "payment"; PathSegment.Name "value"; PathSegment.Name "number" ]
@@ -105,7 +105,7 @@ module UnionSchemaParseTests =
                     [ "payment", RawInput.Object(Map.ofList [ "type", RawInput.Scalar "invoice"; "value", RawInput.Scalar "inv-42" ]) ]
             )
 
-        let parsed = Input.parse (checkoutSchema ()) raw
+        let parsed = Model.parse (checkoutSchema ()) raw
 
         test
             <@ parsed.Result
@@ -123,8 +123,6 @@ module UnionSchemaParseTests =
                 | Ok slug -> Invoice slug
                 | Error error -> failwithf "Unexpected slug failure: %A" error }
 
-        let result =
-            Validation.validate (checkoutSchema ()) model
-            |> Validation.toResult
+        let result = Model.reconstruct (checkoutSchema ()) model
 
         test <@ result = Ok model @>

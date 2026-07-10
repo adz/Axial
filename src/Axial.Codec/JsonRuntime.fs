@@ -6,7 +6,7 @@ open System.Text
 /// <remarks>
 /// The path renders like <c>$.contacts[1].value</c>, matching the field names declared on the schema. Codec decoding
 /// is the trusted hot path: it reports the first structural failure and does not accumulate path-aware diagnostics.
-/// Use schema input parsing (<c>Input.parse</c> over <c>RawInput</c>) at untrusted boundaries where complete
+/// Use schema input parsing (<c>Model.parse</c> over <c>RawInput</c>) at untrusted boundaries where complete
 /// diagnostics matter more than throughput.
 /// </remarks>
 type JsonCodecException(path: string, detail: string, ?inner: exn) =

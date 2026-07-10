@@ -18,7 +18,7 @@ The schema declares each field once: external name, getter, and constraints.
 
 ```fsharp
 open Axial.Schema
-open Axial.Validation.Schema
+open Axial.Schema
 
 type Signup = { Email: string; Age: int }
 
@@ -48,7 +48,7 @@ let raw =
 ## Parse
 
 ```fsharp
-let parsed = Input.parse signupSchema raw
+let parsed = Model.parse signupSchema raw
 ```
 
 `parsed` is a `ParsedInput<Signup, SchemaError>`. On success `parsed.Result` is `Ok signup` and every constraint

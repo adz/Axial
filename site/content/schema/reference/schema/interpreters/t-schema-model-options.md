@@ -1,7 +1,8 @@
 ---
-title: "Schema.Input.Options"
+title: "Schema.Model.Options"
 linkTitle: "Options"
 weight: 1103
+type: docs
 ---
 
 Options that customize how raw input is parsed through a schema.

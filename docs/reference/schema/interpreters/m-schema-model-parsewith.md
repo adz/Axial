@@ -1,22 +1,22 @@
 ---
-title: "Schema.Input.parse"
-linkTitle: "parse"
-weight: 2101
-type: docs
+title: "Schema.Model.parseWith"
+linkTitle: "parseWith"
+weight: 2102
 ---
 
-Parses raw boundary input through a trusted model schema.
+Parses raw boundary input through a trusted model schema using custom input parser options.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Schema.Input.parse&#32;<span>schema&#32;input</span></span></code>
+<code><span>Schema.Model.parseWith&#32;<span>configure&#32;schema&#32;input</span></span></code>
 </div>
 
 ## Parameters
 
 | Name | Type | Description |
 | --- | --- | --- |
+| `configure` | <code><span><a href="t-schema-model-options.md">Options</a>&#32;->&#32;<a href="t-schema-model-options.md">Options</a></span></code> |  |
 | `schema` | <code><span><a href="../t-schema-schema.md">Schema</a>&lt;'model&gt;</span></code> |  |
 | `input` | <code><a href="t-schema-rawinput.md">RawInput</a></code> |  |
 

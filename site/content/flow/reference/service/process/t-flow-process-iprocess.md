@@ -5,7 +5,7 @@ weight: 1000
 type: docs
 ---
 
-Provides asynchronous access to external process execution.
+Provides asynchronous execution for typed external-process pipelines.
 
 ## Signature
 

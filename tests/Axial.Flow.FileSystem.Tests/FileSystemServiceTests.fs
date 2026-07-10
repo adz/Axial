@@ -37,6 +37,31 @@ module FileSystemServiceTests =
         | Exit.Failure cause -> failwithf "Expected success, got %A" cause
 
     [<Fact>]
+    let ``live file-system service creates and resolves file and directory symbolic links`` () =
+        withTempRoot (fun root ->
+            let targetFile = Path.Combine(root, "target.txt")
+            let fileLink = Path.Combine(root, "file-link")
+            let targetDirectory = Path.Combine(root, "target-directory")
+            let directoryLink = Path.Combine(root, "directory-link")
+            File.WriteAllText(targetFile, "target")
+            Directory.CreateDirectory targetDirectory |> ignore
+
+            let workflow =
+                flow {
+                    do! FileSystem.createFileSymbolicLink fileLink targetFile
+                    do! FileSystem.createDirectorySymbolicLink directoryLink targetDirectory
+                    let! immediate = FileSystem.getSymbolicLinkTarget fileLink
+                    let! finalFile = FileSystem.resolveSymbolicLinkTarget true fileLink
+                    let! finalDirectory = FileSystem.resolveSymbolicLinkTarget true directoryLink
+                    return immediate, finalFile, finalDirectory
+                }
+
+            let immediate, finalFile, finalDirectory = workflow |> Flow.runSync (env ()) |> requireSuccess
+            test <@ immediate = Some targetFile @>
+            test <@ finalFile = Some targetFile @>
+            test <@ finalDirectory = Some targetDirectory @>)
+
+    [<Fact>]
     let ``live file-system service covers common text line byte and stream operations`` () =
         withTempRoot (fun root ->
             let textPath = Path.Combine(root, "text.txt")
@@ -247,4 +272,3 @@ module FileSystemServiceTests =
                 test <@ path = missing @>
             | other ->
                 failwithf "Expected FileNotFound failure, got %A" other)
-

@@ -441,9 +441,12 @@ module ValueSchemaCheck =
 
         fromUnderlying (SchemaConstraintCheck.ordered<'primitive> (Value.allConstraints schema)) schema
 
-/// <summary>Functions for validating existing trusted model values through a schema.</summary>
+/// <summary>
+/// Field-constraint checking for an existing trusted model value, shared by <c>Model.reconstruct</c>. Checks every
+/// field's schema constraints but does not re-invoke the model's constructor; <c>Model.reconstruct</c> adds that.
+/// </summary>
 [<RequireQualifiedAccess>]
-module Validation =
+module internal ModelFieldCheck =
     let private diagnosticsAt path error =
         Axial.Validation.Validation.fail (Diagnostics.singleton error)
         |> Axial.Validation.Validation.at path
@@ -701,15 +704,16 @@ module Validation =
         let value = field.Getter model
         validateValue field.ValueSchema field.Constraints path value
 
-    /// <summary>Validates an existing trusted model value through a built model schema.</summary>
+    /// <summary>Checks an existing trusted model value's field constraints through a built model schema.</summary>
     /// <remarks>
-    /// The validator reads values with schema getters, runs schema constraints through the same executable
-    /// <see cref="T:Axial.ErrorHandling.Check`1" /> lowering used by input parsing, and recursively validates nested
-    /// models and collection items. Successful validation returns the original model value.
+    /// Reads values with schema getters, runs schema constraints through the same executable
+    /// <see cref="T:Axial.ErrorHandling.Check`1" /> lowering used by input parsing, and recursively checks nested
+    /// models and collection items. Does not re-invoke the model's constructor; <c>Model.reconstruct</c> does that
+    /// separately once every field's constraints have passed.
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
     /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="schema" /> is not a built model schema.</exception>
-    let validate (schema: Schema<'model>) (model: 'model) : Axial.Validation.Validation<'model, SchemaError> =
+    let check (schema: Schema<'model>) (model: 'model) : Axial.Validation.Validation<'model, SchemaError> =
         if isNull (box schema) then
             nullArg (nameof schema)
 

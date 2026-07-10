@@ -7,11 +7,11 @@ This page shows the external-process service package. `IProcess` models command 
 
 ## Service
 
-- [`Flow.Process.IProcess`](./t-flow-process-iprocess.md): Provides asynchronous access to external process execution.
-- [`Flow.Process.ProcessResult`](./t-flow-process-processresult.md): Represents the outcome of an external process execution.
+- [`Flow.Process.IProcess`](./t-flow-process-iprocess.md): Provides asynchronous execution for typed external-process pipelines.
+- [`Flow.Process.ProcessResult`](./t-flow-process-processresult.md): Represents the captured outcome of an external process pipeline.
 
 ## Helpers
 
-- [`Flow.Process.execute`](./m-flow-process-process-execute.md): Executes a process through an explicit process service and returns the result.
+- [`Flow.Process.execute`](./m-flow-process-process-execute.md): Executes one command. Prefer <code>command</code>, <code>|&gt;&gt;</code>, and <code>run</code> for new code.
 - [`Flow.Process.live`](./p-flow-process-process-live.md): Creates a live process service backed by <a href="https://learn.microsoft.com/dotnet/api/system.diagnostics.process">Process</a>.
 - [`Flow.Process.layer`](./p-flow-process-process-layer.md): Builds the live process service as a layer.

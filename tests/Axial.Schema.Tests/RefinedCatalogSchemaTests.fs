@@ -51,7 +51,7 @@ module RefinedCatalogSchemaTests =
                       "quantity", RawInput.Scalar "3" ]
             )
 
-        let parsed = Input.parse (productSchema ()) raw
+        let parsed = Model.parse (productSchema ()) raw
 
         test
             <@ parsed.Result
@@ -68,7 +68,7 @@ module RefinedCatalogSchemaTests =
                       "quantity", RawInput.Scalar "0" ]
             )
 
-        let parsed = Input.parse (productSchema ()) raw
+        let parsed = Model.parse (productSchema ()) raw
 
         test <@ Refine.nonBlankString "   " |> Result.mapError SchemaError.ofRefinementError = Error [ SchemaError.Required ] @>
         test <@ Refine.slug "Ada" |> Result.mapError SchemaError.ofRefinementError = Error [ SchemaError.InvalidFormat "^[a-z0-9]+(-[a-z0-9]+)*$" ] @>
@@ -101,7 +101,7 @@ module RefinedCatalogSchemaTests =
         let raw =
             RawInput.Object(Map.ofList [ "command", RawInput.Scalar " deploy "; "offset", RawInput.Scalar "0" ])
 
-        let parsed = Input.parse schema raw
+        let parsed = Model.parse schema raw
 
         test
             <@ Refine.trimmedString " deploy " |> Result.mapError SchemaError.ofRefinementError =
@@ -130,7 +130,7 @@ module RefinedCatalogSchemaTests =
                       "codes", RawInput.Many [ RawInput.Scalar "A"; RawInput.Scalar "B" ] ]
             )
 
-        let parsed = Input.parse schema raw
+        let parsed = Model.parse schema raw
 
         test
             <@ parsed.Result
@@ -152,7 +152,7 @@ module RefinedCatalogSchemaTests =
                       "codes", RawInput.Many [ RawInput.Scalar "A"; RawInput.Scalar "A" ] ]
             )
 
-        let parsed = Input.parse schema raw
+        let parsed = Model.parse schema raw
 
         test
             <@ parsed.Errors = [ { Path = [ PathSegment.Name "codes" ]
@@ -169,7 +169,7 @@ module RefinedCatalogSchemaTests =
                       "end", RawInput.Scalar "2026-01-02T00:00:00+00:00" ]
             )
 
-        let parsed = Input.parse RefinedSchema.dateTimeOffsetRange raw
+        let parsed = Model.parse RefinedSchema.dateTimeOffsetRange raw
 
         test
             <@ parsed.Result
@@ -188,7 +188,7 @@ module RefinedCatalogSchemaTests =
                       "end", RawInput.Scalar "2026-01-01T00:00:00+00:00" ]
             )
 
-        let parsed = Input.parse RefinedSchema.dateTimeOffsetRange raw
+        let parsed = Model.parse RefinedSchema.dateTimeOffsetRange raw
 
         test
             <@ parsed.Errors = [ { Path = []
@@ -201,7 +201,7 @@ module RefinedCatalogSchemaTests =
         let raw =
             RawInput.Object(Map.ofList [ "start", RawInput.Scalar "2026-01-01"; "end", RawInput.Scalar "2026-01-02" ])
 
-        let parsed = Input.parse RefinedSchema.dateOnlyRange raw
+        let parsed = Model.parse RefinedSchema.dateOnlyRange raw
 
         test
             <@ parsed.Result

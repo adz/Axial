@@ -43,11 +43,11 @@ upsert_frontmatter() {
 }
 
 # Axial's three areas each get a top-level section: /error-handling/
-# (with validation nested as its machinery, since Validation ships in
-# Axial.ErrorHandling), /schema/ (with refined nested as its machinery,
-# since Refined ships in Axial.Schema), and /flow/. Both docs/ and the
-# generated site mirror the same nesting now that the source folders live
-# at docs/error-handling/validation and docs/schema/refined directly.
+# (with validation and refined nested as its machinery, since both ship in
+# Axial.ErrorHandling), /schema/, and /flow/. The refined *guide* pages
+# still live under docs/schema/refined for now (a separate site-IA move,
+# not yet done) even though the refined *API reference* is routed to the
+# error-handling area below to match the package it actually ships in.
 # The generated API reference is split across them under <area>/reference/.
 eh_dir="$root_dir/site/content/error-handling"
 schema_dir="$root_dir/site/content/schema"
@@ -77,10 +77,10 @@ copy_ref_group() {
   cp -r "$root_dir/docs/reference/$group" "$dest/"
 }
 
-for group in check predicate result validation diagnostics; do
+for group in check predicate result validation diagnostics refined; do
   copy_ref_group "$eh_ref" "$group"
 done
-for group in schema codec refined; do
+for group in schema codec; do
   copy_ref_group "$schema_ref" "$group"
 done
 for group in flow fiber exit cause concurrency schedule ref stm stream bind service layer scope; do
@@ -115,15 +115,15 @@ upsert_frontmatter "$eh_ref/predicate/_index.md" "weight" "15"
 upsert_frontmatter "$eh_ref/result/_index.md" "weight" "20"
 upsert_frontmatter "$eh_ref/validation/_index.md" "weight" "30"
 upsert_frontmatter "$eh_ref/diagnostics/_index.md" "weight" "40"
+upsert_frontmatter "$eh_ref/refined/_index.md" "weight" "50"
 upsert_frontmatter "$schema_ref/schema/_index.md" "weight" "10"
 upsert_frontmatter "$schema_ref/codec/_index.md" "weight" "20"
-upsert_frontmatter "$schema_ref/refined/_index.md" "weight" "30"
 
 # Rewrite absolute /reference/<group> links (in hand-written guides and any
 # generated pages) to the split locations.
 declare -A ref_home=(
-  [check]=error-handling [predicate]=error-handling [result]=error-handling [validation]=error-handling [diagnostics]=error-handling
-  [schema]=schema [codec]=schema [refined]=schema
+  [check]=error-handling [predicate]=error-handling [result]=error-handling [validation]=error-handling [diagnostics]=error-handling [refined]=error-handling
+  [schema]=schema [codec]=schema
   [flow]=flow [fiber]=flow [exit]=flow [cause]=flow [concurrency]=flow [schedule]=flow
   [ref]=flow [stm]=flow [stream]=flow [bind]=flow [service]=flow [layer]=flow [scope]=flow
 )

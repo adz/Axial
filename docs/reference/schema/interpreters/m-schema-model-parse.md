@@ -1,5 +1,5 @@
 ---
-title: "Schema.Input.parse"
+title: "Schema.Model.parse"
 linkTitle: "parse"
 weight: 2101
 ---
@@ -9,7 +9,7 @@ Parses raw boundary input through a trusted model schema.
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Schema.Input.parse&#32;<span>schema&#32;input</span></span></code>
+<code><span>Schema.Model.parse&#32;<span>schema&#32;input</span></span></code>
 </div>
 
 ## Parameters

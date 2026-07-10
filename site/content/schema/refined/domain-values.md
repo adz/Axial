@@ -47,7 +47,7 @@ Add a `Value.refined` schema in the same module when the value appears inside a 
 
 ```fsharp
 open Axial.Schema
-open Axial.Validation.Schema
+open Axial.Schema
 
 module ContactEmail =
     let value (ContactEmail value) = value
@@ -108,4 +108,4 @@ let signupSchema =
     |> Schema.build
 ```
 
-For built-in catalog types, prefer `Axial.Validation.Schema.RefinedSchema` instead of re-authoring local wrappers.
+For built-in catalog types, prefer `Axial.Schema.RefinedSchema` instead of re-authoring local wrappers.

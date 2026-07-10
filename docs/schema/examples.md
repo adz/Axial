@@ -434,7 +434,6 @@ Source code:
 module RefinedValueSchemaExample
 
 open Axial.Schema
-open Axial.Validation.Schema
 
 /// <summary>An email address refined over Axial's text primitive, carrying the well-known email format.</summary>
 type Email = private Email of string
@@ -567,7 +566,6 @@ open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
 open Axial.Schema
 open Axial.Codec
-open Axial.Validation.Schema
 
 // ---------------------------------------------------------------------------
 // Domain model: parse, don't validate. Email can only be constructed by the
@@ -787,7 +785,7 @@ let buildApp (args: string[]) =
         Func<HttpRequest, System.Threading.Tasks.Task<IResult>>(fun request ->
             task {
                 use! document = JsonDocument.ParseAsync request.Body
-                let parsed = Input.parse Signup.schema (RawInput.ofJsonDocument document)
+                let parsed = Model.parse Signup.schema (RawInput.ofJsonDocument document)
 
                 match parsed.Result with
                 | Ok signup ->
@@ -813,7 +811,7 @@ let buildApp (args: string[]) =
         Func<HttpRequest, System.Threading.Tasks.Task<IResult>>(fun request ->
             task {
                 let! form = request.ReadFormAsync()
-                let parsed = Input.parse Signup.schema (formToRawInput form)
+                let parsed = Model.parse Signup.schema (formToRawInput form)
                 return Results.Text(FormPage.render (Some parsed), "text/html")
             })
     )
@@ -906,7 +904,6 @@ open Axial.Flow
 open Axial.Refined
 open Axial.Schema
 open Axial.Validation
-open Axial.Validation.Schema
 
 type Quantity = private Quantity of int
 
@@ -949,18 +946,16 @@ let parseQuantityText : Policy<OrderEnv, OrderError, string, int> =
 let refinePositive : Policy<OrderEnv, OrderError, int, PositiveInt> =
     Policy.withError Refine.positiveInt QuantityNotPositive
 
-// 3. Schema input result: adapt Input.parse over raw boundary input.
+// 3. Schema input result: adapt Model.parse over raw boundary input.
 let parseOrderLine : Policy<OrderEnv, OrderError, RawInput, OrderLine> =
     Policy.lift
-        (fun raw -> (Input.parse orderLineSchema raw).Result)
+        (fun raw -> (Model.parse orderLineSchema raw).Result)
         (Diagnostics.flatten >> LineRejected)
 
 // 4. Validation result: adapt intrinsic validation of an existing model.
 let validateOrderLine : Policy<OrderEnv, OrderError, OrderLine, OrderLine> =
     Policy.lift
-        (fun line ->
-            Axial.Validation.Schema.Validation.validate orderLineSchema line
-            |> Axial.Validation.Validation.toResult)
+        (fun line -> Axial.Schema.Model.reconstruct orderLineSchema line)
         (Diagnostics.flatten >> LineRejected)
 
 // 5. Contextual rules: adapt a RuleSet evaluated with the workflow environment.

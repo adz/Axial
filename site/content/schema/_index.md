@@ -43,19 +43,17 @@ raw input kept for redisplay, contextual rules, JSON codecs, and documentation.
 One schema declaration, several interpreters:
 
 ```text
-RawInput -> Input.parse schema -> trusted model | Diagnostics
-model    -> Validation.validate schema -> trusted model | Diagnostics   (Axial.Validation.Schema.Validation)
+RawInput -> Model.parse schema -> trusted model | Diagnostics
+model    -> Model.reconstruct schema -> trusted model | Diagnostics
 model    -> Rules.apply ruleSet -> trusted model | Diagnostics
 schema   -> Inspect.model -> metadata (no execution)
 schema   -> Json.compile -> compiled JSON codec (trusted hot path)
 schema   -> JsonSchema.generate -> JSON Schema document
 ```
 
-That `Validation.validate` is `Axial.Validation.Schema.Validation` — schema-driven re-validation of an existing
-model. It is not `Axial.Validation.Validation<'value, 'error>`, the general accumulating-error type from
-[Error Handling]({{< relref "/validation/" >}}); the two share a bare name because the schema interpreter is built
-on top of that type, not because they're the same API. Always reach it as `Validation.validate` inside a module that
-opened only `Axial.Validation.Schema`, or fully qualify it, to keep the two apart.
+`Model.reconstruct` gives an already-existing model value (imported rows, hand-built values) the same trust
+strength as `Model.parse` — every field's constraints re-checked, and the model's own constructor re-invoked so
+cross-field invariants hold too — without re-parsing from raw input.
 
 ## Guides
 

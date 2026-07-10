@@ -16,14 +16,14 @@ private constructor, smart constructor, optional standalone helper, and `Value.r
 
 ## Built-In Refined Catalog Schemas
 
-The `Axial.Validation.Schema` namespace includes schema values for the scalar `Axial.Refined` catalog. Both
+The `Axial.Schema` namespace includes schema values for the scalar `Axial.Refined` catalog. Both
 namespaces ship in the `Axial.Schema` package; the separate namespace just keeps the schema-field integration
 (`RefinedSchema`) apart from the refined value types themselves (`Axial.Refined`), which have no schema dependency.
 
 ```fsharp
 open Axial.Refined
 open Axial.Schema
-open Axial.Validation.Schema
+open Axial.Schema
 
 type Product =
     {

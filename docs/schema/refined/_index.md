@@ -19,7 +19,7 @@ it without re-checking. This section shows how to parse untrusted boundary data 
 data reaches your domain model.
 
 This is machinery behind [Schema](../): for whole models, refined values usually arrive as schema
-fields (`Value.refined`), and `Input.parse` runs the parsing for you. Come here directly for single values or when
+fields (`Value.refined`), and `Model.parse` runs the parsing for you. Come here directly for single values or when
 building the domain value types your schemas will use.
 
 Use `Parse` for serialized primitive input, `Refine` for built-in refined values, submodules such as `Text`, `Numeric`, `Collection`, `Temporal`, and `Choice` for discoverability, and `refine {}` to sequence fail-fast construction.

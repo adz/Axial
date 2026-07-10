@@ -96,7 +96,7 @@ let raw =
 ## One Parse For All Of Them
 
 ```fsharp
-let parsed = Input.parse customerSchema raw
+let parsed = Model.parse customerSchema raw
 
 match parsed.Result with
 | Ok customer -> customer
@@ -116,7 +116,7 @@ sequences and values — and call as plain static methods. `ofMap` and `ofConfig
 a sequence of F# tuples), so use their C#-friendly equivalents instead:
 
 ```csharp
-using Axial.Validation.Schema;
+using Axial.Schema;
 
 // ofMap's C# equivalent — takes IDictionary<string, string> instead of an F# Map:
 RawInput raw = RawInputModule.ofDictionary(new Dictionary<string, string> { ["name"] = "Ada Lovelace" });
@@ -124,7 +124,7 @@ RawInput raw = RawInputModule.ofDictionary(new Dictionary<string, string> { ["na
 // ofConfiguration's C# equivalent — takes the pairs IConfiguration.AsEnumerable() already returns:
 RawInput fromConfig = RawInputModule.ofConfigurationPairs(configuration.AsEnumerable());
 
-ParsedInput<Customer, SchemaError> parsed = Input.parse(customerSchema, raw);
+ParsedInput<Customer, SchemaError> parsed = Model.parse(customerSchema, raw);
 
 if (parsed.IsValid)
 {
@@ -136,9 +136,9 @@ else
 }
 ```
 
-`Input.parseWith` takes an F# function for its `configure` parameter, which C# cannot pass a lambda to directly. Use
-`Input.parseWithOptions`, which takes a `Func<Options, Options>` instead:
+`Model.parseWith` takes an F# function for its `configure` parameter, which C# cannot pass a lambda to directly. Use
+`Model.parseWithOptions`, which takes a `Func<Options, Options>` instead:
 
 ```csharp
-var parsed = Input.parseWithOptions(o => Input.constructorErrorAt("end", o), dateRangeSchema, raw);
+var parsed = Model.parseWithOptions(o => Model.constructorErrorAt("end", o), dateRangeSchema, raw);
 ```

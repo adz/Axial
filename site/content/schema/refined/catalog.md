@@ -14,11 +14,11 @@ For caller-owned domain values, use the single authoring pattern in [Domain Valu
 constructor, smart constructor, optional standalone helper, and `Value.refined` schema when the type appears in a model.
 
 When the same scalar catalog value is used as a schema field, use the schema integration catalog in
-`Axial.Validation.Schema`:
+`Axial.Schema`:
 
 ```fsharp
 open Axial.Schema
-open Axial.Validation.Schema
+open Axial.Schema
 
 let productSchema =
     Schema.recordFor<Product, _> (fun name slug quantity ->

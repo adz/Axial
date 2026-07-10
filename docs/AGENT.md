@@ -17,7 +17,7 @@ Use these patterns unless local code shows a different convention.
 
 **Axial consists of three packages that can be used independently but work together**: Error Handling (plain `Result`
 with a user-owned error DU for simple code without a domain model), Schema (declare a `Schema` and parse with
-`Input.parse` when modelling a domain), and Flow (the optional effects side). `Check`, `Validation`, and `Refined` are
+`Model.parse` when modelling a domain), and Flow (the optional effects side). `Check`, `Validation`, and `Refined` are
 machinery inside those areas.
 
 When a schema lives in its own definition module, `open Axial.Schema.DSL` there and write the pipeline bare:
@@ -29,7 +29,7 @@ For schema boundaries, use `SchemaError` as the one interpreter error shape. Low
 `SchemaError.ofParseError`, `SchemaError.ofRefinementError`, or `SchemaError.ofCheckFailure`; render with
 `SchemaError.render` or `ParsedInput.renderErrors`; map to application errors with `ParsedInput.mapErrors`.
 
-For built-in scalar refined values in schema fields, use `Axial.Validation.Schema.RefinedSchema`:
+For built-in scalar refined values in schema fields, use `Axial.Schema.RefinedSchema`:
 `RefinedSchema.nonBlankString`, `RefinedSchema.boundedString min max`, `RefinedSchema.slug`,
 `RefinedSchema.trimmedString`, `RefinedSchema.positiveInt`, `RefinedSchema.nonNegativeInt`,
 `RefinedSchema.nonZeroInt`, `RefinedSchema.negativeInt`, and
@@ -45,7 +45,7 @@ Use `RefinedSchema.dateTimeOffsetRange` as a record-shaped model schema, not a f
 also available when targeting frameworks that support `DateOnly`.
 
 For JSON, pick the path by trust: untrusted bodies go `RawInput.ofJsonDocument` (or `ofJsonLikeValue`) then
-`Input.parse` for diagnostics; trusted payloads use `Axial.Codec` — compile once with `Json.compile schema`, then
+`Model.parse` for diagnostics; trusted payloads use `Axial.Codec` — compile once with `Json.compile schema`, then
 `Json.serialize` / `Json.deserialize`. Serve the contract with `JsonSchema.generate schema`. Do not hand-write
 `System.Text.Json` converters for schema-described models.
 
@@ -133,7 +133,7 @@ Translate common patterns from other libraries into idiomatic Axial.
 | `Result.mapError` | `let! x = result |> Bind.mapError mapper` in `flow {}` |
 | retry policy | `flow |> Schedule.retry schedule` |
 | repeat policy | `flow |> Schedule.repeat schedule` |
-| ActiveModel / FluentValidation validators | `Schema<'model>` + `Input.parse` — constraints declared once, invalid models never constructed |
+| ActiveModel / FluentValidation validators | `Schema<'model>` + `Model.parse` — constraints declared once, invalid models never constructed |
 | DTO + manual mapping into domain types | schema fields over refined value schemas (`Value.refined`) |
 | form redisplay with per-field errors | `parsed.Input` + `RawInput.redisplayPath`, `parsed.ErrorsFor "contacts[1].value"` |
 | workflow-specific business rules | `RuleSet` + `Rules.apply` over the already-trusted model |
@@ -148,7 +148,7 @@ Later types can bind earlier types directly within their computation expressions
 2. **Result**: Fail-fast typed errors (`Result<'T, 'E>`).
 3. **Refined**: Parsing and structural refined values.
 4. **Validation**: Accumulating diagnostics.
-5. **Schema**: Portable model metadata (`Schema<'model>`) interpreted by `Input.parse`, `Validation.validate`, `Rules.apply`, and `Inspect`.
+5. **Schema**: Portable model metadata (`Schema<'model>`) interpreted by `Model.parse`, `Model.reconstruct`, `Rules.apply`, and `Inspect`.
 6. **Flow**: Environment-aware workflows (`Flow<'Env, 'E, 'T>`) for synchronous, async, and task-based composition.
 
 ## Machine-Readable Reference

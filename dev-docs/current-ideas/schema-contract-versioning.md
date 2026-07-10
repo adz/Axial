@@ -45,6 +45,13 @@ module SignupContract =
 2. **Constraint drift.** V1-valid data can violate V2 constraints. After migrating, re-validate the result against the
    current schema so "valid instance" always means valid under the *current* contract. Migration signature is
    therefore fallible — `'prev -> Result<'next, MigrationError>` — with an infallible convenience overload.
+   Concretely, this re-validation should be `Model.reconstruct` (see `dev-docs/decisions/README.md`), not a bespoke
+   mechanism — a migration's job is producing a `'next` value, `Model.reconstruct` is what closes the loop back to
+   "this value actually satisfies the current schema." The worked example above (`Ok { Email = v1.Email; Age = 18
+   }`) builds the next-version record directly, unchecked — that's exactly the gap this decision says to close;
+   the example should route through `Model.reconstruct next` (or, once generated per-version `construct` functions
+   exist — see `schema-source-generation.md` — through the generated checked constructor directly) rather than a
+   raw record literal.
 3. **Lifecycle is not core.** Events migrate on read forever (stored events are immutable, so old versions stay
    permanently load-bearing); databases eventually migrate at rest and retire versions. Keep that policy split out of
    the core Contract type and in integration layers.
@@ -59,10 +66,14 @@ module SignupContract =
 - **No attributes / no generation for versions.** Attributes describe the current type only; a superseded version
   needs standalone frozen schema code, which is exactly what the explicit pipeline (with `Axial.Schema.DSL` for
   terseness) produces. When a version is cut, the previous head materializes as ordinary committed code anyway.
-- **No Draft type.** "Draft vs valid" is already the pre-`Ok` state of `Input.parse` (`parsed.Result` +
+- **No Draft type.** "Draft vs valid" is already the pre-`Ok` state of `Model.parse` (`parsed.Result` +
   `parsed.Errors`). A contract adds version dispatch in front of that gate and migration behind it; it does not need a
-  parallel draft concept. Editing UIs hold the un-parsed/erroneous state; published desired state is always a valid,
-  versioned instance.
+  parallel draft concept for *interactive editing*. That said, a related but distinct "draft" need surfaced while
+  designing `Model.construct` (see `schema-source-generation.md`): a publicly-constructible, untrusted record that
+  bridges into a schema-checked trusted type without going through `Model.parse`'s untyped `RawInput` boundary.
+  Version records (`V1.Signup`, `V2.Signup` above) already *are* that shape — plain public records, freely
+  constructible, explicitly not the trusted current model. The distinction this section draws still holds: don't add
+  a *separate* draft concept on top of versioning, because versioning already produces one.
 
 ## Remote Desired-State Configuration (motivating scenario)
 
@@ -138,4 +149,4 @@ contract migrations only for serialized blobs.
 
 Do not start `Contract` machinery until a concrete consumer exists (the remote-config scenario or event-sourced
 storage). When opened: design `Contract.create` / `Contract.supersedes` / `Contract.parse` against
-`Axial.Validation.Schema` interpreters, plus instance re-validation (`Validation.validate`) for post-migration checks.
+`Axial.Schema`'s `Model` interpreters, plus instance re-validation (`Model.reconstruct`) for post-migration checks.

@@ -13,14 +13,16 @@ task is about promoting, rejecting, or implementing that sketch.
 
 ## Package Graph
 
-- `Axial.Flow`: independent workflow package. Must not depend on `Axial.ErrorHandling`, `Axial.Refined`,
-  `Axial.Validation`, or `Axial.Schema`.
-- `Axial.ErrorHandling`: `Check`, `CheckFailure`, `Result`, `Collection`, and `result { }`. Independent leaf.
-- `Axial.Refined`: parsing/refinement over `Axial.ErrorHandling`; no dependency on `Axial.Schema` or
-  `Axial.Validation`.
-- `Axial.Validation`: `Validation`, `Diagnostics`, paths, and `validate { }`. Independent leaf.
-- `Axial.Schema`: schema/value-schema definitions and metadata. Independent of validation, refined values, and flow.
-- `Axial.Validation.Schema`: schema interpreters; depends on schema, validation, error handling, and refined packages.
+- `Axial.Flow`: independent workflow package (`src/Axial.Flow/`). Must not depend on `Axial.ErrorHandling` or
+  `Axial.Schema`.
+- `Axial.ErrorHandling` (`src/Axial.ErrorHandling/`): three namespaces in one package — `Axial.ErrorHandling`
+  (`Check`, `CheckFailure`, `Result`, `Collection`, `result { }`), `Axial.Validation` (`Validation`, `Diagnostics`,
+  paths, `validate { }`), and `Axial.Refined` (`Parse`, `Refine`, `refine { }`). Independent leaf — no dependency on
+  `Axial.Schema` or `Axial.Flow`.
+- `Axial.Schema` (`src/Axial.Schema/`): schema declaration (`Schema` module) and interpreters (`Model.parse`/
+  `.reconstruct`, `Rules`, `Inspect`, `JsonSchema`, `RefinedSchema`) in one package. Depends on
+  `Axial.ErrorHandling`.
+- `Axial.Codec` (`src/Axial.Codec/`): compiled JSON codecs. Depends on `Axial.Schema`.
 - `Axial.Flow.*` add-on packages depend on `Axial.Flow`.
 - `Axial` umbrella package references the public packages for convenience.
 
@@ -30,13 +32,14 @@ task is about promoting, rejecting, or implementing that sketch.
   `tests/Axial.Flow.PlatformService.Tests/**`, and `dev-docs/PLAN.md`.
 - Check/Result: `src/Axial.ErrorHandling/Check.fs`, `src/Axial.ErrorHandling/Result.fs`,
   `tests/Axial.ErrorHandling.Tests/CheckResultTests.fs`, `tests/Axial.ApiShape.Tests/ApiShapeTests.fs`, and `dev-docs/PLAN.md`.
-- Refined values: `src/Axial.Refined/**`, `tests/Axial.Refined.Tests/**`, and the Check/Result files only as needed.
-- Validation/diagnostics: `src/Axial.Validation/**`, `tests/Axial.Validation.Tests/ValidationTests.fs`, and
-  `dev-docs/PLAN.md`.
+- Refined values: `src/Axial.ErrorHandling/Refine.fs`, `src/Axial.ErrorHandling/Parse.fs`,
+  `tests/Axial.ErrorHandling.Tests/{ParseAndBuilderTests,CatalogTests}.fs`, and the Check/Result files only as needed.
+- Validation/diagnostics: `src/Axial.ErrorHandling/{Validation,Diagnostics,ValidateBuilder}.fs`,
+  `tests/Axial.ErrorHandling.Tests/ValidationTests.fs`, and `dev-docs/PLAN.md`.
 - Schema metadata/builder: `src/Axial.Schema/Schema.fs`, `tests/Axial.Schema.Tests/Schema*Tests.fs`, and the schema section in
   `dev-docs/PLAN.md`.
-- Schema input/rules/interpreters: start with `src/Axial.Validation.Schema/**`,
-  `src/Axial.Schema/Schema.fs`, and the active queue.
+- Schema input/rules/interpreters: `src/Axial.Schema/{Model,RawInput,SchemaValidation,ParsedInput,Rules}.fs` and
+  `tests/Axial.Schema.Tests/*ParseTests.fs`.
 - User-facing docs: read `dev-docs/DOCS.md` before editing `docs/**`, source comments, generated reference pages,
   `llms.txt`, or site content.
 - Agent process/docs: `AGENTS.md`, this file, `dev-docs/TASKS.md`, and `dev-docs/PLAN.md`.

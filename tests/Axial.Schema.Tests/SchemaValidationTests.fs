@@ -133,18 +133,18 @@ module SchemaValidationTests =
     let ``validate returns the original model when schema constraints pass`` () =
         let model = { Email = "ada@example.com"; Age = 42 }
 
-        let validation = Axial.Schema.Validation.validate schema model
+        let validation = Axial.Schema.Model.reconstruct schema model
 
-        test <@ Axial.Validation.Validation.toResult validation = Ok model @>
+        test <@ validation = Ok model @>
 
     [<Fact>]
     let ``validate reports diagnostics for existing model values that violate schema constraints`` () =
         let validation =
-            Axial.Schema.Validation.validate schema { Email = ""; Age = 10 }
+            Axial.Schema.Model.reconstruct schema { Email = ""; Age = 10 }
 
         test
             <@
-                Axial.Validation.Validation.toResult validation =
+                validation =
                     Error
                         {
                             Errors = []
@@ -164,11 +164,11 @@ module SchemaValidationTests =
     let ``validate reports diagnostics for imported hand-built values that bypass input parsing`` () =
         let imported = { Email = "not-an-email"; Age = 16 }
 
-        let validation = Axial.Schema.Validation.validate schema imported
+        let validation = Axial.Schema.Model.reconstruct schema imported
 
         test
             <@
-                Axial.Validation.Validation.toResult validation =
+                validation =
                     Error
                         {
                             Errors = []
@@ -198,11 +198,11 @@ module SchemaValidationTests =
             |> Schema.build
 
         let validation =
-            Axial.Schema.Validation.validate messageSchema { Email = ""; Age = 10 }
+            Axial.Schema.Model.reconstruct messageSchema { Email = ""; Age = 10 }
 
         test
             <@
-                Axial.Validation.Validation.toResult validation =
+                validation =
                     Error
                         {
                             Errors = []
@@ -232,14 +232,14 @@ module SchemaValidationTests =
             |> Schema.build
 
         let validation =
-            Axial.Schema.Validation.validate
+            Axial.Schema.Model.reconstruct
                 swappedSchema
                 { Primary = "primary-value"
                   Secondary = "wrong-secondary" }
 
         test
             <@
-                Axial.Validation.Validation.toResult validation =
+                validation =
                     Error
                         {
                             Errors = []
@@ -265,14 +265,14 @@ module SchemaValidationTests =
             |> Schema.build
 
         let validation =
-            Axial.Schema.Validation.validate
+            Axial.Schema.Model.reconstruct
                 customerSchema
                 { Name = "Ada"
                   Address = { Street = "1 Main Street"; City = "" } }
 
         test
             <@
-                Axial.Validation.Validation.toResult validation =
+                validation =
                     Error
                         {
                             Errors = []
@@ -298,11 +298,11 @@ module SchemaValidationTests =
                   { Kind = "phone"; Value = "" } ] }
 
         let validation =
-            Axial.Schema.Validation.validate contactBookSchema model
+            Axial.Schema.Model.reconstruct contactBookSchema model
 
         test
             <@
-                Axial.Validation.Validation.toResult validation =
+                validation =
                     Error
                         {
                             Errors = []
@@ -343,11 +343,11 @@ module SchemaValidationTests =
                   { Kind = "sms"; Value = "+61 400 000 000" } ] }
 
         let validation =
-            Axial.Schema.Validation.validate contactBookSchema model
+            Axial.Schema.Model.reconstruct contactBookSchema model
 
         test
             <@
-                Axial.Validation.Validation.toResult validation =
+                validation =
                     Error
                         {
                             Errors = []
@@ -366,11 +366,11 @@ module SchemaValidationTests =
             |> Schema.build
 
         let validation =
-            Axial.Schema.Validation.validate schema { Values = [ "fsharp"; "" ] }
+            Axial.Schema.Model.reconstruct schema { Values = [ "fsharp"; "" ] }
 
         test
             <@
-                Axial.Validation.Validation.toResult validation =
+                validation =
                     Error
                         {
                             Errors = []
@@ -395,32 +395,32 @@ module SchemaValidationTests =
                       "age", RawInput.Scalar "42" ]
             )
 
-        let parsed = Input.parse schema raw
-        let validation = Axial.Schema.Validation.validate schema parsed.Model
+        let parsed = Model.parse schema raw
+        let validation = Axial.Schema.Model.reconstruct schema parsed.Model
 
         test <@ parsed.IsValid @>
-        test <@ Axial.Validation.Validation.toResult validation = Ok parsed.Model @>
+        test <@ validation = Ok parsed.Model @>
 
     [<Fact>]
     let ``values produced by a generated builder validate through the same schema`` () =
         let builder = generatedBuilder schema
         let generated = builder.Build [| box "ada@example.com"; box 42 |]
 
-        let validation = Axial.Schema.Validation.validate schema generated
+        let validation = Axial.Schema.Model.reconstruct schema generated
 
         test <@ generated = { Email = "ada@example.com"; Age = 42 } @>
-        test <@ Axial.Validation.Validation.toResult validation = Ok generated @>
+        test <@ validation = Ok generated @>
 
     [<Fact>]
     let ``validate reports diagnostics for generated builder values that bypass input parsing`` () =
         let builder = generatedBuilder schema
         let generated = builder.Build [| box ""; box 17 |]
 
-        let validation = Axial.Schema.Validation.validate schema generated
+        let validation = Axial.Schema.Model.reconstruct schema generated
 
         test
             <@
-                Axial.Validation.Validation.toResult validation =
+                validation =
                     Error
                         {
                             Errors = []
@@ -451,8 +451,8 @@ module SchemaValidationTests =
                       "end", RawInput.Scalar "2026-01-12" ]
             )
 
-        let parsed = Input.parse rangeSchema raw
-        let validation = Axial.Schema.Validation.validate rangeSchema parsed.Model
+        let parsed = Model.parse rangeSchema raw
+        let validation = Axial.Schema.Model.reconstruct rangeSchema parsed.Model
 
         test <@ parsed.IsValid @>
-        test <@ Axial.Validation.Validation.toResult validation = Ok parsed.Model @>
+        test <@ validation = Ok parsed.Model @>

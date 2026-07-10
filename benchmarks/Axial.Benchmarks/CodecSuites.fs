@@ -115,8 +115,8 @@ type BoundaryParseBenchmarks() =
     [<Benchmark(Baseline = true, Description = "Axial Json.deserialize (trusted lane)")>]
     member _.CodecDeserialize() = Json.deserialize codec json
 
-    [<Benchmark(Description = "JsonDocument + RawInput + Input.parse (boundary lane)")>]
+    [<Benchmark(Description = "JsonDocument + RawInput + Model.parse (boundary lane)")>]
     member _.BoundaryParse() =
         use document = JsonDocument.Parse json
         let input = RawInput.ofJsonDocument document
-        (Input.parse CodecModel.customerSchema input).Result
+        (Model.parse CodecModel.customerSchema input).Result

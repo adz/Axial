@@ -31,9 +31,9 @@ This page shows the `Axial.Schema` interpreter surface: raw boundary input, sche
 - [`Schema.ParsedInput`](./t-schema-parsedinput.md):
  The result of parsing boundary input through a schema while retaining the original raw input.
 
-- [`Schema.Input.parse`](./m-schema-input-parse.md): Parses raw boundary input through a trusted model schema.
-- [`Schema.Input.parseWith`](./m-schema-input-parsewith.md): Parses raw boundary input through a trusted model schema using custom input parser options.
-- [`Schema.Input.Options`](./t-schema-input-options.md): Options that customize how raw input is parsed through a schema.
+- [`Schema.Model.parse`](./m-schema-model-parse.md): Parses raw boundary input through a trusted model schema.
+- [`Schema.Model.parseWith`](./m-schema-model-parsewith.md): Parses raw boundary input through a trusted model schema using custom input parser options.
+- [`Schema.Model.Options`](./t-schema-model-options.md): Options that customize how raw input is parsed through a schema.
 - [`Schema.ParsedInput.mapErrors`](./m-schema-parsedinput-maperrors.md): Maps a failed parse&#39;s errors to a domain or application error type, preserving the raw input and paths.
 - [`Schema.ParsedInput.renderErrors`](./m-schema-parsedinput-rendererrors.md): Renders a failed schema parse as default English display strings, preserving diagnostics paths.
 
@@ -61,7 +61,10 @@ This page shows the `Axial.Schema` interpreter surface: raw boundary input, sche
 
 ## Model validation
 
-- [`Schema.Validation.validate`](./m-schema-validation-validate.md): Validates an existing trusted model value through a built model schema.
+- [`Schema.Model.reconstruct`](./m-schema-model-reconstruct.md):
+ Rebuilds trust in an existing model value that did not come through <code>Model.parse</code> or <code>Model.construct</code>
+ — for example a value deserialized directly into the model type, or read back from storage.
+
 
 ## Rules
 

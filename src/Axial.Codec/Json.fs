@@ -17,7 +17,7 @@ open Axial.Codec.JsonRuntime
 /// <para>
 /// The codec is the trusted hot path: it enforces JSON structure and required fields, but does not run schema
 /// constraint metadata such as <c>maxLength</c>. Parse untrusted boundary input with schema input parsing
-/// (<c>Input.parse</c>) when complete path-aware diagnostics are needed, and use the codec where the payload producer
+/// (<c>Model.parse</c>) when complete path-aware diagnostics are needed, and use the codec where the payload producer
 /// is trusted, such as internal services, storage, caches, and message queues.
 /// </para>
 /// </remarks>

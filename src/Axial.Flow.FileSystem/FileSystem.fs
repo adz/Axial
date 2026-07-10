@@ -117,6 +117,18 @@ type IFileSystem =
     /// <summary>Moves a file to a destination path.</summary>
     abstract MoveFile : sourcePath: string * destinationPath: string * overwrite: bool -> unit
 
+    /// <summary>Creates a symbolic link to a file.</summary>
+    abstract CreateFileSymbolicLink : linkPath: string * targetPath: string -> unit
+
+    /// <summary>Creates a symbolic link to a directory.</summary>
+    abstract CreateDirectorySymbolicLink : linkPath: string * targetPath: string -> unit
+
+    /// <summary>Returns the immediate target stored in a symbolic link, or <c>None</c> when the path is not a link.</summary>
+    abstract GetSymbolicLinkTarget : path: string -> string option
+
+    /// <summary>Resolves a symbolic link target and optionally follows the complete link chain.</summary>
+    abstract ResolveSymbolicLinkTarget : path: string * returnFinalTarget: bool -> string option
+
     /// <summary>Opens a file with the specified mode.</summary>
     abstract OpenFile : path: string * mode: FileMode -> FileStream
 
@@ -599,6 +611,37 @@ module FileSystem =
         : Flow<'env, FileSystemError, unit> =
         withService (Some sourcePath) (fun fileSystem -> fileSystem.MoveFile(sourcePath, destinationPath, overwrite))
 
+    /// <summary>Creates a symbolic link to a file through an explicit file-system service.</summary>
+    /// <example><code>FileSystem.createFileSymbolicLink "current.json" "releases/v2.json"</code></example>
+    let createFileSymbolicLink<'env when 'env :> IHas<IFileSystem>>
+        (linkPath: string)
+        (targetPath: string)
+        : Flow<'env, FileSystemError, unit> =
+        withService (Some linkPath) (fun fileSystem -> fileSystem.CreateFileSymbolicLink(linkPath, targetPath))
+
+    /// <summary>Creates a symbolic link to a directory through an explicit file-system service.</summary>
+    /// <example><code>FileSystem.createDirectorySymbolicLink "current" "releases/v2"</code></example>
+    let createDirectorySymbolicLink<'env when 'env :> IHas<IFileSystem>>
+        (linkPath: string)
+        (targetPath: string)
+        : Flow<'env, FileSystemError, unit> =
+        withService (Some linkPath) (fun fileSystem -> fileSystem.CreateDirectorySymbolicLink(linkPath, targetPath))
+
+    /// <summary>Returns the immediate target stored in a symbolic link.</summary>
+    /// <example><code>FileSystem.getSymbolicLinkTarget "current"</code></example>
+    let getSymbolicLinkTarget<'env when 'env :> IHas<IFileSystem>>
+        (path: string)
+        : Flow<'env, FileSystemError, string option> =
+        withService (Some path) (fun fileSystem -> fileSystem.GetSymbolicLinkTarget path)
+
+    /// <summary>Resolves a symbolic link target, optionally following the complete chain.</summary>
+    /// <example><code>FileSystem.resolveSymbolicLinkTarget true "current"</code></example>
+    let resolveSymbolicLinkTarget<'env when 'env :> IHas<IFileSystem>>
+        (returnFinalTarget: bool)
+        (path: string)
+        : Flow<'env, FileSystemError, string option> =
+        withService (Some path) (fun fileSystem -> fileSystem.ResolveSymbolicLinkTarget(path, returnFinalTarget))
+
     /// <summary>Opens a file with the specified mode through an explicit file-system service.</summary>
     let openFile<'env when 'env :> IHas<IFileSystem>>
         (mode: FileMode)
@@ -1014,6 +1057,36 @@ module FileSystem =
                     File.Delete destinationPath
 
                 File.Move(sourcePath, destinationPath)
+            member _.CreateFileSymbolicLink(linkPath, targetPath) =
+#if NETSTANDARD2_1
+                raise (PlatformNotSupportedException("Symbolic links require a modern .NET runtime."))
+#else
+                File.CreateSymbolicLink(linkPath, targetPath) |> ignore
+#endif
+            member _.CreateDirectorySymbolicLink(linkPath, targetPath) =
+#if NETSTANDARD2_1
+                raise (PlatformNotSupportedException("Symbolic links require a modern .NET runtime."))
+#else
+                Directory.CreateSymbolicLink(linkPath, targetPath) |> ignore
+#endif
+            member _.GetSymbolicLinkTarget(path) =
+#if NETSTANDARD2_1
+                raise (PlatformNotSupportedException("Symbolic links require a modern .NET runtime."))
+#else
+                let attributes = File.GetAttributes path
+                let info: FileSystemInfo =
+                    if attributes.HasFlag FileAttributes.Directory then DirectoryInfo path else FileInfo path
+                info.LinkTarget |> Option.ofObj
+#endif
+            member _.ResolveSymbolicLinkTarget(path, returnFinalTarget) =
+#if NETSTANDARD2_1
+                raise (PlatformNotSupportedException("Symbolic links require a modern .NET runtime."))
+#else
+                let attributes = File.GetAttributes path
+                let info: FileSystemInfo =
+                    if attributes.HasFlag FileAttributes.Directory then DirectoryInfo path else FileInfo path
+                info.ResolveLinkTarget(returnFinalTarget) |> Option.ofObj |> Option.map _.FullName
+#endif
             member _.OpenFile(path, mode) = File.Open(path, mode)
             member _.OpenFile(path, mode, access) = File.Open(path, mode, access)
             member _.OpenFile(path, mode, access, share) = File.Open(path, mode, access, share)

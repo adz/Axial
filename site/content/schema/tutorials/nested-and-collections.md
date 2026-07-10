@@ -13,7 +13,7 @@ schemas are ordinary built schemas — composition is just `Value.nested` and `V
 
 ```fsharp
 open Axial.Schema
-open Axial.Validation.Schema
+open Axial.Schema
 
 type Address = { Street: string; City: string }
 type Item = { Sku: string; Quantity: int }
@@ -62,7 +62,7 @@ let raw =
 Every item is parsed and every item error is kept — one bad line item does not hide the others:
 
 ```fsharp
-let parsed = Input.parse orderSchema raw
+let parsed = Model.parse orderSchema raw
 
 parsed.ErrorsFor "items[1].quantity"   // quantity 0 fails greaterThan 0
 parsed.ErrorsFor "items[0].sku"        // [] — the first item is fine

@@ -57,6 +57,10 @@ module UnifiedServiceTests =
             member _.DeleteFile(_) = ()
             member _.CopyFile(_, _, _) = ()
             member _.MoveFile(_, _, _) = ()
+            member _.CreateFileSymbolicLink(_, _) = ()
+            member _.CreateDirectorySymbolicLink(_, _) = ()
+            member _.GetSymbolicLinkTarget(_) = Some "target"
+            member _.ResolveSymbolicLinkTarget(_, _) = Some "/target"
             member _.OpenFile(_, _) = new FileStream(Path.GetTempFileName(), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite)
             member _.OpenFile(_, _, _) = new FileStream(Path.GetTempFileName(), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite)
             member _.OpenFile(_, _, _, _) = new FileStream(Path.GetTempFileName(), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite)
@@ -176,8 +180,9 @@ module UnifiedServiceTests =
         let services = { 
             Process = 
                 { new IProcess with 
-                    member _.Execute(_, _) = Task.FromResult { ExitCode = 0; StdOut = "out"; StdErr = "" } }
+                    member _.Execute(_, _, _) =
+                        Task.FromResult(Ok { ExitCode = 0; StdOut = "out"; StdErr = ""; ExitCodes = [ 0 ] }) }
             Console = Unchecked.defaultof<_>; FS = Unchecked.defaultof<_>; Http = Unchecked.defaultof<_>
         }
         
-        test <@ Flow.runSync services (Process.execute "echo" "hi") = Exit.Success { ExitCode = 0; StdOut = "out"; StdErr = "" } @>
+        test <@ Flow.runSync services (Process.execute "echo" [ "hi" ]) = Exit.Success { ExitCode = 0; StdOut = "out"; StdErr = ""; ExitCodes = [ 0 ] } @>

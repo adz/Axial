@@ -334,10 +334,10 @@ let pageSpecs = [
         Intro = "This page shows the `Axial.Schema` interpreter surface: raw boundary input, schema input parsing into `ParsedInput`, intrinsic validation of existing models, and contextual rule sets over already-trusted models. Core schema metadata stays in [Schema](../); these interpreters attach diagnostics, raw input, and redisplay behavior to it."
         SymbolIds = [
             "Raw input", ["T:Axial.Schema.RawInput"; "T:Axial.Schema.JsonLikeValue"; "M:Axial.Schema.RawInputModule.ofMap"; "M:Axial.Schema.RawInputModule.ofNameValues"; "M:Axial.Schema.RawInputModule.ofCliArgs"; "M:Axial.Schema.RawInputModule.ofJsonLikeValue"; "M:Axial.Schema.RawInputModule.ofJsonElement"; "M:Axial.Schema.RawInputModule.ofJsonDocument"; "M:Axial.Schema.RawInputModule.ofConfiguration"; "M:Axial.Schema.RawInputModule.redisplay"; "M:Axial.Schema.RawInputModule.redisplayPath"]
-            "Input parsing", ["T:Axial.Schema.ParsedInput`2"; "M:Axial.Schema.Input.parse"; "M:Axial.Schema.Input.parseWith"; "T:Axial.Schema.Input.Options"; "M:Axial.Schema.ParsedInputModule.mapErrors"; "M:Axial.Schema.ParsedInputModule.renderErrors"]
+            "Input parsing", ["T:Axial.Schema.ParsedInput`2"; "M:Axial.Schema.Model.parse"; "M:Axial.Schema.Model.parseWith"; "T:Axial.Schema.Model.Options"; "M:Axial.Schema.ParsedInputModule.mapErrors"; "M:Axial.Schema.ParsedInputModule.renderErrors"]
             "Errors", ["T:Axial.Schema.SchemaError"]
             "Refined catalog schemas", ["M:Axial.Schema.RefinedSchema.nonBlankString"; "M:Axial.Schema.RefinedSchema.trimmedString"; "M:Axial.Schema.RefinedSchema.boundedString"; "M:Axial.Schema.RefinedSchema.slug"; "M:Axial.Schema.RefinedSchema.positiveInt"; "M:Axial.Schema.RefinedSchema.nonNegativeInt"; "M:Axial.Schema.RefinedSchema.nonZeroInt"; "M:Axial.Schema.RefinedSchema.negativeInt"; "M:Axial.Schema.RefinedSchema.nonPositiveInt"; "M:Axial.Schema.RefinedSchema.nonEmptyList"; "M:Axial.Schema.RefinedSchema.nonEmptyArray"; "M:Axial.Schema.RefinedSchema.distinctList"; "M:Axial.Schema.RefinedSchema.boundedList"; "M:Axial.Schema.RefinedSchema.boundedArray"; "M:Axial.Schema.RefinedSchema.dateTimeOffsetRange"]
-            "Model validation", ["M:Axial.Schema.Validation.validate"]
+            "Model validation", ["M:Axial.Schema.Model.reconstruct"]
             "Rules", ["T:Axial.Schema.RuleSet`2"; "M:Axial.Schema.Rules.create"; "M:Axial.Schema.Rules.concat"; "M:Axial.Schema.Rules.at"; "M:Axial.Schema.Rules.failAt"; "M:Axial.Schema.Rules.custom"; "M:Axial.Schema.Rules.validate"; "M:Axial.Schema.Rules.apply"]
         ]
         Alias = None
@@ -695,6 +695,10 @@ let pageSpecs = [
                   "M:Axial.Flow.FileSystem.FileSystem.deleteFile"
                   "M:Axial.Flow.FileSystem.FileSystem.copyFile"
                   "M:Axial.Flow.FileSystem.FileSystem.moveFile"
+                  "M:Axial.Flow.FileSystem.FileSystem.createFileSymbolicLink"
+                  "M:Axial.Flow.FileSystem.FileSystem.createDirectorySymbolicLink"
+                  "M:Axial.Flow.FileSystem.FileSystem.getSymbolicLinkTarget"
+                  "M:Axial.Flow.FileSystem.FileSystem.resolveSymbolicLinkTarget"
                   "M:Axial.Flow.FileSystem.FileSystem.openFile"
                   "M:Axial.Flow.FileSystem.FileSystem.openFileWithAccess"
                   "M:Axial.Flow.FileSystem.FileSystem.openFileWithShare"
@@ -787,10 +791,15 @@ let pageSpecs = [
         OutPath = ["service"; "process"; "_index.md"]
         Title = "Services Process"
         Description = "Source-documented external process service for Axial.Flow.Process."
-        Intro = "This page shows the external-process service package. `IProcess` models command execution as an asynchronous workflow service and returns a `ProcessResult` with exit code, standard output, and standard error. Keep process execution behind this service contract so tests can return deterministic results without shelling out."
+        Intro = "This page shows the external-process service package. Immutable `Command` and `Pipeline` values preserve shell-like left-to-right composition without shell parsing. `Process.run` executes through the explicit `IProcess` capability, connects real standard streams, captures complete output, tracks every exit code, and reports startup, cancellation, I/O, and non-zero exits through `ProcessError`. Use the streaming variants when output must be observed before completion."
         SymbolIds = [
-            "Service", ["T:Axial.Flow.Process.IProcess"; "T:Axial.Flow.Process.ProcessResult"]
-            "Helpers", ["M:Axial.Flow.Process.Process.execute"; "P:Axial.Flow.Process.Process.live"; "P:Axial.Flow.Process.Process.layer"]
+            "Model", ["T:Axial.Flow.Process.Command"; "T:Axial.Flow.Process.Pipeline"; "T:Axial.Flow.Process.ProcessResult"; "T:Axial.Flow.Process.ProcessOutput"; "T:Axial.Flow.Process.ProcessError"]
+            "Service", ["T:Axial.Flow.Process.IProcess"]
+            "Errors", ["M:Axial.Flow.Process.ProcessError.describe"]
+            "Commands", ["M:Axial.Flow.Process.Process.command"; "M:Axial.Flow.Process.Process.fileName"; "M:Axial.Flow.Process.Process.arguments"; "M:Axial.Flow.Process.Process.tryWorkingDirectory"; "M:Axial.Flow.Process.Process.environmentVariables"; "M:Axial.Flow.Process.Process.tryInput"; "M:Axial.Flow.Process.Process.arg"; "M:Axial.Flow.Process.Process.workingDirectory"; "M:Axial.Flow.Process.Process.environment"; "M:Axial.Flow.Process.Process.removeEnvironment"; "M:Axial.Flow.Process.Process.input"; "M:Axial.Flow.Process.Process.pipeline"; "M:Axial.Flow.Process.Process.commands"; "M:Axial.Flow.Process.Process.pipe"]
+            "Execution", ["M:Axial.Flow.Process.Process.run"; "M:Axial.Flow.Process.Process.runResult"; "M:Axial.Flow.Process.Process.runStreaming"; "M:Axial.Flow.Process.Process.runResultStreaming"; "M:Axial.Flow.Process.Process.execute"]
+            "Concise DSL", ["M:Axial.Flow.Process.DSL.cmd"; "M:Axial.Flow.Process.DSL.cwd"; "M:Axial.Flow.Process.DSL.env"; "M:Axial.Flow.Process.DSL.stdin"; "M:Axial.Flow.Process.DSL.run"; "M:Axial.Flow.Process.DSL.runResult"]
+            "Implementations", ["P:Axial.Flow.Process.Process.live"; "P:Axial.Flow.Process.Process.layer"]
         ]
         Alias = None
     }

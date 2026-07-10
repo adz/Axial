@@ -4,7 +4,7 @@ linkTitle: "ProcessResult"
 weight: 1001
 ---
 
-Represents the outcome of an external process execution.
+Represents the captured outcome of an external process pipeline.
 
 ## Signature
 
@@ -16,6 +16,7 @@ Represents the outcome of an external process execution.
 
 | Field | Description |
 | --- | --- |
-| `ExitCode` | The exit code returned by the process. |
-| `StdOut` | The standard output stream of the process. |
-| `StdErr` | The standard error stream of the process. |
+| `ExitCode` | The exit code returned by the last process. |
+| `StdOut` | The standard output produced by the last process. |
+| `StdErr` | The combined standard error produced by every process. |
+| `ExitCodes` | The exit code of each process, from left to right. |

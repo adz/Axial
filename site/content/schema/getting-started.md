@@ -64,10 +64,10 @@ separate implementation. See [The Schema DSL](./dsl/) for the full field and con
 ## Parse Raw Input
 
 ```fsharp
-open Axial.Validation.Schema
+open Axial.Schema
 
 let raw = RawInput.ofNameValues [ "email", "ada@example.com"; "age", "36" ]
-let parsed = Input.parse SignupSchema.schema raw
+let parsed = Model.parse SignupSchema.schema raw
 
 match parsed.Result with
 | Ok signup -> printfn "trusted: %A" signup

@@ -34,7 +34,7 @@ module OptionalSchemaParseTests =
     let ``parse maps missing optional fields to None`` () =
         let raw = RawInput.Object(Map.ofList [ "name", RawInput.Scalar "Ada" ])
 
-        let parsed = Input.parse (profileSchema ()) raw
+        let parsed = Model.parse (profileSchema ()) raw
 
         test <@ parsed.Result = Ok { Name = "Ada"; Nickname = None; Age = None } @>
 
@@ -49,7 +49,7 @@ module OptionalSchemaParseTests =
             )
             |> RawInput.ofJsonLikeValue
 
-        let parsed = Input.parse (profileSchema ()) raw
+        let parsed = Model.parse (profileSchema ()) raw
 
         test <@ parsed.Result = Ok { Name = "Ada"; Nickname = None; Age = None } @>
 
@@ -63,7 +63,7 @@ module OptionalSchemaParseTests =
                       "age", RawInput.Scalar "36" ]
             )
 
-        let parsed = Input.parse (profileSchema ()) raw
+        let parsed = Model.parse (profileSchema ()) raw
 
         test <@ parsed.Result = Ok { Name = "Ada"; Nickname = Some "Lady A"; Age = Some 36 } @>
 
@@ -76,7 +76,7 @@ module OptionalSchemaParseTests =
                       "nickname", RawInput.Scalar "A" ]
             )
 
-        let parsed = Input.parse (profileSchema ()) raw
+        let parsed = Model.parse (profileSchema ()) raw
 
         test <@ not parsed.IsValid @>
 
@@ -89,20 +89,20 @@ module OptionalSchemaParseTests =
         let schema = profileSchema ()
         let valid = { Name = "Ada"; Nickname = None; Age = None }
 
-        let validation = Axial.Schema.Validation.validate schema valid
+        let validation = Axial.Schema.Model.reconstruct schema valid
 
-        test <@ Axial.Validation.Validation.toResult validation = Ok valid @>
+        test <@ validation = Ok valid @>
 
     [<Fact>]
     let ``validate checks present optional payloads`` () =
         let schema = profileSchema ()
         let invalid = { Name = "Ada"; Nickname = Some "A"; Age = None }
 
-        let validation = Axial.Schema.Validation.validate schema invalid
+        let validation = Axial.Schema.Model.reconstruct schema invalid
 
         test
             <@
-                Axial.Validation.Validation.toResult validation =
+                validation =
                     Error
                         {
                             Errors = []

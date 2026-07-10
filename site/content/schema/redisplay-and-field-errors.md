@@ -13,10 +13,10 @@ When boundary input fails to parse, a form should show the user's original text 
 
 ## The Handoff Value
 
-`Input.parse` always returns a `ParsedInput<'model, SchemaError>`:
+`Model.parse` always returns a `ParsedInput<'model, SchemaError>`:
 
 ```fsharp
-let parsed = Input.parse customerSchema raw
+let parsed = Model.parse customerSchema raw
 
 parsed.IsValid        // true when a trusted model exists
 parsed.Result         // Ok model | Error diagnostics

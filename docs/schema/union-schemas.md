@@ -24,7 +24,7 @@ Each case supplies a tag, a constructor, a payload extractor, and a payload sche
 ```fsharp
 open Axial.Refined
 open Axial.Schema
-open Axial.Validation.Schema
+open Axial.Schema
 
 type CardDetails =
     {
@@ -82,7 +82,7 @@ let raw =
         ]
     )
 
-let parsed = Input.parse checkoutSchema raw
+let parsed = Model.parse checkoutSchema raw
 let errors = parsed.Errors
 ```
 

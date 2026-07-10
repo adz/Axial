@@ -12,3 +12,5 @@ API reference for the Error Handling area — everything here ships in the **`Ax
 - [`Result`](./result/) — focused helpers, guards, and the `result {}` builder over standard F# `Result`.
 - [`Validation`](./validation/) — accumulating validation and the `validate {}` builder (namespace `Axial.Validation`).
 - [`Diagnostics`](./diagnostics/) — path-aware error trees: inspection, merging, and rendering.
+- [`Refined`](./refined/) — parse and refine single values into types that carry their own proof (namespace
+  `Axial.Refined`).

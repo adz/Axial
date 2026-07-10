@@ -49,18 +49,16 @@ let parseQuantityText : Policy<OrderEnv, OrderError, string, int> =
 let refinePositive : Policy<OrderEnv, OrderError, int, PositiveInt> =
     Policy.withError Refine.positiveInt QuantityNotPositive
 
-// 3. Schema input result: adapt Input.parse over raw boundary input.
+// 3. Schema input result: adapt Model.parse over raw boundary input.
 let parseOrderLine : Policy<OrderEnv, OrderError, RawInput, OrderLine> =
     Policy.lift
-        (fun raw -> (Input.parse orderLineSchema raw).Result)
+        (fun raw -> (Model.parse orderLineSchema raw).Result)
         (Diagnostics.flatten >> LineRejected)
 
 // 4. Validation result: adapt intrinsic validation of an existing model.
 let validateOrderLine : Policy<OrderEnv, OrderError, OrderLine, OrderLine> =
     Policy.lift
-        (fun line ->
-            Axial.Schema.Validation.validate orderLineSchema line
-            |> Axial.Validation.Validation.toResult)
+        (fun line -> Axial.Schema.Model.reconstruct orderLineSchema line)
         (Diagnostics.flatten >> LineRejected)
 
 // 5. Contextual rules: adapt a RuleSet evaluated with the workflow environment.

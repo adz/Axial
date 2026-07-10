@@ -34,3 +34,5 @@ orchestration syntax.
 - [`FileSystem`](./service/filesystem/) — `Axial.Flow.FileSystem`.
 - [`Http`](./service/http/) — `Axial.Flow.Http`.
 - [`Process`](./service/process/) — `Axial.Flow.Process`.
+
+See [Processes and pipelines](../../flow/processes/) for the shell-like authoring guide and Bash comparisons.
