@@ -471,6 +471,7 @@ module internal ModelFieldCheck =
             | EnumValueDefinition _ -> valueDefinition.Constraints
             | OptionValueDefinition _ -> valueDefinition.Constraints
             | MapValueDefinition _ -> valueDefinition.Constraints
+            | LazyValueDefinition deferred -> gather (deferred.Force()) @ valueDefinition.Constraints
 
         gather definition
 
@@ -486,6 +487,7 @@ module internal ModelFieldCheck =
             | EnumValueDefinition _ -> invalidOp "Enum value schemas have no underlying primitive kind."
             | OptionValueDefinition _ -> invalidOp "Optional value schemas have no underlying primitive kind."
             | MapValueDefinition _ -> invalidOp "Map value schemas have no underlying primitive kind."
+            | LazyValueDefinition _ -> invalidOp "Deferred model value schemas have no underlying primitive kind."
 
         kindOf definition
 
@@ -501,6 +503,7 @@ module internal ModelFieldCheck =
             | EnumValueDefinition _ -> invalidOp "Enum values have no underlying primitive representation."
             | OptionValueDefinition _ -> invalidOp "Optional values have no underlying primitive representation."
             | MapValueDefinition _ -> invalidOp "Map values have no underlying primitive representation."
+            | LazyValueDefinition _ -> invalidOp "Deferred model values have no underlying primitive representation."
 
         project definition value
 
@@ -547,6 +550,8 @@ module internal ModelFieldCheck =
         let constraints = allConstraints valueSchema @ fieldConstraints
 
         match valueSchema.Shape with
+        | LazyValueDefinition deferred ->
+            validateValue (deferred.Force()) (valueSchema.Constraints @ fieldConstraints) path value
         | RefinedValueDefinition(raw, ops) ->
             match raw.Shape with
             | NestedValueDefinition _
@@ -556,6 +561,9 @@ module internal ModelFieldCheck =
             | EnumValueDefinition _
             | OptionValueDefinition _
             | MapValueDefinition _ ->
+                validateValue raw (valueSchema.Constraints @ fieldConstraints) path (ops.Inspect value)
+                |> Axial.Validation.Validation.map (fun _ -> value)
+            | LazyValueDefinition _ ->
                 validateValue raw (valueSchema.Constraints @ fieldConstraints) path (ops.Inspect value)
                 |> Axial.Validation.Validation.map (fun _ -> value)
             | PrimitiveValueDefinition _

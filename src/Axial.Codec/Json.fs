@@ -396,6 +396,17 @@ module rec Json =
                 else
                     let struct (payload, next) = payloadDecoder src
                     struct (optional.WrapSome payload, next)
+        | LazyValueDefinition deferred ->
+            let mutable compiled: Decoder<obj> option = None
+            fun src ->
+                let decoder =
+                    match compiled with
+                    | Some decoder -> decoder
+                    | None ->
+                        let decoder = compileValueDecoderObj (deferred.Force())
+                        compiled <- Some decoder
+                        decoder
+                decoder src
 
     let private compileErasedModelDecoder (model: ModelSchemaDefinition<obj>) : Decoder<obj> =
         let matchers =
@@ -543,6 +554,17 @@ module rec Json =
                 match optional.TryUnwrap value with
                 | Some payload -> payloadEncoder writer payload
                 | None -> writer.WriteString "null"
+        | LazyValueDefinition deferred ->
+            let mutable compiled: Encoder<obj> option = None
+            fun writer value ->
+                let encoder =
+                    match compiled with
+                    | Some encoder -> encoder
+                    | None ->
+                        let encoder = compileValueEncoderObj (deferred.Force())
+                        compiled <- Some encoder
+                        encoder
+                encoder writer value
 
     /// Writes one model field, choosing the leading-comma prefix from whether an earlier field was written,
     /// and reports whether it wrote anything so None-valued optional fields can be omitted.
@@ -779,6 +801,11 @@ module rec Json =
             fun src ->
                 let struct (value, next) = objDecoder src
                 struct (unbox<'field> value, next)
+        | LazyValueDefinition _ ->
+            let objDecoder = compileValueDecoderObj definition
+            fun src ->
+                let struct (value, next) = objDecoder src
+                struct (unbox<'field> value, next)
 
     let private compileValueEncoder<'field> (definition: ValueSchemaDefinition) : Encoder<'field> =
         match definition.Shape with
@@ -808,6 +835,9 @@ module rec Json =
         | UnionInlineValueDefinition _
         | EnumValueDefinition _
         | OptionValueDefinition _ ->
+            let objEncoder = compileValueEncoderObj definition
+            fun writer value -> objEncoder writer (box value)
+        | LazyValueDefinition _ ->
             let objEncoder = compileValueEncoderObj definition
             fun writer value -> objEncoder writer (box value)
 

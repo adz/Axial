@@ -1,0 +1,8 @@
+/// A recursive category tree used to prove self-references in generated schemas.
+contract Category.v1 {
+  /// Stable display name.
+  name: text [ min 1 ]
+
+  /// Child categories use the same wire contract.
+  children: list Category.v1
+}

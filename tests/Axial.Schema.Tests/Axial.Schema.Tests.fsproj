@@ -35,12 +35,14 @@
     <Compile Include="SchemaValidationTests.fs" />
     <Compile Include="ContextRulesTests.fs" />
     <Compile Include="ContractTests.fs" />
+    <Compile Include="RecursiveSchemaTests.fs" />
     <Compile Include="SchemaDiagnosticsRenderingTests.fs" />
     <Compile Include="SchemaConstraintCheckTests.fs" />
     <Compile Include="SchemaRefinedValueCheckTests.fs" />
     <Compile Include="RefinedCatalogSchemaTests.fs" />
     <Compile Include="SchemaVerticalSliceProofTests.fs" />
     <Compile Include="contracts/geo.g.fs" />
+    <Compile Include="contracts/category.g.fs" />
     <Compile Include="contracts/signup.g.fs" />
     <Compile Include="contracts/payment.g.fs" />
     <Compile Include="GeneratedContractTests.fs" />
@@ -58,6 +60,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Axial.Schema\Axial.Schema.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Codec\Axial.Codec.fsproj" />
   </ItemGroup>
 
 </Project>

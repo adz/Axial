@@ -111,6 +111,7 @@ module Emitter =
         | Primitive PDate -> "Value.date"
         | Primitive PDateTime -> "Value.dateTime"
         | Primitive PGuid -> "Value.guid"
+        | Reference reference when reference.RefName = contractName -> "Value.lazyOf (fun () -> schema)"
         | Reference reference -> $"Value.nested {reference.RefName}.schema"
         | ListOf element -> $"Value.manyOf {parenthesize (baseValueExpr contractName fieldName element)}"
         | MapOf element -> $"Value.map {parenthesize (baseValueExpr contractName fieldName element)}"
@@ -209,6 +210,16 @@ module Emitter =
         for contract in file.Contracts do
             let contractRef = $"{fileName}, {contract.ContractName}.v{contract.Version}"
 
+            let rec hasSelfReference fieldType =
+                match fieldType with
+                | Reference reference -> reference.RefName = contract.ContractName && reference.RefVersion = contract.Version
+                | ListOf element
+                | MapOf element -> hasSelfReference element
+                | UnionBlock(_, cases) ->
+                    cases |> List.exists (fun case -> case.CaseRef.RefName = contract.ContractName && case.CaseRef.RefVersion = contract.Version)
+                | Primitive _
+                | LiteralUnion _ -> false
+
             let caseFields =
                 contract.Fields
                 |> List.filter (fun field ->
@@ -288,7 +299,8 @@ module Emitter =
 
             line ""
             line $"    /// The schema declared by {fileName} ({contract.ContractName}.v{contract.Version})."
-            line $"    let schema : Schema<{contract.ContractName}> ="
+            let recursion = if contract.Fields |> List.exists (fun field -> hasSelfReference field.FieldType) then " rec" else ""
+            line $"    let{recursion} schema : Schema<{contract.ContractName}> ="
 
             let parameters =
                 contract.Fields

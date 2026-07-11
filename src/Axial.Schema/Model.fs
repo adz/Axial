@@ -94,6 +94,7 @@ module Model =
             | EnumValueDefinition _ -> valueDefinition.Constraints
             | OptionValueDefinition _ -> valueDefinition.Constraints
             | MapValueDefinition _ -> valueDefinition.Constraints
+            | LazyValueDefinition deferred -> gather (deferred.Force()) @ valueDefinition.Constraints
 
         gather definition
 
@@ -113,6 +114,7 @@ module Model =
             | EnumValueDefinition _ -> invalidOp "Enum value schemas have no underlying primitive kind."
             | OptionValueDefinition _ -> invalidOp "Optional value schemas have no underlying primitive kind."
             | MapValueDefinition _ -> invalidOp "Map value schemas have no underlying primitive kind."
+            | LazyValueDefinition _ -> invalidOp "Deferred model value schemas have no underlying primitive kind."
 
         kindOf definition
 
@@ -128,6 +130,7 @@ module Model =
             | EnumValueDefinition _
             | OptionValueDefinition _
             | MapValueDefinition _ -> value
+            | LazyValueDefinition _ -> value
 
         construct definition primitive
 
@@ -190,6 +193,8 @@ module Model =
 
     let rec private parseValue options valueSchema fieldConstraints path raw =
         match valueSchema.Shape with
+        | LazyValueDefinition deferred ->
+            parseValue options (deferred.Force()) (valueSchema.Constraints @ fieldConstraints) path raw
         | OptionValueDefinition optional ->
             // Absence is a legal parse result for optional values: missing (and JSON null, which raw input adapters
             // lower to Missing) becomes None, while present input parses through the payload schema into Some. The

@@ -137,7 +137,9 @@ module Resolver =
                     let declaredInFile =
                         file.Contracts |> List.exists (fun candidate -> candidate.ContractName = reference.RefName)
 
-                    if declaredInFile && not (declaredSoFar.Contains reference.RefName) then
+                    let isSelf = reference.RefName = contract.ContractName && reference.RefVersion = contract.Version
+
+                    if declaredInFile && not isSelf && not (declaredSoFar.Contains reference.RefName) then
                         report file.FilePath line
                             $"'{reference.RefName}' must be declared before '{contract.ContractName}' uses it"
 
@@ -211,6 +213,9 @@ module Resolver =
                             for case in cases do
                                 resolveReference file.FilePath case.CaseLine case.CaseRef
                                 checkOrder case.CaseLine case.CaseRef
+
+                                if case.CaseRef.RefName = contract.ContractName && case.CaseRef.RefVersion = contract.Version then
+                                    report file.FilePath case.CaseLine "recursive union-block payloads are not supported; use a recursive field reference"
 
                     checkType field.FieldType
 

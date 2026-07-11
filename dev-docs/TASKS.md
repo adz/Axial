@@ -32,26 +32,6 @@ Source analysis: `dev-docs/current-ideas/zio-schema-comparison.md` (2026-07-11 d
 genuinely useful for this project's goals, ranked. Items 1–2 are worth doing before 1.0; item 3 rides along with
 anything. None of this is committed scope — the schema surface is still settling.
 
-### 29.1 Recursive schemas (the one expressiveness wall)
-
-The builder cannot express a self-nesting model at all (comment trees, nested config sections, org hierarchies) —
-ZIO does it with a `Lazy` node. A user who hits this has no workaround inside Axial.
-
-- Core: a lazy node in the value-definition DU (`src/Axial.Schema/Schema.fs`, `ValueSchemaDefinition.Shape` /
-  `ValueShape`) — something like `LazyValueDefinition of (unit -> ValueSchemaDefinition)` with memoized force, plus
-  `Value.lazyOf : (unit -> Schema<'model>) -> ValueSchema<'model>` (or on `ValueSchema`) so a schema can reference
-  itself through a thunk.
-- Touch points to walk (each currently assumes a finite tree): `Model.parse`/`Model.reconstruct` recursion (force
-  the thunk per visit — naturally terminates on finite *data*), `Codec` compile (compile-on-first-use with a cache
-  keyed by the thunk/definition identity, or cycles hang the compiler), `Inspect` (needs cycle detection — probably
-  a `ValueShape.Recursive` marker with an identity/reference rather than infinite expansion), `JsonSchema.generate`
-  (this finally forces `$defs` hoisting + `$ref` emission — the docs currently note inlining "cannot fail to
-  terminate" precisely because recursion is inexpressible; that note inverts).
-- Grammar/generator: recursive contract refs (`contract Category.v1 { children: list Category.v1 }`) — the resolver's
-  declare-before-use rule needs a self-reference exception; emitter needs `Value.lazyOf (fun () -> Category.schema)`.
-  Can trail the core work.
-- Tests: recursive record round-trip through parse/reconstruct/codec; JSON Schema `$ref` output; Inspect terminates;
-  stack safety on deep (not just cyclic) data.
 
 ### 29.2 Test-data generation from schema
 

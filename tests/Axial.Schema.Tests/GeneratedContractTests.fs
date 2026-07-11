@@ -12,6 +12,22 @@ open Xunit
 module GeneratedContractTests =
 
     [<Fact>]
+    let ``generated recursive contract parses child trees`` () =
+        let raw =
+            RawInput.Object(
+                Map.ofList
+                    [ "name", RawInput.Scalar "root"
+                      "children",
+                      RawInput.Many
+                          [ RawInput.Object(Map.ofList [ "name", RawInput.Scalar "leaf"; "children", RawInput.Many [] ]) ] ]
+            )
+
+        match Axial.Tests.Generated.Category.parse raw with
+        | parsed when parsed.IsValid ->
+            test <@ parsed.Model.Children = [ { Axial.Tests.Generated.Category.Name = "leaf"; Children = [] } ] @>
+        | parsed -> failwithf "Expected recursive generated input to parse, got %A" parsed.Errors
+
+    [<Fact>]
     let ``validate promotes a draft record literal when every constraint passes`` () =
         let result =
             Signup.validate

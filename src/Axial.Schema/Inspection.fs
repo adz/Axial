@@ -29,6 +29,10 @@ type ValueShape =
     | Optional of payload: ValueDescription
     /// <summary>A dictionary value, keyed by text, whose entries share the supplied item description.</summary>
     | MapOf of item: ValueDescription
+    /// <summary>The first expansion of a deferred recursive value, identified within this inspection tree.</summary>
+    | Deferred of reference: int * value: ValueDescription
+    /// <summary>A reference back to an already-expanding deferred value.</summary>
+    | Recursive of reference: int
 
 /// <summary>Describes one value schema: its shape, declared format, and portable constraint metadata.</summary>
 and ValueDescription =
@@ -129,54 +133,76 @@ and EnumDescription =
 /// </remarks>
 [<RequireQualifiedAccess>]
 module Inspect =
-    let rec internal describeValueDefinition (definition: ValueSchemaDefinition) : ValueDescription =
-        let shape =
+    let private describeValueDefinitionRoot (definition: ValueSchemaDefinition) : ValueDescription =
+        let identities = System.Collections.Generic.Dictionary<DeferredValueDefinition, int>(HashIdentity.Reference)
+        let expanding = System.Collections.Generic.HashSet<DeferredValueDefinition>(HashIdentity.Reference)
+
+        let rec describeValueDefinition (definition: ValueSchemaDefinition) : ValueDescription =
+            let metadata shape =
+                { Shape = shape
+                  Format = definition.Format
+                  Constraints = definition.Constraints
+                  Description = definition.Description
+                  Default = definition.Default }
+
             match definition.Shape with
-            | PrimitiveValueDefinition kind -> ValueShape.Primitive kind
-            | RefinedValueDefinition(raw, _) -> ValueShape.Refined(describeValueDefinition raw)
-            | NestedValueDefinition(nested, _) ->
-                ValueShape.Nested
-                    { Fields = nested.Fields |> List.map describeFieldDescriptor
-                      Description = nested.Description }
-            | ManyValueDefinition collection -> ValueShape.Many(describeValueDefinition collection.Item)
-            | UnionValueDefinition union ->
-                ValueShape.Union
-                    { DiscriminatorField = ExternalFieldName.value union.DiscriminatorField
-                      PayloadField = ExternalFieldName.value union.PayloadField
-                      Cases =
-                        union.Cases
-                        |> List.map (fun case ->
-                            { Tag = case.Tag
-                              Payload = describeValueDefinition case.Payload }) }
-            | UnionInlineValueDefinition union ->
-                ValueShape.UnionInline
-                    { DiscriminatorField = ExternalFieldName.value union.DiscriminatorField
-                      Cases =
-                        union.Cases
-                        |> List.map (fun case ->
-                            match case.Payload.Shape with
-                            | NestedValueDefinition(nested, _) ->
-                                { Tag = case.Tag
-                                  Payload =
-                                    { Fields = nested.Fields |> List.map describeFieldDescriptor
-                                      Description = nested.Description } }
-                            | _ -> invalidOp "Union-inline case payloads must be nested model schemas.") }
-            | EnumValueDefinition enum ->
-                ValueShape.Enum { Cases = enum.Cases |> List.map (fun case -> { Tag = case.Tag }) }
-            | OptionValueDefinition optional -> ValueShape.Optional(describeValueDefinition optional.Payload)
-            | MapValueDefinition collection -> ValueShape.MapOf(describeValueDefinition collection.Item)
+            | LazyValueDefinition deferred ->
+                let reference =
+                    match identities.TryGetValue deferred with
+                    | true, value -> value
+                    | false, _ ->
+                        let value = identities.Count + 1
+                        identities.Add(deferred, value)
+                        value
 
-        { Shape = shape
-          Format = definition.Format
-          Constraints = definition.Constraints
-          Description = definition.Description
-          Default = definition.Default }
+                if expanding.Contains deferred then
+                    metadata (ValueShape.Recursive reference)
+                else
+                    expanding.Add deferred |> ignore
+                    let value = describeValueDefinition (deferred.Force())
+                    expanding.Remove deferred |> ignore
+                    metadata (ValueShape.Deferred(reference, value))
+            | _ ->
+                let shape =
+                    match definition.Shape with
+                    | PrimitiveValueDefinition kind -> ValueShape.Primitive kind
+                    | RefinedValueDefinition(raw, _) -> ValueShape.Refined(describeValueDefinition raw)
+                    | NestedValueDefinition(nested, _) ->
+                        ValueShape.Nested
+                            { Fields = nested.Fields |> List.map describeFieldDescriptor
+                              Description = nested.Description }
+                    | ManyValueDefinition collection -> ValueShape.Many(describeValueDefinition collection.Item)
+                    | UnionValueDefinition union ->
+                        ValueShape.Union
+                            { DiscriminatorField = ExternalFieldName.value union.DiscriminatorField
+                              PayloadField = ExternalFieldName.value union.PayloadField
+                              Cases = union.Cases |> List.map (fun case -> { Tag = case.Tag; Payload = describeValueDefinition case.Payload }) }
+                    | UnionInlineValueDefinition union ->
+                        ValueShape.UnionInline
+                            { DiscriminatorField = ExternalFieldName.value union.DiscriminatorField
+                              Cases =
+                                union.Cases
+                                |> List.map (fun case ->
+                                    match case.Payload.Shape with
+                                    | NestedValueDefinition(nested, _) ->
+                                        { Tag = case.Tag; Payload = { Fields = nested.Fields |> List.map describeFieldDescriptor; Description = nested.Description } }
+                                    | _ -> invalidOp "Union-inline case payloads must be nested model schemas.") }
+                    | EnumValueDefinition enum -> ValueShape.Enum { Cases = enum.Cases |> List.map (fun case -> { Tag = case.Tag }) }
+                    | OptionValueDefinition optional -> ValueShape.Optional(describeValueDefinition optional.Payload)
+                    | MapValueDefinition collection -> ValueShape.MapOf(describeValueDefinition collection.Item)
+                    | LazyValueDefinition _ -> invalidOp "Deferred definitions are handled before ordinary shapes."
+                metadata shape
 
-    and internal describeFieldDescriptor (field: FieldDescriptor<obj>) : FieldDescription =
-        { Name = ExternalFieldName.value field.ExternalName
-          Order = FieldOrder.value field.Order
-          Value = describeValueDefinition field.ValueSchema
-          Constraints = field.Constraints }
+        and describeFieldDescriptor (field: FieldDescriptor<obj>) : FieldDescription =
+            { Name = ExternalFieldName.value field.ExternalName
+              Order = FieldOrder.value field.Order
+              Value = describeValueDefinition field.ValueSchema
+              Constraints = field.Constraints }
+
+        describeValueDefinition definition
+
+    let internal describeValueDefinition definition = describeValueDefinitionRoot definition
+
 
     let internal describeModelDefinition (definition: ModelSchemaDefinition<'model>) : ModelDescription =
         { Fields =
@@ -184,7 +210,7 @@ module Inspect =
             |> List.map (fun field ->
                 { Name = ExternalFieldName.value field.ExternalName
                   Order = FieldOrder.value field.Order
-                  Value = describeValueDefinition field.ValueSchema
+                  Value = describeValueDefinitionRoot field.ValueSchema
                   Constraints = field.Constraints })
           Description = definition.Description }
 

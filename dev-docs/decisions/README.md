@@ -17,6 +17,23 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 - Multi-version `schemagen` output is not part of the engine. It follows only after a real hand-written version chain
   has been dogfooded.
 
+## 2026-07-13: Recursive schemas use one memoized deferred model node
+
+- `Value.lazyOf : (unit -> Schema<'model>) -> ValueSchema<'model>` is the recursion primitive. Its thunk is memoized;
+  parsing and reconstruction force it at each finite data node, while codec compilation installs a delayed plan so
+  compiling a cyclic schema graph terminates.
+- Inspection assigns traversal-local integer identities. The first occurrence is `ValueShape.Deferred(id, value)`;
+  an edge back to a value currently being expanded is `ValueShape.Recursive id`. The public inspection tree therefore
+  remains finite without runtime reflection or global identity state.
+- JSON Schema lowers deferred identities to deterministic `recursiveN` entries in `$defs` and every recursive edge to
+  `$ref`. Non-recursive schemas retain their previous inlined output.
+- `schemagen` permits a contract to reference its own pinned version and emits `Value.lazyOf`; references to later,
+  different contracts still violate declaration order. Internally-tagged union payloads remain immediate nested model
+  schemas because their fields must be known while validating discriminator collisions; recursive models can contain
+  unions, but an inline-union case cannot itself be the deferred edge.
+- Recursive authoring uses a delayed schema holder so the thunk returns the same built schema. Calling a schema
+  factory afresh from the thunk would create an endless sequence of distinct deferred nodes and defeat cycle identity.
+
 ## Current Invariants
 
 - `Flow<'env, 'error, 'value>` is the public workflow model. Platform carriers are execution/adaptation boundaries, not

@@ -38,6 +38,7 @@ module EmitterGoldenTests =
     [<InlineData("geo.contract", "geo.g.fs")>]
     [<InlineData("signup.contract", "signup.g.fs")>]
     [<InlineData("payment.contract", "payment.g.fs")>]
+    [<InlineData("category.contract", "category.g.fs")>]
     let ``the emitter reproduces every checked-in golden file byte for byte`` (contractName: string) (goldenName: string) =
         let emitted = Emitter.emit "Axial.Tests.Generated" (emitCorpusFile contractName)
 

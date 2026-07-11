@@ -184,6 +184,8 @@ module JsonSchema =
                 [ "\"type\":\"object\""
                   sprintf "\"additionalProperties\":{%s}" (valueKeywords [] item |> String.concat ",") ]
                 @ constraintKeywords constraints
+            | ValueShape.Deferred(reference, _) -> [ sprintf "\"$ref\":\"#/$defs/recursive%d\"" reference ]
+            | ValueShape.Recursive reference -> [ sprintf "\"$ref\":\"#/$defs/recursive%d\"" reference ]
             | ValueShape.Refined _ -> failwith "underlyingShape never returns a refined shape."
 
         descriptionKeyword @ defaultKeyword @ shapeKeywords
@@ -194,6 +196,7 @@ module JsonSchema =
         match description.Shape with
         | ValueShape.Optional _ -> true
         | ValueShape.Refined underlying -> isOptionalDescription underlying
+        | ValueShape.Deferred(_, value) -> isOptionalDescription value
         | ValueShape.Primitive _
         | ValueShape.Nested _
         | ValueShape.Many _
@@ -201,6 +204,7 @@ module JsonSchema =
         | ValueShape.UnionInline _
         | ValueShape.Enum _
         | ValueShape.MapOf _ -> false
+        | ValueShape.Recursive _ -> false
 
     and private inlineCaseKeywords (discriminatorField: string) (tag: string) (model: ModelDescription) =
         let discriminatorProperty = sprintf "\"%s\":{\"const\":%s}" (escape discriminatorField) (literal tag)
@@ -250,6 +254,41 @@ module JsonSchema =
     [<Literal>]
     let private draft2020_12 = "https://json-schema.org/draft/2020-12/schema"
 
+    let private deferredDefinitions (roots: ValueDescription list) =
+        let found = System.Collections.Generic.Dictionary<int, ValueDescription>()
+
+        let rec visitValue description =
+            match description.Shape with
+            | ValueShape.Deferred(reference, value) ->
+                if not (found.ContainsKey reference) then
+                    found.Add(reference, value)
+                    visitValue value
+            | ValueShape.Refined value
+            | ValueShape.Many value
+            | ValueShape.Optional value
+            | ValueShape.MapOf value -> visitValue value
+            | ValueShape.Nested model -> visitModel model
+            | ValueShape.Union union -> union.Cases |> List.iter (fun case -> visitValue case.Payload)
+            | ValueShape.UnionInline union -> union.Cases |> List.iter (fun case -> visitModel case.Payload)
+            | ValueShape.Primitive _
+            | ValueShape.Enum _
+            | ValueShape.Recursive _ -> ()
+
+        and visitModel model = model.Fields |> List.iter (fun field -> visitValue field.Value)
+
+        roots |> List.iter visitValue
+
+        found
+        |> Seq.sortBy _.Key
+        |> Seq.map (fun pair ->
+            sprintf "\"recursive%d\":{%s}" pair.Key (valueKeywords [] pair.Value |> String.concat ","))
+        |> Seq.toList
+
+    let private definitionsKeyword roots =
+        match deferredDefinitions roots with
+        | [] -> []
+        | definitions -> [ sprintf "\"$defs\":{%s}" (String.concat "," definitions) ]
+
     /// <summary>Generates a compact JSON Schema document from a built model schema's metadata.</summary>
     /// <param name="schema">The built model schema to lower.</param>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
@@ -261,16 +300,19 @@ module JsonSchema =
     /// </code>
     /// </example>
     let generate (schema: Schema<'model>) : string =
+        let model = Inspect.model schema
+        let roots = model.Fields |> List.map _.Value
         sprintf
             "{%s}"
-            (sprintf "\"$schema\":%s" (literal draft2020_12) :: modelKeywords (Inspect.model schema)
+            (sprintf "\"$schema\":%s" (literal draft2020_12) :: (modelKeywords model @ definitionsKeyword roots)
              |> String.concat ",")
 
     /// <summary>Generates a compact JSON Schema document for a standalone value schema.</summary>
     /// <param name="schema">The value schema to lower.</param>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
     let generateValue (schema: ValueSchema<'value>) : string =
+        let value = Inspect.value schema
         sprintf
             "{%s}"
-            (sprintf "\"$schema\":%s" (literal draft2020_12) :: valueKeywords [] (Inspect.value schema)
+            (sprintf "\"$schema\":%s" (literal draft2020_12) :: (valueKeywords [] value @ definitionsKeyword [ value ])
              |> String.concat ",")

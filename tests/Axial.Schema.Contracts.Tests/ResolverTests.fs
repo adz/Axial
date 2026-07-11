@@ -68,6 +68,19 @@ contract Geo.v1 {
         test <@ messages diagnostics |> List.exists (fun message -> message.Contains "'Geo' must be declared before 'Site'") @>
 
     [<Fact>]
+    let ``a contract may refer to its own pinned version`` () =
+        let diagnostics =
+            resolveOne
+                """
+contract Category.v1 {
+  name: text
+  children: list Category.v1
+}
+"""
+
+        test <@ diagnostics = [] @>
+
+    [<Fact>]
     let ``multiple versions of one contract are rejected`` () =
         let diagnostics =
             resolveOne

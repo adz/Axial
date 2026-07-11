@@ -676,6 +676,11 @@ and internal ValueSchemaShape =
     | OptionValueDefinition of OptionalValueDefinition
     /// <summary>A dictionary value whose entries are each described by the same item value schema, keyed by text.</summary>
     | MapValueDefinition of MapValueDefinition
+    /// <summary>A memoized deferred value definition used to close recursive model graphs.</summary>
+    | LazyValueDefinition of DeferredValueDefinition
+
+and [<ReferenceEquality>] internal DeferredValueDefinition =
+    { Force: unit -> ValueSchemaDefinition }
 
 /// <summary>
 /// Holds the type-erased payload value schema for an optional value, plus closures that move between the boxed
@@ -1136,6 +1141,47 @@ module Value =
     /// <summary>Describes a globally unique identifier represented as <see cref="T:System.Guid" />.</summary>
     let guid : ValueSchema<Guid> = primitive PrimitiveValueKind.Guid
 
+    /// <summary>Defers a nested model schema so the model can refer to itself.</summary>
+    /// <remarks>
+    /// The thunk is evaluated at most once. Use this only to close a recursive model graph; ordinary nested models
+    /// should use <see cref="M:Axial.Schema.Value.nested``1" /> because their schema is already available.
+    /// </remarks>
+    /// <param name="schema">A thunk returning the built schema when an interpreter reaches the recursive value.</param>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null or returns null.</exception>
+    /// <exception cref="T:System.ArgumentException">Thrown when the thunk returns an unbuilt schema.</exception>
+    /// <example>
+    /// <code>
+    /// let rec categorySchema () =
+    ///     Schema.recordFor&lt;Category, _&gt; (fun name children -&gt; { Name = name; Children = children })
+    ///     |&gt; Schema.text "name" _.Name
+    ///     |&gt; Schema.field "children" _.Children (Value.manyOf (Value.lazyOf categorySchema))
+    ///     |&gt; Schema.build
+    /// </code>
+    /// </example>
+    let lazyOf (schema: unit -> Schema<'model>) : ValueSchema<'model> =
+        if isNull (box schema) then nullArg (nameof schema)
+
+        let definition =
+            lazy
+                (let modelSchema = schema ()
+                 if isNull (box modelSchema) then nullArg (nameof schema)
+                 match modelSchema.Definition with
+                 | PendingDefinition -> invalidArg (nameof schema) "Expected the deferred function to return a built model schema."
+                 | ModelDefinition model ->
+                     { Shape = NestedValueDefinition(ModelSchemaErasure.erase model, box modelSchema)
+                       Format = None
+                       Constraints = []
+                       Description = None
+                       Default = None })
+
+        ValueSchema(
+            { Shape = LazyValueDefinition { Force = fun () -> definition.Value }
+              Format = None
+              Constraints = []
+              Description = None
+              Default = None }
+        )
+
     /// <summary>Returns the intrinsic primitive kind for a primitive value schema.</summary>
     /// <remarks>
     /// This accessor is intentionally strict about the schema being primitive itself. Use
@@ -1165,6 +1211,8 @@ module Value =
             invalidArg (nameof schema) "Expected a primitive value schema, but the schema is an optional value schema."
         | MapValueDefinition _ ->
             invalidArg (nameof schema) "Expected a primitive value schema, but the schema is a map value schema."
+        | LazyValueDefinition _ ->
+            invalidArg (nameof schema) "Expected a primitive value schema, but the schema is a deferred model value schema."
 
     /// <summary>
     /// Describes a named refined/domain value schema by pairing a raw value schema with a value-preserving
@@ -1435,11 +1483,11 @@ module Value =
             | UnionInlineValueDefinition _
             | EnumValueDefinition _
             | OptionValueDefinition _
+            | LazyValueDefinition _
             | MapValueDefinition _ ->
                 invalidArg
                     (nameof cases)
                     (sprintf "Union-inline case \"%s\" payload must be an object schema built with Value.nested." case.Definition.Tag))
-
         ValueSchema(
             { Shape =
                 UnionInlineValueDefinition
@@ -1521,6 +1569,7 @@ module Value =
         | UnionInlineValueDefinition _
         | EnumValueDefinition _
         | MapValueDefinition _ -> ()
+        | LazyValueDefinition _ -> ()
 
         let rec carriesRequired (definition: ValueSchemaDefinition) =
             let ownRequired =
@@ -1538,6 +1587,7 @@ module Value =
                | EnumValueDefinition _
                | OptionValueDefinition _
                | MapValueDefinition _ -> false
+               | LazyValueDefinition deferred -> carriesRequired (deferred.Force())
 
         if carriesRequired payload.Definition then
             invalidArg (nameof payload) "Optional value schemas cannot carry the required constraint."
@@ -1572,6 +1622,7 @@ module Value =
         | EnumValueDefinition _ -> false
         | OptionValueDefinition _ -> false
         | MapValueDefinition _ -> false
+        | LazyValueDefinition _ -> false
 
     /// <summary>Returns the intrinsic primitive kind beneath any refinement layers of a value schema.</summary>
     /// <remarks>
@@ -1604,6 +1655,8 @@ module Value =
                 invalidArg (nameof schema) "Optional value schemas have no underlying primitive kind."
             | MapValueDefinition _ ->
                 invalidArg (nameof schema) "Map value schemas have no underlying primitive kind."
+            | LazyValueDefinition _ ->
+                invalidArg (nameof schema) "Deferred model value schemas have no underlying primitive kind."
 
         kindOf schema.Definition
 
@@ -1639,6 +1692,8 @@ module Value =
             invalidArg (nameof schema) "Expected a refined value schema, but the schema is an optional value schema."
         | MapValueDefinition _ ->
             invalidArg (nameof schema) "Expected a refined value schema, but the schema is a map value schema."
+        | LazyValueDefinition _ ->
+            invalidArg (nameof schema) "Expected a refined value schema, but the schema is a deferred model value schema."
 
     let private underlyingClrType kind =
         match kind with
@@ -1704,6 +1759,8 @@ module Value =
                 invalidArg (nameof schema) "Optional value schemas have no underlying primitive representation."
             | MapValueDefinition _ ->
                 invalidArg (nameof schema) "Map value schemas have no underlying primitive representation."
+            | LazyValueDefinition _ ->
+                invalidArg (nameof schema) "Deferred model value schemas have no underlying primitive representation."
 
         fun value -> project schema.Definition (box value) |> unbox<'primitive>
 
@@ -1760,6 +1817,7 @@ module Value =
                 | EnumValueDefinition _ -> None
                 | OptionValueDefinition _ -> None
                 | MapValueDefinition _ -> None
+                | LazyValueDefinition deferred -> formatOf (deferred.Force())
 
         formatOf schema.Definition
 
@@ -1814,6 +1872,7 @@ module Value =
                 | EnumValueDefinition _ -> None
                 | OptionValueDefinition _ -> None
                 | MapValueDefinition _ -> None
+                | LazyValueDefinition deferred -> descriptionOf (deferred.Force())
 
         descriptionOf schema.Definition
 
@@ -1864,6 +1923,7 @@ module Value =
                 | EnumValueDefinition _ -> None
                 | OptionValueDefinition _ -> None
                 | MapValueDefinition _ -> None
+                | LazyValueDefinition deferred -> defaultOf (deferred.Force())
 
         defaultOf schema.Definition |> Option.map unbox<'value>
 
@@ -1906,6 +1966,7 @@ module Value =
             | EnumValueDefinition _ -> definition.Constraints
             | OptionValueDefinition _ -> definition.Constraints
             | MapValueDefinition _ -> definition.Constraints
+            | LazyValueDefinition deferred -> gather (deferred.Force()) @ definition.Constraints
 
         gather schema.Definition
 
