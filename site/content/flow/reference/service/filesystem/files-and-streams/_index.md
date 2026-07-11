@@ -10,6 +10,10 @@ This page shows the `FileSystem.FileSystem` helpers for file existence, mutation
 - [`Flow.FileSystem.deleteFile`](./m-flow-filesystem-filesystem-deletefile.md): Deletes a file through an explicit file-system service.
 - [`Flow.FileSystem.copyFile`](./m-flow-filesystem-filesystem-copyfile.md): Copies a file through an explicit file-system service.
 - [`Flow.FileSystem.moveFile`](./m-flow-filesystem-filesystem-movefile.md): Moves a file through an explicit file-system service.
+- [`Flow.FileSystem.createFileSymbolicLink`](./m-flow-filesystem-filesystem-createfilesymboliclink.md): Creates a symbolic link to a file through an explicit file-system service.
+- [`Flow.FileSystem.createDirectorySymbolicLink`](./m-flow-filesystem-filesystem-createdirectorysymboliclink.md): Creates a symbolic link to a directory through an explicit file-system service.
+- [`Flow.FileSystem.getSymbolicLinkTarget`](./m-flow-filesystem-filesystem-getsymboliclinktarget.md): Returns the immediate target stored in a symbolic link.
+- [`Flow.FileSystem.resolveSymbolicLinkTarget`](./m-flow-filesystem-filesystem-resolvesymboliclinktarget.md): Resolves a symbolic link target, optionally following the complete chain.
 - [`Flow.FileSystem.openFile`](./m-flow-filesystem-filesystem-openfile.md): Opens a file with the specified mode through an explicit file-system service.
 - [`Flow.FileSystem.openFileWithAccess`](./m-flow-filesystem-filesystem-openfilewithaccess.md): Opens a file with the specified mode and access through an explicit file-system service.
 - [`Flow.FileSystem.openFileWithShare`](./m-flow-filesystem-filesystem-openfilewithshare.md): Opens a file with the specified mode, access, and sharing behavior through an explicit file-system service.

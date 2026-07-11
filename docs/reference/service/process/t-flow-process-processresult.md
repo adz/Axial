@@ -1,10 +1,10 @@
 ---
 title: "Flow.Process.ProcessResult"
 linkTitle: "ProcessResult"
-weight: 1001
+weight: 1005
 ---
 
-Represents the captured outcome of an external process pipeline.
+ The complete structured transcript returned by a process execution.
 
 ## Signature
 
@@ -16,7 +16,12 @@ Represents the captured outcome of an external process pipeline.
 
 | Field | Description |
 | --- | --- |
-| `ExitCode` | The exit code returned by the last process. |
-| `StdOut` | The standard output produced by the last process. |
-| `StdErr` | The combined standard error produced by every process. |
-| `ExitCodes` | The exit code of each process, from left to right. |
+| `ExitCode` |  |
+| `ExitCodes` |  |
+| `StdOut` |  |
+| `StdErr` |  |
+| `StdOutCapture` |  |
+| `StdErrCapture` |  |
+| `Stages` |  |
+| `StartedAt` |  |
+| `Duration` |  |

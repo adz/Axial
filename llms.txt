@@ -14,6 +14,7 @@
 - **Scheduling**: Use `Schedule.retry schedule flow` for typed failure retries and `Schedule.repeat schedule flow` for repeating successes.
 - **STM (Software Transactional Memory)**: Use `TRef` for transactional state and `stm { }` for atomic, composable transitions. Use `STM.retry` and `STM.orElse` for coordination without locks.
 - **Streams**: Use `FlowStream` for effectful, backpressured pull-based sequences.
+- **Processes**: Open `Axial.Flow.Process.DSL`; construct safely tokenized commands with `cmd $"...{value}"`, connect typed endpoints with `=>`, and select `capture`, `console`, `stream`, or an explicit `Output.*` endpoint to produce Flow.
 
 ## The Flow Hierarchy
 Data flows from left to right. Later stages can bind earlier stages directly.
@@ -140,6 +141,10 @@ equivalent, Axial usually expects a different boundary shape rather than a 1:1 h
 - `catch`: Handle exceptions.
 - `attemptAsync`, `attemptTask`, `attemptValueTask`: Convert expected interop exceptions into typed `exn` failures.
 - `Schedule.retry`, `Schedule.repeat`: Apply retry/repeat policies.
+- Process topology: `Input.file "in" => cmd $"tool {arg}" => cmd $"next" => Output.file "out"`.
+- Process capture: `cmd $"git status --short" |> capture`; interpolation holes remain one argument and are never shell fragments.
+- Process streaming: `cmd $"dotnet test" |> stream |> FlowStream.runForEachFlow handleEvent`.
+- Shell escape hatches: use `bash $"...{arg}"`, `sh`, or `pwsh`; values are passed out-of-band. Use `bashText`/`shText`/`pwshText` only for deliberately assembled source.
 
 ## Usage in Prompting
 Users should point agents to `llms.txt` in the repo root, or the locally generated docs preview when available, for the full context.

@@ -177,12 +177,18 @@ module UnifiedServiceTests =
 
     [<Fact>]
     let ``Process: execute`` () =
+        let captured = { Text = ""; Bytes = Array.empty; Truncated = false }
+        let now = DateTimeOffset.UtcNow
+        let processResult =
+            { ExitCode = 0; StdOut = "out"; StdErr = ""; ExitCodes = [ 0 ]
+              StdOutCapture = { captured with Text = "out"; Bytes = Encoding.UTF8.GetBytes "out" }
+              StdErrCapture = captured; Stages = []; StartedAt = now; Duration = TimeSpan.Zero }
         let services = { 
             Process = 
                 { new IProcess with 
                     member _.Execute(_, _, _) =
-                        Task.FromResult(Ok { ExitCode = 0; StdOut = "out"; StdErr = ""; ExitCodes = [ 0 ] }) }
+                        async.Return(Ok processResult) }
             Console = Unchecked.defaultof<_>; FS = Unchecked.defaultof<_>; Http = Unchecked.defaultof<_>
         }
         
-        test <@ Flow.runSync services (Process.execute "echo" [ "hi" ]) = Exit.Success { ExitCode = 0; StdOut = "out"; StdErr = ""; ExitCodes = [ 0 ] } @>
+        test <@ Flow.runSync services (Process.execute<UnifiedServices> "echo" [ "hi" ]) = Exit.Success processResult @>

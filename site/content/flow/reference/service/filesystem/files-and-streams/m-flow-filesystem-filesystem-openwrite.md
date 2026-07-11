@@ -1,7 +1,7 @@
 ---
 title: "Flow.FileSystem.openWrite"
 linkTitle: "openWrite"
-weight: 2310
+weight: 2314
 type: docs
 ---
 

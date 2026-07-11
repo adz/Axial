@@ -1,11 +1,10 @@
 ---
 title: "Flow.Process.IProcess"
 linkTitle: "IProcess"
-weight: 1000
-type: docs
+weight: 1100
 ---
 
-Provides asynchronous execution for typed external-process pipelines.
+ Executes typed process pipelines for a concrete host platform.
 
 ## Signature
 

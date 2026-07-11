@@ -334,11 +334,11 @@ let pageSpecs = [
         Intro = "This page shows the `Axial.Schema` interpreter surface: raw boundary input, schema input parsing into `ParsedInput`, intrinsic validation of existing models, and contextual rule sets over already-trusted models. Core schema metadata stays in [Schema](../); these interpreters attach diagnostics, raw input, and redisplay behavior to it."
         SymbolIds = [
             "Raw input", ["T:Axial.Schema.RawInput"; "T:Axial.Schema.JsonLikeValue"; "M:Axial.Schema.RawInputModule.ofMap"; "M:Axial.Schema.RawInputModule.ofNameValues"; "M:Axial.Schema.RawInputModule.ofCliArgs"; "M:Axial.Schema.RawInputModule.ofJsonLikeValue"; "M:Axial.Schema.RawInputModule.ofJsonElement"; "M:Axial.Schema.RawInputModule.ofJsonDocument"; "M:Axial.Schema.RawInputModule.ofConfiguration"; "M:Axial.Schema.RawInputModule.redisplay"; "M:Axial.Schema.RawInputModule.redisplayPath"]
-            "Input parsing", ["T:Axial.Schema.ParsedInput`2"; "M:Axial.Schema.Model.parse"; "M:Axial.Schema.Model.parseWith"; "T:Axial.Schema.Model.Options"; "M:Axial.Schema.ParsedInputModule.mapErrors"; "M:Axial.Schema.ParsedInputModule.renderErrors"]
+            "Input parsing", ["T:Axial.Schema.ParsedInput`2"; "M:Axial.Schema.ModelModule.parse"; "M:Axial.Schema.ModelModule.parseWith"; "T:Axial.Schema.ModelModule.Options"; "M:Axial.Schema.ParsedInputModule.mapErrors"; "M:Axial.Schema.ParsedInputModule.renderErrors"]
             "Errors", ["T:Axial.Schema.SchemaError"]
             "Refined catalog schemas", ["M:Axial.Schema.RefinedSchema.nonBlankString"; "M:Axial.Schema.RefinedSchema.trimmedString"; "M:Axial.Schema.RefinedSchema.boundedString"; "M:Axial.Schema.RefinedSchema.slug"; "M:Axial.Schema.RefinedSchema.positiveInt"; "M:Axial.Schema.RefinedSchema.nonNegativeInt"; "M:Axial.Schema.RefinedSchema.nonZeroInt"; "M:Axial.Schema.RefinedSchema.negativeInt"; "M:Axial.Schema.RefinedSchema.nonPositiveInt"; "M:Axial.Schema.RefinedSchema.nonEmptyList"; "M:Axial.Schema.RefinedSchema.nonEmptyArray"; "M:Axial.Schema.RefinedSchema.distinctList"; "M:Axial.Schema.RefinedSchema.boundedList"; "M:Axial.Schema.RefinedSchema.boundedArray"; "M:Axial.Schema.RefinedSchema.dateTimeOffsetRange"]
-            "Model validation", ["M:Axial.Schema.Model.reconstruct"]
-            "Rules", ["T:Axial.Schema.RuleSet`2"; "M:Axial.Schema.Rules.create"; "M:Axial.Schema.Rules.concat"; "M:Axial.Schema.Rules.at"; "M:Axial.Schema.Rules.failAt"; "M:Axial.Schema.Rules.custom"; "M:Axial.Schema.Rules.validate"; "M:Axial.Schema.Rules.apply"]
+            "Trusted models", ["T:Axial.Schema.Model`1"; "M:Axial.Schema.ModelModule.validate"; "M:Axial.Schema.ModelModule.reconstruct"; "T:Axial.Schema.FieldRef`2"]
+            "Context rules", ["M:Axial.Schema.ContextRules.apply"; "M:Axial.Schema.ContextRules.at"; "M:Axial.Schema.ContextRules.atField"; "M:Axial.Schema.ContextRules.failAt"; "M:Axial.Schema.ContextRules.failAtField"; "M:Axial.Schema.ContextRules.custom"]
         ]
         Alias = None
     }
@@ -463,10 +463,13 @@ let pageSpecs = [
         OutPath = ["stream"; "_index.md"]
         Title = "Stream"
         Description = "Source-documented effectful streams for Axial."
-        Intro = "This page shows the `FlowStream` surface for cold, pull-based streams that still participate in Axial's environment and typed-error model. A stream can require `env`, emit values incrementally, and fail with the same error discipline as `Flow`. Use it when the boundary produces many values over time, such as file records, network messages, or paged API results. Keep per-item logic small and push final side effects through `runForEach` so cancellation and failure stay visible."
+        Intro = "This page shows the Fable-compatible `FlowStream` surface for cold, pull-based streams that participate in Axial's environment, typed-error, cancellation, and scope model. Construct streams from values or effectful state transitions, transform them without starting work, and consume them back into an ordinary `Flow`."
         SymbolIds = [
             "Core type", ["T:Axial.Flow.FlowStream`3"]
-            "Module functions", ["M:Axial.Flow.FlowStream.fromSeq"; "M:Axial.Flow.FlowStream.map"; "M:Axial.Flow.FlowStream.runForEach"]
+            "Construction", ["M:Axial.Flow.FlowStream.empty"; "M:Axial.Flow.FlowStream.singleton"; "M:Axial.Flow.FlowStream.fromSeq"; "M:Axial.Flow.FlowStream.fromFlow"; "M:Axial.Flow.FlowStream.unfoldFlow"]
+            "Transformation", ["M:Axial.Flow.FlowStream.map"; "M:Axial.Flow.FlowStream.mapError"; "M:Axial.Flow.FlowStream.filter"; "M:Axial.Flow.FlowStream.choose"; "M:Axial.Flow.FlowStream.mapFlow"; "M:Axial.Flow.FlowStream.tapFlow"; "M:Axial.Flow.FlowStream.take"; "M:Axial.Flow.FlowStream.skip"; "M:Axial.Flow.FlowStream.takeWhile"; "M:Axial.Flow.FlowStream.skipWhile"; "M:Axial.Flow.FlowStream.indexed"; "M:Axial.Flow.FlowStream.scan"; "M:Axial.Flow.FlowStream.distinctUntilChangedBy"]
+            "Composition", ["M:Axial.Flow.FlowStream.append"; "M:Axial.Flow.FlowStream.collect"; "M:Axial.Flow.FlowStream.zip"]
+            "Consumption", ["M:Axial.Flow.FlowStream.runForEach"; "M:Axial.Flow.FlowStream.runForEachFlow"; "M:Axial.Flow.FlowStream.runFold"; "M:Axial.Flow.FlowStream.runCollect"; "M:Axial.Flow.FlowStream.runDrain"]
         ]
         Alias = None
     }
@@ -791,14 +794,18 @@ let pageSpecs = [
         OutPath = ["service"; "process"; "_index.md"]
         Title = "Services Process"
         Description = "Source-documented external process service for Axial.Flow.Process."
-        Intro = "This page shows the external-process service package. Immutable `Command` and `Pipeline` values preserve shell-like left-to-right composition without shell parsing. `Process.run` executes through the explicit `IProcess` capability, connects real standard streams, captures complete output, tracks every exit code, and reports startup, cancellation, I/O, and non-zero exits through `ProcessError`. Use the streaming variants when output must be observed before completion."
+        Intro = "This page shows the external-process service package. Immutable `Command` and `Pipeline` values preserve shell-like endpoint composition without shell parsing. `Process.toFlow` converts a topology through the explicit `IProcess` capability, connects real standard streams, captures complete output, tracks every exit code, and reports startup, cancellation, I/O, and non-zero exits through `ProcessError`. Use `Process.stream` when output must be observed before completion."
         SymbolIds = [
-            "Model", ["T:Axial.Flow.Process.Command"; "T:Axial.Flow.Process.Pipeline"; "T:Axial.Flow.Process.ProcessResult"; "T:Axial.Flow.Process.ProcessOutput"; "T:Axial.Flow.Process.ProcessError"]
+            "Model", ["T:Axial.Flow.Process.Command"; "T:Axial.Flow.Process.Pipeline"; "T:Axial.Flow.Process.ProcessPlan"; "T:Axial.Flow.Process.InputSource"; "T:Axial.Flow.Process.OutputTarget"; "T:Axial.Flow.Process.ProcessResult"; "T:Axial.Flow.Process.StageResult"; "T:Axial.Flow.Process.CapturedOutput"; "T:Axial.Flow.Process.ProcessOutput"; "T:Axial.Flow.Process.ProcessEvent"; "T:Axial.Flow.Process.ProcessError"]
             "Service", ["T:Axial.Flow.Process.IProcess"]
-            "Errors", ["M:Axial.Flow.Process.ProcessError.describe"]
-            "Commands", ["M:Axial.Flow.Process.Process.command"; "M:Axial.Flow.Process.Process.fileName"; "M:Axial.Flow.Process.Process.arguments"; "M:Axial.Flow.Process.Process.tryWorkingDirectory"; "M:Axial.Flow.Process.Process.environmentVariables"; "M:Axial.Flow.Process.Process.tryInput"; "M:Axial.Flow.Process.Process.arg"; "M:Axial.Flow.Process.Process.workingDirectory"; "M:Axial.Flow.Process.Process.environment"; "M:Axial.Flow.Process.Process.removeEnvironment"; "M:Axial.Flow.Process.Process.input"; "M:Axial.Flow.Process.Process.pipeline"; "M:Axial.Flow.Process.Process.commands"; "M:Axial.Flow.Process.Process.pipe"]
-            "Execution", ["M:Axial.Flow.Process.Process.run"; "M:Axial.Flow.Process.Process.runResult"; "M:Axial.Flow.Process.Process.runStreaming"; "M:Axial.Flow.Process.Process.runResultStreaming"; "M:Axial.Flow.Process.Process.execute"]
-            "Concise DSL", ["M:Axial.Flow.Process.DSL.cmd"; "M:Axial.Flow.Process.DSL.cwd"; "M:Axial.Flow.Process.DSL.env"; "M:Axial.Flow.Process.DSL.stdin"; "M:Axial.Flow.Process.DSL.run"; "M:Axial.Flow.Process.DSL.runResult"]
+            "Errors", ["M:Axial.Flow.Process.ProcessError.describe"; "M:Axial.Flow.Process.ProcessError.exitCode"]
+            "Commands", ["M:Axial.Flow.Process.Process.command"; "M:Axial.Flow.Process.Process.arg"; "M:Axial.Flow.Process.Process.secretArg"; "M:Axial.Flow.Process.Process.workingDirectory"; "M:Axial.Flow.Process.Process.environment"; "M:Axial.Flow.Process.Process.removeEnvironment"; "M:Axial.Flow.Process.Process.encoding"; "M:Axial.Flow.Process.Process.successCodes"; "M:Axial.Flow.Process.Process.render"]
+            "Pipelines", ["M:Axial.Flow.Process.Process.pipeline"; "M:Axial.Flow.Process.Process.pipe"; "M:Axial.Flow.Process.Process.pipeBoth"; "M:Axial.Flow.Process.Process.merge"; "M:Axial.Flow.Process.Process.stdin"; "M:Axial.Flow.Process.Process.stdout"; "M:Axial.Flow.Process.Process.stderr"; "M:Axial.Flow.Process.Process.mergeStderr"; "M:Axial.Flow.Process.Process.framing"; "M:Axial.Flow.Process.Process.renderPipeline"; "M:Axial.Flow.Process.Process.plan"]
+            "Execution", ["M:Axial.Flow.Process.Process.toFlow"; "M:Axial.Flow.Process.Process.toFlowResult"; "M:Axial.Flow.Process.Process.observe"; "M:Axial.Flow.Process.Process.observeResult"; "M:Axial.Flow.Process.Process.stream"; "M:Axial.Flow.Process.Process.execute"; "M:Axial.Flow.Process.Script.run"]
+            "Input endpoints", ["P:Axial.Flow.Process.DSL.Input.empty"; "M:Axial.Flow.Process.DSL.Input.text"; "M:Axial.Flow.Process.DSL.Input.bytes"; "M:Axial.Flow.Process.DSL.Input.file"; "M:Axial.Flow.Process.DSL.Input.read"; "M:Axial.Flow.Process.DSL.Input.produce"; "M:Axial.Flow.Process.DSL.Input.stream"]
+            "Output endpoints", ["P:Axial.Flow.Process.DSL.Output.capture"; "M:Axial.Flow.Process.DSL.Output.captureTail"; "P:Axial.Flow.Process.DSL.Output.console"; "P:Axial.Flow.Process.DSL.Output.inheritHandles"; "P:Axial.Flow.Process.DSL.Output.discard"; "M:Axial.Flow.Process.DSL.Output.file"; "M:Axial.Flow.Process.DSL.Output.appendFile"; "M:Axial.Flow.Process.DSL.Output.callback"; "M:Axial.Flow.Process.DSL.Output.tee"; "M:Axial.Flow.Process.DSL.Output.stream"; "M:Axial.Flow.Process.DSL.Output.textWriter"]
+            "Concise DSL", ["M:Axial.Flow.Process.DSL.cmd"; "M:Axial.Flow.Process.DSL.cmdText"; "M:Axial.Flow.Process.DSL.pipe"; "M:Axial.Flow.Process.DSL.pipeCommands"; "M:Axial.Flow.Process.DSL.pipeTo"; "M:Axial.Flow.Process.DSL.pipeBothTo"; "M:Axial.Flow.Process.DSL.merge"; "M:Axial.Flow.Process.DSL.mergeBytes"; "M:Axial.Flow.Process.DSL.mergeStderr"; "M:Axial.Flow.Process.DSL.cwd"; "M:Axial.Flow.Process.DSL.env"; "M:Axial.Flow.Process.DSL.stdin"; "M:Axial.Flow.Process.DSL.stdout"; "M:Axial.Flow.Process.DSL.stderr"; "M:Axial.Flow.Process.DSL.toFlow"; "M:Axial.Flow.Process.DSL.capture"; "M:Axial.Flow.Process.DSL.captureResult"; "M:Axial.Flow.Process.DSL.console"; "M:Axial.Flow.Process.DSL.stream"; "M:Axial.Flow.Process.DSL.writeTo"; "M:Axial.Flow.Process.DSL.appendTo"; "M:Axial.Flow.Process.DSL.captureParallel"]
+            "Shells", ["M:Axial.Flow.Process.DSL.bash"; "M:Axial.Flow.Process.DSL.sh"; "M:Axial.Flow.Process.DSL.pwsh"; "M:Axial.Flow.Process.DSL.bashText"; "M:Axial.Flow.Process.DSL.shText"; "M:Axial.Flow.Process.DSL.pwshText"; "M:Axial.Flow.Process.DSL.secret"]
             "Implementations", ["P:Axial.Flow.Process.Process.live"; "P:Axial.Flow.Process.Process.layer"]
         ]
         Alias = None
@@ -1093,7 +1100,10 @@ let main argv =
     let root = Path.GetFullPath(Path.Combine(__SOURCE_DIRECTORY__, "../.."))
     let artifactsDir = Path.Combine(root, "artifacts/bin")
     
-    let outRoot = Path.Combine(root, "docs/reference")
+    let outRoot =
+        match Environment.GetEnvironmentVariable "AXIAL_DOCS_OUT_ROOT" with
+        | null | "" -> Path.Combine(root, "docs/reference")
+        | path -> Path.GetFullPath path
     
     if Directory.Exists outRoot then
         for d in Directory.GetDirectories(outRoot) do
@@ -1134,6 +1144,11 @@ let main argv =
         |> Seq.collect collectAllEntities
         |> Seq.toList
 
+    let selectedPageSpecs =
+        match Environment.GetEnvironmentVariable "AXIAL_DOCS_PAGE_PREFIX" with
+        | null | "" -> pageSpecs
+        | prefix -> pageSpecs |> List.filter (fun spec -> String.concat "/" spec.OutPath |> fun path -> path.StartsWith(prefix, StringComparison.Ordinal))
+
     let referenceTargetMap = Dictionary<string, string>()
 
     let registerReferenceTarget (symbolFullName: string) (absolutePath: string) =
@@ -1144,7 +1159,7 @@ let main argv =
         let rawName = id.Substring(2).Split('(').[0]
         referenceTargetMap[formatterApiSlug rawName] <- absolutePath
 
-    for spec in pageSpecs do
+    for spec in selectedPageSpecs do
         let outPath = Path.Combine(outRoot, Path.Combine(Array.ofList spec.OutPath))
 
         for sectionTitle, ids in spec.SymbolIds do
@@ -1211,7 +1226,7 @@ let main argv =
     // Debug: print all entity names
     // for e in allEntities do printfn "Entity: %s" (safeFullName e.Symbol)
 
-    for spec in pageSpecs do
+    for spec in selectedPageSpecs do
         let outPath = Path.Combine(outRoot, Path.Combine(Array.ofList spec.OutPath))
         Directory.CreateDirectory(Path.GetDirectoryName(outPath)) |> ignore
         

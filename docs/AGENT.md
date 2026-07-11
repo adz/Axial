@@ -49,6 +49,20 @@ For JSON, pick the path by trust: untrusted bodies go `RawInput.ofJsonDocument` 
 `Json.serialize` / `Json.deserialize`. Serve the contract with `JsonSchema.generate schema`. Do not hand-write
 `System.Text.Json` converters for schema-described models.
 
+For external processes, open `Axial.Flow.Process.DSL` locally. Use `cmd $"tool {argument}"` so interpolation holes stay
+atomic, connect endpoints with `=>`, and end with `capture`, `console`, `stream`, or `Output.*`:
+
+```fsharp
+Input.file "source.json"
+=> cmd $"jq {filter}"
+=> Output.file "result.json"
+```
+
+Use `pipe [ $"producer"; $"consumer" ]` for vertical linear pipelines, `merge` for line-framed fan-in, `pipeBothTo`
+for Bash `|&`, and `mergeStderr` for the intent of `2>&1`. Prefer typed topology across platforms. Use explicit `bash`,
+`sh`, or `pwsh` only when shell language is genuinely clearer; never concatenate untrusted values into `*Text` shell
+programs.
+
 ### 1. Handling Failures
 Use `Check` for executable value constraints, `Predicate` for local boolean tests, and `Result` for fail-fast values. `Check.*` helpers return `Result<'value, CheckFailure list>` — a passing check hands back the same value unchanged, so it pipes directly into the next step with no separate value-preserving wrapper needed. `Result.requireTrue`/`okIf`/`failIf`/`orError` and extraction helpers cover the generic, non-Check cases.
 

@@ -1,7 +1,7 @@
 ---
 title: "Flow.FileSystem.appendText"
 linkTitle: "appendText"
-weight: 2313
+weight: 2317
 ---
 
 Creates an append text writer through an explicit file-system service.

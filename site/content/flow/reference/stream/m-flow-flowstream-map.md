@@ -1,8 +1,7 @@
 ---
 title: "Flow.FlowStream.map"
 linkTitle: "map"
-weight: 2101
-type: docs
+weight: 2200
 ---
 
 Transforms the successful values of a stream using the provided function.

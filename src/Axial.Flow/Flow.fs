@@ -61,6 +61,21 @@ module Flow =
             (fun cleanupError executionError exit ->
                 combineCleanup cleanupError executionError exit "Flow execution produced no outcome.")
 
+    /// <summary>Registers a F# async finalizer with the current runtime scope on .NET or Fable.</summary>
+    /// <example><code>Flow.addFinalizerAsync (fun _ -&gt; async { resource.Close() })</code></example>
+    let addFinalizerAsync
+        (finalizer: CancellationToken -> Async<unit>)
+        : Flow<'env, 'error, unit> =
+        Flow(fun _ _ ->
+            RuntimeState.current().Scope.AddFinalizer(fun cancellationToken ->
+#if FABLE_COMPILER
+                finalizer cancellationToken
+#else
+                Async.StartAsTask(finalizer cancellationToken, cancellationToken = cancellationToken) :> Task
+#endif
+            )
+            Execution.ofValue ())
+
     /// <summary>Creates a flow from an execution outcome.</summary>
     let ofExit (exit: Exit<'value, 'error>) : Flow<'env, 'error, 'value> =
         Flow(fun _ _ -> Execution.ofExit exit)

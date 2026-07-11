@@ -1,7 +1,7 @@
 ---
 title: "Flow.FileSystem.openRead"
 linkTitle: "openRead"
-weight: 2308
+weight: 2312
 ---
 
 Opens a file for reading through an explicit file-system service.

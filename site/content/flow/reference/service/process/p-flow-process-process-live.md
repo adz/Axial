@@ -1,11 +1,10 @@
 ---
 title: "Flow.Process.live"
 linkTitle: "live"
-weight: 2101
-type: docs
+weight: 3000
 ---
 
-Creates a live process service backed by <a href="https://learn.microsoft.com/dotnet/api/system.diagnostics.process">Process</a>.
+
 
 ## Signature
 
