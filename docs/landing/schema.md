@@ -44,16 +44,19 @@ One schema declaration, several interpreters:
 
 ```text
 RawInput -> Model.parse schema -> trusted model | Diagnostics
+draft    -> Model.validate schema -> Model<'model> | Diagnostics
 model    -> Model.reconstruct schema -> trusted model | Diagnostics
-model    -> Rules.apply ruleSet -> trusted model | Diagnostics
+model    -> ContextRules.apply rules -> trusted model | Diagnostics
 schema   -> Inspect.model -> metadata (no execution)
 schema   -> Json.compile -> compiled JSON codec (trusted hot path)
 schema   -> JsonSchema.generate -> JSON Schema document
 ```
 
-`Model.reconstruct` gives an already-existing model value (imported rows, hand-built values) the same trust
-strength as `Model.parse` — every field's constraints re-checked, and the model's own constructor re-invoked so
-cross-field invariants hold too — without re-parsing from raw input.
+`Model.validate` is named-field trusted construction: build a draft with an ordinary record literal (named fields,
+any order, compiler-checked completeness) and promote it — holding the returned `Model<'model>` is the proof it
+passed every constraint. `Model.reconstruct` gives an already-existing model value (imported rows, hand-built
+values) the same trust strength as `Model.parse` — every field's constraints re-checked, and the model's own
+constructor re-invoked so cross-field invariants hold too — without re-parsing from raw input.
 
 ## Guides
 

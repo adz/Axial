@@ -58,22 +58,25 @@ This page shows the `Axial.Schema` interpreter surface: raw boundary input, sche
 - [`Schema.RefinedSchema.boundedArray`](./m-schema-refinedschema-boundedarray.md): Describes a bounded array as a schema refined value over a collection with inclusive count bounds.
 - [`Schema.RefinedSchema.dateTimeOffsetRange`](./m-schema-refinedschema-datetimeoffsetrange.md): Describes a date-time range as a record schema with <code>start</code> and <code>end</code> fields.
 
-## Model validation
+## Trusted models
+
+- [`Schema.Model`](./t-schema-model.md): A schema-validated model value. Only <code>Model.parse</code>-adjacent functions in this module can
+ produce one, so holding a <code>Model&lt;&#39;model&gt;</code> is proof the value passed every schema constraint and
+ constructor invariant.
+- [`Schema.Model.validate`](./m-schema-model-validate.md):
+ Validates a draft value against its schema and promotes it to a trusted <code>Model&lt;&#39;model&gt;</code>.
 
 - [`Schema.Model.reconstruct`](./m-schema-model-reconstruct.md):
  Rebuilds trust in an existing model value that did not come through <code>Model.parse</code> or <code>Model.construct</code>
  — for example a value deserialized directly into the model type, or read back from storage.
 
+- [`Schema.FieldRef`](./t-schema-fieldref.md): A typed, named reference to one field of a schema-described model.
 
-## Rules
+## Context rules
 
-- [`Schema.RuleSet`](./t-schema-ruleset.md):
- A collection of contextual rules evaluated over an already-trusted model.
-
-- [`Schema.Rules.create`](./m-schema-rules-create.md): Creates a contextual rule set from one executable model rule.
-- [`Schema.Rules.concat`](./m-schema-rules-concat.md): Combines contextual rule sets in sequence, preserving rule order.
-- [`Schema.Rules.at`](./m-schema-rules-at.md): Scopes a rule&#39;s diagnostics under the supplied path when the rule fails.
-- [`Schema.Rules.failAt`](./m-schema-rules-failat.md): Creates a rule failure attached to the supplied diagnostics path.
-- [`Schema.Rules.custom`](./m-schema-rules-custom.md): Creates a custom schema rule error with a stable code and display message.
-- [`Schema.Rules.validate`](./m-schema-rules-validate.md): Evaluates contextual rules over an already-trusted model.
-- [`Schema.Rules.apply`](./m-schema-rules-apply.md): Applies contextual rules to an already-trusted model, returning a plain result.
+- [`Schema.ContextRules.apply`](./m-schema-contextrules-apply.md): Applies contextual rules to an already-trusted model, accumulating any diagnostics.
+- [`Schema.ContextRules.at`](./m-schema-contextrules-at.md): Scopes a rule&#39;s diagnostics under the supplied path when the rule fails.
+- [`Schema.ContextRules.atField`](./m-schema-contextrules-atfield.md): Scopes a rule&#39;s diagnostics under a schema field reference when the rule fails.
+- [`Schema.ContextRules.failAt`](./m-schema-contextrules-failat.md): Creates a rule failure attached to the supplied diagnostics path.
+- [`Schema.ContextRules.failAtField`](./m-schema-contextrules-failatfield.md): Creates a rule failure attached to a schema field reference&#39;s diagnostics path.
+- [`Schema.ContextRules.custom`](./m-schema-contextrules-custom.md): Creates a custom schema rule error with a stable code and display message.

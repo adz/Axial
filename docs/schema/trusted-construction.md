@@ -75,6 +75,34 @@ details from every other file, including files in the same assembly, which close
   trusted arguments
 - failed parses keep the raw input for redisplay instead of a half-valid object
 
+## Two Patterns
+
+**Wrapper style** — keep the record public, and let the type-level trust claim live in `Model<'model>`. The bare
+record is a *draft*: freely constructible with named fields in any order, visibly untrusted by its type. Only
+`Model.validate` (and `Model.parse`) can produce the wrapper, so functions that demand `Model<Signup>` in their
+signatures can never receive an unchecked value:
+
+```fsharp
+type SignupRequest = { Email: string; Age: int }
+
+module SignupRequest =
+    let schema =
+        Schema.recordFor<SignupRequest, _> (fun email age -> { Email = email; Age = age })
+        |> Schema.fieldWith [ SchemaConstraint.required; SchemaConstraint.email ] "email" _.Email Value.text
+        |> Schema.fieldWith [ SchemaConstraint.atLeast 13 ] "age" _.Age Value.int
+        |> Schema.build
+
+match Model.validate SignupRequest.schema { Email = "ada@example.com"; Age = 42 } with
+| Ok signup -> signup.Value.Email        // Model<SignupRequest>: proof of validity
+| Error diagnostics -> ...               // path-aware, accumulated
+```
+
+This is the right default for boundary-shaped records (requests, config, wire types) — and it is the shape
+the contract generator emits (`.contract` files; dev tooling, stabilizing). **Private-representation style** — the `Signup` example above —
+suits behavior-rich domain types: your members and methods live on the type, construction goes through your smart
+constructor or a two-line `construct` (`private assembly |> Model.reconstruct schema`), and no wrapper appears in
+signatures. Both styles run the same constraints through the same schema; pick per type.
+
 ## Where Constraints Live
 
 - value requirements that always hold → schema constraints (this page)

@@ -1,0 +1,5 @@
+/// A geographic coordinate.
+contract Geo.v1 {
+  lat: decimal [ >= -90, <= 90 ]
+  lon: decimal [ >= -180, <= 180 ]
+}

@@ -1,6 +1,11 @@
 # Model.construct Sketch
 
-Status: parked (2026-07-11). Not accepted architecture. This records why a typed, checked "construct a model from
+Status: RESOLVED (2026-07-12) by `Model<'model>` + `Model.validate`. The wall below was real for positional typed
+arguments, but moving the trust claim into a library-owned wrapper dissolved the requirement that the unchecked
+record never exist: the bare public record is a *draft* (named-field record literals, any order, compiler-checked
+completeness), and `Model.validate schema draft : Result<Model<'model>, Diagnostics<SchemaError>>` is an ordinary
+generic library function — no reflection, no arity cap, no generation required. The rest of this document is kept
+as the map of the design space that led there. This records why a typed, checked "construct a model from
 already-typed field values" function is harder than it looks, every shape tried, and why each was rejected — so the
 next attempt doesn't re-derive the same wall from scratch.
 

@@ -1,0 +1,11 @@
+/// A new account request.
+contract Signup.v1 {
+  /// Primary contact address.
+  email: email [ max 254 ]
+  displayName as "display_name"?: text [ min 1, max 64 ]
+  age: int [ >= 13 ]
+  plan: "free" | "pro" = "free"
+  tags: list text [ max 8, distinct ]
+  limits: map int
+  location?: Geo.v1
+}

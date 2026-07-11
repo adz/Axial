@@ -81,7 +81,7 @@ Schema constraints and contextual rules answer different questions:
   workflow, and can run during input parsing before a model exists
 - a contextual rule needs the completed, trusted model and describes when that model is acceptable for one workflow
 
-Author contextual rules with `RuleSet` and evaluate them with `Rules.apply`:
+Author contextual rules as plain functions in a list and evaluate them with `ContextRules.apply`:
 
 ```fsharp
 type TicketRuleError =
@@ -89,24 +89,23 @@ type TicketRuleError =
     | ManualReviewRequired
 
 let approvalRules =
-    Rules.concat
-        [ Rules.create (fun ticket ->
-              if ticket.Priority >= 4 && not ticket.HasAssignee then
-                  Rules.failAt [ PathSegment.Name "assignee" ] HighPriorityNeedsAssignee
-              else
-                  Ok ())
-          Rules.create (Rules.name "review" (fun ticket ->
-              if ticket.Priority >= 5 then
-                  Rules.fail ManualReviewRequired
-              else
-                  Ok ())) ]
+    [ (fun ticket ->
+          if ticket.Priority >= 4 && not ticket.HasAssignee then
+              ContextRules.failAt [ PathSegment.Name "assignee" ] HighPriorityNeedsAssignee
+          else
+              Ok ())
+      ContextRules.name "review" (fun ticket ->
+          if ticket.Priority >= 5 then
+              ContextRules.fail ManualReviewRequired
+          else
+              Ok ()) ]
 
-match Rules.apply approvalRules ticket with
+match ContextRules.apply approvalRules ticket with
 | Ok trusted -> approve trusted
 | Error diagnostics -> reject diagnostics
 ```
 
-`Rules.apply` never constructs, parses, or transforms the model. On success it returns the same trusted instance; on
+`ContextRules.apply` never constructs, parses, or transforms the model. On success it returns the same trusted instance; on
 failure it returns path-aware diagnostics that render exactly like schema input diagnostics, so one error-display layer
 serves both boundaries. Different workflows can apply different rule sets to the same model — triage may only require an
 assignee while approval also requires review — without weakening the model's constructor.

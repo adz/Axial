@@ -14,8 +14,10 @@ touching how the model gets built.
 
 ## Contextual Rules
 
-A `RuleSet<'model, 'error>` holds rules that evaluate an already-trusted model against workflow context. Rules never
-construct or transform the model — `Rules.apply` returns the same instance or path-aware diagnostics.
+A contextual rule is a plain function — `'model -> Result<unit, Diagnostics<'error>>` — evaluated against an
+already-trusted model. A set of rules is an ordinary list, and selecting which rules apply in which context is
+ordinary F#: a `match` over your own context type, or a `Map`. Rules never construct or transform the model —
+`ContextRules.apply` returns the same instance or path-aware diagnostics.
 
 ```fsharp
 type TicketRuleError =
@@ -23,33 +25,33 @@ type TicketRuleError =
     | ManualReviewRequired
 
 let approvalRules =
-    Rules.concat
-        [ Rules.create (fun ticket ->
-              if ticket.Priority >= 4 && not ticket.HasAssignee then
-                  Rules.failAt [ PathSegment.Name "assignee" ] HighPriorityNeedsAssignee
-              else
-                  Ok ())
-          Rules.create (Rules.name "review" (fun ticket ->
-              if ticket.Priority >= 5 then Rules.fail ManualReviewRequired else Ok ())) ]
+    [ (fun ticket ->
+          if ticket.Priority >= 4 && not ticket.HasAssignee then
+              ContextRules.failAt [ PathSegment.Name "assignee" ] HighPriorityNeedsAssignee
+          else
+              Ok ())
+      ContextRules.name "review" (fun ticket ->
+          if ticket.Priority >= 5 then ContextRules.fail ManualReviewRequired else Ok ()) ]
 
-match Rules.apply approvalRules ticket with
+match ContextRules.apply approvalRules ticket with
 | Ok trusted -> approve trusted
 | Error diagnostics -> reject diagnostics
 ```
 
-Failures attach anywhere in the diagnostics tree — `Rules.failAt`, or the `Rules.name`/`Rules.key`/`Rules.index`
+Failures attach anywhere in the diagnostics tree — `ContextRules.failAt`, `ContextRules.failAtField` (through a
+typed `FieldRef` so field names cannot drift from the schema), or the `ContextRules.at`/`name`/`key`/`index`
 scoping combinators — and render exactly like schema input diagnostics, so one error-display layer serves both.
-`Rules.custom` and `Rules.failCustom` produce `SchemaError.Custom` values with stable codes when the rule error type is
-`SchemaError`.
+`ContextRules.custom` and `ContextRules.failCustom` produce `SchemaError.Custom` values with stable codes when the
+rule error type is `SchemaError`.
 
 Different workflows apply different rule sets to the same model: triage may only require an assignee while approval
 also requires review. That is the point — the model's constructor stays strong, and each workflow states its own bar.
 
 ## Rules Inside A Workflow
 
-`Rules.apply` is a plain function — `RuleSet<'model, 'error> -> 'model -> Result<'model, Diagnostics<'error>>` — so it
+`ContextRules.apply` is a plain function over a plain rule list — no rule-set container type exists — so it
 already binds directly in `result {}` or `flow {}` with no adapter needed for the common case. When a rule set needs
 the workflow's environment, should compose with other verification steps (parsing, refined construction), or should
 switch on and off per environment, that's `Policy` and `Flow.verify` — both live in the separate `Axial.Flow`
 package, not here. See [Bind Versus Policy]({{< relref "/flow/bind/" >}}#bind-versus-policy) for that, and the
-[Rules In A Workflow tutorial](../tutorials/rules-in-a-workflow/) for `Rules.apply` wrapped in a `Policy` end to end.
+[Rules In A Workflow tutorial](../tutorials/rules-in-a-workflow/) for `ContextRules.apply` wrapped in a `Policy` end to end.

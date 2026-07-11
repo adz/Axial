@@ -33,12 +33,16 @@
     <Compile Include="UnionSchemaParseTests.fs" />
     <Compile Include="OptionalSchemaParseTests.fs" />
     <Compile Include="SchemaValidationTests.fs" />
-    <Compile Include="RulesTests.fs" />
+    <Compile Include="ContextRulesTests.fs" />
     <Compile Include="SchemaDiagnosticsRenderingTests.fs" />
     <Compile Include="SchemaConstraintCheckTests.fs" />
     <Compile Include="SchemaRefinedValueCheckTests.fs" />
     <Compile Include="RefinedCatalogSchemaTests.fs" />
     <Compile Include="SchemaVerticalSliceProofTests.fs" />
+    <Compile Include="contracts/geo.g.fs" />
+    <Compile Include="contracts/signup.g.fs" />
+    <Compile Include="contracts/payment.g.fs" />
+    <Compile Include="GeneratedContractTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

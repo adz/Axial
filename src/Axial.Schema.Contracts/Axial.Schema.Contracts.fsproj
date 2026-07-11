@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <AssemblyName>Axial.Schema.Contracts</AssemblyName>
+    <RootNamespace>Axial.Schema.Contracts</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Ast.fs" />
+    <Compile Include="Parser.fs" />
+    <Compile Include="Resolver.fs" />
+    <Compile Include="Emitter.fs" />
+  </ItemGroup>
+
+</Project>

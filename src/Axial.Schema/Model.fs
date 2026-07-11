@@ -7,7 +7,28 @@ open Axial.Refined
 open Axial.Schema
 open Axial.Validation
 
+/// <summary>A schema-validated model value. Only <c>Model.parse</c>-adjacent functions in this module can
+/// produce one, so holding a <c>Model&lt;'model&gt;</c> is proof the value passed every schema constraint and
+/// constructor invariant.</summary>
+/// <remarks>
+/// <para>
+/// The wrapper separates "the record shape" from "the trust claim": the underlying record can stay public and
+/// freely constructible — a draft, visibly untrusted by its type — while functions that require validity demand
+/// <c>Model&lt;'model&gt;</c> in their signatures. Construct drafts with ordinary record literals (named fields, any
+/// order) and promote them with <c>Model.validate</c>.
+/// </para>
+/// </remarks>
+type Model<'model> =
+    private
+    | Model of 'model
+
+    /// <summary>The validated underlying value.</summary>
+    member this.Value =
+        let (Model value) = this
+        value
+
 /// <summary>Functions that produce or verify a trusted model, using a schema as authority.</summary>
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
 module Model =
     /// <summary>Options that customize how raw input is parsed through a schema.</summary>
@@ -529,3 +550,24 @@ module Model =
                 match modelSchema.Constructor.TryApplyTrusted arguments with
                 | Ok reconstructed -> Ok reconstructed
                 | Error message -> errorAtConstructor defaults [] message
+
+    /// <summary>
+    /// Validates a draft value against its schema and promotes it to a trusted <c>Model&lt;'model&gt;</c>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This is the named-field trusted construction door: build the draft with an ordinary record literal
+    /// (named fields, any order, compiler-checked completeness), then promote it. Every field constraint runs,
+    /// the model's own constructor is re-invoked so cross-field invariants hold, and only the <c>Ok</c> value
+    /// carries the <c>Model&lt;'model&gt;</c> proof.
+    /// </para>
+    /// <code>
+    /// match Model.validate SignupRequest.schema { Email = "ada@example.com"; Age = 42 } with
+    /// | Ok signup -> signup.Value.Email
+    /// | Error diagnostics -> ...
+    /// </code>
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
+    /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="schema" /> is not a built model schema.</exception>
+    let validate (schema: Schema<'model>) (draft: 'model) : Result<Model<'model>, Diagnostics<SchemaError>> =
+        reconstruct schema draft |> Result.map Model

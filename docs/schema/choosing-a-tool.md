@@ -13,7 +13,7 @@ description: Schema vs Input vs Rules — the three tools inside Axial.Schema.
 | :--- | :--- |
 | `Schema<'model>` | What is the model's shape, order, construction, and constraint metadata? |
 | `Model.parse` / `Model.reconstruct` | Can this raw input, or this already-existing value, become a trusted model? |
-| `Rules.apply` | Is this already-trusted model acceptable in this context? |
+| `ContextRules.apply` | Is this already-trusted model acceptable in this context? |
 
 ## Schema
 
@@ -33,11 +33,11 @@ re-checked too, not just per-field constraints.
 
 ## Rules
 
-A `RuleSet<'model, 'error>` evaluates contextual requirements over an already-trusted model — requirements that vary by
+Contextual rules are plain functions evaluated over an already-trusted model — requirements that vary by
 workflow, user, tenant, clock, or feature flag. Rules never construct or transform the model.
 
 ```fsharp
-match Rules.apply approvalRules ticket with
+match ContextRules.apply approvalRules ticket with
 | Ok trusted -> approve trusted
 | Error diagnostics -> reject diagnostics
 ```
@@ -58,6 +58,6 @@ Two related tools live elsewhere, for a reason:
   reusing a bare `Check` for one value doesn't need a schema at all.
 - Running any of the above inside a workflow, with environment access, composition, or per-environment switches →
   `Policy` and `Flow.verify` in [Bind Versus Policy]({{< relref "/flow/bind/" >}}#bind-versus-policy)
-  (`Axial.Flow`). `Rules.apply` is a plain function, so it already works inside `flow {}` without `Policy` for the
+  (`Axial.Flow`). `ContextRules.apply` is a plain function, so it already works inside `flow {}` without `Policy` for the
   simple case; reach for `Policy` when a rule set needs to compose with parsing or refined construction as one named
   step.

@@ -1,8 +1,7 @@
 ---
-title: "Schema.Rules.failAt"
+title: "Schema.ContextRules.failAt"
 linkTitle: "failAt"
-weight: 2504
-type: docs
+weight: 2503
 ---
 
 Creates a rule failure attached to the supplied diagnostics path.
@@ -10,7 +9,7 @@ Creates a rule failure attached to the supplied diagnostics path.
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Schema.Rules.failAt&#32;<span>path&#32;error</span></span></code>
+<code><span>Schema.ContextRules.failAt&#32;<span>path&#32;error</span></span></code>
 </div>
 
 ## Parameters
@@ -28,6 +27,6 @@ Creates a rule failure attached to the supplied diagnostics path.
 
 ## Examples
 
-<pre class="fssnip highlighted"><code lang="fsharp"> <span class="k">let</span> <span data-fsdocs-tip="fs1" data-fsdocs-tip-unique="1" class="id">result</span> <span class="o">=</span> <span class="id">Rules</span><span class="pn">.</span><span class="id">failAt</span> <span class="pn">[</span> <span class="id">PathSegment</span><span class="pn">.</span><span class="id">Name</span> <span class="s">&quot;assignee&quot;</span> <span class="pn">]</span> <span class="id">HighPriorityNeedsAssignee</span>
+<pre class="fssnip highlighted"><code lang="fsharp"> <span class="k">let</span> <span data-fsdocs-tip="fs1" data-fsdocs-tip-unique="1" class="id">result</span> <span class="o">=</span> <span class="id">ContextRules</span><span class="pn">.</span><span class="id">failAt</span> <span class="pn">[</span> <span class="id">PathSegment</span><span class="pn">.</span><span class="id">Name</span> <span class="s">&quot;assignee&quot;</span> <span class="pn">]</span> <span class="id">HighPriorityNeedsAssignee</span>
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">val result: obj</div>

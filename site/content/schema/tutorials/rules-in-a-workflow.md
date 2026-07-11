@@ -31,34 +31,33 @@ A rule accepts the model or returns diagnostics. Attach failures to a field path
 ```fsharp
 let needsAssignee ticket =
     if ticket.Priority >= 4 && not ticket.HasAssignee then
-        Rules.failAt [ PathSegment.Name "assignee" ] HighPriorityNeedsAssignee
+        ContextRules.failAt [ PathSegment.Name "assignee" ] HighPriorityNeedsAssignee
     else
         Ok ()
 
 let needsReview ticket =
-    if ticket.Priority >= 5 then Rules.fail ManualReviewRequired else Ok ()
+    if ticket.Priority >= 5 then ContextRules.fail ManualReviewRequired else Ok ()
 ```
 
 ## Compose Rule Sets Per Workflow
 
 ```fsharp
-let triageRules = Rules.create needsAssignee
+let triageRules = [ needsAssignee ]
 
 let approvalRules =
-    Rules.concat
-        [ Rules.create needsAssignee
-          Rules.create (Rules.name "review" needsReview) ]
+    [ needsAssignee
+      ContextRules.name "review" needsReview ]
 ```
 
 ## Apply
 
-`Rules.apply` returns the same trusted instance or accumulated diagnostics:
+`ContextRules.apply` returns the same trusted instance or accumulated diagnostics:
 
 ```fsharp
 let ticket = { Priority = 5; HasAssignee = true }
 
-Rules.apply triageRules ticket      // Ok ticket
-Rules.apply approvalRules ticket    // Error — review required at path "review"
+ContextRules.apply triageRules ticket      // Ok ticket
+ContextRules.apply approvalRules ticket    // Error — review required at path "review"
 ```
 
 ## Run It Inside A Workflow
@@ -75,7 +74,7 @@ let reviewPolicy : Policy<ApprovalEnv, TicketRuleError, Ticket, Ticket> =
     Policy.context
         (fun env ticket ->
             let rules = if env.RequireReview then approvalRules else triageRules
-            Rules.apply rules ticket)
+            ContextRules.apply rules ticket)
         (fun diagnostics -> diagnostics |> Diagnostics.flatten |> List.head |> _.Error)
 
 let approve ticket = flow {

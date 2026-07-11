@@ -165,20 +165,31 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 Pre-ideas and proposals live in [`../current-ideas/`](../current-ideas/). When accepted, keep only the durable rule here
 or in `AGENTS.md`, then delete the detailed sketch.
 
-- **`Model.construct`.** See `dev-docs/current-ideas/model-construct.md` for the full exploration — why
+- **`Model.construct`.** RESOLVED: `Model<'model>` + `Model.validate` (named-field drafts promoted to a
+  library-owned trust wrapper) is the shipped answer. See `dev-docs/current-ideas/model-construct.md` for the full exploration — why
   `Schema<'model>` can't carry per-field types, every shape tried (builder ceremony, tuple-returning
   `buildWithConstruct`, reflection off a draft record, a `(string * obj) list`) and why each was rejected, and why
   source generation (`schema-source-generation.md`) is the only path found to the ergonomics that were actually
   wanted.
-- **`Trusted<'model>`.** See `dev-docs/current-ideas/trusted-model-wrapper.md`. An opaque, library-owned wrapper
+- **`Trusted<'model>`.** SHIPPED as `Axial.Schema.Model<'model>` + `Model.validate`. See
+  `dev-docs/current-ideas/trusted-model-wrapper.md`. An opaque, library-owned wrapper
   around a constructed model, closing the "same-file bypass" gap that bare `private` leaves open (a `.fsi` signature
   file also closes it, at lower cost, and is the currently-recommended pattern — see `docs/schema/trusted-construction.md`).
-- **`RuleSet`/`Rules`.** No design doc yet — the session that produced the `Model` split concluded `RuleSet` as
-  currently shaped doesn't fit ("using the schema to inspect the model to apply rules... may or may not be
-  validation/check style, typically for a given context but could be for other reasons") and explicitly deferred it
-  rather than force a fix. Whoever picks this up next should start from why a "context" needs to be a real, named,
-  typed thing (not a hand-typed string) and why "select applicable rules for a context" is plain `Map`/`match`, not
-  a bespoke container type — both were reached but not written up as a standalone sketch.
+- **`RuleSet`/`Rules`.** RESOLVED by reduction (2026-07-12): renamed to `ContextRules`, the `RuleSet` container
+  type deleted. A rule is a plain `'model -> Result<unit, Diagnostics<'error>>`; a rule set is a plain list;
+  context selection is the caller's own `match`/`Map`. `ContextRules` keeps only failure constructors
+  (`fail`/`failAt`/`failAtField`/`custom`/`failCustom`), path scoping (`at`/`atField`/`name`/`key`/`index` —
+  prefer `atField` over `name` so wire names can't drift), and `apply` over lists.
 - **Refined guide docs area.** `Axial.Refined`'s API reference now lives under `/error-handling/reference/refined/`
   (it moved with the package), but the hand-written guide pages (`docs/schema/refined/*.md`) still live under the
   `/schema/` docs area for now. Whether to move the guides too is an open site-IA question, not decided either way.
+
+- `Model<'model>` (single-case private DU in `Axial.Schema`, `ModuleSuffix` on `module Model` per the
+  `Result`/`Option` precedent) is the trust wrapper: only library functions produce it, `.Value` reads it.
+  `Model.validate schema draft` is the named-field trusted-construction door. Two documented construction styles:
+  wrapper (public draft record, boundary shapes, what generated contracts emit) and private representation
+  (behavior-rich domain types). See `docs/schema/trusted-construction.md`.
+- The contract grammar/generator (`src/Axial.Schema.Contracts`, `scripts/schemagen`) is WIRE-tier tooling only.
+  Domain models are hand-written F#; a domain-tier declaration kind was designed and rejected (generated types
+  can't carry methods; DUs don't fit a JSON-shaped grammar). Golden corpus: `tests/Axial.Schema.Tests/contracts/`
+  (compiled + behavior-tested) with byte-for-byte emission tests in `tests/Axial.Schema.Contracts.Tests`.

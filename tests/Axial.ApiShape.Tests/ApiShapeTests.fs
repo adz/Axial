@@ -395,9 +395,11 @@ module ApiShapeTests =
         |> publicStaticMemberNames
         |> assertContainsAll [ "model"; "value"; "field" ]
 
-        moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.Model"
+        moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.ModelModule"
         |> publicStaticMemberNames
-        |> assertContainsAll [ "parse"; "parseWith"; "constructorErrorAt"; "reconstruct" ]
+        |> assertContainsAll [ "parse"; "parseWith"; "constructorErrorAt"; "reconstruct"; "validate" ]
+
+        assertTypePresentInAssembly "Axial.Schema" "Axial.Schema.Model`1" |> ignore
 
         moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.RawInputModule"
         |> publicStaticMemberNames
@@ -480,7 +482,7 @@ module ApiShapeTests =
         assertModuleAbsentFromAssembly "Axial.ErrorHandling" "Axial.Schema.SchemaValidation"
         assertModuleAbsentFromAssembly "Axial.ErrorHandling" "Axial.Schema.SchemaConstraintCheck"
         assertModuleAbsentFromAssembly "Axial.ErrorHandling" "Axial.Schema.ValueSchemaCheck"
-        assertModuleAbsentFromAssembly "Axial.ErrorHandling" "Axial.Schema.Model"
+        assertModuleAbsentFromAssembly "Axial.ErrorHandling" "Axial.Schema.ModelModule"
 
         test <@ schemaAssembly.GetName().Name = "Axial.Schema" @>
 
@@ -499,30 +501,29 @@ module ApiShapeTests =
         |> publicStaticMemberNames
         |> assertContainsAll [ "fromUnderlying"; "text"; "ordered" ]
 
-        moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.Rules"
+        moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.ContextRules"
         |> publicStaticMemberNames
         |> assertContainsAll
-            [ "empty"
-              "fail"
+            [ "fail"
               "custom"
               "failCustom"
               "failAt"
-              "failCustomAt"
-              "create"
-              "ofSeq"
-              "ofList"
+              "failAtField"
               "at"
+              "atField"
               "name"
               "key"
               "index"
-              "append"
-              "concat" ]
+              "apply" ]
 
     [<Fact>]
     let ``schema contextual rules are reserved for schema validation interpreters`` () =
+        // Contextual rules are plain functions plus a minimal helper module; there is
+        // deliberately no rule-set container type anywhere in the library.
         let forbiddenCoreRuleModules =
             [ "Rules"
               "SchemaRules"
+              "ContextRules"
               "ContextualRules" ]
 
         let forbiddenCoreRuleTypes =
@@ -538,15 +539,8 @@ module ApiShapeTests =
             assertTypeAbsentFromAssembly "Axial.ErrorHandling" $"Axial.ErrorHandling.{typeName}"
             assertTypeAbsentFromAssembly "Axial.ErrorHandling" $"Axial.Validation.{typeName}"
 
-        let ruleSetType =
-            assertTypePresentInAssembly "Axial.Schema" "Axial.Schema.RuleSet`2"
-
-        let publicRuleSetConstructors =
-            ruleSetType.GetConstructors(BindingFlags.Public ||| BindingFlags.Instance)
-
-        test <@ ruleSetType.IsGenericTypeDefinition @>
-        test <@ ruleSetType.GetGenericArguments().Length = 2 @>
-        test <@ publicRuleSetConstructors.Length = 0 @>
+        assertTypeAbsentFromAssembly "Axial.Schema" "Axial.Schema.RuleSet`2"
+        assertModuleAbsentFromAssembly "Axial.Schema" "Axial.Schema.Rules"
 
     [<Fact>]
     let ``schema types stay out of the flow package`` () =

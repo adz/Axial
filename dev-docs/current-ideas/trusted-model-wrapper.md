@@ -1,6 +1,8 @@
 # Trusted&lt;'model&gt; Wrapper Sketch
 
-Status: parked (2026-07-11). Not accepted architecture. This records an alternative, stronger enforcement mechanism
+Status: SHIPPED (2026-07-12) as `Axial.Schema.Model<'model>` with `Model.validate` (option 2 below, named `Model`
+rather than `Trusted`). The interpreter-rewiring fear was avoided exactly as sketched: `ParsedInput`, `Codec`, and
+`ContextRules` stay `'model`-typed; the wrapper is opt-in at the edges. Kept for the reasoning record. This records an alternative, stronger enforcement mechanism
 for "an invalid model is never constructed," found while working out how to actually close the gap `private` alone
 leaves open, and deliberately not pursued yet because it's a bigger structural change than a documentation fix.
 

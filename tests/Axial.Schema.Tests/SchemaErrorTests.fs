@@ -82,19 +82,18 @@ module SchemaErrorTests =
     [<Fact>]
     let ``rules using schema boundary errors render with the same display path`` () =
         let rules =
-            Rules.create (fun ticket ->
-                if ticket.Priority >= 4 && not ticket.HasAssignee then
-                    Rules.failCustomAt
-                        [ PathSegment.Name "assignee" ]
-                        "ticket.assignee.required"
-                        "High-priority tickets need an assignee."
-                else
-                    Ok ())
+            [ fun ticket ->
+                  if ticket.Priority >= 4 && not ticket.HasAssignee then
+                      ContextRules.failAt
+                          [ PathSegment.Name "assignee" ]
+                          (ContextRules.custom "ticket.assignee.required" "High-priority tickets need an assignee.")
+                  else
+                      Ok () ]
 
         let ticket = { Priority = 5; HasAssignee = false }
 
         let messages =
-            match Rules.apply rules ticket with
+            match ContextRules.apply rules ticket with
             | Ok _ -> failwith "Expected rule diagnostics."
             | Error diagnostics -> SchemaError.renderDiagnostics diagnostics
 

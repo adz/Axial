@@ -61,17 +61,17 @@ let validateOrderLine : Policy<OrderEnv, OrderError, OrderLine, OrderLine> =
         (fun line -> Axial.Schema.Model.reconstruct orderLineSchema line)
         (Diagnostics.flatten >> LineRejected)
 
-// 5. Contextual rules: adapt a RuleSet evaluated with the workflow environment.
-let quantityCapRules (env: OrderEnv) : RuleSet<OrderLine, OrderError> =
-    Rules.create (fun line ->
-        if Quantity.value line.Quantity > env.MaxLineQuantity then
-            Rules.failAt [ PathSegment.Name "quantity" ] (QuantityOverCap env.MaxLineQuantity)
-        else
-            Ok ())
+// 5. Contextual rules: plain rule functions selected by the workflow environment.
+let quantityCapRules (env: OrderEnv) : (OrderLine -> Result<unit, Diagnostics<OrderError>>) list =
+    [ fun line ->
+          if Quantity.value line.Quantity > env.MaxLineQuantity then
+              ContextRules.failAt [ PathSegment.Name "quantity" ] (QuantityOverCap env.MaxLineQuantity)
+          else
+              Ok () ]
 
 let underQuantityCap : Policy<OrderEnv, OrderError, OrderLine, OrderLine> =
     Policy.context
-        (fun env line -> Rules.apply (quantityCapRules env) line)
+        (fun env line -> ContextRules.apply (quantityCapRules env) line)
         (Diagnostics.flatten >> List.map _.Error >> List.head)
 
 // Policies over the same input/output compose, and environment predicates can

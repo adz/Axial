@@ -1,6 +1,17 @@
 # Contract Grammar Sketch
 
-Status: pre-idea, being actively worked (2026-07-08). Companion to `schema-contract-versioning.md` — that file holds
+Status: grammar library + generator IMPLEMENTED (2026-07-12) in `src/Axial.Schema.Contracts` (parser, resolver,
+emitter) with the `scripts/schemagen` CLI (`--check` drift guard) and `tests/Axial.Schema.Contracts.Tests`
+(parser/resolver specs + byte-for-byte golden emission against the compiled corpus in
+`tests/Axial.Schema.Tests/contracts/`). Scope shipped: single-version contracts, primitives + email format type,
+comparisons/min/max/pattern/multipleOf/distinct, defaults, literal unions (→ generated DUs + `Value.enumOf`),
+`list`/`map`, contract refs, inline tagged unions (`union kind { ... }` → `Value.unionInline`), doc comments
+(→ XML docs + `Value.describe`/`Schema.describe`). Emitted shape per contract: public record (the draft), `schema`,
+`validate` (→ `Result<Model<'t>, Diagnostics<SchemaError>>`), `parse`, and a typed `Fields` module of `FieldRef`s.
+Deliberately not shipped yet: multiple versions/migrations (Contract machinery stays gated), `check` refs, refined
+type refs, date/time/guid defaults, LSP. Contracts are the WIRE tier only — domain models are hand-written F#
+(see `docs/schema/trusted-construction.md`); a domain-tier `model` declaration kind was designed and rejected
+(no methods on generated types, DUs don't fit the grammar). Original sketch follows. Companion to `schema-contract-versioning.md` — that file holds
 the Contract concept; this file refines the declaration grammar and the tooling plan.
 
 ## Goals

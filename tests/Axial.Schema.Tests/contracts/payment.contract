@@ -1,0 +1,17 @@
+/// A card payment source.
+contract Card.v1 {
+  number: text [ min 12, max 19 ]
+}
+
+/// An invoice payment source.
+contract Invoice.v1 {
+  reference: text [ min 1 ]
+}
+
+/// A payment method choice.
+contract Payment.v1 {
+  source: union kind {
+    card: Card.v1
+    invoice: Invoice.v1
+  }
+}
