@@ -12,7 +12,7 @@ This page shows how domain values such as `Email`, `Quantity`, and `ContactName`
 A refined value schema pairs a raw representation with a domain type, so fields can carry real domain values — `Email`,
 `Quantity`, `ContactName` — while boundary interpreters keep working with the raw representation.
 
-For caller-owned domain values, author the type in one place using the [Domain Values](../refined/domain-values/) pattern:
+For caller-owned domain values, author the type in one place using the [Domain Values]({{< relref "/error-handling/refined/domain-values/" >}}) pattern:
 private constructor, smart constructor, optional standalone helper, and `Value.refined` schema.
 
 ## Built-In Refined Catalog Schemas

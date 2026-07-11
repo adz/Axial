@@ -44,10 +44,8 @@ upsert_frontmatter() {
 
 # Axial's three areas each get a top-level section: /error-handling/
 # (with validation and refined nested as its machinery, since both ship in
-# Axial.ErrorHandling), /schema/, and /flow/. The refined *guide* pages
-# still live under docs/schema/refined for now (a separate site-IA move,
-# not yet done) even though the refined *API reference* is routed to the
-# error-handling area below to match the package it actually ships in.
+# Axial.ErrorHandling), /schema/, and /flow/. Refined guides and reference
+# both live under the error-handling area, matching the package.
 # The generated API reference is split across them under <area>/reference/.
 eh_dir="$root_dir/site/content/error-handling"
 schema_dir="$root_dir/site/content/schema"

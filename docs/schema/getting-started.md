@@ -80,7 +80,7 @@ rules, and metadata inspection step by step.
 
 ## Related
 
-- For a single value rather than a whole model, use [Refined](./refined/) types or plain `Result` in
+- For a single value rather than a whole model, use [Refined]({{< relref "/error-handling/refined/" >}}) types or plain `Result` in
   [Error Handling]({{< relref "/error-handling/" >}}).
 - To carry a parsed model into a workflow with dependencies and async work, see
   [Flow]({{< relref "/flow/" >}}).

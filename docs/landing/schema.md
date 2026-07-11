@@ -82,11 +82,12 @@ constructor re-invoked so cross-field invariants hold too — without re-parsing
 
 ## The Machinery
 
-Two subsections hold the tools schemas are built from — reach for them directly when they pay for themselves:
+Two subsections hold the tools schemas are built from — both ship in `Axial.ErrorHandling`, not this package;
+Schema uses them, they aren't Schema-specific:
 
-- [Refined](./refined/) — single values whose types carry their own proof: `PositiveInt`, `NonBlankString`, your own.
-- [Validation]({{< relref "/validation/" >}}) — accumulate every sibling failure as a path-aware diagnostics tree
-  (ships in `Axial.ErrorHandling`, not this package — Schema uses it, it isn't Schema-specific).
+- [Refined]({{< relref "/error-handling/refined/" >}}) — single values whose types carry their own proof:
+  `PositiveInt`, `NonBlankString`, your own.
+- [Validation]({{< relref "/validation/" >}}) — accumulate every sibling failure as a path-aware diagnostics tree.
 
 Axial consists of three packages: [Error Handling]({{< relref "/error-handling/" >}}) for pure fail-fast checks with
 plain `Result`, Schema for domain models at data boundaries, and [Flow]({{< relref "/flow/" >}}) for the effects
