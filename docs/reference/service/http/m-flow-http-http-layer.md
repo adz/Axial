@@ -1,10 +1,11 @@
 ---
 title: "Flow.Http.layer"
 linkTitle: "layer"
-weight: 2102
+weight: 2701
 ---
 
-Builds a live HTTP service as a layer.
+ Builds a live HTTP service as a layer.
+ <example><code>Http.layer (new HttpClient())</code></example>
 
 ## Signature
 

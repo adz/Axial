@@ -44,6 +44,7 @@
     <Project Path="tests/Axial.Flow.Hosting.Tests/Axial.Flow.Hosting.Tests.fsproj" />
     <Project Path="tests/Axial.Flow.Telemetry.Tests/Axial.Flow.Telemetry.Tests.fsproj" />
     <Project Path="tests/Axial.Flow.FileSystem.Tests/Axial.Flow.FileSystem.Tests.fsproj" />
+    <Project Path="tests/Axial.Flow.Http.Tests/Axial.Flow.Http.Tests.fsproj" />
     <Project Path="tests/Axial.Flow.Integration.Tests/Axial.Flow.Integration.Tests.fsproj" />
     <Project Path="tests/Axial.ApiShape.Tests/Axial.ApiShape.Tests.fsproj" />
   </Folder>

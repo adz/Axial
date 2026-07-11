@@ -63,6 +63,20 @@ for Bash `|&`, and `mergeStderr` for the intent of `2>&1`. Prefer typed topology
 `sh`, or `pwsh` only when shell language is genuinely clearer; never concatenate untrusted values into `*Text` shell
 programs.
 
+For HTTP calls, open `Axial.Flow.Http.DSL` locally. Build requests with `GET $"...{value}"` (interpolation holes are
+URL-encoded as one value; wrap credentials in `secret` for redaction), configure with `query`, `bearer`, `timeout`,
+`jsonBody`, and `expect`, then finish with `fetch`, `fetchText`, or `fetchJson decode`:
+
+```fsharp
+GET $"https://api.example.com/users/{userId}"
+|> bearer token
+|> fetchJson decodeUser
+```
+
+The result is `Flow<#IHas<IHttp>, HttpError, _>`. Treat expected non-2xx statuses as data with
+`expect [ 200; 404 ]` rather than catching errors, and retry only transient failures with `Http.retryTransient`
+(or `withRetries`); never wrap non-idempotent POSTs in retries without an idempotency key header.
+
 ### 1. Handling Failures
 Use `Check` for executable value constraints, `Predicate` for local boolean tests, and `Result` for fail-fast values. `Check.*` helpers return `Result<'value, CheckFailure list>` — a passing check hands back the same value unchanged, so it pipes directly into the next step with no separate value-preserving wrapper needed. `Result.requireTrue`/`okIf`/`failIf`/`orError` and extraction helpers cover the generic, non-Check cases.
 

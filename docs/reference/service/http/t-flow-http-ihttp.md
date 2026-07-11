@@ -1,10 +1,10 @@
 ---
 title: "Flow.Http.IHttp"
 linkTitle: "IHttp"
-weight: 1000
+weight: 1100
 ---
 
-Provides asynchronous access to HTTP client operations.
+ Sends fully described HTTP requests for a concrete host platform.
 
 ## Signature
 

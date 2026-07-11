@@ -1,10 +1,11 @@
 ---
 title: "Flow.Http.live"
 linkTitle: "live"
-weight: 2101
+weight: 2700
 ---
 
-Creates a live HTTP service backed by <a href="https://learn.microsoft.com/dotnet/api/system.net.http.httpclient">HttpClient</a>.
+ Creates a live HTTP service backed by <see cref="T:System.Net.Http.HttpClient" />.
+ <example><code>Http.live (new HttpClient())</code></example>
 
 ## Signature
 

@@ -1,11 +1,12 @@
 ---
 title: "Flow.Http.getString"
 linkTitle: "getString"
-weight: 2100
+weight: 2511
 type: docs
 ---
 
-Sends a GET request through an explicit HTTP service and returns the response body.
+ Sends a GET request and returns the response body, mirroring <c>HttpClient.GetStringAsync</c>.
+ <example><code>Http.getString "https://example.com"</code></example>
 
 ## Signature
 
@@ -23,4 +24,4 @@ Sends a GET request through an explicit HTTP service and returns the response bo
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="../../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;string</span>&gt;</span></code> |  |
+| <code><span><a href="../../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;<a href="t-flow-http-httperror.md">HttpError</a>,&#32;string</span>&gt;</span></code> |  |

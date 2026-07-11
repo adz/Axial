@@ -35,4 +35,5 @@ orchestration syntax.
 - [`Http`](./service/http/) — `Axial.Flow.Http`.
 - [`Process`](./service/process/) — `Axial.Flow.Process`.
 
-See [Processes and pipelines](../../flow/processes/) for the shell-like authoring guide and Bash comparisons.
+See [Processes and pipelines](../../flow/processes/) for the shell-like authoring guide and Bash comparisons, and
+[HTTP clients](../../flow/http/) for typed request building, response decoding, and retry guidance.
