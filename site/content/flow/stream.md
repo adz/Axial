@@ -2,9 +2,9 @@
 weight: 40
 title: FlowStream
 description: Cold, pull-based, effectful streams for .NET and Fable.
+type: docs
 ---
 
-# FlowStream
 
 This page shows how to construct, transform, and consume cold streams that share Flow's environment, typed failures,
 cancellation, and platform portability.

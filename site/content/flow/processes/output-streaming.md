@@ -2,9 +2,9 @@
 weight: 20
 title: Output And Streaming
 description: Capture, bound, tee, redirect, and stream process output with backpressure.
+type: docs
 ---
 
-# Output And Streaming
 
 This page shows complete process execution in full-capture, direct-console, target, callback, and FlowStream modes.
 

@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.Input.text"
 linkTitle: "text"
 weight: 2601
+type: docs
 ---
 
  Supplies encoded text incrementally when execution begins.

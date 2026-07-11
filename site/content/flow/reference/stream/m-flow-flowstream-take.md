@@ -2,6 +2,7 @@
 title: "Flow.FlowStream.take"
 linkTitle: "take"
 weight: 2206
+type: docs
 ---
 
 Emits at most <span class="fsdocs-param-name">count</span> values.

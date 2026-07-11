@@ -2,6 +2,7 @@
 title: "Flow.Process.mergeStderr"
 linkTitle: "mergeStderr"
 weight: 2407
+type: docs
 ---
 
  Routes final stderr through the final stdout targets, like the intent of <c>2&gt;&amp;1</c>.

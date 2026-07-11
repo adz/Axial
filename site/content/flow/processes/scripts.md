@@ -2,9 +2,9 @@
 weight: 40
 title: Executable Scripts
 description: Run typed Flow workflows from one dotnet-fsi shebang file.
+type: docs
 ---
 
-# Executable Scripts
 
 This page shows complete executable `.fsx` scripts that provision the live process service with one call.
 

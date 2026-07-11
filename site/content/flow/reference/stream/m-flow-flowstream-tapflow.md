@@ -2,6 +2,7 @@
 title: "Flow.FlowStream.tapFlow"
 linkTitle: "tapFlow"
 weight: 2205
+type: docs
 ---
 
 Runs an effect for each value before emitting the original value.
@@ -16,7 +17,7 @@ Runs an effect for each value before emitting the original value.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `action` | <code><span>'a&#32;->&#32;<span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'b,&#32;'c,&#32;unit</span>&gt;</span></span></code> |  |
+| `action` | <code><span>'a&#32;->&#32;<span><a href="../flow/t-flow-flow.md">Flow</a>&lt;<span>'b,&#32;'c,&#32;unit</span>&gt;</span></span></code> |  |
 | `arg1` | <code><span><a href="t-flow-flowstream.md">FlowStream</a>&lt;<span>'b,&#32;'c,&#32;'a</span>&gt;</span></code> |  |
 
 ## Returns

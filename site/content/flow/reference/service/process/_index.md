@@ -1,6 +1,7 @@
 ---
 title: "Services Process"
 weight: 50
+type: docs
 ---
 
 This page shows the external-process service package. Immutable `Command` and `Pipeline` values preserve shell-like endpoint composition without shell parsing. `Process.toFlow` converts a topology through the explicit `IProcess` capability, connects real standard streams, captures complete output, tracks every exit code, and reports startup, cancellation, I/O, and non-zero exits through `ProcessError`. Use `Process.stream` when output must be observed before completion.

@@ -2,6 +2,7 @@
 title: "Flow.Process.OutputTarget"
 linkTitle: "OutputTarget"
 weight: 1004
+type: docs
 ---
 
  Receives bytes from a process topology. Capture limits are measured in bytes.

@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.Output.console"
 linkTitle: "console"
 weight: 2702
+type: docs
 ---
 
  Forwards redirected bytes through the host console streams.

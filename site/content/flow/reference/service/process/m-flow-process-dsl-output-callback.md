@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.Output.callback"
 linkTitle: "callback"
 weight: 2707
+type: docs
 ---
 
  Sends exact byte chunks to an asynchronous backpressured callback.

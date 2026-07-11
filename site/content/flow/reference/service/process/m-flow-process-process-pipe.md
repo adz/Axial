@@ -2,6 +2,7 @@
 title: "Flow.Process.pipe"
 linkTitle: "pipe"
 weight: 2401
+type: docs
 ---
 
  Connects the current stdout to the next command's stdin. <example><code>pipeline |&gt; Process.pipe next</code></example>

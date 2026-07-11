@@ -2,6 +2,7 @@
 title: "Flow.Process.live"
 linkTitle: "live"
 weight: 3000
+type: docs
 ---
 
 

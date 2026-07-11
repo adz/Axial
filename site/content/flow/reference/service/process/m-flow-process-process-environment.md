@@ -2,6 +2,7 @@
 title: "Flow.Process.environment"
 linkTitle: "environment"
 weight: 2304
+type: docs
 ---
 
  Sets an environment override. <example><code>command |&gt; Process.environment "CI" "true"</code></example>

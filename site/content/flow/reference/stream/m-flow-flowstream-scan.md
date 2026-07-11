@@ -2,6 +2,7 @@
 title: "Flow.FlowStream.scan"
 linkTitle: "scan"
 weight: 2211
+type: docs
 ---
 
 Emits successive accumulator states.

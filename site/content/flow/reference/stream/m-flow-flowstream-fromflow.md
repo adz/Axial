@@ -2,6 +2,7 @@
 title: "Flow.FlowStream.fromFlow"
 linkTitle: "fromFlow"
 weight: 2103
+type: docs
 ---
 
 Creates a one-element stream from an effectful value.
@@ -16,7 +17,7 @@ Creates a one-element stream from an effectful value.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `flow` | <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> |  |
+| `flow` | <code><span><a href="../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> |  |
 
 ## Returns
 

@@ -2,6 +2,7 @@
 title: "Flow.Process.ProcessError"
 linkTitle: "ProcessError"
 weight: 1010
+type: docs
 ---
 
  A recoverable process startup, cancellation, stage, or I/O failure.

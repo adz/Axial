@@ -2,6 +2,7 @@
 title: "Flow.Process.plan"
 linkTitle: "plan"
 weight: 2410
+type: docs
 ---
 
  Returns a redacted execution plan without starting a process.

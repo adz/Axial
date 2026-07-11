@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.Output.tee"
 linkTitle: "tee"
 weight: 2708
+type: docs
 ---
 
  Sends every byte chunk to each target in order.

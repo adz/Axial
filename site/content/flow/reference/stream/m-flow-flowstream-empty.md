@@ -2,6 +2,7 @@
 title: "Flow.FlowStream.empty"
 linkTitle: "empty"
 weight: 2100
+type: docs
 ---
 
 Creates an empty stream.

@@ -2,6 +2,7 @@
 title: "Flow.FlowStream.runForEach"
 linkTitle: "runForEach"
 weight: 2400
+type: docs
 ---
 
 Executes the stream and performs a synchronous action for each successful value.
@@ -23,7 +24,7 @@ Executes the stream and performs a synchronous action for each successful value.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;unit</span>&gt;</span></code> | A flow that represents the execution of the stream. If the stream fails, the flow fails with the same cause. |
+| <code><span><a href="../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;unit</span>&gt;</span></code> | A flow that represents the execution of the stream. If the stream fails, the flow fails with the same cause. |
 
 ## Examples
 

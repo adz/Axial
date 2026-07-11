@@ -2,6 +2,7 @@
 title: "Flow.Process.framing"
 linkTitle: "framing"
 weight: 2408
+type: docs
 ---
 
  Selects chunk or line event framing. <example><code>pipeline |&gt; Process.framing OutputFraming.Lines</code></example>

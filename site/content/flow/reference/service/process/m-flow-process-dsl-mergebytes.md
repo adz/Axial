@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.mergeBytes"
 linkTitle: "mergeBytes"
 weight: 2807
+type: docs
 ---
 
  Creates raw-byte fan-in producers with explicitly nondeterministic chunk interleaving.

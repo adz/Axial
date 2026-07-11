@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.pipeCommands"
 linkTitle: "pipeCommands"
 weight: 2803
+type: docs
 ---
 
  Builds a pipeline from already constructed commands.

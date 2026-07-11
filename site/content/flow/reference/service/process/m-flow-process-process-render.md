@@ -2,6 +2,7 @@
 title: "Flow.Process.render"
 linkTitle: "render"
 weight: 2308
+type: docs
 ---
 
  Renders a diagnostic command string with secret arguments redacted.

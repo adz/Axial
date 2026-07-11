@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.Output.file"
 linkTitle: "file"
 weight: 2705
+type: docs
 ---
 
  Writes output to a truncating file.

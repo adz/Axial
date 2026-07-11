@@ -2,6 +2,7 @@
 title: "Flow.Process.pipeline"
 linkTitle: "pipeline"
 weight: 2400
+type: docs
 ---
 
  Starts a one-command pipeline with full stdout and stderr capture.

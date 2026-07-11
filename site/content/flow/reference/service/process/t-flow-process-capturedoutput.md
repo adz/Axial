@@ -2,6 +2,7 @@
 title: "Flow.Process.CapturedOutput"
 linkTitle: "CapturedOutput"
 weight: 1007
+type: docs
 ---
 
  Exact captured bytes plus their decoded text view and truncation status.

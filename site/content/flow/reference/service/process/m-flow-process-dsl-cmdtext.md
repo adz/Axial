@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.cmdText"
 linkTitle: "cmdText"
 weight: 2801
+type: docs
 ---
 
  Parses a fixed command line. Prefer <c>cmd $"...{value}"</c> whenever values are inserted.

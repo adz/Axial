@@ -2,6 +2,7 @@
 title: "Flow.Process.stderr"
 linkTitle: "stderr"
 weight: 2406
+type: docs
 ---
 
  Configures combined stderr handling. <example><code>pipeline |&gt; Process.stderr (OutputTarget.CaptureTail 65536)</code></example>

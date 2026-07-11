@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.writeTo"
 linkTitle: "writeTo"
 weight: 2819
+type: docs
 ---
 
  Writes final stdout to a truncating file and converts the topology to Flow.
@@ -23,4 +24,4 @@ weight: 2819
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'b,&#32;<a href="t-flow-process-processerror.md">ProcessError</a>,&#32;<a href="t-flow-process-processresult.md">ProcessResult</a></span>&gt;</span></code> |  |
+| <code><span><a href="../../flow/t-flow-flow.md">Flow</a>&lt;<span>'b,&#32;<a href="t-flow-process-processerror.md">ProcessError</a>,&#32;<a href="t-flow-process-processresult.md">ProcessResult</a></span>&gt;</span></code> |  |

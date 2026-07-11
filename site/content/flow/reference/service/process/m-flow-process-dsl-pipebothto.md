@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.pipeBothTo"
 linkTitle: "pipeBothTo"
 weight: 2805
+type: docs
 ---
 
  Connects both stdout and stderr from the current final stage to the next command.

@@ -2,6 +2,7 @@
 title: "Flow.FlowStream.runCollect"
 linkTitle: "runCollect"
 weight: 2403
+type: docs
 ---
 
 Collects all emitted values into a list.
@@ -22,7 +23,7 @@ Collects all emitted values into a list.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'a,&#32;'b,&#32;<span>'c&#32;list</span></span>&gt;</span></code> |  |
+| <code><span><a href="../flow/t-flow-flow.md">Flow</a>&lt;<span>'a,&#32;'b,&#32;<span>'c&#32;list</span></span>&gt;</span></code> |  |
 
 ## Examples
 

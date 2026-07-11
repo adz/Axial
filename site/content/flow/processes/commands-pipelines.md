@@ -2,9 +2,9 @@
 weight: 10
 title: Commands And Pipelines
 description: Construct safely tokenized commands and connect typed process endpoints.
+type: docs
 ---
 
-# Commands And Pipelines
 
 This page shows how immutable commands and typed endpoints replace shell quoting and redirection.
 

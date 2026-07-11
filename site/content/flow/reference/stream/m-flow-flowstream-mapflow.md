@@ -2,6 +2,7 @@
 title: "Flow.FlowStream.mapFlow"
 linkTitle: "mapFlow"
 weight: 2204
+type: docs
 ---
 
 Transforms every value with a Flow effect.
@@ -16,7 +17,7 @@ Transforms every value with a Flow effect.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `mapper` | <code><span>'a&#32;->&#32;<span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'b,&#32;'c,&#32;'d</span>&gt;</span></span></code> |  |
+| `mapper` | <code><span>'a&#32;->&#32;<span><a href="../flow/t-flow-flow.md">Flow</a>&lt;<span>'b,&#32;'c,&#32;'d</span>&gt;</span></span></code> |  |
 | `arg1` | <code><span><a href="t-flow-flowstream.md">FlowStream</a>&lt;<span>'b,&#32;'c,&#32;'a</span>&gt;</span></code> |  |
 
 ## Returns

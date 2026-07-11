@@ -2,6 +2,7 @@
 title: "Flow.FlowStream.filter"
 linkTitle: "filter"
 weight: 2202
+type: docs
 ---
 
 Keeps values that satisfy a predicate.

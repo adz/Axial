@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.Input.empty"
 linkTitle: "empty"
 weight: 2600
+type: docs
 ---
 
  Supplies no bytes and closes stdin.

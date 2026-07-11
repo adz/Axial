@@ -2,6 +2,7 @@
 title: "Flow.FlowStream.append"
 linkTitle: "append"
 weight: 2300
+type: docs
 ---
 
 Concatenates two streams, evaluating the second only after the first ends.

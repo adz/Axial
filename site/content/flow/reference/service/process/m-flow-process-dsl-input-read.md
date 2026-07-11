@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.Input.read"
 linkTitle: "read"
 weight: 2604
+type: docs
 ---
 
  Reads one asynchronous byte block when execution begins.

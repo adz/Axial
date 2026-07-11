@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.pipe"
 linkTitle: "pipe"
 weight: 2802
+type: docs
 ---
 
  Builds a vertical pipeline from safely parsed command templates.

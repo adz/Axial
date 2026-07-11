@@ -2,6 +2,7 @@
 title: "Flow.FlowStream.distinctUntilChangedBy"
 linkTitle: "distinctUntilChangedBy"
 weight: 2212
+type: docs
 ---
 
 Suppresses consecutive duplicate values according to a projection.

@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.bashText"
 linkTitle: "bashText"
 weight: 2903
+type: docs
 ---
 
  Builds an explicitly assembled Bash program. Values in the text are not escaped by Axial.

@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.stdin"
 linkTitle: "stdin"
 weight: 2811
+type: docs
 ---
 
  Supplies a primary input source to a command or pipeline.

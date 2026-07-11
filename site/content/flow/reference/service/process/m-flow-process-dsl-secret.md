@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.secret"
 linkTitle: "secret"
 weight: 2906
+type: docs
 ---
 
  Marks an interpolated value for diagnostic redaction.

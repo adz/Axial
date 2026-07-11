@@ -2,6 +2,7 @@
 title: "Flow.FlowStream.unfoldFlow"
 linkTitle: "unfoldFlow"
 weight: 2104
+type: docs
 ---
 
 Creates a cold stream by repeatedly running an effectful state transition.
@@ -16,7 +17,7 @@ Creates a cold stream by repeatedly running an effectful state transition.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `step` | <code><span>'state&#32;->&#32;<span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'env,&#32;'error,&#32;<span><span>(<span>'value&#32;*&#32;'state</span>)</span>&#32;option</span></span>&gt;</span></span></code> | Returns <code>Some(value, nextState)</code> or <code>None</code> when the stream is complete. |
+| `step` | <code><span>'state&#32;->&#32;<span><a href="../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;<span><span>(<span>'value&#32;*&#32;'state</span>)</span>&#32;option</span></span>&gt;</span></span></code> | Returns <code>Some(value, nextState)</code> or <code>None</code> when the stream is complete. |
 | `initialState` | <code>'state</code> | The state used for the first pull. |
 
 ## Returns

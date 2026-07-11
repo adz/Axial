@@ -2,6 +2,7 @@
 title: "Flow.Process.workingDirectory"
 linkTitle: "workingDirectory"
 weight: 2303
+type: docs
 ---
 
  Sets the working directory. <example><code>command |&gt; Process.workingDirectory repo</code></example>

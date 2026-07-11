@@ -2,6 +2,7 @@
 title: "Flow.Process.Pipeline"
 linkTitle: "Pipeline"
 weight: 1001
+type: docs
 ---
 
  One or more commands connected left-to-right through their real standard streams.

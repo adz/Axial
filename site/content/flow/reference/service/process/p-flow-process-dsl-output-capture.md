@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.Output.capture"
 linkTitle: "capture"
 weight: 2700
+type: docs
 ---
 
  Retains all output bytes and their decoded text view.

@@ -2,6 +2,7 @@
 title: "Flow.FlowStream.fromSeq"
 linkTitle: "fromSeq"
 weight: 2102
+type: docs
 ---
 
 Creates a stream from a synchronous sequence of values.

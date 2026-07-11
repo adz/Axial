@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.Input.bytes"
 linkTitle: "bytes"
 weight: 2602
+type: docs
 ---
 
  Supplies exact bytes when execution begins.

@@ -2,6 +2,7 @@
 title: "Flow.Process.Script.run"
 linkTitle: "run"
 weight: 2506
+type: docs
 ---
 
  Runs a process workflow with live services and sets the host exit code. Intended for dotnet-fsi shebang scripts.
@@ -16,7 +17,7 @@ weight: 2506
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `workflow` | <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span><a href="/reference/Axial/axial-flow-process-scriptenvironment.html">ScriptEnvironment</a>,&#32;<a href="t-flow-process-processerror.md">ProcessError</a>,&#32;'value</span>&gt;</span></code> |  |
+| `workflow` | <code><span><a href="../../flow/t-flow-flow.md">Flow</a>&lt;<span><a href="/reference/Axial/axial-flow-process-scriptenvironment.html">ScriptEnvironment</a>,&#32;<a href="t-flow-process-processerror.md">ProcessError</a>,&#32;'value</span>&gt;</span></code> |  |
 
 ## Returns
 

@@ -2,9 +2,9 @@
 weight: 35
 title: Processes And Scripts
 description: Build typed commands, connect process endpoints, stream output, and run executable F# scripts.
+type: docs
 ---
 
-# Processes And Scripts
 
 This page shows the shortest path from Bash process syntax to an explicitly tracked Flow workflow.
 

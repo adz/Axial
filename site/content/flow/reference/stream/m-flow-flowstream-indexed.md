@@ -2,6 +2,7 @@
 title: "Flow.FlowStream.indexed"
 linkTitle: "indexed"
 weight: 2210
+type: docs
 ---
 
 Emits each value paired with its zero-based index.

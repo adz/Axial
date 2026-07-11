@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.bash"
 linkTitle: "bash"
 weight: 2900
+type: docs
 ---
 
  Builds a Bash program with interpolation values passed as positional arguments.

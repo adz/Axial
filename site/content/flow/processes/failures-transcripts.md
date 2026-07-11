@@ -2,9 +2,9 @@
 weight: 30
 title: Failures And Transcripts
 description: Interpret exit codes and diagnose the exact failed stage.
+type: docs
 ---
 
-# Failures And Transcripts
 
 This page shows how process failures retain structured context for CI, deployments, and support diagnostics.
 

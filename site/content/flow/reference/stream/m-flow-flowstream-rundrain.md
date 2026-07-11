@@ -2,6 +2,7 @@
 title: "Flow.FlowStream.runDrain"
 linkTitle: "runDrain"
 weight: 2404
+type: docs
 ---
 
 Consumes a stream and ignores its values.
@@ -22,7 +23,7 @@ Consumes a stream and ignores its values.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'a,&#32;'b,&#32;unit</span>&gt;</span></code> |  |
+| <code><span><a href="../flow/t-flow-flow.md">Flow</a>&lt;<span>'a,&#32;'b,&#32;unit</span>&gt;</span></code> |  |
 
 ## Examples
 

@@ -2,6 +2,7 @@
 title: "Flow.Process.ProcessPlan"
 linkTitle: "ProcessPlan"
 weight: 1002
+type: docs
 ---
 
  A redacted, serializable description of work that would be executed.

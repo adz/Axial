@@ -2,6 +2,7 @@
 title: "Flow.Process.ProcessError.exitCode"
 linkTitle: "exitCode"
 weight: 2201
+type: docs
 ---
 
  Returns a suitable host exit code for a process failure.

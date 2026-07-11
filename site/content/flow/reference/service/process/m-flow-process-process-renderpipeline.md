@@ -2,6 +2,7 @@
 title: "Flow.Process.renderPipeline"
 linkTitle: "renderPipeline"
 weight: 2409
+type: docs
 ---
 
  Renders a redacted shell-like diagnostic pipeline. <example><code>Process.renderPipeline pipeline</code></example>

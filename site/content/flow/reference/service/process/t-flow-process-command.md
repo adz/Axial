@@ -2,6 +2,7 @@
 title: "Flow.Process.Command"
 linkTitle: "Command"
 weight: 1000
+type: docs
 ---
 
  An immutable, safely tokenized external command.

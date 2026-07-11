@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.captureResult"
 linkTitle: "captureResult"
 weight: 2816
+type: docs
 ---
 
  Captures output without interpreting command success codes.
@@ -22,4 +23,4 @@ weight: 2816
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'b,&#32;<a href="t-flow-process-processerror.md">ProcessError</a>,&#32;<a href="t-flow-process-processresult.md">ProcessResult</a></span>&gt;</span></code> |  |
+| <code><span><a href="../../flow/t-flow-flow.md">Flow</a>&lt;<span>'b,&#32;<a href="t-flow-process-processerror.md">ProcessError</a>,&#32;<a href="t-flow-process-processresult.md">ProcessResult</a></span>&gt;</span></code> |  |

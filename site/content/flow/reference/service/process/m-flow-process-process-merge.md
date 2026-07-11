@@ -2,6 +2,7 @@
 title: "Flow.Process.merge"
 linkTitle: "merge"
 weight: 2403
+type: docs
 ---
 
  Creates a fan-in topology whose producers may be connected to one downstream command.

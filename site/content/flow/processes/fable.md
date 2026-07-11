@@ -2,9 +2,9 @@
 weight: 50
 title: Fable And Node
 description: Understand which stream and process capabilities are portable.
+type: docs
 ---
 
-# Fable And Node
 
 This page shows the platform boundary between portable stream programs and concrete operating-system process launchers.
 

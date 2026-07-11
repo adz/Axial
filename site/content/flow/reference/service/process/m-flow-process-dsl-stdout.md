@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.stdout"
 linkTitle: "stdout"
 weight: 2812
+type: docs
 ---
 
  Configures final stdout without converting the topology.

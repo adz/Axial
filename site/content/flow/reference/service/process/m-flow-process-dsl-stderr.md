@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.stderr"
 linkTitle: "stderr"
 weight: 2813
+type: docs
 ---
 
  Configures combined stderr without converting the topology.

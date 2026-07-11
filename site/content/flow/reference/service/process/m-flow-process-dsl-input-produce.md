@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.Input.produce"
 linkTitle: "produce"
 weight: 2605
+type: docs
 ---
 
  Produces asynchronous byte blocks with backpressure.

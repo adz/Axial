@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.toFlow"
 linkTitle: "toFlow"
 weight: 2814
+type: docs
 ---
 
  Explicitly converts a command or pipeline into a captured Flow.
@@ -22,4 +23,4 @@ weight: 2814
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'b,&#32;<a href="t-flow-process-processerror.md">ProcessError</a>,&#32;<a href="t-flow-process-processresult.md">ProcessResult</a></span>&gt;</span></code> |  |
+| <code><span><a href="../../flow/t-flow-flow.md">Flow</a>&lt;<span>'b,&#32;<a href="t-flow-process-processerror.md">ProcessError</a>,&#32;<a href="t-flow-process-processresult.md">ProcessResult</a></span>&gt;</span></code> |  |

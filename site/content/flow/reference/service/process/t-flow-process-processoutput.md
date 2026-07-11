@@ -2,6 +2,7 @@
 title: "Flow.Process.ProcessOutput"
 linkTitle: "ProcessOutput"
 weight: 1008
+type: docs
 ---
 
  A timestamped decoded output event attributed to one pipeline stage.

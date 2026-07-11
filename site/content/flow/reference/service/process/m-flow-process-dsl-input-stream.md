@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.Input.stream"
 linkTitle: "stream"
 weight: 2606
+type: docs
 ---
 
  Adapts a .NET stream into a backpressured input source.

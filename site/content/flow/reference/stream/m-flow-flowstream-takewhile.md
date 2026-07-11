@@ -2,6 +2,7 @@
 title: "Flow.FlowStream.takeWhile"
 linkTitle: "takeWhile"
 weight: 2208
+type: docs
 ---
 
 Emits values while a predicate remains true.

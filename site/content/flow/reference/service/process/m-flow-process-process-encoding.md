@@ -2,6 +2,7 @@
 title: "Flow.Process.encoding"
 linkTitle: "encoding"
 weight: 2306
+type: docs
 ---
 
  Selects text decoding for this stage. <example><code>command |&gt; Process.encoding Encoding.Latin1</code></example>

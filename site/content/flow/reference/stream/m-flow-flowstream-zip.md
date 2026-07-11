@@ -2,6 +2,7 @@
 title: "Flow.FlowStream.zip"
 linkTitle: "zip"
 weight: 2302
+type: docs
 ---
 
 Pairs values from two streams until either stream ends.

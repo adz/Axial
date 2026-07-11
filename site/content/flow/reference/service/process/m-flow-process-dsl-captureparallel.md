@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.captureParallel"
 linkTitle: "captureParallel"
 weight: 2821
+type: docs
 ---
 
  Captures commands concurrently with a fixed upper bound while preserving input order.
@@ -23,4 +24,4 @@ weight: 2821
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-flow-flow-3.html">Flow</a>&lt;<span>'a,&#32;<a href="t-flow-process-processerror.md">ProcessError</a>,&#32;<span><a href="t-flow-process-processresult.md">ProcessResult</a>&#32;list</span></span>&gt;</span></code> |  |
+| <code><span><a href="../../flow/t-flow-flow.md">Flow</a>&lt;<span>'a,&#32;<a href="t-flow-process-processerror.md">ProcessError</a>,&#32;<span><a href="t-flow-process-processresult.md">ProcessResult</a>&#32;list</span></span>&gt;</span></code> |  |
