@@ -1,8 +1,11 @@
 # Schema Contract Versioning Sketch
 
-Status: pre-idea (2026-07-07). Not accepted architecture. This sketches a **Contract** concept: a named, versioned
-family of frozen schemas with manually written, typed migrations. Motivating boundaries: config files, messages,
-event-sourced events, and (later) database records.
+Status: shipped (2026-07-13). `Axial.Schema.Contract` is the version-selection and typed-migration engine described
+here. The remaining generator work is deliberately separate: `schemagen` still emits one version at a time and does
+not generate migration-chain wiring.
+
+The shipped engine represents a named, versioned family of frozen schemas with manually written, typed migrations.
+Motivating boundaries are config files, messages, event-sourced events, and, later, database records.
 
 ## Fundamental Principle
 
@@ -37,11 +40,11 @@ module SignupContract =
 - Superseded versions are frozen checked-in code: the version record and its schema never change again. This is the
   event-sourcing upcaster pattern generalized to config and messages.
 
-## Design Decisions To Settle
+## Shipped Design Decisions
 
-1. **Version detection.** Prefer an explicit version field owned by the contract (config `version: 2`, event
-   metadata, message header) over structural sniffing, which breaks when two versions are shape-compatible. At most
-   one designated "unversioned input means V1" legacy rule.
+1. **Version detection.** `VersionSource.Field` reads an explicit scalar field,
+   `VersionSource.External` requires `Contract.parseWithVersion`, and `VersionSource.UnversionedMeans` assigns one
+   registered version to unversioned input. There is no structural sniffing.
 2. **Constraint drift.** V1-valid data can violate V2 constraints. After migrating, re-validate the result against the
    current schema so "valid instance" always means valid under the *current* contract. Migration signature is
    therefore fallible — `'prev -> Result<'next, MigrationError>` — with an infallible convenience overload.
@@ -60,6 +63,13 @@ module SignupContract =
    such as `Email`), so direct construction in application code cannot be invalid and version records are visibly
    ingestion artifacts. Invariant-bearing constraints live in the refined types; schema-level constraints cover
    boundary concerns (presence, trimming, external names, representation).
+5. **Trust and diagnostics survive the contract boundary.** Successful parsing returns `Model<'model>`, because the
+   selected schema, every migration, and head revalidation have established the same trust claim as `Model.validate`.
+   `ParseFailed` and `RevalidationFailed` retain `Diagnostics<SchemaError>` rather than choosing one error and losing
+   its path. Contract selection errors remain separate from application failures.
+6. **Chains are contiguous.** `Contract.supersedes` accepts only the immediately preceding positive integer version.
+   This keeps the typed builder and the documented n-1 → n migration rule identical; sparse version labels would
+   imply migrations that skip an unrepresented contract revision.
 
 ## Why This Reinforces Existing Decisions
 
@@ -145,8 +155,8 @@ contract migrations only for serialized blobs.
   custom migrations always need escape hatches; advisory metadata beside plain functions captures the inspectability
   benefits incrementally.
 
-## Promotion Criteria
+## Follow-up Boundary
 
-Do not start `Contract` machinery until a concrete consumer exists (the remote-config scenario or event-sourced
-storage). When opened: design `Contract.create` / `Contract.supersedes` / `Contract.parse` against
-`Axial.Schema`'s `Model` interpreters, plus instance re-validation (`Model.reconstruct`) for post-migration checks.
+Multi-version generator support remains follow-up work. Lift the resolver's duplicate-contract-name rejection, emit
+per-version modules, and generate chain wiring only after a real multi-version config has exercised the hand-written
+engine. LSP positioning remains gated on that dogfood pass.

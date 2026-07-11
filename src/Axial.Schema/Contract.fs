@@ -1,0 +1,165 @@
+namespace Axial.Schema
+
+open System
+open Axial.Validation
+
+/// A failure produced while migrating an older wire representation.
+[<RequireQualifiedAccess>]
+type MigrationError =
+    | MigrationFailed of message: string
+    | RevalidationFailed of Diagnostics<SchemaError>
+
+/// The explicit source of a contract version.
+[<RequireQualifiedAccess>]
+type VersionSource =
+    | Field of wireName: string
+    | External
+    | UnversionedMeans of version: int
+
+/// A failure to select, parse, or migrate a versioned contract.
+[<RequireQualifiedAccess>]
+type ContractError =
+    | VersionMissing
+    | VersionUnrecognized of version: int
+    | VersionTooNew of detected: int * highestSupported: int
+    | ParseFailed of version: int * Diagnostics<SchemaError>
+    | Migration of MigrationError
+
+type private ContractVersion =
+    {
+        Version: int
+        Parse: RawInput -> Result<obj, Diagnostics<SchemaError>>
+        MigrateToNext: (obj -> Result<obj, MigrationError>) option
+    }
+
+/// A progressively typed version chain. The second type parameter is the oldest representation currently registered.
+type ContractBuilder<'model, 'current> =
+    private
+        {
+            Name: string
+            HeadVersion: int
+            HeadSchema: Schema<'model>
+            Versions: ContractVersion list
+        }
+
+/// A versioned wire contract whose successful result is the current domain model.
+type Contract<'model> =
+    private
+        {
+            Name: string
+            HeadVersion: int
+            HeadSchema: Schema<'model>
+            Source: VersionSource
+            Versions: ContractVersion list
+        }
+
+/// Functions for declaring and parsing explicitly versioned wire contracts.
+[<RequireQualifiedAccess>]
+module Contract =
+    let private validateName (name: string) =
+        if isNull name then nullArg (nameof name)
+        if String.IsNullOrWhiteSpace name then invalidArg (nameof name) "Contract names cannot be empty."
+
+    let private validateVersion parameterName version =
+        if version < 1 then invalidArg parameterName "Contract versions must be positive integers."
+
+    /// Starts a contract at its current version and schema.
+    let create<'model> (name: string) (headVersion: int) (headSchema: Schema<'model>) : ContractBuilder<'model, 'model> =
+        validateName name
+        validateVersion (nameof headVersion) headVersion
+        if isNull (box headSchema) then nullArg (nameof headSchema)
+
+        let head =
+            {
+                Version = headVersion
+                Parse = fun raw -> (Model.parse headSchema raw).Result |> Result.map box
+                MigrateToNext = None
+            }
+
+        { Name = name; HeadVersion = headVersion; HeadSchema = headSchema; Versions = [ head ] }
+
+    /// Adds the immediately preceding wire version and its typed migration to the next registered version.
+    let supersedes
+        (version: int)
+        (schema: Schema<'previous>)
+        (migrate: 'previous -> Result<'current, MigrationError>)
+        (builder: ContractBuilder<'model, 'current>)
+        : ContractBuilder<'model, 'previous> =
+        validateVersion (nameof version) version
+        if isNull (box schema) then nullArg (nameof schema)
+        if isNull (box migrate) then nullArg (nameof migrate)
+
+        let oldest = builder.Versions.Head.Version
+        if version <> oldest - 1 then
+            invalidArg (nameof version) $"Expected the immediately preceding version {oldest - 1}, but received {version}."
+
+        let entry =
+            {
+                Version = version
+                Parse = fun raw -> (Model.parse schema raw).Result |> Result.map box
+                MigrateToNext = Some(fun value -> migrate (unbox<'previous> value) |> Result.map box)
+            }
+
+        { Name = builder.Name; HeadVersion = builder.HeadVersion; HeadSchema = builder.HeadSchema; Versions = entry :: builder.Versions }
+
+    /// Finishes a contract with an explicit version-detection strategy.
+    let build (source: VersionSource) (builder: ContractBuilder<'model, 'oldest>) : Contract<'model> =
+        match source with
+        | VersionSource.Field wireName ->
+            if isNull wireName then nullArg (nameof wireName)
+            if String.IsNullOrWhiteSpace wireName then invalidArg (nameof wireName) "Version field names cannot be empty."
+        | VersionSource.UnversionedMeans version ->
+            if not (builder.Versions |> List.exists (fun item -> item.Version = version)) then
+                invalidArg (nameof source) $"The unversioned fallback {version} is not registered in this contract."
+        | VersionSource.External -> ()
+
+        { Name = builder.Name; HeadVersion = builder.HeadVersion; HeadSchema = builder.HeadSchema; Source = source; Versions = builder.Versions }
+
+    let private parseSelected (contract: Contract<'model>) version raw =
+        if version > contract.HeadVersion then
+            Error(ContractError.VersionTooNew(version, contract.HeadVersion))
+        else
+            match contract.Versions |> List.tryFindIndex (fun item -> item.Version = version) with
+            | None -> Error(ContractError.VersionUnrecognized version)
+            | Some index ->
+                let selected = contract.Versions[index]
+                match selected.Parse raw with
+                | Error diagnostics -> Error(ContractError.ParseFailed(version, diagnostics))
+                | Ok parsed ->
+                    let migrations = contract.Versions |> List.skip index |> List.choose _.MigrateToNext
+                    let migrated = migrations |> List.fold (fun state migrate -> state |> Result.bind migrate) (Ok parsed)
+                    match migrated with
+                    | Error error -> Error(ContractError.Migration error)
+                    | Ok value when version = contract.HeadVersion -> Ok(Model(unbox<'model> value))
+                    | Ok value ->
+                        match Model.reconstruct contract.HeadSchema (unbox<'model> value) with
+                        | Ok current -> Ok(Model current)
+                        | Error diagnostics -> Error(ContractError.Migration(MigrationError.RevalidationFailed diagnostics))
+
+    /// Parses input using an out-of-band version value.
+    let parseWithVersion (contract: Contract<'model>) (version: int) (raw: RawInput) : Result<Model<'model>, ContractError> =
+        validateVersion (nameof version) version
+        parseSelected contract version raw
+
+    /// Detects the input version according to the contract and parses it into the current trusted model.
+    let parse (contract: Contract<'model>) (raw: RawInput) : Result<Model<'model>, ContractError> =
+        match contract.Source with
+        | VersionSource.External -> Error ContractError.VersionMissing
+        | VersionSource.UnversionedMeans version -> parseSelected contract version raw
+        | VersionSource.Field wireName ->
+            match RawInput.tryRedisplayPath wireName raw with
+            | None
+            | Some "" -> Error ContractError.VersionMissing
+            | Some text ->
+                match Int32.TryParse text with
+                | true, version when version > 0 -> parseSelected contract version raw
+                | _ -> Error ContractError.VersionMissing
+
+    /// Returns the contract's stable name.
+    let name (contract: Contract<'model>) = contract.Name
+
+    /// Returns the highest supported version.
+    let headVersion (contract: Contract<'model>) = contract.HeadVersion
+
+    /// Returns the schema for the current domain model.
+    let headSchema (contract: Contract<'model>) = contract.HeadSchema

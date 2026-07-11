@@ -47,6 +47,7 @@
     <Compile Include="FieldRef.fs" />
     <Compile Include="ContextRules.fs" />
     <Compile Include="Model.fs" />
+    <Compile Include="Contract.fs" />
     <Compile Include="RefinedSchemas.fs" />
     <Compile Include="Inspection.fs" />
     <Compile Include="JsonSchema.fs" />

@@ -3,6 +3,20 @@
 This folder keeps only high-level durable decisions. Detailed historical specs are deleted once their useful rules have
 been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 
+## 2026-07-13: Contract parsing preserves trust and diagnostics
+
+- `Contract<'model>` is the wire-version engine: it selects an explicitly declared version, parses against that
+  frozen schema, composes typed contiguous n-1 → n migrations, and reconstructs against the head schema.
+- `Contract.parse` and `Contract.parseWithVersion` return `Model<'model>`, not bare `'model`. A successful contract
+  parse has passed the same schema and constructor gates represented by the trust wrapper.
+- `ContractError.ParseFailed` and `MigrationError.RevalidationFailed` carry `Diagnostics<SchemaError>`. The earlier
+  sketch used one `SchemaError`, but `Model.parse` and `Model.reconstruct` can report several path-bearing failures;
+  selecting one would discard boundary information.
+- Version labels are positive and contiguous. `supersedes` registers only the immediately preceding version, matching
+  the promised n-1 → n migration model and preventing accidental gaps in a chain.
+- Multi-version `schemagen` output is not part of the engine. It follows only after a real hand-written version chain
+  has been dogfooded.
+
 ## Current Invariants
 
 - `Flow<'env, 'error, 'value>` is the public workflow model. Platform carriers are execution/adaptation boundaries, not

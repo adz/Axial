@@ -12,7 +12,7 @@ a real adoption target (a ~100-variant versioned config system). The Flow group'
 `LATER_TODO.md` is demand-driven — pulled forward when a concrete application needs it. The contract-declaration
 thread originally sequenced versioning/migration machinery before the grammar; in practice the grammar and generator
 shipped first (2026-07-12, single-version wire-tier scope — see `dev-docs/current-ideas/contract-grammar.md`), and
-the versioning/migration engine is the active next phase (`dev-docs/TASKS.md` Phase 28), followed by dogfood → LSP.
+the versioning/migration engine shipped on 2026-07-13, followed by Schema-depth work, dogfood, then LSP.
 The schema surface has been through heavy recent churn (`Model<'t>`, `ContextRules`, contracts) and should be treated
 as settling rather than settled.
 
