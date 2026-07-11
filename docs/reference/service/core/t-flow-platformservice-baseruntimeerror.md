@@ -4,7 +4,7 @@ linkTitle: "BaseRuntimeError"
 weight: 1007
 ---
 
-Describes a service-provider bootstrap failure while building the base runtime.
+
 
 ## Signature
 
@@ -16,4 +16,4 @@ Describes a service-provider bootstrap failure while building the base runtime.
 
 | Case | Description |
 | --- | --- |
-| `MissingService` | A required service was missing from the provider. |
+| `MissingService` |  |

@@ -1,5 +1,5 @@
 ---
-title: "Flow.IGuid"
+title: "Flow.PlatformService.IGuid"
 linkTitle: "IGuid"
 weight: 1004
 type: docs

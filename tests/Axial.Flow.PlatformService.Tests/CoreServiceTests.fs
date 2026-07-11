@@ -17,6 +17,12 @@ module CoreServiceTests =
         }
 
     [<Fact>]
+    let ``operational service contracts belong to the optional platform-service package`` () =
+        test <@ typeof<IClock>.Assembly.GetName().Name = "Axial.Flow.PlatformService" @>
+        test <@ typeof<IRandom>.Assembly.GetName().Name = "Axial.Flow.PlatformService" @>
+        test <@ typeof<IEnvironmentVariables>.Assembly.GetName().Name = "Axial.Flow.PlatformService" @>
+
+    [<Fact>]
     let ``clock random guid and environment-variable services are deterministic when fixed`` () =
         let clock = Clock.fromValue (DateTimeOffset(2026, 5, 10, 12, 0, 0, TimeSpan.Zero))
         let random = Random.fromFixed 4 0.25 0x2Auy

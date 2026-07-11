@@ -21,6 +21,10 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
   cancellation, scope, scheduling, interruption, and trace metadata.
 - Operational services are explicit services provisioned through records, nominal `IHas<'service>` contracts, host-edge
   `IServiceProvider` resolution, and `Layer`.
+- Operational service contracts do not live in `Axial.Flow`. Clock, log, random, GUID, and environment-variable
+  contracts and operations belong to the optional `Axial.Flow.PlatformService` package. Its internal `Platform` file
+  is the only place target-specific implementations may use `FABLE_COMPILER`; the public operation layer stays
+  portable and host-specific capabilities such as process environment access are injected at the boundary.
 - `Check` and `Result` helpers belong to the `Axial.ErrorHandling` namespace; `Parse`, `Refine`, and the `refine { }`
   builder belong to `Axial.Refined`; `Validation` and `Diagnostics` belong to `Axial.Validation`; `Policy`, `Bind`,
   and `BindError` belong to `Axial.Flow`. All of the first three ship in the `Axial.ErrorHandling` package.

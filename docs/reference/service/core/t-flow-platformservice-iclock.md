@@ -1,5 +1,5 @@
 ---
-title: "Flow.IClock"
+title: "Flow.PlatformService.IClock"
 linkTitle: "IClock"
 weight: 1000
 ---

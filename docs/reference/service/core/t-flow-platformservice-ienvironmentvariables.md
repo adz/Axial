@@ -1,10 +1,10 @@
 ---
-title: "Flow.IEnvironmentVariables"
+title: "Flow.PlatformService.IEnvironmentVariables"
 linkTitle: "IEnvironmentVariables"
 weight: 1005
 ---
 
-Provides synchronous environment-variable access.
+Provides environment-variable access supplied by the application host.
 
 ## Signature
 

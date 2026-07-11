@@ -7,15 +7,15 @@ This page shows the core service package: clock, logging, random numbers, GUID g
 
 ## Service types
 
-- [`Flow.IClock`](./t-flow-platformservice-iclock.md): Provides synchronous access to the current UTC clock.
-- [`Flow.ILog`](./t-flow-platformservice-ilog.md): Provides synchronous access to explicit workflow logging.
+- [`Flow.PlatformService.IClock`](./t-flow-platformservice-iclock.md): Provides synchronous access to the current UTC clock.
+- [`Flow.PlatformService.ILog`](./t-flow-platformservice-ilog.md): Provides synchronous access to workflow logging as an explicit service.
 - [`Flow.LogLevel`](./t-flow-loglevel.md):  Log levels used by runtime logging helpers and environment-provided logging functions.
-- [`Flow.IRandom`](./t-flow-platformservice-irandom.md): Provides synchronous random-number generation.
-- [`Flow.IGuid`](./t-flow-platformservice-iguid.md): Provides synchronous GUID generation.
-- [`Flow.IEnvironmentVariables`](./t-flow-platformservice-ienvironmentvariables.md): Provides synchronous environment-variable access.
-- [`Flow.PlatformService.EnvironmentVariableError`](./t-flow-platformservice-environmentvariableerror.md): Describes a meaningful environment-variable failure.
-- [`Flow.PlatformService.BaseRuntimeError`](./t-flow-platformservice-baseruntimeerror.md): Describes a service-provider bootstrap failure while building the base runtime.
-- [`Flow.PlatformService.BaseRuntime`](./t-flow-platformservice-baseruntime.md): Groups the standard explicit services commonly used by workflow hosts.
+- [`Flow.PlatformService.IRandom`](./t-flow-platformservice-irandom.md): Provides synchronous random-number generation.
+- [`Flow.PlatformService.IGuid`](./t-flow-platformservice-iguid.md): Provides synchronous GUID generation.
+- [`Flow.PlatformService.IEnvironmentVariables`](./t-flow-platformservice-ienvironmentvariables.md): Provides environment-variable access supplied by the application host.
+- [`Flow.PlatformService.EnvironmentVariableError`](./t-flow-platformservice-environmentvariableerror.md):
+- [`Flow.PlatformService.BaseRuntimeError`](./t-flow-platformservice-baseruntimeerror.md):
+- [`Flow.PlatformService.BaseRuntime`](./t-flow-platformservice-baseruntime.md): Groups the standard operational services commonly used by workflow hosts.
 
 ## Base runtime
 

@@ -7,60 +7,18 @@ open System.Globalization
 open System.Threading.Tasks
 open Axial.Flow
 
-/// <summary>Provides synchronous access to the current UTC clock.</summary>
-type IClock = Axial.Flow.IClock
-
-/// <summary>Provides synchronous access to workflow logging as an explicit service.</summary>
-type ILog = Axial.Flow.ILog
-
-/// <summary>Provides synchronous random-number generation.</summary>
-type IRandom = Axial.Flow.IRandom
-
-/// <summary>Provides synchronous GUID generation.</summary>
-type IGuid = Axial.Flow.IGuid
-
-/// <summary>Provides synchronous environment-variable lookup.</summary>
-type IEnvironmentVariables = Axial.Flow.IEnvironmentVariables
-
-/// <summary>Describes a meaningful environment-variable failure.</summary>
-[<RequireQualifiedAccess>]
-type EnvironmentVariableError =
-    /// <summary>The requested variable was not present.</summary>
-    | MissingVariable of name: string
-
-    /// <summary>The requested variable existed but could not be parsed.</summary>
-    | InvalidVariable of name: string * value: string * expected: string
-
-/// <summary>Describes a service-provider bootstrap failure while building the base runtime.</summary>
-[<RequireQualifiedAccess>]
-type BaseRuntimeError =
-    /// <summary>A required service was missing from the provider.</summary>
-    | MissingService of serviceName: string
-
-/// <summary>Groups the standard explicit services commonly used by workflow hosts.</summary>
+/// <summary>Groups the standard operational services commonly used by workflow hosts.</summary>
 type BaseRuntime =
-    {
-        Clock: IClock
-        Log: ILog
-        Random: IRandom
-        Guid: IGuid
-        EnvironmentVariables: IEnvironmentVariables
-    }
-
-    interface IHas<IClock> with
-        member this.Service = this.Clock
-
-    interface IHas<ILog> with
-        member this.Service = this.Log
-
-    interface IHas<IRandom> with
-        member this.Service = this.Random
-
-    interface IHas<IGuid> with
-        member this.Service = this.Guid
-
-    interface IHas<IEnvironmentVariables> with
-        member this.Service = this.EnvironmentVariables
+    { Clock: IClock
+      Log: ILog
+      Random: IRandom
+      Guid: IGuid
+      EnvironmentVariables: IEnvironmentVariables }
+    interface IHas<IClock> with member this.Service = this.Clock
+    interface IHas<ILog> with member this.Service = this.Log
+    interface IHas<IRandom> with member this.Service = this.Random
+    interface IHas<IGuid> with member this.Service = this.Guid
+    interface IHas<IEnvironmentVariables> with member this.Service = this.EnvironmentVariables
 
 /// <summary>Helpers for the clock service.</summary>
 [<RequireQualifiedAccess>]
@@ -192,46 +150,7 @@ module Random =
 
     /// <summary>Creates a live random-number generator backed by <see cref="T:System.Random" />.</summary>
     let live : IRandom =
-        let rng = System.Random()
-        let gate = obj()
-
-        { new IRandom with
-            member _.Next() =
-                #if FABLE_COMPILER
-                rng.Next()
-                #else
-                lock gate rng.Next
-                #endif
-
-            member _.NextMax maxExclusive =
-                #if FABLE_COMPILER
-                rng.Next(maxExclusive)
-                #else
-                lock gate (fun () -> rng.Next maxExclusive)
-                #endif
-
-            member _.NextInt minInclusive maxExclusive =
-                #if FABLE_COMPILER
-                rng.Next(minInclusive, maxExclusive)
-                #else
-                lock gate (fun () -> rng.Next(minInclusive, maxExclusive))
-                #endif
-
-            member _.NextDouble() =
-                #if FABLE_COMPILER
-                rng.NextDouble()
-                #else
-                lock gate rng.NextDouble
-                #endif
-
-            member _.NextBytes buffer =
-                #if FABLE_COMPILER
-                for index in 0 .. buffer.Length - 1 do
-                    buffer[index] <- byte (rng.Next(0, 256))
-                #else
-                lock gate (fun () -> rng.NextBytes buffer)
-                #endif
-        }
+        Platform.random ()
 
     /// <summary>Creates a deterministic random generator that always returns the supplied value.</summary>
     let fromValue (value: int) : IRandom =
@@ -325,95 +244,11 @@ module EnvironmentVariables =
 
     /// <summary>Creates a live provider backed by the current process environment.</summary>
     let live : IEnvironmentVariables =
-        { new IEnvironmentVariables with
-            member _.TryGet name =
-                #if FABLE_COMPILER
-                None
-                #else
-                match Environment.GetEnvironmentVariable name with
-                | null -> None
-                | value -> Some value
-                #endif
-
-            member _.Set(name, value) =
-                #if FABLE_COMPILER
-                ignore name
-                ignore value
-                #else
-                Environment.SetEnvironmentVariable(name, Option.toObj value)
-                #endif
-
-            member _.Expand text =
-                #if FABLE_COMPILER
-                text
-                #else
-                Environment.ExpandEnvironmentVariables text
-                #endif
-
-            member _.GetAll() =
-                #if FABLE_COMPILER
-                Dictionary<string, string>() :> IReadOnlyDictionary<string, string>
-                #else
-                let values = Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-                let environmentVariables = Environment.GetEnvironmentVariables()
-
-                for entry in environmentVariables do
-                    let entry = entry :?> DictionaryEntry
-                    values[string entry.Key] <- string entry.Value
-
-                values :> IReadOnlyDictionary<string, string>
-                #endif
-        }
+        Platform.environmentVariables ()
 
     /// <summary>Creates a deterministic provider from a fixed set of name/value pairs.</summary>
     let fromPairs (values: seq<string * string>) : IEnvironmentVariables =
-        #if FABLE_COMPILER
-        let lookup = Dictionary<string, string>()
-
-        for (name, value) in values do
-            lookup[name.ToLowerInvariant()] <- value
-
-        { new IEnvironmentVariables with
-            member _.TryGet name =
-                match lookup.TryGetValue(name.ToLowerInvariant()) with
-                | true, value -> Some value
-                | false, _ -> None
-
-            member _.Set(name, value) =
-                match value with
-                | Some value -> lookup[name.ToLowerInvariant()] <- value
-                | None -> lookup.Remove(name.ToLowerInvariant()) |> ignore
-
-            member _.Expand text =
-                lookup
-                |> Seq.fold (fun (expanded: string) pair -> expanded.Replace("%" + pair.Key + "%", pair.Value)) text
-
-            member _.GetAll() =
-                lookup :> IReadOnlyDictionary<string, string> }
-        #else
-        let lookup = Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-
-        for (name, value) in values do
-            lookup[name] <- value
-
-        { new IEnvironmentVariables with
-            member _.TryGet name =
-                match lookup.TryGetValue name with
-                | true, value -> Some value
-                | false, _ -> None
-
-            member _.Set(name, value) =
-                match value with
-                | Some value -> lookup[name] <- value
-                | None -> lookup.Remove name |> ignore
-
-            member _.Expand text =
-                lookup
-                |> Seq.fold (fun (expanded: string) pair -> expanded.Replace("%" + pair.Key + "%", pair.Value)) text
-
-            member _.GetAll() =
-                lookup :> IReadOnlyDictionary<string, string> }
-        #endif
+        Platform.environmentVariablesFromPairs values
 
     /// <summary>Builds the live environment-variable service as a layer.</summary>
     let layer : Layer<unit, Never, IEnvironmentVariables> =
@@ -543,11 +378,6 @@ module EnvironmentVariableErrors =
 /// <summary>Helpers for constructing the standard explicit service bundle used by workflow hosts.</summary>
 [<RequireQualifiedAccess>]
 module BaseRuntime =
-    let private getService<'service> (serviceProvider: IServiceProvider) =
-        match serviceProvider.GetService(typeof<'service>) with
-        | null -> Error (BaseRuntimeError.MissingService typeof<'service>.Name)
-        | service -> Ok (unbox<'service> service)
-
     /// <summary>Creates the standard live base runtime as an explicit service bundle.</summary>
     let liveValue : BaseRuntime =
         {
@@ -563,41 +393,8 @@ module BaseRuntime =
         Layer.succeed liveValue
 
     /// <summary>Builds the base runtime from an <see cref="T:System.IServiceProvider" />.</summary>
-    #if FABLE_COMPILER
     let fromServiceProvider : Layer<IServiceProvider, BaseRuntimeError, BaseRuntime> =
-        Layer.fromAsync (fun _ _ ->
-            async.Return(
-                Exit.Failure (
-                    Cause.Die (PlatformNotSupportedException("IServiceProvider layers are not supported on Fable."))
-                )
-            ))
-    #else
-    let fromServiceProvider : Layer<IServiceProvider, BaseRuntimeError, BaseRuntime> =
-        Layer.fromValueTask (fun (serviceProvider, _) _ ->
-            ValueTask<Exit<BaseRuntime, BaseRuntimeError>>(
-                task {
-                    match
-                        getService<IClock> serviceProvider,
-                        getService<ILog> serviceProvider,
-                        getService<IRandom> serviceProvider,
-                        getService<IGuid> serviceProvider,
-                        getService<IEnvironmentVariables> serviceProvider
-                    with
-                    | Ok clock, Ok log, Ok random, Ok guid, Ok environmentVariables ->
-                        return
-                            Exit.Success
-                                {
-                                    Clock = clock
-                                    Log = log
-                                    Random = random
-                                    Guid = guid
-                                    EnvironmentVariables = environmentVariables
-                                }
-                    | Error error, _, _, _, _
-                    | _, Error error, _, _, _
-                    | _, _, Error error, _, _
-                    | _, _, _, Error error, _
-                    | _, _, _, _, Error error ->
-                        return Exit.Failure (Cause.Fail error)
-                }))
-    #endif
+        Platform.servicesFromServiceProvider
+        |> Layer.map (fun (clock, log, random, guid, environmentVariables) ->
+            { Clock = clock; Log = log; Random = random; Guid = guid
+              EnvironmentVariables = environmentVariables })

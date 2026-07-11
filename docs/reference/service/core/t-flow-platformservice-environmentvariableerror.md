@@ -4,7 +4,7 @@ linkTitle: "EnvironmentVariableError"
 weight: 1006
 ---
 
-Describes a meaningful environment-variable failure.
+
 
 ## Signature
 
@@ -16,5 +16,5 @@ Describes a meaningful environment-variable failure.
 
 | Case | Description |
 | --- | --- |
-| `MissingVariable` | The requested variable was not present. |
-| `InvalidVariable` | The requested variable existed but could not be parsed. |
+| `MissingVariable` |  |
+| `InvalidVariable` |  |

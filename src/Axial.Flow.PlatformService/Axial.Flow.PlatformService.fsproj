@@ -28,7 +28,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="PlatformService.fs" />
+    <Compile Include="Services.fs" />
+    <Compile Include="Platform.fs" />
+    <Compile Include="Operations.fs" />
   </ItemGroup>
 
 </Project>

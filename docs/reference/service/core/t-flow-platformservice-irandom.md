@@ -1,5 +1,5 @@
 ---
-title: "Flow.IRandom"
+title: "Flow.PlatformService.IRandom"
 linkTitle: "IRandom"
 weight: 1003
 ---

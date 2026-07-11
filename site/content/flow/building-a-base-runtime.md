@@ -9,6 +9,10 @@ type: docs
 Clock, logging, random, GUID, and environment-variable access are explicit services. `Axial.Flow.PlatformService` provides a
 `BaseRuntime` record that groups the standard services most hosts need:
 
+The service contracts live in `Axial.Flow.PlatformService`, not `Axial.Flow`: the core package only owns workflow
+execution. This keeps operational dependencies optional and lets .NET, browser, Node, and other Fable hosts provide
+implementations appropriate to their runtime.
+
 ```fsharp
 type BaseRuntime =
     { Clock: IClock
@@ -29,6 +33,10 @@ Use `BaseRuntime.liveValue` when you already want a concrete value:
 let result =
     (Clock.now).RunSynchronously(BaseRuntime.liveValue)
 ```
+
+On Fable, the live environment-variable service is empty because browsers do not expose a process environment. Inject
+`EnvironmentVariables.fromPairs` or your own `IEnvironmentVariables` implementation when configuration comes from a
+JavaScript host, page bootstrap data, or another source. The clock, random, and GUID services remain live and portable.
 
 Use `BaseRuntime.live` when composing with layers:
 

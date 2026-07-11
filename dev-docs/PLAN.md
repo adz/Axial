@@ -230,6 +230,10 @@ Service packages should focus on explicit, typed, testable system effects:
 - Process
 - future Network and telemetry packages
 
+`Axial.Flow` owns no operational service contracts. The contracts for clock, log, random, GUID, and environment
+variables live in `Axial.Flow.PlatformService`; all target-specific implementations in that package are isolated in
+its internal `Platform` module. Fable-facing public operations and test implementations remain target-neutral.
+
 Service-package operations should use explicit services. They should normally be thin wrappers over
 `Service<'service>.get()` plus live implementations and layers.
 

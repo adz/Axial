@@ -4,7 +4,7 @@ linkTitle: "BaseRuntime"
 weight: 1008
 ---
 
-Groups the standard explicit services commonly used by workflow hosts.
+Groups the standard operational services commonly used by workflow hosts.
 
 ## Signature
 
