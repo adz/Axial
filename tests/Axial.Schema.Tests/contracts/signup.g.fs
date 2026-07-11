@@ -66,10 +66,10 @@ module Signup =
     /// Typed field references for rules, redisplay, and UI binding.
     [<RequireQualifiedAccess>]
     module Fields =
-        let email : FieldRef<Signup, string> = { Name = "email"; Get = _.Email }
-        let displayName : FieldRef<Signup, string option> = { Name = "display_name"; Get = _.DisplayName }
-        let age : FieldRef<Signup, int> = { Name = "age"; Get = _.Age }
-        let plan : FieldRef<Signup, SignupPlan> = { Name = "plan"; Get = _.Plan }
-        let tags : FieldRef<Signup, string list> = { Name = "tags"; Get = _.Tags }
-        let limits : FieldRef<Signup, Map<string, int>> = { Name = "limits"; Get = _.Limits }
-        let location : FieldRef<Signup, Geo option> = { Name = "location"; Get = _.Location }
+        let email : FieldRef<Signup, string> = { Name = "email"; Get = _.Email; Set = fun draft value -> { draft with Email = value } }
+        let displayName : FieldRef<Signup, string option> = { Name = "display_name"; Get = _.DisplayName; Set = fun draft value -> { draft with DisplayName = value } }
+        let age : FieldRef<Signup, int> = { Name = "age"; Get = _.Age; Set = fun draft value -> { draft with Age = value } }
+        let plan : FieldRef<Signup, SignupPlan> = { Name = "plan"; Get = _.Plan; Set = fun draft value -> { draft with Plan = value } }
+        let tags : FieldRef<Signup, string list> = { Name = "tags"; Get = _.Tags; Set = fun draft value -> { draft with Tags = value } }
+        let limits : FieldRef<Signup, Map<string, int>> = { Name = "limits"; Get = _.Limits; Set = fun draft value -> { draft with Limits = value } }
+        let location : FieldRef<Signup, Geo option> = { Name = "location"; Get = _.Location; Set = fun draft value -> { draft with Location = value } }

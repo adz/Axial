@@ -12,6 +12,13 @@ open Xunit
 module GeneratedContractTests =
 
     [<Fact>]
+    let ``generated field references update one field immutably`` () =
+        let original: Axial.Tests.Generated.Geo = { Lat = 1m; Lon = 2m }
+        let changed = Axial.Tests.Generated.Geo.Fields.lat.Set original 3m
+        test <@ changed = { Lat = 3m; Lon = 2m } @>
+        test <@ original = { Lat = 1m; Lon = 2m } @>
+
+    [<Fact>]
     let ``generated recursive contract parses child trees`` () =
         let raw =
             RawInput.Object(

@@ -40,5 +40,5 @@ module Geo =
     /// Typed field references for rules, redisplay, and UI binding.
     [<RequireQualifiedAccess>]
     module Fields =
-        let lat : FieldRef<Geo, decimal> = { Name = "lat"; Get = _.Lat }
-        let lon : FieldRef<Geo, decimal> = { Name = "lon"; Get = _.Lon }
+        let lat : FieldRef<Geo, decimal> = { Name = "lat"; Get = _.Lat; Set = fun draft value -> { draft with Lat = value } }
+        let lon : FieldRef<Geo, decimal> = { Name = "lon"; Get = _.Lon; Set = fun draft value -> { draft with Lon = value } }

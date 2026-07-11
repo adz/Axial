@@ -351,6 +351,6 @@ module Emitter =
                 let fieldType = $"{fsType contract.ContractName field.FieldName (fieldTypeOf field)}{optionSuffix}"
 
                 line
-                    $"        let {escapeIdent (camel field.FieldName)} : FieldRef<{contract.ContractName}, {fieldType}> = {{ Name = \"{escapeString wire}\"; Get = _.{escapeIdent (pascal field.FieldName)} }}"
+                    $"        let {escapeIdent (camel field.FieldName)} : FieldRef<{contract.ContractName}, {fieldType}> = {{ Name = \"{escapeString wire}\"; Get = _.{escapeIdent (pascal field.FieldName)}; Set = fun draft value -> {{ draft with {escapeIdent (pascal field.FieldName)} = value }} }}"
 
         builder.ToString().Replace("\r\n", "\n")

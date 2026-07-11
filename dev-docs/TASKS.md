@@ -34,14 +34,6 @@ anything. None of this is committed scope — the schema surface is still settli
 
 
 
-### 29.3 FieldRef setters
-
-`FieldRef` currently carries `Name` + `Get` only; ZIO's `Field` carries `set` too. Add
-`Set: 'model -> 'value -> 'model` — enables form editing, patch application, and draft manipulation without record
-boilerplate at call sites. Touches: `src/Axial.Schema/FieldRef.fs` (the type is 3 days old; breaking it is fine),
-the emitter (`Emitter.fs` Fields section: `Set = fun draft value -> { draft with X = value }`), the three golden
-`.g.fs` files + `EmitterGoldenTests` (byte-for-byte), and hand-written `FieldRef` mentions in docs. Small; ride
-along with any schema work.
 
 ## Phase 30: Contracts milestone bundle (gated on Phase 28 + a real consumer)
 

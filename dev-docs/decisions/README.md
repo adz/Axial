@@ -52,6 +52,15 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 - Pattern reversal, custom constraints, `notEqualTo`, `contains`, and `distinct` are not guessed. Derivation returns
   `UnsupportedConstraint(path, code)` unless `SchemaGen.rawWith` supplies a generator for that exact field path.
 
+## 2026-07-13: FieldRef is an immutable-record lens
+
+- `FieldRef<'model,'value>` carries the external `Name`, typed `Get`, and typed `Set` functions. `Set model value`
+  returns a model copy with only that field replaced; it does not validate or mutate the input.
+- Generated field references use F# record-copy expressions. This keeps updates reflection-free, preserves unrelated
+  fields, and makes the same reference useful for diagnostics, forms, draft editing, and future patch application.
+- Setters operate on draft model values. Code that requires schema trust must pass the updated draft through
+  `Model.validate`; a field setter does not imply that cross-field constructor invariants still hold.
+
 ## Current Invariants
 
 - `Flow<'env, 'error, 'value>` is the public workflow model. Platform carriers are execution/adaptation boundaries, not
