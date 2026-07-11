@@ -23,6 +23,8 @@ task is about promoting, rejecting, or implementing that sketch.
   `.reconstruct`, `Rules`, `Inspect`, `JsonSchema`, `RefinedSchema`) in one package. Depends on
   `Axial.ErrorHandling`.
 - `Axial.Codec` (`src/Axial.Codec/`): compiled JSON codecs. Depends on `Axial.Schema`.
+- `Axial.Schema.Testing` (`src/Axial.Schema.Testing/`): non-packable FsCheck adapter deriving test data from Schema.
+  Depends on `Axial.Schema` and FsCheck; never move the test-library dependency into a public package.
 - `Axial.Flow.*` add-on packages depend on `Axial.Flow`.
 - `Axial` umbrella package references the public packages for convenience.
 

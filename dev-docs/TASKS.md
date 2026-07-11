@@ -33,22 +33,6 @@ genuinely useful for this project's goals, ranked. Items 1–2 are worth doing b
 anything. None of this is committed scope — the schema surface is still settling.
 
 
-### 29.2 Test-data generation from schema
-
-Schema → generators that respect constraints (valid emails, in-range ints, count-bounded lists, union case
-selection). Cheap relative to value: immediately useful to adopters' property tests, and lets us fuzz our own
-parse/validate/codec round-trips.
-
-- Recommended mechanism (avoids any new construction machinery): generate *constraint-satisfying `RawInput`*, then
-  `Model.parse` it — validity is guaranteed by construction because parse enforces everything, including refined
-  construction and constructor invariants (retry/shrink on the rare constructor rejection). Walk `Inspect.model`
-  metadata to drive generation: `SchemaConstraint` codes (`minLength`/`maxLength`/`between`/`atLeast`/`count*`/
-  `multipleOf`/`oneOf`/`email`) map to generator ranges; `pattern` starts as "unsupported — supply a custom
-  generator for this field" rather than regex-reversal.
-- Decide the target library by what the work adoption target actually uses — FsCheck `Gen<'t>` vs Hedgehog — before
-  building; wrap as a separate non-packable project first (`Axial.Schema.Testing`?) so the core stays
-  dependency-free.
-- Also useful internally: property-test the contract engine's migration chains once Phase 28 lands.
 
 ### 29.3 FieldRef setters
 

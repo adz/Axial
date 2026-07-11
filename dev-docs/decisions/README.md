@@ -34,6 +34,24 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 - Recursive authoring uses a delayed schema holder so the thunk returns the same built schema. Calling a schema
   factory afresh from the thunk would create an endless sequence of distinct deferred nodes and defeat cycle identity.
 
+## 2026-07-13: Schema test data is a non-packable FsCheck adapter over RawInput
+
+- The repository contains no property-test dependency from the adoption target, so there was no evidence for its
+  actual choice. The first adapter uses FsCheck 3.3.3 because this repository already uses xUnit and FsCheck has the
+  established F# generator API and xUnit integration. This is not a core dependency or a commitment against a later
+  Hedgehog adapter.
+- `Axial.Schema.Testing` is non-packable and references `Axial.Schema` plus FsCheck. `Axial.Schema` remains
+  dependency-free from test frameworks.
+- Generation produces constraint-satisfying `RawInput` from `Inspect` metadata. `SchemaGen.model` then parses it and
+  filters constructor rejections, so successful samples carry `Model<'model>` and constructor invariants are not
+  duplicated in the generator.
+- Built-in lowering covers primitives, refined representations, nested models, collections and maps with count
+  bounds, options, all three union forms, recursive references, email/length/choice constraints, ordered numeric
+  bounds, and numeric multiples. FsCheck's size controls recursive depth; a zero-size collection becomes empty when
+  its minimum count permits that finite base case.
+- Pattern reversal, custom constraints, `notEqualTo`, `contains`, and `distinct` are not guessed. Derivation returns
+  `UnsupportedConstraint(path, code)` unless `SchemaGen.rawWith` supplies a generator for that exact field path.
+
 ## Current Invariants
 
 - `Flow<'env, 'error, 'value>` is the public workflow model. Platform carriers are execution/adaptation boundaries, not
