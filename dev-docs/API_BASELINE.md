@@ -26,7 +26,7 @@ dotnet build tests/Axial.Flow.Telemetry.Tests/Axial.Flow.Telemetry.Tests.fsproj 
 dotnet build tests/Axial.Flow.Tests/Axial.Flow.Tests.fsproj --no-restore --nologo -v minimal
 dotnet build tests/Axial.Refined.Tests/Axial.Refined.Tests.fsproj --no-restore --nologo -v minimal
 dotnet build tests/Axial.Schema.Tests/Axial.Schema.Tests.fsproj --no-restore --nologo -v minimal
-dotnet build tests/Axial.Validation.Schema.Tests/Axial.Validation.Schema.Tests.fsproj --no-restore --nologo -v minimal
+dotnet build tests/Axial.Schema.Tests/Axial.Schema.Tests.fsproj --no-restore --nologo -v minimal
 dotnet build tests/Axial.Validation.Tests/Axial.Validation.Tests.fsproj --no-restore --nologo -v minimal
 => Build succeeded for each package-boundary test project.
 
@@ -40,7 +40,7 @@ Additional validated commands for this refresh:
 dotnet test tests/Axial.ApiShape.Tests --nologo (36 passed)
 dotnet test tests/Axial.Schema.Tests --nologo (56 passed)
 dotnet test tests/Axial.Codec.Tests --nologo (13 passed)
-dotnet test tests/Axial.Validation.Schema.Tests --nologo (144 passed)
+dotnet test tests/Axial.Schema.Tests --nologo (stale count; re-baseline after the 2026-07 renames)
 dotnet test tests/Axial.Flow.Tests --nologo (89 passed)
 bash scripts/validate-docs.sh
 => Docs validation build succeeded, including regenerated reference docs.
@@ -70,7 +70,6 @@ The old monolithic `tests/Axial.Tests/Axial.Tests.fsproj` harness has been repla
 - `tests/Axial.Flow.Tests/Axial.Flow.Tests.fsproj`
 - `tests/Axial.Refined.Tests/Axial.Refined.Tests.fsproj`
 - `tests/Axial.Schema.Tests/Axial.Schema.Tests.fsproj`
-- `tests/Axial.Validation.Schema.Tests/Axial.Validation.Schema.Tests.fsproj`
 - `tests/Axial.Validation.Tests/Axial.Validation.Tests.fsproj`
 
 ## CI Baseline Gates
@@ -120,7 +119,7 @@ the named modules, types, and members users and examples are expected to depend 
 - `Check`, `Bind`, `BindError`, `Validation`, `Diagnostics`
 - `Schema`, `Value`, `Field`, `SchemaConstraint`, `Inspect` and its description types, `JsonSchema`
 - `Axial.Codec` `Json` module and `JsonCodec`
-- `RawInput`, `Input`, `ParsedInput`, `SchemaError`, `Rules`, `RuleSet`, schema `Validation.validate`
+- `RawInput`, `Model` (parse/validate/reconstruct, `Model<'model>`), `ParsedInput`, `SchemaError`, `ContextRules`, `FieldRef`
 - `Policy` and `Flow.verify`
 - the leaf-package dependency graph (`leaf packages stay independent of each other`)
 - `Schedule`, `FlowStream`, `STM`, `TRef`, `Ref`

@@ -6,11 +6,15 @@ Speculative sketches live in `dev-docs/current-ideas/`, but this file is the liv
 
 ## Release Strategy
 
-Per `prd.md`: the boundary stack (`Axial.ErrorHandling`, `Axial.Refined`, `Axial.Schema`, `Axial.Validation`,
-`Axial.Validation.Schema`, `Axial.Codec`) is the 1.0 gate, driven by a real adoption target (a ~100-variant versioned
-config system). The Flow group's remaining pre-1.0 scope in `LATER_TODO.md` is demand-driven — pulled forward when a
-concrete application needs it. The contract-declaration thread sequences as: versioning/migration machinery → grammar
-and generator → dogfood → LSP.
+Per `prd.md`: the boundary stack — the `Axial.ErrorHandling` package (hosting the `Axial.ErrorHandling`,
+`Axial.Validation`, and `Axial.Refined` namespaces), `Axial.Schema`, and `Axial.Codec` — is the 1.0 gate, driven by
+a real adoption target (a ~100-variant versioned config system). The Flow group's remaining pre-1.0 scope in
+`LATER_TODO.md` is demand-driven — pulled forward when a concrete application needs it. The contract-declaration
+thread originally sequenced versioning/migration machinery before the grammar; in practice the grammar and generator
+shipped first (2026-07-12, single-version wire-tier scope — see `dev-docs/current-ideas/contract-grammar.md`), and
+the versioning/migration engine is the active next phase (`dev-docs/TASKS.md` Phase 28), followed by dogfood → LSP.
+The schema surface has been through heavy recent churn (`Model<'t>`, `ContextRules`, contracts) and should be treated
+as settling rather than settled.
 
 ## Current Direction
 
@@ -59,14 +63,17 @@ Axial's data-boundary direction splits concerns like this:
 
 - `Check<'value>` describes reusable, path-free, raw-input-free value constraints
 - `Schema<'model>` describes trusted model shape, field ordering, construction, inspection, and portable constraint
-  metadata
+  metadata (the `Schema` module declares; the `Model` module produces/verifies models: `Model.parse` from raw input,
+  `Model.validate` promoting a named-field draft record to the `Model<'model>` trust wrapper, `Model.reconstruct`
+  re-deriving trust for an existing value including constructor invariants)
 - schema interpreters parse raw input, validate existing models, produce diagnostics, and drive non-validation metadata
   consumers
-- rules describe contextual requirements over already trusted models
+- contextual rules are plain functions over already-trusted models; `ContextRules` supplies only failure constructors,
+  `FieldRef`-based path scoping, and `apply` — context selection is the caller's own `match`/`Map`
 - policies adapt checks, parsers, validations, and rules into `Flow`
 
-Core schema definitions live in `Axial.Schema`. Schema interpreters live in `Axial.Validation.Schema`, so `Axial.Schema`
-stays independent of diagnostics, raw input, validation, refined values, and flow execution.
+Core schema declarations and their interpreters share the single `Axial.Schema` namespace and package (module names,
+not namespaces, separate declaration from interpretation); the package stays independent of flow execution.
 
 Constructor-level intrinsic errors are a second stage after field parsing and field constraints, not an error source that
 runs alongside invalid fields. If any field or nested item has intrinsic diagnostics, interpreters must not apply the
@@ -91,32 +98,18 @@ clear or getters are annotated explicitly. Each field application peels one curr
 `Schema.build` only type-checks when the constructor is fully applied, so constructor/getter alignment is
 compiler-checked by argument position and authoring scales to any field count without a hand-written `mapN` family,
 computation expression, or source generator. The earlier `Schema.map2`/`Schema.map3` API was only a transitional proof
-of the metadata model. The `schema create { }` computation expression and any `[<Schema>]` source generator are optional
-sugar over the builder, not the required path for larger models. Raw input, schema validation, rules, and DSL work
-should build on that explicit builder core rather than bypass it.
+of the metadata model. The `schema create { }` computation expression was evaluated and rejected (see
+`dev-docs/decisions/README.md`); `Axial.Schema.DSL` delivers its prefix-elimination motivation as an open module over
+the same pipeline. Build-time generation exists as wire-tier tooling only (`.contract` files →
+`src/Axial.Schema.Contracts` + `scripts/schemagen`); domain-tier generation was designed and rejected. Raw input,
+schema validation, rules, and DSL work should build on the explicit builder core rather than bypass it.
 
 The public schema-authoring vocabulary should make primitive fields the short path and custom value schemas the explicit
 path. The primitive field operations are `text`, `int`, `decimal`, `bool`, `date`, `dateTime`, and `guid`, using the same
-external-name-first, getter-second order as `Schema.field`. In the pipeline surface they should be qualified builder
-steps such as `Schema.text "name" _.Name`; in the optional `schema create { }` computation expression they should be the
-unqualified operations:
-
-```fsharp
-schema create {
-    text "name" _.Name {
-        required
-        maxLength 80
-    }
-
-    int "age" _.Age {
-        atLeast 0
-    }
-}
-```
-
-Reserve generic `Schema.field "email" _.Email Email.schema` and `field "email" _.Email Email.schema { ... }` for
-explicit or custom `ValueSchema<'value>` values, including refined/domain schemas, nested schemas once introduced, and
-advanced composition. Do not introduce competing primitive aliases such as `string`, `integer`, `boolean`, `uuid`,
+external-name-first, getter-second order as `Schema.field`. In the pipeline surface they are qualified builder steps
+such as `Schema.text "name" _.Name`, with unqualified equivalents available by opening `Axial.Schema.DSL` inside a
+schema definition module. Reserve generic `Schema.field "email" _.Email Email.schema` for explicit or custom
+`ValueSchema<'value>` values, including refined/domain schemas, nested schemas, and advanced composition. Do not introduce competing primitive aliases such as `string`, `integer`, `boolean`, `uuid`,
 `dateOnly`, or `Field.text`. `Value.text`, `Value.int`, and the other `Value.*` primitives remain the lower-level
 value-schema vocabulary used by generic fields and interpreters, not the everyday field-authoring names.
 

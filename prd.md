@@ -19,10 +19,10 @@ Axial is an F#/.NET library with two groups, presented in this order:
 
 The boundary stack ships 1.0 first; the Flow group follows demand.
 
-- **The 1.0 gate is the boundary stack**: `Axial.ErrorHandling`, `Axial.Refined`, `Axial.Schema`, `Axial.Validation`,
-  `Axial.Validation.Schema`, and `Axial.Codec`. Scope: the Phase 26 queue in `dev-docs/TASKS.md` (optional fields,
-  union wire shapes, JSON Schema fidelity, stream entry points, Fable codec surface, C# ergonomics) plus its
-  acceptance checks.
+- **The 1.0 gate is the boundary stack**: the `Axial.ErrorHandling` package (hosting the `Axial.ErrorHandling`,
+  `Axial.Validation`, and `Axial.Refined` namespaces), `Axial.Schema` (declaration + interpreters in one package,
+  including `Model<'model>` trusted construction and `ContextRules`), and `Axial.Codec`. Scope: the current queue in
+  `dev-docs/TASKS.md` (contract versioning engine, then schema-depth candidates) plus its acceptance checks.
 - **The Flow group's remaining pre-1.0 scope is demand-driven**, tracked in `LATER_TODO.md`. Its current surface
   (typed errors, services/layers, scoped resources, fibers, retry/timeout) is already useful and stays
   source-compatible; deeper runtime work (queues, schedule composition, observability depth, fiber runtime) is pulled
@@ -49,8 +49,10 @@ systematically. Axial's answer, in dependency order:
    emits ordinary checked-in F# builder code, so the grammar is never required reading for someone maintaining the
    codebase.
 
-Within the contract thread the order is: versioning/migration machinery → grammar + generator → dogfood on the real
-config system → LSP and public positioning informed by that experience.
+Within the contract thread the original order was versioning/migration machinery → grammar + generator; in
+practice the grammar + generator shipped first (single-version, wire-tier scope). Remaining order: versioning/
+migration engine → multi-version generator support → dogfood on the real config system → LSP and public positioning
+informed by that experience.
 
 ## Positioning
 

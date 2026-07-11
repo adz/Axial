@@ -5,49 +5,37 @@ Keep live architecture direction in `dev-docs/PLAN.md`.
 Keep speculative design sketches in `dev-docs/current-ideas/` and high-level durable decisions in
 `dev-docs/decisions/`.
 
-Work this queue from top to bottom.
+Work this queue from top to bottom, with one caveat: the schema surface has just been through heavy churn
+(`Model<'t>`/`Model.validate`, `ContextRules`, the contract generator — see `dev-docs/decisions/README.md`,
+2026-07-11/12 entries) and the shape is settling, not settled. Phases 29–30 below are current thinking with enough
+detail to pick up cold; re-read the decisions file and sanity-check the ordering before starting any of them.
 
 Axial has two main groups, and everything in this queue serves that split:
 
 - **Parse-don't-validate results**: `Schema` is the front door for domain models — parsing, validation, redisplay,
-  rules, and metadata fall out of one declaration. Plain `Result` with the user's own error DU is the blessed lane for
-  simple code. `Check`, `Validation`, `Refined`, and the interpreter error types are machinery behind those two doors,
-  not peer entry points.
-- **Effects in Flow**: the ZIO-style Reader-Async-Result workflow model. Useful with or without schemas, and never part
-  of the entry price for the results group.
+  contextual rules, and metadata fall out of one declaration. Plain `Result` with the user's own error DU is the
+  blessed lane for simple code. `Check`, `Validation`, `Refined`, and the interpreter error types are machinery
+  behind those two doors, not peer entry points.
+- **Effects in Flow**: the ZIO-style Reader-Async-Result workflow model. Useful with or without schemas, and never
+  part of the entry price for the results group. Flow-group gaps are tracked in `LATER_TODO.md` (demand-driven, not
+  worked top to bottom).
 
-Phases 19–24 are complete: the two-door narrative, one boundary error, one domain-value catalog, union schemas,
-boundary utility packages (`Axial.Codec`, `JsonSchema.generate`, `RawInput.ofJsonDocument`, the `examples/Axial.Api`
-minimal-API sample), and positioning/polish (comparison pages, the public AOT/Fable story, the backtick audit with
-`Policy.lift`). The `dotnet new axial-api` template is evaluated and deferred in `dev-docs/decisions/README.md`.
+Phases 19–28-prelude are complete and recorded in `dev-docs/decisions/README.md` and git history; the most recent
+completions (2026-07-09..12): the `Model` module split with a sound `reconstruct`, `Axial.Refined` moved into
+`Axial.ErrorHandling`, `Model<'model>` + `Model.validate` (named-field trusted construction), `FieldRef` +
+`ContextRules` (RuleSet deleted), and the `.contract` grammar/generator as wire-tier tooling
+(`src/Axial.Schema.Contracts`, `scripts/schemagen`, golden corpus in `tests/Axial.Schema.Tests/contracts/`).
 
-Phase 25 (reiteration-question triage) is complete: all twelve questions from `dev-docs/questions.md` were decided.
-Deferred items (codec decode allocations, checked-codec mode, UI-metadata promotion, fused boundary path, netstandard2.1
-STJ adapter) are recorded with their pre-chosen answers in `dev-docs/decisions/README.md`; the rest became Phase 26.
-
-Phase 26 (triaged boundary work) is complete: union wire shapes (`Value.enumOf`, `Value.unionInline`) across
-Input.parse, Codec, JsonSchema, and Inspect, and the C# ergonomics audit (`RawInput.ofDictionary`,
-`RawInput.ofConfigurationPairs`, `Input.parseWithOptions`, and "From C#" sections on the codec and input-sources
-pages).
-
-Phase 27 (contract grammar prerequisites) is complete: `Value.map` (JSON objects as dictionaries, string-keyed) across
-Input.parse, Codec, JsonSchema (`additionalProperties`), and Inspect; default-value metadata (`Value.withDefault` /
-`Value.defaultValue`) with JSON Schema `default` lowering; and a `multipleOf` schema constraint lowered to both
-JSON Schema and an executable check.
-
-Phase 28 (Contract versioning/migration core) is next. Detail below.
-
-## Phase 28: Contract versioning/migration core
+## Phase 28: Contract versioning/migration engine
 
 ### Motivation
 
-Axial's 1.0 gate is driven by a real adoption target: a ~100-variant versioned config system (`dev-docs/PLAN.md`).
-The concrete scenario is a **remote desired-state device config** setup: a central editor writes desired config: a
-fleet of devices (mixed versions, .NET/AOT and Fable) ingest it and report back. Requirements that fall out of that
-scenario:
+Axial's 1.0 gate is driven by a real adoption target: a ~100-variant versioned config system (`prd.md`). The concrete
+scenario is a **remote desired-state device config** setup: a central editor writes desired config; a fleet of
+devices (mixed versions, .NET/AOT and Fable) ingest it and report back. Requirements that fall out of that scenario:
 
-- The domain model is never versioned — only the external wire representation is. Business logic (`RuleSet`, Flow
-  workflows) must stay independent of representation churn as the config shape evolves across dozens of versions.
+- The domain model is never versioned — only the external wire representation is. Business logic (`ContextRules`,
+  Flow workflows) must stay independent of representation churn as the config shape evolves across dozens of versions.
 - Devices must accept older config versions via typed migrations (n-1 → n, composing through the chain), but cleanly
   reject versions newer than they know, reporting their highest supported version — this is a fleet-skew concern, not
   an edge case.
@@ -58,67 +46,52 @@ scenario:
   config files and most messages), or an out-of-band value the caller already has (event-store/message metadata,
   transport headers) — never structural sniffing.
 
-This phase builds the **runtime orchestration engine** only: version dispatch, chain composition, and post-migration
-re-validation. It deliberately does not build the `.contract` declaration grammar or generator
-(`dev-docs/current-ideas/contract-grammar.md`) — per that sketch's own sequencing, the grammar/generator is a later,
-scale-gated concern, and per `schema-contract-versioning.md`'s Promotion Criteria this phase should not start without
-a concrete consumer, which the work adoption target now provides. Each version in this phase is still hand-written as
-an ordinary F# record + `Schema<'model>` (see `docs/error-handling/getting-started.md` / `src/Axial.Schema/Schema.fs`
-`module Schema` DSL), and each migration is a hand-written function — Contract only supplies the engine that wires
-those pieces together safely.
+Sequencing note (2026-07-12): the original plan sequenced engine → grammar/generator, but the grammar/generator was
+built first by explicit direction, scoped to **single-version** contracts. That inversion helps this phase: the
+generated corpus and `schemagen` give the engine something concrete to dogfood against, and the resolver currently
+*rejects* multiple versions of one contract name — lifting that restriction (emitting per-version modules) is a
+follow-up to this phase, not part of it. Each version in this phase is hand-written F# (record + `Schema<'model>`);
+migrations are hand-written functions; Contract supplies only the engine wiring them together safely.
 
-### Grounding in the current codebase
+### Grounding in the current codebase (verified 2026-07-12)
 
-All new code lives in the existing `src/Axial.Schema/Axial.Schema.fsproj` project (namespace
-`Axial.Validation.Schema`, matching `Input.fs`/`RawInput.fs`/`SchemaValidation.fs`) — no new project. It depends on:
+All new code lives in `src/Axial.Schema/Axial.Schema.fsproj`, namespace `Axial.Schema` (the old
+`Axial.Validation.Schema` namespace no longer exists). It depends on:
 
-- `Schema<'model>` — `src/Axial.Schema/Schema.fs:1031`, built via `module Schema` (Schema.fs:2075).
-- `Input.parse (schema: Schema<'model>) (input: RawInput) : ParsedInput<'model, SchemaError>` —
-  `src/Axial.Schema/Input.fs:472`.
+- `Schema<'model>` — `src/Axial.Schema/Schema.fs`, built via `module Schema`.
+- `Model.parse (schema: Schema<'model>) (input: RawInput) : ParsedInput<'model, SchemaError>` —
+  `src/Axial.Schema/Model.fs`.
 - `RawInput` — `src/Axial.Schema/RawInput.fs`, a closed DU: `Missing | Scalar of string | Many of RawInput list |
   Object of Map<string, RawInput>`.
-- Field-peek without full parsing (the version-detection hook):
-  `RawInput.tryFindPath (path: string) (input: RawInput) : RawInput option` (RawInput.fs:594) and
-  `RawInput.tryRedisplayPath (path: string) (input: RawInput) : string option` (RawInput.fs:625). Use
-  `tryRedisplayPath` to pull the raw string at `"version"` (or whatever wire name is configured) before selecting
-  which versioned `Schema` to parse with — this already exists and needs no new `RawInput` API.
-- `SchemaValidation.validate (schema: Schema<'model>) (model: 'model) : Axial.Validation.Validation<'model,
-  SchemaError>` — `src/Axial.Schema/SchemaValidation.fs:712`. Use this for post-migration re-validation (constraint
-  drift: a migrated instance can violate the *current* schema's constraints even though it was valid under its own
-  version). Convert with `Validation.toResult` (`src/Axial.ErrorHandling/Validation.fs`).
-- `Result` helpers — `src/Axial.ErrorHandling/Result.fs`, `module Result`. Migration functions return plain
-  `Result<'next, MigrationError>`.
+- Field-peek without full parsing (the version-detection hook): `RawInput.tryFindPath` and
+  `RawInput.tryRedisplayPath` (`RawInput.fs`). Use `tryRedisplayPath` to pull the raw string at `"version"` (or the
+  configured wire name) before selecting which versioned `Schema` to parse with — already exists, no new API needed.
+- `Model.reconstruct (schema: Schema<'model>) (model: 'model) : Result<'model, Diagnostics<SchemaError>>` —
+  `src/Axial.Schema/Model.fs`. Use this for post-migration re-validation (constraint drift: a migrated instance can
+  violate the *current* schema's constraints even though it was valid under its own version). Note it also re-invokes
+  the head constructor, so cross-field invariants re-check for free. (The old `SchemaValidation.validate` +
+  `Validation.toResult` two-step is gone; `reconstruct` returns `Result` directly.)
+- Migration functions return plain `Result<'next, MigrationError>` (`Result` helpers in
+  `src/Axial.ErrorHandling/Result.fs`).
 
-### API design (decided in this planning conversation)
+### API design (previously agreed; re-validate names against the current surface before implementing)
 
-New file `src/Axial.Schema/Contract.fs`. Add it to `Axial.Schema.fsproj`'s `<Compile>` list after `Input.fs` and
-before `RefinedSchemas.fs` (needs `Input.parse`, `RawInput`, `SchemaValidation.validate`, none of which depend on
-it).
+New file `src/Axial.Schema/Contract.fs`, added to the `<Compile>` list after `Model.fs` and before
+`RefinedSchemas.fs`.
 
 ```fsharp
-namespace Axial.Validation.Schema
+namespace Axial.Schema
 
-/// Raised when a hand-written migration function fails, or when post-migration re-validation
-/// against the current schema fails (constraint drift).
 type MigrationError =
     | MigrationFailed of message: string
     | RevalidationFailed of SchemaError
 
-/// Version-detection strategy for a Contract. Deliberately explicit — never structural sniffing.
+/// Version-detection strategy. Deliberately explicit — never structural sniffing.
 type VersionSource =
-    /// Peek this wire field in the raw payload before selecting a schema (the envelope case:
-    /// config files, most messages). Resolved via RawInput.tryRedisplayPath.
-    | Field of wireName: string
-    /// Caller supplies the version alongside the raw payload (event-store/message metadata,
-    /// transport headers). Use Contract.parseWithVersion, not Contract.parse, with this source.
-    | External
-    /// No version field/metadata present means this version. At most one per Contract.
-    | UnversionedMeans of version: int
+    | Field of wireName: string          // peek via RawInput.tryRedisplayPath
+    | External                           // caller supplies the version (use parseWithVersion)
+    | UnversionedMeans of version: int   // absence means this version; at most one per Contract
 
-/// What went wrong resolving/parsing/migrating a contract instance. Consumers should treat
-/// VersionTooNew/VersionUnrecognized/VersionMissing/Migration as contract rejection (alarm-worthy:
-/// bug or version skew), and keep this distinct from any later "valid config, couldn't apply it
-/// locally" application-level error, which is out of scope for Contract itself.
 type ContractError =
     | VersionMissing
     | VersionUnrecognized of version: int
@@ -126,89 +99,126 @@ type ContractError =
     | ParseFailed of version: int * SchemaError
     | Migration of MigrationError
 
-/// Builder tracking the model type ('model, fixed = the head/current version) and the type of
-/// the newest version registered so far in the chain ('current). supersedes shifts 'current back
-/// one version each call, giving compile-time checked chain composition without an untyped AST.
-type ContractBuilder<'model, 'current> = internal { ... }
-
-/// A built, immutable contract: head version/schema plus the full prior-version chain, type-erased
-/// internally (boxed) so `Contract<'model>` only exposes the current model type.
-type Contract<'model> = internal { ... }
+type ContractBuilder<'model, 'current> = internal { ... }   // 'current walks back one version per supersedes
+type Contract<'model> = internal { ... }                     // prior chain type-erased (boxed) internally
 
 module Contract =
-    /// Start building a contract at its current (head) version and schema.
     val create<'model> : name: string -> headVersion: int -> headSchema: Schema<'model> -> ContractBuilder<'model, 'model>
-
-    /// Register the version immediately prior to the newest version registered so far, with its
-    /// own frozen schema and a migration from it to that newer version. Call newest-to-oldest,
-    /// mirroring the doc's worked example:
-    ///   Contract.create "signup" 2 V2.schema
-    ///   |> Contract.supersedes 1 V1.schema (fun (v1: V1.Signup) -> Ok { Email = v1.Email; Age = 18 })
-    ///   |> Contract.build (Field "version")
     val supersedes : version: int -> schema: Schema<'prev> -> migrate: ('prev -> Result<'current, MigrationError>) -> ContractBuilder<'model, 'current> -> ContractBuilder<'model, 'prev>
-
-    /// Finalize the builder into a Contract, fixing its version-detection strategy.
     val build : source: VersionSource -> ContractBuilder<'model, 'oldest> -> Contract<'model>
-
-    /// Parse raw input whose version is embedded per the contract's VersionSource (Field or
-    /// UnversionedMeans). Detects version, parses against that version's frozen schema, walks the
-    /// migration chain up to the head version, then re-validates against the head schema.
     val parse : contract: Contract<'model> -> raw: RawInput -> Result<'model, ContractError>
-
-    /// Parse raw input whose version is supplied externally (VersionSource.External, or to
-    /// override Field/UnversionedMeans detection e.g. from a transport header).
     val parseWithVersion : contract: Contract<'model> -> version: int -> raw: RawInput -> Result<'model, ContractError>
-
     val name : Contract<'model> -> string
     val headVersion : Contract<'model> -> int
     val headSchema : Contract<'model> -> Schema<'model>
 ```
 
-Internal storage sketch for `Contract<'model>` (implementation detail, adjust as needed): a
-`Map<int, VersionEntry>` keyed by version number, where
+Parse algorithm: resolve version per `VersionSource` (missing with no `UnversionedMeans` fallback →
+`VersionMissing`); head version → `Model.parse` directly (no migration/re-validation); greater than head →
+`VersionTooNew`; registered prior version → parse with that frozen schema, fold boxed `MigrateToNext` entries up the
+chain, then `Model.reconstruct headSchema` (failure → `Migration (RevalidationFailed _)`); otherwise
+`VersionUnrecognized`.
 
-```fsharp
-type private VersionEntry =
-    { ParseRaw: RawInput -> Result<obj, SchemaError>          // boxed Input.parse for that version's schema
-      MigrateToNext: obj -> Result<obj, MigrationError> }     // boxed migrate function to the next version up
-```
-
-`Contract.supersedes` closes over the caller's `Schema<'prev>` and `'prev -> Result<'current, MigrationError>`,
-boxing both into a `VersionEntry` at that version number. `Contract.parse`/`parseWithVersion`:
-
-1. Resolve the version int per `VersionSource` (`Field` → `RawInput.tryRedisplayPath wireName raw` then
-   `Int32.TryParse`; `UnversionedMeans v` as fallback when the field/metadata is absent; `External` requires
-   `parseWithVersion`). Missing with no fallback → `ContractError.VersionMissing`.
-2. If `version = headVersion`: `Input.parse headSchema raw`, map failure to `ParseFailed`, return the model directly
-   (already current, no migration or re-validation needed).
-3. If `version > headVersion`: `ContractError.VersionTooNew (version, headVersion)`.
-4. If `version` matches a registered prior entry: `ParseRaw raw` (→ `ParseFailed` on failure), then fold
-   `MigrateToNext` from that version up through the chain to the head version (→ `ContractError.Migration` on
-   failure), then `SchemaValidation.validate headSchema model |> Validation.toResult` and map failure to
-   `ContractError.Migration (RevalidationFailed _)`.
-5. Otherwise (no head match, no chain entry, not covered by `UnversionedMeans`): `VersionUnrecognized version`.
+Open question to settle at implementation time: whether `parse` should return `Model<'model>` (the trust wrapper)
+instead of bare `'model` — the wrapper now exists and a contract-parsed value has earned it. Lean yes, but check the
+call-site ergonomics against the wire-tier positioning (wire records are drafts by design).
 
 ### TODOs
 
-1. Add `src/Axial.Schema/Contract.fs` implementing the types and `module Contract` above; register it in
-   `Axial.Schema.fsproj`'s `<Compile>` list after `Input.fs`, before `RefinedSchemas.fs`.
-2. Unit tests in `tests/Axial.Schema.Tests` (new file, e.g. `ContractTests.fs`, added to that project's `.fsproj`)
-   covering: head-version parse; single-hop migration (V1 → V2) with `Field` version source; multi-hop chain (V1 →
-   V2 → V3) exercising composed migration; `UnversionedMeans` fallback when the field is absent; `VersionTooNew` when
-   detected version exceeds head; `VersionUnrecognized` for an unknown version number; constraint-drift
-   re-validation failure surfaced as `Migration (RevalidationFailed _)` (e.g. a V1 record that migrates to a value
-   violating a V2-only `atLeast`/`multipleOf` constraint); a failing hand-written migration surfaced as
-   `Migration (MigrationFailed _)`; `parseWithVersion` with `VersionSource.External`.
-3. Confirm Fable compatibility — `Axial.Schema.fsproj` targets `netstandard2.1;net8.0` and ships `Fable.Core`; avoid
-   any BCL API in `Contract.fs` not already used elsewhere in this project (boxing/`Map`/`Int32.TryParse` are fine;
-   check against existing patterns in `RawInput.fs` if unsure).
-4. Once the implementation is verified end-to-end (round-trip a 3-version chain), update
-   `dev-docs/current-ideas/schema-contract-versioning.md`: mark "Design Decisions To Settle" #1 (version detection)
-   resolved with the `VersionSource` design above, and update the Promotion Criteria note to record that the
-   ~100-variant work config system is the concrete consumer that opened this work.
-5. Do not start `dev-docs/current-ideas/contract-grammar.md` (the `.contract` declaration grammar/generator/LSP)
-   until this phase's engine is dogfooded against at least one real multi-version config from the adoption target —
-   per that sketch's own sequencing (versioning/migration machinery → grammar and generator → dogfood → LSP).
+1. Implement `Contract.fs` + register in the fsproj.
+2. Tests (`tests/Axial.Schema.Tests/ContractTests.fs`): head-version parse; single-hop migration with `Field`
+   source; multi-hop chain (V1→V2→V3); `UnversionedMeans` fallback; `VersionTooNew`; `VersionUnrecognized`;
+   constraint-drift re-validation failure as `Migration (RevalidationFailed _)`; failing migration as
+   `Migration (MigrationFailed _)`; `parseWithVersion` with `External`.
+3. Fable check: no new BCL surface beyond what `RawInput.fs` already uses.
+4. On completion, update `dev-docs/current-ideas/schema-contract-versioning.md` (version detection resolved via
+   `VersionSource`; the work config system is the consumer that opened this) and then design multi-version support
+   in the generator (`Resolver.resolve` currently rejects duplicate contract names — emit per-version modules
+   `SignupV1`/`SignupV2` or nested modules, plus generated chain wiring) as its own follow-up task.
+5. LSP and public contract positioning stay gated until the engine + generator have been dogfooded against at least
+   one real multi-version config from the adoption target.
+
+## Phase 29: Schema depth (pre-1.0 candidates from the ZIO Schema comparison)
+
+Source analysis: `dev-docs/current-ideas/zio-schema-comparison.md` (2026-07-11 deep dive). These are the gaps judged
+genuinely useful for this project's goals, ranked. Items 1–2 are worth doing before 1.0; item 3 rides along with
+anything. None of this is committed scope — the schema surface is still settling.
+
+### 29.1 Recursive schemas (the one expressiveness wall)
+
+The builder cannot express a self-nesting model at all (comment trees, nested config sections, org hierarchies) —
+ZIO does it with a `Lazy` node. A user who hits this has no workaround inside Axial.
+
+- Core: a lazy node in the value-definition DU (`src/Axial.Schema/Schema.fs`, `ValueSchemaDefinition.Shape` /
+  `ValueShape`) — something like `LazyValueDefinition of (unit -> ValueSchemaDefinition)` with memoized force, plus
+  `Value.lazyOf : (unit -> Schema<'model>) -> ValueSchema<'model>` (or on `ValueSchema`) so a schema can reference
+  itself through a thunk.
+- Touch points to walk (each currently assumes a finite tree): `Model.parse`/`Model.reconstruct` recursion (force
+  the thunk per visit — naturally terminates on finite *data*), `Codec` compile (compile-on-first-use with a cache
+  keyed by the thunk/definition identity, or cycles hang the compiler), `Inspect` (needs cycle detection — probably
+  a `ValueShape.Recursive` marker with an identity/reference rather than infinite expansion), `JsonSchema.generate`
+  (this finally forces `$defs` hoisting + `$ref` emission — the docs currently note inlining "cannot fail to
+  terminate" precisely because recursion is inexpressible; that note inverts).
+- Grammar/generator: recursive contract refs (`contract Category.v1 { children: list Category.v1 }`) — the resolver's
+  declare-before-use rule needs a self-reference exception; emitter needs `Value.lazyOf (fun () -> Category.schema)`.
+  Can trail the core work.
+- Tests: recursive record round-trip through parse/reconstruct/codec; JSON Schema `$ref` output; Inspect terminates;
+  stack safety on deep (not just cyclic) data.
+
+### 29.2 Test-data generation from schema
+
+Schema → generators that respect constraints (valid emails, in-range ints, count-bounded lists, union case
+selection). Cheap relative to value: immediately useful to adopters' property tests, and lets us fuzz our own
+parse/validate/codec round-trips.
+
+- Recommended mechanism (avoids any new construction machinery): generate *constraint-satisfying `RawInput`*, then
+  `Model.parse` it — validity is guaranteed by construction because parse enforces everything, including refined
+  construction and constructor invariants (retry/shrink on the rare constructor rejection). Walk `Inspect.model`
+  metadata to drive generation: `SchemaConstraint` codes (`minLength`/`maxLength`/`between`/`atLeast`/`count*`/
+  `multipleOf`/`oneOf`/`email`) map to generator ranges; `pattern` starts as "unsupported — supply a custom
+  generator for this field" rather than regex-reversal.
+- Decide the target library by what the work adoption target actually uses — FsCheck `Gen<'t>` vs Hedgehog — before
+  building; wrap as a separate non-packable project first (`Axial.Schema.Testing`?) so the core stays
+  dependency-free.
+- Also useful internally: property-test the contract engine's migration chains once Phase 28 lands.
+
+### 29.3 FieldRef setters
+
+`FieldRef` currently carries `Name` + `Get` only; ZIO's `Field` carries `set` too. Add
+`Set: 'model -> 'value -> 'model` — enables form editing, patch application, and draft manipulation without record
+boilerplate at call sites. Touches: `src/Axial.Schema/FieldRef.fs` (the type is 3 days old; breaking it is fine),
+the emitter (`Emitter.fs` Fields section: `Set = fun draft value -> { draft with X = value }`), the three golden
+`.g.fs` files + `EmitterGoldenTests` (byte-for-byte), and hand-written `FieldRef` mentions in docs. Small; ride
+along with any schema work.
+
+## Phase 30: Contracts milestone bundle (gated on Phase 28 + a real consumer)
+
+From the same ZIO comparison; these belong *with* the remote-config milestone, not before it:
+
+- **Schema-as-data** (their `MetaSchema`): a stable serialized form of `Inspect`'s `ModelDescription` tree, so the
+  browser editor receives the schema as *data* and drives forms dynamically instead of compiling every schema into
+  the Fable bundle; also the substrate for contract version-diff tooling (the LSP's planned version-gap warnings).
+  Note `Inspect` output is already a plain data tree — most of this is choosing a stable wire format + a codec for
+  descriptions, not a new representation. Constraint arguments are `obj`-boxed (`SchemaConstraint.tryFindArgument`),
+  which is where the serialization design effort actually lives.
+- **Diff/Patch**: schema-derived structural diff of two values ("what changed between desired and reported
+  config"), rendered over the same `Path` vocabulary as diagnostics so display infrastructure is shared. Read-only
+  walk over erased getters suffices for diff; patch application wants `FieldRef.Set` (29.3).
+- **Deliberately rejected** from the ZIO list (recorded so nobody re-litigates casually): automatic structural
+  migrations (conflicts with manual-typed-migrations; their own docs show it silently deleting fields), advisory
+  validation, multi-format codecs before a consumer asks, `DynamicValue` as a public surface (at most internal
+  plumbing for the two items above).
+
+## Smaller queue items
+
+- User-facing docs for the contract tooling once it stabilizes: a `docs/schema/contracts.md` guide (grammar by
+  example, `schemagen` usage, `--check` in CI, "wire tier only — domain models are hand-written" positioning). The
+  only current documentation is dev-docs and the golden corpus.
+- `docs/schema/getting-started.md` and the tutorials still teach only the pipe-builder + parse flow; fold in
+  `Model.validate` + drafts as the named-field construction story (trusted-construction.md already covers it; the
+  tutorials don't).
+- `dev-docs/API_BASELINE.md` needs a fresh baseline pass after the 2026-07-09..12 renames (it still references
+  pre-consolidation projects and the old `Input`/`Validation.validate`/`RuleSet` names in its notes).
 
 ## Acceptance Checks
 
