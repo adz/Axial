@@ -7,7 +7,7 @@ Keep speculative design sketches in `dev-docs/current-ideas/` and high-level dur
 
 Work this queue from top to bottom, with one caveat: the schema surface has just been through heavy churn
 (`Model<'t>`/`Model.validate`, `ContextRules`, the contract generator — see `dev-docs/decisions/README.md`,
-2026-07-11/12 entries) and the shape is settling, not settled. Phases 29–30 below are current thinking with enough
+2026-07-11/12 entries) and the shape is settling, not settled. Phase 30 below is current thinking with enough
 detail to pick up cold; re-read the decisions file and sanity-check the ordering before starting any of them.
 
 Axial has two main groups, and everything in this queue serves that split:
@@ -25,15 +25,6 @@ completions (2026-07-09..12): the `Model` module split with a sound `reconstruct
 `Axial.ErrorHandling`, `Model<'model>` + `Model.validate` (named-field trusted construction), `FieldRef` +
 `ContextRules` (RuleSet deleted), and the `.contract` grammar/generator as wire-tier tooling
 (`src/Axial.Schema.Contracts`, `scripts/schemagen`, golden corpus in `tests/Axial.Schema.Tests/contracts/`).
-
-## Phase 29: Schema depth (pre-1.0 candidates from the ZIO Schema comparison)
-
-Source analysis: `dev-docs/current-ideas/zio-schema-comparison.md` (2026-07-11 deep dive). These are the gaps judged
-genuinely useful for this project's goals, ranked. Items 1–2 are worth doing before 1.0; item 3 rides along with
-anything. None of this is committed scope — the schema surface is still settling.
-
-
-
 
 ## Phase 30: Contracts milestone bundle (gated on Phase 28 + a real consumer)
 
@@ -58,9 +49,8 @@ From the same ZIO comparison; these belong *with* the remote-config milestone, n
 - User-facing docs for the contract tooling once it stabilizes: a `docs/schema/contracts.md` guide (grammar by
   example, `schemagen` usage, `--check` in CI, "wire tier only — domain models are hand-written" positioning). The
   only current documentation is dev-docs and the golden corpus.
-- `docs/schema/getting-started.md` and the tutorials still teach only the pipe-builder + parse flow; fold in
-  `Model.validate` + drafts as the named-field construction story (trusted-construction.md already covers it; the
-  tutorials don't).
+- The tutorials still teach only the pipe-builder + parse flow; fold in `Model.validate` + drafts as the named-field
+  construction story after the overview is reviewed (`trusted-construction.md` already covers it).
 - `dev-docs/API_BASELINE.md` needs a fresh baseline pass after the 2026-07-09..12 renames (it still references
   pre-consolidation projects and the old `Input`/`Validation.validate`/`RuleSet` names in its notes).
 

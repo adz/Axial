@@ -1,86 +1,91 @@
 ---
 weight: 2
 title: Getting Started
-description: Declare a schema once and parse raw input into a trusted model.
+description: Why Schema exists, what it describes, and how its parts fit together.
 type: docs
 ---
 
 
-When the input is a whole model rather than one value, checking values one by one falls apart: fail-fast drops sibling
-errors, hand-rolled accumulation loses the field paths, and either way the record gets constructed before the checks
-finish. Instead, declare a schema once and parse raw input through it. If any constraint fails, the model is never
-constructed — you get path-aware errors for every failing field, and the original input is retained for redisplay.
+This page shows why Axial uses Schema for domain-model boundaries and gives a compact map of the parts.
 
-## Declare A Schema
+## The Problem Schema Solves
 
-Open `Axial.Schema.DSL` inside the module that defines the schema, and write it bare:
+A validator starts with an object. That is often too late: the object may already violate the rules that give the
+model its meaning, and the type does not record whether validation ran. Boundary code then repeats the same work in
+several forms:
 
-```fsharp
-module SignupSchema =
-    open Axial.Schema.DSL
+- parse strings and JSON values;
+- accumulate failures without losing field paths;
+- retain rejected input for a form or editor;
+- construct the model only after every field is acceptable;
+- describe the same constraints to codecs, JSON Schema, documentation, and tests.
 
-    type Signup = { Email: string; Age: int }
+A `Schema<'model>` makes that boundary explicit. It records how fields are named, parsed, constrained, ordered, read,
+and passed to the model constructor. `Model.parse` runs untrusted `RawInput` through that declaration. If any field
+or constructor invariant fails, no model is returned. The failure is a path-aware diagnostics graph and the original
+input remains available.
 
-    let schema =
-        recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
-        |> text [ required; email ] "email" _.Email
-        |> int [ atLeast 13 ] "age" _.Age
-        |> build
-```
+This is appropriate for domain models and boundary records. For a small function with one or two ordinary failure
+cases, plain F# `Result` with an application-owned error type is simpler.
 
-`text` and `int` are field shortcuts — each is `field [...] name getter Value.text`/`Value.int` with the value
-schema already filled in, so a field line reads as "external name, getter, constraints" and nothing else. The same
-shortcuts exist for `decimal`, `bool`, `date`, and the other primitive value shapes; reach for the general `field`
-combinator directly when a field needs an explicit `ValueSchema<'field>` the shortcuts don't cover — a nested model,
-a collection, or a refined value.
-
-## The DSL Is Scoped On Purpose
-
-`Axial.Schema.DSL` exists to be opened inside exactly one module: the one that defines a schema, the same way
-`Axial.ErrorHandling.CheckDSL` is scoped to a module that runs checks. Opened there, it puts every constraint
-(`required`, `email`, `atLeast`, ...), every field shortcut (`text`, `int`, `decimal`, `bool`, ...), and the builder
-entry/exit points (`recordFor`, `field`, `build`) into scope unqualified, so a schema reads as one flat, purpose-built
-vocabulary instead of a wall of `Schema.`/`SchemaConstraint.`/`Value.` prefixes.
-
-That convenience has a cost: `int`, `decimal`, and `bool` shadow the F# core conversion functions of the same names.
-Opening the DSL anywhere broader than the schema module — at file or namespace scope, in general application code —
-means every unrelated `int x` in that scope now means something else. Keep the `open` local to the schema module, the
-way the example above does, and it never comes up.
-
-Outside a schema module, use the qualified form the DSL expands to:
+## A First Schema
 
 ```fsharp
 open Axial.Schema
+open Axial.Validation
 
-Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
-|> Schema.fieldWith [ SchemaConstraint.required; SchemaConstraint.email ] "email" _.Email Value.text
-|> Schema.fieldWith [ SchemaConstraint.atLeast 13 ] "age" _.Age Value.int
-|> Schema.build
+type Signup =
+    { Email: string
+      Age: int }
+
+let signupSchema =
+    // recordFor anchors Signup before the first field. The constructor is checked
+    // against field order and types, so the schema cannot silently omit an argument.
+    Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
+    // Constraints are data as well as executable checks. Other interpreters can read them.
+    |> Schema.fieldWith [ SchemaConstraint.email ] "email" _.Email Value.text
+    |> Schema.fieldWith [ SchemaConstraint.between 13 120 ] "age" _.Age Value.int
+    |> Schema.build
+
+let raw =
+    RawInput.ofNameValues
+        [ "email", "ada@example.com"
+          "age", "36" ]
+
+match (Model.parse signupSchema raw).Result with
+| Ok signup ->
+    // The constructor ran only after both fields parsed and passed their constraints.
+    printfn "%s" signup.Email
+| Error diagnostics ->
+    // Diagnostics retain paths such as email and age; ParsedInput also retains raw.
+    printfn "%A" (Diagnostics.flatten diagnostics)
 ```
 
-Both forms produce the identical `Schema<Signup>` — the DSL is sugar over `Schema`/`SchemaConstraint`/`Value`, not a
-separate implementation. See [The Schema DSL](./dsl/) for the full field and constraint vocabulary.
+The qualified form above keeps the vocabulary visible. `Axial.Schema.DSL` provides the same builder operations
+without prefixes inside a schema-definition module; it does not define a second schema model.
 
-## Parse Raw Input
+## The Parts
 
-```fsharp
-open Axial.Schema
+| Part | Role |
+| --- | --- |
+| `Schema` and `Value` | Declare records, primitive and domain values, nesting, collections, maps, options, unions, and recursion. |
+| `SchemaConstraint` and `SchemaFormat` | Attach portable checks and descriptive boundary metadata. |
+| `RawInput`, `Model.parse`, and `ParsedInput` | Turn source-neutral boundary data into a model or path-aware diagnostics while retaining rejected input. |
+| `Model.validate` and `Model.reconstruct` | Establish schema trust for named-field drafts or already-existing model values. |
+| `Model<'model>` | Record the trust claim in a type when application code must distinguish drafts from accepted values. |
+| `FieldRef` and `ContextRules` | Name, read, and copy-update fields; attach contextual failures to stable schema paths. |
+| `Inspect` and `JsonSchema` | Read the declaration as finite metadata and emit JSON Schema, including recursive references. |
+| `Axial.Codec.Json` | Compile a reflection-free JSON hot path for already-trusted data. Codec decoding checks wire shape; use Schema parsing for full constraint diagnostics. |
+| `Contract` | Select explicit wire versions, parse frozen schemas, and compose typed migrations into the current trusted model. |
+| `.contract` and `schemagen` | Generate repetitive wire records, schemas, parsers, validation functions, and field references from a checked declaration file. |
+| `Axial.Schema.Testing.SchemaGen` | Derive FsCheck generators through `RawInput`; unsupported constraints require an explicit field generator. |
 
-let raw = RawInput.ofNameValues [ "email", "ada@example.com"; "age", "36" ]
-let parsed = Model.parse SignupSchema.schema raw
-
-match parsed.Result with
-| Ok signup -> printfn "trusted: %A" signup
-| Error _ -> printfn "rejected: %A" parsed.Errors   // path-aware; raw input kept in parsed.Input
-```
-
-The same schema also re-validates existing values, powers contextual rules, and describes itself to JSON Schema,
-docs, and UI interpreters. Continue with the [tutorials](./tutorials/) — they build up nested models, collections,
-rules, and metadata inspection step by step.
+The [Schema overview examples](./overview-examples/) exercise each part and state when it is appropriate. The other
+guides go into individual APIs; this page stops at the system boundary so the overall shape can be reviewed first.
 
 ## Related
 
-- For a single value rather than a whole model, use [Refined]({{< relref "/error-handling/refined/" >}}) types or plain `Result` in
-  [Error Handling]({{< relref "/error-handling/" >}}).
-- To carry a parsed model into a workflow with dependencies and async work, see
-  [Flow]({{< relref "/flow/" >}}).
+- Use [Error Handling]({{< relref "/error-handling/" >}}) for plain `Result`, reusable checks, diagnostics machinery,
+  and refined single values.
+- Use [Flow]({{< relref "/flow/" >}}) for dependencies, asynchronous work, cancellation, and typed operational
+  failures around an accepted model.

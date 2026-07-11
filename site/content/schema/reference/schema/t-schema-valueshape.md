@@ -28,6 +28,8 @@ type: docs
 | `Enum` | A bare-string enum value with explicit case tags. |
 | `Optional` | An optional value whose present payload is described by the supplied payload description. |
 | `MapOf` | A dictionary value, keyed by text, whose entries share the supplied item description. |
+| `Deferred` | The first expansion of a deferred recursive value, identified within this inspection tree. |
+| `Recursive` | A reference back to an already-expanding deferred value. |
 
 ## Remarks
 

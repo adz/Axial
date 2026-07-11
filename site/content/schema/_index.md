@@ -18,21 +18,21 @@ menu:
 <h1>Parse, don't validate.</h1>
 
 <div class="lede">
-Validators check objects that already exist &mdash; so the invalid object gets constructed first, and every code path
-after it has to trust that someone, somewhere, ran the checks. Axial inverts this: declare the model once as a
-<code>Schema</code>, and parsing goes <em>through</em> the declaration. If a constraint fails, the model is never
-constructed. Holding the value is the proof it was valid.
+Validators start with an object that already exists. That leaves application code to track whether validation ran,
+keep field paths aligned with checks, and repeat the same rules for parsing, forms, codecs, and contract documents.
+Axial starts one step earlier: a <code>Schema</code> describes how untrusted boundary values become a model. If a field
+or constructor invariant fails, parsing returns diagnostics and does not return the model.
 </div>
 
 <div class="lede">
-One declaration drives everything that usually drifts apart: input parsing, re-validation, path-aware errors with the
-raw input kept for redisplay, contextual rules, JSON codecs, and documentation.
+The declaration is reusable data. Input parsing executes it; inspection, JSON Schema, codecs, versioned contracts,
+and test-data generation interpret the same field names, value shapes, and constraints for their own jobs.
 </div>
 
 <div class="docs-home-meta">
-<a class="docs-home-cta" href="{{< relref "/schema/tutorials/" >}}">Get started &gt;</a>
+<a class="docs-home-cta" href="{{< relref "/schema/getting-started.md" >}}">Get started &gt;</a>
 <a class="docs-chip" href="{{< relref "/schema/getting-started.md" >}}">Getting started guide</a>
-<a class="docs-chip" href="{{< relref "/schema/examples.md" >}}">Examples</a>
+<a class="docs-chip" href="{{< relref "/schema/overview-examples.md" >}}">Overview examples</a>
 </div>
 </div>
 
@@ -42,15 +42,17 @@ raw input kept for redisplay, contextual rules, JSON codecs, and documentation.
 
 One schema declaration, several interpreters:
 
-```text
-RawInput -> Model.parse schema -> trusted model | Diagnostics
-draft    -> Model.validate schema -> Model<'model> | Diagnostics
-model    -> Model.reconstruct schema -> trusted model | Diagnostics
-model    -> ContextRules.apply rules -> trusted model | Diagnostics
-schema   -> Inspect.model -> metadata (no execution)
-schema   -> Json.compile -> compiled JSON codec (trusted hot path)
-schema   -> JsonSchema.generate -> JSON Schema document
-```
+| Input | Interpreter | Result |
+| --- | --- | --- |
+| `RawInput` | `Model.parse schema` | model or `Diagnostics` |
+| draft record | `Model.validate schema` | `Model<'model>` or `Diagnostics` |
+| existing model | `Model.reconstruct schema` | reconstructed model or `Diagnostics` |
+| trusted model | `ContextRules.apply rules` | accepted model or contextual `Diagnostics` |
+| schema | `Inspect.model` | finite metadata without execution |
+| schema | `Json.compile` | reusable compiled JSON codec |
+| schema | `JsonSchema.generate` | JSON Schema document |
+| versioned `RawInput` | `Contract.parse` | current `Model<'model>` or `ContractError` |
+| schema | `SchemaGen.raw` / `SchemaGen.model` | FsCheck generators |
 
 `Model.validate` is named-field trusted construction: build a draft with an ordinary record literal (named fields,
 any order, compiler-checked completeness) and promote it — holding the returned `Model<'model>` is the proof it
@@ -58,9 +60,14 @@ passed every constraint. `Model.reconstruct` gives an already-existing model val
 values) the same trust strength as `Model.parse` — every field's constraints re-checked, and the model's own
 constructor re-invoked so cross-field invariants hold too — without re-parsing from raw input.
 
+The declaration vocabulary covers primitive and refined values, nested models, lists, maps, optional values, three
+tagged-union shapes, and recursive models. `FieldRef` values name, read, and copy-update draft fields without repeating
+wire-name strings. `Contract` keeps frozen wire versions and typed migrations outside the current domain model.
+
 ## Guides
 
 - [Getting Started](./getting-started/) — declare a schema once and parse raw input into a trusted model.
+- [Schema Overview Examples](./overview-examples/) — short, commented examples covering every Schema subsystem.
 - [Tutorials](./tutorials/) — parse a signup form, nest models, apply rules, and inspect metadata.
 - [Trusted Construction](./trusted-construction/) — ActiveModel ergonomics with F# trusted construction.
 - [The Schema DSL](./dsl/) — open one module inside a schema definition and drop the qualified prefixes.
@@ -95,9 +102,7 @@ around them.
 
 ## Install
 
-```sh
-dotnet add package Axial.Schema
-```
+Install the core package with `dotnet add package Axial.Schema`.
 
 Model metadata, `Refined`, input parsing, model validation, and rules all live in this one package now — declaring a
 schema, parsing raw input, and inspecting metadata never require a second package.
@@ -106,9 +111,7 @@ schema, parsing raw input, and inspecting metadata never require a second packag
 your schema (`Json.compile`). Everything else — parsing, validation, rules, redisplay, JSON Schema generation — works
 without it.
 
-```sh
-dotnet add package Axial.Codec
-```
+Install the optional codec with `dotnet add package Axial.Codec`.
 
 See [JSON Codec](./json-codec/) for what that package buys you.
 
