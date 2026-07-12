@@ -73,7 +73,7 @@ This page shows the external-process service package. Immutable `Command` and `P
 - [`Flow.Process.stream`](./m-flow-process-process-stream.md):  Streams structured process events with one-element bounded backpressure. The last event is <c>Completed</c>.
 - [`Flow.Process.execute`](./m-flow-process-process-execute.md):  Creates and runs one command with default capture policy.
  <example><code>Process.execute "dotnet" [ "--version" ]</code></example>
-- [`Flow.Process.Script.run`](./m-flow-process-script-run.md):  Runs a process workflow with live services and sets the host exit code. Intended for dotnet-fsi shebang scripts.
+- [`Flow.Process.Script.run`](./m-flow-process-script-run.md):  Runs a process workflow with live services, writes failures through the supplied console, and returns a host exit code.
 
 ## Input endpoints
 

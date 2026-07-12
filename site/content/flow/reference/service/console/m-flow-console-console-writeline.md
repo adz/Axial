@@ -5,19 +5,19 @@ weight: 2101
 type: docs
 ---
 
-Writes a line through an explicit console service.
+
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Flow.Console.Console.writeLine&#32;<span>message</span></span></code>
+<code><span>Flow.Console.Console.writeLine&#32;<span>value</span></span></code>
 </div>
 
 ## Parameters
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `message` | <code>string</code> |  |
+| `value` | <code>string</code> |  |
 
 ## Returns
 

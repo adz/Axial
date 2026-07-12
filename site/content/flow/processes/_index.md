@@ -1,6 +1,7 @@
 ---
-weight: 35
-title: Processes And Scripts
+weight: 100
+title: Axial.Flow.Process
+linkTitle: Process
 description: Build typed commands, connect process endpoints, stream output, and run executable F# scripts.
 type: docs
 ---

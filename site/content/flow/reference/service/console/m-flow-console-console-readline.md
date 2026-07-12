@@ -5,7 +5,7 @@ weight: 2100
 type: docs
 ---
 
-Reads a line through an explicit console service.
+
 
 ## Signature
 
