@@ -169,7 +169,7 @@ module UnifiedServiceTests =
     [<Fact>]
     let ``Http: getString`` () =
         let services = { 
-            Http = { new IHttp with member _.Send(_, _) = async { return Ok(Response.create 200 "html") } }
+            Http = { new IHttp with member _.Send(_, _) = async { return Ok(Response.create (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)) 200 "html") } }
             Console = Unchecked.defaultof<_>; FS = Unchecked.defaultof<_>; Process = Unchecked.defaultof<_>
         }
         

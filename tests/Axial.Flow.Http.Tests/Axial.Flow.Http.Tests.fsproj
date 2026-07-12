@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Axial.Flow.Http\Axial.Flow.Http.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Flow.PlatformService\Axial.Flow.PlatformService.fsproj" />
   </ItemGroup>
 
 </Project>

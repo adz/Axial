@@ -9,6 +9,7 @@ open System.Text
 open System.Threading
 open System.Threading.Tasks
 open Axial.Flow
+open Axial.Flow.PlatformService
 
 /// Identifies one standard output channel.
 [<RequireQualifiedAccess>]
@@ -509,7 +510,8 @@ module Process =
         proc.WaitForExitAsync(cancellationToken)
 #endif
 
-    let live : IProcess =
+    /// Creates a live process service using an explicit clock for transcript timestamps and durations.
+    let live (clock: IClock) : IProcess =
         { new IProcess with
             member _.Execute((pipeline: Pipeline), observer, cancellationToken) =
                 async {
@@ -521,7 +523,7 @@ module Process =
                     let stderrTails = pipeline.Commands |> List.map (fun _ -> CaptureBuffer(Some(64 * 1024), true)) |> List.toArray
                     let stdoutFiles = openFiles pipeline.StdOut
                     let stderrFiles = openFiles pipeline.StdErr
-                    let startedAt = DateTimeOffset.UtcNow
+                    let startedAt = clock.UtcNow()
                     try
                         try
                             for index, command in pipeline.Commands |> List.indexed do
@@ -533,7 +535,7 @@ module Process =
                                 let redirectError = hasErrorConnection || not inheritError
                                 let proc = new Diagnostics.Process(StartInfo = startInfo redirectOutput redirectError command)
                                 if not (proc.Start()) then raise (Exception $"Could not start {command.FileName}.")
-                                processes.Add proc; started.Add DateTimeOffset.UtcNow
+                                processes.Add proc; started.Add(clock.UtcNow())
 
                             use registration = cancellationToken.Register(fun () ->
                                 for proc in processes do
@@ -634,7 +636,7 @@ module Process =
                                                 do! observerGate.WaitAsync cancellationToken
                                                 try
                                                     do! Async.StartAsTask(
-                                                        publish { Stage = stage; Channel = channel; Text = text; Timestamp = DateTimeOffset.UtcNow },
+                                                        publish { Stage = stage; Channel = channel; Text = text; Timestamp = clock.UtcNow() },
                                                         cancellationToken = cancellationToken)
                                                 finally observerGate.Release() |> ignore
                                             }
@@ -677,7 +679,7 @@ module Process =
                                 |> Seq.map (fun proc ->
                                     task {
                                         do! waitForExit proc cancellationToken
-                                        return DateTimeOffset.UtcNow
+                                        return clock.UtcNow()
                                     })
                                 |> Seq.toArray
                             if not (isInherit pipeline.StdOut) then
@@ -721,7 +723,8 @@ module Process =
                   } |> Async.AwaitTask
                 } }
 
-    let layer : Layer<unit, Never, IProcess> = Layer.succeed live
+    /// Builds a live process service from an explicit clock as a layer.
+    let layer (clock: IClock) : Layer<unit, Never, IProcess> = Layer.succeed (live clock)
 #endif
 
 module DSL =
@@ -1047,7 +1050,7 @@ module Script =
 
     /// Runs a process workflow with live services and sets the host exit code. Intended for dotnet-fsi shebang scripts.
     let run (workflow: Flow<ScriptEnvironment, ProcessError, 'value>) : unit =
-        match workflow.RunSynchronously({ Process = Process.live }) with
+        match workflow.RunSynchronously({ Process = Process.live Clock.live }) with
         | Exit.Success _ -> Environment.ExitCode <- 0
         | Exit.Failure(Cause.Fail error) ->
             Console.Error.WriteLine(ProcessError.describe error)

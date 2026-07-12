@@ -8,6 +8,7 @@ open System.Threading.Tasks
 open Axial.Flow
 open Axial.Flow.Http
 open Axial.Flow.Http.DSL
+open Axial.Flow.PlatformService
 open Swensen.Unquote
 open Xunit
 
@@ -18,6 +19,7 @@ type HttpTestEnv =
         member this.Service = this.Http
 
 module HttpServiceTests =
+    let private syntheticTime = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
     let private runSync (environment: 'env) (workflow: Flow<'env, 'error, 'value>) : Exit<'value, 'error> =
         workflow.RunSynchronously(environment)
 
@@ -44,7 +46,7 @@ module HttpServiceTests =
                     } }
         sent, { Http = service }
 
-    let private okResponse status body = Ok(Response.create status body)
+    let private okResponse status body = Ok(Response.create syntheticTime status body)
 
     // ---- Request building and safety ----
 
@@ -167,10 +169,10 @@ module HttpServiceTests =
     let ``transient classification covers connections timeouts and retryable statuses`` () =
         test <@ HttpError.isTransient (HttpError.ConnectionFailed("GET x", "refused")) @>
         test <@ HttpError.isTransient (HttpError.TimedOut("GET x", TimeSpan.FromSeconds 1.0)) @>
-        test <@ HttpError.isTransient (HttpError.Status(Response.create 503 "")) @>
-        test <@ HttpError.isTransient (HttpError.Status(Response.create 429 "")) @>
-        test <@ not (HttpError.isTransient (HttpError.Status(Response.create 404 ""))) @>
-        test <@ not (HttpError.isTransient (HttpError.DecodeFailed("bad", Response.create 200 ""))) @>
+        test <@ HttpError.isTransient (HttpError.Status(Response.create syntheticTime 503 "")) @>
+        test <@ HttpError.isTransient (HttpError.Status(Response.create syntheticTime 429 "")) @>
+        test <@ not (HttpError.isTransient (HttpError.Status(Response.create syntheticTime 404 ""))) @>
+        test <@ not (HttpError.isTransient (HttpError.DecodeFailed("bad", Response.create syntheticTime 200 ""))) @>
 
     [<Fact>]
     let ``retryTransient retries transient failures and stops on success`` () =
@@ -236,7 +238,7 @@ module HttpServiceTests =
 
     let private liveEnv () =
         let client = new HttpClient()
-        { Http = Http.live client }
+        { Http = Http.live Clock.live client }
 
     [<Fact>]
     let ``live service performs a real GET with query and headers`` () =
@@ -258,6 +260,18 @@ module HttpServiceTests =
                 test <@ response.Text = "a b|Bearer tkn" @>
                 test <@ response.Request.Contains "q=a%20b" @>
                 test <@ not (response.Request.Contains "tkn") @>)
+
+    [<Fact>]
+    let ``live service timestamps transcripts through the supplied clock`` () =
+        let fixedTime = DateTimeOffset(2030, 4, 5, 6, 7, 8, TimeSpan.Zero)
+        withServer
+            (fun context -> context.Response.StatusCode <- 200)
+            (fun root ->
+                use client = new HttpClient()
+                let env = { Http = Http.live (Clock.fromValue fixedTime) client }
+                let response = Http.get root |> Http.send |> runSync env |> requireSuccess
+                test <@ response.StartedAt = fixedTime @>
+                test <@ response.Duration = TimeSpan.Zero @>)
 
     [<Fact>]
     let ``live service posts JSON bodies and reads status errors`` () =

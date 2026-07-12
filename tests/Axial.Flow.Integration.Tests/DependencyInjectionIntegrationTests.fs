@@ -133,8 +133,8 @@ module DependencyInjectionIntegrationTests =
             layer {
                 let! console = ConsoleService.layer
                 and! fileSystem = FileSystemService.layer
-                and! http = HttpService.layer httpClient
-                and! processService = ProcessService.layer
+                and! http = HttpService.layer CoreClock.live httpClient
+                and! processService = ProcessService.layer CoreClock.live
 
                 return
                     {

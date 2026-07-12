@@ -4,6 +4,7 @@ open System
 open System.Globalization
 open System.Text
 open Axial.Flow
+open Axial.Flow.PlatformService
 #if !FABLE_COMPILER
 open System.Net.Http
 open System.Threading
@@ -346,16 +347,16 @@ module Response =
         | Ok value -> Ok value
         | Error message -> Error(HttpError.DecodeFailed(message, response))
 
-    /// Creates a synthetic response transcript, primarily for test fakes.
-    /// <example><code>Response.create 200 """{"ok":true}"""</code></example>
-    let create (status: int) (bodyText: string) : HttpResponse =
+    /// Creates a synthetic response transcript at an explicit start time, primarily for test fakes.
+    /// <example><code>Response.create startedAt 200 """{"ok":true}"""</code></example>
+    let create (startedAt: DateTimeOffset) (status: int) (bodyText: string) : HttpResponse =
         { StatusCode = status
           ReasonPhrase = ""
           Headers = []
           Body = Encoding.UTF8.GetBytes bodyText
           Text = bodyText
           Request = ""
-          StartedAt = DateTimeOffset.UtcNow
+          StartedAt = startedAt
           Duration = TimeSpan.Zero }
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -490,15 +491,15 @@ module Http =
                 | content -> content.Headers.TryAddWithoutValidation(parameter.Name, parameter.Value) |> ignore
         message
 
-    /// Creates a live HTTP service backed by <see cref="T:System.Net.Http.HttpClient" />.
-    /// <example><code>Http.live (new HttpClient())</code></example>
-    let live (client: HttpClient) : IHttp =
+    /// Creates a live HTTP service backed by an explicit clock and <see cref="T:System.Net.Http.HttpClient" />.
+    /// <example><code>Http.live Clock.live (new HttpClient())</code></example>
+    let live (clock: IClock) (client: HttpClient) : IHttp =
         { new IHttp with
             member _.Send(request, cancellationToken) =
                 async {
                     return! task {
                         let display = Request.render request
-                        let startedAt = DateTimeOffset.UtcNow
+                        let startedAt = clock.UtcNow()
                         use timeoutSource = CancellationTokenSource.CreateLinkedTokenSource cancellationToken
                         request.Timeout |> Option.iter timeoutSource.CancelAfter
                         try
@@ -522,7 +523,7 @@ module Http =
                                   Text = decodeBody contentType body
                                   Request = display
                                   StartedAt = startedAt
-                                  Duration = DateTimeOffset.UtcNow - startedAt }
+                                  Duration = clock.UtcNow() - startedAt }
                         with
                         | :? OperationCanceledException when cancellationToken.IsCancellationRequested ->
                             return Error(HttpError.Canceled display)
@@ -542,10 +543,10 @@ module Http =
                     } |> Async.AwaitTask
                 } }
 
-    /// Builds a live HTTP service as a layer.
-    /// <example><code>Http.layer (new HttpClient())</code></example>
-    let layer (client: HttpClient) : Layer<unit, Never, IHttp> =
-        Layer.succeed (live client)
+    /// Builds a live HTTP service from an explicit clock as a layer.
+    /// <example><code>Http.layer Clock.live (new HttpClient())</code></example>
+    let layer (clock: IClock) (client: HttpClient) : Layer<unit, Never, IHttp> =
+        Layer.succeed (live clock client)
 #endif
 
 module DSL =

@@ -8,6 +8,7 @@ open System.Threading.Tasks
 open Axial.Flow
 open Axial.Flow.Process
 open Axial.Flow.Process.DSL
+open Axial.Flow.PlatformService
 open Swensen.Unquote
 open Xunit
 
@@ -17,7 +18,20 @@ type ProcessTestEnv =
         member this.Service = this.Process
 
 module ProcessServiceTests =
-    let private env = { Process = Process.live }
+    let private env = { Process = Process.live Clock.live }
+
+    [<Fact>]
+    let ``live process timestamps transcripts through the supplied clock`` () =
+        let fixedTime = DateTimeOffset(2030, 4, 5, 6, 7, 8, TimeSpan.Zero)
+        let fixedEnv = { Process = Process.live (Clock.fromValue fixedTime) }
+        let workflow = cmd $"true" |> capture
+
+        match Flow.runSync fixedEnv workflow with
+        | Exit.Success result ->
+            test <@ result.StartedAt = fixedTime @>
+            test <@ result.Duration = TimeSpan.Zero @>
+            test <@ result.Stages |> List.forall (fun stage -> stage.StartedAt = fixedTime && stage.Duration = TimeSpan.Zero) @>
+        | failure -> failwithf "Expected success, got %A" failure
 
     [<Fact>]
     let ``arguments stay tokenized and pipelines connect stdout to stdin`` () =
