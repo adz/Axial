@@ -26,9 +26,8 @@ Refer to [`dev-docs/PLAN.md`](dev-docs/PLAN.md) for architectural direction and
 - Apply the same rule to randomness, GUID generation, environment variables, filesystem, console, and other operational effects: use the appropriate explicit service from `Axial.Flow.PlatformService` or another package whose core type is present in the signature.
 
 - `Flow<'env, 'error, 'value>` is the public workflow model. Do not reintroduce public `Effect`, `EffectFlow`, `AsyncFlow`, `TaskFlow`, or carrier-specific workflow concepts.
-- Keep `Axial.Flow`, `Axial.ErrorHandling`, `Axial.Refined`, and `Axial.Validation` as independent leaf packages. `Axial.Flow` must not depend on `Axial.ErrorHandling`, `Axial.Refined`, or `Axial.Validation`.
+- Keep `Axial.Flow` and `Axial.ErrorHandling` independent; neither package may depend on the other.
 - Model application and operational dependencies explicitly in `'env`; keep the ambient runtime for executor mechanics only.
-- `Check` and `Result` live in `Axial.ErrorHandling`, `Parse`/`Refine`/`refine { }` live in `Axial.Refined`, `Validation`/`Diagnostics` live in `Axial.Validation`, and `BindError`/`Policy` live in `Axial.Flow`.
 - Keep `Check` as a complete typed value-constraint subsystem: `Check<'value> = 'value -> Result<unit, CheckFailure list>`. Checks are path-free, raw-input-free value programs; value-preserving guards and extraction helpers belong in `Result`, and parsing and refined value construction belong in `Axial.Refined`.
 - Use `BindError` only at a `flow { }` bind site when a source error must be assigned or mapped immediately before binding.
 - Prefer AOT- and trimming-safe designs. Do not introduce runtime reflection as the foundation for core workflow, validation, schema, or service-access APIs; use explicit definitions first and consider build-time generation only after the API shape stabilizes.
@@ -40,6 +39,15 @@ Refer to [`dev-docs/PLAN.md`](dev-docs/PLAN.md) for architectural direction and
 - Keep completed work out of `dev-docs/TASKS.md`; keep the remaining active queue there for loop scripts.
 - Keep speculative or pre-idea work in `dev-docs/current-ideas/`.
 - Do not retain detailed historical specs after their useful decisions have been folded into current instructions. Delete stale specs instead of archiving large files that no longer match the codebase.
+
+## Writing
+
+- Write concrete prose that names the API, behavior, tradeoff, or decision directly. Remove generic AI filler,
+  promotional adjectives, grandiose claims, repetitive summaries, fake quotations, and throat-clearing such as
+  "In today's landscape", "It's important to note", "powerful", "robust", "seamless", and "comprehensive" when the
+  sentence does not prove a specific claim. Do not use slogans such as "not just X, but Y" in place of an explanation.
+- In documentation and code comments, explain facts a reader cannot already see from the signature or implementation.
+  Prefer a short example or a precise constraint over restating the member name in prose.
 
 ## Test Authoring
 
@@ -57,8 +65,7 @@ Refer to [`dev-docs/PLAN.md`](dev-docs/PLAN.md) for architectural direction and
 
 - **Before 1.0:** Bravely iterate. Remove old APIs and "old ways" immediately when a better alternative is established. Do not maintain compatibility aliases or stale patterns.
 - **Post 1.0:** Standard semantic versioning applies. Maintain compatibility and use deprecation cycles for breaking changes.
-- Pre-1.0 releases use one coordinated package version across `Axial.Flow`, `Axial.ErrorHandling`, `Axial.Refined`, `Axial.Validation`, the umbrella `Axial` package, and the `Axial.Flow.*` add-on packages.
-- The shared package version lives in `Directory.Build.props`; individual packable projects should not declare their own `<Version>`.
+- Packable projects inherit the shared version from `Directory.Build.props`; do not declare project-specific `<Version>` values.
 - A release tag such as `v0.7.0` produces all public Axial NuGet packages at version `0.7.0`.
 - Revisit independent package versioning after the package boundaries stabilize, likely at or after 1.0.
 
