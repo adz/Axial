@@ -73,29 +73,21 @@ The same interpreter works for a value schema:
 let parsedName = Schema.parse RefinedSchemas.nonBlankString (RawInput.Scalar "Ada")
 ```
 
-## Why the API no longer separates values and models
+## One catalog for values and models
 
-The earlier catalog made users translate between `ValueSchema<'field>` and `Schema<'model>`, then choose `Value.*`
-or `Model.*` according to the declaration's current shape:
-
-```fsharp
-// Earlier shape
-Value.text
-|> Value.withConstraint SchemaConstraint.email
-
-Model.parse signupSchema raw
-```
-
-That distinction did not describe a useful domain boundary. A string, refined name, list, union, and record are all
-typed descriptions interpreted in the same ways. The current form keeps the distinction internal:
+A string, a refined name, a list, a union, and a record are all typed descriptions interpreted in the same ways, so
+the catalog exposes them through one module:
 
 ```fsharp
 Schema.text |> Schema.constrain Constraint.email
 Schema.parse signupSchema raw
 ```
 
-`RefinedSchemas` remains a sibling namespace only because it is a named catalog of schemas corresponding to
-`Axial.Refined` types. Its members still produce `Schema<'value>`.
+There is no separate field-level module to learn. The same combinators and interpreters apply whether `'value` is a
+scalar, a collection, or a whole model; whatever distinction the implementation needs stays internal.
+
+`RefinedSchemas` is a sibling namespace only because it is a named catalog of schemas corresponding to
+`Axial.Refined` types. Its members produce ordinary `Schema<'value>` values.
 
 ## What successful parsing proves
 

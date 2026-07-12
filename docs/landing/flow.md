@@ -96,36 +96,36 @@ dotnet add package Axial.Flow.Http
 
 - [Getting Started](./getting-started/) — the smallest flow, execution, `Exit`, and the environment.
 - [Straightforward Examples](./basic-examples/) — quick, practical flows without full application setup.
-- [Semantics](./semantics/) — cold workflows, execution, and how Flow fits the Axial model.
-- [Execution and Outcomes](./execution-and-outcomes/) — running flows and reading `Exit`.
-- [Task and Async Interop](./task-async-interop/) — binding `Async`, `Task`, `ValueTask`, and attempt constructors.
-- [Defects and Exceptions](./defects/) — typed failures, defects, interruption, and exception recovery.
-- [Bind](./bind/) — bind-site error assignment and mapping inside `flow {}`.
+- [Semantics](./core-concepts/semantics/) — cold workflows, execution, and how Flow fits the Axial model.
+- [Execution and Outcomes](./core-concepts/execution-and-outcomes/) — running flows and reading `Exit`.
+- [Task and Async Interop](./core-concepts/task-async-interop/) — binding `Async`, `Task`, `ValueTask`, and attempt constructors.
+- [Defects and Exceptions](./core-concepts/defects/) — typed failures, defects, interruption, and exception recovery.
+- [Bind](./core-concepts/bind/) — bind-site error assignment and mapping inside `flow {}`.
 - [Flow Tutorials](./tutorials/) — service, runtime, environment, and layer walkthroughs.
 
 ## Dependencies and Resources
 
-- [Dependencies](./dependencies/) — records, services, layers, scopes, and host boundaries.
-- [Explicit Services](./explicit-services/) — reusable service contracts with `IHas<'service>`.
-- [Layers](./layers/) — building explicit environments.
-- [Scopes and Resources](./scopes-and-resources/) — resource lifetime and cleanup.
-- [Building a Base Runtime](./building-a-base-runtime/) — standard operational services.
-- [Service Provider Boundaries](./service-provider-boundaries/) — deliberate `IServiceProvider` edges.
+- [Dependencies](./services-and-runtimes/dependencies/) — records, services, layers, scopes, and host boundaries.
+- [Explicit Services](./services-and-runtimes/explicit-services/) — reusable service contracts with `IHas<'service>`.
+- [Layers](./services-and-runtimes/layers/) — building explicit environments.
+- [Scopes and Resources](./services-and-runtimes/scopes-and-resources/) — resource lifetime and cleanup.
+- [Building a Base Runtime](./services-and-runtimes/building-a-base-runtime/) — standard operational services.
+- [Service Provider Boundaries](./services-and-runtimes/service-provider-boundaries/) — deliberate `IServiceProvider` edges.
 
 ## State and Concurrency
 
-- [Fibers](./fibers/) — background workflow execution.
-- [Deferred and Semaphore](./deferred-semaphore/) — coordination primitives.
-- [Ref](./ref/) — atomic mutable references.
-- [Schedule](./schedule/) — retry and repeat policies.
-- [STM](./stm/) — transactional memory.
-- [Stream](./stream/) — effectful pull-based streams.
+- [Fibers](./concurrency/fibers/) — background workflow execution.
+- [Deferred and Semaphore](./concurrency/deferred-semaphore/) — coordination primitives.
+- [Ref](./concurrency/ref/) — atomic mutable references.
+- [Schedule](./concurrency/schedule/) — retry and repeat policies.
+- [STM](./concurrency/stm/) — transactional memory.
+- [Stream](./concurrency/stream/) — effectful pull-based streams.
 
 ## In Practice
 
 - [Runnable Examples](./examples/) — executed during the docs build, mirrored back into the site.
-- [Troubleshooting Types](./troubleshooting-types/) — the compiler errors that mean a wrapper boundary was crossed.
-- Comparisons: [vs Effect-TS](./effect-ts-comparison/), [FSharpPlus integration](./fsharpplus-comparison/).
+- [Troubleshooting Types](./core-concepts/troubleshooting-types/) — the compiler errors that mean a wrapper boundary was crossed.
+- Comparisons: [vs Effect-TS](./comparisons/effect-ts-comparison/), [FSharpPlus integration](./comparisons/fsharpplus-comparison/).
 
 Flow is one of the three packages Axial consists of — each usable independently, all working together. If the code
 is still pure, start in [Error Handling]({{< relref "/error-handling/" >}}) or [Schema]({{< relref "/schema/" >}})

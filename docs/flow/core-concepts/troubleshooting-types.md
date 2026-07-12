@@ -144,7 +144,7 @@ If the compiler error mentions one of these shapes, check the boundary first:
 - `Task<Result<...>>`
 - `Flow<...>`
 
-`Flow.Retry` and `Flow.Repeat` were replaced with `Schedule.retry` and `Schedule.repeat` to avoid ambiguity with shorter `Flow` aliases.
+Retry and repeat live on `Schedule` (`Schedule.retry`, `Schedule.repeat`), not on `Flow`, to avoid ambiguity with shorter `Flow` aliases.
 
 Most fixes are one of:
 

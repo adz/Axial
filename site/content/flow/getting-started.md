@@ -119,7 +119,7 @@ let runOnFable () = async {
 }
 ```
 
-For a deeper dive into handling outcomes, cancellation, and combining multiple flows, see **[Execution and Outcomes](./execution-and-outcomes/)**.
+For a deeper dive into handling outcomes, cancellation, and combining multiple flows, see **[Execution and Outcomes](./core-concepts/execution-and-outcomes/)**.
 
 ## 4. Reading from the Environment
 

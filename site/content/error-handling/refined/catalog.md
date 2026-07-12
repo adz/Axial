@@ -8,7 +8,7 @@ type: docs
 
 This page shows the built-in refined values available from `Axial.Refined` and how to choose the right helper at a request boundary.
 
-The package stays named `Axial.Refined`. It is not only a type catalog: it also owns primitive parsing, smart constructors, the `refine {}` builder, and parser-choice helpers.
+`Axial.Refined` is not only a type catalog: it also owns primitive parsing, smart constructors, the `refine {}` builder, and parser-choice helpers.
 
 For caller-owned domain values, use the single authoring pattern in [Domain Values](../domain-values/): private
 constructor, smart constructor, optional standalone helper, and `Schema.refine` schema when the type appears in a model.
@@ -63,7 +63,7 @@ let databaseId : Result<NonZeroInt, RefinementError> =
     Refine.nonZeroInt 42
 ```
 
-Available first-wave integer wrappers:
+Available integer wrappers:
 
 - `PositiveInt`: greater than zero.
 - `NonNegativeInt`: greater than or equal to zero.
@@ -71,7 +71,7 @@ Available first-wave integer wrappers:
 - `NegativeInt`: less than zero.
 - `NonPositiveInt`: less than or equal to zero.
 
-Float refinements and `Percentage` are intentionally not in the first wave. They need explicit decisions about `NaN`, infinities, negative zero, and percentage scale.
+Float refinements and `Percentage` are intentionally absent. They need explicit decisions about `NaN`, infinities, negative zero, and percentage scale.
 
 ## Text
 
@@ -98,7 +98,7 @@ Important semantics:
 - `BoundedString` stores the min/max bounds used for construction.
 - `Slug` is ASCII-only: lowercase letters, digits, and hyphens, with no leading, trailing, or repeated hyphen.
 
-Regex-backed values, email addresses, URLs, telephone numbers, postal codes, and sanitized text are deferred. Regex adds dependency and timeout concerns; sanitizing text transforms input rather than simply refining it.
+Regex-backed values, email addresses, URLs, telephone numbers, postal codes, and sanitized text are intentionally absent. Regex adds dependency and timeout concerns; sanitizing text transforms input rather than simply refining it.
 
 ## Collections
 
@@ -118,7 +118,7 @@ let batch =
     Refine.boundedList 1 100 [ 1; 2; 3 ]
 ```
 
-Available first-wave collection wrappers:
+Available collection wrappers:
 
 - `NonEmptyList<'T>`: exposes `Head`, `Tail`, `ToList()`, and `seq<'T>`.
 - `NonEmptyArray<'T>`: exposes `Head`, `Tail`, `ToArray()`, and `seq<'T>`.
@@ -142,7 +142,7 @@ let nonEmptyEvens : Result<NonEmptyList<int>, RefinementError> =
     |> Result.bind (NonEmptyList.tryFilter (fun value -> value % 2 = 0))
 ```
 
-`BoundedSeq` and fixed-size arrays are deferred. A .NET sequence may be lazy, single-use, infinite, or effectful, and plain F# does not make array length a normal type-level value.
+`BoundedSeq` and fixed-size arrays are intentionally absent. A .NET sequence may be lazy, single-use, infinite, or effectful, and plain F# does not make array length a normal type-level value.
 
 ## Temporal
 
@@ -164,7 +164,7 @@ let range =
 
 ## Character
 
-Character helpers are predicates rather than wrappers in the first wave:
+Character helpers are predicates rather than wrappers:
 
 ```fsharp
 Character.isAsciiDigit '7'

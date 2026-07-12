@@ -85,8 +85,8 @@ wire-name strings. `Contract` keeps frozen wire versions and typed migrations ou
 - [Runnable Examples](./examples/) — executed during the docs build, mirrored back into the site.
 - [Benchmarks](./benchmarks/) — measured parse and codec numbers on .NET and Fable.
 - [Zero Reflection, AOT, and Fable](./aot-trimming-fable/) — why the guarantees hold by construction.
-- Comparisons: [vs zod](./zod-comparison/), [vs FluentValidation](./fluentvalidation-comparison/),
-  [Validus integration](./validus-comparison/).
+- Comparisons: [vs zod](./comparisons/zod-comparison/), [vs FluentValidation](./comparisons/fluentvalidation-comparison/),
+  [Validus integration](./comparisons/validus-comparison/).
 
 ## The Machinery
 

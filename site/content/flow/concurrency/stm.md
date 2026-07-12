@@ -11,7 +11,7 @@ atomic operations into a single **transaction**.
 
 While `Ref` is perfect for updating a single variable, `STM` is designed for scenarios where you
 need to update **multiple** variables consistently. Axial ensures that the entire transaction is
-executed atomically, and it now supports `retry` / `orElse` style coordination for transactions
+executed atomically, and supports `retry` / `orElse` style coordination for transactions
 that need to wait on state changes or fall back to alternate branches.
 
 > **Note:** `STM` is currently available on **.NET** only.
