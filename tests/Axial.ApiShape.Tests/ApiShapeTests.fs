@@ -1718,7 +1718,11 @@ module ApiShapeTests =
     let ``service modules keep expected public shape`` () =
         moduleType typeof<Axial.Flow.Console.IConsole> "Axial.Flow.Console.Console"
         |> publicStaticMemberNames
-        |> assertContainsAll [ "readLine"; "writeLine"; "layer"; "live" ]
+        |> assertContainsAll
+            [ "read"; "readLine"; "readKey"; "write"; "writeLine"; "writeError"; "writeErrorLine"
+              "openStandardInput"; "openStandardOutput"; "openStandardError"; "inputEncoding"; "outputEncoding"
+              "isInputRedirected"; "isOutputRedirected"; "isErrorRedirected"; "clear"; "beep"; "resetColor"
+              "foregroundColor"; "backgroundColor"; "cursorPosition"; "setCursorPosition"; "title"; "layer"; "live" ]
 
         moduleType typeof<Axial.Flow.FileSystem.IFileSystem> "Axial.Flow.FileSystem.FileSystem"
         |> publicStaticMemberNames

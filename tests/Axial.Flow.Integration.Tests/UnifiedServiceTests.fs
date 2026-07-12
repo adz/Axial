@@ -137,8 +137,36 @@ module UnifiedServiceTests =
         let services = { 
             Console = 
                 { new IConsole with 
+                    member _.In = TextReader.Null
+                    member _.Out = TextWriter.Null
+                    member _.Error = TextWriter.Null
+                    member _.InputEncoding with get () = Encoding.UTF8 and set _ = ()
+                    member _.OutputEncoding with get () = Encoding.UTF8 and set _ = ()
+                    member _.IsInputRedirected = true
+                    member _.IsOutputRedirected = true
+                    member _.IsErrorRedirected = true
+                    member _.KeyAvailable = false
+                    member _.Read() = -1
                     member _.ReadLine() = "input"
-                    member _.WriteLine(m) = lastMsg <- m }
+                    member _.ReadKey(_) = ConsoleKeyInfo()
+                    member _.Write(m) = lastMsg <- m
+                    member _.WriteLine(m) = lastMsg <- m
+                    member _.WriteError(_) = ()
+                    member _.WriteErrorLine(_) = ()
+                    member _.OpenStandardInput() = Stream.Null
+                    member _.OpenStandardOutput() = Stream.Null
+                    member _.OpenStandardError() = Stream.Null
+                    member _.Clear() = ()
+                    member _.Beep() = ()
+                    member _.ResetColor() = ()
+                    member _.ForegroundColor with get () = ConsoleColor.Gray and set _ = ()
+                    member _.BackgroundColor with get () = ConsoleColor.Black and set _ = ()
+                    member _.CursorLeft with get () = 0 and set _ = ()
+                    member _.CursorTop with get () = 0 and set _ = ()
+                    member _.CursorVisible with get () = false and set _ = ()
+                    member _.SetCursorPosition(_, _) = ()
+                    member _.Title with get () = "test" and set _ = ()
+                    member _.TreatControlCAsInput with get () = false and set _ = () }
             FS = Unchecked.defaultof<_>; Http = Unchecked.defaultof<_>; Process = Unchecked.defaultof<_>
         }
         
