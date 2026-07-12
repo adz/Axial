@@ -4,7 +4,7 @@ linkTitle: "IConsole"
 weight: 1000
 ---
 
-Provides synchronous access to standard console I/O.
+Provides explicit access to standard console and terminal I/O.
 
 ## Signature
 

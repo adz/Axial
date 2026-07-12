@@ -4,7 +4,7 @@ linkTitle: "readLine"
 weight: 2100
 ---
 
-Reads a line through an explicit console service.
+
 
 ## Signature
 

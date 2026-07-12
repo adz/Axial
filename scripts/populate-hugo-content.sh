@@ -108,6 +108,21 @@ upsert_frontmatter "$flow_ref/service/console/_index.md" "weight" "20"
 upsert_frontmatter "$flow_ref/service/filesystem/_index.md" "weight" "30"
 upsert_frontmatter "$flow_ref/service/http/_index.md" "weight" "40"
 upsert_frontmatter "$flow_ref/service/process/_index.md" "weight" "50"
+
+# Promote each Flow add-on package to a root section in the Flow sidebar.
+promote_service_reference() {
+  local group="$1"
+  local package_dir="$2"
+  mkdir -p "$flow_dir/$package_dir/reference"
+  cp -r "$flow_ref/service/$group/"* "$flow_dir/$package_dir/reference/"
+  rm -rf "$flow_ref/service/$group"
+}
+
+promote_service_reference core platform-service
+promote_service_reference console console
+promote_service_reference filesystem filesystem
+promote_service_reference http http
+promote_service_reference process processes
 upsert_frontmatter "$eh_ref/check/_index.md" "weight" "10"
 upsert_frontmatter "$eh_ref/predicate/_index.md" "weight" "15"
 upsert_frontmatter "$eh_ref/result/_index.md" "weight" "20"
@@ -130,6 +145,13 @@ for group in "${!ref_home[@]}"; do
   sed_args+=(-e "s|/reference/$group\b|/${ref_home[$group]}/reference/$group|g")
 done
 find "$eh_dir" "$schema_dir" "$flow_dir" -name "*.md" -type f -exec sed -i "${sed_args[@]}" {} \;
+
+find "$eh_dir" "$schema_dir" "$flow_dir" -name "*.md" -type f -exec sed -i \
+  -e 's|/flow/reference/service/core\b|/flow/platform-service/reference|g' \
+  -e 's|/flow/reference/service/console\b|/flow/console/reference|g' \
+  -e 's|/flow/reference/service/filesystem\b|/flow/filesystem/reference|g' \
+  -e 's|/flow/reference/service/http\b|/flow/http/reference|g' \
+  -e 's|/flow/reference/service/process\b|/flow/processes/reference|g' {} \;
 
 # Fix all files: remove body titles to avoid double headings in Hugo
 find "$eh_dir" "$schema_dir" "$flow_dir" -name "*.md" -type f -exec sed -i '/^# /d' {} \;

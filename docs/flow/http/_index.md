@@ -1,6 +1,7 @@
 ---
-weight: 36
-title: HTTP Clients
+weight: 90
+title: Axial.Flow.Http
+linkTitle: HTTP
 description: Build typed HTTP requests, decode responses safely, and retry transient failures.
 ---
 
