@@ -5,6 +5,24 @@ namespace Axial.Schema.Contracts
 [<RequireQualifiedAccess>]
 module Resolver =
 
+    let private fsharpKeywords =
+        set
+            [ "abstract"; "and"; "as"; "assert"; "base"; "begin"; "class"; "default"; "delegate"; "do"; "done"
+              "downcast"; "downto"; "elif"; "else"; "end"; "exception"; "extern"; "false"; "finally"; "fixed"
+              "for"; "fun"; "function"; "global"; "if"; "in"; "inherit"; "inline"; "interface"; "internal"
+              "lazy"; "let"; "match"; "member"; "module"; "mutable"; "namespace"; "new"; "not"; "null"; "of"
+              "open"; "or"; "override"; "private"; "public"; "rec"; "return"; "select"; "static"; "struct"
+              "then"; "to"; "true"; "try"; "type"; "upcast"; "use"; "val"; "void"; "when"; "while"; "with"
+              "yield"; "const"; "atomic"; "break"; "checked"; "component"; "constraint"; "constructor"
+              "continue"; "eager"; "event"; "external"; "functor"; "include"; "method"; "mixin"; "object"
+              "parallel"; "process"; "protected"; "pure"; "sealed"; "tailcall"; "trait"; "virtual" ]
+
+    let private pascal (name: string) =
+        if name.Length = 0 then name else string (System.Char.ToUpperInvariant name.[0]) + name.Substring 1
+
+    let private camel (name: string) =
+        if name.Length = 0 then name else string (System.Char.ToLowerInvariant name.[0]) + name.Substring 1
+
     /// The kinds a constraint list is judged against.
     type private TypeKind =
         | KText
@@ -108,6 +126,13 @@ module Resolver =
 
         for file in files do
             for contract in file.Contracts do
+                if contract.ContractName = "_" || fsharpKeywords.Contains contract.ContractName then
+                    report file.FilePath contract.ContractLine
+                        $"contract name '{contract.ContractName}' cannot safely name a generated F# type and module"
+
+                if List.isEmpty contract.Fields then
+                    report file.FilePath contract.ContractLine "contracts need at least one field"
+
                 match registry.TryGetValue contract.ContractName with
                 | true, (existingFile, existingLine, existingVersion) ->
                     if existingVersion = contract.Version then
@@ -149,10 +174,23 @@ module Resolver =
 
                 let wireNames = System.Collections.Generic.HashSet<string>()
                 let fieldNames = System.Collections.Generic.HashSet<string>()
+                let generatedFieldNames = System.Collections.Generic.HashSet<string>()
+                let generatedBindingNames = System.Collections.Generic.HashSet<string>()
 
                 for field in contract.Fields do
+                    if field.FieldName = "_" then
+                        report file.FilePath field.FieldLine "field name '_' cannot safely name a generated F# field or binding"
+
                     if not (fieldNames.Add field.FieldName) then
                         report file.FilePath field.FieldLine $"duplicate field name '{field.FieldName}'"
+
+                    let generatedFieldName = pascal field.FieldName
+                    if not (generatedFieldNames.Add generatedFieldName) then
+                        report file.FilePath field.FieldLine $"duplicate generated field name '{generatedFieldName}'"
+
+                    let generatedBindingName = camel field.FieldName
+                    if not (generatedBindingNames.Add generatedBindingName) then
+                        report file.FilePath field.FieldLine $"duplicate generated binding name '{generatedBindingName}'"
 
                     let wire = FieldDecl.wireName field
 

@@ -94,8 +94,14 @@ module Parser =
     let private parseLiteral tokens =
         match tokens with
         | TString value :: rest -> Ok(LString value, rest)
-        | TNumber value :: rest when value.Contains "." -> Ok(LDecimal(Decimal.Parse(value, Globalization.CultureInfo.InvariantCulture)), rest)
-        | TNumber value :: rest -> Ok(LInt(Int32.Parse(value, Globalization.CultureInfo.InvariantCulture)), rest)
+        | TNumber value :: rest when value.Contains "." ->
+            match Decimal.TryParse(value, Globalization.NumberStyles.Number, Globalization.CultureInfo.InvariantCulture) with
+            | true, parsed -> Ok(LDecimal parsed, rest)
+            | false, _ -> Error $"numeric literal '{value}' is out of range for decimal"
+        | TNumber value :: rest ->
+            match Int32.TryParse(value, Globalization.NumberStyles.Integer, Globalization.CultureInfo.InvariantCulture) with
+            | true, parsed -> Ok(LInt parsed, rest)
+            | false, _ -> Error $"numeric literal '{value}' is out of range for int"
         | TIdent "true" :: rest -> Ok(LBool true, rest)
         | TIdent "false" :: rest -> Ok(LBool false, rest)
         | token :: _ -> Error $"expected a literal, found {describeToken token}"
@@ -103,9 +109,11 @@ module Parser =
 
     let private parseVersion (ident: string) =
         if ident.Length > 1 && ident.[0] = 'v' && ident |> Seq.skip 1 |> Seq.forall Char.IsDigit then
-            Some(Int32.Parse(ident.Substring 1, Globalization.CultureInfo.InvariantCulture))
+            match Int32.TryParse(ident.Substring 1, Globalization.NumberStyles.None, Globalization.CultureInfo.InvariantCulture) with
+            | true, version -> Ok version
+            | false, _ -> Error $"version '{ident}' is out of range for int"
         else
-            None
+            Error $"expected a version like v1, found '{ident}'"
 
     let private primitiveOf name =
         match name with
@@ -138,8 +146,8 @@ module Parser =
             |> Result.map (fun (cases, remaining) -> LiteralUnion cases, remaining)
         | TIdent name :: TPunct "." :: TIdent versionText :: rest ->
             match parseVersion versionText with
-            | Some version -> Ok(Reference { RefName = name; RefVersion = version }, rest)
-            | None -> Error $"expected a version like v1 after '{name}.', found '{versionText}'"
+            | Ok version -> Ok(Reference { RefName = name; RefVersion = version }, rest)
+            | Error message -> Error message
         | TIdent name :: rest ->
             match primitiveOf name with
             | Some primitive -> Ok(Primitive primitive, rest)
@@ -154,10 +162,14 @@ module Parser =
         | TPunct "<=" :: rest -> parseLiteral rest |> Result.map (fun (lit, remaining) -> AtMost lit, remaining)
         | TPunct "<" :: rest -> parseLiteral rest |> Result.map (fun (lit, remaining) -> LessThan lit, remaining)
         | TIdent "min" :: TNumber value :: rest when not (value.Contains "." || value.StartsWith "-") ->
-            Ok(MinSize(Int32.Parse(value, Globalization.CultureInfo.InvariantCulture)), rest)
+            match Int32.TryParse(value, Globalization.NumberStyles.None, Globalization.CultureInfo.InvariantCulture) with
+            | true, parsed -> Ok(MinSize parsed, rest)
+            | false, _ -> Error $"size literal '{value}' is out of range for int"
         | TIdent "min" :: _ -> Error "'min' takes a non-negative whole number (it bounds the size of the type; use >= for value bounds)"
         | TIdent "max" :: TNumber value :: rest when not (value.Contains "." || value.StartsWith "-") ->
-            Ok(MaxSize(Int32.Parse(value, Globalization.CultureInfo.InvariantCulture)), rest)
+            match Int32.TryParse(value, Globalization.NumberStyles.None, Globalization.CultureInfo.InvariantCulture) with
+            | true, parsed -> Ok(MaxSize parsed, rest)
+            | false, _ -> Error $"size literal '{value}' is out of range for int"
         | TIdent "max" :: _ -> Error "'max' takes a non-negative whole number (it bounds the size of the type; use <= for value bounds)"
         | TIdent "pattern" :: TString value :: rest -> Ok(Pattern value, rest)
         | TIdent "pattern" :: _ -> Error "'pattern' takes a quoted regular expression"
@@ -267,8 +279,8 @@ module Parser =
         match tokens with
         | TIdent tag :: TPunct ":" :: TIdent name :: TPunct "." :: TIdent versionText :: [] ->
             match parseVersion versionText with
-            | Some version -> Ok { CaseTag = tag; CaseRef = { RefName = name; RefVersion = version }; CaseLine = line }
-            | None -> Error $"expected a version like v1 after '{name}.', found '{versionText}'"
+            | Ok version -> Ok { CaseTag = tag; CaseRef = { RefName = name; RefVersion = version }; CaseLine = line }
+            | Error message -> Error message
         | TIdent _ :: TPunct ":" :: _ -> Error "union cases must reference a contract at a pinned version, like Circle.v1"
         | token :: _ -> Error $"expected a union case like 'tag: Contract.v1', found {describeToken token}"
         | [] -> Error "expected a union case like 'tag: Contract.v1'"
@@ -289,8 +301,8 @@ module Parser =
         match tokens with
         | TIdent "contract" :: TIdent name :: TPunct "." :: TIdent versionText :: TPunct "{" :: [] ->
             match parseVersion versionText with
-            | Some version -> Ok(name, version)
-            | None -> Error $"expected a version like v1 after '{name}.', found '{versionText}'"
+            | Ok version -> Ok(name, version)
+            | Error message -> Error message
         | TIdent "contract" :: _ -> Error "expected a contract header like 'contract Name.v1 {'"
         | token :: _ -> Error $"expected 'contract', found {describeToken token}"
         | [] -> Error "expected 'contract'"

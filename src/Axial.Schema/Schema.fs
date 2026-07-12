@@ -1158,6 +1158,7 @@ module internal Value =
                  if isNull (box modelSchema) then nullArg (nameof schema)
                  match modelSchema.Definition with
                  | PendingDefinition -> invalidArg (nameof schema) "Expected the deferred function to return a built model schema."
+                 | ValueDefinition _ -> invalidArg (nameof schema) "Expected the deferred function to return a built model schema, not a value schema."
                  | ModelDefinition model ->
                      { Shape = NestedValueDefinition(ModelSchemaErasure.erase model, box modelSchema)
                        Format = None
@@ -1309,6 +1310,7 @@ module internal Value =
 
         match schema.Definition with
         | PendingDefinition -> invalidArg (nameof schema) "Expected a built model schema."
+        | ValueDefinition _ -> invalidArg (nameof schema) "Expected a built model schema, not a value schema."
         | ModelDefinition model ->
             Schema(ValueDefinition
                 { Shape = NestedValueDefinition(ModelSchemaErasure.erase model, box schema)

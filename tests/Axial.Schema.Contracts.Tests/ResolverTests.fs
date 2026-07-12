@@ -191,3 +191,35 @@ contract Broken.v1 {
 """
 
         test <@ messages diagnostics |> List.exists (fun message -> message.Contains "unknown annotation '@nonsense'") @>
+
+    [<Fact>]
+    let ``empty contracts are rejected before emission`` () =
+        let diagnostics = resolveOne "contract Empty.v1 {\n}"
+        test <@ messages diagnostics |> List.exists (fun message -> message.Contains "at least one field") @>
+
+    [<Fact>]
+    let ``field names that collide after FSharp normalization are rejected`` () =
+        let diagnostics =
+            resolveOne
+                """
+contract Collision.v1 {
+  foo: text
+  Foo: text
+}
+"""
+
+        test <@ messages diagnostics |> List.exists (fun message -> message.Contains "generated field name 'Foo'") @>
+        test <@ messages diagnostics |> List.exists (fun message -> message.Contains "generated binding name 'foo'") @>
+
+    [<Fact>]
+    let ``identifiers that cannot safely name generated declarations are rejected`` () =
+        let diagnostics =
+            resolveOne
+                """
+contract type.v1 {
+  _: text
+}
+"""
+
+        test <@ messages diagnostics |> List.exists (fun message -> message.Contains "contract name 'type'") @>
+        test <@ messages diagnostics |> List.exists (fun message -> message.Contains "field name '_'") @>

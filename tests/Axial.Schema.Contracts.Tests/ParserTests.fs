@@ -168,3 +168,12 @@ contract Broken.v1 {
 
         test <@ diagnostics |> List.exists (fun diagnostic -> diagnostic.Message.Contains "union block") @>
         test <@ diagnostics |> List.exists (fun diagnostic -> diagnostic.Message.Contains "never closed") @>
+
+    [<Theory>]
+    [<InlineData("contract Huge.v999999999999 {\n  value: int\n}")>]
+    [<InlineData("contract Huge.v1 {\n  value: int [ >= 999999999999 ]\n}")>]
+    [<InlineData("contract Huge.v1 {\n  value: decimal [ >= 999999999999999999999999999999999999 ]\n}")>]
+    [<InlineData("contract Huge.v1 {\n  value: text [ min 999999999999 ]\n}")>]
+    let ``numeric overflow is reported instead of escaping the Result API`` source =
+        let diagnostics = parseErrors source
+        test <@ diagnostics |> List.exists (fun diagnostic -> diagnostic.Message.Contains "out of range") @>

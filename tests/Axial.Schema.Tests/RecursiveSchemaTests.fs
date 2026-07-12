@@ -40,6 +40,22 @@ module RecursiveSchemaTests =
         test <@ Schema.check schema sample = Ok sample @>
 
     [<Fact>]
+    let ``deferred model schemas remain parseable beneath refinement`` () =
+        let schema = categorySchema ()
+        let refinedDeferred =
+            Schema.defer (fun () -> schema)
+            |> Schema.convert id id
+
+        let input = rawCategory "root" []
+        test <@ (Schema.parse refinedDeferred input).Result = Ok { Name = "root"; Children = [] } @>
+
+    [<Fact>]
+    let ``nested and defer reject value schemas with argument errors`` () =
+        raises<System.ArgumentException> <@ Value.nested Schema.text @>
+        let deferred = Value.lazyOf (fun () -> Schema.text)
+        raises<System.ArgumentException> <@ Schema.parse deferred (RawInput.Scalar "value") @>
+
+    [<Fact>]
     let ``recursive schema compiles to a reusable codec`` () =
         let codec = Json.compile (categorySchema ())
         let encoded = Json.serialize codec sample

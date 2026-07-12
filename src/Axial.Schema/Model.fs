@@ -209,6 +209,7 @@ module internal SchemaParsing =
             | UnionValueDefinition union -> parseUnion options path union fields
             | UnionInlineValueDefinition union -> parseUnionInline options path union fields
             | MapValueDefinition collection -> parseMap options path collection constraints fields
+            | LazyValueDefinition _ -> parseValue options valueSchema fieldConstraints path (RawInput.Object fields)
             | RefinedValueDefinition(raw, _) ->
                 match raw.Shape with
                 | NestedValueDefinition(nestedModel, _) ->
@@ -222,6 +223,9 @@ module internal SchemaParsing =
                     |> Result.bind (constructValue path valueSchema)
                 | MapValueDefinition collection ->
                     parseMap options path collection constraints fields
+                    |> Result.bind (constructValue path valueSchema)
+                | LazyValueDefinition _ ->
+                    parseValue options raw [] path (RawInput.Object fields)
                     |> Result.bind (constructValue path valueSchema)
                 | OptionValueDefinition _ ->
                     parseValue options raw [] path (RawInput.Object fields)
@@ -241,10 +245,14 @@ module internal SchemaParsing =
             | UnionInlineValueDefinition _
             | MapValueDefinition _ -> errorAt path SchemaError.ExpectedObject
             | ManyValueDefinition collection -> parseMany options path collection constraints rawItems
+            | LazyValueDefinition _ -> parseValue options valueSchema fieldConstraints path (RawInput.Many rawItems)
             | RefinedValueDefinition(raw, _) ->
                 match raw.Shape with
                 | ManyValueDefinition collection ->
                     parseMany options path collection constraints rawItems
+                    |> Result.bind (constructValue path valueSchema)
+                | LazyValueDefinition _ ->
+                    parseValue options raw [] path (RawInput.Many rawItems)
                     |> Result.bind (constructValue path valueSchema)
                 | OptionValueDefinition _ ->
                     parseValue options raw [] path (RawInput.Many rawItems)
@@ -268,6 +276,7 @@ module internal SchemaParsing =
             | UnionInlineValueDefinition _
             | MapValueDefinition _ -> errorAt path SchemaError.ExpectedObject
             | ManyValueDefinition _ -> errorAt path SchemaError.ExpectedMany
+            | LazyValueDefinition _ -> parseValue options valueSchema fieldConstraints path (RawInput.Scalar text)
             | OptionValueDefinition _ -> invalidOp "Optional value schemas are parsed before raw input dispatch."
             | EnumValueDefinition enum -> parseEnum path enum text
             | RefinedValueDefinition(raw, _) ->
@@ -277,6 +286,9 @@ module internal SchemaParsing =
                 | UnionInlineValueDefinition _
                 | MapValueDefinition _ -> errorAt path SchemaError.ExpectedObject
                 | ManyValueDefinition _ -> errorAt path SchemaError.ExpectedMany
+                | LazyValueDefinition _ ->
+                    parseValue options raw [] path (RawInput.Scalar text)
+                    |> Result.bind (constructValue path valueSchema)
                 | OptionValueDefinition _ ->
                     parseValue options raw [] path (RawInput.Scalar text)
                     |> Result.bind (constructValue path valueSchema)
