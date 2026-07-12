@@ -7,6 +7,7 @@ open System.Text
 open Xunit
 open Swensen.Unquote
 open Axial.Flow
+open Axial.Refined
 open Axial.Schema
 open Axial.ReferenceApp
 
@@ -14,6 +15,26 @@ module ReferenceAppTests =
     let private tempDirectory () = Path.Combine(Path.GetTempPath(), "axial-reference-" + Guid.NewGuid().ToString("N"))
     let private scalar value = RawInput.Scalar(string value)
     let private object' fields = RawInput.Object(Map.ofList fields)
+
+    [<Fact>]
+    let ``direct smart-constructor failures are structured admission errors`` () =
+        let unexpectedStore =
+            { new IWorkspaceStore with
+                member _.Load _ = failwith "Invalid input must fail before storage."
+                member _.Save _ = failwith "Invalid input must fail before storage."
+                member _.List() = failwith "Invalid input must fail before storage."
+                member _.Delete _ = failwith "Invalid input must fail before storage." }
+        let env = { Store = unexpectedStore; NewGuid = Guid.NewGuid }
+        let workspaceId = WorkspaceId.create Guid.Empty
+        let expectInvalidValue (workflow: Flow<AppEnv, AppError, 'value>) =
+            match workflow.RunSynchronously(env) with
+            | Exit.Failure(Cause.Fail(AppError.InvalidValue(RefinementError.CheckFailed(_, _)))) -> ()
+            | result -> failwithf "Expected a structured invalid-value error, got %A" result
+
+        expectInvalidValue (Application.createWorkspace " ")
+        expectInvalidValue (Application.addMember workspaceId " ")
+        expectInvalidValue (Application.addWorkItem workspaceId " ")
+        expectInvalidValue (Application.rename workspaceId " ")
 
     [<Fact>]
     let ``schema constructs refined fields and reports boundary paths`` () =

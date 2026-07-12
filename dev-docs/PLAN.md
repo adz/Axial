@@ -62,10 +62,9 @@ slots.
 Axial's data-boundary direction splits concerns like this:
 
 - `Check<'value>` describes reusable, path-free, raw-input-free value constraints
-- `Schema<'model>` describes trusted model shape, field ordering, construction, inspection, and portable constraint
-  metadata (the `Schema` module declares; the `Model` module produces/verifies models: `Model.parse` from raw input,
-  `Model.validate` promoting a named-field draft record to the `Model<'model>` trust wrapper, `Model.reconstruct`
-  re-deriving trust for an existing value including constructor invariants)
+- `Schema<'value>` describes typed shape, construction, inspection, and portable constraint metadata; `Schema.parse`
+  admits raw input and `Schema.check` rechecks an already assembled typed value through its field schemas and record
+  constructor. Successful operations return the ordinary value rather than a universal trust wrapper.
 - schema interpreters parse raw input, validate existing models, produce diagnostics, and drive non-validation metadata
   consumers
 - contextual rules are plain functions over already-trusted models; `ContextRules` supplies only failure constructors,

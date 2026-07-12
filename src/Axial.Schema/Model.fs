@@ -7,7 +7,6 @@ open Axial.Refined
 open Axial.Schema
 open Axial.Validation
 
-/// <summary>Functions that produce or verify a trusted model, using a schema as authority.</summary>
 /// <summary>Options that customize how raw input is parsed through a schema.</summary>
 type SchemaParseOptions =
     internal

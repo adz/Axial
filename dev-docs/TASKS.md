@@ -6,7 +6,7 @@ Keep speculative design sketches in `dev-docs/current-ideas/` and high-level dur
 `dev-docs/decisions/`.
 
 Work this queue from top to bottom, with one caveat: the schema surface has just been through heavy churn
-(`Model<'t>`/`Model.validate`, `ContextRules`, the contract generator — see `dev-docs/decisions/README.md`,
+(`Schema.check`, `ContextRules`, the contract generator — see `dev-docs/decisions/README.md`,
 2026-07-11/12 entries) and the shape is settling, not settled. Phase 30 below is current thinking with enough
 detail to pick up cold; re-read the decisions file and sanity-check the ordering before starting any of them.
 
@@ -21,8 +21,8 @@ Axial has two main groups, and everything in this queue serves that split:
   worked top to bottom).
 
 Phases 19–28-prelude are complete and recorded in `dev-docs/decisions/README.md` and git history; the most recent
-completions (2026-07-09..12): the `Model` module split with a sound `reconstruct`, `Axial.Refined` moved into
-`Axial.ErrorHandling`, `Model<'model>` + `Model.validate` (named-field trusted construction), `FieldRef` +
+completions (2026-07-09..12): the Schema value/model catalog consolidation, `Axial.Refined` moved into
+`Axial.ErrorHandling`, `Schema.check` for already assembled typed values, `FieldRef` +
 `ContextRules` (RuleSet deleted), and the `.contract` grammar/generator as wire-tier tooling
 (`src/Axial.Schema.Contracts`, `scripts/schemagen`, golden corpus in `tests/Axial.Schema.Tests/contracts/`).
 
@@ -49,8 +49,10 @@ From the same ZIO comparison; these belong *with* the remote-config milestone, n
 - User-facing docs for the contract tooling once it stabilizes: a `docs/schema/contracts.md` guide (grammar by
   example, `schemagen` usage, `--check` in CI, "wire tier only — domain models are hand-written" positioning). The
   only current documentation is dev-docs and the golden corpus.
-- The tutorials still teach only the pipe-builder + parse flow; fold in `Model.validate` + drafts as the named-field
-  construction story after the overview is reviewed (`trusted-construction.md` already covers it).
+- Review the tutorials against the construction split: `Schema.check` for admitting already assembled public
+  wire/draft values; private representations plus authoritative smart constructors for durable domain guarantees;
+  separate drafts only for named assembly/editing of private cross-field aggregates. `trusted-construction.md` already
+  contains the detailed treatment.
 - `dev-docs/API_BASELINE.md` needs a fresh baseline pass after the 2026-07-09..12 renames (it still references
   pre-consolidation projects and the old `Input`/`Validation.validate`/`RuleSet` names in its notes).
 

@@ -4,6 +4,37 @@
 > one `Schema<'value>` catalog, `Schema.parse`, `Schema.check`, fallible `Schema.refine`, bare successful contract
 > results, and `RefinedSchemas`. Old API names remain below where they identify the evidence that prompted a change.
 
+## 2026-07-12 construction re-review
+
+The current reference app supports a narrower construction recommendation than the earlier `Model<'value>` / universal
+draft direction:
+
+- A reusable field schema is an ordinary `Schema<'field>` value. It may be named (`Contracts.workspaceName`) or
+  written inline at `Schema.field`; these are the same mechanism.
+- Portable constraints stay on that field schema because parsing, diagnostics, inspection, JSON Schema, and test-data
+  generation need declarative metadata. They are not a second record-field API and they do not replace a domain
+  constructor.
+- Important field-local guarantees belong to private refined types with authoritative smart constructors. The app's
+  `WorkspaceName`, `PersonName`, and `WorkItemTitle` demonstrate this: ordinary application code calls `create`, while
+  `Schema.refine` calls that same constructor at boundaries.
+- A public aggregate record is appropriate when its fields already carry their durable guarantees and its relational
+  changes go through domain transitions. `Workspace` does not need a parallel draft merely to support ordinary record
+  construction or `with` updates.
+- Introduce a separate public draft only when the aggregate itself has a private representation and callers need named
+  assembly or multi-field editing before re-admission. Drafts are a solution to private cross-field aggregates, not the
+  default Schema construction model.
+- Public wire records such as `WorkspaceV2` are already draft-like boundary representations. Parse external values with
+  `Schema.parse`; use `Schema.check` only when admitting an already assembled typed wire/draft value whose construction
+  history is not trusted.
+
+The reference app should therefore continue to teach regular `Schema.field name getter fieldSchema` composition. It
+should not add positional field constraints, primitive-specific field builders, a second value-schema catalog, or a
+universal trust wrapper.
+
+Direct smart-constructor failures from `createWorkspace`, `addMember`, `addWorkItem`, and `rename` use the structured
+`AppError.InvalidValue of RefinementError` case. They remain distinguishable from schema diagnostics and domain
+transition failures without being mislabeled as persistence errors or flattened to strings before rendering.
+
 This report evaluates Axial through the implementation of `examples/Axial.ReferenceApp`: a workspace tracker with
 related domain types, four schemas, refined values, smart constructors, contextual rules, Flow application services,
 CLI commands, HTML forms, a JSON API, versioned JSON files, migration, and focused tests.

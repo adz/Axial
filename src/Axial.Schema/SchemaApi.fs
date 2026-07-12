@@ -87,5 +87,5 @@ module Schema =
     let parse schema input = SchemaParsing.parse schema input
     /// <summary>Parses raw input with a C#-friendly options delegate.</summary>
     let parseWithOptions options schema input = SchemaParsing.parseWithOptions options schema input
-    /// <summary>Checks an already assembled value and re-invokes its record constructor when present.</summary>
+    /// <summary>Checks an existing typed value, such as a freely constructed draft, through the schema's constraints, refinements, and record constructor.</summary>
     let check schema value = SchemaParsing.check schema value

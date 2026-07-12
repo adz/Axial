@@ -6,11 +6,13 @@ open System.Text.Json
 open Axial.Flow
 open Axial.Schema
 open Axial.Codec
+open Axial.Refined
 open Axial.Validation
 
 [<RequireQualifiedAccess>]
 type AppError =
     | InvalidInput of Diagnostics<SchemaError>
+    | InvalidValue of RefinementError
     | InvalidContract of ContractError
     | Domain of DomainError
     | NotFound of WorkspaceId
@@ -74,6 +76,8 @@ module FileWorkspaceStore =
 
 [<RequireQualifiedAccess>]
 module Application =
+    let private invalidValue result = result |> Result.mapError AppError.InvalidValue
+
     let private store operation : Flow<AppEnv, AppError, 'value> =
         Flow.read (fun env -> operation env.Store)
         |> Flow.bind (function Ok value -> Flow.ok value | Error error -> Flow.fail error)
@@ -89,7 +93,7 @@ module Application =
     let createWorkspace name : Flow<AppEnv, AppError, Workspace> =
         flow {
             let! env = Flow.env
-            let! name = WorkspaceName.create name |> Result.mapError (string >> AppError.Storage)
+            let! name = WorkspaceName.create name |> invalidValue
             let workspace = Workspace.create (WorkspaceId.create (env.NewGuid())) name
             do! store (fun repository -> repository.Save workspace)
             return workspace
@@ -98,7 +102,7 @@ module Application =
     let addMember workspaceId name =
         flow {
             let! env = Flow.env
-            let! name = PersonName.create name |> Result.mapError (string >> AppError.Storage)
+            let! name = PersonName.create name |> invalidValue
             let member' = { Id = MemberId.create (env.NewGuid()); Name = name }
             return! update workspaceId (Workspace.addMember member')
         }
@@ -106,7 +110,7 @@ module Application =
     let addWorkItem workspaceId title =
         flow {
             let! env = Flow.env
-            let! title = WorkItemTitle.create title |> Result.mapError (string >> AppError.Storage)
+            let! title = WorkItemTitle.create title |> invalidValue
             let item = { Id = WorkItemId.create (env.NewGuid()); Title = title; Assignee = None; State = WorkItemState.Todo }
             return! update workspaceId (Workspace.addWorkItem item)
         }
@@ -115,7 +119,7 @@ module Application =
     let complete workspaceId itemId = update workspaceId (Workspace.complete itemId)
     let rename workspaceId name =
         flow {
-            let! name = WorkspaceName.create name |> Result.mapError (string >> AppError.Storage)
+            let! name = WorkspaceName.create name |> invalidValue
             return! update workspaceId (fun workspace -> Ok { workspace with Name = name })
         }
     let delete workspaceId = store (fun repository -> repository.Delete workspaceId)

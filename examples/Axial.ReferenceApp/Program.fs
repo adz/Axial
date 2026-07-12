@@ -7,6 +7,7 @@ open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.Hosting
 open Axial.Flow
+open Axial.Refined
 open Axial.Schema
 open Axial.ReferenceApp
 
@@ -16,6 +17,7 @@ let private renderError = function
         |> Axial.Validation.Diagnostics.flatten
         |> List.map (fun item -> $"{item.Path}: {SchemaError.render item.Error}")
         |> String.concat "; "
+    | AppError.InvalidValue error -> RefinementError.describe error
     | error -> string error
 
 let private run (env: AppEnv) (flow: Flow<AppEnv, AppError, 'value>) =
