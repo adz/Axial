@@ -7,7 +7,7 @@ open Swensen.Unquote
 open Xunit
 
 /// <summary>
-/// Covers parsing and validating optional fields declared with <c>Value.optionOf</c>: absent (or JSON null) input is
+/// Covers parsing and validating optional fields declared with <c>Schema.option</c>: absent (or JSON null) input is
 /// a legal <c>None</c>, present input parses through the payload schema into <c>Some</c>, and payload constraints run
 /// only when a value is present.
 /// </summary>
@@ -22,19 +22,19 @@ module OptionalSchemaParseTests =
             { Name = name
               Nickname = nickname
               Age = age })
-        |> Schema.text "name" _.Name
+        |> Schema.field "name" _.Name Schema.text
         |> Schema.field
             "nickname"
             _.Nickname
-            (Value.optionOf (Value.text |> Value.withConstraint (SchemaConstraint.minLength 2)))
-        |> Schema.field "age" _.Age (Value.optionOf Value.int)
+            (Schema.option (Schema.text |> Schema.constrain (Constraint.minLength 2)))
+        |> Schema.field "age" _.Age (Schema.option Schema.int)
         |> Schema.build
 
     [<Fact>]
     let ``parse maps missing optional fields to None`` () =
         let raw = RawInput.Object(Map.ofList [ "name", RawInput.Scalar "Ada" ])
 
-        let parsed = Model.parse (profileSchema ()) raw
+        let parsed = Schema.parse (profileSchema ()) raw
 
         test <@ parsed.Result = Ok { Name = "Ada"; Nickname = None; Age = None } @>
 
@@ -49,7 +49,7 @@ module OptionalSchemaParseTests =
             )
             |> RawInput.ofJsonLikeValue
 
-        let parsed = Model.parse (profileSchema ()) raw
+        let parsed = Schema.parse (profileSchema ()) raw
 
         test <@ parsed.Result = Ok { Name = "Ada"; Nickname = None; Age = None } @>
 
@@ -63,7 +63,7 @@ module OptionalSchemaParseTests =
                       "age", RawInput.Scalar "36" ]
             )
 
-        let parsed = Model.parse (profileSchema ()) raw
+        let parsed = Schema.parse (profileSchema ()) raw
 
         test <@ parsed.Result = Ok { Name = "Ada"; Nickname = Some "Lady A"; Age = Some 36 } @>
 
@@ -76,7 +76,7 @@ module OptionalSchemaParseTests =
                       "nickname", RawInput.Scalar "A" ]
             )
 
-        let parsed = Model.parse (profileSchema ()) raw
+        let parsed = Schema.parse (profileSchema ()) raw
 
         test <@ not parsed.IsValid @>
 
@@ -89,7 +89,7 @@ module OptionalSchemaParseTests =
         let schema = profileSchema ()
         let valid = { Name = "Ada"; Nickname = None; Age = None }
 
-        let validation = Axial.Schema.Model.reconstruct schema valid
+        let validation = Schema.check schema valid
 
         test <@ validation = Ok valid @>
 
@@ -98,7 +98,7 @@ module OptionalSchemaParseTests =
         let schema = profileSchema ()
         let invalid = { Name = "Ada"; Nickname = Some "A"; Age = None }
 
-        let validation = Axial.Schema.Model.reconstruct schema invalid
+        let validation = Schema.check schema invalid
 
         test
             <@

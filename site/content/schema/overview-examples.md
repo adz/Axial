@@ -22,7 +22,7 @@ let addressSchema =
     Schema.recordFor<Address, _> (fun city -> { City = city })
     // A field-level constraint belongs here because it is part of Address at every boundary.
     // Benefit: parsing, JSON Schema, inspection, and test generation see the same minimum.
-    |> Schema.fieldWith [ SchemaConstraint.minLength 1 ] "city" _.City Value.text
+    |> Schema.field "city" _.City (Schema.text |> Schema.constrainAll [ Constraint.minLength 1 ])
     |> Schema.build
 
 type Customer =
@@ -38,28 +38,28 @@ let customerSchema =
     |> Schema.guid "id" _.Id
     // nested is appropriate when a field is another model with its own constructor and constraints.
     // Benefit: child diagnostics keep the address path and the child schema stays reusable.
-    |> Schema.nested "address" _.Address addressSchema
+    |> Schema.field "address" _.Address addressSchema
     // manyOf describes a list of values; count metadata applies to the collection, not each item.
-    |> Schema.fieldWith [ SchemaConstraint.maxCount 3 ] "aliases" _.Aliases (Value.manyOf Value.text)
+    |> Schema.field "aliases" _.Aliases ((Schema.list Schema.text) |> Schema.constrainAll [ Constraint.maxCount 3 ])
     // map is appropriate for dynamic string keys whose values share one schema.
-    |> Schema.field "labels" _.Labels (Value.map Value.text)
+    |> Schema.field "labels" _.Labels (Schema.map Schema.text)
     // optionOf makes absence part of the declared wire shape instead of a special parser branch.
-    |> Schema.field "note" _.Note (Value.optionOf Value.text)
+    |> Schema.field "note" _.Note (Schema.option Schema.text)
     |> Schema.build
     // Descriptions are metadata. They do not change parsing.
     |> Schema.describe "A customer accepted at the application boundary."
 
 let documentedText =
-    Value.text
+    Schema.text
     // A format tells metadata consumers what the text represents without adding a check.
-    |> Value.withFormat (SchemaFormat.create "account-code")
-    |> Value.describe "Stable account code"
+    |> Schema.withFormat (SchemaFormat.create "account-code")
+    |> Schema.describe "Stable account code"
 
 module LocalSchemaVocabulary =
     open Axial.Schema.DSL
 
     // The DSL is appropriate inside one schema-definition module when repeated prefixes obscure field lines.
-    // Benefit: it expands to the same Schema, Value, and SchemaConstraint calls; there is only one declaration model.
+    // Benefit: it expands to the same Schema, Value, and Constraint calls; there is only one declaration model.
     let address =
         recordFor<Address, _> (fun city -> { City = city })
         |> text [ minLength 1 ] "city" _.City
@@ -81,7 +81,7 @@ let accountSchema =
     Schema.recordFor<Account, _> (fun name -> { Name = name })
     // A refined schema is appropriate when validity should be carried by the field's own type.
     // Benefit: application code receives NonBlankString, while the boundary still parses ordinary text.
-    |> Schema.field "name" _.Name RefinedSchema.nonBlankString
+    |> Schema.field "name" _.Name RefinedSchemas.nonBlankString
     |> Schema.build
 ```
 
@@ -96,32 +96,32 @@ type State = Draft | Submitted
 
 let cardSchema =
     Schema.recordFor<Card, _> (fun lastFour -> { LastFour = lastFour })
-    |> Schema.fieldWith [ SchemaConstraint.lengthBetween 4 4 ] "lastFour" _.LastFour Value.text
+    |> Schema.field "lastFour" _.LastFour (Schema.text |> Schema.constrainAll [ Constraint.lengthBetween 4 4 ])
     |> Schema.build
 
 let paymentValue =
     // A discriminator is appropriate when cases have different payload shapes.
     // Benefit: parsing is deterministic and diagnostics can name both the tag and payload fields.
-    Value.union "type" "value"
-        [ UnionCase.create "card" Card (function Card value -> Some value | _ -> None) (Value.nested cardSchema)
-          UnionCase.create "invoice" Invoice (function Invoice value -> Some value | _ -> None) Value.text ]
+    Schema.union "type" "value"
+        [ UnionCase.create "card" Card (function Card value -> Some value | _ -> None) cardSchema
+          UnionCase.create "invoice" Invoice (function Invoice value -> Some value | _ -> None) Schema.text ]
 
 let stateValue =
     // enumOf is appropriate for payload-free cases represented by one scalar tag.
     // Benefit: the F# DU remains the model type without an object wrapper on the wire.
-    Value.enumOf [ EnumCase.create "draft" Draft; EnumCase.create "submitted" Submitted ]
+    Schema.enum [ EnumCase.create "draft" Draft; EnumCase.create "submitted" Submitted ]
 
 type InlinePayment = InlineCard of Card
 
 let inlinePaymentValue =
     // unionInline is appropriate when every payload is an object and the tag should sit beside its fields.
     // Benefit: the shorter wire object remains deterministic; construction rejects discriminator collisions.
-    Value.unionInline "type"
+    Schema.inlineUnion "type"
         [ UnionCase.create
               "card"
               InlineCard
               (function InlineCard value -> Some value)
-              (Value.nested cardSchema) ]
+              cardSchema ]
 ```
 
 ## Recursive models
@@ -138,7 +138,7 @@ let categorySchema =
              |> Schema.text "name" _.Name
              // lazyOf is appropriate only for an edge that closes a model cycle.
              // Benefit: parsers walk finite data, while Inspect and codecs do not expand the schema forever.
-             |> Schema.field "children" _.Children (Value.manyOf (Value.lazyOf (fun () -> holder.Value)))
+             |> Schema.field "children" _.Children (Schema.list (Schema.defer (fun () -> holder.Value)))
              |> Schema.build)
 
     holder.Value
@@ -150,7 +150,7 @@ let categorySchema =
 open Axial.Schema
 
 let raw = RawInput.ofNameValues [ "id", "not-a-guid"; "address.city", "" ]
-let parsed = Model.parse customerSchema raw
+let parsed = Schema.parse customerSchema raw
 
 match parsed.Result with
 | Ok customer -> useCustomer customer
@@ -164,13 +164,12 @@ match parsed.Result with
 let draft =
     { Id = System.Guid.NewGuid(); Address = { City = "Adelaide" }; Aliases = []; Labels = Map.empty; Note = None }
 
-// validate is appropriate for named-field construction in application code.
-// Benefit: Model<Customer> records that the draft passed the schema and constructor.
-let trusted: Result<Model<Customer>, _> = Model.validate customerSchema draft
+// check is appropriate when an assembled value arrived through an uncertain path.
+// The successful Result records this operation's trust decision; it is not a durable proof wrapper.
+let checked: Result<Customer, _> = Schema.check customerSchema draft
 
-// reconstruct is appropriate for a complete value read from storage or another serializer.
-// Benefit: it rechecks fields and invokes the model constructor again without converting through RawInput.
-let reconstructed = Model.reconstruct customerSchema draft
+// It rechecks fields and invokes the record schema's constructor without converting through RawInput.
+let imported = Schema.check customerSchema draft
 ```
 
 ## Field references and contextual rules
@@ -272,7 +271,7 @@ open Axial.Schema.Testing
 open FsCheck.FSharp
 
 // SchemaGen is appropriate for property tests that need valid boundary inputs rather than arbitrary records.
-// Benefit: generated RawInput is checked by Model.parse, including refined construction and constructor invariants.
+// Benefit: generated RawInput is checked by Schema.parse, including refined construction and constructor invariants.
 let rawGenerator = SchemaGen.raw customerSchema |> Result.defaultWith (failwithf "%A")
 let samples = Gen.sample 100 rawGenerator
 

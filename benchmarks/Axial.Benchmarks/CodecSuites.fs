@@ -27,14 +27,14 @@ module CodecModel =
 
     let addressSchema =
         Schema.recordFor<Address, _> (fun street city -> { Street = street; City = city })
-        |> Schema.text "street" _.Street
-        |> Schema.text "city" _.City
+        |> Schema.field "street" _.Street Schema.text
+        |> Schema.field "city" _.City Schema.text
         |> Schema.build
 
     let contactSchema =
         Schema.recordFor<Contact, _> (fun label value -> { Label = label; Value = value })
-        |> Schema.text "label" _.Label
-        |> Schema.text "value" _.Value
+        |> Schema.field "label" _.Label Schema.text
+        |> Schema.field "value" _.Value Schema.text
         |> Schema.build
 
     let customerSchema =
@@ -49,16 +49,16 @@ module CodecModel =
               Address = address
               Contacts = contacts
               Scores = scores })
-        |> Schema.guid "id" _.Id
-        |> Schema.text "name" _.Name
-        |> Schema.int "age" _.Age
-        |> Schema.decimal "balance" _.Balance
-        |> Schema.bool "newsletter" _.Newsletter
-        |> Schema.date "joined" _.Joined
-        |> Schema.dateTime "lastSeen" _.LastSeen
-        |> Schema.nested "address" _.Address addressSchema
-        |> Schema.many "contacts" _.Contacts contactSchema
-        |> Schema.field "scores" _.Scores (Value.manyOf Value.int)
+        |> Schema.field "id" _.Id Schema.guid
+        |> Schema.field "name" _.Name Schema.text
+        |> Schema.field "age" _.Age Schema.int
+        |> Schema.field "balance" _.Balance Schema.decimal
+        |> Schema.field "newsletter" _.Newsletter Schema.bool
+        |> Schema.field "joined" _.Joined Schema.date
+        |> Schema.field "lastSeen" _.LastSeen Schema.dateTime
+        |> Schema.field "address" _.Address addressSchema
+        |> Schema.field "contacts" _.Contacts (Schema.list contactSchema)
+        |> Schema.field "scores" _.Scores (Schema.list Schema.int)
         |> Schema.build
 
     let sample =
@@ -115,8 +115,8 @@ type BoundaryParseBenchmarks() =
     [<Benchmark(Baseline = true, Description = "Axial Json.deserialize (trusted lane)")>]
     member _.CodecDeserialize() = Json.deserialize codec json
 
-    [<Benchmark(Description = "JsonDocument + RawInput + Model.parse (boundary lane)")>]
+    [<Benchmark(Description = "JsonDocument + RawInput + Schema.parse (boundary lane)")>]
     member _.BoundaryParse() =
         use document = JsonDocument.Parse json
         let input = RawInput.ofJsonDocument document
-        (Model.parse CodecModel.customerSchema input).Result
+        (Schema.parse CodecModel.customerSchema input).Result

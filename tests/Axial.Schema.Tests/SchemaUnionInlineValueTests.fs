@@ -17,23 +17,23 @@ module SchemaUnionInlineValueTests =
 
     let private cardSchema () =
         Schema.recordFor<CardDetails, _> (fun number -> { Number = number })
-        |> Schema.text "number" _.Number
+        |> Schema.field "number" _.Number Schema.text
         |> Schema.build
 
     let private invoiceSchema () =
         Schema.recordFor<InvoiceDetails, _> (fun reference -> { Reference = reference })
-        |> Schema.text "reference" _.Reference
+        |> Schema.field "reference" _.Reference Schema.text
         |> Schema.build
 
     let private paymentSchema () =
-        Value.unionInline
+        Schema.inlineUnion
             "type"
-            [ UnionCase.create "card" Card (function Card details -> Some details | _ -> None) (Value.nested (cardSchema ()))
+            [ UnionCase.create "card" Card (function Card details -> Some details | _ -> None) ((cardSchema ()))
               UnionCase.create
                   "invoice"
                   Invoice
                   (function Invoice details -> Some details | _ -> None)
-                  (Value.nested (invoiceSchema ())) ]
+                  ((invoiceSchema ())) ]
 
     [<Fact>]
     let ``union-inline value schema exposes discriminator and spliced case fields`` () =
@@ -47,8 +47,8 @@ module SchemaUnionInlineValueTests =
             |> _.Fields
             |> List.exactlyOne
 
-        match payment.Value.Shape with
-        | ValueShape.UnionInline union ->
+        match payment.Schema.Shape with
+        | SchemaShape.UnionInline union ->
             test <@ union.DiscriminatorField = "type" @>
             test <@ union.Cases |> List.map _.Tag = [ "card"; "invoice" ] @>
             test <@ union.Cases[0].Payload.Fields |> List.map _.Name = [ "number" ] @>
@@ -78,25 +78,25 @@ module SchemaUnionInlineValueTests =
     let ``unionInline rejects payload field names that collide with the discriminator`` () =
         let colliding =
             Schema.recordFor<CardDetails, _> (fun number -> { Number = number })
-            |> Schema.text "type" _.Number
+            |> Schema.field "type" _.Number Schema.text
             |> Schema.build
 
         Assert.Throws<ArgumentException>(fun () ->
-            Value.unionInline
+            Schema.inlineUnion
                 "type"
-                [ UnionCase.create "card" Card (function Card details -> Some details | _ -> None) (Value.nested colliding) ]
+                [ UnionCase.create "card" Card (function Card details -> Some details | _ -> None) (colliding) ]
             |> ignore)
         |> ignore
 
     [<Fact>]
     let ``unionInline rejects payloads that are not nested model schemas`` () =
         Assert.Throws<ArgumentException>(fun () ->
-            Value.unionInline
+            Schema.inlineUnion
                 "type"
                 [ UnionCase.create
                       "invoice"
                       (fun reference -> Invoice { Reference = reference })
                       (function Invoice details -> Some details.Reference | _ -> None)
-                      Value.text ]
+                      Schema.text ]
             |> ignore)
         |> ignore

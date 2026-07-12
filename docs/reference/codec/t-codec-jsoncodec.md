@@ -28,6 +28,6 @@ A compiled JSON codec for one schema-described model.
  </p><p class='fsdocs-para'>
  The codec is the trusted hot path: it enforces JSON structure and required fields, but does not run schema
  constraint metadata such as <code>maxLength</code>. Parse untrusted boundary input with schema input parsing
- (<code>Model.parse</code>) when complete path-aware diagnostics are needed, and use the codec where the payload producer
+ (<code>Schema.parse</code>) when complete path-aware diagnostics are needed, and use the codec where the payload producer
  is trusted, such as internal services, storage, caches, and message queues.
  </p>

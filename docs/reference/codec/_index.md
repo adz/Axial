@@ -12,7 +12,7 @@ This page shows the `Axial.Codec` surface: `Json.compile` turns a built `Schema<
 
 ## Module functions
 
-- [`Codec.Json.compile`](./m-codec-json-compile.md): Compiles a built model schema into a reusable JSON codec.
+- [`Codec.Json.compile`](./m-codec-json-compile.md): Compiles a completed schema into a reusable JSON codec.
 - [`Codec.Json.serialize`](./m-codec-json-serialize.md): Serializes a trusted model to a JSON string through a compiled codec.
 - [`Codec.Json.serializeBytes`](./m-codec-json-serializebytes.md): Serializes a trusted model to UTF-8 JSON bytes through a compiled codec.
 - [`Codec.Json.serializeToStream`](./m-codec-json-serializetostream.md): Serializes a trusted model as UTF-8 JSON directly to a stream through a compiled codec, flushing once when complete.

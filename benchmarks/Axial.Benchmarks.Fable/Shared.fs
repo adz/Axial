@@ -147,13 +147,13 @@ module Shared =
         workflow
 
     let private contactSchema =
-        Schema.record (fun name age -> { Name = name; Age = age })
-        |> Schema.field "name" (fun (contact: SchemaContact) -> contact.Name) Value.text
-        |> Schema.field "age" (fun (contact: SchemaContact) -> contact.Age) Value.int
-        |> Schema.build
+        SchemaCore.record (fun name age -> { Name = name; Age = age })
+        |> SchemaCore.field "name" (fun (contact: SchemaContact) -> contact.Name) SchemaCore.text
+        |> SchemaCore.field "age" (fun (contact: SchemaContact) -> contact.Age) SchemaCore.int
+        |> SchemaCore.build
 
     let buildSchemaBuilderSummary () =
-        Schema.specialize (SummaryFactory<SchemaContact>()) contactSchema
+        SchemaCore.specialize (SummaryFactory<SchemaContact>()) contactSchema
 
     let runCodecRoundTrip () =
         let codec = Json.compile contactSchema

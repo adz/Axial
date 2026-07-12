@@ -1,110 +1,124 @@
----
-weight: 10
-title: Trusted Construction
-type: docs
-description: ActiveModel ergonomics with F# trusted construction.
----
 
+This page shows which correctness claims Schema can enforce and which claims require an invariant-preserving F# type.
 
-Rails ActiveModel made one thing easy: declare the fields and constraints in one place, then let the framework parse
-params, collect errors, and redisplay input. Axial keeps that ergonomic while keeping F#'s core promise — **an invalid
-model is never constructed**.
+## The limit
 
-## Side By Side
-
-ActiveModel validates a mutable object after construction:
-
-```ruby
-class Signup
-  include ActiveModel::Model
-  attr_accessor :email, :age
-
-  validates :email, presence: true, length: { maximum: 254 }
-  validates :age, numericality: { greater_than_or_equal_to: 13 }
-end
-
-signup = Signup.new(params)   # exists even when invalid
-signup.valid?                 # errors discovered afterwards
-```
-
-Axial declares the same constraints on a schema, and parsing either produces the model or refuses to construct it:
+A library can guarantee the result of its own functions. It cannot prevent a caller from using another public
+constructor:
 
 ```fsharp
-type Signup =
+type Booking =
+    { Start: DateOnly
+      End: DateOnly }
+
+let bookingSchema =
+    Schema.recordFor<Booking, _> (fun start finish ->
+        if start <= finish then Ok { Start = start; End = finish }
+        else Error "Start must not be after end.")
+    |> Schema.field "start" _.Start Schema.date
+    |> Schema.field "end" _.End Schema.date
+    |> Schema.buildResult
+
+let invalidAnyway =
+    { Start = DateOnly(2026, 7, 20)
+      End = DateOnly(2026, 7, 12) }
+```
+
+`Schema.parse bookingSchema raw` and `Schema.check bookingSchema value` enforce the constructor rule. The public record
+literal does not. There is no honest library-level type guarantee for every `Booking` while that literal remains
+available.
+
+## Durable field invariants
+
+Private refined fields make illegal field values unrepresentable:
+
+```fsharp
+type WorkspaceName = private WorkspaceName of NonBlankString
+
+module WorkspaceName =
+    let create raw =
+        Refine.nonBlankString raw |> Result.map WorkspaceName
+
+    let value (WorkspaceName name) = name.Value
+
+    let schema : Schema<WorkspaceName> =
+        Schema.text
+        |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 80 ]
+        |> Schema.refine create SchemaError.ofRefinementError value
+```
+
+`Schema.refine` takes the real fallible smart constructor. Raw constraints can report common failures with familiar
+codes and metadata; the smart constructor remains authoritative. If the two declarations drift, refinement returns
+diagnostics instead of throwing.
+
+Any `WorkspaceName` is valid because its representation is private and every exposed constructor returns `Result`.
+The schema participates in that construction; it is not the sole guardian.
+
+## Durable aggregate invariants
+
+Use a private aggregate representation when every value must satisfy a relationship between fields:
+
+```fsharp
+type Booking =
     private
-        { Email: string
-          Age: int }
+        { Start: DateOnly
+          End: DateOnly }
 
-    /// The only other place `Signup` may legitimately be constructed — a static member has access to its own
-    /// type's private fields by definition, so this and the schema below are the two authorized construction paths.
-    static member Schema : Schema<Signup> =
-        Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
-        |> Schema.fieldWith
-            [ SchemaConstraint.required; SchemaConstraint.maxLength 254; SchemaConstraint.email ]
-            "email" _.Email Value.text
-        |> Schema.fieldWith [ SchemaConstraint.atLeast 13 ] "age" _.Age Value.int
-        |> Schema.build
+module Booking =
+    let create start finish =
+        if start <= finish then Ok { Start = start; End = finish }
+        else Error "Start must not be after end."
 
-let parsed = Model.parse Signup.Schema raw
+    let start booking = booking.Start
+    let finish booking = booking.End
 
-match parsed.Result with
-| Ok signup -> signup                  // trusted: constraints already hold
-| Error diagnostics -> diagnostics     // no Signup value exists
+    let schema =
+        Schema.recordFor<Booking, _> create
+        |> Schema.field "start" start Schema.date
+        |> Schema.field "end" finish Schema.date
+        |> Schema.buildResult
 ```
 
-The declaration density matches ActiveModel — external name, getter, constraints in one line per field — but the type
-system carries the guarantee forward: every `Signup` in the program passed its schema.
+The record schema invokes `Booking.create`, and ordinary callers cannot use a record literal. Updates must also go
+through functions that preserve the rule. A private constructor with a public unchecked `with`-style escape hatch is
+not complete encapsulation.
 
-Two things make that guarantee real rather than aspirational. First, `Signup`'s fields are `private` — without that,
-nothing stops `{ Email = ""; Age = 10 }` being written directly anywhere in the program, schema or no schema. Second,
-declaring the schema as a `static member` on `Signup` itself, rather than in a separate module, keeps the type and
-its one sanctioned construction path in the same place — no second name to import, and the schema has the same
-privileged access to `Signup`'s private fields that a hand-written smart constructor would.
+## Drafts and contracts
 
-`private` alone only blocks *other* files and modules — F# privacy is scoped to the enclosing module/file, so code
-in the same file as `Signup` could still write a second, competing `{ Email = ...; Age = ... }` literal that bypasses
-`Signup.Schema` entirely. If that matters for a given type, put it in its own file with a matching `.fsi` signature
-file that only exposes `Schema` (and whatever else is meant to be public) — signature files hide implementation
-details from every other file, including files in the same assembly, which closes the gap `private` leaves open.
-
-## What "Trusted" Buys
-
-- downstream code never re-checks `Email` length or `Age` range
-- constructors run only after every argument parsed and passed its constraints, so smart constructors can assume
-  trusted arguments
-- failed parses keep the raw input for redisplay instead of a half-valid object
-
-## Two Patterns
-
-**Wrapper style** — keep the record public, and let the type-level trust claim live in `Model<'model>`. The bare
-record is a *draft*: freely constructible with named fields in any order, visibly untrusted by its type. Only
-`Model.validate` (and `Model.parse`) can produce the wrapper, so functions that demand `Model<Signup>` in their
-signatures can never receive an unchecked value:
+Wire records often should remain easy to construct:
 
 ```fsharp
-type SignupRequest = { Email: string; Age: int }
-
-module SignupRequest =
-    let schema =
-        Schema.recordFor<SignupRequest, _> (fun email age -> { Email = email; Age = age })
-        |> Schema.fieldWith [ SchemaConstraint.required; SchemaConstraint.email ] "email" _.Email Value.text
-        |> Schema.fieldWith [ SchemaConstraint.atLeast 13 ] "age" _.Age Value.int
-        |> Schema.build
-
-match Model.validate SignupRequest.schema { Email = "ada@example.com"; Age = 42 } with
-| Ok signup -> signup.Value.Email        // Model<SignupRequest>: proof of validity
-| Error diagnostics -> ...               // path-aware, accumulated
+type BookingV1 =
+    { start: DateOnly
+      ``end``: DateOnly }
 ```
 
-This is the right default for boundary-shaped records (requests, config, wire types) — and it is the shape
-the contract generator emits (`.contract` files; dev tooling, stabilizing). **Private-representation style** — the `Signup` example above —
-suits behavior-rich domain types: your members and methods live on the type, construction goes through your smart
-constructor or a two-line `construct` (`private assembly |> Model.reconstruct schema`), and no wrapper appears in
-signatures. Both styles run the same constraints through the same schema; pick per type.
+Their job is representation, not durable domain correctness. Parse them through a schema and map once into the domain
+type. Naming the value `draft`, `wire`, or `contract` makes the trust boundary visible. Do not pass it through business
+logic as though its schema had changed the record's constructors.
 
-## Where Constraints Live
+## Existing typed values
 
-- value requirements that always hold → schema constraints (this page)
-- invariants across fields that define the model's meaning → constructor results with `Schema.buildResult`
-  (see [Schema Boundaries]({{< relref "/error-handling/validation/schema-boundaries.md" >}}))
-- workflow-dependent requirements → [Rules](../rules/)
+`Schema.check` is for values whose construction history is uncertain:
+
+```fsharp
+match Schema.check bookingSchema importedBooking with
+| Ok checked -> useBooking checked
+| Error diagnostics -> quarantine diagnostics
+```
+
+It recursively checks fields and collections and re-invokes a record schema's constructor. It returns the original
+value on success; it does not create a proof wrapper. The guarantee belongs to that successful result flow. A private
+domain representation carries a stronger, durable guarantee.
+
+## Recommendation
+
+The reference app uses all three levels deliberately:
+
+- `WorkspaceV1` and `WorkspaceV2` are public wire records.
+- `WorkspaceName`, `PersonName`, and `WorkItemTitle` have private representations and fallible constructors.
+- `Workspace` business transitions accept only refined fields and return `Result` for relational business rules.
+- persisted contracts are parsed again when read; contextual production rules run only at the relevant admission
+  boundary.
+
+This division keeps schema metadata useful without claiming that metadata overrides F# construction semantics.

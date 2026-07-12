@@ -24,18 +24,18 @@ module Geo =
         Schema.recordFor<Geo, _> (fun lat lon ->
             { Lat = lat
               Lon = lon })
-        |> Schema.fieldWith [ SchemaConstraint.atLeast (-90m); SchemaConstraint.atMost (90m) ] "lat" _.Lat Value.decimal
-        |> Schema.fieldWith [ SchemaConstraint.atLeast (-180m); SchemaConstraint.atMost (180m) ] "lon" _.Lon Value.decimal
+        |> Schema.field "lat" _.Lat (Schema.decimal |> Schema.constrainAll [ Constraint.atLeast (-90m); Constraint.atMost (90m) ])
+        |> Schema.field "lon" _.Lon (Schema.decimal |> Schema.constrainAll [ Constraint.atLeast (-180m); Constraint.atMost (180m) ])
         |> Schema.build
         |> Schema.describe "A geographic coordinate."
 
-    /// Validates a draft built with an ordinary record literal, promoting it to a trusted model.
-    let validate (draft: Geo) : Result<Model<Geo>, Diagnostics<SchemaError>> =
-        Model.validate schema draft
+    /// Checks a draft built with an ordinary record literal.
+    let validate (draft: Geo) : Result<Geo, Diagnostics<SchemaError>> =
+        Schema.check schema draft
 
     /// Parses raw boundary input through the schema.
     let parse (input: RawInput) : ParsedInput<Geo, SchemaError> =
-        Model.parse schema input
+        Schema.parse schema input
 
     /// Typed field references for rules, redisplay, and UI binding.
     [<RequireQualifiedAccess>]

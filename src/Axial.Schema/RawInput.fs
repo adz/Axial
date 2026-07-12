@@ -493,7 +493,7 @@ module RawInput =
     /// <remarks>
     /// <para>
     /// This is the boundary adapter for JSON bodies parsed with <c>System.Text.Json</c>, such as ASP.NET Core request
-    /// payloads: convert the element once, then parse it with <c>Model.parse</c> to get path-aware diagnostics or a
+    /// payloads: convert the element once, then parse it with <c>Schema.parse</c> to get path-aware diagnostics or a
     /// trusted model. JSON null and undefined become <c>Missing</c>, numbers keep their exact boundary text, and
     /// booleans become <c>"true"</c>/<c>"false"</c> scalars.
     /// </para>

@@ -14,7 +14,7 @@ module EnumSchemaParseTests =
     type private Swatch = { Color: Color }
 
     let private colorSchema () =
-        Value.enumOf [ EnumCase.create "red" Red; EnumCase.create "green" Green; EnumCase.create "blue" Blue ]
+        Schema.enum [ EnumCase.create "red" Red; EnumCase.create "green" Green; EnumCase.create "blue" Blue ]
 
     let private swatchSchema () =
         Schema.recordFor<Swatch, _> (fun color -> { Color = color })
@@ -25,7 +25,7 @@ module EnumSchemaParseTests =
     let ``parse builds the enum case matching the tag`` () =
         let raw = RawInput.Object(Map.ofList [ "color", RawInput.Scalar "green" ])
 
-        let parsed = Model.parse (swatchSchema ()) raw
+        let parsed = Schema.parse (swatchSchema ()) raw
 
         test <@ parsed.Result = Ok { Color = Green } @>
 
@@ -33,7 +33,7 @@ module EnumSchemaParseTests =
     let ``parse reports an unknown tag at the field path`` () =
         let raw = RawInput.Object(Map.ofList [ "color", RawInput.Scalar "purple" ])
 
-        let parsed = Model.parse (swatchSchema ()) raw
+        let parsed = Schema.parse (swatchSchema ()) raw
 
         test
             <@ parsed.Errors = [ { Path = [ PathSegment.Name "color" ]
@@ -41,6 +41,6 @@ module EnumSchemaParseTests =
 
     [<Fact>]
     let ``validate checks existing enum values through case equality`` () =
-        let result = Model.reconstruct (swatchSchema ()) { Color = Blue }
+        let result = Schema.check (swatchSchema ()) { Color = Blue }
 
         test <@ result = Ok { Color = Blue } @>

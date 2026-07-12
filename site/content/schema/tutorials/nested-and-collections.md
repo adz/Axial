@@ -7,7 +7,7 @@ type: docs
 
 
 This tutorial parses an order that contains a nested address and a collection of line items. Nested schemas and item
-schemas are ordinary built schemas — composition is just `Value.nested` and `Value.many`.
+schemas are ordinary `Schema<_>` values — composition is `Schema.field` with the nested schema or `Schema.list`.
 
 ## Declare The Schemas
 
@@ -24,20 +24,20 @@ type Order =
 
 let addressSchema =
     Schema.recordFor<Address, _> (fun street city -> { Street = street; City = city })
-    |> Schema.fieldWith [ SchemaConstraint.required ] "street" _.Street Value.text
-    |> Schema.fieldWith [ SchemaConstraint.required ] "city" _.City Value.text
+    |> Schema.field "street" _.Street (Schema.text |> Schema.constrainAll [ Constraint.required ])
+    |> Schema.field "city" _.City (Schema.text |> Schema.constrainAll [ Constraint.required ])
     |> Schema.build
 
 let itemSchema =
     Schema.recordFor<Item, _> (fun sku quantity -> { Sku = sku; Quantity = quantity })
-    |> Schema.fieldWith [ SchemaConstraint.required ] "sku" _.Sku Value.text
-    |> Schema.fieldWith [ SchemaConstraint.greaterThan 0 ] "quantity" _.Quantity Value.int
+    |> Schema.field "sku" _.Sku (Schema.text |> Schema.constrainAll [ Constraint.required ])
+    |> Schema.field "quantity" _.Quantity (Schema.int |> Schema.constrainAll [ Constraint.greaterThan 0 ])
     |> Schema.build
 
 let orderSchema =
     Schema.recordFor<Order, _> (fun address items -> { Address = address; Items = items })
-    |> Schema.fieldWith [ SchemaConstraint.required ] "address" _.Address (Value.nested addressSchema)
-    |> Schema.fieldWith [ SchemaConstraint.minCount 1 ] "items" _.Items (Value.many itemSchema)
+    |> Schema.field "address" _.Address (addressSchema |> Schema.constrainAll [ Constraint.required ])
+    |> Schema.field "items" _.Items ((Schema.list itemSchema) |> Schema.constrainAll [ Constraint.minCount 1 ])
     |> Schema.build
 ```
 
@@ -62,7 +62,7 @@ let raw =
 Every item is parsed and every item error is kept — one bad line item does not hide the others:
 
 ```fsharp
-let parsed = Model.parse orderSchema raw
+let parsed = Schema.parse orderSchema raw
 
 parsed.ErrorsFor "items[1].quantity"   // quantity 0 fails greaterThan 0
 parsed.ErrorsFor "items[0].sku"        // [] — the first item is fine

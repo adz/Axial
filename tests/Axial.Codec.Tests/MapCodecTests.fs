@@ -5,13 +5,13 @@ open Axial.Schema
 open Swensen.Unquote
 open Xunit
 
-/// <summary>Covers the compiled JSON codec's handling of <c>Value.map</c> dictionary value schemas.</summary>
+/// <summary>Covers the compiled JSON codec's handling of <c>Schema.map</c> dictionary value schemas.</summary>
 module MapCodecTests =
     type private Thresholds = { Values: Map<string, decimal> }
 
     let private thresholdsSchema () =
         Schema.recordFor<Thresholds, _> (fun values -> { Values = values })
-        |> Schema.field "values" _.Values (Value.map Value.decimal)
+        |> Schema.field "values" _.Values (Schema.map Schema.decimal)
         |> Schema.build
 
     [<Fact>]

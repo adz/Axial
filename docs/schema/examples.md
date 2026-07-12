@@ -416,7 +416,7 @@ let run () =
 
 ## Refined Value Schema Example
 
-This example shows schema-level refined values (Email, ContactName, a positive Quantity, and a non-negative Balance) built with Value.refined, composed into a record schema, and checked with ValueSchemaCheck.
+This example shows total domain conversions built with Schema.convert, composed into a record schema, and lowered to executable checks.
 
 Run it:
 
@@ -442,12 +442,12 @@ module Email =
     let create (value: string) = Email value
     let value (Email value) = value
 
-    let schema : ValueSchema<Email> =
-        Value.text
-        |> Value.withConstraint SchemaConstraint.required
-        |> Value.refined create value
-        |> Value.withConstraint SchemaConstraint.email
-        |> Value.withFormat SchemaFormat.email
+    let schema : Schema<Email> =
+        Schema.text
+        |> Schema.constrain Constraint.required
+        |> Schema.convert create value
+        |> Schema.constrain Constraint.email
+        |> Schema.withFormat SchemaFormat.email
 
 /// <summary>A bounded-text domain value whose length constraints live on the raw text schema.</summary>
 type ContactName = private ContactName of string
@@ -456,10 +456,10 @@ module ContactName =
     let create (value: string) = ContactName value
     let value (ContactName value) = value
 
-    let schema : ValueSchema<ContactName> =
-        Value.text
-        |> Value.withConstraints [ SchemaConstraint.minLength 2; SchemaConstraint.maxLength 40 ]
-        |> Value.refined create value
+    let schema : Schema<ContactName> =
+        Schema.text
+        |> Schema.constrainAll [ Constraint.minLength 2; Constraint.maxLength 40 ]
+        |> Schema.convert create value
 
 /// <summary>A quantity that must always be positive (strictly greater than zero).</summary>
 type Quantity = private Quantity of int
@@ -468,10 +468,10 @@ module Quantity =
     let create (value: int) = Quantity value
     let value (Quantity value) = value
 
-    let schema : ValueSchema<Quantity> =
-        Value.int
-        |> Value.withConstraint (SchemaConstraint.greaterThan 0)
-        |> Value.refined create value
+    let schema : Schema<Quantity> =
+        Schema.int
+        |> Schema.constrain (Constraint.greaterThan 0)
+        |> Schema.convert create value
 
 /// <summary>A running total that must never go negative, but zero is allowed.</summary>
 type Balance = private Balance of decimal
@@ -480,10 +480,10 @@ module Balance =
     let create (value: decimal) = Balance value
     let value (Balance value) = value
 
-    let schema : ValueSchema<Balance> =
-        Value.decimal
-        |> Value.withConstraint (SchemaConstraint.atLeast 0m)
-        |> Value.refined create value
+    let schema : Schema<Balance> =
+        Schema.decimal
+        |> Schema.constrain (Constraint.atLeast 0m)
+        |> Schema.convert create value
 
 type Contact =
     { Email: Email
@@ -510,10 +510,10 @@ let run () =
           Quantity = Quantity.create 3
           Balance = Balance.create 0m }
 
-    let emailCheck = Email.schema |> ValueSchemaCheck.text
-    let nameCheck = ContactName.schema |> ValueSchemaCheck.text
-    let quantityCheck = Quantity.schema |> ValueSchemaCheck.ordered<int, _>
-    let balanceCheck = Balance.schema |> ValueSchemaCheck.ordered<decimal, _>
+    let emailCheck = Email.schema |> SchemaCheck.text
+    let nameCheck = ContactName.schema |> SchemaCheck.text
+    let quantityCheck = Quantity.schema |> SchemaCheck.ordered<int, _>
+    let balanceCheck = Balance.schema |> SchemaCheck.ordered<decimal, _>
 
     printfn "Email check: %A" (emailCheck contact.Email)
     printfn "Name check: %A" (nameCheck contact.Name)
@@ -577,14 +577,14 @@ type Email = private EmailValue of string
 module Email =
     let value (EmailValue raw) = raw
 
-    let schema: ValueSchema<Email> =
-        Value.text
-        |> Value.withConstraints
-            [ SchemaConstraint.required
-              SchemaConstraint.maxLength 254
-              SchemaConstraint.email ]
-        |> Value.refined EmailValue value
-        |> Value.withFormat SchemaFormat.email
+    let schema: Schema<Email> =
+        Schema.text
+        |> Schema.constrainAll
+            [ Constraint.required
+              Constraint.maxLength 254
+              Constraint.email ]
+        |> Schema.convert EmailValue value
+        |> Schema.withFormat SchemaFormat.email
 
 type Address = { Street: string; City: string }
 
@@ -598,8 +598,8 @@ type Signup =
 module Signup =
     let addressSchema =
         Schema.recordFor<Address, _> (fun street city -> { Street = street; City = city })
-        |> Schema.fieldWith [ SchemaConstraint.required; SchemaConstraint.maxLength 120 ] "street" _.Street Value.text
-        |> Schema.fieldWith [ SchemaConstraint.required; SchemaConstraint.maxLength 80 ] "city" _.City Value.text
+        |> Schema.field "street" _.Street (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 120 ])
+        |> Schema.field "city" _.City (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 80 ])
         |> Schema.build
 
     let schema =
@@ -609,11 +609,11 @@ module Signup =
               Age = age
               Address = address
               Tags = tags })
-        |> Schema.fieldWith [ SchemaConstraint.required; SchemaConstraint.maxLength 80 ] "name" _.Name Value.text
+        |> Schema.field "name" _.Name (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 80 ])
         |> Schema.field "email" _.Email Email.schema
-        |> Schema.fieldWith [ SchemaConstraint.between 13 120 ] "age" _.Age Value.int
-        |> Schema.fieldWith [ SchemaConstraint.required ] "address" _.Address (Value.nested addressSchema)
-        |> Schema.fieldWith [ SchemaConstraint.maxCount 5 ] "tags" _.Tags (Value.manyOf Value.text)
+        |> Schema.field "age" _.Age (Schema.int |> Schema.constrainAll [ Constraint.between 13 120 ])
+        |> Schema.field "address" _.Address ((addressSchema) |> Schema.constrainAll [ Constraint.required ])
+        |> Schema.field "tags" _.Tags ((Schema.list Schema.text) |> Schema.constrainAll [ Constraint.maxCount 5 ])
         |> Schema.build
 
 // ---------------------------------------------------------------------------
@@ -661,35 +661,35 @@ module FormPage =
     let private constraintAttributes (field: FieldDescription) =
         let metadata =
             (field.Constraints |> List.map _.Metadata)
-            @ (let rec gather (value: ValueDescription) =
+            @ (let rec gather (value: SchemaDescription) =
                 (value.Constraints |> List.map _.Metadata)
                 @ (match value.Shape with
-                   | ValueShape.Refined underlying -> gather underlying
+                   | SchemaShape.Refined underlying -> gather underlying
                    | _ -> [])
 
-               gather field.Value)
+               gather field.Schema)
 
         let required =
-            if metadata |> List.contains SchemaConstraintMetadata.Required then " required" else ""
+            if metadata |> List.contains ConstraintMetadata.Required then " required" else ""
 
         let maxLength =
             metadata
             |> List.tryPick (function
-                | SchemaConstraintMetadata.MaxLength maximum -> Some $" maxlength=\"{maximum}\""
+                | ConstraintMetadata.MaxLength maximum -> Some $" maxlength=\"{maximum}\""
                 | _ -> None)
             |> Option.defaultValue ""
 
         required + maxLength
 
     let private inputType (field: FieldDescription) =
-        let rec shape (value: ValueDescription) =
+        let rec shape (value: SchemaDescription) =
             match value.Shape with
-            | ValueShape.Refined underlying -> shape underlying
+            | SchemaShape.Refined underlying -> shape underlying
             | other -> other
 
-        match field.Value.Format, shape field.Value with
+        match field.Schema.Format, shape field.Schema with
         | Some format, _ when format = SchemaFormat.email -> "email"
-        | _, ValueShape.Primitive PrimitiveValueKind.Int -> "number"
+        | _, SchemaShape.Primitive PrimitiveValueKind.Int -> "number"
         | _ -> "text"
 
     /// Renders one flat form from the schema description, redisplaying raw input and attaching errors by path.
@@ -720,9 +720,9 @@ module FormPage =
         let rows =
             description.Fields
             |> List.collect (fun field ->
-                match field.Value.Shape with
-                | ValueShape.Nested nested -> nested.Fields |> List.map (fieldRow field.Name)
-                | ValueShape.Many _ -> [ fieldRow "" field ]
+                match field.Schema.Shape with
+                | SchemaShape.Nested nested -> nested.Fields |> List.map (fieldRow field.Name)
+                | SchemaShape.Many _ -> [ fieldRow "" field ]
                 | _ -> [ fieldRow "" field ])
             |> String.concat "\n"
 
@@ -785,7 +785,7 @@ let buildApp (args: string[]) =
         Func<HttpRequest, System.Threading.Tasks.Task<IResult>>(fun request ->
             task {
                 use! document = JsonDocument.ParseAsync request.Body
-                let parsed = Model.parse Signup.schema (RawInput.ofJsonDocument document)
+                let parsed = Schema.parse Signup.schema (RawInput.ofJsonDocument document)
 
                 match parsed.Result with
                 | Ok signup ->
@@ -811,7 +811,7 @@ let buildApp (args: string[]) =
         Func<HttpRequest, System.Threading.Tasks.Task<IResult>>(fun request ->
             task {
                 let! form = request.ReadFormAsync()
-                let parsed = Model.parse Signup.schema (formToRawInput form)
+                let parsed = Schema.parse Signup.schema (formToRawInput form)
                 return Results.Text(FormPage.render (Some parsed), "text/html")
             })
     )
@@ -911,10 +911,10 @@ module Quantity =
     let create (value: int) = Quantity value
     let value (Quantity value) = value
 
-    let schema : ValueSchema<Quantity> =
-        Value.int
-        |> Value.withConstraint (SchemaConstraint.greaterThan 0)
-        |> Value.refined create value
+    let schema : Schema<Quantity> =
+        Schema.int
+        |> Schema.constrain (Constraint.greaterThan 0)
+        |> Schema.convert create value
 
 type OrderLine =
     { Sku: string
@@ -924,7 +924,7 @@ let orderLineSchema =
     Schema.recordFor<OrderLine, _> (fun sku quantity ->
         { Sku = sku
           Quantity = quantity })
-    |> Schema.text "sku" _.Sku
+    |> Schema.field "sku" _.Sku Schema.text
     |> Schema.field "quantity" _.Quantity Quantity.schema
     |> Schema.build
 
@@ -946,16 +946,16 @@ let parseQuantityText : Policy<OrderEnv, OrderError, string, int> =
 let refinePositive : Policy<OrderEnv, OrderError, int, PositiveInt> =
     Policy.withError Refine.positiveInt QuantityNotPositive
 
-// 3. Schema input result: adapt Model.parse over raw boundary input.
+// 3. Schema input result: adapt Schema.parse over raw boundary input.
 let parseOrderLine : Policy<OrderEnv, OrderError, RawInput, OrderLine> =
     Policy.lift
-        (fun raw -> (Model.parse orderLineSchema raw).Result)
+        (fun raw -> (Schema.parse orderLineSchema raw).Result)
         (Diagnostics.flatten >> LineRejected)
 
 // 4. Validation result: adapt intrinsic validation of an existing model.
 let validateOrderLine : Policy<OrderEnv, OrderError, OrderLine, OrderLine> =
     Policy.lift
-        (fun line -> Axial.Schema.Model.reconstruct orderLineSchema line)
+        (fun line -> Schema.check orderLineSchema line)
         (Diagnostics.flatten >> LineRejected)
 
 // 5. Contextual rules: plain rule functions selected by the workflow environment.

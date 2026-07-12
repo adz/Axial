@@ -13,7 +13,7 @@ open Xunit
 /// simultaneously carry ordered fields, a primitive value schema, required and maxLength constraint metadata,
 /// constraint lowering to <c>Check</c>, metadata inspection without running validation, constructor/getter alignment,
 /// and enough typed information to compile a CodecMapper-style record plan. Earlier tests
-/// (<c>SchemaConstraintCheckTests</c>, <c>SchemaConstraintInspectionTests</c>, <c>SchemaConstructorGetterAlignmentTests</c>,
+/// (<c>ConstraintCheckTests</c>, <c>ConstraintInspectionTests</c>, <c>SchemaConstructorGetterAlignmentTests</c>,
 /// <c>SchemaCompiledRecordPlanProofTests</c>) prove each capability in isolation; this test proves they compose on the
 /// very same schema rather than only working for narrower, unrelated examples.
 /// </summary>
@@ -150,12 +150,12 @@ module SchemaVerticalSliceProofTests =
 
     [<Fact>]
     let ``one authored schema proves ordering, primitive value schema, required/maxLength metadata, Check lowering, inspection, alignment, and a compiled plan together`` () =
-        // Ordered fields + primitive value schema (`Value.text`) + required and maxLength constraint metadata,
+        // Ordered fields + primitive value schema (`Schema.text`) + required and maxLength constraint metadata,
         // authored through the progressive typed builder.
         let emailValue =
-            Value.text |> Value.withConstraints [ SchemaConstraint.required; SchemaConstraint.maxLength 254 ]
+            Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 254 ]
 
-        let displayNameValue = Value.text |> Value.withConstraint SchemaConstraint.required
+        let displayNameValue = Schema.text |> Schema.constrain Constraint.required
 
         // Declare fields in reverse of the record's own field order to prove constructor/getter alignment
         // follows declared argument position, not the record's source order or external field name.
@@ -186,15 +186,15 @@ module SchemaVerticalSliceProofTests =
 
         let emailDescriptor = byName["email"]
 
-        test <@ emailDescriptor.ValueSchema.Constraints |> List.map SchemaConstraint.code = [ "required"; "maxLength" ] @>
+        test <@ emailDescriptor.ValueSchema.Constraints |> List.map Constraint.code = [ "required"; "maxLength" ] @>
         test <@
-            emailDescriptor.ValueSchema.Constraints |> List.map SchemaConstraint.metadata =
-                [ SchemaConstraintMetadata.Required; SchemaConstraintMetadata.MaxLength 254 ]
+            emailDescriptor.ValueSchema.Constraints |> List.map Constraint.metadata =
+                [ ConstraintMetadata.Required; ConstraintMetadata.MaxLength 254 ]
         @>
 
         // Constraint lowering to `Check`: the same required/maxLength metadata read above lowers to an executable,
         // path-free value program.
-        let emailCheck = SchemaConstraintCheck.text emailDescriptor.ValueSchema.Constraints
+        let emailCheck = ConstraintCheck.text emailDescriptor.ValueSchema.Constraints
 
         test <@ emailCheck "ada@example.com" = Ok "ada@example.com" @>
         test <@ emailCheck "" = Error [ Required ] @>

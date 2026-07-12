@@ -6,7 +6,7 @@ open Swensen.Unquote
 open Xunit
 
 /// <summary>
-/// Proves that <c>Value.refined</c> describes a named refined/domain value as a portable
+/// Proves that <c>Schema.convert</c> describes a named refined/domain value as a portable
 /// <c>ValueSchema&lt;'value&gt;</c>: it retains the raw value schema as inspectable metadata, it round-trips a value
 /// through the supplied construction and inspection functions, it supports refinement over every primitive value
 /// schema — especially text — while keeping the primitive foundation and raw constraints inspectable, and the result
@@ -27,7 +27,7 @@ module SchemaRefinedValueTests =
         let create (value: string) = Email value
         let value (email: Email) = email.Value
 
-        let schema : ValueSchema<Email> = Value.refined create value Value.text
+        let schema : Schema<Email> = Schema.convert create value Schema.text
 
     /// <summary>A bounded-text domain value whose raw text schema carries its own constraint metadata.</summary>
     type private ContactName = private ContactName of string
@@ -36,10 +36,10 @@ module SchemaRefinedValueTests =
         let create (value: string) = ContactName value
         let value (ContactName value) = value
 
-        let schema : ValueSchema<ContactName> =
-            Value.text
-            |> Value.withConstraints [ SchemaConstraint.minLength 2; SchemaConstraint.maxLength 40 ]
-            |> Value.refined create value
+        let schema : Schema<ContactName> =
+            Schema.text
+            |> Schema.constrainAll [ Constraint.minLength 2; Constraint.maxLength 40 ]
+            |> Schema.convert create value
 
     /// <summary>An email address refined a second time over the already refined <c>Email</c> schema.</summary>
     type private NormalizedEmail = private NormalizedEmail of Email
@@ -48,7 +48,7 @@ module SchemaRefinedValueTests =
         let create (email: Email) = NormalizedEmail email
         let value (NormalizedEmail email) = email
 
-        let schema : ValueSchema<NormalizedEmail> = Value.refined create value Email.schema
+        let schema : Schema<NormalizedEmail> = Schema.convert create value Email.schema
 
     type private Age = private Age of int
 
@@ -56,44 +56,67 @@ module SchemaRefinedValueTests =
         let create (value: int) = Age value
         let value (Age value) = value
 
-        let schema : ValueSchema<Age> = Value.refined create value Value.int
+        let schema : Schema<Age> = Schema.convert create value Schema.int
 
     type private Contact = { Email: Email; Name: string }
 
     [<Fact>]
+    let ``parse interprets a refined schema at the root`` () =
+        let parsed = Schema.parse Email.schema (RawInput.Scalar "ada@example.com")
+        test <@ parsed.Result = Ok(Email.create "ada@example.com") @>
+
+    [<Fact>]
+    let ``fallible refinement failures become root diagnostics`` () =
+        let schema =
+            Schema.text
+            |> Schema.refine
+                (fun _ -> Error "email.blocked")
+                (fun code -> [ SchemaError.Custom(code, Some "This address is blocked.") ])
+                Email.value
+
+        let parsed = Schema.parse schema (RawInput.Scalar "ada@example.com")
+
+        match parsed.Result with
+        | Ok _ -> failwith "Expected refinement to reject the value."
+        | Error diagnostics ->
+            let errors = diagnostics |> Axial.Validation.Diagnostics.flatten
+            test <@ errors |> List.map _.Path = [ [] ] @>
+            test <@ errors |> List.map _.Error = [ SchemaError.Custom("email.blocked", Some "This address is blocked.") ] @>
+
+    [<Fact>]
     let ``refined retains the raw value schema as inspectable metadata`` () =
-        match Email.schema.Definition.Shape with
-        | RefinedValueDefinition(raw, _) -> test <@ raw = Value.text.Definition @>
+        match Email.schema.ValueDefinition.Shape with
+        | RefinedValueDefinition(raw, _) -> test <@ raw = Schema.text.ValueDefinition @>
         | _ -> failwith "Expected a refined value schema shape."
 
     [<Fact>]
     let ``refined construct and inspect round-trip through the stored operations`` () =
-        match Email.schema.Definition.Shape with
+        match Email.schema.ValueDefinition.Shape with
         | RefinedValueDefinition(_, ops) ->
-            let constructed = ops.Construct(box "ada@example.com") |> unbox<Email>
-            test <@ constructed = Email.create "ada@example.com" @>
-            test <@ ops.Inspect(box constructed) |> unbox<string> = "ada@example.com" @>
+            let constructed = ops.Construct(box "ada@example.com") |> Result.map unbox<Email>
+            test <@ constructed = Ok(Email.create "ada@example.com") @>
+            test <@ ops.Inspect(box (Result.defaultValue (Email.create "fallback@example.com") constructed)) |> unbox<string> = "ada@example.com" @>
         | _ -> failwith "Expected a refined value schema shape."
 
     [<Fact>]
     let ``refined value schemas start with no constraints and accept constraints like any value schema`` () =
-        test <@ Value.constraints Email.schema = [] @>
+        test <@ Schema.constraints Email.schema = [] @>
 
-        let required = Email.schema |> Value.withConstraint SchemaConstraint.required
-        test <@ Value.constraints required |> List.map SchemaConstraint.code = [ "required" ] @>
+        let required = Email.schema |> Schema.constrain Constraint.required
+        test <@ Schema.constraints required |> List.map Constraint.code = [ "required" ] @>
 
     [<Fact>]
     let ``refined value schemas compose with the schema builder like a primitive value schema`` () =
         let emailField =
             Field.create "email" (fun (contact: Contact) -> contact.Email) Email.schema
-            |> Field.withConstraint SchemaConstraint.required
+            |> Field.withConstraint Constraint.required
 
-        let nameField = Field.create "name" (fun (contact: Contact) -> contact.Name) Value.text
+        let nameField = Field.create "name" (fun (contact: Contact) -> contact.Name) Schema.text
 
         let schema =
             Schema.recordFor<Contact, _> (fun email name -> { Email = email; Name = name })
-            |> Schema.fieldWith [ SchemaConstraint.required ] "email" _.Email Email.schema
-            |> Schema.text "name" _.Name
+            |> Schema.field "email" _.Email (Email.schema |> Schema.constrainAll [ Constraint.required ])
+            |> Schema.field "name" _.Name Schema.text
             |> Schema.build
 
         let contact = { Email = Email.create "ada@example.com"; Name = "Ada" }
@@ -104,23 +127,23 @@ module SchemaRefinedValueTests =
         match schema.Definition with
         | ModelDefinition model ->
             let email = model.Fields |> List.find (fun field -> ExternalFieldName.value field.ExternalName = "email")
-            test <@ email.Constraints |> List.map SchemaConstraint.code = [ "required" ] @>
+            test <@ email.ValueSchema.Constraints |> List.map Constraint.code = [ "required" ] @>
         | PendingDefinition -> failwith "Expected public schema API to create a model definition."
 
     [<Fact>]
     let ``model schemas can attach required to a refined field's value schema, matching field "email" _.Email Email.schema { required }`` () =
-        let requiredEmail = Email.schema |> Value.withConstraint SchemaConstraint.required
+        let requiredEmail = Email.schema |> Schema.constrain Constraint.required
 
         let schema =
             Schema.recordFor<Contact, _> (fun email name -> { Email = email; Name = name })
             |> Schema.field "email" _.Email requiredEmail
-            |> Schema.text "name" _.Name
+            |> Schema.field "name" _.Name Schema.text
             |> Schema.build
 
         match schema.Definition with
         | ModelDefinition model ->
             let email = model.Fields |> List.find (fun field -> ExternalFieldName.value field.ExternalName = "email")
-            test <@ email.ValueSchema.Constraints |> List.map SchemaConstraint.code = [ "required" ] @>
+            test <@ email.ValueSchema.Constraints |> List.map Constraint.code = [ "required" ] @>
 
             match email.ValueSchema.Shape with
             | RefinedValueDefinition _ -> ()
@@ -133,13 +156,13 @@ module SchemaRefinedValueTests =
     [<Fact>]
     let ``refined value schemas can layer over every primitive value schema`` () =
         let kinds =
-            [ Value.refined Email.create Email.value Value.text |> Value.underlyingPrimitiveKind
-              Value.refined Age.create Age.value Value.int |> Value.underlyingPrimitiveKind
-              Value.refined (fun (value: decimal) -> value) id Value.decimal |> Value.underlyingPrimitiveKind
-              Value.refined (fun (value: bool) -> value) id Value.bool |> Value.underlyingPrimitiveKind
-              Value.refined (fun (value: DateOnly) -> value) id Value.date |> Value.underlyingPrimitiveKind
-              Value.refined (fun (value: DateTimeOffset) -> value) id Value.dateTime |> Value.underlyingPrimitiveKind
-              Value.refined (fun (value: Guid) -> value) id Value.guid |> Value.underlyingPrimitiveKind ]
+            [ Schema.convert Email.create Email.value Schema.text |> Schema.underlyingPrimitiveKind
+              Schema.convert Age.create Age.value Schema.int |> Schema.underlyingPrimitiveKind
+              Schema.convert (fun (value: decimal) -> value) id Schema.decimal |> Schema.underlyingPrimitiveKind
+              Schema.convert (fun (value: bool) -> value) id Schema.bool |> Schema.underlyingPrimitiveKind
+              Schema.convert (fun (value: DateOnly) -> value) id Schema.date |> Schema.underlyingPrimitiveKind
+              Schema.convert (fun (value: DateTimeOffset) -> value) id Schema.dateTime |> Schema.underlyingPrimitiveKind
+              Schema.convert (fun (value: Guid) -> value) id Schema.guid |> Schema.underlyingPrimitiveKind ]
 
         test <@
             kinds =
@@ -154,70 +177,70 @@ module SchemaRefinedValueTests =
 
     [<Fact>]
     let ``refined value schemas over non-text primitives round-trip like text-based ones`` () =
-        match Age.schema.Definition.Shape with
+        match Age.schema.ValueDefinition.Shape with
         | RefinedValueDefinition(raw, ops) ->
-            test <@ raw = Value.int.Definition @>
-            let constructed = ops.Construct(box 42) |> unbox<Age>
-            test <@ constructed = Age.create 42 @>
-            test <@ ops.Inspect(box constructed) |> unbox<int> = 42 @>
+            test <@ raw = Schema.int.ValueDefinition @>
+            let constructed = ops.Construct(box 42) |> Result.map unbox<Age>
+            test <@ constructed = Ok(Age.create 42) @>
+            test <@ ops.Inspect(box (Result.defaultValue (Age.create 0) constructed)) |> unbox<int> = 42 @>
         | _ -> failwith "Expected a refined value schema shape."
 
     [<Fact>]
     let ``isRefined distinguishes refined value schemas from primitive value schemas`` () =
-        test <@ Value.isRefined Email.schema @>
-        test <@ Value.isRefined Age.schema @>
-        test <@ not (Value.isRefined Value.text) @>
-        test <@ not (Value.isRefined Value.int) @>
+        test <@ Schema.isRefined Email.schema @>
+        test <@ Schema.isRefined Age.schema @>
+        test <@ not (Schema.isRefined Schema.text) @>
+        test <@ not (Schema.isRefined Schema.int) @>
 
     [<Fact>]
     let ``underlyingPrimitiveKind matches primitiveKind for primitive value schemas`` () =
-        test <@ Value.underlyingPrimitiveKind Value.text = Value.primitiveKind Value.text @>
-        test <@ Value.underlyingPrimitiveKind Value.int = Value.primitiveKind Value.int @>
-        test <@ Value.underlyingPrimitiveKind Value.guid = Value.primitiveKind Value.guid @>
+        test <@ Schema.underlyingPrimitiveKind Schema.text = Schema.primitiveKind Schema.text @>
+        test <@ Schema.underlyingPrimitiveKind Schema.int = Schema.primitiveKind Schema.int @>
+        test <@ Schema.underlyingPrimitiveKind Schema.guid = Schema.primitiveKind Schema.guid @>
 
     [<Fact>]
     let ``layered refined value schemas bottom out on their primitive foundation`` () =
-        test <@ Value.isRefined NormalizedEmail.schema @>
-        test <@ Value.underlyingPrimitiveKind NormalizedEmail.schema = PrimitiveValueKind.Text @>
+        test <@ Schema.isRefined NormalizedEmail.schema @>
+        test <@ Schema.underlyingPrimitiveKind NormalizedEmail.schema = PrimitiveValueKind.Text @>
 
-        match NormalizedEmail.schema.Definition.Shape with
+        match NormalizedEmail.schema.ValueDefinition.Shape with
         | RefinedValueDefinition(raw, ops) ->
-            test <@ raw = Email.schema.Definition @>
-            let constructed = ops.Construct(box (Email.create "ada@example.com")) |> unbox<NormalizedEmail>
-            test <@ constructed = NormalizedEmail.create (Email.create "ada@example.com") @>
+            test <@ raw = Email.schema.ValueDefinition @>
+            let constructed = ops.Construct(box (Email.create "ada@example.com")) |> Result.map unbox<NormalizedEmail>
+            test <@ constructed = Ok(NormalizedEmail.create (Email.create "ada@example.com")) @>
         | _ -> failwith "Expected a refined value schema shape."
 
     [<Fact>]
     let ``refined text value schemas keep raw text constraint metadata inspectable`` () =
-        test <@ Value.rawConstraints ContactName.schema |> List.map SchemaConstraint.code = [ "minLength"; "maxLength" ] @>
-        test <@ Value.underlyingPrimitiveKind ContactName.schema = PrimitiveValueKind.Text @>
+        test <@ Schema.rawConstraints ContactName.schema |> List.map Constraint.code = [ "minLength"; "maxLength" ] @>
+        test <@ Schema.underlyingPrimitiveKind ContactName.schema = PrimitiveValueKind.Text @>
 
         // Constraints attached to the refined schema itself stay separate from the raw schema's constraints.
-        test <@ Value.constraints ContactName.schema = [] @>
+        test <@ Schema.constraints ContactName.schema = [] @>
 
-        let required = ContactName.schema |> Value.withConstraint SchemaConstraint.required
-        test <@ Value.constraints required |> List.map SchemaConstraint.code = [ "required" ] @>
-        test <@ Value.rawConstraints required |> List.map SchemaConstraint.code = [ "minLength"; "maxLength" ] @>
+        let required = ContactName.schema |> Schema.constrain Constraint.required
+        test <@ Schema.constraints required |> List.map Constraint.code = [ "required" ] @>
+        test <@ Schema.rawConstraints required |> List.map Constraint.code = [ "minLength"; "maxLength" ] @>
 
     [<Fact>]
     let ``rawConstraints raises for primitive value schemas`` () =
-        raises<ArgumentException> <@ Value.rawConstraints Value.text |> ignore @>
+        raises<ArgumentException> <@ Schema.rawConstraints Schema.text |> ignore @>
 
     [<Fact>]
     let ``refined inspection helpers raise for null schemas`` () =
-        raises<ArgumentNullException> <@ Value.isRefined Unchecked.defaultof<ValueSchema<Email>> |> ignore @>
-        raises<ArgumentNullException> <@ Value.underlyingPrimitiveKind Unchecked.defaultof<ValueSchema<Email>> |> ignore @>
-        raises<ArgumentNullException> <@ Value.rawConstraints Unchecked.defaultof<ValueSchema<Email>> |> ignore @>
+        raises<ArgumentNullException> <@ Schema.isRefined Unchecked.defaultof<Schema<Email>> |> ignore @>
+        raises<ArgumentNullException> <@ Schema.underlyingPrimitiveKind Unchecked.defaultof<Schema<Email>> |> ignore @>
+        raises<ArgumentNullException> <@ Schema.rawConstraints Unchecked.defaultof<Schema<Email>> |> ignore @>
 
     [<Fact>]
     let ``refined raises for null construct, inspect, or raw schema`` () =
-        raises<ArgumentNullException> <@ Value.refined Unchecked.defaultof<string -> Email> Email.value Value.text |> ignore @>
-        raises<ArgumentNullException> <@ Value.refined Email.create Unchecked.defaultof<Email -> string> Value.text |> ignore @>
-        raises<ArgumentNullException> <@ Value.refined Email.create Email.value Unchecked.defaultof<ValueSchema<string>> |> ignore @>
+        raises<ArgumentNullException> <@ Schema.convert Unchecked.defaultof<string -> Email> Email.value Schema.text |> ignore @>
+        raises<ArgumentNullException> <@ Schema.convert Email.create Unchecked.defaultof<Email -> string> Schema.text |> ignore @>
+        raises<ArgumentNullException> <@ Schema.convert Email.create Email.value Unchecked.defaultof<Schema<string>> |> ignore @>
 
     [<Fact>]
     let ``every refined value schema carries both construction and inspection operations`` () =
-        match Email.schema.Definition.Shape with
+        match Email.schema.ValueDefinition.Shape with
         | RefinedValueDefinition(_, ops) ->
             test <@ not (isNull (box ops.Construct)) @>
             test <@ not (isNull (box ops.Inspect)) @>
@@ -225,5 +248,5 @@ module SchemaRefinedValueTests =
 
     [<Fact>]
     let ``refined value operations reject a missing construction or inspection function`` () =
-        raises<ArgumentNullException> <@ RefinedValueOps(Unchecked.defaultof<obj -> obj>, id) |> ignore @>
-        raises<ArgumentNullException> <@ RefinedValueOps(id, Unchecked.defaultof<obj -> obj>) |> ignore @>
+        raises<ArgumentNullException> <@ RefinedValueOps(Unchecked.defaultof<obj -> Result<obj, SchemaError list>>, id) |> ignore @>
+        raises<ArgumentNullException> <@ RefinedValueOps(Ok, Unchecked.defaultof<obj -> obj>) |> ignore @>

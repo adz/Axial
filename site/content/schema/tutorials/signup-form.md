@@ -18,16 +18,15 @@ The schema declares each field once: external name, getter, and constraints.
 
 ```fsharp
 open Axial.Schema
-open Axial.Schema
 
 type Signup = { Email: string; Age: int }
 
 let signupSchema =
     Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
-    |> Schema.fieldWith
-        [ SchemaConstraint.required; SchemaConstraint.email; SchemaConstraint.maxLength 254 ]
-        "email" _.Email Value.text
-    |> Schema.fieldWith [ SchemaConstraint.atLeast 13 ] "age" _.Age Value.int
+    |> Schema.field "email" _.Email
+        (Schema.text
+         |> Schema.constrainAll [ Constraint.required; Constraint.email; Constraint.maxLength 254 ])
+    |> Schema.field "age" _.Age (Schema.int |> Schema.constrainAll [ Constraint.atLeast 13 ])
     |> Schema.build
 ```
 
@@ -48,7 +47,7 @@ let raw =
 ## Parse
 
 ```fsharp
-let parsed = Model.parse signupSchema raw
+let parsed = Schema.parse signupSchema raw
 ```
 
 `parsed` is a `ParsedInput<Signup, SchemaError>`. On success `parsed.Result` is `Ok signup` and every constraint

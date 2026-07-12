@@ -1,11 +1,11 @@
 ---
 title: "Schema.UnionCase"
 linkTitle: "UnionCase<union>"
-weight: 1003
+weight: 1002
 type: docs
 ---
 
-Describes one tagged union case for <code>Value.union</code>.
+Describes one tagged union case for <code>Schema.union</code>.
 
 ## Signature
 

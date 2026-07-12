@@ -11,7 +11,7 @@ description: Schema vs Input vs Rules — the three tools inside Axial.Schema.
 | Tool | Question it answers |
 | :--- | :--- |
 | `Schema<'model>` | What is the model's shape, order, construction, and constraint metadata? |
-| `Model.parse` / `Model.reconstruct` | Can this raw input, or this already-existing value, become a trusted model? |
+| `Schema.parse` / `Schema.check` | Can this raw input, or this already-existing value, become a trusted model? |
 | `ContextRules.apply` | Is this already-trusted model acceptable in this context? |
 
 ## Schema
@@ -21,13 +21,13 @@ constraints. It executes nothing by itself — interpreters decide what it means
 
 ## Input
 
-`Model.parse schema raw` is the boundary interpreter: it parses raw field values, runs constraint checks, calls the
+`Schema.parse schema raw` is the boundary interpreter: it parses raw field values, runs constraint checks, calls the
 constructor only when every argument is trusted, and returns `ParsedInput` carrying either the model or path-aware
 diagnostics plus the original input for redisplay.
 
-Use `Model.reconstruct schema model` when the value already exists (imported rows, hand-built values) and needs the
+Use `Schema.check schema model` when the value already exists (imported rows, hand-built values) and needs the
 same intrinsic constraints re-checked through getters, instead of parsed from raw input. It gives the same trust
-strength as `Model.parse` — including re-invoking the model's own constructor, so cross-field invariants are
+strength as `Schema.parse` — including re-invoking the model's own constructor, so cross-field invariants are
 re-checked too, not just per-field constraints.
 
 ## Rules
@@ -45,8 +45,8 @@ See [Rules](../rules/) for the full picture, including custom codes and scoping 
 
 ## Rule Of Thumb
 
-Model shape → `Schema`; boundary input, or an existing value that needs re-checking → `Model.parse` /
-`Model.reconstruct`; workflow-dependent acceptability of an already-trusted model → `Rules`.
+Model shape → `Schema`; boundary input, or an existing value that needs re-checking → `Schema.parse` /
+`Schema.check`; workflow-dependent acceptability of an already-trusted model → `Rules`.
 
 ## Outside This Package
 

@@ -106,7 +106,7 @@ render_example_section \
 
 render_example_section \
   "Refined Value Schema Example" \
-  "This example shows schema-level refined values (Email, ContactName, a positive Quantity, and a non-negative Balance) built with Value.refined, composed into a record schema, and checked with ValueSchemaCheck." \
+  "This example shows total domain conversions built with Schema.convert, composed into a record schema, and lowered to executable checks." \
   "$root_dir/examples/Axial.Examples/Axial.Examples.fsproj" \
   "$root_dir/examples/Axial.Examples/RefinedValueSchemaExample.fs" \
   "https://github.com/adz/Axial/blob/main/examples/Axial.Examples/RefinedValueSchemaExample.fs" \

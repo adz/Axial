@@ -17,23 +17,23 @@ module UnionInlineSchemaParseTests =
 
     let private cardSchema () =
         Schema.recordFor<CardDetails, _> (fun number -> { Number = number })
-        |> Schema.field "number" _.Number (Value.text |> Value.withConstraint SchemaConstraint.required)
+        |> Schema.field "number" _.Number (Schema.text |> Schema.constrain Constraint.required)
         |> Schema.build
 
     let private invoiceSchema () =
         Schema.recordFor<InvoiceDetails, _> (fun reference -> { Reference = reference })
-        |> Schema.text "reference" _.Reference
+        |> Schema.field "reference" _.Reference Schema.text
         |> Schema.build
 
     let private paymentValue () =
-        Value.unionInline
+        Schema.inlineUnion
             "type"
-            [ UnionCase.create "card" Card (function Card details -> Some details | _ -> None) (Value.nested (cardSchema ()))
+            [ UnionCase.create "card" Card (function Card details -> Some details | _ -> None) ((cardSchema ()))
               UnionCase.create
                   "invoice"
                   Invoice
                   (function Invoice details -> Some details | _ -> None)
-                  (Value.nested (invoiceSchema ())) ]
+                  ((invoiceSchema ())) ]
 
     let private checkoutSchema () =
         Schema.recordFor<Checkout, _> (fun payment -> { Payment = payment })
@@ -49,7 +49,7 @@ module UnionInlineSchemaParseTests =
                       RawInput.Object(Map.ofList [ "type", RawInput.Scalar "card"; "number", RawInput.Scalar "4242" ]) ]
             )
 
-        let parsed = Model.parse (checkoutSchema ()) raw
+        let parsed = Schema.parse (checkoutSchema ()) raw
 
         test <@ parsed.Result = Ok { Payment = Card { Number = "4242" } } @>
 
@@ -61,7 +61,7 @@ module UnionInlineSchemaParseTests =
                     [ "payment", RawInput.Object(Map.ofList [ "type", RawInput.Scalar "cash"; "number", RawInput.Scalar "4242" ]) ]
             )
 
-        let parsed = Model.parse (checkoutSchema ()) raw
+        let parsed = Schema.parse (checkoutSchema ()) raw
 
         test
             <@ parsed.Errors = [ { Path = [ PathSegment.Name "payment"; PathSegment.Name "type" ]
@@ -72,7 +72,7 @@ module UnionInlineSchemaParseTests =
         let raw =
             RawInput.Object(Map.ofList [ "payment", RawInput.Object(Map.ofList [ "type", RawInput.Scalar "card" ]) ])
 
-        let parsed = Model.parse (checkoutSchema ()) raw
+        let parsed = Schema.parse (checkoutSchema ()) raw
 
         test
             <@ parsed.Errors = [ { Path = [ PathSegment.Name "payment"; PathSegment.Name "number" ]
@@ -82,6 +82,6 @@ module UnionInlineSchemaParseTests =
     let ``validate checks existing union-inline values through case extractors`` () =
         let model = { Payment = Invoice { Reference = "inv-42" } }
 
-        let result = Model.reconstruct (checkoutSchema ()) model
+        let result = Schema.check (checkoutSchema ()) model
 
         test <@ result = Ok model @>

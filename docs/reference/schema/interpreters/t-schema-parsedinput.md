@@ -1,6 +1,6 @@
 ---
 title: "Schema.ParsedInput"
-linkTitle: "ParsedInput<model, error>"
+linkTitle: "ParsedInput<value, error>"
 weight: 1100
 ---
 
@@ -11,14 +11,14 @@ weight: 1100
 ## Signature
 
 <div class="fsdocs-usage">
-<code>type ParsedInput<'model, 'error></code>
+<code>type ParsedInput<'value, 'error></code>
 </div>
 
 ## Type Parameters
 
 | Name |
 | --- |
-| `model` |
+| `value` |
 | `error` |
 
 ## Record Fields

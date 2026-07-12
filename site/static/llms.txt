@@ -33,16 +33,16 @@ Data flows from left to right. Later stages can bind earlier stages directly.
 - Clock-relative refined types such as future/past date-time are intentionally absent.
 
 ## Schema Boundary Model
-- `Schema<'model>` is the domain-model boundary declaration: ordered fields, external names, typed construction, value shapes, portable constraints, formats, and descriptions. It executes nothing until an interpreter consumes it.
+- `Schema<'value>` is the universal typed declaration for primitives, refined values, collections, unions, and records. It executes nothing until an interpreter consumes it.
 - Author with `Schema.recordFor<'model,_> ctor |> Schema.field... |> Schema.build`; use `Schema.buildResult` for a constructor returning `Result`. `Axial.Schema.DSL` is the same pipeline without prefixes and should be opened only inside a schema-definition module.
-- Value shapes are primitives (`text`, `int`, `decimal`, `bool`, `date`, `dateTime`, `guid`), refined/domain values, `nested`, `manyOf`, `map`, `optionOf`, externally tagged `union`, internally tagged `unionInline`, scalar `enumOf`, and recursive `lazyOf`.
-- `RawInput` is source-neutral boundary data. `Model.parse schema raw` returns `ParsedInput<'model,SchemaError>`: a model or accumulated path-aware diagnostics plus the original input for redisplay. `ParsedInput.renderErrors` is the default English renderer.
-- `Model.validate schema draft` promotes named-field construction to `Model<'model>`. `Model.reconstruct schema model` rechecks an existing value and invokes the constructor again. Both enforce field constraints and cross-field constructor invariants.
+- Catalog members include primitives (`text`, `int`, `decimal`, `bool`, `date`, `dateTime`, `guid`), `list`, `map`, `option`, externally tagged `union`, `inlineUnion`, scalar `enum`, recursive `defer`, total `convert`, and fallible `refine`.
+- `RawInput` is source-neutral boundary data. `Schema.parse schema raw` returns `ParsedInput<'model,SchemaError>`: a model or accumulated path-aware diagnostics plus the original input for redisplay. `ParsedInput.renderErrors` is the default English renderer.
+- `Schema.check schema value` rechecks an existing value and invokes a record schema's constructor again. It returns the original value on success; durable guarantees require private representations or complete smart constructors.
 - `FieldRef<'model,'value>` carries `Name`, `Get`, and immutable `Set`; generated contracts emit one per field. A setter updates a draft and does not establish schema trust.
 - `ContextRules.apply` runs operation-specific rules over an already trusted model. Use `failAtField` and `atField` to keep diagnostic paths tied to `FieldRef` values.
-- `Inspect.model` / `Inspect.value` return finite metadata without parsing or checks. Recursive graphs use `ValueShape.Deferred` and `Recursive`. `JsonSchema.generate` lowers the same declaration, using `$defs` and `$ref` for recursion.
-- `Axial.Codec.Json.compile` creates a reusable reflection-free JSON codec. The codec checks wire shape; untrusted boundaries still use `RawInput` plus `Model.parse` for constraints and complete diagnostics.
-- `Contract.create` / `supersedes` / `build` declare contiguous typed wire migrations. `Contract.parse` selects versions with `VersionSource.Field`, `External`, or `UnversionedMeans` and returns the current `Model<'model>` or `ContractError`.
+- `Inspect.model` / `Inspect.schema` return finite metadata without parsing or checks. Recursive graphs use `SchemaShape.Deferred` and `Recursive`. `JsonSchema.generate` lowers the same declaration, using `$defs` and `$ref` for recursion.
+- `Axial.Codec.Json.compile` creates a reusable reflection-free JSON codec. The codec checks wire shape; untrusted boundaries still use `RawInput` plus `Schema.parse` for constraints and complete diagnostics.
+- `Contract.create` / `supersedes` / `build` declare contiguous typed wire migrations. `Contract.parse` selects versions with `VersionSource.Field`, `External`, or `UnversionedMeans` and returns the current value or `ContractError`.
 - `schemagen` turns a `.contract` wire declaration into checked-in F# records, schemas, parse/validate functions, and field references. Migrations remain hand-written F#.
 - The non-packable `Axial.Schema.Testing.SchemaGen` adapter derives FsCheck generators through `RawInput`. Use `rawWith` for pattern, custom, or application-specific field distributions.
 

@@ -25,15 +25,15 @@ module UnionSchemaParseTests =
 
     let private cardSchema () =
         Schema.recordFor<CardDetails, _> (fun number -> { Number = number })
-        |> Schema.field "number" _.Number RefinedSchema.nonBlankString
+        |> Schema.field "number" _.Number RefinedSchemas.nonBlankString
         |> Schema.build
 
     let private paymentValue () =
-        Value.union
+        Schema.union
             "type"
             "value"
-            [ UnionCase.create "card" Card (function Card details -> Some details | _ -> None) (Value.nested (cardSchema ()))
-              UnionCase.create "invoice" Invoice (function Invoice slug -> Some slug | _ -> None) RefinedSchema.slug ]
+            [ UnionCase.create "card" Card (function Card details -> Some details | _ -> None) ((cardSchema ()))
+              UnionCase.create "invoice" Invoice (function Invoice slug -> Some slug | _ -> None) RefinedSchemas.slug ]
 
     let private checkoutSchema () =
         Schema.recordFor<Checkout, _> (fun payment -> { Payment = payment })
@@ -53,7 +53,7 @@ module UnionSchemaParseTests =
                       ) ]
             )
 
-        let parsed = Model.parse (checkoutSchema ()) raw
+        let parsed = Schema.parse (checkoutSchema ()) raw
 
         test
             <@ parsed.Result
@@ -72,7 +72,7 @@ module UnionSchemaParseTests =
                       RawInput.Object(Map.ofList [ "type", RawInput.Scalar "cash"; "value", RawInput.Scalar "ignored" ]) ]
             )
 
-        let parsed = Model.parse (checkoutSchema ()) raw
+        let parsed = Schema.parse (checkoutSchema ()) raw
 
         test
             <@ parsed.Errors = [ { Path = [ PathSegment.Name "payment"; PathSegment.Name "type" ]
@@ -91,7 +91,7 @@ module UnionSchemaParseTests =
                       ) ]
             )
 
-        let parsed = Model.parse (checkoutSchema ()) raw
+        let parsed = Schema.parse (checkoutSchema ()) raw
 
         test
             <@ parsed.Errors = [ { Path = [ PathSegment.Name "payment"; PathSegment.Name "value"; PathSegment.Name "number" ]
@@ -105,7 +105,7 @@ module UnionSchemaParseTests =
                     [ "payment", RawInput.Object(Map.ofList [ "type", RawInput.Scalar "invoice"; "value", RawInput.Scalar "inv-42" ]) ]
             )
 
-        let parsed = Model.parse (checkoutSchema ()) raw
+        let parsed = Schema.parse (checkoutSchema ()) raw
 
         test
             <@ parsed.Result
@@ -123,6 +123,6 @@ module UnionSchemaParseTests =
                 | Ok slug -> Invoice slug
                 | Error error -> failwithf "Unexpected slug failure: %A" error }
 
-        let result = Model.reconstruct (checkoutSchema ()) model
+        let result = Schema.check (checkoutSchema ()) model
 
         test <@ result = Ok model @>

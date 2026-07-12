@@ -20,8 +20,8 @@ module SchemaNestedValueTests =
 
     let private buildAddressSchema () =
         Schema.recordFor<Address, _> (fun street city -> { Street = street; City = city })
-        |> Schema.field "street" _.Street (Value.text |> Value.withConstraint SchemaConstraint.required)
-        |> Schema.field "city" _.City (Value.text |> Value.withConstraint SchemaConstraint.required)
+        |> Schema.field "street" _.Street (Schema.text |> Schema.constrain Constraint.required)
+        |> Schema.field "city" _.City (Schema.text |> Schema.constrain Constraint.required)
         |> Schema.build
 
     [<Fact>]
@@ -30,8 +30,8 @@ module SchemaNestedValueTests =
 
         let schema =
             Schema.recordFor<Customer, _> (fun name address -> { Name = name; Address = address })
-            |> Schema.field "name" _.Name (Value.text |> Value.withConstraint SchemaConstraint.required)
-            |> Schema.nested "address" _.Address addressSchema
+            |> Schema.field "name" _.Name (Schema.text |> Schema.constrain Constraint.required)
+            |> Schema.field "address" _.Address addressSchema
             |> Schema.build
 
         let model = modelDefinition schema
@@ -50,8 +50,8 @@ module SchemaNestedValueTests =
 
         let schema =
             Schema.recordFor<Customer, _> (fun name address -> { Name = name; Address = address })
-            |> Schema.field "name" _.Name (Value.text |> Value.withConstraint SchemaConstraint.required)
-            |> Schema.nestedWith [ SchemaConstraint.required ] "address" _.Address addressSchema
+            |> Schema.field "name" _.Name (Schema.text |> Schema.constrain Constraint.required)
+            |> Schema.field "address" _.Address (addressSchema |> Schema.constrainAll [ Constraint.required ])
             |> Schema.build
 
         let model = modelDefinition schema
@@ -60,14 +60,14 @@ module SchemaNestedValueTests =
             model.Fields
             |> List.find (fun field -> ExternalFieldName.value field.ExternalName = "address")
 
-        test <@ addressField.Constraints |> List.map SchemaConstraint.code = [ "required" ] @>
+        test <@ addressField.ValueSchema.Constraints |> List.map Constraint.code = [ "required" ] @>
 
     [<Fact>]
-    let ``a nested value schema built from Value.nested is not a refined or primitive value schema`` () =
+    let ``a nested value schema built from is not a refined or primitive value schema`` () =
         let addressSchema = buildAddressSchema ()
-        let nestedValue = Value.nested addressSchema
+        let nestedValue = addressSchema
 
-        test <@ not (Value.isRefined nestedValue) @>
+        test <@ not (Schema.isRefined nestedValue) @>
 
     [<Fact>]
     let ``inspection interpreters can walk into a nested value schema using getters, without reflection`` () =
@@ -75,8 +75,8 @@ module SchemaNestedValueTests =
 
         let schema =
             Schema.recordFor<Customer, _> (fun name address -> { Name = name; Address = address })
-            |> Schema.field "name" _.Name (Value.text |> Value.withConstraint SchemaConstraint.required)
-            |> Schema.nested "address" _.Address addressSchema
+            |> Schema.field "name" _.Name (Schema.text |> Schema.constrain Constraint.required)
+            |> Schema.field "address" _.Address addressSchema
             |> Schema.build
 
         let model = modelDefinition schema

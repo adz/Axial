@@ -27,26 +27,26 @@ module NestedSchemaParseTests =
 
     let private addressSchema =
         Schema.recordFor<Address, _> (fun street city -> ({ Street = street; City = city }: Address))
-        |> Schema.field "street" (fun address -> address.Street) (Value.text |> Value.withConstraint SchemaConstraint.required)
-        |> Schema.field "city" (fun address -> address.City) (Value.text |> Value.withConstraint SchemaConstraint.required)
+        |> Schema.field "street" (fun address -> address.Street) (Schema.text |> Schema.constrain Constraint.required)
+        |> Schema.field "city" (fun address -> address.City) (Schema.text |> Schema.constrain Constraint.required)
         |> Schema.build
 
     let private customerSchema =
         Schema.recordFor<Customer, _> (fun name address -> ({ Name = name; Address = address }: Customer))
-        |> Schema.field "name" (fun customer -> customer.Name) (Value.text |> Value.withConstraint SchemaConstraint.required)
-        |> Schema.nestedWith [ SchemaConstraint.required ] "address" (fun customer -> customer.Address) addressSchema
+        |> Schema.field "name" (fun customer -> customer.Name) (Schema.text |> Schema.constrain Constraint.required)
+        |> Schema.field "address" (fun customer -> customer.Address) (addressSchema |> Schema.constrain Constraint.required)
         |> Schema.build
 
     let private verifiedAddressSchema =
         Schema.recordFor<VerifiedAddress, _> VerifiedAddress.Create
-        |> Schema.field "street" (fun address -> address.Street) (Value.text |> Value.withConstraint SchemaConstraint.required)
-        |> Schema.field "city" (fun address -> address.City) (Value.text |> Value.withConstraint SchemaConstraint.required)
+        |> Schema.field "street" (fun address -> address.Street) (Schema.text |> Schema.constrain Constraint.required)
+        |> Schema.field "city" (fun address -> address.City) (Schema.text |> Schema.constrain Constraint.required)
         |> Schema.buildResult
 
     let private verifiedCustomerSchema =
         Schema.recordFor<VerifiedCustomer, _> (fun name address -> ({ Name = name; Address = address }: VerifiedCustomer))
-        |> Schema.field "name" (fun customer -> customer.Name) (Value.text |> Value.withConstraint SchemaConstraint.required)
-        |> Schema.nestedWith [ SchemaConstraint.required ] "address" (fun customer -> customer.Address) verifiedAddressSchema
+        |> Schema.field "name" (fun customer -> customer.Name) (Schema.text |> Schema.constrain Constraint.required)
+        |> Schema.field "address" (fun customer -> customer.Address) (verifiedAddressSchema |> Schema.constrain Constraint.required)
         |> Schema.build
 
     let private validAddress =
@@ -57,10 +57,10 @@ module NestedSchemaParseTests =
         let raw =
             RawInput.Object(Map.ofList [ "name", RawInput.Scalar "Ada"; "address", validAddress ])
 
-        let parsed = Model.parse customerSchema raw
+        let parsed = Schema.parse customerSchema raw
 
         test <@ parsed.IsValid @>
-        test <@ parsed.Model = { Name = "Ada"; Address = { Street = "1 Infinite Loop"; City = "Cupertino" } } @>
+        test <@ parsed.Value = { Name = "Ada"; Address = { Street = "1 Infinite Loop"; City = "Cupertino" } } @>
 
     [<Fact>]
     let ``parse prefixes nested field diagnostics with the nested field's name`` () =
@@ -71,7 +71,7 @@ module NestedSchemaParseTests =
                       "address", RawInput.Object(Map.ofList [ "street", RawInput.Scalar "1 Infinite Loop"; "city", RawInput.Missing ]) ]
             )
 
-        let parsed = Model.parse customerSchema raw
+        let parsed = Schema.parse customerSchema raw
 
         test <@ not parsed.IsValid @>
         test <@ parsed.Errors = [ { Path = [ PathSegment.Name "address"; PathSegment.Name "city" ]; Error = SchemaError.Required } ] @>
@@ -85,7 +85,7 @@ module NestedSchemaParseTests =
                       "address", RawInput.Object(Map.ofList [ "street", RawInput.Scalar "Same"; "city", RawInput.Scalar "Same" ]) ]
             )
 
-        let parsed = Model.parse verifiedCustomerSchema raw
+        let parsed = Schema.parse verifiedCustomerSchema raw
 
         test <@ not parsed.IsValid @>
         test
@@ -99,7 +99,7 @@ module NestedSchemaParseTests =
         let raw =
             RawInput.Object(Map.ofList [ "name", RawInput.Scalar "Ada"; "address", RawInput.Scalar "not-an-object" ])
 
-        let parsed = Model.parse customerSchema raw
+        let parsed = Schema.parse customerSchema raw
 
         test <@ not parsed.IsValid @>
         test <@ parsed.Errors = [ { Path = [ PathSegment.Name "address" ]; Error = SchemaError.ExpectedObject } ] @>
@@ -111,7 +111,7 @@ module NestedSchemaParseTests =
                 Map.ofList [ "name", RawInput.Scalar "Ada"; "address", RawInput.Many [ RawInput.Scalar "not-an-object" ] ]
             )
 
-        let parsed = Model.parse customerSchema raw
+        let parsed = Schema.parse customerSchema raw
 
         test <@ not parsed.IsValid @>
         test <@ parsed.Errors = [ { Path = [ PathSegment.Name "address" ]; Error = SchemaError.ExpectedObject } ] @>
@@ -120,7 +120,7 @@ module NestedSchemaParseTests =
     let ``parse reports required when the nested raw field is missing`` () =
         let raw = RawInput.Object(Map.ofList [ "name", RawInput.Scalar "Ada" ])
 
-        let parsed = Model.parse customerSchema raw
+        let parsed = Schema.parse customerSchema raw
 
         test <@ not parsed.IsValid @>
         test <@ parsed.Errors = [ { Path = [ PathSegment.Name "address" ]; Error = SchemaError.Required } ] @>
@@ -134,7 +134,7 @@ module NestedSchemaParseTests =
                       "address", RawInput.Object(Map.ofList [ "street", RawInput.Missing; "city", RawInput.Missing ]) ]
             )
 
-        let parsed = Model.parse customerSchema raw
+        let parsed = Schema.parse customerSchema raw
 
         let sortedErrors =
             parsed.Errors

@@ -85,7 +85,7 @@ module FieldOrder =
 /// </para>
 /// </remarks>
 [<RequireQualifiedAccess>]
-type SchemaConstraintMetadata =
+type ConstraintMetadata =
     /// <summary>A boundary value must be supplied.</summary>
     | Required
     /// <summary>A boundary value may be omitted.</summary>
@@ -149,9 +149,9 @@ type SchemaConstraintMetadata =
 /// </para>
 /// </remarks>
 [<Sealed; AllowNullLiteral>]
-type SchemaConstraint internal (
+type Constraint internal (
     code: string,
-    metadata: SchemaConstraintMetadata,
+    metadata: ConstraintMetadata,
     arguments: IReadOnlyDictionary<string, obj>,
     message: string option
 ) =
@@ -164,14 +164,14 @@ type SchemaConstraint internal (
     /// <summary>Gets the structured constraint arguments keyed by stable interpreter-facing names.</summary>
     member _.Arguments = arguments
 
-    /// <summary>Gets the author-supplied message override, when one was attached with <see cref="M:Axial.Schema.SchemaConstraint.withMessage" />.</summary>
+    /// <summary>Gets the author-supplied message override, when one was attached with <see cref="M:Axial.Schema.Constraint.withMessage" />.</summary>
     member _.Message = message
 
     override _.ToString() = code
 
 /// <summary>Functions for creating and inspecting schema constraint metadata.</summary>
 [<RequireQualifiedAccess>]
-module SchemaConstraint =
+module Constraint =
     let private ensureName parameterName (value: string) =
         if isNull value then
             nullArg parameterName
@@ -194,7 +194,7 @@ module SchemaConstraint =
 
     let private createKnown code metadata =
         ensureName (nameof code) code
-        SchemaConstraint(code, metadata, emptyArguments, None)
+        Constraint(code, metadata, emptyArguments, None)
 
     let private createKnownWithArguments code metadata (arguments: (string * obj) seq) =
         ensureName (nameof code) code
@@ -209,7 +209,7 @@ module SchemaConstraint =
             ensureName (nameof arguments) name
             values.Add(name, value))
 
-        SchemaConstraint(code, metadata, freezeArguments values, None)
+        Constraint(code, metadata, freezeArguments values, None)
 
     /// <summary>Creates portable custom schema constraint metadata with no arguments.</summary>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="code" /> is null.</exception>
@@ -218,7 +218,7 @@ module SchemaConstraint =
     /// </exception>
     let create code =
         ensureName (nameof code) code
-        SchemaConstraint(code, SchemaConstraintMetadata.Custom code, emptyArguments, None)
+        Constraint(code, ConstraintMetadata.Custom code, emptyArguments, None)
 
     /// <summary>Creates portable custom schema constraint metadata with structured arguments.</summary>
     /// <exception cref="T:System.ArgumentNullException">
@@ -240,30 +240,30 @@ module SchemaConstraint =
             ensureName (nameof arguments) name
             values.Add(name, value))
 
-        SchemaConstraint(
+        Constraint(
             code,
-            SchemaConstraintMetadata.Custom code,
+            ConstraintMetadata.Custom code,
             freezeArguments values,
             None
         )
 
     /// <summary>Requires a value to be supplied by boundary interpreters.</summary>
-    let required = createKnown "required" SchemaConstraintMetadata.Required
+    let required = createKnown "required" ConstraintMetadata.Required
 
     /// <summary>Marks a value as optional for boundary interpreters.</summary>
-    let optional = createKnown "optional" SchemaConstraintMetadata.Optional
+    let optional = createKnown "optional" ConstraintMetadata.Optional
 
     /// <summary>Requires a text value to have at least the supplied length.</summary>
     /// <exception cref="T:System.ArgumentOutOfRangeException">Thrown when <paramref name="minimum" /> is negative.</exception>
     let minLength minimum =
         ensureNonNegative (nameof minimum) minimum
-        createKnownWithArguments "minLength" (SchemaConstraintMetadata.MinLength minimum) [ "minimum", box minimum ]
+        createKnownWithArguments "minLength" (ConstraintMetadata.MinLength minimum) [ "minimum", box minimum ]
 
     /// <summary>Requires a text value to have at most the supplied length.</summary>
     /// <exception cref="T:System.ArgumentOutOfRangeException">Thrown when <paramref name="maximum" /> is negative.</exception>
     let maxLength maximum =
         ensureNonNegative (nameof maximum) maximum
-        createKnownWithArguments "maxLength" (SchemaConstraintMetadata.MaxLength maximum) [ "maximum", box maximum ]
+        createKnownWithArguments "maxLength" (ConstraintMetadata.MaxLength maximum) [ "maximum", box maximum ]
 
     /// <summary>Requires a text value to have a length inside the supplied inclusive bounds.</summary>
     /// <exception cref="T:System.ArgumentOutOfRangeException">
@@ -278,14 +278,14 @@ module SchemaConstraint =
         ensureOrderedBounds (nameof minimum) minimum maximum
         createKnownWithArguments
             "lengthBetween"
-            (SchemaConstraintMetadata.LengthBetween(minimum, maximum))
+            (ConstraintMetadata.LengthBetween(minimum, maximum))
             [ "minimum", box minimum; "maximum", box maximum ]
 
     /// <summary>Requires a text value to match Axial's pragmatic email format.</summary>
-    let email = createKnown "email" SchemaConstraintMetadata.Email
+    let email = createKnown "email" ConstraintMetadata.Email
 
     /// <summary>Requires a text value to have no leading or trailing whitespace.</summary>
-    let trimmed = createKnown "trimmed" SchemaConstraintMetadata.Trimmed
+    let trimmed = createKnown "trimmed" ConstraintMetadata.Trimmed
 
     /// <summary>Requires a text value to match the supplied regular expression pattern.</summary>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="pattern" /> is null.</exception>
@@ -294,7 +294,7 @@ module SchemaConstraint =
     /// </exception>
     let pattern pattern =
         ensureName (nameof pattern) pattern
-        createKnownWithArguments "pattern" (SchemaConstraintMetadata.Pattern pattern) [ "pattern", box pattern ]
+        createKnownWithArguments "pattern" (ConstraintMetadata.Pattern pattern) [ "pattern", box pattern ]
 
     /// <summary>Requires a text value to equal one of the supplied choices.</summary>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="choices" /> is null.</exception>
@@ -305,14 +305,14 @@ module SchemaConstraint =
         let choices = choices |> Seq.toList
         createKnownWithArguments
             "oneOf"
-            (SchemaConstraintMetadata.OneOf choices)
+            (ConstraintMetadata.OneOf choices)
             [ "choices", choices |> List.toArray |> box ]
 
     /// <summary>Requires a value to not equal the supplied unexpected value.</summary>
     let notEqualTo unexpected =
         createKnownWithArguments
             "notEqualTo"
-            (SchemaConstraintMetadata.NotEqualTo(box unexpected))
+            (ConstraintMetadata.NotEqualTo(box unexpected))
             [ "unexpected", box unexpected ]
 
     /// <summary>Requires a value to be inside the supplied inclusive numeric bounds.</summary>
@@ -323,54 +323,54 @@ module SchemaConstraint =
         ensureOrderedBounds (nameof minimum) minimum maximum
         createKnownWithArguments
             "between"
-            (SchemaConstraintMetadata.Between(box minimum, box maximum))
+            (ConstraintMetadata.Between(box minimum, box maximum))
             [ "minimum", box minimum; "maximum", box maximum ]
 
     /// <summary>Requires a value to be greater than the supplied exclusive numeric lower bound.</summary>
     let greaterThan minimum =
         createKnownWithArguments
             "greaterThan"
-            (SchemaConstraintMetadata.GreaterThan(box minimum))
+            (ConstraintMetadata.GreaterThan(box minimum))
             [ "minimum", box minimum ]
 
     /// <summary>Requires a value to be less than the supplied exclusive numeric upper bound.</summary>
     let lessThan maximum =
         createKnownWithArguments
             "lessThan"
-            (SchemaConstraintMetadata.LessThan(box maximum))
+            (ConstraintMetadata.LessThan(box maximum))
             [ "maximum", box maximum ]
 
     /// <summary>Requires a value to be greater than or equal to the supplied numeric lower bound.</summary>
     let atLeast minimum =
         createKnownWithArguments
             "atLeast"
-            (SchemaConstraintMetadata.AtLeast(box minimum))
+            (ConstraintMetadata.AtLeast(box minimum))
             [ "minimum", box minimum ]
 
     /// <summary>Requires a value to be less than or equal to the supplied numeric upper bound.</summary>
     let atMost maximum =
         createKnownWithArguments
             "atMost"
-            (SchemaConstraintMetadata.AtMost(box maximum))
+            (ConstraintMetadata.AtMost(box maximum))
             [ "maximum", box maximum ]
 
     /// <summary>Requires a collection value to contain exactly the supplied count.</summary>
     /// <exception cref="T:System.ArgumentOutOfRangeException">Thrown when <paramref name="expected" /> is negative.</exception>
     let count expected =
         ensureNonNegative (nameof expected) expected
-        createKnownWithArguments "count" (SchemaConstraintMetadata.Count expected) [ "expected", box expected ]
+        createKnownWithArguments "count" (ConstraintMetadata.Count expected) [ "expected", box expected ]
 
     /// <summary>Requires a collection value to contain at least the supplied count.</summary>
     /// <exception cref="T:System.ArgumentOutOfRangeException">Thrown when <paramref name="minimum" /> is negative.</exception>
     let minCount minimum =
         ensureNonNegative (nameof minimum) minimum
-        createKnownWithArguments "minCount" (SchemaConstraintMetadata.MinCount minimum) [ "minimum", box minimum ]
+        createKnownWithArguments "minCount" (ConstraintMetadata.MinCount minimum) [ "minimum", box minimum ]
 
     /// <summary>Requires a collection value to contain at most the supplied count.</summary>
     /// <exception cref="T:System.ArgumentOutOfRangeException">Thrown when <paramref name="maximum" /> is negative.</exception>
     let maxCount maximum =
         ensureNonNegative (nameof maximum) maximum
-        createKnownWithArguments "maxCount" (SchemaConstraintMetadata.MaxCount maximum) [ "maximum", box maximum ]
+        createKnownWithArguments "maxCount" (ConstraintMetadata.MaxCount maximum) [ "maximum", box maximum ]
 
     /// <summary>Requires a collection value to contain a count inside the supplied inclusive bounds.</summary>
     /// <exception cref="T:System.ArgumentOutOfRangeException">
@@ -385,59 +385,59 @@ module SchemaConstraint =
         ensureOrderedBounds (nameof minimum) minimum maximum
         createKnownWithArguments
             "countBetween"
-            (SchemaConstraintMetadata.CountBetween(minimum, maximum))
+            (ConstraintMetadata.CountBetween(minimum, maximum))
             [ "minimum", box minimum; "maximum", box maximum ]
 
     /// <summary>Requires a numeric value to be an integer multiple of the supplied divisor.</summary>
     let multipleOf divisor =
-        createKnownWithArguments "multipleOf" (SchemaConstraintMetadata.MultipleOf(box divisor)) [ "divisor", box divisor ]
+        createKnownWithArguments "multipleOf" (ConstraintMetadata.MultipleOf(box divisor)) [ "divisor", box divisor ]
 
     /// <summary>Requires a collection value to contain no duplicate items.</summary>
-    let distinct = createKnown "distinct" SchemaConstraintMetadata.Distinct
+    let distinct = createKnown "distinct" ConstraintMetadata.Distinct
 
     /// <summary>Requires a collection value to contain the supplied item.</summary>
     let contains (item: 'value) =
-        createKnownWithArguments "contains" (SchemaConstraintMetadata.Contains(box item)) [ "item", box item ]
+        createKnownWithArguments "contains" (ConstraintMetadata.Contains(box item)) [ "item", box item ]
 
-    /// <summary>Requires a value to be greater than zero. Alias for <see cref="M:Axial.Schema.SchemaConstraint.greaterThan" /> with a generic zero bound.</summary>
+    /// <summary>Requires a value to be greater than zero. Alias for <see cref="M:Axial.Schema.Constraint.greaterThan" /> with a generic zero bound.</summary>
     let inline positive<'value when 'value: (static member Zero: 'value)> () =
         greaterThan LanguagePrimitives.GenericZero<'value>
 
-    /// <summary>Requires a value to be greater than or equal to zero. Alias for <see cref="M:Axial.Schema.SchemaConstraint.atLeast" /> with a generic zero bound.</summary>
+    /// <summary>Requires a value to be greater than or equal to zero. Alias for <see cref="M:Axial.Schema.Constraint.atLeast" /> with a generic zero bound.</summary>
     let inline nonNegative<'value when 'value: (static member Zero: 'value)> () =
         atLeast LanguagePrimitives.GenericZero<'value>
 
-    /// <summary>Requires a value to be less than zero. Alias for <see cref="M:Axial.Schema.SchemaConstraint.lessThan" /> with a generic zero bound.</summary>
+    /// <summary>Requires a value to be less than zero. Alias for <see cref="M:Axial.Schema.Constraint.lessThan" /> with a generic zero bound.</summary>
     let inline negative<'value when 'value: (static member Zero: 'value)> () =
         lessThan LanguagePrimitives.GenericZero<'value>
 
-    /// <summary>Requires a value to be less than or equal to zero. Alias for <see cref="M:Axial.Schema.SchemaConstraint.atMost" /> with a generic zero bound.</summary>
+    /// <summary>Requires a value to be less than or equal to zero. Alias for <see cref="M:Axial.Schema.Constraint.atMost" /> with a generic zero bound.</summary>
     let inline nonPositive<'value when 'value: (static member Zero: 'value)> () =
         atMost LanguagePrimitives.GenericZero<'value>
 
     /// <summary>Returns the stable interpreter-facing constraint code.</summary>
-    let code (constraint': SchemaConstraint) =
+    let code (constraint': Constraint) =
         if isNull constraint' then
             nullArg (nameof constraint')
 
         constraint'.Code
 
     /// <summary>Returns the typed interpreter-facing constraint metadata.</summary>
-    let metadata (constraint': SchemaConstraint) =
+    let metadata (constraint': Constraint) =
         if isNull constraint' then
             nullArg (nameof constraint')
 
         constraint'.Metadata
 
     /// <summary>Returns the structured constraint arguments.</summary>
-    let arguments (constraint': SchemaConstraint) =
+    let arguments (constraint': Constraint) =
         if isNull constraint' then
             nullArg (nameof constraint')
 
         constraint'.Arguments
 
     /// <summary>Returns a structured constraint argument when present.</summary>
-    let tryFindArgument name (constraint': SchemaConstraint) =
+    let tryFindArgument name (constraint': Constraint) =
         ensureName (nameof name) name
 
         if isNull constraint' then
@@ -447,8 +447,8 @@ module SchemaConstraint =
         | true, value -> Some value
         | false, _ -> None
 
-    /// <summary>Returns the author-supplied message override, when one was attached with <see cref="M:Axial.Schema.SchemaConstraint.withMessage" />.</summary>
-    let message (constraint': SchemaConstraint) =
+    /// <summary>Returns the author-supplied message override, when one was attached with <see cref="M:Axial.Schema.Constraint.withMessage" />.</summary>
+    let message (constraint': Constraint) =
         if isNull constraint' then
             nullArg (nameof constraint')
 
@@ -464,13 +464,13 @@ module SchemaConstraint =
     /// <exception cref="T:System.ArgumentException">
     /// Thrown when <paramref name="message" /> is empty or contains only whitespace.
     /// </exception>
-    let withMessage (message: string) (constraint': SchemaConstraint) =
+    let withMessage (message: string) (constraint': Constraint) =
         ensureName (nameof message) message
 
         if isNull constraint' then
             nullArg (nameof constraint')
 
-        SchemaConstraint(constraint'.Code, constraint'.Metadata, constraint'.Arguments, Some message)
+        Constraint(constraint'.Code, constraint'.Metadata, constraint'.Arguments, Some message)
 
 [<ReferenceEquality>]
 type internal ConstructorApplication<'model> =
@@ -585,7 +585,7 @@ type PrimitiveValueKind =
 /// </para>
 /// <para>
 /// A format is annotation metadata, not a constraint. Declaring a format does not attach any executable check;
-/// validation-facing requirements such as <see cref="P:Axial.Schema.SchemaConstraint.email" /> remain separate
+/// validation-facing requirements such as <see cref="P:Axial.Schema.Constraint.email" /> remain separate
 /// constraint metadata.
 /// </para>
 /// </remarks>
@@ -632,11 +632,10 @@ module SchemaFormat =
 /// </para>
 /// <para>
 /// This is a plain reference type rather than a record so it keeps reference equality: the boxed functions it wraps
-/// cannot support structural equality, and reference equality is enough for <see cref="T:Axial.Schema.ValueSchemaShape" />
-/// to remain an ordinary comparable union.
+/// cannot support structural equality, and reference equality is enough for the internal schema-shape union.
 /// </para>
 /// </remarks>
-type internal RefinedValueOps(construct: obj -> obj, inspect: obj -> obj) =
+type internal RefinedValueOps(construct: obj -> Result<obj, SchemaError list>, inspect: obj -> obj) =
     do
         if isNull (box construct) then
             nullArg (nameof construct)
@@ -650,7 +649,7 @@ type internal RefinedValueOps(construct: obj -> obj, inspect: obj -> obj) =
 type internal ValueSchemaDefinition =
     { Shape: ValueSchemaShape
       Format: SchemaFormat option
-      Constraints: SchemaConstraint list
+      Constraints: Constraint list
       Description: string option
       Default: obj option }
 
@@ -687,7 +686,7 @@ and [<ReferenceEquality>] internal DeferredValueDefinition =
 /// payload representation and the boxed <c>'value option</c> the model field carries.
 /// </summary>
 /// <remarks>
-/// The closures are captured at <c>Value.optionOf</c> call sites where the payload CLR type is still statically known,
+/// The closures are captured at <c>Schema.optionOf</c> call sites where the payload CLR type is still statically known,
 /// so interpreters such as input parsing and codecs can wrap parsed payloads into <c>Some</c> and unwrap existing
 /// trusted options without runtime reflection.
 /// </remarks>
@@ -702,7 +701,7 @@ and [<ReferenceEquality>] internal OptionalValueDefinition =
 /// type-erased items back into the collection's original CLR item list type.
 /// </summary>
 /// <remarks>
-/// The boxing closure is captured at <c>Value.many</c> call sites where the item CLR type is still statically known,
+/// The boxing closure is captured at <c>Schema.many</c> call sites where the item CLR type is still statically known,
 /// so interpreters such as input parsing can build a correctly-typed <c>'item list</c> without runtime reflection.
 /// </remarks>
 and [<ReferenceEquality>] internal CollectionValueDefinition =
@@ -710,7 +709,7 @@ and [<ReferenceEquality>] internal CollectionValueDefinition =
       BoxItems: obj list -> obj
       /// <summary>
       /// Reintroduces the statically-known item type to an interpreter. The closure is captured at
-      /// <c>Value.manyOf</c> call sites, so interpreters such as codecs can build typed item plans
+      /// <c>Schema.manyOf</c> call sites, so interpreters such as codecs can build typed item plans
       /// (for example a <c>Decoder&lt;'item list&gt;</c>) without reflection or per-item boxing.
       /// </summary>
       AcceptItem: ICollectionItemInterpreter -> obj }
@@ -732,7 +731,7 @@ and internal ICollectionItemInterpreter =
 /// </summary>
 /// <remarks>
 /// Keys are always text: a JSON object's field names are the map's keys, so there is no separate key schema.
-/// The boxing closure is captured at <c>Value.mapOf</c> call sites where the item CLR type is still statically
+/// The boxing closure is captured at <c>Schema.mapOf</c> call sites where the item CLR type is still statically
 /// known, so interpreters such as input parsing can build a correctly-typed <c>Map&lt;string,'item&gt;</c> without
 /// reflection.
 /// </remarks>
@@ -741,13 +740,13 @@ and [<ReferenceEquality>] internal MapValueDefinition =
       BoxEntries: (string * obj) list -> obj
       /// <summary>
       /// Projects a trusted, boxed <c>Map&lt;string,'item&gt;</c> back into a type-erased key/value entry list.
-      /// Captured at <c>Value.map</c> call sites where the item CLR type is still statically known, so interpreters
+      /// Captured at <c>Schema.map</c> call sites where the item CLR type is still statically known, so interpreters
       /// such as model validation and codec encoding can walk entries without reflection.
       /// </summary>
       Entries: obj -> (string * obj) list
       /// <summary>
       /// Reintroduces the statically-known item type to an interpreter. The closure is captured at
-      /// <c>Value.mapOf</c> call sites, so interpreters such as codecs can build typed item plans without
+      /// <c>Schema.mapOf</c> call sites, so interpreters such as codecs can build typed item plans without
       /// reflection or per-item boxing.
       /// </summary>
       AcceptItem: ICollectionItemInterpreter -> obj }
@@ -780,19 +779,19 @@ and [<ReferenceEquality>] internal FieldDescriptor<'model> =
       Order: FieldOrder
       Getter: 'model -> obj
       ValueSchema: ValueSchemaDefinition
-      Constraints: SchemaConstraint list }
+      Constraints: Constraint list }
 
 and [<ReferenceEquality>] internal ModelSchemaDefinition<'model> =
     { Constructor: ConstructorApplication<'model>
       Fields: FieldDescriptor<'model> list
       Description: string option }
 
-/// <summary>Describes one tagged union case for <c>Value.union</c>.</summary>
+/// <summary>Describes one tagged union case for <c>Schema.union</c>.</summary>
 [<Sealed>]
 type UnionCase<'union> internal (definition: UnionCaseValueDefinition) =
     member internal _.Definition = definition
 
-/// <summary>Describes one payload-less case for <c>Value.enumOf</c>.</summary>
+/// <summary>Describes one payload-less case for <c>Schema.enumOf</c>.</summary>
 [<Sealed>]
 type EnumCase<'enum> internal (definition: EnumCaseValueDefinition) =
     member internal _.Definition = definition
@@ -800,6 +799,7 @@ type EnumCase<'enum> internal (definition: EnumCaseValueDefinition) =
 type internal SchemaDefinition<'model> =
     | PendingDefinition
     | ModelDefinition of ModelSchemaDefinition<'model>
+    | ValueDefinition of ValueSchemaDefinition
 
 /// <summary>Type-erases a model schema definition so it can be stored as a nested value schema shape.</summary>
 module internal ModelSchemaErasure =
@@ -826,7 +826,7 @@ type internal FieldDefinition<'model, 'value> =
       Order: FieldOrder
       Getter: 'model -> 'value
       ValueSchema: ValueSchemaDefinition
-      Constraints: SchemaConstraint list }
+      Constraints: Constraint list }
 
 /// <summary>
 /// Describes one typed field of a trusted model for schema interpreters.
@@ -1016,45 +1016,36 @@ module internal ModelSchemaDefinition =
           Description = None }
 
 /// <summary>
-/// Describes the portable structure of a trusted model for schema interpreters.
+/// Describes a typed value's portable structure and construction for schema interpreters.
 /// </summary>
 /// <remarks>
 /// <para>
-/// A schema definition records model structure and construction metadata without tying that metadata to input parsing,
+/// A schema records shape and construction metadata without tying that metadata to input parsing,
 /// diagnostics, validation, codecs, UI generation, or workflow execution.
 /// </para>
 /// <para>
-/// The public construction path is the progressive typed builder: start with <c>Schema.recordFor&lt;'model, _&gt;</c>,
-/// append primitive field steps such as <c>Schema.text "name" _.Name</c>, and finish with <c>Schema.build</c>. The
-/// model-type anchor lets field getters use shorthand member access such as <c>_.Name</c>. <c>Schema.field</c> remains
-/// available for explicit or custom value schemas, and <c>Schema.record</c> remains available when the model type is
-/// already clear or getters are annotated explicitly. Computation expressions and source generators can layer over that
-/// builder later, but they are not required for larger models.
+/// Primitive, collection, optional, union, refined, and record declarations all produce <c>Schema&lt;'value&gt;</c>.
+/// Record declarations use <c>Schema.recordFor</c>, attach completed field schemas with <c>Schema.field</c>, and finish
+/// with <c>Schema.build</c> or a result-returning build operation.
 /// </para>
 /// </remarks>
 [<Sealed>]
-type Schema<'model> internal (definition: SchemaDefinition<'model>, specialization: ISchemaSpecialization<'model> option) =
+type Schema<'model> internal (definition: SchemaDefinition<'model>, specialization: ISchemaSpecialization<'model> option) as this =
     internal new(definition: SchemaDefinition<'model>) = Schema(definition, None)
 
     member internal _.Definition = definition
     member internal _.Specialization = specialization
 
-/// <summary>
-/// Describes the portable shape of a trusted value for schema interpreters.
-/// </summary>
-/// <remarks>
-/// <para>
-/// A value schema definition records primitive, refined, collection, optionality, and constraint metadata without tying
-/// that metadata to input parsing, diagnostics, validation, codecs, UI generation, or workflow execution.
-/// </para>
-/// <para>
-/// The public construction API is intentionally introduced by the primitive and constraint operations that follow this
-/// core type.
-/// </para>
-/// </remarks>
-[<Sealed>]
-type ValueSchema<'value> internal (definition: ValueSchemaDefinition) =
-    member internal _.Definition = definition
+    member internal _.ValueDefinition =
+        match definition with
+        | ValueDefinition value -> value
+        | ModelDefinition model ->
+            { Shape = NestedValueDefinition(ModelSchemaErasure.erase model, box this)
+              Format = None
+              Constraints = []
+              Description = None
+              Default = None }
+        | PendingDefinition -> invalidOp "Expected a completed schema definition."
 
 /// <summary>Functions for defining explicit tagged union schema cases.</summary>
 [<RequireQualifiedAccess>]
@@ -1072,7 +1063,7 @@ module UnionCase =
     /// Thrown when <paramref name="tag" />, <paramref name="construct" />, <paramref name="tryPayload" />, or
     /// <paramref name="payload" /> is null.
     /// </exception>
-    let create tag (construct: 'payload -> 'union) (tryPayload: 'union -> 'payload option) (payload: ValueSchema<'payload>) : UnionCase<'union> =
+    let create tag (construct: 'payload -> 'union) (tryPayload: 'union -> 'payload option) (payload: Schema<'payload>) : UnionCase<'union> =
         if isNull tag then
             nullArg (nameof tag)
 
@@ -1087,7 +1078,7 @@ module UnionCase =
 
         UnionCase(
             { Tag = ExternalFieldName.create tag |> ExternalFieldName.value
-              Payload = payload.Definition
+              Payload = payload.ValueDefinition
               Construct = fun value -> value |> unbox<'payload> |> construct |> box
               TryInspect = fun value -> value |> unbox<'union> |> tryPayload |> Option.map box }
         )
@@ -1106,9 +1097,9 @@ module EnumCase =
 
 /// <summary>Functions for creating and inspecting value schemas.</summary>
 [<RequireQualifiedAccess>]
-module Value =
+module internal Value =
     let private primitive kind =
-        ValueSchema(
+        Schema(ValueDefinition
             { Shape = PrimitiveValueDefinition kind
               Format = None
               Constraints = []
@@ -1118,33 +1109,33 @@ module Value =
         )
 
     /// <summary>Describes text represented as <see cref="T:System.String" />.</summary>
-    let text : ValueSchema<string> = primitive PrimitiveValueKind.Text
+    let text : Schema<string> = primitive PrimitiveValueKind.Text
 
     /// <summary>Describes a 32-bit signed integer represented as <see cref="T:System.Int32" />.</summary>
-    let ``int`` : ValueSchema<int> = primitive PrimitiveValueKind.Int
+    let ``int`` : Schema<int> = primitive PrimitiveValueKind.Int
 
     /// <summary>Describes a decimal number represented as <see cref="T:System.Decimal" />.</summary>
-    let ``decimal`` : ValueSchema<decimal> = primitive PrimitiveValueKind.Decimal
+    let ``decimal`` : Schema<decimal> = primitive PrimitiveValueKind.Decimal
 
     /// <summary>Describes a Boolean value represented as <see cref="T:System.Boolean" />.</summary>
-    let ``bool`` : ValueSchema<bool> = primitive PrimitiveValueKind.Bool
+    let ``bool`` : Schema<bool> = primitive PrimitiveValueKind.Bool
 
 #if NET8_0_OR_GREATER
     /// <summary>Describes a calendar date represented as <see cref="T:System.DateOnly" />.</summary>
     /// <remarks>netstandard2.1: not available.</remarks>
-    let date : ValueSchema<DateOnly> = primitive PrimitiveValueKind.Date
+    let date : Schema<DateOnly> = primitive PrimitiveValueKind.Date
 #endif
 
     /// <summary>Describes an instant-like date and time represented as <see cref="T:System.DateTimeOffset" />.</summary>
-    let dateTime : ValueSchema<DateTimeOffset> = primitive PrimitiveValueKind.DateTime
+    let dateTime : Schema<DateTimeOffset> = primitive PrimitiveValueKind.DateTime
 
     /// <summary>Describes a globally unique identifier represented as <see cref="T:System.Guid" />.</summary>
-    let guid : ValueSchema<Guid> = primitive PrimitiveValueKind.Guid
+    let guid : Schema<Guid> = primitive PrimitiveValueKind.Guid
 
     /// <summary>Defers a nested model schema so the model can refer to itself.</summary>
     /// <remarks>
     /// The thunk is evaluated at most once. Use this only to close a recursive model graph; ordinary nested models
-    /// should use <see cref="M:Axial.Schema.Value.nested``1" /> because their schema is already available.
+    /// should use <see cref="M:Axial.Schema.Schema.nested``1" /> because their schema is already available.
     /// </remarks>
     /// <param name="schema">A thunk returning the built schema when an interpreter reaches the recursive value.</param>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null or returns null.</exception>
@@ -1154,11 +1145,11 @@ module Value =
     /// let rec categorySchema () =
     ///     Schema.recordFor&lt;Category, _&gt; (fun name children -&gt; { Name = name; Children = children })
     ///     |&gt; Schema.text "name" _.Name
-    ///     |&gt; Schema.field "children" _.Children (Value.manyOf (Value.lazyOf categorySchema))
+    ///     |&gt; Schema.field "children" _.Children (Schema.list (Schema.defer categorySchema))
     ///     |&gt; Schema.build
     /// </code>
     /// </example>
-    let lazyOf (schema: unit -> Schema<'model>) : ValueSchema<'model> =
+    let lazyOf (schema: unit -> Schema<'model>) : Schema<'model> =
         if isNull (box schema) then nullArg (nameof schema)
 
         let definition =
@@ -1174,7 +1165,7 @@ module Value =
                        Description = None
                        Default = None })
 
-        ValueSchema(
+        Schema(ValueDefinition
             { Shape = LazyValueDefinition { Force = fun () -> definition.Value }
               Format = None
               Constraints = []
@@ -1185,15 +1176,15 @@ module Value =
     /// <summary>Returns the intrinsic primitive kind for a primitive value schema.</summary>
     /// <remarks>
     /// This accessor is intentionally strict about the schema being primitive itself. Use
-    /// <see cref="M:Axial.Schema.Value.underlyingPrimitiveKind``1" /> to see through refinement layers to the primitive
+    /// <see cref="M:Axial.Schema.Schema.underlyingPrimitiveKind``1" /> to see through refinement layers to the primitive
     /// foundation of a refined value schema.
     /// </remarks>
     /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="schema" /> is a refined value schema.</exception>
-    let primitiveKind (schema: ValueSchema<'value>) =
+    let primitiveKind (schema: Schema<'value>) =
         if isNull (box schema) then
             nullArg (nameof schema)
 
-        match schema.Definition.Shape with
+        match schema.ValueDefinition.Shape with
         | PrimitiveValueDefinition kind -> kind
         | RefinedValueDefinition _ ->
             invalidArg (nameof schema) "Expected a primitive value schema, but the schema is a refined value schema."
@@ -1233,24 +1224,24 @@ module Value =
     /// </para>
     /// <para>
     /// Refined value schemas built this way are portable metadata, matching primitive value schemas: they can be
-    /// combined with <see cref="M:Axial.Schema.Value.withConstraint``1" /> and used as the value schema for
-    /// <see cref="M:Axial.Schema.Schema.field``2" /> like any other <see cref="T:Axial.Schema.ValueSchema`1" />.
+    /// combined with <see cref="M:Axial.Schema.Schema.withConstraint``1" /> and used as the value schema for
+    /// <see cref="M:Axial.Schema.Schema.field``2" /> like any other <see cref="T:Axial.Schema.Schema`1" />.
     /// </para>
     /// <para>
-    /// The everyday raw schema is a primitive value schema, especially <see cref="P:Axial.Schema.Value.text" /> for
+    /// The everyday raw schema is a primitive value schema, especially <see cref="P:Axial.Schema.Schema.text" /> for
     /// domain values such as email addresses and names. The primitive foundation stays inspectable through the
-    /// refinement: <see cref="M:Axial.Schema.Value.underlyingPrimitiveKind``1" /> reports the intrinsic primitive kind
-    /// beneath any number of refinement layers, and <see cref="M:Axial.Schema.Value.rawConstraints``1" /> returns the
+    /// refinement: <see cref="M:Axial.Schema.Schema.underlyingPrimitiveKind``1" /> reports the intrinsic primitive kind
+    /// beneath any number of refinement layers, and <see cref="M:Axial.Schema.Schema.rawConstraints``1" /> returns the
     /// constraint metadata carried by the raw schema, so interpreters can parse, render, and document the raw
     /// representation before constructing the refined value. Format metadata declared with
-    /// <see cref="M:Axial.Schema.Value.withFormat``1" /> stays visible the same way:
-    /// <see cref="M:Axial.Schema.Value.format``1" /> reports the nearest declared format through refinement layers.
+    /// <see cref="M:Axial.Schema.Schema.withFormat``1" /> stays visible the same way:
+    /// <see cref="M:Axial.Schema.Schema.format``1" /> reports the nearest declared format through refinement layers.
     /// </para>
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">
     /// Thrown when <paramref name="construct" />, <paramref name="inspect" />, or <paramref name="raw" /> is null.
     /// </exception>
-    let refined (construct: 'raw -> 'value) (inspect: 'value -> 'raw) (raw: ValueSchema<'raw>) : ValueSchema<'value> =
+    let refined (construct: 'raw -> 'value) (inspect: 'value -> 'raw) (raw: Schema<'raw>) : Schema<'value> =
         if isNull (box construct) then
             nullArg (nameof construct)
 
@@ -1262,12 +1253,12 @@ module Value =
 
         let ops =
             RefinedValueOps(
-                (fun value -> value |> unbox<'raw> |> construct |> box),
+                (fun value -> value |> unbox<'raw> |> construct |> box |> Ok),
                 (fun value -> value |> unbox<'value> |> inspect |> box)
             )
 
-        ValueSchema(
-            { Shape = RefinedValueDefinition(raw.Definition, ops)
+        Schema(ValueDefinition
+            { Shape = RefinedValueDefinition(raw.ValueDefinition, ops)
               Format = None
               Constraints = []
               Description = None
@@ -1275,24 +1266,51 @@ module Value =
               Default = None }
         )
 
+    let refine
+        (construct: 'raw -> Result<'value, 'error>)
+        (mapError: 'error -> SchemaError list)
+        (inspect: 'value -> 'raw)
+        (raw: Schema<'raw>)
+        : Schema<'value> =
+        if isNull (box construct) then nullArg (nameof construct)
+        if isNull (box mapError) then nullArg (nameof mapError)
+        if isNull (box inspect) then nullArg (nameof inspect)
+        if isNull (box raw) then nullArg (nameof raw)
+
+        let ops =
+            RefinedValueOps(
+                (fun value ->
+                    match construct (unbox<'raw> value) with
+                    | Ok refined -> Ok(box refined)
+                    | Error error -> Error(mapError error)),
+                (fun value -> value |> unbox<'value> |> inspect |> box)
+            )
+
+        Schema(ValueDefinition
+            { Shape = RefinedValueDefinition(raw.ValueDefinition, ops)
+              Format = None
+              Constraints = []
+              Description = None
+              Default = None })
+
     /// <summary>Describes a nested model value from an already built nested model schema.</summary>
     /// <remarks>
     /// Nested value schemas let a field carry another trusted model, such as an address nested inside a customer.
     /// Interpreters that see through primitive and refined value schema layers, such as
-    /// <see cref="M:Axial.Schema.Value.underlyingPrimitiveKind``1" />, do not see through a nested value schema because a
+    /// <see cref="M:Axial.Schema.Schema.underlyingPrimitiveKind``1" />, do not see through a nested value schema because a
     /// nested model has no underlying primitive representation of its own; interpreters that understand nested models,
     /// such as input parsing, inspect the nested model schema directly instead.
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
     /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="schema" /> was not produced by <c>Schema.build</c>.</exception>
-    let nested (schema: Schema<'nested>) : ValueSchema<'nested> =
+    let nested (schema: Schema<'nested>) : Schema<'nested> =
         if isNull (box schema) then
             nullArg (nameof schema)
 
         match schema.Definition with
         | PendingDefinition -> invalidArg (nameof schema) "Expected a built model schema."
         | ModelDefinition model ->
-            ValueSchema(
+            Schema(ValueDefinition
                 { Shape = NestedValueDefinition(ModelSchemaErasure.erase model, box schema)
                   Format = None
                   Constraints = []
@@ -1311,19 +1329,19 @@ module Value =
     /// </para>
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="itemSchema" /> is null.</exception>
-    let manyOf (itemSchema: ValueSchema<'item>) : ValueSchema<'item list> =
+    let manyOf (itemSchema: Schema<'item>) : Schema<'item list> =
         if isNull (box itemSchema) then
             nullArg (nameof itemSchema)
 
         let boxItems (items: obj list) : obj = items |> List.map unbox<'item> |> box
 
         let acceptItem (interpreter: ICollectionItemInterpreter) =
-            interpreter.Item<'item> itemSchema.Definition
+            interpreter.Item<'item> itemSchema.ValueDefinition
 
-        ValueSchema(
+        Schema(ValueDefinition
             { Shape =
                 ManyValueDefinition
-                    { Item = itemSchema.Definition
+                    { Item = itemSchema.ValueDefinition
                       BoxItems = boxItems
                       AcceptItem = acceptItem }
               Format = None
@@ -1337,24 +1355,24 @@ module Value =
     /// <remarks>
     /// Many value schemas let a field carry an ordered collection of another trusted model, such as a customer's
     /// contact methods. Interpreters that see through primitive and refined value schema layers, such as
-    /// <see cref="M:Axial.Schema.Value.underlyingPrimitiveKind``1" />, do not see through a many value schema because a
+    /// <see cref="M:Axial.Schema.Schema.underlyingPrimitiveKind``1" />, do not see through a many value schema because a
     /// collection has no underlying primitive representation of its own; interpreters that understand collections,
     /// such as input parsing, inspect the item model schema directly instead.
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="itemSchema" /> is null.</exception>
     /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="itemSchema" /> was not produced by <c>Schema.build</c>.</exception>
-    let many (itemSchema: Schema<'item>) : ValueSchema<'item list> =
+    let many (itemSchema: Schema<'item>) : Schema<'item list> =
         let itemValueSchema = nested itemSchema
         manyOf itemValueSchema
 
     /// <summary>Describes a JSON object as a dictionary from an already built item value schema.</summary>
     /// <remarks>
     /// Keys are always text: the object's field names become the map's keys, so there is no separate key schema.
-    /// <c>Value.map</c> is the general dictionary constructor; each entry's value is described by
+    /// <c>Schema.map</c> is the general dictionary constructor; each entry's value is described by
     /// <paramref name="itemSchema" />, and interpreters attach diagnostics to entry key paths.
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="itemSchema" /> is null.</exception>
-    let map (itemSchema: ValueSchema<'item>) : ValueSchema<Map<string, 'item>> =
+    let map (itemSchema: Schema<'item>) : Schema<Map<string, 'item>> =
         if isNull (box itemSchema) then
             nullArg (nameof itemSchema)
 
@@ -1365,12 +1383,12 @@ module Value =
             value |> unbox<Map<string, 'item>> |> Map.toList |> List.map (fun (key, item) -> key, box item)
 
         let acceptItem (interpreter: ICollectionItemInterpreter) =
-            interpreter.Item<'item> itemSchema.Definition
+            interpreter.Item<'item> itemSchema.ValueDefinition
 
-        ValueSchema(
+        Schema(ValueDefinition
             { Shape =
                 MapValueDefinition
-                    { Item = itemSchema.Definition
+                    { Item = itemSchema.ValueDefinition
                       BoxEntries = boxEntries
                       Entries = entries
                       AcceptItem = acceptItem }
@@ -1396,7 +1414,7 @@ module Value =
     /// <exception cref="T:System.ArgumentException">
     /// Thrown when a field name is empty, no cases are supplied, or case tags are duplicated.
     /// </exception>
-    let union discriminatorField payloadField (cases: UnionCase<'union> list) : ValueSchema<'union> =
+    let union discriminatorField payloadField (cases: UnionCase<'union> list) : Schema<'union> =
         if isNull (box cases) then
             nullArg (nameof cases)
 
@@ -1414,7 +1432,7 @@ module Value =
         if not (List.isEmpty duplicates) then
             invalidArg (nameof cases) "Union case tags must be unique."
 
-        ValueSchema(
+        Schema(ValueDefinition
             { Shape =
                 UnionValueDefinition
                     { DiscriminatorField = ExternalFieldName.create discriminatorField
@@ -1430,10 +1448,10 @@ module Value =
     /// <summary>
     /// Describes a tagged union value using explicit cases whose payload fields are spliced beside the discriminator
     /// field in the same object, serde/zod style — for example <c>{ type = "card"; number = "..." }</c> instead of
-    /// <c>Value.union</c>'s externally-wrapped <c>{ type = "card"; value = { number = "..." } }</c>.
+    /// <c>Schema.union</c>'s externally-wrapped <c>{ type = "card"; value = { number = "..." } }</c>.
     /// </summary>
     /// <remarks>
-    /// Every case payload must be built with <see cref="M:Axial.Schema.Value.nested``1" /> so its field names are known
+    /// Every case payload must be built with <see cref="M:Axial.Schema.Schema.nested``1" /> so its field names are known
     /// upfront, and no payload field name may collide with <paramref name="discriminatorField" />; both are checked at
     /// construction time so the ambiguity can never reach input parsing or codec compilation.
     /// </remarks>
@@ -1444,7 +1462,7 @@ module Value =
     /// Thrown when a field name is empty, no cases are supplied, case tags are duplicated, a case payload is not a
     /// nested model value schema, or a case payload field name collides with <paramref name="discriminatorField" />.
     /// </exception>
-    let unionInline discriminatorField (cases: UnionCase<'union> list) : ValueSchema<'union> =
+    let unionInline discriminatorField (cases: UnionCase<'union> list) : Schema<'union> =
         if isNull (box cases) then
             nullArg (nameof cases)
 
@@ -1487,8 +1505,8 @@ module Value =
             | MapValueDefinition _ ->
                 invalidArg
                     (nameof cases)
-                    (sprintf "Union-inline case \"%s\" payload must be an object schema built with Value.nested." case.Definition.Tag))
-        ValueSchema(
+                    (sprintf "Union-inline case \"%s\" payload must be an object schema built with Schema record." case.Definition.Tag))
+        Schema(ValueDefinition
             { Shape =
                 UnionInlineValueDefinition
                     { DiscriminatorField = discriminatorName
@@ -1505,7 +1523,7 @@ module Value =
     /// <exception cref="T:System.ArgumentException">
     /// Thrown when no cases are supplied or case tags are duplicated.
     /// </exception>
-    let enumOf (cases: EnumCase<'enum> list) : ValueSchema<'enum> =
+    let enumOf (cases: EnumCase<'enum> list) : Schema<'enum> =
         if isNull (box cases) then
             nullArg (nameof cases)
 
@@ -1523,7 +1541,7 @@ module Value =
         if not (List.isEmpty duplicates) then
             invalidArg (nameof cases) "Enum case tags must be unique."
 
-        ValueSchema(
+        Schema(ValueDefinition
             { Shape = EnumValueDefinition { Cases = cases |> List.map _.Definition }
               Format = None
               Constraints = []
@@ -1545,7 +1563,7 @@ module Value =
     /// Optionality is a single boundary layer, not a nestable wrapper: <c>optionOf (optionOf ...)</c> is rejected
     /// because absent input could not distinguish <c>None</c> from <c>Some None</c>. Combining <c>optionOf</c> with
     /// the <c>required</c> constraint is contradictory and is rejected here when the payload carries it, by
-    /// <c>Value.withConstraint</c> when attached to the optional schema itself, and by <c>Schema.build</c> when
+    /// <c>Schema.withConstraint</c> when attached to the optional schema itself, and by <c>Schema.build</c> when
     /// attached at the field level.
     /// </para>
     /// </remarks>
@@ -1554,11 +1572,11 @@ module Value =
     /// Thrown when <paramref name="payload" /> is itself an optional value schema or carries the <c>required</c>
     /// constraint on any layer.
     /// </exception>
-    let optionOf (payload: ValueSchema<'value>) : ValueSchema<'value option> =
+    let optionOf (payload: Schema<'value>) : Schema<'value option> =
         if isNull (box payload) then
             nullArg (nameof payload)
 
-        match payload.Definition.Shape with
+        match payload.ValueDefinition.Shape with
         | OptionValueDefinition _ ->
             invalidArg (nameof payload) "Optional value schemas cannot be nested inside another optional value schema."
         | PrimitiveValueDefinition _
@@ -1589,13 +1607,13 @@ module Value =
                | MapValueDefinition _ -> false
                | LazyValueDefinition deferred -> carriesRequired (deferred.Force())
 
-        if carriesRequired payload.Definition then
+        if carriesRequired payload.ValueDefinition then
             invalidArg (nameof payload) "Optional value schemas cannot carry the required constraint."
 
-        ValueSchema(
+        Schema(ValueDefinition
             { Shape =
                 OptionValueDefinition
-                    { Payload = payload.Definition
+                    { Payload = payload.ValueDefinition
                       WrapSome = fun value -> value |> unbox<'value> |> Some |> box
                       NoneValue = box (None: 'value option)
                       TryUnwrap = fun value -> value |> unbox<'value option> |> Option.map box }
@@ -1608,11 +1626,11 @@ module Value =
 
     /// <summary>Returns whether a value schema is a refined/domain value schema.</summary>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
-    let isRefined (schema: ValueSchema<'value>) =
+    let isRefined (schema: Schema<'value>) =
         if isNull (box schema) then
             nullArg (nameof schema)
 
-        match schema.Definition.Shape with
+        match schema.ValueDefinition.Shape with
         | RefinedValueDefinition _ -> true
         | PrimitiveValueDefinition _ -> false
         | NestedValueDefinition _ -> false
@@ -1633,7 +1651,7 @@ module Value =
     /// generators, use this to treat a refined value like its primitive representation at the boundary.
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
-    let underlyingPrimitiveKind (schema: ValueSchema<'value>) =
+    let underlyingPrimitiveKind (schema: Schema<'value>) =
         if isNull (box schema) then
             nullArg (nameof schema)
 
@@ -1658,23 +1676,23 @@ module Value =
             | LazyValueDefinition _ ->
                 invalidArg (nameof schema) "Deferred model value schemas have no underlying primitive kind."
 
-        kindOf schema.Definition
+        kindOf schema.ValueDefinition
 
     /// <summary>Returns the constraint metadata carried by the raw value schema of a refined value schema.</summary>
     /// <remarks>
     /// Raw constraints describe the underlying representation that boundary interpreters see before the refined value
     /// is constructed, such as length bounds on the raw text of an email address. They are retained separately from
     /// constraints attached to the refined value schema itself with
-    /// <see cref="M:Axial.Schema.Value.withConstraint``1" />, which
-    /// <see cref="M:Axial.Schema.Value.constraints``1" /> continues to return.
+    /// <see cref="M:Axial.Schema.Schema.withConstraint``1" />, which
+    /// <see cref="M:Axial.Schema.Schema.constraints``1" /> continues to return.
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
     /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="schema" /> is a primitive value schema.</exception>
-    let rawConstraints (schema: ValueSchema<'value>) =
+    let rawConstraints (schema: Schema<'value>) =
         if isNull (box schema) then
             nullArg (nameof schema)
 
-        match schema.Definition.Shape with
+        match schema.ValueDefinition.Shape with
         | RefinedValueDefinition(raw, _) -> raw.Constraints
         | PrimitiveValueDefinition _ ->
             invalidArg (nameof schema) "Expected a refined value schema, but the schema is a primitive value schema."
@@ -1716,7 +1734,7 @@ module Value =
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Like <see cref="M:Axial.Schema.Value.underlyingPrimitiveKind``1" />, this accessor is total over value schemas:
+    /// Like <see cref="M:Axial.Schema.Schema.underlyingPrimitiveKind``1" />, this accessor is total over value schemas:
     /// for a primitive value schema the projection returns the value itself, and for a refined value schema it applies
     /// the inspection function of every refinement layer, including refined values layered over other refined values,
     /// until it reaches the primitive foundation. Interpreters use it to observe the raw representation of an already
@@ -1732,7 +1750,7 @@ module Value =
     /// <exception cref="T:System.ArgumentException">
     /// Thrown when the requested projection type does not match the schema's underlying primitive kind.
     /// </exception>
-    let inspectUnderlying<'value, 'primitive> (schema: ValueSchema<'value>) : 'value -> 'primitive =
+    let inspectUnderlying<'value, 'primitive> (schema: Schema<'value>) : 'value -> 'primitive =
         if isNull (box schema) then
             nullArg (nameof schema)
 
@@ -1762,16 +1780,16 @@ module Value =
             | LazyValueDefinition _ ->
                 invalidArg (nameof schema) "Deferred model value schemas have no underlying primitive representation."
 
-        fun value -> project schema.Definition (box value) |> unbox<'primitive>
+        fun value -> project schema.ValueDefinition (box value) |> unbox<'primitive>
 
     /// <summary>Returns a value schema carrying the supplied portable format metadata.</summary>
     /// <remarks>
     /// <para>
     /// The format names the boundary-facing interpretation of the value, such as
     /// <see cref="P:Axial.Schema.SchemaFormat.email" /> for a refined email address over
-    /// <see cref="P:Axial.Schema.Value.text" />. It is annotation metadata for interpreters — JSON Schema emitters,
+    /// <see cref="P:Axial.Schema.Schema.text" />. It is annotation metadata for interpreters — JSON Schema emitters,
     /// UI renderers, and documentation generators — and attaches no executable check; pair it with constraint
-    /// metadata such as <see cref="P:Axial.Schema.SchemaConstraint.email" /> when validation is also required.
+    /// metadata such as <see cref="P:Axial.Schema.Constraint.email" /> when validation is also required.
     /// </para>
     /// <para>
     /// A value schema carries at most one format. Applying <c>withFormat</c> again replaces the earlier declaration.
@@ -1779,27 +1797,27 @@ module Value =
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
     /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="format" /> carries no name.</exception>
-    let withFormat (format: SchemaFormat) (schema: ValueSchema<'value>) =
+    let withFormat (format: SchemaFormat) (schema: Schema<'value>) : Schema<'value> =
         if String.IsNullOrWhiteSpace format.Name then
             invalidArg (nameof format) "Schema format names must not be empty or whitespace."
 
         if isNull (box schema) then
             nullArg (nameof schema)
 
-        ValueSchema(
-            { schema.Definition with
+        Schema(ValueDefinition
+            { schema.ValueDefinition with
                 Format = Some format }
         )
 
     /// <summary>Returns the portable format metadata declared nearest to a value schema, when present.</summary>
     /// <remarks>
-    /// Like <see cref="M:Axial.Schema.Value.underlyingPrimitiveKind``1" />, this accessor sees through refinement
+    /// Like <see cref="M:Axial.Schema.Schema.underlyingPrimitiveKind``1" />, this accessor sees through refinement
     /// layers: a format declared on the refined value schema itself wins, and otherwise the raw value schemas are
     /// walked toward the primitive foundation until a declaration is found. A format declared on the raw text of a
     /// refined email address therefore stays visible on the refined schema, while an outer declaration overrides it.
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
-    let format (schema: ValueSchema<'value>) =
+    let format (schema: Schema<'value>) =
         if isNull (box schema) then
             nullArg (nameof schema)
 
@@ -1819,7 +1837,7 @@ module Value =
                 | MapValueDefinition _ -> None
                 | LazyValueDefinition deferred -> formatOf (deferred.Force())
 
-        formatOf schema.Definition
+        formatOf schema.ValueDefinition
 
     /// <summary>Returns a value schema carrying the supplied description metadata.</summary>
     /// <remarks>
@@ -1835,26 +1853,26 @@ module Value =
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
     /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="text" /> is null, empty, or whitespace.</exception>
-    let describe (text: string) (schema: ValueSchema<'value>) =
+    let describe (text: string) (schema: Schema<'value>) : Schema<'value> =
         if String.IsNullOrWhiteSpace text then
             invalidArg (nameof text) "Descriptions must not be empty or whitespace."
 
         if isNull (box schema) then
             nullArg (nameof schema)
 
-        ValueSchema(
-            { schema.Definition with
+        Schema(ValueDefinition
+            { schema.ValueDefinition with
                 Description = Some text }
         )
 
     /// <summary>Returns the description metadata declared nearest to a value schema, when present.</summary>
     /// <remarks>
-    /// Like <see cref="M:Axial.Schema.Value.format``1" />, this accessor sees through refinement layers: a description
+    /// Like <see cref="M:Axial.Schema.Schema.format``1" />, this accessor sees through refinement layers: a description
     /// declared on the refined value schema itself wins, and otherwise the raw value schemas are walked toward the
     /// primitive foundation until a declaration is found.
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
-    let description (schema: ValueSchema<'value>) =
+    let description (schema: Schema<'value>) =
         if isNull (box schema) then
             nullArg (nameof schema)
 
@@ -1874,14 +1892,14 @@ module Value =
                 | MapValueDefinition _ -> None
                 | LazyValueDefinition deferred -> descriptionOf (deferred.Force())
 
-        descriptionOf schema.Definition
+        descriptionOf schema.ValueDefinition
 
     /// <summary>Returns a value schema carrying the supplied default-value metadata.</summary>
     /// <remarks>
     /// <para>
     /// The default is annotation metadata for interpreters: JSON Schema generation lowers it to the <c>default</c>
     /// keyword at the point the value schema is used. It attaches no executable check and does not affect parsing —
-    /// missing input is still a diagnostic unless the value schema is also wrapped with <c>Value.optionOf</c>.
+    /// missing input is still a diagnostic unless the value schema is also wrapped with <c>Schema.optionOf</c>.
     /// </para>
     /// <para>
     /// A value schema carries at most one default. Applying <c>withDefault</c> again replaces the earlier
@@ -1889,23 +1907,23 @@ module Value =
     /// </para>
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
-    let withDefault (value: 'value) (schema: ValueSchema<'value>) =
+    let withDefault (value: 'value) (schema: Schema<'value>) : Schema<'value> =
         if isNull (box schema) then
             nullArg (nameof schema)
 
-        ValueSchema(
-            { schema.Definition with
+        Schema(ValueDefinition
+            { schema.ValueDefinition with
                 Default = Some(box value) }
         )
 
     /// <summary>Returns the default-value metadata declared nearest to a value schema, when present.</summary>
     /// <remarks>
-    /// Like <see cref="M:Axial.Schema.Value.format``1" />, this accessor sees through refinement layers: a default
+    /// Like <see cref="M:Axial.Schema.Schema.format``1" />, this accessor sees through refinement layers: a default
     /// declared on the refined value schema itself wins, and otherwise the raw value schemas are walked toward the
     /// primitive foundation until a declaration is found.
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
-    let defaultValue (schema: ValueSchema<'value>) : 'value option =
+    let defaultValue (schema: Schema<'value>) : 'value option =
         if isNull (box schema) then
             nullArg (nameof schema)
 
@@ -1925,14 +1943,14 @@ module Value =
                 | MapValueDefinition _ -> None
                 | LazyValueDefinition deferred -> defaultOf (deferred.Force())
 
-        defaultOf schema.Definition |> Option.map unbox<'value>
+        defaultOf schema.ValueDefinition |> Option.map unbox<'value>
 
     /// <summary>Returns the portable constraint metadata attached to a value schema.</summary>
-    let constraints (schema: ValueSchema<'value>) =
+    let constraints (schema: Schema<'value>) =
         if isNull (box schema) then
             nullArg (nameof schema)
 
-        schema.Definition.Constraints
+        schema.ValueDefinition.Constraints
 
     /// <summary>Returns the portable constraint metadata carried by every layer of a value schema.</summary>
     /// <remarks>
@@ -1940,18 +1958,18 @@ module Value =
     /// Constraints are returned foundation-first: the primitive foundation's constraints come first, then each
     /// refinement layer outward, ending with the constraints attached to the schema itself. This matches authoring
     /// order, where raw constraints are declared before the schema is refined. For a primitive value schema the
-    /// result equals <see cref="M:Axial.Schema.Value.constraints``1" />.
+    /// result equals <see cref="M:Axial.Schema.Schema.constraints``1" />.
     /// </para>
     /// <para>
     /// Interpreters that lower a value schema's complete constraint metadata to one executable program — such as a
     /// check over the underlying primitive representation obtained with
-    /// <see cref="M:Axial.Schema.Value.inspectUnderlying``2" /> — use this accessor so constraints declared on raw
+    /// <see cref="M:Axial.Schema.Schema.inspectUnderlying``2" /> — use this accessor so constraints declared on raw
     /// layers and on the refined schema are honored together. Per-layer inspection remains available through
-    /// <see cref="M:Axial.Schema.Value.constraints``1" /> and <see cref="M:Axial.Schema.Value.rawConstraints``1" />.
+    /// <see cref="M:Axial.Schema.Schema.constraints``1" /> and <see cref="M:Axial.Schema.Schema.rawConstraints``1" />.
     /// </para>
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
-    let allConstraints (schema: ValueSchema<'value>) =
+    let allConstraints (schema: Schema<'value>) =
         if isNull (box schema) then
             nullArg (nameof schema)
 
@@ -1968,10 +1986,10 @@ module Value =
             | MapValueDefinition _ -> definition.Constraints
             | LazyValueDefinition deferred -> gather (deferred.Force()) @ definition.Constraints
 
-        gather schema.Definition
+        gather schema.ValueDefinition
 
-    let private ensureNotRequiredOnOptional parameterName (constraint': SchemaConstraint) (schema: ValueSchema<'value>) =
-        match schema.Definition.Shape with
+    let private ensureNotRequiredOnOptional parameterName (constraint': Constraint) (schema: Schema<'value>) =
+        match schema.ValueDefinition.Shape with
         | OptionValueDefinition _ when constraint'.Code = "required" ->
             invalidArg parameterName "Optional value schemas cannot carry the required constraint."
         | _ -> ()
@@ -1980,7 +1998,7 @@ module Value =
     /// <exception cref="T:System.ArgumentException">
     /// Thrown when the <c>required</c> constraint is attached to an optional value schema.
     /// </exception>
-    let withConstraint (constraint': SchemaConstraint) (schema: ValueSchema<'value>) =
+    let withConstraint (constraint': Constraint) (schema: Schema<'value>) : Schema<'value> =
         if isNull constraint' then
             nullArg (nameof constraint')
 
@@ -1989,16 +2007,16 @@ module Value =
 
         ensureNotRequiredOnOptional (nameof constraint') constraint' schema
 
-        ValueSchema(
-            { schema.Definition with
-                Constraints = schema.Definition.Constraints @ [ constraint' ] }
+        Schema(ValueDefinition
+            { schema.ValueDefinition with
+                Constraints = schema.ValueDefinition.Constraints @ [ constraint' ] }
         )
 
     /// <summary>Returns a value schema with additional portable constraint metadata appended in declaration order.</summary>
     /// <exception cref="T:System.ArgumentException">
     /// Thrown when the <c>required</c> constraint is attached to an optional value schema.
     /// </exception>
-    let withConstraints (constraints: SchemaConstraint list) (schema: ValueSchema<'value>) =
+    let withConstraints (constraints: Constraint list) (schema: Schema<'value>) : Schema<'value> =
         if isNull (box constraints) then
             nullArg (nameof constraints)
 
@@ -2013,9 +2031,9 @@ module Value =
         constraints
         |> List.iter (fun constraint' -> ensureNotRequiredOnOptional (nameof constraints) constraint' schema)
 
-        ValueSchema(
-            { schema.Definition with
-                Constraints = schema.Definition.Constraints @ constraints }
+        Schema(ValueDefinition
+            { schema.ValueDefinition with
+                Constraints = schema.ValueDefinition.Constraints @ constraints }
         )
 
 module internal FieldDescriptorOps =
@@ -2057,7 +2075,7 @@ module Field =
     /// <exception cref="T:System.ArgumentException">
     /// Thrown when <paramref name="externalName" /> is empty or contains only whitespace.
     /// </exception>
-    let create externalName (getter: 'model -> 'value) (value: ValueSchema<'value>) : Field<'model, 'value> =
+    let create externalName (getter: 'model -> 'value) (value: Schema<'value>) : Field<'model, 'value> =
         if isNull (box getter) then
             nullArg (nameof getter)
 
@@ -2068,7 +2086,7 @@ module Field =
             { ExternalName = ExternalFieldName.create externalName
               Order = FieldOrder.create 0
               Getter = getter
-              ValueSchema = value.Definition
+              ValueSchema = value.ValueDefinition
               Constraints = [] }
         )
 
@@ -2101,7 +2119,7 @@ module Field =
         field.Definition.Constraints
 
     /// <summary>Returns a schema field with additional portable constraint metadata appended in declaration order.</summary>
-    let withConstraint (constraint': SchemaConstraint) (field: Field<'model, 'value>) =
+    let withConstraint (constraint': Constraint) (field: Field<'model, 'value>) =
         if isNull constraint' then
             nullArg (nameof constraint')
 
@@ -2114,7 +2132,7 @@ module Field =
         )
 
     /// <summary>Returns a schema field with additional portable constraint metadata appended in declaration order.</summary>
-    let withConstraints (constraints: SchemaConstraint list) (field: Field<'model, 'value>) =
+    let withConstraints (constraints: Constraint list) (field: Field<'model, 'value>) =
         if isNull (box constraints) then
             nullArg (nameof constraints)
 
@@ -2133,7 +2151,59 @@ module Field =
 
 /// <summary>Functions for creating and inspecting model schemas.</summary>
 [<RequireQualifiedAccess>]
-module Schema =
+module internal SchemaCore =
+    /// <summary>Describes text.</summary>
+    let text = Value.text
+    /// <summary>Describes a 32-bit signed integer.</summary>
+    let ``int`` = Value.``int``
+    /// <summary>Describes a decimal number.</summary>
+    let ``decimal`` = Value.``decimal``
+    /// <summary>Describes a Boolean value.</summary>
+    let ``bool`` = Value.``bool``
+#if NET8_0_OR_GREATER
+    /// <summary>Describes a calendar date.</summary>
+    let date = Value.date
+#endif
+    /// <summary>Describes a date and time with an offset.</summary>
+    let dateTime = Value.dateTime
+    /// <summary>Describes a globally unique identifier.</summary>
+    let guid = Value.guid
+    /// <summary>Describes a list whose items use the supplied schema.</summary>
+    let list item = Value.manyOf item
+    /// <summary>Describes an optional value.</summary>
+    let option item = Value.optionOf item
+    /// <summary>Describes a string-keyed map.</summary>
+    let map item = Value.map item
+    /// <summary>Defers a recursive schema.</summary>
+    let defer schema = Value.lazyOf schema
+    /// <summary>Converts a schema through total construction and inspection functions.</summary>
+    let convert construct inspect schema = Value.refined construct inspect schema
+    let refine construct mapError inspect schema = Value.refine construct mapError inspect schema
+    /// <summary>Describes a tagged union.</summary>
+    let union discriminator payload cases = Value.union discriminator payload cases
+    /// <summary>Describes an internally tagged union.</summary>
+    let inlineUnion discriminator cases = Value.unionInline discriminator cases
+    /// <summary>Describes a payload-less tagged enum.</summary>
+    let enum cases = Value.enumOf cases
+    /// <summary>Appends one portable constraint.</summary>
+    let constrain constraint' schema = Value.withConstraint constraint' schema
+    /// <summary>Appends portable constraints in declaration order.</summary>
+    let constrainAll constraints schema = Value.withConstraints constraints schema
+    /// <summary>Attaches boundary format metadata.</summary>
+    let withFormat format schema = Value.withFormat format schema
+    /// <summary>Attaches descriptive metadata.</summary>
+    /// <summary>Attaches a default value.</summary>
+    let withDefault value schema = Value.withDefault value schema
+    let format schema = Value.format schema
+    let description schema = Value.description schema
+    let defaultValue schema = Value.defaultValue schema
+    let constraints schema = Value.constraints schema
+    let isRefined schema = Value.isRefined schema
+    let primitiveKind schema = Value.primitiveKind schema
+    let underlyingPrimitiveKind schema = Value.underlyingPrimitiveKind schema
+    let rawConstraints schema = Value.rawConstraints schema
+    let internal inspectUnderlying<'value, 'primitive> schema = Value.inspectUnderlying<'value, 'primitive> schema
+    let internal allConstraints schema = Value.allConstraints schema
     /// <summary>
     /// Starts a progressive typed model schema builder from a trusted curried constructor.
     /// </summary>
@@ -2192,7 +2262,7 @@ module Schema =
     let field
         externalName
         (getter: 'model -> 'field)
-        (value: ValueSchema<'field>)
+        (value: Schema<'field>)
         (builder: SchemaBuilder<'model, 'constructor, 'field -> 'next, 'chain>)
         : SchemaBuilder<'model, 'constructor, 'next, FieldsAppend<'model, 'constructor, 'field, 'next, 'chain>> =
         if isNull (box getter) then
@@ -2208,7 +2278,7 @@ module Schema =
             { ExternalName = ExternalFieldName.create externalName
               Order = FieldOrder.create 0
               Getter = getter
-              ValueSchema = value.Definition
+              ValueSchema = value.ValueDefinition
               Constraints = [] }
 
         SchemaBuilder(builder.Constructor, FieldsAppend(builder.Chain, definition))
@@ -2221,10 +2291,10 @@ module Schema =
     /// <paramref name="getter" />, <paramref name="value" />, or <paramref name="builder" /> is null.
     /// </exception>
     let fieldWith
-        (constraints: SchemaConstraint list)
+        (constraints: Constraint list)
         externalName
         (getter: 'model -> 'field)
-        (value: ValueSchema<'field>)
+        (value: Schema<'field>)
         (builder: SchemaBuilder<'model, 'constructor, 'field -> 'next, 'chain>)
         : SchemaBuilder<'model, 'constructor, 'next, FieldsAppend<'model, 'constructor, 'field, 'next, 'chain>> =
         if isNull (box constraints) then
@@ -2248,7 +2318,7 @@ module Schema =
             { ExternalName = ExternalFieldName.create externalName
               Order = FieldOrder.create 0
               Getter = getter
-              ValueSchema = value.Definition
+              ValueSchema = value.ValueDefinition
               Constraints = constraints }
 
         SchemaBuilder(builder.Constructor, FieldsAppend(builder.Chain, definition))
@@ -2272,7 +2342,7 @@ module Schema =
     /// <paramref name="getter" />, <paramref name="nestedSchema" />, or <paramref name="builder" /> is null.
     /// </exception>
     let nestedWith
-        (constraints: SchemaConstraint list)
+        (constraints: Constraint list)
         externalName
         (getter: 'model -> 'nested)
         (nestedSchema: Schema<'nested>)
@@ -2299,7 +2369,7 @@ module Schema =
     /// <paramref name="getter" />, <paramref name="itemSchema" />, or <paramref name="builder" /> is null.
     /// </exception>
     let manyWith
-        (constraints: SchemaConstraint list)
+        (constraints: Constraint list)
         externalName
         (getter: 'model -> 'item list)
         (itemSchema: Schema<'item>)
@@ -2308,7 +2378,7 @@ module Schema =
         fieldWith constraints externalName getter (Value.many itemSchema) builder
 
     /// <summary>Appends a text field represented as <see cref="T:System.String" /> to a progressive schema builder.</summary>
-    let text
+    let private textField
         externalName
         (getter: 'model -> string)
         (builder: SchemaBuilder<'model, 'constructor, string -> 'next, 'chain>)
@@ -2316,7 +2386,7 @@ module Schema =
         field externalName getter Value.text builder
 
     /// <summary>Appends a 32-bit signed integer field represented as <see cref="T:System.Int32" /> to a progressive schema builder.</summary>
-    let ``int``
+    let private intField
         externalName
         (getter: 'model -> int)
         (builder: SchemaBuilder<'model, 'constructor, int -> 'next, 'chain>)
@@ -2324,7 +2394,7 @@ module Schema =
         field externalName getter Value.``int`` builder
 
     /// <summary>Appends a decimal field represented as <see cref="T:System.Decimal" /> to a progressive schema builder.</summary>
-    let ``decimal``
+    let private decimalField
         externalName
         (getter: 'model -> decimal)
         (builder: SchemaBuilder<'model, 'constructor, decimal -> 'next, 'chain>)
@@ -2332,7 +2402,7 @@ module Schema =
         field externalName getter Value.``decimal`` builder
 
     /// <summary>Appends a Boolean field represented as <see cref="T:System.Boolean" /> to a progressive schema builder.</summary>
-    let ``bool``
+    let private boolField
         externalName
         (getter: 'model -> bool)
         (builder: SchemaBuilder<'model, 'constructor, bool -> 'next, 'chain>)
@@ -2341,7 +2411,7 @@ module Schema =
 
 #if NET8_0_OR_GREATER
     /// <summary>Appends a calendar date field represented as <see cref="T:System.DateOnly" /> to a progressive schema builder.</summary>
-    let date
+    let private dateField
         externalName
         (getter: 'model -> DateOnly)
         (builder: SchemaBuilder<'model, 'constructor, DateOnly -> 'next, 'chain>)
@@ -2350,7 +2420,7 @@ module Schema =
 #endif
 
     /// <summary>Appends an instant-like date and time field represented as <see cref="T:System.DateTimeOffset" /> to a progressive schema builder.</summary>
-    let dateTime
+    let private dateTimeField
         externalName
         (getter: 'model -> DateTimeOffset)
         (builder: SchemaBuilder<'model, 'constructor, DateTimeOffset -> 'next, 'chain>)
@@ -2358,7 +2428,7 @@ module Schema =
         field externalName getter Value.dateTime builder
 
     /// <summary>Appends a globally unique identifier field represented as <see cref="T:System.Guid" /> to a progressive schema builder.</summary>
-    let guid
+    let private guidField
         externalName
         (getter: 'model -> Guid)
         (builder: SchemaBuilder<'model, 'constructor, Guid -> 'next, 'chain>)
@@ -2507,3 +2577,4 @@ module Schema =
         | PendingDefinition -> invalidArg (nameof schema) "Expected a built model schema."
         | ModelDefinition definition ->
             Schema(ModelDefinition { definition with Description = Some text }, schema.Specialization)
+        | ValueDefinition _ -> Value.describe text schema

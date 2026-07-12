@@ -5,7 +5,7 @@ weight: 2100
 type: docs
 ---
 
-Compiles a built model schema into a reusable JSON codec.
+Compiles a completed schema into a reusable JSON codec.
 
 ## Signature
 
@@ -29,8 +29,8 @@ Compiles a built model schema into a reusable JSON codec.
 
 <p class='fsdocs-para'>
  Compile once per schema, typically at startup, and reuse the codec for every value. Schemas produced by
- <code>Schema.build</code> compile through the retained typed field chain into constructor-specialized plans. Schemas
- produced by <code>Schema.buildResult</code>/<code>Schema.buildResultWith</code> compile through the type-erased plan, and
+ <code>SchemaCore.build</code> compile through the retained typed field chain into constructor-specialized plans. Schemas
+ produced by <code>SchemaCore.buildResult</code>/<code>SchemaCore.buildResultWith</code> compile through the type-erased plan, and
  constructor errors surface as <a href="t-codec-jsoncodecexception.md">JsonCodecException</a> during decoding.
  </p>
 

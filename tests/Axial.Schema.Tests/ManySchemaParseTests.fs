@@ -29,32 +29,32 @@ module ManySchemaParseTests =
 
     let private contactMethodSchema =
         Schema.recordFor<ContactMethod, _> (fun kind value -> ({ Kind = kind; Value = value }: ContactMethod))
-        |> Schema.field "kind" (fun contact -> contact.Kind) (Value.text |> Value.withConstraint SchemaConstraint.required)
-        |> Schema.field "value" (fun contact -> contact.Value) (Value.text |> Value.withConstraint SchemaConstraint.required)
+        |> Schema.field "kind" (fun contact -> contact.Kind) (Schema.text |> Schema.constrain Constraint.required)
+        |> Schema.field "value" (fun contact -> contact.Value) (Schema.text |> Schema.constrain Constraint.required)
         |> Schema.build
 
     let private verifiedContactMethodSchema =
         Schema.recordFor<VerifiedContactMethod, _> VerifiedContactMethod.Create
-        |> Schema.field "kind" (fun contact -> contact.Kind) (Value.text |> Value.withConstraint SchemaConstraint.required)
-        |> Schema.field "value" (fun contact -> contact.Value) (Value.text |> Value.withConstraint SchemaConstraint.required)
+        |> Schema.field "kind" (fun contact -> contact.Kind) (Schema.text |> Schema.constrain Constraint.required)
+        |> Schema.field "value" (fun contact -> contact.Value) (Schema.text |> Schema.constrain Constraint.required)
         |> Schema.buildResult
 
     let private customerSchema =
         Schema.recordFor<Customer, _> (fun name contacts -> ({ Name = name; Contacts = contacts }: Customer))
-        |> Schema.field "name" (fun customer -> customer.Name) (Value.text |> Value.withConstraint SchemaConstraint.required)
-        |> Schema.many "contacts" (fun customer -> customer.Contacts) contactMethodSchema
+        |> Schema.field "name" (fun customer -> customer.Name) (Schema.text |> Schema.constrain Constraint.required)
+        |> Schema.field "contacts" (fun customer -> customer.Contacts) (Schema.list contactMethodSchema)
         |> Schema.build
 
     let private verifiedCustomerSchema =
         Schema.recordFor<VerifiedCustomer, _> (fun name contacts -> ({ Name = name; Contacts = contacts }: VerifiedCustomer))
-        |> Schema.field "name" (fun customer -> customer.Name) (Value.text |> Value.withConstraint SchemaConstraint.required)
-        |> Schema.many "contacts" (fun customer -> customer.Contacts) verifiedContactMethodSchema
+        |> Schema.field "name" (fun customer -> customer.Name) (Schema.text |> Schema.constrain Constraint.required)
+        |> Schema.field "contacts" (fun customer -> customer.Contacts) (Schema.list verifiedContactMethodSchema)
         |> Schema.build
 
     let private constrainedCustomerSchema =
         Schema.recordFor<Customer, _> (fun name contacts -> ({ Name = name; Contacts = contacts }: Customer))
-        |> Schema.field "name" (fun customer -> customer.Name) (Value.text |> Value.withConstraint SchemaConstraint.required)
-        |> Schema.manyWith [ SchemaConstraint.minCount 1; SchemaConstraint.maxCount 2 ] "contacts" (fun customer -> customer.Contacts) contactMethodSchema
+        |> Schema.field "name" (fun customer -> customer.Name) (Schema.text |> Schema.constrain Constraint.required)
+        |> Schema.field "contacts" (fun customer -> customer.Contacts) (Schema.list contactMethodSchema |> Schema.constrainAll [ Constraint.minCount 1; Constraint.maxCount 2 ])
         |> Schema.build
 
     let private validContact kind value =
@@ -69,19 +69,19 @@ module ManySchemaParseTests =
                       "contacts", RawInput.Many [ validContact "email" "ada@example.com" ] ]
             )
 
-        let parsed = Model.parse customerSchema raw
+        let parsed = Schema.parse customerSchema raw
 
         test <@ parsed.IsValid @>
-        test <@ parsed.Model = { Name = "Ada"; Contacts = [ { Kind = "email"; Value = "ada@example.com" } ] } @>
+        test <@ parsed.Value = { Name = "Ada"; Contacts = [ { Kind = "email"; Value = "ada@example.com" } ] } @>
 
     [<Fact>]
     let ``parse builds an empty collection from an empty collection-shaped raw input`` () =
         let raw = RawInput.Object(Map.ofList [ "name", RawInput.Scalar "Ada"; "contacts", RawInput.Many [] ])
 
-        let parsed = Model.parse customerSchema raw
+        let parsed = Schema.parse customerSchema raw
 
         test <@ parsed.IsValid @>
-        test <@ parsed.Model = { Name = "Ada"; Contacts = [] } @>
+        test <@ parsed.Value = { Name = "Ada"; Contacts = [] } @>
 
     [<Fact>]
     let ``parse accepts a collection whose item count satisfies field constraints`` () =
@@ -95,12 +95,12 @@ module ManySchemaParseTests =
                             validContact "phone" "+61 400 000 000" ] ]
             )
 
-        let parsed = Model.parse constrainedCustomerSchema raw
+        let parsed = Schema.parse constrainedCustomerSchema raw
 
         test <@ parsed.IsValid @>
         test
             <@
-                parsed.Model =
+                parsed.Value =
                     { Name = "Ada"
                       Contacts =
                         [ { Kind = "email"; Value = "ada@example.com" }
@@ -111,7 +111,7 @@ module ManySchemaParseTests =
     let ``parse reports min count constraint failures at the collection field path`` () =
         let raw = RawInput.Object(Map.ofList [ "name", RawInput.Scalar "Ada"; "contacts", RawInput.Many [] ])
 
-        let parsed = Model.parse constrainedCustomerSchema raw
+        let parsed = Schema.parse constrainedCustomerSchema raw
 
         test <@ not parsed.IsValid @>
         test
@@ -133,7 +133,7 @@ module ManySchemaParseTests =
                             validContact "sms" "+61 400 000 000" ] ]
             )
 
-        let parsed = Model.parse constrainedCustomerSchema raw
+        let parsed = Schema.parse constrainedCustomerSchema raw
 
         test <@ not parsed.IsValid @>
         test
@@ -149,7 +149,7 @@ module ManySchemaParseTests =
                 Map.ofList [ "name", RawInput.Scalar "Ada"; "contacts", RawInput.Object(Map.ofList [ "kind", RawInput.Scalar "email" ]) ]
             )
 
-        let parsed = Model.parse customerSchema raw
+        let parsed = Schema.parse customerSchema raw
 
         test <@ not parsed.IsValid @>
         test <@ parsed.Errors = [ { Path = [ PathSegment.Name "contacts" ]; Error = SchemaError.ExpectedMany } ] @>
@@ -159,7 +159,7 @@ module ManySchemaParseTests =
         let raw =
             RawInput.Object(Map.ofList [ "name", RawInput.Scalar "Ada"; "contacts", RawInput.Scalar "not-a-collection" ])
 
-        let parsed = Model.parse customerSchema raw
+        let parsed = Schema.parse customerSchema raw
 
         test <@ not parsed.IsValid @>
         test <@ parsed.Errors = [ { Path = [ PathSegment.Name "contacts" ]; Error = SchemaError.ExpectedMany } ] @>
@@ -171,7 +171,7 @@ module ManySchemaParseTests =
                 Map.ofList [ "name", RawInput.Scalar "Ada"; "contacts", RawInput.Many [ RawInput.Scalar "not-an-object" ] ]
             )
 
-        let parsed = Model.parse customerSchema raw
+        let parsed = Schema.parse customerSchema raw
 
         test <@ not parsed.IsValid @>
         test
@@ -184,13 +184,13 @@ module ManySchemaParseTests =
     let ``parse builds a collection from primitive item schemas`` () =
         let schema =
             Schema.recordFor<Tags, _> (fun values -> { Values = values })
-            |> Schema.field "values" _.Values (Value.manyOf (Value.text |> Value.withConstraint SchemaConstraint.required))
+            |> Schema.field "values" _.Values (Schema.list (Schema.text |> Schema.constrain Constraint.required))
             |> Schema.build
 
         let raw =
             RawInput.Object(Map.ofList [ "values", RawInput.Many [ RawInput.Scalar "fsharp"; RawInput.Scalar "typed-errors" ] ])
 
-        let parsed = Model.parse schema raw
+        let parsed = Schema.parse schema raw
 
         test <@ parsed.Result = Ok { Values = [ "fsharp"; "typed-errors" ] } @>
 
@@ -198,13 +198,13 @@ module ManySchemaParseTests =
     let ``parse reports primitive item failures at collection index paths`` () =
         let schema =
             Schema.recordFor<Tags, _> (fun values -> { Values = values })
-            |> Schema.field "values" _.Values (Value.manyOf (Value.text |> Value.withConstraint SchemaConstraint.required))
+            |> Schema.field "values" _.Values (Schema.list (Schema.text |> Schema.constrain Constraint.required))
             |> Schema.build
 
         let raw =
             RawInput.Object(Map.ofList [ "values", RawInput.Many [ RawInput.Scalar "fsharp"; RawInput.Scalar "   " ] ])
 
-        let parsed = Model.parse schema raw
+        let parsed = Schema.parse schema raw
 
         test
             <@ parsed.Errors = [ { Path = [ PathSegment.Name "values"; PathSegment.Index 1 ]
@@ -222,7 +222,7 @@ module ManySchemaParseTests =
                             RawInput.Object(Map.ofList [ "kind", RawInput.Scalar "email"; "value", RawInput.Scalar "" ]) ] ]
             )
 
-        let parsed = Model.parse customerSchema raw
+        let parsed = Schema.parse customerSchema raw
 
         test <@ not parsed.IsValid @>
 
@@ -249,7 +249,7 @@ module ManySchemaParseTests =
                             RawInput.Object(Map.ofList [ "kind", RawInput.Scalar "same"; "value", RawInput.Scalar "same" ]) ] ]
             )
 
-        let parsed = Model.parse verifiedCustomerSchema raw
+        let parsed = Schema.parse verifiedCustomerSchema raw
 
         test <@ not parsed.IsValid @>
 
@@ -271,7 +271,7 @@ module ManySchemaParseTests =
                             RawInput.Object(Map.ofList [ "kind", RawInput.Scalar ""; "value", RawInput.Scalar "" ]) ] ]
             )
 
-        let parsed = Model.parse customerSchema raw
+        let parsed = Schema.parse customerSchema raw
 
         test <@ not parsed.IsValid @>
 

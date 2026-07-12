@@ -21,8 +21,8 @@ module SchemaManyValueTests =
 
     let private buildContactMethodSchema () =
         Schema.recordFor<ContactMethod, _> (fun kind value -> { Kind = kind; Value = value })
-        |> Schema.field "kind" _.Kind (Value.text |> Value.withConstraint SchemaConstraint.required)
-        |> Schema.field "value" _.Value (Value.text |> Value.withConstraint SchemaConstraint.required)
+        |> Schema.field "kind" _.Kind (Schema.text |> Schema.constrain Constraint.required)
+        |> Schema.field "value" _.Value (Schema.text |> Schema.constrain Constraint.required)
         |> Schema.build
 
     [<Fact>]
@@ -31,8 +31,8 @@ module SchemaManyValueTests =
 
         let schema =
             Schema.recordFor<Customer, _> (fun name contacts -> { Name = name; Contacts = contacts })
-            |> Schema.field "name" _.Name (Value.text |> Value.withConstraint SchemaConstraint.required)
-            |> Schema.many "contacts" _.Contacts contactMethodSchema
+            |> Schema.field "name" _.Name (Schema.text |> Schema.constrain Constraint.required)
+            |> Schema.field "contacts" _.Contacts (Schema.list contactMethodSchema)
             |> Schema.build
 
         let model = modelDefinition schema
@@ -53,8 +53,8 @@ module SchemaManyValueTests =
 
         let schema =
             Schema.recordFor<Customer, _> (fun name contacts -> { Name = name; Contacts = contacts })
-            |> Schema.field "name" _.Name (Value.text |> Value.withConstraint SchemaConstraint.required)
-            |> Schema.manyWith [ SchemaConstraint.minCount 1 ] "contacts" _.Contacts contactMethodSchema
+            |> Schema.field "name" _.Name (Schema.text |> Schema.constrain Constraint.required)
+            |> Schema.field "contacts" _.Contacts (Schema.list contactMethodSchema |> Schema.constrainAll [ Constraint.minCount 1 ])
             |> Schema.build
 
         let model = modelDefinition schema
@@ -63,26 +63,26 @@ module SchemaManyValueTests =
             model.Fields
             |> List.find (fun field -> ExternalFieldName.value field.ExternalName = "contacts")
 
-        test <@ contactsField.Constraints |> List.map SchemaConstraint.code = [ "minCount" ] @>
+        test <@ contactsField.ValueSchema.Constraints |> List.map Constraint.code = [ "minCount" ] @>
 
     [<Fact>]
-    let ``a many value schema built from Value.many is not a refined or primitive value schema`` () =
+    let ``a many value schema built from Schema.list is not a refined or primitive value schema`` () =
         let contactMethodSchema = buildContactMethodSchema ()
-        let manyValue = Value.many contactMethodSchema
+        let manyValue = Schema.list contactMethodSchema
 
-        test <@ not (Value.isRefined manyValue) @>
+        test <@ not (Schema.isRefined manyValue) @>
 
     [<Fact>]
     let ``manyOf builds a collection value schema from primitive and refined item schemas`` () =
-        let names = Value.manyOf (Value.text |> Value.withConstraint SchemaConstraint.required)
+        let names = Schema.list (Schema.text |> Schema.constrain Constraint.required)
 
-        match names.Definition.Shape with
+        match names.ValueDefinition.Shape with
         | ManyValueDefinition collection ->
             match collection.Item.Shape with
             | PrimitiveValueDefinition PrimitiveValueKind.Text -> ()
             | _ -> failwith "Expected the manyOf item to keep the supplied primitive value schema."
 
-            test <@ collection.Item.Constraints |> List.map SchemaConstraint.code = [ "required" ] @>
+            test <@ collection.Item.Constraints |> List.map Constraint.code = [ "required" ] @>
         | PrimitiveValueDefinition _
         | RefinedValueDefinition _
         | NestedValueDefinition _
@@ -95,8 +95,8 @@ module SchemaManyValueTests =
 
         let schema =
             Schema.recordFor<Customer, _> (fun name contacts -> { Name = name; Contacts = contacts })
-            |> Schema.field "name" _.Name (Value.text |> Value.withConstraint SchemaConstraint.required)
-            |> Schema.many "contacts" _.Contacts contactMethodSchema
+            |> Schema.field "name" _.Name (Schema.text |> Schema.constrain Constraint.required)
+            |> Schema.field "contacts" _.Contacts (Schema.list contactMethodSchema)
             |> Schema.build
 
         let model = modelDefinition schema

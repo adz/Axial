@@ -14,10 +14,10 @@ module Quantity =
     let create (value: int) = Quantity value
     let value (Quantity value) = value
 
-    let schema : ValueSchema<Quantity> =
-        Value.int
-        |> Value.withConstraint (SchemaConstraint.greaterThan 0)
-        |> Value.refined create value
+    let schema : Schema<Quantity> =
+        Schema.int
+        |> Schema.constrain (Constraint.greaterThan 0)
+        |> Schema.convert create value
 
 type OrderLine =
     { Sku: string
@@ -27,7 +27,7 @@ let orderLineSchema =
     Schema.recordFor<OrderLine, _> (fun sku quantity ->
         { Sku = sku
           Quantity = quantity })
-    |> Schema.text "sku" _.Sku
+    |> Schema.field "sku" _.Sku Schema.text
     |> Schema.field "quantity" _.Quantity Quantity.schema
     |> Schema.build
 
@@ -49,16 +49,16 @@ let parseQuantityText : Policy<OrderEnv, OrderError, string, int> =
 let refinePositive : Policy<OrderEnv, OrderError, int, PositiveInt> =
     Policy.withError Refine.positiveInt QuantityNotPositive
 
-// 3. Schema input result: adapt Model.parse over raw boundary input.
+// 3. Schema input result: adapt Schema.parse over raw boundary input.
 let parseOrderLine : Policy<OrderEnv, OrderError, RawInput, OrderLine> =
     Policy.lift
-        (fun raw -> (Model.parse orderLineSchema raw).Result)
+        (fun raw -> (Schema.parse orderLineSchema raw).Result)
         (Diagnostics.flatten >> LineRejected)
 
 // 4. Validation result: adapt intrinsic validation of an existing model.
 let validateOrderLine : Policy<OrderEnv, OrderError, OrderLine, OrderLine> =
     Policy.lift
-        (fun line -> Axial.Schema.Model.reconstruct orderLineSchema line)
+        (fun line -> Schema.check orderLineSchema line)
         (Diagnostics.flatten >> LineRejected)
 
 // 5. Contextual rules: plain rule functions selected by the workflow environment.

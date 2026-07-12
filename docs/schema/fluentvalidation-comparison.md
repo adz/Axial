@@ -37,11 +37,11 @@ intermediate invalid object:
 ```fsharp
 let customerSchema =
     Schema.recordFor<Customer, _> (fun name age -> { Name = name; Age = age })
-    |> Schema.fieldWith [ SchemaConstraint.required; SchemaConstraint.maxLength 80 ] "name" _.Name Value.text
-    |> Schema.fieldWith [ SchemaConstraint.between 13 120 ] "age" _.Age Value.int
+    |> Schema.field "name" _.Name (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 80 ])
+    |> Schema.field "age" _.Age (Schema.int |> Schema.constrainAll [ Constraint.between 13 120 ])
     |> Schema.build
 
-match (Model.parse customerSchema raw).Result with
+match (Schema.parse customerSchema raw).Result with
 | Ok customer -> customer          // every Customer in the program passed the boundary
 | Error diagnostics -> reject diagnostics
 ```
@@ -62,7 +62,7 @@ errors. With FluentValidation, each of those is a separate artifact to keep in s
 - Validation of objects you genuinely do not construct (third-party types, EF entities mid-flight).
 - Teams that want C#-first fluent syntax rather than F# declarations.
 
-Axial's equivalent of "validate an existing object" exists — `Model.reconstruct schema model` (the
+Axial's equivalent of "validate an existing object" exists — `Schema.check schema model` (the
 `Axial.Schema` module, not [`Axial.Validation.Validation`]({{< relref "/validation/" >}}) from Error
 Handling, which it's built on) re-checks a trusted model, and `Rules` add contextual requirements — but they run
 against schema metadata, not a second rulebook.
@@ -72,7 +72,7 @@ against schema metadata, not a second rulebook.
 | Concern | FluentValidation | Axial |
 | --- | --- | --- |
 | Invalid object exists? | Yes, until validated | No — parsing constructs or fails |
-| Rules readable as data | No (lambdas in classes) | Yes (`SchemaConstraint` metadata) |
+| Rules readable as data | No (lambdas in classes) | Yes (`Constraint` metadata) |
 | OpenAPI/JSON Schema | Separate annotations | Generated from the same declaration |
 | Error paths | Property names via expressions | Structural paths (`contacts[1].value`) |
 | Reflection | Expression trees + reflection | None; AOT/trimming/Fable-safe |

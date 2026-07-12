@@ -64,29 +64,33 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 - [x] Add Promise/deferred result primitive.
 - [ ] Design bounded and unbounded queues only when a concrete v1 feature needs Axial-owned backpressure, shutdown, and interruption semantics.
 - [x] Add semaphore primitive.
-- [ ] Stabilize `Ref` for v1.0, including atomic modify/get-and-set/update-and-get helpers.
+- [x] Add a minimal atomic `Ref` implementation with `make`, `get`, `set`, `update`, and `modify`, backed by a lock and covered by state tests and public docs.
+- [ ] Stabilize `Ref` for v1.0 by adding and testing the remaining atomic `getAndSet` and `updateAndGet` helpers and confirming the API/semantics are sufficient for realistic concurrent applications.
 - [ ] Cover future queue shutdown/fairness semantics and remaining state/resource cleanup cases in tests.
 
 ## 6. v1.0 Scheduling and Time
 
-- [ ] Expand schedules with composition, recurrence limits, jitter controls, elapsed/attempt outputs, and reset behavior needed for retry/repeat.
-- [ ] Connect schedules to retry/repeat APIs without using default unchecked errors.
+- [x] Add a minimal schedule implementation with recurrence limits, fixed spacing, exponential backoff, fixed-range jitter, attempt/delay outputs, and retry/repeat integration.
+- [ ] Make schedules production-ready with schedule composition, configurable/deterministic jitter, elapsed outputs, reset behavior, overflow/invalid-delay handling, and any additional retry/repeat semantics required by realistic applications.
+- [ ] Remove `Unchecked.defaultof<'error>` from `Schedule.repeat` when schedule evaluation or sleeping is interrupted, preserving interruption/cause information without fabricating a typed error.
 - [ ] Add deterministic clock-driven tests for retry, repeat, timeout, and sleep.
 
 ## 7. v1.0 Observability
 
-- [ ] Add structured log context or annotations sufficient for request/correlation/tenant-style metadata.
-- [ ] Extend the current `ActivitySource` telemetry wrapper with exit tagging, error/defect recording, cancellation tagging, and fiber/runtime metadata available in v1.0.
+- [x] Add scoped runtime annotations, trace IDs, annotation sinks, and request/correlation/tenant metadata propagation into telemetry spans.
+- [x] Add a minimal `ActivitySource` telemetry wrapper that creates spans and tags environment metadata plus existing and dynamically-added runtime annotations.
+- [ ] Make the `ActivitySource` wrapper production-ready with exit tagging, typed-error and defect recording, cancellation tagging, activity status, and available fiber/runtime metadata.
 - [ ] Integrate observability with `Axial.Flow.Telemetry` and `Microsoft.Extensions.Logging`.
 - [ ] Add tests for annotation/span propagation through flows, fibers, layers, resources, and retries.
 
 ## 7a. Future Service Packages
 
 - [ ] Treat service packages as explicit service contracts over the expected .NET API surface: wrap most operations a competent .NET developer would look for, omitting only obsolete, legacy-only, redundant, unsafe-to-abstract, or poor-Axial-fit APIs.
-- [ ] Use `Axial.Flow.PlatformService` and `Axial.Flow.FileSystem` as the first examples of near-complete service surfaces with live implementations, typed Flow helpers, fake-friendly contracts, tests, and generated reference docs.
+- [x] Use `Axial.Flow.PlatformService` and `Axial.Flow.FileSystem` as the first examples of near-complete service surfaces with live implementations, typed Flow helpers, fake-friendly contracts, tests, and generated reference docs.
 - [ ] Expand `Axial.Flow.Console` into a near-complete console/terminal service package rather than only read/write-line helpers.
-- [ ] Expand `Axial.Flow.Http` into a practical HTTP service package that covers common `HttpClient` request/response, headers, content, timeout, cancellation, and error-classification scenarios without hiding host-owned client configuration.
-- [ ] Expand `Axial.Flow.Process` into a near-complete process service package covering start-info configuration, environment, working directory, streams, cancellation, timeouts, exit handling, and typed errors.
+- [x] Expand `Axial.Flow.Http` into a practical HTTP service package covering common requests/responses, headers, text/JSON/byte content, per-request timeout, cancellation, error classification, host-owned `HttpClient` configuration, live tests, and user guides.
+- [x] Expand `Axial.Flow.Process` into a practical process service package covering commands and pipelines, environment and working-directory configuration, structured and streaming output, cancellation, exit handling, typed errors, live tests, scripts, and user guides.
+- [ ] Add explicit process timeout/deadline configuration and tests so callers do not have to arrange timeout cancellation outside `Axial.Flow.Process`.
 - [ ] Design `Axial.Flow.Network` after the core v1 service/layer surface is stable.
 - [ ] Decide whether telemetry needs explicit service contracts under a future telemetry package, or should remain runtime instrumentation through `Axial.Flow.Telemetry`.
 - [ ] If telemetry services are introduced, define how they compose with annotations, `ActivitySource`, `Microsoft.Extensions.Logging`, layers, and host-provider boundaries.
@@ -94,18 +98,19 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 ## 8. v1.0 Compatibility Tracks
 
 - [ ] Define the supported Fable subset explicitly.
-- [ ] Add a minimal Fable app/test project that references Axial and compiles to JavaScript.
+- [x] Add a runnable Fable JavaScript project/gate that references Axial, compiles the intended surface, executes a codec round trip under Node, and checks that .NET-only APIs do not leak into the output (`benchmarks/Axial.Benchmarks.Fable` via `scripts/check-fable-js-surface.sh`).
 - [ ] Audit APIs guarded by `#if !FABLE_COMPILER`, especially `AsyncAdapter`, `TaskAdapter`, `Ref`, `STM`, `Stream`, `Schedule`, `Task`, `ValueTask`, process, live console, filesystem, hosting, and telemetry APIs.
 - [ ] Provide Fable-safe alternatives or document unsupported modules.
 - [ ] Add trimming analyzer warnings as build failures for the `net8.0` target.
-- [ ] Add a small NativeAOT sample that exercises core `Flow`, services, validation, resources, and hosting boundaries.
+- [x] Add and run a small NativeAOT sample in CI that exercises core `Flow`, explicit services/layers, validation, resources, and host-provider boundaries (`examples/Axial.AotProbe`).
 - [ ] Audit reflection usage in builders, tests, hosting, telemetry, and DI integration.
 - [ ] Document unsupported dynamic patterns where trimming cannot be made safe.
 
 ## 9. v1.0 Documentation and Examples
 
 - [ ] Update README/docs to explain Axial's target model: .NET baseline, Fable JavaScript, NativeAOT/trimming.
-- [ ] Add examples for environment/layer usage, resource safety, fibers, cancellation, retry/timeout, validation, services, and hosting.
+- [x] Add user-facing examples and guides for environments/layers, resource safety, fibers, cancellation and execution outcomes, retry/timeout schedules, validation, explicit services, provider boundaries, and base-runtime construction.
+- [ ] Add or expand a realistic hosting example that ties those pieces together in an end-user application; topic guides alone do not complete the hosting example requirement.
 - [ ] Add migration notes as runtime semantics become richer.
 - [ ] Keep links back to the external ZIO reference corpus for parity rationale, not platform promises.
 

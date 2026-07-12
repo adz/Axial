@@ -5,7 +5,7 @@ open Swensen.Unquote
 open Xunit
 
 /// <summary>
-/// Proves that optional value schemas built with <c>Value.optionOf</c> are portable metadata: the payload stays
+/// Proves that optional value schemas built with <c>Schema.option</c> are portable metadata: the payload stays
 /// inspectable, JSON Schema generation leaves optional fields out of <c>required</c>, and the contradictory
 /// combinations (nested options, the <c>required</c> constraint) are rejected when the schema is built.
 /// </summary>
@@ -16,23 +16,23 @@ module SchemaOptionalValueTests =
 
     let private profileSchema () =
         Schema.recordFor<Profile, _> (fun name nickname -> { Name = name; Nickname = nickname })
-        |> Schema.text "name" _.Name
+        |> Schema.field "name" _.Name Schema.text
         |> Schema.field
             "nickname"
             _.Nickname
-            (Value.optionOf (Value.text |> Value.withConstraint (SchemaConstraint.minLength 2)))
+            (Schema.option (Schema.text |> Schema.constrain (Constraint.minLength 2)))
         |> Schema.build
 
     [<Fact>]
     let ``optionOf describes an optional shape carrying the payload description`` () =
         let description =
-            Value.optionOf (Value.text |> Value.withConstraint (SchemaConstraint.maxLength 10))
-            |> Inspect.value
+            Schema.option (Schema.text |> Schema.constrain (Constraint.maxLength 10))
+            |> Inspect.schema
 
         match description.Shape with
-        | ValueShape.Optional payload ->
-            test <@ payload.Shape = ValueShape.Primitive PrimitiveValueKind.Text @>
-            test <@ payload.Constraints |> List.map SchemaConstraint.code = [ "maxLength" ] @>
+        | SchemaShape.Optional payload ->
+            test <@ payload.Shape = SchemaShape.Primitive PrimitiveValueKind.Text @>
+            test <@ payload.Constraints |> List.map Constraint.code = [ "maxLength" ] @>
         | _ -> failwith "Expected an optional value shape."
 
     [<Fact>]
@@ -40,8 +40,8 @@ module SchemaOptionalValueTests =
         let description = Inspect.model (profileSchema ())
         let nickname = description.Fields |> List.find (fun field -> field.Name = "nickname")
 
-        match nickname.Value.Shape with
-        | ValueShape.Optional _ -> ()
+        match nickname.Schema.Shape with
+        | SchemaShape.Optional _ -> ()
         | _ -> failwith "Expected the nickname field to describe an optional value."
 
     [<Fact>]
@@ -53,22 +53,22 @@ module SchemaOptionalValueTests =
 
     [<Fact>]
     let ``optionOf rejects a nested optional payload`` () =
-        raises<System.ArgumentException> <@ Value.optionOf (Value.optionOf Value.text) @>
+        raises<System.ArgumentException> <@ Schema.option (Schema.option Schema.text) @>
 
     [<Fact>]
     let ``optionOf rejects a payload carrying the required constraint`` () =
         raises<System.ArgumentException>
-            <@ Value.optionOf (Value.text |> Value.withConstraint SchemaConstraint.required) @>
+            <@ Schema.option (Schema.text |> Schema.constrain Constraint.required) @>
 
     [<Fact>]
     let ``withConstraint rejects required on an optional value schema`` () =
         raises<System.ArgumentException>
-            <@ Value.optionOf Value.text |> Value.withConstraint SchemaConstraint.required @>
+            <@ Schema.option Schema.text |> Schema.constrain Constraint.required @>
 
     [<Fact>]
     let ``build rejects an optional field carrying the required field constraint`` () =
         raises<System.ArgumentException>
             <@ Schema.recordFor<Profile, _> (fun name nickname -> { Name = name; Nickname = nickname })
-               |> Schema.text "name" _.Name
-               |> Schema.fieldWith [ SchemaConstraint.required ] "nickname" _.Nickname (Value.optionOf Value.text)
+               |> Schema.field "name" _.Name Schema.text
+               |> Schema.field "nickname" _.Nickname ((Schema.option Schema.text) |> Schema.constrainAll [ Constraint.required ])
                |> Schema.build @>

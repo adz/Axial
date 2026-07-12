@@ -14,7 +14,7 @@ module SchemaEnumValueTests =
     type private Swatch = { Color: Color }
 
     let private colorSchema () =
-        Value.enumOf [ EnumCase.create "red" Red; EnumCase.create "green" Green; EnumCase.create "blue" Blue ]
+        Schema.enum [ EnumCase.create "red" Red; EnumCase.create "green" Green; EnumCase.create "blue" Blue ]
 
     [<Fact>]
     let ``enum value schema exposes case tags`` () =
@@ -28,8 +28,8 @@ module SchemaEnumValueTests =
             |> _.Fields
             |> List.exactlyOne
 
-        match color.Value.Shape with
-        | ValueShape.Enum enum -> test <@ enum.Cases |> List.map _.Tag = [ "red"; "green"; "blue" ] @>
+        match color.Schema.Shape with
+        | SchemaShape.Enum enum -> test <@ enum.Cases |> List.map _.Tag = [ "red"; "green"; "blue" ] @>
         | _ -> failwith "Expected an enum value shape."
 
     [<Fact>]
@@ -46,5 +46,5 @@ module SchemaEnumValueTests =
     [<Fact>]
     let ``enumOf rejects duplicate tags`` () =
         Assert.Throws<ArgumentException>(fun () ->
-            Value.enumOf [ EnumCase.create "red" Red; EnumCase.create "red" Green ] |> ignore)
+            Schema.enum [ EnumCase.create "red" Red; EnumCase.create "red" Green ] |> ignore)
         |> ignore

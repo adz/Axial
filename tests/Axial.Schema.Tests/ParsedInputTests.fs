@@ -24,8 +24,8 @@ module ParsedInputTests =
         test <@ parsed.Input = raw @>
         test <@ parsed.Result = Ok { Email = "ada@example.com" } @>
         test <@ parsed.IsValid @>
-        test <@ parsed.Model = { Email = "ada@example.com" } @>
-        test <@ parsed.TryModel = Some { Email = "ada@example.com" } @>
+        test <@ parsed.Value = { Email = "ada@example.com" } @>
+        test <@ parsed.TryValue = Some { Email = "ada@example.com" } @>
         test <@ parsed.Errors = [] @>
         test <@ parsed.ErrorsFor "email" = [] @>
 
@@ -52,8 +52,8 @@ module ParsedInputTests =
         test <@ parsed.Result = Error diagnostics @>
         test <@ Diagnostics.flatten diagnostics = [ { Path = [ PathSegment.Name "email" ]; Error = "Required" } ] @>
         test <@ not parsed.IsValid @>
-        test <@ parsed.TryModel = None @>
-        raises<System.InvalidOperationException> <@ parsed.Model |> ignore @>
+        test <@ parsed.TryValue = None @>
+        raises<System.InvalidOperationException> <@ parsed.Value |> ignore @>
 
         let expectedErrors =
             [ { Path = [ PathSegment.Name "email" ]; Error = "Required" } ]
@@ -105,5 +105,5 @@ module ParsedInputTests =
         let domainParsed = parsed |> ParsedInput.mapErrors MissingField
 
         test <@ domainParsed.IsValid @>
-        test <@ domainParsed.Model = { Email = "ada@example.com" } @>
+        test <@ domainParsed.Value = { Email = "ada@example.com" } @>
         test <@ domainParsed.Errors = [] @>

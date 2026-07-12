@@ -31,14 +31,14 @@ type Email = private EmailValue of string
 module Email =
     let value (EmailValue raw) = raw
 
-    let schema: ValueSchema<Email> =
-        Value.text
-        |> Value.withConstraints
-            [ SchemaConstraint.required
-              SchemaConstraint.maxLength 254
-              SchemaConstraint.email ]
-        |> Value.refined EmailValue value
-        |> Value.withFormat SchemaFormat.email
+    let schema: Schema<Email> =
+        Schema.text
+        |> Schema.constrainAll
+            [ Constraint.required
+              Constraint.maxLength 254
+              Constraint.email ]
+        |> Schema.convert EmailValue value
+        |> Schema.withFormat SchemaFormat.email
 
 type Address = { Street: string; City: string }
 
@@ -52,8 +52,8 @@ type Signup =
 module Signup =
     let addressSchema =
         Schema.recordFor<Address, _> (fun street city -> { Street = street; City = city })
-        |> Schema.fieldWith [ SchemaConstraint.required; SchemaConstraint.maxLength 120 ] "street" _.Street Value.text
-        |> Schema.fieldWith [ SchemaConstraint.required; SchemaConstraint.maxLength 80 ] "city" _.City Value.text
+        |> Schema.field "street" _.Street (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 120 ])
+        |> Schema.field "city" _.City (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 80 ])
         |> Schema.build
 
     let schema =
@@ -63,11 +63,11 @@ module Signup =
               Age = age
               Address = address
               Tags = tags })
-        |> Schema.fieldWith [ SchemaConstraint.required; SchemaConstraint.maxLength 80 ] "name" _.Name Value.text
+        |> Schema.field "name" _.Name (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 80 ])
         |> Schema.field "email" _.Email Email.schema
-        |> Schema.fieldWith [ SchemaConstraint.between 13 120 ] "age" _.Age Value.int
-        |> Schema.fieldWith [ SchemaConstraint.required ] "address" _.Address (Value.nested addressSchema)
-        |> Schema.fieldWith [ SchemaConstraint.maxCount 5 ] "tags" _.Tags (Value.manyOf Value.text)
+        |> Schema.field "age" _.Age (Schema.int |> Schema.constrainAll [ Constraint.between 13 120 ])
+        |> Schema.field "address" _.Address ((addressSchema) |> Schema.constrainAll [ Constraint.required ])
+        |> Schema.field "tags" _.Tags ((Schema.list Schema.text) |> Schema.constrainAll [ Constraint.maxCount 5 ])
         |> Schema.build
 
 // ---------------------------------------------------------------------------
@@ -115,35 +115,35 @@ module FormPage =
     let private constraintAttributes (field: FieldDescription) =
         let metadata =
             (field.Constraints |> List.map _.Metadata)
-            @ (let rec gather (value: ValueDescription) =
+            @ (let rec gather (value: SchemaDescription) =
                 (value.Constraints |> List.map _.Metadata)
                 @ (match value.Shape with
-                   | ValueShape.Refined underlying -> gather underlying
+                   | SchemaShape.Refined underlying -> gather underlying
                    | _ -> [])
 
-               gather field.Value)
+               gather field.Schema)
 
         let required =
-            if metadata |> List.contains SchemaConstraintMetadata.Required then " required" else ""
+            if metadata |> List.contains ConstraintMetadata.Required then " required" else ""
 
         let maxLength =
             metadata
             |> List.tryPick (function
-                | SchemaConstraintMetadata.MaxLength maximum -> Some $" maxlength=\"{maximum}\""
+                | ConstraintMetadata.MaxLength maximum -> Some $" maxlength=\"{maximum}\""
                 | _ -> None)
             |> Option.defaultValue ""
 
         required + maxLength
 
     let private inputType (field: FieldDescription) =
-        let rec shape (value: ValueDescription) =
+        let rec shape (value: SchemaDescription) =
             match value.Shape with
-            | ValueShape.Refined underlying -> shape underlying
+            | SchemaShape.Refined underlying -> shape underlying
             | other -> other
 
-        match field.Value.Format, shape field.Value with
+        match field.Schema.Format, shape field.Schema with
         | Some format, _ when format = SchemaFormat.email -> "email"
-        | _, ValueShape.Primitive PrimitiveValueKind.Int -> "number"
+        | _, SchemaShape.Primitive PrimitiveValueKind.Int -> "number"
         | _ -> "text"
 
     /// Renders one flat form from the schema description, redisplaying raw input and attaching errors by path.
@@ -174,9 +174,9 @@ module FormPage =
         let rows =
             description.Fields
             |> List.collect (fun field ->
-                match field.Value.Shape with
-                | ValueShape.Nested nested -> nested.Fields |> List.map (fieldRow field.Name)
-                | ValueShape.Many _ -> [ fieldRow "" field ]
+                match field.Schema.Shape with
+                | SchemaShape.Nested nested -> nested.Fields |> List.map (fieldRow field.Name)
+                | SchemaShape.Many _ -> [ fieldRow "" field ]
                 | _ -> [ fieldRow "" field ])
             |> String.concat "\n"
 
@@ -239,7 +239,7 @@ let buildApp (args: string[]) =
         Func<HttpRequest, System.Threading.Tasks.Task<IResult>>(fun request ->
             task {
                 use! document = JsonDocument.ParseAsync request.Body
-                let parsed = Model.parse Signup.schema (RawInput.ofJsonDocument document)
+                let parsed = Schema.parse Signup.schema (RawInput.ofJsonDocument document)
 
                 match parsed.Result with
                 | Ok signup ->
@@ -265,7 +265,7 @@ let buildApp (args: string[]) =
         Func<HttpRequest, System.Threading.Tasks.Task<IResult>>(fun request ->
             task {
                 let! form = request.ReadFormAsync()
-                let parsed = Model.parse Signup.schema (formToRawInput form)
+                let parsed = Schema.parse Signup.schema (formToRawInput form)
                 return Results.Text(FormPage.render (Some parsed), "text/html")
             })
     )

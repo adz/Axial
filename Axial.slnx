@@ -9,6 +9,7 @@
     <Project Path="examples/Axial.Api/Axial.Api.fsproj" />
     <Project Path="examples/Axial.Examples/Axial.Examples.fsproj" />
     <Project Path="examples/Axial.ReadmeExample/Axial.ReadmeExample.fsproj" />
+    <Project Path="examples/Axial.ReferenceApp/Axial.ReferenceApp.fsproj" />
     <Project Path="examples/Axial.MaintenanceExamples/Axial.MaintenanceExamples.fsproj" />
     <Project Path="examples/Axial.Playground/Axial.Playground.fsproj" />
     <Project Path="examples/Axial.Flow.PlatformService.Examples/Axial.Flow.PlatformService.Examples.fsproj" />
@@ -47,5 +48,6 @@
     <Project Path="tests/Axial.Flow.Http.Tests/Axial.Flow.Http.Tests.fsproj" />
     <Project Path="tests/Axial.Flow.Integration.Tests/Axial.Flow.Integration.Tests.fsproj" />
     <Project Path="tests/Axial.ApiShape.Tests/Axial.ApiShape.Tests.fsproj" />
+    <Project Path="tests/Axial.ReferenceApp.Tests/Axial.ReferenceApp.Tests.fsproj" />
   </Folder>
 </Solution>

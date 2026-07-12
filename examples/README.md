@@ -39,6 +39,13 @@ dotnet run --project examples/Axial.Api/Axial.Api.fsproj
 AXIAL_EXAMPLE=smoke dotnet run --project examples/Axial.Api/Axial.Api.fsproj --nologo
 ```
 
+Reference architecture app (CLI, HTML forms, JSON API, versioned local files, schemas, refined domain types, and Flow):
+
+```bash
+dotnet run --project examples/Axial.ReferenceApp/Axial.ReferenceApp.fsproj -- create-workspace Delivery
+dotnet run --project examples/Axial.ReferenceApp/Axial.ReferenceApp.fsproj -- web --urls http://localhost:5080
+```
+
 NativeAOT probe:
 
 ```bash
@@ -95,6 +102,13 @@ where one schema declaration drives everything at the boundary:
 
 Set `AXIAL_EXAMPLE=smoke` to start the server on an ephemeral port, exercise every endpoint, and exit; CI runs that
 mode on every push.
+
+## Reference Architecture App
+
+The reference app in [`examples/Axial.ReferenceApp`](./Axial.ReferenceApp/) shows how the pieces behave across a
+non-trivial domain. It includes four related schemas, refined fields and smart constructors, contextual rules,
+v1-to-v2 contract migration, latest-version JSON persistence, Flow-based CRUD/task workflows, CLI commands, an HTML
+form, a JSON API, and focused architecture tests. Its README also records the wrapper friction the example exposes.
 
 ## Smallest Docs-First Examples
 

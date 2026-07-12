@@ -13,8 +13,8 @@ module RecursiveSchemaTests =
         let rec schema: Lazy<Schema<Category>> =
             lazy
                 (Schema.recordFor<Category, _> (fun name children -> { Name = name; Children = children })
-                 |> Schema.text "name" _.Name
-                 |> Schema.field "children" _.Children (Value.manyOf (Value.lazyOf (fun () -> schema.Value)))
+                 |> Schema.field "name" _.Name Schema.text
+                 |> Schema.field "children" _.Children (Schema.list (Schema.defer (fun () -> schema.Value)))
                  |> Schema.build)
 
         schema.Value
@@ -36,8 +36,8 @@ module RecursiveSchemaTests =
                 [ rawCategory "one" []
                   rawCategory "two" [ rawCategory "leaf" [] ] ]
 
-        test <@ (Model.parse schema input).Result = Ok sample @>
-        test <@ Model.reconstruct schema sample = Ok sample @>
+        test <@ (Schema.parse schema input).Result = Ok sample @>
+        test <@ Schema.check schema sample = Ok sample @>
 
     [<Fact>]
     let ``recursive schema compiles to a reusable codec`` () =
@@ -49,14 +49,14 @@ module RecursiveSchemaTests =
     let ``inspection terminates with a stable recursive marker`` () =
         let description = Inspect.model (categorySchema ())
 
-        match description.Fields[1].Value.Shape with
-        | ValueShape.Many item ->
+        match description.Fields[1].Schema.Shape with
+        | SchemaShape.Many item ->
             match item.Shape with
-            | ValueShape.Deferred(reference, expanded) ->
+            | SchemaShape.Deferred(reference, expanded) ->
                 match expanded.Shape with
-                | ValueShape.Nested category ->
-                    match category.Fields[1].Value.Shape with
-                    | ValueShape.Many nestedItem -> test <@ nestedItem.Shape = ValueShape.Recursive reference @>
+                | SchemaShape.Nested category ->
+                    match category.Fields[1].Schema.Shape with
+                    | SchemaShape.Many nestedItem -> test <@ nestedItem.Shape = SchemaShape.Recursive reference @>
                     | shape -> failwithf "Expected recursive children, got %A" shape
                 | shape -> failwithf "Expected expanded nested model, got %A" shape
             | shape -> failwithf "Expected deferred item, got %A" shape
@@ -75,4 +75,4 @@ module RecursiveSchemaTests =
             [ depth - 1 .. -1 .. 1 ]
             |> List.fold (fun child index -> { Name = string index; Children = [ child ] }) { Name = string depth; Children = [] }
 
-        test <@ Model.reconstruct (categorySchema ()) model = Ok model @>
+        test <@ Schema.check (categorySchema ()) model = Ok model @>

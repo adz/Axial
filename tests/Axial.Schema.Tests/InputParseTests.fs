@@ -47,8 +47,8 @@ module InputParseTests =
 
     let private schema =
         Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
-        |> Schema.field "email" _.Email (Value.text |> Value.withConstraint SchemaConstraint.required)
-        |> Schema.int "age" _.Age
+        |> Schema.field "email" _.Email (Schema.text |> Schema.constrain Constraint.required)
+        |> Schema.field "age" _.Age Schema.int
         |> Schema.build
 
     [<Fact>]
@@ -60,12 +60,12 @@ module InputParseTests =
                       "age", RawInput.Scalar "42" ]
             )
 
-        let parsed = Model.parse schema raw
+        let parsed = Schema.parse schema raw
 
         test <@ parsed.Input = raw @>
         test <@ parsed.IsValid @>
         test <@ parsed.Result = Ok { Email = "ada@example.com"; Age = 42 } @>
-        test <@ parsed.Model = { Email = "ada@example.com"; Age = 42 } @>
+        test <@ parsed.Value = { Email = "ada@example.com"; Age = 42 } @>
 
     [<Fact>]
     let ``parse reports field diagnostics for invalid scalar input`` () =
@@ -76,11 +76,11 @@ module InputParseTests =
                       "age", RawInput.Scalar "not-an-int" ]
             )
 
-        let parsed = Model.parse schema raw
+        let parsed = Schema.parse schema raw
 
         test <@ parsed.Input = raw @>
         test <@ not parsed.IsValid @>
-        test <@ parsed.TryModel = None @>
+        test <@ parsed.TryValue = None @>
         test <@ parsed.ErrorsFor "age" = [ SchemaError.InvalidFormat "int" ] @>
         test <@ parsed.Errors = [ { Path = [ PathSegment.Name "age" ]; Error = SchemaError.InvalidFormat "int" } ] @>
 
@@ -93,7 +93,7 @@ module InputParseTests =
                       "age", RawInput.Scalar "not-an-int" ]
             )
 
-        let parsed = Model.parse schema raw
+        let parsed = Schema.parse schema raw
 
         test <@ parsed.Input = raw @>
         test <@ not parsed.IsValid @>
@@ -111,19 +111,19 @@ module InputParseTests =
             |> Schema.field
                 "email"
                 _.Email
-                (Value.text
-                 |> Value.withConstraint (SchemaConstraint.required |> SchemaConstraint.withMessage "Email is required."))
+                (Schema.text
+                 |> Schema.constrain (Constraint.required |> Constraint.withMessage "Email is required."))
             |> Schema.field
                 "age"
                 _.Age
-                (Value.int
-                 |> Value.withConstraint (SchemaConstraint.atLeast 18 |> SchemaConstraint.withMessage "Must be an adult."))
+                (Schema.int
+                 |> Schema.constrain (Constraint.atLeast 18 |> Constraint.withMessage "Must be an adult."))
             |> Schema.build
 
         let raw =
             RawInput.Object(Map.ofList [ "email", RawInput.Missing; "age", RawInput.Scalar "10" ])
 
-        let parsed = Model.parse messageSchema raw
+        let parsed = Schema.parse messageSchema raw
 
         test <@ not parsed.IsValid @>
         test <@ parsed.ErrorsFor "email" = [ SchemaError.Custom("required", Some "Email is required.") ] @>
@@ -138,14 +138,14 @@ module InputParseTests =
                       "age", RawInput.Scalar "42" ]
             )
 
-        let parsed = Model.parse schema raw
+        let parsed = Schema.parse schema raw
 
         test <@ parsed.ErrorsFor "email" = [ SchemaError.Required ] @>
 
     [<Fact>]
     let ``parse reports root diagnostic when model input is not an object`` () =
         let raw = RawInput.Scalar "ada@example.com"
-        let parsed = Model.parse schema raw
+        let parsed = Schema.parse schema raw
 
         test <@ parsed.Input = raw @>
         test <@ not parsed.IsValid @>
@@ -155,7 +155,7 @@ module InputParseTests =
     let ``required reports missing raw field as required`` () =
         let raw = RawInput.Object(Map.ofList [ "age", RawInput.Scalar "42" ])
 
-        let parsed = Model.parse schema raw
+        let parsed = Schema.parse schema raw
 
         test <@ parsed.Input = raw @>
         test <@ not parsed.IsValid @>
@@ -171,7 +171,7 @@ module InputParseTests =
                       "age", RawInput.Scalar "not-an-int" ]
             )
 
-        let parsed = Model.parse schema raw
+        let parsed = Schema.parse schema raw
 
         test <@ not parsed.IsValid @>
         test <@ parsed.Input = raw @>
@@ -185,7 +185,7 @@ module InputParseTests =
                       "age", RawInput.Scalar "42" ]
             )
 
-        let parsed = Model.parse schema raw
+        let parsed = Schema.parse schema raw
 
         test <@ not parsed.IsValid @>
         test <@ parsed.ErrorsFor "email" = [ SchemaError.Required ] @>
@@ -199,7 +199,7 @@ module InputParseTests =
                       "age", RawInput.Scalar "42" ]
             )
 
-        let parsed = Model.parse schema raw
+        let parsed = Schema.parse schema raw
 
         test <@ not parsed.IsValid @>
         test <@ parsed.ErrorsFor "email" = [ SchemaError.Required ] @>
@@ -212,8 +212,8 @@ module InputParseTests =
             Schema.recordFor<Signup, _> (fun email age ->
                 constructorCalls <- constructorCalls + 1
                 { Email = email; Age = age })
-            |> Schema.field "email" _.Email (Value.text |> Value.withConstraint SchemaConstraint.required)
-            |> Schema.int "age" _.Age
+            |> Schema.field "email" _.Email (Schema.text |> Schema.constrain Constraint.required)
+            |> Schema.field "age" _.Age Schema.int
             |> Schema.build
 
         let raw =
@@ -223,7 +223,7 @@ module InputParseTests =
                       "age", RawInput.Scalar "not-an-int" ]
             )
 
-        let parsed = Model.parse countingSchema raw
+        let parsed = Schema.parse countingSchema raw
 
         test <@ not parsed.IsValid @>
         test <@ constructorCalls = 0 @>
@@ -236,8 +236,8 @@ module InputParseTests =
             Schema.recordFor<Signup, _> (fun email age ->
                 constructorCalls <- constructorCalls + 1
                 { Email = email; Age = age })
-            |> Schema.field "email" _.Email (Value.text |> Value.withConstraint SchemaConstraint.required)
-            |> Schema.int "age" _.Age
+            |> Schema.field "email" _.Email (Schema.text |> Schema.constrain Constraint.required)
+            |> Schema.field "age" _.Age Schema.int
             |> Schema.build
 
         let raw =
@@ -247,7 +247,7 @@ module InputParseTests =
                       "age", RawInput.Scalar "42" ]
             )
 
-        let parsed = Model.parse countingSchema raw
+        let parsed = Schema.parse countingSchema raw
 
         test <@ parsed.IsValid @>
         test <@ constructorCalls = 1 @>
@@ -256,7 +256,7 @@ module InputParseTests =
     let ``parse builds a model from a constructor returning Ok`` () =
         let ageSchema =
             Schema.recordFor<AdultAge, _> AdultAge.Create
-            |> Schema.int "age" _.Age
+            |> Schema.field "age" _.Age Schema.int
             |> Schema.buildResult
 
         let raw =
@@ -265,16 +265,16 @@ module InputParseTests =
                     [ "age", RawInput.Scalar "21" ]
             )
 
-        let parsed = Model.parse ageSchema raw
+        let parsed = Schema.parse ageSchema raw
 
         test <@ parsed.IsValid @>
-        test <@ parsed.Model = { Age = 21 } @>
+        test <@ parsed.Value = { Age = 21 } @>
 
     [<Fact>]
     let ``parse reports a constructor error from a constructor returning Error`` () =
         let ageSchema =
             Schema.recordFor<AdultAge, _> AdultAge.Create
-            |> Schema.int "age" _.Age
+            |> Schema.field "age" _.Age Schema.int
             |> Schema.buildResult
 
         let raw =
@@ -283,17 +283,17 @@ module InputParseTests =
                     [ "age", RawInput.Scalar "17" ]
             )
 
-        let parsed = Model.parse ageSchema raw
+        let parsed = Schema.parse ageSchema raw
 
         test <@ not parsed.IsValid @>
-        test <@ parsed.TryModel = None @>
+        test <@ parsed.TryValue = None @>
         test <@ parsed.Errors = [ { Path = []; Error = SchemaError.ConstructorFailed "Age must be at least 18." } ] @>
 
     [<Fact>]
     let ``parse can attach a constructor error to a field path`` () =
         let ageSchema =
             Schema.recordFor<AdultAge, _> AdultAge.Create
-            |> Schema.int "age" _.Age
+            |> Schema.field "age" _.Age Schema.int
             |> Schema.buildResult
 
         let raw =
@@ -302,7 +302,7 @@ module InputParseTests =
                     [ "age", RawInput.Scalar "17" ]
             )
 
-        let parsed = Model.parseWith (Model.constructorErrorAt "age") ageSchema raw
+        let parsed = Schema.parseWith (Schema.constructorErrorAt "age") ageSchema raw
 
         test <@ not parsed.IsValid @>
         test
@@ -318,7 +318,7 @@ module InputParseTests =
             Schema.recordFor<AdultAge, _> (fun age ->
                 constructorCalls <- constructorCalls + 1
                 AdultAge.Create age)
-            |> Schema.field "age" _.Age (Value.int |> Value.withConstraint (SchemaConstraint.atLeast 0))
+            |> Schema.field "age" _.Age (Schema.int |> Schema.constrain (Constraint.atLeast 0))
             |> Schema.buildResult
 
         let raw =
@@ -327,7 +327,7 @@ module InputParseTests =
                     [ "age", RawInput.Scalar "-1" ]
             )
 
-        let parsed = Model.parse gatedSchema raw
+        let parsed = Schema.parse gatedSchema raw
 
         test <@ not parsed.IsValid @>
         test <@ constructorCalls = 0 @>
@@ -341,7 +341,7 @@ module InputParseTests =
     let ``parse maps constructor error values through buildResultWith`` () =
         let ageSchema =
             Schema.recordFor<MappedAdultAge, _> MappedAdultAge.Create
-            |> Schema.int "age" _.Age
+            |> Schema.field "age" _.Age Schema.int
             |> Schema.buildResultWith (function Underage -> "Adult age is required.")
 
         let raw =
@@ -350,7 +350,7 @@ module InputParseTests =
                     [ "age", RawInput.Scalar "17" ]
             )
 
-        let parsed = Model.parse ageSchema raw
+        let parsed = Schema.parse ageSchema raw
 
         test <@ parsed.Errors = [ { Path = []; Error = SchemaError.ConstructorFailed "Adult age is required." } ] @>
 
@@ -358,8 +358,8 @@ module InputParseTests =
     let ``parse builds a DateRange when cross-field constructor invariant passes`` () =
         let rangeSchema =
             Schema.recordFor<DateRange, _> DateRange.Create
-            |> Schema.date "start" _.Start
-            |> Schema.date "end" _.End
+            |> Schema.field "start" _.Start Schema.date
+            |> Schema.field "end" _.End Schema.date
             |> Schema.buildResult
 
         let raw =
@@ -369,18 +369,18 @@ module InputParseTests =
                       "end", RawInput.Scalar "2026-01-12" ]
             )
 
-        let parsed = Model.parse rangeSchema raw
+        let parsed = Schema.parse rangeSchema raw
 
         test <@ parsed.IsValid @>
-        test <@ parsed.Model.Start = DateOnly(2026, 1, 10) @>
-        test <@ parsed.Model.End = DateOnly(2026, 1, 12) @>
+        test <@ parsed.Value.Start = DateOnly(2026, 1, 10) @>
+        test <@ parsed.Value.End = DateOnly(2026, 1, 12) @>
 
     [<Fact>]
     let ``parse reports DateRange constructor invariant errors at root by default`` () =
         let rangeSchema =
             Schema.recordFor<DateRange, _> DateRange.Create
-            |> Schema.date "start" _.Start
-            |> Schema.date "end" _.End
+            |> Schema.field "start" _.Start Schema.date
+            |> Schema.field "end" _.End Schema.date
             |> Schema.buildResult
 
         let raw =
@@ -390,18 +390,18 @@ module InputParseTests =
                       "end", RawInput.Scalar "2026-01-10" ]
             )
 
-        let parsed = Model.parse rangeSchema raw
+        let parsed = Schema.parse rangeSchema raw
 
         test <@ not parsed.IsValid @>
-        test <@ parsed.TryModel = None @>
+        test <@ parsed.TryValue = None @>
         test <@ parsed.Errors = [ { Path = []; Error = SchemaError.ConstructorFailed "End date must be on or after start date." } ] @>
 
     [<Fact>]
     let ``parse can attach DateRange constructor invariant errors to the end field`` () =
         let rangeSchema =
             Schema.recordFor<DateRange, _> DateRange.Create
-            |> Schema.date "start" _.Start
-            |> Schema.date "end" _.End
+            |> Schema.field "start" _.Start Schema.date
+            |> Schema.field "end" _.End Schema.date
             |> Schema.buildResult
 
         let raw =
@@ -411,7 +411,7 @@ module InputParseTests =
                       "end", RawInput.Scalar "2026-01-10" ]
             )
 
-        let parsed = Model.parseWith (Model.constructorErrorAt "end") rangeSchema raw
+        let parsed = Schema.parseWith (Schema.constructorErrorAt "end") rangeSchema raw
 
         test <@ not parsed.IsValid @>
         test
@@ -427,8 +427,8 @@ module InputParseTests =
             Schema.recordFor<DateRange, _> (fun start endDate ->
                 constructorCalls <- constructorCalls + 1
                 DateRange.Create start endDate)
-            |> Schema.date "start" _.Start
-            |> Schema.date "end" _.End
+            |> Schema.field "start" _.Start Schema.date
+            |> Schema.field "end" _.End Schema.date
             |> Schema.buildResult
 
         let raw =
@@ -438,7 +438,7 @@ module InputParseTests =
                       "end", RawInput.Scalar "2026-01-10" ]
             )
 
-        let parsed = Model.parse rangeSchema raw
+        let parsed = Schema.parse rangeSchema raw
 
         test <@ not parsed.IsValid @>
         test <@ constructorCalls = 0 @>
@@ -453,7 +453,7 @@ module InputParseTests =
                       "age", RawInput.Scalar "not-an-int" ]
             )
 
-        let parsed = Model.parse schema raw
+        let parsed = Schema.parse schema raw
 
         test <@ not parsed.IsValid @>
         test <@ RawInput.redisplayPath "email" parsed.Input = "ada@example.com" @>
@@ -463,8 +463,8 @@ module InputParseTests =
     let ``parse maps a check failure from a value constraint to a schema error`` () =
         let minLengthSchema =
             Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
-            |> Schema.field "email" _.Email (Value.text |> Value.withConstraint (SchemaConstraint.minLength 5))
-            |> Schema.int "age" _.Age
+            |> Schema.field "email" _.Email (Schema.text |> Schema.constrain (Constraint.minLength 5))
+            |> Schema.field "age" _.Age Schema.int
             |> Schema.build
 
         let raw =
@@ -474,7 +474,7 @@ module InputParseTests =
                       "age", RawInput.Scalar "42" ]
             )
 
-        let parsed = Model.parse minLengthSchema raw
+        let parsed = Schema.parse minLengthSchema raw
 
         test <@ not parsed.IsValid @>
         test <@ parsed.ErrorsFor "email" = [ SchemaError.InvalidLength(CheckLengthExpectation.MinimumLength 5, Some 2) ] @>
@@ -483,15 +483,15 @@ module InputParseTests =
     let ``schema errors are identical across differently named fields, only the diagnostics path differs`` () =
         let makeSchema fieldName =
             Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
-            |> Schema.field fieldName _.Email (Value.text |> Value.withConstraint SchemaConstraint.required)
-            |> Schema.int "age" _.Age
+            |> Schema.field fieldName _.Email (Schema.text |> Schema.constrain Constraint.required)
+            |> Schema.field "age" _.Age Schema.int
             |> Schema.build
 
         let rawFor fieldName =
             RawInput.Object(Map.ofList [ fieldName, RawInput.Missing; "age", RawInput.Scalar "42" ])
 
-        let shortNameParsed = Model.parse (makeSchema "email") (rawFor "email")
-        let longNameParsed = Model.parse (makeSchema "emailAddress") (rawFor "emailAddress")
+        let shortNameParsed = Schema.parse (makeSchema "email") (rawFor "email")
+        let longNameParsed = Schema.parse (makeSchema "emailAddress") (rawFor "emailAddress")
 
         test <@ (shortNameParsed.Errors |> List.map _.Error) = (longNameParsed.Errors |> List.map _.Error) @>
         test <@ shortNameParsed.Errors <> longNameParsed.Errors @>
@@ -500,8 +500,8 @@ module InputParseTests =
     let ``required reports blank non-text scalar as required`` () =
         let requiredAgeSchema =
             Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
-            |> Schema.text "email" _.Email
-            |> Schema.field "age" _.Age (Value.int |> Value.withConstraint SchemaConstraint.required)
+            |> Schema.field "email" _.Email Schema.text
+            |> Schema.field "age" _.Age (Schema.int |> Schema.constrain Constraint.required)
             |> Schema.build
 
         let raw =
@@ -511,7 +511,7 @@ module InputParseTests =
                       "age", RawInput.Scalar "   " ]
             )
 
-        let parsed = Model.parse requiredAgeSchema raw
+        let parsed = Schema.parse requiredAgeSchema raw
 
         test <@ not parsed.IsValid @>
         test <@ parsed.ErrorsFor "age" = [ SchemaError.Required ] @>

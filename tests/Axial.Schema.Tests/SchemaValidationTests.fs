@@ -105,25 +105,22 @@ module SchemaValidationTests =
         |> Schema.field
             "email"
             _.Email
-            (Value.text
-             |> Value.withConstraints [ SchemaConstraint.required; SchemaConstraint.email; SchemaConstraint.maxLength 254 ])
-        |> Schema.field "age" _.Age (Value.int |> Value.withConstraint (SchemaConstraint.atLeast 18))
+            (Schema.text
+             |> Schema.constrainAll [ Constraint.required; Constraint.email; Constraint.maxLength 254 ])
+        |> Schema.field "age" _.Age (Schema.int |> Schema.constrain (Constraint.atLeast 18))
         |> Schema.build
 
     let private contactMethodSchema =
         Schema.recordFor<ContactMethod, _> (fun kind value -> { Kind = kind; Value = value })
-        |> Schema.field "kind" _.Kind (Value.text |> Value.withConstraint SchemaConstraint.required)
-        |> Schema.field "value" _.Value (Value.text |> Value.withConstraint SchemaConstraint.required)
+        |> Schema.field "kind" _.Kind (Schema.text |> Schema.constrain Constraint.required)
+        |> Schema.field "value" _.Value (Schema.text |> Schema.constrain Constraint.required)
         |> Schema.build
 
     let private contactBookSchema =
         Schema.recordFor<ContactBook, _> (fun name contacts -> { Name = name; Contacts = contacts })
-        |> Schema.field "name" _.Name (Value.text |> Value.withConstraint SchemaConstraint.required)
-        |> Schema.manyWith
-            [ SchemaConstraint.minCount 1; SchemaConstraint.maxCount 2 ]
-            "contacts"
-            _.Contacts
-            contactMethodSchema
+        |> Schema.field "name" _.Name (Schema.text |> Schema.constrain Constraint.required)
+        |> Schema.field "contacts" _.Contacts
+            (Schema.list contactMethodSchema |> Schema.constrainAll [ Constraint.minCount 1; Constraint.maxCount 2 ])
         |> Schema.build
 
     let private generatedBuilder schema =
@@ -133,14 +130,14 @@ module SchemaValidationTests =
     let ``validate returns the original model when schema constraints pass`` () =
         let model = { Email = "ada@example.com"; Age = 42 }
 
-        let validation = Axial.Schema.Model.reconstruct schema model
+        let validation = Schema.check schema model
 
         test <@ validation = Ok model @>
 
     [<Fact>]
     let ``validate reports diagnostics for existing model values that violate schema constraints`` () =
         let validation =
-            Axial.Schema.Model.reconstruct schema { Email = ""; Age = 10 }
+            Schema.check schema { Email = ""; Age = 10 }
 
         test
             <@
@@ -164,7 +161,7 @@ module SchemaValidationTests =
     let ``validate reports diagnostics for imported hand-built values that bypass input parsing`` () =
         let imported = { Email = "not-an-email"; Age = 16 }
 
-        let validation = Axial.Schema.Model.reconstruct schema imported
+        let validation = Schema.check schema imported
 
         test
             <@
@@ -188,17 +185,17 @@ module SchemaValidationTests =
             |> Schema.field
                 "email"
                 _.Email
-                (Value.text
-                 |> Value.withConstraint (SchemaConstraint.required |> SchemaConstraint.withMessage "Email is required."))
+                (Schema.text
+                 |> Schema.constrain (Constraint.required |> Constraint.withMessage "Email is required."))
             |> Schema.field
                 "age"
                 _.Age
-                (Value.int
-                 |> Value.withConstraint (SchemaConstraint.atLeast 18 |> SchemaConstraint.withMessage "Must be an adult."))
+                (Schema.int
+                 |> Schema.constrain (Constraint.atLeast 18 |> Constraint.withMessage "Must be an adult."))
             |> Schema.build
 
         let validation =
-            Axial.Schema.Model.reconstruct messageSchema { Email = ""; Age = 10 }
+            Schema.check messageSchema { Email = ""; Age = 10 }
 
         test
             <@
@@ -224,15 +221,15 @@ module SchemaValidationTests =
             |> Schema.field
                 "secondary-on-wire"
                 _.Primary
-                (Value.text |> Value.withConstraint (SchemaConstraint.oneOf [ "primary-value" ]))
+                (Schema.text |> Schema.constrain (Constraint.oneOf [ "primary-value" ]))
             |> Schema.field
                 "primary-on-wire"
                 _.Secondary
-                (Value.text |> Value.withConstraint (SchemaConstraint.oneOf [ "secondary-value" ]))
+                (Schema.text |> Schema.constrain (Constraint.oneOf [ "secondary-value" ]))
             |> Schema.build
 
         let validation =
-            Axial.Schema.Model.reconstruct
+            Schema.check
                 swappedSchema
                 { Primary = "primary-value"
                   Secondary = "wrong-secondary" }
@@ -254,18 +251,18 @@ module SchemaValidationTests =
     let ``validate checks nested model values through their nested schema`` () =
         let addressSchema =
             Schema.recordFor<Address, _> (fun street city -> { Street = street; City = city })
-            |> Schema.field "street" _.Street (Value.text |> Value.withConstraint SchemaConstraint.required)
-            |> Schema.field "city" _.City (Value.text |> Value.withConstraint SchemaConstraint.required)
+            |> Schema.field "street" _.Street (Schema.text |> Schema.constrain Constraint.required)
+            |> Schema.field "city" _.City (Schema.text |> Schema.constrain Constraint.required)
             |> Schema.build
 
         let customerSchema =
             Schema.recordFor<Customer, _> (fun name address -> { Name = name; Address = address })
-            |> Schema.field "name" _.Name (Value.text |> Value.withConstraint SchemaConstraint.required)
-            |> Schema.nested "address" _.Address addressSchema
+            |> Schema.field "name" _.Name (Schema.text |> Schema.constrain Constraint.required)
+            |> Schema.field "address" _.Address addressSchema
             |> Schema.build
 
         let validation =
-            Axial.Schema.Model.reconstruct
+            Schema.check
                 customerSchema
                 { Name = "Ada"
                   Address = { Street = "1 Main Street"; City = "" } }
@@ -298,7 +295,7 @@ module SchemaValidationTests =
                   { Kind = "phone"; Value = "" } ] }
 
         let validation =
-            Axial.Schema.Model.reconstruct contactBookSchema model
+            Schema.check contactBookSchema model
 
         test
             <@
@@ -343,7 +340,7 @@ module SchemaValidationTests =
                   { Kind = "sms"; Value = "+61 400 000 000" } ] }
 
         let validation =
-            Axial.Schema.Model.reconstruct contactBookSchema model
+            Schema.check contactBookSchema model
 
         test
             <@
@@ -362,11 +359,11 @@ module SchemaValidationTests =
     let ``validate reports primitive collection item constraints at index paths`` () =
         let schema =
             Schema.recordFor<Tags, _> (fun values -> { Values = values })
-            |> Schema.field "values" _.Values (Value.manyOf (Value.text |> Value.withConstraint SchemaConstraint.required))
+            |> Schema.field "values" _.Values (Schema.list (Schema.text |> Schema.constrain Constraint.required))
             |> Schema.build
 
         let validation =
-            Axial.Schema.Model.reconstruct schema { Values = [ "fsharp"; "" ] }
+            Schema.check schema { Values = [ "fsharp"; "" ] }
 
         test
             <@
@@ -395,18 +392,18 @@ module SchemaValidationTests =
                       "age", RawInput.Scalar "42" ]
             )
 
-        let parsed = Model.parse schema raw
-        let validation = Axial.Schema.Model.reconstruct schema parsed.Model
+        let parsed = Schema.parse schema raw
+        let validation = Schema.check schema parsed.Value
 
         test <@ parsed.IsValid @>
-        test <@ validation = Ok parsed.Model @>
+        test <@ validation = Ok parsed.Value @>
 
     [<Fact>]
     let ``values produced by a generated builder validate through the same schema`` () =
         let builder = generatedBuilder schema
         let generated = builder.Build [| box "ada@example.com"; box 42 |]
 
-        let validation = Axial.Schema.Model.reconstruct schema generated
+        let validation = Schema.check schema generated
 
         test <@ generated = { Email = "ada@example.com"; Age = 42 } @>
         test <@ validation = Ok generated @>
@@ -416,7 +413,7 @@ module SchemaValidationTests =
         let builder = generatedBuilder schema
         let generated = builder.Build [| box ""; box 17 |]
 
-        let validation = Axial.Schema.Model.reconstruct schema generated
+        let validation = Schema.check schema generated
 
         test
             <@
@@ -440,8 +437,8 @@ module SchemaValidationTests =
     let ``values produced by input parsing with constructor invariants validate through the same schema`` () =
         let rangeSchema =
             Schema.recordFor<DateRange, _> DateRange.Create
-            |> Schema.date "start" _.Start
-            |> Schema.date "end" _.End
+            |> Schema.field "start" _.Start Schema.date
+            |> Schema.field "end" _.End Schema.date
             |> Schema.buildResult
 
         let raw =
@@ -451,8 +448,8 @@ module SchemaValidationTests =
                       "end", RawInput.Scalar "2026-01-12" ]
             )
 
-        let parsed = Model.parse rangeSchema raw
-        let validation = Axial.Schema.Model.reconstruct rangeSchema parsed.Model
+        let parsed = Schema.parse rangeSchema raw
+        let validation = Schema.check rangeSchema parsed.Value
 
         test <@ parsed.IsValid @>
-        test <@ validation = Ok parsed.Model @>
+        test <@ validation = Ok parsed.Value @>

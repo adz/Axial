@@ -207,8 +207,8 @@ let renderUserForm user =
 let probeSchemaBuilder () =
     let schema =
         Schema.recordFor<SchemaContact, _> (fun name age -> { Name = name; Age = age })
-        |> Schema.field "name" _.Name Value.text
-        |> Schema.field "age" _.Age Value.int
+        |> Schema.field "name" _.Name Schema.text
+        |> Schema.field "age" _.Age Schema.int
         |> Schema.build
 
     Schema.specialize (SummaryFactory<SchemaContact>()) schema

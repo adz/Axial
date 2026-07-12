@@ -27,22 +27,22 @@ Nothing executes: no getters run, no constructors are called, no checks fire. Th
 
 ## Read Field Shapes And Constraints
 
-Each field carries a `ValueDescription` — shape, declared format, and constraint metadata:
+Each field carries a `SchemaDescription` — shape, declared format, and constraint metadata:
 
 ```fsharp
 let email = description.Fields |> List.find (fun field -> field.Name = "email")
 
-email.Value.Format          // Some SchemaFormat.email (when declared with Value.withFormat)
+email.Schema.Format          // Some SchemaFormat.email (when declared with Schema.withFormat)
 
-match email.Value.Shape with
-| ValueShape.Primitive kind -> printfn "primitive %A" kind
-| ValueShape.Refined underlying -> printfn "refined over %A" underlying.Shape
-| ValueShape.Nested model -> printfn "nested with %d fields" model.Fields.Length
-| ValueShape.Many item -> printfn "collection of %A" item.Shape
-| ValueShape.Union union -> printfn "union with cases %A" (union.Cases |> List.map _.Tag)
+match email.Schema.Shape with
+| SchemaShape.Primitive kind -> printfn "primitive %A" kind
+| SchemaShape.Refined underlying -> printfn "refined over %A" underlying.Shape
+| SchemaShape.Nested model -> printfn "nested with %d fields" model.Fields.Length
+| SchemaShape.Many item -> printfn "collection of %A" item.Shape
+| SchemaShape.Union union -> printfn "union with cases %A" (union.Cases |> List.map _.Tag)
 ```
 
-Refined values expose their raw representation through `ValueShape.Refined`, so a boundary interpreter can render an
+Refined values expose their raw representation through `SchemaShape.Refined`, so a boundary interpreter can render an
 `Email` field as a constrained string without knowing the domain type.
 
 ## Lower Constraints To Another Format
@@ -50,7 +50,7 @@ Refined values expose their raw representation through `ValueShape.Refined`, so 
 Constraint metadata is a closed, typed vocabulary (`SchemaConstraintMetadata`), so lowering is one `match`:
 
 ```fsharp
-let jsonKeyword (constraint': SchemaConstraint) =
+let jsonKeyword (constraint': Constraint) =
     match constraint'.Metadata with
     | SchemaConstraintMetadata.MaxLength maximum -> Some $"\"maxLength\":{maximum}"
     | SchemaConstraintMetadata.Pattern pattern -> Some $"\"pattern\":\"{pattern}\""

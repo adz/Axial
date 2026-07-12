@@ -12,12 +12,12 @@ open Axial.Validation
 /// original <see cref="T:Axial.Schema.RawInput" /> remains available for redisplay and error lookup.
 /// </para>
 /// </remarks>
-type ParsedInput<'model, 'error> =
+type ParsedInput<'value, 'error> =
     {
         /// <summary>The raw boundary input that was parsed.</summary>
         Input: RawInput
         /// <summary>The parsed model or path-aware parse diagnostics.</summary>
-        Result: Result<'model, Diagnostics<'error>>
+        Result: Result<'value, Diagnostics<'error>>
     }
 
     /// <summary>Returns <c>true</c> when input parsing produced a trusted model.</summary>
@@ -26,15 +26,15 @@ type ParsedInput<'model, 'error> =
         | Ok _ -> true
         | Error _ -> false
 
-    /// <summary>Returns the trusted model or raises when input parsing failed.</summary>
+    /// <summary>Returns the parsed value or raises when input parsing failed.</summary>
     /// <exception cref="T:System.InvalidOperationException">Thrown when input parsing failed.</exception>
-    member this.Model =
+    member this.Value =
         match this.Result with
         | Ok model -> model
-        | Error _ -> invalidOp "Parsed input does not contain a valid model."
+        | Error _ -> invalidOp "Parsed input does not contain a value."
 
-    /// <summary>Returns the trusted model when input parsing succeeded.</summary>
-    member this.TryModel =
+    /// <summary>Returns the parsed value when input parsing succeeded.</summary>
+    member this.TryValue =
         match this.Result with
         | Ok model -> Some model
         | Error _ -> None

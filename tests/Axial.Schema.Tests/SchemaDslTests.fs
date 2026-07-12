@@ -30,9 +30,9 @@ module SchemaDslTests =
 
         let schema () =
             recordFor<Signup, _> (fun email age note -> { Email = email; Age = age; Note = note })
-            |> text [ required; email ] "email" _.Email
-            |> int [ atLeast 13 ] "age" _.Age
-            |> text [] "note" _.Note
+            |> field "email" _.Email (text |> constrainAll [ required; email ])
+            |> field "age" _.Age (int |> constrain (atLeast 13))
+            |> field "note" _.Note text
             |> build
 
     module private OrderSchema =
@@ -40,12 +40,12 @@ module SchemaDslTests =
 
         let citySchema () =
             recordFor<Address, _> (fun city -> { City = city })
-            |> text [ required ] "city" _.City
+            |> field "city" _.City (text |> constrain required)
             |> build
 
         let contactSchema () =
             recordFor<Contact, _> (fun kind -> { Kind = kind })
-            |> text [ required ] "kind" _.Kind
+            |> field "kind" _.Kind (text |> constrain required)
             |> build
 
         let schema () =
@@ -53,18 +53,18 @@ module SchemaDslTests =
                 { Address = address
                   Contacts = contacts
                   Total = total })
-            |> nested [ required ] "address" _.Address (citySchema ())
-            |> many [ minCount 1 ] "contacts" _.Contacts (contactSchema ())
-            |> decimal [ greaterThan 0 ] "total" _.Total
+            |> field "address" _.Address (citySchema () |> constrain required)
+            |> field "contacts" _.Contacts (list (contactSchema ()) |> constrain (minCount 1))
+            |> field "total" _.Total (decimal |> constrain (greaterThan 0m))
             |> build
 
     [<Fact>]
     let ``dsl pipeline produces the same field metadata as the qualified pipeline`` () =
         let qualified =
             Schema.recordFor<Signup, _> (fun email age note -> { Email = email; Age = age; Note = note })
-            |> Schema.fieldWith [ SchemaConstraint.required; SchemaConstraint.email ] "email" _.Email Value.text
-            |> Schema.fieldWith [ SchemaConstraint.atLeast 13 ] "age" _.Age Value.``int``
-            |> Schema.fieldWith [] "note" _.Note Value.text
+            |> Schema.field "email" _.Email (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.email ])
+            |> Schema.field "age" _.Age (Schema.``int`` |> Schema.constrainAll [ Constraint.atLeast 13 ])
+            |> Schema.field "note" _.Note (Schema.text |> Schema.constrainAll [])
             |> Schema.build
 
         let describe (schema: Schema<Signup>) =
@@ -82,7 +82,7 @@ module SchemaDslTests =
         let constraintCodes name =
             description.Fields
             |> List.find (fun field -> field.Name = name)
-            |> _.Constraints
+            |> _.Schema.Constraints
             |> List.map _.Code
 
         test <@ constraintCodes "address" = [ "required" ] @>

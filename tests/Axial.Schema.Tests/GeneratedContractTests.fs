@@ -31,7 +31,7 @@ module GeneratedContractTests =
 
         match Axial.Tests.Generated.Category.parse raw with
         | parsed when parsed.IsValid ->
-            test <@ parsed.Model.Children = [ { Axial.Tests.Generated.Category.Name = "leaf"; Children = [] } ] @>
+            test <@ parsed.Value.Children = [ { Axial.Tests.Generated.Category.Name = "leaf"; Children = [] } ] @>
         | parsed -> failwithf "Expected recursive generated input to parse, got %A" parsed.Errors
 
     [<Fact>]
@@ -48,8 +48,8 @@ module GeneratedContractTests =
 
         match result with
         | Ok signup ->
-            test <@ signup.Value.Email = "ada@example.com" @>
-            test <@ signup.Value.Plan = SignupPlan.Pro @>
+            test <@ signup.Email = "ada@example.com" @>
+            test <@ signup.Plan = SignupPlan.Pro @>
         | Error diagnostics -> failwithf "Expected trusted construction, got %A" diagnostics
 
     [<Fact>]
@@ -186,7 +186,7 @@ module GeneratedContractTests =
             Payment.validate { Source = PaymentSource.Card { Number = "4242424242424242" } }
 
         match payment with
-        | Ok trusted -> test <@ trusted.Value.Source = PaymentSource.Card { Number = "4242424242424242" } @>
+        | Ok trusted -> test <@ trusted.Source = PaymentSource.Card { Number = "4242424242424242" } @>
         | Error diagnostics -> failwithf "Expected trusted Payment, got %A" diagnostics
 
         match Payment.validate { Source = PaymentSource.Card { Number = "short" } } with
@@ -217,10 +217,10 @@ module GeneratedContractTests =
             description.Fields
             |> List.find (fun field -> field.Name = "email")
 
-        test <@ emailField.Value.Description = Some "Primary contact address." @>
+        test <@ emailField.Schema.Description = Some "Primary contact address." @>
 
         let planField =
             description.Fields
             |> List.find (fun field -> field.Name = "plan")
 
-        test <@ planField.Value.Default = Some(box SignupPlan.Free) @>
+        test <@ planField.Schema.Default = Some(box SignupPlan.Free) @>

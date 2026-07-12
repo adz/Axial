@@ -16,11 +16,11 @@ differences come from F# and .NET, not from a different philosophy.
 
 | zod | Axial |
 | --- | --- |
-| `z.object({ name: z.string().max(80) })` | `Schema.recordFor<...> ctor \|> Schema.fieldWith [ SchemaConstraint.maxLength 80 ] "name" _.Name Value.text \|> Schema.build` |
-| `schema.safeParse(input)` | `Model.parse schema raw` → `ParsedInput` |
+| `z.object({ name: z.string().max(80) })` | `Schema.recordFor<...> ctor \|> Schema.field "name" _.Name (Schema.text \|> Schema.constrain (Constraint.maxLength 80)) \|> Schema.build` |
+| `schema.safeParse(input)` | `Schema.parse schema raw` → `ParsedInput` |
 | `result.error.issues` with paths | path-aware `Diagnostics` (`parsed.ErrorsFor "contacts[1].value"`) |
-| `z.string().email().brand<'Email'>()` | refined value schemas (`Value.refined` over a private constructor) |
-| `z.discriminatedUnion("type", ...)` | `Value.union "type" "value" [ UnionCase.create ... ]` |
+| `z.string().email().brand<'Email'>()` | `Schema.refine` over a private representation and fallible constructor |
+| `z.discriminatedUnion("type", ...)` | `Schema.union "type" "value" [ UnionCase.create ... ]` |
 | `z.infer<typeof schema>` | not needed — the schema is declared against your record type directly |
 | `zod-to-json-schema` | `JsonSchema.generate` (built in, from the same metadata) |
 

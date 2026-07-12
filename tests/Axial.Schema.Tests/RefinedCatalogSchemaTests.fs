@@ -36,9 +36,9 @@ module RefinedCatalogSchemaTests =
                 Slug = slug
                 Quantity = quantity
             })
-        |> Schema.field "name" _.Name RefinedSchema.nonBlankString
-        |> Schema.field "slug" _.Slug RefinedSchema.slug
-        |> Schema.field "quantity" _.Quantity RefinedSchema.positiveInt
+        |> Schema.field "name" _.Name RefinedSchemas.nonBlankString
+        |> Schema.field "slug" _.Slug RefinedSchemas.slug
+        |> Schema.field "quantity" _.Quantity RefinedSchemas.positiveInt
         |> Schema.build
 
     [<Fact>]
@@ -51,7 +51,7 @@ module RefinedCatalogSchemaTests =
                       "quantity", RawInput.Scalar "3" ]
             )
 
-        let parsed = Model.parse (productSchema ()) raw
+        let parsed = Schema.parse (productSchema ()) raw
 
         test
             <@ parsed.Result
@@ -68,7 +68,7 @@ module RefinedCatalogSchemaTests =
                       "quantity", RawInput.Scalar "0" ]
             )
 
-        let parsed = Model.parse (productSchema ()) raw
+        let parsed = Schema.parse (productSchema ()) raw
 
         test <@ Refine.nonBlankString "   " |> Result.mapError SchemaError.ofRefinementError = Error [ SchemaError.Required ] @>
         test <@ Refine.slug "Ada" |> Result.mapError SchemaError.ofRefinementError = Error [ SchemaError.InvalidFormat "^[a-z0-9]+(-[a-z0-9]+)*$" ] @>
@@ -81,11 +81,11 @@ module RefinedCatalogSchemaTests =
 
     [<Fact>]
     let ``bounded string schema carries caller supplied bounds`` () =
-        let schema = RefinedSchema.boundedString 2 4
+        let schema = RefinedSchemas.boundedString 2 4
 
-        test <@ Value.allConstraints schema |> List.map SchemaConstraint.code = [ "required"; "lengthBetween" ] @>
+        test <@ Schema.allConstraints schema |> List.map Constraint.code = [ "required"; "lengthBetween" ] @>
 
-        let check = ValueSchemaCheck.text schema
+        let check = SchemaCheck.text schema
         let value = Refine.boundedString 2 4 "Ada" |> Result.defaultWith (fun error -> failwithf "%A" error)
 
         test <@ check value = Ok value @>
@@ -94,14 +94,14 @@ module RefinedCatalogSchemaTests =
     let ``remaining scalar catalog schemas report the same failures as standalone refinement`` () =
         let schema =
             Schema.recordFor<Scalars, _> (fun command offset -> { Command = command; Offset = offset })
-            |> Schema.field "command" _.Command RefinedSchema.trimmedString
-            |> Schema.field "offset" _.Offset RefinedSchema.nonZeroInt
+            |> Schema.field "command" _.Command RefinedSchemas.trimmedString
+            |> Schema.field "offset" _.Offset RefinedSchemas.nonZeroInt
             |> Schema.build
 
         let raw =
             RawInput.Object(Map.ofList [ "command", RawInput.Scalar " deploy "; "offset", RawInput.Scalar "0" ])
 
-        let parsed = Model.parse schema raw
+        let parsed = Schema.parse schema raw
 
         test
             <@ Refine.trimmedString " deploy " |> Result.mapError SchemaError.ofRefinementError =
@@ -119,8 +119,8 @@ module RefinedCatalogSchemaTests =
     let ``refined collection catalog schemas parse trusted values`` () =
         let schema =
             Schema.recordFor<Tagged, _> (fun tags codes -> { Tags = tags; Codes = codes })
-            |> Schema.field "tags" _.Tags (RefinedSchema.nonEmptyList RefinedSchema.slug)
-            |> Schema.field "codes" _.Codes (RefinedSchema.distinctList Value.text)
+            |> Schema.field "tags" _.Tags (RefinedSchemas.nonEmptyList RefinedSchemas.slug)
+            |> Schema.field "codes" _.Codes (RefinedSchemas.distinctList Schema.text)
             |> Schema.build
 
         let raw =
@@ -130,7 +130,7 @@ module RefinedCatalogSchemaTests =
                       "codes", RawInput.Many [ RawInput.Scalar "A"; RawInput.Scalar "B" ] ]
             )
 
-        let parsed = Model.parse schema raw
+        let parsed = Schema.parse schema raw
 
         test
             <@ parsed.Result
@@ -141,8 +141,8 @@ module RefinedCatalogSchemaTests =
     let ``refined collection catalog schemas report collection and item failures`` () =
         let schema =
             Schema.recordFor<Tagged, _> (fun tags codes -> { Tags = tags; Codes = codes })
-            |> Schema.field "tags" _.Tags (RefinedSchema.nonEmptyList RefinedSchema.slug)
-            |> Schema.field "codes" _.Codes (RefinedSchema.distinctList Value.text)
+            |> Schema.field "tags" _.Tags (RefinedSchemas.nonEmptyList RefinedSchemas.slug)
+            |> Schema.field "codes" _.Codes (RefinedSchemas.distinctList Schema.text)
             |> Schema.build
 
         let raw =
@@ -152,7 +152,7 @@ module RefinedCatalogSchemaTests =
                       "codes", RawInput.Many [ RawInput.Scalar "A"; RawInput.Scalar "A" ] ]
             )
 
-        let parsed = Model.parse schema raw
+        let parsed = Schema.parse schema raw
 
         test
             <@ parsed.Errors = [ { Path = [ PathSegment.Name "codes" ]
@@ -169,7 +169,7 @@ module RefinedCatalogSchemaTests =
                       "end", RawInput.Scalar "2026-01-02T00:00:00+00:00" ]
             )
 
-        let parsed = Model.parse RefinedSchema.dateTimeOffsetRange raw
+        let parsed = Schema.parse RefinedSchemas.dateTimeOffsetRange raw
 
         test
             <@ parsed.Result
@@ -188,7 +188,7 @@ module RefinedCatalogSchemaTests =
                       "end", RawInput.Scalar "2026-01-01T00:00:00+00:00" ]
             )
 
-        let parsed = Model.parse RefinedSchema.dateTimeOffsetRange raw
+        let parsed = Schema.parse RefinedSchemas.dateTimeOffsetRange raw
 
         test
             <@ parsed.Errors = [ { Path = []
@@ -201,7 +201,7 @@ module RefinedCatalogSchemaTests =
         let raw =
             RawInput.Object(Map.ofList [ "start", RawInput.Scalar "2026-01-01"; "end", RawInput.Scalar "2026-01-02" ])
 
-        let parsed = Model.parse RefinedSchema.dateOnlyRange raw
+        let parsed = Schema.parse RefinedSchemas.dateOnlyRange raw
 
         test
             <@ parsed.Result

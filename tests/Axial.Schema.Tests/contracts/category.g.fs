@@ -26,18 +26,18 @@ module Category =
         Schema.recordFor<Category, _> (fun name children ->
             { Name = name
               Children = children })
-        |> Schema.fieldWith [ SchemaConstraint.minLength (1) ] "name" _.Name (Value.text |> Value.describe "Stable display name.")
-        |> Schema.field "children" _.Children (Value.manyOf (Value.lazyOf (fun () -> schema)) |> Value.describe "Child categories use the same wire contract.")
+        |> Schema.field "name" _.Name (Schema.text |> Schema.constrainAll [ Constraint.minLength (1) ] |> Schema.describe "Stable display name.")
+        |> Schema.field "children" _.Children (Schema.list (Schema.defer (fun () -> schema)) |> Schema.describe "Child categories use the same wire contract.")
         |> Schema.build
         |> Schema.describe "A recursive category tree used to prove self-references in generated schemas."
 
-    /// Validates a draft built with an ordinary record literal, promoting it to a trusted model.
-    let validate (draft: Category) : Result<Model<Category>, Diagnostics<SchemaError>> =
-        Model.validate schema draft
+    /// Checks a draft built with an ordinary record literal.
+    let validate (draft: Category) : Result<Category, Diagnostics<SchemaError>> =
+        Schema.check schema draft
 
     /// Parses raw boundary input through the schema.
     let parse (input: RawInput) : ParsedInput<Category, SchemaError> =
-        Model.parse schema input
+        Schema.parse schema input
 
     /// Typed field references for rules, redisplay, and UI binding.
     [<RequireQualifiedAccess>]

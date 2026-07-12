@@ -37,8 +37,8 @@ type ContractBuilder<'model, 'current> =
     private
         {
             Name: string
-            HeadVersion: int
-            HeadSchema: Schema<'model>
+            CurrentVersion: int
+            CurrentSchema: Schema<'model>
             Versions: ContractVersion list
         }
 
@@ -47,8 +47,8 @@ type Contract<'model> =
     private
         {
             Name: string
-            HeadVersion: int
-            HeadSchema: Schema<'model>
+            CurrentVersion: int
+            CurrentSchema: Schema<'model>
             Source: VersionSource
             Versions: ContractVersion list
         }
@@ -64,19 +64,19 @@ module Contract =
         if version < 1 then invalidArg parameterName "Contract versions must be positive integers."
 
     /// Starts a contract at its current version and schema.
-    let create<'model> (name: string) (headVersion: int) (headSchema: Schema<'model>) : ContractBuilder<'model, 'model> =
+    let create<'model> (name: string) (currentVersion: int) (currentSchema: Schema<'model>) : ContractBuilder<'model, 'model> =
         validateName name
-        validateVersion (nameof headVersion) headVersion
-        if isNull (box headSchema) then nullArg (nameof headSchema)
+        validateVersion (nameof currentVersion) currentVersion
+        if isNull (box currentSchema) then nullArg (nameof currentSchema)
 
         let head =
             {
-                Version = headVersion
-                Parse = fun raw -> (Model.parse headSchema raw).Result |> Result.map box
+                Version = currentVersion
+                Parse = fun raw -> (Schema.parse currentSchema raw).Result |> Result.map box
                 MigrateToNext = None
             }
 
-        { Name = name; HeadVersion = headVersion; HeadSchema = headSchema; Versions = [ head ] }
+        { Name = name; CurrentVersion = currentVersion; CurrentSchema = currentSchema; Versions = [ head ] }
 
     /// Adds the immediately preceding wire version and its typed migration to the next registered version.
     let supersedes
@@ -96,11 +96,11 @@ module Contract =
         let entry =
             {
                 Version = version
-                Parse = fun raw -> (Model.parse schema raw).Result |> Result.map box
+                Parse = fun raw -> (Schema.parse schema raw).Result |> Result.map box
                 MigrateToNext = Some(fun value -> migrate (unbox<'previous> value) |> Result.map box)
             }
 
-        { Name = builder.Name; HeadVersion = builder.HeadVersion; HeadSchema = builder.HeadSchema; Versions = entry :: builder.Versions }
+        { Name = builder.Name; CurrentVersion = builder.CurrentVersion; CurrentSchema = builder.CurrentSchema; Versions = entry :: builder.Versions }
 
     /// Finishes a contract with an explicit version-detection strategy.
     let build (source: VersionSource) (builder: ContractBuilder<'model, 'oldest>) : Contract<'model> =
@@ -113,11 +113,11 @@ module Contract =
                 invalidArg (nameof source) $"The unversioned fallback {version} is not registered in this contract."
         | VersionSource.External -> ()
 
-        { Name = builder.Name; HeadVersion = builder.HeadVersion; HeadSchema = builder.HeadSchema; Source = source; Versions = builder.Versions }
+        { Name = builder.Name; CurrentVersion = builder.CurrentVersion; CurrentSchema = builder.CurrentSchema; Source = source; Versions = builder.Versions }
 
     let private parseSelected (contract: Contract<'model>) version raw =
-        if version > contract.HeadVersion then
-            Error(ContractError.VersionTooNew(version, contract.HeadVersion))
+        if version > contract.CurrentVersion then
+            Error(ContractError.VersionTooNew(version, contract.CurrentVersion))
         else
             match contract.Versions |> List.tryFindIndex (fun item -> item.Version = version) with
             | None -> Error(ContractError.VersionUnrecognized version)
@@ -130,19 +130,19 @@ module Contract =
                     let migrated = migrations |> List.fold (fun state migrate -> state |> Result.bind migrate) (Ok parsed)
                     match migrated with
                     | Error error -> Error(ContractError.Migration error)
-                    | Ok value when version = contract.HeadVersion -> Ok(Model(unbox<'model> value))
+                    | Ok value when version = contract.CurrentVersion -> Ok(unbox<'model> value)
                     | Ok value ->
-                        match Model.reconstruct contract.HeadSchema (unbox<'model> value) with
-                        | Ok current -> Ok(Model current)
+                        match Schema.check contract.CurrentSchema (unbox<'model> value) with
+                        | Ok current -> Ok current
                         | Error diagnostics -> Error(ContractError.Migration(MigrationError.RevalidationFailed diagnostics))
 
     /// Parses input using an out-of-band version value.
-    let parseWithVersion (contract: Contract<'model>) (version: int) (raw: RawInput) : Result<Model<'model>, ContractError> =
+    let parseVersion (contract: Contract<'model>) (version: int) (raw: RawInput) : Result<'model, ContractError> =
         validateVersion (nameof version) version
         parseSelected contract version raw
 
     /// Detects the input version according to the contract and parses it into the current trusted model.
-    let parse (contract: Contract<'model>) (raw: RawInput) : Result<Model<'model>, ContractError> =
+    let parse (contract: Contract<'model>) (raw: RawInput) : Result<'model, ContractError> =
         match contract.Source with
         | VersionSource.External -> Error ContractError.VersionMissing
         | VersionSource.UnversionedMeans version -> parseSelected contract version raw
@@ -159,7 +159,7 @@ module Contract =
     let name (contract: Contract<'model>) = contract.Name
 
     /// Returns the highest supported version.
-    let headVersion (contract: Contract<'model>) = contract.HeadVersion
+    let currentVersion (contract: Contract<'model>) = contract.CurrentVersion
 
     /// Returns the schema for the current domain model.
-    let headSchema (contract: Contract<'model>) = contract.HeadSchema
+    let currentSchema (contract: Contract<'model>) = contract.CurrentSchema

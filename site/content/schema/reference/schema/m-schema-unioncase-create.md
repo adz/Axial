@@ -1,7 +1,7 @@
 ---
 title: "Schema.UnionCase.create"
 linkTitle: "create"
-weight: 2109
+weight: 2110
 type: docs
 ---
 
@@ -22,7 +22,7 @@ type: docs
 | `tag` | <code>string</code> |  |
 | `construct` | <code><span>'payload&#32;->&#32;'union</span></code> |  |
 | `tryPayload` | <code><span>'union&#32;->&#32;<span>'payload&#32;option</span></span></code> |  |
-| `payload` | <code><span><a href="t-schema-valueschema.md">ValueSchema</a>&lt;'payload&gt;</span></code> |  |
+| `payload` | <code><span><a href="t-schema-schema.md">Schema</a>&lt;'payload&gt;</span></code> |  |
 
 ## Returns
 

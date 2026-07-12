@@ -151,7 +151,7 @@ module ApiShapeTests =
             { ExternalName = ExternalFieldName.create externalName
               Order = FieldOrder.create order
               Getter = getter
-              ValueSchema = Value.text.Definition
+              ValueSchema = Schema.text.ValueDefinition
               Constraints = [] }
 
         Field definition
@@ -393,13 +393,13 @@ module ApiShapeTests =
     let ``schema inspection and input interpreter modules expose the expected surface`` () =
         moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.Inspect"
         |> publicStaticMemberNames
-        |> assertContainsAll [ "model"; "value"; "field" ]
+        |> assertContainsAll [ "model"; "schema"; "field" ]
 
-        moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.ModelModule"
+        moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.Schema"
         |> publicStaticMemberNames
-        |> assertContainsAll [ "parse"; "parseWith"; "constructorErrorAt"; "reconstruct"; "validate" ]
+        |> assertContainsAll [ "parse"; "parseWith"; "constructorErrorAt"; "check"; "refine" ]
 
-        assertTypePresentInAssembly "Axial.Schema" "Axial.Schema.Model`1" |> ignore
+        assertTypeAbsentFromAssembly "Axial.Schema" "Axial.Schema.ValueSchema`1"
 
         moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.RawInputModule"
         |> publicStaticMemberNames
@@ -480,8 +480,8 @@ module ApiShapeTests =
         test <@ errorHandlingAssembly.GetName().Name = "Axial.ErrorHandling" @>
 
         assertModuleAbsentFromAssembly "Axial.ErrorHandling" "Axial.Schema.SchemaValidation"
-        assertModuleAbsentFromAssembly "Axial.ErrorHandling" "Axial.Schema.SchemaConstraintCheck"
-        assertModuleAbsentFromAssembly "Axial.ErrorHandling" "Axial.Schema.ValueSchemaCheck"
+        assertModuleAbsentFromAssembly "Axial.ErrorHandling" "Axial.Schema.ConstraintCheck"
+        assertModuleAbsentFromAssembly "Axial.ErrorHandling" "Axial.Schema.SchemaCheck"
         assertModuleAbsentFromAssembly "Axial.ErrorHandling" "Axial.Schema.ModelModule"
 
         test <@ schemaAssembly.GetName().Name = "Axial.Schema" @>
@@ -493,11 +493,11 @@ module ApiShapeTests =
         |> publicStaticMemberNames
         |> assertContainsAll [ "packageName" ]
 
-        moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.SchemaConstraintCheck"
+        moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.ConstraintCheck"
         |> publicStaticMemberNames
         |> assertContainsAll [ "tryText"; "text"; "tryOrdered"; "ordered"; "trySequence"; "sequence" ]
 
-        moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.ValueSchemaCheck"
+        moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.SchemaCheck"
         |> publicStaticMemberNames
         |> assertContainsAll [ "fromUnderlying"; "text"; "ordered" ]
 
@@ -545,17 +545,16 @@ module ApiShapeTests =
     [<Fact>]
     let ``schema types stay out of the flow package`` () =
         let schemaType = typedefof<Schema<_>>
-        let valueSchemaType = typedefof<ValueSchema<_>>
+        let valueSchemaType = typedefof<Schema<_>>
         let fieldType = typedefof<Field<_, _>>
         let primitiveValueKindType = typeof<PrimitiveValueKind>
-        let schemaConstraintMetadataType = typeof<SchemaConstraintMetadata>
-        let schemaConstraintType = typeof<SchemaConstraint>
+        let schemaConstraintMetadataType = typeof<ConstraintMetadata>
+        let schemaConstraintType = typeof<Constraint>
         let externalFieldNameType = typeof<ExternalFieldName>
         let fieldOrderType = typeof<FieldOrder>
         let schemaModule = moduleType schemaType "Axial.Schema.Schema"
         let fieldModule = moduleType fieldType "Axial.Schema.Field"
-        let valueModule = moduleType valueSchemaType "Axial.Schema.Value"
-        let schemaConstraintModule = moduleType schemaConstraintType "Axial.Schema.SchemaConstraintModule"
+        let schemaConstraintModule = moduleType schemaConstraintType "Axial.Schema.ConstraintModule"
         let schemaAssembly = schemaType.Assembly
         let references = referencedAssemblyNames schemaAssembly
         let publicConstructors =
@@ -564,7 +563,7 @@ module ApiShapeTests =
             valueSchemaType.GetConstructors(BindingFlags.Public ||| BindingFlags.Instance)
         let publicFieldConstructors =
             fieldType.GetConstructors(BindingFlags.Public ||| BindingFlags.Instance)
-        let publicSchemaConstraintConstructors =
+        let publicConstraintConstructors =
             schemaConstraintType.GetConstructors(BindingFlags.Public ||| BindingFlags.Instance)
         let publicExternalFieldNameConstructors =
             externalFieldNameType.GetConstructors(BindingFlags.Public ||| BindingFlags.Instance)
@@ -631,7 +630,7 @@ module ApiShapeTests =
         test <@ fieldType.IsGenericTypeDefinition @>
         test <@ fieldType.GetGenericArguments().Length = 2 @>
         test <@ publicFieldConstructors.Length = 0 @>
-        test <@ publicSchemaConstraintConstructors.Length = 0 @>
+        test <@ publicConstraintConstructors.Length = 0 @>
         test <@ publicExternalFieldNameConstructors.Length = 0 @>
         schemaModule
         |> publicStaticMemberNames
@@ -639,7 +638,6 @@ module ApiShapeTests =
             [ "record"
               "recordFor"
               "field"
-              "fieldWith"
               "text"
               "int"
               "decimal"
@@ -660,7 +658,7 @@ module ApiShapeTests =
         test <@ fieldCreateMethods.Length = 1 @>
         test <@ fieldCreateParameterCount = 3 @>
         test <@ fieldCreateReturnType = fieldTypeDefinition @>
-        valueModule
+        schemaModule
         |> publicStaticMemberNames
         |> assertContainsAll
             [ "text"
@@ -671,15 +669,16 @@ module ApiShapeTests =
               "dateTime"
               "guid"
               "primitiveKind"
-              "refined"
+              "convert"
+              "refine"
               "isRefined"
               "underlyingPrimitiveKind"
               "inspectUnderlying"
               "rawConstraints"
               "constraints"
               "allConstraints"
-              "withConstraint"
-              "withConstraints" ]
+              "constrain"
+              "constrainAll" ]
         schemaConstraintModule
         |> publicStaticMemberNames
         |> assertContainsAll
@@ -759,13 +758,13 @@ module ApiShapeTests =
     [<Fact>]
     let ``primitive value schemas carry typed intrinsic metadata`` () =
         let valueSchemas =
-            [ Value.primitiveKind Value.text
-              Value.primitiveKind Value.int
-              Value.primitiveKind Value.decimal
-              Value.primitiveKind Value.bool
-              Value.primitiveKind Value.date
-              Value.primitiveKind Value.dateTime
-              Value.primitiveKind Value.guid ]
+            [ Schema.primitiveKind Schema.text
+              Schema.primitiveKind Schema.int
+              Schema.primitiveKind Schema.decimal
+              Schema.primitiveKind Schema.bool
+              Schema.primitiveKind Schema.date
+              Schema.primitiveKind Schema.dateTime
+              Schema.primitiveKind Schema.guid ]
 
         test <@
             valueSchemas =
@@ -777,23 +776,23 @@ module ApiShapeTests =
                   PrimitiveValueKind.DateTime
                   PrimitiveValueKind.Guid ]
         @>
-        test <@ Value.text.Definition.Shape = PrimitiveValueDefinition PrimitiveValueKind.Text @>
-        test <@ Value.int.Definition.Shape = PrimitiveValueDefinition PrimitiveValueKind.Int @>
-        test <@ Value.decimal.Definition.Shape = PrimitiveValueDefinition PrimitiveValueKind.Decimal @>
-        test <@ Value.bool.Definition.Shape = PrimitiveValueDefinition PrimitiveValueKind.Bool @>
-        test <@ Value.date.Definition.Shape = PrimitiveValueDefinition PrimitiveValueKind.Date @>
-        test <@ Value.dateTime.Definition.Shape = PrimitiveValueDefinition PrimitiveValueKind.DateTime @>
-        test <@ Value.guid.Definition.Shape = PrimitiveValueDefinition PrimitiveValueKind.Guid @>
-        test <@ Value.constraints Value.text = [] @>
-        raises<ArgumentNullException> <@ Value.primitiveKind Unchecked.defaultof<ValueSchema<string>> |> ignore @>
+        test <@ Schema.text.ValueDefinition.Shape = PrimitiveValueDefinition PrimitiveValueKind.Text @>
+        test <@ Schema.int.ValueDefinition.Shape = PrimitiveValueDefinition PrimitiveValueKind.Int @>
+        test <@ Schema.decimal.ValueDefinition.Shape = PrimitiveValueDefinition PrimitiveValueKind.Decimal @>
+        test <@ Schema.bool.ValueDefinition.Shape = PrimitiveValueDefinition PrimitiveValueKind.Bool @>
+        test <@ Schema.date.ValueDefinition.Shape = PrimitiveValueDefinition PrimitiveValueKind.Date @>
+        test <@ Schema.dateTime.ValueDefinition.Shape = PrimitiveValueDefinition PrimitiveValueKind.DateTime @>
+        test <@ Schema.guid.ValueDefinition.Shape = PrimitiveValueDefinition PrimitiveValueKind.Guid @>
+        test <@ Schema.constraints Schema.text = [] @>
+        raises<ArgumentNullException> <@ Schema.primitiveKind Unchecked.defaultof<Schema<string>> |> ignore @>
 
     [<Fact>]
-    let ``refined value schemas require both construction and inspection functions`` () =
-        let valueModule = moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.Value"
+    let ``refined value schemas require fallible construction error lowering and inspection`` () =
+        let valueModule = moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.Schema"
 
         let refinedOverloads =
             publicStaticMethods valueModule
-            |> Array.filter (fun methodInfo -> methodInfo.Name.Equals("refined", StringComparison.OrdinalIgnoreCase))
+            |> Array.filter (fun methodInfo -> methodInfo.Name.Equals("refine", StringComparison.OrdinalIgnoreCase))
 
         test <@ refinedOverloads.Length = 1 @>
 
@@ -801,84 +800,80 @@ module ApiShapeTests =
         let parameters = refined.GetParameters()
         let parameterNames = parameters |> Array.map _.Name
 
-        test <@ parameterNames = [| "construct"; "inspect"; "raw" |] @>
+        test <@ parameterNames = [| "construct"; "mapError"; "inspect"; "schema" |] @>
 
         let constructArguments = parameters[0].ParameterType.GetGenericArguments()
-        let inspectArguments = parameters[1].ParameterType.GetGenericArguments()
+        let inspectArguments = parameters[2].ParameterType.GetGenericArguments()
         let constructIsFunction = parameters[0].ParameterType.GetGenericTypeDefinition() = typedefof<FSharpFunc<_, _>>
-        let inspectIsFunction = parameters[1].ParameterType.GetGenericTypeDefinition() = typedefof<FSharpFunc<_, _>>
-        let rawIsValueSchema = parameters[2].ParameterType.GetGenericTypeDefinition() = typedefof<ValueSchema<_>>
-        let returnsValueSchema = refined.ReturnType.GetGenericTypeDefinition() = typedefof<ValueSchema<_>>
-        let inspectReversesConstruct = inspectArguments = Array.rev constructArguments
-        let rawMatchesConstructInput = parameters[2].ParameterType.GetGenericArguments()[0] = constructArguments[0]
-        let returnMatchesConstructOutput = refined.ReturnType.GetGenericArguments()[0] = constructArguments[1]
+        let inspectIsFunction = parameters[2].ParameterType.GetGenericTypeDefinition() = typedefof<FSharpFunc<_, _>>
+        let rawIsValueSchema = parameters[3].ParameterType.GetGenericTypeDefinition() = typedefof<Schema<_>>
+        let returnsValueSchema = refined.ReturnType.GetGenericTypeDefinition() = typedefof<Schema<_>>
+        let rawMatchesConstructInput = parameters[3].ParameterType.GetGenericArguments()[0] = constructArguments[0]
 
         test <@ constructIsFunction @>
         test <@ inspectIsFunction @>
         test <@ rawIsValueSchema @>
         test <@ returnsValueSchema @>
-        test <@ inspectReversesConstruct @>
         test <@ rawMatchesConstructInput @>
-        test <@ returnMatchesConstructOutput @>
 
     [<Fact>]
     let ``schema constraints are inspectable metadata independent of executable checks`` () =
-        let required = SchemaConstraint.required
-        let maxLength = SchemaConstraint.maxLength 20
-        let text = Value.text |> Value.withConstraints [ required; maxLength ]
+        let required = Constraint.required
+        let maxLength = Constraint.maxLength 20
+        let text = Schema.text |> Schema.constrainAll [ required; maxLength ]
         let field =
             schemaField "name" 0 (fun (model: Customer) -> model.Name)
             |> Field.withConstraint required
             |> Field.withConstraint maxLength
         let descriptor = field |> schemaFieldDescriptor
 
-        test <@ SchemaConstraint.code required = "required" @>
-        test <@ SchemaConstraint.metadata required = SchemaConstraintMetadata.Required @>
-        test <@ SchemaConstraint.metadata maxLength = SchemaConstraintMetadata.MaxLength 20 @>
+        test <@ Constraint.code required = "required" @>
+        test <@ Constraint.metadata required = ConstraintMetadata.Required @>
+        test <@ Constraint.metadata maxLength = ConstraintMetadata.MaxLength 20 @>
         test <@ string required = "required" @>
-        test <@ SchemaConstraint.arguments required |> Seq.isEmpty @>
-        test <@ SchemaConstraint.tryFindArgument "maximum" maxLength = Some(box 20) @>
-        test <@ Value.constraints text |> List.map SchemaConstraint.code = [ "required"; "maxLength" ] @>
-        test <@ Field.constraints field |> List.map SchemaConstraint.code = [ "required"; "maxLength" ] @>
-        test <@ descriptor.Constraints |> List.map SchemaConstraint.code = [ "required"; "maxLength" ] @>
+        test <@ Constraint.arguments required |> Seq.isEmpty @>
+        test <@ Constraint.tryFindArgument "maximum" maxLength = Some(box 20) @>
+        test <@ Schema.constraints text |> List.map Constraint.code = [ "required"; "maxLength" ] @>
+        test <@ Field.constraints field |> List.map Constraint.code = [ "required"; "maxLength" ] @>
+        test <@ descriptor.Constraints |> List.map Constraint.code = [ "required"; "maxLength" ] @>
         test <@ descriptor.ValueSchema.Constraints = [] @>
-        test <@ text.Definition.Constraints |> List.map SchemaConstraint.code = [ "required"; "maxLength" ] @>
-        raises<ArgumentException> <@ SchemaConstraint.create "" |> ignore @>
-        raises<ArgumentException> <@ SchemaConstraint.createWithArguments "maxLength" [ "", box 20 ] |> ignore @>
-        raises<ArgumentException> <@ SchemaConstraint.createWithArguments "maxLength" [ "maximum", box 20; "maximum", box 30 ] |> ignore @>
-        raises<ArgumentNullException> <@ Value.withConstraint null Value.text |> ignore @>
+        test <@ text.ValueDefinition.Constraints |> List.map Constraint.code = [ "required"; "maxLength" ] @>
+        raises<ArgumentException> <@ Constraint.create "" |> ignore @>
+        raises<ArgumentException> <@ Constraint.createWithArguments "maxLength" [ "", box 20 ] |> ignore @>
+        raises<ArgumentException> <@ Constraint.createWithArguments "maxLength" [ "maximum", box 20; "maximum", box 30 ] |> ignore @>
+        raises<ArgumentNullException> <@ Schema.constrain null Schema.text |> ignore @>
         raises<ArgumentNullException> <@ Field.constraints Unchecked.defaultof<Field<Customer, string>> |> ignore @>
 
     [<Fact>]
     let ``named schema constraints expose stable codes and structured arguments`` () =
         let codes =
-            [ SchemaConstraint.required
-              SchemaConstraint.optional
-              SchemaConstraint.minLength 2
-              SchemaConstraint.maxLength 20
-              SchemaConstraint.lengthBetween 2 20
-              SchemaConstraint.email
-              SchemaConstraint.trimmed
-              SchemaConstraint.pattern "^[a-z]+$"
-              SchemaConstraint.oneOf [ "draft"; "published" ]
-              SchemaConstraint.notEqualTo "archived"
-              SchemaConstraint.between 1 10
-              SchemaConstraint.greaterThan 0
-              SchemaConstraint.lessThan 100
-              SchemaConstraint.atLeast 1
-              SchemaConstraint.atMost 10
-              SchemaConstraint.count 2
-              SchemaConstraint.minCount 1
-              SchemaConstraint.maxCount 5
-              SchemaConstraint.countBetween 1 5
-              SchemaConstraint.distinct ]
-            |> List.map SchemaConstraint.code
+            [ Constraint.required
+              Constraint.optional
+              Constraint.minLength 2
+              Constraint.maxLength 20
+              Constraint.lengthBetween 2 20
+              Constraint.email
+              Constraint.trimmed
+              Constraint.pattern "^[a-z]+$"
+              Constraint.oneOf [ "draft"; "published" ]
+              Constraint.notEqualTo "archived"
+              Constraint.between 1 10
+              Constraint.greaterThan 0
+              Constraint.lessThan 100
+              Constraint.atLeast 1
+              Constraint.atMost 10
+              Constraint.count 2
+              Constraint.minCount 1
+              Constraint.maxCount 5
+              Constraint.countBetween 1 5
+              Constraint.distinct ]
+            |> List.map Constraint.code
 
-        let length = SchemaConstraint.lengthBetween 2 20
-        let pattern = SchemaConstraint.pattern "^[a-z]+$"
-        let choices = SchemaConstraint.oneOf [ "draft"; "published" ]
-        let range = SchemaConstraint.between 1.5m 3.5m
-        let count = SchemaConstraint.countBetween 1 5
+        let length = Constraint.lengthBetween 2 20
+        let pattern = Constraint.pattern "^[a-z]+$"
+        let choices = Constraint.oneOf [ "draft"; "published" ]
+        let range = Constraint.between 1.5m 3.5m
+        let count = Constraint.countBetween 1 5
 
         test <@
             codes =
@@ -903,98 +898,98 @@ module ApiShapeTests =
                   "countBetween"
                   "distinct" ]
         @>
-        test <@ SchemaConstraint.tryFindArgument "minimum" length = Some(box 2) @>
-        test <@ SchemaConstraint.tryFindArgument "maximum" length = Some(box 20) @>
-        test <@ SchemaConstraint.tryFindArgument "pattern" pattern = Some(box "^[a-z]+$") @>
-        test <@ SchemaConstraint.tryFindArgument "choices" choices |> Option.map unbox<string array> = Some [| "draft"; "published" |] @>
-        test <@ SchemaConstraint.tryFindArgument "minimum" range = Some(box 1.5m) @>
-        test <@ SchemaConstraint.tryFindArgument "maximum" range = Some(box 3.5m) @>
-        test <@ SchemaConstraint.tryFindArgument "minimum" count = Some(box 1) @>
-        test <@ SchemaConstraint.tryFindArgument "maximum" count = Some(box 5) @>
+        test <@ Constraint.tryFindArgument "minimum" length = Some(box 2) @>
+        test <@ Constraint.tryFindArgument "maximum" length = Some(box 20) @>
+        test <@ Constraint.tryFindArgument "pattern" pattern = Some(box "^[a-z]+$") @>
+        test <@ Constraint.tryFindArgument "choices" choices |> Option.map unbox<string array> = Some [| "draft"; "published" |] @>
+        test <@ Constraint.tryFindArgument "minimum" range = Some(box 1.5m) @>
+        test <@ Constraint.tryFindArgument "maximum" range = Some(box 3.5m) @>
+        test <@ Constraint.tryFindArgument "minimum" count = Some(box 1) @>
+        test <@ Constraint.tryFindArgument "maximum" count = Some(box 5) @>
         test <@
-            SchemaConstraint.metadata (SchemaConstraint.create "tenantOnly") = SchemaConstraintMetadata.Custom "tenantOnly"
+            Constraint.metadata (Constraint.create "tenantOnly") = ConstraintMetadata.Custom "tenantOnly"
         @>
         test <@
-            SchemaConstraint.metadata (SchemaConstraint.createWithArguments "tenantOnly" [ "tenant", box "north" ]) =
-                SchemaConstraintMetadata.Custom "tenantOnly"
+            Constraint.metadata (Constraint.createWithArguments "tenantOnly" [ "tenant", box "north" ]) =
+                ConstraintMetadata.Custom "tenantOnly"
         @>
-        raises<ArgumentOutOfRangeException> <@ SchemaConstraint.minLength -1 |> ignore @>
-        raises<ArgumentOutOfRangeException> <@ SchemaConstraint.count -1 |> ignore @>
-        raises<ArgumentException> <@ SchemaConstraint.lengthBetween 5 2 |> ignore @>
-        raises<ArgumentException> <@ SchemaConstraint.countBetween 5 2 |> ignore @>
-        raises<ArgumentException> <@ SchemaConstraint.between 10 1 |> ignore @>
-        raises<ArgumentException> <@ SchemaConstraint.pattern "" |> ignore @>
-        raises<ArgumentNullException> <@ SchemaConstraint.oneOf null |> ignore @>
+        raises<ArgumentOutOfRangeException> <@ Constraint.minLength -1 |> ignore @>
+        raises<ArgumentOutOfRangeException> <@ Constraint.count -1 |> ignore @>
+        raises<ArgumentException> <@ Constraint.lengthBetween 5 2 |> ignore @>
+        raises<ArgumentException> <@ Constraint.countBetween 5 2 |> ignore @>
+        raises<ArgumentException> <@ Constraint.between 10 1 |> ignore @>
+        raises<ArgumentException> <@ Constraint.pattern "" |> ignore @>
+        raises<ArgumentNullException> <@ Constraint.oneOf null |> ignore @>
 
     [<Fact>]
     let ``schema constraints retain typed metadata for non validation interpreters`` () =
         let constraints =
-            [ SchemaConstraint.required
-              SchemaConstraint.maxLength 20
-              SchemaConstraint.email
-              SchemaConstraint.pattern "^[^@]+@example.com$"
-              SchemaConstraint.oneOf [ "ada@example.com"; "grace@example.com" ]
-              SchemaConstraint.between 1 10
-              SchemaConstraint.countBetween 1 3
-              SchemaConstraint.distinct ]
+            [ Constraint.required
+              Constraint.maxLength 20
+              Constraint.email
+              Constraint.pattern "^[^@]+@example.com$"
+              Constraint.oneOf [ "ada@example.com"; "grace@example.com" ]
+              Constraint.between 1 10
+              Constraint.countBetween 1 3
+              Constraint.distinct ]
 
         let diagnostics =
             constraints
-            |> List.choose (SchemaConstraint.metadata >> function
-                | SchemaConstraintMetadata.Required -> Some "SchemaError.Required"
-                | SchemaConstraintMetadata.MaxLength maximum -> Some $"SchemaError.InvalidLength maxLength {maximum}"
-                | SchemaConstraintMetadata.Email -> Some "SchemaError.InvalidFormat email"
-                | SchemaConstraintMetadata.Pattern pattern -> Some $"SchemaError.InvalidFormat {pattern}"
-                | SchemaConstraintMetadata.OneOf choices ->
+            |> List.choose (Constraint.metadata >> function
+                | ConstraintMetadata.Required -> Some "SchemaError.Required"
+                | ConstraintMetadata.MaxLength maximum -> Some $"SchemaError.InvalidLength maxLength {maximum}"
+                | ConstraintMetadata.Email -> Some "SchemaError.InvalidFormat email"
+                | ConstraintMetadata.Pattern pattern -> Some $"SchemaError.InvalidFormat {pattern}"
+                | ConstraintMetadata.OneOf choices ->
                     Some(sprintf "SchemaError.NotOneOf %s" (String.concat "|" choices))
-                | SchemaConstraintMetadata.Between(minimum, maximum) ->
+                | ConstraintMetadata.Between(minimum, maximum) ->
                     Some $"SchemaError.OutOfRange {minimum}-{maximum}"
-                | SchemaConstraintMetadata.CountBetween(minimum, maximum) ->
+                | ConstraintMetadata.CountBetween(minimum, maximum) ->
                     Some $"SchemaError.InvalidCount {minimum}-{maximum}"
-                | SchemaConstraintMetadata.Distinct -> Some "SchemaError.Duplicate"
+                | ConstraintMetadata.Distinct -> Some "SchemaError.Duplicate"
                 | _ -> None)
 
         let jsonSchema =
             constraints
-            |> List.choose (SchemaConstraint.metadata >> function
-                | SchemaConstraintMetadata.Required -> Some "required"
-                | SchemaConstraintMetadata.MaxLength maximum -> Some $"maxLength={maximum}"
-                | SchemaConstraintMetadata.Email -> Some "format=email"
-                | SchemaConstraintMetadata.Pattern pattern -> Some $"pattern={pattern}"
-                | SchemaConstraintMetadata.OneOf choices -> Some(sprintf "enum=%s" (String.concat "," choices))
-                | SchemaConstraintMetadata.Between(minimum, maximum) ->
+            |> List.choose (Constraint.metadata >> function
+                | ConstraintMetadata.Required -> Some "required"
+                | ConstraintMetadata.MaxLength maximum -> Some $"maxLength={maximum}"
+                | ConstraintMetadata.Email -> Some "format=email"
+                | ConstraintMetadata.Pattern pattern -> Some $"pattern={pattern}"
+                | ConstraintMetadata.OneOf choices -> Some(sprintf "enum=%s" (String.concat "," choices))
+                | ConstraintMetadata.Between(minimum, maximum) ->
                     Some $"minimum={minimum};maximum={maximum}"
-                | SchemaConstraintMetadata.CountBetween(minimum, maximum) ->
+                | ConstraintMetadata.CountBetween(minimum, maximum) ->
                     Some $"minItems={minimum};maxItems={maximum}"
-                | SchemaConstraintMetadata.Distinct -> Some "uniqueItems=true"
+                | ConstraintMetadata.Distinct -> Some "uniqueItems=true"
                 | _ -> None)
 
         let ui =
             constraints
-            |> List.choose (SchemaConstraint.metadata >> function
-                | SchemaConstraintMetadata.Required -> Some "required"
-                | SchemaConstraintMetadata.MaxLength maximum -> Some $"maxlength={maximum}"
-                | SchemaConstraintMetadata.Email -> Some "input=email"
-                | SchemaConstraintMetadata.Pattern pattern -> Some $"pattern={pattern}"
-                | SchemaConstraintMetadata.OneOf choices -> Some $"choices={choices.Length}"
-                | SchemaConstraintMetadata.Between(minimum, maximum) ->
+            |> List.choose (Constraint.metadata >> function
+                | ConstraintMetadata.Required -> Some "required"
+                | ConstraintMetadata.MaxLength maximum -> Some $"maxlength={maximum}"
+                | ConstraintMetadata.Email -> Some "input=email"
+                | ConstraintMetadata.Pattern pattern -> Some $"pattern={pattern}"
+                | ConstraintMetadata.OneOf choices -> Some $"choices={choices.Length}"
+                | ConstraintMetadata.Between(minimum, maximum) ->
                     Some $"min={minimum};max={maximum}"
-                | SchemaConstraintMetadata.CountBetween(minimum, maximum) ->
+                | ConstraintMetadata.CountBetween(minimum, maximum) ->
                     Some $"min-items={minimum};max-items={maximum}"
-                | SchemaConstraintMetadata.Distinct -> Some "unique-items"
+                | ConstraintMetadata.Distinct -> Some "unique-items"
                 | _ -> None)
 
         let docs =
             constraints
-            |> List.map (SchemaConstraint.metadata >> function
-                | SchemaConstraintMetadata.Required -> "Required"
-                | SchemaConstraintMetadata.MaxLength maximum -> $"Maximum length {maximum}"
-                | SchemaConstraintMetadata.Email -> "Email format"
-                | SchemaConstraintMetadata.Pattern pattern -> $"Matches {pattern}"
-                | SchemaConstraintMetadata.OneOf choices -> sprintf "One of %s" (String.concat ", " choices)
-                | SchemaConstraintMetadata.Between(minimum, maximum) -> $"Between {minimum} and {maximum}"
-                | SchemaConstraintMetadata.CountBetween(minimum, maximum) -> $"Between {minimum} and {maximum} items"
-                | SchemaConstraintMetadata.Distinct -> "No duplicates"
+            |> List.map (Constraint.metadata >> function
+                | ConstraintMetadata.Required -> "Required"
+                | ConstraintMetadata.MaxLength maximum -> $"Maximum length {maximum}"
+                | ConstraintMetadata.Email -> "Email format"
+                | ConstraintMetadata.Pattern pattern -> $"Matches {pattern}"
+                | ConstraintMetadata.OneOf choices -> sprintf "One of %s" (String.concat ", " choices)
+                | ConstraintMetadata.Between(minimum, maximum) -> $"Between {minimum} and {maximum}"
+                | ConstraintMetadata.CountBetween(minimum, maximum) -> $"Between {minimum} and {maximum} items"
+                | ConstraintMetadata.Distinct -> "No duplicates"
                 | other -> string other)
 
         test <@
@@ -1044,8 +1039,8 @@ module ApiShapeTests =
 
     [<Fact>]
     let ``schema fields inspect existing trusted models through typed getters`` () =
-        let nameField = Field.create "name" (fun (model: Customer) -> model.Name) Value.text
-        let ageField = Field.create "age" (fun (model: Customer) -> model.Age) Value.int
+        let nameField = Field.create "name" (fun (model: Customer) -> model.Name) Schema.text
+        let ageField = Field.create "age" (fun (model: Customer) -> model.Age) Schema.int
         let customer = { Name = "Ada"; Age = 37 }
         let missingField = Unchecked.defaultof<Field<Customer, string>>
 
@@ -1059,21 +1054,21 @@ module ApiShapeTests =
     [<Fact>]
     let ``schema field rejects invalid public construction arguments`` () =
         let builder = Schema.recordFor<Customer, _> (fun name -> { Name = name; Age = 0 })
-        raises<ArgumentNullException> <@ Schema.field null (fun (model: Customer) -> model.Name) Value.text builder |> ignore @>
-        raises<ArgumentException> <@ Schema.field " " (fun (model: Customer) -> model.Name) Value.text builder |> ignore @>
-        raises<ArgumentNullException> <@ Schema.field "name" Unchecked.defaultof<Customer -> string> Value.text builder |> ignore @>
-        raises<ArgumentNullException> <@ Schema.field "name" (fun (model: Customer) -> model.Name) Unchecked.defaultof<ValueSchema<string>> builder |> ignore @>
+        raises<ArgumentNullException> <@ Schema.field null (fun (model: Customer) -> model.Name) Schema.text builder |> ignore @>
+        raises<ArgumentException> <@ Schema.field " " (fun (model: Customer) -> model.Name) Schema.text builder |> ignore @>
+        raises<ArgumentNullException> <@ Schema.field "name" Unchecked.defaultof<Customer -> string> Schema.text builder |> ignore @>
+        raises<ArgumentNullException> <@ Schema.field "name" (fun (model: Customer) -> model.Name) Unchecked.defaultof<Schema<string>> builder |> ignore @>
         raises<ArgumentNullException> <@ Schema.record Unchecked.defaultof<string -> Customer> |> ignore @>
         raises<ArgumentNullException> <@ Schema.recordFor<Customer, _> Unchecked.defaultof<string -> Customer> |> ignore @>
 
     [<Fact>]
     let ``schema builder builds explicit ordered model schema with value schema constraints`` () =
-        let requiredText = Value.text |> Value.withConstraint SchemaConstraint.required
+        let requiredText = Schema.text |> Schema.constrain Constraint.required
 
         let schema =
             Schema.recordFor<Customer, _> (fun name age -> { Name = name; Age = age })
-            |> Schema.fieldWith [ SchemaConstraint.required ] "name" _.Name requiredText
-            |> Schema.int "age" _.Age
+            |> Schema.field "name" _.Name (requiredText |> Schema.constrainAll [ Constraint.required ])
+            |> Schema.field "age" _.Age Schema.int
             |> Schema.build
 
         let constructed =
@@ -1086,8 +1081,8 @@ module ApiShapeTests =
                 test <@ model.Constructor.ArgumentCount = 2 @>
                 test <@ model.Fields |> List.map (fun field -> ExternalFieldName.value field.ExternalName) = [ "name"; "age" ] @>
                 test <@ model.Fields |> List.map (fun field -> FieldOrder.value field.Order) = [ 0; 1 ] @>
-                test <@ model.Fields[0].ValueSchema.Constraints |> List.map SchemaConstraint.code = [ "required" ] @>
-                test <@ model.Fields[0].Constraints |> List.map SchemaConstraint.code = [ "required" ] @>
+                test <@ model.Fields[0].ValueSchema.Constraints |> List.map Constraint.code = [ "required"; "required" ] @>
+                test <@ model.Fields[0].Constraints = [] @>
                 ConstructorApplication.apply model.Constructor (values |> List.toArray)
             | PendingDefinition -> failwith "Expected public schema API to create a model definition."
 
@@ -1098,9 +1093,9 @@ module ApiShapeTests =
         let create name age active = { Name = name; Age = age; Active = active }
         let schema =
             Schema.recordFor<CustomerProfile, _> create
-            |> Schema.text "name" _.Name
-            |> Schema.int "age" _.Age
-            |> Schema.bool "active" _.Active
+            |> Schema.field "name" _.Name Schema.text
+            |> Schema.field "age" _.Age Schema.int
+            |> Schema.field "active" _.Active Schema.bool
             |> Schema.build
 
         match schema.Definition with
@@ -1120,9 +1115,9 @@ module ApiShapeTests =
         let create name age active = { Name = name; Age = age; Active = active }
         let schema =
             Schema.recordFor<CustomerProfile, _> create
-            |> Schema.text "name" _.Name
-            |> Schema.int "age" _.Age
-            |> Schema.bool "active" _.Active
+            |> Schema.field "name" _.Name Schema.text
+            |> Schema.field "age" _.Age Schema.int
+            |> Schema.field "active" _.Active Schema.bool
             |> Schema.build
 
         match schema.Definition with
@@ -1149,13 +1144,13 @@ module ApiShapeTests =
 
         let schema =
             Schema.recordFor<PrimitiveProfile, _> create
-            |> Schema.text "name" _.Name
-            |> Schema.int "age" _.Age
-            |> Schema.decimal "balance" _.Balance
-            |> Schema.bool "active" _.Active
-            |> Schema.date "birthDate" _.BirthDate
-            |> Schema.dateTime "lastSeen" _.LastSeen
-            |> Schema.guid "id" _.Id
+            |> Schema.field "name" _.Name Schema.text
+            |> Schema.field "age" _.Age Schema.int
+            |> Schema.field "balance" _.Balance Schema.decimal
+            |> Schema.field "active" _.Active Schema.bool
+            |> Schema.field "birthDate" _.BirthDate Schema.date
+            |> Schema.field "lastSeen" _.LastSeen Schema.dateTime
+            |> Schema.field "id" _.Id Schema.guid
             |> Schema.build
 
         match schema.Definition with

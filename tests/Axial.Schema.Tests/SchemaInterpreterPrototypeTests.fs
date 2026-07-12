@@ -15,44 +15,44 @@ open Xunit
 module SchemaInterpreterPrototypes =
     /// Collects the constraint metadata visible at a boundary: field-level constraints plus every value-schema layer
     /// down to (and including) the primitive foundation of refined values.
-    let rec boundaryConstraints (description: ValueDescription) : SchemaConstraintMetadata list =
+    let rec boundaryConstraints (description: SchemaDescription) : ConstraintMetadata list =
         let own = description.Constraints |> List.map _.Metadata
 
         match description.Shape with
-        | ValueShape.Refined underlying -> own @ boundaryConstraints underlying
+        | SchemaShape.Refined underlying -> own @ boundaryConstraints underlying
         | _ -> own
 
-    let rec boundaryFormat (description: ValueDescription) : SchemaFormat option =
+    let rec boundaryFormat (description: SchemaDescription) : SchemaFormat option =
         match description.Format, description.Shape with
         | Some format, _ -> Some format
-        | None, ValueShape.Refined underlying -> boundaryFormat underlying
+        | None, SchemaShape.Refined underlying -> boundaryFormat underlying
         | None, _ -> None
 
-    let rec underlyingShape (description: ValueDescription) : ValueShape =
+    let rec underlyingShape (description: SchemaDescription) : SchemaShape =
         match description.Shape with
-        | ValueShape.Refined underlying -> underlyingShape underlying
+        | SchemaShape.Refined underlying -> underlyingShape underlying
         | shape -> shape
 
     [<RequireQualifiedAccess>]
     module Docs =
-        let rec private valueSummary (description: ValueDescription) =
+        let rec private valueSummary (description: SchemaDescription) =
             match underlyingShape description with
-            | ValueShape.Primitive kind -> (sprintf "%A" kind).ToLowerInvariant()
-            | ValueShape.Nested _ -> "object"
-            | ValueShape.Many _ -> "list"
-            | ValueShape.Union _ -> "union"
-            | ValueShape.Optional payload -> sprintf "optional %s" (valueSummary payload)
-            | ValueShape.Refined _ -> failwith "underlyingShape never returns a refined shape."
+            | SchemaShape.Primitive kind -> (sprintf "%A" kind).ToLowerInvariant()
+            | SchemaShape.Nested _ -> "object"
+            | SchemaShape.Many _ -> "list"
+            | SchemaShape.Union _ -> "union"
+            | SchemaShape.Optional payload -> sprintf "optional %s" (valueSummary payload)
+            | SchemaShape.Refined _ -> failwith "underlyingShape never returns a refined shape."
 
         let private constraintSummary metadata =
             match metadata with
-            | SchemaConstraintMetadata.Required -> Some "required"
-            | SchemaConstraintMetadata.Optional -> Some "optional"
-            | SchemaConstraintMetadata.MinLength minimum -> Some(sprintf "at least %d characters" minimum)
-            | SchemaConstraintMetadata.MaxLength maximum -> Some(sprintf "at most %d characters" maximum)
-            | SchemaConstraintMetadata.Email -> Some "email format"
-            | SchemaConstraintMetadata.MinCount minimum -> Some(sprintf "at least %d items" minimum)
-            | SchemaConstraintMetadata.AtLeast minimum ->
+            | ConstraintMetadata.Required -> Some "required"
+            | ConstraintMetadata.Optional -> Some "optional"
+            | ConstraintMetadata.MinLength minimum -> Some(sprintf "at least %d characters" minimum)
+            | ConstraintMetadata.MaxLength maximum -> Some(sprintf "at most %d characters" maximum)
+            | ConstraintMetadata.Email -> Some "email format"
+            | ConstraintMetadata.MinCount minimum -> Some(sprintf "at least %d items" minimum)
+            | ConstraintMetadata.AtLeast minimum ->
                 Some(sprintf "at least %s" (Convert.ToString(minimum, CultureInfo.InvariantCulture)))
             | _ -> None
 
@@ -60,24 +60,24 @@ module SchemaInterpreterPrototypes =
             model.Fields
             |> List.collect (fun field ->
                 let notes =
-                    (field.Constraints |> List.map _.Metadata) @ boundaryConstraints field.Value
+                    (field.Constraints |> List.map _.Metadata) @ boundaryConstraints field.Schema
                     |> List.choose constraintSummary
 
                 let noteText = if List.isEmpty notes then "" else sprintf " — %s" (String.concat ", " notes)
-                let line = sprintf "%s- %s (%s)%s" indent field.Name (valueSummary field.Value) noteText
+                let line = sprintf "%s- %s (%s)%s" indent field.Name (valueSummary field.Schema) noteText
 
                 let children =
-                    match underlyingShape field.Value with
-                    | ValueShape.Nested nested -> fieldLines (indent + "  ") nested
-                    | ValueShape.Many item ->
+                    match underlyingShape field.Schema with
+                    | SchemaShape.Nested nested -> fieldLines (indent + "  ") nested
+                    | SchemaShape.Many item ->
                         match underlyingShape item with
-                        | ValueShape.Nested nested -> fieldLines (indent + "  ") nested
+                        | SchemaShape.Nested nested -> fieldLines (indent + "  ") nested
                         | _ -> []
-                    | ValueShape.Union union ->
+                    | SchemaShape.Union union ->
                         union.Cases
                         |> List.collect (fun case ->
                             match underlyingShape case.Payload with
-                            | ValueShape.Nested nested -> fieldLines (indent + "  ") nested
+                            | SchemaShape.Nested nested -> fieldLines (indent + "  ") nested
                             | _ -> [])
                     | _ -> []
 
@@ -107,38 +107,38 @@ module SchemaInterpreterPrototypes =
 
     [<RequireQualifiedAccess>]
     module UiMetadata =
-        let rec private controlFor (description: ValueDescription) =
+        let rec private controlFor (description: SchemaDescription) =
             let constraints = boundaryConstraints description
 
             match underlyingShape description with
-            | ValueShape.Primitive PrimitiveValueKind.Text ->
-                if constraints |> List.contains SchemaConstraintMetadata.Email then EmailBox else TextBox
-            | ValueShape.Primitive PrimitiveValueKind.Int
-            | ValueShape.Primitive PrimitiveValueKind.Decimal -> NumberBox
-            | ValueShape.Primitive PrimitiveValueKind.Bool -> CheckBox
-            | ValueShape.Primitive PrimitiveValueKind.Date -> DatePicker
-            | ValueShape.Primitive PrimitiveValueKind.DateTime -> DateTimePicker
-            | ValueShape.Primitive PrimitiveValueKind.Guid -> IdentifierBox
-            | ValueShape.Nested model -> Group(fieldsFor model)
-            | ValueShape.Many item -> Repeater(controlFor item)
-            | ValueShape.Union _ -> Group []
-            | ValueShape.Optional payload -> controlFor payload
-            | ValueShape.Refined _ -> failwith "underlyingShape never returns a refined shape."
+            | SchemaShape.Primitive PrimitiveValueKind.Text ->
+                if constraints |> List.contains ConstraintMetadata.Email then EmailBox else TextBox
+            | SchemaShape.Primitive PrimitiveValueKind.Int
+            | SchemaShape.Primitive PrimitiveValueKind.Decimal -> NumberBox
+            | SchemaShape.Primitive PrimitiveValueKind.Bool -> CheckBox
+            | SchemaShape.Primitive PrimitiveValueKind.Date -> DatePicker
+            | SchemaShape.Primitive PrimitiveValueKind.DateTime -> DateTimePicker
+            | SchemaShape.Primitive PrimitiveValueKind.Guid -> IdentifierBox
+            | SchemaShape.Nested model -> Group(fieldsFor model)
+            | SchemaShape.Many item -> Repeater(controlFor item)
+            | SchemaShape.Union _ -> Group []
+            | SchemaShape.Optional payload -> controlFor payload
+            | SchemaShape.Refined _ -> failwith "underlyingShape never returns a refined shape."
 
         and private fieldsFor (model: ModelDescription) =
             model.Fields
             |> List.map (fun field ->
-                let constraints = (field.Constraints |> List.map _.Metadata) @ boundaryConstraints field.Value
+                let constraints = (field.Constraints |> List.map _.Metadata) @ boundaryConstraints field.Schema
 
                 { Label = field.Name
-                  Control = controlFor field.Value
-                  IsRequired = constraints |> List.contains SchemaConstraintMetadata.Required
+                  Control = controlFor field.Schema
+                  IsRequired = constraints |> List.contains ConstraintMetadata.Required
                   MaxLength =
                     constraints
                     |> List.tryPick (fun metadata ->
                         match metadata with
-                        | SchemaConstraintMetadata.MaxLength maximum -> Some maximum
-                        | SchemaConstraintMetadata.LengthBetween(_, maximum) -> Some maximum
+                        | ConstraintMetadata.MaxLength maximum -> Some maximum
+                        | ConstraintMetadata.LengthBetween(_, maximum) -> Some maximum
                         | _ -> None) })
 
         /// <summary>Describes a built model schema as UI field metadata without creating a UI framework.</summary>
@@ -166,27 +166,27 @@ module SchemaInterpreterPrototypeTests =
     let private counters () = ref 0, ref 0
 
     let private emailSchemaWith (constructions: int ref) (getterReads: int ref) =
-        Value.text
-        |> Value.withConstraints [ SchemaConstraint.required; SchemaConstraint.maxLength 254 ]
-        |> Value.refined
+        Schema.text
+        |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 254 ]
+        |> Schema.convert
             (fun raw ->
                 constructions.Value <- constructions.Value + 1
                 EmailValue raw)
             (fun (EmailValue raw) ->
                 getterReads.Value <- getterReads.Value + 1
                 raw)
-        |> Value.withConstraint SchemaConstraint.email
-        |> Value.withFormat SchemaFormat.email
+        |> Schema.constrain Constraint.email
+        |> Schema.withFormat SchemaFormat.email
 
     let private addressSchema () =
         Schema.recordFor<Address, _> (fun street city -> { Street = street; City = city })
-        |> Schema.text "street" _.Street
-        |> Schema.text "city" _.City
+        |> Schema.field "street" _.Street Schema.text
+        |> Schema.field "city" _.City Schema.text
         |> Schema.build
 
     let private tagSchema () =
         Schema.recordFor<Tag, _> (fun label -> { Label = label })
-        |> Schema.text "label" _.Label
+        |> Schema.field "label" _.Label Schema.text
         |> Schema.build
 
     let private signupSchemaWith constructions getterReads =
@@ -197,18 +197,10 @@ module SchemaInterpreterPrototypeTests =
               Address = address
               Tags = tags })
         |> Schema.field "email" _.Email (emailSchemaWith constructions getterReads)
-        |> Schema.fieldWith
-            [ SchemaConstraint.between 13 120 ]
-            "age"
-            _.Age
-            Value.int
-        |> Schema.field "newsletter" _.Newsletter Value.bool
-        |> Schema.fieldWith [ SchemaConstraint.required ] "address" _.Address (Value.nested (addressSchema ()))
-        |> Schema.fieldWith
-            [ SchemaConstraint.minCount 1; SchemaConstraint.distinct ]
-            "tags"
-            _.Tags
-            (Value.many (tagSchema ()))
+        |> Schema.field "age" _.Age (Schema.int |> Schema.constrain (Constraint.between 13 120))
+        |> Schema.field "newsletter" _.Newsletter Schema.bool
+        |> Schema.field "address" _.Address (((addressSchema ())) |> Schema.constrainAll [ Constraint.required ])
+        |> Schema.field "tags" _.Tags (Schema.list (tagSchema ()) |> Schema.constrainAll [ Constraint.minCount 1; Constraint.distinct ])
         |> Schema.build
 
     [<Fact>]
@@ -223,7 +215,7 @@ module SchemaInterpreterPrototypeTests =
         test <@ generated.Contains "\"newsletter\":{\"type\":\"boolean\"}" @>
         test <@ generated.Contains "\"address\":{\"type\":\"object\",\"properties\":{\"street\":{\"type\":\"string\"},\"city\":{\"type\":\"string\"}},\"required\":[\"street\",\"city\"]}" @>
         test <@ generated.Contains "\"tags\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"label\":{\"type\":\"string\"}},\"required\":[\"label\"]},\"minItems\":1,\"uniqueItems\":true" @>
-        // Every non-optional field is required, matching the parser; only Value.optionOf fields drop out.
+        // Every non-optional field is required, matching the parser; only Schema.option fields drop out.
         test <@ generated.Contains "\"required\":[\"email\",\"age\",\"newsletter\",\"address\",\"tags\"]" @>
         test <@ constructions.Value = 0 @>
         test <@ getterReads.Value = 0 @>
@@ -232,13 +224,12 @@ module SchemaInterpreterPrototypeTests =
     let ``json schema generation lowers pattern one-of and length range metadata`` () =
         let generated =
             Schema.recordFor<Tag, _> (fun label -> { Label = label })
-            |> Schema.fieldWith
-                [ SchemaConstraint.lengthBetween 2 10
-                  SchemaConstraint.pattern "^[a-z]+$"
-                  SchemaConstraint.oneOf [ "alpha"; "beta" ] ]
-                "label"
-                _.Label
-                Value.text
+            |> Schema.field "label" _.Label
+                (Schema.text
+                 |> Schema.constrainAll
+                     [ Constraint.lengthBetween 2 10
+                       Constraint.pattern "^[a-z]+$"
+                       Constraint.oneOf [ "alpha"; "beta" ] ])
             |> Schema.build
             |> JsonSchema.generate
 
@@ -295,12 +286,12 @@ module SchemaInterpreterPrototypeTests =
         test <@ description.Fields |> List.map _.Order = [ 0; 1; 2; 3; 4 ] @>
 
         let email = description.Fields |> List.find (fun field -> field.Name = "email")
-        test <@ email.Value.Format = Some SchemaFormat.email @>
+        test <@ email.Schema.Format = Some SchemaFormat.email @>
 
-        match email.Value.Shape with
-        | ValueShape.Refined underlying ->
-            test <@ underlying.Shape = ValueShape.Primitive PrimitiveValueKind.Text @>
-            test <@ underlying.Constraints |> List.map _.Metadata |> List.contains SchemaConstraintMetadata.Required @>
+        match email.Schema.Shape with
+        | SchemaShape.Refined underlying ->
+            test <@ underlying.Shape = SchemaShape.Primitive PrimitiveValueKind.Text @>
+            test <@ underlying.Constraints |> List.map _.Metadata |> List.contains ConstraintMetadata.Required @>
         | other -> failwithf "Expected the email field to be refined, but got %A." other
 
         test <@ constructions.Value = 0 @>
@@ -311,8 +302,8 @@ module SchemaInterpreterPrototypeTests =
         let constructions, getterReads = counters ()
         let emailSchema = emailSchemaWith constructions getterReads
 
-        let description = Inspect.value emailSchema
+        let description = Inspect.schema emailSchema
 
-        test <@ boundaryConstraints description |> List.contains SchemaConstraintMetadata.Email @>
+        test <@ boundaryConstraints description |> List.contains ConstraintMetadata.Email @>
         test <@ (Inspect.field (Field.create "email" _.Email emailSchema)).Name = "email" @>
         test <@ constructions.Value = 0 && getterReads.Value = 0 @>

@@ -23,9 +23,9 @@ type Customer =
 let customerSchema =
     Schema.recordFor<Customer, _> (fun name address contacts ->
         { Name = name; Address = address; Contacts = contacts })
-    |> Schema.fieldWith [ SchemaConstraint.required ] "name" _.Name Value.text
-    |> Schema.fieldWith [ SchemaConstraint.required ] "address" _.Address (Value.nested addressSchema)
-    |> Schema.fieldWith [ SchemaConstraint.minCount 1 ] "contacts" _.Contacts (Value.many contactSchema)
+    |> Schema.field "name" _.Name (Schema.text |> Schema.constrainAll [ Constraint.required ])
+    |> Schema.field "address" _.Address (addressSchema |> Schema.constrainAll [ Constraint.required ])
+    |> Schema.field "contacts" _.Contacts ((Schema.list contactSchema) |> Schema.constrainAll [ Constraint.minCount 1 ])
     |> Schema.build
 ```
 
@@ -96,7 +96,7 @@ let raw =
 ## One Parse For All Of Them
 
 ```fsharp
-let parsed = Model.parse customerSchema raw
+let parsed = Schema.parse customerSchema raw
 
 match parsed.Result with
 | Ok customer -> customer
@@ -124,11 +124,11 @@ RawInput raw = RawInputModule.ofDictionary(new Dictionary<string, string> { ["na
 // ofConfiguration's C# equivalent — takes the pairs IConfiguration.AsEnumerable() already returns:
 RawInput fromConfig = RawInputModule.ofConfigurationPairs(configuration.AsEnumerable());
 
-ParsedInput<Customer, SchemaError> parsed = Model.parse(customerSchema, raw);
+ParsedInput<Customer, SchemaError> parsed = Schema.parse(customerSchema, raw);
 
 if (parsed.IsValid)
 {
-    Customer customer = parsed.Model;
+    Customer customer = parsed.Value;
 }
 else
 {
@@ -136,9 +136,9 @@ else
 }
 ```
 
-`Model.parseWith` takes an F# function for its `configure` parameter, which C# cannot pass a lambda to directly. Use
-`Model.parseWithOptions`, which takes a `Func<Options, Options>` instead:
+`Schema.parseWith` takes an F# function for its `configure` parameter, which C# cannot pass a lambda to directly. Use
+`Schema.parseWithOptions`, which takes a `Func<Options, Options>` instead:
 
 ```csharp
-var parsed = Model.parseWithOptions(o => Model.constructorErrorAt("end", o), dateRangeSchema, raw);
+var parsed = Schema.parseWithOptions(o => Schema.constructorErrorAt("end", o), dateRangeSchema, raw);
 ```

@@ -22,17 +22,17 @@ module Card =
     let schema : Schema<Card> =
         Schema.recordFor<Card, _> (fun number ->
             { Number = number })
-        |> Schema.fieldWith [ SchemaConstraint.minLength (12); SchemaConstraint.maxLength (19) ] "number" _.Number Value.text
+        |> Schema.field "number" _.Number (Schema.text |> Schema.constrainAll [ Constraint.minLength (12); Constraint.maxLength (19) ])
         |> Schema.build
         |> Schema.describe "A card payment source."
 
-    /// Validates a draft built with an ordinary record literal, promoting it to a trusted model.
-    let validate (draft: Card) : Result<Model<Card>, Diagnostics<SchemaError>> =
-        Model.validate schema draft
+    /// Checks a draft built with an ordinary record literal.
+    let validate (draft: Card) : Result<Card, Diagnostics<SchemaError>> =
+        Schema.check schema draft
 
     /// Parses raw boundary input through the schema.
     let parse (input: RawInput) : ParsedInput<Card, SchemaError> =
-        Model.parse schema input
+        Schema.parse schema input
 
     /// Typed field references for rules, redisplay, and UI binding.
     [<RequireQualifiedAccess>]
@@ -54,17 +54,17 @@ module Invoice =
     let schema : Schema<Invoice> =
         Schema.recordFor<Invoice, _> (fun reference ->
             { Reference = reference })
-        |> Schema.fieldWith [ SchemaConstraint.minLength (1) ] "reference" _.Reference Value.text
+        |> Schema.field "reference" _.Reference (Schema.text |> Schema.constrainAll [ Constraint.minLength (1) ])
         |> Schema.build
         |> Schema.describe "An invoice payment source."
 
-    /// Validates a draft built with an ordinary record literal, promoting it to a trusted model.
-    let validate (draft: Invoice) : Result<Model<Invoice>, Diagnostics<SchemaError>> =
-        Model.validate schema draft
+    /// Checks a draft built with an ordinary record literal.
+    let validate (draft: Invoice) : Result<Invoice, Diagnostics<SchemaError>> =
+        Schema.check schema draft
 
     /// Parses raw boundary input through the schema.
     let parse (input: RawInput) : ParsedInput<Invoice, SchemaError> =
-        Model.parse schema input
+        Schema.parse schema input
 
     /// Typed field references for rules, redisplay, and UI binding.
     [<RequireQualifiedAccess>]
@@ -89,24 +89,24 @@ type Payment =
 module Payment =
 
     let private sourceCases =
-        [ UnionCase.create "card" PaymentSource.Card (function PaymentSource.Card payload -> Some payload | _ -> None) (Value.nested Card.schema)
-          UnionCase.create "invoice" PaymentSource.Invoice (function PaymentSource.Invoice payload -> Some payload | _ -> None) (Value.nested Invoice.schema) ]
+        [ UnionCase.create "card" PaymentSource.Card (function PaymentSource.Card payload -> Some payload | _ -> None) Card.schema
+          UnionCase.create "invoice" PaymentSource.Invoice (function PaymentSource.Invoice payload -> Some payload | _ -> None) Invoice.schema ]
 
     /// The schema declared by payment.contract (Payment.v1).
     let schema : Schema<Payment> =
         Schema.recordFor<Payment, _> (fun source ->
             { Source = source })
-        |> Schema.field "source" _.Source (Value.unionInline "kind" sourceCases)
+        |> Schema.field "source" _.Source (Schema.inlineUnion "kind" sourceCases)
         |> Schema.build
         |> Schema.describe "A payment method choice."
 
-    /// Validates a draft built with an ordinary record literal, promoting it to a trusted model.
-    let validate (draft: Payment) : Result<Model<Payment>, Diagnostics<SchemaError>> =
-        Model.validate schema draft
+    /// Checks a draft built with an ordinary record literal.
+    let validate (draft: Payment) : Result<Payment, Diagnostics<SchemaError>> =
+        Schema.check schema draft
 
     /// Parses raw boundary input through the schema.
     let parse (input: RawInput) : ParsedInput<Payment, SchemaError> =
-        Model.parse schema input
+        Schema.parse schema input
 
     /// Typed field references for rules, redisplay, and UI binding.
     [<RequireQualifiedAccess>]

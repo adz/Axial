@@ -22,7 +22,7 @@ compile ahead of time.
   into encode/decode plans — cached wire-name bytes and typed field decoders — where `System.Text.Json`'s default path
   builds converters through reflection and asks you to switch to source generators for AOT. Axial has nothing to
   switch: the explicit path is the only path.
-- **Refined values are functions, not conventions.** `Value.refined construct inspect` carries the conversion in both
+- **Refined values are functions, not conventions.** `Schema.convert construct inspect` carries the conversion in both
   directions as ordinary closures.
 - **Services are explicit.** Dependencies live in `'env` records or nominal `IHas<'service>` contracts; there is no
   runtime service map or proxy generation.

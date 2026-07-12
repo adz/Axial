@@ -48,8 +48,8 @@ module SchemaErrorTests =
     let ``parsed input renders failed parse diagnostics with paths`` () =
         let schema =
             Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
-            |> Schema.field "email" _.Email (Value.text |> Value.withConstraint SchemaConstraint.required)
-            |> Schema.int "age" _.Age
+            |> Schema.field "email" _.Email (Schema.text |> Schema.constrain Constraint.required)
+            |> Schema.field "age" _.Age Schema.int
             |> Schema.build
 
         let raw =
@@ -59,7 +59,7 @@ module SchemaErrorTests =
                       "age", RawInput.Scalar "not-an-int" ]
             )
 
-        let parsed = Model.parse schema raw
+        let parsed = Schema.parse schema raw
 
         test
             <@ ParsedInput.renderErrors parsed = [ "age: Expected int format."; "email: This value is required." ] @>
@@ -68,13 +68,13 @@ module SchemaErrorTests =
     let ``parsed input maps schema boundary errors to user owned errors with one function`` () =
         let schema =
             Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
-            |> Schema.field "email" _.Email (Value.text |> Value.withConstraint SchemaConstraint.required)
-            |> Schema.int "age" _.Age
+            |> Schema.field "email" _.Email (Schema.text |> Schema.constrain Constraint.required)
+            |> Schema.field "age" _.Age Schema.int
             |> Schema.build
 
         let parsed =
             RawInput.Object(Map.ofList [ "email", RawInput.Missing; "age", RawInput.Scalar "42" ])
-            |> Model.parse schema
+            |> Schema.parse schema
             |> ParsedInput.mapErrors Boundary
 
         test <@ parsed.ErrorsFor "email" = [ Boundary SchemaError.Required ] @>

@@ -11,7 +11,7 @@ serialization and boundary parsing come from one declaration.
 
 Axial has two paths for JSON, and they exist because they optimize for different things:
 
-- **Boundary lane** — `RawInput` + `Model.parse`: for untrusted input. It runs constraint metadata, accumulates
+- **Boundary lane** — `RawInput` + `Schema.parse`: for untrusted input. It runs constraint metadata, accumulates
   path-aware diagnostics, and keeps the raw input for redisplay.
 - **Trusted path** — `Json.compile` + `Json.serialize`/`Json.deserialize`: for payloads whose producer you trust, such
   as internal services, storage, caches, and queues. It enforces the wire shape and required fields, skips constraint
@@ -41,7 +41,7 @@ let customerSchema =
     Schema.recordFor<Customer, _> (fun name age address -> { Name = name; Age = age; Address = address })
     |> Schema.text "name" _.Name
     |> Schema.int "age" _.Age
-    |> Schema.nested "address" _.Address addressSchema
+    |> Schema.field "address" _.Address addressSchema
     |> Schema.build
 
 let codec = Json.compile customerSchema   // compile once, typically at startup
@@ -82,7 +82,7 @@ input — a form, a public API — that is the boundary lane's job:
 
 ```fsharp
 // Boundary lane: complete diagnostics for untrusted input.
-let parsed = Model.parse customerSchema (RawInput.ofJsonDocument document)
+let parsed = Schema.parse customerSchema (RawInput.ofJsonDocument document)
 ```
 
 ## Bytes In, Bytes Out

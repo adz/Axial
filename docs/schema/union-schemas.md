@@ -37,22 +37,22 @@ type Payment =
 
 let cardSchema =
     Schema.recordFor<CardDetails, _> (fun number -> { Number = number })
-    |> Schema.field "number" _.Number RefinedSchema.nonBlankString
+    |> Schema.field "number" _.Number RefinedSchemas.nonBlankString
     |> Schema.build
 
 let paymentValue =
-    Value.union
+    Schema.union
         "type"
         "value"
-        [ UnionCase.create "card" Card (function Card details -> Some details | _ -> None) (Value.nested cardSchema)
-          UnionCase.create "invoice" Invoice (function Invoice slug -> Some slug | _ -> None) RefinedSchema.slug ]
+        [ UnionCase.create "card" Card (function Card details -> Some details | _ -> None) cardSchema
+          UnionCase.create "invoice" Invoice (function Invoice slug -> Some slug | _ -> None) RefinedSchemas.slug ]
 ```
 
 The extractor is what lets validation and metadata/codecs inspect an existing trusted union without reflection.
 
 ## Use As A Field
 
-Union value schemas are ordinary `ValueSchema<'value>` values, so use `Schema.field`:
+Union value schemas are ordinary `Schema<'value>` values, so use `Schema.field`:
 
 ```fsharp
 type Checkout =
@@ -82,7 +82,7 @@ let raw =
         ]
     )
 
-let parsed = Model.parse checkoutSchema raw
+let parsed = Schema.parse checkoutSchema raw
 let errors = parsed.Errors
 ```
 
@@ -90,6 +90,6 @@ The failing payload field reports at `payment.value.number`. An unknown tag repo
 
 ## Metadata
 
-`Inspect` exposes union schemas as `ValueShape.Union` with the discriminator field, payload field, and per-case payload
+`Inspect` exposes union schemas as `SchemaShape.Union` with the discriminator field, payload field, and per-case payload
 descriptions. Prototype JSON Schema interpreters can lower this to `oneOf`, while UI interpreters can render the tag
 selector and then render the selected payload schema.

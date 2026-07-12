@@ -317,12 +317,12 @@ let pageSpecs = [
     {
         OutPath = ["schema"; "_index.md"]
         Title = "Schema"
-        Description = "Source-documented model schema definitions for Axial."
-        Intro = "This page shows the core `Schema<'model>`, `ValueSchema<'value>`, and `Field<'model, 'value>` types. Schemas describe trusted model and value structure for interpreters such as input parsing, validation, codecs, JSON Schema, UI, and documentation. The core schema package stays independent of workflow execution, diagnostics, raw input, and validation interpreters."
+        Description = "Source-documented universal schema definitions for Axial."
+        Intro = "This page shows `Schema<'value>`, the universal catalog for primitive, collection, optional, union, refined, and record declarations. The same declaration can be parsed, checked, inspected, encoded, documented, and used for generation."
         SymbolIds = [
-            "Core types", ["T:Axial.Schema.Schema`1"; "T:Axial.Schema.ValueSchema`1"; "T:Axial.Schema.Field`2"; "T:Axial.Schema.UnionCase`1"]
-            "Value schemas", ["P:Axial.Schema.Value.text"; "P:Axial.Schema.Value.int"; "P:Axial.Schema.Value.decimal"; "P:Axial.Schema.Value.bool"; "P:Axial.Schema.Value.dateTime"; "P:Axial.Schema.Value.guid"; "M:Axial.Schema.Value.manyOf"; "M:Axial.Schema.Value.optionOf"; "M:Axial.Schema.Value.union"; "M:Axial.Schema.UnionCase.create"]
-            "Inspection", ["T:Axial.Schema.ValueShape"; "T:Axial.Schema.ValueDescription"; "T:Axial.Schema.FieldDescription"; "T:Axial.Schema.ModelDescription"; "T:Axial.Schema.UnionDescription"; "T:Axial.Schema.UnionCaseDescription"; "M:Axial.Schema.Inspect.model"; "M:Axial.Schema.Inspect.value"; "M:Axial.Schema.Inspect.field"]
+            "Core types", ["T:Axial.Schema.Schema`1"; "T:Axial.Schema.Field`2"; "T:Axial.Schema.UnionCase`1"]
+            "Catalog", ["P:Axial.Schema.Schema.text"; "P:Axial.Schema.Schema.int"; "P:Axial.Schema.Schema.decimal"; "P:Axial.Schema.Schema.bool"; "P:Axial.Schema.Schema.dateTime"; "P:Axial.Schema.Schema.guid"; "M:Axial.Schema.Schema.list"; "M:Axial.Schema.Schema.option"; "M:Axial.Schema.Schema.refine"; "M:Axial.Schema.Schema.union"; "M:Axial.Schema.UnionCase.create"]
+            "Inspection", ["T:Axial.Schema.SchemaShape"; "T:Axial.Schema.SchemaDescription"; "T:Axial.Schema.FieldDescription"; "T:Axial.Schema.ModelDescription"; "T:Axial.Schema.UnionDescription"; "T:Axial.Schema.UnionCaseDescription"; "M:Axial.Schema.Inspect.model"; "M:Axial.Schema.Inspect.schema"; "M:Axial.Schema.Inspect.field"]
             "JSON Schema generation", ["M:Axial.Schema.JsonSchema.generate"; "M:Axial.Schema.JsonSchema.generateValue"]
         ]
         Alias = None
@@ -331,13 +331,13 @@ let pageSpecs = [
         OutPath = ["schema"; "interpreters"; "_index.md"]
         Title = "Schema Interpreters"
         Description = "Source-documented schema input parsing, validation, and rules interpreters."
-        Intro = "This page shows the `Axial.Schema` interpreter surface: raw boundary input, schema input parsing into `ParsedInput`, intrinsic validation of existing models, and contextual rule sets over already-trusted models. Core schema metadata stays in [Schema](../); these interpreters attach diagnostics, raw input, and redisplay behavior to it."
+        Intro = "This page shows raw boundary input, universal schema parsing into `ParsedInput`, checking of existing values, refined schemas, and contextual rules. Core schema metadata stays in [Schema](../); interpreters attach diagnostics, raw input, and redisplay behavior to it."
         SymbolIds = [
             "Raw input", ["T:Axial.Schema.RawInput"; "T:Axial.Schema.JsonLikeValue"; "M:Axial.Schema.RawInputModule.ofMap"; "M:Axial.Schema.RawInputModule.ofNameValues"; "M:Axial.Schema.RawInputModule.ofCliArgs"; "M:Axial.Schema.RawInputModule.ofJsonLikeValue"; "M:Axial.Schema.RawInputModule.ofJsonElement"; "M:Axial.Schema.RawInputModule.ofJsonDocument"; "M:Axial.Schema.RawInputModule.ofConfiguration"; "M:Axial.Schema.RawInputModule.redisplay"; "M:Axial.Schema.RawInputModule.redisplayPath"]
-            "Input parsing", ["T:Axial.Schema.ParsedInput`2"; "M:Axial.Schema.ModelModule.parse"; "M:Axial.Schema.ModelModule.parseWith"; "T:Axial.Schema.ModelModule.Options"; "M:Axial.Schema.ParsedInputModule.mapErrors"; "M:Axial.Schema.ParsedInputModule.renderErrors"]
+            "Input parsing", ["T:Axial.Schema.ParsedInput`2"; "M:Axial.Schema.Schema.parse"; "M:Axial.Schema.Schema.parseWith"; "T:Axial.Schema.SchemaParseOptions"; "M:Axial.Schema.ParsedInputModule.mapErrors"; "M:Axial.Schema.ParsedInputModule.renderErrors"]
             "Errors", ["T:Axial.Schema.SchemaError"]
-            "Refined catalog schemas", ["M:Axial.Schema.RefinedSchema.nonBlankString"; "M:Axial.Schema.RefinedSchema.trimmedString"; "M:Axial.Schema.RefinedSchema.boundedString"; "M:Axial.Schema.RefinedSchema.slug"; "M:Axial.Schema.RefinedSchema.positiveInt"; "M:Axial.Schema.RefinedSchema.nonNegativeInt"; "M:Axial.Schema.RefinedSchema.nonZeroInt"; "M:Axial.Schema.RefinedSchema.negativeInt"; "M:Axial.Schema.RefinedSchema.nonPositiveInt"; "M:Axial.Schema.RefinedSchema.nonEmptyList"; "M:Axial.Schema.RefinedSchema.nonEmptyArray"; "M:Axial.Schema.RefinedSchema.distinctList"; "M:Axial.Schema.RefinedSchema.boundedList"; "M:Axial.Schema.RefinedSchema.boundedArray"; "M:Axial.Schema.RefinedSchema.dateTimeOffsetRange"]
-            "Trusted models", ["T:Axial.Schema.Model`1"; "M:Axial.Schema.ModelModule.validate"; "M:Axial.Schema.ModelModule.reconstruct"; "T:Axial.Schema.FieldRef`2"]
+            "Refined catalog schemas", ["P:Axial.Schema.RefinedSchemas.nonBlankString"; "P:Axial.Schema.RefinedSchemas.trimmedString"; "M:Axial.Schema.RefinedSchemas.boundedString"; "P:Axial.Schema.RefinedSchemas.slug"; "P:Axial.Schema.RefinedSchemas.positiveInt"; "P:Axial.Schema.RefinedSchemas.nonNegativeInt"; "P:Axial.Schema.RefinedSchemas.nonZeroInt"; "P:Axial.Schema.RefinedSchemas.negativeInt"; "P:Axial.Schema.RefinedSchemas.nonPositiveInt"; "M:Axial.Schema.RefinedSchemas.nonEmptyList"; "M:Axial.Schema.RefinedSchemas.nonEmptyArray"; "M:Axial.Schema.RefinedSchemas.distinctList"; "M:Axial.Schema.RefinedSchemas.boundedList"; "M:Axial.Schema.RefinedSchemas.boundedArray"; "P:Axial.Schema.RefinedSchemas.dateTimeOffsetRange"]
+            "Existing values", ["M:Axial.Schema.Schema.check"; "T:Axial.Schema.FieldRef`2"]
             "Context rules", ["M:Axial.Schema.ContextRules.apply"; "M:Axial.Schema.ContextRules.at"; "M:Axial.Schema.ContextRules.atField"; "M:Axial.Schema.ContextRules.failAt"; "M:Axial.Schema.ContextRules.failAtField"; "M:Axial.Schema.ContextRules.custom"]
         ]
         Alias = None

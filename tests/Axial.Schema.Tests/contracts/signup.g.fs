@@ -45,23 +45,23 @@ module Signup =
               Tags = tags
               Limits = limits
               Location = location })
-        |> Schema.fieldWith [ SchemaConstraint.email; SchemaConstraint.maxLength (254) ] "email" _.Email (Value.text |> Value.describe "Primary contact address.")
-        |> Schema.field "display_name" _.DisplayName (Value.optionOf (Value.text |> Value.withConstraints [ SchemaConstraint.minLength (1); SchemaConstraint.maxLength (64) ]))
-        |> Schema.fieldWith [ SchemaConstraint.atLeast (13) ] "age" _.Age Value.int
-        |> Schema.field "plan" _.Plan (Value.enumOf planCases |> Value.withDefault SignupPlan.Free)
-        |> Schema.fieldWith [ SchemaConstraint.maxCount (8); SchemaConstraint.distinct ] "tags" _.Tags (Value.manyOf Value.text)
-        |> Schema.field "limits" _.Limits (Value.map Value.int)
-        |> Schema.field "location" _.Location (Value.optionOf (Value.nested Geo.schema))
+        |> Schema.field "email" _.Email (Schema.text |> Schema.constrainAll [ Constraint.email; Constraint.maxLength (254) ] |> Schema.describe "Primary contact address.")
+        |> Schema.field "display_name" _.DisplayName (Schema.option (Schema.text |> Schema.constrainAll [ Constraint.minLength (1); Constraint.maxLength (64) ]))
+        |> Schema.field "age" _.Age (Schema.int |> Schema.constrainAll [ Constraint.atLeast (13) ])
+        |> Schema.field "plan" _.Plan (Schema.enum planCases |> Schema.withDefault SignupPlan.Free)
+        |> Schema.field "tags" _.Tags (Schema.list Schema.text |> Schema.constrainAll [ Constraint.maxCount (8); Constraint.distinct ])
+        |> Schema.field "limits" _.Limits (Schema.map Schema.int)
+        |> Schema.field "location" _.Location (Schema.option Geo.schema)
         |> Schema.build
         |> Schema.describe "A new account request."
 
-    /// Validates a draft built with an ordinary record literal, promoting it to a trusted model.
-    let validate (draft: Signup) : Result<Model<Signup>, Diagnostics<SchemaError>> =
-        Model.validate schema draft
+    /// Checks a draft built with an ordinary record literal.
+    let validate (draft: Signup) : Result<Signup, Diagnostics<SchemaError>> =
+        Schema.check schema draft
 
     /// Parses raw boundary input through the schema.
     let parse (input: RawInput) : ParsedInput<Signup, SchemaError> =
-        Model.parse schema input
+        Schema.parse schema input
 
     /// Typed field references for rules, redisplay, and UI binding.
     [<RequireQualifiedAccess>]

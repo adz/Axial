@@ -59,28 +59,28 @@ module Emitter =
         | Primitive PDecimal -> PDecimal
         | _ -> PInt
 
-    /// Renders one SchemaConstraint expression for the constraint list.
+    /// Renders one Constraint expression for the constraint list.
     let private renderConstraint fieldType constraint' =
         let sized minName maxName size =
             match constraint' with
-            | MinSize n -> $"SchemaConstraint.{minName} ({n})"
-            | MaxSize n -> $"SchemaConstraint.{maxName} ({n})"
+            | MinSize n -> $"Constraint.{minName} ({n})"
+            | MaxSize n -> $"Constraint.{maxName} ({n})"
             | _ -> size
 
         match constraint' with
-        | AtLeast literal -> $"SchemaConstraint.atLeast ({renderNumericLiteral (numericKind fieldType) literal})"
-        | GreaterThan literal -> $"SchemaConstraint.greaterThan ({renderNumericLiteral (numericKind fieldType) literal})"
-        | AtMost literal -> $"SchemaConstraint.atMost ({renderNumericLiteral (numericKind fieldType) literal})"
-        | LessThan literal -> $"SchemaConstraint.lessThan ({renderNumericLiteral (numericKind fieldType) literal})"
-        | MultipleOf literal -> $"SchemaConstraint.multipleOf ({renderNumericLiteral (numericKind fieldType) literal})"
+        | AtLeast literal -> $"Constraint.atLeast ({renderNumericLiteral (numericKind fieldType) literal})"
+        | GreaterThan literal -> $"Constraint.greaterThan ({renderNumericLiteral (numericKind fieldType) literal})"
+        | AtMost literal -> $"Constraint.atMost ({renderNumericLiteral (numericKind fieldType) literal})"
+        | LessThan literal -> $"Constraint.lessThan ({renderNumericLiteral (numericKind fieldType) literal})"
+        | MultipleOf literal -> $"Constraint.multipleOf ({renderNumericLiteral (numericKind fieldType) literal})"
         | MinSize _
         | MaxSize _ ->
             match fieldType with
             | ListOf _
             | MapOf _ -> sized "minCount" "maxCount" ""
             | _ -> sized "minLength" "maxLength" ""
-        | Pattern value -> $"SchemaConstraint.pattern (\"{escapeString value}\")"
-        | Distinct -> "SchemaConstraint.distinct"
+        | Pattern value -> $"Constraint.pattern (\"{escapeString value}\")"
+        | Distinct -> "Constraint.distinct"
         | CheckRef name -> failwith $"check reference '{name}' should have been rejected by the resolver"
 
     /// The F# type of a field as written in the record and FieldRef declarations.
@@ -100,23 +100,23 @@ module Emitter =
         | LiteralUnion _
         | UnionBlock _ -> caseTypeName contractName fieldName
 
-    /// The base Value.* expression for a field's type, before decorations.
+    /// The base Schema.* expression for a field's type, before decorations.
     let rec private baseValueExpr contractName fieldName fieldType =
         match fieldType with
         | Primitive PText
-        | Primitive PEmail -> "Value.text"
-        | Primitive PInt -> "Value.int"
-        | Primitive PDecimal -> "Value.decimal"
-        | Primitive PBool -> "Value.bool"
-        | Primitive PDate -> "Value.date"
-        | Primitive PDateTime -> "Value.dateTime"
-        | Primitive PGuid -> "Value.guid"
-        | Reference reference when reference.RefName = contractName -> "Value.lazyOf (fun () -> schema)"
-        | Reference reference -> $"Value.nested {reference.RefName}.schema"
-        | ListOf element -> $"Value.manyOf {parenthesize (baseValueExpr contractName fieldName element)}"
-        | MapOf element -> $"Value.map {parenthesize (baseValueExpr contractName fieldName element)}"
-        | LiteralUnion _ -> $"Value.enumOf {camel fieldName}Cases"
-        | UnionBlock(discriminator, _) -> $"Value.unionInline \"{escapeString discriminator}\" {camel fieldName}Cases"
+        | Primitive PEmail -> "Schema.text"
+        | Primitive PInt -> "Schema.int"
+        | Primitive PDecimal -> "Schema.decimal"
+        | Primitive PBool -> "Schema.bool"
+        | Primitive PDate -> "Schema.date"
+        | Primitive PDateTime -> "Schema.dateTime"
+        | Primitive PGuid -> "Schema.guid"
+        | Reference reference when reference.RefName = contractName -> "Schema.defer (fun () -> schema)"
+        | Reference reference -> $"{reference.RefName}.schema"
+        | ListOf element -> $"Schema.list {parenthesize (baseValueExpr contractName fieldName element)}"
+        | MapOf element -> $"Schema.map {parenthesize (baseValueExpr contractName fieldName element)}"
+        | LiteralUnion _ -> $"Schema.enum {camel fieldName}Cases"
+        | UnionBlock(discriminator, _) -> $"Schema.inlineUnion \"{escapeString discriminator}\" {camel fieldName}Cases"
 
     and private parenthesize (expression: string) =
         if expression.Contains " " then $"({expression})" else expression
@@ -134,27 +134,25 @@ module Emitter =
     let private valueExpr contractName (field: FieldDecl) =
         let mutable expression = baseValueExpr contractName field.FieldName field.FieldType
 
-        // Payload constraints belong on the value schema only when the field is optional; required
-        // fields carry them at the field level through Schema.fieldWith.
-        if field.Optional && not (List.isEmpty field.Constraints) then
+        if not (List.isEmpty field.Constraints) then
             let emailPrefix =
                 match field.FieldType with
-                | Primitive PEmail -> [ "SchemaConstraint.email" ]
+                | Primitive PEmail -> [ "Constraint.email" ]
                 | _ -> []
 
             let rendered =
                 emailPrefix @ (field.Constraints |> List.map (fun (constraint', _) -> renderConstraint field.FieldType constraint'))
 
             let joined = String.Join("; ", rendered)
-            expression <- $"{expression} |> Value.withConstraints [ {joined} ]"
-        elif field.Optional then
+            expression <- $"{expression} |> Schema.constrainAll [ {joined} ]"
+        else
             match field.FieldType with
-            | Primitive PEmail -> expression <- $"{expression} |> Value.withConstraints [ SchemaConstraint.email ]"
+            | Primitive PEmail -> expression <- $"{expression} |> Schema.constrainAll [ Constraint.email ]"
             | _ -> ()
 
         match field.Doc with
         | [] -> ()
-        | doc -> expression <- $"{expression} |> Value.describe \"{escapeString (joinedDoc doc)}\""
+        | doc -> expression <- $"{expression} |> Schema.describe \"{escapeString (joinedDoc doc)}\""
 
         match field.Default with
         | None -> ()
@@ -164,10 +162,10 @@ module Emitter =
                 | LiteralUnion _, LString value -> $"{caseTypeName contractName field.FieldName}.{duCaseName value}"
                 | _ -> renderDefault field.FieldType literal
 
-            expression <- $"{expression} |> Value.withDefault {renderedDefault}"
+            expression <- $"{expression} |> Schema.withDefault {renderedDefault}"
 
         if field.Optional then
-            $"Value.optionOf {parenthesize expression}"
+            $"Schema.option {parenthesize expression}"
         else
             expression
 
@@ -177,7 +175,7 @@ module Emitter =
         else
             let emailPrefix =
                 match field.FieldType with
-                | Primitive PEmail -> [ "SchemaConstraint.email" ]
+                | Primitive PEmail -> [ "Constraint.email" ]
                 | _ -> []
 
             emailPrefix
@@ -294,7 +292,7 @@ module Emitter =
                                 $"(function {du}.{duCaseName case.CaseTag} payload -> Some payload | _ -> None)"
 
                         line
-                            $"        {opener}UnionCase.create \"{escapeString case.CaseTag}\" {du}.{duCaseName case.CaseTag} {extractor} (Value.nested {case.CaseRef.RefName}.schema){closer}")
+                            $"        {opener}UnionCase.create \"{escapeString case.CaseTag}\" {du}.{duCaseName case.CaseTag} {extractor} {case.CaseRef.RefName}.schema{closer}")
                 | _ -> ()
 
             line ""
@@ -320,11 +318,7 @@ module Emitter =
                 let getter = $"_.{escapeIdent (pascal field.FieldName)}"
                 let value = valueExpr contract.ContractName field
 
-                match fieldLevelConstraints field with
-                | [] -> line $"        |> Schema.field \"{escapeString wire}\" {getter} {parenthesize value}"
-                | constraints ->
-                    let joined = String.Join("; ", constraints)
-                    line $"        |> Schema.fieldWith [ {joined} ] \"{escapeString wire}\" {getter} {parenthesize value}"
+                line $"        |> Schema.field \"{escapeString wire}\" {getter} {parenthesize value}"
 
             line "        |> Schema.build"
 
@@ -333,13 +327,13 @@ module Emitter =
             | doc -> line $"        |> Schema.describe \"{escapeString (joinedDoc doc)}\""
 
             line ""
-            line "    /// Validates a draft built with an ordinary record literal, promoting it to a trusted model."
-            line $"    let validate (draft: {contract.ContractName}) : Result<Model<{contract.ContractName}>, Diagnostics<SchemaError>> ="
-            line "        Model.validate schema draft"
+            line "    /// Checks a draft built with an ordinary record literal."
+            line $"    let validate (draft: {contract.ContractName}) : Result<{contract.ContractName}, Diagnostics<SchemaError>> ="
+            line "        Schema.check schema draft"
             line ""
             line "    /// Parses raw boundary input through the schema."
             line $"    let parse (input: RawInput) : ParsedInput<{contract.ContractName}, SchemaError> ="
-            line "        Model.parse schema input"
+            line "        Schema.parse schema input"
             line ""
             line "    /// Typed field references for rules, redisplay, and UI binding."
             line "    [<RequireQualifiedAccess>]"

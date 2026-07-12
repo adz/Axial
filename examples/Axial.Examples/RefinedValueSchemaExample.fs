@@ -9,12 +9,12 @@ module Email =
     let create (value: string) = Email value
     let value (Email value) = value
 
-    let schema : ValueSchema<Email> =
-        Value.text
-        |> Value.withConstraint SchemaConstraint.required
-        |> Value.refined create value
-        |> Value.withConstraint SchemaConstraint.email
-        |> Value.withFormat SchemaFormat.email
+    let schema : Schema<Email> =
+        Schema.text
+        |> Schema.constrain Constraint.required
+        |> Schema.convert create value
+        |> Schema.constrain Constraint.email
+        |> Schema.withFormat SchemaFormat.email
 
 /// <summary>A bounded-text domain value whose length constraints live on the raw text schema.</summary>
 type ContactName = private ContactName of string
@@ -23,10 +23,10 @@ module ContactName =
     let create (value: string) = ContactName value
     let value (ContactName value) = value
 
-    let schema : ValueSchema<ContactName> =
-        Value.text
-        |> Value.withConstraints [ SchemaConstraint.minLength 2; SchemaConstraint.maxLength 40 ]
-        |> Value.refined create value
+    let schema : Schema<ContactName> =
+        Schema.text
+        |> Schema.constrainAll [ Constraint.minLength 2; Constraint.maxLength 40 ]
+        |> Schema.convert create value
 
 /// <summary>A quantity that must always be positive (strictly greater than zero).</summary>
 type Quantity = private Quantity of int
@@ -35,10 +35,10 @@ module Quantity =
     let create (value: int) = Quantity value
     let value (Quantity value) = value
 
-    let schema : ValueSchema<Quantity> =
-        Value.int
-        |> Value.withConstraint (SchemaConstraint.greaterThan 0)
-        |> Value.refined create value
+    let schema : Schema<Quantity> =
+        Schema.int
+        |> Schema.constrain (Constraint.greaterThan 0)
+        |> Schema.convert create value
 
 /// <summary>A running total that must never go negative, but zero is allowed.</summary>
 type Balance = private Balance of decimal
@@ -47,10 +47,10 @@ module Balance =
     let create (value: decimal) = Balance value
     let value (Balance value) = value
 
-    let schema : ValueSchema<Balance> =
-        Value.decimal
-        |> Value.withConstraint (SchemaConstraint.atLeast 0m)
-        |> Value.refined create value
+    let schema : Schema<Balance> =
+        Schema.decimal
+        |> Schema.constrain (Constraint.atLeast 0m)
+        |> Schema.convert create value
 
 type Contact =
     { Email: Email
@@ -77,10 +77,10 @@ let run () =
           Quantity = Quantity.create 3
           Balance = Balance.create 0m }
 
-    let emailCheck = Email.schema |> ValueSchemaCheck.text
-    let nameCheck = ContactName.schema |> ValueSchemaCheck.text
-    let quantityCheck = Quantity.schema |> ValueSchemaCheck.ordered<int, _>
-    let balanceCheck = Balance.schema |> ValueSchemaCheck.ordered<decimal, _>
+    let emailCheck = Email.schema |> SchemaCheck.text
+    let nameCheck = ContactName.schema |> SchemaCheck.text
+    let quantityCheck = Quantity.schema |> SchemaCheck.ordered<int, _>
+    let balanceCheck = Balance.schema |> SchemaCheck.ordered<decimal, _>
 
     printfn "Email check: %A" (emailCheck contact.Email)
     printfn "Name check: %A" (nameCheck contact.Name)

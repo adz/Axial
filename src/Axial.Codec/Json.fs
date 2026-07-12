@@ -17,7 +17,7 @@ open Axial.Codec.JsonRuntime
 /// <para>
 /// The codec is the trusted hot path: it enforces JSON structure and required fields, but does not run schema
 /// constraint metadata such as <c>maxLength</c>. Parse untrusted boundary input with schema input parsing
-/// (<c>Model.parse</c>) when complete path-aware diagnostics are needed, and use the codec where the payload producer
+/// (<c>Schema.parse</c>) when complete path-aware diagnostics are needed, and use the codec where the payload producer
 /// is trusted, such as internal services, storage, caches, and message queues.
 /// </para>
 /// </remarks>
@@ -366,7 +366,11 @@ module rec Json =
 
             fun src ->
                 let struct (rawValue, next) = rawDecoder src
-                struct (ops.Construct rawValue, next)
+                match ops.Construct rawValue with
+                | Ok value -> struct (value, next)
+                | Error errors ->
+                    let detail = errors |> List.map string |> String.concat "; "
+                    raise (JsonCodecException("", detail))
         | NestedValueDefinition(model, _) -> compileErasedModelDecoder model
         | ManyValueDefinition collection ->
             let itemDecoder = compileValueDecoderObj collection.Item
@@ -901,7 +905,7 @@ module rec Json =
                 objectDecoder matchers (fun slots -> link.Apply constructor slots)
 
     let private compileTypedModelDecoder<'model> (schema: Schema<'model>) : Decoder<'model> =
-        Schema.specialize (DecodeFactory<'model>()) schema
+        SchemaCore.specialize (DecodeFactory<'model>()) schema
 
     // The typed encode chain: each field contributes cached wire-name bytes
     // plus a writer over the typed getter.
@@ -966,28 +970,23 @@ module rec Json =
                     writer.WriteByte(byte '}')
 
     let private compileTypedModelEncoder<'model> (schema: Schema<'model>) : Encoder<'model> =
-        Schema.specialize (EncodeFactory<'model>()) schema
+        SchemaCore.specialize (EncodeFactory<'model>()) schema
 
     // ---------------------------------------------------------------------
     // Public API
     // ---------------------------------------------------------------------
 
-    let private modelDefinition (schema: Schema<'model>) =
-        match schema.Definition with
-        | PendingDefinition -> invalidArg (nameof schema) "Expected a built model schema."
-        | ModelDefinition definition -> definition
-
-    /// <summary>Compiles a built model schema into a reusable JSON codec.</summary>
+    /// <summary>Compiles a completed schema into a reusable JSON codec.</summary>
     /// <remarks>
     /// <para>
     /// Compile once per schema, typically at startup, and reuse the codec for every value. Schemas produced by
-    /// <c>Schema.build</c> compile through the retained typed field chain into constructor-specialized plans. Schemas
-    /// produced by <c>Schema.buildResult</c>/<c>Schema.buildResultWith</c> compile through the type-erased plan, and
+    /// <c>SchemaCore.build</c> compile through the retained typed field chain into constructor-specialized plans. Schemas
+    /// produced by <c>SchemaCore.buildResult</c>/<c>SchemaCore.buildResultWith</c> compile through the type-erased plan, and
     /// constructor errors surface as <see cref="T:Axial.Codec.JsonCodecException" /> during decoding.
     /// </para>
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
-    /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="schema" /> was not produced by <c>Schema.build</c>.</exception>
+    /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="schema" /> is an incomplete record builder.</exception>
     /// <example>
     /// <code>
     /// let codec = Json.compile customerSchema
@@ -999,24 +998,23 @@ module rec Json =
         if isNull (box schema) then
             nullArg (nameof schema)
 
-        let definition = modelDefinition schema
-
-        match schema.Specialization with
-        | Some _ ->
-            JsonCodec(compileTypedModelEncoder schema, compileTypedModelDecoder schema)
-        | None ->
-            let erased = ModelSchemaErasure.erase definition
-            let objEncoder = compileErasedModelEncoder erased
-            let objDecoder = compileErasedModelDecoder erased
-
-            let encoder: Encoder<'model> = fun writer model -> objEncoder writer (box model)
-
-            let decoder: Decoder<'model> =
-                fun src ->
-                    let struct (value, next) = objDecoder src
-                    struct (unbox<'model> value, next)
-
-            JsonCodec(encoder, decoder)
+        match schema.Definition with
+        | PendingDefinition -> invalidArg (nameof schema) "Expected a completed schema."
+        | ValueDefinition definition ->
+            JsonCodec(compileValueEncoder<'model> definition, compileValueDecoder<'model> definition)
+        | ModelDefinition definition ->
+            match schema.Specialization with
+            | Some _ -> JsonCodec(compileTypedModelEncoder schema, compileTypedModelDecoder schema)
+            | None ->
+                let erased = ModelSchemaErasure.erase definition
+                let objEncoder = compileErasedModelEncoder erased
+                let objDecoder = compileErasedModelDecoder erased
+                let encoder: Encoder<'model> = fun writer model -> objEncoder writer (box model)
+                let decoder: Decoder<'model> =
+                    fun src ->
+                        let struct (value, next) = objDecoder src
+                        struct (unbox<'model> value, next)
+                JsonCodec(encoder, decoder)
 
     /// <summary>Serializes a trusted model to a JSON string through a compiled codec.</summary>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="codec" /> is null.</exception>

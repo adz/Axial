@@ -11,7 +11,7 @@ does not. The ticket itself stays valid throughout — rules judge acceptability
 
 ## The Trusted Model
 
-Assume `Ticket` came from `Model.parse` or a smart constructor, so its intrinsic constraints already hold:
+Assume `Ticket` came from `Schema.parse` or a smart constructor, so its intrinsic constraints already hold:
 
 ```fsharp
 open Axial.Validation

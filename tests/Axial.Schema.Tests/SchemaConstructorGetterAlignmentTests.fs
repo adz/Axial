@@ -26,8 +26,8 @@ module SchemaConstructorGetterAlignmentTests =
     let ``builder aligns each field's getter with its constructor argument position`` () =
         let schema =
             Schema.recordFor<FullName, _> (fun first last -> { First = first; Last = last })
-            |> Schema.text "first" _.First
-            |> Schema.text "last" _.Last
+            |> Schema.field "first" _.First Schema.text
+            |> Schema.field "last" _.Last Schema.text
             |> Schema.build
         let source = { First = "Ada"; Last = "Lovelace" }
 
@@ -43,8 +43,8 @@ module SchemaConstructorGetterAlignmentTests =
     let ``builder binds argument position to declaration order, not external field name`` () =
         let swapped =
             Schema.recordFor<FullName, _> (fun a b -> { First = a; Last = b })
-            |> Schema.text "last" _.Last
-            |> Schema.text "first" _.First
+            |> Schema.field "last" _.Last Schema.text
+            |> Schema.field "first" _.First Schema.text
             |> Schema.build
         let source = { First = "Ada"; Last = "Lovelace" }
 
@@ -60,9 +60,9 @@ module SchemaConstructorGetterAlignmentTests =
     let ``builder aligns each of three same-typed fields with its constructor argument position`` () =
         let schema =
             Schema.recordFor<Address, _> (fun line1 line2 city -> { Line1 = line1; Line2 = line2; City = city })
-            |> Schema.text "line1" _.Line1
-            |> Schema.text "line2" _.Line2
-            |> Schema.text "city" _.City
+            |> Schema.field "line1" _.Line1 Schema.text
+            |> Schema.field "line2" _.Line2 Schema.text
+            |> Schema.field "city" _.City Schema.text
             |> Schema.build
 
         let source = { Line1 = "221B Baker Street"; Line2 = "Flat 2"; City = "London" }
@@ -84,9 +84,9 @@ module SchemaConstructorGetterAlignmentTests =
         // matching its declared position rather than the record's source order or external field name.
         let reordered =
             Schema.recordFor<Address, _> (fun city line1 line2 -> { Line1 = line1; Line2 = line2; City = city })
-            |> Schema.text "city" _.City
-            |> Schema.text "line1" _.Line1
-            |> Schema.text "line2" _.Line2
+            |> Schema.field "city" _.City Schema.text
+            |> Schema.field "line1" _.Line1 Schema.text
+            |> Schema.field "line2" _.Line2 Schema.text
             |> Schema.build
 
         let source = { Line1 = "221B Baker Street"; Line2 = "Flat 2"; City = "London" }

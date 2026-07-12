@@ -3,7 +3,7 @@ title: "Schema Interpreters"
 weight: 500
 ---
 
-This page shows the `Axial.Schema` interpreter surface: raw boundary input, schema input parsing into `ParsedInput`, intrinsic validation of existing models, and contextual rule sets over already-trusted models. Core schema metadata stays in [Schema](../); these interpreters attach diagnostics, raw input, and redisplay behavior to it.
+This page shows raw boundary input, universal schema parsing into `ParsedInput`, checking of existing values, refined schemas, and contextual rules. Core schema metadata stays in [Schema](../); interpreters attach diagnostics, raw input, and redisplay behavior to it.
 
 ## Raw input
 
@@ -30,46 +30,37 @@ This page shows the `Axial.Schema` interpreter surface: raw boundary input, sche
 - [`Schema.ParsedInput`](./t-schema-parsedinput.md):
  The result of parsing boundary input through a schema while retaining the original raw input.
 
-- [`Schema.Model.parse`](./m-schema-model-parse.md): Parses raw boundary input through a trusted model schema.
-- [`Schema.Model.parseWith`](./m-schema-model-parsewith.md): Parses raw boundary input through a trusted model schema using custom input parser options.
-- [`Schema.Model.Options`](./t-schema-model-options.md): Options that customize how raw input is parsed through a schema.
+- [`Schema.parse`](./m-schema-schema-parse.md): Parses source-neutral raw input, runs constraints and refinements, and invokes record constructors.
+- [`Schema.parseWith`](./m-schema-schema-parsewith.md): Parses raw input after configuring parser options.
+- [`Schema.SchemaParseOptions`](./t-schema-schemaparseoptions.md): Functions that produce or verify a trusted model, using a schema as authority.Options that customize how raw input is parsed through a schema.
 - [`Schema.ParsedInput.mapErrors`](./m-schema-parsedinput-maperrors.md): Maps a failed parse&#39;s errors to a domain or application error type, preserving the raw input and paths.
 - [`Schema.ParsedInput.renderErrors`](./m-schema-parsedinput-rendererrors.md): Renders a failed schema parse as default English display strings, preserving diagnostics paths.
 
 ## Errors
 
-- [`Schema.SchemaError`](./t-schema-schemaerror.md): Schema input, model validation, and contextual rule failures attached to diagnostics paths.
+- [`Schema.SchemaError`](./t-schema-schemaerror.md): Schema input, checking, and contextual rule failures attached to diagnostics paths.
 
 ## Refined catalog schemas
 
-- [`Schema.RefinedSchema.nonBlankString`](./m-schema-refinedschema-nonblankstring.md): Describes a non-blank string as a schema refined value over required text.
-- [`Schema.RefinedSchema.trimmedString`](./m-schema-refinedschema-trimmedstring.md): Describes a trimmed string as a schema refined value over text with no leading or trailing whitespace.
-- [`Schema.RefinedSchema.boundedString`](./m-schema-refinedschema-boundedstring.md): Describes a bounded string as a schema refined value over required text with inclusive length bounds.
-- [`Schema.RefinedSchema.slug`](./m-schema-refinedschema-slug.md): Describes an ASCII slug as a schema refined value over required text with the built-in slug pattern.
-- [`Schema.RefinedSchema.positiveInt`](./m-schema-refinedschema-positiveint.md): Describes a positive integer as a schema refined value over an integer greater than zero.
-- [`Schema.RefinedSchema.nonNegativeInt`](./m-schema-refinedschema-nonnegativeint.md): Describes a non-negative integer as a schema refined value over an integer greater than or equal to zero.
-- [`Schema.RefinedSchema.nonZeroInt`](./m-schema-refinedschema-nonzeroint.md): Describes a non-zero integer as a schema refined value over an integer not equal to zero.
-- [`Schema.RefinedSchema.negativeInt`](./m-schema-refinedschema-negativeint.md): Describes a negative integer as a schema refined value over an integer less than zero.
-- [`Schema.RefinedSchema.nonPositiveInt`](./m-schema-refinedschema-nonpositiveint.md): Describes a non-positive integer as a schema refined value over an integer less than or equal to zero.
-- [`Schema.RefinedSchema.nonEmptyList`](./m-schema-refinedschema-nonemptylist.md): Describes a non-empty list as a schema refined value over a collection of item schemas.
-- [`Schema.RefinedSchema.nonEmptyArray`](./m-schema-refinedschema-nonemptyarray.md): Describes a non-empty array as a schema refined value over a collection of item schemas.
-- [`Schema.RefinedSchema.distinctList`](./m-schema-refinedschema-distinctlist.md): Describes a distinct list as a schema refined value over a distinct collection of item schemas.
-- [`Schema.RefinedSchema.boundedList`](./m-schema-refinedschema-boundedlist.md): Describes a bounded list as a schema refined value over a collection with inclusive count bounds.
-- [`Schema.RefinedSchema.boundedArray`](./m-schema-refinedschema-boundedarray.md): Describes a bounded array as a schema refined value over a collection with inclusive count bounds.
-- [`Schema.RefinedSchema.dateTimeOffsetRange`](./m-schema-refinedschema-datetimeoffsetrange.md): Describes a date-time range as a record schema with <code>start</code> and <code>end</code> fields.
+- [`Schema.RefinedSchemas.nonBlankString`](./p-schema-refinedschemas-nonblankstring.md): Describes a non-blank string as a schema refined value over required text.
+- [`Schema.RefinedSchemas.trimmedString`](./p-schema-refinedschemas-trimmedstring.md): Describes a trimmed string as a schema refined value over text with no leading or trailing whitespace.
+- [`Schema.RefinedSchemas.boundedString`](./m-schema-refinedschemas-boundedstring.md): Describes a bounded string as a schema refined value over required text with inclusive length bounds.
+- [`Schema.RefinedSchemas.slug`](./p-schema-refinedschemas-slug.md): Describes an ASCII slug as a schema refined value over required text with the built-in slug pattern.
+- [`Schema.RefinedSchemas.positiveInt`](./p-schema-refinedschemas-positiveint.md): Describes a positive integer as a schema refined value over an integer greater than zero.
+- [`Schema.RefinedSchemas.nonNegativeInt`](./p-schema-refinedschemas-nonnegativeint.md): Describes a non-negative integer as a schema refined value over an integer greater than or equal to zero.
+- [`Schema.RefinedSchemas.nonZeroInt`](./p-schema-refinedschemas-nonzeroint.md): Describes a non-zero integer as a schema refined value over an integer not equal to zero.
+- [`Schema.RefinedSchemas.negativeInt`](./p-schema-refinedschemas-negativeint.md): Describes a negative integer as a schema refined value over an integer less than zero.
+- [`Schema.RefinedSchemas.nonPositiveInt`](./p-schema-refinedschemas-nonpositiveint.md): Describes a non-positive integer as a schema refined value over an integer less than or equal to zero.
+- [`Schema.RefinedSchemas.nonEmptyList`](./m-schema-refinedschemas-nonemptylist.md): Describes a non-empty list as a schema refined value over a collection of item schemas.
+- [`Schema.RefinedSchemas.nonEmptyArray`](./m-schema-refinedschemas-nonemptyarray.md): Describes a non-empty array as a schema refined value over a collection of item schemas.
+- [`Schema.RefinedSchemas.distinctList`](./m-schema-refinedschemas-distinctlist.md): Describes a distinct list as a schema refined value over a distinct collection of item schemas.
+- [`Schema.RefinedSchemas.boundedList`](./m-schema-refinedschemas-boundedlist.md): Describes a bounded list as a schema refined value over a collection with inclusive count bounds.
+- [`Schema.RefinedSchemas.boundedArray`](./m-schema-refinedschemas-boundedarray.md): Describes a bounded array as a schema refined value over a collection with inclusive count bounds.
+- [`Schema.RefinedSchemas.dateTimeOffsetRange`](./p-schema-refinedschemas-datetimeoffsetrange.md): Describes a date-time range as a record schema with <code>start</code> and <code>end</code> fields.
 
-## Trusted models
+## Existing values
 
-- [`Schema.Model`](./t-schema-model.md): A schema-validated model value. Only <code>Model.parse</code>-adjacent functions in this module can
- produce one, so holding a <code>Model&lt;&#39;model&gt;</code> is proof the value passed every schema constraint and
- constructor invariant.
-- [`Schema.Model.validate`](./m-schema-model-validate.md):
- Validates a draft value against its schema and promotes it to a trusted <code>Model&lt;&#39;model&gt;</code>.
-
-- [`Schema.Model.reconstruct`](./m-schema-model-reconstruct.md):
- Rebuilds trust in an existing model value that did not come through <code>Model.parse</code> or <code>Model.construct</code>
- — for example a value deserialized directly into the model type, or read back from storage.
-
+- [`Schema.check`](./m-schema-schema-check.md): Checks an already assembled value and re-invokes its record constructor when present.
 - [`Schema.FieldRef`](./t-schema-fieldref.md): A typed, named reference to one field of a schema-described model.
 
 ## Context rules
