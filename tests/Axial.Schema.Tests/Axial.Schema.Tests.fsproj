@@ -18,7 +18,9 @@
     <Compile Include="SchemaNestedValueTests.fs" />
     <Compile Include="SchemaManyValueTests.fs" />
     <Compile Include="SchemaMapValueTests.fs" />
+    <Compile Include="SchemaEnumValueTests.fs" />
     <Compile Include="SchemaUnionValueTests.fs" />
+    <Compile Include="SchemaUnionInlineValueTests.fs" />
     <Compile Include="SchemaOptionalValueTests.fs" />
     <Compile Include="SchemaInterpreterPrototypeTests.fs" />
     <Compile Include="SchemaGenerationTargetProofTests.fs" />
@@ -30,7 +32,9 @@
     <Compile Include="NestedSchemaParseTests.fs" />
     <Compile Include="ManySchemaParseTests.fs" />
     <Compile Include="MapSchemaParseTests.fs" />
+    <Compile Include="EnumSchemaParseTests.fs" />
     <Compile Include="UnionSchemaParseTests.fs" />
+    <Compile Include="UnionInlineSchemaParseTests.fs" />
     <Compile Include="OptionalSchemaParseTests.fs" />
     <Compile Include="SchemaValidationTests.fs" />
     <Compile Include="ContextRulesTests.fs" />
