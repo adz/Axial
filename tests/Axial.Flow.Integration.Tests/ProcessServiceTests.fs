@@ -9,6 +9,8 @@ open Axial.Flow
 open Axial.Flow.Process
 open Axial.Flow.Process.DSL
 open Axial.Flow.PlatformService
+open Axial.Flow.Console
+open Axial.Flow.FileSystem
 open Swensen.Unquote
 open Xunit
 
@@ -18,12 +20,12 @@ type ProcessTestEnv =
         member this.Service = this.Process
 
 module ProcessServiceTests =
-    let private env = { Process = Process.live Clock.live }
+    let private env = { Process = Process.live Clock.live FileSystem.live Console.live }
 
     [<Fact>]
     let ``live process timestamps transcripts through the supplied clock`` () =
         let fixedTime = DateTimeOffset(2030, 4, 5, 6, 7, 8, TimeSpan.Zero)
-        let fixedEnv = { Process = Process.live (Clock.fromValue fixedTime) }
+        let fixedEnv = { Process = Process.live (Clock.fromValue fixedTime) FileSystem.live Console.live }
         let workflow = cmd $"true" |> capture
 
         match Flow.runSync fixedEnv workflow with

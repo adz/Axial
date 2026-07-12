@@ -26,6 +26,8 @@
   <ItemGroup>
     <ProjectReference Include="..\Axial.Flow\Axial.Flow.fsproj" />
     <ProjectReference Include="..\Axial.Flow.PlatformService\Axial.Flow.PlatformService.fsproj" />
+    <ProjectReference Include="..\Axial.Flow.Console\Axial.Flow.Console.fsproj" />
+    <ProjectReference Include="..\Axial.Flow.FileSystem\Axial.Flow.FileSystem.fsproj" />
   </ItemGroup>
 
   <ItemGroup>

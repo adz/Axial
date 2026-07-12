@@ -10,6 +10,8 @@ open System.Threading
 open System.Threading.Tasks
 open Axial.Flow
 open Axial.Flow.PlatformService
+open Axial.Flow.Console
+open Axial.Flow.FileSystem
 
 /// Identifies one standard output channel.
 [<RequireQualifiedAccess>]
@@ -468,21 +470,21 @@ module Process =
             | _ -> None
         find destination |> Option.defaultWith (fun () -> CaptureBuffer(Some -1, false))
 
-    let private openFiles destination =
+    let private openFiles (fileSystem: IFileSystem) destination =
         let files = Dictionary<string * bool, FileStream>()
         let rec visit = function
-            | OutputTarget.File path -> files.TryAdd((path, false), new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read)) |> ignore
-            | OutputTarget.AppendFile path -> files.TryAdd((path, true), new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read)) |> ignore
+            | OutputTarget.File path -> files.TryAdd((path, false), fileSystem.OpenFile(path, FileMode.Create, FileAccess.Write, FileShare.Read)) |> ignore
+            | OutputTarget.AppendFile path -> files.TryAdd((path, true), fileSystem.OpenFile(path, FileMode.Append, FileAccess.Write, FileShare.Read)) |> ignore
             | OutputTarget.Tee items -> List.iter visit items
             | _ -> ()
         visit destination
         files
 
-    let private writeDestination (gate: SemaphoreSlim) (files: Dictionary<string * bool, FileStream>) (channel: OutputChannel) destination (bytes: byte array) =
+    let private writeDestination (console: IConsole) (gate: SemaphoreSlim) (files: Dictionary<string * bool, FileStream>) (channel: OutputChannel) destination (bytes: byte array) =
         let rec write = function
             | OutputTarget.Console
             | OutputTarget.Inherit ->
-                let target = if channel = OutputChannel.StdOut then Console.OpenStandardOutput() else Console.OpenStandardError()
+                let target = if channel = OutputChannel.StdOut then console.OpenStandardOutput() else console.OpenStandardError()
                 target.WriteAsync(bytes, 0, bytes.Length)
             | OutputTarget.File path -> files[(path, false)].WriteAsync(bytes, 0, bytes.Length)
             | OutputTarget.AppendFile path -> files[(path, true)].WriteAsync(bytes, 0, bytes.Length)
@@ -511,7 +513,7 @@ module Process =
 #endif
 
     /// Creates a live process service using an explicit clock for transcript timestamps and durations.
-    let live (clock: IClock) : IProcess =
+    let live (clock: IClock) (fileSystem: IFileSystem) (console: IConsole) : IProcess =
         { new IProcess with
             member _.Execute((pipeline: Pipeline), observer, cancellationToken) =
                 async {
@@ -521,8 +523,8 @@ module Process =
                     let stdoutCapture = captureFor pipeline.StdOut
                     let stderrCapture = captureFor pipeline.StdErr
                     let stderrTails = pipeline.Commands |> List.map (fun _ -> CaptureBuffer(Some(64 * 1024), true)) |> List.toArray
-                    let stdoutFiles = openFiles pipeline.StdOut
-                    let stderrFiles = openFiles pipeline.StdErr
+                    let stdoutFiles = openFiles fileSystem pipeline.StdOut
+                    let stderrFiles = openFiles fileSystem pipeline.StdErr
                     let startedAt = clock.UtcNow()
                     try
                         try
@@ -607,7 +609,7 @@ module Process =
                                         | InputSource.Text text -> do! write (pipeline.Commands[root].Encoding.GetBytes text) |> Async.StartAsTask
                                         | InputSource.Bytes bytes -> do! write bytes |> Async.StartAsTask
                                         | InputSource.File path ->
-                                            use source = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read)
+                                            use source = fileSystem.OpenFile(path, FileMode.Open, FileAccess.Read, FileShare.Read)
                                             do! source.CopyToAsync(target, 81920, cancellationToken)
                                         | InputSource.Read read ->
                                             let! bytes = Async.StartAsTask(read(), cancellationToken = cancellationToken)
@@ -669,7 +671,7 @@ module Process =
                                             let chunk = buffer[.. count - 1]
                                             capture.Append chunk
                                             if channel = OutputChannel.StdErr then stderrTails[stage].Append chunk
-                                            do! writeDestination destinationGate files channel destination chunk
+                                            do! writeDestination console destinationGate files channel destination chunk
                                             do! decodeAndPublish chunk chunk.Length false
                                 }
                             let reads = ResizeArray<Task>()
@@ -724,7 +726,8 @@ module Process =
                 } }
 
     /// Builds a live process service from an explicit clock as a layer.
-    let layer (clock: IClock) : Layer<unit, Never, IProcess> = Layer.succeed (live clock)
+    let layer (clock: IClock) (fileSystem: IFileSystem) (console: IConsole) : Layer<unit, Never, IProcess> =
+        Layer.succeed (live clock fileSystem console)
 #endif
 
 module DSL =
@@ -1048,14 +1051,14 @@ module Script =
         | Cause.Interrupt -> "Interrupted."
         | cause -> $"{cause}"
 
-    /// Runs a process workflow with live services and sets the host exit code. Intended for dotnet-fsi shebang scripts.
-    let run (workflow: Flow<ScriptEnvironment, ProcessError, 'value>) : unit =
-        match workflow.RunSynchronously({ Process = Process.live Clock.live }) with
-        | Exit.Success _ -> Environment.ExitCode <- 0
+    /// Runs a process workflow with live services, writes failures through the supplied console, and returns a host exit code.
+    let run (console: IConsole) (workflow: Flow<ScriptEnvironment, ProcessError, 'value>) : int =
+        match workflow.RunSynchronously({ Process = Process.live Clock.live FileSystem.live console }) with
+        | Exit.Success _ -> 0
         | Exit.Failure(Cause.Fail error) ->
-            Console.Error.WriteLine(ProcessError.describe error)
-            Environment.ExitCode <- ProcessError.exitCode error
+            console.WriteErrorLine(ProcessError.describe error)
+            ProcessError.exitCode error
         | Exit.Failure cause ->
-            Console.Error.WriteLine(describeCause cause)
-            Environment.ExitCode <- 1
+            console.WriteErrorLine(describeCause cause)
+            1
 #endif
