@@ -1,3 +1,10 @@
+---
+weight: 20
+title: Schema DSL
+type: docs
+description: The unqualified authoring view of the universal Schema catalog.
+---
+
 # Schema DSL
 
 This page shows the unqualified authoring view of the universal Schema catalog.

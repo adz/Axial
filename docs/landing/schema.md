@@ -44,21 +44,22 @@ One schema declaration, several interpreters:
 
 | Input | Interpreter | Result |
 | --- | --- | --- |
-| `RawInput` | `Model.parse schema` | model or `Diagnostics` |
-| draft record | `Model.validate schema` | `Model<'model>` or `Diagnostics` |
-| existing model | `Model.reconstruct schema` | reconstructed model or `Diagnostics` |
+| `RawInput` | `Schema.parse schema` | model or `Diagnostics` |
+| draft or imported value | `Schema.check schema` | the same value or `Diagnostics` |
 | trusted model | `ContextRules.apply rules` | accepted model or contextual `Diagnostics` |
 | schema | `Inspect.model` | finite metadata without execution |
 | schema | `Json.compile` | reusable compiled JSON codec |
 | schema | `JsonSchema.generate` | JSON Schema document |
-| versioned `RawInput` | `Contract.parse` | current `Model<'model>` or `ContractError` |
+| versioned `RawInput` | `Contract.parse` | current model or `ContractError` |
 | schema | `SchemaGen.raw` / `SchemaGen.model` | FsCheck generators |
 
-`Model.validate` is named-field trusted construction: build a draft with an ordinary record literal (named fields,
-any order, compiler-checked completeness) and promote it — holding the returned `Model<'model>` is the proof it
-passed every constraint. `Model.reconstruct` gives an already-existing model value (imported rows, hand-built
-values) the same trust strength as `Model.parse` — every field's constraints re-checked, and the model's own
-constructor re-invoked so cross-field invariants hold too — without re-parsing from raw input.
+`Schema.check` covers typed values that did not arrive as raw input: a draft assembled with an ordinary record
+literal (named fields, any order, compiler-checked completeness), or an existing value from an import or database
+mapper. It runs every field's constraints and refinements again and re-invokes the record constructor, so
+cross-field invariants hold too. Success returns the value itself, not a proof wrapper — when every value of a type
+must satisfy an invariant, give the type a private representation and a fallible constructor;
+[Trusted Construction](./trusted-construction/) shows how drafts keep record syntax and `with` updates alongside
+that guarantee.
 
 The declaration vocabulary covers primitive and refined values, nested models, lists, maps, optional values, three
 tagged-union shapes, and recursive models. `FieldRef` values name, read, and copy-update draft fields without repeating
@@ -104,8 +105,9 @@ around them.
 
 Install the core package with `dotnet add package Axial.Schema`.
 
-Model metadata, `Refined`, input parsing, model validation, and rules all live in this one package now — declaring a
-schema, parsing raw input, and inspecting metadata never require a second package.
+Schema metadata, input parsing, checking, and rules live in this one package; `Refined` and `Validation` arrive with
+it as the `Axial.ErrorHandling` dependency — declaring a schema, parsing raw input, and inspecting metadata never
+require a second install.
 
 `Axial.Codec` is separate and optional: add it only if you want a compiled, reflection-free JSON codec generated from
 your schema (`Json.compile`). Everything else — parsing, validation, rules, redisplay, JSON Schema generation — works

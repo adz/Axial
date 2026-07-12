@@ -135,5 +135,5 @@ This page shows the external-process service package. Immutable `Command` and `P
 
 ## Implementations
 
-- [`Flow.Process.live`](./p-flow-process-process-live.md):
-- [`Flow.Process.layer`](./p-flow-process-process-layer.md):
+- [`Flow.Process.live`](./m-flow-process-process-live.md):  Creates a live process service using an explicit clock for transcript timestamps and durations.
+- [`Flow.Process.layer`](./m-flow-process-process-layer.md):  Builds a live process service from an explicit clock as a layer.

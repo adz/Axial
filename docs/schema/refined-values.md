@@ -1,3 +1,10 @@
+---
+weight: 40
+title: Refined Schemas
+type: docs
+description: Turn a fallible refined-value constructor into an ordinary schema.
+---
+
 # Refined schemas
 
 This page shows how a fallible refined-value constructor becomes an ordinary `Schema<'value>`.

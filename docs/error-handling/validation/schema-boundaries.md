@@ -39,12 +39,12 @@ During input parsing, Axial first parses and checks each field. It calls the con
 argument is already trusted. Field diagnostics gate constructor diagnostics, so a malformed `start` field does not also
 produce a cross-field constructor error.
 
-Constructor errors attach to the current object path by default. Use `Model.constructorErrorAt` when a specific relative
+Constructor errors attach to the current object path by default. Use `Schema.constructorErrorAt` when a specific relative
 field path gives better boundary feedback:
 
 ```fsharp
 let parsed =
-    Model.parseWith (Model.constructorErrorAt "end") dateRangeSchema raw
+    Schema.parseWith (Schema.constructorErrorAt "end") dateRangeSchema raw
 ```
 
 ## Contextual Rules

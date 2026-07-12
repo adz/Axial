@@ -33,7 +33,6 @@ module ContactEmail =
                 Check.String.email
                 Check.String.maxLength 254
             ])
-            (fun target failures -> RefinementError.InvalidFormat(target, CheckFailure.describeAll failures))
             ContactEmail
             value
 ```
@@ -43,10 +42,9 @@ The constructor stays private, so the rest of the application cannot accidentall
 
 ## Schema Field
 
-Add a `Value.refined` schema in the same module when the value appears inside a larger input model:
+Add a `Schema.refine` schema in the same module when the value appears inside a larger input model:
 
 ```fsharp
-open Axial.Schema
 open Axial.Schema
 
 module ContactEmail =
@@ -60,24 +58,25 @@ module ContactEmail =
                 Check.String.email
                 Check.String.maxLength 254
             ])
-            (fun target failures -> RefinementError.InvalidFormat(target, CheckFailure.describeAll failures))
             ContactEmail
             value
 
-    let schema : ValueSchema<ContactEmail> =
-        Value.text
-        |> Value.withConstraints [
-            SchemaConstraint.required
-            SchemaConstraint.email
-            SchemaConstraint.maxLength 254
+    let schema : Schema<ContactEmail> =
+        Schema.text
+        |> Schema.constrainAll [
+            Constraint.required
+            Constraint.email
+            Constraint.maxLength 254
         ]
-        |> Value.refined create value
-        |> Value.withFormat SchemaFormat.email
+        |> Schema.refine create SchemaError.ofRefinementError value
+        |> Schema.withFormat SchemaFormat.email
 ```
 
-`Value.refined` needs both directions. The construction function turns checked raw input into the domain value. The
-extractor lets validation, codecs, documentation, and UI interpreters recover the raw representation from an existing
-trusted value.
+`Schema.refine` takes the real fallible smart constructor and both directions. `create` remains authoritative: its
+failures lower into path-aware schema diagnostics through `SchemaError.ofRefinementError`. The extractor lets
+checking, codecs, documentation, and UI interpreters recover the raw representation from an existing trusted value.
+The raw constraints supply portable metadata for JSON Schema, forms, and generators; if they drift from `create`,
+refinement still returns diagnostics rather than admitting the value.
 
 Keep raw parsing and path-aware diagnostics in the schema layer. Keep value-only facts in `Check` and the smart
 constructor. Use `Schema.buildResult` for whole-record invariants that need multiple fields.
@@ -108,4 +107,4 @@ let signupSchema =
     |> Schema.build
 ```
 
-For built-in catalog types, prefer `Axial.Schema.RefinedSchema` instead of re-authoring local wrappers.
+For built-in catalog types, prefer `Axial.Schema.RefinedSchemas` instead of re-authoring local wrappers.

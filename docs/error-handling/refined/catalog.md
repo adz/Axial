@@ -11,29 +11,28 @@ This page shows the built-in refined values available from `Axial.Refined` and h
 The package stays named `Axial.Refined`. It is not only a type catalog: it also owns primitive parsing, smart constructors, the `refine {}` builder, and parser-choice helpers.
 
 For caller-owned domain values, use the single authoring pattern in [Domain Values](../domain-values/): private
-constructor, smart constructor, optional standalone helper, and `Value.refined` schema when the type appears in a model.
+constructor, smart constructor, optional standalone helper, and `Schema.refine` schema when the type appears in a model.
 
 When the same scalar catalog value is used as a schema field, use the schema integration catalog in
 `Axial.Schema`:
 
 ```fsharp
 open Axial.Schema
-open Axial.Schema
 
 let productSchema =
     Schema.recordFor<Product, _> (fun name slug quantity ->
         { Name = name; Slug = slug; Quantity = quantity })
-    |> Schema.field "name" _.Name RefinedSchema.nonBlankString
-    |> Schema.field "slug" _.Slug RefinedSchema.slug
-    |> Schema.field "quantity" _.Quantity RefinedSchema.positiveInt
+    |> Schema.field "name" _.Name RefinedSchemas.nonBlankString
+    |> Schema.field "slug" _.Slug RefinedSchemas.slug
+    |> Schema.field "quantity" _.Quantity RefinedSchemas.positiveInt
     |> Schema.build
 ```
 
 The schema catalog lives outside `Axial.Refined` so the refined-value package stays usable without any schema dependency.
-Collection schema helpers such as `RefinedSchema.nonEmptyList RefinedSchema.slug` and
-`RefinedSchema.distinctList Value.text` take an item value schema, so item parsing and item diagnostics stay explicit.
-Temporal range helpers such as `RefinedSchema.dateTimeOffsetRange` are complete model schemas with `start` and `end`
-fields. `RefinedSchema.dateOnlyRange` is available when targeting frameworks that support `DateOnly`.
+Collection schema helpers such as `RefinedSchemas.nonEmptyList RefinedSchemas.slug` and
+`RefinedSchemas.distinctList Schema.text` take an item value schema, so item parsing and item diagnostics stay explicit.
+Temporal range helpers such as `RefinedSchemas.dateTimeOffsetRange` are complete model schemas with `start` and `end`
+fields. `RefinedSchemas.dateOnlyRange` is available when targeting frameworks that support `DateOnly`.
 
 ## Module Layout
 

@@ -54,6 +54,7 @@ Workflows result in one of three `Exit` outcomes:
 - `Defect`: An unhandled exception or bug occurred (`Cause.Die`).
 
 ## Dependency Guidance
+- **HARD EFFECT BOUNDARY:** `Axial.Flow.Process` and `Axial.Flow.Http` may perform only the effect represented by their core mockable service (`IProcess`/`IHttp`). Every additional effect must be an explicit, mockable dependency visible in the signature. Never use `DateTimeOffset.UtcNow`/`DateTime.Now` there; inject `Axial.Flow.PlatformService.IClock` and call `clock.UtcNow()`. Apply the same rule to random, GUID, environment, filesystem, console, and other effects.
 - Use `Flow.read (env -> 'v)` for direct projection from an explicit environment.
 - Use `Service<'service>.get()` when reusable helpers need a named service contract and `'env :> IHas<'service>`.
 - Use `layer { }` plus `Flow.provide` to build environments and own scoped cleanup.

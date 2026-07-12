@@ -1,3 +1,10 @@
+---
+weight: 2
+title: Getting Started
+type: docs
+description: One schema describing boundary input, domain construction, checking, codecs, and metadata.
+---
+
 # Schema: one description, several interpreters
 
 This page shows how one `Schema<'value>` describes boundary input, domain construction, checking, codecs, and metadata.

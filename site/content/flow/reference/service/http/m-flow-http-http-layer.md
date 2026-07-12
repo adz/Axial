@@ -5,19 +5,20 @@ weight: 2701
 type: docs
 ---
 
- Builds a live HTTP service as a layer.
- <example><code>Http.layer (new HttpClient())</code></example>
+ Builds a live HTTP service from an explicit clock as a layer.
+ <example><code>Http.layer Clock.live (new HttpClient())</code></example>
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Flow.Http.Http.layer&#32;<span>client</span></span></code>
+<code><span>Flow.Http.Http.layer&#32;<span>clock&#32;client</span></span></code>
 </div>
 
 ## Parameters
 
 | Name | Type | Description |
 | --- | --- | --- |
+| `clock` | <code><a href="../core/t-flow-platformservice-iclock.md">IClock</a></code> |  |
 | `client` | <code><a href="https://learn.microsoft.com/dotnet/api/system.net.http.httpclient">HttpClient</a></code> |  |
 
 ## Returns

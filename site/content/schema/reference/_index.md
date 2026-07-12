@@ -20,12 +20,12 @@ Schemas are consumed by interpreters that stay independent of workflow execution
 
 - [`Schema Interpreters`](./schema/interpreters/) — the boundary-parsing and rule-evaluation surface:
   - [`RawInput`](./schema/interpreters/#raw-input) — source-agnostic raw input captured at a data boundary.
-  - [`Model` / `ParsedInput`](./schema/interpreters/#input-parsing) — parsing boundary input through a schema, and
-    re-checking (`Model.reconstruct`) an already-existing model value with the same trust guarantee.
-  - [`SchemaError`](./schema/interpreters/#errors) — schema input, model validation, and rule failures.
-  - [`RefinedSchema`](./schema/interpreters/#refined-catalog-schemas) — bridges `Axial.Refined` types (see the
+  - [`Schema.parse` / `ParsedInput`](./schema/interpreters/#input-parsing) — parsing boundary input through a schema,
+    plus `Schema.check` for giving an already-existing value (a draft or an import) the same trust guarantee.
+  - [`SchemaError`](./schema/interpreters/#errors) — schema input, checking, and rule failures.
+  - [`RefinedSchemas`](./schema/interpreters/#refined-catalog-schemas) — bridges `Axial.Refined` types (see the
     [Error Handling reference]({{< relref "/error-handling/reference/" >}})) into schema field declarations.
-  - [`RuleSet` / `Rules`](./schema/interpreters/#rules) — contextual rules evaluated over an already-trusted model.
+  - [`ContextRules`](./schema/interpreters/#context-rules) — contextual rules evaluated over an already-trusted model.
 - [`JsonSchema`](./schema/#json-schema-generation) — generates a JSON Schema document from a built schema's
   metadata (still `Axial.Schema`, no extra package).
 

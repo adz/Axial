@@ -65,7 +65,7 @@ defaultContentLanguage = "en"
 [params.ui]
   sidebar_menu_foldable = true
   sidebar_menu_compact = false
-  sidebar_menu_truncate = 600
+  sidebar_menu_truncate = 5000
   breadcrumb_disable = false
   footer_about_enable = false
 

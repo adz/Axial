@@ -35,7 +35,7 @@ Example output:
 10.0.300
 ```
 
-`Script.run` is the interpreter boundary: it supplies `Process.live`, runs the Flow, and sets the host exit code. A
+`Script.run` is the interpreter boundary: it supplies `Process.live Clock.live`, runs the Flow, and sets the host exit code. A
 failed stage propagates its exit code, cancellation uses 130, and startup or I/O failures use one.
 
 ## Full Capture Script

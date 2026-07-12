@@ -52,5 +52,5 @@ also requires review. That is the point — the model's constructor stays strong
 already binds directly in `result {}` or `flow {}` with no adapter needed for the common case. When a rule set needs
 the workflow's environment, should compose with other verification steps (parsing, refined construction), or should
 switch on and off per environment, that's `Policy` and `Flow.verify` — both live in the separate `Axial.Flow`
-package, not here. See [Bind Versus Policy]({{< relref "/flow/bind/" >}}#bind-versus-policy) for that, and the
+package, not here. See [Bind Versus Policy]({{< relref "/flow/core-concepts/bind/" >}}#bind-versus-policy) for that, and the
 [Rules In A Workflow tutorial](../tutorials/rules-in-a-workflow/) for `ContextRules.apply` wrapped in a `Policy` end to end.

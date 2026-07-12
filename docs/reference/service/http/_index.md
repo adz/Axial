@@ -78,8 +78,8 @@ This page shows the HTTP client service package. Immutable `HttpRequest` values 
  <example><code>response |&gt; Response.tryHeader "ETag"</code></example>
 - [`Flow.Http.Response.json`](./m-flow-http-response-json.md):  Decodes the response body with the supplied decoder, mapping failure to <c>HttpError.DecodeFailed</c>.
  <example><code>response |&gt; Response.json (Json.deserializeResult codec)</code></example>
-- [`Flow.Http.Response.create`](./m-flow-http-response-create.md):  Creates a synthetic response transcript, primarily for test fakes.
- <example><code>Response.create 200 """{"ok":true}"""</code></example>
+- [`Flow.Http.Response.create`](./m-flow-http-response-create.md):  Creates a synthetic response transcript at an explicit start time, primarily for test fakes.
+ <example><code>Response.create startedAt 200 """{"ok":true}"""</code></example>
 
 ## Execution
 
@@ -148,7 +148,7 @@ This page shows the HTTP client service package. Immutable `HttpRequest` values 
 
 ## Implementations
 
-- [`Flow.Http.live`](./m-flow-http-http-live.md):  Creates a live HTTP service backed by <see cref="T:System.Net.Http.HttpClient" />.
- <example><code>Http.live (new HttpClient())</code></example>
-- [`Flow.Http.layer`](./m-flow-http-http-layer.md):  Builds a live HTTP service as a layer.
- <example><code>Http.layer (new HttpClient())</code></example>
+- [`Flow.Http.live`](./m-flow-http-http-live.md):  Creates a live HTTP service backed by an explicit clock and <see cref="T:System.Net.Http.HttpClient" />.
+ <example><code>Http.live Clock.live (new HttpClient())</code></example>
+- [`Flow.Http.layer`](./m-flow-http-http-layer.md):  Builds a live HTTP service from an explicit clock as a layer.
+ <example><code>Http.layer Clock.live (new HttpClient())</code></example>

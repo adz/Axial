@@ -13,6 +13,14 @@ If you are an AI assistant, prioritize the patterns in the **Dependency Guidance
 
 ## Default Patterns
 
+{{% alert title="Hard effect boundary" color="danger" %}}
+`Axial.Flow.Process` and `Axial.Flow.Http` may perform only the effect represented by their core mockable service
+(`IProcess` or `IHttp`). Every additional effect must be an explicit, mockable dependency visible in the signature.
+Never call `DateTimeOffset.UtcNow` or `DateTime.Now` in these adapters; inject
+`Axial.Flow.PlatformService.IClock` and call `clock.UtcNow()`. Apply the same rule to random, GUID, environment,
+filesystem, console, and other operational effects.
+{{% /alert %}}
+
 Use these patterns unless local code shows a different convention.
 
 **Axial consists of three packages that can be used independently but work together**: Error Handling (plain `Result`
@@ -166,6 +174,7 @@ Translate common patterns from other libraries into idiomatic Axial.
 | form redisplay with per-field errors | `parsed.Input` + `RawInput.tryRedisplayPath`, `parsed.ErrorsFor "contacts[1].value"` |
 | workflow-specific business rules | a plain rule list + `ContextRules.apply` over the already-trusted model |
 | editable schema field | `FieldRef` with `Get` and immutable `Set`, followed by `Schema.check` when trust is required |
+| `with` update on a private-representation aggregate | lower to its public draft record, edit with `with`, re-admit through the aggregate's `create` |
 | versioned wire input | `Contract.parse` with an explicit `VersionSource` and typed migrations |
 | guard clauses at workflow entry | `Policy` + `Flow.verify` |
 
@@ -178,7 +187,7 @@ Later types can bind earlier types directly within their computation expressions
 2. **Result**: Fail-fast typed errors (`Result<'T, 'E>`).
 3. **Refined**: Parsing and structural refined values.
 4. **Validation**: Accumulating diagnostics.
-5. **Schema**: Portable model metadata (`Schema<'model>`) interpreted by `Schema.parse`, `Schema.check`, `Schema.check`, `ContextRules.apply`, `Inspect`, contracts, codecs, and test generators.
+5. **Schema**: Portable model metadata (`Schema<'model>`) interpreted by `Schema.parse`, `Schema.check`, `ContextRules.apply`, `Inspect`, contracts, codecs, and test generators.
 6. **Flow**: Environment-aware workflows (`Flow<'Env, 'E, 'T>`) for synchronous, async, and task-based composition.
 
 ## Machine-Readable Reference

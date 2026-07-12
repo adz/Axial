@@ -32,7 +32,7 @@ This page shows raw boundary input, universal schema parsing into `ParsedInput`,
 
 - [`Schema.parse`](./m-schema-schema-parse.md): Parses source-neutral raw input, runs constraints and refinements, and invokes record constructors.
 - [`Schema.parseWith`](./m-schema-schema-parsewith.md): Parses raw input after configuring parser options.
-- [`Schema.SchemaParseOptions`](./t-schema-schemaparseoptions.md): Functions that produce or verify a trusted model, using a schema as authority.Options that customize how raw input is parsed through a schema.
+- [`Schema.SchemaParseOptions`](./t-schema-schemaparseoptions.md): Options that customize how raw input is parsed through a schema.
 - [`Schema.ParsedInput.mapErrors`](./m-schema-parsedinput-maperrors.md): Maps a failed parse&#39;s errors to a domain or application error type, preserving the raw input and paths.
 - [`Schema.ParsedInput.renderErrors`](./m-schema-parsedinput-rendererrors.md): Renders a failed schema parse as default English display strings, preserving diagnostics paths.
 
@@ -60,7 +60,7 @@ This page shows raw boundary input, universal schema parsing into `ParsedInput`,
 
 ## Existing values
 
-- [`Schema.check`](./m-schema-schema-check.md): Checks an already assembled value and re-invokes its record constructor when present.
+- [`Schema.check`](./m-schema-schema-check.md): Checks an existing typed value, such as a freely constructed draft, through the schema's constraints, refinements, and record constructor.
 - [`Schema.FieldRef`](./t-schema-fieldref.md): A typed, named reference to one field of a schema-described model.
 
 ## Context rules

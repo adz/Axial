@@ -56,7 +56,7 @@ Two related tools live elsewhere, for a reason:
   (`Axial.ErrorHandling`). Schema's own field constraints lower to the same checks during parsing and validation, but
   reusing a bare `Check` for one value doesn't need a schema at all.
 - Running any of the above inside a workflow, with environment access, composition, or per-environment switches →
-  `Policy` and `Flow.verify` in [Bind Versus Policy]({{< relref "/flow/bind/" >}}#bind-versus-policy)
+  `Policy` and `Flow.verify` in [Bind Versus Policy]({{< relref "/flow/core-concepts/bind/" >}}#bind-versus-policy)
   (`Axial.Flow`). `ContextRules.apply` is a plain function, so it already works inside `flow {}` without `Policy` for the
   simple case; reach for `Policy` when a rule set needs to compose with parsing or refined construction as one named
   step.

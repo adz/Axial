@@ -10,7 +10,7 @@ This page shows how the single `IHttp.Send` boundary makes HTTP workflows testab
 
 ## A Complete Fake In A Few Lines
 
-The whole service surface is one method, and `Response.create` builds synthetic transcripts:
+The whole service surface is one method, and `Response.create` builds synthetic transcripts from an explicit timestamp:
 
 ```fsharp
 type TestEnv =
@@ -19,9 +19,10 @@ type TestEnv =
         member this.Service = this.Http
 
 let stub status body =
+    let startedAt = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
     { Http =
         { new IHttp with
-            member _.Send(_, _) = async { return Ok(Response.create status body) } } }
+            member _.Send(_, _) = async { return Ok(Response.create startedAt status body) } } }
 
 [<Fact>]
 let ``decodes the user payload`` () =
@@ -36,7 +37,7 @@ fallback paths deterministically, with no network and no clock.
 
 ## The Live Service
 
-`Http.live` adapts one `HttpClient`; `Http.layer` exposes it as a layer:
+`Http.live` adapts an explicit `IClock` and one `HttpClient`; `Http.layer` exposes them as a layer:
 
 ```fsharp
 type AppEnv =
@@ -44,20 +45,21 @@ type AppEnv =
     interface IHas<IHttp> with
         member this.Service = this.Http
 
-let appLayer (client: HttpClient) : Layer<unit, Never, AppEnv> =
+let appLayer (clock: IClock) (client: HttpClient) : Layer<unit, Never, AppEnv> =
     layer {
-        let! http = Http.layer client
+        let! http = Http.layer clock client
         return { Http = http }
     }
 
 workflow
-|> Flow.provide (appLayer client)
+|> Flow.provide (appLayer Clock.live client)
 |> Flow.runSync ()
 ```
 
 Reuse one `HttpClient` per application, exactly as .NET recommends: connection pooling, DNS rotation handlers,
 and proxy settings stay standard `HttpClient` concerns. Axial adds the typed request/response boundary on top
-without hiding the client.
+without hiding the client or the clock used for transcript timestamps and durations. Tests can pass `Clock.fromValue`
+or another `IClock` fake for deterministic time.
 
 Base addresses configured on the client work as usual — relative request URLs resolve against
 `client.BaseAddress`:

@@ -5,7 +5,7 @@ weight: 2400
 type: docs
 ---
 
-Checks an already assembled value and re-invokes its record constructor when present.
+Checks an existing typed value, such as a freely constructed draft, through the schema's constraints, refinements, and record constructor.
 
 ## Signature
 
