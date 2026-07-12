@@ -21,8 +21,9 @@ The boundary stack ships 1.0 first; the Flow group follows demand.
 
 - **The 1.0 gate is the boundary stack**: the `Axial.ErrorHandling` package (hosting the `Axial.ErrorHandling`,
   `Axial.Validation`, and `Axial.Refined` namespaces), `Axial.Schema` (declaration + interpreters in one package,
-  including `Model<'model>` trusted construction and `ContextRules`), and `Axial.Codec`. Scope: the current queue in
-  `dev-docs/TASKS.md` (contract versioning engine, then schema-depth candidates) plus its acceptance checks.
+  including `Schema.check` boundary admission and `ContextRules`), and `Axial.Codec`. Scope: the current queue in
+  `dev-docs/TASKS.md` (schema-depth candidates, now that the contract versioning engine has shipped) plus its
+  acceptance checks.
 - **The Flow group's remaining pre-1.0 scope is demand-driven**, tracked in `LATER_TODO.md`. Its current surface
   (typed errors, services/layers, scoped resources, fibers, retry/timeout) is already useful and stays
   source-compatible; deeper runtime work (queues, schedule composition, observability depth, fiber runtime) is pulled
@@ -37,8 +38,8 @@ with discriminator fields inspected at runtime to select which other fields appl
 variant, produced by a wizard UI whose shape mutates over time, with breakage today caught by scrutiny rather than
 systematically. Axial's answer, in dependency order:
 
-1. **Model the variants honestly**: internally tagged unions (`Value.unionInline`) for discriminator-beside-fields
-   records, `Value.optionOf` for the genuinely optional remainder, `Value.enumOf` for payload-less cases. Most
+1. **Model the variants honestly**: internally tagged unions (`Schema.inlineUnion`) for discriminator-beside-fields
+   records, `Schema.option` for the genuinely optional remainder, `Schema.enum` for payload-less cases. Most
    "nullable" fields become required-within-their-variant.
 2. **Version the boundary**: explicit `Config.vN` schemas with manual migrations, so reading any stored config is
    detect version → migrate forward → parse against one current schema with path-aware diagnostics
@@ -50,9 +51,9 @@ systematically. Axial's answer, in dependency order:
    codebase.
 
 Within the contract thread the original order was versioning/migration machinery → grammar + generator; in
-practice the grammar + generator shipped first (single-version, wire-tier scope). Remaining order: versioning/
-migration engine → multi-version generator support → dogfood on the real config system → LSP and public positioning
-informed by that experience.
+practice the grammar + generator shipped first (single-version, wire-tier scope), and the versioning/migration
+engine (`Contract<'model>`) followed on 2026-07-13. Remaining order: multi-version generator support → dogfood on
+the real config system → LSP and public positioning informed by that experience.
 
 ## Positioning
 

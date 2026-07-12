@@ -7,10 +7,10 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 
 - `Contract<'model>` is the wire-version engine: it selects an explicitly declared version, parses against that
   frozen schema, composes typed contiguous n-1 → n migrations, and reconstructs against the head schema.
-- `Contract.parse` and `Contract.parseWithVersion` return `Model<'model>`, not bare `'model`. A successful contract
-  parse has passed the same schema and constructor gates represented by the trust wrapper.
+- `Contract.parse` and `Contract.parseVersion` return the ordinary `'model` in `Result<'model, ContractError>`.
+  A successful contract parse has passed the head schema's field and constructor gates.
 - `ContractError.ParseFailed` and `MigrationError.RevalidationFailed` carry `Diagnostics<SchemaError>`. The earlier
-  sketch used one `SchemaError`, but `Model.parse` and `Model.reconstruct` can report several path-bearing failures;
+  sketch used one `SchemaError`, but `Schema.parse` and `Schema.check` can report several path-bearing failures;
   selecting one would discard boundary information.
 - Version labels are positive and contiguous. `supersedes` registers only the immediately preceding version, matching
   the promised n-1 → n migration model and preventing accidental gaps in a chain.
@@ -19,15 +19,15 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 
 ## 2026-07-13: Recursive schemas use one memoized deferred model node
 
-- `Value.lazyOf : (unit -> Schema<'model>) -> ValueSchema<'model>` is the recursion primitive. Its thunk is memoized;
+- `Schema.defer : (unit -> Schema<'model>) -> Schema<'model>` is the recursion primitive. Its thunk is memoized;
   parsing and reconstruction force it at each finite data node, while codec compilation installs a delayed plan so
   compiling a cyclic schema graph terminates.
-- Inspection assigns traversal-local integer identities. The first occurrence is `ValueShape.Deferred(id, value)`;
-  an edge back to a value currently being expanded is `ValueShape.Recursive id`. The public inspection tree therefore
+- Inspection assigns traversal-local integer identities. The first occurrence is `SchemaShape.Deferred(id, value)`;
+  an edge back to a value currently being expanded is `SchemaShape.Recursive id`. The public inspection tree therefore
   remains finite without runtime reflection or global identity state.
 - JSON Schema lowers deferred identities to deterministic `recursiveN` entries in `$defs` and every recursive edge to
   `$ref`. Non-recursive schemas retain their previous inlined output.
-- `schemagen` permits a contract to reference its own pinned version and emits `Value.lazyOf`; references to later,
+- `schemagen` permits a contract to reference its own pinned version and emits `Schema.defer`; references to later,
   different contracts still violate declaration order. Internally-tagged union payloads remain immediate nested model
   schemas because their fields must be known while validating discriminator collisions; recursive models can contain
   unions, but an inline-union case cannot itself be the deferred edge.
@@ -43,8 +43,8 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 - `Axial.Schema.Testing` is non-packable and references `Axial.Schema` plus FsCheck. `Axial.Schema` remains
   dependency-free from test frameworks.
 - Generation produces constraint-satisfying `RawInput` from `Inspect` metadata. `SchemaGen.model` then parses it and
-  filters constructor rejections, so successful samples carry `Model<'model>` and constructor invariants are not
-  duplicated in the generator.
+  filters constructor rejections, so successful samples are schema-checked `'model` values and constructor
+  invariants are not duplicated in the generator.
 - Built-in lowering covers primitives, refined representations, nested models, collections and maps with count
   bounds, options, all three union forms, recursive references, email/length/choice constraints, ordered numeric
   bounds, and numeric multiples. FsCheck's size controls recursive depth; a zero-size collection becomes empty when
@@ -59,7 +59,7 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 - Generated field references use F# record-copy expressions. This keeps updates reflection-free, preserves unrelated
   fields, and makes the same reference useful for diagnostics, forms, draft editing, and future patch application.
 - Setters operate on draft model values. Code that requires schema trust must pass the updated draft through
-  `Model.validate`; a field setter does not imply that cross-field constructor invariants still hold.
+  `Schema.check`; a field setter does not imply that cross-field constructor invariants still hold.
 
 ## Current Invariants
 
@@ -87,7 +87,7 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
   builder belong to `Axial.Refined`; `Validation` and `Diagnostics` belong to `Axial.Validation`; `Policy`, `Bind`,
   and `BindError` belong to `Axial.Flow`. All of the first three ship in the `Axial.ErrorHandling` package.
 - `Check` is a complete typed value-constraint subsystem:
-  `Check<'value> = 'value -> Result<unit, CheckFailure list>`. Checks are path-free, raw-input-free value programs;
+  `Check<'value> = 'value -> Result<'value, CheckFailure list>`. Checks are path-free, raw-input-free value programs;
   value-preserving guards and extraction helpers belong in `Result`, and parsing and refined value construction belong in
   `Axial.Refined`. `Result` itself stays generic `Option`/`seq`/nullable → `Result` plumbing (`someOr`, `headOr`, etc.)
   — it must not grow a predicate- or domain-specific helper when the same rule already is, or should be, a named type
@@ -116,7 +116,7 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
   definitions inside `Axial.Validation`; keep schema definitions independent and put input, validation, diagnostics, and
   rules integration in `Axial.Schema`.
 - The explicit schema core is a CodecMapper-style progressive typed builder:
-  `Schema.recordFor<Customer, _> ctor |> Schema.field "name" _.Name Value.text |> ... |> Schema.build`.
+  `Schema.recordFor<Customer, _> ctor |> Schema.field "name" _.Name Schema.text |> ... |> Schema.build`.
   `Schema.recordFor<'model, _>` is the everyday entry point because it anchors the model type before the first field,
   allowing shorthand member getters. Plain `Schema.record ctor` remains available when the model type is already clear
   or getters are annotated explicitly. Each field application peels one curried constructor argument and `Schema.build`
@@ -127,16 +127,16 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
   progressive builder. The built schema must keep its typed field chain reachable alongside the type-erased descriptor
   view so codec interpreters can compile constructor-specialized plans from a `Schema<'model>` value alone, without
   `obj array` constructor application.
-- Primitive schema field shorthands use the primitive names directly: `text`, `int`, `decimal`, `bool`, `date`,
-  `dateTime`, and `guid`. They are field-authoring operations with external name first and getter second, for example
-  `Schema.text "name" _.Name` in the pipeline surface and `text "name" _.Name { ... }` inside the optional
-  `schema create { }` computation expression. Generic `Schema.field "email" _.Email Email.schema` and
-  `field "email" _.Email Email.schema { ... }` are reserved for explicit or custom `ValueSchema<'value>` values such as
-  refined/domain schemas and advanced composition. Do not add competing aliases such as `string`, `integer`, `boolean`,
-  `uuid`, `dateOnly`, or `Field.text`; `Value.*` remains the lower-level value-schema vocabulary.
-- Non-validation interpreters start from the public `Inspect` API (`Inspect.model`, `Inspect.value`, `Inspect.field`),
-  which describes a built schema as plain metadata trees (`ModelDescription`, `FieldDescription`, `ValueDescription`,
-  `ValueShape`). Inspection never parses input, runs checks, or constructs models. JSON Schema, documentation, and UI
+- Primitive value schemas use the primitive names directly: `Schema.text`, `Schema.int`, `Schema.decimal`,
+  `Schema.bool`, `Schema.date`, `Schema.dateTime`, and `Schema.guid`. They are `Schema<'value>` values supplied as
+  the third argument to `Schema.field "name" _.Name Schema.text`, alongside composites (`Schema.list`,
+  `Schema.option`, `Schema.map`, `Schema.union`, `Schema.inlineUnion`, `Schema.enum`, `Schema.defer`) and custom
+  refined/domain schemas. `Axial.Schema.DSL` re-exports the same names unqualified for use inside a schema-definition
+  module. Do not add competing aliases such as `string`, `integer`, `boolean`, `uuid`, `dateOnly`, or `Field.text`;
+  the `Value` module is internal and is not public vocabulary.
+- Non-validation interpreters start from the public `Inspect` API (`Inspect.model`, `Inspect.schema`, `Inspect.field`),
+  which describes a built schema as plain metadata trees (`ModelDescription`, `FieldDescription`, `SchemaDescription`,
+  `SchemaShape`). Inspection never parses input, runs checks, or constructs models. JSON Schema, documentation, and UI
   metadata generators are prototype interpreters over that read model, not core packages, until a consumer demands one.
 - CodecMapper-style codecs consume schema by referencing `Axial.Schema` only, in their own package: metadata comes from
   `Inspect`, and hot-path plans come from `Schema.specialize` with an `IFieldChainFactory<'model, 'result>` that walks
@@ -162,9 +162,9 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 - Compiled JSON codecs live in `Axial.Codec`, a package that references only `Axial.Schema` (through
   `InternalsVisibleTo` for the type-erased definitions) and mirrors CodecMapper's byte-level runtime. The codec is the
   trusted hot path: it enforces wire shape and required fields but does not run constraint metadata. Untrusted boundary
-  input keeps going through `RawInput` + `Model.parse` for complete path-aware diagnostics. Do not fold codecs into
-  `Axial.Schema` (they must not pull in diagnostics) or into `Axial.Schema` (the schema core stays free of
-  any wire runtime).
+  input keeps going through `RawInput` + `Schema.parse` for complete path-aware diagnostics. Do not fold codecs into
+  `Axial.Schema`: codecs must not pull diagnostics into the schema package, and the schema core stays free of any
+  wire runtime.
 - A `dotnet new axial-api` template is evaluated and deferred until the public surface stabilizes (at or near 1.0).
   The seed exists as `examples/Axial.Api`, which CI smoke-runs on every push, so the template would only add packaging
   around a sample that still changes with the pre-1.0 API. Revisit when (a) the schema/codec/boundary surface has been
@@ -176,19 +176,19 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
   fixed-arity typed decoders for arities 1..8 with the slot decoder as fallback — no reflection, dispatch on field
   count from the typed chain in `Schema.specialize` — with a target of ≤ 2.0 µs / ≤ 1.5 KB on the benchmark aggregate.
 - There is no "checked codec" compile option. `Axial.Codec` enforces wire shape only; a consumer who wants constraint
-  enforcement on trusted-lane decode composes `Json.deserialize` then `Model.reconstruct` (one extra model walk). If
+  enforcement on trusted-lane decode composes `Json.deserialize` then `Schema.check` (one extra model walk). If
   that composition proves too slow for a real consumer, the pre-chosen answer is a `Json.deserializeValidated` helper
   in `Axial.Schema` (interpreters may reference Codec, never the reverse). Duplicating constraint lowering
   inside `Axial.Codec` stays rejected.
-- Unions support three wire shapes: the externally-wrapped `{discriminator, payload}` object (`Value.union`, the
-  default), internally-tagged objects (`Value.unionInline` — valid only when every payload is an object whose field
-  names don't collide with the discriminator, checked at construction), and bare-string enums (`Value.enumOf`) for
-  payload-less cases. All three are implemented across Model.parse, Codec, JsonSchema, and Inspect; the contract
-  grammar's literal unions (`"a" | "b"`) lower to `Value.enumOf`. No untagged unions — discriminators are required.
+- Unions support three wire shapes: the externally-wrapped `{discriminator, payload}` object (`Schema.union`, the
+  default), internally-tagged objects (`Schema.inlineUnion` — valid only when every payload is an object whose field
+  names don't collide with the discriminator, checked at construction), and bare-string enums (`Schema.enum`) for
+  payload-less cases. All three are implemented across Schema.parse, Codec, JsonSchema, and Inspect; the contract
+  grammar's literal unions (`"a" | "b"`) lower to `Schema.enum`. No untagged unions — discriminators are required.
 - `JsonSchema.generate`/`generateValue` pin `$schema` to draft 2020-12 and carry description metadata
-  (`Value.describe`/`Schema.describe`) into `description` (field/value level) and `title` (model root). `$defs`
-  hoisting is deferred until a sample has real nested reuse; recursion is not expressible in the builder today, so
-  inlining cannot fail to terminate.
+  (`Schema.describe`) into `description` (field/value level) and `title` (model root). `$defs`
+  hoisting for non-recursive nested reuse is deferred until a sample has real need; recursive schemas
+  (`Schema.defer`) lower to deterministic `recursiveN` entries in `$defs` with `$ref` edges, so inlining terminates.
 - The UI-metadata interpreter stays a prototype. Promotion waits for an external consumer; if promoted, the API sample
   must consume the shipped module, otherwise the duplication just moves. UI scope stays field list + control kinds —
   layout, localization, and widget options are application concerns.
@@ -196,27 +196,25 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
   round-trip test exercises it. The `FABLE_COMPILER` gates are load-bearing, and every future codec optimization must
   keep the JS branch working. This completes the zod-comparison story — one declaration shared between server and
   browser covers serialization as well as parsing.
-- No fused fast boundary path for now: the 20 µs boundary-lane cost is not a reported problem, and `Model.parse` keeps
+- No fused fast boundary path for now: the 20 µs boundary-lane cost is not a reported problem, and `Schema.parse` keeps
   its raw-retaining redisplay contract. If demand appears, the pre-chosen shape is a separate entry point
-  (`Model.parseUtf8` — diagnostics-on-failure, no redisplay, API bodies), prototyped in the benchmarks project first,
-  exactly how the codec earned promotion. Never an optimization flag on `Model.parse`.
+  (`Schema.parseUtf8` — diagnostics-on-failure, no redisplay, API bodies), prototyped in the benchmarks project first,
+  exactly how the codec earned promotion. Never an optimization flag on `Schema.parse`.
 - `RawInput.ofJsonElement`/`ofJsonDocument` stay gated to `net8.0 && !FABLE_COMPILER`. If a netstandard2.1 consumer
   ever asks, the pre-chosen answer is a TFM-conditional `System.Text.Json` package reference on netstandard2.1 only —
   not a split adapter package, which would force a different module name.
-- `Schema` (the module) is only for declaring a schema — `Schema.recordFor`, `Schema.field`, `Schema.build`. Every
-  operation that produces or verifies a *model* using a schema as authority lives in a separate `Model` module
-  instead — `Model.parse` (untyped `RawInput` → trusted model), `Model.reconstruct` (an already-existing model value
-  → the same trust guarantee, re-checking field constraints and re-invoking the constructor so cross-field
-  invariants aren't silently skipped). "You don't parse a schema, you parse input into a model" — a `Schema.parse`
-  name was tried and rejected during the 2026-07-11 session that produced this split; see the commit history around
-  that date for the full reasoning if the split is ever questioned.
-- `Axial.Schema.Model.reconstruct` replaced the old `Axial.Schema.Validation.validate`, which only re-checked
-  per-field constraints and silently skipped the model's own constructor invariant (a `DateRange` with `Start` after
-  `End` would have passed it). `Model.reconstruct` is implemented as "extract fields via getters, then run the exact
-  pipeline `Model.parse` uses" specifically so the constructor re-check isn't a bolt-on special case.
+- The `Schema` module hosts both declaration (`Schema.recordFor`, `Schema.field`, `Schema.build`) and the model
+  operations that use a schema as authority: `Schema.parse` / `Schema.parseWith` / `Schema.parseWithOptions`
+  (untyped `RawInput` → `ParsedInput<'model, SchemaError>`) and `Schema.check` (an already-existing model value,
+  re-checked through its field constraints and its constructor so cross-field invariants aren't silently skipped).
+  There is no separate public `Model` module.
+- `Schema.check` replaced the old `Axial.Schema.Validation.validate`, which only re-checked per-field constraints
+  and silently skipped the model's own constructor invariant (a `DateRange` with `Start` after `End` would have
+  passed it). `Schema.check` re-runs field constraints and then re-invokes the constructor over the field getters'
+  outputs specifically so the constructor re-check isn't a bolt-on special case.
 - `RuleSet<'model,'error>`/`Rules` (contextual, workflow-dependent rules over an already-trusted model) is a known
   unresolved design problem, not a settled API — see the Open Ideas pointer below before extending it.
-- `Model.construct` (typed field values in, schema-checked model out, without going through `Model.parse`'s
+- `Model.construct` (typed field values in, schema-checked model out, without going through `Schema.parse`'s
   untyped `RawInput`) does not exist as a library function and cannot be added as one without either breaking the
   zero-reflection/AOT/Fable rule or capping arity with numbered overloads — see the Open Ideas pointer below. Do not
   attempt to add `Model.construct schema arg1 arg2 ...` as a plain function; the type-erasure wall is structural, not

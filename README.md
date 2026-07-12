@@ -1,7 +1,7 @@
 # Axial
 
 > [!WARNING]
-> Axial 0.7.0 is the first planned release under the Axial name as split packages, renamed from monolithic FsFlow. The new package line continues in `Axial.Flow`, `Axial.ErrorHandling`, `Axial.Refined`, `Axial.Schema`, `Axial.Codec`, `Axial.Validation`, `Axial.Validation.Schema`, and the umbrella `Axial` package. The direction is designed to keep parts usable independently and reduce cognitive load.
+> Axial 0.7.0 is the first planned release under the Axial name as split packages, renamed from monolithic FsFlow. The new package line continues in `Axial.ErrorHandling` (hosting the `Axial.ErrorHandling`, `Axial.Validation`, and `Axial.Refined` namespaces), `Axial.Schema` (with `Axial.Schema.Contracts` and the non-packable `Axial.Schema.Testing`), `Axial.Codec`, `Axial.Flow` and its service packages (`Axial.Flow.PlatformService`, `.Console`, `.FileSystem`, `.Http`, `.Process`, `.Hosting`, `.Telemetry`), and the umbrella `Axial` package. The direction is designed to keep parts usable independently and reduce cognitive load.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/content/img/axial-readme-dark.svg">
@@ -63,7 +63,7 @@ type RegistrationError =
 
 let validateEmail (email: string) : Result<string, RegistrationError> =
     email
-    |> Check.present
+    |> Check.String.present
     |> Result.orError EmailMissing
 ```
 
@@ -102,7 +102,7 @@ Axial stays close to standard F# and .NET:
 - On .Net, `flow { ... }` also binds to `Task`, `ValueTask`, `Task<_>`, `ValueTask<_>`, and `ColdTask`
 - `result {}` keeps fail-fast pure code readable
 - `validate {}` keeps sibling validation accumulation explicit
-- `Schema` + `Input.parse` turn raw boundary input into trusted models or path-aware diagnostics — invalid models are never constructed
+- `Schema` + `Schema.parse` turn raw boundary input into trusted models or path-aware diagnostics — invalid models are never constructed
 - `Json.compile` (`Axial.Codec`) compiles the same schema into a reflection-free JSON codec for trusted payloads, and `JsonSchema.generate` publishes the matching contract
 
 Because tasks are hot, Axial includes `ColdTask`: a small wrapper around `CancellationToken -> Task`.

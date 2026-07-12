@@ -86,8 +86,8 @@ and constructor/getter alignment — is proven. The explicit core API is a Codec
 
 ```fsharp
 Schema.recordFor<Customer, _> ctor
-|> Schema.field "id" _.Id Value.int
-|> Schema.field "name" _.Name Value.text
+|> Schema.field "id" _.Id Schema.int
+|> Schema.field "name" _.Name Schema.text
 |> Schema.build
 ```
 
@@ -103,14 +103,13 @@ the same pipeline. Build-time generation exists as wire-tier tooling only (`.con
 `src/Axial.Schema.Contracts` + `scripts/schemagen`); domain-tier generation was designed and rejected. Raw input,
 schema validation, rules, and DSL work should build on the explicit builder core rather than bypass it.
 
-The public schema-authoring vocabulary should make primitive fields the short path and custom value schemas the explicit
-path. The primitive field operations are `text`, `int`, `decimal`, `bool`, `date`, `dateTime`, and `guid`, using the same
-external-name-first, getter-second order as `Schema.field`. In the pipeline surface they are qualified builder steps
-such as `Schema.text "name" _.Name`, with unqualified equivalents available by opening `Axial.Schema.DSL` inside a
-schema definition module. Reserve generic `Schema.field "email" _.Email Email.schema` for explicit or custom
-`ValueSchema<'value>` values, including refined/domain schemas, nested schemas, and advanced composition. Do not introduce competing primitive aliases such as `string`, `integer`, `boolean`, `uuid`,
-`dateOnly`, or `Field.text`. `Value.text`, `Value.int`, and the other `Value.*` primitives remain the lower-level
-value-schema vocabulary used by generic fields and interpreters, not the everyday field-authoring names.
+The public schema-authoring vocabulary keeps one field operation and names value schemas by their primitive:
+`Schema.field "name" _.Name Schema.text`, where `Schema.text`, `Schema.int`, `Schema.decimal`, `Schema.bool`,
+`Schema.date`, `Schema.dateTime`, and `Schema.guid` are the primitive `Schema<'value>` values, and composites
+(`Schema.list`, `Schema.option`, `Schema.map`, `Schema.union`, `Schema.inlineUnion`, `Schema.enum`, `Schema.defer`)
+and refined/domain schemas fill the same argument slot. Opening `Axial.Schema.DSL` inside a schema definition module
+provides the same names unqualified. Do not introduce competing primitive aliases such as `string`, `integer`,
+`boolean`, `uuid`, `dateOnly`, or `Field.text`; the `Value` module is internal implementation, not public vocabulary.
 
 Schema must also preserve a high-performance codec lowering path. The inspectable schema model may contain rich metadata,
 but JSON codecs should not interpret that metadata tree directly on the hot path. A codec interpreter must be able to
@@ -222,12 +221,13 @@ over reflection, proxy types, or hidden service maps.
 
 Service packages should focus on explicit, typed, testable system effects:
 
-- Core: clock, log, random, GUID, environment variables
-- Console
-- FileSystem
-- Http
-- Process
-- future Network and telemetry packages
+- Core (`Axial.Flow.PlatformService`): clock, log, random, GUID, environment variables
+- Console (`Axial.Flow.Console`)
+- FileSystem (`Axial.Flow.FileSystem`)
+- Http (`Axial.Flow.Http`)
+- Process (`Axial.Flow.Process`)
+- Telemetry (`Axial.Flow.Telemetry`) and hosting adapters (`Axial.Flow.Hosting`)
+- future Network package
 
 `Axial.Flow` owns no operational service contracts. The contracts for clock, log, random, GUID, and environment
 variables live in `Axial.Flow.PlatformService`; all target-specific implementations in that package are isolated in
@@ -255,13 +255,16 @@ Docs must avoid:
 
 ## Implementation Snapshot
 
-As of 2026-06-03, core code, service packages, tests, examples, and generated reference docs use the explicit
+As of 2026-07-12, core code, service packages, tests, examples, and generated reference docs use the explicit
 service/layer model. Integration tests cover `Microsoft.Extensions.DependencyInjection` provider-backed base runtime
 construction, typed missing-registration failures, direct `Service<'T>.resolve()` defects, and composition of the
-current Console, FileSystem, Http, and Process service layers. Remaining work should improve public guide coverage and
-future service packages, not ambient-core or `Flow.service` / `Flow.inject` direction.
+current Console, FileSystem, Http, and Process service layers. Effect dependencies are explicit through the stack:
+`Process.live`/`Process.layer` take `IClock`, `IFileSystem`, and `IConsole` rather than touching files or the host
+console ambiently, and `Script.run` takes an explicit `IConsole` and returns the exit code. Remaining work should
+improve public guide coverage and future service packages, not ambient-core or `Flow.service` / `Flow.inject`
+direction.
 
 ## Open Product Questions
 
-- Should future telemetry services live under `Axial.Services.Telemetry` or stay as runtime instrumentation adapters?
-- Should process support add scoped long-running process helpers beyond one-shot `Process.execute`?
+- Should process support add scoped long-running process helpers beyond the current one-shot pipelines
+  (`Process.execute`, `Process.toFlow`, `Process.stream`)?

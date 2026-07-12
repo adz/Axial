@@ -10,6 +10,11 @@ documentation.
 - .NET SDK: `10.0.300`
 - Node.js used locally: `v26.1.0`
 
+Note (2026-07-12): the validated-command record below is historical — it predates the 2026-07-09..13 renames and
+references test projects that have since been restructured (`Axial.Refined.Tests` and `Axial.Validation.Tests`
+folded into `Axial.ErrorHandling.Tests`). The project lists in this file were corrected on 2026-07-12; a fresh
+validated-command pass is queued in `dev-docs/TASKS.md`.
+
 Validated commands for this refresh:
 
 ```text
@@ -64,13 +69,15 @@ The old monolithic `tests/Axial.Tests/Axial.Tests.fsproj` harness has been repla
 - `tests/Axial.ErrorHandling.Tests/Axial.ErrorHandling.Tests.fsproj`
 - `tests/Axial.Flow.FileSystem.Tests/Axial.Flow.FileSystem.Tests.fsproj`
 - `tests/Axial.Flow.Hosting.Tests/Axial.Flow.Hosting.Tests.fsproj`
+- `tests/Axial.Flow.Http.Tests/Axial.Flow.Http.Tests.fsproj`
 - `tests/Axial.Flow.Integration.Tests/Axial.Flow.Integration.Tests.fsproj`
 - `tests/Axial.Flow.PlatformService.Tests/Axial.Flow.PlatformService.Tests.fsproj`
 - `tests/Axial.Flow.Telemetry.Tests/Axial.Flow.Telemetry.Tests.fsproj`
 - `tests/Axial.Flow.Tests/Axial.Flow.Tests.fsproj`
-- `tests/Axial.Refined.Tests/Axial.Refined.Tests.fsproj`
+- `tests/Axial.ReferenceApp.Tests/Axial.ReferenceApp.Tests.fsproj`
+- `tests/Axial.Schema.Contracts.Tests/Axial.Schema.Contracts.Tests.fsproj`
+- `tests/Axial.Schema.Testing.Tests/Axial.Schema.Testing.Tests.fsproj`
 - `tests/Axial.Schema.Tests/Axial.Schema.Tests.fsproj`
-- `tests/Axial.Validation.Tests/Axial.Validation.Tests.fsproj`
 
 ## CI Baseline Gates
 
@@ -119,7 +126,7 @@ the named modules, types, and members users and examples are expected to depend 
 - `Check`, `Bind`, `BindError`, `Validation`, `Diagnostics`
 - `Schema`, `Value`, `Field`, `SchemaConstraint`, `Inspect` and its description types, `JsonSchema`
 - `Axial.Codec` `Json` module and `JsonCodec`
-- `RawInput`, `Model` (parse/validate/reconstruct, `Model<'model>`), `ParsedInput`, `SchemaError`, `ContextRules`, `FieldRef`
+- `RawInput`, `Schema.parse`/`Schema.check`, `ParsedInput`, `SchemaError`, `ContextRules`, `FieldRef`, `Contract`
 - `Policy` and `Flow.verify`
 - the leaf-package dependency graph (`leaf packages stay independent of each other`)
 - `Schedule`, `FlowStream`, `STM`, `TRef`, `Ref`
