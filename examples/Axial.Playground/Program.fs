@@ -18,7 +18,7 @@ let greetingAsync : Flow<AppEnv, string, string> =
         let! greeting = greetingFlow
         let! checkedGreeting =
             greeting
-            |> Check.String.present
+            |> Check.present
             |> Result.mapError (fun _ -> "Blanko")
 
         return checkedGreeting.ToUpperInvariant()

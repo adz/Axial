@@ -2,6 +2,7 @@ module RefinedCatalogExample
 
 open System
 open Axial.ErrorHandling
+open Axial.ErrorHandling.CheckDSL
 open Axial.Refined
 
 type ProductId = ProductId of NonZeroInt
@@ -20,7 +21,7 @@ module ContactEmail =
     let create value : Result<ContactEmail, RefinementError> =
         Refine.withChecks
             "ContactEmail"
-            [ Check.String.present; Check.String.email; Check.String.maxLength 254 ]
+            [ present; email; maxLength 254 ]
             ContactEmail
             value
 
@@ -30,7 +31,7 @@ module Sku =
     let create value : Result<Sku, RefinementError> =
         Refine.withChecks
             "Sku"
-            [ Check.String.present; Check.String.lengthBetween 3 12; Check.String.matches "^[A-Z0-9-]+$" ]
+            [ present; lengthBetween 3 12; matches "^[A-Z0-9-]+$" ]
             Sku
             value
 
@@ -38,13 +39,13 @@ module Rating =
     let value (Rating value) = value
 
     let create value : Result<Rating, RefinementError> =
-        Refine.withCheck "Rating" (Check.Number.between 1 5) Rating value
+        Refine.withCheck "Rating" (Check.between 1 5) Rating value
 
 module UnitPrice =
     let value (UnitPrice value) = value
 
     let create value : Result<UnitPrice, RefinementError> =
-        Refine.withCheck "UnitPrice" (Check.Number.greaterThan 0m) UnitPrice value
+        Refine.withCheck "UnitPrice" (greaterThan 0m) UnitPrice value
 
 type Discount =
     | Percent of PositiveInt

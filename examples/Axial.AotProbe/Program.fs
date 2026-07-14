@@ -97,6 +97,8 @@ module FormField =
 type Rule<'root, 'error> = 'root -> Validation<'root, 'error>
 
 module Rule =
+    open Axial.ErrorHandling.CheckDSL
+
     let private success (root: 'root) = Validation.ok root
 
     let private failAt (path: PathSegment list) (error: 'error) =
@@ -116,28 +118,28 @@ module Rule =
     let whenNotBlank (error: 'error) (field: FormField<'root, string>) : Rule<'root, 'error> =
         fun root ->
             field.Get root
-            |> Check.String.present
+            |> present
             |> Result.mapError (fun _ -> error)
             |> lift field.Path root
 
     let whenMinLength (minimum: int) (error: 'error) (field: FormField<'root, string>) : Rule<'root, 'error> =
         fun root ->
             field.Get root
-            |> Check.String.minLength minimum
+            |> minLength minimum
             |> Result.mapError (fun _ -> error)
             |> lift field.Path root
 
     let whenMaxLength (maximum: int) (error: 'error) (field: FormField<'root, string>) : Rule<'root, 'error> =
         fun root ->
             field.Get root
-            |> Check.String.maxLength maximum
+            |> maxLength maximum
             |> Result.mapError (fun _ -> error)
             |> lift field.Path root
 
     let whenPositive (error: 'error) (field: FormField<'root, int>) : Rule<'root, 'error> =
         fun root ->
             field.Get root
-            |> Check.Number.greaterThan 0
+            |> greaterThan 0
             |> Result.mapError (fun _ -> error)
             |> lift field.Path root
 
