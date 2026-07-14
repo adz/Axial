@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Axial Browser Hosting Example</title>
+    <style>
+      body { font: 1rem/1.5 system-ui, sans-serif; max-width: 42rem; margin: 4rem auto; padding: 0 1rem; }
+      button { font: inherit; padding: .6rem 1rem; }
+      #status { padding: 1rem; background: #f2f4f7; border-radius: .4rem; }
+    </style>
+  </head>
+  <body>
+    <h1>Axial Browser Hosting</h1>
+    <p id="status">Loading application…</p>
+    <button id="stop" type="button">Stop application</button>
+    <script type="module" src="./dist/Program.js"></script>
+  </body>
+</html>

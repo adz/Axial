@@ -31,6 +31,9 @@ module internal Axial.Flow.Platform
 open System
 open System.Threading
 open System.Threading.Tasks
+#if FABLE_COMPILER
+open Fable.Core
+#endif
 
 // ---------------------------------------------------------------------------------------------
 // Execution<'value, 'error>: the workflow's core awaitable outcome type.
@@ -378,16 +381,23 @@ let getCellOrDefault (fallback: unit -> 'value) (cell: RuntimeCell<'value>) : 'v
 
 /// Runs <paramref name="operation" /> with the cell holding <paramref name="value" />, restoring the previous
 /// value once the operation completes (even if it throws).
-let withCell (cell: RuntimeCell<'value>) (value: 'value) (operation: unit -> 'result) : 'result =
 #if FABLE_COMPILER
-    let previous = cell.Current
-    cell.Current <- value
+let withCell
+    (cell: RuntimeCell<'value>)
+    (value: 'value)
+    (operation: unit -> Async<'result>)
+    : Async<'result> =
+    async {
+        let previous = cell.Current
+        cell.Current <- value
 
-    try
-        operation ()
-    finally
-        cell.Current <- previous
+        try
+            return! operation ()
+        finally
+            cell.Current <- previous
+    }
 #else
+let withCell (cell: RuntimeCell<'value>) (value: 'value) (operation: unit -> 'result) : 'result =
     let previous = cell.Current.Value
     cell.Current.Value <- value
 
@@ -436,15 +446,37 @@ let inline runScoped
 // Sleep and timeout.
 // ---------------------------------------------------------------------------------------------
 
+#if FABLE_COMPILER
+[<Emit("setTimeout($0, $1)")>]
+let private scheduleTimer (_callback: unit -> unit) (_milliseconds: int) : obj = jsNative
+
+[<Emit("clearTimeout($0)")>]
+let private cancelTimer (_timer: obj) : unit = jsNative
+#endif
+
 /// Suspends for the given delay, observing cancellation as an interruption.
 let sleepExecution (delay: TimeSpan) (cancellationToken: CancellationToken) : Execution<unit, 'error> =
 #if FABLE_COMPILER
     async {
-        try
-            do! Async.Sleep(int delay.TotalMilliseconds)
-            return Exit.Success()
-        with :? OperationCanceledException ->
-            return Exit.Failure Cause.Interrupt
+        let! interrupted =
+            Async.FromContinuations(fun (onSuccess, onError, onCancel) ->
+                let mutable settled = false
+
+                let settle value =
+                    if not settled then
+                        settled <- true
+                        onSuccess value
+
+                if cancellationToken.IsCancellationRequested then
+                    settle true
+                else
+                    let timer = scheduleTimer (fun () -> settle false) (int delay.TotalMilliseconds)
+                    cancellationToken.Register(fun () ->
+                        cancelTimer timer
+                        settle true)
+                    |> ignore)
+
+        return if interrupted then Exit.Failure Cause.Interrupt else Exit.Success()
     }
 #else
     ValueTask<Exit<unit, 'error>>(

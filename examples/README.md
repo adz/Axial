@@ -1,5 +1,20 @@
 # Examples
 
+## Application Hosting
+
+The hosting examples are independent applications with local run instructions in each directory:
+
+- [`Axial.App.Example`](./Axial.App.Example/) — portable finite application using `App.run` only.
+- [`Axial.Hosting.DotNet`](./Axial.Hosting.DotNet/) — standalone .NET process with Ctrl+C and exit codes.
+- [`Axial.Hosting.GenericHost`](./Axial.Hosting.GenericHost/) — Microsoft Generic Host and dependency injection.
+- [`Axial.Hosting.Desktop`](./Axial.Hosting.Desktop/) — desktop-framework-owned start and asynchronous close.
+- [`Axial.Hosting.Node`](./Axial.Hosting.Node/) — Fable on Node with arguments, `process.env`, and signals.
+- [`Axial.Hosting.Browser`](./Axial.Hosting.Browser/) — Fable browser mount with `AbortSignal` ownership.
+
+Start with the README inside the variant matching the application host. Each example references the source projects
+in this repository; package consumers can replace those `ProjectReference` entries with the corresponding Axial
+NuGet package.
+
 This page points to runnable examples so you can see what the Axial package family looks like in code.
 
 ## Run The Examples

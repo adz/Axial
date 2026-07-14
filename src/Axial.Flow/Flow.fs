@@ -80,7 +80,7 @@ module Flow =
 #if FABLE_COMPILER
                 finalizer cancellationToken
 #else
-                Async.StartAsTask(finalizer cancellationToken, cancellationToken = cancellationToken) :> Task
+                Async.StartAsTask(finalizer cancellationToken) :> Task
 #endif
             )
             Execution.ofValue ())

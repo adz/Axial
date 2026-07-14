@@ -136,6 +136,20 @@ module private OtelCheck =
 
         if appExit <> Exit.Success 7 then failwith $"Unexpected App exit: %A{appExit}"
 
+        let mutable appFinalized = false
+        let stoppableApp : Flow<unit, string, unit> =
+            flow {
+                do! Flow.addFinalizerAsync (fun _ -> async { appFinalized <- true })
+                do! Flow.Runtime.sleep (TimeSpan.FromDays 1.0)
+            }
+
+        let runningApp = App.start () stoppableApp
+        let mutable stoppedExit = None
+        Async.StartWithContinuations(runningApp.Stop(), (fun value -> stoppedExit <- Some value), raise, (fun _ -> ()))
+
+        if stoppedExit <> Some(Exit.Failure Cause.Interrupt) || not appFinalized then
+            failwith $"Fable App stop did not await cleanup: exit=%A{stoppedExit}, finalized=%b{appFinalized}"
+
         NodeEnvironment.live.Set("AXIAL_FABLE_HOSTING_CHECK", Some "ok")
         if NodeEnvironment.live.TryGet "AXIAL_FABLE_HOSTING_CHECK" <> Some "ok" then
             failwith "Node environment adapter did not round-trip process.env."

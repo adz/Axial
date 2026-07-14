@@ -1,0 +1,9 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "dotnet fable --outDir dist",
+    "start": "node dist/Program.js",
+    "run": "npm run build && npm start"
+  }
+}

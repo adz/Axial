@@ -128,8 +128,7 @@ module App =
             application.ToAsync(environment, cancellationToken = cancellationSource.Token),
             finish,
             (fun error -> finish (Exit.Failure(Cause.Die error))),
-            (fun _ -> finish (Exit.Failure Cause.Interrupt)),
-            cancellationToken = cancellationSource.Token)
+            (fun _ -> finish (Exit.Failure Cause.Interrupt)))
 
         new AppHandle<'error, 'value>(cancellationSource, completion, status, requestStop)
 

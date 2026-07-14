@@ -13,6 +13,12 @@
     <Project Path="examples/Axial.MaintenanceExamples/Axial.MaintenanceExamples.fsproj" />
     <Project Path="examples/Axial.Playground/Axial.Playground.fsproj" />
     <Project Path="examples/Axial.Flow.PlatformService.Examples/Axial.Flow.PlatformService.Examples.fsproj" />
+    <Project Path="examples/Axial.App.Example/Axial.App.Example.fsproj" />
+    <Project Path="examples/Axial.Hosting.DotNet/Axial.Hosting.DotNet.fsproj" />
+    <Project Path="examples/Axial.Hosting.GenericHost/Axial.Hosting.GenericHost.fsproj" />
+    <Project Path="examples/Axial.Hosting.Desktop/Axial.Hosting.Desktop.fsproj" />
+    <Project Path="examples/Axial.Hosting.Node/Axial.Hosting.Node.fsproj" />
+    <Project Path="examples/Axial.Hosting.Browser/Axial.Hosting.Browser.fsproj" />
   </Folder>
   <Folder Name="/benchmarks/">
     <Project Path="benchmarks/Axial.Benchmarks/Axial.Benchmarks.fsproj" />

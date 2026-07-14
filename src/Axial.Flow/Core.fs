@@ -514,8 +514,13 @@ module internal RuntimeState =
     let current () : RuntimeContext =
         currentRuntime |> Platform.getCellOrDefault (fun () -> RuntimeContext.detached)
 
+#if FABLE_COMPILER
+    let withRuntime (runtime: RuntimeContext) (operation: unit -> Async<'value>) : Async<'value> =
+        Platform.withCell currentRuntime runtime operation
+#else
     let withRuntime (runtime: RuntimeContext) (operation: unit -> 'value) : 'value =
         Platform.withCell currentRuntime runtime operation
+#endif
 
 /// <summary>
 /// Represents a cold workflow that reads an environment, returns a typed result, and is executed

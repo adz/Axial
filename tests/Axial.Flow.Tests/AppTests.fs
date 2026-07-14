@@ -24,9 +24,9 @@ module AppTests =
 
         let application : Flow<unit, string, unit> =
             flow {
-                do! Flow.addFinalizer(fun token ->
+                do! Flow.addFinalizerAsync(fun token -> async {
                     finalized.Add token.IsCancellationRequested
-                    Task.CompletedTask)
+                })
                 started.TrySetResult() |> ignore
                 do! Flow.Runtime.sleep(TimeSpan.FromSeconds 30.0)
             }
