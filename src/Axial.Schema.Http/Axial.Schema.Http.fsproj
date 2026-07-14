@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsAotCompatible>true</IsAotCompatible>
+    <PackageId>Axial.Schema.Http</PackageId>
+    <AssemblyName>Axial.Schema.Http</AssemblyName>
+    <RootNamespace>Axial.Schema.Http</RootNamespace>
+    <Authors>Adam Davies</Authors>
+    <Description>Host-neutral HTTP boundary support for Axial schemas: query and form raw input, RFC 9457 problem details from parse diagnostics, and OpenAPI documents assembled from endpoint specifications.</Description>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <PackageTags>fsharp;axial;schema;http;openapi;problem-details</PackageTags>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Axial.Schema\Axial.Schema.fsproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="BoundaryInput.fs" />
+    <Compile Include="ProblemDetails.fs" />
+    <Compile Include="Endpoint.fs" />
+  </ItemGroup>
+
+</Project>

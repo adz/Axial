@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageId>Axial.Schema.Http.AspNetCore</PackageId>
+    <AssemblyName>Axial.Schema.Http.AspNetCore</AssemblyName>
+    <RootNamespace>Axial.Schema.Http.AspNetCore</RootNamespace>
+    <Authors>Adam Davies</Authors>
+    <Description>ASP.NET Core adapter for Axial schema-driven endpoints: parse requests into ParsedInput, respond with problem details and compiled codecs, and serve assembled OpenAPI documents.</Description>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <PackageTags>fsharp;axial;schema;http;aspnetcore</PackageTags>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Axial.Schema.Http\Axial.Schema.Http.fsproj" />
+    <ProjectReference Include="..\Axial.Codec\Axial.Codec.fsproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="AspNetCore.fs" />
+  </ItemGroup>
+
+</Project>
