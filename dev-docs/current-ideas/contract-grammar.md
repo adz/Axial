@@ -11,8 +11,9 @@ comparisons/min/max/pattern/multipleOf/distinct, defaults, literal unions (→ g
 Deliberately not shipped yet: multiple versions/migrations (Contract machinery stays gated), `check` refs, refined
 type refs, date/time/guid defaults, LSP. Contracts are the WIRE tier only — domain models are hand-written F#
 (see `docs/schema/trusted-construction.md`); a domain-tier `model` declaration kind was designed and rejected
-(no methods on generated types, DUs don't fit the grammar). Original sketch follows. Companion to `schema-contract-versioning.md` — that file holds
-the Contract concept; this file refines the declaration grammar and the tooling plan.
+(no methods on generated types, DUs don't fit the grammar). The versioned-Contract engine this grammar will
+eventually target is shipped as `Axial.Schema.Contract` (`src/Axial.Schema/Contract.fs`). Original sketch follows;
+this file refines the declaration grammar and the tooling plan.
 
 ## Goals
 

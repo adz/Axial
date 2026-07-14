@@ -1,9 +1,6 @@
 # Axial Package Boundaries
 
-This file records the current package split. Detailed migration history belongs in current ideas only while it is
-active. Superseded by consolidation: this file previously described five leaf packages plus a separate
-`Axial.Validation.Schema` integration package; that history lives in `dev-docs/decisions/README.md`'s "Current
-Invariants" if it needs to be recovered.
+This file records the current package split.
 
 ## Public Packages
 
@@ -59,9 +56,8 @@ Axial.Refined namespace:       Parse, Refine, RefinementError, NonBlankString, P
 ```
 
 These three namespaces live in one package because none of them depend on `Axial.Schema` or `Axial.Flow`, and all
-three are single-value/error-vocabulary concerns rather than model-declaration concerns. `Axial.Refined` moved here
-from `Axial.Schema` (2026-07-11) after confirming it has zero actual dependency on schema metadata — only on
-`Check`/`Result`, which already lived in this package. `Axial.ErrorHandling` as a whole must not depend on
+three are single-value/error-vocabulary concerns rather than model-declaration concerns. `Axial.Refined` depends
+only on `Check`/`Result`, not on schema metadata. `Axial.ErrorHandling` as a whole must not depend on
 `Axial.Schema` or `Axial.Flow`.
 
 `Check` is the complete typed value-constraint subsystem:
@@ -100,8 +96,7 @@ value.
 
 The authored schema path must stay AOT-, trimming-, and Fable-compatible. Runtime reflection belongs only in
 optional .NET import/tooling packages or experiments; it must not become the foundation for schema construction,
-constructor binding, validation, or codec execution. This ruled out a reflection-based `Model.construct` shape
-outright — see `dev-docs/current-ideas/model-construct.md`.
+constructor binding, validation, or codec execution.
 
 `Axial.Codec` owns compiled JSON codecs, depending only on `Axial.Schema` (via `InternalsVisibleTo` for the
 type-erased chain). It enforces wire shape only and does not run constraint metadata; that's `Model.parse`'s job.

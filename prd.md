@@ -43,7 +43,7 @@ systematically. Axial's answer, in dependency order:
    "nullable" fields become required-within-their-variant.
 2. **Version the boundary**: explicit `Config.vN` schemas with manual migrations, so reading any stored config is
    detect version → migrate forward → parse against one current schema with path-aware diagnostics
-   (`dev-docs/current-ideas/schema-contract-versioning.md`).
+   (`Axial.Schema.Contract`, `src/Axial.Schema/Contract.fs`).
 3. **Validate at write time**: generated JSON Schema lets the wizard reject broken configs before they enter storage.
 4. **Generate at scale**: the `.contract` declaration grammar and generator
    (`dev-docs/current-ideas/contract-grammar.md`) make authoring ~100 versioned contracts tolerable. The generator

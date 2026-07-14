@@ -90,7 +90,6 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 - [x] Remove the unused `LogEntry` type (it had no consumers).
 - [x] Add a producer for `Cause.Traced` (`Flow.tracedError`) so the existing cause-trace channel and `Cause.prettyPrint` rendering are reachable from user code.
 - [x] Add tests for annotation/span propagation through flows, fibers, layers, resources, retries, and supervised restarts, plus span-lifetime, exit-mapping, nesting/parentage, fiber-span, and logging-observer coverage.
-- [x] Design record: `dev-docs/current-ideas/telemetry-expansion.md`.
 
 ## 7a. Future Service Packages
 
@@ -127,7 +126,7 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 
 - [ ] Add fiber-local state similar to FiberRef/FiberRefs, adapted to .NET/F#.
 - [x] Add supervision hooks for fiber start/end/failure/interruption (`FiberObserver` with `OnStart`/`OnEnd`/`OnUnobservedDefect`, installed via `Flow.withFiberObserver`; interruption is reported through `OnEnd` status; unobserved defects are detected at race/timeout discard sites, scope close, and a GC net).
-- [x] Add `Flow.Runtime.supervise` restart-on-defect combinator (`SupervisePolicy`, fresh child scope per attempt) and `Flow.forkDetached` for explicit fire-and-forget; design record in `dev-docs/current-ideas/supervising-fiber-defects.md`.
+- [x] Add `Flow.Runtime.supervise` restart-on-defect combinator (`SupervisePolicy`, fresh child scope per attempt) and `Flow.forkDetached` for explicit fire-and-forget.
 - [ ] Add runtime flags and execution strategy where they materially affect .NET behavior.
 - [ ] Add structured fiber dumps and richer runtime diagnostics.
 

@@ -105,12 +105,11 @@ about it):
   schema's actual field name.
 - **Redisplay / UI binding**: the schema's own stated ambition (ActiveModel-style form binding) needs exactly this
   — a typed way to say "this UI field maps to this model field" without stringly-typed lookups.
-- **Contract migrations** (`schema-contract-versioning.md`): a migration currently pattern-matches the previous
+- **Contract migrations** (`Axial.Schema.Contract`, `src/Axial.Schema/Contract.fs`): a migration currently pattern-matches the previous
   version's record directly (`fun (v1: V1.Signup) -> Ok { Email = v1.Email; Age = 18 }`). Generated optics on both
   the source and target version records would let migrations be written and checked against named fields rather
   than raw record literals, and — combined with the generated `construct` above — let a migration's *output* be
-  checked-constructed against the target version's schema rather than assembled as an unchecked record literal
-  (see the cross-reference added to that doc).
+  checked-constructed against the target version's schema rather than assembled as an unchecked record literal.
 
 ### Why this doesn't relax the Private Constructors section above
 

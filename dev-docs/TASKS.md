@@ -52,10 +52,6 @@ From the same ZIO comparison; these belong *with* the remote-config milestone, n
 - User-facing docs for the contract tooling once it stabilizes: a `docs/schema/contracts.md` guide (grammar by
   example, `schemagen` usage, `--check` in CI, "wire tier only — domain models are hand-written" positioning). The
   only current documentation is dev-docs and the golden corpus.
-- Review the tutorials against the construction split: `Schema.check` for admitting already assembled public
-  wire/draft values; private representations plus authoritative smart constructors for durable domain guarantees;
-  separate drafts only for named assembly/editing of private cross-field aggregates. `trusted-construction.md` already
-  contains the detailed treatment.
 - `dev-docs/API_BASELINE.md` needs a fresh validated-command pass: its project lists were corrected on 2026-07-12,
   but the recorded run, test counts, and baseline commit predate the 2026-07-09..13 renames.
 - Decide whether `Check` should expose SRTP-based common names (`Check.present` and friends resolving across

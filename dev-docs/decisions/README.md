@@ -227,11 +227,10 @@ or in `AGENTS.md`, then delete the detailed sketch.
 
 - **`Model.construct`.** RESOLVED by reduction: there is no positional construction API or universal trust wrapper.
   Public wire/draft records use ordinary named-field construction followed by `Schema.check`; private domain types use
-  their own smart constructors. See `dev-docs/current-ideas/model-construct.md` for the full exploration — why
-  `Schema<'model>` can't carry per-field types, every shape tried (builder ceremony, tuple-returning
-  `buildWithConstruct`, reflection off a draft record, a `(string * obj) list`) and why each was rejected, and why
-  source generation (`schema-source-generation.md`) is the only path found to the ergonomics that were actually
-  wanted.
+  their own smart constructors. The structural reason: `Schema<'model>` can't carry per-field types, so a typed
+  positional `Model.construct` is impossible without source generation (`schema-source-generation.md`); every
+  runtime shape tried (builder ceremony, tuple-returning `buildWithConstruct`, reflection off a draft record, a
+  `(string * obj) list`) was rejected.
 - **`Trusted<'model>`.** REJECTED after reference-app re-review. A universal wrapper made parse, contract, and ordinary
   domain construction carry library proof ceremony without establishing durable F# invariants. `Schema.check` returns
   the ordinary checked value for boundary admission; private representations and smart constructors provide durable
