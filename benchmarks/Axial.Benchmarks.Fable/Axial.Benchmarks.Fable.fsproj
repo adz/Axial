@@ -46,6 +46,8 @@
     <Compile Include="..\..\src\Axial.Flow\Builders.fs" />
     <Compile Include="..\..\src\Axial.ErrorHandling\Builders.fs" />
     <Compile Include="..\..\src\Axial.ErrorHandling\ValidationBuilders.fs" />
+    <Compile Include="..\..\src\Axial.Flow.Telemetry.Shared\SpanConventions.fs" />
+    <Compile Include="..\..\src\Axial.Flow.Telemetry.JavaScript\Telemetry.fs" />
     <Compile Include="Shared.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

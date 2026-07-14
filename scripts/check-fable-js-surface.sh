@@ -25,6 +25,12 @@ if ! grep -q "Codec round-trip: ok" <<<"$program_output"; then
   exit 1
 fi
 
+if ! grep -q "Otel spans: ok" <<<"$program_output"; then
+  echo "Axial.Flow.Telemetry.JavaScript spans did not record correctly in the Fable JavaScript output." >&2
+  echo "$program_output" >&2
+  exit 1
+fi
+
 if grep -R "ColdTask" "$out_dir" >/dev/null; then
   echo "ColdTask leaked into the Fable JavaScript output." >&2
   exit 1

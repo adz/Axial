@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added `Axial.Flow.Telemetry.JavaScript`: OpenTelemetry tracing for Axial workflows compiled with Fable (Node and browser). `Otel.install` takes a host-supplied `@opentelemetry/api` object through structural bindings; `Otel.trace`/`traceWith` mirror the .NET `Activity.trace` span semantics and tag vocabulary, and `FiberTelemetry.observe`/`observeWithSpans` mirror the fiber observers. JavaScript targets only; the .NET build is inert.
+
 - Renamed the fail-fast package from `Axial.Result` to `Axial.ErrorHandling`, keeping `Check`, focused `Result` helpers, collection traversal, and `result {}` together.
 - Added `Axial.Refined` for parse helpers, initial refined value types, and `refine {}`.
 - Added environment-aware `Policy` helpers and `Flow.verify` for running pure checks at workflow boundaries.

@@ -16,4 +16,5 @@ namespace Axial.Flow
 [<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Flow.Process")>]
 [<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Flow.Hosting")>]
 [<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Flow.Telemetry")>]
+[<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Flow.Telemetry.JavaScript")>]
 do ()

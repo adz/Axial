@@ -2,59 +2,24 @@ namespace Axial.Flow.Telemetry
 
 open System.Diagnostics
 open Axial.Flow
+open Axial.Flow.Telemetry.Shared
 
-/// Shared span tag conventions, applied by both workflow spans and fiber spans.
+/// The `Activity` adapter for the shared span vocabulary in `Axial.Flow.Telemetry.Shared`.
 module internal Tags =
+    let writer (activity: Activity) : SpanWriter =
+        { SetTag = fun name value -> activity.SetTag(name, value) |> ignore
+          SetStatus =
+            function
+            | SpanStatusOutcome.Ok -> activity.SetStatus(ActivityStatusCode.Ok) |> ignore
+            | SpanStatusOutcome.Error "" -> activity.SetStatus(ActivityStatusCode.Error) |> ignore
+            | SpanStatusOutcome.Error message -> activity.SetStatus(ActivityStatusCode.Error, message) |> ignore
+          DefectTypeName = fun defect -> defect.GetType().FullName }
+
     let tagDefect (activity: Activity) (defect: exn) =
-        activity.SetStatus(ActivityStatusCode.Error, defect.Message) |> ignore
-        activity.SetTag("exception.type", defect.GetType().FullName) |> ignore
-        activity.SetTag("exception.message", defect.Message) |> ignore
-        activity.SetTag("exception.stacktrace", string defect) |> ignore
+        SpanConventions.tagDefect (writer activity) defect
 
-    let private isComposite (cause: Cause<'error>) =
-        match cause with
-        | Cause.Fail _
-        | Cause.Die _
-        | Cause.Interrupt -> false
-        | Cause.Then _
-        | Cause.Both _
-        | Cause.Traced _ -> true
-
-    /// Stamps an exit onto a span: activity status, `axial.flow.outcome`, typed-error and defect
-    /// tags, cancellation tagging, and the pretty-printed cause tree for composite causes.
     let stampExit (renderError: 'error -> string) (activity: Activity) (exit: Exit<'value, 'error>) =
-        match exit with
-        | Exit.Success _ ->
-            activity.SetStatus(ActivityStatusCode.Ok) |> ignore
-            activity.SetTag("axial.flow.outcome", "success") |> ignore
-        | Exit.Failure cause ->
-            let defects = Cause.defects cause
-            let failures = Cause.failures cause
-            let interrupted = Cause.isInterrupted cause
-
-            let outcome =
-                if not (List.isEmpty defects) then "die"
-                elif not (List.isEmpty failures) then "fail"
-                else "interrupt"
-
-            activity.SetTag("axial.flow.outcome", outcome) |> ignore
-
-            if interrupted then
-                activity.SetTag("axial.flow.interrupted", "true") |> ignore
-
-            match failures with
-            | firstError :: _ ->
-                activity.SetStatus(ActivityStatusCode.Error, renderError firstError) |> ignore
-                activity.SetTag("axial.flow.error", renderError firstError) |> ignore
-            | [] -> ()
-
-            // Defects dominate typed errors for status/exception tags.
-            match defects with
-            | firstDefect :: _ -> tagDefect activity firstDefect
-            | [] -> ()
-
-            if isComposite cause then
-                activity.SetTag("axial.flow.cause", Cause.prettyPrint renderError cause) |> ignore
+        SpanConventions.stampExit renderError (writer activity) exit
 
 [<RequireQualifiedAccess>]
 module Activity =
@@ -242,22 +207,7 @@ module FiberTelemetry =
                 fun metadata defect ->
                     match fiberSpans.TryGetValue metadata with
                     | true, activity ->
-                        activity.SetTag("axial.flow.fiber.status", string metadata.Status) |> ignore
-
-                        match metadata.Status, defect with
-                        | FiberStatus.Succeeded, _ ->
-                            activity.SetStatus(ActivityStatusCode.Ok) |> ignore
-                            activity.SetTag("axial.flow.outcome", "success") |> ignore
-                        | FiberStatus.Interrupted, _ ->
-                            activity.SetTag("axial.flow.outcome", "interrupt") |> ignore
-                            activity.SetTag("axial.flow.interrupted", "true") |> ignore
-                        | _, Some exn ->
-                            activity.SetTag("axial.flow.outcome", "die") |> ignore
-                            Tags.tagDefect activity exn
-                        | _, None ->
-                            activity.SetStatus(ActivityStatusCode.Error) |> ignore
-                            activity.SetTag("axial.flow.outcome", "fail") |> ignore
-
+                        SpanConventions.stampFiberEnd (Tags.writer activity) metadata.Status defect
                         activity.Dispose()
                     | _ -> ()
             OnUnobservedDefect =
