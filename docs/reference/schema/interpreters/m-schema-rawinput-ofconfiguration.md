@@ -31,4 +31,11 @@ weight: 2008
 <p class='fsdocs-para'>
  Numeric path segments are interpreted as collection indexes, matching the common .NET configuration convention
  for arrays such as <code>contacts:0:value</code>.
+ </p><p class='fsdocs-para'>
+ Later pairs override earlier ones at the same path, matching .NET configuration layering: a repeated key
+ keeps its last value, and a later scalar or section replaces an earlier section or scalar at that key.
+ Collections come from numeric segments, never from repetition — repeated names as multi-value input is a
+ wire convention that belongs to <code>ofNameValues</code>. A null value never overrides an existing section,
+ because <code>IConfiguration.AsEnumerable()</code> emits every section key with a null value alongside that
+ section&#39;s children.
  </p>

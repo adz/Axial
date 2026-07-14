@@ -92,6 +92,12 @@ let raw =
           "contacts:0:value", "ada@example.com" ]
 ```
 
+Later pairs override earlier ones at the same path, matching .NET configuration layering: a repeated key keeps its
+last value, and a later scalar or section replaces the earlier shape at that key. Collections come from numeric
+segments, never from repetition — repeated names as multi-value input is a wire convention that belongs to
+`ofNameValues`. Section keys with null values, as `IConfiguration.AsEnumerable()` emits alongside a section's
+children, never override those children, so real layered `IConfiguration` output round-trips directly.
+
 ## One Parse For All Of Them
 
 ```fsharp

@@ -322,16 +322,16 @@ module RawInput =
 
     let private insertConfigurationValue (segments: string list) value node =
         let rec insert remaining current =
-            match remaining with
-            | [] -> Value value
-            | segment :: rest ->
+            match remaining, current with
+            // Last write wins, matching .NET configuration layering — except that a null value never
+            // overrides an existing section, because IConfiguration.AsEnumerable() emits every section
+            // key with a null value alongside that section's children.
+            | [], Branch children when not children.IsEmpty && value = RawInput.Missing -> current
+            | [], _ -> Value value
+            // A later section path replaces an earlier scalar at the same key: last write wins there too.
+            | _ :: _, Value _ -> insert remaining (Branch Map.empty)
+            | segment :: rest, Branch children ->
                 let segment = ensureName segment
-
-                let children =
-                    match current with
-                    | Branch children -> children
-                    | Value _ -> Map.empty
-
                 let child = children |> Map.tryFind segment |> Option.defaultValue (Branch Map.empty)
                 Branch(children |> Map.add segment (insert rest child))
 
@@ -537,6 +537,14 @@ module RawInput =
     /// <para>
     /// Numeric path segments are interpreted as collection indexes, matching the common .NET configuration convention
     /// for arrays such as <c>contacts:0:value</c>.
+    /// </para>
+    /// <para>
+    /// Later pairs override earlier ones at the same path, matching .NET configuration layering: a repeated key
+    /// keeps its last value, and a later scalar or section replaces an earlier section or scalar at that key.
+    /// Collections come from numeric segments, never from repetition — repeated names as multi-value input is a
+    /// wire convention that belongs to <c>ofNameValues</c>. A null value never overrides an existing section,
+    /// because <c>IConfiguration.AsEnumerable()</c> emits every section key with a null value alongside that
+    /// section's children.
     /// </para>
     /// </remarks>
     let ofConfiguration (values: seq<string * string>) : RawInput =

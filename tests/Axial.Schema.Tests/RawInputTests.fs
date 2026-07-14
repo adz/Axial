@@ -1,6 +1,8 @@
 namespace Axial.Tests
 
 open System
+open System.Collections.Generic
+open Microsoft.Extensions.Configuration
 open System.Collections.Specialized
 open Axial.Validation
 open Axial.Schema
@@ -129,6 +131,55 @@ module RawInputTests =
         test <@ RawInput.lookupPath "contacts[0].value" input = RawInput.Scalar "ada@example.com" @>
         test <@ RawInput.lookupPath "contacts[1].value" input = RawInput.Scalar "+61 400 000 000" @>
         test <@ RawInput.lookupPath "features.email" input = RawInput.Scalar "true" @>
+
+    [<Fact>]
+    let ``later configuration pairs override earlier ones at the same path`` () =
+        let input =
+            RawInput.ofConfiguration [ "name", "default"; "age", "1"; "name", "Ada" ]
+
+        test <@ RawInput.lookupPath "name" input = RawInput.Scalar "Ada" @>
+        test <@ RawInput.lookupPath "age" input = RawInput.Scalar "1" @>
+
+    [<Fact>]
+    let ``a later section or scalar replaces the earlier shape at the same key`` () =
+        let sectionWins = RawInput.ofConfiguration [ "a", "1"; "a:b", "2" ]
+        test <@ RawInput.lookupPath "a.b" sectionWins = RawInput.Scalar "2" @>
+
+        let scalarWins = RawInput.ofConfiguration [ "a:b", "2"; "a", "1" ]
+        test <@ RawInput.lookupPath "a" scalarWins = RawInput.Scalar "1" @>
+
+    [<Fact>]
+    let ``a null section marker does not override the section's children`` () =
+        // IConfiguration.AsEnumerable() emits section keys with null values alongside their children.
+        let input =
+            RawInput.ofConfiguration [ "address:city", "London"; "address", null ]
+
+        test <@ RawInput.lookupPath "address.city" input = RawInput.Scalar "London" @>
+
+    [<Fact>]
+    let ``real IConfiguration layering round-trips through ofConfigurationPairs`` () =
+        let defaults =
+            [ "name", "default"
+              "address:city", "Nowhere"
+              "tags:0", "vip" ]
+            |> Seq.map (fun (key, value) -> KeyValuePair(key, value))
+
+        let overrides =
+            [ "name", "Ada"; "address:city", "London"; "tags:1", "founder" ]
+            |> Seq.map (fun (key, value) -> KeyValuePair(key, value))
+
+        let configuration =
+            ConfigurationBuilder()
+                .AddInMemoryCollection(defaults)
+                .AddInMemoryCollection(overrides)
+                .Build()
+
+        let input = RawInput.ofConfigurationPairs (configuration.AsEnumerable())
+
+        test <@ RawInput.lookupPath "name" input = RawInput.Scalar "Ada" @>
+        test <@ RawInput.lookupPath "address.city" input = RawInput.Scalar "London" @>
+        test <@ RawInput.lookupPath "tags[0]" input = RawInput.Scalar "vip" @>
+        test <@ RawInput.lookupPath "tags[1]" input = RawInput.Scalar "founder" @>
 
     [<Fact>]
     let ``input path constructs names and indexes`` () =
