@@ -54,16 +54,28 @@ module Endpoint =
           RequestSchema = None
           Responses = [] }
 
+    /// <summary>Starts a GET endpoint spec at the supplied path.</summary>
     let get (path: string) = create "get" path
+
+    /// <summary>Starts a POST endpoint spec at the supplied path.</summary>
     let post (path: string) = create "post" path
+
+    /// <summary>Starts a PUT endpoint spec at the supplied path.</summary>
     let put (path: string) = create "put" path
+
+    /// <summary>Starts a PATCH endpoint spec at the supplied path.</summary>
     let patch (path: string) = create "patch" path
+
+    /// <summary>Starts a DELETE endpoint spec at the supplied path.</summary>
     let delete (path: string) = create "delete" path
 
+    /// <summary>Sets the operation summary shown in generated documents.</summary>
     let summary (text: string) (spec: EndpointSpec) = { spec with Summary = Some text }
 
+    /// <summary>Sets the OpenAPI operation id.</summary>
     let operationId (id: string) (spec: EndpointSpec) = { spec with OperationId = Some id }
 
+    /// <summary>Appends an OpenAPI tag used to group operations.</summary>
     let tag (name: string) (spec: EndpointSpec) = { spec with Tags = spec.Tags @ [ name ] }
 
     /// <summary>Declares the request body: JSON described by the schema's generated JSON Schema.</summary>
@@ -109,6 +121,7 @@ type OpenApiInfo =
 /// <summary>Assembles an OpenAPI 3.1 document from endpoint specs.</summary>
 [<RequireQualifiedAccess>]
 module OpenApi =
+    /// <summary>Builds document metadata with no description.</summary>
     let info (title: string) (version: string) : OpenApiInfo =
         { Title = title
           Version = version

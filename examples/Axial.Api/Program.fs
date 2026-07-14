@@ -13,12 +13,13 @@ module Axial.Api.Program
 open System
 open System.Net.Http
 open System.Text
-open System.Text.Json
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
 open Axial.Schema
+open Axial.Schema.Http
+open Axial.Schema.Http.AspNetCore
 open Axial.Codec
 
 // ---------------------------------------------------------------------------
@@ -77,33 +78,16 @@ module Signup =
 module Boundary =
     let codec = Json.compile Signup.schema
 
-    let jsonSchema = JsonSchema.generate Signup.schema
-
+    // The request and response schemas are generated straight from the declaration,
+    // so the published contract can never drift from what the parser accepts.
     let openApiDocument =
-        // The request body schema is generated straight from the declaration, so
-        // the published contract can never drift from what the parser accepts.
-        sprintf
-            """{"openapi":"3.1.0","info":{"title":"Axial signup sample","version":"1.0.0"},"paths":{"/signups":{"post":{"summary":"Create a signup","requestBody":{"required":true,"content":{"application/json":{"schema":%s}}},"responses":{"201":{"description":"The trusted signup that was parsed.","content":{"application/json":{"schema":%s}}},"400":{"description":"Path-aware parse diagnostics."}}}}}}"""
-            jsonSchema
-            jsonSchema
-
-    /// Renders failed parse diagnostics as a JSON body of { path, message } entries.
-    let errorBody (parsed: ParsedInput<Signup, SchemaError>) =
-        let errors =
-            parsed.Errors
-            |> List.map (fun diagnostic ->
-                let path =
-                    diagnostic.Path
-                    |> List.map (function
-                        | Axial.Validation.PathSegment.Index index -> $"[{index}]"
-                        | Axial.Validation.PathSegment.Key key -> key
-                        | Axial.Validation.PathSegment.Name name -> name)
-                    |> String.concat "."
-
-                {| path = path
-                   message = SchemaError.render diagnostic.Error |})
-
-        {| errors = errors |}
+        OpenApi.document
+            (OpenApi.info "Axial signup sample" "1.0.0")
+            [ Endpoint.post "/signups"
+              |> Endpoint.summary "Create a signup"
+              |> Endpoint.accepts Signup.schema
+              |> Endpoint.returnsJson 201 "The trusted signup that was parsed." Signup.schema
+              |> Endpoint.returnsProblemDetails ]
 
 // ---------------------------------------------------------------------------
 // A small HTML form renderer over the schema's inspection metadata.
@@ -207,28 +191,6 @@ input {{ width: 100%%; padding: 0.4rem; }}
 // The minimal API host.
 // ---------------------------------------------------------------------------
 
-/// Writes a trusted model straight to the response body through the compiled codec, so the response path never
-/// materializes an intermediate JSON string.
-type private CodecResult<'model>(codec: JsonCodec<'model>, value: 'model, statusCode: int) =
-    interface IResult with
-        member _.ExecuteAsync(context: HttpContext) =
-            context.Response.StatusCode <- statusCode
-            context.Response.ContentType <- "application/json"
-
-            match context.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpBodyControlFeature>() with
-            | null -> ()
-            | feature -> feature.AllowSynchronousIO <- true
-
-            Json.serializeToStream codec context.Response.Body value
-            System.Threading.Tasks.Task.CompletedTask
-
-let private formToRawInput (form: IFormCollection) =
-    // Dotted form field names such as address.street become nested raw input
-    // through the configuration-style path builder.
-    form
-    |> Seq.collect (fun pair -> pair.Value |> Seq.map (fun value -> pair.Key.Replace(".", ":"), value))
-    |> RawInput.ofConfiguration
-
 let buildApp (args: string[]) =
     let builder = WebApplication.CreateBuilder(args)
     builder.Logging.ClearProviders() |> ignore
@@ -238,23 +200,19 @@ let buildApp (args: string[]) =
         "/signups",
         Func<HttpRequest, System.Threading.Tasks.Task<IResult>>(fun request ->
             task {
-                use! document = JsonDocument.ParseAsync request.Body
-                let parsed = Schema.parse Signup.schema (RawInput.ofJsonDocument document)
+                let! parsed = SchemaRequest.json Signup.schema request
 
-                match parsed.Result with
-                | Ok signup ->
-                    // The trusted model round-trips through the compiled codec, proving the same declaration
-                    // drives serialization too, streamed straight to the response body.
-                    return CodecResult(Boundary.codec, signup, 201) :> IResult
-                | Error _ -> return Results.Json(Boundary.errorBody parsed, statusCode = 400)
+                // A trusted model round-trips through the compiled codec, proving the same declaration drives
+                // serialization too; a failed parse becomes a 400 problem-details body with JSON-pointer errors.
+                return!
+                    parsed
+                    |> SchemaResult.handleParsed (fun signup ->
+                        System.Threading.Tasks.Task.FromResult(SchemaResult.codec Boundary.codec 201 signup))
             })
     )
     |> ignore
 
-    app.MapGet(
-        "/openapi.json",
-        Func<IResult>(fun () -> Results.Text(Boundary.openApiDocument, "application/json"))
-    )
+    app.MapGet("/openapi.json", Func<IResult>(fun () -> SchemaResult.openApi Boundary.openApiDocument))
     |> ignore
 
     app.MapGet("/signup", Func<IResult>(fun () -> Results.Text(FormPage.render None, "text/html")))
@@ -264,8 +222,7 @@ let buildApp (args: string[]) =
         "/signup",
         Func<HttpRequest, System.Threading.Tasks.Task<IResult>>(fun request ->
             task {
-                let! form = request.ReadFormAsync()
-                let parsed = Schema.parse Signup.schema (formToRawInput form)
+                let! parsed = SchemaRequest.form Signup.schema request
                 return Results.Text(FormPage.render (Some parsed), "text/html")
             })
     )

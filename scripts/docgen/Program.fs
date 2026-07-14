@@ -354,6 +354,19 @@ let pageSpecs = [
         Alias = None
     }
     {
+        OutPath = ["schema"; "http"; "_index.md"]
+        Title = "Schema HTTP Boundary"
+        Description = "Source-documented host-neutral HTTP boundary support for schemas."
+        Intro = "This page shows the host-neutral server boundary in `Axial.Schema.Http`: `BoundaryInput` builds raw input from the name/value surfaces HTTP servers hand over, `ProblemDetails` renders failed parses as RFC 9457 bodies with RFC 6901 JSON pointers, and `EndpointSpec` values assemble into OpenAPI 3.1 documents whose schemas are embedded from `JsonSchema.generate` output. The `Axial.Schema.Http.AspNetCore` and `Axial.Schema.Http.GenHttp` packages adapt these pieces to one host each; see the [HTTP servers guide](/schema/http-servers/) for the adapter surfaces."
+        SymbolIds = [
+            "Boundary input", ["M:Axial.Schema.Http.BoundaryInput.ofQuery"; "M:Axial.Schema.Http.BoundaryInput.ofForm"]
+            "Problem details", ["T:Axial.Schema.Http.ProblemDetails"; "T:Axial.Schema.Http.ProblemError"; "M:Axial.Schema.Http.ProblemDetailsModule.ofParsed"; "M:Axial.Schema.Http.ProblemDetailsModule.ofDiagnostics"; "M:Axial.Schema.Http.ProblemDetailsModule.ofDiagnosticsWith"; "M:Axial.Schema.Http.ProblemDetailsModule.toJson"; "M:Axial.Schema.Http.ProblemDetailsModule.writeTo"; "M:Axial.Schema.Http.JsonPointer.ofPath"]
+            "Endpoint specs", ["T:Axial.Schema.Http.EndpointSpec"; "T:Axial.Schema.Http.ResponseSpec"; "M:Axial.Schema.Http.Endpoint.get"; "M:Axial.Schema.Http.Endpoint.post"; "M:Axial.Schema.Http.Endpoint.put"; "M:Axial.Schema.Http.Endpoint.patch"; "M:Axial.Schema.Http.Endpoint.delete"; "M:Axial.Schema.Http.Endpoint.summary"; "M:Axial.Schema.Http.Endpoint.operationId"; "M:Axial.Schema.Http.Endpoint.tag"; "M:Axial.Schema.Http.Endpoint.accepts"; "M:Axial.Schema.Http.Endpoint.returnsJson"; "M:Axial.Schema.Http.Endpoint.returns"; "M:Axial.Schema.Http.Endpoint.returnsProblemDetails"]
+            "OpenAPI assembly", ["T:Axial.Schema.Http.OpenApiInfo"; "M:Axial.Schema.Http.OpenApi.info"; "M:Axial.Schema.Http.OpenApi.document"; "M:Axial.Schema.Http.OpenApi.writeTo"]
+        ]
+        Alias = None
+    }
+    {
         OutPath = ["flow"; "_index.md"]
         Title = "Flow"
         Description = "Source-documented workflow surface in Axial."
@@ -1128,6 +1141,7 @@ let main argv =
         Path.Combine(artifactsDir, "Axial.ErrorHandling/debug_net8.0/Axial.ErrorHandling.dll")
         Path.Combine(artifactsDir, "Axial.Schema/debug_net8.0/Axial.Schema.dll")
         Path.Combine(artifactsDir, "Axial.Codec/debug_net8.0/Axial.Codec.dll")
+        Path.Combine(artifactsDir, "Axial.Schema.Http/debug/Axial.Schema.Http.dll")
         Path.Combine(artifactsDir, "Axial.Flow.PlatformService/debug_net8.0/Axial.Flow.PlatformService.dll")
         Path.Combine(artifactsDir, "Axial.Flow.Console/debug_net8.0/Axial.Flow.Console.dll")
         Path.Combine(artifactsDir, "Axial.Flow.FileSystem/debug_net8.0/Axial.Flow.FileSystem.dll")

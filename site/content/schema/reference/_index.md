@@ -29,6 +29,14 @@ Schemas are consumed by interpreters that stay independent of workflow execution
 - [`JsonSchema`](./schema/#json-schema-generation) — generates a JSON Schema document from a built schema's
   metadata (still `Axial.Schema`, no extra package).
 
+## Axial.Schema.Http
+
+- [`Schema HTTP Boundary`](./schema/http/) — host-neutral server boundary support (namespace `Axial.Schema.Http`):
+  `BoundaryInput` for query and form raw input, `ProblemDetails` for RFC 9457 error bodies with JSON-pointer paths,
+  and `EndpointSpec`/`OpenApi` for assembling OpenAPI 3.1 documents. The `Axial.Schema.Http.AspNetCore` and
+  `Axial.Schema.Http.GenHttp` packages adapt this contract to one host each — see the
+  [HTTP servers guide]({{< relref "/schema/http-servers/" >}}).
+
 ## Axial.Codec
 
 - [`Codec`](./codec/) — compiled JSON codecs from the same declaration (namespace `Axial.Codec`). Optional:

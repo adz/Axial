@@ -13,6 +13,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Axial.Schema\Axial.Schema.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Codec\Axial.Codec.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Schema.Http\Axial.Schema.Http.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Schema.Http.AspNetCore\Axial.Schema.Http.AspNetCore.fsproj" />
   </ItemGroup>
 
 </Project>
