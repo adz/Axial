@@ -13,7 +13,6 @@ schemas are ordinary `Schema<_>` values — composition is `Schema.field` with t
 
 ```fsharp
 open Axial.Schema
-open Axial.Schema
 
 type Address = { Street: string; City: string }
 type Item = { Sku: string; Quantity: int }

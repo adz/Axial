@@ -79,7 +79,14 @@ match parsed.Result with
 | Error _ -> renderForm parsed
 ```
 
+`Signup` here is a public record, so the guarantee belongs to the successful parse result, not to the type — other
+code can still write a `Signup` literal that skips the schema. That is the right trade for a boundary form model.
+When a value's construction history is uncertain, `Schema.check signupSchema value` runs the same constraints over an
+already assembled value; when an invariant must hold for every value of the type, use a private representation with a
+smart constructor. [Construction Guarantees](../../trusted-construction/) covers the full division.
+
 ## Next
 
 - [Nested Models And Collections](../nested-and-collections/) for models inside models.
 - [Redisplay And Field Errors](../../redisplay-and-field-errors/) for the full redisplay guide.
+- [Construction Guarantees](../../trusted-construction/) for which claims need a private type rather than a schema.
