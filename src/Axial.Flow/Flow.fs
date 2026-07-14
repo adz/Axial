@@ -1089,6 +1089,29 @@ module Flow =
             invoke flow environment cancellationToken
             |> Execution.mapError mapper)
 
+    /// <summary>Attaches diagnostic trace text to any failure cause of the flow.</summary>
+    /// <remarks>
+    /// On failure the cause is wrapped in <c>Cause.Traced</c>, so retries, parallel composition, and
+    /// telemetry (<c>Cause.prettyPrint</c>, the <c>axial.flow.cause</c> span tag) can show where in the
+    /// workflow the failure passed through. Successful values are untouched, and the typed error is not
+    /// changed — only the cause tree grows a trace node.
+    /// </remarks>
+    /// <param name="trace">The diagnostic trace text, typically an operation or boundary name.</param>
+    /// <param name="flow">The source flow.</param>
+    /// <returns>A flow whose failures carry the trace annotation.</returns>
+    /// <example>
+    /// <code>
+    /// let flow = loadUser |> Flow.tracedError "billing.load-user"
+    /// </code>
+    /// </example>
+    let tracedError
+        (trace: string)
+        (flow: Flow<'env, 'error, 'value>)
+        : Flow<'env, 'error, 'value> =
+        Flow(fun environment cancellationToken ->
+            invoke flow environment cancellationToken
+            |> Execution.mapBoth id (Cause.traced trace))
+
     /// <summary>Maps both the successful value and the failure cause of a synchronous flow.</summary>
     /// <param name="onSuccess">The function to transform the success value.</param>
     /// <param name="onFailure">The function to transform the failure cause.</param>

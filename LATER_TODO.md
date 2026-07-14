@@ -88,7 +88,7 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 - [x] Add an extensible `IHasTelemetryTags` environment trait applied by `Activity.trace` alongside the existing `IHasRequestId`/`IHasCorrelationId`/`IHasTenantId` trio. (Fiber spans cannot apply environment traits — the observer deliberately never sees the environment.)
 - [x] Add an exception-carrying member to `ILog` (`LogException`, with `Log.logException`/`errorExn`/`criticalExn` helpers), forward it through the Hosting MEL bridge, and ship `FiberLogging.observer`/`FiberLogging.observe` in `Axial.Flow.Hosting` plus `FiberObserver.compose` in core (replacing the docs-recipe-only logging integration).
 - [x] Remove the unused `LogEntry` type (it had no consumers).
-- [ ] Add a producer for `Cause.Traced` (e.g. `Flow.tracedError`) so the existing cause-trace channel and `Cause.prettyPrint` rendering are reachable from user code.
+- [x] Add a producer for `Cause.Traced` (`Flow.tracedError`) so the existing cause-trace channel and `Cause.prettyPrint` rendering are reachable from user code.
 - [ ] Add tests for annotation/span propagation through flows, fibers, layers, resources, retries, and supervised restarts, plus span-lifetime, exit-mapping, nesting/parentage, fiber-span, and logging-observer coverage.
 - [ ] Design record: `dev-docs/current-ideas/telemetry-expansion.md`.
 

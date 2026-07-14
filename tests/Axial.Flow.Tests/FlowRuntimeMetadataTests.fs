@@ -94,3 +94,33 @@ module FlowRuntimeMetadataTests =
 
         test <@ result = Exit.Success "done" @>
         test <@ List.ofSeq surviving = [ "step" ] @>
+
+    [<Fact>]
+    let ``tracedError wraps failure causes in Cause.Traced and leaves successes untouched`` () =
+        let failing =
+            (Flow.fail "domain error" : Flow<unit, string, int>)
+            |> Flow.tracedError "billing.load-user"
+
+        let succeeding =
+            (Flow.succeed 42 : Flow<unit, string, int>)
+            |> Flow.tracedError "billing.load-user"
+
+        let failResult = Flow.runSync () failing
+        let okResult = Flow.runSync () succeeding
+
+        test <@ failResult = Exit.Failure(Cause.Traced(Cause.Fail "domain error", "billing.load-user")) @>
+        test <@ okResult = Exit.Success 42 @>
+
+    [<Fact>]
+    let ``tracedError traces defects and renders through prettyPrint`` () =
+        let result =
+            (Flow.die (System.InvalidOperationException "boom") : Flow<unit, string, int>)
+            |> Flow.tracedError "outer-boundary"
+            |> Flow.runSync ()
+
+        match result with
+        | Exit.Failure(Cause.Traced(Cause.Die error, trace)) ->
+            test <@ error.Message = "boom" @>
+            test <@ trace = "outer-boundary" @>
+            test <@ (Cause.prettyPrint id (Cause.Traced(Cause.Die error, trace))).Contains "Traced(outer-boundary)" @>
+        | other -> failwithf "Expected traced defect, got %A" other
