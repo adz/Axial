@@ -138,6 +138,10 @@ Start with the smallest useful Flow signature. Expand to the full `Flow<'env, 'e
 
 Use `Flow.fromAsync`, `Flow.fromTask`, and `Flow.fromValueTask` when thrown exceptions are defects. Use `Flow.attemptAsync`, `Flow.attemptTask`, and `Flow.attemptValueTask` when expected exceptions should become `Cause.Fail exn`.
 
+Use `App.run env rootFlow` for a finite root application. Use `App.start env rootFlow` when a signal handler, host, or
+UI owner needs an `AppHandle`; await `Stop()` so scoped cleanup finishes. Platform adapters live in
+`Axial.Flow.Hosting` (.NET and Generic Host), `Axial.Flow.Hosting.Node`, and `Axial.Flow.Hosting.Browser`.
+
 ### 6. Dependency Guidance
 
 Keep application dependencies explicit in `'env`.

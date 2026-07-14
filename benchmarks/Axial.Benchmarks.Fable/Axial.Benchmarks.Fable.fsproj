@@ -33,6 +33,7 @@
     <Compile Include="..\..\src\Axial.Flow\RuntimeLayer.fs" />
     <Compile Include="..\..\src\Axial.Flow\Policy.fs" />
     <Compile Include="..\..\src\Axial.Flow\Flow.fs" />
+    <Compile Include="..\..\src\Axial.Flow\App.fs" />
     <Compile Include="..\..\src\Axial.Flow\BindError.fs" />
     <Compile Include="..\..\src\Axial.Flow\Concurrency.fs" />
     <Compile Include="..\..\src\Axial.Flow\Ref.fs" />
@@ -44,6 +45,11 @@
     <Compile Include="..\..\src\Axial.ErrorHandling\ValidateBuilder.fs" />
     <Compile Include="..\..\src\Axial.ErrorHandling\ResultBuilder.fs" />
     <Compile Include="..\..\src\Axial.Flow\Builders.fs" />
+    <Compile Include="..\..\src\Axial.Flow.PlatformService\Services.fs" />
+    <Compile Include="..\..\src\Axial.Flow.PlatformService\Platform.fs" />
+    <Compile Include="..\..\src\Axial.Flow.PlatformService\Operations.fs" />
+    <Compile Include="..\..\src\Axial.Flow.Hosting.Node\NodeHosting.fs" />
+    <Compile Include="..\..\src\Axial.Flow.Hosting.Browser\BrowserHosting.fs" />
     <Compile Include="..\..\src\Axial.ErrorHandling\Builders.fs" />
     <Compile Include="..\..\src\Axial.ErrorHandling\ValidationBuilders.fs" />
     <Compile Include="..\..\src\Axial.Flow.Telemetry.Shared\SpanConventions.fs" />

@@ -35,6 +35,8 @@
     <Project Path="src/Axial.Schema.Contracts/Axial.Schema.Contracts.fsproj" />
     <Project Path="src/Axial.Schema.Testing/Axial.Schema.Testing.fsproj" />
     <Project Path="src/Axial.Flow.Hosting/Axial.Flow.Hosting.fsproj" />
+    <Project Path="src/Axial.Flow.Hosting.Node/Axial.Flow.Hosting.Node.fsproj" />
+    <Project Path="src/Axial.Flow.Hosting.Browser/Axial.Flow.Hosting.Browser.fsproj" />
     <Project Path="src/Axial.Flow.Telemetry/Axial.Flow.Telemetry.fsproj" />
     <Project Path="src/Axial.Flow.Telemetry.JavaScript/Axial.Flow.Telemetry.JavaScript.fsproj" />
   </Folder>

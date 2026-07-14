@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <AssemblyName>Axial.Flow.Hosting.Browser</AssemblyName>
+    <RootNamespace>Axial.Flow.Hosting.Browser</RootNamespace>
+    <PackageId>Axial.Flow.Hosting.Browser</PackageId>
+    <Authors>Adam Davies</Authors>
+    <Description>Browser ownership and AbortSignal adapters for Axial Flow applications compiled with Fable.</Description>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <PackageTags>fsharp;fable;browser;hosting;axial;flow</PackageTags>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Fable.Core" Version="4.3.0" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Axial.Flow\Axial.Flow.fsproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="BrowserHosting.fs" />
+  </ItemGroup>
+</Project>

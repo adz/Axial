@@ -34,6 +34,8 @@ projects=(
   "src/Axial.Flow.Process/Axial.Flow.Process.fsproj"
   "src/Axial.Flow.PlatformService/Axial.Flow.PlatformService.fsproj"
   "src/Axial.Flow.Hosting/Axial.Flow.Hosting.fsproj"
+  "src/Axial.Flow.Hosting.Node/Axial.Flow.Hosting.Node.fsproj"
+  "src/Axial.Flow.Hosting.Browser/Axial.Flow.Hosting.Browser.fsproj"
   "src/Axial.Flow.Telemetry/Axial.Flow.Telemetry.fsproj"
 )
 

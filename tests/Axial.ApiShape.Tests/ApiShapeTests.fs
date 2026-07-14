@@ -1702,13 +1702,21 @@ module ApiShapeTests =
 
     [<Fact>]
     let ``hosting and telemetry modules keep expected public shape`` () =
-        moduleType typeof<LiveClock> "Axial.Flow.Hosting.Hosting"
+        moduleType typeof<FlowHostedService<unit, string>> "Axial.Flow.Hosting.Hosting"
         |> publicStaticMemberNames
-        |> assertContainsAll [ "createBaseRuntime" ]
+        |> assertContainsAll [ "addApp"; "addAppWith" ]
 
-        moduleType typeof<LiveClock> "Axial.Flow.Hosting.Startup"
+        moduleType typeof<FlowHostedService<unit, string>> "Axial.Flow.Hosting.MicrosoftLogging"
         |> publicStaticMemberNames
-        |> assertContainsAll [ "validateEnvironment" ]
+        |> assertContainsAll [ "create"; "fromFactory"; "layer" ]
+
+        moduleType typeof<FlowHostedService<unit, string>> "Axial.Flow.Hosting.DotNetApp"
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "run"; "exitCode" ]
+
+        moduleType typeof<AppHandle<string, unit>> "Axial.Flow.App"
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "start"; "startWithCancellation"; "run"; "runWithCancellation" ]
 
         moduleTypeFromAssembly "Axial.Flow.Telemetry" "Axial.Flow.Telemetry.Activity"
         |> publicStaticMemberNames

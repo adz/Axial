@@ -29,7 +29,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\Axial.Flow.Telemetry.Shared\SpanConventions.fs" />
+    <Compile Include="../Axial.Flow.Telemetry.Shared/SpanConventions.fs" />
     <Compile Include="Telemetry.fs" />
   </ItemGroup>
 

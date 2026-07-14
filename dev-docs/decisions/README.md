@@ -3,6 +3,26 @@
 This folder keeps only high-level durable decisions. Detailed historical specs are deleted once their useful rules have
 been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 
+## 2026-07-15: App owns portable root lifetime; hosts adapt native lifecycle
+
+- `App` in `Axial.Flow` is the portable application launcher. `App.run` runs a finite root Flow;
+  `App.start` returns one `AppHandle<'error,'value>` with `Status`, shared `Completion`, and idempotent `Stop()`.
+  Completion is published only after the root Flow scope has closed. Direct `ToTask`/`ToAsync` execution remains the
+  interface for individual operations and interop boundaries.
+- An application is still an ordinary Flow value. Its live `Layer` is composed with `Flow.provide` before launch;
+  there is no `IApp` inheritance model, hidden environment, universal error renderer, or ambient application registry.
+- Host adapters translate only native lifecycle and outcomes. `Axial.Flow.Hosting` supplies standalone .NET Ctrl+C /
+  exit-code integration, Microsoft Generic Host lifetime, the MEL `ILog` adapter, and fiber logging.
+  `Axial.Flow.Hosting.Node` supplies Node arguments, `process.env`, SIGINT/SIGTERM, and `process.exitCode`.
+  `Axial.Flow.Hosting.Browser` supplies explicit UI ownership and structural `AbortSignal` integration; it does not
+  treat visibility or unload events as dependable shutdown.
+- Node and browser packages are JavaScript-only Fable bindings. Their .NET target asset exists because Fable consumes
+  F# projects through MSBuild; entry points touch a native runtime guard immediately and fail loudly on .NET or the
+  wrong JavaScript runtime rather than providing inert implementations.
+- The earlier `LiveClock`, partial `Hosting.createBaseRuntime`, and environment-only `Startup.validateEnvironment`
+  helpers were deleted. `Clock.live` and `BaseRuntime.fromServiceProvider` remain the single clock and provider-backed
+  provisioning paths; application startup failures retain their typed cause until the host edge.
+
 ## 2026-07-14: Telemetry is runtime instrumentation, not a service contract
 
 - There is no telemetry service package and no `IHas<...>` telemetry contract. Tracing, annotations, and fiber

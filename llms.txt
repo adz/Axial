@@ -7,6 +7,7 @@
 - **Flow aliases**: `Flow<'value>` = no env/no typed failure, `Flow<'error, 'value>` = no env with typed failure, `EnvFlow<'env, 'value>` = env with no typed failure, `ExnFlow<'value>` and `ExnEnvFlow<'env, 'value>` = exception-channel interop shapes.
 - **Hybrid Optimization**: On .NET, `flow { }` uses inlined overloads for zero-boilerplate, low-allocation interop with `Task`, `ValueTask`, and `Async`.
 - **Exit Outcomes**: Workflows result in `Success`, `Failure` (`Cause.Fail`), `Interruption` (`Cause.Interrupt`), or `Defect` (`Cause.Die`).
+- **Root applications**: Compose the live `Layer` into one root Flow, then use `App.run` for finite applications or `App.start` for an owned `AppHandle`. `Stop()` is idempotent and waits for root scope cleanup. Use `Axial.Flow.Hosting` for standalone .NET/Generic Host/MEL, `.Hosting.Node` for Node signals/process state, and `.Hosting.Browser` for UI ownership/AbortSignal.
 
 ## Concurrency & Coordination
 - **Fibers**: Use `Flow.fork` to start a fiber, `Flow.join` to wait for its outcome, and `Flow.interrupt` for graceful stopping. Use `Flow.forkDetached` for intentional fire-and-forget; a discarded `Flow.fork` handle whose fiber dies with a defect is reported through the fiber observer.
@@ -133,6 +134,8 @@ equivalent, Axial usually expects a different boundary shape rather than a 1:1 h
 - Important difference: `Validation.mapError` remaps the entire diagnostics tree recursively, not just a flat error list
 
 ## Golden Path API
+- `App.run env application`: Run a finite root application and await scope cleanup.
+- `App.start env application`: Start an owned root application; observe `Completion` or call `Stop()`.
 - `run env flow`: Execute a flow.
 - `env`: Get the full environment.
 - `read (env -> 'v)`: Project value from env.

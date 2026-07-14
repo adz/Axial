@@ -41,6 +41,7 @@
     <Compile Include="RuntimeLayer.fs" />
     <Compile Include="Policy.fs" />
     <Compile Include="Flow.fs" />
+    <Compile Include="App.fs" />
     <Compile Include="BindError.fs" />
     <Compile Include="Concurrency.fs" />
     <Compile Include="Ref.fs" />

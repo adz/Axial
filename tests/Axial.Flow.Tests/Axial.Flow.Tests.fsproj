@@ -13,6 +13,7 @@
     <Compile Include="FlowRuntimeMetadataTests.fs" />
     <Compile Include="RuntimeSemanticsTests.fs" />
     <Compile Include="ExecutionTests.fs" />
+    <Compile Include="AppTests.fs" />
     <Compile Include="WorkflowBasicTests.fs" />
     <Compile Include="WorkflowConcurrencyTests.fs" />
     <Compile Include="WorkflowParallelTests.fs" />

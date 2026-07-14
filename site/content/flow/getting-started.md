@@ -95,29 +95,28 @@ match exitValue with
 
 Use `Flow.fail` or `Flow.error` for expected domain failures, `Flow.die` for explicit defects, and `Flow.catch` only when you intentionally want to translate a defect into a typed error. Use `Flow.attemptTask`, `Flow.attemptValueTask`, or `Flow.attemptAsync` when thrown exceptions are expected interop outcomes.
 
-## 3. Running Your First Flow
+## 3. Running Your First App
 
-Because `ToTask` and `ToAsync` return deferred execution handles, you must await them to get the final `Exit` outcome. On .NET, `RunSynchronously` is the blocking alternative.
+Use `App.run` when a Flow is the root of your application. It works on .NET and Fable, carries cancellation from the
+calling async, and returns only after the root scope has closed.
 
 ```fsharp
-let myFlow = Flow.succeed "Hello World"
+let application : Flow<string> = Flow.succeed "Hello World"
 
-// On .NET:
-let runOnDotNet () = task {
-    let! exit = myFlow.ToTask(())
-    match exit with
-    | Exit.Success s -> printfn "%s" s
-    | _ -> ()
-}
-
-// On Fable:
-let runOnFable () = async {
-    let! exit = myFlow.ToAsync(())
+let run () = async {
+    let! exit = App.run () application
     match exit with
     | Exit.Success s -> printfn "%s" s
     | _ -> ()
 }
 ```
+
+Use `App.start` when a signal handler, desktop window, UI component, or external host will stop the application later.
+For complete setup, see [Application lifecycle](./applications/), [.NET hosting](./hosting/),
+[Node hosting](./hosting/node/), and [browser hosting](./hosting/browser/).
+
+For individual operations and interop boundaries, `ToTask`, `ToAsync`, `ToValueTask`, and `RunSynchronously` remain
+the direct execution interface.
 
 For a deeper dive into handling outcomes, cancellation, and combining multiple flows, see **[Execution and Outcomes](./core-concepts/execution-and-outcomes/)**.
 
@@ -151,5 +150,5 @@ let runExample () = task {
 
 1.  **Define**: Use `flow {}` to describe the work and its requirements.
 2.  **Compose**: Combine flows, Results, Tasks, and Asyncs.
-3.  **Run**: Call `RunSynchronously`, `ToTask`, or `ToAsync` at an application entry point.
+3.  **Run**: Use `App.run` or `App.start` at an application entry point; use direct execution members for individual operations.
 4.  **Handle**: Match on the `Exit` value.

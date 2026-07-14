@@ -85,8 +85,8 @@ dotnet add package Axial.Flow
 
 `Flow<'env, 'error, 'value>`, the `flow {}` builder, and the runtime live in this one package. Reach for a satellite
 package only for the specific integration it wraps — `Axial.Flow.HttpClient`, `Axial.Flow.Console`,
-`Axial.Flow.FileSystem`, `Axial.Flow.Process`, `Axial.Flow.Hosting`, and `Axial.Flow.Telemetry` each add one
-`IHas<'service>`-shaped integration; none of them are required to use `flow {}` itself.
+`Axial.Flow.FileSystem`, `Axial.Flow.Process`, the .NET/Node/browser hosting packages, and telemetry packages are
+optional; none is required to use `flow {}` or `App` itself.
 
 ```sh
 dotnet add package Axial.Flow.HttpClient
@@ -95,6 +95,7 @@ dotnet add package Axial.Flow.HttpClient
 ## Core Flow
 
 - [Getting Started](./getting-started/) — the smallest flow, execution, `Exit`, and the environment.
+- [Application Lifecycle](./applications/) — root applications with `App.run`, `App.start`, and coordinated stop.
 - [Straightforward Examples](./basic-examples/) — quick, practical flows without full application setup.
 - [Semantics](./core-concepts/semantics/) — cold workflows, execution, and how Flow fits the Axial model.
 - [Execution and Outcomes](./core-concepts/execution-and-outcomes/) — running flows and reading `Exit`.
@@ -111,6 +112,7 @@ dotnet add package Axial.Flow.HttpClient
 - [Scopes and Resources](./services-and-runtimes/scopes-and-resources/) — resource lifetime and cleanup.
 - [Building a Base Runtime](./services-and-runtimes/building-a-base-runtime/) — standard operational services.
 - [Service Provider Boundaries](./services-and-runtimes/service-provider-boundaries/) — deliberate `IServiceProvider` edges.
+- [Hosting](./hosting/) — standalone .NET, Generic Host, Node, and browser application edges.
 
 ## State and Concurrency
 

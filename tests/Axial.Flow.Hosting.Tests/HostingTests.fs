@@ -1,7 +1,9 @@
 namespace Axial.Tests
 
 open System
-open Microsoft.Extensions.DependencyInjection
+open System.Threading
+open System.Threading.Tasks
+open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
 open Axial.Flow
 open Axial.Flow.Hosting
@@ -10,10 +12,11 @@ open Swensen.Unquote
 open Xunit
 
 type RecordingLogger() =
-    let entries = ResizeArray<Microsoft.Extensions.Logging.LogLevel * string>()
+    let entries = ResizeArray<Microsoft.Extensions.Logging.LogLevel * string * exn option>()
     member _.Entries = entries |> Seq.toList
+
     interface ILogger with
-        member _.Log(level, _, state, _, _) = entries.Add(level, string state)
+        member _.Log(level, _, state, error, _) = entries.Add(level, string state, Option.ofObj error)
         member _.IsEnabled(_) = true
         member _.BeginScope(_) = { new IDisposable with member _.Dispose() = () }
 
@@ -23,122 +26,134 @@ type RecordingLoggerFactory(logger: RecordingLogger) =
         member _.CreateLogger(_) = logger
         member _.Dispose() = ()
 
+type TypedLogger<'category>(logger: ILogger) =
+    interface ILogger<'category>
+    interface ILogger with
+        member _.Log(level, eventId, state, error, formatter) =
+            logger.Log(level, eventId, state, error, formatter)
+        member _.IsEnabled level = logger.IsEnabled level
+        member _.BeginScope state = logger.BeginScope state
+
+type RecordingLifetime() =
+    let started = new CancellationTokenSource()
+    let stopping = new CancellationTokenSource()
+    let stopped = new CancellationTokenSource()
+    let mutable stopCalls = 0
+    member _.StopCalls = stopCalls
+    member _.MarkStarted() = started.Cancel()
+    member _.MarkStopped() = stopped.Cancel()
+
+    interface IHostApplicationLifetime with
+        member _.ApplicationStarted = started.Token
+        member _.ApplicationStopping = stopping.Token
+        member _.ApplicationStopped = stopped.Token
+        member _.StopApplication() =
+            Interlocked.Increment(&stopCalls) |> ignore
+            stopping.Cancel()
+
 module HostingTests =
     [<Fact>]
-    let ``BaseRuntime fromServiceProvider provides the standard base runtime from IServiceProvider`` () =
-        let innerLogger = RecordingLogger()
-        let loggerFactory = new RecordingLoggerFactory(innerLogger) :> ILoggerFactory
-        let sp =
-            { new IServiceProvider with
-                member _.GetService(requestedType) =
-                    if requestedType = typeof<ILoggerFactory> then loggerFactory :> obj else null }
+    let ``Microsoft logging adapter preserves levels and exceptions`` () =
+        let logger = RecordingLogger()
+        let log = MicrosoftLogging.create logger
+        let defect = InvalidOperationException "boom"
 
-        let flow : Flow<BaseRuntime, string, string> =
-            flow {
-                let! now = Clock.now<BaseRuntime, string>
-                do! Log.info<BaseRuntime, string> "Hello"
-                return now.ToString("HH:mm")
-            }
+        log.Log LogLevel.Information "started"
+        log.LogException LogLevel.Error defect "failed"
 
-        let result =
-            flow.RunSynchronously(Hosting.createBaseRuntime sp)
-
-        match result with
-        | Exit.Success _ -> ()
-        | _ -> failwithf "Expected success, got %A" result
-        test <@ innerLogger.Entries |> List.exists (fun (l, m) -> l = Microsoft.Extensions.Logging.LogLevel.Information && m.Contains("Hello")) @>
+        match logger.Entries with
+        | [ information, first, None; error, second, Some captured ] ->
+            test <@ information = Microsoft.Extensions.Logging.LogLevel.Information @>
+            test <@ first.Contains "started" @>
+            test <@ error = Microsoft.Extensions.Logging.LogLevel.Error @>
+            test <@ second.Contains "failed" @>
+            test <@ obj.ReferenceEquals(captured, defect) @>
+        | other -> failwithf "Unexpected log entries: %A" other
 
     [<Fact>]
-    let ``Startup: validateEnvironment detects missing variables`` () =
-        let flow : Flow<BaseRuntime, EnvironmentVariableError, string> =
-            EnvironmentVariable.get "AXIAL_HOSTING_MISSING"
-        let result = Startup.validateEnvironment flow
-        
-        match result with
-        | Error [ message ] -> test <@ message.Contains("AXIAL_HOSTING_MISSING") && message.Contains("Missing required environment variable") @>
-        | _ -> failwithf "Expected missing variable error, got %A" result
+    let ``Generic Host adapter runs root App and requests host stop on completion`` () =
+        let logger = RecordingLogger()
+        let lifetime = RecordingLifetime()
+        let completed = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
 
-type ExceptionRecordingLogger() =
-    let entries = ResizeArray<Microsoft.Extensions.Logging.LogLevel * string * exn option>()
-    member _.Entries = entries |> Seq.toList
-    interface ILogger with
-        member _.Log(level, _, state, error, _) =
-            entries.Add(level, string state, Option.ofObj error)
-        member _.IsEnabled(_) = true
-        member _.BeginScope(_) = { new IDisposable with member _.Dispose() = () }
+        let application : Flow<string, string, unit> =
+            flow {
+                let! environment = Flow.env<string, string>
+                test <@ environment = "host-environment" @>
+                completed.TrySetResult() |> ignore
+            }
+
+        let hosted =
+            new FlowHostedService<string, string>(
+                null,
+                (fun _ -> "host-environment"),
+                id,
+                application,
+                TypedLogger<FlowHostedService<string, string>>(logger) :> ILogger<_>,
+                lifetime,
+                HostedAppOptions.Default)
+            :> IHostedService
+
+        hosted.StartAsync(CancellationToken.None).GetAwaiter().GetResult()
+
+        test <@ completed.Task.Wait(TimeSpan.FromSeconds 2.0) @>
+        SpinWait.SpinUntil((fun () -> lifetime.StopCalls = 1), TimeSpan.FromSeconds 2.0) |> ignore
+        test <@ lifetime.StopCalls = 1 @>
+        hosted.StopAsync(CancellationToken.None).GetAwaiter().GetResult()
+
+    [<Fact>]
+    let ``Generic Host shutdown interrupts root App and waits for finalizer`` () =
+        let logger = RecordingLogger()
+        let lifetime = RecordingLifetime()
+        let started = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let finalized = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+
+        let application : Flow<unit, string, unit> =
+            flow {
+                do! Flow.addFinalizer(fun _ -> finalized.TrySetResult() |> ignore; Task.CompletedTask)
+                started.TrySetResult() |> ignore
+                do! Flow.Runtime.sleep(TimeSpan.FromSeconds 30.0)
+            }
+
+        let hosted =
+            new FlowHostedService<unit, string>(
+                null,
+                (fun _ -> ()),
+                id,
+                application,
+                TypedLogger<FlowHostedService<unit, string>>(logger) :> ILogger<_>,
+                lifetime,
+                { StopHostOnCompletion = false })
+            :> IHostedService
+
+        hosted.StartAsync(CancellationToken.None).GetAwaiter().GetResult()
+        test <@ started.Task.Wait(TimeSpan.FromSeconds 2.0) @>
+        (lifetime :> IHostApplicationLifetime).StopApplication()
+        hosted.StopAsync(CancellationToken.None).GetAwaiter().GetResult()
+        test <@ finalized.Task.IsCompletedSuccessfully @>
+
+    [<Fact>]
+    let ``standalone exit codes distinguish failure defects and interruption`` () =
+        test <@ DotNetApp.exitCode (Exit.Success 1 : Exit<int, string>) = 0 @>
+        test <@ DotNetApp.exitCode (Exit.Failure(Cause.Fail "bad") : Exit<int, string>) = 1 @>
+        test <@ DotNetApp.exitCode (Exit.Failure(Cause.Die(InvalidOperationException "bad")) : Exit<int, string>) = 2 @>
+        test <@ DotNetApp.exitCode (Exit.Failure Cause.Interrupt : Exit<int, string>) = 130 @>
 
 module FiberLoggingTests =
-    /// Waits for a fiber to settle without consuming its outcome, so it stays unobserved.
-    /// Deterministic replacement for fixed sleeps, which race the thread pool under load.
-    let rec private waitForSettled (fiber: Fiber<'error, 'value>) : Flow<unit, 'testError, unit> =
-        flow {
-            if fiber.Metadata.Status = FiberStatus.Running then
-                do! Flow.Runtime.sleep (TimeSpan.FromMilliseconds 5.0)
-                return! waitForSettled fiber
-        }
-
     [<Fact>]
-    let ``FiberLogging.observe logs fiber defects and unobserved defects with their exceptions`` () =
-        let logger = ExceptionRecordingLogger()
+    let ``Fiber logging records defects and unobserved defects`` () =
+        let logger = RecordingLogger()
+        let observer = FiberLogging.observer logger
+        let defect = InvalidOperationException "fiber failed"
+        let metadata =
+            { Id = FiberId 9L
+              ParentId = None
+              StartedAt = DateTimeOffset.UtcNow
+              Status = FiberStatus.Failed
+              Observed = false }
 
-        let result =
-            flow {
-                let! fiber = Flow.fork (Flow.die (InvalidOperationException "silent crash") : Flow<unit, string, int>)
-                do! waitForSettled fiber
-                return "done"
-            }
-            |> FiberLogging.observe (logger :> ILogger)
-            |> fun workflow -> workflow.RunSynchronously(())
+        observer.OnEnd metadata (Some defect)
+        observer.OnUnobservedDefect (Some metadata) defect
 
-        test <@ result = Exit.Success "done" @>
-
-        let errors =
-            logger.Entries
-            |> List.filter (fun (level, _, _) -> level = Microsoft.Extensions.Logging.LogLevel.Error)
-
-        let criticals =
-            logger.Entries
-            |> List.filter (fun (level, _, _) -> level = Microsoft.Extensions.Logging.LogLevel.Critical)
-
-        test <@ List.length errors = 1 @>
-        test <@ List.length criticals = 1 @>
-
-        match criticals with
-        | [ _, message, Some error ] ->
-            test <@ message.Contains "Unobserved fiber defect" @>
-            test <@ error.Message = "silent crash" @>
-        | other -> failwithf "Expected one critical entry with an exception, got %A" other
-
-    [<Fact>]
-    let ``FiberObserver.compose runs both observers and guards each hook`` () =
-        let logger = ExceptionRecordingLogger()
-        let seen = ResizeArray<string>()
-
-        let throwing =
-            { FiberObserver.none with
-                OnEnd = fun _ _ -> failwith "observer bug" }
-
-        let recording =
-            { FiberObserver.none with
-                OnEnd = fun metadata _ -> lock seen (fun () -> seen.Add(string metadata.Id.Value)) }
-
-        let composed = FiberObserver.compose throwing (FiberObserver.compose recording (FiberLogging.observer logger))
-
-        let result =
-            flow {
-                let! fiber = Flow.fork (Flow.die (InvalidOperationException "boom") : Flow<unit, string, int>)
-                do! waitForSettled fiber
-                let! _exit = Flow.interrupt fiber
-                return 1
-            }
-            |> Flow.withFiberObserver composed
-            |> fun workflow -> workflow.RunSynchronously(())
-
-        test <@ result = Exit.Success 1 @>
-        test <@ seen.Count = 1 @>
-
-        let errors =
-            logger.Entries
-            |> List.filter (fun (level, _, _) -> level = Microsoft.Extensions.Logging.LogLevel.Error)
-
-        test <@ List.length errors = 1 @>
+        test <@ logger.Entries |> List.exists (fun (level, _, error) -> level = Microsoft.Extensions.Logging.LogLevel.Error && error = Some defect) @>
+        test <@ logger.Entries |> List.exists (fun (level, _, error) -> level = Microsoft.Extensions.Logging.LogLevel.Critical && error = Some defect) @>

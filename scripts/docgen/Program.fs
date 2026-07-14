@@ -384,6 +384,50 @@ let pageSpecs = [
         Alias = None
     }
     {
+        OutPath = ["app"; "_index.md"]
+        Title = "App"
+        Description = "Source-documented root application lifecycle for Flow."
+        Intro = "This page shows the portable `App` lifecycle in `Axial.Flow`. Use `App.run` for a finite root workflow, or `App.start` when a console signal, host, window, UI owner, or test controls stop through an `AppHandle`. The handle keeps the final structured `Exit`, makes stop idempotent, and completes only after the root Flow scope has closed. Platform event subscription and error rendering stay in the host adapter."
+        SymbolIds = [
+            "Lifecycle", ["T:Axial.Flow.AppStatus"; "T:Axial.Flow.AppHandle`2"; "P:Axial.Flow.AppHandle`2.Status"; "P:Axial.Flow.AppHandle`2.Completion"; "M:Axial.Flow.AppHandle`2.Stop"]
+            "Start and run", ["M:Axial.Flow.App.start"; "M:Axial.Flow.App.startWithCancellation"; "M:Axial.Flow.App.run"; "M:Axial.Flow.App.runWithCancellation"]
+        ]
+        Alias = None
+    }
+    {
+        OutPath = ["hosting"; "_index.md"]
+        Title = ".NET Hosting"
+        Description = "Source-documented .NET standalone, Generic Host, and Microsoft logging adapters."
+        Intro = "This page shows `Axial.Flow.Hosting` for .NET. `DotNetApp` owns Ctrl+C and process exit codes without requiring Generic Host. `Hosting.addApp` installs one root Flow application into Generic Host lifetime. `MicrosoftLogging` adapts MEL to the explicit `ILog` service, while `FiberLogging` reports fiber defects at the root edge. See the [.NET hosting guide](/flow/hosting/) for complete setup."
+        SymbolIds = [
+            "Standalone", ["M:Axial.Flow.Hosting.DotNetApp.run"; "M:Axial.Flow.Hosting.DotNetApp.exitCode"]
+            "Generic Host", ["T:Axial.Flow.Hosting.HostedAppOptions"; "T:Axial.Flow.Hosting.FlowHostedService`2"; "M:Axial.Flow.Hosting.Hosting.addApp"; "M:Axial.Flow.Hosting.Hosting.addAppWith"]
+            "Logging", ["M:Axial.Flow.Hosting.MicrosoftLogging.create"; "M:Axial.Flow.Hosting.MicrosoftLogging.fromFactory"; "M:Axial.Flow.Hosting.MicrosoftLogging.layer"; "M:Axial.Flow.Hosting.FiberLogging.observer"; "M:Axial.Flow.Hosting.FiberLogging.observe"]
+        ]
+        Alias = None
+    }
+    {
+        OutPath = ["hosting-node"; "_index.md"]
+        Title = "Node Hosting"
+        Description = "Source-documented Node process adapters for Fable applications."
+        Intro = "This page shows the JavaScript-only `Axial.Flow.Hosting.Node` surface. `NodeApp` connects SIGINT/SIGTERM and `process.exitCode` to a root `App`; `NodeEnvironment.live` exposes `process.env` as the explicit `IEnvironmentVariables` service. See the [Node hosting guide](/flow/hosting/node/) for complete Fable setup."
+        SymbolIds = [
+            "Node application", ["M:Axial.Flow.Hosting.Node.NodeApp.arguments"; "M:Axial.Flow.Hosting.Node.NodeApp.start"; "M:Axial.Flow.Hosting.Node.NodeApp.run"; "M:Axial.Flow.Hosting.Node.NodeApp.exitCode"]
+            "Environment", ["P:Axial.Flow.Hosting.Node.NodeEnvironment.live"]
+        ]
+        Alias = None
+    }
+    {
+        OutPath = ["hosting-browser"; "_index.md"]
+        Title = "Browser Hosting"
+        Description = "Source-documented browser ownership and AbortSignal adapters for Fable applications."
+        Intro = "This page shows the JavaScript-only `Axial.Flow.Hosting.Browser` surface. `BrowserApp.mount` gives a UI owner an `AppHandle`; `startWithSignal` connects a structural browser `AbortSignal` to coordinated stop. The package deliberately does not treat page visibility or unload events as dependable application shutdown. See the [browser hosting guide](/flow/hosting/browser/) for complete setup."
+        SymbolIds = [
+            "Browser application", ["T:Axial.Flow.Hosting.Browser.AbortSignal"; "M:Axial.Flow.Hosting.Browser.BrowserApp.mount"; "M:Axial.Flow.Hosting.Browser.BrowserApp.startWithSignal"]
+        ]
+        Alias = None
+    }
+    {
         OutPath = ["fiber"; "_index.md"]
         Title = "Fiber"
         Description = "Source-documented handle for running workflows."
@@ -1147,6 +1191,9 @@ let main argv =
         Path.Combine(artifactsDir, "Axial.Flow.FileSystem/debug_net8.0/Axial.Flow.FileSystem.dll")
         Path.Combine(artifactsDir, "Axial.Flow.HttpClient/debug_net8.0/Axial.Flow.HttpClient.dll")
         Path.Combine(artifactsDir, "Axial.Flow.Process/debug_net8.0/Axial.Flow.Process.dll")
+        Path.Combine(artifactsDir, "Axial.Flow.Hosting/debug_net8.0/Axial.Flow.Hosting.dll")
+        Path.Combine(artifactsDir, "Axial.Flow.Hosting.Node/debug/Axial.Flow.Hosting.Node.dll")
+        Path.Combine(artifactsDir, "Axial.Flow.Hosting.Browser/debug/Axial.Flow.Hosting.Browser.dll")
     ]
 
     let apiDocInputs = [
@@ -1156,7 +1203,22 @@ let main argv =
     ]
 
     let substitutions = Substitutions.Empty
-    let model = ApiDocs.GenerateModel(apiDocInputs, "Axial", substitutions, root="/", qualify=true)
+    let dependencyDirectories =
+        [ typeof<Microsoft.Extensions.Logging.ILogger>.Assembly.Location
+          typeof<Microsoft.Extensions.DependencyInjection.IServiceCollection>.Assembly.Location
+          typeof<Microsoft.Extensions.Hosting.IHostedService>.Assembly.Location
+          typeof<Fable.Core.JS.Promise<_>>.Assembly.Location ]
+        |> List.map Path.GetDirectoryName
+        |> List.distinct
+
+    let model =
+        ApiDocs.GenerateModel(
+            apiDocInputs,
+            "Axial",
+            substitutions,
+            root="/",
+            qualify=true,
+            libDirs=dependencyDirectories)
     
     let allEntities = 
         model.EntityInfos 

@@ -195,6 +195,21 @@ Ambient mechanics include:
 Operational services such as clock, log, random, GUID, and environment variables should be modeled as explicit services
 and provisioned through environments and layers.
 
+### Root Applications And Hosts
+
+`App` owns the portable lifetime of one root Flow application. `App.run` is the finite entry point; `App.start` returns
+an owned handle whose `Stop()` is idempotent and whose `Completion` becomes available after root scope cleanup. App
+definitions stay ordinary provided Flow values rather than inheriting a host-specific base type.
+
+Platform hosting packages translate native events into `App.Stop()` and translate the final `Exit` at the outer edge:
+
+- `Axial.Flow.Hosting`: standalone .NET console and Microsoft Generic Host, plus MEL adaptation
+- `Axial.Flow.Hosting.Node`: Node signals, process exit, arguments, and `process.env`
+- `Axial.Flow.Hosting.Browser`: UI ownership and `AbortSignal`
+
+The browser adapter never equates tab visibility or unload with dependable application shutdown. Node and browser
+packages are JavaScript-only Fable bindings and fail immediately outside their named runtime.
+
 ## Scope And Layers
 
 `Scope` and `Layer` are part of the target public architecture rather than deferred internals.

@@ -26,6 +26,8 @@ The coordinated release currently packs:
 - `Axial.Flow.Process`
 - `Axial.Flow.PlatformService`
 - `Axial.Flow.Hosting`
+- `Axial.Flow.Hosting.Node`
+- `Axial.Flow.Hosting.Browser`
 - `Axial.Flow.Telemetry`
 
 `Axial` is the umbrella package. It references `Axial.Flow`, `Axial.ErrorHandling`, `Axial.Refined`, and `Axial.Validation`.

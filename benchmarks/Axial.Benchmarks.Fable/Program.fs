@@ -2,6 +2,8 @@ namespace Axial.Benchmarks.Fable
 
 open System
 open Axial.Flow
+open Axial.Flow.Hosting.Browser
+open Axial.Flow.Hosting.Node
 open Axial.Flow.Telemetry.JavaScript
 
 /// An in-memory `@opentelemetry/api` fake proving the OTel JS surface works end to end under Fable.
@@ -39,6 +41,12 @@ module private OtelCheck =
                     member _.``with`` (_, operation) = operation () } }
 
 #if FABLE_COMPILER
+    [<Fable.Core.Emit("globalThis.window = {}; globalThis.document = {}")>]
+    let private installBrowserGlobals () : unit = ()
+
+    [<Fable.Core.Emit("delete globalThis.window; delete globalThis.document")>]
+    let private removeBrowserGlobals () : unit = ()
+
     let private runToExit (flow: Flow<unit, string, int>) : Exit<int, string> =
         let mutable exit = None
 
@@ -118,6 +126,36 @@ module private OtelCheck =
         | None -> failwith "Fiber defect span was not recorded."
 
         Otel.uninstall ()
+
+        let appExit =
+            App.run () (Flow.ok 7 : Flow<unit, string, int>)
+            |> fun work ->
+                let mutable result = None
+                Async.StartWithContinuations(work, (fun value -> result <- Some value), raise, (fun _ -> ()))
+                result |> Option.defaultWith (fun () -> failwith "App.run did not complete synchronously")
+
+        if appExit <> Exit.Success 7 then failwith $"Unexpected App exit: %A{appExit}"
+
+        NodeEnvironment.live.Set("AXIAL_FABLE_HOSTING_CHECK", Some "ok")
+        if NodeEnvironment.live.TryGet "AXIAL_FABLE_HOSTING_CHECK" <> Some "ok" then
+            failwith "Node environment adapter did not round-trip process.env."
+        NodeEnvironment.live.Set("AXIAL_FABLE_HOSTING_CHECK", None)
+
+        let nodeApp = NodeApp.start id () (Flow.ok 9 : Flow<unit, string, int>)
+        let mutable nodeExit = None
+        Async.StartWithContinuations(nodeApp.Completion, (fun value -> nodeExit <- Some value), raise, (fun _ -> ()))
+        if nodeExit <> Some(Exit.Success 9) then failwith $"Unexpected Node App exit: %A{nodeExit}"
+
+        installBrowserGlobals ()
+        try
+            let browserApp = BrowserApp.mount () (Flow.ok 8 : Flow<unit, string, int>)
+            let mutable browserExit = None
+            Async.StartWithContinuations(browserApp.Completion, (fun value -> browserExit <- Some value), raise, (fun _ -> ()))
+            if browserExit <> Some(Exit.Success 8) then failwith $"Unexpected browser App exit: %A{browserExit}"
+        finally
+            removeBrowserGlobals ()
+
+        printfn "App hosting: ok"
         printfn "Otel spans: ok"
 #endif
 
