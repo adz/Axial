@@ -171,6 +171,12 @@ type FiberMetadata =
         StartedAt: DateTimeOffset
         /// <summary>The current fiber status.</summary>
         mutable Status: FiberStatus
+        /// <summary>
+        /// Whether the fiber's outcome was consumed (<c>Flow.join</c>, <c>Flow.interrupt</c>) or explicitly
+        /// detached at birth (<c>Flow.forkDetached</c>). A fiber that dies with a defect while unobserved is
+        /// reported through the runtime's fiber observer once no observation can happen anymore.
+        /// </summary>
+        mutable Observed: bool
     }
 
 /// <summary>Human-readable diagnostic dump for a fiber.</summary>
@@ -185,6 +191,103 @@ type FiberDump =
         /// <summary>The current fiber status.</summary>
         Status: FiberStatus
     }
+
+/// <summary>
+/// Runtime hooks observing fiber lifecycle events for diagnostics and telemetry.
+/// </summary>
+/// <remarks>
+/// Installed once at the application edge with <c>Flow.withFiberObserver</c> and carried implicitly to every
+/// descendant fork. All hooks default to no-ops, receive only diagnostic data (<c>FiberMetadata</c> and defect
+/// exceptions, never typed exits), and must not throw; exceptions raised by hooks are swallowed so a
+/// diagnostics hook can never alter a fiber's outcome.
+/// </remarks>
+type FiberObserver =
+    {
+        /// <summary>A fiber was forked. Receives the child fiber's metadata.</summary>
+        OnStart: FiberMetadata -> unit
+        /// <summary>
+        /// A fiber settled. <c>FiberMetadata.Status</c> distinguishes success, failure, and interruption; the
+        /// first <c>Cause.Die</c> defect in the exit, if any, is passed alongside.
+        /// </summary>
+        OnEnd: FiberMetadata -> exn option -> unit
+        /// <summary>
+        /// A <c>Cause.Die</c> defect became unobservable: a forked fiber died unobserved and no observation can
+        /// happen anymore, or the runtime discarded a race/timeout loser's exit. The metadata is absent for
+        /// discarded race/timeout losers, which are executions rather than fibers.
+        /// </summary>
+        OnUnobservedDefect: FiberMetadata option -> exn -> unit
+    }
+
+/// <summary>Standard fiber observers.</summary>
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+[<RequireQualifiedAccess>]
+module FiberObserver =
+    /// <summary>The default observer: every hook is a no-op.</summary>
+    let none : FiberObserver =
+        {
+            OnStart = ignore
+            OnEnd = fun _ _ -> ()
+            OnUnobservedDefect = fun _ _ -> ()
+        }
+
+    let internal notifyStart (observer: FiberObserver) (metadata: FiberMetadata) : unit =
+        try observer.OnStart metadata with _ -> ()
+
+    let internal notifyEnd (observer: FiberObserver) (metadata: FiberMetadata) (defect: exn option) : unit =
+        try observer.OnEnd metadata defect with _ -> ()
+
+    let internal notifyUnobservedDefect
+        (observer: FiberObserver)
+        (metadata: FiberMetadata option)
+        (defect: exn)
+        : unit =
+        try observer.OnUnobservedDefect metadata defect with _ -> ()
+
+/// <summary>
+/// Tracks a forked fiber's settled defect so it can be reported as unobserved exactly once, by whichever
+/// detection mechanism (scope-close sweep or garbage-collection net) reaches finality first.
+/// </summary>
+type internal FiberDefectTracker(metadata: FiberMetadata, observer: FiberObserver) =
+    let gate = obj()
+    let mutable defect: exn option = None
+    let mutable reported = false
+
+#if !FABLE_COMPILER
+    static let sentinels = System.Runtime.CompilerServices.ConditionalWeakTable<obj, FiberDefectTracker>()
+#endif
+
+    /// Records the defect the fiber settled with, if any.
+    member _.Settled(settledDefect: exn option) =
+        lock gate (fun () -> defect <- settledDefect)
+
+    /// Reports the fiber's defect as unobserved if it has one, was never observed, and was not already
+    /// reported. Safe to call from the scope sweep and the GC net concurrently.
+    member _.TryReport() =
+        let toReport =
+            lock gate (fun () ->
+                if not reported && not metadata.Observed then
+                    match defect with
+                    | Some _ ->
+                        reported <- true
+                        defect
+                    | None -> None
+                else
+                    None)
+
+        match toReport with
+        | Some exn -> FiberObserver.notifyUnobservedDefect observer (Some metadata) exn
+        | None -> ()
+
+#if !FABLE_COMPILER
+    /// Keeps <paramref name="tracker" /> alive exactly as long as <paramref name="fiberHandle" /> is
+    /// reachable. When a discarded handle is collected, the tracker becomes collectable and its finalizer
+    /// reports any unobserved defect — the same mechanism as <c>TaskScheduler.UnobservedTaskException</c>.
+    static member Attach(fiberHandle: obj, tracker: FiberDefectTracker) =
+        sentinels.Add(fiberHandle, tracker)
+
+    override this.Finalize() =
+        try this.TryReport() with _ -> ()
+#endif
 
 /// <summary>
 /// Represents a handle to a workflow that has already been started.
@@ -340,6 +443,7 @@ type internal RuntimeContext =
         Annotations: Map<string, string>
         AnnotationSink: string -> string -> unit
         FiberId: FiberId
+        Observer: FiberObserver
     }
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -351,6 +455,7 @@ module internal RuntimeContext =
             Annotations = Map.empty
             AnnotationSink = fun _ _ -> ()
             FiberId = FiberId.next ()
+            Observer = FiberObserver.none
         }
 
     let detached : RuntimeContext =
@@ -367,6 +472,9 @@ module internal RuntimeContext =
 
     let withFiberId (fiberId: FiberId) (runtime: RuntimeContext) : RuntimeContext =
         { runtime with FiberId = fiberId }
+
+    let withObserver (observer: FiberObserver) (runtime: RuntimeContext) : RuntimeContext =
+        { runtime with Observer = observer }
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
@@ -523,6 +631,30 @@ module RetryPolicy =
         { MaxAttempts = maxAttempts
           Delay = fun _ -> TimeSpan.Zero
           ShouldRetry = fun _ -> true }
+
+/// <summary>
+/// Defines how <c>Flow.Runtime.supervise</c> restarts flows that terminate with unexpected defects.
+/// </summary>
+/// <remarks>
+/// The defect-channel sibling of <see cref="T:Axial.Flow.RetryPolicy`1" />: it decides restarts from the
+/// defect exception rather than the typed error, because defects are bugs that escaped the typed channel.
+/// </remarks>
+type SupervisePolicy =
+    {
+      MaxAttempts: int
+      Delay: int -> TimeSpan
+      ShouldRestart: exn -> bool
+    }
+
+/// <summary>
+/// Standard supervision policies for runtime helpers.
+/// </summary>
+[<RequireQualifiedAccess>]
+module SupervisePolicy =
+    let noDelay (maxAttempts: int) : SupervisePolicy =
+        { MaxAttempts = maxAttempts
+          Delay = fun _ -> TimeSpan.Zero
+          ShouldRestart = fun _ -> true }
 
 /// <summary>
 /// Represents an error channel that cannot occur.

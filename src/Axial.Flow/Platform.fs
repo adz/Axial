@@ -465,9 +465,14 @@ let timeoutExecution
     (after: TimeSpan)
     (operation: CancellationToken -> Execution<'value, 'error>)
     (cancellationToken: CancellationToken)
+    (onDiscardedExit: Exit<'value, 'error> -> unit)
     (onTimeout: unit -> Execution<'value, 'error>)
     : Execution<'value, 'error> =
 #if FABLE_COMPILER
+    // Fable's StartChild timeout cancels the child without surfacing its exit, so there is nothing to
+    // report to onDiscardedExit here.
+    ignore onDiscardedExit
+
     async {
         try
             let! child =
@@ -487,9 +492,11 @@ let timeoutExecution
 
             if obj.ReferenceEquals(completed, timeoutTask) then
                 timeoutSource.Cancel()
+                // The losing operation's exit is dropped here and can never be observed by anyone else,
+                // so hand it to the caller for unobserved-defect reporting before discarding it.
                 try
-                    let! _ = running
-                    ()
+                    let! discarded = running
+                    onDiscardedExit discarded
                 with _ -> ()
                 return! onTimeout ()
             else
@@ -668,11 +675,13 @@ let raceExecution
     (leftOp: CancellationToken -> Execution<'value, 'error>)
     (rightOp: CancellationToken -> Execution<'value, 'error>)
     (cancellationToken: CancellationToken)
+    (onDiscardedExit: Exit<'value, 'error> -> unit)
     : Execution<'value, 'error> =
 #if FABLE_COMPILER
     ignore leftOp
     ignore rightOp
     ignore cancellationToken
+    ignore onDiscardedExit
     async { return failwith "Flow.race is not supported on Fable." }
 #else
     ValueTask<Exit<'value, 'error>>(
@@ -684,6 +693,18 @@ let raceExecution
 
             let! completed = Task.WhenAny(leftFiberTask, rightFiberTask)
             cts.Cancel()
+
+            // The loser's exit is dropped without ever being awaited, so hand it to the caller for
+            // unobserved-defect reporting once the loser settles.
+            let losing =
+                if obj.ReferenceEquals(completed, leftFiberTask) then rightFiberTask else leftFiberTask
+
+            losing.ContinueWith(
+                (fun (settled: Task<Exit<'value, 'error>>) ->
+                    if settled.IsCompletedSuccessfully then
+                        onDiscardedExit settled.Result),
+                TaskContinuationOptions.ExecuteSynchronously)
+            |> ignore
 
             return completed.GetAwaiter().GetResult()
         })
@@ -702,11 +723,12 @@ type ExitTask<'value, 'error> = Task<Exit<'value, 'error>>
 #endif
 
 /// Starts <paramref name="run" /> as hot, detached work and returns both a cancellation source that requests its
-/// interruption and a handle that completes with its final exit. <paramref name="setStatus" /> is invoked with
-/// the fiber's terminal status once <paramref name="run" /> settles (including when it throws).
+/// interruption and a handle that completes with its final exit. <paramref name="onSettled" /> is invoked with
+/// the fiber's terminal status and exit once <paramref name="run" /> settles (including when it throws), so the
+/// caller can update fiber metadata and notify lifecycle observers.
 let startFiber
     (parentCancellationToken: CancellationToken)
-    (setStatus: FiberStatus -> unit)
+    (onSettled: FiberStatus -> Exit<'value, 'error> -> unit)
     (run: CancellationToken -> Execution<'value, 'error>)
     : CancellationTokenSource * ExitTask<'value, 'error> =
     // A local mirror of Cause.isInterrupted (defined later, in Core.fs) so this file does not need to
@@ -754,11 +776,11 @@ let startFiber
         async {
             try
                 let! exit = run cts.Token
-                setStatus (statusFromExit exit)
+                onSettled (statusFromExit exit) exit
                 settle exit
             with error ->
                 let exit = Exit.Failure(causeOfException error)
-                setStatus (statusFromExit exit)
+                onSettled (statusFromExit exit) exit
                 settle exit
         })
 
@@ -779,11 +801,11 @@ let startFiber
         task {
             try
                 let! exit = (run cts.Token).AsTask()
-                setStatus (statusFromExit exit)
+                onSettled (statusFromExit exit) exit
                 return exit
             with error ->
                 let exit = Exit.Failure(causeOfException error)
-                setStatus (statusFromExit exit)
+                onSettled (statusFromExit exit) exit
                 return exit
         }
 

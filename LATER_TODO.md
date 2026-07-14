@@ -79,9 +79,18 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 
 - [x] Add scoped runtime annotations, trace IDs, annotation sinks, and request/correlation/tenant metadata propagation into telemetry spans.
 - [x] Add a minimal `ActivitySource` telemetry wrapper that creates spans and tags environment metadata plus existing and dynamically-added runtime annotations.
-- [ ] Make the `ActivitySource` wrapper production-ready with exit tagging, typed-error and defect recording, cancellation tagging, activity status, and available fiber/runtime metadata.
-- [ ] Integrate observability with `Axial.Flow.Telemetry` and `Microsoft.Extensions.Logging`.
-- [ ] Add tests for annotation/span propagation through flows, fibers, layers, resources, and retries.
+- [x] Integrate observability with `Axial.Flow.Telemetry` and `Microsoft.Extensions.Logging` (fiber-lifecycle wiring: `FiberTelemetry.observe` records fiber defect / unobserved-defect error spans; `Microsoft.Extensions.Logging` recipe documented in the supervision guide).
+- [ ] Fix `Activity.trace` span lifetime: stop the activity when the execution settles instead of `use`-disposing when the workflow is started, so async work is measured by its span.
+- [ ] Stamp exits onto spans with one canonical tag vocabulary: `ActivityStatusCode` from the exit, `axial.flow.outcome` (success/fail/die/interrupt), `axial.flow.error` for rendered typed errors, OTel `exception.*` tags for defects, `axial.flow.interrupted` for cancellation, and `axial.flow.cause` (via `Cause.prettyPrint`) for composite causes.
+- [ ] Expose the current fiber id through `Flow.Runtime` and tag it on traced spans so workflow spans correlate with fiber telemetry.
+- [ ] Make annotation sinks composable (tee to the previous sink instead of replacing it), swallow sink exceptions, and switch `Activity.trace` to the composing form so nested traces and user sinks all receive annotations.
+- [ ] Give forked fibers real spans: open an `axial.flow.fiber` activity in `FiberObserver.OnStart` (parent captured at the fork site), close it with exit conventions in `OnEnd`, link unobserved-defect spans to it, and keep span-per-fiber opt-in alongside defect-only reporting.
+- [ ] Add an extensible `IHasTelemetryTags` environment trait applied by `Activity.trace` and fiber spans, alongside the existing `IHasRequestId`/`IHasCorrelationId`/`IHasTenantId` trio.
+- [ ] Add an exception-carrying overload to `ILog`, forward it through the Hosting MEL bridge, and ship `FiberLogging.observer : ILogger -> FiberObserver` plus a `FiberObserver` composition helper in `Axial.Flow.Hosting` (replacing the docs-recipe-only logging integration).
+- [ ] Remove the unused `LogEntry` type or give it a consumer (`Log.fromSink` over structured entries with `IClock` timestamps); removal is the default.
+- [ ] Add a producer for `Cause.Traced` (e.g. `Flow.tracedError`) so the existing cause-trace channel and `Cause.prettyPrint` rendering are reachable from user code.
+- [ ] Add tests for annotation/span propagation through flows, fibers, layers, resources, retries, and supervised restarts, plus span-lifetime, exit-mapping, nesting/parentage, fiber-span, and logging-observer coverage.
+- [ ] Design record: `dev-docs/current-ideas/telemetry-expansion.md`.
 
 ## 7a. Future Service Packages
 
@@ -117,7 +126,8 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 ## 10. Post-v1.0 Fiber Runtime
 
 - [ ] Add fiber-local state similar to FiberRef/FiberRefs, adapted to .NET/F#.
-- [ ] Add supervision hooks for fiber start/end/failure/interruption.
+- [x] Add supervision hooks for fiber start/end/failure/interruption (`FiberObserver` with `OnStart`/`OnEnd`/`OnUnobservedDefect`, installed via `Flow.withFiberObserver`; interruption is reported through `OnEnd` status; unobserved defects are detected at race/timeout discard sites, scope close, and a GC net).
+- [x] Add `Flow.Runtime.supervise` restart-on-defect combinator (`SupervisePolicy`, fresh child scope per attempt) and `Flow.forkDetached` for explicit fire-and-forget; design record in `dev-docs/current-ideas/supervising-fiber-defects.md`.
 - [ ] Add runtime flags and execution strategy where they materially affect .NET behavior.
 - [ ] Add structured fiber dumps and richer runtime diagnostics.
 

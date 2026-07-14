@@ -1,7 +1,7 @@
 ---
 title: "Flow.interrupt"
 linkTitle: "interrupt"
-weight: 2102
+weight: 2103
 ---
 
 Signals a fiber to stop and waits for it to finish its cleanup.

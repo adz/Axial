@@ -9,7 +9,8 @@
 - **Exit Outcomes**: Workflows result in `Success`, `Failure` (`Cause.Fail`), `Interruption` (`Cause.Interrupt`), or `Defect` (`Cause.Die`).
 
 ## Concurrency & Coordination
-- **Fibers**: Use `Flow.fork` to start a fiber, `Flow.join` to wait for its outcome, and `Flow.interrupt` for graceful stopping.
+- **Fibers**: Use `Flow.fork` to start a fiber, `Flow.join` to wait for its outcome, and `Flow.interrupt` for graceful stopping. Use `Flow.forkDetached` for intentional fire-and-forget; a discarded `Flow.fork` handle whose fiber dies with a defect is reported through the fiber observer.
+- **Defect supervision**: Use `Flow.Runtime.supervise policy flow` (with a `SupervisePolicy`) to restart background work that dies with `Cause.Die` defects; `Flow.Runtime.retry` remains the typed-error path. Install `Flow.withFiberObserver` once at the application edge (or `FiberTelemetry.observe` from `Axial.Flow.Telemetry`) to log/trace fiber defects and unobserved defects.
 - **Parallelism**: Use `Flow.zipPar` to run two flows concurrently or `Flow.race` for the first winner.
 - **Scheduling**: Use `Schedule.retry schedule flow` for typed failure retries and `Schedule.repeat schedule flow` for repeating successes.
 - **STM (Software Transactional Memory)**: Use `TRef` for transactional state and `stm { }` for atomic, composable transitions. Use `STM.retry` and `STM.orElse` for coordination without locks.

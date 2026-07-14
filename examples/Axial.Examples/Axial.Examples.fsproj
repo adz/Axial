@@ -12,6 +12,7 @@
     <Compile Include="RefinedCatalogExample.fs" />
     <Compile Include="RefinedValueSchemaExample.fs" />
     <Compile Include="PolicyExamples.fs" />
+    <Compile Include="SupervisionExample.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

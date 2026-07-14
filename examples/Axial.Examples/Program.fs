@@ -11,6 +11,8 @@ module Runner =
         RefinedValueSchemaExample.run()
         printfn ""
         PolicyExamples.run()
+        printfn ""
+        SupervisionExample.run()
 
 [<EntryPoint>]
 let main _ =
@@ -20,5 +22,6 @@ let main _ =
     | "refined-catalog" -> RefinedCatalogExample.run()
     | "refined-value-schema" -> RefinedValueSchemaExample.run()
     | "policy" -> PolicyExamples.run()
+    | "supervision" -> SupervisionExample.run()
     | _ -> Runner.run()
     0

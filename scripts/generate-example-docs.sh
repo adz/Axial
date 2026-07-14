@@ -147,3 +147,12 @@ render_example_section \
   "$root_dir/examples/Axial.MaintenanceExamples/Program.fs" \
   "https://github.com/adz/Axial/blob/main/examples/Axial.MaintenanceExamples/Program.fs" \
   "dotnet run --project examples/Axial.MaintenanceExamples/Axial.MaintenanceExamples.fsproj --nologo"
+
+render_example_section \
+  "Supervision and Fiber Observability Example" \
+  "This example shows Flow.Runtime.supervise restarting a background worker that dies with a defect, a FiberObserver reporting the defect of a fiber whose fork handle was discarded, and Flow.forkDetached stating intentional fire-and-forget so the report is suppressed." \
+  "$root_dir/examples/Axial.Examples/Axial.Examples.fsproj" \
+  "$root_dir/examples/Axial.Examples/SupervisionExample.fs" \
+  "https://github.com/adz/Axial/blob/main/examples/Axial.Examples/SupervisionExample.fs" \
+  "AXIAL_EXAMPLE=supervision dotnet run --project examples/Axial.Examples/Axial.Examples.fsproj --nologo" \
+  "supervision"

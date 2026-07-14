@@ -46,6 +46,15 @@ module Flow =
         | Exit.Success _, Exit.Failure cause ->
             Exit.Failure cause
 
+    /// Reports every defect inside a runtime-discarded exit (a race or timeout loser) as unobserved.
+    /// Such exits are dropped without a fiber handle, so nobody can ever observe them.
+    let private reportDiscardedExit (observer: FiberObserver) (exit: Exit<'value, 'error>) : unit =
+        match exit with
+        | Exit.Success _ -> ()
+        | Exit.Failure cause ->
+            for defect in Cause.defects cause do
+                FiberObserver.notifyUnobservedDefect observer None defect
+
     let private runEffect
         (environment: 'env)
         (cancellationToken: CancellationToken)
@@ -406,6 +415,21 @@ module Flow =
 
             RuntimeState.withRuntime runtime (fun () -> invoke flow environment cancellationToken))
 
+    /// <summary>Installs runtime fiber-lifecycle hooks for diagnostics and telemetry.</summary>
+    /// <remarks>
+    /// The observer is carried implicitly to every fiber forked inside <paramref name="flow" />, so installing
+    /// it once at the application edge covers all descendant background work. Hooks receive diagnostic data
+    /// only and cannot alter any fiber's outcome; exceptions they throw are swallowed.
+    /// </remarks>
+    /// <param name="observer">The lifecycle hooks. Start from <c>FiberObserver.none</c> and override what you need.</param>
+    /// <param name="flow">The source flow.</param>
+    /// <returns>A flow that runs with the supplied observer in the ambient runtime context.</returns>
+    let withFiberObserver
+        (observer: FiberObserver)
+        (flow: Flow<'env, 'error, 'value>)
+        : Flow<'env, 'error, 'value> =
+        withRuntime (RuntimeContext.withObserver observer) flow
+
     /// <summary>Installs a runtime annotation sink for integration packages.</summary>
     [<System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>]
     let withAnnotationSink
@@ -519,6 +543,7 @@ module Flow =
                     after
                     (invoke flow environment)
                     cancellationToken
+                    (reportDiscardedExit (RuntimeState.current().Observer))
                     (fun () -> Platform.ofExit (Exit.Failure(Cause.Fail timeoutError))))
 
         /// <summary>Returns the supplied success value when the flow does not complete before the timeout.</summary>
@@ -536,6 +561,7 @@ module Flow =
                     after
                     (invoke flow environment)
                     cancellationToken
+                    (reportDiscardedExit (RuntimeState.current().Observer))
                     (fun () -> Platform.ofExit (Exit.Success value)))
 
         /// <summary>Alias for <c>timeout</c> that emphasizes typed failure on timeout.</summary>
@@ -561,6 +587,7 @@ module Flow =
                     after
                     (invoke flow environment)
                     cancellationToken
+                    (reportDiscardedExit (RuntimeState.current().Observer))
                     (fun () -> invoke (fallback ()) environment cancellationToken))
 
         /// <summary>Retries typed failures according to the specified policy.</summary>
@@ -592,6 +619,61 @@ module Flow =
 
             loop 1
 
+        /// <summary>Restarts a flow that terminates with an unexpected defect, according to the specified policy.</summary>
+        /// <remarks>
+        /// The defect-channel sibling of <c>retry</c>: <c>retry</c> re-runs typed <c>Cause.Fail</c> errors and
+        /// never touches defects, while <c>supervise</c> re-runs <c>Cause.Die</c> defects and never touches typed
+        /// errors or interruptions. Each attempt runs inside its own child scope that is closed before the next
+        /// attempt starts, so finalizers registered by a failed attempt are released instead of accumulating
+        /// until the enclosing scope closes. Re-evaluation only resets state that lives inside the flow itself;
+        /// mutable state in the environment is not restored. When attempts are exhausted, the final defect
+        /// propagates as the flow's exit.
+        /// </remarks>
+        /// <param name="policy">The supervision policy.</param>
+        /// <param name="flow">The source flow.</param>
+        /// <returns>A flow that re-evaluates <c>Cause.Die</c> outcomes when the policy allows it.</returns>
+        let supervise
+            (policy: SupervisePolicy)
+            (flow: Flow<'env, 'error, 'value>)
+            : Flow<'env, 'error, 'value> =
+            if policy.MaxAttempts < 1 then
+                invalidArg (nameof policy.MaxAttempts) "SupervisePolicy.MaxAttempts must be at least 1."
+
+            // Restart only pure defect outcomes: an interruption must stay an interruption, and a cause that
+            // also carries a typed failure must surface it rather than being silently re-run.
+            let shouldRestart (cause: Cause<'error>) =
+                match Cause.defects cause with
+                | [] -> false
+                | defects ->
+                    not (Cause.isInterrupted cause)
+                    && List.isEmpty (Cause.failures cause)
+                    && defects |> List.forall policy.ShouldRestart
+
+            let rec loop attempt =
+                Flow(fun environment cancellationToken ->
+                    let parentRuntime = RuntimeState.current()
+                    let attemptScope = parentRuntime.Scope.AddChild()
+                    let attemptRuntime = parentRuntime |> RuntimeContext.withScope attemptScope
+
+                    Platform.runScoped
+                        attemptScope.Close
+                        cancellationToken
+                        (fun () ->
+                            RuntimeState.withRuntime attemptRuntime (fun () ->
+                                invoke flow environment cancellationToken))
+                        (fun cleanupError executionError exit ->
+                            combineCleanup cleanupError executionError exit "Supervised flow execution produced no outcome.")
+                    |> Execution.fold
+                        Execution.ofValue
+                        (fun cause ->
+                            if attempt < policy.MaxAttempts && shouldRestart cause then
+                                Platform.delayThenExecution (policy.Delay attempt) cancellationToken (fun () ->
+                                    invoke (loop (attempt + 1)) environment cancellationToken)
+                            else
+                                Execution.ofCause cause))
+
+            loop 1
+
     /// <summary>Starts a flow in a new fiber without waiting for it to complete.</summary>
     /// <remarks>
     /// Forking turns a cold flow description into hot child work and returns a handle
@@ -603,6 +685,7 @@ module Flow =
     let fork (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'none, Fiber<'error, 'value>> =
         Flow(fun environment cancellationToken ->
             let parentRuntime = RuntimeState.current()
+            let observer = parentRuntime.Observer
 
             let metadata: FiberMetadata =
                 {
@@ -610,16 +693,51 @@ module Flow =
                     ParentId = Some parentRuntime.FiberId
                     StartedAt = DateTimeOffset.UtcNow
                     Status = FiberStatus.Running
+                    Observed = false
                 }
 
+            let tracker = FiberDefectTracker(metadata, observer)
             let childRuntime = parentRuntime |> RuntimeContext.withFiberId metadata.Id
+
+            FiberObserver.notifyStart observer metadata
 
             let cts, exitTask =
                 Platform.startFiber
                     cancellationToken
-                    (fun status -> metadata.Status <- status)
+                    (fun status exit ->
+                        metadata.Status <- status
+
+                        let defect =
+                            match exit with
+                            | Exit.Success _ -> None
+                            | Exit.Failure cause -> Cause.defects cause |> List.tryHead
+
+                        tracker.Settled defect
+                        FiberObserver.notifyEnd observer metadata defect)
                     (fun childToken ->
                         RuntimeState.withRuntime childRuntime (fun () -> invoke flow environment childToken))
+
+            // Deterministic unobserved-defect sweep: when the forking scope closes, report the fiber's defect
+            // if nobody consumed its outcome by then. The tracker is held weakly on .NET so the sweep does not
+            // keep a long-dead fiber's defect alive; if the tracker was already collected, its GC net has
+            // handled reporting. A closed scope cannot accept the sweep, in which case the GC net is the only
+            // detection path.
+            try
+#if FABLE_COMPILER
+                parentRuntime.Scope.AddFinalizer(fun _ ->
+                    tracker.TryReport()
+                    Platform.completedDeed ())
+#else
+                let weakTracker = WeakReference<FiberDefectTracker>(tracker)
+
+                parentRuntime.Scope.AddFinalizer(fun _ ->
+                    match weakTracker.TryGetTarget() with
+                    | true, live -> live.TryReport()
+                    | _ -> ()
+
+                    Platform.completedDeed ())
+#endif
+            with _ -> ()
 
             let fiber =
                 {
@@ -628,7 +746,32 @@ module Flow =
                     InterruptSource = cts
                 }
 
+#if !FABLE_COMPILER
+            // GC net: keep the tracker alive exactly as long as the fiber handle is reachable. When a
+            // discarded handle is collected, the tracker becomes collectable and its finalizer reports the
+            // defect even if the forking scope never closes.
+            FiberDefectTracker.Attach(fiber, tracker)
+#endif
+
             Execution.ofValue fiber)
+
+    /// <summary>Starts a flow in a new fiber that is deliberately never awaited.</summary>
+    /// <remarks>
+    /// The explicit fire-and-forget: the fiber counts as observed from birth, so a defect it dies with is
+    /// never reported as an unobserved defect through the runtime's fiber observer. Use this instead of
+    /// discarding a <c>Flow.fork</c> handle when silence is intended; a discarded <c>fork</c> handle whose
+    /// fiber dies of a defect is reported.
+    /// </remarks>
+    /// <param name="flow">The flow to fork.</param>
+    /// <returns>A flow that produces a <see cref="T:Axial.Fiber`2" /> handle that can still be joined or interrupted.</returns>
+    let forkDetached (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'none, Fiber<'error, 'value>> =
+        Flow(fun environment cancellationToken ->
+            invoke (fork flow) environment cancellationToken
+            |> Execution.fold
+                (fun (fiber: Fiber<'error, 'value>) ->
+                    fiber.Metadata.Observed <- true
+                    Execution.ofValue fiber)
+                Execution.ofCause)
 
     /// <summary>Waits for a fiber to complete and returns its successful value or typed failure.</summary>
     /// <remarks>
@@ -639,7 +782,9 @@ module Flow =
     /// <param name="fiber">The fiber to join.</param>
     /// <returns>A flow that completes with the fiber's outcome.</returns>
     let join (fiber: Fiber<'error, 'value>) : Flow<'env, 'error, 'value> =
-        Flow(fun _ _ -> Platform.joinExitTask fiber.ExitTask)
+        Flow(fun _ _ ->
+            fiber.Metadata.Observed <- true
+            Platform.joinExitTask fiber.ExitTask)
 
     /// <summary>Signals a fiber to stop and waits for it to finish its cleanup.</summary>
     /// <remarks>
@@ -651,6 +796,7 @@ module Flow =
     /// <returns>A flow that completes with the fiber's final outcome after interruption.</returns>
     let interrupt (fiber: Fiber<'error, 'value>) : Flow<'env, 'none, Exit<'value, 'error>> =
         Flow(fun _ _ ->
+            fiber.Metadata.Observed <- true
             fiber.InterruptSource.Cancel()
             Platform.awaitExitTaskAsSuccess fiber.ExitTask)
 
@@ -694,7 +840,11 @@ module Flow =
         (right: Flow<'env, 'error, 'value>)
         : Flow<'env, 'error, 'value> =
         Flow(fun environment cancellationToken ->
-            Platform.raceExecution (invoke left environment) (invoke right environment) cancellationToken)
+            Platform.raceExecution
+                (invoke left environment)
+                (invoke right environment)
+                cancellationToken
+                (reportDiscardedExit (RuntimeState.current().Observer)))
 
     /// <summary>Lifts an option into a synchronous flow with the supplied error.</summary>
     /// <param name="error">The error to return if the option is <c>None</c>.</param>

@@ -18,6 +18,8 @@
     <Compile Include="WorkflowParallelTests.fs" />
     <Compile Include="WorkflowErrorTests.fs" />
     <Compile Include="WorkflowSchedulingTests.fs" />
+    <Compile Include="WorkflowSupervisionTests.fs" />
+    <Compile Include="FiberObserverTests.fs" />
     <Compile Include="WorkflowResourceTests.fs" />
     <Compile Include="WorkflowStateTests.fs" />
     <Compile Include="WorkflowStreamTests.fs" />

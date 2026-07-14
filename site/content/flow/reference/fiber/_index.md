@@ -15,7 +15,11 @@ This page shows the `Fiber<'error, 'value>` handle used by Axial concurrency. A 
 - [`Flow.FiberStatus`](./t-flow-fiberstatus.md): Describes the current lifecycle state of a fiber.
 - [`Flow.FiberMetadata`](./t-flow-fibermetadata.md): Diagnostic metadata for a running fiber.
 - [`Flow.FiberDump`](./t-flow-fiberdump.md): Human-readable diagnostic dump for a fiber.
+- [`Flow.FiberObserver`](./t-flow-fiberobserver.md):
+ Runtime hooks observing fiber lifecycle events for diagnostics and telemetry.
+
 
 ## Module functions
 
 - [`Flow.Fiber.dump`](./m-flow-fiber-dump.md): Returns a snapshot of the current fiber metadata.
+- [`Flow.FiberObserver.none`](./p-flow-fiberobserver-none.md): The default observer: every hook is a no-op.

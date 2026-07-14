@@ -21,8 +21,10 @@ This page shows the Flow surface for cold workflow descriptions that only start 
 ## Fiber operations
 
 - [`Flow.fork`](./concurrency/m-flow-flow-fork.md): Starts a flow in a new fiber without waiting for it to complete.
+- [`Flow.forkDetached`](./concurrency/m-flow-flow-forkdetached.md): Starts a flow in a new fiber that is deliberately never awaited.
 - [`Flow.join`](./concurrency/m-flow-flow-join.md): Waits for a fiber to complete and returns its successful value or typed failure.
 - [`Flow.interrupt`](./concurrency/m-flow-flow-interrupt.md): Signals a fiber to stop and waits for it to finish its cleanup.
+- [`Flow.withFiberObserver`](./concurrency/m-flow-flow-withfiberobserver.md): Installs runtime fiber-lifecycle hooks for diagnostics and telemetry.
 
 ## Execution
 

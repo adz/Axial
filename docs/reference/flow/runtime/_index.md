@@ -8,6 +8,9 @@ This page shows the `Flow.Runtime` helpers for closed executor mechanics. These 
 ## Runtime types
 
 - [`Flow.RetryPolicy`](./t-flow-retrypolicy.md):  Defines how runtime retry helpers repeat typed failures in a controlled way.
+- [`Flow.SupervisePolicy`](./t-flow-supervisepolicy.md):
+ Defines how <code>Flow.Runtime.supervise</code> restarts flows that terminate with unexpected defects.
+
 
 ## Runtime helpers
 
@@ -23,3 +26,4 @@ This page shows the `Flow.Runtime` helpers for closed executor mechanics. These 
 - [`Flow.Runtime.timeoutToError`](./m-flow-flow-runtime-timeouttoerror.md): Alias for <code>timeout</code> that emphasizes typed failure on timeout.
 - [`Flow.Runtime.timeoutWith`](./m-flow-flow-runtime-timeoutwith.md): Runs a fallback flow when the source flow does not complete before the timeout.
 - [`Flow.Runtime.retry`](./m-flow-flow-runtime-retry.md): Retries typed failures according to the specified policy.
+- [`Flow.Runtime.supervise`](./m-flow-flow-runtime-supervise.md): Restarts a flow that terminates with an unexpected defect, according to the specified policy.

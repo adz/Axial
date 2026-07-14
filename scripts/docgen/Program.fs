@@ -360,7 +360,7 @@ let pageSpecs = [
         Intro = "This page shows the Flow surface for cold workflow descriptions that only start when you call an execution member such as `workflow.ToTask(env)`, `workflow.ToValueTask(env)`, `workflow.ToAsync(env)`, or `workflow.RunSynchronously(env)`. The smallest useful signature is `Flow<'value>`: no environment and no typed failure. `Flow<'error, 'value>` adds typed failure with no environment; `EnvFlow<'env, 'value>` adds an environment with no typed failure; `ExnFlow`/`ExnEnvFlow` put recoverable exceptions in the typed error channel; the full `Flow<'env, 'error, 'value>` form carries both. Use this page as the API map for building fail-fast workflows with `flow { }`, `Flow.read`, `Flow.bind`, and `Flow.map`; reading dependencies from `env`; reshaping environments with `localEnv`; composing typed failures; and introducing concurrency with fibers, `zipPar`, or `race`. Reach for [runtime helpers](./runtime/) and parallel orchestration only at the boundary where the workflow actually needs them."
         SymbolIds = [
             "Core type", ["T:Axial.Flow.Flow`3"; "T:Axial.Flow.Flow`2"; "T:Axial.Flow.Flow`1"; "T:Axial.Flow.EnvFlow`2"; "T:Axial.Flow.ExnFlow`1"; "T:Axial.Flow.ExnEnvFlow`2"; "T:Axial.Flow.Never"]
-            "Fiber operations", ["M:Axial.Flow.Flow.fork"; "M:Axial.Flow.Flow.join"; "M:Axial.Flow.Flow.interrupt"]
+            "Fiber operations", ["M:Axial.Flow.Flow.fork"; "M:Axial.Flow.Flow.forkDetached"; "M:Axial.Flow.Flow.join"; "M:Axial.Flow.Flow.interrupt"; "M:Axial.Flow.Flow.withFiberObserver"]
             "Execution", ["M:Axial.Flow.Flow.ToAsync"; "M:Axial.Flow.Flow.ToTask"; "M:Axial.Flow.Flow.ToValueTask"; "M:Axial.Flow.Flow.RunSynchronously"]
             "Module functions", ["M:Axial.Flow.Flow.ok"; "M:Axial.Flow.Flow.error"; "M:Axial.Flow.Flow.succeed"; "M:Axial.Flow.Flow.value"; "M:Axial.Flow.Flow.fail"; "M:Axial.Flow.Flow.fromResult"; "M:Axial.Flow.Flow.fromOption"; "M:Axial.Flow.Flow.fromValueOption"; "M:Axial.Flow.Flow.fromAsync"; "M:Axial.Flow.Flow.attemptAsync"; "M:Axial.Flow.Flow.fromTask"; "M:Axial.Flow.Flow.attemptTask"; "M:Axial.Flow.Flow.fromValueTask"; "M:Axial.Flow.Flow.attemptValueTask"; "M:Axial.Flow.Flow.verify"; "M:Axial.Flow.Flow.orElseFlow"; "M:Axial.Flow.Flow.env"; "M:Axial.Flow.Flow.read"; "M:Axial.Flow.Flow.map"; "M:Axial.Flow.Flow.bind"; "M:Axial.Flow.Flow.tap"; "M:Axial.Flow.Flow.tapError"; "M:Axial.Flow.Flow.mapError"; "M:Axial.Flow.Flow.catch"; "M:Axial.Flow.Flow.orElseWith"; "M:Axial.Flow.Flow.orElse"; "M:Axial.Flow.Flow.zip"; "M:Axial.Flow.Flow.map2"; "M:Axial.Flow.Flow.map3"; "M:Axial.Flow.Flow.apply"; "M:Axial.Flow.Flow.ignore"; "M:Axial.Flow.Flow.localEnv"; "M:Axial.Flow.Flow.provide"; "M:Axial.Flow.Flow.delay"; "M:Axial.Flow.Flow.traverse"; "M:Axial.Flow.Flow.sequence"]
             "Policies", ["T:Axial.Flow.Policy`4"; "M:Axial.Flow.Policy.pure"; "M:Axial.Flow.Policy.withError"; "M:Axial.Flow.Policy.context"; "P:Axial.Flow.Policy.pass"; "M:Axial.Flow.Policy.compose"; "M:Axial.Flow.Policy.optional"]
@@ -376,8 +376,8 @@ let pageSpecs = [
         Description = "Source-documented handle for running workflows."
         Intro = "This page shows the `Fiber<'error, 'value>` handle used by Axial concurrency. A fiber represents a flow that has already been started in the background; it keeps the workflow's typed error and success values attached to the running work, plus diagnostic metadata such as fiber id, parent id, start time, and lifecycle status. The operations that create and consume fibers are still part of the [`Flow`](../flow/) API: use [`Flow.fork`](../flow/concurrency/m-flow-fork.md), [`Flow.join`](../flow/concurrency/m-flow-join.md), and [`Flow.interrupt`](../flow/concurrency/m-flow-interrupt.md) when a workflow needs explicit child execution. Prefer higher-level helpers such as `Flow.zipPar` or `Flow.race` when the code only needs parallel composition."
         SymbolIds = [
-            "Core types", ["T:Axial.Flow.Fiber`2"; "T:Axial.Flow.FiberId"; "T:Axial.Flow.FiberStatus"; "T:Axial.Flow.FiberMetadata"; "T:Axial.Flow.FiberDump"]
-            "Module functions", ["M:Axial.Flow.Fiber.dump"]
+            "Core types", ["T:Axial.Flow.Fiber`2"; "T:Axial.Flow.FiberId"; "T:Axial.Flow.FiberStatus"; "T:Axial.Flow.FiberMetadata"; "T:Axial.Flow.FiberDump"; "T:Axial.Flow.FiberObserver"]
+            "Module functions", ["M:Axial.Flow.Fiber.dump"; "P:Axial.Flow.FiberObserverModule.none"]
         ]
         Alias = None
     }
@@ -420,8 +420,8 @@ let pageSpecs = [
         Description = "Runtime helpers for operational concerns like logging, timeout, retry, and cleanup."
         Intro = "This page shows the `Flow.Runtime` helpers for closed executor mechanics. These functions expose cancellation, scope ownership, runtime annotations, timeout handling, and retry. User-facing resource combinators such as `Flow.acquireRelease` live on the main `Flow` module; `Flow.Runtime.scope` remains available for advanced code that needs direct scope access."
         SymbolIds = [
-            "Runtime types", ["T:Axial.Flow.RetryPolicy`1"]
-            "Runtime helpers", ["M:Axial.Flow.Flow.Runtime.cancellationToken"; "M:Axial.Flow.Flow.Runtime.catchCancellation"; "M:Axial.Flow.Flow.Runtime.ensureNotCanceled"; "M:Axial.Flow.Flow.Runtime.sleep"; "M:Axial.Flow.Flow.Runtime.scope"; "M:Axial.Flow.Flow.Runtime.annotations"; "M:Axial.Flow.Flow.Runtime.traceId"; "M:Axial.Flow.Flow.Runtime.timeout"; "M:Axial.Flow.Flow.Runtime.timeoutToOk"; "M:Axial.Flow.Flow.Runtime.timeoutToError"; "M:Axial.Flow.Flow.Runtime.timeoutWith"; "M:Axial.Flow.Flow.Runtime.retry"]
+            "Runtime types", ["T:Axial.Flow.RetryPolicy`1"; "T:Axial.Flow.SupervisePolicy"]
+            "Runtime helpers", ["M:Axial.Flow.Flow.Runtime.cancellationToken"; "M:Axial.Flow.Flow.Runtime.catchCancellation"; "M:Axial.Flow.Flow.Runtime.ensureNotCanceled"; "M:Axial.Flow.Flow.Runtime.sleep"; "M:Axial.Flow.Flow.Runtime.scope"; "M:Axial.Flow.Flow.Runtime.annotations"; "M:Axial.Flow.Flow.Runtime.traceId"; "M:Axial.Flow.Flow.Runtime.timeout"; "M:Axial.Flow.Flow.Runtime.timeoutToOk"; "M:Axial.Flow.Flow.Runtime.timeoutToError"; "M:Axial.Flow.Flow.Runtime.timeoutWith"; "M:Axial.Flow.Flow.Runtime.retry"; "M:Axial.Flow.Flow.Runtime.supervise"]
         ]
         Alias = None
     }
@@ -1209,6 +1209,7 @@ let main argv =
             formatterApiSlug "Axial.Path", Path.Combine(outRoot, "diagnostics", "t-path.md")
             formatterApiSlug "Axial.LogLevel", Path.Combine(outRoot, "service", "core", "t-flow-loglevel.md")
             formatterApiSlug "Axial.RetryPolicy`1", Path.Combine(outRoot, "flow", "runtime", "t-flow-retrypolicy.md")
+            formatterApiSlug "Axial.SupervisePolicy", Path.Combine(outRoot, "flow", "runtime", "t-flow-supervisepolicy.md")
             formatterApiSlug "Axial.Never", Path.Combine(outRoot, "flow", "t-flow-never.md")
             formatterApiSlug "Axial.Flow.PlatformService.Clock", Path.Combine(outRoot, "service", "core", "_index.md")
             formatterApiSlug "Axial.Flow.PlatformService.Log", Path.Combine(outRoot, "service", "core", "_index.md")

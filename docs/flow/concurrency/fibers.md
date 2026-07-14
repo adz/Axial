@@ -32,12 +32,15 @@ The example starts `left` in the background, runs `right` in the current workflo
 
 Fibers are the foundation of **Structured Concurrency** in Axial. Unlike "fire-and-forget" background tasks, Fibers allow you to maintain a parent-child relationship between workflows, ensuring that background work is always accounted for and safely cleaned up.
 
-The three primary operations for managing fibers are:
+The primary operations for managing fibers are:
 
 - [**`Flow.fork`**]({{< relref "/reference/flow/concurrency/m-flow-fork.md" >}}): starts a flow in the background and returns a `Fiber<'error, 'value>` handle.
 - [**`Flow.join`**]({{< relref "/reference/flow/concurrency/m-flow-join.md" >}}): waits for the fiber and resumes with its successful value or typed failure.
 - [**`Flow.interrupt`**]({{< relref "/reference/flow/concurrency/m-flow-interrupt.md" >}}): asks the fiber to stop, then waits for the child workflow to report its final `Exit`.
+- [**`Flow.forkDetached`**]({{< relref "/reference/flow/concurrency/m-flow-flow-forkdetached.md" >}}): starts deliberate fire-and-forget work whose defects are never reported as unobserved.
 - `Fiber.dump`: returns a diagnostic snapshot of the fiber id, parent id, start time, and current status.
+
+Joining or interrupting a fiber marks its outcome as observed. A fiber whose handle is simply discarded and that later dies with a defect is reported through the runtime's [fiber observer]({{< relref "supervision.md" >}}); use `Flow.forkDetached` when the silence is intentional, and [`Flow.Runtime.supervise`]({{< relref "supervision.md" >}}) to restart background work that dies with defects.
 
 ## Why Fibers?
 
