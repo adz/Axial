@@ -58,3 +58,39 @@ module FlowRuntimeMetadataTests =
         let result = Flow.runSync () outer
 
         test <@ result = Exit.Success ("outer", "inner", "outer") @>
+
+    [<Fact>]
+    let ``Composed annotation sinks all receive annotations`` () =
+        let outer = ResizeArray<string * string>()
+        let inner = ResizeArray<string * string>()
+
+        let workflow =
+            flow {
+                do! Flow.annotate "step" "one" (Flow.succeed ())
+                return 42
+            }
+            |> Flow.addAnnotationSink (fun name value -> inner.Add(name, value))
+            |> Flow.addAnnotationSink (fun name value -> outer.Add(name, value))
+
+        let result = Flow.runSync () workflow
+
+        test <@ result = Exit.Success 42 @>
+        test <@ List.ofSeq outer = [ "step", "one" ] @>
+        test <@ List.ofSeq inner = [ "step", "one" ] @>
+
+    [<Fact>]
+    let ``A throwing annotation sink cannot fail the workflow or starve other sinks`` () =
+        let surviving = ResizeArray<string>()
+
+        let workflow =
+            flow {
+                do! Flow.annotate "step" "one" (Flow.succeed ())
+                return "done"
+            }
+            |> Flow.addAnnotationSink (fun _ _ -> failwith "sink bug")
+            |> Flow.addAnnotationSink (fun name _ -> surviving.Add name)
+
+        let result = Flow.runSync () workflow
+
+        test <@ result = Exit.Success "done" @>
+        test <@ List.ofSeq surviving = [ "step" ] @>

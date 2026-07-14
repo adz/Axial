@@ -438,6 +438,19 @@ module Flow =
         : Flow<'env, 'error, 'value> =
         withRuntime (RuntimeContext.withAnnotationSink sink) flow
 
+    /// <summary>Adds a runtime annotation sink, composing with any sink already installed.</summary>
+    /// <remarks>
+    /// Unlike <c>withAnnotationSink</c>, which replaces the ambient sink, this tees annotations to the
+    /// existing sink first, so nested telemetry regions and user sinks all receive them. Sinks are guarded:
+    /// one that throws cannot fail the workflow or starve the others.
+    /// </remarks>
+    [<System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>]
+    let addAnnotationSink
+        (sink: string -> string -> unit)
+        (flow: Flow<'env, 'error, 'value>)
+        : Flow<'env, 'error, 'value> =
+        withRuntime (RuntimeContext.withComposedAnnotationSink sink) flow
+
     /// <summary>Adds a runtime annotation for the duration of the supplied flow.</summary>
     /// <remarks>
     /// Annotations are runtime metadata for diagnostics, logging, metrics, and tracing. Nested annotations
@@ -454,7 +467,8 @@ module Flow =
         : Flow<'env, 'error, 'value> =
         Flow(fun environment cancellationToken ->
             let currentRuntime = RuntimeState.current()
-            currentRuntime.AnnotationSink name value
+            // A diagnostics sink must never fail the workflow that annotated.
+            (try currentRuntime.AnnotationSink name value with _ -> ())
             let runtime = currentRuntime |> RuntimeContext.withAnnotation name value
 
             RuntimeState.withRuntime runtime (fun () -> invoke flow environment cancellationToken))

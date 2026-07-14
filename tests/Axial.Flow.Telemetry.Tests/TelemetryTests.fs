@@ -146,6 +146,25 @@ module TelemetryTests =
         | other -> failwithf "Expected one composite-op span, got %A" other
 
     [<Fact>]
+    let ``Activity.trace: nested traces both receive annotations set in the inner region`` () =
+        let spans =
+            captureSpans (fun () ->
+                flow {
+                    do! Flow.annotate "step" "inner-step" (Flow.succeed ())
+                    return 1
+                }
+                |> Activity.trace "inner-op"
+                |> Activity.trace "outer-op"
+                |> Flow.runSync ()
+                |> ignore)
+
+        let tagsOf name =
+            spans |> List.pick (fun (n, _, _, tags) -> if n = name then Some tags else None)
+
+        test <@ (tagsOf "inner-op")["axial.flow.annotation.step"] = "inner-step" @>
+        test <@ (tagsOf "outer-op")["axial.flow.annotation.step"] = "inner-step" @>
+
+    [<Fact>]
     let ``FiberTelemetry.observe: records unobserved fiber defects as error spans`` () =
         let listener = new ActivityListener()
         listener.ShouldListenTo <- (fun source -> source.Name = "Axial.Flow")

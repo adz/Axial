@@ -470,6 +470,18 @@ module internal RuntimeContext =
     let withAnnotationSink (sink: string -> string -> unit) (runtime: RuntimeContext) : RuntimeContext =
         { runtime with AnnotationSink = sink }
 
+    /// Tees annotations to the existing sink before the new one, so nested telemetry regions and
+    /// user-installed sinks all receive them. Each sink is guarded: a throwing sink cannot fail the
+    /// workflow or starve the other sinks.
+    let withComposedAnnotationSink (sink: string -> string -> unit) (runtime: RuntimeContext) : RuntimeContext =
+        let previous = runtime.AnnotationSink
+
+        { runtime with
+            AnnotationSink =
+                fun name value ->
+                    (try previous name value with _ -> ())
+                    (try sink name value with _ -> ()) }
+
     let withFiberId (fiberId: FiberId) (runtime: RuntimeContext) : RuntimeContext =
         { runtime with FiberId = fiberId }
 

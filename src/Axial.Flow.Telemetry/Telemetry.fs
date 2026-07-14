@@ -122,7 +122,7 @@ module Activity =
                     sourceWithExistingAnnotations
                 else
                     sourceWithExistingAnnotations
-                    |> Flow.withAnnotationSink (fun name value ->
+                    |> Flow.addAnnotationSink (fun name value ->
                         activity.SetTag($"axial.flow.annotation.{name}", value) |> ignore)
 
             let (Flow operation) = tracedFlow
