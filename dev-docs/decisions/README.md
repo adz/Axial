@@ -3,6 +3,32 @@
 This folder keeps only high-level durable decisions. Detailed historical specs are deleted once their useful rules have
 been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 
+## 2026-07-14: Telemetry is runtime instrumentation, not a service contract
+
+- There is no telemetry service package and no `IHas<...>` telemetry contract. Tracing, annotations, and fiber
+  observability stay runtime instrumentation in `Axial.Flow.Telemetry`: `Activity.trace`/`Activity.traceWith` over
+  the static `ActivitySource("Axial.Flow")`, annotation sinks via `Flow.addAnnotationSink`, and
+  `FiberTelemetry.observe`/`observeWithSpans` installed through `Flow.withFiberObserver`.
+- The rule "operational services are explicit services, not runtime slots" does not extend to telemetry, for two
+  structural reasons. `ActivitySource`/`ActivityListener` is .NET's own ambient instrumentation model — hosts and
+  test code subscribe with listeners, so a service indirection would add ceremony without adding substitutability.
+  And fiber observers deliberately never see the environment (a forked fiber's observer outlives any one
+  environment), so a service-shaped telemetry contract could not be applied where much of the instrumentation runs.
+- Environment still participates declaratively, not as a service: `Activity.trace` reads the
+  `IHasRequestId`/`IHasCorrelationId`/`IHasTenantId` trio and the extensible `IHasTelemetryTags` trait from `'env`
+  and stamps them as span tags.
+- Logging is the opposite case and stays an explicit service: `ILog` (with the MEL bridge in `Axial.Flow.Hosting`
+  and `FiberLogging.observe`) is a substitutable application dependency, not host instrumentation.
+- On Fable JavaScript targets the same decision holds with OpenTelemetry JS in the `ActivitySource` role:
+  `Axial.Flow.Telemetry.JavaScript` ships `Otel.trace`/`Otel.traceWith` and `FiberTelemetry`
+  observers with the .NET tag vocabulary, emitting through a host-supplied `@opentelemetry/api` object
+  (`Otel.install`) via structural bindings — the package has no npm dependency, and the SDK, exporter, and
+  context manager stay the application's concern. The .NET build of that package is inert (`install` throws,
+  `trace` passes through). Two structural consequences are accepted and documented: environment traits are
+  read structurally (interface type tests are erased in JS), and runtime-context fidelity under Fable is
+  construction-time, so the trace combinator captures fiber id, annotations, and the composed annotation sink
+  at invoke time rather than reading them inside the running async.
+
 ## 2026-07-13: Contract parsing preserves trust and diagnostics
 
 - `Contract<'model>` is the wire-version engine: it selects an explicitly declared version, parses against that

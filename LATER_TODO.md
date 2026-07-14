@@ -90,6 +90,7 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 - [x] Remove the unused `LogEntry` type (it had no consumers).
 - [x] Add a producer for `Cause.Traced` (`Flow.tracedError`) so the existing cause-trace channel and `Cause.prettyPrint` rendering are reachable from user code.
 - [x] Add tests for annotation/span propagation through flows, fibers, layers, resources, retries, and supervised restarts, plus span-lifetime, exit-mapping, nesting/parentage, fiber-span, and logging-observer coverage.
+- [x] Add `Axial.Flow.Telemetry.JavaScript`: OpenTelemetry JS tracing for Fable targets (Node and browser) — `Otel.install` over a host-supplied `@opentelemetry/api` object via structural bindings, `Otel.trace`/`traceWith` with the .NET span vocabulary, `FiberTelemetry` observer twins; covered by the Fable JS surface gate with an in-memory api fake.
 
 ## 7a. Future Service Packages
 
@@ -98,10 +99,10 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 - [x] Expand `Axial.Flow.Console` into a near-complete console/terminal service package rather than only read/write-line helpers.
 - [x] Expand `Axial.Flow.HttpClient` into a practical HTTP service package covering common requests/responses, headers, text/JSON/byte content, per-request timeout, cancellation, error classification, host-owned `HttpClient` configuration, live tests, and user guides.
 - [x] Expand `Axial.Flow.Process` into a practical process service package covering commands and pipelines, environment and working-directory configuration, structured and streaming output, cancellation, exit handling, typed errors, live tests, scripts, and user guides.
-- [ ] Add explicit process timeout/deadline configuration and tests so callers do not have to arrange timeout cancellation outside `Axial.Flow.Process`.
+- [x] Add explicit process timeout/deadline configuration and tests (`Process.timeout` / DSL `timeout` on `ProcessSpec`, enforced via `Flow.Runtime.timeout` with `ProcessError.TimedOut` and process-tree termination; live integration test in `ProcessServiceTests`).
 - [ ] Design `Axial.Flow.Network` after the core v1 service/layer surface is stable.
-- [ ] Decide whether telemetry needs explicit service contracts under a future telemetry package, or should remain runtime instrumentation through `Axial.Flow.Telemetry`.
-- [ ] If telemetry services are introduced, define how they compose with annotations, `ActivitySource`, `Microsoft.Extensions.Logging`, layers, and host-provider boundaries.
+- [x] Decide whether telemetry needs explicit service contracts under a future telemetry package: it remains runtime instrumentation through `Axial.Flow.Telemetry` — see `dev-docs/decisions/README.md` (2026-07-14). Logging stays the explicit `ILog` service.
+- [x] Define telemetry-service composition with annotations, `ActivitySource`, `Microsoft.Extensions.Logging`, layers, and host-provider boundaries — not applicable; no telemetry service contracts are introduced per the decision above.
 
 ## 8. v1.0 Compatibility Tracks
 
