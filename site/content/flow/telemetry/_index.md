@@ -6,6 +6,10 @@ type: docs
 ---
 
 This page shows how Flow annotations and trace metadata enter .NET activities and telemetry spans.
+For the big picture — how traces, logs, and metrics fit together and how to wire up OpenTelemetry — see
+[Observability]({{< relref "/flow/observability.md" >}}). On Fable JavaScript targets, the counterpart
+package is `Axial.Flow.Telemetry.JavaScript` (`Otel.trace`, same tag vocabulary, emitting through
+OpenTelemetry JS); its wiring is shown on the Observability page.
 
 - [Execution and outcomes](../core-concepts/execution-and-outcomes/)
 - [Explicit services and runtimes](../services-and-runtimes/)
@@ -47,6 +51,10 @@ application
 - Every defect the runtime proves unobservable — a discarded `Flow.fork` handle, or a `Flow.race`/timeout loser —
   produces an `axial.flow.fiber.unobserved_defect` error span.
 
+Spans carry `axial.flow.fiber.id`, `axial.flow.fiber.parent_id`, `axial.flow.fiber.status`, and
+OpenTelemetry-convention `exception.*` tags. Use `FiberTelemetry.observer` directly with
+`Flow.withFiberObserver` if you want to combine it with your own hooks.
+
 ## Span-per-fiber
 
 `FiberTelemetry.observeWithSpans` upgrades every forked fiber to a real `axial.flow.fiber` span: opened at
@@ -71,23 +79,3 @@ application
 
 The explicit `ILog` service also carries exceptions now: `Log.errorExn`/`Log.criticalExn` (and the general
 `Log.logException`) preserve the exception through the Hosting bridge to the host logger.
-
-## Fiber defect spans
-
-`FiberTelemetry.observe` installs a [fiber observer]({{< relref "/flow/concurrency/supervision.md" >}}) that records
-fiber defects on the `Axial.Flow` activity source:
-
-```fsharp
-open Axial.Flow.Telemetry
-
-application
-|> FiberTelemetry.observe
-```
-
-- Every fiber that settles with a defect produces an `axial.flow.fiber.defect` error span.
-- Every defect the runtime proves unobservable — a discarded `Flow.fork` handle, or a `Flow.race`/timeout loser —
-  produces an `axial.flow.fiber.unobserved_defect` error span.
-
-Spans carry `axial.flow.fiber.id`, `axial.flow.fiber.parent_id`, `axial.flow.fiber.status`, and
-OpenTelemetry-convention `exception.*` tags. Use `FiberTelemetry.observer` directly with
-`Flow.withFiberObserver` if you want to combine it with your own hooks.
