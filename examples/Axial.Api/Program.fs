@@ -11,7 +11,9 @@
 module Axial.Api.Program
 
 open System
+open System.Net
 open System.Net.Http
+open System.Threading.Tasks
 open System.Text
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Http
@@ -94,7 +96,7 @@ module Boundary =
 // ---------------------------------------------------------------------------
 
 module FormPage =
-    let private encode (text: string) = System.Net.WebUtility.HtmlEncode text
+    let private encode (text: string) = WebUtility.HtmlEncode text
 
     let private constraintAttributes (field: FieldDescription) =
         let metadata =
@@ -198,7 +200,7 @@ let buildApp (args: string[]) =
 
     app.MapPost(
         "/signups",
-        Func<HttpRequest, System.Threading.Tasks.Task<IResult>>(fun request ->
+        Func<HttpRequest, Task<IResult>>(fun request ->
             task {
                 let! parsed = SchemaRequest.json Signup.schema request
 
@@ -207,7 +209,7 @@ let buildApp (args: string[]) =
                 return!
                     parsed
                     |> SchemaResult.handleParsed (fun signup ->
-                        System.Threading.Tasks.Task.FromResult(SchemaResult.codec Boundary.codec 201 signup))
+                        Task.FromResult(SchemaResult.codec Boundary.codec 201 signup))
             })
     )
     |> ignore
@@ -220,7 +222,7 @@ let buildApp (args: string[]) =
 
     app.MapPost(
         "/signup",
-        Func<HttpRequest, System.Threading.Tasks.Task<IResult>>(fun request ->
+        Func<HttpRequest, Task<IResult>>(fun request ->
             task {
                 let! parsed = SchemaRequest.form Signup.schema request
                 return Results.Text(FormPage.render (Some parsed), "text/html")

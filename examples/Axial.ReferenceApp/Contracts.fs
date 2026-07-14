@@ -2,6 +2,7 @@ namespace Axial.ReferenceApp
 
 open System
 open Axial.Schema
+open Axial.Validation
 
 // Wire records can represent untrusted drafts and old persisted versions.
 type WorkspaceV1 = { version: int; id: Guid; name: string }
@@ -92,7 +93,7 @@ module Contracts =
                     assignee = item.Assignee |> Option.map MemberId.value
                     state = if item.State = WorkItemState.Done then "done" else "todo" }) }
 
-    let productionRules : (WorkspaceV2 -> Result<unit, Axial.Validation.Diagnostics<SchemaError>>) list =
+    let productionRules : (WorkspaceV2 -> Result<unit, Diagnostics<SchemaError>>) list =
         [ fun value ->
               if (WorkspaceName.value value.name).EndsWith("-demo", StringComparison.OrdinalIgnoreCase) then
                   ContextRules.failCustom "workspace.demo-name" "Production workspace names cannot end in -demo."

@@ -27,8 +27,8 @@ module CoreServicesExample =
         let services =
             {
                 Clock = Clock.fromValue (DateTimeOffset(2026, 5, 10, 12, 0, 0, TimeSpan.Zero))
-                Random = Axial.Flow.PlatformService.Random.fromValue 7
-                Guid = Axial.Flow.PlatformService.Guid.fromValue (global.System.Guid.Parse "11111111-1111-1111-1111-111111111111")
+                Random = Random.fromValue 7
+                Guid = Guid.fromValue (System.Guid.Parse "11111111-1111-1111-1111-111111111111")
                 EnvVars =
                     EnvironmentVariables.fromPairs
                         [ "AXIAL_SERVICES_PORT", "8080"
@@ -40,8 +40,8 @@ module CoreServicesExample =
         let run (flow: Flow<AppServices, 'error, 'value>) = flow.RunSynchronously(services)
 
         printfn "clock=%O" (run Clock.now)
-        printfn "random=%d" (run (Axial.Flow.PlatformService.Random.nextInt 0 10) |> function Exit.Success v -> v | _ -> -1)
-        printfn "guid=%O" (run Axial.Flow.PlatformService.Guid.newGuid)
+        printfn "random=%d" (run (Random.nextInt 0 10) |> function Exit.Success v -> v | _ -> -1)
+        printfn "guid=%O" (run Guid.newGuid)
         printfn "port=%s" (renderExit string (run (EnvironmentVariable.getInt "AXIAL_SERVICES_PORT")))
         printfn "enabled=%s" (renderExit string (run (EnvironmentVariable.getBool "AXIAL_SERVICES_ENABLED")))
         printfn "session=%s" (renderExit string (run (EnvironmentVariable.getGuid "AXIAL_SERVICES_SESSION")))

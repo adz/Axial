@@ -80,7 +80,7 @@ module Application =
 
     let private store operation : Flow<AppEnv, AppError, 'value> =
         Flow.read (fun env -> operation env.Store)
-        |> Flow.bind (function Ok value -> Flow.ok value | Error error -> Flow.fail error)
+        |> Flow.bind Flow.fromResult
 
     let private update id change =
         flow {

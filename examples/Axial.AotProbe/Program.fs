@@ -61,9 +61,9 @@ type SummaryFactory<'model>() =
             SummaryChainResult<'model, 'constructor, 'constructor>(box ([]: SchemaFieldSummary list))
             :> IFieldChainResult<_, _, _>
 
-        member _.OnField(order, field: Axial.Schema.Field<'model, 'field>, head) =
+        member _.OnField(order, field: Field<'model, 'field>, head) =
             let fields = head.Value :?> SchemaFieldSummary list
-            let name = Axial.Schema.Field.externalName field |> ExternalFieldName.value
+            let name = Field.externalName field |> ExternalFieldName.value
             let fieldSummary = { Order = order; ExternalName = name }
 
             SummaryChainResult<'model, 'constructorIn, 'next>(box (fields @ [ fieldSummary ]))
@@ -72,14 +72,14 @@ type SummaryFactory<'model>() =
         member _.OnComplete(_, chain) =
             chain.Value :?> SchemaFieldSummary list
 
-type Field<'root, 'value> =
+type FormField<'root, 'value> =
     {
         Path: PathSegment list
         Get: 'root -> 'value
     }
 
-module Field =
-    let ofGetter (path: PathSegment list) (getter: 'root -> 'value) : Field<'root, 'value> =
+module FormField =
+    let ofGetter (path: PathSegment list) (getter: 'root -> 'value) : FormField<'root, 'value> =
         { Path = path; Get = getter }
 
     let renderPath (path: PathSegment list) =
@@ -113,42 +113,42 @@ module Rule =
             rules
             |> List.fold (fun acc rule -> Validation.map2 (fun _ _ -> root) acc (rule root)) (success root)
 
-    let whenNotBlank (error: 'error) (field: Field<'root, string>) : Rule<'root, 'error> =
+    let whenNotBlank (error: 'error) (field: FormField<'root, string>) : Rule<'root, 'error> =
         fun root ->
             field.Get root
             |> Check.String.present
             |> Result.mapError (fun _ -> error)
             |> lift field.Path root
 
-    let whenMinLength (minimum: int) (error: 'error) (field: Field<'root, string>) : Rule<'root, 'error> =
+    let whenMinLength (minimum: int) (error: 'error) (field: FormField<'root, string>) : Rule<'root, 'error> =
         fun root ->
             field.Get root
             |> Check.String.minLength minimum
             |> Result.mapError (fun _ -> error)
             |> lift field.Path root
 
-    let whenMaxLength (maximum: int) (error: 'error) (field: Field<'root, string>) : Rule<'root, 'error> =
+    let whenMaxLength (maximum: int) (error: 'error) (field: FormField<'root, string>) : Rule<'root, 'error> =
         fun root ->
             field.Get root
             |> Check.String.maxLength maximum
             |> Result.mapError (fun _ -> error)
             |> lift field.Path root
 
-    let whenPositive (error: 'error) (field: Field<'root, int>) : Rule<'root, 'error> =
+    let whenPositive (error: 'error) (field: FormField<'root, int>) : Rule<'root, 'error> =
         fun root ->
             field.Get root
             |> Check.Number.greaterThan 0
             |> Result.mapError (fun _ -> error)
             |> lift field.Path root
 
-    let sub (field: Field<'root, 'child>) (rule: Rule<'child, 'error>) : Rule<'root, 'error> =
+    let sub (field: FormField<'root, 'child>) (rule: Rule<'child, 'error>) : Rule<'root, 'error> =
         fun root ->
             rule (field.Get root)
             |> Validation.at field.Path
             |> Validation.map (fun _ -> root)
 
     let each<'root, 'collection, 'item, 'error when 'collection :> seq<'item>>
-        (field: Field<'root, 'collection>)
+        (field: FormField<'root, 'collection>)
         (rule: int -> Rule<'item, 'error>)
         : Rule<'root, 'error> =
         fun root ->
@@ -169,15 +169,15 @@ module Form =
         | :? string as text -> $"\"{text}\""
         | _ -> string value
 
-    let renderField (prefix: PathSegment list) (root: 'root) (field: Field<'root, 'value>) =
-        $"{Field.renderPath (prefix @ field.Path)} = {renderValue (field.Get root)}"
+    let renderField (prefix: PathSegment list) (root: 'root) (field: FormField<'root, 'value>) =
+        $"{FormField.renderPath (prefix @ field.Path)} = {renderValue (field.Get root)}"
 
-let username = Field.ofGetter [ PathSegment.Name "Username" ] (fun (u: User) -> u.Username)
-let address = Field.ofGetter [ PathSegment.Name "Address" ] (fun (u: User) -> u.Address)
-let city = Field.ofGetter [ PathSegment.Name "City" ] (fun (a: Address) -> a.City)
-let lines = Field.ofGetter [ PathSegment.Name "Lines" ] (fun (u: User) -> u.Lines)
-let lineName = Field.ofGetter [ PathSegment.Name "Name" ] (fun (l: Line) -> l.Name)
-let lineQuantity = Field.ofGetter [ PathSegment.Name "Quantity" ] (fun (l: Line) -> l.Quantity)
+let username = FormField.ofGetter [ PathSegment.Name "Username" ] (fun (u: User) -> u.Username)
+let address = FormField.ofGetter [ PathSegment.Name "Address" ] (fun (u: User) -> u.Address)
+let city = FormField.ofGetter [ PathSegment.Name "City" ] (fun (a: Address) -> a.City)
+let lines = FormField.ofGetter [ PathSegment.Name "Lines" ] (fun (u: User) -> u.Lines)
+let lineName = FormField.ofGetter [ PathSegment.Name "Name" ] (fun (l: Line) -> l.Name)
+let lineQuantity = FormField.ofGetter [ PathSegment.Name "Quantity" ] (fun (l: Line) -> l.Quantity)
 
 let validateUser : Rule<User, ProbeError> =
     Rule.all

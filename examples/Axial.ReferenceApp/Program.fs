@@ -2,6 +2,7 @@ module Axial.ReferenceApp.Program
 
 open System
 open System.Net
+open System.Threading.Tasks
 open System.Text.Json
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Http
@@ -9,12 +10,13 @@ open Microsoft.Extensions.Hosting
 open Axial.Flow
 open Axial.Refined
 open Axial.Schema
+open Axial.Validation
 open Axial.ReferenceApp
 
 let private renderError = function
     | AppError.InvalidInput diagnostics ->
         diagnostics
-        |> Axial.Validation.Diagnostics.flatten
+        |> Diagnostics.flatten
         |> List.map (fun item -> $"{item.Path}: {SchemaError.render item.Error}")
         |> String.concat "; "
     | AppError.InvalidValue error -> RefinementError.describe error
@@ -59,7 +61,7 @@ let buildWebApp (env: AppEnv) (args: string array) =
             | Ok workspace -> Results.Json(summary workspace)
             | Error error -> Results.NotFound(error))) |> ignore
 
-    app.MapPost("/api/workspaces", Func<HttpRequest, Threading.Tasks.Task<IResult>>(fun request -> task {
+    app.MapPost("/api/workspaces", Func<HttpRequest, Task<IResult>>(fun request -> task {
         use! document = JsonDocument.ParseAsync(request.Body)
         let raw = RawInput.ofJsonDocument document
         match Application.admitProduction raw with
@@ -67,12 +69,12 @@ let buildWebApp (env: AppEnv) (args: string array) =
         | Ok workspace ->
             let save =
                 Flow.read (fun env -> env.Store.Save workspace)
-                |> Flow.bind (function Ok () -> Flow.ok () | Error error -> Flow.fail error)
+                |> Flow.bind Flow.fromResult
             match run env save with
             | Ok () -> return Results.Json(summary workspace, statusCode = 201)
             | Error error -> return Results.Problem(error, statusCode = 500) })) |> ignore
 
-    app.MapPost("/api/workspaces/{workspaceId}/members", Func<string, HttpRequest, Threading.Tasks.Task<IResult>>(fun workspaceId request -> task {
+    app.MapPost("/api/workspaces/{workspaceId}/members", Func<string, HttpRequest, Task<IResult>>(fun workspaceId request -> task {
         use! document = JsonDocument.ParseAsync(request.Body)
         match id workspaceId WorkspaceId.create with
         | Error error -> return Results.BadRequest(error)
@@ -82,7 +84,7 @@ let buildWebApp (env: AppEnv) (args: string array) =
             | Ok workspace -> return Results.Json(summary workspace)
             | Error error -> return Results.BadRequest(error) })) |> ignore
 
-    app.MapPost("/api/workspaces/{workspaceId}/items", Func<string, HttpRequest, Threading.Tasks.Task<IResult>>(fun workspaceId request -> task {
+    app.MapPost("/api/workspaces/{workspaceId}/items", Func<string, HttpRequest, Task<IResult>>(fun workspaceId request -> task {
         use! document = JsonDocument.ParseAsync(request.Body)
         match id workspaceId WorkspaceId.create with
         | Error error -> return Results.BadRequest(error)
@@ -112,7 +114,7 @@ let buildWebApp (env: AppEnv) (args: string array) =
     app.MapGet("/workspaces/new", Func<IResult>(fun () ->
         Results.Text("""<!doctype html><html><body><h1>New workspace</h1><form method="post"><input type="hidden" name="version" value="2"><label>Id <input name="id"></label><label>Name <input name="name"></label><button>Create</button></form></body></html>""", "text/html"))) |> ignore
 
-    app.MapPost("/workspaces/new", Func<HttpRequest, Threading.Tasks.Task<IResult>>(fun request -> task {
+    app.MapPost("/workspaces/new", Func<HttpRequest, Task<IResult>>(fun request -> task {
         let! form = request.ReadFormAsync()
         match formRaw form |> Application.admitProduction with
         | Error error -> return Results.Text($"<p>{WebUtility.HtmlEncode(renderError error)}</p>", "text/html", statusCode = 400)
@@ -134,13 +136,13 @@ let buildWebApp (env: AppEnv) (args: string array) =
                     $"""<li>{WebUtility.HtmlEncode(WorkItemTitle.value item.Title)} ({item.State}) <form method="post" action="/workspaces/{wid}/items/{iid}/complete" style="display:inline"><button>Complete</button></form><form method="post" action="/workspaces/{wid}/items/{iid}/assign" style="display:inline"><input name="memberId" placeholder="Member id"><button>Assign</button></form></li>""") |> String.concat ""
                 Results.Text($"""<!doctype html><html><body><h1>{WebUtility.HtmlEncode(WorkspaceName.value workspace.Name)}</h1><ul>{items}</ul><form method="post" action="/workspaces/{wid}/members"><input name="name" placeholder="Member name"><button>Add member</button></form><form method="post" action="/workspaces/{wid}/items"><input name="title" placeholder="Work item"><button>Add item</button></form></body></html>""", "text/html"))) |> ignore
 
-    app.MapPost("/workspaces/{workspaceId}/members", Func<string, HttpRequest, Threading.Tasks.Task<IResult>>(fun workspaceId request -> task {
+    app.MapPost("/workspaces/{workspaceId}/members", Func<string, HttpRequest, Task<IResult>>(fun workspaceId request -> task {
         let! form = request.ReadFormAsync()
         match id workspaceId WorkspaceId.create with
         | Ok workspaceId -> match run env (Application.addMember workspaceId (string form["name"])) with Ok _ -> return Results.Redirect($"/workspaces/{workspaceId}") | Error error -> return Results.BadRequest(error)
         | Error error -> return Results.BadRequest(error) })) |> ignore
 
-    app.MapPost("/workspaces/{workspaceId}/items", Func<string, HttpRequest, Threading.Tasks.Task<IResult>>(fun workspaceId request -> task {
+    app.MapPost("/workspaces/{workspaceId}/items", Func<string, HttpRequest, Task<IResult>>(fun workspaceId request -> task {
         let! form = request.ReadFormAsync()
         match id workspaceId WorkspaceId.create with
         | Ok workspaceId -> match run env (Application.addWorkItem workspaceId (string form["title"])) with Ok _ -> return Results.Redirect($"/workspaces/{workspaceId}") | Error error -> return Results.BadRequest(error)
@@ -151,7 +153,7 @@ let buildWebApp (env: AppEnv) (args: string array) =
         | Ok workspaceId, Ok itemId -> match run env (Application.complete workspaceId itemId) with Ok _ -> Results.Redirect($"/workspaces/{workspaceId}") | Error error -> Results.BadRequest(error)
         | _ -> Results.BadRequest("Invalid id."))) |> ignore
 
-    app.MapPost("/workspaces/{workspaceId}/items/{itemId}/assign", Func<string, string, HttpRequest, Threading.Tasks.Task<IResult>>(fun workspaceId itemId request -> task {
+    app.MapPost("/workspaces/{workspaceId}/items/{itemId}/assign", Func<string, string, HttpRequest, Task<IResult>>(fun workspaceId itemId request -> task {
         let! form = request.ReadFormAsync()
         match id workspaceId WorkspaceId.create, id itemId WorkItemId.create, id (string form["memberId"]) MemberId.create with
         | Ok workspaceId, Ok itemId, Ok memberId -> match run env (Application.assign workspaceId itemId memberId) with Ok _ -> return Results.Redirect($"/workspaces/{workspaceId}") | Error error -> return Results.BadRequest(error)
