@@ -22,7 +22,7 @@ The coordinated release currently packs:
 - `Axial`
 - `Axial.Flow.Console`
 - `Axial.Flow.FileSystem`
-- `Axial.Flow.Http`
+- `Axial.Flow.HttpClient`
 - `Axial.Flow.Process`
 - `Axial.Flow.PlatformService`
 - `Axial.Flow.Hosting`

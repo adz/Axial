@@ -10,7 +10,7 @@ open Axial.Flow
 open Axial.Flow.Console
 open Axial.Flow.PlatformService
 open Axial.Flow.FileSystem
-open Axial.Flow.Http
+open Axial.Flow.HttpClient
 open Axial.Flow.Process
 open Microsoft.Extensions.DependencyInjection
 open Swensen.Unquote
@@ -23,7 +23,7 @@ module CoreLog = Axial.Flow.PlatformService.Log
 module CoreRandom = Axial.Flow.PlatformService.Random
 module ConsoleService = Axial.Flow.Console.Console
 module FileSystemService = Axial.Flow.FileSystem.FileSystem
-module HttpService = Axial.Flow.Http.Http
+module HttpService = Axial.Flow.HttpClient.Http
 module ProcessService = Axial.Flow.Process.Process
 
 type ServicePackageLayerServices =

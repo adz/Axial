@@ -8,7 +8,7 @@ open System.Threading.Tasks
 open Axial.Flow
 open Axial.Flow.Console
 open Axial.Flow.FileSystem
-open Axial.Flow.Http
+open Axial.Flow.HttpClient
 open Axial.Flow.Process
 open Swensen.Unquote
 open Xunit

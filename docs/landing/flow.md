@@ -84,12 +84,12 @@ dotnet add package Axial.Flow
 ```
 
 `Flow<'env, 'error, 'value>`, the `flow {}` builder, and the runtime live in this one package. Reach for a satellite
-package only for the specific integration it wraps — `Axial.Flow.Http`, `Axial.Flow.Console`,
+package only for the specific integration it wraps — `Axial.Flow.HttpClient`, `Axial.Flow.Console`,
 `Axial.Flow.FileSystem`, `Axial.Flow.Process`, `Axial.Flow.Hosting`, and `Axial.Flow.Telemetry` each add one
 `IHas<'service>`-shaped integration; none of them are required to use `flow {}` itself.
 
 ```sh
-dotnet add package Axial.Flow.Http
+dotnet add package Axial.Flow.HttpClient
 ```
 
 ## Core Flow

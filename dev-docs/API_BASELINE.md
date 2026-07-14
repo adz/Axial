@@ -69,7 +69,7 @@ The old monolithic `tests/Axial.Tests/Axial.Tests.fsproj` harness has been repla
 - `tests/Axial.ErrorHandling.Tests/Axial.ErrorHandling.Tests.fsproj`
 - `tests/Axial.Flow.FileSystem.Tests/Axial.Flow.FileSystem.Tests.fsproj`
 - `tests/Axial.Flow.Hosting.Tests/Axial.Flow.Hosting.Tests.fsproj`
-- `tests/Axial.Flow.Http.Tests/Axial.Flow.Http.Tests.fsproj`
+- `tests/Axial.Flow.HttpClient.Tests/Axial.Flow.HttpClient.Tests.fsproj`
 - `tests/Axial.Flow.Integration.Tests/Axial.Flow.Integration.Tests.fsproj`
 - `tests/Axial.Flow.PlatformService.Tests/Axial.Flow.PlatformService.Tests.fsproj`
 - `tests/Axial.Flow.Telemetry.Tests/Axial.Flow.Telemetry.Tests.fsproj`

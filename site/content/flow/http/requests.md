@@ -14,8 +14,8 @@ String-built URLs break on spaces, slashes, and user input. The DSL builders tre
 URL-encoded value:
 
 ```fsharp
-open Axial.Flow.Http
-open Axial.Flow.Http.DSL
+open Axial.Flow.HttpClient
+open Axial.Flow.HttpClient.DSL
 
 let name = "a b/c&d"
 let request = GET $"https://api.example.com/users/{name}"
@@ -111,6 +111,6 @@ let plan =
 
 ## When Not To Use The DSL
 
-Open `Axial.Flow.Http.DSL` locally in modules that make HTTP calls, not at the top of every file: it introduces
+Open `Axial.Flow.HttpClient.DSL` locally in modules that make HTTP calls, not at the top of every file: it introduces
 short names such as `query`, `header`, and `timeout`. In code that only forwards a request built elsewhere, the
 qualified `Request.*` functions keep the origin obvious.

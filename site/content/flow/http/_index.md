@@ -1,6 +1,6 @@
 ---
 weight: 90
-title: Axial.Flow.Http
+title: Axial.Flow.HttpClient
 linkTitle: HTTP
 description: Build typed HTTP requests, decode responses safely, and retry transient failures.
 type: docs
@@ -22,8 +22,8 @@ let user = parseUser body // throws on bad payloads
 The same call as an Axial workflow:
 
 ```fsharp
-open Axial.Flow.Http
-open Axial.Flow.Http.DSL
+open Axial.Flow.HttpClient
+open Axial.Flow.HttpClient.DSL
 
 let user =
     GET $"https://api.example.com/users/{userId}"
@@ -37,7 +37,7 @@ failures all arrive as one typed `HttpError`, and nothing is sent until a Flow r
 
 ## Two Levels
 
-`Axial.Flow.Http` has two deliberate levels:
+`Axial.Flow.HttpClient` has two deliberate levels:
 
 1. **The `Http` and `Request` modules** wrap the common `HttpClient` operations with explicit requests, typed
    errors, and service-based execution. Use them when you want full control over every request field.

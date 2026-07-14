@@ -224,7 +224,7 @@ Service packages should focus on explicit, typed, testable system effects:
 - Core (`Axial.Flow.PlatformService`): clock, log, random, GUID, environment variables
 - Console (`Axial.Flow.Console`)
 - FileSystem (`Axial.Flow.FileSystem`)
-- Http (`Axial.Flow.Http`)
+- Http (`Axial.Flow.HttpClient`)
 - Process (`Axial.Flow.Process`)
 - Telemetry (`Axial.Flow.Telemetry`) and hosting adapters (`Axial.Flow.Hosting`)
 - future Network package

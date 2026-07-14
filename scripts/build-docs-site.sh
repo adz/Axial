@@ -10,7 +10,7 @@ for project in \
   "src/Axial.Flow.PlatformService/Axial.Flow.PlatformService.fsproj" \
   "src/Axial.Flow.Console/Axial.Flow.Console.fsproj" \
   "src/Axial.Flow.FileSystem/Axial.Flow.FileSystem.fsproj" \
-  "src/Axial.Flow.Http/Axial.Flow.Http.fsproj" \
+  "src/Axial.Flow.HttpClient/Axial.Flow.HttpClient.fsproj" \
   "src/Axial.Flow.Process/Axial.Flow.Process.fsproj" \
   "src/Axial.Schema/Axial.Schema.fsproj"
 do

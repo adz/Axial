@@ -14,7 +14,7 @@ If you are an AI assistant, prioritize the patterns in the **Dependency Guidance
 ## Default Patterns
 
 {{% alert title="Hard effect boundary" color="danger" %}}
-`Axial.Flow.Process` and `Axial.Flow.Http` may perform only the effect represented by their core mockable service
+`Axial.Flow.Process` and `Axial.Flow.HttpClient` may perform only the effect represented by their core mockable service
 (`IProcess` or `IHttp`). Every additional effect must be an explicit, mockable dependency visible in the signature.
 Never call `DateTimeOffset.UtcNow` or `DateTime.Now` in these adapters; inject
 `Axial.Flow.PlatformService.IClock` and call `clock.UtcNow()`. Apply the same rule to random, GUID, environment,
@@ -71,7 +71,7 @@ for Bash `|&`, and `mergeStderr` for the intent of `2>&1`. Prefer typed topology
 `sh`, or `pwsh` only when shell language is genuinely clearer; never concatenate untrusted values into `*Text` shell
 programs.
 
-For HTTP calls, open `Axial.Flow.Http.DSL` locally. Build requests with `GET $"...{value}"` (interpolation holes are
+For HTTP calls, open `Axial.Flow.HttpClient.DSL` locally. Build requests with `GET $"...{value}"` (interpolation holes are
 URL-encoded as one value; wrap credentials in `secret` for redaction), configure with `query`, `bearer`, `timeout`,
 `jsonBody`, and `expect`, then finish with `fetch`, `fetchText`, or `fetchJson decode`:
 

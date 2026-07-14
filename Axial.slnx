@@ -23,7 +23,7 @@
     <Project Path="src/Axial.Flow.PlatformService/Axial.Flow.PlatformService.fsproj" />
     <Project Path="src/Axial.Flow.Console/Axial.Flow.Console.fsproj" />
     <Project Path="src/Axial.Flow.FileSystem/Axial.Flow.FileSystem.fsproj" />
-    <Project Path="src/Axial.Flow.Http/Axial.Flow.Http.fsproj" />
+    <Project Path="src/Axial.Flow.HttpClient/Axial.Flow.HttpClient.fsproj" />
     <Project Path="src/Axial.Flow.Process/Axial.Flow.Process.fsproj" />
     <Project Path="src/Axial.Flow/Axial.Flow.fsproj" />
     <Project Path="src/Axial.ErrorHandling/Axial.ErrorHandling.fsproj" />
@@ -45,7 +45,7 @@
     <Project Path="tests/Axial.Flow.Hosting.Tests/Axial.Flow.Hosting.Tests.fsproj" />
     <Project Path="tests/Axial.Flow.Telemetry.Tests/Axial.Flow.Telemetry.Tests.fsproj" />
     <Project Path="tests/Axial.Flow.FileSystem.Tests/Axial.Flow.FileSystem.Tests.fsproj" />
-    <Project Path="tests/Axial.Flow.Http.Tests/Axial.Flow.Http.Tests.fsproj" />
+    <Project Path="tests/Axial.Flow.HttpClient.Tests/Axial.Flow.HttpClient.Tests.fsproj" />
     <Project Path="tests/Axial.Flow.Integration.Tests/Axial.Flow.Integration.Tests.fsproj" />
     <Project Path="tests/Axial.ApiShape.Tests/Axial.ApiShape.Tests.fsproj" />
     <Project Path="tests/Axial.ReferenceApp.Tests/Axial.ReferenceApp.Tests.fsproj" />

@@ -25,9 +25,12 @@ re-implemented per consumer.
 `FsToolkit.ErrorHandling` provides a broad toolbox of helpers for working with Result, 
 `AsyncResult`, and `TaskResult` as separate, wrapped types.
 
-Axial provides a single, scalable progression:
-
-[Check]({{< relref "/error-handling/reference/check/" >}}) -> [Result]({{< relref "/error-handling/reference/result/" >}}) -> [Refined]({{< relref "/error-handling/reference/refined/" >}}) -> [Validation]({{< relref "/error-handling/reference/validation/" >}}) -> [Flow]({{< relref "/flow/reference/flow/" >}})
+Axial divides the same ground by role instead of by wrapper type: plain [Result]({{< relref "/error-handling/reference/result/" >}})
+with your own error union for simple code, [Validation]({{< relref "/error-handling/reference/validation/" >}}) when independent
+failures must accumulate, and [Flow]({{< relref "/flow/reference/flow/" >}}) for effectful workflows.
+[Check]({{< relref "/error-handling/reference/check/" >}}) and [Refined]({{< relref "/error-handling/reference/refined/" >}}) are reusable
+machinery behind those surfaces — value constraints and named proof types — not additional entry points to choose
+between.
 
 In Axial, the environment and runtime concerns are baked into the computation, allowing you to
 write orchestration logic that remains agnostic of whether the underlying work is sync or async

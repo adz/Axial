@@ -21,7 +21,7 @@ Refer to [`dev-docs/PLAN.md`](dev-docs/PLAN.md) for architectural direction and
 
 ### EFFECT BOUNDARY — DO NOT HIDE AMBIENT EFFECTS IN SERVICE ADAPTERS
 
-- `Axial.Flow.Process` and `Axial.Flow.Http` may perform only the effect named by their core, mockable service type (`IProcess` or `IHttp`). Any additional effect must be an explicit, mockable dependency visible in the implementation signature.
+- `Axial.Flow.Process` and `Axial.Flow.HttpClient` may perform only the effect named by their core, mockable service type (`IProcess` or `IHttp`). Any additional effect must be an explicit, mockable dependency visible in the implementation signature.
 - In particular, never call `DateTimeOffset.UtcNow`, `DateTime.Now`, or another ambient clock from Process or Http. Inject `Axial.Flow.PlatformService.IClock` into live implementations and use `clock.UtcNow()`.
 - Apply the same rule to randomness, GUID generation, environment variables, filesystem, console, and other operational effects: use the appropriate explicit service from `Axial.Flow.PlatformService` or another package whose core type is present in the signature.
 

@@ -12,7 +12,7 @@ namespace Axial.Flow
 [<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Flow.PlatformService")>]
 [<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Flow.Console")>]
 [<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Flow.FileSystem")>]
-[<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Flow.Http")>]
+[<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Flow.HttpClient")>]
 [<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Flow.Process")>]
 [<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Flow.Hosting")>]
 [<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Flow.Telemetry")>]

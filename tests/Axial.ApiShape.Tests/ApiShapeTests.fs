@@ -1829,7 +1829,7 @@ module ApiShapeTests =
         |> publicStaticMemberNames
         |> assertContainsAll [ "fromException"; "describe" ]
 
-        moduleType typeof<Axial.Flow.Http.IHttp> "Axial.Flow.Http.Http"
+        moduleType typeof<Axial.Flow.HttpClient.IHttp> "Axial.Flow.HttpClient.Http"
         |> publicStaticMemberNames
         |> assertContainsAll [ "getString"; "layer"; "live" ]
 

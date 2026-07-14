@@ -96,7 +96,7 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 - [ ] Treat service packages as explicit service contracts over the expected .NET API surface: wrap most operations a competent .NET developer would look for, omitting only obsolete, legacy-only, redundant, unsafe-to-abstract, or poor-Axial-fit APIs.
 - [x] Use `Axial.Flow.PlatformService` and `Axial.Flow.FileSystem` as the first examples of near-complete service surfaces with live implementations, typed Flow helpers, fake-friendly contracts, tests, and generated reference docs.
 - [x] Expand `Axial.Flow.Console` into a near-complete console/terminal service package rather than only read/write-line helpers.
-- [x] Expand `Axial.Flow.Http` into a practical HTTP service package covering common requests/responses, headers, text/JSON/byte content, per-request timeout, cancellation, error classification, host-owned `HttpClient` configuration, live tests, and user guides.
+- [x] Expand `Axial.Flow.HttpClient` into a practical HTTP service package covering common requests/responses, headers, text/JSON/byte content, per-request timeout, cancellation, error classification, host-owned `HttpClient` configuration, live tests, and user guides.
 - [x] Expand `Axial.Flow.Process` into a practical process service package covering commands and pipelines, environment and working-directory configuration, structured and streaming output, cancellation, exit handling, typed errors, live tests, scripts, and user guides.
 - [ ] Add explicit process timeout/deadline configuration and tests so callers do not have to arrange timeout cancellation outside `Axial.Flow.Process`.
 - [ ] Design `Axial.Flow.Network` after the core v1 service/layer surface is stable.

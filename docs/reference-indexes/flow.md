@@ -32,7 +32,7 @@ orchestration syntax.
 - [`Core services`](./service/core/) — clock, log, random, guid, environment variables (`Axial.Flow.PlatformService`).
 - [`Console`](./service/console/) — `Axial.Flow.Console`.
 - [`FileSystem`](./service/filesystem/) — `Axial.Flow.FileSystem`.
-- [`Http`](./service/http/) — `Axial.Flow.Http`.
+- [`Http`](./service/http/) — `Axial.Flow.HttpClient`.
 - [`Process`](./service/process/) — `Axial.Flow.Process`.
 
 See [Processes and pipelines](../../flow/processes/) for the shell-like authoring guide and Bash comparisons, and

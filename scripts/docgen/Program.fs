@@ -782,17 +782,17 @@ let pageSpecs = [
     {
         OutPath = ["service"; "http"; "_index.md"]
         Title = "Services Http"
-        Description = "Source-documented HTTP client service for Axial.Flow.Http."
+        Description = "Source-documented HTTP client service for Axial.Flow.HttpClient."
         Intro = "This page shows the HTTP client service package. Immutable `HttpRequest` values carry the method, encoded URL, headers, body, timeout, and status expectation; `Http.send` converts a request through the explicit `IHttp` capability and reports connection, timeout, status, and decode failures through `HttpError` with redacted request transcripts. The `DSL` module adds interpolated URL builders and terminal fetch verbs for concise call sites."
         SymbolIds = [
-            "Model", ["T:Axial.Flow.Http.Method"; "T:Axial.Flow.Http.RequestBody"; "T:Axial.Flow.Http.StatusExpectation"; "T:Axial.Flow.Http.HttpRequest"; "T:Axial.Flow.Http.RequestPlan"; "T:Axial.Flow.Http.HttpResponse"; "T:Axial.Flow.Http.HttpError"]
-            "Service", ["T:Axial.Flow.Http.IHttp"]
-            "Errors", ["M:Axial.Flow.Http.HttpError.describe"; "M:Axial.Flow.Http.HttpError.tryResponse"; "M:Axial.Flow.Http.HttpError.isTransient"; "M:Axial.Flow.Http.HttpError.transientPolicy"]
-            "Request building", ["M:Axial.Flow.Http.Request.create"; "M:Axial.Flow.Http.Request.query"; "M:Axial.Flow.Http.Request.secretQuery"; "M:Axial.Flow.Http.Request.header"; "M:Axial.Flow.Http.Request.secretHeader"; "M:Axial.Flow.Http.Request.bearer"; "M:Axial.Flow.Http.Request.basicAuth"; "M:Axial.Flow.Http.Request.accept"; "M:Axial.Flow.Http.Request.acceptJson"; "M:Axial.Flow.Http.Request.userAgent"; "M:Axial.Flow.Http.Request.timeout"; "M:Axial.Flow.Http.Request.textBody"; "M:Axial.Flow.Http.Request.jsonBody"; "M:Axial.Flow.Http.Request.jsonBodyWith"; "M:Axial.Flow.Http.Request.bytesBody"; "M:Axial.Flow.Http.Request.formBody"; "M:Axial.Flow.Http.Request.expect"; "M:Axial.Flow.Http.Request.expectAny"; "M:Axial.Flow.Http.Request.render"; "M:Axial.Flow.Http.Request.plan"]
-            "Responses", ["M:Axial.Flow.Http.Response.text"; "M:Axial.Flow.Http.Response.bytes"; "M:Axial.Flow.Http.Response.statusCode"; "M:Axial.Flow.Http.Response.tryHeader"; "M:Axial.Flow.Http.Response.json"; "M:Axial.Flow.Http.Response.create"]
-            "Execution", ["M:Axial.Flow.Http.Http.get"; "M:Axial.Flow.Http.Http.head"; "M:Axial.Flow.Http.Http.post"; "M:Axial.Flow.Http.Http.put"; "M:Axial.Flow.Http.Http.patch"; "M:Axial.Flow.Http.Http.delete"; "M:Axial.Flow.Http.Http.send"; "M:Axial.Flow.Http.Http.sendResult"; "M:Axial.Flow.Http.Http.text"; "M:Axial.Flow.Http.Http.bytes"; "M:Axial.Flow.Http.Http.json"; "M:Axial.Flow.Http.Http.getString"; "M:Axial.Flow.Http.Http.getBytes"; "M:Axial.Flow.Http.Http.getJson"; "M:Axial.Flow.Http.Http.postString"; "M:Axial.Flow.Http.Http.postJson"; "M:Axial.Flow.Http.Http.retryTransient"]
-            "Concise DSL", ["M:Axial.Flow.Http.DSL.GET"; "M:Axial.Flow.Http.DSL.HEAD"; "M:Axial.Flow.Http.DSL.POST"; "M:Axial.Flow.Http.DSL.PUT"; "M:Axial.Flow.Http.DSL.PATCH"; "M:Axial.Flow.Http.DSL.DELETE"; "M:Axial.Flow.Http.DSL.secret"; "M:Axial.Flow.Http.DSL.query"; "M:Axial.Flow.Http.DSL.secretQuery"; "M:Axial.Flow.Http.DSL.header"; "M:Axial.Flow.Http.DSL.bearer"; "M:Axial.Flow.Http.DSL.basicAuth"; "M:Axial.Flow.Http.DSL.timeout"; "M:Axial.Flow.Http.DSL.jsonBody"; "M:Axial.Flow.Http.DSL.jsonBodyOf"; "M:Axial.Flow.Http.DSL.textBody"; "M:Axial.Flow.Http.DSL.formBody"; "M:Axial.Flow.Http.DSL.expect"; "M:Axial.Flow.Http.DSL.expectAny"; "M:Axial.Flow.Http.DSL.fetch"; "M:Axial.Flow.Http.DSL.fetchText"; "M:Axial.Flow.Http.DSL.fetchBytes"; "M:Axial.Flow.Http.DSL.fetchJson"; "M:Axial.Flow.Http.DSL.withRetries"]
-            "Implementations", ["M:Axial.Flow.Http.Http.live"; "M:Axial.Flow.Http.Http.layer"]
+            "Model", ["T:Axial.Flow.HttpClient.Method"; "T:Axial.Flow.HttpClient.RequestBody"; "T:Axial.Flow.HttpClient.StatusExpectation"; "T:Axial.Flow.HttpClient.HttpRequest"; "T:Axial.Flow.HttpClient.RequestPlan"; "T:Axial.Flow.HttpClient.HttpResponse"; "T:Axial.Flow.HttpClient.HttpError"]
+            "Service", ["T:Axial.Flow.HttpClient.IHttp"]
+            "Errors", ["M:Axial.Flow.HttpClient.HttpError.describe"; "M:Axial.Flow.HttpClient.HttpError.tryResponse"; "M:Axial.Flow.HttpClient.HttpError.isTransient"; "M:Axial.Flow.HttpClient.HttpError.transientPolicy"]
+            "Request building", ["M:Axial.Flow.HttpClient.Request.create"; "M:Axial.Flow.HttpClient.Request.query"; "M:Axial.Flow.HttpClient.Request.secretQuery"; "M:Axial.Flow.HttpClient.Request.header"; "M:Axial.Flow.HttpClient.Request.secretHeader"; "M:Axial.Flow.HttpClient.Request.bearer"; "M:Axial.Flow.HttpClient.Request.basicAuth"; "M:Axial.Flow.HttpClient.Request.accept"; "M:Axial.Flow.HttpClient.Request.acceptJson"; "M:Axial.Flow.HttpClient.Request.userAgent"; "M:Axial.Flow.HttpClient.Request.timeout"; "M:Axial.Flow.HttpClient.Request.textBody"; "M:Axial.Flow.HttpClient.Request.jsonBody"; "M:Axial.Flow.HttpClient.Request.jsonBodyWith"; "M:Axial.Flow.HttpClient.Request.bytesBody"; "M:Axial.Flow.HttpClient.Request.formBody"; "M:Axial.Flow.HttpClient.Request.expect"; "M:Axial.Flow.HttpClient.Request.expectAny"; "M:Axial.Flow.HttpClient.Request.render"; "M:Axial.Flow.HttpClient.Request.plan"]
+            "Responses", ["M:Axial.Flow.HttpClient.Response.text"; "M:Axial.Flow.HttpClient.Response.bytes"; "M:Axial.Flow.HttpClient.Response.statusCode"; "M:Axial.Flow.HttpClient.Response.tryHeader"; "M:Axial.Flow.HttpClient.Response.json"; "M:Axial.Flow.HttpClient.Response.create"]
+            "Execution", ["M:Axial.Flow.HttpClient.Http.get"; "M:Axial.Flow.HttpClient.Http.head"; "M:Axial.Flow.HttpClient.Http.post"; "M:Axial.Flow.HttpClient.Http.put"; "M:Axial.Flow.HttpClient.Http.patch"; "M:Axial.Flow.HttpClient.Http.delete"; "M:Axial.Flow.HttpClient.Http.send"; "M:Axial.Flow.HttpClient.Http.sendResult"; "M:Axial.Flow.HttpClient.Http.text"; "M:Axial.Flow.HttpClient.Http.bytes"; "M:Axial.Flow.HttpClient.Http.json"; "M:Axial.Flow.HttpClient.Http.getString"; "M:Axial.Flow.HttpClient.Http.getBytes"; "M:Axial.Flow.HttpClient.Http.getJson"; "M:Axial.Flow.HttpClient.Http.postString"; "M:Axial.Flow.HttpClient.Http.postJson"; "M:Axial.Flow.HttpClient.Http.retryTransient"]
+            "Concise DSL", ["M:Axial.Flow.HttpClient.DSL.GET"; "M:Axial.Flow.HttpClient.DSL.HEAD"; "M:Axial.Flow.HttpClient.DSL.POST"; "M:Axial.Flow.HttpClient.DSL.PUT"; "M:Axial.Flow.HttpClient.DSL.PATCH"; "M:Axial.Flow.HttpClient.DSL.DELETE"; "M:Axial.Flow.HttpClient.DSL.secret"; "M:Axial.Flow.HttpClient.DSL.query"; "M:Axial.Flow.HttpClient.DSL.secretQuery"; "M:Axial.Flow.HttpClient.DSL.header"; "M:Axial.Flow.HttpClient.DSL.bearer"; "M:Axial.Flow.HttpClient.DSL.basicAuth"; "M:Axial.Flow.HttpClient.DSL.timeout"; "M:Axial.Flow.HttpClient.DSL.jsonBody"; "M:Axial.Flow.HttpClient.DSL.jsonBodyOf"; "M:Axial.Flow.HttpClient.DSL.textBody"; "M:Axial.Flow.HttpClient.DSL.formBody"; "M:Axial.Flow.HttpClient.DSL.expect"; "M:Axial.Flow.HttpClient.DSL.expectAny"; "M:Axial.Flow.HttpClient.DSL.fetch"; "M:Axial.Flow.HttpClient.DSL.fetchText"; "M:Axial.Flow.HttpClient.DSL.fetchBytes"; "M:Axial.Flow.HttpClient.DSL.fetchJson"; "M:Axial.Flow.HttpClient.DSL.withRetries"]
+            "Implementations", ["M:Axial.Flow.HttpClient.Http.live"; "M:Axial.Flow.HttpClient.Http.layer"]
         ]
         Alias = None
     }
@@ -1131,7 +1131,7 @@ let main argv =
         Path.Combine(artifactsDir, "Axial.Flow.PlatformService/debug_net8.0/Axial.Flow.PlatformService.dll")
         Path.Combine(artifactsDir, "Axial.Flow.Console/debug_net8.0/Axial.Flow.Console.dll")
         Path.Combine(artifactsDir, "Axial.Flow.FileSystem/debug_net8.0/Axial.Flow.FileSystem.dll")
-        Path.Combine(artifactsDir, "Axial.Flow.Http/debug_net8.0/Axial.Flow.Http.dll")
+        Path.Combine(artifactsDir, "Axial.Flow.HttpClient/debug_net8.0/Axial.Flow.HttpClient.dll")
         Path.Combine(artifactsDir, "Axial.Flow.Process/debug_net8.0/Axial.Flow.Process.dll")
     ]
 
@@ -1220,7 +1220,7 @@ let main argv =
             formatterApiSlug "Axial.Flow.Console.Console", Path.Combine(outRoot, "service", "console", "_index.md")
             formatterApiSlug "Axial.Flow.FileSystem.FileSystem", Path.Combine(outRoot, "service", "filesystem", "_index.md")
             formatterApiSlug "Axial.Flow.FileSystem.FileSystemError", Path.Combine(outRoot, "service", "filesystem", "_index.md")
-            formatterApiSlug "Axial.Flow.Http.Http", Path.Combine(outRoot, "service", "http", "_index.md")
+            formatterApiSlug "Axial.Flow.HttpClient.Http", Path.Combine(outRoot, "service", "http", "_index.md")
             formatterApiSlug "Axial.Flow.Process.Process", Path.Combine(outRoot, "service", "process", "_index.md")
         ]
 

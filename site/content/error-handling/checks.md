@@ -16,7 +16,41 @@ That's the whole shape. What makes it worth reaching for instead of writing the 
 `Check` is **named** and **reusable** — `Check.present`, `Check.atLeast 18`, `Check.email` are each written once and
 called from everywhere that fact matters — and its failure side is **structured**, not a bare `unit` or `string`.
 
-### The `CheckFailure` Type
+## Reach For The Root Names First
+
+The common facts live directly on `Check`, and the three presence names are type-directed: `Check.present`,
+`Check.empty`, and `Check.notEmpty` accept a `string`, `option`, `voption`, `Nullable<'value>`, `list`, or `array`,
+and each call site resolves to the right rule for that type:
+
+```fsharp
+Check.present "Ada"           // Result<string, CheckFailure list>       — non-blank
+Check.present (Some 1)        // Result<int option, CheckFailure list>   — is Some
+Check.present (Nullable 1)    // Result<Nullable<int>, CheckFailure list> — has a value
+Check.present [ 1; 2 ]        // Result<int list, CheckFailure list>     — non-empty
+```
+
+The dispatch is F#'s statically resolved type parameters (SRTP), resolved entirely at compile time — no runtime type
+test, no reflection; each call compiles directly against the matching type-specific implementation. The result type
+comes from context rather than the input, so a surrounding annotation (a function's return type, a binding's type)
+must pin it; in the middle of an inference chain with nothing pinning the result, use the type-specific form
+(`Check.String.present`) instead.
+
+The rest of the root catalog is ordinary named functions: `Check.atLeast`, `Check.email`, `Check.minLength`,
+`Check.maxCount`, `Check.matches`, `Check.oneOf`, and so on. Start here; most call sites never need anything else.
+
+## Dot Into A Type's Module To Browse
+
+When you know the type and want to see what can be checked about it, the per-type modules are the catalog:
+`Check.String`, `Check.Number`, `Check.Seq`, `Check.Option`, `Check.ValueOption`, `Check.Nullable`, and
+`Check.Result`. Typing `Check.String.` lists every string check in completions; `Check.Seq.` lists every collection
+check. Root names like `Check.minLength` are thin forwarders into these modules — one implementation, two entry
+points — so the qualified form is never a different behavior, just a browsable one.
+
+The qualified form is also the disambiguator when a name would otherwise collide, and it states the rule precisely
+where a call site reads better with the container named — `Check.Option.some ticket.Assignee` says exactly what is
+being proven.
+
+## The `CheckFailure` Type
 
 Every `Check` that fails produces one or more [`CheckFailure`]({{< relref "/error-handling/reference/check/t-errorhandling-checkfailure.md" >}})
 values — a closed set of describable reasons, not free-form text:
@@ -129,17 +163,12 @@ A `Check` piped into `Result.orError`/`Result.mapError` is already a plain `Resu
 `flow {}` (a separate package — see [Flow]({{< relref "/flow/" >}})) the same way it does in a `result {}`; no
 adapter is needed either direction.
 
-## The Full Check Surface
+## Check Or Extract
 
-Everything above uses the deduplicated root names. The full picture underneath:
+A `Check` always hands back the same type it received. When success should instead *unwrap* a value — the inner
+value of an option, the head of a sequence — that's extraction, and it lives elsewhere:
 
-### Type-Specific Submodules
-
-`Check.String`, `Check.Number`, `Check.Seq`, `Check.Option`, `Check.ValueOption`, `Check.Nullable`, and `Check.Result`
-hold the type-specific implementations. Root names like `Check.minLength` are thin forwarders into `Check.String.minLength`
-— one implementation, two entry points. Reach for the qualified form directly when a name would otherwise collide:
-
-| Check | Extract (a different shape, lives elsewhere) |
+| Check (proves, keeps the shape) | Extract (unwraps) |
 | --- | --- |
 | `Check.Option.some` | `Result.someOr` |
 | `Check.ValueOption.some` | `Result.valueSomeOr` |
@@ -152,32 +181,14 @@ hold the type-specific implementations. Root names like `Check.minLength` are th
 
 Cardinality — "this collection has exactly one item" — is a collection-level structural fact, not a value-level
 constraint. `Check.single`/`Check.atMostOne` prove the fact and keep the sequence; extracting the element itself
-isn't something a `Check` can do (a `Check` always returns the same type it received), so that lives in `Refine`
-instead, reusing `CheckFailed` rather than a separate error type:
+lives in `Refine` instead, reusing `CheckFailed` rather than a separate error type:
 
 ```fsharp
 ids |> Check.single      // proves the fact, keeps the sequence
 ids |> Refine.exactlyOne // extracts the single element
 ```
 
-### The Type-Directed Presence Facade
-
-`Check.present`, `Check.empty`, and `Check.notEmpty` dispatch across `string`, `option`, `voption`, `Nullable<'value>`,
-and sequence-shaped values generically — the same three names work regardless of which type you hand them:
-
-```fsharp
-Check.present "Ada"           // Result<string, CheckFailure list>
-Check.present (Some 1)        // Result<int option, CheckFailure list>
-Check.present (ValueSome 1)   // Result<int voption, CheckFailure list>
-Check.present (Nullable 1)    // Result<Nullable<int>, CheckFailure list>
-```
-
-This is resolved at compile time via F#'s statically resolved type parameters (SRTP) — there's no runtime type test.
-Each call site is compiled directly against the matching `Check.String.present`/`Check.Option.present`/etc.
-implementation, so there's no reflection and no boxing overhead beyond what the compiler would generate for a direct
-call to the type-specific version.
-
-### Composition
+## Composition
 
 `Check.all`, `Check.any`, `Check.not`, and `Check.mapFailure` combine `Check<'value>` values:
 
