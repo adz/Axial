@@ -14,6 +14,13 @@ type MockTelemetryEnv =
     interface IHasRequestId with member this.RequestId = this.RequestId
     interface IHasCorrelationId with member this.CorrelationId = this.CorrelationId
 
+type TaggedEnv =
+    {
+        SessionId: string
+    }
+    interface IHasTelemetryTags with
+        member this.TelemetryTags = [ "app.session_id", this.SessionId; "app.region", "eu-west" ]
+
 module TelemetryTests =
     [<Fact>]
     let ``Activity.trace: automatically maps metadata traits to tags`` () =
@@ -144,6 +151,21 @@ module TelemetryTests =
             test <@ tags.ContainsKey "axial.flow.cause" @>
             test <@ tags["axial.flow.cause"].Contains "Then" @>
         | other -> failwithf "Expected one composite-op span, got %A" other
+
+    [<Fact>]
+    let ``Activity.trace: applies IHasTelemetryTags from the environment`` () =
+        let spans =
+            captureSpans (fun () ->
+                (Flow.succeed 1 : Flow<TaggedEnv, string, int>)
+                |> Activity.trace "tagged-op"
+                |> Flow.runSync { SessionId = "session-9" }
+                |> ignore)
+
+        match spans |> List.filter (fun (name, _, _, _) -> name = "tagged-op") with
+        | [ _, _, _, tags ] ->
+            test <@ tags["app.session_id"] = "session-9" @>
+            test <@ tags["app.region"] = "eu-west" @>
+        | other -> failwithf "Expected one tagged-op span, got %A" other
 
     [<Fact>]
     let ``Activity.trace: nested traces both receive annotations set in the inner region`` () =

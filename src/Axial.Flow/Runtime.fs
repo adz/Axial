@@ -24,6 +24,18 @@ type IHasTenantId =
     abstract TenantId: string option
 
 /// <summary>
+/// Provides extensible telemetry tags from an environment.
+/// </summary>
+/// <remarks>
+/// Telemetry integrations (such as <c>Activity.trace</c> in <c>Axial.Flow.Telemetry</c>) apply these tags to
+/// spans after the standard request/correlation/tenant traits. Implement this when the environment carries
+/// ambient identity beyond that trio — session ids, job ids, regions — without needing a trait per concept.
+/// </remarks>
+type IHasTelemetryTags =
+    /// <summary>Tag name/value pairs to stamp onto telemetry spans.</summary>
+    abstract TelemetryTags: (string * string) list
+
+/// <summary>
 /// Provides a standard way to access the current user context from an environment.
 /// </summary>
 /// <typeparam name="user">The type of the application-specific user model.</typeparam>

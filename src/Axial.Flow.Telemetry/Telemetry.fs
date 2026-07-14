@@ -103,6 +103,12 @@ module Activity =
                     | None -> ()
                 | _ -> ()
 
+                match box env with
+                | :? IHasTelemetryTags as tagged ->
+                    for tagName, tagValue in tagged.TelemetryTags do
+                        activity.SetTag(tagName, tagValue) |> ignore
+                | _ -> ()
+
             let tracedFlow =
                 let sourceWithExistingAnnotations =
                     flow {
