@@ -20,4 +20,6 @@ settles — see each file's Status line):
 - `trusted-model-wrapper.md` — Status: SHIPPED as `Model<'model>`; kept for the reasoning record.
 - `zio-schema-comparison.md` — the ZIO Schema deep dive; source of the Phase 29/30 gap ranking in
   `dev-docs/TASKS.md`.
+- `flow-compelling-examples.md` — candidate ZIO/Axial Flow scenarios comparing ordinary implementations, typed effect
+  implementations, guarantees, and remaining application responsibilities.
 - `flow-process-scripting-prd.md` — Flow-group; owned by the Flow track.
