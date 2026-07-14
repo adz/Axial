@@ -45,7 +45,7 @@ This page shows the core service package: clock, logging, random numbers, GUID g
 - [`Flow.PlatformService.Log.critical`](./log/m-flow-platformservice-log-critical.md): Writes a critical log message through an explicit logging service.
 - [`Flow.PlatformService.Log.live`](./log/p-flow-platformservice-log-live.md): Creates a no-op logger for tests and local service bundles.
 - [`Flow.PlatformService.Log.layer`](./log/p-flow-platformservice-log-layer.md): Builds the live logger as a layer.
-- [`Flow.PlatformService.Log.fromSink`](./log/m-flow-platformservice-log-fromsink.md): Creates a logger from a synchronous sink function.
+- [`Flow.PlatformService.Log.fromSink`](./log/m-flow-platformservice-log-fromsink.md): Creates a logger from a synchronous sink function. Exceptions are appended to the message text.
 
 ## Random
 

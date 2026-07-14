@@ -124,3 +124,96 @@ module FlowRuntimeMetadataTests =
             test <@ trace = "outer-boundary" @>
             test <@ (Cause.prettyPrint id (Cause.Traced(Cause.Die error, trace))).Contains "Traced(outer-boundary)" @>
         | other -> failwithf "Expected traced defect, got %A" other
+
+    [<Fact>]
+    let ``Annotations propagate into forked fibers and their annotations reach the outer sink`` () =
+        let sunk = ResizeArray<string * string>()
+
+        let workflow =
+            flow {
+                let! fiber =
+                    Flow.fork (
+                        flow {
+                            let! inherited = Flow.Runtime.annotations |> Flow.map (Map.tryFind "request")
+                            do! Flow.annotate "child" "child-value" (Flow.succeed ())
+                            return inherited
+                        })
+
+                return! Flow.join fiber
+            }
+            |> Flow.annotate "request" "req-1"
+            |> Flow.addAnnotationSink (fun name value -> lock sunk (fun () -> sunk.Add(name, value)))
+
+        let result = Flow.runSync () workflow
+
+        test <@ result = Exit.Success (Some "req-1") @>
+        test <@ lock sunk (fun () -> List.ofSeq sunk) |> List.contains ("child", "child-value") @>
+
+    [<Fact>]
+    let ``Annotations from every retry and supervise attempt reach the sink`` () =
+        let sunk = ResizeArray<string * string>()
+        let sink name value = lock sunk (fun () -> sunk.Add(name, value))
+
+        let retryAttempts = ref 0
+
+        let retried =
+            Flow.delay(fun () ->
+                retryAttempts.Value <- retryAttempts.Value + 1
+
+                Flow.annotate "retry-attempt" (string retryAttempts.Value) (
+                    if retryAttempts.Value < 3 then Flow.fail "transient" else Flow.succeed ()))
+            |> Flow.Runtime.retry (RetryPolicy.noDelay 5)
+            |> Flow.addAnnotationSink sink
+
+        let superviseAttempts = ref 0
+
+        let supervised =
+            Flow.delay(fun () ->
+                superviseAttempts.Value <- superviseAttempts.Value + 1
+
+                Flow.annotate "supervise-attempt" (string superviseAttempts.Value) (
+                    if superviseAttempts.Value < 3 then
+                        Flow.die (System.InvalidOperationException "crash")
+                    else
+                        Flow.succeed ()))
+            |> Flow.Runtime.supervise (SupervisePolicy.noDelay 5)
+            |> Flow.addAnnotationSink sink
+
+        test <@ Flow.runSync () retried = Exit.Success () @>
+        test <@ Flow.runSync () supervised = Exit.Success () @>
+
+        let entries = lock sunk (fun () -> List.ofSeq sunk)
+        test <@ entries |> List.filter (fun (name, _) -> name = "retry-attempt") |> List.map snd = [ "1"; "2"; "3" ] @>
+        test <@ entries |> List.filter (fun (name, _) -> name = "supervise-attempt") |> List.map snd = [ "1"; "2"; "3" ] @>
+
+    [<Fact>]
+    let ``Annotations inside provided layers and resource-using flows reach the outer sink`` () =
+        let sunk = ResizeArray<string * string>()
+        let released = ref false
+
+        let layer = Layer.succeed "service"
+
+        let workflow =
+            flow {
+                let! resource =
+                    Flow.acquireRelease
+                        (Flow.succeed "resource")
+                        (fun _ _ ->
+                            released.Value <- true
+                            System.Threading.Tasks.Task.CompletedTask)
+
+                do! Flow.annotate "resource" resource (Flow.succeed ())
+                let! service = Flow.env<string, string>
+                do! Flow.annotate "layered" service (Flow.succeed ())
+                return service
+            }
+            |> Flow.provide layer
+            |> Flow.addAnnotationSink (fun name value -> lock sunk (fun () -> sunk.Add(name, value)))
+
+        let result = Flow.runSync () workflow
+        let entries = lock sunk (fun () -> List.ofSeq sunk)
+
+        test <@ result = Exit.Success "service" @>
+        test <@ released.Value @>
+        test <@ entries |> List.contains ("resource", "resource") @>
+        test <@ entries |> List.contains ("layered", "service") @>

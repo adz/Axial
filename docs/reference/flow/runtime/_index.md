@@ -27,3 +27,4 @@ This page shows the `Flow.Runtime` helpers for closed executor mechanics. These 
 - [`Flow.Runtime.timeoutWith`](./m-flow-flow-runtime-timeoutwith.md): Runs a fallback flow when the source flow does not complete before the timeout.
 - [`Flow.Runtime.retry`](./m-flow-flow-runtime-retry.md): Retries typed failures according to the specified policy.
 - [`Flow.Runtime.supervise`](./m-flow-flow-runtime-supervise.md): Restarts a flow that terminates with an unexpected defect, according to the specified policy.
+- [`Flow.Runtime.fiberId`](./m-flow-flow-runtime-fiberid.md): Reads the current fiber id from the ambient runtime context.

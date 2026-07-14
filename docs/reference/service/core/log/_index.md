@@ -13,4 +13,4 @@ This page shows the `Core.Log` helpers for writing messages through an explicit 
 - [`Flow.PlatformService.Log.critical`](./m-flow-platformservice-log-critical.md): Writes a critical log message through an explicit logging service.
 - [`Flow.PlatformService.Log.live`](./p-flow-platformservice-log-live.md): Creates a no-op logger for tests and local service bundles.
 - [`Flow.PlatformService.Log.layer`](./p-flow-platformservice-log-layer.md): Builds the live logger as a layer.
-- [`Flow.PlatformService.Log.fromSink`](./m-flow-platformservice-log-fromsink.md): Creates a logger from a synchronous sink function.
+- [`Flow.PlatformService.Log.fromSink`](./m-flow-platformservice-log-fromsink.md): Creates a logger from a synchronous sink function. Exceptions are appended to the message text.

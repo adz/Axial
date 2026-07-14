@@ -1,7 +1,7 @@
 ---
 title: "Flow.map3"
 linkTitle: "map3"
-weight: 2328
+weight: 2329
 ---
 
 Combines three flows with a mapping function.

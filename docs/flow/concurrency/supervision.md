@@ -101,25 +101,19 @@ application
 
 Every fiber that settles with a defect produces an `axial.flow.fiber.defect` error span, and every unobservable defect produces an `axial.flow.fiber.unobserved_defect` error span, tagged with fiber id, parent id, status, and OpenTelemetry-convention exception tags.
 
-### Logging recipe
+### Logging
 
-Wiring the observer to `Microsoft.Extensions.Logging` at the host edge:
+`Axial.Flow.Hosting` ships the `Microsoft.Extensions.Logging` wiring: `FiberLogging.observe logger` logs
+fiber defects as errors and unobserved defects as critical entries, with the exception attached. Observers
+compose, so telemetry and logging stack from one edge install:
 
 ```fsharp
-let fiberLogging (logger: ILogger) =
-    { FiberObserver.none with
-        OnEnd = fun metadata defect ->
-            match defect with
-            | Some exn ->
-                logger.LogError(exn, "Fiber {FiberId} died with a defect", metadata.Id.Value)
-            | None -> ()
-        OnUnobservedDefect = fun metadata defect ->
-            logger.LogCritical(defect, "Unobserved fiber defect{FiberId}",
-                metadata
-                |> Option.map (fun m -> $" (fiber {m.Id.Value})")
-                |> Option.defaultValue " (race/timeout loser)") }
+open Axial.Flow.Hosting
+open Axial.Flow.Telemetry
 
-application |> Flow.withFiberObserver (fiberLogging logger)
+application
+|> Flow.withFiberObserver
+    (FiberObserver.compose FiberTelemetry.observer (FiberLogging.observer logger))
 ```
 
 ## Platform notes

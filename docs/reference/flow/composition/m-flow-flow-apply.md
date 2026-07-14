@@ -1,7 +1,7 @@
 ---
 title: "Flow.apply"
 linkTitle: "apply"
-weight: 2329
+weight: 2330
 ---
 
 Applies a flow-wrapped function to a flow-wrapped value.

@@ -1,5 +1,11 @@
 # Telemetry Expansion: Activities, Annotations, and Logging
 
+> **Status: implemented (2026-07-14).** All seven pieces shipped: `Activity.trace`/`traceWith` span the
+> execution and stamp exits; `Flow.addAnnotationSink` composes sinks; `FiberTelemetry.observeWithSpans`
+> gives fibers real spans; `IHasTelemetryTags`; `ILog.LogException` + `FiberLogging` in Hosting +
+> `FiberObserver.compose` (and `LogEntry` removed); `Flow.tracedError`; propagation test matrix.
+> Tag vocabulary documented in `docs/flow/telemetry/_index.md`. Tracked in `LATER_TODO.md` §7.
+
 ## Problem
 
 Axial's observability surface is half-built. The pieces that exist are individually sound —

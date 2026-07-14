@@ -23,3 +23,4 @@ This page shows the `Fiber<'error, 'value>` handle used by Axial concurrency. A 
 
 - [`Flow.Fiber.dump`](./m-flow-fiber-dump.md): Returns a snapshot of the current fiber metadata.
 - [`Flow.FiberObserver.none`](./p-flow-fiberobserver-none.md): The default observer: every hook is a no-op.
+- [`Flow.FiberObserver.compose`](./m-flow-fiberobserver-compose.md): Combines two observers so every hook runs both, each guarded independently.

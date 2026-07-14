@@ -4,7 +4,7 @@ linkTitle: "fromSink"
 weight: 2309
 ---
 
-Creates a logger from a synchronous sink function.
+Creates a logger from a synchronous sink function. Exceptions are appended to the message text.
 
 ## Signature
 
