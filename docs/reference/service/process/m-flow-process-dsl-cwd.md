@@ -1,7 +1,7 @@
 ---
 title: "Flow.Process.DSL.cwd"
 linkTitle: "cwd"
-weight: 2809
+weight: 2808
 ---
 
 
@@ -17,10 +17,10 @@ weight: 2809
 | Name | Type | Description |
 | --- | --- | --- |
 | `path` | <code>string</code> |  |
-| `command` | <code><a href="t-flow-process-command.md">Command</a></code> |  |
+| `command` | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><a href="t-flow-process-command.md">Command</a></code> |  |
+| <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |

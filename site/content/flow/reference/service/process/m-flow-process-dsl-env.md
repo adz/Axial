@@ -1,7 +1,7 @@
 ---
 title: "Flow.Process.DSL.env"
 linkTitle: "env"
-weight: 2810
+weight: 2809
 type: docs
 ---
 
@@ -19,10 +19,10 @@ type: docs
 | --- | --- | --- |
 | `name` | <code>string</code> |  |
 | `value` | <code>string</code> |  |
-| `command` | <code><a href="t-flow-process-command.md">Command</a></code> |  |
+| `command` | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><a href="t-flow-process-command.md">Command</a></code> |  |
+| <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |

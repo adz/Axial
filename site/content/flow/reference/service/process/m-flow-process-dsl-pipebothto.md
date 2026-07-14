@@ -1,7 +1,7 @@
 ---
 title: "Flow.Process.DSL.pipeBothTo"
 linkTitle: "pipeBothTo"
-weight: 2805
+weight: 2804
 type: docs
 ---
 
@@ -17,11 +17,11 @@ type: docs
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `next` | <code><a href="t-flow-process-command.md">Command</a></code> |  |
-| `source` | <code>^a</code> |  |
+| `next` | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
+| `source` | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><a href="t-flow-process-pipeline.md">Pipeline</a></code> |  |
+| <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |

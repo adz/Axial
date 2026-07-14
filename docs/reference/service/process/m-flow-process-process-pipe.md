@@ -1,10 +1,10 @@
 ---
 title: "Flow.Process.pipe"
 linkTitle: "pipe"
-weight: 2401
+weight: 2400
 ---
 
- Connects the current stdout to the next command's stdin. <example><code>pipeline |&gt; Process.pipe next</code></example>
+ Connects the current stdout to the next one-command specification's stdin.
 
 ## Signature
 
@@ -16,11 +16,11 @@ weight: 2401
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `next` | <code><a href="t-flow-process-command.md">Command</a></code> |  |
-| `source` | <code><a href="t-flow-process-pipeline.md">Pipeline</a></code> |  |
+| `next` | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
+| `source` | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><a href="t-flow-process-pipeline.md">Pipeline</a></code> |  |
+| <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |

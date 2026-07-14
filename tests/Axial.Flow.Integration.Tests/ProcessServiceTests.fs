@@ -4,6 +4,7 @@ open System
 open System.Collections.Concurrent
 open System.IO
 open System.Text
+open System.Threading
 open System.Threading.Tasks
 open Axial.Flow
 open Axial.Flow.Process
@@ -21,6 +22,23 @@ type ProcessTestEnv =
 
 module ProcessServiceTests =
     let private env = { Process = Process.live Clock.live FileSystem.live Console.live }
+
+    let private waitUntil timeout predicate =
+        let deadline = DateTime.UtcNow + timeout
+        while not (predicate ()) && DateTime.UtcNow < deadline do
+            Thread.Sleep 20
+        predicate ()
+
+    let private processHasExited pid =
+        try
+            use nativeProcess = System.Diagnostics.Process.GetProcessById pid
+            nativeProcess.HasExited
+        with :? ArgumentException -> true
+
+    let private run workflow =
+        match Flow.runSync env workflow with
+        | Exit.Success result -> result
+        | failure -> failwithf "Expected success, got %A" failure
 
     [<Fact>]
     let ``live process timestamps transcripts through the supplied clock`` () =
@@ -51,21 +69,129 @@ module ProcessServiceTests =
         | failure -> failwithf "Expected success, got %A" failure
 
     [<Fact>]
-    let ``streaming observes stdout and stderr while preserving the complete result`` () =
-        let observed = ConcurrentQueue<ProcessOutput>()
-        let observe output = async { observed.Enqueue output }
+    let ``partial pipeline startup terminates stages that already started`` () =
+        let pidPath = Path.GetTempFileName()
+        File.Delete pidPath
+        let mutable leaked: System.Diagnostics.Process option = None
+        try
+            let first = Process.command "sh" [ "-c"; $"echo $$ > '{pidPath}'; sleep 30" ]
+            let missing = Process.command $"axial-missing-{Guid.NewGuid():N}" []
+            let outcome = first => missing |> capture |> Flow.runSync env
 
-        let workflow =
+            match outcome with
+            | Exit.Failure(Cause.Fail(ProcessError.StartFailed failure)) ->
+                test <@ failure.Command.Contains "axial-missing-" @>
+            | other -> failwithf "Expected startup failure, got %A" other
+
+            test <@ waitUntil (TimeSpan.FromSeconds 2.0) (fun () -> File.Exists pidPath) @>
+            let pid = File.ReadAllText(pidPath).Trim() |> Int32.Parse
+            test <@ waitUntil (TimeSpan.FromSeconds 2.0) (fun () -> processHasExited pid) @>
+        finally
+            leaked
+            |> Option.iter (fun nativeProcess ->
+                if not nativeProcess.HasExited then nativeProcess.Kill(entireProcessTree = true)
+                nativeProcess.Dispose())
+            if File.Exists pidPath then File.Delete pidPath
+
+    [<Fact>]
+    let ``configured timeout returns a process diagnostic and terminates the process`` () =
+        let pidPath = Path.GetTempFileName()
+        File.Delete pidPath
+        let mutable timedOutProcess: System.Diagnostics.Process option = None
+        try
+            let timeout = TimeSpan.FromMilliseconds 250.0
+            let workflow =
+                shText $"echo $$ > '{pidPath}'; sleep 30"
+                |> Process.timeout timeout
+                |> Process.run
+
+            match Flow.runSync env workflow with
+            | Exit.Failure(Cause.Fail(ProcessError.TimedOut failure)) ->
+                test <@ failure.Specification.Contains "sleep 30" @>
+                test <@ failure.Timeout = timeout @>
+            | other -> failwithf "Expected process timeout, got %A" other
+
+            test <@ File.Exists pidPath @>
+            let pid = File.ReadAllText(pidPath).Trim() |> Int32.Parse
+            test <@ waitUntil (TimeSpan.FromSeconds 2.0) (fun () -> processHasExited pid) @>
+        finally
+            timedOutProcess
+            |> Option.iter (fun nativeProcess ->
+                if not nativeProcess.HasExited then nativeProcess.Kill(entireProcessTree = true)
+                nativeProcess.Dispose())
+            if File.Exists pidPath then File.Delete pidPath
+
+    [<Fact>]
+    let ``caller cancellation terminates the complete process tree`` () =
+        let childPidPath = Path.GetTempFileName()
+        File.Delete childPidPath
+        let mutable childProcess: System.Diagnostics.Process option = None
+        use cancellation = new CancellationTokenSource()
+        try
+            let specification = shText $"sleep 30 & echo $! > '{childPidPath}'; wait"
+            let running = Process.run<ProcessTestEnv> specification |> fun workflow -> workflow.ToTask(env, cancellation.Token)
+            test <@ waitUntil (TimeSpan.FromSeconds 2.0) (fun () -> File.Exists childPidPath) @>
+            let childPid = File.ReadAllText(childPidPath).Trim() |> Int32.Parse
+            let nativeChild = System.Diagnostics.Process.GetProcessById childPid
+            childProcess <- Some nativeChild
+
+            cancellation.Cancel()
+            match running.GetAwaiter().GetResult() with
+            | Exit.Failure(Cause.Fail(ProcessError.Canceled _)) -> ()
+            | other -> failwithf "Expected cancellation, got %A" other
+            test <@ waitUntil (TimeSpan.FromSeconds 2.0) (fun () -> nativeChild.HasExited) @>
+        finally
+            childProcess
+            |> Option.iter (fun nativeProcess ->
+                if not nativeProcess.HasExited then nativeProcess.Kill(entireProcessTree = true)
+                nativeProcess.Dispose())
+            if File.Exists childPidPath then File.Delete childPidPath
+
+    [<Fact>]
+    let ``working directory and environment overrides reach the native process`` () =
+        let directory = Path.Combine(Path.GetTempPath(), $"axial-process-{Guid.NewGuid():N}")
+        Directory.CreateDirectory directory |> ignore
+        try
+            let workingDirectoryResult =
+                Process.command "sh" [ "-c"; "printf '%s|%s' \"$PWD\" \"$AXIAL_DEVICE\"" ]
+                |> Process.workingDirectory directory
+                |> Process.environment "AXIAL_DEVICE" "override"
+                |> Process.run
+                |> run
+            let environmentResult =
+                Process.command "/usr/bin/env" []
+                |> Process.environment "AXIAL_DEVICE" "override"
+                |> Process.removeEnvironment "PATH"
+                |> Process.run
+                |> run
+
+            test <@ workingDirectoryResult.StdOut = $"{directory}|override" @>
+            test <@ environmentResult.StdOut.Split('\n') |> Array.contains "AXIAL_DEVICE=override" @>
+            test <@ environmentResult.StdOut.Split('\n') |> Array.exists (fun line -> line.StartsWith "PATH=") |> not @>
+        finally
+            Directory.Delete directory
+
+    [<Fact>]
+    let ``startup failure identifies the command without escaping the typed channel`` () =
+        let executable = $"axial-missing-{Guid.NewGuid():N}"
+        let outcome = Process.command executable [] |> Process.run |> Flow.runSync env
+        match outcome with
+        | Exit.Failure(Cause.Fail(ProcessError.StartFailed failure)) ->
+            test <@ failure.Command = executable @>
+            test <@ String.IsNullOrWhiteSpace failure.Message = false @>
+        | other -> failwithf "Expected startup failure, got %A" other
+
+    [<Fact>]
+    let ``streaming emits stdout and stderr before the complete result`` () =
+        let stream =
             Process.command "sh" [ "-c"; "printf out; printf err >&2" ]
-            |> Process.pipeline
-            |> Process.observe observe
+            |> Process.stream
 
-        match Flow.runSync env workflow with
-        | Exit.Success result ->
-            test <@ result.StdOut = "out" @>
-            test <@ result.StdErr = "err" @>
-            test <@ observed |> Seq.exists (fun output -> output.Channel = OutputChannel.StdOut && output.Text = "out") @>
-            test <@ observed |> Seq.exists (fun output -> output.Channel = OutputChannel.StdErr && output.Stage = 0 && output.Text = "err") @>
+        match stream |> FlowStream.runCollect |> Flow.runSync env with
+        | Exit.Success events ->
+            test <@ events |> List.exists (function ProcessEvent.Output output -> output.Channel = OutputChannel.StdOut && output.Text = "out" | _ -> false) @>
+            test <@ events |> List.exists (function ProcessEvent.Output output -> output.Channel = OutputChannel.StdErr && output.Stage = 0 && output.Text = "err" | _ -> false) @>
+            test <@ events |> List.exists (function ProcessEvent.Completed result -> result.StdOut = "out" && result.StdErr = "err" | _ -> false) @>
         | failure -> failwithf "Expected success, got %A" failure
 
     [<Fact>]
@@ -76,23 +202,17 @@ module ProcessServiceTests =
             |> capture
 
         match Flow.runSync env workflow with
-        | Exit.Failure(Cause.Fail(ProcessError.StageFailed(stage, result))) ->
-            test <@ stage.Stage = 0 @>
-            test <@ result.ExitCodes = [ 7; 0 ] @>
+        | Exit.Failure(Cause.Fail(ProcessError.StageFailed failure)) ->
+            test <@ failure.Stage.Stage = 0 @>
+            test <@ failure.Result.ExitCodes = [ 7; 0 ] @>
         | result -> failwithf "Expected a typed non-zero exit, got %A" result
-
-    let private run workflow =
-        match Flow.runSync env workflow with
-        | Exit.Success result -> result
-        | failure -> failwithf "Expected success, got %A" failure
 
     [<Fact>]
     let ``tail capture is bounded and reports truncation`` () =
         let result =
             cmd $"printf %%s 0123456789"
-            |> Process.pipeline
             |> Process.stdout (OutputTarget.CaptureTail 4)
-            |> Process.toFlow
+            |> Process.run
             |> run
 
         test <@ result.StdOut = "6789" @>
@@ -105,9 +225,8 @@ module ProcessServiceTests =
         try
             let result =
                 cmd $"printf %%s artifact-output"
-                |> Process.pipeline
                 |> Process.stdout (OutputTarget.Tee [ OutputTarget.File path; OutputTarget.CaptureTail 6 ])
-                |> Process.toFlow
+                |> Process.run
                 |> run
 
             test <@ File.ReadAllText path = "artifact-output" @>
@@ -120,8 +239,7 @@ module ProcessServiceTests =
         let result =
             Process.command "sh" [ "-c"; "printf '\\377\\000A'" ]
             |> Process.encoding Encoding.Latin1
-            |> Process.pipeline
-            |> Process.toFlow
+            |> Process.run
             |> run
 
         test <@ result.StdOutCapture.Bytes = [| 255uy; 0uy; 65uy |] @>
@@ -132,8 +250,7 @@ module ProcessServiceTests =
         let result =
             Process.command "sh" [ "-c"; "exit 7" ]
             |> Process.successCodes [ 0; 7 ]
-            |> Process.pipeline
-            |> Process.toFlow
+            |> Process.run
             |> run
 
         test <@ result.Stages.Head.ExitCode = 7 @>
@@ -145,7 +262,7 @@ module ProcessServiceTests =
         let command = cmd $"printf %%s {token}"
 
         test <@ Process.render command = "printf \"%s\" ***" @>
-        let plan = command |> Process.pipeline |> Process.plan
+        let plan = command |> Process.plan
         test <@ plan.Commands = [ "printf \"%s\" ***" ] @>
         let result = command |> capture |> run
         test <@ result.Stages.Head.Command = "printf \"%s\" ***" @>
@@ -155,7 +272,6 @@ module ProcessServiceTests =
     let ``native process stream emits output and a final transcript`` () =
         let stream =
             cmd $"printf %%s streamed"
-            |> Process.pipeline
             |> Process.framing OutputFraming.Lines
             |> Process.stream
 
@@ -166,6 +282,28 @@ module ProcessServiceTests =
             test <@ result.StdOut = "streamed" @>
             test <@ result.Duration >= TimeSpan.Zero @>
         | other -> failwithf "Unexpected stream events: %A" other
+
+    [<Fact>]
+    let ``ending stream consumption terminates the native process tree`` () =
+        let pidPath = Path.GetTempFileName()
+        File.Delete pidPath
+        try
+            let events =
+                shText $"echo $$ > '{pidPath}'; printf 'ready\n'; sleep 30"
+                |> Process.framing OutputFraming.Lines
+                |> Process.stream
+                |> FlowStream.take 1
+                |> FlowStream.runCollect
+                |> Flow.runSync env
+
+            match events with
+            | Exit.Success [ ProcessEvent.Output output ] -> test <@ output.Text = "ready\n" @>
+            | other -> failwithf "Expected one output event, got %A" other
+            test <@ File.Exists pidPath @>
+            let pid = File.ReadAllText(pidPath).Trim() |> Int32.Parse
+            test <@ waitUntil (TimeSpan.FromSeconds 2.0) (fun () -> processHasExited pid) @>
+        finally
+            if File.Exists pidPath then File.Delete pidPath
 
     [<Fact>]
     let ``collection pipelines use implicit yields and endpoint composition`` () =
@@ -222,10 +360,9 @@ module ProcessServiceTests =
     let ``true inherited handles execute without redirected capture`` () =
         let result =
             cmd $"true"
-            |> Process.pipeline
             |> Process.stdout Output.inheritHandles
             |> Process.stderr Output.inheritHandles
-            |> toFlow
+            |> Process.run
             |> run
         test <@ result.ExitCode = 0 @>
         test <@ result.StdOut = "" @>
@@ -285,6 +422,5 @@ module ProcessServiceTests =
     let ``true inheritance cannot be combined with tee`` () =
         raises<ArgumentException> <@
             cmd $"printf inherited"
-            |> Process.pipeline
             |> Process.stdout (OutputTarget.Tee [ Output.inheritHandles; Output.capture ])
             |> ignore @>

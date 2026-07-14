@@ -5,8 +5,8 @@ weight: 2300
 type: docs
 ---
 
- Creates a safely tokenized command.
- <example><code>Process.command "git" [ "status"; "--short" ]</code></example>
+ Creates a runnable, safely tokenized one-command process specification.
+ <example><code>Process.command "git" [ "status"; "--short" ] |&gt; Process.run</code></example>
 
 ## Signature
 
@@ -25,4 +25,4 @@ type: docs
 
 | Type | Description |
 | --- | --- |
-| <code><a href="t-flow-process-command.md">Command</a></code> |  |
+| <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |

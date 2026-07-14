@@ -1,7 +1,7 @@
 ---
 title: "Flow.Process.ProcessError"
 linkTitle: "ProcessError"
-weight: 1010
+weight: 1014
 ---
 
  A recoverable process startup, cancellation, stage, or I/O failure.
@@ -17,6 +17,7 @@ weight: 1010
 | Case | Description |
 | --- | --- |
 | `StartFailed` |  |
+| `TimedOut` |  |
 | `Canceled` |  |
 | `StageFailed` |  |
-| `Io` |  |
+| `IoFailed` |  |

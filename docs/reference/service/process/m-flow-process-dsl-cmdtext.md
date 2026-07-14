@@ -22,4 +22,4 @@ weight: 2801
 
 | Type | Description |
 | --- | --- |
-| <code><a href="t-flow-process-command.md">Command</a></code> |  |
+| <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |

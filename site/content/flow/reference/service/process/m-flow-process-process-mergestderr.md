@@ -1,7 +1,7 @@
 ---
 title: "Flow.Process.mergeStderr"
 linkTitle: "mergeStderr"
-weight: 2407
+weight: 2406
 type: docs
 ---
 
@@ -10,17 +10,17 @@ type: docs
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Flow.Process.Process.mergeStderr&#32;<span>pipeline</span></span></code>
+<code><span>Flow.Process.Process.mergeStderr&#32;<span>specification</span></span></code>
 </div>
 
 ## Parameters
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `pipeline` | <code><a href="t-flow-process-pipeline.md">Pipeline</a></code> |  |
+| `specification` | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><a href="t-flow-process-pipeline.md">Pipeline</a></code> |  |
+| <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |

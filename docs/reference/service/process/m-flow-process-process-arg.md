@@ -10,7 +10,7 @@ weight: 2301
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Flow.Process.Process.arg&#32;<span>value&#32;command</span></span></code>
+<code><span>Flow.Process.Process.arg&#32;<span>value&#32;specification</span></span></code>
 </div>
 
 ## Parameters
@@ -18,10 +18,10 @@ weight: 2301
 | Name | Type | Description |
 | --- | --- | --- |
 | `value` | <code>string</code> |  |
-| `command` | <code><a href="t-flow-process-command.md">Command</a></code> |  |
+| `specification` | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><a href="t-flow-process-command.md">Command</a></code> |  |
+| <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |

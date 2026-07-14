@@ -1,7 +1,7 @@
 ---
 title: "Flow.Process.DSL.console"
 linkTitle: "console"
-weight: 2817
+weight: 2816
 ---
 
  Forwards stdout and stderr to the host console while retaining structured completion data.
@@ -16,10 +16,10 @@ weight: 2817
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `source` | <code>^a</code> |  |
+| `source` | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="../../flow/t-flow-flow.md">Flow</a>&lt;<span>'b,&#32;<a href="t-flow-process-processerror.md">ProcessError</a>,&#32;<a href="t-flow-process-processresult.md">ProcessResult</a></span>&gt;</span></code> |  |
+| <code><span><a href="../../flow/t-flow-flow.md">Flow</a>&lt;<span>'a,&#32;<a href="t-flow-process-processerror.md">ProcessError</a>,&#32;<a href="t-flow-process-processresult.md">ProcessResult</a></span>&gt;</span></code> |  |

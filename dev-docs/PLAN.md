@@ -264,7 +264,7 @@ console ambiently, and `Script.run` takes an explicit `IConsole` and returns the
 improve public guide coverage and future service packages, not ambient-core or `Flow.service` / `Flow.inject`
 direction.
 
-## Open Product Questions
-
-- Should process support add scoped long-running process helpers beyond the current one-shot pipelines
-  (`Process.execute`, `Process.toFlow`, `Process.stream`)?
+`Axial.Flow.Process` uses one immutable `ProcessSpec` construction model. `IProcess.Run` returns a lazy
+`Flow<unit, ProcessError, ProcessResult>` and `IProcess.Stream` returns a lazy event stream. `Process.run` and
+`Process.stream` compose those programs into the caller's environment. Flow owns timeout racing, cancellation, and
+scope cleanup; the native interpreter owns process-tree termination and partial-start cleanup.

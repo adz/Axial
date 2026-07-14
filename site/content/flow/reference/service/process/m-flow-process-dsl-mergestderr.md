@@ -1,7 +1,7 @@
 ---
 title: "Flow.Process.DSL.mergeStderr"
 linkTitle: "mergeStderr"
-weight: 2808
+weight: 2807
 type: docs
 ---
 
@@ -17,10 +17,10 @@ type: docs
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `source` | <code>^a</code> |  |
+| `source` | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><a href="t-flow-process-pipeline.md">Pipeline</a></code> |  |
+| <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |

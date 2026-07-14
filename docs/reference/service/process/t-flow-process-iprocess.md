@@ -4,7 +4,7 @@ linkTitle: "IProcess"
 weight: 1100
 ---
 
- Executes typed process pipelines for a concrete host platform.
+ Interprets process specifications as lazy Axial workflows for a concrete host platform.
 
 ## Signature
 

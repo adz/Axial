@@ -1,7 +1,7 @@
 ---
 title: "Flow.Process.DSL.mergeBytes"
 linkTitle: "mergeBytes"
-weight: 2807
+weight: 2806
 type: docs
 ---
 
@@ -17,10 +17,10 @@ type: docs
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `commands` | <code><span><a href="t-flow-process-command.md">Command</a>&#32;seq</span></code> |  |
+| `commands` | <code><span><a href="t-flow-process-processspec.md">ProcessSpec</a>&#32;seq</span></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><a href="t-flow-process-pipeline.md">Pipeline</a></code> |  |
+| <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |

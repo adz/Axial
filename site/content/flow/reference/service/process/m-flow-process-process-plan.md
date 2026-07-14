@@ -1,7 +1,7 @@
 ---
 title: "Flow.Process.plan"
 linkTitle: "plan"
-weight: 2410
+weight: 2409
 type: docs
 ---
 
@@ -10,14 +10,14 @@ type: docs
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Flow.Process.Process.plan&#32;<span>pipeline</span></span></code>
+<code><span>Flow.Process.Process.plan&#32;<span>specification</span></span></code>
 </div>
 
 ## Parameters
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `pipeline` | <code><a href="t-flow-process-pipeline.md">Pipeline</a></code> |  |
+| `specification` | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
 
 ## Returns
 

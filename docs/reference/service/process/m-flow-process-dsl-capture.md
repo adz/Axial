@@ -4,7 +4,7 @@ linkTitle: "capture"
 weight: 2815
 ---
 
- Waits for completion and captures stdout and stderr.
+ Runs a command or specification and captures stdout and stderr.
 
 ## Signature
 
@@ -16,10 +16,10 @@ weight: 2815
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `source` | <code>^a</code> |  |
+| `source` | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="../../flow/t-flow-flow.md">Flow</a>&lt;<span>'b,&#32;<a href="t-flow-process-processerror.md">ProcessError</a>,&#32;<a href="t-flow-process-processresult.md">ProcessResult</a></span>&gt;</span></code> |  |
+| <code><span><a href="../../flow/t-flow-flow.md">Flow</a>&lt;<span>'a,&#32;<a href="t-flow-process-processerror.md">ProcessError</a>,&#32;<a href="t-flow-process-processresult.md">ProcessResult</a></span>&gt;</span></code> |  |

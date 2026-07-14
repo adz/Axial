@@ -480,11 +480,17 @@ let timeoutExecution
 #else
     ValueTask<Exit<'value, 'error>>(
         task {
-            let running = (operation cancellationToken).AsTask()
+            use timeoutSource = CancellationTokenSource.CreateLinkedTokenSource cancellationToken
+            let running = (operation timeoutSource.Token).AsTask()
             let timeoutTask = Task.Delay after
             let! completed = Task.WhenAny([| running :> Task; timeoutTask |])
 
             if obj.ReferenceEquals(completed, timeoutTask) then
+                timeoutSource.Cancel()
+                try
+                    let! _ = running
+                    ()
+                with _ -> ()
                 return! onTimeout ()
             else
                 return! running

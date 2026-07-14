@@ -121,6 +121,26 @@ module WorkflowSchedulingTests =
         test <@ withResult = Exit.Success () @>
 
     [<Fact>]
+    let ``Flow timeout interrupts and awaits losing workflow cleanup`` () =
+        let cleanedUp = ref false
+        let operation : Flow<unit, string, unit> =
+            flow {
+                do! Flow.addFinalizerAsync (fun _ -> async {
+                    do! Async.Sleep 10
+                    cleanedUp.Value <- true
+                })
+                do! Flow.Runtime.sleep (TimeSpan.FromSeconds 30.0)
+            }
+
+        let result =
+            operation
+            |> Flow.Runtime.timeout (TimeSpan.FromMilliseconds 20.0) "timed out"
+            |> Flow.runSync ()
+
+        test <@ result = Exit.Failure(Cause.Fail "timed out") @>
+        test <@ cleanedUp.Value @>
+
+    [<Fact>]
     let ``Flow cancellation helpers expose and check runtime token`` () =
         use cts = new CancellationTokenSource()
         cts.Cancel()

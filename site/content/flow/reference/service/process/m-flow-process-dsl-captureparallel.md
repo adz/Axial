@@ -1,7 +1,7 @@
 ---
 title: "Flow.Process.DSL.captureParallel"
 linkTitle: "captureParallel"
-weight: 2821
+weight: 2820
 type: docs
 ---
 
@@ -18,7 +18,7 @@ type: docs
 | Name | Type | Description |
 | --- | --- | --- |
 | `maximumConcurrency` | <code>int</code> |  |
-| `commands` | <code><span><a href="t-flow-process-command.md">Command</a>&#32;seq</span></code> |  |
+| `commands` | <code><span><a href="t-flow-process-processspec.md">ProcessSpec</a>&#32;seq</span></code> |  |
 
 ## Returns
 

@@ -1,10 +1,10 @@
 ---
 title: "Flow.Process.ProcessOutput"
 linkTitle: "ProcessOutput"
-weight: 1008
+weight: 1007
 ---
 
- A timestamped decoded output event attributed to one pipeline stage.
+ A timestamped decoded output event attributed to one specification stage.
 
 ## Signature
 

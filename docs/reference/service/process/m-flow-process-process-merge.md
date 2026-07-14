@@ -1,7 +1,7 @@
 ---
 title: "Flow.Process.merge"
 linkTitle: "merge"
-weight: 2403
+weight: 2402
 ---
 
  Creates a fan-in topology whose producers may be connected to one downstream command.
@@ -16,10 +16,10 @@ weight: 2403
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `commands` | <code><span><a href="t-flow-process-command.md">Command</a>&#32;seq</span></code> |  |
+| `commands` | <code><span><a href="t-flow-process-processspec.md">ProcessSpec</a>&#32;seq</span></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><a href="t-flow-process-pipeline.md">Pipeline</a></code> |  |
+| <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |

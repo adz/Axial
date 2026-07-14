@@ -1,7 +1,7 @@
 ---
 title: "Flow.Process.CapturedOutput"
 linkTitle: "CapturedOutput"
-weight: 1007
+weight: 1006
 ---
 
  Exact captured bytes plus their decoded text view and truncation status.

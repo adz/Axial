@@ -9,7 +9,7 @@ weight: 2303
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Flow.Process.Process.workingDirectory&#32;<span>path&#32;command</span></span></code>
+<code><span>Flow.Process.Process.workingDirectory&#32;<span>path&#32;specification</span></span></code>
 </div>
 
 ## Parameters
@@ -17,10 +17,10 @@ weight: 2303
 | Name | Type | Description |
 | --- | --- | --- |
 | `path` | <code>string</code> |  |
-| `command` | <code><a href="t-flow-process-command.md">Command</a></code> |  |
+| `specification` | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><a href="t-flow-process-command.md">Command</a></code> |  |
+| <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |

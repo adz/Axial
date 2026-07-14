@@ -1,7 +1,7 @@
 ---
 title: "Flow.Process.ProcessError"
 linkTitle: "ProcessError"
-weight: 1010
+weight: 1014
 type: docs
 ---
 
@@ -18,6 +18,7 @@ type: docs
 | Case | Description |
 | --- | --- |
 | `StartFailed` |  |
+| `TimedOut` |  |
 | `Canceled` |  |
 | `StageFailed` |  |
-| `Io` |  |
+| `IoFailed` |  |

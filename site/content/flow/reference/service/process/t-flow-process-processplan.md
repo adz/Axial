@@ -1,7 +1,7 @@
 ---
 title: "Flow.Process.ProcessPlan"
 linkTitle: "ProcessPlan"
-weight: 1002
+weight: 1001
 type: docs
 ---
 
@@ -24,3 +24,4 @@ type: docs
 | `Connections` |  |
 | `MergeStdErr` |  |
 | `Framing` |  |
+| `Timeout` |  |

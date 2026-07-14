@@ -1,10 +1,10 @@
 ---
 title: "Flow.Process.DSL.stdout"
 linkTitle: "stdout"
-weight: 2812
+weight: 2811
 ---
 
- Configures final stdout without converting the topology.
+ Configures final stdout on the specification.
 
 ## Signature
 
@@ -17,10 +17,10 @@ weight: 2812
 | Name | Type | Description |
 | --- | --- | --- |
 | `target` | <code><a href="t-flow-process-outputtarget.md">OutputTarget</a></code> |  |
-| `source` | <code>^a</code> |  |
+| `source` | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><a href="t-flow-process-pipeline.md">Pipeline</a></code> |  |
+| <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |

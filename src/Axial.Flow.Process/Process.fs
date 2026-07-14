@@ -45,8 +45,8 @@ type OutputTarget =
     | Sink of write: (byte array -> Async<unit>) * complete: (unit -> Async<unit>)
     | Tee of OutputTarget list
 
-/// An immutable, safely tokenized external command.
-type Command =
+/// Internal configuration for one safely tokenized external command.
+type internal CommandDefinition =
     internal
         { FileName: string
           Arguments: string list
@@ -56,17 +56,18 @@ type Command =
           Encoding: Encoding
           SuccessCodes: Set<int> }
 
-/// One or more commands connected left-to-right through their real standard streams.
-type Pipeline =
+/// An immutable description of one command or a connected process topology and its execution policy.
+type ProcessSpec =
     internal
-        { Commands: Command list
+        { Commands: CommandDefinition list
           StdIn: InputSource
           StdOut: OutputTarget
           StdErr: OutputTarget
           Connections: (int * int * bool) list
           Leaves: Set<int>
           MergeStdErr: bool
-          Framing: OutputFraming }
+          Framing: OutputFraming
+          Timeout: TimeSpan option }
 
 /// Exact captured bytes plus their decoded text view and truncation status.
 type CapturedOutput =
@@ -74,7 +75,7 @@ type CapturedOutput =
       Bytes: byte array
       Truncated: bool }
 
-/// A timestamped decoded output event attributed to one pipeline stage.
+/// A timestamped decoded output event attributed to one specification stage.
 type ProcessOutput =
     { Stage: int
       Channel: OutputChannel
@@ -111,7 +112,8 @@ type ProcessPlan =
       StdErr: string
       Connections: (int * int * bool) list
       MergeStdErr: bool
-      Framing: OutputFraming }
+      Framing: OutputFraming
+      Timeout: TimeSpan option }
 
 /// Values emitted by a native process FlowStream.
 [<RequireQualifiedAccess>]
@@ -119,17 +121,36 @@ type ProcessEvent =
     | Output of ProcessOutput
     | Completed of ProcessResult
 
+/// Diagnostic details for a process that could not be started.
+type ProcessStartFailure = { Command: string; Message: string }
+
+/// Diagnostic details for an elapsed process deadline.
+type ProcessTimeout = { Specification: string; Timeout: TimeSpan }
+
+/// Diagnostic details for caller-initiated process cancellation.
+type ProcessCancellation = { Message: string }
+
+/// Diagnostic details for an unsuccessful process stage.
+type StageFailure = { Stage: StageResult; Result: ProcessResult }
+
+/// Diagnostic details for a process I/O failure.
+type ProcessIoFailure = { Message: string }
+
 /// A recoverable process startup, cancellation, stage, or I/O failure.
 [<RequireQualifiedAccess>]
 type ProcessError =
-    | StartFailed of command: string * message: string
-    | Canceled of message: string
-    | StageFailed of stage: StageResult * result: ProcessResult
-    | Io of message: string
+    | StartFailed of ProcessStartFailure
+    | TimedOut of ProcessTimeout
+    | Canceled of ProcessCancellation
+    | StageFailed of StageFailure
+    | IoFailed of ProcessIoFailure
 
-/// Executes typed process pipelines for a concrete host platform.
+/// Interprets process specifications as lazy Axial workflows for a concrete host platform.
 type IProcess =
-    abstract Execute : pipeline: Pipeline * onOutput: (ProcessOutput -> Async<unit>) option * cancellationToken: CancellationToken -> Async<Result<ProcessResult, ProcessError>>
+    /// Returns a lazy workflow that runs the specification when composed into a Flow runtime.
+    abstract Run : specification: ProcessSpec -> Flow<unit, ProcessError, ProcessResult>
+    /// Returns a lazy, backpressured stream of output and completion events.
+    abstract Stream : specification: ProcessSpec -> FlowStream<unit, ProcessError, ProcessEvent>
 
 type private AsyncRendezvous<'value>() =
     let gate = obj()
@@ -160,26 +181,37 @@ type private AsyncRendezvous<'value>() =
             | Some(value, acknowledge) -> success value; acknowledge ()
             | None -> ())
 
+type private ProcessStreamSession =
+    { Events: AsyncRendezvous<Result<ProcessEvent, ProcessError>> }
+
+type private ProcessStreamState =
+    | NotStarted
+    | Running of ProcessStreamSession
+    | Finished
+
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
 module ProcessError =
     /// Formats a process error with stage-aware diagnostic context.
     /// <example><code>error |&gt; ProcessError.describe</code></example>
     let describe = function
-        | ProcessError.StartFailed(command, message) -> $"Could not start '{command}': {message}"
-        | ProcessError.Canceled message -> $"Process execution was canceled: {message}"
-        | ProcessError.StageFailed(stage, _) ->
+        | ProcessError.StartFailed failure -> $"Could not start '{failure.Command}': {failure.Message}"
+        | ProcessError.TimedOut failure -> $"Process specification '{failure.Specification}' timed out after {failure.Timeout}."
+        | ProcessError.Canceled failure -> $"Process execution was canceled: {failure.Message}"
+        | ProcessError.StageFailed failure ->
+            let stage = failure.Stage
             let diagnostic = if stage.StdErrTail.Text = "" then "" else Environment.NewLine + stage.StdErrTail.Text
             $"Stage {stage.Stage} ({stage.Command}) exited with code {stage.ExitCode}.{diagnostic}"
-        | ProcessError.Io message -> $"Process I/O failed: {message}"
+        | ProcessError.IoFailed failure -> $"Process I/O failed: {failure.Message}"
 
     /// Returns a suitable host exit code for a process failure.
     /// <example><code>Environment.ExitCode &lt;- ProcessError.exitCode error</code></example>
     let exitCode = function
-        | ProcessError.StageFailed(stage, _) -> stage.ExitCode
+        | ProcessError.StageFailed failure -> failure.Stage.ExitCode
+        | ProcessError.TimedOut _ -> 124
         | ProcessError.Canceled _ -> 130
         | ProcessError.StartFailed _
-        | ProcessError.Io _ -> 1
+        | ProcessError.IoFailed _ -> 1
 
 #if !FABLE_COMPILER
 type private CaptureBuffer(limit: int option, tail: bool) =
@@ -218,55 +250,73 @@ type private CaptureBuffer(limit: int option, tail: bool) =
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
 module Process =
-    /// Creates a safely tokenized command.
-    /// <example><code>Process.command "git" [ "status"; "--short" ]</code></example>
+    let private one command =
+        { Commands = [ command ]; StdIn = InputSource.Empty
+          StdOut = OutputTarget.Capture; StdErr = OutputTarget.Capture
+          Connections = []; Leaves = Set.singleton 0
+          MergeStdErr = false; Framing = OutputFraming.Chunks; Timeout = None }
+
+    let private mapSingle transform (specification: ProcessSpec) =
+        match specification.Commands with
+        | [ command ] -> { specification with Commands = [ transform command ] }
+        | _ -> invalidArg (nameof specification) "This operation configures one command and must be applied before commands are connected."
+
+    let private single (specification: ProcessSpec) =
+        match specification.Commands with
+        | [ command ] -> command
+        | _ -> invalidArg (nameof specification) "The supplied process specification must contain exactly one command."
+
+    /// Creates a runnable, safely tokenized one-command process specification.
+    /// <example><code>Process.command "git" [ "status"; "--short" ] |&gt; Process.run</code></example>
     let command fileName arguments =
         if String.IsNullOrWhiteSpace fileName then invalidArg (nameof fileName) "A command file name cannot be empty."
         { FileName = fileName; Arguments = arguments; RedactedArguments = Map.empty
           WorkingDirectory = None; Environment = Map.empty
           Encoding = Encoding.UTF8; SuccessCodes = Set.singleton 0 }
+        |> one
 
-    /// Returns the executable name. <example><code>Process.fileName command</code></example>
-    let fileName command = command.FileName
-    /// Returns the real argument values. <example><code>Process.arguments command</code></example>
-    let arguments command = command.Arguments
-    /// Returns the configured working directory. <example><code>Process.tryWorkingDirectory command</code></example>
-    let tryWorkingDirectory command = command.WorkingDirectory
-    /// Returns environment overrides. <example><code>Process.environmentVariables command</code></example>
-    let environmentVariables command = command.Environment
-    /// Returns accepted exit codes. <example><code>Process.acceptedExitCodes command</code></example>
-    let acceptedExitCodes command = command.SuccessCodes
+    /// Returns the executable name of a one-command specification.
+    let fileName specification = (single specification).FileName
+    /// Returns the real argument values of a one-command specification.
+    let arguments specification = (single specification).Arguments
+    /// Returns the configured working directory of a one-command specification.
+    let tryWorkingDirectory specification = (single specification).WorkingDirectory
+    /// Returns environment overrides of a one-command specification.
+    let environmentVariables specification = (single specification).Environment
+    /// Returns accepted exit codes of a one-command specification.
+    let acceptedExitCodes specification = (single specification).SuccessCodes
 
     /// Appends one ordinary argument.
     /// <example><code>command |&gt; Process.arg "--verbose"</code></example>
-    let arg value command = { command with Arguments = command.Arguments @ [ value ] }
+    let arg value specification = specification |> mapSingle (fun command -> { command with Arguments = command.Arguments @ [ value ] })
 
     /// Adds an argument whose value is replaced with <c>***</c> in rendered commands and transcripts.
-    let secretArg value command =
-        let index = command.Arguments.Length
-        { command with Arguments = command.Arguments @ [ value ]; RedactedArguments = command.RedactedArguments.Add(index, "***") }
+    let secretArg value specification =
+        specification |> mapSingle (fun command ->
+            let index = command.Arguments.Length
+            { command with Arguments = command.Arguments @ [ value ]; RedactedArguments = command.RedactedArguments.Add(index, "***") })
 
     /// Sets the working directory. <example><code>command |&gt; Process.workingDirectory repo</code></example>
-    let workingDirectory path command = { command with WorkingDirectory = Some path }
+    let workingDirectory path specification = specification |> mapSingle (fun command -> { command with WorkingDirectory = Some path })
     /// Sets an environment override. <example><code>command |&gt; Process.environment "CI" "true"</code></example>
-    let environment name value command = { command with Environment = command.Environment.Add(name, Some value) }
+    let environment name value specification = specification |> mapSingle (fun command -> { command with Environment = command.Environment.Add(name, Some value) })
     /// Removes an inherited environment variable. <example><code>command |&gt; Process.removeEnvironment "TOKEN"</code></example>
-    let removeEnvironment name command = { command with Environment = command.Environment.Add(name, None) }
+    let removeEnvironment name specification = specification |> mapSingle (fun command -> { command with Environment = command.Environment.Add(name, None) })
     /// Selects text decoding for this stage. <example><code>command |&gt; Process.encoding Encoding.Latin1</code></example>
-    let encoding value command = { command with Encoding = value }
+    let encoding value specification = specification |> mapSingle (fun command -> { command with Encoding = value })
 
     /// Replaces the set of exit codes considered successful for this command.
-    let successCodes values command =
+    let successCodes values specification =
         let codes = Set.ofSeq values
         if Set.isEmpty codes then invalidArg (nameof values) "At least one successful exit code is required."
-        { command with SuccessCodes = codes }
+        specification |> mapSingle (fun command -> { command with SuccessCodes = codes })
 
     let private quote (value: string) =
         if value.Length > 0 && value |> Seq.forall (fun c -> Char.IsLetterOrDigit c || "-._/:=@+".Contains c) then value
         else "\"" + value.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\""
 
-    /// Renders a diagnostic command string with secret arguments redacted.
-    let render command =
+    /// Renders one command definition with secret arguments redacted.
+    let private renderCommand command =
         command.Arguments
         |> List.mapi (fun index value ->
             match command.RedactedArguments |> Map.tryFind index with
@@ -274,44 +324,40 @@ module Process =
             | None -> quote value)
         |> fun args -> String.concat " " (quote command.FileName :: args)
 
-    /// Starts a one-command pipeline with full stdout and stderr capture.
-    /// <example><code>command |&gt; Process.pipeline</code></example>
-    let pipeline (command: Command) : Pipeline =
-        { Commands = [ command ]; StdIn = InputSource.Empty
-          StdOut = OutputTarget.Capture; StdErr = OutputTarget.Capture
-          Connections = []; Leaves = Set.singleton 0
-          MergeStdErr = false; Framing = OutputFraming.Chunks }
+    /// Renders a redacted shell-like description of the complete process specification.
+    let render (specification: ProcessSpec) = specification.Commands |> List.map renderCommand |> String.concat " | "
 
-    /// Returns stages from left to right. <example><code>Process.commands pipeline</code></example>
-    let commands (pipeline: Pipeline) = pipeline.Commands
-    /// Connects the current stdout to the next command's stdin. <example><code>pipeline |&gt; Process.pipe next</code></example>
-    let pipe (next: Command) (source: Pipeline) : Pipeline =
+    /// Connects the current stdout to the next one-command specification's stdin.
+    let pipe (next: ProcessSpec) (source: ProcessSpec) : ProcessSpec =
+        let nextCommand = single next
         let target = source.Commands.Length
         let connections = source.Leaves |> Seq.map (fun stage -> stage, target, false) |> Seq.toList
-        { source with Commands = source.Commands @ [ next ]; Connections = source.Connections @ connections; Leaves = Set.singleton target }
+        { source with Commands = source.Commands @ [ nextCommand ]; Connections = source.Connections @ connections; Leaves = Set.singleton target }
     /// Connects both stdout and stderr from the current final stage to the next command's stdin.
-    let pipeBoth (next: Command) (source: Pipeline) : Pipeline =
+    let pipeBoth (next: ProcessSpec) (source: ProcessSpec) : ProcessSpec =
         if source.Leaves.Count <> 1 then invalidArg (nameof source) "pipeBothTo requires one current producer."
+        let nextCommand = single next
         let target = source.Commands.Length
         let stage = Set.minElement source.Leaves
-        { source with Commands = source.Commands @ [ next ]; Connections = source.Connections @ [ stage, target, true ]; Leaves = Set.singleton target }
+        { source with Commands = source.Commands @ [ nextCommand ]; Connections = source.Connections @ [ stage, target, true ]; Leaves = Set.singleton target }
     /// Creates a fan-in topology whose producers may be connected to one downstream command.
-    let merge commands : Pipeline =
+    let merge commands : ProcessSpec =
         match Seq.toList commands with
         | [] -> invalidArg (nameof commands) "A merge requires at least one command."
-        | commands ->
+        | specifications ->
+            let commands = specifications |> List.map single
             { Commands = commands; StdIn = InputSource.Empty
               StdOut = OutputTarget.Capture; StdErr = OutputTarget.Capture
               Connections = []; Leaves = Set.ofList [ 0 .. commands.Length - 1 ]
-              MergeStdErr = false; Framing = OutputFraming.Lines }
+              MergeStdErr = false; Framing = OutputFraming.Lines; Timeout = None }
     /// Supplies stdin to the first stage.
-    let stdin source (pipeline: Pipeline) =
-        match pipeline.StdIn with
+    let stdin source (specification: ProcessSpec) =
+        match specification.StdIn with
         | InputSource.Empty -> ()
         | _ -> invalidArg (nameof source) "A process topology can have only one primary input source."
-        { pipeline with StdIn = source }
-    /// Configures final stdout handling. <example><code>pipeline |&gt; Process.stdout OutputTarget.Console</code></example>
-    let stdout destination (pipeline: Pipeline) =
+        { specification with StdIn = source }
+    /// Configures final stdout handling. <example><code>specification |&gt; Process.stdout OutputTarget.Console</code></example>
+    let stdout destination (specification: ProcessSpec) =
         let rec validate = function
             | OutputTarget.CaptureTail maximum when maximum < 0 -> invalidArg (nameof destination) "Capture size cannot be negative."
             | OutputTarget.Tee items when items |> List.exists (function OutputTarget.Inherit -> true | _ -> false) ->
@@ -319,9 +365,9 @@ module Process =
             | OutputTarget.Tee items -> List.iter validate items
             | _ -> ()
         validate destination
-        { pipeline with StdOut = destination }
-    /// Configures combined stderr handling. <example><code>pipeline |&gt; Process.stderr (OutputTarget.CaptureTail 65536)</code></example>
-    let stderr destination (pipeline: Pipeline) =
+        { specification with StdOut = destination }
+    /// Configures combined stderr handling. <example><code>specification |&gt; Process.stderr (OutputTarget.CaptureTail 65536)</code></example>
+    let stderr destination (specification: ProcessSpec) =
         let rec validate = function
             | OutputTarget.CaptureTail maximum when maximum < 0 -> invalidArg (nameof destination) "Capture size cannot be negative."
             | OutputTarget.Tee items when items |> List.exists (function OutputTarget.Inherit -> true | _ -> false) ->
@@ -329,18 +375,20 @@ module Process =
             | OutputTarget.Tee items -> List.iter validate items
             | _ -> ()
         validate destination
-        { pipeline with StdErr = destination }
+        { specification with StdErr = destination }
     /// Routes final stderr through the final stdout targets, like the intent of <c>2&gt;&amp;1</c>.
-    let mergeStderr (pipeline: Pipeline) = { pipeline with MergeStdErr = true }
-    /// Selects chunk or line event framing. <example><code>pipeline |&gt; Process.framing OutputFraming.Lines</code></example>
-    let framing value (pipeline: Pipeline) : Pipeline = { pipeline with Framing = value }
-    /// Renders a redacted shell-like diagnostic pipeline. <example><code>Process.renderPipeline pipeline</code></example>
-    let renderPipeline (pipeline: Pipeline) = pipeline.Commands |> List.map render |> String.concat " | "
-
+    let mergeStderr (specification: ProcessSpec) = { specification with MergeStdErr = true }
+    /// Selects chunk or line event framing. <example><code>specification |&gt; Process.framing OutputFraming.Lines</code></example>
+    let framing value (specification: ProcessSpec) : ProcessSpec = { specification with Framing = value }
+    /// Sets the maximum execution time for the complete process topology.
+    /// <example><code>specification |&gt; Process.timeout (TimeSpan.FromSeconds 30.0)</code></example>
+    let timeout after (specification: ProcessSpec) : ProcessSpec =
+        if after <= TimeSpan.Zero then invalidArg (nameof after) "A process timeout must be greater than zero."
+        { specification with Timeout = Some after }
     /// Returns a redacted execution plan without starting a process.
-    let plan (pipeline: Pipeline) : ProcessPlan =
+    let plan (specification: ProcessSpec) : ProcessPlan =
         let input =
-            match pipeline.StdIn with
+            match specification.StdIn with
             | InputSource.Empty -> "empty"
             | InputSource.Text text -> $"text ({text.Length} characters)"
             | InputSource.Bytes bytes -> $"bytes ({bytes.Length} bytes)"
@@ -358,97 +406,46 @@ module Process =
             | OutputTarget.Callback _ -> "callback"
             | OutputTarget.Sink _ -> "sink"
             | OutputTarget.Tee targets -> targets |> List.map target |> String.concat ", " |> sprintf "tee (%s)"
-        { Commands = pipeline.Commands |> List.map render
+        { Commands = specification.Commands |> List.map renderCommand
           StdIn = input
-          StdOut = target pipeline.StdOut
-          StdErr = target pipeline.StdErr
-          Connections = pipeline.Connections
-          MergeStdErr = pipeline.MergeStdErr
-          Framing = pipeline.Framing }
+          StdOut = target specification.StdOut
+          StdErr = target specification.StdErr
+          Connections = specification.Connections
+          MergeStdErr = specification.MergeStdErr
+          Framing = specification.Framing
+          Timeout = specification.Timeout }
 
     let private validate result =
         match result.Stages |> List.tryFind (fun stage -> not stage.Succeeded) with
-        | Some stage -> Error(ProcessError.StageFailed(stage, result))
+        | Some stage -> Error(ProcessError.StageFailed { Stage = stage; Result = result })
         | None -> Ok result
 
-    /// Converts a topology to Flow without interpreting stage success policies.
-    /// <example><code>pipeline |&gt; Process.toFlowResult</code></example>
-    let toFlowResult<'env when 'env :> IHas<IProcess>> pipeline : Flow<'env, ProcessError, ProcessResult> =
-        if pipeline.Leaves.Count <> 1 then invalidArg (nameof pipeline) "A process topology requires one final output stage. Connect merged producers to a consumer first."
+    /// Runs a process specification in the current Flow runtime.
+    /// <example><code>specification |&gt; Process.run</code></example>
+    let run<'env when 'env :> IHas<IProcess>> specification : Flow<'env, ProcessError, ProcessResult> =
+        if specification.Leaves.Count <> 1 then invalidArg (nameof specification) "A process topology requires one final output stage. Connect merged producers to a consumer first."
         flow {
             let! service = Service<IProcess>.get()
-            let! cancellationToken = Flow.Runtime.cancellationToken
-            let! outcome: Result<ProcessResult, ProcessError> = service.Execute(pipeline, None, cancellationToken)
-            return! outcome
+            return! service.Run specification |> Flow.localEnv (fun _ -> ())
         }
 
-    /// Converts a topology to Flow and fails on the first unsuccessful stage.
-    /// <example><code>pipeline |&gt; Process.toFlow</code></example>
-    let toFlow<'env when 'env :> IHas<IProcess>> pipeline : Flow<'env, ProcessError, ProcessResult> =
-        flow {
-            let! result = toFlowResult pipeline
-            return! validate result
-        }
+    /// Runs a process specification with complete stdout and stderr capture.
+    /// <example><code>Process.command "dotnet" [ "--info" ] |&gt; Process.capture</code></example>
+    let capture<'env when 'env :> IHas<IProcess>> specification : Flow<'env, ProcessError, ProcessResult> =
+        specification
+        |> stdout OutputTarget.Capture
+        |> stderr OutputTarget.Capture
+        |> run
 
-    /// Converts a topology to Flow with an asynchronous observer and without interpreting stage success policies.
-    /// <example><code>pipeline |&gt; Process.observeResult observer</code></example>
-    let observeResult<'env when 'env :> IHas<IProcess>> observer pipeline : Flow<'env, ProcessError, ProcessResult> =
-        flow {
-            let! service = Service<IProcess>.get()
-            let! cancellationToken = Flow.Runtime.cancellationToken
-            let! outcome: Result<ProcessResult, ProcessError> = service.Execute(pipeline, Some observer, cancellationToken)
-            return! outcome
-        }
+    /// Streams process events in the current Flow runtime. The last event is <c>Completed</c>.
+    let stream<'env when 'env :> IHas<IProcess>> specification : FlowStream<'env, ProcessError, ProcessEvent> =
+        FlowStream(fun environment cancellationToken ->
+            let service = (environment :> IHas<IProcess>).Service
+            let (FlowStream stream) = service.Stream specification
+            stream () cancellationToken)
 
-    /// Converts a topology to Flow with an asynchronous observer and validates stage success policies.
-    /// <example><code>pipeline |&gt; Process.observe observer</code></example>
-    let observe<'env when 'env :> IHas<IProcess>> observer pipeline : Flow<'env, ProcessError, ProcessResult> =
-        flow {
-            let! result = observeResult observer pipeline
-            return! validate result
-        }
-
-    type private StreamSession = { Events: AsyncRendezvous<Result<ProcessEvent, ProcessError>>; Lifetime: CancellationTokenSource }
-    type private StreamState = NotStarted of Pipeline | Running of StreamSession | Finished
-
-    /// Streams structured process events with one-element bounded backpressure. The last event is <c>Completed</c>.
-    let stream<'env when 'env :> IHas<IProcess>> pipeline : FlowStream<'env, ProcessError, ProcessEvent> =
-        let step state =
-            match state with
-            | Finished -> Flow.ok None
-            | _ -> flow {
-                let! session =
-                    match state with
-                    | Running session -> Flow.ok session
-                    | Finished -> failwith "unreachable"
-                    | NotStarted pipeline ->
-                        flow {
-                            let! service = Service<IProcess>.get()
-                            let! cancellationToken = Flow.Runtime.cancellationToken
-                            let lifetime = new CancellationTokenSource()
-                            do! Flow.addFinalizerAsync (fun _ -> async { lifetime.Cancel(); lifetime.Dispose() })
-                            let events = AsyncRendezvous<Result<ProcessEvent, ProcessError>>()
-                            let observer output = events.Put(Ok(ProcessEvent.Output output))
-                            Async.Start(
-                                async {
-                                    let! outcome = service.Execute(pipeline, Some observer, lifetime.Token)
-                                    let final = outcome |> Result.bind validate |> Result.map ProcessEvent.Completed
-                                    do! events.Put final
-                                }, cancellationToken = lifetime.Token)
-                            return { Events = events; Lifetime = lifetime }
-                        }
-                let! item = session.Events.Take()
-                match item with
-                | Ok(ProcessEvent.Completed result) -> return Some(ProcessEvent.Completed result, Finished)
-                | Ok event -> return Some(event, Running session)
-                | Error error -> return! Flow.fail error
-            }
-        FlowStream.unfoldFlow step (NotStarted pipeline)
-
-    /// Creates and runs one command with default capture policy.
-    /// <example><code>Process.execute "dotnet" [ "--version" ]</code></example>
-    let execute<'env when 'env :> IHas<IProcess>> fileName arguments : Flow<'env, ProcessError, ProcessResult> =
-        command fileName arguments |> pipeline |> toFlow
+    let internal withRedactedArguments redacted specification =
+        specification |> mapSingle (fun command -> { command with RedactedArguments = redacted })
 
 #if !FABLE_COMPILER
     let private isInherit = function OutputTarget.Inherit -> true | _ -> false
@@ -514,216 +511,262 @@ module Process =
 
     /// Creates a live process service using an explicit clock for transcript timestamps and durations.
     let live (clock: IClock) (fileSystem: IFileSystem) (console: IConsole) : IProcess =
-        { new IProcess with
-            member _.Execute((pipeline: Pipeline), observer, cancellationToken) =
-                async {
-                  return! task {
-                    let processes = ResizeArray<Diagnostics.Process>()
-                    let started = ResizeArray<DateTimeOffset>()
-                    let stdoutCapture = captureFor pipeline.StdOut
-                    let stderrCapture = captureFor pipeline.StdErr
-                    let stderrTails = pipeline.Commands |> List.map (fun _ -> CaptureBuffer(Some(64 * 1024), true)) |> List.toArray
-                    let stdoutFiles = openFiles fileSystem pipeline.StdOut
-                    let stderrFiles = openFiles fileSystem pipeline.StdErr
-                    let startedAt = clock.UtcNow()
-                    try
-                        try
-                            for index, command in pipeline.Commands |> List.indexed do
-                                let isFinal = index = pipeline.Commands.Length - 1
-                                let hasOutputConnection = pipeline.Connections |> List.exists (fun (source, _, _) -> source = index)
-                                let hasErrorConnection = pipeline.Connections |> List.exists (fun (source, _, both) -> source = index && both)
-                                let redirectOutput = hasOutputConnection || not (isFinal && isInherit pipeline.StdOut)
-                                let inheritError = isInherit pipeline.StdErr && not (isFinal && pipeline.MergeStdErr)
-                                let redirectError = hasErrorConnection || not inheritError
-                                let proc = new Diagnostics.Process(StartInfo = startInfo redirectOutput redirectError command)
-                                if not (proc.Start()) then raise (Exception $"Could not start {command.FileName}.")
-                                processes.Add proc; started.Add(clock.UtcNow())
-
-                            use registration = cancellationToken.Register(fun () ->
+        let execute observer (specification: ProcessSpec) =
+            let execution =
+                    flow {
+                      let! cancellationToken = Flow.Runtime.cancellationToken
+                      let! outcome = async {
+                        return! task {
+                            let processes = ResizeArray<Diagnostics.Process>()
+                            let started = ResizeArray<DateTimeOffset>()
+                            let stdoutCapture = captureFor specification.StdOut
+                            let stderrCapture = captureFor specification.StdErr
+                            let stderrTails = specification.Commands |> List.map (fun _ -> CaptureBuffer(Some(64 * 1024), true)) |> List.toArray
+                            let stdoutFiles = openFiles fileSystem specification.StdOut
+                            let stderrFiles = openFiles fileSystem specification.StdErr
+                            let startedAt = clock.UtcNow()
+                            let terminateProcesses () =
                                 for proc in processes do
                                     try
                                         if not proc.HasExited then
-#if NETSTANDARD2_1
+        #if NETSTANDARD2_1
                                             proc.Kill()
-#else
+        #else
                                             proc.Kill(entireProcessTree = true)
-#endif
-                                    with _ -> ())
-                            let copies =
-                                pipeline.Connections
-                                |> List.groupBy (fun (_, target, _) -> target)
-                                |> List.map (fun (targetIndex, connections) ->
-                                    task {
-                                        let target = processes[targetIndex].StandardInput.BaseStream
-                                        use gate = new SemaphoreSlim(1, 1)
-                                        let writeChunk (chunk: byte array) =
+        #endif
+                                    with _ -> ()
+                            try
+                                try
+                                    use registration = cancellationToken.Register terminateProcesses
+                                    for index, command in specification.Commands |> List.indexed do
+                                        let isFinal = index = specification.Commands.Length - 1
+                                        let hasOutputConnection = specification.Connections |> List.exists (fun (source, _, _) -> source = index)
+                                        let hasErrorConnection = specification.Connections |> List.exists (fun (source, _, both) -> source = index && both)
+                                        let redirectOutput = hasOutputConnection || not (isFinal && isInherit specification.StdOut)
+                                        let inheritError = isInherit specification.StdErr && not (isFinal && specification.MergeStdErr)
+                                        let redirectError = hasErrorConnection || not inheritError
+                                        let proc = new Diagnostics.Process(StartInfo = startInfo redirectOutput redirectError command)
+                                        if not (proc.Start()) then raise (Exception $"Could not start {command.FileName}.")
+                                        processes.Add proc; started.Add(clock.UtcNow())
+                                    let copies =
+                                        specification.Connections
+                                        |> List.groupBy (fun (_, target, _) -> target)
+                                        |> List.map (fun (targetIndex, connections) ->
                                             task {
-                                                do! gate.WaitAsync cancellationToken
-                                                try do! target.WriteAsync(chunk, 0, chunk.Length, cancellationToken)
-                                                finally gate.Release() |> ignore
-                                            }
-                                        let pump (tail: CaptureBuffer option) (source: Stream) =
-                                            task {
-                                                let buffer = Array.zeroCreate<byte> 4096
-                                                use pendingLine = new MemoryStream()
-                                                let frameLines = connections.Length > 1 && pipeline.Framing = OutputFraming.Lines
-                                                let mutable reading = true
-                                                while reading do
-                                                    let! count = source.ReadAsync(buffer, 0, buffer.Length, cancellationToken)
-                                                    if count = 0 then
-                                                        reading <- false
-                                                        if frameLines && pendingLine.Length > 0L then do! writeChunk (pendingLine.ToArray())
-                                                    else
-                                                        let chunk = buffer[.. count - 1]
-                                                        tail |> Option.iter (fun capture -> capture.Append chunk)
-                                                        if frameLines then
-                                                            for value in chunk do
-                                                                pendingLine.WriteByte value
-                                                                if value = byte '\n' then
-                                                                    do! writeChunk (pendingLine.ToArray())
-                                                                    pendingLine.SetLength 0L
-                                                        else do! writeChunk chunk
-                                            }
-                                        let pumps =
-                                            [| for sourceIndex, _, both in connections do
-                                                yield pump None processes[sourceIndex].StandardOutput.BaseStream
-                                                if both then yield pump (Some stderrTails[sourceIndex]) processes[sourceIndex].StandardError.BaseStream |]
-                                        let! _ = Task.WhenAll pumps
-                                        processes[targetIndex].StandardInput.Close()
-                                    } :> Task)
-                                |> List.toArray
-                            let targets = pipeline.Connections |> Seq.map (fun (_, target, _) -> target) |> Set.ofSeq
-                            let roots = [ for index in 0 .. processes.Count - 1 do if not (targets.Contains index) then yield index ]
-                            let inputWrites : Task array =
-                                match pipeline.StdIn, roots with
-                                | InputSource.Empty, roots ->
-                                    roots |> List.iter (fun index -> processes[index].StandardInput.Close())
-                                    Array.empty
-                                | _, _ :: _ :: _ -> invalidArg "pipeline" "A primary input source requires exactly one root command."
-                                | source, [ root ] ->
-                                    [| task {
-                                        let target = processes[root].StandardInput.BaseStream
-                                        let write bytes = target.WriteAsync(bytes, 0, bytes.Length, cancellationToken) |> Async.AwaitTask
-                                        match source with
-                                        | InputSource.Empty -> ()
-                                        | InputSource.Text text -> do! write (pipeline.Commands[root].Encoding.GetBytes text) |> Async.StartAsTask
-                                        | InputSource.Bytes bytes -> do! write bytes |> Async.StartAsTask
-                                        | InputSource.File path ->
-                                            use source = fileSystem.OpenFile(path, FileMode.Open, FileAccess.Read, FileShare.Read)
-                                            do! source.CopyToAsync(target, 81920, cancellationToken)
-                                        | InputSource.Read read ->
-                                            let! bytes = Async.StartAsTask(read(), cancellationToken = cancellationToken)
-                                            do! target.WriteAsync(bytes, 0, bytes.Length, cancellationToken)
-                                        | InputSource.Produce produce ->
-                                            do! Async.StartAsTask(produce write, cancellationToken = cancellationToken)
-                                        processes[root].StandardInput.Close()
-                                    } :> Task |]
-                                | _, [] -> invalidArg "pipeline" "A process topology has no root command."
+                                                let target = processes[targetIndex].StandardInput.BaseStream
+                                                use gate = new SemaphoreSlim(1, 1)
+                                                let writeChunk (chunk: byte array) =
+                                                    task {
+                                                        do! gate.WaitAsync cancellationToken
+                                                        try do! target.WriteAsync(chunk, 0, chunk.Length, cancellationToken)
+                                                        finally gate.Release() |> ignore
+                                                    }
+                                                let pump (tail: CaptureBuffer option) (source: Stream) =
+                                                    task {
+                                                        let buffer = Array.zeroCreate<byte> 4096
+                                                        use pendingLine = new MemoryStream()
+                                                        let frameLines = connections.Length > 1 && specification.Framing = OutputFraming.Lines
+                                                        let mutable reading = true
+                                                        while reading do
+                                                            let! count = source.ReadAsync(buffer, 0, buffer.Length, cancellationToken)
+                                                            if count = 0 then
+                                                                reading <- false
+                                                                if frameLines && pendingLine.Length > 0L then do! writeChunk (pendingLine.ToArray())
+                                                            else
+                                                                let chunk = buffer[.. count - 1]
+                                                                tail |> Option.iter (fun capture -> capture.Append chunk)
+                                                                if frameLines then
+                                                                    for value in chunk do
+                                                                        pendingLine.WriteByte value
+                                                                        if value = byte '\n' then
+                                                                            do! writeChunk (pendingLine.ToArray())
+                                                                            pendingLine.SetLength 0L
+                                                                else do! writeChunk chunk
+                                                    }
+                                                let pumps =
+                                                    [| for sourceIndex, _, both in connections do
+                                                        yield pump None processes[sourceIndex].StandardOutput.BaseStream
+                                                        if both then yield pump (Some stderrTails[sourceIndex]) processes[sourceIndex].StandardError.BaseStream |]
+                                                let! _ = Task.WhenAll pumps
+                                                processes[targetIndex].StandardInput.Close()
+                                            } :> Task)
+                                        |> List.toArray
+                                    let targets = specification.Connections |> Seq.map (fun (_, target, _) -> target) |> Set.ofSeq
+                                    let roots = [ for index in 0 .. processes.Count - 1 do if not (targets.Contains index) then yield index ]
+                                    let inputWrites : Task array =
+                                        match specification.StdIn, roots with
+                                        | InputSource.Empty, roots ->
+                                            roots |> List.iter (fun index -> processes[index].StandardInput.Close())
+                                            Array.empty
+                                        | _, _ :: _ :: _ -> invalidArg "specification" "A primary input source requires exactly one root command."
+                                        | source, [ root ] ->
+                                            [| task {
+                                                let target = processes[root].StandardInput.BaseStream
+                                                let write bytes = target.WriteAsync(bytes, 0, bytes.Length, cancellationToken) |> Async.AwaitTask
+                                                match source with
+                                                | InputSource.Empty -> ()
+                                                | InputSource.Text text -> do! write (specification.Commands[root].Encoding.GetBytes text) |> Async.StartAsTask
+                                                | InputSource.Bytes bytes -> do! write bytes |> Async.StartAsTask
+                                                | InputSource.File path ->
+                                                    use source = fileSystem.OpenFile(path, FileMode.Open, FileAccess.Read, FileShare.Read)
+                                                    do! source.CopyToAsync(target, 81920, cancellationToken)
+                                                | InputSource.Read read ->
+                                                    let! bytes = Async.StartAsTask(read(), cancellationToken = cancellationToken)
+                                                    do! target.WriteAsync(bytes, 0, bytes.Length, cancellationToken)
+                                                | InputSource.Produce produce ->
+                                                    do! Async.StartAsTask(produce write, cancellationToken = cancellationToken)
+                                                processes[root].StandardInput.Close()
+                                            } :> Task |]
+                                        | _, [] -> invalidArg "specification" "A process topology has no root command."
 
-                            use observerGate = new SemaphoreSlim(1, 1)
-                            use stdoutGate = new SemaphoreSlim(1, 1)
-                            use stderrGate = new SemaphoreSlim(1, 1)
-                            let read (stage: int) (channel: OutputChannel) destination (capture: CaptureBuffer) (stream: Stream) (encoding: Encoding) =
-                                task {
-                                    let buffer = Array.zeroCreate<byte> 4096
-                                    let decoder = encoding.GetDecoder()
-                                    let characters = Array.zeroCreate<char> (encoding.GetMaxCharCount buffer.Length)
-                                    let pendingLine = StringBuilder()
-                                    let files = if channel = OutputChannel.StdOut then stdoutFiles else stderrFiles
-                                    let destinationGate = if channel = OutputChannel.StdOut then stdoutGate else stderrGate
-                                    let publishText (text: string) =
-                                        match observer with
-                                        | Some publish when text <> "" ->
-                                            task {
-                                                do! observerGate.WaitAsync cancellationToken
-                                                try
-                                                    do! Async.StartAsTask(
-                                                        publish { Stage = stage; Channel = channel; Text = text; Timestamp = clock.UtcNow() },
-                                                        cancellationToken = cancellationToken)
-                                                finally observerGate.Release() |> ignore
-                                            }
-                                        | _ -> Task.FromResult(())
-                                    let decodeAndPublish (bytes: byte array) (count: int) (flush: bool) =
+                                    use observerGate = new SemaphoreSlim(1, 1)
+                                    use stdoutGate = new SemaphoreSlim(1, 1)
+                                    use stderrGate = new SemaphoreSlim(1, 1)
+                                    let read (stage: int) (channel: OutputChannel) destination (capture: CaptureBuffer) (stream: Stream) (encoding: Encoding) =
                                         task {
-                                            let characterCount = decoder.GetChars(bytes, 0, count, characters, 0, flush)
-                                            let text = String(characters, 0, characterCount)
-                                            match pipeline.Framing with
-                                            | OutputFraming.Chunks -> do! publishText text
-                                            | OutputFraming.Lines ->
-                                                pendingLine.Append text |> ignore
-                                                let mutable newline = pendingLine.ToString().IndexOf '\n'
-                                                while newline >= 0 do
-                                                    let line = pendingLine.ToString(0, newline + 1)
-                                                    pendingLine.Remove(0, newline + 1) |> ignore
-                                                    do! publishText line
-                                                    newline <- pendingLine.ToString().IndexOf '\n'
-                                                if flush && pendingLine.Length > 0 then
-                                                    do! publishText (pendingLine.ToString())
-                                                    pendingLine.Clear() |> ignore
+                                            let buffer = Array.zeroCreate<byte> 4096
+                                            let decoder = encoding.GetDecoder()
+                                            let characters = Array.zeroCreate<char> (encoding.GetMaxCharCount buffer.Length)
+                                            let pendingLine = StringBuilder()
+                                            let files = if channel = OutputChannel.StdOut then stdoutFiles else stderrFiles
+                                            let destinationGate = if channel = OutputChannel.StdOut then stdoutGate else stderrGate
+                                            let publishText (text: string) =
+                                                match observer with
+                                                | Some publish when text <> "" ->
+                                                    task {
+                                                        do! observerGate.WaitAsync cancellationToken
+                                                        try do! Async.StartAsTask(publish { Stage = stage; Channel = channel; Text = text; Timestamp = clock.UtcNow() }, cancellationToken = cancellationToken)
+                                                        finally observerGate.Release() |> ignore
+                                                    }
+                                                | _ -> Task.FromResult(())
+                                            let decodeAndPublish (bytes: byte array) (count: int) (flush: bool) =
+                                                task {
+                                                    let characterCount = decoder.GetChars(bytes, 0, count, characters, 0, flush)
+                                                    let text = String(characters, 0, characterCount)
+                                                    match specification.Framing with
+                                                    | OutputFraming.Chunks -> do! publishText text
+                                                    | OutputFraming.Lines ->
+                                                        pendingLine.Append text |> ignore
+                                                        let mutable newline = pendingLine.ToString().IndexOf '\n'
+                                                        while newline >= 0 do
+                                                            let line = pendingLine.ToString(0, newline + 1)
+                                                            pendingLine.Remove(0, newline + 1) |> ignore
+                                                            do! publishText line
+                                                            newline <- pendingLine.ToString().IndexOf '\n'
+                                                        if flush && pendingLine.Length > 0 then
+                                                            do! publishText (pendingLine.ToString())
+                                                            pendingLine.Clear() |> ignore
+                                                }
+                                            let mutable reading = true
+                                            while reading do
+                                                let! count = stream.ReadAsync(buffer, 0, buffer.Length, cancellationToken)
+                                                if count = 0 then
+                                                    reading <- false
+                                                    do! decodeAndPublish Array.empty 0 true
+                                                else
+                                                    let chunk = buffer[.. count - 1]
+                                                    capture.Append chunk
+                                                    if channel = OutputChannel.StdErr then stderrTails[stage].Append chunk
+                                                    do! writeDestination console destinationGate files channel destination chunk
+                                                    do! decodeAndPublish chunk chunk.Length false
                                         }
-                                    let mutable reading = true
-                                    while reading do
-                                        let! count = stream.ReadAsync(buffer, 0, buffer.Length, cancellationToken)
-                                        if count = 0 then
-                                            reading <- false
-                                            do! decodeAndPublish Array.empty 0 true
-                                        else
-                                            let chunk = buffer[.. count - 1]
-                                            capture.Append chunk
-                                            if channel = OutputChannel.StdErr then stderrTails[stage].Append chunk
-                                            do! writeDestination console destinationGate files channel destination chunk
-                                            do! decodeAndPublish chunk chunk.Length false
-                                }
-                            let reads = ResizeArray<Task>()
-                            let finalEncoding = (List.last pipeline.Commands).Encoding
-                            let completionTasks =
-                                processes
-                                |> Seq.map (fun proc ->
-                                    task {
-                                        do! waitForExit proc cancellationToken
-                                        return clock.UtcNow()
-                                    })
-                                |> Seq.toArray
-                            if not (isInherit pipeline.StdOut) then
-                                reads.Add(read (processes.Count - 1) OutputChannel.StdOut pipeline.StdOut stdoutCapture processes[processes.Count - 1].StandardOutput.BaseStream finalEncoding)
-                            for index in 0 .. processes.Count - 1 do
-                                let stderrPiped = pipeline.Connections |> List.exists (fun (source, _, both) -> source = index && both)
-                                if not stderrPiped then
-                                    let merged = pipeline.MergeStdErr && index = processes.Count - 1
-                                    let destination = if merged then pipeline.StdOut else pipeline.StdErr
-                                    let capture = if merged then stdoutCapture else stderrCapture
-                                    if not (isInherit destination) then
-                                        reads.Add(read index OutputChannel.StdErr destination capture processes[index].StandardError.BaseStream pipeline.Commands[index].Encoding)
-                            do! Task.WhenAll(Array.concat [ copies; inputWrites; reads.ToArray() ])
-                            do! completeDestination pipeline.StdOut
-                            do! completeDestination pipeline.StdErr
-                            let! completedStages = Task.WhenAll completionTasks
-                            cancellationToken.ThrowIfCancellationRequested()
-                            let completed = completedStages |> Array.max
-                            let outCapture = stdoutCapture.Finish finalEncoding
-                            let errCapture = stderrCapture.Finish finalEncoding
-                            let stages =
-                                pipeline.Commands
-                                |> List.mapi (fun index command ->
-                                    { Stage = index; Command = render command; ExitCode = processes[index].ExitCode
-                                      Succeeded = command.SuccessCodes.Contains processes[index].ExitCode
-                                      StartedAt = started[index]; Duration = completedStages[index] - started[index]
-                                      StdErrTail = stderrTails[index].Finish command.Encoding })
-                            return Ok { ExitCode = processes[processes.Count - 1].ExitCode; ExitCodes = stages |> List.map _.ExitCode
-                                        StdOut = outCapture.Text; StdErr = errCapture.Text; StdOutCapture = outCapture; StdErrCapture = errCapture
-                                        Stages = stages; StartedAt = startedAt; Duration = completed - startedAt }
-                        with
-                        | :? OperationCanceledException as error -> return Error(ProcessError.Canceled error.Message)
-                        | error when processes.Count = 0 || processes.Count < pipeline.Commands.Length ->
-                            let command = pipeline.Commands[processes.Count] |> render
-                            return Error(ProcessError.StartFailed(command, error.Message))
-                        | error -> return Error(ProcessError.Io error.Message)
-                    finally
-                        processes |> Seq.iter (fun proc -> proc.Dispose())
-                        stdoutFiles.Values |> Seq.iter (fun stream -> stream.Dispose())
-                        stderrFiles.Values |> Seq.iter (fun stream -> stream.Dispose())
-                  } |> Async.AwaitTask
-                } }
+                                    let reads = ResizeArray<Task>()
+                                    let finalEncoding = (List.last specification.Commands).Encoding
+                                    let completionTasks =
+                                        processes
+                                        |> Seq.map (fun proc ->
+                                            task {
+                                                do! waitForExit proc cancellationToken
+                                                return clock.UtcNow()
+                                            })
+                                        |> Seq.toArray
+                                    if not (isInherit specification.StdOut) then
+                                        reads.Add(read (processes.Count - 1) OutputChannel.StdOut specification.StdOut stdoutCapture processes[processes.Count - 1].StandardOutput.BaseStream finalEncoding)
+                                    for index in 0 .. processes.Count - 1 do
+                                        let stderrPiped = specification.Connections |> List.exists (fun (source, _, both) -> source = index && both)
+                                        if not stderrPiped then
+                                            let merged = specification.MergeStdErr && index = processes.Count - 1
+                                            let destination = if merged then specification.StdOut else specification.StdErr
+                                            let capture = if merged then stdoutCapture else stderrCapture
+                                            if not (isInherit destination) then
+                                                reads.Add(read index OutputChannel.StdErr destination capture processes[index].StandardError.BaseStream specification.Commands[index].Encoding)
+                                    do! Task.WhenAll(Array.concat [ copies; inputWrites; reads.ToArray() ])
+                                    do! completeDestination specification.StdOut
+                                    do! completeDestination specification.StdErr
+                                    let! completedStages = Task.WhenAll completionTasks
+                                    cancellationToken.ThrowIfCancellationRequested()
+                                    let completed = completedStages |> Array.max
+                                    let outCapture = stdoutCapture.Finish finalEncoding
+                                    let errCapture = stderrCapture.Finish finalEncoding
+                                    let stages =
+                                        specification.Commands
+                                        |> List.mapi (fun index command ->
+                                            { Stage = index; Command = renderCommand command; ExitCode = processes[index].ExitCode
+                                              Succeeded = command.SuccessCodes.Contains processes[index].ExitCode
+                                              StartedAt = started[index]; Duration = completedStages[index] - started[index]
+                                              StdErrTail = stderrTails[index].Finish command.Encoding })
+                                    return Ok { ExitCode = processes[processes.Count - 1].ExitCode; ExitCodes = stages |> List.map _.ExitCode
+                                                StdOut = outCapture.Text; StdErr = errCapture.Text; StdOutCapture = outCapture; StdErrCapture = errCapture
+                                                Stages = stages; StartedAt = startedAt; Duration = completed - startedAt }
+                                with
+                                | :? OperationCanceledException as error -> return Error(ProcessError.Canceled { Message = error.Message })
+                                | error when processes.Count = 0 || processes.Count < specification.Commands.Length ->
+                                    let command = specification.Commands[processes.Count] |> renderCommand
+                                    return Error(ProcessError.StartFailed { Command = command; Message = error.Message })
+                                | error -> return Error(ProcessError.IoFailed { Message = error.Message })
+                            finally
+                                terminateProcesses ()
+                                processes |> Seq.iter (fun proc -> proc.Dispose())
+                                stdoutFiles.Values |> Seq.iter (fun stream -> stream.Dispose())
+                                stderrFiles.Values |> Seq.iter (fun stream -> stream.Dispose())
+                        } |> Async.AwaitTask
+                      }
+                      return! outcome |> Result.bind validate
+                    }
+            match specification.Timeout with
+            | Some timeout -> execution |> Flow.Runtime.timeout timeout (ProcessError.TimedOut { Specification = render specification; Timeout = timeout })
+            | None -> execution
+
+        let stream specification =
+            let step state =
+                match state with
+                | Finished -> Flow.ok None
+                | Running session ->
+                    flow {
+                        let! item = session.Events.Take()
+                        match item with
+                        | Ok(ProcessEvent.Completed result) -> return Some(ProcessEvent.Completed result, Finished)
+                        | Ok event -> return Some(event, Running session)
+                        | Error error -> return! Flow.fail error
+                    }
+                | NotStarted ->
+                    flow {
+                        let events = AsyncRendezvous<Result<ProcessEvent, ProcessError>>()
+                        let observer output = events.Put(Ok(ProcessEvent.Output output))
+                        let producer =
+                            flow {
+                                let! result = execute (Some observer) specification
+                                do! events.Put(Ok(ProcessEvent.Completed result))
+                                return result
+                            }
+                        let! fiber = Flow.fork producer
+                        do! Flow.addFinalizerAsync (fun _ -> async {
+                            fiber.InterruptSource.Cancel()
+                            let! _ = fiber.ExitTask |> Async.AwaitTask
+                            return ()
+                        })
+                        let session = { Events = events }
+                        let! item = events.Take()
+                        match item with
+                        | Ok(ProcessEvent.Completed result) -> return Some(ProcessEvent.Completed result, Finished)
+                        | Ok event -> return Some(event, Running session)
+                        | Error error -> return! Flow.fail error
+                    }
+            FlowStream.unfoldFlow step NotStarted
+
+        { new IProcess with
+            member _.Run specification = execute None specification
+            member _.Stream specification = stream specification }
 
     /// Builds a live process service from an explicit clock as a layer.
     let layer (clock: IClock) (fileSystem: IFileSystem) (console: IConsole) : Layer<unit, Never, IProcess> =
@@ -823,18 +866,15 @@ module DSL =
             |> Seq.mapi (fun index token -> index, token)
             |> Seq.choose (fun (index, token) -> if token.Value = token.Display then None else Some(index, token.Display))
             |> Map.ofSeq
-        { (Process.command executable.Value arguments) with RedactedArguments = redacted }
+        Process.command executable.Value arguments |> Process.withRedactedArguments redacted
 
     type EndpointConnector =
-        static member Connect(source: InputSource, next: Command) = Process.pipeline next |> Process.stdin source
-        static member Connect(source: Command, next: Command) = Process.pipeline source |> Process.pipe next
-        static member Connect(source: Pipeline, next: Command) = Process.pipe next source
-        static member Connect(source: Command, target: OutputTarget) = Process.pipeline source |> Process.stdout target |> Process.toFlow
-        static member Connect(source: Pipeline, target: OutputTarget) = source |> Process.stdout target |> Process.toFlow
-        static member ToPipeline(source: Command) = Process.pipeline source
-        static member ToPipeline(source: Pipeline) = source
+        static member Connect(source: InputSource, next: ProcessSpec) = Process.stdin source next
+        static member Connect(source: ProcessSpec, next: ProcessSpec) = Process.pipe next source
+        static member Connect(source: ProcessSpec, target: OutputTarget) = source |> Process.stdout target |> Process.run
+        static member ToSpecification(source: ProcessSpec) = source
 
-    /// Connects a typed input, command, pipeline, or terminal output endpoint.
+    /// Connects a typed input, command, specification, or terminal output endpoint.
     let inline (=>) (source: ^source) (destination: ^destination) : ^result =
         ((^source or ^destination or EndpointConnector) : (static member Connect : ^source * ^destination -> ^result) (source, destination))
 
@@ -844,18 +884,12 @@ module DSL =
     /// Parses a fixed command line. Prefer <c>cmd $"...{value}"</c> whenever values are inserted.
     let cmdText (commandLine: string) = parseCommandLine commandLine Array.empty
 
-    /// Builds a vertical pipeline from safely parsed command templates.
+    /// Builds a vertical specification from safely parsed command templates.
     let pipe (commandLines: seq<FormattableString>) =
         let commands = commandLines |> Seq.map cmd |> Seq.toList
         match commands with
-        | [] -> invalidArg (nameof commandLines) "A pipeline requires at least one command."
-        | head :: tail -> tail |> List.fold (fun pipeline next -> Process.pipe next pipeline) (Process.pipeline head)
-
-    /// Builds a pipeline from already constructed commands.
-    let pipeCommands commands =
-        match Seq.toList commands with
-        | [] -> invalidArg (nameof commands) "A pipeline requires at least one command."
-        | head :: tail -> tail |> List.fold (fun pipeline next -> Process.pipe next pipeline) (Process.pipeline head)
+        | [] -> invalidArg (nameof commandLines) "A specification requires at least one command."
+        | head :: tail -> tail |> List.fold (fun specification next -> Process.pipe next specification) head
 
     /// Creates line-framed fan-in producers ready to connect to one consumer.
     let merge commands = Process.merge commands
@@ -903,7 +937,7 @@ module DSL =
             |> Array.mapi (fun index value -> index, value)
             |> Array.choose (fun (index, value) -> match value with :? SecretArgument -> Some(firstValue + index, "***") | _ -> None)
             |> Map.ofArray
-        { (Process.command executable arguments) with RedactedArguments = redacted }
+        Process.command executable arguments |> Process.withRedactedArguments redacted
 
     /// Builds a Bash program with interpolation values passed as positional arguments.
     let bash program = shellCommand "bash" (fun script -> [ "-o"; "pipefail"; "-c"; script; "axial" ]) (fun index -> $"\"${{{index + 1}}}\"") program
@@ -923,39 +957,40 @@ module DSL =
     let secret value = SecretArgument(box value)
     let cwd path command = Process.workingDirectory path command
     let env name value command = Process.environment name value command
-    let inline private toPipeline source = ((^source or EndpointConnector) : (static member ToPipeline : ^source -> Pipeline) source)
-    /// Supplies a primary input source to a command or pipeline.
-    let inline stdin source topology = toPipeline topology |> Process.stdin source
-    /// Connects stdout from a command or pipeline to the next command's stdin.
-    let inline pipeTo next source = toPipeline source |> Process.pipe next
-    /// Configures final stdout without converting the topology.
-    let inline stdout target source = toPipeline source |> Process.stdout target
-    /// Configures combined stderr without converting the topology.
-    let inline stderr target source = toPipeline source |> Process.stderr target
-    /// Explicitly converts a command or pipeline into a captured Flow.
-    let inline toFlow source = toPipeline source |> Process.toFlow
-    /// Waits for completion and captures stdout and stderr.
-    let inline capture source = toPipeline source |> Process.stdout OutputTarget.Capture |> Process.stderr OutputTarget.Capture |> Process.toFlow
-    /// Captures output without interpreting command success codes.
-    let inline captureResult source = toPipeline source |> Process.stdout OutputTarget.Capture |> Process.stderr OutputTarget.Capture |> Process.toFlowResult
+    let private toSpecification (source: ProcessSpec) = source
+    /// Supplies a primary input source to a command or specification.
+    let stdin source topology = toSpecification topology |> Process.stdin source
+    /// Connects stdout from a command or specification to the next command's stdin.
+    let pipeTo next source = toSpecification source |> Process.pipe next
+    /// Configures final stdout on the specification.
+    let stdout target source = toSpecification source |> Process.stdout target
+    /// Configures combined stderr on the specification.
+    let stderr target source = toSpecification source |> Process.stderr target
+    /// Sets the maximum execution time for a command or specification.
+    /// <example><code>cmd $"service-device" |&gt; timeout (TimeSpan.FromSeconds 30.0) |&gt; capture</code></example>
+    let timeout after source = toSpecification source |> Process.timeout after
+    /// Runs a command or specification in the current Flow runtime.
+    let run source = toSpecification source |> Process.run
+    /// Runs a command or specification and captures stdout and stderr.
+    let capture source = toSpecification source |> Process.capture
     /// Forwards stdout and stderr to the host console while retaining structured completion data.
-    let inline console source = toPipeline source |> Process.stdout OutputTarget.Console |> Process.stderr OutputTarget.Console |> Process.toFlow
+    let console source = toSpecification source |> Process.stdout OutputTarget.Console |> Process.stderr OutputTarget.Console |> Process.run
     /// Produces a bounded stream of structured output and completion events.
-    let inline stream source = toPipeline source |> Process.stream
+    let stream source = toSpecification source |> Process.stream
     /// Connects both stdout and stderr from the current final stage to the next command.
-    let inline pipeBothTo next source = toPipeline source |> Process.pipeBoth next
+    let pipeBothTo next source = toSpecification source |> Process.pipeBoth next
     /// Routes final stderr through final stdout targets.
-    let inline mergeStderr source = toPipeline source |> Process.mergeStderr
-    /// Writes final stdout to a truncating file and converts the topology to Flow.
-    let inline writeTo path source = toPipeline source |> Process.stdout (OutputTarget.File path) |> Process.toFlow
-    /// Writes final stdout to an appending file and converts the topology to Flow.
-    let inline appendTo path source = toPipeline source |> Process.stdout (OutputTarget.AppendFile path) |> Process.toFlow
+    let mergeStderr source = toSpecification source |> Process.mergeStderr
+    /// Writes final stdout to a truncating file and runs the specification.
+    let writeTo path source = toSpecification source |> Process.stdout (OutputTarget.File path) |> Process.run
+    /// Writes final stdout to an appending file and runs the specification.
+    let appendTo path source = toSpecification source |> Process.stdout (OutputTarget.AppendFile path) |> Process.run
     /// Captures commands concurrently with a fixed upper bound while preserving input order.
     let captureParallel maximumConcurrency commands =
         if maximumConcurrency <= 0 then invalidArg (nameof maximumConcurrency) "Maximum concurrency must be positive."
         let runBatch batch =
             batch
-            |> List.map (fun command -> command |> Process.pipeline |> Process.toFlow |> Flow.map List.singleton)
+            |> List.map (fun specification -> specification |> Process.run |> Flow.map List.singleton)
             |> function
                 | [] -> Flow.ok []
                 | head :: tail ->

@@ -1,22 +1,22 @@
 ---
 title: "Flow.Process.stream"
 linkTitle: "stream"
-weight: 2504
+weight: 2502
 ---
 
- Streams structured process events with one-element bounded backpressure. The last event is <c>Completed</c>.
+ Streams process events in the current Flow runtime. The last event is <c>Completed</c>.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Flow.Process.Process.stream&#32;<span>pipeline</span></span></code>
+<code><span>Flow.Process.Process.stream&#32;<span>specification</span></span></code>
 </div>
 
 ## Parameters
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `pipeline` | <code><a href="t-flow-process-pipeline.md">Pipeline</a></code> |  |
+| `specification` | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
 
 ## Returns
 

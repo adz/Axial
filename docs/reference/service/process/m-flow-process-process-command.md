@@ -4,8 +4,8 @@ linkTitle: "command"
 weight: 2300
 ---
 
- Creates a safely tokenized command.
- <example><code>Process.command "git" [ "status"; "--short" ]</code></example>
+ Creates a runnable, safely tokenized one-command process specification.
+ <example><code>Process.command "git" [ "status"; "--short" ] |&gt; Process.run</code></example>
 
 ## Signature
 
@@ -24,4 +24,4 @@ weight: 2300
 
 | Type | Description |
 | --- | --- |
-| <code><a href="t-flow-process-command.md">Command</a></code> |  |
+| <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |

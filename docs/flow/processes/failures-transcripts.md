@@ -1,51 +1,31 @@
 ---
+title: Failures and transcripts
+description: Handle structured process failures and inspect complete execution results.
 weight: 30
-title: Failures And Transcripts
-description: Interpret exit codes and diagnose the exact failed stage.
 ---
 
-# Failures And Transcripts
-
-This page shows how process failures retain structured context for CI, deployments, and support diagnostics.
-
-## Pipefail Is The Default
-
-`capture` and `toFlow` require every stage's configured success policy. If stage one fails in a three-stage pipeline,
-the typed error is `ProcessError.StageFailed(stage, result)`, even when the final stage exits zero.
+`Process.run` fails when startup, timeout, cancellation, I/O, or a stage success policy fails:
 
 ```fsharp
 match exit with
-| Exit.Failure(Cause.Fail(ProcessError.StageFailed(stage, transcript))) ->
-    eprintfn "stage %d failed: %s" stage.Stage stage.Command
-    eprintfn "exit: %d" stage.ExitCode
-    eprintf "%s" stage.StdErrTail.Text
+| Exit.Failure(Cause.Fail(ProcessError.StartFailed failure)) ->
+    eprintfn "could not start %s: %s" failure.Command failure.Message
+| Exit.Failure(Cause.Fail(ProcessError.TimedOut failure)) ->
+    eprintfn "%s exceeded %O" failure.Specification failure.Timeout
+| Exit.Failure(Cause.Fail(ProcessError.StageFailed failure)) ->
+    eprintfn "stage %d exited %d" failure.Stage.Stage failure.Stage.ExitCode
 | _ -> ()
 ```
 
-Each stage contains its redacted command, exit code, success decision, start time, duration, and bounded 64 KiB stderr
-tail. The overall transcript contains configured captures, all exit codes, and total timing.
+`ProcessError.describe` formats a redacted diagnostic. `ProcessError.exitCode` maps stage failure to its native exit code, timeout to 124, cancellation to 130, and other failures to 1.
 
-## Meaningful Non-Zero Codes
-
-```fsharp
-let grep =
-    Process.command "grep" [ pattern; file ]
-    |> Process.successCodes [ 0; 1 ]
-```
-
-Use `captureResult` or `Process.toFlowResult` when exit codes should remain data. Startup, cancellation, and I/O failures
-still use `ProcessError`.
-
-## Transcript Shape
+Successful execution returns `ProcessResult`, including exact captured bytes, decoded text, every stage exit code, start times, durations, and bounded stderr tails. A configured `successCodes` set determines whether each stage succeeds.
 
 ```fsharp
-let! result = pipeline |> toFlow
-
-printfn "exit codes: %A" result.ExitCodes
-printfn "duration: %O" result.Duration
+let! result = specification |> Process.run
 
 for stage in result.Stages do
     printfn "[%d] %s => %d (%O)" stage.Stage stage.Command stage.ExitCode stage.Duration
 ```
 
-This replaces Bash `PIPESTATUS`, manual timers, and ad hoc stderr buffering with one testable value.
+Timeout is specification policy. The Flow runtime races the execution, interrupts the losing workflow, waits for native cleanup, and then returns `ProcessError.TimedOut`. Caller cancellation follows the same tree-termination path and returns `ProcessError.Canceled` from the process interpreter.

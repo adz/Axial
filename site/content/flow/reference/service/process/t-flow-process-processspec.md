@@ -1,15 +1,16 @@
 ---
-title: "Flow.Process.Pipeline"
-linkTitle: "Pipeline"
-weight: 1001
+title: "Flow.Process.ProcessSpec"
+linkTitle: "ProcessSpec"
+weight: 1000
+type: docs
 ---
 
- One or more commands connected left-to-right through their real standard streams.
+ An immutable description of one command or a connected process topology and its execution policy.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code>type Pipeline</code>
+<code>type ProcessSpec</code>
 </div>
 
 ## Record Fields
@@ -24,3 +25,4 @@ weight: 1001
 | `Leaves` |  |
 | `MergeStdErr` |  |
 | `Framing` |  |
+| `Timeout` |  |

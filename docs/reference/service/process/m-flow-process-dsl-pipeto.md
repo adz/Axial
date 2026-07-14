@@ -1,10 +1,10 @@
 ---
 title: "Flow.Process.DSL.pipeTo"
 linkTitle: "pipeTo"
-weight: 2804
+weight: 2803
 ---
 
- Connects stdout from a command or pipeline to the next command's stdin.
+ Connects stdout from a command or specification to the next command's stdin.
 
 ## Signature
 
@@ -16,11 +16,11 @@ weight: 2804
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `next` | <code><a href="t-flow-process-command.md">Command</a></code> |  |
-| `source` | <code>^a</code> |  |
+| `next` | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
+| `source` | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><a href="t-flow-process-pipeline.md">Pipeline</a></code> |  |
+| <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |

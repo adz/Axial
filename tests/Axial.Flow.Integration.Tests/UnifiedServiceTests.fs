@@ -214,9 +214,9 @@ module UnifiedServiceTests =
         let services = { 
             Process = 
                 { new IProcess with 
-                    member _.Execute(_, _, _) =
-                        async.Return(Ok processResult) }
+                    member _.Run _ = Flow.succeed processResult
+                    member _.Stream _ = FlowStream.singleton(ProcessEvent.Completed processResult) }
             Console = Unchecked.defaultof<_>; FS = Unchecked.defaultof<_>; Http = Unchecked.defaultof<_>
         }
         
-        test <@ Flow.runSync services (Process.execute<UnifiedServices> "echo" [ "hi" ]) = Exit.Success processResult @>
+        test <@ Flow.runSync services (Process.command "echo" [ "hi" ] |> Process.run<UnifiedServices>) = Exit.Success processResult @>

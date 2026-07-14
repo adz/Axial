@@ -1,15 +1,15 @@
 ---
 title: "Flow.Process.stdout"
 linkTitle: "stdout"
-weight: 2405
+weight: 2404
 ---
 
- Configures final stdout handling. <example><code>pipeline |&gt; Process.stdout OutputTarget.Console</code></example>
+ Configures final stdout handling. <example><code>specification |&gt; Process.stdout OutputTarget.Console</code></example>
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Flow.Process.Process.stdout&#32;<span>destination&#32;pipeline</span></span></code>
+<code><span>Flow.Process.Process.stdout&#32;<span>destination&#32;specification</span></span></code>
 </div>
 
 ## Parameters
@@ -17,10 +17,10 @@ weight: 2405
 | Name | Type | Description |
 | --- | --- | --- |
 | `destination` | <code><a href="t-flow-process-outputtarget.md">OutputTarget</a></code> |  |
-| `pipeline` | <code><a href="t-flow-process-pipeline.md">Pipeline</a></code> |  |
+| `specification` | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><a href="t-flow-process-pipeline.md">Pipeline</a></code> |  |
+| <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |

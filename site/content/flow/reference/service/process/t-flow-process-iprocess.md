@@ -5,7 +5,7 @@ weight: 1100
 type: docs
 ---
 
- Executes typed process pipelines for a concrete host platform.
+ Interprets process specifications as lazy Axial workflows for a concrete host platform.
 
 ## Signature
 

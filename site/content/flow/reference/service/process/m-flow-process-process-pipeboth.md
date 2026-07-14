@@ -1,7 +1,7 @@
 ---
 title: "Flow.Process.pipeBoth"
 linkTitle: "pipeBoth"
-weight: 2402
+weight: 2401
 type: docs
 ---
 
@@ -17,11 +17,11 @@ type: docs
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `next` | <code><a href="t-flow-process-command.md">Command</a></code> |  |
-| `source` | <code><a href="t-flow-process-pipeline.md">Pipeline</a></code> |  |
+| `next` | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
+| `source` | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><a href="t-flow-process-pipeline.md">Pipeline</a></code> |  |
+| <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |

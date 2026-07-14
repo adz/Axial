@@ -3,25 +3,29 @@ title: "Services Process"
 weight: 50
 ---
 
-This page shows the external-process service package. Immutable `Command` and `Pipeline` values preserve shell-like endpoint composition without shell parsing. `Process.toFlow` converts a topology through the explicit `IProcess` capability, connects real standard streams, captures complete output, tracks every exit code, and reports startup, cancellation, I/O, and non-zero exits through `ProcessError`. Use `Process.stream` when output must be observed before completion.
+This page shows the external-process service package. Immutable `ProcessSpec` values describe safely tokenized commands, connected topologies, I/O routing, and execution policy. `Process.run` composes the selected `IProcess` interpreter into the current Flow runtime; `Process.stream` emits output incrementally.
 
 ## Model
 
-- [`Flow.Process.Command`](./t-flow-process-command.md):  An immutable, safely tokenized external command.
-- [`Flow.Process.Pipeline`](./t-flow-process-pipeline.md):  One or more commands connected left-to-right through their real standard streams.
+- [`Flow.Process.ProcessSpec`](./t-flow-process-processspec.md):  An immutable description of one command or a connected process topology and its execution policy.
 - [`Flow.Process.ProcessPlan`](./t-flow-process-processplan.md):  A redacted, serializable description of work that would be executed.
 - [`Flow.Process.InputSource`](./t-flow-process-inputsource.md):  Supplies bytes to the first process stage.
 - [`Flow.Process.OutputTarget`](./t-flow-process-outputtarget.md):  Receives bytes from a process topology. Capture limits are measured in bytes.
 - [`Flow.Process.ProcessResult`](./t-flow-process-processresult.md):  The complete structured transcript returned by a process execution.
 - [`Flow.Process.StageResult`](./t-flow-process-stageresult.md):  The redacted command, exit decision, timing, and diagnostic stderr tail for one stage.
 - [`Flow.Process.CapturedOutput`](./t-flow-process-capturedoutput.md):  Exact captured bytes plus their decoded text view and truncation status.
-- [`Flow.Process.ProcessOutput`](./t-flow-process-processoutput.md):  A timestamped decoded output event attributed to one pipeline stage.
+- [`Flow.Process.ProcessOutput`](./t-flow-process-processoutput.md):  A timestamped decoded output event attributed to one specification stage.
 - [`Flow.Process.ProcessEvent`](./t-flow-process-processevent.md):  Values emitted by a native process FlowStream.
+- [`Flow.Process.ProcessStartFailure`](./t-flow-process-processstartfailure.md):  Diagnostic details for a process that could not be started.
+- [`Flow.Process.ProcessTimeout`](./t-flow-process-processtimeout.md):  Diagnostic details for an elapsed process deadline.
+- [`Flow.Process.ProcessCancellation`](./t-flow-process-processcancellation.md):  Diagnostic details for caller-initiated process cancellation.
+- [`Flow.Process.StageFailure`](./t-flow-process-stagefailure.md):  Diagnostic details for an unsuccessful process stage.
+- [`Flow.Process.ProcessIoFailure`](./t-flow-process-processiofailure.md):  Diagnostic details for a process I/O failure.
 - [`Flow.Process.ProcessError`](./t-flow-process-processerror.md):  A recoverable process startup, cancellation, stage, or I/O failure.
 
 ## Service
 
-- [`Flow.Process.IProcess`](./t-flow-process-iprocess.md):  Executes typed process pipelines for a concrete host platform.
+- [`Flow.Process.IProcess`](./t-flow-process-iprocess.md):  Interprets process specifications as lazy Axial workflows for a concrete host platform.
 
 ## Errors
 
@@ -32,8 +36,8 @@ This page shows the external-process service package. Immutable `Command` and `P
 
 ## Commands
 
-- [`Flow.Process.command`](./m-flow-process-process-command.md):  Creates a safely tokenized command.
- <example><code>Process.command "git" [ "status"; "--short" ]</code></example>
+- [`Flow.Process.command`](./m-flow-process-process-command.md):  Creates a runnable, safely tokenized one-command process specification.
+ <example><code>Process.command "git" [ "status"; "--short" ] |&gt; Process.run</code></example>
 - [`Flow.Process.arg`](./m-flow-process-process-arg.md):  Appends one ordinary argument.
  <example><code>command |&gt; Process.arg "--verbose"</code></example>
 - [`Flow.Process.secretArg`](./m-flow-process-process-secretarg.md):  Adds an argument whose value is replaced with <c>***</c> in rendered commands and transcripts.
@@ -42,36 +46,29 @@ This page shows the external-process service package. Immutable `Command` and `P
 - [`Flow.Process.removeEnvironment`](./m-flow-process-process-removeenvironment.md):  Removes an inherited environment variable. <example><code>command |&gt; Process.removeEnvironment "TOKEN"</code></example>
 - [`Flow.Process.encoding`](./m-flow-process-process-encoding.md):  Selects text decoding for this stage. <example><code>command |&gt; Process.encoding Encoding.Latin1</code></example>
 - [`Flow.Process.successCodes`](./m-flow-process-process-successcodes.md):  Replaces the set of exit codes considered successful for this command.
-- [`Flow.Process.render`](./m-flow-process-process-render.md):  Renders a diagnostic command string with secret arguments redacted.
+- [`Flow.Process.render`](./m-flow-process-process-render.md):  Renders a redacted shell-like description of the complete process specification.
 
-## Pipelines
+## Composition
 
-- [`Flow.Process.pipeline`](./m-flow-process-process-pipeline.md):  Starts a one-command pipeline with full stdout and stderr capture.
- <example><code>command |&gt; Process.pipeline</code></example>
-- [`Flow.Process.pipe`](./m-flow-process-process-pipe.md):  Connects the current stdout to the next command's stdin. <example><code>pipeline |&gt; Process.pipe next</code></example>
+- [`Flow.Process.pipe`](./m-flow-process-process-pipe.md):  Connects the current stdout to the next one-command specification's stdin.
 - [`Flow.Process.pipeBoth`](./m-flow-process-process-pipeboth.md):  Connects both stdout and stderr from the current final stage to the next command's stdin.
 - [`Flow.Process.merge`](./m-flow-process-process-merge.md):  Creates a fan-in topology whose producers may be connected to one downstream command.
 - [`Flow.Process.stdin`](./m-flow-process-process-stdin.md):  Supplies stdin to the first stage.
-- [`Flow.Process.stdout`](./m-flow-process-process-stdout.md):  Configures final stdout handling. <example><code>pipeline |&gt; Process.stdout OutputTarget.Console</code></example>
-- [`Flow.Process.stderr`](./m-flow-process-process-stderr.md):  Configures combined stderr handling. <example><code>pipeline |&gt; Process.stderr (OutputTarget.CaptureTail 65536)</code></example>
+- [`Flow.Process.stdout`](./m-flow-process-process-stdout.md):  Configures final stdout handling. <example><code>specification |&gt; Process.stdout OutputTarget.Console</code></example>
+- [`Flow.Process.stderr`](./m-flow-process-process-stderr.md):  Configures combined stderr handling. <example><code>specification |&gt; Process.stderr (OutputTarget.CaptureTail 65536)</code></example>
 - [`Flow.Process.mergeStderr`](./m-flow-process-process-mergestderr.md):  Routes final stderr through the final stdout targets, like the intent of <c>2&gt;&amp;1</c>.
-- [`Flow.Process.framing`](./m-flow-process-process-framing.md):  Selects chunk or line event framing. <example><code>pipeline |&gt; Process.framing OutputFraming.Lines</code></example>
-- [`Flow.Process.renderPipeline`](./m-flow-process-process-renderpipeline.md):  Renders a redacted shell-like diagnostic pipeline. <example><code>Process.renderPipeline pipeline</code></example>
+- [`Flow.Process.framing`](./m-flow-process-process-framing.md):  Selects chunk or line event framing. <example><code>specification |&gt; Process.framing OutputFraming.Lines</code></example>
+- [`Flow.Process.timeout`](./m-flow-process-process-timeout.md):  Sets the maximum execution time for the complete process topology.
+ <example><code>specification |&gt; Process.timeout (TimeSpan.FromSeconds 30.0)</code></example>
 - [`Flow.Process.plan`](./m-flow-process-process-plan.md):  Returns a redacted execution plan without starting a process.
 
 ## Execution
 
-- [`Flow.Process.toFlow`](./m-flow-process-process-toflow.md):  Converts a topology to Flow and fails on the first unsuccessful stage.
- <example><code>pipeline |&gt; Process.toFlow</code></example>
-- [`Flow.Process.toFlowResult`](./m-flow-process-process-toflowresult.md):  Converts a topology to Flow without interpreting stage success policies.
- <example><code>pipeline |&gt; Process.toFlowResult</code></example>
-- [`Flow.Process.observe`](./m-flow-process-process-observe.md):  Converts a topology to Flow with an asynchronous observer and validates stage success policies.
- <example><code>pipeline |&gt; Process.observe observer</code></example>
-- [`Flow.Process.observeResult`](./m-flow-process-process-observeresult.md):  Converts a topology to Flow with an asynchronous observer and without interpreting stage success policies.
- <example><code>pipeline |&gt; Process.observeResult observer</code></example>
-- [`Flow.Process.stream`](./m-flow-process-process-stream.md):  Streams structured process events with one-element bounded backpressure. The last event is <c>Completed</c>.
-- [`Flow.Process.execute`](./m-flow-process-process-execute.md):  Creates and runs one command with default capture policy.
- <example><code>Process.execute "dotnet" [ "--version" ]</code></example>
+- [`Flow.Process.run`](./m-flow-process-process-run.md):  Runs a process specification in the current Flow runtime.
+ <example><code>specification |&gt; Process.run</code></example>
+- [`Flow.Process.capture`](./m-flow-process-process-capture.md):  Runs a process specification with complete stdout and stderr capture.
+ <example><code>Process.command "dotnet" [ "--info" ] |&gt; Process.capture</code></example>
+- [`Flow.Process.stream`](./m-flow-process-process-stream.md):  Streams process events in the current Flow runtime. The last event is <c>Completed</c>.
 - [`Flow.Process.Script.run`](./m-flow-process-script-run.md):  Runs a process workflow with live services, writes failures through the supplied console, and returns a host exit code.
 
 ## Input endpoints
@@ -102,25 +99,25 @@ This page shows the external-process service package. Immutable `Command` and `P
 
 - [`Flow.Process.DSL.cmd`](./m-flow-process-dsl-cmd.md):  Builds a command-line-shaped command while preserving every interpolation hole as one argument.
 - [`Flow.Process.DSL.cmdText`](./m-flow-process-dsl-cmdtext.md):  Parses a fixed command line. Prefer <c>cmd $"...{value}"</c> whenever values are inserted.
-- [`Flow.Process.DSL.pipe`](./m-flow-process-dsl-pipe.md):  Builds a vertical pipeline from safely parsed command templates.
-- [`Flow.Process.DSL.pipeCommands`](./m-flow-process-dsl-pipecommands.md):  Builds a pipeline from already constructed commands.
-- [`Flow.Process.DSL.pipeTo`](./m-flow-process-dsl-pipeto.md):  Connects stdout from a command or pipeline to the next command's stdin.
+- [`Flow.Process.DSL.pipe`](./m-flow-process-dsl-pipe.md):  Builds a vertical specification from safely parsed command templates.
+- [`Flow.Process.DSL.pipeTo`](./m-flow-process-dsl-pipeto.md):  Connects stdout from a command or specification to the next command's stdin.
 - [`Flow.Process.DSL.pipeBothTo`](./m-flow-process-dsl-pipebothto.md):  Connects both stdout and stderr from the current final stage to the next command.
 - [`Flow.Process.DSL.merge`](./m-flow-process-dsl-merge.md):  Creates line-framed fan-in producers ready to connect to one consumer.
 - [`Flow.Process.DSL.mergeBytes`](./m-flow-process-dsl-mergebytes.md):  Creates raw-byte fan-in producers with explicitly nondeterministic chunk interleaving.
 - [`Flow.Process.DSL.mergeStderr`](./m-flow-process-dsl-mergestderr.md):  Routes final stderr through final stdout targets.
 - [`Flow.Process.DSL.cwd`](./m-flow-process-dsl-cwd.md):
 - [`Flow.Process.DSL.env`](./m-flow-process-dsl-env.md):
-- [`Flow.Process.DSL.stdin`](./m-flow-process-dsl-stdin.md):  Supplies a primary input source to a command or pipeline.
-- [`Flow.Process.DSL.stdout`](./m-flow-process-dsl-stdout.md):  Configures final stdout without converting the topology.
-- [`Flow.Process.DSL.stderr`](./m-flow-process-dsl-stderr.md):  Configures combined stderr without converting the topology.
-- [`Flow.Process.DSL.toFlow`](./m-flow-process-dsl-toflow.md):  Explicitly converts a command or pipeline into a captured Flow.
-- [`Flow.Process.DSL.capture`](./m-flow-process-dsl-capture.md):  Waits for completion and captures stdout and stderr.
-- [`Flow.Process.DSL.captureResult`](./m-flow-process-dsl-captureresult.md):  Captures output without interpreting command success codes.
+- [`Flow.Process.DSL.stdin`](./m-flow-process-dsl-stdin.md):  Supplies a primary input source to a command or specification.
+- [`Flow.Process.DSL.stdout`](./m-flow-process-dsl-stdout.md):  Configures final stdout on the specification.
+- [`Flow.Process.DSL.stderr`](./m-flow-process-dsl-stderr.md):  Configures combined stderr on the specification.
+- [`Flow.Process.DSL.timeout`](./m-flow-process-dsl-timeout.md):  Sets the maximum execution time for a command or specification.
+ <example><code>cmd $"service-device" |&gt; timeout (TimeSpan.FromSeconds 30.0) |&gt; capture</code></example>
+- [`Flow.Process.DSL.run`](./m-flow-process-dsl-run.md):  Runs a command or specification in the current Flow runtime.
+- [`Flow.Process.DSL.capture`](./m-flow-process-dsl-capture.md):  Runs a command or specification and captures stdout and stderr.
 - [`Flow.Process.DSL.console`](./m-flow-process-dsl-console.md):  Forwards stdout and stderr to the host console while retaining structured completion data.
 - [`Flow.Process.DSL.stream`](./m-flow-process-dsl-stream.md):  Produces a bounded stream of structured output and completion events.
-- [`Flow.Process.DSL.writeTo`](./m-flow-process-dsl-writeto.md):  Writes final stdout to a truncating file and converts the topology to Flow.
-- [`Flow.Process.DSL.appendTo`](./m-flow-process-dsl-appendto.md):  Writes final stdout to an appending file and converts the topology to Flow.
+- [`Flow.Process.DSL.writeTo`](./m-flow-process-dsl-writeto.md):  Writes final stdout to a truncating file and runs the specification.
+- [`Flow.Process.DSL.appendTo`](./m-flow-process-dsl-appendto.md):  Writes final stdout to an appending file and runs the specification.
 - [`Flow.Process.DSL.captureParallel`](./m-flow-process-dsl-captureparallel.md):  Captures commands concurrently with a fixed upper bound while preserving input order.
 
 ## Shells

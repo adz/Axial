@@ -4,7 +4,7 @@ linkTitle: "pipe"
 weight: 2802
 ---
 
- Builds a vertical pipeline from safely parsed command templates.
+ Builds a vertical specification from safely parsed command templates.
 
 ## Signature
 
@@ -22,4 +22,4 @@ weight: 2802
 
 | Type | Description |
 | --- | --- |
-| <code><a href="t-flow-process-pipeline.md">Pipeline</a></code> |  |
+| <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |

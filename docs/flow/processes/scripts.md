@@ -1,87 +1,38 @@
 ---
+title: Scripts
+description: Author concise, safely interpolated process workflows.
 weight: 40
-title: Executable Scripts
-description: Run typed Flow workflows from one dotnet-fsi shebang file.
 ---
 
-# Executable Scripts
-
-This page shows complete executable `.fsx` scripts that provision the live process service with one call.
-
-## Minimal Shebang Script
+Open `Axial.Flow.Process.DSL` for command-line-shaped authoring:
 
 ```fsharp
-#!/usr/bin/env -S dotnet fsi
-#r "nuget: Axial.Flow.Process, 0.7.0"
-
-open Axial.Flow.Process
 open Axial.Flow.Process.DSL
 
-cmd $"dotnet --version"
-|> console
-|> Script.run
+let workflow =
+    cmd $"device-tool connect {deviceId}"
+    |> cwd workspace
+    |> env "DEVICE_MODE" "service"
+    |> timeout (TimeSpan.FromSeconds 30)
+    |> capture
 ```
 
-Make the file executable and run it:
-
-```bash
-chmod +x versions.fsx
-./versions.fsx
-```
-
-Example output:
-
-```text
-10.0.300
-```
-
-`Script.run` is the interpreter boundary: it supplies `Process.live Clock.live`, runs the Flow, and sets the host exit code. A
-failed stage propagates its exit code, cancellation uses 130, and startup or I/O failures use one.
-
-## Full Capture Script
+Interpolation holes remain individual native arguments. They are not concatenated into shell source. Mark sensitive values explicitly:
 
 ```fsharp
-#!/usr/bin/env -S dotnet fsi
-#r "nuget: Axial.Flow.Process, 0.7.0"
-
-open Axial.Flow
-open Axial.Flow.Process
-open Axial.Flow.Process.DSL
-
-flow {
-    let! branch = cmd $"git branch --show-current" |> capture
-    let! tests = cmd $"dotnet test --configuration Release" |> capture
-    printfn "branch=%s tests=%O" (branch.StdOut.Trim()) tests.Duration
-}
-|> Script.run
+let workflow =
+    cmd $"device-tool authenticate {secret token}"
+    |> capture
 ```
 
-## Full Streaming Script
+Use `bash`, `sh`, or `pwsh` when shell syntax is required. Interpolated values are passed out of band as positional arguments:
 
 ```fsharp
-#!/usr/bin/env -S dotnet fsi
-#r "nuget: Axial.Flow.Process, 0.7.0"
-
-open Axial.Flow
-open Axial.Flow.Process
-open Axial.Flow.Process.DSL
-
-let print = function
-    | ProcessEvent.Output output ->
-        flow {
-            let prefix = if output.Channel = OutputChannel.StdErr then "error" else "output"
-            printf "[%s:%d] %s" prefix output.Stage output.Text
-        }
-    | ProcessEvent.Completed result ->
-        flow { printfn "completed %d stages in %O" result.Stages.Length result.Duration }
-
-cmd $"dotnet build --nologo"
-=> cmd $"tee build.log"
-|> Process.framing OutputFraming.Lines
-|> stream
-|> FlowStream.runForEachFlow print
-|> Script.run
+let workflow =
+    bash $"printf '%s' {value} | tr '[:lower:]' '[:upper:]'"
+    |> capture
 ```
 
-Use a compiled application when startup time, deployment, richer dependency layers, or several source files matter.
-The shebang host is for focused automation where one file is the useful unit of distribution.
+The DSL's execution verbs are `run`, `capture`, `console`, and `stream`. `capture` selects complete stdout and stderr capture before running. `console` forwards both channels while retaining structured completion data. `stream` yields `ProcessEvent` values.
+
+At a command-line host boundary, `Script.run console workflow` executes against live services, prints a typed process failure through the supplied console service, and returns a host exit code.

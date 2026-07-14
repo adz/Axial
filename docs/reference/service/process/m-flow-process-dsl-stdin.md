@@ -1,10 +1,10 @@
 ---
 title: "Flow.Process.DSL.stdin"
 linkTitle: "stdin"
-weight: 2811
+weight: 2810
 ---
 
- Supplies a primary input source to a command or pipeline.
+ Supplies a primary input source to a command or specification.
 
 ## Signature
 
@@ -17,10 +17,10 @@ weight: 2811
 | Name | Type | Description |
 | --- | --- | --- |
 | `source` | <code><a href="t-flow-process-inputsource.md">InputSource</a></code> |  |
-| `topology` | <code>^a</code> |  |
+| `topology` | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><a href="t-flow-process-pipeline.md">Pipeline</a></code> |  |
+| <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |

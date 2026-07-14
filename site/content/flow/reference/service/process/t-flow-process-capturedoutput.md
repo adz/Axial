@@ -1,7 +1,7 @@
 ---
 title: "Flow.Process.CapturedOutput"
 linkTitle: "CapturedOutput"
-weight: 1007
+weight: 1006
 type: docs
 ---
 

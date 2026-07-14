@@ -9,7 +9,7 @@ weight: 2306
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Flow.Process.Process.encoding&#32;<span>value&#32;command</span></span></code>
+<code><span>Flow.Process.Process.encoding&#32;<span>value&#32;specification</span></span></code>
 </div>
 
 ## Parameters
@@ -17,10 +17,10 @@ weight: 2306
 | Name | Type | Description |
 | --- | --- | --- |
 | `value` | <code><a href="https://learn.microsoft.com/dotnet/api/system.text.encoding">Encoding</a></code> |  |
-| `command` | <code><a href="t-flow-process-command.md">Command</a></code> |  |
+| `specification` | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><a href="t-flow-process-command.md">Command</a></code> |  |
+| <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |

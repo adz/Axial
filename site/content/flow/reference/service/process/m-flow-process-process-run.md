@@ -1,24 +1,24 @@
 ---
-title: "Flow.Process.toFlowResult"
-linkTitle: "toFlowResult"
-weight: 2501
+title: "Flow.Process.run"
+linkTitle: "run"
+weight: 2500
 type: docs
 ---
 
- Converts a topology to Flow without interpreting stage success policies.
- <example><code>pipeline |&gt; Process.toFlowResult</code></example>
+ Runs a process specification in the current Flow runtime.
+ <example><code>specification |&gt; Process.run</code></example>
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Flow.Process.Process.toFlowResult&#32;<span>pipeline</span></span></code>
+<code><span>Flow.Process.Process.run&#32;<span>specification</span></span></code>
 </div>
 
 ## Parameters
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `pipeline` | <code><a href="t-flow-process-pipeline.md">Pipeline</a></code> |  |
+| `specification` | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
 
 ## Returns
 

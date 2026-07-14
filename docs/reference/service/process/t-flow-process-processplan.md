@@ -1,7 +1,7 @@
 ---
 title: "Flow.Process.ProcessPlan"
 linkTitle: "ProcessPlan"
-weight: 1002
+weight: 1001
 ---
 
  A redacted, serializable description of work that would be executed.
@@ -23,3 +23,4 @@ weight: 1002
 | `Connections` |  |
 | `MergeStdErr` |  |
 | `Framing` |  |
+| `Timeout` |  |

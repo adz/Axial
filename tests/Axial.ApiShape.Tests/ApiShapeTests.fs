@@ -1835,7 +1835,7 @@ module ApiShapeTests =
 
         moduleType typeof<Axial.Flow.Process.IProcess> "Axial.Flow.Process.Process"
         |> publicStaticMemberNames
-        |> assertContainsAll [ "execute"; "layer"; "live" ]
+        |> assertContainsAll [ "run"; "capture"; "stream"; "timeout"; "layer"; "live" ]
 
         moduleType typeof<Axial.Flow.PlatformService.EnvironmentVariableError> "Axial.Flow.PlatformService.Clock"
         |> publicStaticMemberNames
