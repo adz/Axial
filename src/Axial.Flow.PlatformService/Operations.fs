@@ -89,15 +89,34 @@ module Log =
     let critical<'env, 'error when 'env :> IHas<ILog>> (message: string) : Flow<'env, 'error, unit> =
         log LogLevel.Critical message
 
+    /// <summary>Writes a log message carrying an exception through an explicit logging service.</summary>
+    let logException<'env, 'error when 'env :> IHas<ILog>>
+        (level: LogLevel)
+        (error: exn)
+        (message: string)
+        : Flow<'env, 'error, unit> =
+        Service<ILog>.get()
+        |> Flow.map (fun log -> log.LogException level error message)
+
+    /// <summary>Writes an error log message carrying an exception through an explicit logging service.</summary>
+    let errorExn<'env, 'error when 'env :> IHas<ILog>> (error: exn) (message: string) : Flow<'env, 'error, unit> =
+        logException LogLevel.Error error message
+
+    /// <summary>Writes a critical log message carrying an exception through an explicit logging service.</summary>
+    let criticalExn<'env, 'error when 'env :> IHas<ILog>> (error: exn) (message: string) : Flow<'env, 'error, unit> =
+        logException LogLevel.Critical error message
+
     /// <summary>Creates a no-op logger for tests and local service bundles.</summary>
     let live : ILog =
         { new ILog with
-            member _.Log _ _ = () }
+            member _.Log _ _ = ()
+            member _.LogException _ _ _ = () }
 
-    /// <summary>Creates a logger from a synchronous sink function.</summary>
+    /// <summary>Creates a logger from a synchronous sink function. Exceptions are appended to the message text.</summary>
     let fromSink (sink: LogLevel -> string -> unit) : ILog =
         { new ILog with
-            member _.Log level message = sink level message }
+            member _.Log level message = sink level message
+            member _.LogException level error message = sink level $"{message}{Environment.NewLine}{error}" }
 
     /// <summary>Builds the live logger as a layer.</summary>
     let layer : Layer<unit, Never, ILog> =

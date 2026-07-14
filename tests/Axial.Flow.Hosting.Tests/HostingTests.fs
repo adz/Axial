@@ -57,3 +57,79 @@ module HostingTests =
         match result with
         | Error [ message ] -> test <@ message.Contains("AXIAL_HOSTING_MISSING") && message.Contains("Missing required environment variable") @>
         | _ -> failwithf "Expected missing variable error, got %A" result
+
+type ExceptionRecordingLogger() =
+    let entries = ResizeArray<Microsoft.Extensions.Logging.LogLevel * string * exn option>()
+    member _.Entries = entries |> Seq.toList
+    interface ILogger with
+        member _.Log(level, _, state, error, _) =
+            entries.Add(level, string state, Option.ofObj error)
+        member _.IsEnabled(_) = true
+        member _.BeginScope(_) = { new IDisposable with member _.Dispose() = () }
+
+module FiberLoggingTests =
+    [<Fact>]
+    let ``FiberLogging.observe logs fiber defects and unobserved defects with their exceptions`` () =
+        let logger = ExceptionRecordingLogger()
+
+        let result =
+            flow {
+                let! _fiber = Flow.fork (Flow.die (InvalidOperationException "silent crash") : Flow<unit, string, int>)
+                do! Flow.Runtime.sleep (TimeSpan.FromMilliseconds 50.0)
+                return "done"
+            }
+            |> FiberLogging.observe (logger :> ILogger)
+            |> fun workflow -> workflow.RunSynchronously(())
+
+        test <@ result = Exit.Success "done" @>
+
+        let errors =
+            logger.Entries
+            |> List.filter (fun (level, _, _) -> level = Microsoft.Extensions.Logging.LogLevel.Error)
+
+        let criticals =
+            logger.Entries
+            |> List.filter (fun (level, _, _) -> level = Microsoft.Extensions.Logging.LogLevel.Critical)
+
+        test <@ List.length errors = 1 @>
+        test <@ List.length criticals = 1 @>
+
+        match criticals with
+        | [ _, message, Some error ] ->
+            test <@ message.Contains "Unobserved fiber defect" @>
+            test <@ error.Message = "silent crash" @>
+        | other -> failwithf "Expected one critical entry with an exception, got %A" other
+
+    [<Fact>]
+    let ``FiberObserver.compose runs both observers and guards each hook`` () =
+        let logger = ExceptionRecordingLogger()
+        let seen = ResizeArray<string>()
+
+        let throwing =
+            { FiberObserver.none with
+                OnEnd = fun _ _ -> failwith "observer bug" }
+
+        let recording =
+            { FiberObserver.none with
+                OnEnd = fun metadata _ -> lock seen (fun () -> seen.Add(string metadata.Id.Value)) }
+
+        let composed = FiberObserver.compose throwing (FiberObserver.compose recording (FiberLogging.observer logger))
+
+        let result =
+            flow {
+                let! fiber = Flow.fork (Flow.die (InvalidOperationException "boom") : Flow<unit, string, int>)
+                do! Flow.Runtime.sleep (TimeSpan.FromMilliseconds 50.0)
+                let! _exit = Flow.interrupt fiber
+                return 1
+            }
+            |> Flow.withFiberObserver composed
+            |> fun workflow -> workflow.RunSynchronously(())
+
+        test <@ result = Exit.Success 1 @>
+        test <@ seen.Count = 1 @>
+
+        let errors =
+            logger.Entries
+            |> List.filter (fun (level, _, _) -> level = Microsoft.Extensions.Logging.LogLevel.Error)
+
+        test <@ List.length errors = 1 @>

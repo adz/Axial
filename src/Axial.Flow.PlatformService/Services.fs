@@ -13,6 +13,8 @@ type IClock =
 type ILog =
     /// <summary>Writes a log message at the requested level.</summary>
     abstract Log: level: LogLevel -> message: string -> unit
+    /// <summary>Writes a log message carrying an exception, preserving its stack trace for the host logger.</summary>
+    abstract LogException: level: LogLevel -> error: exn -> message: string -> unit
 
 /// <summary>Provides synchronous random-number generation.</summary>
 type IRandom =

@@ -230,6 +230,24 @@ module FiberObserver =
             OnUnobservedDefect = fun _ _ -> ()
         }
 
+    /// <summary>Combines two observers so every hook runs both, each guarded independently.</summary>
+    /// <remarks>Use this to stack integrations — for example telemetry spans plus logging — from one edge-level install.</remarks>
+    let compose (first: FiberObserver) (second: FiberObserver) : FiberObserver =
+        {
+            OnStart =
+                fun metadata ->
+                    (try first.OnStart metadata with _ -> ())
+                    (try second.OnStart metadata with _ -> ())
+            OnEnd =
+                fun metadata defect ->
+                    (try first.OnEnd metadata defect with _ -> ())
+                    (try second.OnEnd metadata defect with _ -> ())
+            OnUnobservedDefect =
+                fun metadata defect ->
+                    (try first.OnUnobservedDefect metadata defect with _ -> ())
+                    (try second.OnUnobservedDefect metadata defect with _ -> ())
+        }
+
     let internal notifyStart (observer: FiberObserver) (metadata: FiberMetadata) : unit =
         try observer.OnStart metadata with _ -> ()
 
@@ -613,16 +631,6 @@ type LogLevel =
     | Warning
     | Error
     | Critical
-
-/// <summary>
-/// A structured log entry written through a runtime logger.
-/// </summary>
-type LogEntry =
-    {
-      Level: LogLevel
-      Message: string
-      TimestampUtc: DateTimeOffset
-    }
 
 /// <summary>
 /// Defines how runtime retry helpers repeat typed failures in a controlled way.

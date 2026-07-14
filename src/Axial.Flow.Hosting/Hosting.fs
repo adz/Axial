@@ -30,7 +30,16 @@ module Hosting =
                         | LogLevel.Information -> inner.LogInformation message
                         | LogLevel.Warning -> inner.LogWarning message
                         | LogLevel.Error -> inner.LogError message
-                        | LogLevel.Critical -> inner.LogCritical message }
+                        | LogLevel.Critical -> inner.LogCritical message
+
+                    member _.LogException level error message =
+                        match level with
+                        | LogLevel.Trace -> inner.LogTrace(error, message)
+                        | LogLevel.Debug -> inner.LogDebug(error, message)
+                        | LogLevel.Information -> inner.LogInformation(error, message)
+                        | LogLevel.Warning -> inner.LogWarning(error, message)
+                        | LogLevel.Error -> inner.LogError(error, message)
+                        | LogLevel.Critical -> inner.LogCritical(error, message) }
             | _ ->
                 Log.live
 
@@ -41,6 +50,37 @@ module Hosting =
             Guid = Guid.live
             EnvironmentVariables = EnvironmentVariables.live
         }
+
+/// <summary>Fiber-lifecycle logging through <c>Microsoft.Extensions.Logging</c>.</summary>
+[<RequireQualifiedAccess>]
+module FiberLogging =
+    /// <summary>
+    /// A fiber observer that logs fiber defects as errors and unobserved defects as critical entries through
+    /// the supplied logger. Stack with telemetry observers via <c>FiberObserver.compose</c>.
+    /// </summary>
+    /// <param name="logger">The host logger to write through.</param>
+    let observer (logger: ILogger) : FiberObserver =
+        { FiberObserver.none with
+            OnEnd =
+                fun metadata defect ->
+                    match defect with
+                    | Some error ->
+                        logger.LogError(error, "Fiber {FiberId} died with a defect", metadata.Id.Value)
+                    | None -> ()
+            OnUnobservedDefect =
+                fun metadata defect ->
+                    match metadata with
+                    | Some m ->
+                        logger.LogCritical(defect, "Unobserved fiber defect (fiber {FiberId})", m.Id.Value)
+                    | None ->
+                        logger.LogCritical(defect, "Unobserved defect from a discarded race/timeout loser") }
+
+    /// <summary>Installs the fiber-logging observer on a flow, typically once at the application edge.</summary>
+    /// <param name="logger">The host logger to write through.</param>
+    /// <param name="flow">The source flow.</param>
+    /// <returns>A flow whose fiber defects are written through the host logger.</returns>
+    let observe (logger: ILogger) (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
+        Flow.withFiberObserver (observer logger) flow
 
 [<RequireQualifiedAccess>]
 module Startup =
