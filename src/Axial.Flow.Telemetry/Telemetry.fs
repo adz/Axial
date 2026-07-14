@@ -204,3 +204,83 @@ module FiberTelemetry =
     /// <returns>A flow whose forked fibers report defects through the <c>Axial.Flow</c> activity source.</returns>
     let observe (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
         Flow.withFiberObserver observer flow
+
+    // Fiber spans opened at fork and closed at settle. Keyed weakly by the fiber's metadata record,
+    // which both hooks receive; entries become collectable with the fiber itself.
+    let private fiberSpans =
+        System.Runtime.CompilerServices.ConditionalWeakTable<FiberMetadata, Activity>()
+
+    /// <summary>
+    /// A fiber observer that gives every forked fiber a real <c>axial.flow.fiber</c> span: opened at the fork
+    /// site (so the parent is the workflow span that forked it), closed when the fiber settles, and stamped
+    /// with the fiber's status and any defect. Unobservable defects still produce a linked
+    /// <c>axial.flow.fiber.unobserved_defect</c> span.
+    /// </summary>
+    /// <remarks>
+    /// Span-per-fiber is opt-in: a hot path forking many fibers can stay on <c>observer</c>, which records
+    /// defect spans only. The forking workflow's ambient activity is restored immediately after the fiber
+    /// span is opened, so code inside the fiber parents to the workflow span, not the fiber span.
+    /// </remarks>
+    let observerWithSpans : FiberObserver =
+        {
+            OnStart =
+                fun metadata ->
+                    let previous = System.Diagnostics.Activity.Current
+                    let activity = Activity.source.StartActivity("axial.flow.fiber")
+                    System.Diagnostics.Activity.Current <- previous
+
+                    if not (isNull activity) then
+                        tagMetadata activity metadata
+                        fiberSpans.Add(metadata, activity)
+            OnEnd =
+                fun metadata defect ->
+                    match fiberSpans.TryGetValue metadata with
+                    | true, activity ->
+                        activity.SetTag("axial.flow.fiber.status", string metadata.Status) |> ignore
+
+                        match metadata.Status, defect with
+                        | FiberStatus.Succeeded, _ ->
+                            activity.SetStatus(ActivityStatusCode.Ok) |> ignore
+                            activity.SetTag("axial.flow.outcome", "success") |> ignore
+                        | FiberStatus.Interrupted, _ ->
+                            activity.SetTag("axial.flow.outcome", "interrupt") |> ignore
+                            activity.SetTag("axial.flow.interrupted", "true") |> ignore
+                        | _, Some exn ->
+                            activity.SetTag("axial.flow.outcome", "die") |> ignore
+                            Tags.tagDefect activity exn
+                        | _, None ->
+                            activity.SetStatus(ActivityStatusCode.Error) |> ignore
+                            activity.SetTag("axial.flow.outcome", "fail") |> ignore
+
+                        activity.Dispose()
+                    | _ -> ()
+            OnUnobservedDefect =
+                fun metadata defect ->
+                    let links =
+                        match metadata with
+                        | Some m ->
+                            match fiberSpans.TryGetValue m with
+                            | true, fiberActivity -> [ ActivityLink fiberActivity.Context ]
+                            | _ -> []
+                        | None -> []
+
+                    use activity =
+                        Activity.source.StartActivity(
+                            "axial.flow.fiber.unobserved_defect",
+                            ActivityKind.Internal,
+                            ActivityContext(),
+                            links = links)
+
+                    if not (isNull activity) then
+                        metadata |> Option.iter (tagMetadata activity)
+                        Tags.tagDefect activity defect
+        }
+
+    /// <summary>
+    /// Installs the span-per-fiber telemetry observer on a flow: every forked fiber becomes an
+    /// <c>axial.flow.fiber</c> span covering fork to settle. See <c>observerWithSpans</c>.
+    /// </summary>
+    /// <param name="flow">The source flow.</param>
+    /// <returns>A flow whose forked fibers each produce a span on the <c>Axial.Flow</c> activity source.</returns>
+    let observeWithSpans (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
+        Flow.withFiberObserver observerWithSpans flow

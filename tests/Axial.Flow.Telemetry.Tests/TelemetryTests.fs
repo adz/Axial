@@ -164,6 +164,76 @@ module TelemetryTests =
         test <@ (tagsOf "inner-op")["axial.flow.annotation.step"] = "inner-step" @>
         test <@ (tagsOf "outer-op")["axial.flow.annotation.step"] = "inner-step" @>
 
+    let private captureSpansWithIds (action: unit -> unit) =
+        use listener = new ActivityListener()
+        listener.ShouldListenTo <- (fun source -> source.Name = "Axial.Flow")
+        listener.Sample <- (fun _ -> ActivitySamplingResult.AllData)
+
+        let stopped = ResizeArray<string * string * string * System.TimeSpan * Map<string, string>>()
+        listener.ActivityStopped <- (fun activity ->
+            let tags =
+                activity.Tags
+                |> Seq.map (fun kv -> kv.Key, kv.Value)
+                |> Map.ofSeq
+
+            lock stopped (fun () ->
+                stopped.Add(
+                    activity.OperationName,
+                    activity.SpanId.ToString(),
+                    activity.ParentSpanId.ToString(),
+                    activity.Duration,
+                    tags)))
+
+        ActivitySource.AddActivityListener(listener)
+        action ()
+        lock stopped (fun () -> List.ofSeq stopped)
+
+    [<Fact>]
+    let ``FiberTelemetry.observeWithSpans: fiber spans cover fork to settle and parent to the workflow span`` () =
+        let spans =
+            captureSpansWithIds (fun () ->
+                flow {
+                    let! fiber = Flow.fork (Flow.Runtime.sleep (System.TimeSpan.FromMilliseconds 80.0) : Flow<unit, string, unit>)
+                    do! Flow.join fiber
+                    return "done"
+                }
+                |> FiberTelemetry.observeWithSpans
+                |> Activity.trace "workflow-op"
+                |> Flow.runSync ()
+                |> ignore)
+
+        let workflowSpanId =
+            spans |> List.pick (fun (name, spanId, _, _, _) -> if name = "workflow-op" then Some spanId else None)
+
+        match spans |> List.filter (fun (name, _, _, _, _) -> name = "axial.flow.fiber") with
+        | [ _, _, parentId, duration, tags ] ->
+            test <@ parentId = workflowSpanId @>
+            test <@ duration >= System.TimeSpan.FromMilliseconds 60.0 @>
+            test <@ tags["axial.flow.outcome"] = "success" @>
+            test <@ tags["axial.flow.fiber.status"] = "Succeeded" @>
+        | other -> failwithf "Expected one fiber span, got %A" other
+
+    [<Fact>]
+    let ``FiberTelemetry.observeWithSpans: a fiber that dies produces a defect-tagged fiber span`` () =
+        let spans =
+            captureSpansWithIds (fun () ->
+                flow {
+                    let! fiber = Flow.fork (Flow.die (System.InvalidOperationException "fiber defect") : Flow<unit, string, int>)
+                    // Wait for the fiber to settle without letting the defect fail this workflow.
+                    do! Flow.Runtime.sleep (System.TimeSpan.FromMilliseconds 50.0)
+                    let! _exit = Flow.interrupt fiber
+                    return "done"
+                }
+                |> FiberTelemetry.observeWithSpans
+                |> Flow.runSync ()
+                |> ignore)
+
+        match spans |> List.filter (fun (name, _, _, _, _) -> name = "axial.flow.fiber") with
+        | [ _, _, _, _, tags ] ->
+            test <@ tags["axial.flow.outcome"] = "die" @>
+            test <@ tags["exception.message"] = "fiber defect" @>
+        | other -> failwithf "Expected one fiber span, got %A" other
+
     [<Fact>]
     let ``FiberTelemetry.observe: records unobserved fiber defects as error spans`` () =
         let listener = new ActivityListener()
