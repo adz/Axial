@@ -1029,14 +1029,17 @@ module internal ModelSchemaDefinition =
 /// with <c>Schema.build</c> or a result-returning build operation.
 /// </para>
 /// </remarks>
+// No class-level `as this` self-identifier here: combined with the secondary constructor it makes
+// F# emit safe-initialization IL that Fable cannot compile. The one member that needs the instance
+// uses a member-level self-identifier instead.
 [<Sealed>]
-type Schema<'model> internal (definition: SchemaDefinition<'model>, specialization: ISchemaSpecialization<'model> option) as this =
+type Schema<'model> internal (definition: SchemaDefinition<'model>, specialization: ISchemaSpecialization<'model> option) =
     internal new(definition: SchemaDefinition<'model>) = Schema(definition, None)
 
     member internal _.Definition = definition
     member internal _.Specialization = specialization
 
-    member internal _.ValueDefinition =
+    member internal this.ValueDefinition =
         match definition with
         | ValueDefinition value -> value
         | ModelDefinition model ->
