@@ -52,6 +52,99 @@ module TelemetryTests =
 
         listener.Dispose()
 
+    let private captureSpans (action: unit -> unit) =
+        use listener = new ActivityListener()
+        listener.ShouldListenTo <- (fun source -> source.Name = "Axial.Flow")
+        listener.Sample <- (fun _ -> ActivitySamplingResult.AllData)
+
+        let stopped = ResizeArray<string * ActivityStatusCode * System.TimeSpan * Map<string, string>>()
+        listener.ActivityStopped <- (fun activity ->
+            let tags =
+                activity.Tags
+                |> Seq.map (fun kv -> kv.Key, kv.Value)
+                |> Map.ofSeq
+
+            lock stopped (fun () -> stopped.Add(activity.OperationName, activity.Status, activity.Duration, tags)))
+
+        ActivitySource.AddActivityListener(listener)
+        action ()
+        lock stopped (fun () -> List.ofSeq stopped)
+
+    [<Fact>]
+    let ``Activity.trace: span lasts until asynchronous work settles`` () =
+        let spans =
+            captureSpans (fun () ->
+                Flow.Runtime.sleep (System.TimeSpan.FromMilliseconds 80.0)
+                |> Activity.trace "async-op"
+                |> Flow.runSync ()
+                |> ignore)
+
+        match spans |> List.filter (fun (name, _, _, _) -> name = "async-op") with
+        | [ _, status, duration, tags ] ->
+            test <@ duration >= System.TimeSpan.FromMilliseconds 60.0 @>
+            test <@ status = ActivityStatusCode.Ok @>
+            test <@ tags["axial.flow.outcome"] = "success" @>
+            test <@ tags.ContainsKey "axial.flow.fiber.id" @>
+        | other -> failwithf "Expected one async-op span, got %A" other
+
+    [<Fact>]
+    let ``Activity.trace: stamps typed failures, defects, and interruptions onto the span`` () =
+        let spans =
+            captureSpans (fun () ->
+                (Flow.fail "domain error" : Flow<unit, string, int>)
+                |> Activity.trace "fail-op"
+                |> Flow.runSync ()
+                |> ignore
+
+                (Flow.die (System.InvalidOperationException "defect") : Flow<unit, string, int>)
+                |> Activity.trace "die-op"
+                |> Flow.runSync ()
+                |> ignore
+
+                (Flow.ofExit (Exit.Failure Cause.Interrupt) : Flow<unit, string, int>)
+                |> Activity.trace "interrupt-op"
+                |> Flow.runSync ()
+                |> ignore)
+
+        let find name =
+            spans |> List.pick (fun (n, status, _, tags) -> if n = name then Some(status, tags) else None)
+
+        let failStatus, failTags = find "fail-op"
+        test <@ failStatus = ActivityStatusCode.Error @>
+        test <@ failTags["axial.flow.outcome"] = "fail" @>
+        test <@ failTags["axial.flow.error"] = "domain error" @>
+
+        let dieStatus, dieTags = find "die-op"
+        test <@ dieStatus = ActivityStatusCode.Error @>
+        test <@ dieTags["axial.flow.outcome"] = "die" @>
+        test <@ dieTags["exception.message"] = "defect" @>
+
+        let interruptStatus, interruptTags = find "interrupt-op"
+        test <@ interruptStatus = ActivityStatusCode.Unset @>
+        test <@ interruptTags["axial.flow.outcome"] = "interrupt" @>
+        test <@ interruptTags["axial.flow.interrupted"] = "true" @>
+
+    [<Fact>]
+    let ``Activity.trace: composite causes carry the pretty-printed cause tree`` () =
+        let composite =
+            Exit.Failure(Cause.Then(Cause.Fail "first", Cause.Die(System.InvalidOperationException "second")))
+
+        let spans =
+            captureSpans (fun () ->
+                (Flow.ofExit composite : Flow<unit, string, int>)
+                |> Activity.trace "composite-op"
+                |> Flow.runSync ()
+                |> ignore)
+
+        match spans |> List.filter (fun (name, _, _, _) -> name = "composite-op") with
+        | [ _, status, _, tags ] ->
+            test <@ status = ActivityStatusCode.Error @>
+            test <@ tags["axial.flow.outcome"] = "die" @>
+            test <@ tags["axial.flow.error"] = "first" @>
+            test <@ tags.ContainsKey "axial.flow.cause" @>
+            test <@ tags["axial.flow.cause"].Contains "Then" @>
+        | other -> failwithf "Expected one composite-op span, got %A" other
+
     [<Fact>]
     let ``FiberTelemetry.observe: records unobserved fiber defects as error spans`` () =
         let listener = new ActivityListener()

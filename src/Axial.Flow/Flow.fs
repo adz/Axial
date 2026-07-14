@@ -528,6 +528,15 @@ module Flow =
         let traceId<'env, 'error> : Flow<'env, 'error, string option> =
             Flow(fun _ _ -> Execution.ofValue (RuntimeState.current().Annotations |> Map.tryFind "trace_id"))
 
+        /// <summary>Reads the current fiber id from the ambient runtime context.</summary>
+        /// <remarks>
+        /// The root workflow runs on a fiber id of its own; every <c>Flow.fork</c> child gets a fresh id.
+        /// Telemetry integrations use this to correlate workflow spans with fiber lifecycle events.
+        /// </remarks>
+        /// <returns>A flow that succeeds with the current <see cref="T:Axial.Flow.FiberId" />.</returns>
+        let fiberId<'env, 'error> : Flow<'env, 'error, FiberId> =
+            Flow(fun _ _ -> Execution.ofValue (RuntimeState.current().FiberId))
+
         /// <summary>Fails with the supplied typed error when the flow does not complete before the timeout.</summary>
         /// <param name="after">The timeout duration.</param>
         /// <param name="timeoutError">The typed error returned when the timeout wins.</param>
