@@ -63,7 +63,7 @@ let jsonOptions = JsonSerializerOptions(WriteIndented = true)
 
 let private required message value =
     value
-    |> Check.String.present
+    |> Check.present
     |> Result.mapError (fun _ -> message)
 
 let validateAddressWithoutCEOrPipe address =

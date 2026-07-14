@@ -54,7 +54,7 @@ type RequestEnv =
 
 let validateName (name: string) : Result<string, string> =
     name
-    |> Check.String.present
+    |> Check.present
     |> Result.mapError (fun _ -> "name is required")
 
 let loadUser : Flow<RequestEnv, string, User> =
