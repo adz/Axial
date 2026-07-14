@@ -38,11 +38,20 @@ module FiberObserverTests =
             }))
 
     let private waitUntil (condition: unit -> bool) =
-        let mutable remaining = 100
+        let mutable remaining = 500
 
         while not (condition ()) && remaining > 0 do
             remaining <- remaining - 1
             Thread.Sleep 10
+
+    /// Waits for a fiber to settle without consuming its outcome, so it stays unobserved.
+    /// Deterministic replacement for fixed sleeps, which race the thread pool under load.
+    let rec private waitForSettled (fiber: Fiber<'error, 'value>) : Flow<unit, 'testError, unit> =
+        flow {
+            if fiber.Metadata.Status = FiberStatus.Running then
+                do! Flow.Runtime.sleep (TimeSpan.FromMilliseconds 5.0)
+                return! waitForSettled fiber
+        }
 
     [<Fact>]
     let ``Observer sees start and end for a joined fiber`` () =
@@ -67,8 +76,8 @@ module FiberObserverTests =
 
         let result =
             flow {
-                let! _fiber = Flow.fork (Flow.die (InvalidOperationException "silent crash") : Flow<unit, string, int>)
-                do! Flow.Runtime.sleep (TimeSpan.FromMilliseconds 50.0)
+                let! fiber = Flow.fork (Flow.die (InvalidOperationException "silent crash") : Flow<unit, string, int>)
+                do! waitForSettled fiber
                 return "done"
             }
             |> Flow.withFiberObserver recording.Observer
@@ -108,8 +117,8 @@ module FiberObserverTests =
 
         let result =
             flow {
-                let! _fiber = Flow.forkDetached (Flow.die (InvalidOperationException "intentional") : Flow<unit, string, int>)
-                do! Flow.Runtime.sleep (TimeSpan.FromMilliseconds 50.0)
+                let! fiber = Flow.forkDetached (Flow.die (InvalidOperationException "intentional") : Flow<unit, string, int>)
+                do! waitForSettled fiber
                 return "done"
             }
             |> Flow.withFiberObserver recording.Observer
@@ -251,11 +260,12 @@ module FiberObserverTests =
         let recording = Recording()
         allocateSettledTracker recording
 
-        GC.Collect()
-        GC.WaitForPendingFinalizers()
-        GC.Collect()
-
-        waitUntil (fun () -> not (List.isEmpty recording.Unobserved))
+        // Collect inside the wait loop: a single collection can miss the tracker under
+        // tiered compilation, where locals live longer than their last use.
+        waitUntil (fun () ->
+            GC.Collect()
+            GC.WaitForPendingFinalizers()
+            not (List.isEmpty recording.Unobserved))
 
         match recording.Unobserved with
         | [ Some metadata, defect ] ->

@@ -68,14 +68,23 @@ type ExceptionRecordingLogger() =
         member _.BeginScope(_) = { new IDisposable with member _.Dispose() = () }
 
 module FiberLoggingTests =
+    /// Waits for a fiber to settle without consuming its outcome, so it stays unobserved.
+    /// Deterministic replacement for fixed sleeps, which race the thread pool under load.
+    let rec private waitForSettled (fiber: Fiber<'error, 'value>) : Flow<unit, 'testError, unit> =
+        flow {
+            if fiber.Metadata.Status = FiberStatus.Running then
+                do! Flow.Runtime.sleep (TimeSpan.FromMilliseconds 5.0)
+                return! waitForSettled fiber
+        }
+
     [<Fact>]
     let ``FiberLogging.observe logs fiber defects and unobserved defects with their exceptions`` () =
         let logger = ExceptionRecordingLogger()
 
         let result =
             flow {
-                let! _fiber = Flow.fork (Flow.die (InvalidOperationException "silent crash") : Flow<unit, string, int>)
-                do! Flow.Runtime.sleep (TimeSpan.FromMilliseconds 50.0)
+                let! fiber = Flow.fork (Flow.die (InvalidOperationException "silent crash") : Flow<unit, string, int>)
+                do! waitForSettled fiber
                 return "done"
             }
             |> FiberLogging.observe (logger :> ILogger)
@@ -118,7 +127,7 @@ module FiberLoggingTests =
         let result =
             flow {
                 let! fiber = Flow.fork (Flow.die (InvalidOperationException "boom") : Flow<unit, string, int>)
-                do! Flow.Runtime.sleep (TimeSpan.FromMilliseconds 50.0)
+                do! waitForSettled fiber
                 let! _exit = Flow.interrupt fiber
                 return 1
             }

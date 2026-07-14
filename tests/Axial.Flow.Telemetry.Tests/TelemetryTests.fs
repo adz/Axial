@@ -22,6 +22,15 @@ type TaggedEnv =
         member this.TelemetryTags = [ "app.session_id", this.SessionId; "app.region", "eu-west" ]
 
 module TelemetryTests =
+    /// Waits for a fiber to settle without consuming its outcome, so it stays unobserved.
+    /// Deterministic replacement for fixed sleeps, which race the thread pool under load.
+    let rec private waitForSettled (fiber: Fiber<'error, 'value>) : Flow<unit, 'testError, unit> =
+        flow {
+            if fiber.Metadata.Status = FiberStatus.Running then
+                do! Flow.Runtime.sleep (System.TimeSpan.FromMilliseconds 5.0)
+                return! waitForSettled fiber
+        }
+
     [<Fact>]
     let ``Activity.trace: automatically maps metadata traits to tags`` () =
         let env = { RequestId = "req-123"; CorrelationId = Some "corr-456" }
@@ -241,8 +250,9 @@ module TelemetryTests =
             captureSpansWithIds (fun () ->
                 flow {
                     let! fiber = Flow.fork (Flow.die (System.InvalidOperationException "fiber defect") : Flow<unit, string, int>)
-                    // Wait for the fiber to settle without letting the defect fail this workflow.
-                    do! Flow.Runtime.sleep (System.TimeSpan.FromMilliseconds 50.0)
+                    // Wait for the fiber to settle without letting the defect fail this workflow;
+                    // interrupting before it dies would flip the outcome to interrupt.
+                    do! waitForSettled fiber
                     let! _exit = Flow.interrupt fiber
                     return "done"
                 }
@@ -275,8 +285,8 @@ module TelemetryTests =
 
         let result =
             flow {
-                let! _fiber = Flow.fork (Flow.die (System.InvalidOperationException "background crash") : Flow<unit, string, int>)
-                do! Flow.Runtime.sleep (System.TimeSpan.FromMilliseconds 50.0)
+                let! fiber = Flow.fork (Flow.die (System.InvalidOperationException "background crash") : Flow<unit, string, int>)
+                do! waitForSettled fiber
                 return "done"
             }
             |> FiberTelemetry.observe
