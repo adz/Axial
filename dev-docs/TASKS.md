@@ -63,7 +63,9 @@ The two-group direction is coherent when the following are true:
 - a newcomer handles one error shape at the boundary, with one default renderer to display strings
 - domain value types exist in one catalog usable standalone and as schema fields
 - discriminated unions are expressible as schemas with path-aware diagnostics
-- a runnable ASP.NET Core sample serves parsing, error responses, and OpenAPI from one schema declaration
+- ~~a runnable ASP.NET Core sample serves parsing, error responses, and OpenAPI from one schema declaration~~ —
+  done 2026-07-14: `examples/Axial.Api` on `Axial.Schema.Http`/`.AspNetCore` (problem-details 400s, codec 201s,
+  assembled OpenAPI 3.1), with a GenHTTP twin proving the boundary contract is host-neutral
 - one schema declaration also compiles to a trusted-lane JSON codec with benchmarked performance
 - Flow is never required by the results-group quick starts
 - comparison pages answer FsToolkit.ErrorHandling, FluentValidation, and zod by name
