@@ -34,14 +34,13 @@ type Email = private EmailValue of string
 module Email =
     let value (EmailValue raw) = raw
 
+    open Axial.Schema.DSL
+
     let schema: Schema<Email> =
-        Schema.text
-        |> Schema.constrainAll
-            [ Constraint.required
-              Constraint.maxLength 254
-              Constraint.email ]
-        |> Schema.convert EmailValue value
-        |> Schema.withFormat SchemaFormat.email
+        text
+        |> constrainAll [ required; maxLength 254; email ]
+        |> convert EmailValue value
+        |> withFormat SchemaFormat.email
 
 type Address = { Street: string; City: string }
 
@@ -53,25 +52,27 @@ type Signup =
       Tags: string list }
 
 module Signup =
+    open Axial.Schema.DSL
+
     let addressSchema =
-        Schema.recordFor<Address, _> (fun street city -> { Street = street; City = city })
-        |> Schema.field "street" _.Street (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 120 ])
-        |> Schema.field "city" _.City (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 80 ])
-        |> Schema.build
+        recordFor<Address, _> (fun street city -> { Street = street; City = city })
+        |> field "street" _.Street (text |> constrainAll [ required; maxLength 120 ])
+        |> field "city" _.City (text |> constrainAll [ required; maxLength 80 ])
+        |> build
 
     let schema =
-        Schema.recordFor<Signup, _> (fun name email age address tags ->
+        recordFor<Signup, _> (fun name email age address tags ->
             { Name = name
               Email = email
               Age = age
               Address = address
               Tags = tags })
-        |> Schema.field "name" _.Name (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 80 ])
-        |> Schema.field "email" _.Email Email.schema
-        |> Schema.field "age" _.Age (Schema.int |> Schema.constrainAll [ Constraint.between 13 120 ])
-        |> Schema.field "address" _.Address ((addressSchema) |> Schema.constrainAll [ Constraint.required ])
-        |> Schema.field "tags" _.Tags ((Schema.list Schema.text) |> Schema.constrainAll [ Constraint.maxCount 5 ])
-        |> Schema.build
+        |> field "name" _.Name (text |> constrainAll [ required; maxLength 80 ])
+        |> field "email" _.Email Email.schema
+        |> field "age" _.Age (int |> constrain (between 13 120))
+        |> field "address" _.Address (addressSchema |> constrain required)
+        |> field "tags" _.Tags (list text |> constrain (maxCount 5))
+        |> build
 
 // ---------------------------------------------------------------------------
 // Interpreters compiled once from the declaration above.

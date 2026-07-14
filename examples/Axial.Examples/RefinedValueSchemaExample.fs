@@ -1,6 +1,7 @@
 module RefinedValueSchemaExample
 
 open Axial.Schema
+open Axial.Schema.DSL
 
 /// <summary>An email address refined over Axial's text primitive, carrying the well-known email format.</summary>
 type Email = private Email of string
@@ -10,11 +11,11 @@ module Email =
     let value (Email value) = value
 
     let schema : Schema<Email> =
-        Schema.text
-        |> Schema.constrain Constraint.required
-        |> Schema.convert create value
-        |> Schema.constrain Constraint.email
-        |> Schema.withFormat SchemaFormat.email
+        text
+        |> constrain required
+        |> convert create value
+        |> constrain email
+        |> withFormat SchemaFormat.email
 
 /// <summary>A bounded-text domain value whose length constraints live on the raw text schema.</summary>
 type ContactName = private ContactName of string
@@ -24,9 +25,9 @@ module ContactName =
     let value (ContactName value) = value
 
     let schema : Schema<ContactName> =
-        Schema.text
-        |> Schema.constrainAll [ Constraint.minLength 2; Constraint.maxLength 40 ]
-        |> Schema.convert create value
+        text
+        |> constrainAll [ minLength 2; maxLength 40 ]
+        |> convert create value
 
 /// <summary>A quantity that must always be positive (strictly greater than zero).</summary>
 type Quantity = private Quantity of int
@@ -36,9 +37,9 @@ module Quantity =
     let value (Quantity value) = value
 
     let schema : Schema<Quantity> =
-        Schema.int
-        |> Schema.constrain (Constraint.greaterThan 0)
-        |> Schema.convert create value
+        int
+        |> constrain (greaterThan 0)
+        |> convert create value
 
 /// <summary>A running total that must never go negative, but zero is allowed.</summary>
 type Balance = private Balance of decimal
@@ -48,9 +49,9 @@ module Balance =
     let value (Balance value) = value
 
     let schema : Schema<Balance> =
-        Schema.decimal
-        |> Schema.constrain (Constraint.atLeast 0m)
-        |> Schema.convert create value
+        decimal
+        |> constrain (atLeast 0m)
+        |> convert create value
 
 type Contact =
     { Email: Email
@@ -59,16 +60,16 @@ type Contact =
       Balance: Balance }
 
 let contactSchema =
-    Schema.recordFor<Contact, _> (fun email name quantity balance ->
+    recordFor<Contact, _> (fun email name quantity balance ->
         { Email = email
           Name = name
           Quantity = quantity
           Balance = balance })
-    |> Schema.field "email" _.Email Email.schema
-    |> Schema.field "name" _.Name ContactName.schema
-    |> Schema.field "quantity" _.Quantity Quantity.schema
-    |> Schema.field "balance" _.Balance Balance.schema
-    |> Schema.build
+    |> field "email" _.Email Email.schema
+    |> field "name" _.Name ContactName.schema
+    |> field "quantity" _.Quantity Quantity.schema
+    |> field "balance" _.Balance Balance.schema
+    |> build
 
 let run () =
     let contact =
