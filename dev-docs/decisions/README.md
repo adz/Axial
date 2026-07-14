@@ -240,6 +240,14 @@ or in `AGENTS.md`, then delete the detailed sketch.
   context selection is the caller's own `match`/`Map`. `ContextRules` keeps only failure constructors
   (`fail`/`failAt`/`failAtField`/`custom`/`failCustom`), path scoping (`at`/`atField`/`name`/`key`/`index` —
   prefer `atField` over `name` so wire names can't drift), and `apply` over lists.
+- **SRTP common names for `Check`.** RESOLVED (2026-07-14): the current hybrid is the decided surface. Top-level
+  type-directed `Check.present`/`Check.empty`/`Check.notEmpty` exist (Check.fs `Present`/`Empty`/`NotEmpty`
+  dispatch types) over `string`/`option`/`voption`/`Nullable`/`list`/`array`, for direct application to a value.
+  The nested modules (`Check.String.present`, `Check.Option.present`, ...) remain the authoritative catalog and
+  the composition form: the type-directed names are `inline` value-applied functions, not first-class
+  `Check<'value>` values, so anything going into a `Check.all`/constraint list uses the nested forms. Do not
+  extend type-directed dispatch beyond the presence/emptiness trio — other shared names (`some`, `ok`, numeric
+  comparisons) are either container-specific or already generic without SRTP dispatch.
 - **Refined guide docs area.** `Axial.Refined`'s API reference now lives under `/error-handling/reference/refined/`
   (it moved with the package), but the hand-written guide pages (`docs/schema/refined/*.md`) still live under the
   `/schema/` docs area for now. Whether to move the guides too is an open site-IA question, not decided either way.

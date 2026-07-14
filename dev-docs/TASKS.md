@@ -54,9 +54,6 @@ From the same ZIO comparison; these belong *with* the remote-config milestone, n
   only current documentation is dev-docs and the golden corpus.
 - `dev-docs/API_BASELINE.md` needs a fresh validated-command pass: its project lists were corrected on 2026-07-12,
   but the recorded run, test counts, and baseline commit predate the 2026-07-09..13 renames.
-- Decide whether `Check` should expose SRTP-based common names (`Check.present` and friends resolving across
-  `String`/`Option`/`ValueOption`/`Nullable`) instead of requiring the nested-module qualification; today only the
-  nested forms (`Check.String.present`, `Check.Option.present`, ...) exist.
 
 ## Acceptance Checks
 
