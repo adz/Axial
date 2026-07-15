@@ -18,16 +18,17 @@ The schema declares each field once: external name, getter, and constraints.
 
 ```fsharp
 open Axial.Schema
+open Axial.Schema.DSL
 
 type Signup = { Email: string; Age: int }
 
 let signupSchema =
-    Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
-    |> Schema.field "email" _.Email
-        (Schema.text
-         |> Schema.constrainAll [ Constraint.required; Constraint.email; Constraint.maxLength 254 ])
-    |> Schema.field "age" _.Age (Schema.int |> Schema.constrainAll [ Constraint.atLeast 13 ])
-    |> Schema.build
+    recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
+    |> field "email" _.Email
+        (text
+         |> constrainAll [ required; email; maxLength 254 ])
+    |> field "age" _.Age (int |> constrainAll [ atLeast 13 ])
+    |> build
 ```
 
 `Schema.recordFor<Signup, _>` anchors the model type so getters can use shorthand member access. Each field consumes

@@ -23,7 +23,7 @@ Each case supplies a tag, a constructor, a payload extractor, and a payload sche
 ```fsharp
 open Axial.Refined
 open Axial.Schema
-open Axial.Schema
+open Axial.Schema.DSL
 
 type CardDetails =
     {
@@ -35,12 +35,12 @@ type Payment =
     | Invoice of Slug
 
 let cardSchema =
-    Schema.recordFor<CardDetails, _> (fun number -> { Number = number })
-    |> Schema.field "number" _.Number RefinedSchemas.nonBlankString
-    |> Schema.build
+    recordFor<CardDetails, _> (fun number -> { Number = number })
+    |> field "number" _.Number RefinedSchemas.nonBlankString
+    |> build
 
 let paymentValue =
-    Schema.union
+    union
         "type"
         "value"
         [ UnionCase.create "card" Card (function Card details -> Some details | _ -> None) cardSchema
@@ -54,15 +54,16 @@ The extractor is what lets validation and metadata/codecs inspect an existing tr
 Union value schemas are ordinary `Schema<'value>` values, so use `Schema.field`:
 
 ```fsharp
+open Axial.Schema.DSL
 type Checkout =
     {
         Payment: Payment
     }
 
 let checkoutSchema =
-    Schema.recordFor<Checkout, _> (fun payment -> { Payment = payment })
-    |> Schema.field "payment" _.Payment paymentValue
-    |> Schema.build
+    recordFor<Checkout, _> (fun payment -> { Payment = payment })
+    |> field "payment" _.Payment paymentValue
+    |> build
 ```
 
 Parsing attaches diagnostics to the discriminator or payload path:

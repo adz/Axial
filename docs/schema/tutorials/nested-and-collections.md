@@ -13,6 +13,7 @@ schemas are ordinary `Schema<_>` values — composition is `Schema.field` with t
 
 ```fsharp
 open Axial.Schema
+open Axial.Schema.DSL
 
 type Address = { Street: string; City: string }
 type Item = { Sku: string; Quantity: int }
@@ -22,22 +23,22 @@ type Order =
       Items: Item list }
 
 let addressSchema =
-    Schema.recordFor<Address, _> (fun street city -> { Street = street; City = city })
-    |> Schema.field "street" _.Street (Schema.text |> Schema.constrainAll [ Constraint.required ])
-    |> Schema.field "city" _.City (Schema.text |> Schema.constrainAll [ Constraint.required ])
-    |> Schema.build
+    recordFor<Address, _> (fun street city -> { Street = street; City = city })
+    |> field "street" _.Street (text |> constrainAll [ required ])
+    |> field "city" _.City (text |> constrainAll [ required ])
+    |> build
 
 let itemSchema =
-    Schema.recordFor<Item, _> (fun sku quantity -> { Sku = sku; Quantity = quantity })
-    |> Schema.field "sku" _.Sku (Schema.text |> Schema.constrainAll [ Constraint.required ])
-    |> Schema.field "quantity" _.Quantity (Schema.int |> Schema.constrainAll [ Constraint.greaterThan 0 ])
-    |> Schema.build
+    recordFor<Item, _> (fun sku quantity -> { Sku = sku; Quantity = quantity })
+    |> field "sku" _.Sku (text |> constrainAll [ required ])
+    |> field "quantity" _.Quantity (int |> constrainAll [ greaterThan 0 ])
+    |> build
 
 let orderSchema =
-    Schema.recordFor<Order, _> (fun address items -> { Address = address; Items = items })
-    |> Schema.field "address" _.Address (addressSchema |> Schema.constrainAll [ Constraint.required ])
-    |> Schema.field "items" _.Items ((Schema.list itemSchema) |> Schema.constrainAll [ Constraint.minCount 1 ])
-    |> Schema.build
+    recordFor<Order, _> (fun address items -> { Address = address; Items = items })
+    |> field "address" _.Address (addressSchema |> constrainAll [ required ])
+    |> field "items" _.Items ((list itemSchema) |> constrainAll [ minCount 1 ])
+    |> build
 ```
 
 ## Adapt Nested Input

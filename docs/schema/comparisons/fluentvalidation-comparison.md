@@ -35,11 +35,12 @@ An Axial schema owns construction. Parsing either produces a trusted model or pa
 intermediate invalid object:
 
 ```fsharp
+open Axial.Schema.DSL
 let customerSchema =
-    Schema.recordFor<Customer, _> (fun name age -> { Name = name; Age = age })
-    |> Schema.field "name" _.Name (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 80 ])
-    |> Schema.field "age" _.Age (Schema.int |> Schema.constrainAll [ Constraint.between 13 120 ])
-    |> Schema.build
+    recordFor<Customer, _> (fun name age -> { Name = name; Age = age })
+    |> field "name" _.Name (text |> constrainAll [ required; maxLength 80 ])
+    |> field "age" _.Age (int |> constrainAll [ between 13 120 ])
+    |> build
 
 match (Schema.parse customerSchema raw).Result with
 | Ok customer -> customer          // every Customer in the program passed the boundary

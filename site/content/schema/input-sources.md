@@ -12,6 +12,7 @@ sources into `RawInput`, and one schema parses them all.
 ## The Schema
 
 ```fsharp
+open Axial.Schema.DSL
 type Contact = { Kind: string; Value: string }
 
 type Customer =
@@ -20,12 +21,12 @@ type Customer =
       Contacts: Contact list }
 
 let customerSchema =
-    Schema.recordFor<Customer, _> (fun name address contacts ->
+    recordFor<Customer, _> (fun name address contacts ->
         { Name = name; Address = address; Contacts = contacts })
-    |> Schema.field "name" _.Name (Schema.text |> Schema.constrainAll [ Constraint.required ])
-    |> Schema.field "address" _.Address (addressSchema |> Schema.constrainAll [ Constraint.required ])
-    |> Schema.field "contacts" _.Contacts ((Schema.list contactSchema) |> Schema.constrainAll [ Constraint.minCount 1 ])
-    |> Schema.build
+    |> field "name" _.Name (text |> constrainAll [ required ])
+    |> field "address" _.Address (addressSchema |> constrainAll [ required ])
+    |> field "contacts" _.Contacts ((list contactSchema) |> constrainAll [ minCount 1 ])
+    |> build
 ```
 
 Nested fields expect object-shaped input and prefix their diagnostics with the field name; collection fields expect

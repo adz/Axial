@@ -16,6 +16,7 @@ model can be valid in one workflow and unacceptable in another.
 A constructor invariant protects the model's own meaning. If it fails, Axial does not have a trusted model.
 
 ```fsharp
+open Axial.Schema.DSL
 type DateRange =
     private
         { Start: DateOnly
@@ -28,10 +29,10 @@ type DateRange =
             Error "End date must be on or after start date."
 
 let dateRangeSchema =
-    Schema.recordFor<DateRange, _> DateRange.Create
-    |> Schema.date "start" _.Start
-    |> Schema.date "end" _.End
-    |> Schema.buildResult
+    recordFor<DateRange, _> DateRange.Create
+    |> field "start" _.Start date
+    |> field "end" _.End date
+    |> buildResult
 ```
 
 `DateRange.Create` belongs in the schema because a range whose end is before its start is never a valid `DateRange`.

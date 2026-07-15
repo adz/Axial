@@ -29,7 +29,7 @@ with a user-owned error DU for simple code without a domain model), Schema (decl
 machinery inside those areas.
 
 When a schema lives in its own definition module, `open Axial.Schema.DSL` there and write the pipeline bare:
-`recordFor<Signup, _> create |> text [ required; email ] "email" _.Email |> int [ atLeast 13 ] "age" _.Age |> build`.
+`recordFor<Signup, _> create |> field "email" _.Email (text |> constrainAll [ required; email ]) |> field "age" _.Age (int |> constrain (atLeast 13)) |> build`.
 DSL `field` attaches a completed schema; decorate that schema with `constrain` or `constrainAll`. `int`/`decimal`/`bool`
 shadow the core conversion functions, so open `DSL` only inside the schema module.
 

@@ -23,6 +23,7 @@ Axial has two paths for JSON, and they exist because they optimize for different
 ```fsharp
 open Axial.Schema
 open Axial.Codec
+open Axial.Schema.DSL
 
 type Address = { Street: string; City: string }
 
@@ -32,17 +33,17 @@ type Customer =
       Address: Address }
 
 let addressSchema =
-    Schema.recordFor<Address, _> (fun street city -> { Street = street; City = city })
-    |> Schema.text "street" _.Street
-    |> Schema.text "city" _.City
-    |> Schema.build
+    recordFor<Address, _> (fun street city -> { Street = street; City = city })
+    |> field "street" _.Street text
+    |> field "city" _.City text
+    |> build
 
 let customerSchema =
-    Schema.recordFor<Customer, _> (fun name age address -> { Name = name; Age = age; Address = address })
-    |> Schema.text "name" _.Name
-    |> Schema.int "age" _.Age
-    |> Schema.field "address" _.Address addressSchema
-    |> Schema.build
+    recordFor<Customer, _> (fun name age address -> { Name = name; Age = age; Address = address })
+    |> field "name" _.Name text
+    |> field "age" _.Age int
+    |> field "address" _.Address addressSchema
+    |> build
 
 let codec = Json.compile customerSchema   // compile once, typically at startup
 
