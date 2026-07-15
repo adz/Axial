@@ -147,8 +147,11 @@ module FiberLoggingTests =
         let defect = InvalidOperationException "fiber failed"
         let metadata =
             { Id = FiberId 9L
+              Name = None
               ParentId = None
+              Annotations = Map.empty
               StartedAt = DateTimeOffset.UtcNow
+              SettledAt = None
               Status = FiberStatus.Failed
               Observed = false }
 

@@ -38,7 +38,8 @@ The primary operations for managing fibers are:
 - [**`Flow.join`**]({{< relref "/reference/flow/concurrency/m-flow-join.md" >}}): waits for the fiber and resumes with its successful value or typed failure.
 - [**`Flow.interrupt`**]({{< relref "/reference/flow/concurrency/m-flow-interrupt.md" >}}): asks the fiber to stop, then waits for the child workflow to report its final `Exit`.
 - [**`Flow.forkDetached`**]({{< relref "/reference/flow/concurrency/m-flow-flow-forkdetached.md" >}}): starts deliberate fire-and-forget work whose defects are never reported as unobserved.
-- `Fiber.dump`: returns a diagnostic snapshot of the fiber id, parent id, start time, and current status.
+- `Flow.forkNamed`: forks with a diagnostic name that carries into dumps and telemetry fiber spans, so long-lived background fibers are recognizable instead of bare ids.
+- `Fiber.dump`: returns a diagnostic snapshot of one fiber handle.
 
 Joining or interrupting a fiber marks its outcome as observed. A fiber whose handle is simply discarded and that later dies with a defect is reported through the runtime's [fiber observer]({{< relref "supervision.md" >}}); use `Flow.forkDetached` when the silence is intentional, and [`Flow.Runtime.supervise`]({{< relref "supervision.md" >}}) to restart background work that dies with defects.
 
@@ -63,11 +64,13 @@ Fibers make background work visible in the workflow that started it. If the pare
 Every forked fiber carries metadata:
 
 - `FiberId`: A unique runtime id for the child fiber.
+- `Name`: The diagnostic name from `Flow.forkNamed`, if one was given.
 - `ParentId`: The id of the fiber that called `Flow.fork`.
-- `StartedAt`: The UTC time when the fiber started.
+- `Annotations`: The runtime annotations (`Flow.annotate`) in scope at the fork site.
+- `StartedAt` / `SettledAt`: UTC timestamps for fork and settle.
 - `Status`: `Running`, `Succeeded`, `Failed`, or `Interrupted`.
 
-Use `Fiber.dump` when logging or debugging fiber behavior. The dump is a snapshot, so a running fiber can report `Running` before `Flow.join` and `Succeeded`, `Failed`, or `Interrupted` afterward.
+Use `Fiber.dump` when logging or debugging one fiber. The dump is a snapshot, so a running fiber can report `Running` before `Flow.join` and `Succeeded`, `Failed`, or `Interrupted` afterward. To see every live fiber at once as a parent/child tree, install a `FiberRegistry` with `Flow.withFiberRegistry` and call `registry.Dump()` — see [Observability]({{< relref "/flow/observability.md" >}}).
 
 ## Underlying Implementation
 

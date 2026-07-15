@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Enriched fiber diagnostics: `FiberMetadata`/`FiberDump` gained `Name` (from the new `Flow.forkNamed`), fork-site `Annotations`, and `SettledAt`; `FiberDump.render`/`renderTree` produce human-readable snapshots. A new `FiberRegistry` (installed with `Flow.withFiberRegistry`, or composed via the new `Flow.addFiberObserver`) tracks every live fiber and renders the whole runtime as a parent/child tree on demand.
+- Added `FiberMetrics` to `Axial.Flow.Telemetry`: an `Axial.Flow` meter with fibers started/live/settled counters, a fork-to-settle duration histogram, and an unobserved-defects counter — register with `.AddMeter("Axial.Flow")` for OTLP backends including the Aspire dashboard. `FiberDumpTelemetry.record` attaches a registry's live-fiber tree to the current activity as an `axial.flow.fiber.dump` event; named fibers set the fiber span's display name.
 - `schemagen` generates whole version chains: a `.contract` file may declare several versions of one contract (oldest first, contiguous). Superseded versions emit frozen version-suffixed types and modules (`ConfigV1`), the latest keeps the bare name, and its module gains a `contract` builder that takes each typed n-1 -> n migration as a parameter plus the `VersionSource` — migrations stay hand-written F# and the compiler enforces the chain.
 - Added the Versioned Contracts guide (`docs/schema/contracts.md`): the `Contract<'model>` versioning engine, the `.contract` grammar by example, `schemagen` usage with `--check` drift guarding in CI, and the wire-tier-only positioning.
 

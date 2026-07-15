@@ -112,8 +112,11 @@ module private OtelCheck =
         // error span with the fiber vocabulary.
         let metadata =
             { Id = FiberId 41L
+              Name = None
               ParentId = None
+              Annotations = Map.empty
               StartedAt = DateTimeOffset.UtcNow
+              SettledAt = None
               Status = FiberStatus.Failed
               Observed = true }
 

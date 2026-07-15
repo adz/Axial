@@ -11,6 +11,7 @@
   <ItemGroup>
     <Compile Include="TestSupport.fs" />
     <Compile Include="TelemetryTests.fs" />
+    <Compile Include="FiberMetricsTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

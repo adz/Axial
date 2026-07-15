@@ -206,8 +206,11 @@ module FiberObserverTests =
             FiberDefectTracker(
                 {
                     Id = FiberId 999L
+                    Name = None
                     ParentId = None
+                    Annotations = Map.empty
                     StartedAt = DateTimeOffset.UtcNow
+                    SettledAt = None
                     Status = FiberStatus.Failed
                     Observed = false
                 },
@@ -226,8 +229,11 @@ module FiberObserverTests =
         let metadata =
             {
                 Id = FiberId 1000L
+                Name = None
                 ParentId = None
+                Annotations = Map.empty
                 StartedAt = DateTimeOffset.UtcNow
+                SettledAt = None
                 Status = FiberStatus.Failed
                 Observed = false
             }
@@ -246,8 +252,11 @@ module FiberObserverTests =
             FiberDefectTracker(
                 {
                     Id = FiberId 1001L
+                    Name = None
                     ParentId = None
+                    Annotations = Map.empty
                     StartedAt = DateTimeOffset.UtcNow
+                    SettledAt = None
                     Status = FiberStatus.Failed
                     Observed = false
                 },

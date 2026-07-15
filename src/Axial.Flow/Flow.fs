@@ -430,6 +430,39 @@ module Flow =
         : Flow<'env, 'error, 'value> =
         withRuntime (RuntimeContext.withObserver observer) flow
 
+    /// <summary>Adds runtime fiber-lifecycle hooks, composing with any observer already installed.</summary>
+    /// <remarks>
+    /// Unlike <c>withFiberObserver</c>, which replaces the ambient observer, this stacks the new hooks after
+    /// the existing ones, so telemetry, metrics, and registry observers can be installed independently. Each
+    /// hook is guarded: one that throws cannot fail a fiber or starve the other hooks.
+    /// </remarks>
+    /// <param name="observer">The lifecycle hooks to add.</param>
+    /// <param name="flow">The source flow.</param>
+    /// <returns>A flow that runs with the composed observer in the ambient runtime context.</returns>
+    let addFiberObserver
+        (observer: FiberObserver)
+        (flow: Flow<'env, 'error, 'value>)
+        : Flow<'env, 'error, 'value> =
+        withRuntime
+            (fun runtime ->
+                RuntimeContext.withObserver (FiberObserver.compose runtime.Observer observer) runtime)
+            flow
+
+    /// <summary>Tracks every fiber forked inside the flow in <paramref name="registry" />.</summary>
+    /// <remarks>
+    /// The registry's observer is composed with any observer already installed, so telemetry hooks and the
+    /// registry can coexist from separate installs. Install once at the application edge, keep the registry,
+    /// and call <c>registry.Dump()</c> (or <c>registry.Snapshot()</c>) whenever a live fiber tree is needed.
+    /// </remarks>
+    /// <param name="registry">The registry that receives fiber lifecycle events.</param>
+    /// <param name="flow">The source flow.</param>
+    /// <returns>A flow whose forked fibers are tracked in the registry.</returns>
+    let withFiberRegistry
+        (registry: FiberRegistry)
+        (flow: Flow<'env, 'error, 'value>)
+        : Flow<'env, 'error, 'value> =
+        addFiberObserver registry.Observer flow
+
     /// <summary>Installs a runtime annotation sink for integration packages.</summary>
     [<System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>]
     let withAnnotationSink
@@ -697,15 +730,7 @@ module Flow =
 
             loop 1
 
-    /// <summary>Starts a flow in a new fiber without waiting for it to complete.</summary>
-    /// <remarks>
-    /// Forking turns a cold flow description into hot child work and returns a handle
-    /// that can later be joined or interrupted. Prefer <c>zipPar</c> or <c>race</c>
-    /// when the caller only needs a simple parallel composition.
-    /// </remarks>
-    /// <param name="flow">The flow to fork.</param>
-    /// <returns>A flow that produces a <see cref="T:Axial.Fiber`2" /> handle.</returns>
-    let fork (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'none, Fiber<'error, 'value>> =
+    let private forkWith (name: string option) (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'none, Fiber<'error, 'value>> =
         Flow(fun environment cancellationToken ->
             let parentRuntime = RuntimeState.current()
             let observer = parentRuntime.Observer
@@ -713,8 +738,11 @@ module Flow =
             let metadata: FiberMetadata =
                 {
                     Id = FiberId.next ()
+                    Name = name
                     ParentId = Some parentRuntime.FiberId
+                    Annotations = parentRuntime.Annotations
                     StartedAt = DateTimeOffset.UtcNow
+                    SettledAt = None
                     Status = FiberStatus.Running
                     Observed = false
                 }
@@ -728,6 +756,7 @@ module Flow =
                 Platform.startFiber
                     cancellationToken
                     (fun status exit ->
+                        metadata.SettledAt <- Some DateTimeOffset.UtcNow
                         metadata.Status <- status
 
                         let defect =
@@ -777,6 +806,28 @@ module Flow =
 #endif
 
             Execution.ofValue fiber)
+
+    /// <summary>Starts a flow in a new fiber without waiting for it to complete.</summary>
+    /// <remarks>
+    /// Forking turns a cold flow description into hot child work and returns a handle
+    /// that can later be joined or interrupted. Prefer <c>zipPar</c> or <c>race</c>
+    /// when the caller only needs a simple parallel composition.
+    /// </remarks>
+    /// <param name="flow">The flow to fork.</param>
+    /// <returns>A flow that produces a <see cref="T:Axial.Fiber`2" /> handle.</returns>
+    let fork (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'none, Fiber<'error, 'value>> =
+        forkWith None flow
+
+    /// <summary>Starts a flow in a new fiber carrying a diagnostic name.</summary>
+    /// <remarks>
+    /// The name appears in <c>FiberDump</c> snapshots, <c>FiberRegistry</c> dumps, and telemetry fiber spans,
+    /// so long-lived background fibers are recognizable in diagnostics instead of showing as bare ids.
+    /// </remarks>
+    /// <param name="name">The diagnostic name recorded in the fiber's metadata.</param>
+    /// <param name="flow">The flow to fork.</param>
+    /// <returns>A flow that produces a <see cref="T:Axial.Fiber`2" /> handle.</returns>
+    let forkNamed (name: string) (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'none, Fiber<'error, 'value>> =
+        forkWith (Some name) flow
 
     /// <summary>Starts a flow in a new fiber that is deliberately never awaited.</summary>
     /// <remarks>

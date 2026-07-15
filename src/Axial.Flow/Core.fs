@@ -165,10 +165,16 @@ type FiberMetadata =
     {
         /// <summary>The unique fiber id.</summary>
         Id: FiberId
+        /// <summary>The diagnostic name given at the fork site (<c>Flow.forkNamed</c>), if any.</summary>
+        Name: string option
         /// <summary>The parent fiber id, if the fiber was forked from another fiber.</summary>
         ParentId: FiberId option
+        /// <summary>The runtime annotations in scope at the fork site.</summary>
+        Annotations: Map<string, string>
         /// <summary>The UTC timestamp when the fiber started.</summary>
         StartedAt: DateTimeOffset
+        /// <summary>The UTC timestamp when the fiber settled, if it has.</summary>
+        mutable SettledAt: DateTimeOffset option
         /// <summary>The current fiber status.</summary>
         mutable Status: FiberStatus
         /// <summary>
@@ -179,18 +185,115 @@ type FiberMetadata =
         mutable Observed: bool
     }
 
-/// <summary>Human-readable diagnostic dump for a fiber.</summary>
+/// <summary>Structured diagnostic snapshot of a fiber, taken at a single point in time.</summary>
 type FiberDump =
     {
         /// <summary>The fiber id.</summary>
         Id: FiberId
+        /// <summary>The diagnostic name given at the fork site, if any.</summary>
+        Name: string option
         /// <summary>The parent fiber id, if available.</summary>
         ParentId: FiberId option
+        /// <summary>The runtime annotations in scope at the fork site.</summary>
+        Annotations: Map<string, string>
         /// <summary>The UTC timestamp when the fiber started.</summary>
         StartedAt: DateTimeOffset
-        /// <summary>The current fiber status.</summary>
+        /// <summary>The UTC timestamp when the fiber settled, if it had settled when the snapshot was taken.</summary>
+        SettledAt: DateTimeOffset option
+        /// <summary>The fiber status when the snapshot was taken.</summary>
         Status: FiberStatus
     }
+
+/// <summary>Snapshot conversion and rendering for fiber dumps.</summary>
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+[<RequireQualifiedAccess>]
+module FiberDump =
+    /// <summary>Takes a dump from live fiber metadata.</summary>
+    let ofMetadata (metadata: FiberMetadata) : FiberDump =
+        {
+            Id = metadata.Id
+            Name = metadata.Name
+            ParentId = metadata.ParentId
+            Annotations = metadata.Annotations
+            StartedAt = metadata.StartedAt
+            SettledAt = metadata.SettledAt
+            Status = metadata.Status
+        }
+
+    /// <summary>Renders one dump as a single line, measuring lifetime against <paramref name="now" /> for live fibers.</summary>
+    let renderAt (now: DateTimeOffset) (dump: FiberDump) : string =
+        let name =
+            match dump.Name with
+            | Some name -> $" \"{name}\""
+            | None -> ""
+
+        let lifetime =
+            let settled = dump.SettledAt |> Option.defaultValue now
+            let elapsed = settled - dump.StartedAt
+            $"%.1f{max elapsed.TotalSeconds 0.0}s"
+
+        let annotations =
+            if Map.isEmpty dump.Annotations then
+                ""
+            else
+                dump.Annotations
+                |> Seq.map (fun (KeyValue(key, value)) -> $"{key}={value}")
+                |> String.concat " "
+                |> sprintf " [%s]"
+
+        $"#{dump.Id.Value}{name} {dump.Status} {lifetime} (started {dump.StartedAt:o}){annotations}"
+
+    /// <summary>Renders one dump as a single line using the current UTC time for live-fiber lifetime.</summary>
+    let render (dump: FiberDump) : string =
+        renderAt DateTimeOffset.UtcNow dump
+
+    /// <summary>
+    /// Renders a set of dumps as an indented parent/child tree. Fibers whose parent is absent from
+    /// <paramref name="dumps" /> (including root fibers) become top-level nodes.
+    /// </summary>
+    let renderTreeAt (now: DateTimeOffset) (dumps: FiberDump list) : string =
+        let ids = dumps |> List.map (fun dump -> dump.Id) |> Set.ofList
+
+        let childrenOf =
+            dumps
+            |> List.choose (fun dump ->
+                match dump.ParentId with
+                | Some parentId when Set.contains parentId ids -> Some(parentId, dump)
+                | _ -> None)
+            |> List.groupBy fst
+            |> List.map (fun (parentId, pairs) -> parentId, pairs |> List.map snd |> List.sortBy _.Id.Value)
+            |> Map.ofList
+
+        let roots =
+            dumps
+            |> List.filter (fun dump ->
+                match dump.ParentId with
+                | Some parentId -> not (Set.contains parentId ids)
+                | None -> true)
+            |> List.sortBy _.Id.Value
+
+        let lines = ResizeArray<string>()
+
+        let rec renderNode (prefix: string) (childPrefix: string) (dump: FiberDump) =
+            lines.Add(prefix + renderAt now dump)
+
+            let children = childrenOf |> Map.tryFind dump.Id |> Option.defaultValue []
+
+            children
+            |> List.iteri (fun index child ->
+                let isLast = index = children.Length - 1
+                let connector = if isLast then "└─ " else "├─ "
+                let continuation = if isLast then "   " else "│  "
+                renderNode (childPrefix + connector) (childPrefix + continuation) child)
+
+        for root in roots do
+            renderNode "" "" root
+
+        String.concat "\n" lines
+
+    /// <summary>Renders a set of dumps as an indented parent/child tree using the current UTC time.</summary>
+    let renderTree (dumps: FiberDump list) : string =
+        renderTreeAt DateTimeOffset.UtcNow dumps
 
 /// <summary>
 /// Runtime hooks observing fiber lifecycle events for diagnostics and telemetry.
@@ -260,6 +363,46 @@ module FiberObserver =
         (defect: exn)
         : unit =
         try observer.OnUnobservedDefect metadata defect with _ -> ()
+
+/// <summary>
+/// Tracks every live forked fiber so the whole runtime can be dumped as a parent/child tree at any moment.
+/// </summary>
+/// <remarks>
+/// Install with <c>Flow.withFiberRegistry</c> at the application edge; the registry's observer is composed
+/// with any observer already installed. Settled fibers leave the registry when they settle, so
+/// <c>Snapshot</c> covers live fibers only (plus any that settle mid-snapshot, which carry their
+/// <c>SettledAt</c>). Root workflow executions are not forked fibers and do not appear; forked fibers whose
+/// parent is the root render as top-level nodes.
+/// </remarks>
+type FiberRegistry() =
+    let gate = obj()
+    let live = System.Collections.Generic.Dictionary<int64, FiberMetadata>()
+
+    let observer =
+        { FiberObserver.none with
+            OnStart = fun metadata -> lock gate (fun () -> live[metadata.Id.Value] <- metadata)
+            OnEnd = fun metadata _ -> lock gate (fun () -> live.Remove metadata.Id.Value |> ignore) }
+
+    /// <summary>The lifecycle observer that feeds the registry. Compose it if installing observers manually.</summary>
+    member _.Observer : FiberObserver = observer
+
+    /// <summary>The number of live fibers currently tracked.</summary>
+    member _.LiveFiberCount : int = lock gate (fun () -> live.Count)
+
+    /// <summary>Takes a structured dump of every live fiber, ordered by fiber id.</summary>
+    member _.Snapshot() : FiberDump list =
+        lock gate (fun () -> live.Values |> Seq.map FiberDump.ofMetadata |> List.ofSeq)
+        |> List.sortBy _.Id.Value
+
+    /// <summary>Renders the current live fibers as a human-readable parent/child tree.</summary>
+    member this.Dump() : string =
+        let snapshot = this.Snapshot()
+        let now = DateTimeOffset.UtcNow
+        let header = $"Fiber dump @ {now:o} — {snapshot.Length} live fiber(s)"
+
+        match snapshot with
+        | [] -> header
+        | dumps -> header + "\n" + FiberDump.renderTreeAt now dumps
 
 /// <summary>
 /// Tracks a forked fiber's settled defect so it can be reported as unobserved exactly once, by whichever
@@ -333,12 +476,7 @@ type Fiber<'error, 'value> =
 module Fiber =
     /// <summary>Returns a snapshot of the current fiber metadata.</summary>
     let dump (fiber: Fiber<'error, 'value>) : FiberDump =
-        {
-            Id = fiber.Metadata.Id
-            ParentId = fiber.Metadata.ParentId
-            StartedAt = fiber.Metadata.StartedAt
-            Status = fiber.Metadata.Status
-        }
+        FiberDump.ofMetadata fiber.Metadata
 
 #if !FABLE_COMPILER
 /// <summary>

@@ -137,12 +137,19 @@ module FiberTelemetry =
     let private tagMetadata (activity: Activity) (metadata: FiberMetadata) =
         activity.SetTag("axial.flow.fiber.id", string metadata.Id.Value) |> ignore
 
+        match metadata.Name with
+        | Some name -> activity.SetTag("axial.flow.fiber.name", name) |> ignore
+        | None -> ()
+
         match metadata.ParentId with
         | Some parentId -> activity.SetTag("axial.flow.fiber.parent_id", string parentId.Value) |> ignore
         | None -> ()
 
         activity.SetTag("axial.flow.fiber.started_at", metadata.StartedAt.ToString "O") |> ignore
         activity.SetTag("axial.flow.fiber.status", string metadata.Status) |> ignore
+
+        for KeyValue(name, value) in metadata.Annotations do
+            activity.SetTag($"axial.flow.annotation.{name}", value) |> ignore
 
     /// <summary>
     /// A fiber observer that records fiber defects on the <c>Axial.Flow</c> activity source: every fiber that
@@ -202,6 +209,10 @@ module FiberTelemetry =
 
                     if not (isNull activity) then
                         tagMetadata activity metadata
+
+                        metadata.Name
+                        |> Option.iter (fun name -> activity.DisplayName <- $"axial.flow.fiber {name}")
+
                         fiberSpans.Add(metadata, activity)
             OnEnd =
                 fun metadata defect ->
@@ -240,3 +251,96 @@ module FiberTelemetry =
     /// <returns>A flow whose forked fibers each produce a span on the <c>Axial.Flow</c> activity source.</returns>
     let observeWithSpans (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
         Flow.withFiberObserver observerWithSpans flow
+
+/// <summary>OpenTelemetry-compatible fiber runtime metrics on the <c>Axial.Flow</c> meter.</summary>
+/// <remarks>
+/// Register the meter with your OpenTelemetry pipeline (<c>AddMeter("Axial.Flow")</c>) and every metric
+/// appears in any OTLP backend, including the Aspire dashboard's metrics view. Instruments:
+/// <c>axial.flow.fibers.started</c> and <c>axial.flow.fibers.settled</c> (counters; settled is tagged with
+/// <c>axial.flow.fiber.status</c>), <c>axial.flow.fibers.live</c> (up-down counter),
+/// <c>axial.flow.fiber.duration</c> (histogram, seconds, tagged with status), and
+/// <c>axial.flow.fibers.unobserved_defects</c> (counter).
+/// </remarks>
+[<RequireQualifiedAccess>]
+module FiberMetrics =
+    /// <summary>The meter for Axial Flow fiber runtime metrics. Register its name with your metrics pipeline.</summary>
+    let meter = new System.Diagnostics.Metrics.Meter("Axial.Flow")
+
+    let private started =
+        meter.CreateCounter<int64>("axial.flow.fibers.started", description = "Fibers forked.")
+
+    let private live =
+        meter.CreateUpDownCounter<int64>("axial.flow.fibers.live", description = "Fibers currently running.")
+
+    let private settled =
+        meter.CreateCounter<int64>(
+            "axial.flow.fibers.settled",
+            description = "Fibers settled, tagged with axial.flow.fiber.status.")
+
+    let private duration =
+        meter.CreateHistogram<float>(
+            "axial.flow.fiber.duration",
+            unit = "s",
+            description = "Fiber lifetime from fork to settle, tagged with axial.flow.fiber.status.")
+
+    let private unobservedDefects =
+        meter.CreateCounter<int64>(
+            "axial.flow.fibers.unobserved_defects",
+            description = "Defects the runtime proved no code could observe.")
+
+    let private statusTag (metadata: FiberMetadata) =
+        System.Collections.Generic.KeyValuePair("axial.flow.fiber.status", box (string metadata.Status))
+
+    /// <summary>A fiber observer that records the runtime metrics above. Compose it with other observers.</summary>
+    let observer : FiberObserver =
+        {
+            OnStart =
+                fun _ ->
+                    started.Add 1L
+                    live.Add 1L
+            OnEnd =
+                fun metadata _ ->
+                    live.Add -1L
+                    settled.Add(1L, statusTag metadata)
+
+                    match metadata.SettledAt with
+                    | Some settledAt ->
+                        duration.Record((settledAt - metadata.StartedAt).TotalSeconds, statusTag metadata)
+                    | None -> ()
+            OnUnobservedDefect = fun _ _ -> unobservedDefects.Add 1L
+        }
+
+    /// <summary>
+    /// Installs the metrics fiber observer on a flow, composing with any observer already installed —
+    /// typically once at the application edge, stacked with <c>FiberTelemetry.observe</c> or a
+    /// <c>FiberRegistry</c>.
+    /// </summary>
+    /// <param name="flow">The source flow.</param>
+    /// <returns>A flow whose forked fibers report runtime metrics on the <c>Axial.Flow</c> meter.</returns>
+    let observe (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
+        Flow.addFiberObserver observer flow
+
+/// <summary>Exports structured fiber dumps into traces.</summary>
+[<RequireQualifiedAccess>]
+module FiberDumpTelemetry =
+    /// <summary>
+    /// Records the registry's current live-fiber tree on the active trace: as an
+    /// <c>axial.flow.fiber.dump</c> event on the current activity when one exists, otherwise as a standalone
+    /// <c>axial.flow.fiber.dump</c> span. The event carries <c>axial.flow.fibers.live</c> and the rendered
+    /// tree in <c>axial.flow.fiber.dump.tree</c>, so dumps land next to the traces they explain in any OTLP
+    /// backend, including the Aspire dashboard.
+    /// </summary>
+    /// <param name="registry">The registry to snapshot.</param>
+    let record (registry: FiberRegistry) : unit =
+        let tags = ActivityTagsCollection()
+        tags["axial.flow.fibers.live"] <- registry.LiveFiberCount
+        tags["axial.flow.fiber.dump.tree"] <- registry.Dump()
+
+        match System.Diagnostics.Activity.Current with
+        | null ->
+            use activity = Activity.source.StartActivity("axial.flow.fiber.dump")
+
+            if not (isNull activity) then
+                for KeyValue(name, value) in tags do
+                    activity.SetTag(name, value) |> ignore
+        | current -> current.AddEvent(ActivityEvent("axial.flow.fiber.dump", tags = tags)) |> ignore
