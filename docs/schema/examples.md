@@ -239,6 +239,7 @@ module RefinedCatalogExample
 
 open System
 open Axial.ErrorHandling
+open Axial.ErrorHandling.CheckDSL
 open Axial.Refined
 
 type ProductId = ProductId of NonZeroInt
@@ -257,7 +258,7 @@ module ContactEmail =
     let create value : Result<ContactEmail, RefinementError> =
         Refine.withChecks
             "ContactEmail"
-            [ Check.String.present; Check.String.email; Check.String.maxLength 254 ]
+            [ present; email; maxLength 254 ]
             ContactEmail
             value
 
@@ -267,7 +268,7 @@ module Sku =
     let create value : Result<Sku, RefinementError> =
         Refine.withChecks
             "Sku"
-            [ Check.String.present; Check.String.lengthBetween 3 12; Check.String.matches "^[A-Z0-9-]+$" ]
+            [ present; lengthBetween 3 12; matches "^[A-Z0-9-]+$" ]
             Sku
             value
 
@@ -275,13 +276,13 @@ module Rating =
     let value (Rating value) = value
 
     let create value : Result<Rating, RefinementError> =
-        Refine.withCheck "Rating" (Check.Number.between 1 5) Rating value
+        Refine.withCheck "Rating" (Check.between 1 5) Rating value
 
 module UnitPrice =
     let value (UnitPrice value) = value
 
     let create value : Result<UnitPrice, RefinementError> =
-        Refine.withCheck "UnitPrice" (Check.Number.greaterThan 0m) UnitPrice value
+        Refine.withCheck "UnitPrice" (greaterThan 0m) UnitPrice value
 
 type Discount =
     | Percent of PositiveInt
@@ -434,6 +435,7 @@ Source code:
 module RefinedValueSchemaExample
 
 open Axial.Schema
+open Axial.Schema.DSL
 
 /// <summary>An email address refined over Axial's text primitive, carrying the well-known email format.</summary>
 type Email = private Email of string
@@ -443,11 +445,11 @@ module Email =
     let value (Email value) = value
 
     let schema : Schema<Email> =
-        Schema.text
-        |> Schema.constrain Constraint.required
-        |> Schema.convert create value
-        |> Schema.constrain Constraint.email
-        |> Schema.withFormat SchemaFormat.email
+        text
+        |> constrain required
+        |> convert create value
+        |> constrain email
+        |> withFormat SchemaFormat.email
 
 /// <summary>A bounded-text domain value whose length constraints live on the raw text schema.</summary>
 type ContactName = private ContactName of string
@@ -457,9 +459,9 @@ module ContactName =
     let value (ContactName value) = value
 
     let schema : Schema<ContactName> =
-        Schema.text
-        |> Schema.constrainAll [ Constraint.minLength 2; Constraint.maxLength 40 ]
-        |> Schema.convert create value
+        text
+        |> constrainAll [ minLength 2; maxLength 40 ]
+        |> convert create value
 
 /// <summary>A quantity that must always be positive (strictly greater than zero).</summary>
 type Quantity = private Quantity of int
@@ -469,9 +471,9 @@ module Quantity =
     let value (Quantity value) = value
 
     let schema : Schema<Quantity> =
-        Schema.int
-        |> Schema.constrain (Constraint.greaterThan 0)
-        |> Schema.convert create value
+        int
+        |> constrain (greaterThan 0)
+        |> convert create value
 
 /// <summary>A running total that must never go negative, but zero is allowed.</summary>
 type Balance = private Balance of decimal
@@ -481,9 +483,9 @@ module Balance =
     let value (Balance value) = value
 
     let schema : Schema<Balance> =
-        Schema.decimal
-        |> Schema.constrain (Constraint.atLeast 0m)
-        |> Schema.convert create value
+        decimal
+        |> constrain (atLeast 0m)
+        |> convert create value
 
 type Contact =
     { Email: Email
@@ -492,16 +494,16 @@ type Contact =
       Balance: Balance }
 
 let contactSchema =
-    Schema.recordFor<Contact, _> (fun email name quantity balance ->
+    recordFor<Contact, _> (fun email name quantity balance ->
         { Email = email
           Name = name
           Quantity = quantity
           Balance = balance })
-    |> Schema.field "email" _.Email Email.schema
-    |> Schema.field "name" _.Name ContactName.schema
-    |> Schema.field "quantity" _.Quantity Quantity.schema
-    |> Schema.field "balance" _.Balance Balance.schema
-    |> Schema.build
+    |> field "email" _.Email Email.schema
+    |> field "name" _.Name ContactName.schema
+    |> field "quantity" _.Quantity Quantity.schema
+    |> field "balance" _.Balance Balance.schema
+    |> build
 
 let run () =
     let contact =
@@ -557,7 +559,9 @@ Source code:
 module Axial.Api.Program
 
 open System
+open System.Net
 open System.Net.Http
+open System.Threading.Tasks
 open System.Text
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Http
@@ -578,14 +582,13 @@ type Email = private EmailValue of string
 module Email =
     let value (EmailValue raw) = raw
 
+    open Axial.Schema.DSL
+
     let schema: Schema<Email> =
-        Schema.text
-        |> Schema.constrainAll
-            [ Constraint.required
-              Constraint.maxLength 254
-              Constraint.email ]
-        |> Schema.convert EmailValue value
-        |> Schema.withFormat SchemaFormat.email
+        text
+        |> constrainAll [ required; maxLength 254; email ]
+        |> convert EmailValue value
+        |> withFormat SchemaFormat.email
 
 type Address = { Street: string; City: string }
 
@@ -597,25 +600,27 @@ type Signup =
       Tags: string list }
 
 module Signup =
+    open Axial.Schema.DSL
+
     let addressSchema =
-        Schema.recordFor<Address, _> (fun street city -> { Street = street; City = city })
-        |> Schema.field "street" _.Street (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 120 ])
-        |> Schema.field "city" _.City (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 80 ])
-        |> Schema.build
+        recordFor<Address, _> (fun street city -> { Street = street; City = city })
+        |> field "street" _.Street (text |> constrainAll [ required; maxLength 120 ])
+        |> field "city" _.City (text |> constrainAll [ required; maxLength 80 ])
+        |> build
 
     let schema =
-        Schema.recordFor<Signup, _> (fun name email age address tags ->
+        recordFor<Signup, _> (fun name email age address tags ->
             { Name = name
               Email = email
               Age = age
               Address = address
               Tags = tags })
-        |> Schema.field "name" _.Name (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 80 ])
-        |> Schema.field "email" _.Email Email.schema
-        |> Schema.field "age" _.Age (Schema.int |> Schema.constrainAll [ Constraint.between 13 120 ])
-        |> Schema.field "address" _.Address ((addressSchema) |> Schema.constrainAll [ Constraint.required ])
-        |> Schema.field "tags" _.Tags ((Schema.list Schema.text) |> Schema.constrainAll [ Constraint.maxCount 5 ])
-        |> Schema.build
+        |> field "name" _.Name (text |> constrainAll [ required; maxLength 80 ])
+        |> field "email" _.Email Email.schema
+        |> field "age" _.Age (int |> constrain (between 13 120))
+        |> field "address" _.Address (addressSchema |> constrain required)
+        |> field "tags" _.Tags (list text |> constrain (maxCount 5))
+        |> build
 
 // ---------------------------------------------------------------------------
 // Interpreters compiled once from the declaration above.
@@ -640,7 +645,7 @@ module Boundary =
 // ---------------------------------------------------------------------------
 
 module FormPage =
-    let private encode (text: string) = System.Net.WebUtility.HtmlEncode text
+    let private encode (text: string) = WebUtility.HtmlEncode text
 
     let private constraintAttributes (field: FieldDescription) =
         let metadata =
@@ -744,7 +749,7 @@ let buildApp (args: string[]) =
 
     app.MapPost(
         "/signups",
-        Func<HttpRequest, System.Threading.Tasks.Task<IResult>>(fun request ->
+        Func<HttpRequest, Task<IResult>>(fun request ->
             task {
                 let! parsed = SchemaRequest.json Signup.schema request
 
@@ -753,7 +758,7 @@ let buildApp (args: string[]) =
                 return!
                     parsed
                     |> SchemaResult.handleParsed (fun signup ->
-                        System.Threading.Tasks.Task.FromResult(SchemaResult.codec Boundary.codec 201 signup))
+                        Task.FromResult(SchemaResult.codec Boundary.codec 201 signup))
             })
     )
     |> ignore
@@ -766,7 +771,7 @@ let buildApp (args: string[]) =
 
     app.MapPost(
         "/signup",
-        Func<HttpRequest, System.Threading.Tasks.Task<IResult>>(fun request ->
+        Func<HttpRequest, Task<IResult>>(fun request ->
             task {
                 let! parsed = SchemaRequest.form Signup.schema request
                 return Results.Text(FormPage.render (Some parsed), "text/html")
