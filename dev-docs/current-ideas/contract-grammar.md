@@ -94,18 +94,55 @@ named custom constraints (metadata + F#-supplied `Check`), cross-field logic sta
 
 ## Language Server
 
-Single grammar library, three frontends (generator, LSP, tests).
+Single grammar library, three frontends (generator, LSP, tests). Investigated 2026-07-16; the plan below is
+settled, the build is gated on dogfooding (see Sequencing).
 
-- **Diagnostics**: parse errors; resolution errors (unknown type/contract/version/check, constraint–type mismatch,
-  default-literal type mismatch, duplicate wire names); version-gap warnings (contract N exists, no N-1→N migration).
-- **Completion**: types; constraints valid for the field's type; contract refs with known versions; check names via a
-  manifest exported by the F# side (the generator needs this resolution map anyway).
-- **Hover**: doc comment + resolved JSON Schema fragment for the field.
-- **Go-to-definition**: contract refs → `.contract` files; checks/refined types → F# source via the resolution map.
-- **Formatting**: canonical aligned-column style.
-- **Semantic tokens**; TextMate fallback.
+**Distribution: one dotnet tool with subcommands** — `axial-contracts generate | check | lsp` — not a separate
+LSP executable.
 
-Ship as a `dotnet tool` LSP server + thin VS Code extension; other editors via generic LSP config.
+- The audience is F# developers with the .NET SDK by definition, so the zero-install pressure that pushes other
+  language servers toward self-contained binaries does not exist. Repo-local tool manifests pin the tool version
+  next to the `.contract` files it validates; teams already use this pattern for fantomas and fsautocomplete.
+- Folding `scripts/schemagen` into the tool also gives external users a way to install the generator at all
+  (today it is a repo-internal script), and the LSP can never disagree with the generator about the grammar
+  because they are the same assembly.
+- Mechanics: a `src/Axial.Schema.Contracts.Tool` project with `PackAsTool` + `ToolCommandName axial-contracts`,
+  absorbing `scripts/schemagen/Program.fs` as `generate`/`check`. `Axial.Schema.Contracts` is dependency-free
+  (it does not reference `Axial.Schema`; it emits text), so the tool's closure stays tiny. Both projects are
+  `IsPackable=false` today and would flip on.
+- Rejected: bundling per-RID NativeAOT binaries in the VS Code extension or on GitHub releases (build matrix and
+  a second release process, for an audience that provably has the SDK); MSBuild analyzer/source-generator shape
+  (`.contract` is not F# source, and checked-in generation is the point).
+
+**Protocol layer: `Ionide.LanguageServerProtocol`** (F#-native, powers FsAutoComplete and csharp-ls, actively
+maintained, netstandard2.0). The old `OmniSharp.Extensions.LanguageServer` shows maintenance drift (unmerged
+bumps, stalled .NET Foundation migration); hand-rolled JSON-RPC would re-derive protocol types for no benefit.
+
+**Server model.** Scan the workspace for `*.contract`, overlay dirty editor buffers, re-run
+`Parser.parse` + `Resolver.resolve` on every change (files are tiny; no incrementality), and map
+`ContractDiagnostic` to LSP diagnostics. Feature ladder:
+
+- **Diagnostics first** — parse and resolution errors are already line-precise and are ~80% of the value.
+  `ContractDiagnostic` carries a line but no column, so v1 publishes whole-line ranges; adding column spans to
+  the tokenizer later is mechanical.
+- **Hover / completion / go-to-definition** need the resolver to expose its resolution model (the
+  contract/version registry, per-field resolved types) instead of returning only diagnostics — a modest refactor
+  to return a resolution record alongside the diagnostic list. Version-*pin* warnings (reference pins a
+  superseded version) come from the same data; true version-gap warnings (v3 exists, no v2→v3 migration) are not
+  knowable from `.contract` files alone because migrations live in F# call sites.
+- **Deferred**: formatting (no formatter exists), semantic tokens, `check`-name manifest (`check` refs are still
+  rejected by the resolver, so there is nothing to complete).
+
+**Editors.** Neovim/Helix/Emacs need only user config pointing a generic LSP client at `axial-contracts lsp` —
+works day one with zero code. VS Code needs a thin extension regardless of distribution (something must declare
+the language id): ~100 lines of TypeScript over `vscode-languageclient` spawning the tool (config path → local
+manifest → global fallback, the fsautocomplete pattern) plus a TextMate grammar for offline highlighting. The
+extension is the only piece outside the F# codebase and ships separately, after the tool.
+
+**Sequencing.** Unchanged from the PRD: dogfood on the real config system first — that decides which diagnostics
+matter in practice (likely: stale-`.g.fs` drift surfaced in-editor, superseded-pin warnings) before investing in
+completion/hover. First build step when ready: the tool restructure + a diagnostics-only `lsp` subcommand
+(roughly a day given the reuse), VS Code extension as a follow-up.
 
 ## Sequencing
 
