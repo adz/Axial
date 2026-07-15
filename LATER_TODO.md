@@ -72,7 +72,7 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 
 - [x] Add a minimal schedule implementation with recurrence limits, fixed spacing, exponential backoff, fixed-range jitter, attempt/delay outputs, and retry/repeat integration.
 - [ ] Make schedules production-ready with schedule composition, configurable/deterministic jitter, elapsed outputs, reset behavior, overflow/invalid-delay handling, and any additional retry/repeat semantics required by realistic applications.
-- [ ] Remove `Unchecked.defaultof<'error>` from `Schedule.repeat` when schedule evaluation or sleeping is interrupted, preserving interruption/cause information without fabricating a typed error.
+- [x] Remove `Unchecked.defaultof<'error>` from `Schedule.repeat` when schedule evaluation or sleeping is interrupted, preserving interruption/cause information without fabricating a typed error (sleep runs at the workflow's error type; schedule-evaluation failure becomes `Cause.Die`). Also hardened: `exponential` caps at the max delay instead of overflowing ticks, `spaced`/`exponential` reject negative delays, and `Schedule.jitteredWith` takes an injectable sample source for deterministic jitter.
 - [ ] Add deterministic clock-driven tests for retry, repeat, timeout, and sleep.
 
 ## 7. v1.0 Observability

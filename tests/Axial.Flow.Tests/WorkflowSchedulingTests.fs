@@ -48,6 +48,83 @@ module WorkflowSchedulingTests =
         test <@ count = 4 @>
 
     [<Fact>]
+    let ``Scheduling: repeat surfaces schedule evaluation failure as a defect`` () =
+        let failingSchedule : Schedule<unit, int, int> =
+            Schedule(fun _ _ -> Flow.fail ())
+
+        let result : Exit<int, string> =
+            Flow.ok 1
+            |> Schedule.repeat failingSchedule
+            |> Flow.runSync ()
+
+        match result with
+        | Exit.Failure (Cause.Die error) -> test <@ error.Message = "Schedule evaluation failed." @>
+        | other -> failwithf "Expected a defect, got %A" other
+
+    [<Fact>]
+    let ``Scheduling: interrupting the delay surfaces as interruption, not a typed error`` () =
+        use cts = new CancellationTokenSource()
+        cts.CancelAfter(TimeSpan.FromMilliseconds 20.0)
+
+        let repeatResult : Exit<int, string> =
+            Flow.ok 1
+            |> Schedule.repeat (Schedule.spaced (TimeSpan.FromSeconds 30.0))
+            |> Flow.runSyncWithToken () cts.Token
+
+        test <@ repeatResult = Exit.Failure Cause.Interrupt @>
+
+        use retryCts = new CancellationTokenSource()
+        retryCts.CancelAfter(TimeSpan.FromMilliseconds 20.0)
+
+        let retryResult : Exit<int, string> =
+            Flow.fail "transient"
+            |> Schedule.retry (Schedule.spaced (TimeSpan.FromSeconds 30.0))
+            |> Flow.runSyncWithToken () retryCts.Token
+
+        test <@ retryResult = Exit.Failure Cause.Interrupt @>
+
+    [<Fact>]
+    let ``Scheduling: exponential caps instead of overflowing and rejects negative delays`` () =
+        let (Schedule op) = Schedule.exponential (TimeSpan.FromMilliseconds 100.0)
+
+        let delayAt attempt =
+            match Flow.runSync () (op 0 attempt) with
+            | Exit.Success (_, delay) -> delay
+            | other -> failwithf "Expected a delay decision, got %A" other
+
+        test <@ delayAt 1 = TimeSpan.FromMilliseconds 200.0 @>
+        test <@ delayAt 100 = TimeSpan.MaxValue @>
+        test <@ delayAt 100 >= TimeSpan.Zero @>
+
+        raises<ArgumentException> <@ Schedule.exponential (TimeSpan.FromSeconds -1.0) @>
+        raises<ArgumentException> <@ Schedule.spaced (TimeSpan.FromSeconds -1.0) @>
+
+    [<Fact>]
+    let ``Scheduling: jitteredWith applies a deterministic sample to every delay`` () =
+        let (Schedule op) =
+            Schedule.spaced (TimeSpan.FromSeconds 1.0)
+            |> Schedule.jitteredWith (fun () -> 0.25)
+
+        let delayAt attempt =
+            match Flow.runSync () (op 0 attempt) with
+            | Exit.Success (_, delay) -> delay
+            | other -> failwithf "Expected a delay decision, got %A" other
+
+        test <@ delayAt 0 = TimeSpan.FromMilliseconds 750.0 @>
+        test <@ delayAt 5 = TimeSpan.FromMilliseconds 750.0 @>
+
+        let (Schedule cappedOp) =
+            Schedule.exponential (TimeSpan.FromMilliseconds 100.0)
+            |> Schedule.jitteredWith (fun () -> 0.999)
+
+        let cappedDelay =
+            match Flow.runSync () (cappedOp TimeSpan.Zero 100) with
+            | Exit.Success (_, delay) -> delay
+            | other -> failwithf "Expected a delay decision, got %A" other
+
+        test <@ cappedDelay = TimeSpan.MaxValue @>
+
+    [<Fact>]
     let ``Flow runtime helpers cover timeout and retry`` () =
         let timeoutResult =
             Flow.Runtime.sleep (TimeSpan.FromMilliseconds 20.0)

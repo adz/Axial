@@ -1676,7 +1676,7 @@ module ApiShapeTests =
     let ``schedule stream and STM modules keep expected public shape`` () =
         moduleType typeof<Schedule<unit, unit, unit>> "Axial.Flow.Schedule"
         |> publicStaticMemberNames
-        |> assertContainsAll [ "recurs"; "spaced"; "exponential"; "jittered"; "retry"; "repeat" ]
+        |> assertContainsAll [ "recurs"; "spaced"; "exponential"; "jittered"; "jitteredWith"; "retry"; "repeat" ]
 
         moduleType typeof<FlowStream<unit, unit, unit>> "Axial.Flow.FlowStream"
         |> publicStaticMemberNames

@@ -9,14 +9,14 @@ Adds random jitter to a schedule&#39;s delay.
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Flow.Schedule.jittered&#32;<span>arg1</span></span></code>
+<code><span>Flow.Schedule.jittered&#32;<span>schedule</span></span></code>
 </div>
 
 ## Parameters
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `arg0` | <code><span><a href="t-flow-schedule.md">Schedule</a>&lt;<span>'env,&#32;'input,&#32;'output</span>&gt;</span></code> |  |
+| `schedule` | <code><span><a href="t-flow-schedule.md">Schedule</a>&lt;<span>'env,&#32;'input,&#32;'output</span>&gt;</span></code> | The base schedule to which jitter will be applied. |
 
 ## Returns
 

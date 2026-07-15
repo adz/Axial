@@ -23,7 +23,7 @@ Creates a schedule that recurs with exponential backoff.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="t-flow-schedule.md">Schedule</a>&lt;<span>'env,&#32;'input,&#32;<a href="https://learn.microsoft.com/dotnet/api/system.timespan">TimeSpan</a></span>&gt;</span></code> | A schedule that recurs indefinitely, doubling the delay each time (baseDelay * 2^attempt). |
+| <code><span><a href="t-flow-schedule.md">Schedule</a>&lt;<span>'env,&#32;'input,&#32;<a href="https://learn.microsoft.com/dotnet/api/system.timespan">TimeSpan</a></span>&gt;</span></code> | A schedule that recurs indefinitely, doubling the delay each time (baseDelay * 2^attempt) and capping at <a href="https://learn.microsoft.com/dotnet/api/system.timespan.maxvalue">TimeSpan.MaxValue</a> instead of overflowing. |
 
 ## Examples
 
