@@ -18,6 +18,7 @@
 - **Streams**: Use `FlowStream` for effectful, backpressured pull-based sequences.
 - **Processes**: Open `Axial.Flow.Process.DSL`; construct safely tokenized commands with `cmd $"...{value}"`, connect typed endpoints with `=>`, and select `capture`, `console`, `stream`, or an explicit `Output.*` endpoint to produce Flow.
 - **HTTP**: Open `Axial.Flow.Http.DSL`; build requests with `GET $"...{value}"` (holes are URL-encoded, `secret` redacts), configure with `query`/`bearer`/`timeout`/`jsonBody`/`expect`, and finish with `fetch`, `fetchText`, or `fetchJson decode` to produce `Flow<#IHas<IHttp>, HttpError, _>`. Retry transient failures with `Http.retryTransient` or `withRetries`.
+- **HTTP server endpoints**: In `Axial.Schema.Http.AspNetCore` or `.GenHttp`, define an ordinary `flow { let! input = Request.json schema; let! output = EndpointFlow.run application input; return Response.json status codec output }`. Configure `flowEndpoint` with a per-request application-environment factory and typed-error renderer, then pass `endpoint workflow` to the host's native route method. The adapter hides delegates/tasks, schema failures, cancellation, and `Exit` lowering; the host still owns routing.
 
 ## The Flow Hierarchy
 Data flows from left to right. Later stages can bind earlier stages directly.

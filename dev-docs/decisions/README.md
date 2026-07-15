@@ -3,6 +3,21 @@
 This folder keeps only high-level durable decisions. Detailed historical specs are deleted once their useful rules have
 been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 
+## 2026-07-16: HTTP hosts lower schema-trusted endpoint Flows without owning routing
+
+- `Axial.Schema.Http.AspNetCore` and `.GenHttp` depend on both `Axial.Schema.Http` and `Axial.Flow`. Their default
+  endpoint API is an ordinary `flow { }`: `Request.json`/`form`/`query` establish trusted input,
+  `EndpointFlow.run` embeds an HTTP-independent application workflow by projecting the explicit application
+  environment, and `Response` constructs the successful native response plan.
+- `flowEndpoint` is the host execution boundary. It constructs `HttpEndpointEnv<'app>` per request, propagates host
+  cancellation where available, renders invalid schema input as RFC 9457 problem details, maps expected application
+  failures through a supplied renderer, and preserves interruption and defects. ASP.NET request-scoped DI may be
+  used only inside the environment factory; application workflows continue to receive typed environments.
+- The server still owns route registration, middleware, authorization, and endpoint metadata. Axial produces the
+  native handler passed to `MapPost` or GenHTTP `Post`; it does not introduce a cross-host router. The lower-level
+  `SchemaRequest`/`SchemaResult` and `SchemaResponse` primitives remain for endpoints that need `ParsedInput` or
+  other host-specific boundary control.
+
 ## 2026-07-16: schemagen generates version chains; migrations are builder parameters
 
 - A `.contract` file may declare several versions of one contract, oldest first with no gaps, all in one file.

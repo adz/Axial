@@ -69,6 +69,16 @@ module ProblemDetails =
         | Ok _ -> None
         | Error diagnostics -> Some(ofDiagnostics diagnostics)
 
+    /// <summary>Builds a 400 problem-details value for a syntactically invalid JSON request body.</summary>
+    let malformedJson : ProblemDetails =
+        { Type = "https://datatracker.ietf.org/doc/html/rfc9457"
+          Title = "The request input could not be parsed."
+          Status = 400
+          Detail = None
+          Errors =
+            [ { Pointer = ""
+                Message = "The request body is not valid JSON." } ] }
+
     /// <summary>Writes the problem-details JSON body to a stream.</summary>
     let writeTo (stream: Stream) (problem: ProblemDetails) : unit =
         use writer = new Utf8JsonWriter(stream)

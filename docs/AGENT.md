@@ -124,6 +124,13 @@ Use `Bind.mapError` inside `flow {}` when the source already carries a meaningfu
 ### 4. Same-Family Fallbacks
 Use `orElse` and `orElseWith` for alternate computations in the same family: `Result.orElse`/`Result.orElseWith`, `Validation.orElse`/`Validation.orElseWith`, and `Flow.orElse`/`Flow.orElseWith` all share this shape — `orElseWith` takes a function from the source error to a fallback of the same type; `orElse` is the eager version that ignores the error and always uses the same fallback.
 
+For ASP.NET Core or GenHTTP server endpoints, keep routing native and make the handler an ordinary Flow. Bind trusted
+input with `Request.json`/`form`/`query`, embed the HTTP-independent application workflow with `EndpointFlow.run`, and
+return a `Response` value. Configure `flowEndpoint` once with the per-request application-environment factory and
+typed-error renderer, then pass it the endpoint Flow at each route. Do not write `Func`, `Task`, `ParsedInput` matching,
+or `Exit` lowering in the normal endpoint path; use the lower-level `SchemaRequest` API only when the endpoint needs
+the complete parse result, such as form redisplay.
+
 ### 5. Flow Signatures
 
 Start with the smallest useful Flow signature. Expand to the full `Flow<'env, 'error, 'value>` form only when a workflow needs both environment and typed failure channels:

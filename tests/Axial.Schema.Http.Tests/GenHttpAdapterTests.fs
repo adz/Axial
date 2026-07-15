@@ -13,6 +13,7 @@ open GenHTTP.Modules.Functional
 open Xunit
 open Swensen.Unquote
 open Axial.Codec
+open Axial.Flow
 open Axial.Schema.Http
 open Axial.Schema.Http.GenHttp
 open Axial.Schema.Http.Tests.Fixtures
@@ -36,23 +37,27 @@ let private buildHandler () =
               |> Endpoint.returnsJson 201 "The trusted signup." schema
               |> Endpoint.returnsProblemDetails ]
 
+    let createSignup (signup: Signup) : Flow<string, string, Signup> =
+        flow {
+            let! suffix = Flow.env
+            return { signup with Name = signup.Name + suffix }
+        }
+
+    let signupEndpoint =
+        flow {
+            let! signup = Request.json schema
+            let! created = EndpointFlow.run createSignup signup
+            return Response.json ResponseStatus.Created codec created
+        }
+
+    let endpoint =
+        flowEndpoint
+            (fun _ -> "!")
+            (Response.text ResponseStatus.BadRequest)
+
     Inline
         .Create()
-        .Post(
-            "/signups",
-            Func<IRequest, ValueTask<IResponse>>(fun request ->
-                ValueTask<IResponse>(
-                    task {
-                        let! parsed = SchemaRequest.json schema request
-
-                        return!
-                            (parsed
-                             |> SchemaResponse.handleParsed request (fun signup ->
-                                 ValueTask<IResponse>(SchemaResponse.codec codec ResponseStatus.Created request signup)))
-                                .AsTask()
-                    }
-                ))
-        )
+        .Post("/signups", endpoint signupEndpoint)
         .Get(
             "/openapi.json",
             Func<IRequest, IResponse>(fun request -> SchemaResponse.openApi request openApiDocument)
@@ -81,7 +86,7 @@ let ``valid json parses and round-trips through the codec`` () =
 
             Assert.Equal(201, int response.StatusCode)
             use document = JsonDocument.Parse body
-            Assert.Equal("Ada Lovelace", document.RootElement.GetProperty("name").GetString())
+            Assert.Equal("Ada Lovelace!", document.RootElement.GetProperty("name").GetString())
         })
 
 [<Fact>]
@@ -102,6 +107,18 @@ let ``invalid json gets a problem details response with pointers`` () =
                 |> List.ofSeq
 
             Assert.Contains("/address/city", pointers)
+        })
+
+[<Fact>]
+let ``malformed json gets a request problem instead of becoming a defect`` () =
+    withServer (fun client ->
+        task {
+            use content = new StringContent("{", Encoding.UTF8, "application/json")
+            let! response = client.PostAsync("/signups", content)
+            let! body = response.Content.ReadAsStringAsync()
+
+            Assert.Equal(400, int response.StatusCode)
+            Assert.Contains("not valid JSON", body)
         })
 
 [<Fact>]

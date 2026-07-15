@@ -23,6 +23,7 @@ open Axial.Schema
 open Axial.Schema.Http
 open Axial.Schema.Http.AspNetCore
 open Axial.Codec
+open Axial.Flow
 
 // ---------------------------------------------------------------------------
 // Domain model: parse, don't validate. Email can only be constructed by the
@@ -199,20 +200,24 @@ let buildApp (args: string[]) =
     builder.Logging.ClearProviders() |> ignore
     let app = builder.Build()
 
-    app.MapPost(
-        "/signups",
-        Func<HttpRequest, Task<IResult>>(fun request ->
-            task {
-                let! parsed = SchemaRequest.json Signup.schema request
+    let acceptSignup (signup: Signup) : Flow<unit, string, Signup> =
+        Flow.succeed signup
 
-                // A trusted model round-trips through the compiled codec, proving the same declaration drives
-                // serialization too; a failed parse becomes a 400 problem-details body with JSON-pointer errors.
-                return!
-                    parsed
-                    |> SchemaResult.handleParsed (fun signup ->
-                        Task.FromResult(SchemaResult.codec Boundary.codec 201 signup))
-            })
-    )
+    let signupEndpoint =
+        flow {
+            let! signup = Request.json Signup.schema
+            let! accepted = EndpointFlow.run acceptSignup signup
+            return Response.json 201 Boundary.codec accepted
+        }
+
+    let endpoint =
+        flowEndpoint
+            (fun _ -> ())
+            (fun error -> Results.BadRequest error)
+
+    // ASP.NET owns the route. Axial turns the endpoint Flow into its native handler, parses the untrusted body,
+    // supplies the application environment, and lowers the typed outcome back to an HTTP response.
+    app.MapPost("/signups", endpoint signupEndpoint)
     |> ignore
 
     app.MapGet("/openapi.json", Func<IResult>(fun () -> SchemaResult.openApi Boundary.openApiDocument))

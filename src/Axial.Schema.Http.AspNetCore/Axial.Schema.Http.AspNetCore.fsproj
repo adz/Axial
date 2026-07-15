@@ -7,7 +7,7 @@
     <AssemblyName>Axial.Schema.Http.AspNetCore</AssemblyName>
     <RootNamespace>Axial.Schema.Http.AspNetCore</RootNamespace>
     <Authors>Adam Davies</Authors>
-    <Description>ASP.NET Core adapter for Axial schema-driven endpoints: parse requests into ParsedInput, respond with problem details and compiled codecs, and serve assembled OpenAPI documents.</Description>
+    <Description>ASP.NET Core hosting for schema-driven Axial Flow endpoints, with trusted request parsing, typed outcome lowering, problem details, compiled codecs, and OpenAPI support.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -27,6 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Axial.Flow\Axial.Flow.fsproj" />
     <ProjectReference Include="..\Axial.Schema.Http\Axial.Schema.Http.fsproj" />
     <ProjectReference Include="..\Axial.Codec\Axial.Codec.fsproj" />
   </ItemGroup>

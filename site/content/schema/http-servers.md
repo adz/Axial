@@ -15,9 +15,9 @@ The package split matters:
 - `Axial.Schema.Http` is host-neutral. It depends only on `Axial.Schema` and defines the boundary contract: how
   name/value input becomes `RawInput`, how parse diagnostics render as an error response, and how endpoint
   declarations assemble into an OpenAPI document.
-- `Axial.Schema.Http.AspNetCore` and `Axial.Schema.Http.GenHttp` adapt one host each. They parse that host's request
-  into `ParsedInput` and build that host's response type. Routing, middleware, and app wiring stay in the host's own
-  idiom — there is deliberately no cross-host application abstraction.
+- `Axial.Schema.Http.AspNetCore` and `Axial.Schema.Http.GenHttp` adapt one host each. Their default API turns an
+  ordinary `Flow` into that host's native handler; lower-level request parsing and response construction remain
+  available when an endpoint does not use Flow. Routing, middleware, and app wiring stay in the host's own idiom.
 
 Because the contract lives in the core package, a service on Kestrel and a service embedding GenHTTP return the same
 error bodies and publish the same OpenAPI fragments from the same schema declarations.
@@ -67,26 +67,63 @@ contract is part of the published document too.
 ## ASP.NET Core
 
 ```fsharp
+open Microsoft.Extensions.DependencyInjection
+open Axial.Flow
 open Axial.Schema.Http.AspNetCore
 
-app.MapPost(
-    "/signups",
-    Func<HttpRequest, Task<IResult>>(fun request ->
-        task {
-            let! parsed = SchemaRequest.json Signup.schema request
+type AppEnv =
+    { SaveSignup: Signup -> Task<Signup> }
 
-            return!
-                parsed
-                |> SchemaResult.handleParsed (fun signup ->
-                    Task.FromResult(SchemaResult.codec signupCodec 201 signup))
-        })
-)
+let createSignup signup : Flow<AppEnv, string, Signup> =
+    flow {
+        let! save = Flow.read _.SaveSignup
+        return! save signup
+    }
+
+let signupEndpoint =
+    flow {
+        let! signup = Request.json Signup.schema
+        let! created = EndpointFlow.run createSignup signup
+        return Response.json 201 signupCodec created
+    }
+
+let endpoint =
+    flowEndpoint
+        (fun context -> context.RequestServices.GetRequiredService<AppEnv>())
+        (fun error -> Results.BadRequest error)
+
+app.MapPost("/signups", endpoint signupEndpoint)
 ```
 
-`SchemaRequest.json`, `SchemaRequest.form`, and `SchemaRequest.query` parse the request into `ParsedInput`.
-`SchemaResult.handleParsed` runs the handler with the trusted model or short-circuits to the problem-details
-response; `SchemaResult.codec` streams the response through a [compiled codec](./json-codec.md) without an
-intermediate string; `SchemaResult.openApi` serves the assembled document.
+`Request.json`, `Request.form`, and `Request.query` are Flow operations. They read the native request from the
+endpoint environment and contribute only a trusted model; failed schema parsing becomes the standard problem-details
+response. `EndpointFlow.run` supplies the application's explicit environment to a narrower application workflow and
+marks its typed failures for the host error mapper. `Response.json` streams the successful value through a
+[compiled codec](./json-codec.md).
+
+`flowEndpoint` is the only lowering boundary. Its environment factory runs once per request, so it can return a
+previously built environment or assemble one from ASP.NET's request-scoped service provider. Defects continue into
+ASP.NET exception middleware, while interruption follows `RequestAborted`.
+
+The lower-level `SchemaRequest` and `SchemaResult` modules remain available for endpoints that need the complete
+`ParsedInput`, such as form redisplay.
+
+Route text is untrusted too. Parse a scalar route value through its schema inside the same endpoint Flow:
+
+```fsharp
+let userEndpoint =
+    flow {
+        let! userId = Request.route "id" UserId.schema
+        let! user = EndpointFlow.run findUser userId
+        return Response.json 200 User.codec user
+    }
+
+app.MapGet("/users/{id}", endpoint userEndpoint)
+```
+
+Use `Request.raw projection` when deliberate direct mapping is enough, and `Request.native` or `Response.native` for
+streaming, signatures, upgrades, or other host-specific behavior. Those names keep the loss of schema-established
+trust visible at the call site.
 
 The runnable version of this is `examples/Axial.Api` — one schema declaration driving parsing, problem details,
 OpenAPI, a compiled response codec, and a redisplaying HTML form.
@@ -96,31 +133,35 @@ OpenAPI, a compiled response codec, and a redisplaying HTML form.
 The same operations exist over GenHTTP's `IRequest`/`IResponse` for embedded servers:
 
 ```fsharp
+open Axial.Flow
 open GenHTTP.Modules.Functional
 open Axial.Schema.Http.GenHttp
 
-let handler =
-    Inline
-        .Create()
-        .Post(
-            "/signups",
-            Func<IRequest, ValueTask<IResponse>>(fun request ->
-                ValueTask<IResponse>(
-                    task {
-                        let! parsed = SchemaRequest.json Signup.schema request
+let createSignup signup : Flow<AppEnv, string, Signup> =
+    flow {
+        let! save = Flow.read _.SaveSignup
+        return! save signup
+    }
 
-                        return!
-                            (parsed
-                             |> SchemaResponse.handleParsed request (fun signup ->
-                                 ValueTask<IResponse>(
-                                     SchemaResponse.codec signupCodec ResponseStatus.Created request signup
-                                 )))
-                                .AsTask()
-                    }
-                ))
-        )
-        .Get("/openapi.json", Func<IRequest, IResponse>(fun request -> SchemaResponse.openApi request openApiDocument))
+let signupEndpoint =
+    flow {
+        let! signup = Request.json Signup.schema
+        let! created = EndpointFlow.run createSignup signup
+        return Response.json ResponseStatus.Created signupCodec created
+    }
+
+let endpoint =
+    flowEndpoint
+        (fun _ -> appEnv)
+        (Response.text ResponseStatus.BadRequest)
+
+let handler =
+    Inline.Create().Post("/signups", endpoint signupEndpoint)
 ```
+
+The endpoint Flow and application workflow have the same structure on both hosts. Each adapter exposes its own
+`Request`, `Response`, `HttpEndpointEnv`, and `flowEndpoint` types so the final value is the native handler expected by
+that server. GenHTTP continues to own route registration.
 
 ## Form and query input
 

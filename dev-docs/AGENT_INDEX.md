@@ -26,9 +26,10 @@ task is about promoting, rejecting, or implementing that sketch.
 - `Axial.Schema.Http` (`src/Axial.Schema.Http/`): host-neutral HTTP boundary support — query/form raw input
   (`BoundaryInput`), RFC 9457 problem details from parse diagnostics, and OpenAPI 3.1 documents assembled from
   `EndpointSpec` values. Depends on `Axial.Schema` only; never on `Axial.Flow`.
-- `Axial.Schema.Http.AspNetCore` / `Axial.Schema.Http.GenHttp` (`src/Axial.Schema.Http.*/`): thin host adapters over
-  `Axial.Schema.Http` (parse request → `ParsedInput`, respond with problem details or a compiled codec). Adapters stay
-  thin; routing and app wiring remain the host's idiom.
+- `Axial.Schema.Http.AspNetCore` / `Axial.Schema.Http.GenHttp` (`src/Axial.Schema.Http.*/`): host boundaries over
+  `Axial.Schema.Http` and `Axial.Flow`. The default API lowers an ordinary endpoint Flow from schema-trusted request
+  input through explicit application services to a native response; lower-level `ParsedInput` adapters remain for
+  redisplay and custom boundaries. Routing and app wiring remain the host's idiom.
 - `Axial.Schema.Testing` (`src/Axial.Schema.Testing/`): non-packable FsCheck adapter deriving test data from Schema.
   Depends on `Axial.Schema` and FsCheck; never move the test-library dependency into a public package.
 - `Axial.Flow.*` add-on packages depend on `Axial.Flow`.
