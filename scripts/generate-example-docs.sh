@@ -8,6 +8,12 @@ flow_output="${DOCS_FLOW_EXAMPLES_OUTPUT:-$root_dir/docs/flow/examples.md}"
 
 mkdir -p "$(dirname "$schema_output")" "$(dirname "$flow_output")"
 
+# Build the pages in temp files and move them into place only after every section succeeded,
+# so a mid-run failure (or a killed run) can never leave truncated docs behind.
+schema_staging="$(mktemp "${TMPDIR:-/tmp}/axial-schema-examples.XXXXXX")"
+flow_staging="$(mktemp "${TMPDIR:-/tmp}/axial-flow-examples.XXXXXX")"
+trap 'rm -f "$schema_staging" "$flow_staging"' EXIT
+
 render_code_block() {
   local language="$1"
   local file_path="$2"
@@ -72,10 +78,10 @@ write_page_header() {
   } > "$file"
 }
 
-write_page_header "$schema_output" "Executable schema, refined, diagnostics, and policy examples mirrored back into the docs."
-write_page_header "$flow_output" "Executable workflow boundary examples mirrored back into the docs."
+write_page_header "$schema_staging" "Executable schema, refined, diagnostics, and policy examples mirrored back into the docs."
+write_page_header "$flow_staging" "Executable workflow boundary examples mirrored back into the docs."
 
-output_file="$flow_output"
+output_file="$flow_staging"
 render_example_section \
   "Request Boundary Example" \
   "This example shows a request boundary that pulls a user from a database-like environment, threads a trace id through the request context, and reuses the same validation shape across Flow." \
@@ -85,7 +91,7 @@ render_example_section \
   "AXIAL_EXAMPLE=request-boundary dotnet run --project examples/Axial.Examples/Axial.Examples.fsproj --nologo" \
   "request-boundary"
 
-output_file="$schema_output"
+output_file="$schema_staging"
 render_example_section \
   "Diagnostics Example" \
   "This example shows a JSON-shaped request boundary with a root-level error, nested child branches, and a display-friendly diagnostics tree." \
@@ -131,7 +137,7 @@ render_example_section \
   "AXIAL_EXAMPLE=policy dotnet run --project examples/Axial.Examples/Axial.Examples.fsproj --nologo" \
   "policy"
 
-output_file="$flow_output"
+output_file="$flow_staging"
 render_example_section \
   'Playground Example' \
   "This example shows the same core boundary across Flow using the normal direct-bind style inside each computation expression." \
@@ -156,3 +162,8 @@ render_example_section \
   "https://github.com/adz/Axial/blob/main/examples/Axial.Examples/SupervisionExample.fs" \
   "AXIAL_EXAMPLE=supervision dotnet run --project examples/Axial.Examples/Axial.Examples.fsproj --nologo" \
   "supervision"
+
+# mktemp creates the staging files with mode 600; the docs should stay world-readable.
+chmod 644 "$schema_staging" "$flow_staging"
+mv "$schema_staging" "$schema_output"
+mv "$flow_staging" "$flow_output"
