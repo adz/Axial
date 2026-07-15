@@ -26,8 +26,9 @@ completions (2026-07-09..13): the Schema value/model catalog consolidation, `Axi
 `ContextRules` (RuleSet deleted), the `.contract` grammar/generator as wire-tier tooling
 (`src/Axial.Schema.Contracts`, `scripts/schemagen`, golden corpus in `tests/Axial.Schema.Tests/contracts/`),
 the `Contract<'model>` versioning engine (`Contract.parse`/`Contract.parseVersion`, typed contiguous n-1 → n
-migrations), `Schema.defer` recursion with finite inspection and `$defs`-based JSON Schema output, and the
-non-packable `Axial.Schema.Testing` FsCheck adapter (`SchemaGen`).
+migrations), `Schema.defer` recursion with finite inspection and `$defs`-based JSON Schema output, the
+non-packable `Axial.Schema.Testing` FsCheck adapter (`SchemaGen`), and (2026-07-16) multi-version `schemagen`
+generation with the user-facing `docs/schema/contracts.md` guide.
 
 ## Phase 30: Contracts milestone bundle (gated on Phase 28 + a real consumer)
 
@@ -49,9 +50,6 @@ From the same ZIO comparison; these belong *with* the remote-config milestone, n
 
 ## Smaller queue items
 
-- User-facing docs for the contract tooling once it stabilizes: a `docs/schema/contracts.md` guide (grammar by
-  example, `schemagen` usage, `--check` in CI, "wire tier only — domain models are hand-written" positioning). The
-  only current documentation is dev-docs and the golden corpus.
 - `dev-docs/API_BASELINE.md` needs a fresh validated-command pass: its project lists were corrected on 2026-07-12,
   but the recorded run, test counts, and baseline commit predate the 2026-07-09..13 renames.
 

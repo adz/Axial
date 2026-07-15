@@ -51,9 +51,11 @@ systematically. Axial's answer, in dependency order:
    codebase.
 
 Within the contract thread the original order was versioning/migration machinery → grammar + generator; in
-practice the grammar + generator shipped first (single-version, wire-tier scope), and the versioning/migration
-engine (`Contract<'model>`) followed on 2026-07-13. Remaining order: multi-version generator support → dogfood on
-the real config system → LSP and public positioning informed by that experience.
+practice the grammar + generator shipped first (single-version, wire-tier scope), the versioning/migration
+engine (`Contract<'model>`) followed on 2026-07-13, and multi-version generator support (whole version chains
+from one `.contract` file, with migrations as typed parameters of a generated builder) plus the public
+`docs/schema/contracts.md` guide shipped on 2026-07-16. Remaining order: dogfood on the real config system →
+LSP informed by that experience.
 
 ## Positioning
 

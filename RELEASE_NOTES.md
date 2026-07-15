@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- `schemagen` generates whole version chains: a `.contract` file may declare several versions of one contract (oldest first, contiguous). Superseded versions emit frozen version-suffixed types and modules (`ConfigV1`), the latest keeps the bare name, and its module gains a `contract` builder that takes each typed n-1 -> n migration as a parameter plus the `VersionSource` — migrations stay hand-written F# and the compiler enforces the chain.
+- Added the Versioned Contracts guide (`docs/schema/contracts.md`): the `Contract<'model>` versioning engine, the `.contract` grammar by example, `schemagen` usage with `--check` drift guarding in CI, and the wire-tier-only positioning.
+
 - Added `Axial.Flow.Telemetry.JavaScript`: OpenTelemetry tracing for Axial workflows compiled with Fable (Node and browser). `Otel.install` takes a host-supplied `@opentelemetry/api` object through structural bindings; `Otel.trace`/`traceWith` mirror the .NET `Activity.trace` span semantics and tag vocabulary, and `FiberTelemetry.observe`/`observeWithSpans` mirror the fiber observers. JavaScript targets only; the .NET build is inert.
 
 - Renamed the fail-fast package from `Axial.Result` to `Axial.ErrorHandling`, keeping `Check`, focused `Result` helpers, collection traversal, and `result {}` together.

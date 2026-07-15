@@ -8,8 +8,11 @@ comparisons/min/max/pattern/multipleOf/distinct, defaults, literal unions (→ g
 `list`/`map`, contract refs, inline tagged unions (`union kind { ... }` → `Value.unionInline`), doc comments
 (→ XML docs + `Value.describe`/`Schema.describe`). Emitted shape per contract: public record (the draft), `schema`,
 `validate` (→ `Result<Model<'t>, Diagnostics<SchemaError>>`), `parse`, and a typed `Fields` module of `FieldRef`s.
-Deliberately not shipped yet: multiple versions/migrations (Contract machinery stays gated), `check` refs, refined
-type refs, date/time/guid defaults, LSP. Contracts are the WIRE tier only — domain models are hand-written F#
+Multi-version generation shipped 2026-07-16: one file declares a contiguous oldest-first version chain, superseded
+versions emit frozen suffixed types (`ConfigV1`), and the latest module gains a `contract` builder taking each
+typed n-1 → n migration as a parameter plus the `VersionSource` (see `dev-docs/decisions/README.md`). User guide:
+`docs/schema/contracts.md`. Deliberately not shipped yet: `check` refs, refined type refs, date/time/guid
+defaults, LSP. Contracts are the WIRE tier only — domain models are hand-written F#
 (see `docs/schema/trusted-construction.md`); a domain-tier `model` declaration kind was designed and rejected
 (no methods on generated types, DUs don't fit the grammar). The versioned-Contract engine this grammar will
 eventually target is shipped as `Axial.Schema.Contract` (`src/Axial.Schema/Contract.fs`). Original sketch follows;

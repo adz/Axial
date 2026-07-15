@@ -65,7 +65,7 @@ contract Geo.v1 {
 }
 """
 
-        test <@ messages diagnostics |> List.exists (fun message -> message.Contains "'Geo' must be declared before 'Site'") @>
+        test <@ messages diagnostics |> List.exists (fun message -> message.Contains "'Geo.v1' must be declared before 'Site.v1'") @>
 
     [<Fact>]
     let ``a contract may refer to its own pinned version`` () =
@@ -81,7 +81,7 @@ contract Category.v1 {
         test <@ diagnostics = [] @>
 
     [<Fact>]
-    let ``multiple versions of one contract are rejected`` () =
+    let ``a contiguous ascending version chain resolves cleanly`` () =
         let diagnostics =
             resolveOne
                 """
@@ -93,9 +93,89 @@ contract Config.v2 {
   a: int
   b: int
 }
+
+contract Wrapper.v1 {
+  old: Config.v1
+  current: Config.v2
+}
 """
 
-        test <@ messages diagnostics |> List.exists (fun message -> message.Contains "multiple versions") @>
+        test <@ diagnostics = [] @>
+
+    [<Fact>]
+    let ``version chains must be declared oldest to newest with no gaps`` () =
+        let gapped =
+            resolveOne
+                """
+contract Config.v1 {
+  a: int
+}
+
+contract Config.v3 {
+  a: int
+}
+"""
+
+        test <@ messages gapped |> List.exists (fun message -> message.Contains "no gaps") @>
+
+        let descending =
+            resolveOne
+                """
+contract Config.v2 {
+  a: int
+}
+
+contract Config.v1 {
+  a: int
+}
+"""
+
+        test <@ messages descending |> List.exists (fun message -> message.Contains "no gaps") @>
+
+    [<Fact>]
+    let ``version chains cannot span files`` () =
+        let diagnostics =
+            Resolver.resolve
+                [ parse "a.contract" "contract Config.v1 {\n  a: int\n}"
+                  parse "b.contract" "contract Config.v2 {\n  a: int\n}" ]
+
+        test <@ messages diagnostics |> List.exists (fun message -> message.Contains "must live in one file") @>
+
+    [<Fact>]
+    let ``a later version cannot be referenced before it is declared`` () =
+        let diagnostics =
+            resolveOne
+                """
+contract Config.v1 {
+  next: Config.v2
+}
+
+contract Config.v2 {
+  a: int
+}
+"""
+
+        test <@ messages diagnostics |> List.exists (fun message -> message.Contains "must be declared before") @>
+
+    [<Fact>]
+    let ``superseded generated type names cannot collide with declared contracts`` () =
+        let diagnostics =
+            resolveOne
+                """
+contract ConfigV1.v1 {
+  a: int
+}
+
+contract Config.v1 {
+  a: int
+}
+
+contract Config.v2 {
+  a: int
+}
+"""
+
+        test <@ messages diagnostics |> List.exists (fun message -> message.Contains "collides") @>
 
     [<Fact>]
     let ``constraint and type mismatches are reported with guidance`` () =

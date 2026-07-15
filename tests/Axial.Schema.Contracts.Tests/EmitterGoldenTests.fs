@@ -39,8 +39,10 @@ module EmitterGoldenTests =
     [<InlineData("signup.contract", "signup.g.fs")>]
     [<InlineData("payment.contract", "payment.g.fs")>]
     [<InlineData("category.contract", "category.g.fs")>]
+    [<InlineData("profile.contract", "profile.g.fs")>]
     let ``the emitter reproduces every checked-in golden file byte for byte`` (contractName: string) (goldenName: string) =
-        let emitted = Emitter.emit "Axial.Tests.Generated" (emitCorpusFile contractName)
+        let file = emitCorpusFile contractName
+        let emitted = Emitter.emit "Axial.Tests.Generated" [ file ] file
 
         let golden =
             (File.ReadAllText(Path.Combine(corpusDirectory (), goldenName))).Replace("\r\n", "\n")
@@ -62,7 +64,7 @@ contract Kw.v1 {
             | Ok file -> file
             | Error diagnostics -> failwithf "Expected a clean parse, got %A" diagnostics
 
-        let emitted = Emitter.emit "Ns" parsed
+        let emitted = Emitter.emit "Ns" [ parsed ] parsed
 
         test <@ emitted.Contains "fun ``type`` ``method``" @>
         test <@ emitted.Contains "let ``type`` : FieldRef<Kw, string>" @>

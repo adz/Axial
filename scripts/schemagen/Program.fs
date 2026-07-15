@@ -86,7 +86,7 @@ let main argv =
 
                 for file in files do
                     let outputPath = Path.ChangeExtension(file.FilePath, ".g.fs")
-                    let emitted = Emitter.emit namespaceName file
+                    let emitted = Emitter.emit namespaceName files file
 
                     if check then
                         let existing =

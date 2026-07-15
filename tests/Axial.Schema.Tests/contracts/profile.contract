@@ -1,0 +1,12 @@
+/// A user profile as first stored.
+contract Profile.v1 {
+  name: text [ min 1, max 100 ]
+  email: email
+}
+
+/// A user profile with an explicit marketing consent decision.
+contract Profile.v2 {
+  name: text [ min 1, max 100 ]
+  email: email
+  marketingOptIn as "marketing_opt_in": bool = false
+}

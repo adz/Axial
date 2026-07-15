@@ -45,7 +45,8 @@ Data flows from left to right. Later stages can bind earlier stages directly.
 - `Inspect.model` / `Inspect.schema` return finite metadata without parsing or checks. Recursive graphs use `SchemaShape.Deferred` and `Recursive`. `JsonSchema.generate` lowers the same declaration, using `$defs` and `$ref` for recursion.
 - `Axial.Codec.Json.compile` creates a reusable reflection-free JSON codec. The codec checks wire shape; untrusted boundaries still use `RawInput` plus `Schema.parse` for constraints and complete diagnostics.
 - `Contract.create` / `supersedes` / `build` declare contiguous typed wire migrations. `Contract.parse` selects versions with `VersionSource.Field`, `External`, or `UnversionedMeans` and returns the current value or `ContractError`.
-- `schemagen` turns a `.contract` wire declaration into checked-in F# records, schemas, parse/validate functions, and field references. Migrations remain hand-written F#.
+- `schemagen` turns a `.contract` wire declaration into checked-in F# records, schemas, parse/validate functions, and field references. Declaring several versions of one contract (oldest first, contiguous) generates the whole chain: superseded versions keep frozen suffixed types (`ConfigV1`), and the latest module gains a `contract` builder that takes each typed n-1 -> n migration as a parameter. Migrations remain hand-written F#.
+- `Contract<'model>` (in `Axial.Schema`) parses explicitly versioned wire input: `Contract.create`/`supersedes`/`build` register frozen version schemas and contiguous migrations; `Contract.parse`/`parseVersion` detect, parse, migrate forward, and re-check against the current schema.
 - The non-packable `Axial.Schema.Testing.SchemaGen` adapter derives FsCheck generators through `RawInput`. Use `rawWith` for pattern, custom, or application-specific field distributions.
 
 ## Execution Outcomes (Exit Model)

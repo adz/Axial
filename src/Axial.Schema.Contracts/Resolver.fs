@@ -120,9 +120,10 @@ module Resolver =
         let report file line message =
             diagnostics.Add { File = file; Line = line; Message = message }
 
-        // Global contract registry: duplicate names (any version) are rejected — multiple live
-        // versions of one contract are Contract-machinery territory, deliberately not generation.
-        let registry = System.Collections.Generic.Dictionary<string, string * int * int>()
+        // Global contract registry: every declared version of a name, in declaration order. A version
+        // chain lives in one file, declared oldest to newest with no gaps, so the emitted F# and the
+        // Contract engine's contiguous n-1 -> n migration model agree.
+        let registry = System.Collections.Generic.Dictionary<string, ResizeArray<string * int * int>>()
 
         for file in files do
             for contract in file.Contracts do
@@ -134,39 +135,68 @@ module Resolver =
                     report file.FilePath contract.ContractLine "contracts need at least one field"
 
                 match registry.TryGetValue contract.ContractName with
-                | true, (existingFile, existingLine, existingVersion) ->
-                    if existingVersion = contract.Version then
+                | true, declared ->
+                    let existingFile, existingLine, existingVersion =
+                        declared |> Seq.maxBy (fun (_, _, version) -> version)
+
+                    if declared |> Seq.exists (fun (_, _, version) -> version = contract.Version) then
+                        let duplicateFile, duplicateLine, _ =
+                            declared |> Seq.find (fun (_, _, version) -> version = contract.Version)
+
                         report file.FilePath contract.ContractLine
-                            $"contract '{contract.ContractName}.v{contract.Version}' is already declared at {existingFile}({existingLine})"
+                            $"contract '{contract.ContractName}.v{contract.Version}' is already declared at {duplicateFile}({duplicateLine})"
+                    elif existingFile <> file.FilePath then
+                        report file.FilePath contract.ContractLine
+                            $"every version of contract '{contract.ContractName}' must live in one file; v{existingVersion} is declared at {existingFile}({existingLine})"
+                    elif contract.Version <> existingVersion + 1 then
+                        report file.FilePath contract.ContractLine
+                            $"contract versions are declared oldest to newest with no gaps; expected '{contract.ContractName}.v{existingVersion + 1}' after v{existingVersion}, found v{contract.Version}"
                     else
-                        report file.FilePath contract.ContractLine
-                            $"multiple versions of contract '{contract.ContractName}' are not supported by generation yet; superseded versions are frozen hand-written code (see the contract versioning sketch)"
+                        declared.Add(file.FilePath, contract.ContractLine, contract.Version)
                 | false, _ ->
-                    registry.[contract.ContractName] <- (file.FilePath, contract.ContractLine, contract.Version)
+                    registry.[contract.ContractName] <- ResizeArray [ file.FilePath, contract.ContractLine, contract.Version ]
+
+        // Superseded versions generate version-suffixed type and module names (`ConfigV1`); those names
+        // must not collide with another declared contract.
+        for entry in registry do
+            let versions = entry.Value
+
+            if versions.Count > 1 then
+                for declaredFile, declaredLine, version in Seq.take (versions.Count - 1) versions do
+                    let generatedName = $"{entry.Key}V{version}"
+
+                    if registry.ContainsKey generatedName then
+                        report declaredFile declaredLine
+                            $"superseded version '{entry.Key}.v{version}' generates the type name '{generatedName}', which collides with the contract of that name"
 
         let resolveReference file line (reference: ContractRef) =
             match registry.TryGetValue reference.RefName with
-            | true, (_, _, version) when version = reference.RefVersion -> ()
-            | true, (_, _, version) ->
-                report file line $"contract '{reference.RefName}' is declared at v{version}, but the reference pins v{reference.RefVersion}"
+            | true, declared when declared |> Seq.exists (fun (_, _, version) -> version = reference.RefVersion) -> ()
+            | true, declared ->
+                let versions =
+                    declared |> Seq.map (fun (_, _, version) -> $"v{version}") |> String.concat ", "
+
+                report file line $"contract '{reference.RefName}' is declared at {versions}, but the reference pins v{reference.RefVersion}"
             | false, _ ->
                 report file line $"unknown contract reference '{reference.RefName}.v{reference.RefVersion}'"
 
         for file in files do
-            // Same-file declaration order: a reference must point at a contract declared earlier in
-            // its own file, because the emitted F# compiles top to bottom.
-            let declaredSoFar = System.Collections.Generic.HashSet<string>()
+            // Same-file declaration order: a reference must point at a contract version declared earlier
+            // in its own file, because the emitted F# compiles top to bottom.
+            let declaredSoFar = System.Collections.Generic.HashSet<string * int>()
 
             for contract in file.Contracts do
                 let checkOrder line (reference: ContractRef) =
                     let declaredInFile =
-                        file.Contracts |> List.exists (fun candidate -> candidate.ContractName = reference.RefName)
+                        file.Contracts
+                        |> List.exists (fun candidate ->
+                            candidate.ContractName = reference.RefName && candidate.Version = reference.RefVersion)
 
                     let isSelf = reference.RefName = contract.ContractName && reference.RefVersion = contract.Version
 
-                    if declaredInFile && not isSelf && not (declaredSoFar.Contains reference.RefName) then
+                    if declaredInFile && not isSelf && not (declaredSoFar.Contains(reference.RefName, reference.RefVersion)) then
                         report file.FilePath line
-                            $"'{reference.RefName}' must be declared before '{contract.ContractName}' uses it"
+                            $"'{reference.RefName}.v{reference.RefVersion}' must be declared before '{contract.ContractName}.v{contract.Version}' uses it"
 
                 for annotation in contract.Annotations do
                     if not (knownAnnotations.Contains annotation.AnnotationName) then
@@ -302,6 +332,6 @@ module Resolver =
                         | Some message -> report file.FilePath field.FieldLine message
                         | None -> ()
 
-                declaredSoFar.Add contract.ContractName |> ignore
+                declaredSoFar.Add(contract.ContractName, contract.Version) |> ignore
 
         List.ofSeq diagnostics

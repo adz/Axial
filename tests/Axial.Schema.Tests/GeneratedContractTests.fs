@@ -224,3 +224,63 @@ module GeneratedContractTests =
             |> List.find (fun field -> field.Name = "plan")
 
         test <@ planField.Schema.Default = Some(box SignupPlan.Free) @>
+
+    /// The hand-written migration the generated Profile.contract builder is wired with.
+    let private profileContract () =
+        Profile.contract
+            (fun (v1: ProfileV1) -> Ok { Name = v1.Name; Email = v1.Email; MarketingOptIn = false })
+            (VersionSource.Field "schemaVersion")
+
+    [<Fact>]
+    let ``the generated contract builder migrates a superseded version to the current model`` () =
+        let rawV1 =
+            RawInput.Object(
+                Map.ofList
+                    [ "schemaVersion", RawInput.Scalar "1"
+                      "name", RawInput.Scalar "Ada"
+                      "email", RawInput.Scalar "ada@example.com" ]
+            )
+
+        match Contract.parse (profileContract ()) rawV1 with
+        | Ok profile -> test <@ profile = { Name = "Ada"; Email = "ada@example.com"; MarketingOptIn = false } @>
+        | Error error -> failwithf "Expected a migrated v1 payload, got %A" error
+
+    [<Fact>]
+    let ``the generated contract builder parses the current version directly`` () =
+        let rawV2 =
+            RawInput.Object(
+                Map.ofList
+                    [ "schemaVersion", RawInput.Scalar "2"
+                      "name", RawInput.Scalar "Ada"
+                      "email", RawInput.Scalar "ada@example.com"
+                      "marketing_opt_in", RawInput.Scalar "true" ]
+            )
+
+        match Contract.parse (profileContract ()) rawV2 with
+        | Ok profile -> test <@ profile.MarketingOptIn @>
+        | Error error -> failwithf "Expected a v2 parse, got %A" error
+
+    [<Fact>]
+    let ``the generated contract builder rejects versions newer than the chain`` () =
+        let rawV3 =
+            RawInput.Object(
+                Map.ofList
+                    [ "schemaVersion", RawInput.Scalar "3"
+                      "name", RawInput.Scalar "Ada"
+                      "email", RawInput.Scalar "ada@example.com" ]
+            )
+
+        test <@ Contract.parse (profileContract ()) rawV3 = Error(ContractError.VersionTooNew(3, 2)) @>
+
+    [<Fact>]
+    let ``superseded generated versions keep their own frozen schema and fields`` () =
+        let parsed =
+            ProfileV1.parse (
+                RawInput.Object(
+                    Map.ofList [ "name", RawInput.Scalar "Ada"; "email", RawInput.Scalar "ada@example.com" ]
+                )
+            )
+
+        match parsed.Result with
+        | Ok v1 -> test <@ ProfileV1.Fields.name.Get v1 = "Ada" @>
+        | Error diagnostics -> failwithf "Expected a v1 parse, got %A" diagnostics

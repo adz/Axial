@@ -3,6 +3,25 @@
 This folder keeps only high-level durable decisions. Detailed historical specs are deleted once their useful rules have
 been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 
+## 2026-07-16: schemagen generates version chains; migrations are builder parameters
+
+- A `.contract` file may declare several versions of one contract, oldest first with no gaps, all in one file.
+  The resolver enforces contiguity, single-file chains, and that superseded generated names (`ConfigV1`) do not
+  collide with declared contracts.
+- The latest version keeps the bare generated type and module name; superseded versions emit version-suffixed
+  frozen types, schemas, parse/validate, and field references. References pin any declared version and lower to
+  the corresponding generated name.
+- The latest module gains a generated `contract` builder whose parameters are each typed n-1 → n migration plus
+  the `VersionSource`, wiring `Contract.create`/`supersedes`/`build`. The grammar never names F# symbols for
+  migrations; they stay hand-written functions the compiler checks against the generated version types, and
+  cutting a new version breaks every construction site until its migration exists.
+- The earlier gate ("multi-version schemagen only after dogfooding a hand-written chain") was resolved by keeping
+  the engine unchanged and the generated surface minimal: the builder function is the only new emission, and the
+  golden corpus (`profile.contract`) plus behavior tests exercise the wired chain end to end.
+- User-facing documentation is `docs/schema/contracts.md`: the versioning model, hand-written `Contract`
+  declaration, grammar by example, `schemagen` with `--check`, multi-version generation, and the wire-tier-only
+  non-goals. Contracts stay positioned as the at-scale tier, never the entry point.
+
 ## 2026-07-15: App owns portable root lifetime; hosts adapt native lifecycle
 
 - `App` in `Axial.Flow` is the portable application launcher. `App.run` runs a finite root Flow;
