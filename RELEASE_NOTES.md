@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Added `Axial.Schema.Contracts.Build`: a targets-only MSBuild package that runs wire schema generation before
+  compile. Declare `<AxialWireSchema>` (and optionally `<AxialContract>`) items and the checked-in `.g.fs`
+  siblings stay fresh on every build — timestamp-incremental, no tool to install or run by hand. The package
+  ships the generator framework-dependent (net8.0, major roll-forward).
+
 - Added record-first wire schema generation: mark a plain record with `[<WireSchema>]` (attributes in the new
   `Axial.Schema.Wire` namespace mirror the contract constraint vocabulary — `Pattern`, `Min`/`Max`, comparison
   bounds, `Distinct`, `Email`, `Default`, `WireName`, `WireUnion`) and `schemagen` derives the permissive wire

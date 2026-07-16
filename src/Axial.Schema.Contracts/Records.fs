@@ -244,10 +244,24 @@ module Records =
                 match kind with
                 | SynModuleOrNamespaceKind.DeclaredNamespace
                 | SynModuleOrNamespaceKind.GlobalNamespace ->
-                    if namespaceName.IsNone then
-                        namespaceName <- Some(longId |> List.map _.idText |> String.concat ".")
+                    let thisNamespace = longId |> List.map _.idText |> String.concat "."
 
-                    List.iter (inspectDecl false) decls
+                    match namespaceName with
+                    | None ->
+                        namespaceName <- Some thisNamespace
+                        List.iter (inspectDecl false) decls
+                    | Some first when first = thisNamespace -> List.iter (inspectDecl false) decls
+                    | Some first ->
+                        // The generated sibling file carries one namespace; marked records outside the
+                        // file's first namespace would silently emit into the wrong one.
+                        for decl in decls do
+                            match decl with
+                            | SynModuleDecl.Types(typeDefns, _) ->
+                                for SynTypeDefn(SynComponentInfo(attributes, _, _, longId, _, _, _, _), _, _, _, typeRange, _) in typeDefns do
+                                    if attributesOf attributes |> List.exists (fun (name, _) -> name = "WireSchema") then
+                                        report typeRange.StartLine
+                                            $"wire DTO '{(List.last longId).idText}' is in namespace '{thisNamespace}', but this file's wire schemas generate into '{first}'; keep one namespace per wire file"
+                            | _ -> ()
                 | SynModuleOrNamespaceKind.NamedModule
                 | SynModuleOrNamespaceKind.AnonModule ->
                     let hasMarked =

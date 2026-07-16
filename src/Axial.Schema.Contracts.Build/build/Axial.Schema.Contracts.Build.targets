@@ -1,0 +1,50 @@
+<Project>
+
+  <!--
+    Wire schema generation before compile.
+
+    Declare the sources that carry wire declarations, alongside their ordinary Compile entries:
+
+      <ItemGroup>
+        <AxialWireSchema Include="wire/orders.fs" />   [<WireSchema>] records; emits wire/orders.g.fs
+        <AxialContract Include="contracts/*.contract" />  .contract files; needs $(AxialContractNamespace)
+      </ItemGroup>
+
+    Generated .g.fs siblings are ordinary checked-in sources: list them in <Compile> after their source.
+    The target is timestamp-incremental — unchanged declarations cost nothing on rebuild.
+
+    Properties:
+      AxialSchemaGenEnabled    - set false to skip generation (default true)
+      AxialWireNaming          - camel | snake | verbatim (default camel)
+      AxialContractNamespace   - namespace for .contract-generated code (required with AxialContract items)
+      AxialSchemaGenToolPath   - override the generator path (defaults to the copy in this package)
+  -->
+
+  <PropertyGroup>
+    <AxialSchemaGenEnabled Condition="'$(AxialSchemaGenEnabled)' == ''">true</AxialSchemaGenEnabled>
+    <AxialWireNaming Condition="'$(AxialWireNaming)' == ''">camel</AxialWireNaming>
+    <AxialSchemaGenToolPath Condition="'$(AxialSchemaGenToolPath)' == ''">$(MSBuildThisFileDirectory)../tools/schemagen.dll</AxialSchemaGenToolPath>
+  </PropertyGroup>
+
+  <Target
+    Name="AxialSchemaGen"
+    BeforeTargets="CoreCompile"
+    Condition="'$(AxialSchemaGenEnabled)' == 'true' and ('@(AxialWireSchema)' != '' or '@(AxialContract)' != '')"
+    Inputs="@(AxialWireSchema);@(AxialContract)"
+    Outputs="@(AxialWireSchema->'%(RootDir)%(Directory)%(Filename).g.fs');@(AxialContract->'%(RootDir)%(Directory)%(Filename).g.fs')">
+
+    <Error
+      Condition="'@(AxialContract)' != '' and '$(AxialContractNamespace)' == ''"
+      Text="AxialContractNamespace must be set when AxialContract items are declared." />
+
+    <PropertyGroup>
+      <_AxialNamespaceArg Condition="'$(AxialContractNamespace)' != ''">--namespace "$(AxialContractNamespace)"</_AxialNamespaceArg>
+      <_AxialWireSchemaArgs>@(AxialWireSchema->'"%(FullPath)"', ' ')</_AxialWireSchemaArgs>
+      <_AxialContractArgs>@(AxialContract->'"%(FullPath)"', ' ')</_AxialContractArgs>
+    </PropertyGroup>
+
+    <Exec Command="dotnet exec &quot;$(AxialSchemaGenToolPath)&quot; --wire-naming $(AxialWireNaming) $(_AxialNamespaceArg) $(_AxialWireSchemaArgs) $(_AxialContractArgs)" />
+
+  </Target>
+
+</Project>

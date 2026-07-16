@@ -333,6 +333,73 @@ type Order = { Source: Source }
         test <@ badUnionPayload |> List.exists (fun m -> m.Contains "exactly one [<WireSchema>] record payload") @>
 
     [<Fact>]
+    let ``a self-referencing record emits a deferred schema`` () =
+        let file =
+            parse
+                """
+namespace My.Wire
+
+open Axial.Schema.Wire
+
+[<WireSchema>]
+type Category =
+    { Name: string
+      Children: Category list }
+"""
+
+        test <@ Resolver.resolve [ file ] = [] @>
+        let emitted = Emitter.emit "Fallback" [ file ] file
+        test <@ emitted.Contains "let rec schema" @>
+        test <@ emitted.Contains "Schema.list (Schema.defer (fun () -> schema))" @>
+        test <@ not (emitted.Contains "type Category") @>
+
+    [<Fact>]
+    let ``chain overrides emit against the user's actual type names`` () =
+        let file =
+            parse
+                """
+namespace My.Wire
+
+open Axial.Schema.Wire
+
+[<WireSchema(Chain = "Order", Version = 1)>]
+type LegacyOrder = { Sku: string }
+
+[<WireSchema(Chain = "Order", Version = 2)>]
+type Order = { Sku: string; Quantity: int }
+"""
+
+        test <@ Resolver.resolve [ file ] = [] @>
+        let emitted = Emitter.emit "Fallback" [ file ] file
+        test <@ emitted.Contains "module LegacyOrder" @>
+        test <@ emitted.Contains "Schema<LegacyOrder>" @>
+        test <@ emitted.Contains "(migrateV1ToV2: LegacyOrder -> Result<Order, MigrationError>)" @>
+        test <@ emitted.Contains "|> Contract.supersedes 1 LegacyOrder.schema migrateV1ToV2" @>
+        test <@ emitted.Contains "namespace My.Wire" @>
+
+    [<Fact>]
+    let ``marked records outside the file's first namespace are rejected`` () =
+        let messages =
+            parseErrors
+                """
+namespace My.Wire
+
+open Axial.Schema.Wire
+
+[<WireSchema>]
+type Order = { Sku: string }
+
+namespace My.Other
+
+open Axial.Schema.Wire
+
+[<WireSchema>]
+type Stray = { A: int }
+"""
+
+        test <@ messages |> List.exists (fun m -> m.Contains "'Stray'" && m.Contains "one namespace per wire file") @>
+
+    [<Fact>]
     let ``snake case naming policy applies to fields and enum tags`` () =
         let file =
             match

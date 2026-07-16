@@ -32,6 +32,12 @@ task is about promoting, rejecting, or implementing that sketch.
   redisplay and custom boundaries. Routing and app wiring remain the host's idiom.
 - `Axial.Schema.Testing` (`src/Axial.Schema.Testing/`): non-packable FsCheck adapter deriving test data from Schema.
   Depends on `Axial.Schema` and FsCheck; never move the test-library dependency into a public package.
+- `Axial.Schema.Contracts` (`src/Axial.Schema.Contracts/`): non-packable wire-tier generation library — the
+  `[<WireSchema>]` record frontend (`Records.fs`, FCS syntax-only), the `.contract` parser, and the shared
+  resolver/emitter. The `Axial.Schema.Wire` attribute namespace lives in `Axial.Schema` itself (inert metadata).
+  FCS stays tool-tier only: never referenced from a packable library.
+- `Axial.Schema.Contracts.Build` (`src/Axial.Schema.Contracts.Build/`): packable targets-only MSBuild package
+  running `scripts/schemagen` before compile over `<AxialWireSchema>`/`<AxialContract>` items.
 - `Axial.Flow.*` add-on packages depend on `Axial.Flow`.
 - `Axial` umbrella package references the public packages for convenience.
 

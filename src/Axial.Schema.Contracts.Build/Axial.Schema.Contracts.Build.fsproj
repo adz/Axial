@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Targets-only package: MSBuild integration for axial schemagen. Referencing it runs wire schema
+       generation before compile, so [<WireSchema>] records and .contract files keep their checked-in
+       .g.fs siblings fresh without anyone running a tool by hand. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <DevelopmentDependency>true</DevelopmentDependency>
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+    <PackageId>Axial.Schema.Contracts.Build</PackageId>
+    <Authors>Adam Davies</Authors>
+    <Description>MSBuild integration for Axial wire schema generation: derives permissive wire schemas from [&lt;WireSchema&gt;]-marked records and .contract files before compile, keeping checked-in .g.fs sources fresh.</Description>
+    <PackageProjectUrl>https://github.com/adz/Axial</PackageProjectUrl>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>fsharp;schema;codegen;msbuild;wire</PackageTags>
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);PackSchemagenTool</TargetsForTfmSpecificContentInPackage>
+    <_SchemagenPublishDir>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../../artifacts/schemagen-publish'))</_SchemagenPublishDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="build/Axial.Schema.Contracts.Build.targets" Pack="true" PackagePath="build/" />
+    <!-- Compile nothing; the package carries only the targets file and the published generator. -->
+    <Compile Remove="**/*.fs" />
+  </ItemGroup>
+
+  <Target Name="PublishSchemagen">
+    <MSBuild
+      Projects="$(MSBuildThisFileDirectory)../../scripts/schemagen/schemagen.fsproj"
+      Targets="Publish"
+      Properties="Configuration=Release;PublishDir=$(_SchemagenPublishDir)/;SelfContained=false" />
+  </Target>
+
+  <Target Name="PackSchemagenTool" DependsOnTargets="PublishSchemagen">
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="$(_SchemagenPublishDir)/**/*" PackagePath="tools/" />
+    </ItemGroup>
+  </Target>
+
+</Project>

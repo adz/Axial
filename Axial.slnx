@@ -39,6 +39,7 @@
     <Project Path="src/Axial.Schema.Http.AspNetCore/Axial.Schema.Http.AspNetCore.fsproj" />
     <Project Path="src/Axial.Schema.Http.GenHttp/Axial.Schema.Http.GenHttp.fsproj" />
     <Project Path="src/Axial.Schema.Contracts/Axial.Schema.Contracts.fsproj" />
+    <Project Path="src/Axial.Schema.Contracts.Build/Axial.Schema.Contracts.Build.fsproj" />
     <Project Path="src/Axial.Schema.Testing/Axial.Schema.Testing.fsproj" />
     <Project Path="src/Axial.Flow.Hosting/Axial.Flow.Hosting.fsproj" />
     <Project Path="src/Axial.Flow.Hosting.Node/Axial.Flow.Hosting.Node.fsproj" />

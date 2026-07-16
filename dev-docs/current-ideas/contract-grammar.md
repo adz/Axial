@@ -48,9 +48,11 @@ Consequences for ideas raised in the same thread:
   the existing format types. Revisit only if dogfooding shows wire-tier validation gaps.
 - **Type-ownership toggle (contract targets a hand-written type): dropped** with universal authoring — wire DTOs
   are generated records by definition.
-- **MSBuild targets package (Grpc.Tools-style `.targets` running schemagen before compile): still queued.**
-  Friction removal is good under any positioning; checked-in emission stays the default so generated code remains
-  reviewable, with the target keeping it fresh in place of `--check`.
+- **MSBuild targets package: SHIPPED 2026-07-17** as `Axial.Schema.Contracts.Build` (targets-only package,
+  Grpc.Tools-style: ships the published schemagen framework-dependent in `tools/`, a `BeforeTargets="CoreCompile"`
+  target over explicit `<AxialWireSchema>`/`<AxialContract>` items with timestamp `Inputs`/`Outputs`
+  incrementality). Checked-in emission stays the default so generated code remains reviewable, with the target
+  keeping it fresh; `--check` remains for CI without the package.
 - **Record → schema generation for wire DTOs** (the reverse direction: you write the record, generation derives
   the permissive schema, STJ-familiar) is DESIGNED (2026-07-17) as the low-ceremony wire-tier entry — full design
   in `schema-source-generation.md`: same `ContractDecl` AST/resolver/emitter, FCS syntax-only frontend,

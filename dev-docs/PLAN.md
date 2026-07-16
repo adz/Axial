@@ -99,9 +99,11 @@ compiler-checked by argument position and authoring scales to any field count wi
 computation expression, or source generator. The earlier `Schema.map2`/`Schema.map3` API was only a transitional proof
 of the metadata model. The `schema create { }` computation expression was evaluated and rejected (see
 `dev-docs/decisions/README.md`); `Axial.Schema.DSL` delivers its prefix-elimination motivation as an open module over
-the same pipeline. Build-time generation exists as wire-tier tooling only (`.contract` files →
-`src/Axial.Schema.Contracts` + `scripts/schemagen`); domain-tier generation was designed and rejected. Raw input,
-schema validation, rules, and DSL work should build on the explicit builder core rather than bypass it.
+the same pipeline. Build-time generation exists as wire-tier tooling only: `[<WireSchema>]`-marked records are the
+primary declaration (FCS syntax-only frontend in `src/Axial.Schema.Contracts`, run by `scripts/schemagen` or the
+`Axial.Schema.Contracts.Build` MSBuild package), with `.contract` files as the parked secondary form; domain-tier
+generation was designed and rejected. Raw input, schema validation, rules, and DSL work should build on the explicit
+builder core rather than bypass it.
 
 The public schema-authoring vocabulary keeps one field operation and names value schemas by their primitive:
 `Schema.field "name" _.Name Schema.text`, where `Schema.text`, `Schema.int`, `Schema.decimal`, `Schema.bool`,

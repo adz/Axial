@@ -191,6 +191,7 @@ Translate common patterns from other libraries into idiomatic Axial.
 | editable schema field | `FieldRef` with `Get` and immutable `Set`, followed by `Schema.check` when trust is required |
 | `with` update on a private-representation aggregate | lower to its public draft record, edit with `with`, re-admit through the aggregate's `create` |
 | versioned wire input | `Contract.parse` with an explicit `VersionSource` and typed migrations |
+| hand-written schema for a plain wire DTO | `[<WireSchema>]` on the record; `schemagen` (or the `Axial.Schema.Contracts.Build` package) derives `schema`/`parse`/`validate`/`Fields` |
 | guard clauses at workflow entry | `Policy` + `Flow.verify` |
 
 

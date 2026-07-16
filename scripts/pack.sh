@@ -26,6 +26,7 @@ projects=(
   "src/Axial.Schema.Http/Axial.Schema.Http.fsproj"
   "src/Axial.Schema.Http.AspNetCore/Axial.Schema.Http.AspNetCore.fsproj"
   "src/Axial.Schema.Http.GenHttp/Axial.Schema.Http.GenHttp.fsproj"
+  "src/Axial.Schema.Contracts.Build/Axial.Schema.Contracts.Build.fsproj"
   "src/Axial.Codec/Axial.Codec.fsproj"
   "src/Axial/Axial.fsproj"
   "src/Axial.Flow.Console/Axial.Flow.Console.fsproj"
