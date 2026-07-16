@@ -17,8 +17,11 @@ Diagnostic metadata for a running fiber.
 | Field | Description |
 | --- | --- |
 | `Id` | The unique fiber id. |
+| `Name` | The diagnostic name given at the fork site (<code>Flow.forkNamed</code>), if any. |
 | `ParentId` | The parent fiber id, if the fiber was forked from another fiber. |
+| `Annotations` | The runtime annotations in scope at the fork site. |
 | `StartedAt` | The UTC timestamp when the fiber started. |
+| `SettledAt` | The UTC timestamp when the fiber settled, if it has. |
 | `Status` | The current fiber status. |
 | `Observed` |
  Whether the fiber&#39;s outcome was consumed (<code>Flow.join</code>, <code>Flow.interrupt</code>) or explicitly

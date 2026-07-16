@@ -18,6 +18,43 @@ defaults, LSP. Contracts are the WIRE tier only — domain models are hand-writt
 eventually target is shipped as `Axial.Schema.Contract` (`src/Axial.Schema/Contract.fs`). Original sketch follows;
 this file refines the declaration grammar and the tooling plan.
 
+## Universal Domain Authoring: Considered and Rejected (2026-07-17)
+
+A design thread explored making contracts the authoring surface for *all* domain models — generated types
+"blended" with user code via augmentation or a type-ownership toggle, MSBuild-integrated generation, top-level
+union declarations. Rejected after taking stock; recorded so it is not re-litigated casually:
+
+- **The market has run this experiment.** protobuf, Avro, and TypeSpec all offer IDL-first modeling with mature
+  generators; .NET teams universally converged on IDL-at-the-edge with hand-written domain types. An IDL
+  authoritative over the domain routes every domain change through a foreign syntax and a generator.
+- **F# adopters chose F# for its type language.** Records, DUs, exhaustive matching are the product they already
+  bought; "author your domain in our DSL" attacks the adopter's own motivation. The STJ+DTO developer's mental
+  model ("my types are the truth") is violated from the other side.
+- **The coverage trap is real at domain scope.** Universal authoring makes every F# type feature (interfaces,
+  custom equality, struct-ness, generic DUs) and every serialization format's load-bearing semantics (protobuf
+  field numbers, MessagePack integer keys) a grammar feature request. Multi-format serialization belongs at the
+  Schema *interpreter* layer (the `Json.compile` pattern), never in the grammar.
+
+The settled positioning that replaces it — **two schema tiers**: wire DTOs are permissive schemas shaped per
+format (accept what the format allows, light constraints); domain models are strict hand-written F# (invariants,
+constructors, DUs). The wire result maps to the domain through an ordinary function, which is where strictness
+lives. Versioning (the `Contract` engine) applies to the wire tier when stored payloads must keep parsing.
+Contracts generate the wire tier concisely; they are never the domain.
+
+Consequences for ideas raised in the same thread:
+
+- **`@constructor` refs and `extern` field-schema refs: parked, likely unnecessary.** With strictness in the
+  wire→domain map, the map *is* the constructor; permissive wire schemas rarely need refined field types beyond
+  the existing format types. Revisit only if dogfooding shows wire-tier validation gaps.
+- **Type-ownership toggle (contract targets a hand-written type): dropped** with universal authoring — wire DTOs
+  are generated records by definition.
+- **MSBuild targets package (Grpc.Tools-style `.targets` running schemagen before compile): still queued.**
+  Friction removal is good under any positioning; checked-in emission stays the default so generated code remains
+  reviewable, with the target keeping it fresh in place of `--check`.
+- **Record → schema generation for wire DTOs** (the reverse direction: you write the record, generation derives
+  the permissive schema, STJ-familiar) is under consideration as the low-ceremony wire-tier entry —
+  see `schema-source-generation.md`, which this re-scopes.
+
 ## Goals
 
 - Cover the full practical JSON Schema feature surface as pure shape data.

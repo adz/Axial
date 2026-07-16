@@ -18,6 +18,28 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
   `SchemaRequest`/`SchemaResult` and `SchemaResponse` primitives remain for endpoints that need `ParsedInput` or
   other host-specific boundary control.
 
+## 2026-07-17: Two schema tiers — permissive wire DTOs, strict hand-written domain
+
+- The boundary story has two schemas. A **wire schema** is shaped per format and permissive: it accepts what the
+  format allows with light constraints, and its result is a plain public DTO record. A **domain schema** is strict
+  hand-written F# — invariants, smart constructors, DUs. The wire result maps to the domain through an ordinary
+  function returning `Result`; that mapping function is where strictness lives.
+- Versioning applies to the wire tier. When stored payloads must keep parsing after the wire changes (events,
+  messages, config files), the `Contract` engine chains frozen wire versions with typed migrations; the domain map
+  runs after the chain.
+- Contracts (`.contract` + schemagen) generate the wire tier concisely — record, schema, version-chain wiring.
+  They are never the domain authoring surface. Making contracts universal (generated types blended with user code,
+  domain-tier declarations) was explored and rejected: IDL-first domain modeling is a pattern the .NET ecosystem
+  has consistently abandoned in favor of IDL-at-the-edge (protobuf, TypeSpec), F# adopters chose F#'s type
+  language, and universal scope turns every F# type feature and every serialization format's semantics into a
+  grammar feature request. Multi-format serialization (MessagePack, protobuf) would enter as additional Schema
+  interpreters beside `Json.compile`, never as grammar features.
+- Record → schema generation (deriving a permissive wire schema from a hand-written DTO record) is under
+  consideration as the low-ceremony wire-tier entry point; `.contract` remains the at-scale entry point. Both
+  produce the same kind of wire schema. See `dev-docs/current-ideas/schema-source-generation.md`.
+- User docs teach this order: wire/domain split and the mapping function first, versioning when compatibility
+  enters, then contracts as the concise way to generate what was just set up by hand.
+
 ## 2026-07-16: schemagen generates version chains; migrations are builder parameters
 
 - A `.contract` file may declare several versions of one contract, oldest first with no gaps, all in one file.

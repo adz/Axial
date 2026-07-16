@@ -1,5 +1,14 @@
 # Schema Source Generation Sketch
 
+Re-scoped 2026-07-16/17 (contract take-stock, see `contract-grammar.md`): generation from records is under
+consideration **for wire-format DTOs specifically**, not domain models. The two-tier positioning (permissive wire
+schemas → strict hand-written domain via an ordinary mapping function) gives record→schema generation a sharp
+home: it is the low-ceremony way to get a wire DTO schema when you'd rather own the record (STJ-familiar,
+`[<Schema>]`-style), while `.contract` files are the at-scale way where the declaration owns record, schema, and
+version chain. Both feed the same wire tier. This scoping dissolves the Private Constructors wall below — wire
+DTOs are public records by definition — and the domain-tier caution throughout this sketch becomes moot rather
+than resolved. Original sketch follows.
+
 Phase 16 status: deferred by design. Runtime reflection is rejected as a foundation, and source generation waits until
 the explicit schema API has real consumers. This sketch fixes the generation *target* now so the tooling choice later is
 mechanical.
