@@ -132,8 +132,12 @@ named custom constraints (metadata + F#-supplied `Check`), cross-field logic sta
 
 ## Language Server
 
-Single grammar library, three frontends (generator, LSP, tests). Investigated 2026-07-16; the plan below is
-settled, the build is gated on dogfooding (see Sequencing).
+SUPERSEDED 2026-07-17: with `[<WireSchema>]` records as the primary wire-tier declaration (see
+`dev-docs/decisions/README.md`), the F# compiler and IDE tooling replace the LSP for the primary path —
+highlighting, rename, find-references, and hover come free. `.contract` is parked with no LSP investment; the
+plan below is kept for history in case the grammar is ever revived for non-F# consumers.
+
+Investigated 2026-07-16; the plan below was settled, gated on dogfooding.
 
 **Distribution: one dotnet tool with subcommands** — `axial-contracts generate | check | lsp` — not a separate
 LSP executable.

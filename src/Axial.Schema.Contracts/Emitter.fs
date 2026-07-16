@@ -101,6 +101,8 @@ module Emitter =
         | MapOf element -> $"Map<string, {fsType refTypeName contractTypeName fieldName element}>"
         | LiteralUnion _
         | UnionBlock _ -> caseTypeName contractTypeName fieldName
+        | ExternalEnum(typeName, _)
+        | ExternalUnion(typeName, _, _) -> typeName
 
     /// The base Schema.* expression for a field's type, before decorations. Self-references (same
     /// contract, same version) lower to Schema.defer over the module's own schema binding.
@@ -119,8 +121,10 @@ module Emitter =
         | Reference reference -> $"{refTypeName reference}.schema"
         | ListOf element -> $"Schema.list {parenthesize (baseValueExpr refTypeName (contractName, contractVersion) fieldName element)}"
         | MapOf element -> $"Schema.map {parenthesize (baseValueExpr refTypeName (contractName, contractVersion) fieldName element)}"
-        | LiteralUnion _ -> $"Schema.enum {camel fieldName}Cases"
-        | UnionBlock(discriminator, _) -> $"Schema.inlineUnion \"{escapeString discriminator}\" {camel fieldName}Cases"
+        | LiteralUnion _
+        | ExternalEnum _ -> $"Schema.enum {camel fieldName}Cases"
+        | UnionBlock(discriminator, _)
+        | ExternalUnion(_, discriminator, _) -> $"Schema.inlineUnion \"{escapeString discriminator}\" {camel fieldName}Cases"
 
     and private parenthesize (expression: string) =
         if expression.Contains " " then $"({expression})" else expression
@@ -164,6 +168,14 @@ module Emitter =
             let renderedDefault =
                 match field.FieldType, literal with
                 | LiteralUnion _, LString value -> $"{caseTypeName contractTypeName field.FieldName}.{duCaseName value}"
+                | ExternalEnum(typeName, cases), LString value ->
+                    let fsCase =
+                        cases
+                        |> List.tryFind (fun case -> case.EnumTag = value)
+                        |> Option.map _.EnumFsCase
+                        |> Option.defaultValue (duCaseName value)
+
+                    $"{typeName}.{fsCase}"
                 | _ -> renderDefault field.FieldType literal
 
             expression <- $"{expression} |> Schema.withDefault {renderedDefault}"
@@ -193,19 +205,33 @@ module Emitter =
     /// it decides generated type names for references (the latest version of a name keeps the bare
     /// name, superseded versions are suffixed, like ConfigV1).
     let emit (namespaceName: string) (fileSet: ContractFile list) (file: ContractFile) : string =
+        let declared = fileSet |> List.collect _.Contracts
+
         let latestVersions =
-            fileSet
-            |> List.collect _.Contracts
+            declared
             |> List.groupBy _.ContractName
             |> List.map (fun (name, contracts) -> name, contracts |> List.map _.Version |> List.max)
             |> Map.ofList
 
+        // User-owned types keep their actual F# names even when a chain override means the conventional
+        // generated name would differ.
+        let externalNames =
+            declared
+            |> List.choose (fun contract ->
+                contract.ExternalTypeName
+                |> Option.map (fun name -> (contract.ContractName, contract.Version), name))
+            |> Map.ofList
+
         let typeNameOf name version =
-            match Map.tryFind name latestVersions with
-            | Some latest when latest <> version -> $"{name}V{version}"
-            | _ -> name
+            match Map.tryFind (name, version) externalNames with
+            | Some externalName -> externalName
+            | None ->
+                match Map.tryFind name latestVersions with
+                | Some latest when latest <> version -> $"{name}V{version}"
+                | _ -> name
 
         let refTypeName (reference: ContractRef) = typeNameOf reference.RefName reference.RefVersion
+        let namespaceName = file.Namespace |> Option.defaultValue namespaceName
 
         let builder = StringBuilder()
         let line (text: string) = builder.AppendLine text |> ignore
@@ -236,49 +262,64 @@ module Emitter =
                 | MapOf element -> hasSelfReference element
                 | UnionBlock(_, cases) ->
                     cases |> List.exists (fun case -> case.CaseRef.RefName = contract.ContractName && case.CaseRef.RefVersion = contract.Version)
+                | ExternalUnion(_, _, cases) ->
+                    cases |> List.exists (fun case -> case.ExtRef.RefName = contract.ContractName && case.ExtRef.RefVersion = contract.Version)
                 | Primitive _
-                | LiteralUnion _ -> false
+                | LiteralUnion _
+                | ExternalEnum _ -> false
+
+            // User-owned record fields are referenced verbatim; generated records normalize to PascalCase.
+            let fsFieldName (field: FieldDecl) =
+                if contract.OwnsType then pascal field.FieldName else field.FieldName
 
             let caseFields =
                 contract.Fields
                 |> List.filter (fun field ->
                     match field.FieldType with
                     | LiteralUnion _
-                    | UnionBlock _ -> true
+                    | UnionBlock _
+                    | ExternalEnum _
+                    | ExternalUnion _ -> true
                     | _ -> false)
 
-            // Case DUs come before the record that uses them.
-            for field in caseFields do
+            if contract.OwnsType then
+                // Case DUs come before the record that uses them; user-owned union types already exist.
+                for field in caseFields do
+                    match field.FieldType with
+                    | LiteralUnion _
+                    | UnionBlock _ ->
+                        line ""
+                        line $"/// The \"{field.FieldName}\" cases of {contract.ContractName} ({contractRef})."
+                        line "[<RequireQualifiedAccess>]"
+                        line $"type {caseTypeName contractTypeName field.FieldName} ="
+
+                        match field.FieldType with
+                        | LiteralUnion cases ->
+                            for case in cases do
+                                line $"    | {duCaseName case}"
+                        | UnionBlock(_, cases) ->
+                            for case in cases do
+                                line $"    | {duCaseName case.CaseTag} of {refTypeName case.CaseRef}"
+                        | _ -> ()
+                    | _ -> ()
+
                 line ""
-                line $"/// The \"{field.FieldName}\" cases of {contract.ContractName} ({contractRef})."
-                line "[<RequireQualifiedAccess>]"
-                line $"type {caseTypeName contractTypeName field.FieldName} ="
 
-                match field.FieldType with
-                | LiteralUnion cases ->
-                    for case in cases do
-                        line $"    | {duCaseName case}"
-                | UnionBlock(_, cases) ->
-                    for case in cases do
-                        line $"    | {duCaseName case.CaseTag} of {refTypeName case.CaseRef}"
-                | _ -> ()
+                for doc in contract.Doc do
+                    line $"/// {doc}"
 
-            line ""
+                line $"type {contractTypeName} ="
+                line "    {"
 
-            for doc in contract.Doc do
-                line $"/// {doc}"
+                for field in contract.Fields do
+                    for doc in field.Doc do
+                        line $"        /// {doc}"
 
-            line $"type {contractTypeName} ="
-            line "    {"
+                    let optionSuffix = if field.Optional then " option" else ""
+                    line $"        {escapeIdent (fsFieldName field)}: {fsType refTypeName contractTypeName field.FieldName (fieldTypeOf field)}{optionSuffix}"
 
-            for field in contract.Fields do
-                for doc in field.Doc do
-                    line $"        /// {doc}"
+                line "    }"
 
-                let optionSuffix = if field.Optional then " option" else ""
-                line $"        {escapeIdent (pascal field.FieldName)}: {fsType refTypeName contractTypeName field.FieldName (fieldTypeOf field)}{optionSuffix}"
-
-            line "    }"
             line ""
             line $"/// Schema and boundary functions for {contractTypeName} ({contractRef})."
             line "[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]"
@@ -314,6 +355,26 @@ module Emitter =
 
                         line
                             $"        {opener}UnionCase.create \"{escapeString case.CaseTag}\" {du}.{duCaseName case.CaseTag} {extractor} {refTypeName case.CaseRef}.schema{closer}")
+                | ExternalEnum(typeName, cases) ->
+                    cases
+                    |> List.iteri (fun index case ->
+                        let opener = if index = 0 then "[ " else "  "
+                        let closer = if index = List.length cases - 1 then " ]" else ""
+                        line $"        {opener}EnumCase.create \"{escapeString case.EnumTag}\" {typeName}.{case.EnumFsCase}{closer}")
+                | ExternalUnion(typeName, _, cases) ->
+                    cases
+                    |> List.iteri (fun index case ->
+                        let opener = if index = 0 then "[ " else "  "
+                        let closer = if index = List.length cases - 1 then " ]" else ""
+
+                        let extractor =
+                            if List.length cases = 1 then
+                                $"(function {typeName}.{case.ExtFsCase} payload -> Some payload)"
+                            else
+                                $"(function {typeName}.{case.ExtFsCase} payload -> Some payload | _ -> None)"
+
+                        line
+                            $"        {opener}UnionCase.create \"{escapeString case.ExtTag}\" {typeName}.{case.ExtFsCase} {extractor} {refTypeName case.ExtRef}.schema{closer}")
                 | _ -> ()
 
             line ""
@@ -332,11 +393,11 @@ module Emitter =
             |> List.iteri (fun index field ->
                 let opener = if index = 0 then "{ " else "  "
                 let closer = if index = List.length contract.Fields - 1 then " })" else ""
-                line $"            {opener}{escapeIdent (pascal field.FieldName)} = {escapeIdent (camel field.FieldName)}{closer}")
+                line $"            {opener}{escapeIdent (fsFieldName field)} = {escapeIdent (camel field.FieldName)}{closer}")
 
             for field in contract.Fields do
                 let wire = FieldDecl.wireName field
-                let getter = $"_.{escapeIdent (pascal field.FieldName)}"
+                let getter = $"_.{escapeIdent (fsFieldName field)}"
                 let value = valueExpr refTypeName (contract.ContractName, contract.Version, contractTypeName) field
 
                 line $"        |> Schema.field \"{escapeString wire}\" {getter} {parenthesize value}"
@@ -396,6 +457,6 @@ module Emitter =
                 let fieldType = $"{fsType refTypeName contractTypeName field.FieldName (fieldTypeOf field)}{optionSuffix}"
 
                 line
-                    $"        let {escapeIdent (camel field.FieldName)} : FieldRef<{contractTypeName}, {fieldType}> = {{ Name = \"{escapeString wire}\"; Get = _.{escapeIdent (pascal field.FieldName)}; Set = fun draft value -> {{ draft with {escapeIdent (pascal field.FieldName)} = value }} }}"
+                    $"        let {escapeIdent (camel field.FieldName)} : FieldRef<{contractTypeName}, {fieldType}> = {{ Name = \"{escapeString wire}\"; Get = _.{escapeIdent (fsFieldName field)}; Set = fun draft value -> {{ draft with {escapeIdent (fsFieldName field)} = value }} }}"
 
         builder.ToString().Replace("\r\n", "\n")

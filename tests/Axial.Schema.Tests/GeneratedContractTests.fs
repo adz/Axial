@@ -273,6 +273,92 @@ module GeneratedContractTests =
         test <@ Contract.parse (profileContract ()) rawV3 = Error(ContractError.VersionTooNew(3, 2)) @>
 
     [<Fact>]
+    let ``record-derived schemas parse wire payloads with enums unions and defaults`` () =
+        let raw =
+            RawInput.Object(
+                Map.ofList
+                    [ "reference", RawInput.Scalar "SH-42"
+                      "notify_email", RawInput.Scalar "ada@example.com"
+                      "items", RawInput.Object(Map.ofList [ "widget", RawInput.Scalar "3" ])
+                      "tags", RawInput.Many [ RawInput.Scalar "fragile" ]
+                      "weightKg", RawInput.Scalar "2.5"
+                      "priority", RawInput.Scalar "same-day"
+                      "delivery",
+                      RawInput.Object(
+                          Map.ofList [ "kind", RawInput.Scalar "pickup"; "code", RawInput.Scalar "LOCKER-9" ]
+                      )
+                      "boxes", RawInput.Scalar "2" ]
+            )
+
+        match (Shipment.parse raw).Result with
+        | Ok shipment ->
+            test <@ shipment.Reference = "SH-42" @>
+            test <@ shipment.Priority = ShipmentPriority.SameDay @>
+            test <@ shipment.Delivery = DeliveryMethod.Pickup { Code = "LOCKER-9" } @>
+            test <@ shipment.Origin = None @>
+            test <@ shipment.Boxes = 2 @>
+        | Error diagnostics -> failwithf "Expected a wire parse, got %A" diagnostics
+
+        // Defaults are schema metadata (for JSON Schema output and editors), same as the .contract path.
+        let boxesField =
+            (Inspect.model Shipment.schema).Fields |> List.find (fun field -> field.Name = "boxes")
+
+        test <@ boxesField.Schema.Default = Some(box 1) @>
+
+    [<Fact>]
+    let ``record-derived schemas enforce the attribute constraints`` () =
+        let draft: Shipment =
+            { Reference = "not-a-reference"
+              NotifyEmail = "not-an-email"
+              Items = Map.empty
+              Tags = []
+              WeightKg = 0.1m
+              Priority = ShipmentPriority.Standard
+              Delivery = DeliveryMethod.Courier { TrackingUrl = "https://example.com/t/1" }
+              Origin = None
+              Boxes = 0 }
+
+        match Shipment.validate draft with
+        | Ok _ -> failwith "Expected constraint failures."
+        | Error diagnostics ->
+            let paths = diagnostics |> Diagnostics.flatten |> List.map _.Path
+
+            for expected in [ "reference"; "notify_email"; "tags"; "weightKg"; "boxes" ] do
+                test <@ paths |> List.contains [ PathSegment.Name expected ] @>
+
+    [<Fact>]
+    let ``record-derived version chains migrate through the generated contract builder`` () =
+        let shipmentContract =
+            Shipment.contract
+                (fun (v1: ShipmentV1) ->
+                    Ok
+                        { Reference = v1.Reference
+                          NotifyEmail = v1.NotifyEmail
+                          Items = v1.Items
+                          Tags = [ "migrated" ]
+                          WeightKg = 1.0m
+                          Priority = ShipmentPriority.Standard
+                          Delivery = DeliveryMethod.Pickup { Code = "DEFAULT" }
+                          Origin = None
+                          Boxes = 1 })
+                (VersionSource.Field "schemaVersion")
+
+        let rawV1 =
+            RawInput.Object(
+                Map.ofList
+                    [ "schemaVersion", RawInput.Scalar "1"
+                      "reference", RawInput.Scalar "SH-7"
+                      "notifyEmail", RawInput.Scalar "ada@example.com"
+                      "items", RawInput.Object(Map.ofList [ "widget", RawInput.Scalar "1" ]) ]
+            )
+
+        match Contract.parse shipmentContract rawV1 with
+        | Ok shipment ->
+            test <@ shipment.Reference = "SH-7" @>
+            test <@ shipment.Tags = [ "migrated" ] @>
+        | Error error -> failwithf "Expected a migrated v1 shipment, got %A" error
+
+    [<Fact>]
     let ``superseded generated versions keep their own frozen schema and fields`` () =
         let parsed =
             ProfileV1.parse (

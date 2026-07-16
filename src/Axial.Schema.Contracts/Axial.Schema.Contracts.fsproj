@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
+    <NoWarn>$(NoWarn);NU1608</NoWarn>
     <IsPackable>false</IsPackable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <AssemblyName>Axial.Schema.Contracts</AssemblyName>
@@ -11,8 +12,13 @@
   <ItemGroup>
     <Compile Include="Ast.fs" />
     <Compile Include="Parser.fs" />
+    <Compile Include="Records.fs" />
     <Compile Include="Resolver.fs" />
     <Compile Include="Emitter.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FSharp.Compiler.Service" Version="43.12.204" />
   </ItemGroup>
 
 </Project>

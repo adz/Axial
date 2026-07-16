@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Added record-first wire schema generation: mark a plain record with `[<WireSchema>]` (attributes in the new
+  `Axial.Schema.Wire` namespace mirror the contract constraint vocabulary — `Pattern`, `Min`/`Max`, comparison
+  bounds, `Distinct`, `Email`, `Default`, `WireName`, `WireUnion`) and `schemagen` derives the permissive wire
+  schema module from it: `schema`, `parse`, `validate`, typed `Fields`, and version-chain `contract` builders via
+  the `ProfileV1`/`Profile` naming convention. The frontend parses F# source with the compiler's syntax tree at
+  generation time only — no runtime reflection, Fable and NativeAOT surfaces unchanged — and generated modules
+  construct your record by name, so the compiler catches record/schema drift. `.contract` files remain supported
+  as the declaration-owns-the-record alternative; both kinds resolve as one generation set.
+
 - Enriched fiber diagnostics: `FiberMetadata`/`FiberDump` gained `Name` (from the new `Flow.forkNamed`), fork-site `Annotations`, and `SettledAt`; `FiberDump.render`/`renderTree` produce human-readable snapshots. A new `FiberRegistry` (installed with `Flow.withFiberRegistry`, or composed via the new `Flow.addFiberObserver`) tracks every live fiber and renders the whole runtime as a parent/child tree on demand.
 - Added `FiberMetrics` to `Axial.Flow.Telemetry`: an `Axial.Flow` meter with fibers started/live/settled counters, a fork-to-settle duration histogram, and an unobserved-defects counter — register with `.AddMeter("Axial.Flow")` for OTLP backends including the Aspire dashboard. `FiberDumpTelemetry.record` attaches a registry's live-fiber tree to the current activity as an `axial.flow.fiber.dump` event; named fibers set the fiber span's display name.
 - `schemagen` generates whole version chains: a `.contract` file may declare several versions of one contract (oldest first, contiguous). Superseded versions emit frozen version-suffixed types and modules (`ConfigV1`), the latest keeps the bare name, and its module gains a `contract` builder that takes each typed n-1 -> n migration as a parameter plus the `VersionSource` — migrations stay hand-written F# and the compiler enforces the chain.

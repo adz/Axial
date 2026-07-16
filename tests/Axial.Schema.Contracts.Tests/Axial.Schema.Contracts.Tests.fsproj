@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <Compile Include="ParserTests.fs" />
+    <Compile Include="RecordsTests.fs" />
     <Compile Include="ResolverTests.fs" />
     <Compile Include="EmitterGoldenTests.fs" />
   </ItemGroup>

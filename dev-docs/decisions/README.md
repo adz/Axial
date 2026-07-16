@@ -18,6 +18,17 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
   `SchemaRequest`/`SchemaResult` and `SchemaResponse` primitives remain for endpoints that need `ParsedInput` or
   other host-specific boundary control.
 
+## 2026-07-17: Records are the primary wire-tier declaration; .contract is parked
+
+- `[<WireSchema>]`-marked plain F# records are the primary way to declare the wire tier. The generator derives
+  the permissive schema from the record through an FCS syntax-only frontend into the same AST, resolver, and
+  emitter as `.contract` files, emitting a schema module only — the F# compiler catches record/schema drift.
+- `.contract` files stay shipped and compiling but receive no further investment: no LSP, no new grammar
+  features, docs lead with records. The bespoke-LSP plan is superseded — records get the entire F# IDE experience
+  (highlighting, rename, find-references, hover) for free, which was most of what the LSP would have built.
+- Whether `.contract` is removed from the public surface before 1.0 is decided by the config-system dogfood: if
+  records cover it, the grammar goes, and the pipeline it funded remains as the record frontend's machinery.
+
 ## 2026-07-17: Two schema tiers — permissive wire DTOs, strict hand-written domain
 
 - The boundary story has two schemas. A **wire schema** is shaped per format and permissive: it accepts what the

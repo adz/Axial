@@ -47,8 +47,10 @@ module Resolver =
         | Primitive PGuid -> KOther "guid"
         | ListOf _ -> KSized "list"
         | MapOf _ -> KSized "map"
-        | LiteralUnion _ -> KEnum
-        | UnionBlock _ -> KUnion
+        | LiteralUnion _
+        | ExternalEnum _ -> KEnum
+        | UnionBlock _
+        | ExternalUnion _ -> KUnion
         | Reference _ -> KReference
 
     let private describeKind kind =
@@ -214,9 +216,12 @@ module Resolver =
                     if not (fieldNames.Add field.FieldName) then
                         report file.FilePath field.FieldLine $"duplicate field name '{field.FieldName}'"
 
-                    let generatedFieldName = pascal field.FieldName
-                    if not (generatedFieldNames.Add generatedFieldName) then
-                        report file.FilePath field.FieldLine $"duplicate generated field name '{generatedFieldName}'"
+                    // User-owned records keep their field names verbatim; only generated records
+                    // normalize to PascalCase and can collide doing so.
+                    if contract.OwnsType then
+                        let generatedFieldName = pascal field.FieldName
+                        if not (generatedFieldNames.Add generatedFieldName) then
+                            report file.FilePath field.FieldLine $"duplicate generated field name '{generatedFieldName}'"
 
                     let generatedBindingName = camel field.FieldName
                     if not (generatedBindingNames.Add generatedBindingName) then
@@ -284,6 +289,25 @@ module Resolver =
 
                                 if case.CaseRef.RefName = contract.ContractName && case.CaseRef.RefVersion = contract.Version then
                                     report file.FilePath case.CaseLine "recursive union-block payloads are not supported; use a recursive field reference"
+                        | ExternalEnum(typeName, cases) ->
+                            if List.isEmpty cases then
+                                report file.FilePath field.FieldLine $"enum union '{typeName}' needs at least one case"
+
+                            for tag, _ in cases |> List.countBy _.EnumTag |> List.filter (fun (_, count) -> count > 1) do
+                                report file.FilePath field.FieldLine $"duplicate wire tag \"{tag}\" in enum union '{typeName}'"
+                        | ExternalUnion(typeName, _, cases) ->
+                            if List.isEmpty cases then
+                                report file.FilePath field.FieldLine $"wire union '{typeName}' needs at least one case"
+
+                            for tag, _ in cases |> List.countBy _.ExtTag |> List.filter (fun (_, count) -> count > 1) do
+                                report file.FilePath field.FieldLine $"duplicate wire tag '{tag}' in wire union '{typeName}'"
+
+                            for case in cases do
+                                resolveReference file.FilePath case.ExtLine case.ExtRef
+                                checkOrder case.ExtLine case.ExtRef
+
+                                if case.ExtRef.RefName = contract.ContractName && case.ExtRef.RefVersion = contract.Version then
+                                    report file.FilePath case.ExtLine "recursive union payloads are not supported; use a recursive field reference"
 
                     checkType field.FieldType
 
@@ -291,10 +315,10 @@ module Resolver =
                     let kind = kindOf field.FieldType
 
                     match field.FieldType, field.Constraints with
-                    | (Reference _ | UnionBlock _), (_ :: _) ->
+                    | (Reference _ | UnionBlock _ | ExternalUnion _), (_ :: _) ->
                         report file.FilePath field.FieldLine
                             $"constraints on {describeKind kind} fields are not supported; declare them on the referenced contract's own fields"
-                    | (LiteralUnion _), (_ :: _) ->
+                    | (LiteralUnion _ | ExternalEnum _), (_ :: _) ->
                         report file.FilePath field.FieldLine
                             "constraints on literal union fields are not supported; the case list is already the constraint"
                     | _ ->
@@ -321,6 +345,12 @@ module Resolver =
                                     None
                                 else
                                     Some $"default \"{value}\" is not one of the literal union cases"
+                            | ExternalEnum(_, cases), LString value ->
+                                if cases |> List.exists (fun case -> case.EnumTag = value) then
+                                    None
+                                else
+                                    Some $"default \"{value}\" is not one of the enum union's wire tags"
+                            | ExternalEnum _, _ -> Some "an enum union default must be one of the quoted wire tags"
                             | Primitive (PText | PEmail), _ -> Some $"a text default must be a string, found {literalDescription literal}"
                             | Primitive PInt, _ -> Some $"an int default must be a whole number, found {literalDescription literal}"
                             | Primitive PDecimal, _ -> Some $"a decimal default must be a number, found {literalDescription literal}"

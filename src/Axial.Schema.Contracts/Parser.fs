@@ -393,6 +393,8 @@ module Parser =
                                   Doc = doc
                                   Annotations = annotations
                                   Fields = List.ofSeq fields
+                                  OwnsType = true
+                                  ExternalTypeName = None
                                   ContractLine = headerLine }
 
                             openContract <- None
@@ -427,4 +429,4 @@ module Parser =
         if errors.Count > 0 then
             Error(List.ofSeq errors)
         else
-            Ok { FilePath = filePath; Contracts = List.ofSeq contracts }
+            Ok { FilePath = filePath; Namespace = None; Contracts = List.ofSeq contracts }

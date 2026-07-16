@@ -1,6 +1,9 @@
 # Record → Schema Generation for Wire DTOs
 
-Status: DESIGNED 2026-07-17, all open questions resolved below; not yet built. Supersedes the earlier
+Status: SHIPPED 2026-07-17 as designed below (`Axial.Schema.Wire` attributes, `Records` FCS frontend in
+`Axial.Schema.Contracts`, schemagen `.fs` inputs with `--wire-naming`, `shipment.fs` golden corpus + behavior
+tests, `docs/schema/contracts.md` leads with records). Deviations from the design: none of substance; defaults
+are schema metadata (not parse-time fill), matching the `.contract` path. Supersedes the earlier
 domain-tier `[<Schema>]` source-generation sketch (preserved in git history), which was re-scoped by the
 two-tier decision (`dev-docs/decisions/README.md`, 2026-07-17): generation from records targets **wire-format
 DTOs only**. Domain models stay hand-written; strictness lives in the wire→domain mapping function.

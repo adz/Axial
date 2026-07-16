@@ -14,22 +14,26 @@ module EmitterGoldenTests =
         Path.Combine(__SOURCE_DIRECTORY__, "..", "Axial.Schema.Tests", "contracts")
         |> Path.GetFullPath
 
-    let private emitCorpusFile name =
-        let contractPath = Path.Combine(corpusDirectory (), name)
+    let private parseCorpusFile name =
+        let path = Path.Combine(corpusDirectory (), name)
 
-        let parsed =
-            match Parser.parse contractPath (File.ReadAllText contractPath) with
-            | Ok file -> file
-            | Error diagnostics -> failwithf "Corpus file %s failed to parse: %A" name diagnostics
+        let result =
+            if name.EndsWith ".contract" then
+                Parser.parse path (File.ReadAllText path)
+            else
+                Records.parse WireNaming.CamelCase path (File.ReadAllText path)
 
-        parsed
+        match result with
+        | Ok file -> file
+        | Error diagnostics -> failwithf "Corpus file %s failed to parse: %A" name diagnostics
 
     [<Fact>]
     let ``the corpus resolves cleanly as one generation set`` () =
         let files =
-            Directory.EnumerateFiles(corpusDirectory (), "*.contract")
+            Directory.EnumerateFiles(corpusDirectory (), "*.*")
+            |> Seq.filter (fun path -> path.EndsWith ".contract" || (path.EndsWith ".fs" && not (path.EndsWith ".g.fs")))
             |> Seq.sort
-            |> Seq.map (Path.GetFileName >> emitCorpusFile)
+            |> Seq.map (Path.GetFileName >> parseCorpusFile)
             |> List.ofSeq
 
         test <@ Resolver.resolve files = [] @>
@@ -40,8 +44,9 @@ module EmitterGoldenTests =
     [<InlineData("payment.contract", "payment.g.fs")>]
     [<InlineData("category.contract", "category.g.fs")>]
     [<InlineData("profile.contract", "profile.g.fs")>]
+    [<InlineData("shipment.fs", "shipment.g.fs")>]
     let ``the emitter reproduces every checked-in golden file byte for byte`` (contractName: string) (goldenName: string) =
-        let file = emitCorpusFile contractName
+        let file = parseCorpusFile contractName
         let emitted = Emitter.emit "Axial.Tests.Generated" [ file ] file
 
         let golden =

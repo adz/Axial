@@ -50,6 +50,8 @@
     <Compile Include="contracts/signup.g.fs" />
     <Compile Include="contracts/payment.g.fs" />
     <Compile Include="contracts/profile.g.fs" />
+    <Compile Include="contracts/shipment.fs" />
+    <Compile Include="contracts/shipment.g.fs" />
     <Compile Include="GeneratedContractTests.fs" />
   </ItemGroup>
 

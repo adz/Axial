@@ -31,7 +31,21 @@ type UnionCaseDecl =
       CaseRef: ContractRef
       CaseLine: int }
 
-/// <summary>A field's declared type.</summary>
+/// <summary>One case of a user-owned nullary discriminated union used as an enum field.</summary>
+type ExternalEnumCase =
+    { EnumTag: string
+      EnumFsCase: string }
+
+/// <summary>One case of a user-owned internally tagged union: wire tag, the F# case name, and the
+/// referenced payload contract.</summary>
+type ExternalUnionCase =
+    { ExtTag: string
+      ExtFsCase: string
+      ExtRef: ContractRef
+      ExtLine: int }
+
+/// <summary>A field's declared type. The <c>External*</c> shapes are produced only by the record frontend:
+/// they reference user-owned F# union types instead of generating case types.</summary>
 type FieldType =
     | Primitive of PrimitiveType
     | Reference of ContractRef
@@ -39,6 +53,8 @@ type FieldType =
     | MapOf of FieldType
     | LiteralUnion of string list
     | UnionBlock of discriminator: string * cases: UnionCaseDecl list
+    | ExternalEnum of typeName: string * cases: ExternalEnumCase list
+    | ExternalUnion of typeName: string * discriminator: string * cases: ExternalUnionCase list
 
 /// <summary>One constraint from a field's <c>[ ... ]</c> list. Comparisons bound the value; <c>min</c>/<c>max</c>
 /// bound the natural size of the type (text length, list/map count).</summary>
@@ -72,18 +88,25 @@ type FieldDecl =
       Annotations: Annotation list
       FieldLine: int }
 
-/// <summary>One declared contract at one version.</summary>
+/// <summary>One declared contract at one version. <c>OwnsType</c> is true when generation emits the record
+/// and its case types (the .contract path); the record frontend sets it false so emission targets the
+/// user-owned type. <c>ExternalTypeName</c> carries the user type's actual name when a chain override means
+/// it differs from the conventional generated name.</summary>
 type ContractDecl =
     { ContractName: string
       Version: int
       Doc: string list
       Annotations: Annotation list
       Fields: FieldDecl list
+      OwnsType: bool
+      ExternalTypeName: string option
       ContractLine: int }
 
-/// <summary>A parsed contract source file.</summary>
+/// <summary>A parsed contract source file. <c>Namespace</c> is set by the record frontend from the source
+/// file's own namespace declaration; .contract files leave it None and take the CLI namespace.</summary>
 type ContractFile =
     { FilePath: string
+      Namespace: string option
       Contracts: ContractDecl list }
 
 /// <summary>A line-precise parse or resolution problem.</summary>
