@@ -52,8 +52,9 @@ Consequences for ideas raised in the same thread:
   Friction removal is good under any positioning; checked-in emission stays the default so generated code remains
   reviewable, with the target keeping it fresh in place of `--check`.
 - **Record → schema generation for wire DTOs** (the reverse direction: you write the record, generation derives
-  the permissive schema, STJ-familiar) is under consideration as the low-ceremony wire-tier entry —
-  see `schema-source-generation.md`, which this re-scopes.
+  the permissive schema, STJ-familiar) is DESIGNED (2026-07-17) as the low-ceremony wire-tier entry — full design
+  in `schema-source-generation.md`: same `ContractDecl` AST/resolver/emitter, FCS syntax-only frontend,
+  module-only emission with the compiler as drift detector.
 
 ## Goals
 

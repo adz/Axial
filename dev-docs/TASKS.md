@@ -30,6 +30,16 @@ migrations), `Schema.defer` recursion with finite inspection and `$defs`-based J
 non-packable `Axial.Schema.Testing` FsCheck adapter (`SchemaGen`), and (2026-07-16) multi-version `schemagen`
 generation with the user-facing `docs/schema/contracts.md` guide.
 
+## Phase 29: Record → schema generation for wire DTOs (designed, ready to build)
+
+Fully designed in `dev-docs/current-ideas/schema-source-generation.md` (2026-07-17, every open question resolved
+there — read it before starting). One sentence: `[<WireSchema>]`-marked plain records lower through an FCS
+syntax-only frontend into the same `ContractDecl` AST, resolver, and emitter as `.contract` files, emitting a
+schema module only (`OwnsType = false`) so the F# compiler catches record/schema drift; attribute vocabulary
+mirrors the contract constraint grammar one-to-one; version chains use the emitter's own `XxxVn`/bare-name
+convention in reverse. Implementation order is at the bottom of the sketch: attributes → emitter mode → FCS
+frontend → schemagen wiring + golden corpus → user docs.
+
 ## Phase 30: Contracts milestone bundle (gated on Phase 28 + a real consumer)
 
 From the same ZIO comparison; these belong *with* the remote-config milestone, not before it:
