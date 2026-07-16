@@ -14,7 +14,7 @@ This page shows the `Fiber<'error, 'value>` handle used by Axial concurrency. A 
 - [`Flow.FiberId`](./t-flow-fiberid.md): Unique identifier for a running fiber.
 - [`Flow.FiberStatus`](./t-flow-fiberstatus.md): Describes the current lifecycle state of a fiber.
 - [`Flow.FiberMetadata`](./t-flow-fibermetadata.md): Diagnostic metadata for a running fiber.
-- [`Flow.FiberDump`](./t-flow-fiberdump.md): Human-readable diagnostic dump for a fiber.
+- [`Flow.FiberDump`](./t-flow-fiberdump.md): Structured diagnostic snapshot of a fiber, taken at a single point in time.
 - [`Flow.FiberObserver`](./t-flow-fiberobserver.md):
  Runtime hooks observing fiber lifecycle events for diagnostics and telemetry.
 

@@ -14,7 +14,8 @@ OpenTelemetry. The fuller guides are linked from each section.
 | --- | --- | --- |
 | **Traces** (spans) | [`Axial.Flow.Telemetry`]({{< relref "/flow/telemetry/_index.md" >}}) emitting on the `Axial.Flow` `ActivitySource`; `Axial.Flow.Telemetry.JavaScript` on Fable targets | any `ActivityListener` — in practice the OpenTelemetry SDK; OpenTelemetry JS under Fable |
 | **Logs** | the explicit `ILog` service, bridged to `Microsoft.Extensions.Logging` by [`Axial.Flow.Hosting`]({{< relref "/flow/hosting/_index.md" >}}) | your host's logging pipeline |
-| **Metrics** | no first-party meter yet — see [Metrics](#metrics) below | host instrumentation / custom observers |
+| **Metrics** | [`Axial.Flow.Telemetry`]({{< relref "/flow/telemetry/_index.md" >}}) — `FiberMetrics` on the `Axial.Flow` `Meter` | OpenTelemetry's `.AddMeter("Axial.Flow")`, `dotnet-counters`, the Aspire dashboard |
+| **Fiber dumps** | core `Axial.Flow` — `FiberRegistry` live-fiber snapshots, no telemetry dependency | `registry.Dump()` on demand; `FiberDumpTelemetry.record` to put dumps on traces |
 
 Two general-purpose channels feed those signals and are part of core `Axial.Flow`, not the telemetry
 package: **runtime annotations** (`Flow.annotate`, ambient key–value diagnostics metadata) and **fiber
@@ -155,31 +156,87 @@ the bridge: `ILog` → MEL → OTLP.
 
 ## Metrics
 
-Axial ships no first-party meter today. The .NET counterpart of `ActivitySource` is
-`System.Diagnostics.Metrics.Meter`, consumed via OpenTelemetry's `.AddMeter(...)`; a first-party
-`Meter("Axial.Flow")` with fiber counters and workflow duration histograms is deliberately deferred until a
-real application needs its instrument set, because metric names and tag cardinality are hard to change once
-dashboards depend on them.
+The .NET counterpart of `ActivitySource` is `System.Diagnostics.Metrics.Meter`, and Axial owns one, named
+`"Axial.Flow"`. `FiberMetrics.observe` (in `Axial.Flow.Telemetry`) installs a fiber observer that records
+runtime health onto it:
 
-Until then:
-
-- host instrumentation (`.AddAspNetCoreInstrumentation()`, `.AddHttpClientInstrumentation()`,
-  `.AddRuntimeInstrumentation()`) covers request rates, latency, and process health;
-- the public `FiberObserver` hooks make workflow-level counters a few lines of user code:
+| Instrument | Kind | Meaning |
+| --- | --- | --- |
+| `axial.flow.fibers.started` | counter | fibers forked |
+| `axial.flow.fibers.live` | up-down counter | fibers currently running |
+| `axial.flow.fibers.settled` | counter, tagged `axial.flow.fiber.status` | settles split by `Succeeded`/`Failed`/`Interrupted` |
+| `axial.flow.fiber.duration` | histogram (seconds), tagged with status | fork-to-settle lifetime |
+| `axial.flow.fibers.unobserved_defects` | counter | defects the runtime proved no code could observe |
 
 ```fsharp
-open System.Diagnostics.Metrics
+application
+|> FiberMetrics.observe        // fiber runtime metrics
+|> FiberTelemetry.observe      // fiber defect spans — installs compose
+```
 
-let meter = new Meter("MyApp.Flow")
-let fiberDefects = meter.CreateCounter<int64>("myapp.fiber.defects")
+Subscribe with `.AddMeter("Axial.Flow")` in `.WithMetrics(...)` and the instruments land in any OTLP
+backend. A climbing `fibers.live` with flat `fibers.settled` is a fiber leak; a nonzero
+`unobserved_defects` rate is crashing background work nobody joins — signals plain `Task.Run` code cannot
+give you without hand-rolled bookkeeping.
 
-let metricsObserver =
-    { FiberObserver.none with
-        OnEnd = fun _ defect -> if defect.IsSome then fiberDefects.Add 1L }
+Host instrumentation (`.AddAspNetCoreInstrumentation()`, `.AddHttpClientInstrumentation()`,
+`.AddRuntimeInstrumentation()`) still covers request rates and process health; the public `FiberObserver`
+hooks remain available for app-specific counters on your own meter.
+
+## Fiber dumps
+
+A `FiberRegistry` (core `Axial.Flow`, no telemetry dependency) tracks every live fiber below one edge
+install and answers "what is my runtime doing right now?" with a structured snapshot or a rendered tree:
+
+```fsharp
+let registry = FiberRegistry()
 
 application
-|> Flow.withFiberObserver (FiberObserver.compose metricsObserver FiberTelemetry.observer)
+|> Flow.withFiberRegistry registry   // composes with observers installed elsewhere
+
+// later — a diagnostics endpoint, a SIGQUIT-style handler, a stuck-shutdown log:
+printfn "%s" (registry.Dump())
 ```
+
+```text
+Fiber dump @ 2026-07-16T10:00:12.5000000+00:00 — 3 live fiber(s)
+#1 "outbox-supervisor" Running 3605.2s (started 2026-07-16T09:00:07.2000000+00:00)
+├─ #2 "outbox-poller" Running 12.5s (started 2026-07-16T10:00:00.0000000+00:00) [tenant=acme]
+└─ #3 Running 0.4s (started 2026-07-16T10:00:12.1000000+00:00)
+```
+
+Name fibers at the fork site with `Flow.forkNamed "outbox-poller" work` — the name carries into dumps,
+fiber spans, and metrics-adjacent tags, so long-lived background fibers are recognizable instead of bare
+ids. Each dump entry also carries the runtime annotations that were in scope at the fork site and, for
+settled fibers, the settle timestamp. `registry.Snapshot()` returns the same data as structured
+`FiberDump` values for programmatic checks; `Fiber.dump fiber` snapshots a single handle.
+
+To put a dump where your traces are, `FiberDumpTelemetry.record registry` attaches the live-fiber tree to
+the current activity as an `axial.flow.fiber.dump` event (or a standalone span when no activity is
+current) — useful just before a timeout fires or from a slow-request handler, so the trace that explains
+*that something was slow* also records *what the runtime was busy with*.
+
+## The Aspire dashboard
+
+Nothing Aspire-specific is required: Aspire's dashboard is an OTLP backend, and `AddServiceDefaults()` in an
+Aspire service project already wires the OpenTelemetry SDK. Add the two Axial sources to the pipeline —
+
+```fsharp
+builder.Services
+    .AddOpenTelemetry()
+    .WithTracing(fun tracing -> tracing.AddSource("Axial.Flow") |> ignore)
+    .WithMetrics(fun metrics -> metrics.AddMeter("Axial.Flow") |> ignore)
+|> ignore
+```
+
+— and the dashboard shows:
+
+- **Traces**: workflow spans from `Activity.trace`, and with `FiberTelemetry.observeWithSpans` a span per
+  forked fiber (named fibers display as `axial.flow.fiber <name>`), nested under the ASP.NET Core request
+  span. Fiber dump events from `FiberDumpTelemetry.record` appear on the span that recorded them.
+- **Metrics**: the `axial.flow.fibers.*` instruments as live charts — watch `fibers.live` breathe under
+  load, and alarm on `unobserved_defects`.
+- **Structured logs**: fiber defects via `FiberLogging.observe` through the `ILog`/MEL bridge.
 
 ## Distributed tracing across a .NET backend and a Fable frontend
 

@@ -5,7 +5,7 @@ weight: 1004
 type: docs
 ---
 
-Human-readable diagnostic dump for a fiber.
+Structured diagnostic snapshot of a fiber, taken at a single point in time.
 
 ## Signature
 
@@ -18,6 +18,9 @@ Human-readable diagnostic dump for a fiber.
 | Field | Description |
 | --- | --- |
 | `Id` | The fiber id. |
+| `Name` | The diagnostic name given at the fork site, if any. |
 | `ParentId` | The parent fiber id, if available. |
+| `Annotations` | The runtime annotations in scope at the fork site. |
 | `StartedAt` | The UTC timestamp when the fiber started. |
-| `Status` | The current fiber status. |
+| `SettledAt` | The UTC timestamp when the fiber settled, if it had settled when the snapshot was taken. |
+| `Status` | The fiber status when the snapshot was taken. |
