@@ -1,7 +1,7 @@
 ---
 weight: 65
 title: Versioned Contracts
-description: Permissive wire schemas mapped to strict domain types, explicit versioning when the wire evolves, and .contract generation when wire schemas multiply.
+description: Permissive wire schemas mapped to strict domain types, explicit versioning when the wire evolves, and schema generation from your own [<WireSchema>] records.
 type: docs
 ---
 
@@ -9,9 +9,9 @@ type: docs
 This page shows how to handle wire payloads that are shaped by their format and outlive the code that wrote them.
 Stored configuration, queued messages, and saved events keep the shape they had when they were written; your
 domain model is neither shaped by a wire format nor frozen in time. The pattern is: a permissive **wire schema**
-per format, a strict **domain schema**, an ordinary mapping function between them, the `Contract<'model>` engine
-when the wire needs versioning — and `.contract` generation when the number of wire schemas makes hand-writing
-them a chore.
+per format, a strict **domain schema**, an ordinary mapping function between them, and the `Contract<'model>`
+engine when the wire needs versioning. When wire schemas multiply, you stop hand-writing them: mark your DTO
+record with `[<WireSchema>]` and `schemagen` derives the schema from it.
 
 ## Wire Schemas and Domain Schemas
 
@@ -107,16 +107,62 @@ match Contract.parse configContract raw with
 `ContractError.ParseFailed` and `MigrationError.RevalidationFailed` carry the same path-aware
 `Diagnostics<SchemaError>` as `Schema.parse`, so one renderer displays every boundary failure.
 
-## Generating the Wire Tier: `.contract` Files
+## Start from a Record
 
-Everything above is hand-written and stays reasonable at small scale. But every wire version is a frozen record
-plus a frozen schema pipeline that must never drift apart, and when versioned wire schemas number in the dozens,
-maintaining them is purely mechanical work. That mechanical part is what contracts generate. A `.contract` file
-declares the wire shape as pure data and `schemagen` emits ordinary checked-in F# — the same records and builder
-pipelines you just saw, so reading the generated file is understanding the system, and a team with a handful of
-wire shapes and no version churn never needs this at all. The grammar has no expressions — literals and names
-only — so a declaration can never hide logic (your domain types, constructors, and migrations remain the only
-places logic lives):
+Everything above is hand-written and stays reasonable at small scale. But every wire schema is a record plus a
+builder pipeline that must never drift apart, and when wire schemas multiply, maintaining the pipelines is purely
+mechanical work. That mechanical part is generated — from the record you would have written anyway:
+
+```fsharp
+// wire/orders.fs — ordinary user-owned F#
+namespace MyApp.Wire
+
+open Axial.Schema.Wire
+
+[<WireSchema>]
+type OrderWire =
+    { /// Stock keeping unit.
+      [<Pattern @"^[A-Z]{3}-\d+$">]
+      Sku: string
+      [<AtLeast 1>]
+      Quantity: int
+      Note: string option }
+```
+
+Running `schemagen` over the file writes a checked-in sibling `orders.g.fs` containing the module you would have
+written by hand: `OrderWire.schema`, `OrderWire.parse`, `OrderWire.validate`, and typed `OrderWire.Fields`
+references. You own the record; the schema is derived. A bare `[<WireSchema>]` record with no other attributes is
+the everyday case — a shape-only permissive schema, exactly the ceremony of a `System.Text.Json` DTO.
+
+The details:
+
+- **Constraints are opt-in attributes** mirroring the schema constraint vocabulary: `Pattern`, `Min`/`Max` (text
+  length, list/map count), `AtLeast`/`GreaterThan`/`AtMost`/`LessThan`/`MultipleOf`, `Distinct`, `Email`, and
+  `Default` (schema metadata, surfaced in generated JSON Schema). `[<WireName "customer_note">]` overrides one
+  wire name; otherwise fields are camelCased (`--wire-naming snake` switches the policy per run).
+- **The compiler is the drift detector.** The generated module constructs your record by name — rename, add, or
+  remove a field without regenerating and the stale `.g.fs` fails to compile, pointing at the exact field.
+- **The type vocabulary is the wire vocabulary**: `string`, `int`, `decimal`, `bool`, `DateOnly`,
+  `DateTimeOffset`, `Guid`, `option`, `list`, `Map<string, _>`, references to other `[<WireSchema>]` records in
+  the same file, nullary unions (an enum: case names become wire tags), and `[<WireUnion "kind">]` unions whose
+  cases each carry one marked record payload (an internally tagged union). Anything else — `float`, tuples,
+  arrays, generics — is a generation-time error with guidance.
+- **Version chains use the same naming convention the generator emits**: `ProfileV1`, `ProfileV2` are frozen
+  superseded versions, the bare `Profile` is current, and the current module gains the same `contract` builder
+  described below, taking your migrations as typed parameters. `[<WireSchema(Chain = "Profile", Version = 1)>]`
+  overrides the convention when a name doesn't fit it.
+- **Doc comments carry through** to the schema, generated JSON Schema, and XML docs.
+- **Nothing runs at runtime.** Attributes are inert metadata read from source text at generation time — no
+  reflection, and the generated output is ordinary schema code, so Fable and NativeAOT/trimming support are
+  unchanged.
+
+## The `.contract` Alternative
+
+The same generator also accepts `.contract` files — a small declaration grammar for when you'd rather the
+declaration own the record too (the generator emits both the record and its schema). It produces exactly the same
+generated shape from the same constraint vocabulary. The grammar has no expressions — literals and names only —
+so a declaration can never hide logic (your domain types, constructors, and migrations remain the only places
+logic lives):
 
 ```text
 /// Site polling configuration.
@@ -156,10 +202,13 @@ output via `JsonSchema.generate` (reject broken payloads before they enter stora
 
 ## Generating with `schemagen`
 
-`schemagen` reads `.contract` files and writes a sibling `.g.fs` for each, which you check in and compile like any
-other source:
+`schemagen` reads `.fs` files with `[<WireSchema>]` records and `.contract` files, and writes a sibling `.g.fs`
+for each, which you check in and compile like any other source. Record-derived files share their source file's
+namespace; `--namespace` applies to `.contract` inputs:
 
 ```bash
+dotnet run --project scripts/schemagen -- src/MyApp/wire
+dotnet run --project scripts/schemagen -- --wire-naming snake src/MyApp/wire
 dotnet run --project scripts/schemagen -- --namespace MyApp.Wire src/MyApp/contracts
 ```
 
@@ -167,8 +216,11 @@ In CI, `--check` writes nothing and exits nonzero if any generated file is missi
 can never drift from its declaration:
 
 ```bash
-dotnet run --project scripts/schemagen -- --namespace MyApp.Wire --check src/MyApp/contracts
+dotnet run --project scripts/schemagen -- --check src/MyApp/wire
 ```
+
+Record- and `.contract`-declared wire types resolve as one set, so either kind may reference the other's
+declarations.
 
 ## Multiple Versions in One File
 
