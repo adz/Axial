@@ -22,6 +22,18 @@ The package split matters:
 Because the contract lives in the core package, a service on Kestrel and a service embedding GenHTTP return the same
 error bodies and publish the same OpenAPI fragments from the same schema declarations.
 
+The host adapters intentionally have a larger dependency surface than the host-neutral package:
+
+- `Axial.Schema.Http` depends on `Axial.Schema` and does not require Flow.
+- `Axial.Schema.Http.AspNetCore` depends on `Axial.Schema.Http`, `Axial.Codec`, `Axial.Flow`, and ASP.NET Core.
+- `Axial.Schema.Http.GenHttp` depends on `Axial.Schema.Http`, `Axial.Codec`, `Axial.Flow`, and GenHTTP.
+
+Use the host-neutral package when parsing and rendering are enough. Install one host adapter when an HTTP handler should
+run as a Flow.
+
+Run `dotnet add package Axial.Schema.Http.AspNetCore` or
+`dotnet add package Axial.Schema.Http.GenHttp`, depending on the server.
+
 ## The error contract
 
 A failed parse becomes an RFC 9457 problem-details body served as `application/problem+json`. Each diagnostic keeps
@@ -40,7 +52,9 @@ its path as an RFC 6901 JSON pointer, so clients can attach errors to fields mec
 ```
 
 `ProblemDetails.ofParsed` builds that value from any failed `ParsedInput`; `ProblemDetails.ofDiagnosticsWith` does
-the same for your own error type with your own renderer.
+the same for your own error type with your own renderer. `ProblemDetails.malformedJson` is the stable 400 value used
+when a JSON body is not syntactically valid. Schema diagnostics and malformed JSON therefore share one media type and
+response shape.
 
 ## Declaring endpoints for OpenAPI
 
@@ -65,6 +79,8 @@ let openApiDocument =
 contract is part of the published document too.
 
 ## ASP.NET Core
+
+### Define the application workflow
 
 ```fsharp
 open Microsoft.Extensions.DependencyInjection
@@ -95,15 +111,99 @@ let endpoint =
 app.MapPost("/signups", endpoint signupEndpoint)
 ```
 
+The application workflow stays independent of ASP.NET Core:
+
+```fsharp
+createSignup : Signup -> Flow<AppEnv, string, Signup>
+```
+
+`EndpointFlow.run createSignup signup` adapts it to the endpoint Flow by projecting `HttpEndpointEnv.App` and wrapping
+typed failures as `EndpointError.ApplicationError`. The endpoint Flow itself has this shape:
+
+```fsharp
+Flow<HttpEndpointEnv<AppEnv>, EndpointError<string>, IResult>
+```
+
+`HttpEndpointEnv.App` is the environment returned by the configured factory. `HttpEndpointEnv.Request` is the native
+request used by `Request` operations; application workflows do not receive it.
+
+### Build the application environment
+
+`flowEndpoint` calls its environment factory once for every request. Resolve request-scoped ASP.NET services there:
+
+```fsharp
+let endpoint =
+    flowEndpoint
+        (fun context -> context.RequestServices.GetRequiredService<AppEnv>())
+        ApiError.toResponse
+```
+
+Service-provider access is confined to this host boundary. If the environment was built at startup, capture it instead:
+
+```fsharp
+let endpoint =
+    flowEndpoint
+        (fun _ -> appEnv)
+        ApiError.toResponse
+```
+
+The environment record is not copied deeply; it carries the same service references.
+
+### Read request input
+
 `Request.json`, `Request.form`, and `Request.query` are Flow operations. They read the native request from the
 endpoint environment and contribute only a trusted model; failed schema parsing becomes the standard problem-details
 response. `EndpointFlow.run` supplies the application's explicit environment to a narrower application workflow and
 marks its typed failures for the host error mapper. `Response.json` streams the successful value through a
 [compiled codec](./json-codec.md).
 
+ASP.NET Core request operations are:
+
+| Operation | Result |
+| --- | --- |
+| `Request.json schema` | Parses the JSON body; malformed JSON and schema failures become 400 problem details. |
+| `Request.form schema` | Reads the posted form and parses its name/value input. |
+| `Request.query schema` | Parses the complete query string. |
+| `Request.route name schema` | Parses one scalar route value, or `RawInput.Missing` when absent. |
+| `Request.raw projection` | Projects an untrusted value directly from `HttpRequest` without establishing schema trust. |
+| `Request.native` | Returns `HttpRequest` for deliberately host-specific handling. |
+
+`Request.raw` does not catch exceptions from the projection. Such exceptions remain Flow defects and reach ASP.NET
+exception middleware.
+
+### Return successful responses
+
+| Operation | Result |
+| --- | --- |
+| `Response.json status codec value` | Streams a trusted value as JSON through the compiled codec. |
+| `Response.text status value` | Returns plain text with the supplied status. |
+| `Response.empty status` | Returns an empty response with the supplied status. |
+| `Response.native result` | Returns an existing ASP.NET `IResult` unchanged. |
+
+The endpoint Flow may branch and return different response values. The typed application-error renderer is separate
+from these successful response choices.
+
+### Lower Flow outcomes
+
 `flowEndpoint` is the only lowering boundary. Its environment factory runs once per request, so it can return a
 previously built environment or assemble one from ASP.NET's request-scoped service provider. Defects continue into
 ASP.NET exception middleware, while interruption follows `RequestAborted`.
+
+The lowering rules are:
+
+| Flow outcome | HTTP behavior |
+| --- | --- |
+| `Exit.Success result` | Returns the successful `IResult`. |
+| `Cause.Fail (InvalidRequest problem)` | Returns the problem as `application/problem+json`. |
+| `Cause.Fail (ApplicationError error)` | Calls the configured application-error renderer. |
+| A traced single `Fail` | Preserves the same typed-failure behavior through the trace wrapper. |
+| One `Die` defect | Rethrows the original exception into ASP.NET middleware. |
+| Multiple defects | Throws an `AggregateException` containing every defect. |
+| Interruption without defects | Throws `OperationCanceledException` using `RequestAborted`. |
+| A compound typed-only cause | Throws `InvalidOperationException`; the adapter never chooses an arbitrary failure. |
+
+A composite cause containing defects takes the defect path. This prevents parallel or sequential failures from being
+silently collapsed into one application response.
 
 The lower-level `SchemaRequest` and `SchemaResult` modules remain available for endpoints that need the complete
 `ParsedInput`, such as form redisplay.
@@ -130,7 +230,7 @@ OpenAPI, a compiled response codec, and a redisplaying HTML form.
 
 ## GenHTTP
 
-The same operations exist over GenHTTP's `IRequest`/`IResponse` for embedded servers:
+The same boundary model exists over GenHTTP's `IRequest`/`IResponse` for embedded servers:
 
 ```fsharp
 open Axial.Flow
@@ -162,6 +262,27 @@ let handler =
 The endpoint Flow and application workflow have the same structure on both hosts. Each adapter exposes its own
 `Request`, `Response`, `HttpEndpointEnv`, and `flowEndpoint` types so the final value is the native handler expected by
 that server. GenHTTP continues to own route registration.
+
+GenHTTP provides `Request.json`, `Request.query`, `Request.raw`, and `Request.native`. It does not claim form or named
+route-value support because the adapter does not have equivalent boundary implementations for those host surfaces.
+
+GenHTTP responses are opaque `HttpResponse` plans because GenHTTP constructs `IResponse` from the current `IRequest`.
+`Response.json`, `Response.text`, and `Response.empty` build those plans; `Response.native` accepts an
+`IRequest -> IResponse` function for host-specific behavior. The application-error renderer supplied to
+`flowEndpoint` returns the same `HttpResponse` plan type.
+
+Outcome lowering matches ASP.NET Core for schema problems, application failures, defects, and compound causes.
+GenHTTP's `IRequest` does not expose an equivalent of `HttpContext.RequestAborted` through this adapter, so
+`flowEndpoint` starts the Flow without a request cancellation token.
+
+## Complete API reference
+
+- [Host-neutral schema HTTP boundary]({{< relref "/schema/reference/schema/http/" >}})
+- [ASP.NET Core adapter]({{< relref "/schema/reference/schema/http/aspnetcore/" >}})
+- [GenHTTP adapter]({{< relref "/schema/reference/schema/http/genhttp/" >}})
+
+The adapter reference pages include every `Request`, `Response`, `EndpointFlow`, and `flowEndpoint` member plus the
+lower-level `SchemaRequest`, `SchemaResult`, and `SchemaResponse` surfaces.
 
 ## Form and query input
 

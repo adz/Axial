@@ -1,7 +1,7 @@
 ---
 title: "Schema.Http.ProblemDetails.ofDiagnosticsWith"
 linkTitle: "ofDiagnosticsWith"
-weight: 2104
+weight: 2105
 ---
 
 Builds a 400 problem-details value from parse diagnostics, rendering each error with <span class="fsdocs-param-name">render</span>.

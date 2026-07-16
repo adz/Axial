@@ -1,7 +1,7 @@
 ---
 title: "Schema.Http.ProblemDetails.ofParsed"
 linkTitle: "ofParsed"
-weight: 2102
+weight: 2103
 ---
 
 Builds a 400 problem-details value from a failed parse, or <code>None</code> when parsing succeeded.

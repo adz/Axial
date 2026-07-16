@@ -33,9 +33,13 @@ Schemas are consumed by interpreters that stay independent of workflow execution
 
 - [`Schema HTTP Boundary`](./schema/http/) — host-neutral server boundary support (namespace `Axial.Schema.Http`):
   `BoundaryInput` for query and form raw input, `ProblemDetails` for RFC 9457 error bodies with JSON-pointer paths,
-  and `EndpointSpec`/`OpenApi` for assembling OpenAPI 3.1 documents. The `Axial.Schema.Http.AspNetCore` and
-  `Axial.Schema.Http.GenHttp` packages adapt this contract to one host each — see the
-  [HTTP servers guide]({{< relref "/schema/http-servers/" >}}).
+  and `EndpointSpec`/`OpenApi` for assembling OpenAPI 3.1 documents.
+- [`ASP.NET Core adapter`](./schema/http/aspnetcore/) — schema-trusted request operations, application Flow embedding,
+  successful responses, native handler lowering, and the lower-level `SchemaRequest`/`SchemaResult` surface.
+- [`GenHTTP adapter`](./schema/http/genhttp/) — the equivalent Flow endpoint boundary and lower-level host surface for
+  GenHTTP's request-relative response model.
+
+See the [HTTP servers guide]({{< relref "/schema/http-servers/" >}}) for the complete authoring model and outcome rules.
 
 ## Axial.Codec
 

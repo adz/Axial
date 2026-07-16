@@ -4,7 +4,7 @@ weight: 500
 type: docs
 ---
 
-This page shows the host-neutral server boundary in `Axial.Schema.Http`: `BoundaryInput` builds raw input from the name/value surfaces HTTP servers hand over, `ProblemDetails` renders failed parses as RFC 9457 bodies with RFC 6901 JSON pointers, and `EndpointSpec` values assemble into OpenAPI 3.1 documents whose schemas are embedded from `JsonSchema.generate` output. The `Axial.Schema.Http.AspNetCore` and `Axial.Schema.Http.GenHttp` packages adapt these pieces to one host each; see the [HTTP servers guide](/schema/http-servers/) for the adapter surfaces.
+This page shows the host-neutral server boundary in `Axial.Schema.Http`: `BoundaryInput` builds raw input from the name/value surfaces HTTP servers hand over, `ProblemDetails` renders failed parses as RFC 9457 bodies with RFC 6901 JSON pointers, and `EndpointSpec` values assemble into OpenAPI 3.1 documents whose schemas are embedded from `JsonSchema.generate` output. Host-specific Flow lowering is documented under [ASP.NET Core](./aspnetcore/) and [GenHTTP](./genhttp/); see the [HTTP servers guide](/schema/http-servers/) for complete usage.
 
 ## Boundary input
 
@@ -15,6 +15,7 @@ This page shows the host-neutral server boundary in `Axial.Schema.Http`: `Bounda
 
 - [`Schema.Http.ProblemDetails`](./t-schema-http-problemdetails.md): An RFC 9457 problem-details value carrying path-aware parse errors.
 - [`Schema.Http.ProblemError`](./t-schema-http-problemerror.md): One boundary error: a JSON pointer into the request body plus a rendered message.
+- [`Schema.Http.ProblemDetails.malformedJson`](./p-schema-http-problemdetails-malformedjson.md): Builds a 400 problem-details value for a syntactically invalid JSON request body.
 - [`Schema.Http.ProblemDetails.ofParsed`](./m-schema-http-problemdetails-ofparsed.md): Builds a 400 problem-details value from a failed parse, or <code>None</code> when parsing succeeded.
 - [`Schema.Http.ProblemDetails.ofDiagnostics`](./m-schema-http-problemdetails-ofdiagnostics.md): Builds a 400 problem-details value from failed schema parse diagnostics.
 - [`Schema.Http.ProblemDetails.ofDiagnosticsWith`](./m-schema-http-problemdetails-ofdiagnosticswith.md): Builds a 400 problem-details value from parse diagnostics, rendering each error with <span class="fsdocs-param-name">render</span>.

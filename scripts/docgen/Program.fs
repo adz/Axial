@@ -357,12 +357,46 @@ let pageSpecs = [
         OutPath = ["schema"; "http"; "_index.md"]
         Title = "Schema HTTP Boundary"
         Description = "Source-documented host-neutral HTTP boundary support for schemas."
-        Intro = "This page shows the host-neutral server boundary in `Axial.Schema.Http`: `BoundaryInput` builds raw input from the name/value surfaces HTTP servers hand over, `ProblemDetails` renders failed parses as RFC 9457 bodies with RFC 6901 JSON pointers, and `EndpointSpec` values assemble into OpenAPI 3.1 documents whose schemas are embedded from `JsonSchema.generate` output. The `Axial.Schema.Http.AspNetCore` and `Axial.Schema.Http.GenHttp` packages adapt these pieces to one host each; see the [HTTP servers guide](/schema/http-servers/) for the adapter surfaces."
+        Intro = "This page shows the host-neutral server boundary in `Axial.Schema.Http`: `BoundaryInput` builds raw input from the name/value surfaces HTTP servers hand over, `ProblemDetails` renders failed parses as RFC 9457 bodies with RFC 6901 JSON pointers, and `EndpointSpec` values assemble into OpenAPI 3.1 documents whose schemas are embedded from `JsonSchema.generate` output. Host-specific Flow lowering is documented under [ASP.NET Core](./aspnetcore/) and [GenHTTP](./genhttp/); see the [HTTP servers guide](/schema/http-servers/) for complete usage."
         SymbolIds = [
             "Boundary input", ["M:Axial.Schema.Http.BoundaryInput.ofQuery"; "M:Axial.Schema.Http.BoundaryInput.ofForm"]
-            "Problem details", ["T:Axial.Schema.Http.ProblemDetails"; "T:Axial.Schema.Http.ProblemError"; "M:Axial.Schema.Http.ProblemDetailsModule.ofParsed"; "M:Axial.Schema.Http.ProblemDetailsModule.ofDiagnostics"; "M:Axial.Schema.Http.ProblemDetailsModule.ofDiagnosticsWith"; "M:Axial.Schema.Http.ProblemDetailsModule.toJson"; "M:Axial.Schema.Http.ProblemDetailsModule.writeTo"; "M:Axial.Schema.Http.JsonPointer.ofPath"]
+            "Problem details", ["T:Axial.Schema.Http.ProblemDetails"; "T:Axial.Schema.Http.ProblemError"; "P:Axial.Schema.Http.ProblemDetailsModule.malformedJson"; "M:Axial.Schema.Http.ProblemDetailsModule.ofParsed"; "M:Axial.Schema.Http.ProblemDetailsModule.ofDiagnostics"; "M:Axial.Schema.Http.ProblemDetailsModule.ofDiagnosticsWith"; "M:Axial.Schema.Http.ProblemDetailsModule.toJson"; "M:Axial.Schema.Http.ProblemDetailsModule.writeTo"; "M:Axial.Schema.Http.JsonPointer.ofPath"]
             "Endpoint specs", ["T:Axial.Schema.Http.EndpointSpec"; "T:Axial.Schema.Http.ResponseSpec"; "M:Axial.Schema.Http.Endpoint.get"; "M:Axial.Schema.Http.Endpoint.post"; "M:Axial.Schema.Http.Endpoint.put"; "M:Axial.Schema.Http.Endpoint.patch"; "M:Axial.Schema.Http.Endpoint.delete"; "M:Axial.Schema.Http.Endpoint.summary"; "M:Axial.Schema.Http.Endpoint.operationId"; "M:Axial.Schema.Http.Endpoint.tag"; "M:Axial.Schema.Http.Endpoint.accepts"; "M:Axial.Schema.Http.Endpoint.returnsJson"; "M:Axial.Schema.Http.Endpoint.returns"; "M:Axial.Schema.Http.Endpoint.returnsProblemDetails"]
             "OpenAPI assembly", ["T:Axial.Schema.Http.OpenApiInfo"; "M:Axial.Schema.Http.OpenApi.info"; "M:Axial.Schema.Http.OpenApi.document"; "M:Axial.Schema.Http.OpenApi.writeTo"]
+        ]
+        Alias = None
+    }
+    {
+        OutPath = ["schema"; "http"; "aspnetcore"; "_index.md"]
+        Title = "Schema HTTP ASP.NET Core"
+        Description = "Source-documented ASP.NET Core hosting for schema-trusted Axial Flow endpoints."
+        Intro = "This page shows `Axial.Schema.Http.AspNetCore`. `Request` contributes schema-trusted values to an endpoint Flow, `EndpointFlow.run` embeds an HTTP-independent application workflow, `Response` constructs successful `IResult` values, and `flowEndpoint` lowers the completed Flow to the delegate accepted by ASP.NET Core routing. ASP.NET Core continues to own paths, verbs, middleware, authorization, filters, and endpoint metadata. The lower-level `SchemaRequest` and `SchemaResult` modules remain available when an endpoint needs the complete `ParsedInput` or direct host control."
+        SymbolIds = [
+            "Endpoint model", ["T:Axial.Schema.Http.AspNetCore.HttpEndpointEnv`1"; "T:Axial.Schema.Http.AspNetCore.EndpointError`1"]
+            "Trusted request input", ["M:Axial.Schema.Http.AspNetCore.Request.json"; "M:Axial.Schema.Http.AspNetCore.Request.form"; "M:Axial.Schema.Http.AspNetCore.Request.query"; "M:Axial.Schema.Http.AspNetCore.Request.route"]
+            "Direct request input", ["M:Axial.Schema.Http.AspNetCore.Request.raw"; "M:Axial.Schema.Http.AspNetCore.Request.native"]
+            "Application workflows", ["M:Axial.Schema.Http.AspNetCore.EndpointFlow.run"]
+            "Successful responses", ["M:Axial.Schema.Http.AspNetCore.Response.json"; "M:Axial.Schema.Http.AspNetCore.Response.text"; "M:Axial.Schema.Http.AspNetCore.Response.empty"; "M:Axial.Schema.Http.AspNetCore.Response.native"]
+            "Host lowering", ["M:Axial.Schema.Http.AspNetCore.FlowEndpoint.flowEndpoint"]
+            "Lower-level request parsing", ["M:Axial.Schema.Http.AspNetCore.SchemaRequest.json"; "M:Axial.Schema.Http.AspNetCore.SchemaRequest.form"; "M:Axial.Schema.Http.AspNetCore.SchemaRequest.query"]
+            "Lower-level responses", ["M:Axial.Schema.Http.AspNetCore.SchemaResult.problem"; "M:Axial.Schema.Http.AspNetCore.SchemaResult.codec"; "M:Axial.Schema.Http.AspNetCore.SchemaResult.openApi"; "M:Axial.Schema.Http.AspNetCore.SchemaResult.handleParsed"]
+        ]
+        Alias = None
+    }
+    {
+        OutPath = ["schema"; "http"; "genhttp"; "_index.md"]
+        Title = "Schema HTTP GenHTTP"
+        Description = "Source-documented GenHTTP hosting for schema-trusted Axial Flow endpoints."
+        Intro = "This page shows `Axial.Schema.Http.GenHttp`. `Request` contributes schema-trusted values to an endpoint Flow, `EndpointFlow.run` embeds an HTTP-independent application workflow, `Response` constructs request-relative response plans, and `flowEndpoint` lowers the completed Flow to the delegate accepted by GenHTTP routing. GenHTTP continues to own paths, verbs, and handler composition. The lower-level `SchemaRequest` and `SchemaResponse` modules remain available when an endpoint needs the complete `ParsedInput` or direct host control."
+        SymbolIds = [
+            "Endpoint model", ["T:Axial.Schema.Http.GenHttp.HttpEndpointEnv`1"; "T:Axial.Schema.Http.GenHttp.EndpointError`1"; "T:Axial.Schema.Http.GenHttp.HttpResponse"]
+            "Trusted request input", ["M:Axial.Schema.Http.GenHttp.Request.json"; "M:Axial.Schema.Http.GenHttp.Request.query"]
+            "Direct request input", ["M:Axial.Schema.Http.GenHttp.Request.raw"; "M:Axial.Schema.Http.GenHttp.Request.native"]
+            "Application workflows", ["M:Axial.Schema.Http.GenHttp.EndpointFlow.run"]
+            "Successful responses", ["M:Axial.Schema.Http.GenHttp.Response.json"; "M:Axial.Schema.Http.GenHttp.Response.text"; "M:Axial.Schema.Http.GenHttp.Response.empty"; "M:Axial.Schema.Http.GenHttp.Response.native"]
+            "Host lowering", ["M:Axial.Schema.Http.GenHttp.FlowEndpoint.flowEndpoint"]
+            "Lower-level request parsing", ["M:Axial.Schema.Http.GenHttp.SchemaRequest.json"; "M:Axial.Schema.Http.GenHttp.SchemaRequest.query"]
+            "Lower-level responses", ["M:Axial.Schema.Http.GenHttp.SchemaResponse.problem"; "M:Axial.Schema.Http.GenHttp.SchemaResponse.codec"; "M:Axial.Schema.Http.GenHttp.SchemaResponse.openApi"; "M:Axial.Schema.Http.GenHttp.SchemaResponse.handleParsed"]
         ]
         Alias = None
     }
@@ -1186,6 +1220,8 @@ let main argv =
         Path.Combine(artifactsDir, "Axial.Schema/debug_net8.0/Axial.Schema.dll")
         Path.Combine(artifactsDir, "Axial.Codec/debug_net8.0/Axial.Codec.dll")
         Path.Combine(artifactsDir, "Axial.Schema.Http/debug/Axial.Schema.Http.dll")
+        Path.Combine(artifactsDir, "Axial.Schema.Http.AspNetCore/debug/Axial.Schema.Http.AspNetCore.dll")
+        Path.Combine(artifactsDir, "Axial.Schema.Http.GenHttp/debug/Axial.Schema.Http.GenHttp.dll")
         Path.Combine(artifactsDir, "Axial.Flow.PlatformService/debug_net8.0/Axial.Flow.PlatformService.dll")
         Path.Combine(artifactsDir, "Axial.Flow.Console/debug_net8.0/Axial.Flow.Console.dll")
         Path.Combine(artifactsDir, "Axial.Flow.FileSystem/debug_net8.0/Axial.Flow.FileSystem.dll")
@@ -1207,6 +1243,8 @@ let main argv =
         [ typeof<Microsoft.Extensions.Logging.ILogger>.Assembly.Location
           typeof<Microsoft.Extensions.DependencyInjection.IServiceCollection>.Assembly.Location
           typeof<Microsoft.Extensions.Hosting.IHostedService>.Assembly.Location
+          typeof<Microsoft.AspNetCore.Http.HttpContext>.Assembly.Location
+          typeof<GenHTTP.Api.Protocol.IRequest>.Assembly.Location
           typeof<Fable.Core.JS.Promise<_>>.Assembly.Location ]
         |> List.map Path.GetDirectoryName
         |> List.distinct

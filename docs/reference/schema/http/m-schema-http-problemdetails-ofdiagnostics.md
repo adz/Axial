@@ -1,7 +1,7 @@
 ---
 title: "Schema.Http.ProblemDetails.ofDiagnostics"
 linkTitle: "ofDiagnostics"
-weight: 2103
+weight: 2104
 ---
 
 Builds a 400 problem-details value from failed schema parse diagnostics.

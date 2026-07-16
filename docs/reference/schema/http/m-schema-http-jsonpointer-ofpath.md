@@ -1,7 +1,7 @@
 ---
 title: "Schema.Http.JsonPointer.ofPath"
 linkTitle: "ofPath"
-weight: 2107
+weight: 2108
 ---
 
 Renders a diagnostics path as a JSON pointer. The empty path renders as <code>&quot;&quot;</code> (the whole document).

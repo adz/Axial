@@ -70,6 +70,7 @@ module SchemaResponse =
         | Error _ -> ValueTask<_>(problem request parsed)
 
 /// <summary>The request-scoped environment supplied to a GenHTTP endpoint Flow.</summary>
+/// <remarks>The host factory supplies <c>App</c>; adapter request operations read <c>Request</c>. Keep application workflows typed against <c>'app</c> and embed them with <c>EndpointFlow.run</c>.</remarks>
 type HttpEndpointEnv<'app> =
     { /// <summary>The application's explicit services and request-derived domain context.</summary>
       App: 'app
@@ -77,6 +78,7 @@ type HttpEndpointEnv<'app> =
       Request: IRequest }
 
 /// <summary>Distinguishes invalid request input from an expected application failure.</summary>
+/// <remarks>Request operations create <c>InvalidRequest</c>; <c>EndpointFlow.run</c> wraps the application error channel as <c>ApplicationError</c>. <c>flowEndpoint</c> renders the two cases separately.</remarks>
 [<RequireQualifiedAccess>]
 type EndpointError<'error> =
     /// <summary>The request could not be parsed into the declared trusted input.</summary>
@@ -85,6 +87,7 @@ type EndpointError<'error> =
     | ApplicationError of 'error
 
 /// <summary>A response plan that GenHTTP executes against the current native request.</summary>
+/// <remarks>The plan stays opaque so successful and typed-error responses are constructed from the same request that entered <c>flowEndpoint</c>.</remarks>
 type HttpResponse = private HttpResponse of (IRequest -> IResponse)
 
 /// <summary>Request decoders that contribute trusted values to an endpoint Flow.</summary>
@@ -96,7 +99,9 @@ module Request =
         | Error diagnostics ->
             Flow.fail (EndpointError.InvalidRequest(ProblemDetails.ofDiagnostics diagnostics))
 
-    /// <summary>Reads and schema-parses a JSON request body.</summary>
+    /// <summary>Reads and schema-parses a JSON request body; malformed JSON and schema diagnostics become invalid-request failures.</summary>
+    /// <param name="schema">The schema that establishes the trusted input type.</param>
+    /// <returns>An endpoint Flow that succeeds with the trusted model.</returns>
     /// <example><code>let! signup = Request.json Signup.schema</code></example>
     let json (schema: Schema<'model>) : Flow<HttpEndpointEnv<'app>, EndpointError<'error>, 'model> =
         Flow.read _.Request
@@ -114,17 +119,22 @@ module Request =
                 | Error problem -> Flow.fail (EndpointError.InvalidRequest problem)))
 
     /// <summary>Schema-parses the query string.</summary>
+    /// <param name="schema">The schema that interprets the complete query input.</param>
+    /// <returns>An endpoint Flow that succeeds with the trusted model.</returns>
     /// <example><code>let! search = Request.query Search.schema</code></example>
     let query (schema: Schema<'model>) : Flow<HttpEndpointEnv<'app>, EndpointError<'error>, 'model> =
         Flow.read _.Request
         |> Flow.bind (SchemaRequest.query schema >> fromParsed)
 
     /// <summary>Projects untrusted input directly from the native request without schema parsing.</summary>
+    /// <param name="projection">The direct projection from the native request.</param>
+    /// <returns>An endpoint Flow containing the projected, still-untrusted value.</returns>
     /// <example><code>let! signature = Request.raw (fun request -&gt; string request.Headers["x-signature"])</code></example>
     let raw (projection: IRequest -> 'input) : Flow<HttpEndpointEnv<'app>, EndpointError<'error>, 'input> =
         Flow.read (fun environment -> projection environment.Request)
 
     /// <summary>Returns the native GenHTTP request for host-specific boundary handling.</summary>
+    /// <returns>An endpoint Flow containing the current native request.</returns>
     /// <example><code>let! request = Request.native</code></example>
     let native<'app, 'error> : Flow<HttpEndpointEnv<'app>, EndpointError<'error>, IRequest> =
         Flow.read _.Request
@@ -132,7 +142,10 @@ module Request =
 /// <summary>Embeds an application Flow into a GenHTTP endpoint Flow.</summary>
 [<RequireQualifiedAccess>]
 module EndpointFlow =
-    /// <summary>Supplies the application environment and marks typed application failures.</summary>
+    /// <summary>Supplies <c>HttpEndpointEnv.App</c> to the application workflow and marks its typed failures as application errors.</summary>
+    /// <param name="operation">The HTTP-independent application workflow factory.</param>
+    /// <param name="input">The trusted input supplied to the application operation.</param>
+    /// <returns>The application operation adapted to the endpoint environment and error channel.</returns>
     /// <example><code>let! created = EndpointFlow.run createSignup signup</code></example>
     let run
         (operation: 'input -> Flow<'app, 'error, 'output>)
@@ -146,21 +159,32 @@ module EndpointFlow =
 [<RequireQualifiedAccess>]
 module Response =
     /// <summary>Serializes a trusted value as JSON through a compiled codec.</summary>
+    /// <param name="status">The successful HTTP status.</param>
+    /// <param name="codec">The compiled codec for the trusted output type.</param>
+    /// <param name="value">The trusted output value.</param>
+    /// <returns>A request-relative GenHTTP response plan.</returns>
     /// <example><code>return Response.json ResponseStatus.Created Signup.codec signup</code></example>
     let json (status: ResponseStatus) (codec: JsonCodec<'model>) (value: 'model) : HttpResponse =
         HttpResponse(fun request -> SchemaResponse.codec codec status request value)
 
     /// <summary>Returns an empty response with the supplied status.</summary>
+    /// <param name="status">The successful HTTP status.</param>
+    /// <returns>A request-relative empty response plan.</returns>
     /// <example><code>return Response.empty ResponseStatus.NoContent</code></example>
     let empty (status: ResponseStatus) : HttpResponse =
         HttpResponse(fun request -> request.Respond().Status(status).Build())
 
     /// <summary>Returns a plain-text response.</summary>
+    /// <param name="status">The successful HTTP status.</param>
+    /// <param name="value">The response text.</param>
+    /// <returns>A request-relative plain-text response plan.</returns>
     /// <example><code>return Response.text ResponseStatus.Ok "ready"</code></example>
     let text (status: ResponseStatus) (value: string) : HttpResponse =
         HttpResponse(fun request -> request.Respond().Status(status).Content(value).Type("text/plain").Build())
 
     /// <summary>Builds a host-native response plan from the current GenHTTP request.</summary>
+    /// <param name="respond">The host-specific response function.</param>
+    /// <returns>A request-relative response plan.</returns>
     /// <example><code>return Response.native (fun request -&gt; request.Respond().Build())</code></example>
     let native (respond: IRequest -> IResponse) : HttpResponse =
         HttpResponse respond
@@ -185,6 +209,16 @@ module FlowEndpoint =
             .Build()
 
     /// <summary>Lowers an endpoint Flow to the native handler expected by GenHTTP routing.</summary>
+    /// <remarks>
+    /// Invalid requests become RFC 9457 responses and typed application failures use <c>mapApplicationError</c>.
+    /// A single defect is rethrown unchanged, multiple defects become <c>AggregateException</c>, interruption becomes
+    /// <c>OperationCanceledException</c>, and compound typed-only causes are rejected rather than reduced to an arbitrary
+    /// failure. GenHTTP does not supply a request cancellation token through this adapter.
+    /// </remarks>
+    /// <param name="getAppEnvironment">Constructs or resolves the explicit application environment for the current request.</param>
+    /// <param name="mapApplicationError">Maps one expected application failure to a GenHTTP response plan.</param>
+    /// <param name="workflow">The complete endpoint Flow to execute.</param>
+    /// <returns>A native delegate suitable for GenHTTP routing methods.</returns>
     /// <example>
     /// <code>
     /// let endpoint = flowEndpoint getAppEnvironment ApiError.toResponse

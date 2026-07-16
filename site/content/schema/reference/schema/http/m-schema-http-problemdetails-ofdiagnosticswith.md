@@ -1,7 +1,7 @@
 ---
 title: "Schema.Http.ProblemDetails.ofDiagnosticsWith"
 linkTitle: "ofDiagnosticsWith"
-weight: 2104
+weight: 2105
 type: docs
 ---
 
