@@ -40,13 +40,13 @@ This page shows the `Axial.Refined` surface for turning untrusted boundary data 
 - [`Refined.Parse.dateOnly`](./m-refined-parse-dateonly.md): Parses a date-only value.
 - [`Refined.Parse.timeOnly`](./m-refined-parse-timeonly.md): Parses a time-only value.
 - [`Refined.Parse.enum`](./m-refined-parse-enum.md): Parses an enum value by name or numeric text.
-- [`Refined.Parse.intOption`](./m-refined-parse-intoption.md): Parses an optional integer, returning <code>None</code> for missing or invalid text.
-- [`Refined.Parse.boolOption`](./m-refined-parse-booloption.md): Parses an optional boolean, returning <code>None</code> for missing or invalid text.
-- [`Refined.Parse.decimalOption`](./m-refined-parse-decimaloption.md): Parses an optional decimal, returning <code>None</code> for missing or invalid text.
-- [`Refined.Parse.guidOption`](./m-refined-parse-guidoption.md): Parses an optional GUID, returning <code>None</code> for missing or invalid text.
-- [`Refined.Parse.intOrDefault`](./m-refined-parse-intordefault.md): Parses an integer or returns the supplied fallback.
-- [`Refined.Parse.boolOrDefault`](./m-refined-parse-boolordefault.md): Parses a boolean or returns the supplied fallback.
-- [`Refined.Parse.decimalOrDefault`](./m-refined-parse-decimalordefault.md): Parses a decimal or returns the supplied fallback.
+- [`Refined.Parse.intOption`](./m-refined-parse-intoption.md): Parses an optional integer. Absence returns <code>Ok None</code>; malformed present text returns its parsing error.
+- [`Refined.Parse.boolOption`](./m-refined-parse-booloption.md): Parses an optional Boolean. Absence returns <code>Ok None</code>; malformed present text returns its parsing error.
+- [`Refined.Parse.decimalOption`](./m-refined-parse-decimaloption.md): Parses an optional decimal. Absence returns <code>Ok None</code>; malformed present text returns its parsing error.
+- [`Refined.Parse.guidOption`](./m-refined-parse-guidoption.md): Parses an optional GUID. Absence returns <code>Ok None</code>; malformed present text returns its parsing error.
+- [`Refined.Parse.intOrDefault`](./m-refined-parse-intordefault.md): Parses an optional integer, using the supplied fallback only when the input is absent.
+- [`Refined.Parse.boolOrDefault`](./m-refined-parse-boolordefault.md): Parses an optional Boolean, using the supplied fallback only when the input is absent.
+- [`Refined.Parse.decimalOrDefault`](./m-refined-parse-decimalordefault.md): Parses an optional decimal, using the supplied fallback only when the input is absent.
 
 ## Text
 

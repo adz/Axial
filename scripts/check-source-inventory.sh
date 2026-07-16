@@ -19,7 +19,8 @@ find src tests -name '*.fs' -print | sort > "$tmp_dir/sources.actual"
 > "$tmp_dir/sources.expected"
 while IFS= read -r project; do
   project_dir="$(dirname "$project")"
-  grep -o '<Compile Include="[^"]*\.fs"' "$project" \
+  # A project may compile no sources at all (targets-only packages like Axial.Schema.Contracts.Build).
+  { grep -o '<Compile Include="[^"]*\.fs"' "$project" || true; } \
     | sed 's/^<Compile Include="//; s/"$//' \
     | while IFS= read -r include_path; do
         if [[ "$include_path" == ..* ]]; then

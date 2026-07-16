@@ -148,9 +148,23 @@ The details:
   cases each carry one marked record payload (an internally tagged union). Anything else — `float`, tuples,
   arrays, generics — is a generation-time error with guidance.
 - **Version chains use the same naming convention the generator emits**: `ProfileV1`, `ProfileV2` are frozen
-  superseded versions, the bare `Profile` is current, and the current module gains the same `contract` builder
-  described below, taking your migrations as typed parameters. `[<WireSchema(Chain = "Profile", Version = 1)>]`
-  overrides the convention when a name doesn't fit it.
+  superseded versions, the bare `Profile` is current, and the current module gains a `contract` builder taking
+  your migrations as typed parameters. `[<WireSchema(Chain = "Profile", Version = 1)>]` overrides the convention
+  when a name doesn't fit it.
+
+  ```fsharp
+  [<WireSchema>]
+  type ProfileV1 = { Name: string }          // frozen v1 wire shape
+
+  [<WireSchema>]
+  type Profile = { Name: string; Email: string }  // current (v2)
+
+  // Generated: Profile.contract takes the v1 -> v2 migration and the VersionSource.
+  let profileContract =
+      Profile.contract
+          (fun v1 -> Ok { Name = v1.Name; Email = "" })
+          (VersionSource.Field "schemaVersion")
+  ```
 - **Doc comments carry through** to the schema, generated JSON Schema, and XML docs.
 - **Nothing runs at runtime.** Attributes are inert metadata read from source text at generation time — no
   reflection, and the generated output is ordinary schema code, so Fable and NativeAOT/trimming support are
@@ -200,22 +214,33 @@ binding — and because the output is an ordinary `Schema`, everything schemas a
 output via `JsonSchema.generate` (reject broken payloads before they enter storage), compiled codecs via
 `Json.compile`, inspection metadata, and doc comments carried through to XML docs and generated JSON Schema.
 
-## Generating with `schemagen`
+## Generation Runs in Your Build
 
-`schemagen` reads `.fs` files with `[<WireSchema>]` records and `.contract` files, and writes a sibling `.g.fs`
-for each, which you check in and compile like any other source. Record-derived files share their source file's
-namespace; `--namespace` applies to `.contract` inputs:
+Reference the `Axial.Schema.Contracts.Build` package and declare which sources carry wire declarations; the
+generator then runs before compile and keeps the checked-in `.g.fs` siblings fresh — nobody runs a tool by hand,
+and unchanged files cost nothing on rebuild (the target is timestamp-incremental):
+
+```xml
+<ItemGroup>
+  <PackageReference Include="Axial.Schema.Contracts.Build" Version="..." PrivateAssets="all" />
+</ItemGroup>
+
+<ItemGroup>
+  <AxialWireSchema Include="wire/orders.fs" />
+  <Compile Include="wire/orders.fs" />
+  <Compile Include="wire/orders.g.fs" />
+</ItemGroup>
+```
+
+`AxialWireNaming` (camel | snake | verbatim) sets the naming policy, `AxialSchemaGenEnabled=false` skips
+generation, and `.contract` files ride along as `<AxialContract>` items with `AxialContractNamespace`.
+
+The same generator is also a plain CLI — useful for one-off runs and for `--check` in CI, which writes nothing
+and exits nonzero if any generated file is missing or stale:
 
 ```bash
 dotnet run --project scripts/schemagen -- src/MyApp/wire
-dotnet run --project scripts/schemagen -- --wire-naming snake src/MyApp/wire
 dotnet run --project scripts/schemagen -- --namespace MyApp.Wire src/MyApp/contracts
-```
-
-In CI, `--check` writes nothing and exits nonzero if any generated file is missing or stale, so the checked-in F#
-can never drift from its declaration:
-
-```bash
 dotnet run --project scripts/schemagen -- --check src/MyApp/wire
 ```
 
