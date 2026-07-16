@@ -1628,6 +1628,8 @@ module ApiShapeTests =
               "dateOnly"
               "timeOnly"
               "enum"
+              "optional"
+              "optionalOr"
               "intOption"
               "boolOption"
               "decimalOption"

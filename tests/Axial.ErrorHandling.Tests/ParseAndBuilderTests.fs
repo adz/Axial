@@ -42,28 +42,39 @@ module ParseAndBuilderTests =
         test <@ Parse.int "999999999999999999999999" = Error(ParseError.OutOfRange("int", "999999999999999999999999")) @>
 
     [<Fact>]
-    let ``Parse option and default helpers cover missing invalid and valid input`` () =
+    let ``Parse optional helpers distinguish absence from malformed present input`` () =
         let guidText = "11111111-1111-1111-1111-111111111111"
         let parsedGuid = Guid.Parse guidText
 
-        test <@ Parse.intOption None = None @>
-        test <@ Parse.intOption (Some "nope") = None @>
-        test <@ Parse.intOption (Some "42") = Some 42 @>
-        test <@ Parse.boolOption None = None @>
-        test <@ Parse.boolOption (Some "nope") = None @>
-        test <@ Parse.boolOption (Some "true") = Some true @>
-        test <@ Parse.decimalOption None = None @>
-        test <@ Parse.decimalOption (Some "nope") = None @>
-        test <@ Parse.decimalOption (Some "12.5") = Some 12.5M @>
-        test <@ Parse.guidOption None = None @>
-        test <@ Parse.guidOption (Some "nope") = None @>
-        test <@ Parse.guidOption (Some guidText) = Some parsedGuid @>
-        test <@ Parse.intOrDefault 5 "42" = 42 @>
-        test <@ Parse.intOrDefault 5 "nope" = 5 @>
-        test <@ Parse.boolOrDefault false "true" = true @>
-        test <@ Parse.boolOrDefault true "nope" = true @>
-        test <@ Parse.decimalOrDefault 5.5M "12.5" = 12.5M @>
-        test <@ Parse.decimalOrDefault 5.5M "nope" = 5.5M @>
+        test <@ Parse.optional Parse.int None = Ok None @>
+        test <@ Parse.optional Parse.int (Some "42") = Ok(Some 42) @>
+        test <@ Parse.optional Parse.int (Some "nope") = Error(ParseError.InvalidFormat("int", "nope")) @>
+        test <@ Parse.optionalOr 5 Parse.int None = Ok 5 @>
+        test <@ Parse.optionalOr 5 Parse.int (Some "42") = Ok 42 @>
+        test <@ Parse.optionalOr 5 Parse.int (Some "nope") = Error(ParseError.InvalidFormat("int", "nope")) @>
+
+        test <@ Parse.intOption None = Ok None @>
+        test <@ Parse.intOption (Some "nope") = Error(ParseError.InvalidFormat("int", "nope")) @>
+        test <@ Parse.intOption (Some "42") = Ok(Some 42) @>
+        test <@ Parse.boolOption None = Ok None @>
+        test <@ Parse.boolOption (Some "nope") = Error(ParseError.InvalidFormat("bool", "nope")) @>
+        test <@ Parse.boolOption (Some "true") = Ok(Some true) @>
+        test <@ Parse.decimalOption None = Ok None @>
+        test <@ Parse.decimalOption (Some "nope") = Error(ParseError.InvalidFormat("decimal", "nope")) @>
+        test <@ Parse.decimalOption (Some "12.5") = Ok(Some 12.5M) @>
+        test <@ Parse.guidOption None = Ok None @>
+        test <@ Parse.guidOption (Some "nope") = Error(ParseError.InvalidFormat("Guid", "nope")) @>
+        test <@ Parse.guidOption (Some guidText) = Ok(Some parsedGuid) @>
+
+        test <@ Parse.intOrDefault 5 None = Ok 5 @>
+        test <@ Parse.intOrDefault 5 (Some "42") = Ok 42 @>
+        test <@ Parse.intOrDefault 5 (Some "nope") = Error(ParseError.InvalidFormat("int", "nope")) @>
+        test <@ Parse.boolOrDefault false None = Ok false @>
+        test <@ Parse.boolOrDefault true (Some "true") = Ok true @>
+        test <@ Parse.boolOrDefault true (Some "nope") = Error(ParseError.InvalidFormat("bool", "nope")) @>
+        test <@ Parse.decimalOrDefault 5.5M None = Ok 5.5M @>
+        test <@ Parse.decimalOrDefault 5.5M (Some "12.5") = Ok 12.5M @>
+        test <@ Parse.decimalOrDefault 5.5M (Some "nope") = Error(ParseError.InvalidFormat("decimal", "nope")) @>
 
     [<Fact>]
     let ``Refine builds initial structural refined values`` () =

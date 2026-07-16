@@ -178,6 +178,39 @@ Character.isNumeric '9'
 
 Use these helpers when building your own named wrappers such as `HexDigitChar` or `UppercaseInitial`.
 
+## Optional serialized input
+
+Optional parsing distinguishes absent input from malformed present input:
+
+```fsharp
+Parse.optional Parse.int None
+// Ok None
+
+Parse.optional Parse.int (Some "42")
+// Ok (Some 42)
+
+Parse.optional Parse.int (Some "bad")
+// Error (InvalidFormat ("int", "bad"))
+```
+
+Use `Parse.optionalOr` when absence has a domain default. The fallback applies only to `None`; a present malformed
+value remains an error:
+
+```fsharp
+maybePort |> Parse.optionalOr 80 Parse.int
+```
+
+Primitive-specific helpers provide the same behavior with discoverable names:
+
+```fsharp
+maybeCount |> Parse.intOption
+maybePort |> Parse.intOrDefault 80
+```
+
+`Parse.intOption` returns `Result<int option, ParseError>`, and `Parse.intOrDefault` returns
+`Result<int, ParseError>`. The corresponding Boolean, decimal, and GUID helpers follow the same rule: optionality
+handles absence, never parsing failure.
+
 ## Choice
 
 Use `Choice` when one raw input may parse into several refined shapes and you want to return your own domain union.

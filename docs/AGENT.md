@@ -37,6 +37,10 @@ For schema boundaries, use `SchemaError` as the one interpreter error shape. Low
 `SchemaError.ofParseError`, `SchemaError.ofRefinementError`, or `SchemaError.ofCheckFailure`; render with
 `SchemaError.render` or `ParsedInput.renderErrors`; map to application errors with `ParsedInput.mapErrors`.
 
+For optional serialized primitives, use `Parse.optional parser` or a discoverable primitive helper such as
+`Parse.intOption`. Use `Parse.optionalOr fallback parser` or `Parse.intOrDefault fallback` when absence has a
+default. These functions default only on `None`; malformed present input remains a `ParseError`.
+
 For built-in scalar refined values in schema fields, use `Axial.Schema.RefinedSchemas`:
 `RefinedSchemas.nonBlankString`, `RefinedSchemas.boundedString min max`, `RefinedSchemas.slug`,
 `RefinedSchemas.trimmedString`, `RefinedSchemas.positiveInt`, `RefinedSchemas.nonNegativeInt`,

@@ -26,7 +26,10 @@ Data flows from left to right. Later stages can bind earlier stages directly.
 
 ## Refined Boundary Values
 - Package/namespace remains `Axial.Refined`, not `Axial.RefinedTypes`.
-- Use `Parse` for serialized primitives: `Parse.int`, `Parse.guid`, `Parse.dateTimeOffset`, etc.
+- Use `Parse` for serialized primitives: `Parse.int`, `Parse.guid`, `Parse.dateTimeOffset`, etc. For optional input,
+  `Parse.optional parser` / `Parse.intOption` preserve malformed present input as an error.
+- Use `Parse.optionalOr fallback parser` / `Parse.intOrDefault fallback` when absence has a default. Defaults apply
+  only to `None`, never to parsing failure.
 - Use `Refine` as the facade for built-in refined values: `nonBlankString`, `trimmedString`, `boundedString`, `slug`, `positiveInt`, `nonNegativeInt`, `nonZeroInt`, `negativeInt`, `nonPositiveInt`, `nonEmptyList`, `nonEmptyArray`, `distinctList`, `boundedList`, `boundedArray`, `dateTimeOffsetRange`.
 - Use submodules for discovery: `Text`, `Numeric`, `Collection`, `Temporal`, `Character`, `Choice`.
 - `NonBlankString` preserves accepted input exactly. Use `TrimmedString` when no leading/trailing whitespace is required.

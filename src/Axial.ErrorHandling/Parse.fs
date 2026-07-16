@@ -86,30 +86,70 @@ module Parse =
         | true, value -> Ok value
         | false, _ -> Error(parseFailure typeof<'enum>.Name text)
 
-    /// <summary>Parses an optional integer, returning <c>None</c> for missing or invalid text.</summary>
-    let intOption (text: string option) : int option =
-        text |> Option.bind (int >> Result.toOption)
+    /// <summary>Parses an optional input, preserving a present input's parsing failure.</summary>
+    /// <example>
+    /// <code>
+    /// Parse.optional Parse.int None = Ok None
+    /// Parse.optional Parse.int (Some "42") = Ok (Some 42)
+    /// Parse.optional Parse.int (Some "bad") = Error (ParseError.InvalidFormat ("int", "bad"))
+    /// </code>
+    /// </example>
+    let optional
+        (parser: 'raw -> Result<'value, 'error>)
+        (input: 'raw option)
+        : Result<'value option, 'error> =
+        match input with
+        | None -> Ok None
+        | Some raw -> parser raw |> Result.map Some
 
-    /// <summary>Parses an optional boolean, returning <c>None</c> for missing or invalid text.</summary>
-    let boolOption (text: string option) : bool option =
-        text |> Option.bind (bool >> Result.toOption)
+    /// <summary>Parses an optional input, using the supplied fallback only when the input is absent.</summary>
+    /// <example>
+    /// <code>
+    /// Parse.optionalOr 80 Parse.int None = Ok 80
+    /// Parse.optionalOr 80 Parse.int (Some "443") = Ok 443
+    /// Parse.optionalOr 80 Parse.int (Some "bad") = Error (ParseError.InvalidFormat ("int", "bad"))
+    /// </code>
+    /// </example>
+    let optionalOr
+        (fallback: 'value)
+        (parser: 'raw -> Result<'value, 'error>)
+        (input: 'raw option)
+        : Result<'value, 'error> =
+        input
+        |> optional parser
+        |> Result.map (Option.defaultValue fallback)
 
-    /// <summary>Parses an optional decimal, returning <c>None</c> for missing or invalid text.</summary>
-    let decimalOption (text: string option) : decimal option =
-        text |> Option.bind (decimal >> Result.toOption)
+    /// <summary>Parses an optional integer. Absence returns <c>Ok None</c>; malformed present text returns its parsing error.</summary>
+    /// <example><code>Parse.intOption (Some "42") = Ok (Some 42)</code></example>
+    let intOption (text: string option) : Result<int option, ParseError> =
+        text |> optional int
 
-    /// <summary>Parses an optional GUID, returning <c>None</c> for missing or invalid text.</summary>
-    let guidOption (text: string option) : Guid option =
-        text |> Option.bind (guid >> Result.toOption)
+    /// <summary>Parses an optional Boolean. Absence returns <c>Ok None</c>; malformed present text returns its parsing error.</summary>
+    /// <example><code>Parse.boolOption (Some "true") = Ok (Some true)</code></example>
+    let boolOption (text: string option) : Result<bool option, ParseError> =
+        text |> optional bool
 
-    /// <summary>Parses an integer or returns the supplied fallback.</summary>
-    let intOrDefault fallback text =
-        int text |> Result.defaultValue fallback
+    /// <summary>Parses an optional decimal. Absence returns <c>Ok None</c>; malformed present text returns its parsing error.</summary>
+    /// <example><code>Parse.decimalOption (Some "12.5") = Ok (Some 12.5M)</code></example>
+    let decimalOption (text: string option) : Result<decimal option, ParseError> =
+        text |> optional decimal
 
-    /// <summary>Parses a boolean or returns the supplied fallback.</summary>
-    let boolOrDefault fallback text =
-        bool text |> Result.defaultValue fallback
+    /// <summary>Parses an optional GUID. Absence returns <c>Ok None</c>; malformed present text returns its parsing error.</summary>
+    /// <example><code>Parse.guidOption None = Ok None</code></example>
+    let guidOption (text: string option) : Result<Guid option, ParseError> =
+        text |> optional guid
 
-    /// <summary>Parses a decimal or returns the supplied fallback.</summary>
-    let decimalOrDefault fallback text =
-        decimal text |> Result.defaultValue fallback
+    /// <summary>Parses an optional integer, using the supplied fallback only when the input is absent.</summary>
+    /// <example><code>Parse.intOrDefault 80 None = Ok 80</code></example>
+    let intOrDefault fallback text : Result<int, ParseError> =
+        text |> optionalOr fallback int
+
+    /// <summary>Parses an optional Boolean, using the supplied fallback only when the input is absent.</summary>
+    /// <example><code>Parse.boolOrDefault false None = Ok false</code></example>
+    let boolOrDefault fallback text : Result<bool, ParseError> =
+        text |> optionalOr fallback bool
+
+    /// <summary>Parses an optional decimal, using the supplied fallback only when the input is absent.</summary>
+    /// <example><code>Parse.decimalOrDefault 5.5M None = Ok 5.5M</code></example>
+    let decimalOrDefault fallback text : Result<decimal, ParseError> =
+        text |> optionalOr fallback decimal
