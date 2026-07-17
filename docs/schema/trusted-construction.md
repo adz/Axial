@@ -9,6 +9,21 @@ description: Which correctness claims Schema can enforce, and which require an i
 
 This page shows which correctness claims Schema can enforce and which claims require an invariant-preserving F# type.
 
+An **invariant** is a rule that must hold for every valid value, such as a booking start date not following its end date.
+An **aggregate** is a group of related values created and updated as one thing.
+
+## Choose the guarantee you need
+
+There are four useful levels:
+
+1. A raw, wire, or draft value is editable and proves nothing.
+2. A successful `Schema.parse` or `Schema.check` result passed that operation's gates.
+3. A private refined field preserves one field-local invariant wherever the value is used.
+4. A private aggregate plus controlled transitions preserves relationships between fields.
+
+Start with the simplest level that prevents a real problem in the application. Stronger representations add more
+construction and update functions, so use them where callers benefit from relying on the guarantee.
+
 ## The limit
 
 A library can guarantee the result of its own functions. It cannot prevent a caller from using another public
@@ -218,3 +233,7 @@ The reference app uses all three levels deliberately:
   boundary.
 
 This division keeps schema metadata useful without claiming that metadata overrides F# construction semantics.
+
+For complete project-sized examples, see [Build A Private Aggregate](patterns/private-aggregates/),
+[Model Legal Transitions](patterns/legal-transitions/), and
+[Separate Wire And Domain Models](patterns/wire-and-domain-models/).

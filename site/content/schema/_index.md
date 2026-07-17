@@ -1,7 +1,7 @@
 ---
 title: "Schema: parse, don't validate"
 linkTitle: Schema
-description: Turn untrusted input into trusted domain models — invalid models are never constructed.
+description: Parse untrusted input through field constraints and domain constructors, or return path-aware diagnostics.
 type: docs
 notoc: true
 weight: 8
@@ -27,6 +27,12 @@ or constructor invariant fails, parsing returns diagnostics and does not return 
 <div class="lede">
 The declaration is reusable data. Input parsing executes it; inspection, JSON Schema, codecs, versioned contracts,
 and test-data generation interpret the same field names, value shapes, and constraints for their own jobs.
+</div>
+
+<div class="lede">
+Schema controls values produced through Schema. A public F# record can still be constructed directly. Use refined fields,
+a private aggregate, or an opaque <code>.fsi</code> interface when the rest of the application must rely on an invariant
+without checking it again.
 </div>
 
 <div class="docs-home-meta">
@@ -71,6 +77,8 @@ wire-name strings. `Contract` keeps frozen wire versions and typed migrations ou
 - [Schema Overview Examples](./overview-examples/) — short, commented examples covering every Schema subsystem.
 - [Tutorials](./tutorials/) — parse a signup form, nest models, apply rules, and inspect metadata.
 - [Trusted Construction](./trusted-construction/) — ActiveModel ergonomics with F# trusted construction.
+- [Recommended Patterns](./patterns/) — private aggregates, legal transitions, wire/domain separation, project layout,
+  and schema-derived tests.
 - [The Schema DSL](./dsl/) — open one module inside a schema definition and drop the qualified prefixes.
 - [Choosing A Tool](./choosing-a-tool/) — Schema vs Input vs Rules, the three tools inside this package.
 - [Refined Value Schemas](./refined-values/) — domain values like `Email` as portable field schemas.

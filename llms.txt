@@ -2,7 +2,7 @@
 > This file is optimized for AI agents (Claude, Gemini, Codex).
 
 ## Core Model
-- **Two doors**: for domain models, declare a `Schema` and use `Input.parse` (parsing, validation, redisplay, rules, and metadata fall out; invalid models are never constructed). For simple code, plain F# `Result` with a user-owned error DU is idiomatic. `Check`/`Validation`/`Refined` are machinery behind those doors. `Flow` is the optional effects side.
+- **Two doors**: for domain models, declare a `Schema` and use `Schema.parse`; failed admission returns path-aware diagnostics instead of a model. For simple code, plain F# `Result` with a user-owned error DU is idiomatic. `Check`/`Validation`/`Refined` are machinery behind those doors. `Flow` is the optional effects side.
 - **Unified Flow**: `Flow<'env, 'error, 'value>` is a cold, environment-aware effect system.
 - **Flow aliases**: `Flow<'value>` = no env/no typed failure, `Flow<'error, 'value>` = no env with typed failure, `EnvFlow<'env, 'value>` = env with no typed failure, `ExnFlow<'value>` and `ExnEnvFlow<'env, 'value>` = exception-channel interop shapes.
 - **Hybrid Optimization**: On .NET, `flow { }` uses inlined overloads for zero-boilerplate, low-allocation interop with `Task`, `ValueTask`, and `Async`.
@@ -46,10 +46,15 @@ Data flows from left to right. Later stages can bind earlier stages directly.
 - `Schema.check schema value` rechecks an existing value and invokes a record schema's constructor again. It returns the original value on success; durable guarantees require private representations or complete smart constructors.
 - `FieldRef<'model,'value>` carries `Name`, `Get`, and immutable `Set`; generated contracts emit one per field. A setter updates a draft and does not establish schema trust.
 - `ContextRules.apply` runs operation-specific rules over an already trusted model. Use `failAtField` and `atField` to keep diagnostic paths tied to `FieldRef` values.
+- Guarantee ladder: raw/wire/draft values prove nothing; successful parse/check proves one admission; private refined fields preserve local invariants; private aggregates plus named transitions preserve relational invariants.
+- For important aggregates, expose an opaque type through an `.fsi` file. Keep the implementation record, constructor, and total invariant-preserving transitions inside the owning module.
+- `[<WireSchema>]` records are public permissive wire shapes, generated before compile by `Axial.Schema.Contracts.Build`. Map them into hand-written domain types before business logic.
+- Larger apps should keep Contracts, Domain, Application, Infrastructure, and Host references one-way. Container resolution belongs in Host; Application receives a typed Flow environment.
+- Pattern guides: `/schema/patterns/private-aggregates/`, `/schema/patterns/legal-transitions/`, `/schema/patterns/wire-and-domain-models/`, `/schema/patterns/project-structure/`, `/schema/patterns/testing-schema-guarantees/`.
 - `Inspect.model` / `Inspect.schema` return finite metadata without parsing or checks. Recursive graphs use `SchemaShape.Deferred` and `Recursive`. `JsonSchema.generate` lowers the same declaration, using `$defs` and `$ref` for recursion.
 - `Axial.Codec.Json.compile` creates a reusable reflection-free JSON codec. The codec checks wire shape; untrusted boundaries still use `RawInput` plus `Schema.parse` for constraints and complete diagnostics.
 - `Contract.create` / `supersedes` / `build` declare contiguous typed wire migrations. `Contract.parse` selects versions with `VersionSource.Field`, `External`, or `UnversionedMeans` and returns the current value or `ContractError`.
-- `schemagen` derives permissive wire schemas from `[<WireSchema>]`-marked plain records (`Axial.Schema.Wire` attributes mirror the constraint vocabulary; you own the record, the generated module is checked-in F# and the compiler catches drift). It also accepts `.contract` declaration files, which additionally generate the record. Version chains (`ConfigV1`, `ConfigV2`, bare `Config` = current) generate a `contract` builder taking each typed n-1 -> n migration as a parameter. Migrations remain hand-written F#; wire DTOs map to hand-written domain types through ordinary functions.
+- `Axial.Schema.Contracts.Build` runs generation before compile for explicit `<AxialWireSchema>` and `<AxialContract>` items. `[<WireSchema>]` records are user-owned public wire DTOs; `.contract` declarations also generate the record. Version chains generate a builder requiring every typed n-1 -> n migration. Map the current wire value into a hand-written domain type through an ordinary function.
 - `Contract<'model>` (in `Axial.Schema`) parses explicitly versioned wire input: `Contract.create`/`supersedes`/`build` register frozen version schemas and contiguous migrations; `Contract.parse`/`parseVersion` detect, parse, migrate forward, and re-check against the current schema.
 - The non-packable `Axial.Schema.Testing.SchemaGen` adapter derives FsCheck generators through `RawInput`. Use `rawWith` for pattern, custom, or application-specific field distributions.
 

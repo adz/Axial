@@ -13,6 +13,9 @@ per format, a strict **domain schema**, an ordinary mapping function between the
 engine when the wire needs versioning. When wire schemas multiply, you stop hand-writing them: mark your DTO
 record with `[<WireSchema>]` and `schemagen` derives the schema from it.
 
+Generated contract types remain wire types. Keep them public and easy to serialize. Map them into private or refined
+domain types before business code relies on their values.
+
 ## Wire Schemas and Domain Schemas
 
 For a wire format you generally want a DTO shaped per format — field names, nesting, and types that match what is
@@ -235,13 +238,11 @@ and unchanged files cost nothing on rebuild (the target is timestamp-incremental
 `AxialWireNaming` (camel | snake | verbatim) sets the naming policy, `AxialSchemaGenEnabled=false` skips
 generation, and `.contract` files ride along as `<AxialContract>` items with `AxialContractNamespace`.
 
-The same generator is also a plain CLI — useful for one-off runs and for `--check` in CI, which writes nothing
-and exits nonzero if any generated file is missing or stale:
+The same generator is also a plain CLI for repository development and one-off generation:
 
 ```bash
 dotnet run --project scripts/schemagen -- src/MyApp/wire
 dotnet run --project scripts/schemagen -- --namespace MyApp.Wire src/MyApp/contracts
-dotnet run --project scripts/schemagen -- --check src/MyApp/wire
 ```
 
 Record- and `.contract`-declared wire types resolve as one set, so either kind may reference the other's
@@ -299,3 +300,5 @@ call site that constructs the contract fails to compile until the new migration 
   discriminator.
 - **No second authoring surface.** The grammar emits the one existing `Schema` builder API; nothing generated is
   something you could not have written yourself.
+
+See [Separate Wire And Domain Models](patterns/wire-and-domain-models/) for a complete build-to-domain pattern.

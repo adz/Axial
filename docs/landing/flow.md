@@ -18,18 +18,14 @@ menu:
 <h1>Structured workflows without framework lock-in.</h1>
 
 <div class="lede">
-Once validated data has to touch the outside world, the usual fixes each solve half the problem.
-<code>Async&lt;Result&lt;_,_&gt;&gt;</code> flattens the nesting but still leaves you hand-threading infrastructure
-through every argument &mdash; connections, configuration, trace ids, cancellation tokens. Meanwhile retries, resource
-cleanup, and background work each get ad-hoc code that leaks tasks and swallows exceptions.
+Application functions often need the same dependencies passed through several callers before they reach the code that
+uses them. Async code also needs one owner for cancellation, resources, retries, and background work.
 </div>
 
 <div class="lede">
-<code>Flow&lt;'env, 'error, 'value&gt;</code> addresses all of it in one type: async execution, typed errors, and an
-explicit environment channel. A workflow declares what it needs in <code>'env</code>; the environment is supplied once
-at the boundary &mdash; live in production, a mock record in tests. And because a flow is a cold description rather
-than a running task, the runtime owns cancellation, retry scheduling, resource scopes, and structured concurrency for
-you.
+<code>Flow&lt;'env, 'error, 'value&gt;</code> puts async execution, expected failures, and required dependencies in one
+type. The host supplies live dependencies once; tests supply a small record of fakes. The runtime owns cancellation,
+retry scheduling, resource scopes, and child fibers.
 </div>
 
 <div class="docs-home-meta">

@@ -30,17 +30,16 @@ helpers, and <code>result { }</code> remove the guard-clause boilerplate without
 <a class="axial-door axial-door--parse" href="{{< relref "/schema/" >}}">
 <span class="axial-door-kicker">Modelling a domain?</span>
 <h2>Schema</h2>
-<p>Declare the model once with <code>Schema</code>. Parsing, validation, redisplay, rules, and docs fall out &mdash;
-an invalid model is never constructed.</p>
+<p>Describe how boundary input becomes a model. Failed input returns path-aware diagnostics; successful input reaches
+the constructor only after its fields have parsed and passed their constraints.</p>
 <span class="axial-door-cta">Enter &rarr;</span>
 </a>
 
 <a class="axial-door axial-door--flow" href="{{< relref "/flow/" >}}">
 <span class="axial-door-kicker">Composing effects?</span>
 <h2>Axial.Flow</h2>
-<p>A Reader-Async-Result workflow model in the ZIO tradition: explicit dependencies in <code>'env</code>, direct
-<code>Task</code>/<code>Async</code> interop, cancellation, layers, fibers, and scheduling &mdash; without framework
-lock-in.</p>
+<p>Describe async work with its dependencies and expected failure type. Tests supply small fake environments; hosts
+supply live implementations and own cancellation and resource lifetime.</p>
 <span class="axial-door-cta">Enter &rarr;</span>
 </a>
 

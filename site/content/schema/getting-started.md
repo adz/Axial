@@ -119,6 +119,9 @@ the application needs:
 The [trusted construction guide](trusted-construction.md) develops these options. The [refined values guide](refined-values.md)
 shows fallible smart constructors inside schemas.
 
+The [recommended patterns](patterns/) show complete module and project layouts for private aggregates, legal updates,
+generated wire records, and schema-derived tests.
+
 ## Qualified and DSL forms
 
 The qualified catalog is explicit and works well in application code. `open Axial.Schema.DSL` exposes the same

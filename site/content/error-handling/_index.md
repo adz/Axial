@@ -10,24 +10,20 @@ menu:
 ---
 
 
-F# already has the right type for fail-fast logic: `Result<'value, 'error>` with your own error union. The problem is
-what happens around it. Real validation code fills up with the same boilerplate — null and blank guards, option
-unwrapping, boolean conditions hand-rolled into `Error` branches — and each team invents its own helpers for it.
-Reaching for a validation framework, a custom result type, or an effect system fixes the boilerplate, but it's a bad
-trade when all you needed was to check a string and stop at the first failure — now every caller signs up for a
-bigger dependency than the problem warranted.
+F# already has `Result<'value, 'error>` for functions that either return a value or a known failure. Application code
+still repeats the same work around it: blank-string checks, option extraction, Boolean guards, and error mapping.
 
-This section is the small end of that trade: keep plain `Result` and make it terse. Standard F# `Result` with a
-small error union is idiomatic Axial here, not a stopgap before something heavier — Axial has heavier tools
-elsewhere (see [Schema]({{< relref "/schema/" >}}) and [Flow]({{< relref "/flow/" >}})), but reaching for them isn't
-the point of this section. Three pieces do the work:
+This package keeps the standard type and removes that repeated plumbing. Use it for small parsing and decision
+functions where a whole model schema or workflow runtime would add more structure than the problem needs.
+
+Three pieces do the work:
 
 - **`Predicate`** — plain `bool` facts, for local branching (`if`, `match`, guard clauses).
 - **`Check`** — the same facts as reusable, named, structured checks that return `Result<'value, CheckFailure list>`.
 - **`Result`'s focused helpers and the `result {}` builder** — attach domain errors and compose fail-fast steps over
   standard `Result`.
 
-Your domain code stays plain F# that any teammate can read; nothing here changes your function signatures.
+Your functions still return ordinary F# `Result` values with your own error type.
 
 This is one of three packages Axial consists of, each usable on its own: this one for single-value fail-fast logic,
 [Schema]({{< relref "/schema/" >}}) for whole domain models parsed at a boundary, and [Flow]({{< relref "/flow/" >}})
