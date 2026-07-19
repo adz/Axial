@@ -168,12 +168,18 @@ The details:
           (fun v1 -> Ok { Name = v1.Name; Email = "" })
           (VersionSource.Field "schemaVersion")
   ```
-- **A custom constructor replaces the record literal** when you want to normalise values on the way in.
-  `[<SchemaConstructor "OrderWire.create">]` on the record makes the generated schema call that function —
-  fields in declaration order, returning the record type — instead of assembling a record literal. Declare it
-  as a static member on the record (`static member create sku quantity = ...`): the generated module takes the
-  record's name, so a user module of the same name would not compile. The name is emitted verbatim into the
-  generated code.
+- **A custom constructor replaces the record literal** when you want to normalise values on the way in. Mark
+  one static member with `[<SchemaConstructor>]` — fields in declaration order, returning the record type —
+  and the generated schema calls it instead of assembling a record literal:
+
+  ```fsharp
+  [<DeriveSchema>]
+  type OrderWire =
+      { Sku: string; Quantity: int }
+
+      [<SchemaConstructor>]
+      static member create sku quantity = { Sku = sku; Quantity = max 1 quantity }
+  ```
 - **Doc comments carry through** to the schema, generated JSON Schema, and XML docs.
 - **Nothing runs at runtime.** Attributes are inert metadata read from source text at generation time — no
   reflection, and the generated output is ordinary schema code, so Fable and NativeAOT/trimming support are

@@ -32,16 +32,13 @@ type DeriveUnionAttribute(discriminator: string) =
     inherit Attribute()
     member _.Discriminator = discriminator
 
-/// <summary>Names the function the derived schema calls to assemble the record, instead of a record
-/// literal. The function takes the fields in declaration order and returns the record type; use it to
-/// normalise values on the way in. The name is emitted verbatim into the generated code, so qualify it
-/// as the generated module would (e.g. <c>"Order.create"</c>). Declare it as a static member on the
-/// record: the generated module takes the record's name, so a user module of the same name would not
-/// compile.</summary>
-[<AttributeUsage(AttributeTargets.Class ||| AttributeTargets.Struct)>]
-type SchemaConstructorAttribute(name: string) =
+/// <summary>Marks the static member the derived schema calls to assemble the record, instead of a
+/// record literal. Put it on one static member of a <c>[&lt;DeriveSchema&gt;]</c> record that takes the
+/// fields in declaration order and returns the record type; use it to normalise values on the way
+/// in.</summary>
+[<AttributeUsage(AttributeTargets.Method)>]
+type SchemaConstructorAttribute() =
     inherit Attribute()
-    member _.Name = name
 
 /// <summary>Constrains a text field to the given regular expression.</summary>
 [<AttributeUsage(AttributeTargets.Property ||| AttributeTargets.Field)>]

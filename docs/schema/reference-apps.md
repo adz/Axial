@@ -71,7 +71,7 @@ The wire slice answers the question the hand-written tier leaves open: what does
 experience look like once wire schemas are generated? You own an ordinary record with constraint attributes:
 
 ```fsharp
-[<DeriveSchema; SchemaConstructor "WorkspaceCard.create">]
+[<DeriveSchema>]
 type WorkspaceCard =
     { [<Min 1; Max 60>] Name: string
       [<Email; SchemaName "owner_email">] OwnerEmail: string
@@ -79,6 +79,7 @@ type WorkspaceCard =
       [<Distinct>] Members: string list }
 
     // Called by the generated schema instead of a record literal.
+    [<SchemaConstructor>]
     static member create name (ownerEmail: string) visibility members =
         { Name = name; OwnerEmail = ownerEmail.ToLowerInvariant(); Visibility = visibility; Members = members }
 ```

@@ -19,7 +19,7 @@ type WorkspaceCardV1 =
       Owner: string }
 
 /// A workspace card with a dedicated owner email, visibility, and member emails.
-[<DeriveSchema; SchemaConstructor "WorkspaceCard.create">]
+[<DeriveSchema>]
 type WorkspaceCard =
     { /// Display name of the workspace.
       [<Min 1; Max 60>]
@@ -32,8 +32,8 @@ type WorkspaceCard =
       Members: string list }
 
     /// Called by the generated schema instead of a record literal: normalises the owner email
-    /// to lower case on the way in. Static member, not a module — the generated module already
-    /// takes the record's name.
+    /// to lower case on the way in.
+    [<SchemaConstructor>]
     static member create name (ownerEmail: string) visibility members =
         { Name = name
           OwnerEmail = ownerEmail.ToLowerInvariant()

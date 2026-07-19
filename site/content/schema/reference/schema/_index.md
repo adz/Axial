@@ -63,12 +63,10 @@ This page shows `Schema<'value>`, the universal catalog for primitive, collectio
 - [`Schema.Derive.DeriveUnionAttribute`](./t-schema-derive-deriveunionattribute.md): Marks a discriminated union as an internally tagged union in the derived schema. Every case
  must carry exactly one <code>[&lt;DeriveSchema&gt;]</code> record payload; the discriminator is the given
  external field name.
-- [`Schema.Derive.SchemaConstructorAttribute`](./t-schema-derive-schemaconstructorattribute.md): Names the function the derived schema calls to assemble the record, instead of a record
- literal. The function takes the fields in declaration order and returns the record type; use it to
- normalise values on the way in. The name is emitted verbatim into the generated code, so qualify it
- as the generated module would (e.g. <code>&quot;Order.create&quot;</code>). Declare it as a static member on the
- record: the generated module takes the record&#39;s name, so a user module of the same name would not
- compile.
+- [`Schema.Derive.SchemaConstructorAttribute`](./t-schema-derive-schemaconstructorattribute.md): Marks the static member the derived schema calls to assemble the record, instead of a
+ record literal. Put it on one static member of a <code>[&lt;DeriveSchema&gt;]</code> record that takes the
+ fields in declaration order and returns the record type; use it to normalise values on the way
+ in.
 - [`Schema.Derive.PatternAttribute`](./t-schema-derive-patternattribute.md): Constrains a text field to the given regular expression.
 - [`Schema.Derive.MinAttribute`](./t-schema-derive-minattribute.md): Bounds the natural size of the field's type from below: text length, list count, or map count.
 - [`Schema.Derive.MaxAttribute`](./t-schema-derive-maxattribute.md): Bounds the natural size of the field's type from above: text length, list count, or map count.

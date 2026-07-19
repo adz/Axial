@@ -419,7 +419,7 @@ type Order = { MarketingOptIn: bool }
         test <@ file.Contracts.Head.Fields |> List.map FieldDecl.wireName = [ "marketing_opt_in" ] @>
 
     [<Fact>]
-    let ``a schema constructor attribute lowers to the contract's constructor`` () =
+    let ``a schema constructor member lowers to the contract's constructor`` () =
         let file =
             parse
                 """
@@ -427,8 +427,12 @@ namespace My.Wire
 
 open Axial.Schema.Derive
 
-[<DeriveSchema; SchemaConstructor "Order.create">]
-type Order = { Sku: string; Quantity: int }
+[<DeriveSchema>]
+type Order =
+    { Sku: string; Quantity: int }
+
+    [<SchemaConstructor>]
+    static member create sku quantity = { Sku = sku; Quantity = max 1 quantity }
 """
 
         test <@ file.Contracts.Head.Constructor = Some "Order.create" @>
@@ -457,14 +461,17 @@ namespace My.Wire
 
 open Axial.Schema.Derive
 
-[<SchemaConstructor "Order.create">]
-type Order = { Sku: string }
+type Order =
+    { Sku: string }
+
+    [<SchemaConstructor>]
+    static member create sku = { Sku = sku }
 """
 
         test <@ messages |> List.exists (fun m -> m.Contains "[<SchemaConstructor>]" && m.Contains "[<DeriveSchema>]") @>
 
     [<Fact>]
-    let ``a schema constructor needs a string literal argument`` () =
+    let ``a schema constructor on the type itself is rejected with guidance`` () =
         let messages =
             parseErrors
                 """
@@ -472,8 +479,49 @@ namespace My.Wire
 
 open Axial.Schema.Derive
 
-[<DeriveSchema; SchemaConstructor 3>]
+[<DeriveSchema; SchemaConstructor>]
 type Order = { Sku: string }
 """
 
-        test <@ messages |> List.exists (fun m -> m.Contains "one string literal") @>
+        test <@ messages |> List.exists (fun m -> m.Contains "goes on the static member") @>
+
+    [<Fact>]
+    let ``a schema constructor on an instance member is rejected`` () =
+        let messages =
+            parseErrors
+                """
+namespace My.Wire
+
+open Axial.Schema.Derive
+
+[<DeriveSchema>]
+type Order =
+    { Sku: string }
+
+    [<SchemaConstructor>]
+    member this.create sku = { Sku = sku }
+"""
+
+        test <@ messages |> List.exists (fun m -> m.Contains "static member") @>
+
+    [<Fact>]
+    let ``marking two schema constructors is rejected`` () =
+        let messages =
+            parseErrors
+                """
+namespace My.Wire
+
+open Axial.Schema.Derive
+
+[<DeriveSchema>]
+type Order =
+    { Sku: string }
+
+    [<SchemaConstructor>]
+    static member create sku = { Sku = sku }
+
+    [<SchemaConstructor>]
+    static member ofSku sku = { Sku = sku }
+"""
+
+        test <@ messages |> List.exists (fun m -> m.Contains "exactly one") @>

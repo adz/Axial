@@ -86,8 +86,12 @@ namespace My.Wire
 
 open Axial.Schema.Derive
 
-[<DeriveSchema; SchemaConstructor "Order.create">]
-type Order = { Sku: string; Quantity: int }
+[<DeriveSchema>]
+type Order =
+    { Sku: string; Quantity: int }
+
+    [<SchemaConstructor>]
+    static member create sku quantity = { Sku = sku; Quantity = max 1 quantity }
 """
             with
             | Ok file -> file

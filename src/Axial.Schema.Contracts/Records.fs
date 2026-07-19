@@ -183,25 +183,57 @@ module Records =
         let records = ResizeArray<SynAttribute * string option * SynComponentInfo * SynField list * PreXmlDoc * int>()
         let unions = Collections.Generic.Dictionary<string, UnionInfo>()
 
-        let inspectTypeDefn (SynTypeDefn(componentInfo, typeRepr, _, _, range, _)) =
+        let inspectTypeDefn (SynTypeDefn(componentInfo, typeRepr, members, _, range, _)) =
             let (SynComponentInfo(attributes, typeParams, _, longId, xmlDoc, _, accessibility, _)) = componentInfo
             let fsName = (List.last longId).idText
             let attrs = attributesOf attributes
             let wireSchema = attrs |> List.tryFind (fun (name, _) -> name = "DeriveSchema") |> Option.map snd
             let wireUnion = attrs |> List.tryPick (fun (name, attribute) -> if name = "DeriveUnion" then Some attribute else None)
 
-            let schemaConstructor =
-                attrs
-                |> List.tryPick (fun (name, attribute) -> if name = "SchemaConstructor" then Some attribute else None)
-                |> Option.bind (fun attribute ->
-                    match attributeArgs source attribute with
-                    | [ LString functionName ], _ -> Some functionName
-                    | _ ->
-                        report range.StartLine "[<SchemaConstructor>] takes one string literal: the function name as the generated code should reference it"
-                        None)
+            if attrs |> List.exists (fun (name, _) -> name = "SchemaConstructor") then
+                report range.StartLine
+                    $"[<SchemaConstructor>] goes on the static member the schema should call, not on '{fsName}' itself"
 
-            if schemaConstructor.IsSome && wireSchema.IsNone then
-                report range.StartLine $"[<SchemaConstructor>] on '{fsName}' needs [<DeriveSchema>] on the same record"
+            // [<SchemaConstructor>]-marked members: the generated schema calls TypeName.member instead
+            // of assembling a record literal.
+            let markedConstructors =
+                members
+                |> List.choose (fun member' ->
+                    match member' with
+                    | SynMemberDefn.Member(SynBinding(attributes = bindingAttributes; valData = valData; headPat = headPat), memberRange) when
+                        attributesOf bindingAttributes |> List.exists (fun (name, _) -> name = "SchemaConstructor")
+                        ->
+                        let memberName =
+                            match headPat with
+                            | SynPat.LongIdent(longDotId = longDotId) -> Some(lastIdent longDotId)
+                            | _ -> None
+
+                        let isStatic =
+                            match valData with
+                            | SynValData(memberFlags = Some flags) -> not flags.IsInstance
+                            | _ -> false
+
+                        Some(memberName, isStatic, memberRange.StartLine)
+                    | _ -> None)
+
+            let schemaConstructor =
+                match markedConstructors with
+                | [] -> None
+                | [ (Some memberName, true, _) ] ->
+                    if wireSchema.IsNone then
+                        report range.StartLine $"[<SchemaConstructor>] on '{fsName}.{memberName}' needs [<DeriveSchema>] on the record"
+                        None
+                    else
+                        Some $"{fsName}.{memberName}"
+                | [ (_, false, line) ] ->
+                    report line "[<SchemaConstructor>] marks a static member; the schema has no instance to call it on"
+                    None
+                | [ (None, _, line) ] ->
+                    report line "[<SchemaConstructor>] marks an ordinary named static member"
+                    None
+                | _ :: (_, _, line) :: _ ->
+                    report line $"'{fsName}' marks more than one [<SchemaConstructor>] member; the schema calls exactly one"
+                    None
 
             match typeRepr with
             | SynTypeDefnRepr.Simple(SynTypeDefnSimpleRepr.Record(reprAccess, fields, _), _) ->
