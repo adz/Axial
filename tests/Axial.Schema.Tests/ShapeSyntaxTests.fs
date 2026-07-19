@@ -150,20 +150,25 @@ module ShapeSyntaxTests =
         | Email of string
 
         member this.Value = let (Email value) = this in value
-        static member DefaultSchema(_: Email) = Schema.convert Email _.Value Schema.text
+        static member Schema(_: Email) = Schema.convert Email _.Value Schema.text
 
     type ContactBook =
         { Emails: Email list
-          Contacts: Map<string, Email> }
+          Contacts: Map<string, Email>
+          Preferred: Email option }
 
-        static member Create emails contacts = { Emails = emails; Contacts = contacts }
+        static member Create emails contacts preferred =
+            { Emails = emails
+              Contacts = contacts
+              Preferred = preferred }
 
     [<Fact>]
-    let ``field recursively infers a domain item schema for lists`` () =
+    let ``field recursively infers domain schemas through collections and options`` () =
         let schema =
             Schema.define<ContactBook>
             |> field "emails" _.Emails
             |> field "contacts" _.Contacts
+            |> field "preferred" _.Preferred
             |> construct ContactBook.Create
 
         let input =
@@ -176,7 +181,9 @@ module ShapeSyntaxTests =
             )
 
         match (Schema.parse schema input).Result with
-        | Ok contactBook -> test <@ contactBook.Emails |> List.map _.Value = [ "ada@example.com" ] @>
+        | Ok contactBook ->
+            test <@ contactBook.Emails |> List.map _.Value = [ "ada@example.com" ] @>
+            test <@ contactBook.Preferred = None @>
         | Error errors -> failwithf "Expected a parse, got %A" errors
 
     [<Fact>]

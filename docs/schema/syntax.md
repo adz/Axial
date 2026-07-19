@@ -17,7 +17,7 @@ module SignupSchemas =
     let schema =
         Schema.define<Signup>
         |> field "email" _.Email
-        |> constrain email
+        |> constrain emailFormat
         |> field "age" _.Age
         |> constrain (atLeast 13)
         |> construct (fun email age -> { Email = email; Age = age })
@@ -43,8 +43,35 @@ fieldWith (Schema.listWith memberSchema) "members" _.Members
 |> constrain (minCount 1)
 ```
 
-Primitive `string`, `int`, `decimal`, `bool`, `DateOnly`, `DateTimeOffset`, and `Guid` fields—and their common option
-and list forms—are inferred. Other types require `fieldWith` or a `DefaultSchema` static member.
+Primitive `string`, `int`, `decimal`, `bool`, `DateOnly`, `DateTimeOffset`, and `Guid` fields are inferred. A user-owned
+or generated type contributes its canonical schema with a static member:
+
+```fsharp
+type EmailAddress =
+    private
+    | EmailAddress of string
+
+    static member Schema(_: EmailAddress) : Schema<EmailAddress> =
+        Schema.convert EmailAddress (fun (EmailAddress value) -> value) Schema.text
+```
+
+The marker argument lets F# select the member by field type without reflection. `field` now infers `EmailAddress`
+directly and recursively through `EmailAddress option`, `EmailAddress list`, and `Map<string, EmailAddress>`:
+
+```fsharp
+type Signup =
+    { Email: EmailAddress option }
+
+let schema =
+    Schema.define<Signup>
+    |> field "email" _.Email
+    |> construct (fun email -> { Email = email })
+```
+
+The same schema is available through `Schema.list<EmailAddress>()` and `Schema.map<EmailAddress>()`. F# optional type
+extensions do not satisfy SRTP member constraints, so a type from another library needs a nominal wrapper or an
+explicit `fieldWith` schema. `fieldWith` is also the right choice when one field needs a local schema instead of the
+type's canonical schema.
 
 Lists and string-keyed maps also resolve their member schema from its type when used independently:
 

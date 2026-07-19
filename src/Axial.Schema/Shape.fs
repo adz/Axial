@@ -69,46 +69,41 @@ module internal ShapeInternals =
         invalidOp $"Unreachable: the shape's phantom type promises {expected} field(s) but {List.length fields} were recorded."
 
 /// <summary>
-/// Default value-schema resolution for the inferred <c>field</c> form. One overload per supported type.
-/// A user or generated type opts in by exposing <c>static member DefaultSchema: T -&gt; Schema&lt;T&gt;</c>.
-/// When no overload matches, the compile error points at this constraint: use <c>fieldWith</c> with an
-/// explicit schema instead.
+/// Canonical value-schema resolution for the inferred <c>field</c> form. A type participates by exposing
+/// <c>static member Schema: T -&gt; Schema&lt;T&gt;</c>; Axial supplies that member for its supported built-in types.
+/// When no member matches, the compile error points at this constraint: use <c>fieldWith</c> with an explicit schema.
 /// </summary>
 [<Sealed; AbstractClass>]
 type SchemaDefaults =
+    /// <summary>Builds an optional schema from an explicitly resolved item schema.</summary>
+    static member OptionWith(item: Schema<'item>) : Schema<'item option> = SchemaCore.option item
     /// <summary>Builds a list schema from an explicitly resolved item schema.</summary>
     static member ListWith(item: Schema<'item>) : Schema<'item list> = SchemaCore.listWith item
     /// <summary>Builds a string-keyed map schema from an explicitly resolved value schema.</summary>
     static member MapWith(item: Schema<'item>) : Schema<Map<string, 'item>> = SchemaCore.mapWith item
-    static member DefaultSchema(_: string) : Schema<string> = SchemaCore.text
-    static member DefaultSchema(_: string option) : Schema<string option> = SchemaCore.option SchemaCore.text
-    static member DefaultSchema(_: int) : Schema<int> = SchemaCore.``int``
-    static member DefaultSchema(_: int option) : Schema<int option> = SchemaCore.option SchemaCore.``int``
-    static member DefaultSchema(_: decimal) : Schema<decimal> = SchemaCore.``decimal``
-    static member DefaultSchema(_: decimal option) : Schema<decimal option> = SchemaCore.option SchemaCore.``decimal``
-    static member DefaultSchema(_: bool) : Schema<bool> = SchemaCore.``bool``
-    static member DefaultSchema(_: bool option) : Schema<bool option> = SchemaCore.option SchemaCore.``bool``
-    static member DefaultSchema(_: System.DateTimeOffset) : Schema<System.DateTimeOffset> = SchemaCore.dateTime
-    static member DefaultSchema(_: System.DateTimeOffset option) : Schema<System.DateTimeOffset option> = SchemaCore.option SchemaCore.dateTime
-    static member DefaultSchema(_: System.Guid) : Schema<System.Guid> = SchemaCore.guid
-    static member DefaultSchema(_: System.Guid option) : Schema<System.Guid option> = SchemaCore.option SchemaCore.guid
+    static member Schema(_: string) : Schema<string> = SchemaCore.text
+    static member Schema(_: int) : Schema<int> = SchemaCore.``int``
+    static member Schema(_: decimal) : Schema<decimal> = SchemaCore.``decimal``
+    static member Schema(_: bool) : Schema<bool> = SchemaCore.``bool``
+    static member Schema(_: System.DateTimeOffset) : Schema<System.DateTimeOffset> = SchemaCore.dateTime
+    static member Schema(_: System.Guid) : Schema<System.Guid> = SchemaCore.guid
 #if NET8_0_OR_GREATER
-    static member DefaultSchema(_: System.DateOnly) : Schema<System.DateOnly> = SchemaCore.date
-    static member DefaultSchema(_: System.DateOnly option) : Schema<System.DateOnly option> = SchemaCore.option SchemaCore.date
+    static member Schema(_: System.DateOnly) : Schema<System.DateOnly> = SchemaCore.date
 #endif
 
-    /// <summary>Resolves the default schema for a value type through the overload set above, or through a
-    /// <c>DefaultSchema</c> static member on the value type itself.</summary>
     static member inline Resolve() : Schema< ^value> =
         let inline call (witness: ^w, marker: ^v) : Schema< ^v> =
-            ((^w or ^v): (static member DefaultSchema: ^v -> Schema< ^v>) marker)
+            ((^w or ^v): (static member Schema: ^v -> Schema< ^v>) marker)
 
         call (Unchecked.defaultof<SchemaDefaults>, Unchecked.defaultof< ^value>)
 
-    static member inline DefaultSchema(_: ^item list) : Schema< ^item list> =
+    static member inline Schema(_: ^item list) : Schema< ^item list> =
         SchemaDefaults.ListWith(SchemaDefaults.Resolve< ^item>())
 
-    static member inline DefaultSchema(_: Map<string, ^item>) : Schema<Map<string, ^item>> =
+    static member inline Schema(_: ^item option) : Schema< ^item option> =
+        SchemaDefaults.OptionWith(SchemaDefaults.Resolve< ^item>())
+
+    static member inline Schema(_: Map<string, ^item>) : Schema<Map<string, ^item>> =
         SchemaDefaults.MapWith(SchemaDefaults.Resolve< ^item>())
 
 /// <summary>
@@ -511,7 +506,7 @@ module Syntax =
 
     /// <summary>Adds a field whose value schema is inferred from the getter's result type. Supported types
     /// are the <see cref="T:Axial.Schema.SchemaDefaults" /> overload set plus any type exposing
-    /// <c>static member DefaultSchema</c>. For anything else, use <c>fieldWith</c> with an explicit schema.</summary>
+    /// <c>static member Schema</c>. For anything else, use <c>fieldWith</c> with an explicit schema.</summary>
     let fieldWith
         (valueSchema: Schema<'value>)
         (name: string)
@@ -522,7 +517,7 @@ module Syntax =
 
     /// <summary>Adds a field whose value schema is inferred from the getter's result type. Supported types
     /// are the <see cref="T:Axial.Schema.SchemaDefaults" /> overload set plus any type exposing
-    /// <c>static member DefaultSchema</c>. For anything else, use <c>fieldWith</c> with an explicit schema.</summary>
+    /// <c>static member Schema</c>. For anything else, use <c>fieldWith</c> with an explicit schema.</summary>
     let inline field (name: string) (getter: 'model -> ^value) (shape: ObjectShape<'model, 'fields>) : ObjectShape<'model, 'fields * ^value> =
         fieldWith (SchemaDefaults.Resolve()) name getter shape
 
@@ -574,7 +569,7 @@ module Syntax =
         Constraint<string>(Constraint.lengthBetween minimum maximum)
 
     /// <summary>Requires a text field to match Axial's pragmatic email format.</summary>
-    let email: Constraint<string> = Constraint<string> Constraint.email
+    let emailFormat: Constraint<string> = Constraint<string> Constraint.email
 
     /// <summary>Requires a text field to have no leading or trailing whitespace.</summary>
     let trimmed: Constraint<string> = Constraint<string> Constraint.trimmed

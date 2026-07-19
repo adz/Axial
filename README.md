@@ -35,9 +35,10 @@ type Signup =
 
 let signupSchema =
     Schema.define<Signup>
-    |> fieldWith (Schema.text
-         |> Schema.constrainAll [ Constraint.required; Constraint.email ]) "email" _.Email
-    |> fieldWith (Schema.int |> Schema.constrain (Constraint.atLeast 13)) "age" _.Age
+    |> field "email" _.Email
+    |> constrain emailFormat
+    |> field "age" _.Age
+    |> constrain (atLeast 13)
     |> construct (fun email age -> { Email = email; Age = age })
 
 match (Schema.parse signupSchema rawInput).Result with

@@ -25,7 +25,7 @@ type Signup = { Email: string; Age: int }
 let signupSchema =
     Schema.define<Signup>
     |> field "email" _.Email
-    |> constrain email
+    |> constrain emailFormat
     |> constrain (maxLength 254)
     |> field "age" _.Age
     |> constrain (atLeast 13)

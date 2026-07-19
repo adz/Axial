@@ -23,15 +23,13 @@ module Schema =
     /// <summary>Describes a list using an explicit item schema.</summary>
     let listWith item = SchemaCore.listWith item
     /// <summary>Describes a list by resolving its item schema from <typeparamref name="'item" />.</summary>
-    let inline list< ^item when (SchemaDefaults or ^item) : (static member DefaultSchema: ^item -> Schema< ^item>)> () : Schema< ^item list> =
-        listWith (SchemaDefaults.Resolve< ^item>())
+    let inline list () : Schema< ^item list> = listWith (SchemaDefaults.Resolve())
     /// <summary>Describes an optional value.</summary>
     let option item = SchemaCore.option item
     /// <summary>Describes a string-keyed map using an explicit value schema.</summary>
     let mapWith item = SchemaCore.mapWith item
     /// <summary>Describes a string-keyed map by resolving its value schema from <typeparamref name="'item" />.</summary>
-    let inline map< ^item when (SchemaDefaults or ^item) : (static member DefaultSchema: ^item -> Schema< ^item>)> () : Schema<Map<string, ^item>> =
-        mapWith (SchemaDefaults.Resolve< ^item>())
+    let inline map () : Schema<Map<string, ^item>> = mapWith (SchemaDefaults.Resolve())
     /// <summary>Defers a recursive schema reference until an interpreter needs it.</summary>
     let defer schema = SchemaCore.defer schema
     /// <summary>Maps a schema through a total, reversible domain conversion.</summary>

@@ -21,8 +21,8 @@ let addressSchema =
     |> construct (fun city -> { City = city })
 ```
 
-`field` infers common primitive and option schemas plus recursively resolved list and string-keyed map schemas. Use `fieldWith` for nested, refined, union, or other
-explicit value schemas:
+`field` infers built-in schemas and canonical schemas declared by user-owned or generated types, recursively through
+option, list, and string-keyed map schemas. Use `fieldWith` when supplying an explicit value schema for that field:
 
 ```fsharp
 type Customer =

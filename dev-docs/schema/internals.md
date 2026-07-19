@@ -89,7 +89,8 @@ value type left to right (`(NoFields * string) * int`). The phantom is what make
   with concrete types.
 - `field` (no explicit schema) resolves the value schema from the getter's result type via
   `SchemaDefaults.Resolve()` — an overload set, extendable by giving a type a
-  `static member DefaultSchema`. Its generic list overload resolves the item schema recursively. No reflection;
+  `static member Schema: T -> Schema<T>`. Its generic option/list/map overloads resolve member schemas recursively. Optional
+  type extensions do not satisfy SRTP constraints; the member must be intrinsic to the type. No reflection;
   unresolvable types are a compile error whose fix is `fieldWith`.
 - `Schema.list<'item>()` and `Schema.map<'item>()` use the same resolver. `listWith`/`mapWith` accept an explicit member
   schema for recursion or local configuration. `constrainItems`/`constrainValues` rewrite the nested value definition;
