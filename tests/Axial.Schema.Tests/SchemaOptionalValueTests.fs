@@ -65,8 +65,15 @@ module SchemaOptionalValueTests =
 
     [<Fact>]
     let ``build rejects an optional field carrying the required field constraint`` () =
-        raises<System.ArgumentException>
-            <@ Schema.define<Profile>
-               |> fieldWith Schema.text "name" _.Name
-               |> fieldWith ((Schema.option Schema.text) |> Schema.constrainAll [ Constraint.required ]) "nickname" _.Nickname
-               |> construct (fun name nickname -> { Name = name; Nickname = nickname })@>
+        // A plain thunk rather than an Unquote quotation: the quotation interpreter cannot build the
+        // private record's constructor lambda, while the compiled pipeline exercises the real path.
+        Assert.Throws<System.ArgumentException>(fun () ->
+            Schema.define<Profile>
+            |> fieldWith Schema.text "name" _.Name
+            |> fieldWith
+                ((Schema.option Schema.text) |> Schema.constrainAll [ Constraint.required ])
+                "nickname"
+                _.Nickname
+            |> construct (fun name nickname -> { Name = name; Nickname = nickname })
+            |> ignore)
+        |> ignore

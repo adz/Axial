@@ -1026,11 +1026,24 @@ module ApiShapeTests =
     [<Fact>]
     let ``schema fields reject invalid construction arguments`` () =
         let shape = Schema.define<Customer>
-        raises<ArgumentNullException> <@ fieldWith Schema.text null (fun (value: Customer) -> value.Name) shape |> ignore @>
-        raises<ArgumentException> <@ fieldWith Schema.text " " (fun (value: Customer) -> value.Name) shape |> ignore @>
-        raises<ArgumentNullException> <@ fieldWith Schema.text "name" Unchecked.defaultof<Customer -> string> shape |> ignore @>
-        raises<ArgumentNullException>
-            <@ fieldWith Unchecked.defaultof<Schema<string>> "name" (fun (value: Customer) -> value.Name) shape |> ignore @>
+        // Plain thunks rather than Unquote quotations: the quotation interpreter cannot dynamically
+        // invoke the inline field dispatch, while compiled calls exercise the real validation.
+        Assert.Throws<ArgumentNullException>(fun () ->
+            fieldWith Schema.text null (fun (value: Customer) -> value.Name) shape |> ignore)
+        |> ignore
+
+        Assert.Throws<ArgumentException>(fun () ->
+            fieldWith Schema.text " " (fun (value: Customer) -> value.Name) shape |> ignore)
+        |> ignore
+
+        Assert.Throws<ArgumentNullException>(fun () ->
+            fieldWith Schema.text "name" Unchecked.defaultof<Customer -> string> shape |> ignore)
+        |> ignore
+
+        Assert.Throws<ArgumentNullException>(fun () ->
+            fieldWith Unchecked.defaultof<Schema<string>> "name" (fun (value: Customer) -> value.Name) shape
+            |> ignore)
+        |> ignore
 
     [<Fact>]
     let ``schema shape builds explicit ordered model schema with value schema constraints`` () =

@@ -86,7 +86,7 @@ module Schema =
 
     /// <summary>Starts a constructor-last structural shape for a model: add fields with <c>Syntax.field</c>,
     /// then close the shape with <c>construct</c> or <c>constructResult</c>.</summary>
-    let define<'model> : ObjectShape<'model, NoFields> = ShapeOps.define<'model>
+    let define<'model> : DefineShape<'model> = ShapeOps.define<'model>
 
     /// <summary>Admits a permissive draft model schema into a trusted domain schema through an admission
     /// function and a projection, preserving fields, wire names, constraints, and metadata.</summary>

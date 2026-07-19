@@ -12,6 +12,7 @@
     <Compile Include="SchemaConstraintInspectionTests.fs" />
     <Compile Include="SchemaConstructorGetterAlignmentTests.fs" />
     <Compile Include="ShapeSyntaxTests.fs" />
+    <Compile Include="SchemaWideShapeTests.fs" />
     <Compile Include="SchemaCompiledRecordPlanProofTests.fs" />
     <Compile Include="SchemaRefinedValueTests.fs" />
     <Compile Include="SchemaFormatTests.fs" />
@@ -68,6 +69,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Axial.Schema\Axial.Schema.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Schema.JsonSchema\Axial.Schema.JsonSchema.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Codec\Axial.Codec.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Data\Axial.Data.fsproj" />
   </ItemGroup>

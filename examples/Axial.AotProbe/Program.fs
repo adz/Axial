@@ -4,6 +4,7 @@ open Axial.ErrorHandling
 open Axial.Schema
 open Axial.Validation
 open Axial.Schema.Syntax
+open type Axial.Schema.Syntax
 
 type ProbeFailure(message: string) =
     inherit Exception(message)
@@ -221,6 +222,24 @@ let probeSchemaPlan () =
 
     Schema.compilePlan (SummaryFactory<SchemaContact>()) schema
 
+let probeBareGetterFields () =
+    // The bare field form derives wire names from getter quotations; this proves the quotation
+    // pattern-match and the compiled-getter extraction both survive native AOT.
+    let schema =
+        Schema.define<SchemaContact>
+        |> field _.Name
+        |> constrain (minLength 1)
+        |> field _.Age
+        |> construct (fun name age -> { Name = name; Age = age })
+
+    let description = Inspect.model schema
+    description.Fields |> List.map _.Name |> Assert.equal [ "name"; "age" ]
+
+    let checked' =
+        Schema.check schema { Name = "Ada"; Age = 36 }
+
+    checked' |> Assert.equal (Ok { Name = "Ada"; Age = 36 })
+
 let inline eraseCheckedValue check value =
     check value |> Result.map (fun _ -> ())
 
@@ -289,6 +308,7 @@ let probe () =
             { Order = 1; ExternalName = "age" }
         ]
 
+    probeBareGetterFields ()
     probeTypeDirectedChecks ()
 
 [<EntryPoint>]
