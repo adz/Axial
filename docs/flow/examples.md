@@ -147,7 +147,7 @@ let greetingFlow : Flow<AppEnv, string, string> =
 let greetingAsync : Flow<AppEnv, string, string> =
     flow {
         let! greeting = greetingFlow
-        let! checkedGreeting =
+        let! (checkedGreeting: string) =
             greeting
             |> Check.present
             |> Result.mapError (fun _ -> "Blanko")

@@ -45,7 +45,13 @@ render_example_section() {
   local example_filter="${7:-}"
 
   local example_output
-  example_output="$(run_example "$project_path" "$example_filter")"
+  printf 'Building docs example: %s\n' "$title"
+
+  if ! example_output="$(run_example "$project_path" "$example_filter")"; then
+    printf 'Docs example failed: %s\n' "$title" >&2
+    printf '%s\n' "$example_output" >&2
+    return 1
+  fi
 
   {
     printf '## %s\n\n' "$title"
