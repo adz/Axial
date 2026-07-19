@@ -8,16 +8,14 @@ rather than keeping a historical spec that no longer matches the codebase.
 
 Active sketches:
 
+- `architecture-guardrails.md` — proposed adopter-facing architecture guidance and a staged tooling direction for
+  schema laws, compile-negative proofs, project roles, and compiled-code/public-surface audits.
 - `project-split.md` — proposal to separate Schema/ErrorHandling and Flow repositories, rename `Axial.Codec` to
   format-specific Schema packages, split the documentation experience, and isolate .NET/Fable codec runtimes behind
   concentrated compiler directives.
-- `contract-grammar.md` — the `.contract` grammar. Status: grammar library + generator IMPLEMENTED (single-version,
-  wire tier); LSP and multi-version support pending.
-  route shipped via the contract grammar; the optics/checked-constructor sections fed `FieldRef` and
-  `Model.validate`.
-- `zio-schema-comparison.md` — the ZIO Schema deep dive; source of the Phase 29/30 gap ranking in
-  `dev-docs/TASKS.md`.
-- `flow-compelling-examples.md` — candidate ZIO/Axial Flow scenarios comparing ordinary implementations, typed effect
-  implementations, guarantees, and remaining application responsibilities.
 - `database.md` — direction sketch for a typed relational layer (generated immutable query AST interpreted through
-  Flow, building on `Schema`, `Model<'t>`, and `FieldRef`).
+  Flow, building on `Schema` and `FieldRef`).
+
+Implemented work and settled decisions do not remain in this folder. Contract generation, versioning, and record-first
+derivation outcomes are recorded in `dev-docs/decisions/README.md`; remaining consumer-gated schema work is in
+`dev-docs/TASKS.md`. The implemented Flow comparison examples live in `examples/Axial.Flow.Comparisons`.

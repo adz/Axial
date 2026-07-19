@@ -1,6 +1,8 @@
+# Typed Relational Layer
 
-• The strongest direction is an immutable, generated, typed relational AST interpreted through Flow. It should not resemble EF’s tracked object graph, and
-  it should not copy Ecto’s Changeset wholesale because Axial already has Schema, Model<'t>, diagnostics, and typed Flow errors.
+The strongest direction is an immutable, generated, typed relational AST interpreted through Flow. It should not
+resemble EF's tracked object graph, and it should not copy Ecto's Changeset wholesale because Axial already has Schema,
+path-aware diagnostics, and typed Flow errors.
 
   The result could be genuinely compelling: database-first correctness like SqlHydra, query composition closer to Ecto, immutable F# values throughout, and
   first-class Flow integration.
@@ -9,8 +11,9 @@
 
   The existing architecture gives SQL a solid foundation:
 
-  - Schema<'model> describes trusted domain shape, constraints, construction, field metadata, parsing, and reconstruction.
-  - Model<'model> proves that a value passed the schema’s intrinsic constraints.
+  - `Schema<'model>` describes domain shape, constraints, construction, field metadata, parsing, and checking.
+  - `Schema.parse` and `Schema.check` return `Result<'model, Diagnostics<SchemaError>>`; success contains the ordinary
+    admitted value rather than a universal trust wrapper.
   - FieldRef<'model,'value> provides stable typed paths for attaching diagnostics.
   - Flow<'env,'error,'value> models database access naturally:
       - database capabilities live explicitly in 'env;
@@ -71,27 +74,34 @@
   This design hides virtually everything: query versus command execution, cardinality, row decoding, parameter binding, dialect rendering, and statement
   caching.
 
-  Its strength is conceptual depthresult>` can conceal meaningful, streaming operations mutation.Expose the underlying distinctions:
+  Its strength is conceptual depth. Its weakness is that `Statement<'result>` can conceal meaningful distinctions
+  between query cardinality, streaming, and mutation.
 
-  <'type Column<'row, 'value,ability whole relational model:
+  ### 2. Full relational AST
 
-  - right and lateral joins sub `EXISTS`;
-  - grouping union/inter conflict clauses, array operationsUsage might valuableCustomers tenant for on (customer.Id =. order.CustomerId)
+  Expose the underlying distinctions: tables, typed columns, scoped expressions, projections, queries, and mutation
+  commands. This surface can represent joins and subqueries, `EXISTS`, grouping and aggregates, set operations,
+  conflict clauses, and provider-specific extensions.
 
-          where (
-              customer.TenantId =. Expr.value tenant
-              &&. order.Total >=. Expr.value minimum
-          )
+  A complex query might read:
 
-          groupBy (customer.Id, customer.Email)
-          having (Expr.count order.Id >. Expr.value 2L)
-          sortByDescending (Expr.sum order.Total)
-
-          select
-              {| CustomerId = customer.Id
-                 Email = customer.Email
-                 Spend = Expr.sum order.Total |}
-      }
+  ```fsharp
+  query {
+      for customer in Customers.table do
+      join order in Orders.table on (customer.Id =. order.CustomerId)
+      where (
+          customer.TenantId =. Expr.value tenant
+          &&. order.Total >=. Expr.value minimum
+      )
+      groupBy (customer.Id, customer.Email)
+      having (Expr.count order.Id >. Expr.value 2L)
+      sortByDescending (Expr.sum order.Total)
+      select
+          {| CustomerId = customer.Id
+             Email = customer.Email
+             Spend = Expr.sum order.Total |}
+  }
+  ```
 
   This is the most complete design, but it risks exposing too many types and making straightforward CRUD feel like constructing a compiler AST.
 
@@ -118,13 +128,13 @@
       val emailUnique : ConstraintRef<NewCustomer>
 
       val query : Query<Customer>
-      val insert : Model<NewCustomer> -> Insert<Customer>
+      val insert : NewCustomer -> Insert<Customer>
       val update : CustomerId -> Update<Customer>
       val delete : CustomerId -> Delete<bool>
 
   The analogue of an Ecto changeset is not one monolithic object. It is the composition of:
 
-  1. Model<'input> for intrinsically valid input;
+  1. an input value admitted by `Schema.parse` or `Schema.check`;
   2. an immutable Insert or Update;
   3. explicit constraint translations attached to the mutation.
 

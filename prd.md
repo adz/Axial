@@ -45,8 +45,8 @@ systematically. Axial's answer, in dependency order:
    detect version → migrate forward → parse against one current schema with path-aware diagnostics
    (`Axial.Schema.Contract`, `src/Axial.Schema/Contract.fs`).
 3. **Validate at write time**: generated JSON Schema lets the wizard reject broken configs before they enter storage.
-4. **Generate at scale**: the `.contract` declaration grammar and generator
-   (`dev-docs/current-ideas/contract-grammar.md`) make authoring ~100 versioned contracts tolerable. The generator
+4. **Generate at scale**: the `.contract` declaration grammar and generator make authoring ~100 versioned contracts
+   tolerable. The generator
    emits ordinary checked-in F# builder code, so the grammar is never required reading for someone maintaining the
    codebase.
 

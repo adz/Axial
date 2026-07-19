@@ -32,7 +32,7 @@ generation with the user-facing `docs/schema/contracts.md` guide, and (2026-07-1
 generation (`[<DeriveSchema>]` records through an FCS syntax-only frontend into the shared AST/resolver/emitter,
 `Axial.Schema.Derive` attributes, `.contract` parked as the secondary declaration form).
 
-## Phase 30: Contracts milestone bundle (gated on Phase 28 + a real consumer)
+## Phase 30: Contracts milestone bundle (gated on a real consumer)
 
 From the same ZIO comparison; these belong *with* the remote-config milestone, not before it:
 

@@ -11,10 +11,10 @@ Per `prd.md`: the boundary stack — the `Axial.ErrorHandling` package (hosting 
 a real adoption target (a ~100-variant versioned config system). The Flow group's remaining pre-1.0 scope in
 `LATER_TODO.md` is demand-driven — pulled forward when a concrete application needs it. The contract-declaration
 thread originally sequenced versioning/migration machinery before the grammar; in practice the grammar and generator
-shipped first (2026-07-12, single-version wire-tier scope — see `dev-docs/current-ideas/contract-grammar.md`), and
-the versioning/migration engine shipped on 2026-07-13, followed by Schema-depth work, dogfood, then LSP.
-The schema surface has been through heavy recent churn (`Model<'t>`, `ContextRules`, contracts) and should be treated
-as settling rather than settled.
+shipped first (2026-07-12, single-version wire-tier scope), and the versioning/migration engine shipped on 2026-07-13.
+Record-first `[<DeriveSchema>]` generation is now the primary generated path; `.contract` remains a secondary wire-tier
+form with no planned LSP investment. The schema surface has been through heavy recent churn (direct `Result` returns,
+`ContextRules`, contracts) and should be treated as settling rather than settled.
 
 ## Current Direction
 
@@ -65,7 +65,7 @@ Axial's data-boundary direction splits concerns like this:
 - `Schema<'value>` describes typed shape, construction, inspection, and portable constraint metadata; `Schema.parse`
   admits structured data and `Schema.check` rechecks an already assembled typed value through its field schemas and record
   constructor. Successful operations return the ordinary value rather than a universal trust wrapper.
-- schema interpreters parse structured data, validate existing models, produce diagnostics, and drive non-validation metadata
+- schema interpreters parse structured data, check existing values, produce diagnostics, and drive non-validation metadata
   consumers
 - contextual rules are plain functions over already-trusted models; `ContextRules` supplies only failure constructors,
   `FieldRef`-based path scoping, and `apply` — context selection is the caller's own `match`/`Map`
@@ -97,8 +97,8 @@ schemas; `fieldWith` accepts an explicit value schema. The shape's phantom type 
 current field through the typed `constrain` operation.
 Build-time generation exists as wire-tier tooling: `[<DeriveSchema>]`-marked records are the
 primary declaration (FCS syntax-only frontend in `src/Axial.Schema.Contracts`, run by `scripts/schemagen` or the
-`Axial.Schema.Contracts.Build` MSBuild package), with `.contract` files as the parked secondary form; domain-tier
-generation remains exploratory.
+`Axial.Schema.Contracts.Build` MSBuild package), with `.contract` files as the parked secondary form. Generated contracts
+remain wire-tier records; domain models stay hand-written F# rather than becoming a second generated authoring surface.
 
 The public schema-authoring vocabulary keeps inferred `field`, explicit `fieldWith`, and typed `constrain` operations.
 `Schema.text`, `Schema.int`, `Schema.decimal`, `Schema.bool`,
