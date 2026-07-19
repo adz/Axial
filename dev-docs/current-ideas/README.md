@@ -15,6 +15,10 @@ Active sketches:
   concentrated compiler directives.
 - `database.md` — direction sketch for a typed relational layer (generated immutable query AST interpreted through
   Flow, building on `Schema` and `FieldRef`).
+- `flow-stream-proving.md` — pre-1.0 plan to prove and freeze resource-safe, portable FlowStream semantics through
+  Process and narrow TCP, Serial, WebSocket, and SSE slices.
+- `flow-transport-packages.md` — package and API direction layered on the FlowStream proving plan for Transport,
+  framing, Network, Serial, WebSocket, streaming HTTP/SSE, Compression, and later Process integration.
 
 Implemented work and settled decisions do not remain in this folder. Contract generation, versioning, and record-first
 derivation outcomes are recorded in `dev-docs/decisions/README.md`; remaining consumer-gated schema work is in
