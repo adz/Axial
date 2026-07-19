@@ -1,5 +1,5 @@
 ---
-title: "Codec.Json.serializeToStream"
+title: "Schema.Codec.Json.serializeToStream"
 linkTitle: "serializeToStream"
 weight: 2103
 type: docs
@@ -10,14 +10,14 @@ Serializes a trusted model as UTF-8 JSON directly to a stream through a compiled
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Codec.Json.serializeToStream&#32;<span>codec&#32;stream&#32;value</span></span></code>
+<code><span>Schema.Codec.Json.serializeToStream&#32;<span>codec&#32;stream&#32;value</span></span></code>
 </div>
 
 ## Parameters
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `codec` | <code><span><a href="t-codec-jsoncodec.md">JsonCodec</a>&lt;'model&gt;</span></code> |  |
+| `codec` | <code><span><a href="t-schema-codec-jsoncodec.md">JsonCodec</a>&lt;'model&gt;</span></code> |  |
 | `stream` | <code><a href="https://learn.microsoft.com/dotnet/api/system.io.stream">Stream</a></code> |  |
 | `value` | <code>'model</code> |  |
 

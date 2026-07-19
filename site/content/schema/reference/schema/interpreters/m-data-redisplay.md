@@ -17,7 +17,7 @@ type: docs
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `input` | <code><a href="t-data.md">Data</a></code> |  |
+| `input` | <code><a href="../../data/t-data.md">Data</a></code> |  |
 
 ## Returns
 

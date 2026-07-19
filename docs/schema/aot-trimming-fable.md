@@ -1,17 +1,20 @@
 ---
 weight: 82
-title: Zero Reflection, AOT, and Fable
+title: Compiler-Directed, AOT, and Fable
 description: Why Axial works under NativeAOT, aggressive trimming, and Fable by construction.
 ---
 
-# Zero Reflection, AOT, and Fable
+# Compiler-Directed: AOT and Fable
 
 This page explains Axial's runtime-portability guarantees and what makes them hold.
 
-Axial contains no runtime reflection in any core path. That is not an optimization applied afterwards — it is an
-architectural rule: schemas, constructors, getters, checks, codecs, and service access are all explicit declarations
-that the compiler can see, so there is nothing for the trimmer to remove by mistake and nothing NativeAOT cannot
-compile ahead of time.
+Axial performs no runtime reflection in any hot path — everything is compiler-directed, for maximal deterministic
+verification. That is not an optimization applied afterwards; it is an architectural rule: schemas, constructors,
+getters, checks, codecs, and service access are all explicit declarations the compiler can see, so there is nothing
+for the trimmer to remove by mistake and nothing NativeAOT cannot compile ahead of time. Where build-phase metadata
+reading exists (the bare `field _.Name` form reads a property name from the getter expression once, when the schema
+value is built), it runs during schema construction, never per parsed or encoded value — and the AOT probe executes it
+natively to prove it.
 
 ## Why It Holds By Construction
 

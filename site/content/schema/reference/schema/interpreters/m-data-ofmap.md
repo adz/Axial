@@ -23,4 +23,4 @@ Builds object-shaped structured data from a map of scalar field values.
 
 | Type | Description |
 | --- | --- |
-| <code><a href="t-data.md">Data</a></code> |  |
+| <code><a href="../../data/t-data.md">Data</a></code> |  |

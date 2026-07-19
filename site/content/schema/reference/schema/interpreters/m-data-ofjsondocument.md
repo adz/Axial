@@ -23,7 +23,7 @@ Builds structured data from the root element of a <a href="https://learn.microso
 
 | Type | Description |
 | --- | --- |
-| <code><a href="t-data.md">Data</a></code> |  |
+| <code><a href="../../data/t-data.md">Data</a></code> |  |
 
 ## Remarks
 

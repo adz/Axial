@@ -40,6 +40,10 @@ The actual call infers `int` from the getter. `SchemaDefaults.Resolve` knows Axi
 intrinsic `static member Schema` on a participating owned type. Resolution continues recursively through `option`,
 `list`, and `Map<string, _>`.
 
+The bare-getter form (`open type Axial.Schema.Syntax`, then `field _.Age`) expands one step earlier: it derives the
+wire name `"age"` from the property name once, when the schema value is built, and then behaves exactly like
+`field "age" _.Age`. Nothing about resolution or parsing differs.
+
 For example, one canonical custom value schema is enough for every structural use:
 
 ```fsharp

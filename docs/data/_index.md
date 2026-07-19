@@ -3,7 +3,7 @@ weight: 5
 title: Data
 type: docs
 notoc: true
-description: Portable structured values for documents, boundaries, fixtures, and adapters.
+description: Portable structured values for documents, fixtures, boundaries, and adapters.
 menu:
   main:
     weight: 3
@@ -11,15 +11,25 @@ menu:
 
 # Data
 
-`Axial.Data` represents the meaning and shape of unowned structured data. It provides one source-neutral tree for
-nulls, primitive values, lists, and objects, with no dependency on Schema, Flow, a serializer, or a runtime service.
+`Axial.Data` is one small type for structured values: a source-neutral tree of objects, lists, text,
+numbers, booleans, and nulls. It has no dependencies and no opinions about where data came from or
+what it will become — it exists for the gap in every program where data has a *shape* but not yet a
+*type*.
 
-Use it between a source adapter and the code that assigns an application-owned type: for example, test fixtures,
-configuration fragments, JSON-like documents, or boundary input awaiting schema parsing.
+You meet that gap constantly:
 
-`Data` is a structured-value model, not a source syntax tree. It distinguishes text, numbers, Booleans, nulls, lists,
-and objects, but it does not model whitespace, comments, source locations, or other format-specific syntax. It is not a
-promise of exact source-document round-tripping.
+- **Test fixtures.** You want to state "a customer object with a name and two order lines" in a test
+  without stringing JSON together or depending on a serializer.
+- **Boundary input.** A form post, query string, CLI invocation, or configuration file has arrived,
+  and you need one representation to inspect, log, or hand to whatever assigns it a real type.
+- **Documents.** A JSON-like payload needs to be built, reshaped, or examined without committing to a
+  concrete record type first.
+- **Adapters.** Code that translates between formats needs a common middle shape so each side only
+  knows about `Data`, not about the other side's library.
+
+`Data` is a structured-*value* model, not a source syntax tree: it distinguishes text, numbers,
+booleans, nulls, lists, and objects, but does not model whitespace, comments, or source locations,
+and it does not promise byte-exact round-tripping of source documents.
 
 ## Install
 
@@ -50,12 +60,25 @@ let customer: Data =
     ]
 ```
 
-`=>` converts supported primitives and recursively converts lists. A nested object remains explicit through `data`,
-so a list is never guessed to be an object.
+`=>` converts supported primitives and recursively converts lists. A nested object remains explicit
+through `data`, so a list is never guessed to be an object.
 
-The supported conversions are `string`, `bool`, `int`, `int64`, `decimal`, `float`, `Guid`, `DateTimeOffset`, `Data`,
-and recursively supported lists. `DateOnly` is also supported on .NET 8 and later. Numeric values use invariant
-formatting. Dates, timestamps, and GUIDs become canonical text values.
+The supported conversions are `string`, `bool`, `int`, `int64`, `decimal`, `float`, `Guid`,
+`DateTimeOffset`, `Data`, and recursively supported lists. `DateOnly` is also supported on .NET 8 and
+later. Numeric values use invariant formatting. Dates, timestamps, and GUIDs become canonical text
+values.
+
+## Convert from a source
+
+Constructors exist for the shapes boundaries actually hand you:
+
+```fsharp
+Data.ofMap (Map.ofList [ "name", "Ada"; "age", "42" ])   // map of raw strings
+Data.ofNameValues [ "tag", "a"; "tag", "b" ]             // repeated names group into a list
+Data.ofCliArgs [| "--name"; "Ada"; "--verbose" |]        // command-line arguments
+Data.ofJsonDocument jsonDocument                         // System.Text.Json (also ofJsonElement)
+Data.ofConfiguration configurationSection                // Microsoft.Extensions.Configuration
+```
 
 ## Use the DU directly
 
@@ -81,10 +104,22 @@ match direct with
 | Data.Null -> []
 ```
 
-`Data.Number` currently stores a lexical token rather than narrowing every number to `decimal` or `float`. This lets
-source adapters carry arbitrary-size integers, decimal precision, and exponent notation through the structured-value
-tree. The token is the number's portable storage, not a claim that `Data` models the source document's complete syntax.
-The DSL turns `42` into `Data.Number "42"`, while `"42"` remains `Data.Text "42"`.
+`Data.Number` stores a lexical token rather than narrowing every number to `decimal` or `float`. This
+lets source adapters carry arbitrary-size integers, decimal precision, and exponent notation through
+the structured-value tree. The token is the number's portable storage, not a claim that `Data` models
+the source document's complete syntax. The DSL turns `42` into `Data.Number "42"`, while `"42"`
+remains `Data.Text "42"`.
 
-`Data.Object` preserves field order and duplicate names. Consumers decide whether duplicates are meaningful, rejected,
-or resolved according to a boundary format's rules.
+`Data.Object` preserves field order and duplicate names. Consumers decide whether duplicates are
+meaningful, rejected, or resolved according to a boundary format's rules.
+
+## Read values back by path
+
+`Data.redisplay` and `Data.redisplayPath` recover the raw value at a path — useful when a form needs
+to re-show exactly what the user typed, or a log needs the offending input fragment.
+
+## Going further
+
+- [API reference]({{< relref "/reference/data/" >}}) — every constructor and helper, source-documented.
+- [Using Data with the rest of Axial](with-axial.md) — feeding schemas, boundary parsing, and
+  redisplay-aware error reporting.

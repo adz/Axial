@@ -1,4 +1,5 @@
-/// The package's platform-variant surface. This file holds the only FABLE_COMPILER directives in the package: each
+/// The package's platform-variant surface. This file holds the package's FABLE_COMPILER directives (plus one guard
+/// in Shape.fs excluding the quotation-based bare-getter `field` form, which Fable cannot interpret): each
 /// half declares the same names, so the rest of the code is platform-directive-free. (Fable 5's project cracker does
 /// not expose FABLE_COMPILER as an MSBuild property, so the variants live in one conditionally-halved file rather
 /// than two conditionally-included ones; split them if Fable restores the property.)

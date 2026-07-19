@@ -6,8 +6,9 @@ description: HTTP form-like, CLI, JSON-like, and configuration input through one
 ---
 
 
-`Data` is the source-agnostic boundary shape: `Null`, `Text`, `Number`, `Bool`, `List`, and `Object`. Adapters turn common
-sources into `Data`, and one schema parses them all.
+[`Data`]({{< relref "/data/" >}}) is the source-agnostic boundary shape: `Null`, `Text`, `Number`, `Bool`, `List`, and
+`Object`. Adapters turn common sources into `Data`, and one schema parses them all. (`Data` is its own dependency-free
+package, useful beyond schemas — see [its docs]({{< relref "/data/" >}}).)
 
 ## The Schema
 

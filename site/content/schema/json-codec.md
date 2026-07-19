@@ -1,17 +1,17 @@
 ---
 weight: 55
 title: JSON Codec
-description: Compile a schema into a reflection-free JSON codec for trusted hot-path serialization.
+description: Compile a schema into a runtime-reflection-free JSON codec for trusted hot-path serialization.
 type: docs
 ---
 
 
-This page shows how `Axial.Codec` turns the schema you already declared into a compiled JSON codec, so trusted
+This page shows how `Axial.Schema.Codec` turns the schema you already declared into a compiled JSON codec, so trusted
 serialization and boundary parsing come from one declaration.
 
 Axial has two paths for JSON, and they exist because they optimize for different things:
 
-- **Boundary lane** — `Data` + `Schema.parse`: for untrusted input. It runs constraint metadata, accumulates
+- **Boundary parsing** — `Data` + `Schema.parse`: for untrusted input. It runs constraint metadata, accumulates
   path-aware diagnostics, and keeps the structured data for redisplay.
 - **Trusted path** — `Json.compile` + `Json.serialize`/`Json.deserialize`: for payloads whose producer you trust, such
   as internal services, storage, caches, and queues. It enforces the wire shape and required fields, skips constraint
@@ -22,7 +22,7 @@ Axial has two paths for JSON, and they exist because they optimize for different
 
 ```fsharp
 open Axial.Schema
-open Axial.Codec
+open Axial.Schema.Codec
 open Axial.Schema.Syntax
 
 type Address =
@@ -56,7 +56,7 @@ let customer = Json.deserialize codec json
 
 `Json.compile` walks the typed record plan retained when the object shape closes and emits a direct plan: ordered field
 descriptors, cached UTF-8 wire-name bytes, typed field decoders, and the original curried constructor applied without
-boxing. There is no reflection at compile time or per value, so the codec is AOT- and trimming-safe by construction.
+boxing. Everything is compiler-directed: there is no runtime reflection at codec-compile time or per value, so the codec is AOT- and trimming-safe by construction.
 
 ## Every Schema Shape Is Supported
 
@@ -80,10 +80,10 @@ match Json.tryDeserialize codec """{"name":"Ada","age":"not-a-number"}""" with
 ```
 
 The codec reports the first structural failure and stops. When you need every problem reported with redisplayable
-input — a form, a public API — that is the boundary lane's job:
+input — a form, a public API — that is boundary parsing's job:
 
 ```fsharp
-// Boundary lane: complete diagnostics for untrusted input.
+// Boundary parsing: complete diagnostics for untrusted input.
 let parsed = Schema.parse customerSchema (Data.ofJsonDocument document)
 ```
 
@@ -111,7 +111,7 @@ function takes plain positional arguments, so it calls as an ordinary static met
 
 ```csharp
 using Axial.Schema;
-using Axial.Codec;
+using Axial.Schema.Codec;
 
 JsonCodec<Customer> codec = Json.compile(customerSchema);
 

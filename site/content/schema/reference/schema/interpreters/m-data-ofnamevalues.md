@@ -23,4 +23,4 @@ Builds object-shaped structured data from name/value pairs, grouping repeated na
 
 | Type | Description |
 | --- | --- |
-| <code><a href="t-data.md">Data</a></code> |  |
+| <code><a href="../../data/t-data.md">Data</a></code> |  |

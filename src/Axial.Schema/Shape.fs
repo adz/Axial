@@ -4,8 +4,10 @@ namespace Axial.Schema
 // intentionally constrains the witness type variable; the warning is noise here.
 #nowarn "64"
 
+#if !FABLE_COMPILER
 open Microsoft.FSharp.Quotations
 open Microsoft.FSharp.Quotations.Patterns
+#endif
 
 // The constructor-last authoring surface. An ObjectShape is a structural record shape that does not
 // yet know how to construct its model: define + fields = structural shape; shape + constructor =
@@ -343,6 +345,7 @@ module Syntax =
     let withMessage (message: string) (constraint': Constraint<'value>) : Constraint<'value> =
         Constraint<'value>(Constraint.withMessage message constraint'.Untyped)
 
+#if !FABLE_COMPILER
 /// <summary>
 /// The bare-getter field form: <c>open type Axial.Schema.Syntax</c> brings an overloaded <c>field</c>
 /// into scope that accepts either a name and getter (like the module form) or a bare property getter
@@ -385,3 +388,4 @@ type Syntax =
                                                                                                               name,
                                                                                                               getter,
                                                                                                               valueSchema))
+#endif

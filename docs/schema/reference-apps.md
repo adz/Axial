@@ -39,7 +39,7 @@ files. The features it leans on, and why they matter at this size:
   hand-written typed functions, and the migrated output is re-checked against the current schema — migration code
   cannot quietly produce invalid current values ([Versioned Contracts]({{< relref "/schema/contracts.md" >}})).
 - **One declaration, several interpreters.** The same schemas drive path-aware parse diagnostics rendered at
-  three boundaries, HTML form metadata and redisplay, compiled trusted-lane JSON codecs for storage writes
+  three boundaries, HTML form metadata and redisplay, compiled trusted JSON codecs for storage writes
   ([JSON Codec]({{< relref "/schema/json-codec.md" >}})), and production-only
   [contextual rules]({{< relref "/schema/rules.md" >}}).
 - **Flow where orchestration warrants it.** Persistence and id generation are environment services; use cases

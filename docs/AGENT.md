@@ -30,6 +30,8 @@ machinery inside those areas.
 
 When a schema lives in its own definition module, open `Axial.Schema.Syntax` and use the constructor-last pipeline:
 `Schema.define<Signup> |> field "email" _.Email |> constrain emailFormat |> field "age" _.Age |> constrain (atLeast 13) |> construct create`.
+Field count is unbounded. Adding `open type Axial.Schema.Syntax` also permits bare getters (`field _.Email`), which
+derive the camelCased wire name from the property; explicit names are never transformed.
 `field` infers built-in schemas and an owned type's intrinsic `static member Schema`, recursively
 through `option`, `list`, and `Map<string, _>`. Use `fieldWith` for an explicit local schema or a type that cannot
 declare that member.

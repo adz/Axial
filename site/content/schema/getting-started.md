@@ -2,29 +2,28 @@
 weight: 2
 title: Getting Started
 type: docs
-description: One schema describing boundary input, domain construction, checking, codecs, and metadata.
+description: Declare what your data looks like once; parse, check, document, and encode from that one declaration.
 ---
 
 
-This page shows how one `Schema<'value>` describes boundary input, domain construction, checking, codecs, and metadata.
+Every application boundary answers the same questions: what fields does this input have, what are
+their types, what makes a value acceptable, and how do I build my domain type from it? Most codebases
+answer those questions several times over — once in a DTO parser, again in validation rules, again in
+API documentation, again in test fixtures — and the answers drift apart.
 
-Application boundaries often repeat the same facts in a DTO parser, validation rules, JSON configuration, form
-metadata, and test generators. A schema keeps those facts in one typed value. It is not a marker attached to a model
-type, and it does not make every value of that type valid.
+`Axial.Schema` lets you answer them once. A schema is an ordinary F# value that *describes* a type:
+its fields, their wire names, their constraints, and how a validated value gets constructed. Everything
+else — parsing input, checking existing values, generating JSON Schema documents, compiling fast JSON
+codecs, driving forms — is an *interpreter* that reads that description. One declaration, several
+behaviors, no drift.
 
-## The catalog
+This page walks the whole loop: declare a schema, feed it input, read its errors, and see what else
+the same declaration can do.
 
-Every completed declaration has the same type:
+## Your first schema
 
-```fsharp
-Schema.text                         // Schema<string>
-Schema.int                          // Schema<int>
-Schema.option Schema.guid           // Schema<Guid option>
-Schema.list<string>()               // Schema<string list>
-RefinedSchemas.nonBlankString       // Schema<NonBlankString>
-```
-
-Record schemas use those values directly:
+A schema for a record names each field, points at its value with a getter, and finishes with the
+constructor:
 
 ```fsharp
 open Axial.Schema
@@ -43,105 +42,144 @@ let signupSchema : Schema<Signup> =
     |> construct (fun email age -> { Email = email; Age = age })
 ```
 
-`field` infers built-in schemas and the canonical schema declared by an owned type. Inference is
-recursive through `option`, `list`, and `Map<string, _>`. See [Schema Syntax](syntax.md) for the custom
-`static member Schema` convention. Use `fieldWith` when a field needs an explicit local schema or its type cannot
-declare a canonical schema.
+Read it top to bottom:
 
-## Parse boundary input
+- `Schema.define<Signup>` starts the declaration. It is not yet a schema — it doesn't know how to
+  build a `Signup`.
+- Each `field` declares one field: the wire name (`"email"` is what appears in JSON, form posts, and
+  error paths) and the getter (`_.Email` is how the schema reads the value back out for checking and
+  encoding). The field's schema is inferred from the getter's type — `string` and `int` here.
+- `constrain` attaches a rule to the field directly above it. Constraints are typed: putting
+  `emailFormat` (a text constraint) after an `int` field is a compile error on that line, not a
+  runtime surprise.
+- `construct` closes the declaration with the constructor. Its arguments must match the declared
+  fields in order and type — checked by the compiler — and there is no limit on how many fields a
+  schema can have.
+
+If a constructor should be able to *reject* a combination of otherwise-valid fields (say, a date range
+whose end precedes its start), close with `constructResult` and return `Result<'model, string>`
+instead. The [syntax guide](syntax.md) covers every form, including fields whose schemas can't be
+inferred.
+
+## Give it input: Data
+
+A schema parses *structured data*, not strings of JSON. The input type is
+[`Data`]({{< relref "/data/" >}}) — a small, source-neutral tree of objects, lists, text, numbers,
+booleans, and nulls. Anything that can produce that shape can feed a schema: JSON, form posts, CLI
+arguments, configuration, or values you write by hand.
+
+The quickest way to write `Data` by hand is the builder syntax:
 
 ```fsharp
-let raw =
-    Data.Object
-        [ "email", Data.Text "ada@example.com"
-          "age", Data.Number "42" ]
+open Axial
+open Axial.Data.Syntax
 
-match (Schema.parse signupSchema raw) with
-| Ok signup -> printfn "%s" signup.Email
+let goodInput =
+    data [
+        "email" => "ada@example.com"
+        "age" => 42
+    ]
+```
+
+which is handy in tests and examples. Real boundaries usually convert from a source instead:
+
+```fsharp
+// from System.Text.Json, e.g. an HTTP request body
+let fromJson = Data.ofJsonDocument jsonDocument
+
+// from name/value pairs, e.g. a form post or query string
+let fromForm = Data.ofNameValues [ "email", "ada@example.com"; "age", "42" ]
+
+// from a map of raw strings
+let fromMap = Data.ofMap (Map.ofList [ "email", "ada@example.com"; "age", "42" ])
+```
+
+Note that `"42"` arriving as text is fine: parsing performs shape conversion, so a number field
+accepts a numeric token whether the source delivered it as JSON `42` or form-post `"42"`.
+`Data` is its own package with no dependencies, useful on its own for shaping test fixtures — see
+[its docs]({{< relref "/data/" >}}).
+
+## Parse it
+
+```fsharp
+match Schema.parse signupSchema goodInput with
+| Ok signup -> printfn "Welcome, %s" signup.Email
 | Error diagnostics ->
     diagnostics
     |> Axial.Validation.Diagnostics.flatten
     |> List.iter (SchemaError.renderDiagnostic >> printfn "%s")
 ```
 
-Parsing performs shape conversion, runs constraints, and invokes the declared record constructor. Errors retain their
-paths. Use `Schema.parseRetainingInput` when form redisplay or auditing also needs the original `Data`.
+One call does everything the declaration promised: checks the shape, converts values, runs every
+constraint, and — only if all fields succeeded — invokes your constructor. On failure you get
+*diagnostics with paths*, not a single message: an input with a blank email and an age of `4` reports
+both problems, each addressed to its field (`email`, `age`), ready to render next to the right form
+input. Nested records, lists, and maps extend the path (`address.city`, `lines[2].quantity`).
 
-The same interpreter works for a value schema:
+When a boundary also needs to redisplay what the user originally typed — form round-trips, audit
+logs — use `Schema.parseRetainingInput`, which keeps the raw `Data` alongside the parse result. See
+[redisplay and field errors](redisplay-and-field-errors.md).
 
-```fsharp
-let parsedName = Schema.parse RefinedSchemas.nonBlankString (Data.Text "Ada")
-```
+## Check a value you already have
 
-## One catalog for values and models
-
-A string, a refined name, a list, a union, and a record are all typed descriptions interpreted in the same ways, so
-the catalog exposes them through one module:
-
-```fsharp
-Schema.text |> Schema.constrain Constraint.email
-Schema.parse signupSchema raw
-```
-
-There is no separate field-level module to learn. The same combinators and interpreters apply whether `'value` is a
-scalar, a collection, or a whole model; whatever distinction the implementation needs stays internal.
-
-`RefinedSchemas` is a sibling namespace only because it is a named catalog of schemas corresponding to
-`Axial.Refined` types. Its members produce ordinary `Schema<'value>` values.
-
-## What successful parsing proves
-
-`Schema.parse schema raw` proves that this operation accepted the structured data and constructed its result through the
-schema. `Schema.check schema value` proves the same checks for an already assembled value and re-runs a record
-constructor where one exists.
-
-Neither operation can change what ordinary F# construction permits. If this type is public, callers can bypass the
-schema:
+Parsing is for structured input. Sometimes a value arrives already assembled — from a database mapper,
+a message queue, or another team's code — and you want the same guarantees:
 
 ```fsharp
-type Signup = { Email: string; Age: int }
+let imported = { Email = "ada@example.com"; Age = 42 }
 
-let bypassed = { Email = ""; Age = 4 }
+match Schema.check signupSchema imported with
+| Ok trusted -> save trusted
+| Error diagnostics -> reject diagnostics
 ```
 
-That is a language-level fact, not a missing validation call. Choose the representation according to the guarantee
-the application needs:
+`Schema.check` reads each field back through its getter, runs the same constraints, and re-runs the
+constructor if it is a checked one. Same declaration, same rules, different entry point.
 
-- Use plain records for wire contracts and drafts. Treat them as untrusted outside a successful schema operation.
-- Use private refined values for intrinsic field invariants such as non-blank names, positive quantities, or IDs
-  with a required format.
-- Use a private domain representation or complete smart constructor when cross-field invariants must hold for every
-  value in application code.
-- Use `Schema.check` at imports where an already assembled value arrived from a serializer, database mapper, plugin,
-  or external integration. It is not the normal constructor for a well-encapsulated domain type.
-- Use contextual rules for facts that vary by operation or environment, such as “assignee belongs to this workspace”
-  or “demo names are forbidden in production.”
+## What one declaration buys you
 
-The [trusted construction guide](trusted-construction.md) develops these options. The [refined values guide](refined-values.md)
-shows fallible smart constructors inside schemas.
-
-The [recommended patterns](patterns/) show complete module and project layouts for private aggregates, legal updates,
-generated wire records, and schema-derived tests.
-
-## Schema-definition modules
-
-Open `Axial.Schema.Syntax` inside a schema-definition module to use fields, typed constraints, and closing constructors:
+Everything below reads the `signupSchema` value declared above — none of it requires further
+annotation:
 
 ```fsharp
-module SignupSchemas =
-    open Axial.Schema
-    open Axial.Schema.Syntax
+// A JSON Schema document for your API docs or contract tests
+// (package Axial.Schema.JsonSchema; same Axial.Schema namespace)
+let contract = JsonSchema.generate signupSchema
 
-    let signup =
-        Schema.define<Signup>
-        |> field "email" _.Email
-        |> constrain emailFormat
-        |> field "age" _.Age
-        |> constrain (atLeast 13)
-        |> construct (fun email age -> { Email = email; Age = age })
+// A compiled JSON codec for trusted hot-path serialization
+open Axial.Schema.Codec // package Axial.Schema.Codec
+
+let codec = Json.compile signupSchema
+let json = Json.serialize codec { Email = "ada@example.com"; Age = 42 }
+
+// Introspectable metadata: fields, wire names, constraints
+let description = Inspect.model signupSchema
+description.Fields |> List.map _.Name   // ["email"; "age"]
 ```
 
-Primitive and composite value schemas remain qualified through `Schema.text`, `Schema.list<'item>()`, `Schema.refine`, and the
-rest of the `Schema` catalog. `field`, `fieldWith`, `constrain`, `construct`, and `constructResult` form the object-shape
-pipeline. [How inferred fields expand](field-desugaring.md) explains the lower-level relationship between those shape
-operations and standalone value schemas.
+The pattern to internalize: a schema never *does* anything — it is data describing your data.
+Interpreters do things. When you need new behavior over your models (a new output format, a UI
+generator, a fuzzer), you write one interpreter over `Inspect` metadata and every schema in your
+codebase gains that behavior at once.
+
+## What parsing does and does not prove
+
+`Schema.parse` proves *this input* passed the declaration and was constructed through it.
+`Schema.check` proves the same for *this value*. Neither changes what ordinary F# construction allows:
+if `Signup` is a public record, any code can still write `{ Email = ""; Age = 4 }` directly.
+
+That is a language-level fact, and Axial's answer is to choose representations deliberately rather
+than sprinkle validation calls: plain records for wire contracts and drafts, private refined types for
+intrinsic invariants, smart constructors where cross-field invariants must hold everywhere. The
+[trusted construction guide](trusted-construction.md) develops the options; the
+[refined values guide](refined-values.md) shows fallible constructors inside schemas.
+
+## Where to go next
+
+- [Schema syntax](syntax.md) — every declaration form: inference, explicit schemas, bare getters,
+  options, lists, maps, unions.
+- [Input sources](input-sources.md) — the full menu of `Data` conversions.
+- [Runnable examples](examples.md) — complete executable programs, mirrored from real code.
+- [Choosing a tool](choosing-a-tool.md) — when to reach for Schema, plain `Result`, or `Check`.
+- [Patterns](patterns/) — project layouts for wire/domain splits, private aggregates, and
+  schema-derived tests.

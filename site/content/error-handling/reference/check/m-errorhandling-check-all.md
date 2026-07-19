@@ -25,3 +25,10 @@ Combines checks conjunctively by running every check against the value and accum
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'value,&#32;<span><a href="../result/t-errorhandling-checkfailure.md">CheckFailure</a>&#32;list</span></span>&gt;</span></code> |  |
+
+## Remarks
+
+
+ F# visits list elements from left to right. When the first check is a type-directed inline check such as
+ <code>Check.present</code>, declare the composed program&#39;s value type so the compiler can select its SRTP overload:
+ <code>let requiredName : Check&lt;string&gt; = Check.all [ Check.present; Check.lengthBetween 2 40 ]</code>.

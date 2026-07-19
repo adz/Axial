@@ -1,5 +1,5 @@
 ---
-title: "Codec.Json.tryDeserialize"
+title: "Schema.Codec.Json.tryDeserialize"
 linkTitle: "tryDeserialize"
 weight: 2107
 type: docs
@@ -10,14 +10,14 @@ Deserializes a JSON string, returning decode failures as a rendered message inst
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Codec.Json.tryDeserialize&#32;<span>codec&#32;json</span></span></code>
+<code><span>Schema.Codec.Json.tryDeserialize&#32;<span>codec&#32;json</span></span></code>
 </div>
 
 ## Parameters
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `codec` | <code><span><a href="t-codec-jsoncodec.md">JsonCodec</a>&lt;'model&gt;</span></code> |  |
+| `codec` | <code><span><a href="t-schema-codec-jsoncodec.md">JsonCodec</a>&lt;'model&gt;</span></code> |  |
 | `json` | <code>string</code> |  |
 
 ## Returns

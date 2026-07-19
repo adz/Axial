@@ -122,7 +122,7 @@ The practical read is unchanged: `Flow` stays competitive with the direct baseli
 
 ### Schema JSON Codec
 
-The codec suites measure `Axial.Codec` — the JSON codec compiled from a `Schema<'model>` declaration — on a realistic aggregate (seven primitive fields, one nested record, and two collections) against `System.Text.Json` on the same model. Both suites live in [benchmarks/Axial.Benchmarks/CodecSuites.fs](https://github.com/adz/Axial/blob/main/benchmarks/Axial.Benchmarks/CodecSuites.fs).
+The codec suites measure `Axial.Schema.Codec` — the JSON codec compiled from a `Schema<'model>` declaration — on a realistic aggregate (seven primitive fields, one nested record, and two collections) against `System.Text.Json` on the same model. Both suites live in [benchmarks/Axial.Benchmarks/CodecSuites.fs](https://github.com/adz/Axial/blob/main/benchmarks/Axial.Benchmarks/CodecSuites.fs).
 
 Run them:
 
@@ -140,14 +140,14 @@ Measured with a BenchmarkDotNet short job on the recorded toolchain:
 | `Axial Json.deserialize` | 3.10 us | 2.84 KB |
 | `System.Text.Json Deserialize` | 3.11 us | 2.01 KB |
 
-The codec compiles once per schema and runs with no reflection, so it stays on par with `System.Text.Json`'s reflection-based serializer while remaining AOT- and trimming-safe by construction. `deserializeBytes` skips the string-to-UTF-8 conversion and is the faster decode entry point when the payload already arrives as bytes.
+The codec compiles once per schema and runs with no runtime reflection, so it stays on par with `System.Text.Json`'s reflection-based serializer while remaining AOT- and trimming-safe by construction. `deserializeBytes` skips the string-to-UTF-8 conversion and is the faster decode entry point when the payload already arrives as bytes.
 
-The boundary suite compares the trusted codec lane against full boundary parsing — `JsonDocument` to `Data` to `Schema.parse` with complete path-aware diagnostics:
+The boundary suite compares the trusted codec against full boundary parsing — `JsonDocument` to `Data` to `Schema.parse` with complete path-aware diagnostics:
 
 | Method | Mean | Allocated |
 | --- | --- | --- |
 | `Axial Json.deserialize (trusted path)` | 3.15 us | 2.84 KB |
-| `JsonDocument + Data + Schema.parse (boundary lane)` | 19.78 us | 27.71 KB |
+| `JsonDocument + Data + Schema.parse (boundary parsing)` | 19.78 us | 27.71 KB |
 
 That gap is the price of diagnostics, redisplayable structured data, and constraint checking, and it is why the two paths exist: parse untrusted input where the diagnostics pay for themselves, and use the compiled codec for trusted payloads such as internal services, storage, and queues.
 
@@ -225,6 +225,6 @@ The actual benchmark suites and the method pairs they compare are:
 - `CancellableTaskBenchmarks`: `ManualTokenTask` vs `CancellableTask`
 - `SynchronousCompletionBenchmarks`: `CandidateValueTaskFlow` vs `Flow task adapter`
 - `JsonCodecBenchmarks`: `Axial Json.serialize`/`Json.deserialize` vs `System.Text.Json`
-- `BoundaryParseBenchmarks`: trusted codec lane vs `Data` + `Schema.parse` boundary lane
+- `BoundaryParseBenchmarks`: trusted codec vs `Data` + `Schema.parse` boundary parsing
 
 The .NET benchmark report is generated from `Axial.Benchmarks`; the Fable runner is separate and uses the same comparison vocabulary without pretending the runtime shape is the same.

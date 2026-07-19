@@ -23,7 +23,7 @@ Builds object-shaped structured data from query-string pairs, grouping repeated 
 
 | Type | Description |
 | --- | --- |
-| <code><a href="../interpreters/t-data.md">Data</a></code> |  |
+| <code><a href="../../data/t-data.md">Data</a></code> |  |
 
 ## Remarks
 

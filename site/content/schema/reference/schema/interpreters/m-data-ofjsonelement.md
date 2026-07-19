@@ -23,7 +23,7 @@ Builds structured data from a <a href="https://learn.microsoft.com/dotnet/api/sy
 
 | Type | Description |
 | --- | --- |
-| <code><a href="t-data.md">Data</a></code> |  |
+| <code><a href="../../data/t-data.md">Data</a></code> |  |
 
 ## Remarks
 

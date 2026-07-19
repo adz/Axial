@@ -86,7 +86,7 @@ wire-name strings. `Contract` keeps frozen wire versions and typed migrations ou
 - [Union Schemas](./union-schemas/) — tagged discriminated unions as schema fields.
 - [Redisplay And Field Errors](./redisplay-and-field-errors/) — failed parses that keep the user's input.
 - [Rules](./rules/) — contextual requirements over an already-trusted model.
-- [JSON Codec](./json-codec/) — compile the same declaration into a reflection-free JSON codec for trusted payloads.
+- [JSON Codec](./json-codec/) — compile the same declaration into a runtime-reflection-free JSON codec for trusted payloads.
 - [Input Sources](./input-sources/) — HTTP form-like, CLI, JSON-like, and configuration input.
 
 ## In Practice
@@ -118,11 +118,11 @@ Schema metadata, input parsing, checking, and rules live in this one package; `R
 it as the `Axial.ErrorHandling` dependency — declaring a schema, parsing structured data, and inspecting metadata never
 require a second install.
 
-`Axial.Codec` is separate and optional: add it only if you want a compiled, reflection-free JSON codec generated from
+`Axial.Schema.Codec` is separate and optional: add it only if you want a compiled, runtime-reflection-free JSON codec generated from
 your schema (`Json.compile`). Everything else — parsing, validation, rules, redisplay, JSON Schema generation — works
 without it.
 
-Install the optional codec with `dotnet add package Axial.Codec`.
+Install the optional codec with `dotnet add package Axial.Schema.Codec`.
 
 See [JSON Codec](./json-codec/) for what that package buys you.
 
