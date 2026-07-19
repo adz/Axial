@@ -70,7 +70,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Axial.Schema\Axial.Schema.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Schema.JsonSchema\Axial.Schema.JsonSchema.fsproj" />
-    <ProjectReference Include="..\..\src\Axial.Codec\Axial.Codec.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Schema.Codec\Axial.Schema.Codec.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Data\Axial.Data.fsproj" />
   </ItemGroup>
 

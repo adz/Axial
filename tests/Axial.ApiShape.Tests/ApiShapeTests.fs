@@ -424,16 +424,18 @@ module ApiShapeTests =
 
     [<Fact>]
     let ``codec compiles json codecs from schemas without extra package coupling`` () =
-        moduleTypeFromAssembly "Axial.Codec" "Axial.Codec.Json"
+        moduleTypeFromAssembly "Axial.Schema.Codec" "Axial.Schema.Codec.Json"
         |> publicStaticMemberNames
         |> assertContainsAll
             [ "compile"; "serialize"; "serializeBytes"; "deserialize"; "deserializeBytes"; "tryDeserialize" ]
 
-        moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.JsonSchema"
+        // JSON Schema generation lives in its own package; the namespace stays Axial.Schema so
+        // callers only add a package reference, not a new open.
+        moduleTypeFromAssembly "Axial.Schema.JsonSchema" "Axial.Schema.JsonSchema"
         |> publicStaticMemberNames
         |> assertContainsAll [ "generate"; "generateValue" ]
 
-        referencedAssemblyNames (Assembly.Load "Axial.Codec")
+        referencedAssemblyNames (Assembly.Load "Axial.Schema.Codec")
         |> assertContainsNone [ "Axial.Flow" ]
 
     [<Fact>]

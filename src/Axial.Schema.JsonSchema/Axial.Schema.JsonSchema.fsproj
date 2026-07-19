@@ -4,21 +4,21 @@
     <TargetFrameworks>netstandard2.1;net8.0</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IsAotCompatible Condition="'$(TargetFramework)' == 'net8.0'">true</IsAotCompatible>
-    <PackageId>Axial.Schema</PackageId>
-    <AssemblyName>Axial.Schema</AssemblyName>
+    <PackageId>Axial.Schema.JsonSchema</PackageId>
+    <AssemblyName>Axial.Schema.JsonSchema</AssemblyName>
     <RootNamespace>Axial.Schema</RootNamespace>
     <Authors>Adam Davies</Authors>
-    <Description>Portable model schema definitions for Axial input, validation, codec, documentation, and UI interpreters.</Description>
+    <Description>JSON Schema document generation over Axial.Schema declarations: one schema drives parsing, validation, and the published contract.</Description>
     <PackageProjectUrl>https://github.com/adz/Axial</PackageProjectUrl>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
-    <PackageTags>fsharp;schema;validation;input;metadata</PackageTags>
+    <PackageTags>fsharp;schema;jsonschema;openapi;contracts</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <FsDocsCollectionName>Axial</FsDocsCollectionName>
     <FsDocsLogoSource>content/img/axial-inline-light.svg</FsDocsLogoSource>
-    <FsDocsLogoAlt>Axial.Schema</FsDocsLogoAlt>
+    <FsDocsLogoAlt>Axial.Schema.JsonSchema</FsDocsLogoAlt>
     <FsDocsLogoLink>https://github.com/adz/Axial</FsDocsLogoLink>
     <FsDocsLicenseLink>https://github.com/adz/Axial/blob/main/LICENSE</FsDocsLicenseLink>
     <FsDocsReleaseNotesLink>https://github.com/adz/Axial/blob/main/RELEASE_NOTES.md</FsDocsReleaseNotesLink>
@@ -28,31 +28,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Fable.Core" Version="4.3.0" />
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+    <Compile Include="JsonSchema.fs" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Axial.Data\Axial.Data.fsproj" />
-    <ProjectReference Include="..\Axial.ErrorHandling\Axial.ErrorHandling.fsproj" />
+    <ProjectReference Include="..\Axial.Schema\Axial.Schema.fsproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="Platform.fs" />
-    <Compile Include="Derive.fs" />
-    <Compile Include="SchemaError.fs" />
-    <Compile Include="Schema.fs" />
-    <Compile Include="Shape.fs" />
-    <Compile Include="SchemaValidation.fs" />
-    <Compile Include="RetainedParseResult.fs" />
-    <Compile Include="FieldRef.fs" />
-    <Compile Include="ContextRules.fs" />
-    <Compile Include="Model.fs" />
-    <Compile Include="SchemaApi.fs" />
-    <Compile Include="Contract.fs" />
-    <Compile Include="RefinedSchemas.fs" />
-    <Compile Include="Inspection.fs" />
+    <None Include="README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>

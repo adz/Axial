@@ -26,6 +26,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Axial.Data\Axial.Data.fsproj" />
     <ProjectReference Include="..\Axial.Schema\Axial.Schema.fsproj" />
+    <ProjectReference Include="..\Axial.Schema.JsonSchema\Axial.Schema.JsonSchema.fsproj" />
   </ItemGroup>
 
   <ItemGroup>
