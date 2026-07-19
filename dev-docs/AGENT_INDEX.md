@@ -11,6 +11,9 @@ Current product direction is in `dev-docs/PLAN.md`. Durable high-level decisions
 `dev-docs/decisions/README.md`. Speculative sketches are in `dev-docs/current-ideas/` and should be opened only when the
 task is about promoting, rejecting, or implementing that sketch.
 
+Working on `src/Axial.Schema`? Read `dev-docs/schema/internals.md` first (implementation map), and
+`dev-docs/schema/constructor-last.md` for the current authoring-surface direction.
+
 ## Package Graph
 
 - `Axial.Flow`: independent workflow package (`src/Axial.Flow/`). Must not depend on `Axial.ErrorHandling` or
