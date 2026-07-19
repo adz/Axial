@@ -365,6 +365,21 @@ module RawInput =
 
         convert node
 
+    /// <summary>Builds object-shaped raw input from a list of named raw input fields.</summary>
+    /// <remarks>When a field name occurs more than once, the last value wins.</remarks>
+    /// <example>
+    /// <code>
+    /// [ "email", RawInput.Scalar "ada@example.com"
+    ///   "age", RawInput.Scalar "42" ]
+    /// |> RawInput.objectOfList
+    /// </code>
+    /// </example>
+    let objectOfList (fields: (string * RawInput) list) : RawInput =
+        ensureValues (nameof fields) fields
+        |> List.map (fun (name, value) -> ensureName name, value)
+        |> Map.ofList
+        |> RawInput.Object
+
     /// <summary>Builds object-shaped raw input from a map of scalar field values.</summary>
     let ofMap (values: Map<string, string>) : RawInput =
         if isNull (box values) then

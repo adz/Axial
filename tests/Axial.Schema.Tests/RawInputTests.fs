@@ -11,6 +11,20 @@ open Xunit
 
 module RawInputTests =
     [<Fact>]
+    let ``raw input builds object fields from a list with the last duplicate winning`` () =
+        let input =
+            [ "name", RawInput.Scalar "Grace"
+              "age", RawInput.Scalar "42"
+              "name", RawInput.Scalar "Ada" ]
+            |> RawInput.objectOfList
+
+        match input with
+        | RawInput.Object fields ->
+            test <@ fields["name"] = RawInput.Scalar "Ada" @>
+            test <@ fields["age"] = RawInput.Scalar "42" @>
+        | _ -> failwith "Expected object input."
+
+    [<Fact>]
     let ``raw input represents missing scalar many and object shapes`` () =
         let input =
             RawInput.Object(
