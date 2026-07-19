@@ -73,6 +73,30 @@ module WorkflowStateTests =
         test <@ Flow.runSync () workflow = Exit.Success 99 @>
 
     [<Fact>]
+    let ``STM: writes made inside orElse branches are committed`` () =
+        let workflow =
+            flow {
+                let! counter = TRef.make 0 |> STM.atomically
+
+                let increment =
+                    stm {
+                        let! current = TRef.get counter
+                        do! TRef.set (current + 1) counter
+                        return current + 1
+                    }
+
+                // Both shapes must commit: a successful left branch and a right branch
+                // reached through a retrying left branch.
+                let! fromLeft = STM.orElse increment (stm { return -1 }) |> STM.atomically
+                let! fromRight = STM.orElse (stm { return! STM.retry }) increment |> STM.atomically
+
+                let! final = TRef.get counter |> STM.atomically
+                return fromLeft, fromRight, final
+            }
+
+        test <@ Flow.runSync () workflow = Exit.Success(1, 2, 2) @>
+
+    [<Fact>]
     let ``STM: retry waits until a committed update changes state`` () =
         let gate =
             TRef.make 0

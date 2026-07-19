@@ -8,6 +8,10 @@ open Xunit
 /// Proves that a JSON object can be described as a dictionary with <c>Schema.map</c>, keyed by text, and that the
 /// resulting value schema is inspectable the same way other collection value schemas are.
 /// </summary>
+type MapVisibility =
+    | Private
+    | Team
+
 module SchemaMapValueTests =
     [<Fact>]
     let ``map builds a dictionary value schema from a primitive item schema`` () =
@@ -67,6 +71,13 @@ module SchemaMapValueTests =
         let document = JsonSchema.generateValue (Schema.``int`` |> Schema.withDefault 30)
 
         test <@ document.Contains "\"default\":30" @>
+
+    [<Fact>]
+    let ``JsonSchema lowers an enum default to its wire tag`` () =
+        let cases = [ EnumCase.create "private" MapVisibility.Private; EnumCase.create "team" MapVisibility.Team ]
+        let document = JsonSchema.generateValue (Schema.enum cases |> Schema.withDefault MapVisibility.Private)
+
+        test <@ document.Contains "\"default\":\"private\"" @>
 
     [<Fact>]
     let ``Schema.defaultValue returns the nearest declared default`` () =

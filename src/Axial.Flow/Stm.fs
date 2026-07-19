@@ -208,12 +208,32 @@ module STM =
     /// <returns>A combined STM transaction that implements choice.</returns>
     let orElse (left: STM<'T>) (right: STM<'T>) : STM<'T> =
         STM(fun context ->
-            let (STM leftOp) = left
-            match leftOp(snapshot context) with
-            | Done value -> Done value
-            | Retry ->
-                let (STM rightOp) = right
-                rightOp(snapshot context))
+            // Each branch runs against a snapshot so a retrying branch leaves no writes behind;
+            // a successful branch's journal and read set must then flow back into the caller's
+            // context, or the commit step would never see the branch's writes.
+            let adopt (branch: TContext) =
+                context.Journal.Clear()
+
+                for KeyValue(key, value) in branch.Journal do
+                    context.Journal[key] <- value
+
+                context.Reads.UnionWith branch.Reads
+
+            let attempt (STM op) =
+                let branch = snapshot context
+
+                match op branch with
+                | Done value ->
+                    adopt branch
+                    Some(Done value)
+                | Retry -> None
+
+            match attempt left with
+            | Some outcome -> outcome
+            | None ->
+                match attempt right with
+                | Some outcome -> outcome
+                | None -> Retry)
 
     /// <summary>
     /// Executes an STM transaction atomically within a flow while preserving retry/orElse coordination.

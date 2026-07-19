@@ -140,7 +140,20 @@ module JsonSchema =
 
         let defaultKeyword =
             match boundaryDefault description with
-            | Some value -> [ sprintf "\"default\":%s" (literal value) ]
+            | Some value ->
+                let rendered =
+                    match underlyingShape description with
+                    | SchemaShape.Enum enum ->
+                        // The stored default is the typed enum value; the document needs its wire tag.
+                        let name = Convert.ToString(value, CultureInfo.InvariantCulture)
+
+                        enum.Cases
+                        |> List.tryFind (fun case -> String.Equals(case.Tag, name, StringComparison.OrdinalIgnoreCase))
+                        |> Option.map (fun case -> literal (box case.Tag))
+                        |> Option.defaultValue (literal (box name))
+                    | _ -> literal value
+
+                [ sprintf "\"default\":%s" rendered ]
             | None -> []
 
         let shapeKeywords =

@@ -36,7 +36,11 @@ module SchemaGen =
         | None ->
             let oneOf = metadata |> List.tryPick (fun (_, item) -> match item with ConstraintMetadata.OneOf values -> Some values | _ -> None)
             let email = metadata |> List.exists (fun (_, item) -> item = ConstraintMetadata.Email)
-            let minimum = metadata |> List.choose (fun (_, item) -> match item with ConstraintMetadata.MinLength n | ConstraintMetadata.LengthBetween(n, _) -> Some n | _ -> None) |> maximumOr 0
+            let required = metadata |> List.exists (fun (_, item) -> item = ConstraintMetadata.Required)
+            let minimum =
+                metadata
+                |> List.choose (fun (_, item) -> match item with ConstraintMetadata.MinLength n | ConstraintMetadata.LengthBetween(n, _) -> Some n | _ -> None)
+                |> maximumOr (if required then 1 else 0)
             let maximum = metadata |> List.choose (fun (_, item) -> match item with ConstraintMetadata.MaxLength n | ConstraintMetadata.LengthBetween(_, n) -> Some n | _ -> None) |> minimumOr (max minimum 24)
             match oneOf with
             | Some values when not (List.isEmpty values) -> Ok(choose values)
