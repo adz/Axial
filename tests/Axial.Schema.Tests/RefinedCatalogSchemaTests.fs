@@ -8,6 +8,7 @@ open Axial.Schema
 open Axial.Validation
 open Swensen.Unquote
 open Xunit
+open Axial.Schema.Syntax
 
 module RefinedCatalogSchemaTests =
     type private Product =
@@ -30,16 +31,16 @@ module RefinedCatalogSchemaTests =
         }
 
     let private productSchema () =
-        Schema.recordFor<Product, _> (fun name slug quantity ->
+        Schema.define<Product>
+        |> fieldWith RefinedSchemas.nonBlankString "name" _.Name
+        |> fieldWith RefinedSchemas.slug "slug" _.Slug
+        |> fieldWith RefinedSchemas.positiveInt "quantity" _.Quantity
+        |> construct (fun name slug quantity ->
             {
                 Name = name
                 Slug = slug
                 Quantity = quantity
             })
-        |> Schema.field "name" _.Name RefinedSchemas.nonBlankString
-        |> Schema.field "slug" _.Slug RefinedSchemas.slug
-        |> Schema.field "quantity" _.Quantity RefinedSchemas.positiveInt
-        |> Schema.build
 
     [<Fact>]
     let ``refined catalog schemas parse trusted scalar values`` () =
@@ -93,10 +94,10 @@ module RefinedCatalogSchemaTests =
     [<Fact>]
     let ``remaining scalar catalog schemas report the same failures as standalone refinement`` () =
         let schema =
-            Schema.recordFor<Scalars, _> (fun command offset -> { Command = command; Offset = offset })
-            |> Schema.field "command" _.Command RefinedSchemas.trimmedString
-            |> Schema.field "offset" _.Offset RefinedSchemas.nonZeroInt
-            |> Schema.build
+            Schema.define<Scalars>
+            |> fieldWith RefinedSchemas.trimmedString "command" _.Command
+            |> fieldWith RefinedSchemas.nonZeroInt "offset" _.Offset
+            |> construct (fun command offset -> { Command = command; Offset = offset })
 
         let raw =
             RawInput.Object(Map.ofList [ "command", RawInput.Scalar " deploy "; "offset", RawInput.Scalar "0" ])
@@ -118,10 +119,10 @@ module RefinedCatalogSchemaTests =
     [<Fact>]
     let ``refined collection catalog schemas parse trusted values`` () =
         let schema =
-            Schema.recordFor<Tagged, _> (fun tags codes -> { Tags = tags; Codes = codes })
-            |> Schema.field "tags" _.Tags (RefinedSchemas.nonEmptyList RefinedSchemas.slug)
-            |> Schema.field "codes" _.Codes (RefinedSchemas.distinctList Schema.text)
-            |> Schema.build
+            Schema.define<Tagged>
+            |> fieldWith (RefinedSchemas.nonEmptyList RefinedSchemas.slug) "tags" _.Tags
+            |> fieldWith (RefinedSchemas.distinctList Schema.text) "codes" _.Codes
+            |> construct (fun tags codes -> { Tags = tags; Codes = codes })
 
         let raw =
             RawInput.Object(
@@ -140,10 +141,10 @@ module RefinedCatalogSchemaTests =
     [<Fact>]
     let ``refined collection catalog schemas report collection and item failures`` () =
         let schema =
-            Schema.recordFor<Tagged, _> (fun tags codes -> { Tags = tags; Codes = codes })
-            |> Schema.field "tags" _.Tags (RefinedSchemas.nonEmptyList RefinedSchemas.slug)
-            |> Schema.field "codes" _.Codes (RefinedSchemas.distinctList Schema.text)
-            |> Schema.build
+            Schema.define<Tagged>
+            |> fieldWith (RefinedSchemas.nonEmptyList RefinedSchemas.slug) "tags" _.Tags
+            |> fieldWith (RefinedSchemas.distinctList Schema.text) "codes" _.Codes
+            |> construct (fun tags codes -> { Tags = tags; Codes = codes })
 
         let raw =
             RawInput.Object(

@@ -3,10 +3,11 @@ namespace Axial.Tests
 open Axial.Schema
 open Swensen.Unquote
 open Xunit
+open Axial.Schema.Syntax
 
 /// <summary>
 /// Proves that field-level and value-schema-level constraint metadata can be read straight from a
-/// <c>Schema&lt;'model&gt;</c> definition produced by the progressive builder -- without constructing a
+/// <c>Schema&lt;'model&gt;</c> definition produced by a constructor-last shape -- without constructing a
 /// trusted model instance and without invoking any executable check or validation interpreter. Schema constraints are
 /// portable data for interpreters such as diagnostics, JSON Schema, UI, and documentation generators, so they must
 /// stay inspectable on their own.
@@ -25,7 +26,7 @@ module ConstraintInspectionTests =
         | PendingDefinition -> failwith "Expected public schema API to create a model definition."
 
     [<Fact>]
-    let ``builder schema constraints are inspectable straight from the schema definition`` () =
+    let ``shape schema constraints are inspectable straight from the schema definition`` () =
         let emailValue =
             Schema.text
             |> Schema.constrainAll [ Constraint.required; Constraint.email; Constraint.maxLength 254 ]
@@ -33,10 +34,10 @@ module ConstraintInspectionTests =
         let ageValue = Schema.int |> Schema.constrain (Constraint.between 13 120)
 
         let schema =
-            Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
-            |> Schema.field "email" _.Email (emailValue |> Schema.constrainAll [ Constraint.required ])
-            |> Schema.field "age" _.Age ageValue
-            |> Schema.build
+            Schema.define<Signup>
+            |> fieldWith (emailValue |> Schema.constrainAll [ Constraint.required ]) "email" _.Email
+            |> fieldWith ageValue "age" _.Age
+            |> construct (fun email age -> { Email = email; Age = age })
 
         // Everything below reads metadata off `schema` alone: no `Signup` value is constructed, and no `Check` or
         // schema-interpreter function is called.
@@ -74,26 +75,17 @@ module ConstraintInspectionTests =
         test <@ Constraint.tryFindArgument "maximum" ageRange = Some(box 120) @>
 
     [<Fact>]
-    let ``builder schema constraints preserve per field ordering and metadata independent of a model instance`` () =
+    let ``shape schema constraints preserve per field ordering and metadata independent of a model instance`` () =
         let schema =
-            Schema.recordFor<Address, _> (fun street city postalCode ->
+            Schema.define<Address>
+            |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "street" _.Street
+            |> fieldWith (Schema.text |> Schema.constrain (Constraint.lengthBetween 1 100)) "city" _.City
+            |> fieldWith (Schema.text
+                 |> Schema.constrainAll [ Constraint.required; Constraint.pattern "^[0-9]{5}$" ]) "postalCode" _.PostalCode
+            |> construct (fun street city postalCode ->
                 { Street = street
                   City = city
                   PostalCode = postalCode })
-            |> Schema.field
-                "street"
-                _.Street
-                (Schema.text |> Schema.constrain Constraint.required)
-            |> Schema.field
-                "city"
-                _.City
-                (Schema.text |> Schema.constrain (Constraint.lengthBetween 1 100))
-            |> Schema.field
-                "postalCode"
-                _.PostalCode
-                (Schema.text
-                 |> Schema.constrainAll [ Constraint.required; Constraint.pattern "^[0-9]{5}$" ])
-            |> Schema.build
 
         let model = modelDefinition schema
 

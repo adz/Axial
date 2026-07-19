@@ -61,9 +61,9 @@ module internal ShapeInternals =
 
     let append
         (definition: FieldDefinition<'model, 'field>)
-        (builder: SchemaBuilder<'model, 'constructor, 'field -> 'next, 'chain>)
-        : SchemaBuilder<'model, 'constructor, 'next, FieldsAppend<'model, 'constructor, 'field, 'next, 'chain>> =
-        SchemaBuilder(builder.Constructor, FieldsAppend(builder.Chain, definition))
+        (closure: ShapeClosure<'model, 'constructor, 'field -> 'next, 'chain>)
+        : ShapeClosure<'model, 'constructor, 'next, ShapeFieldsAppend<'model, 'constructor, 'field, 'next, 'chain>> =
+        ShapeClosure(closure.Constructor, ShapeFieldsAppend(closure.Fields, definition))
 
     let arityMismatch (expected: int) (fields: obj list) : 'result =
         invalidOp $"Unreachable: the shape's phantom type promises {expected} field(s) but {List.length fields} were recorded."
@@ -76,28 +76,25 @@ module internal ShapeInternals =
 /// </summary>
 [<Sealed; AbstractClass>]
 type SchemaDefaults =
+    /// <summary>Builds a list schema from an explicitly resolved item schema.</summary>
+    static member ListWith(item: Schema<'item>) : Schema<'item list> = SchemaCore.listWith item
+    /// <summary>Builds a string-keyed map schema from an explicitly resolved value schema.</summary>
+    static member MapWith(item: Schema<'item>) : Schema<Map<string, 'item>> = SchemaCore.mapWith item
     static member DefaultSchema(_: string) : Schema<string> = SchemaCore.text
     static member DefaultSchema(_: string option) : Schema<string option> = SchemaCore.option SchemaCore.text
-    static member DefaultSchema(_: string list) : Schema<string list> = SchemaCore.list SchemaCore.text
     static member DefaultSchema(_: int) : Schema<int> = SchemaCore.``int``
     static member DefaultSchema(_: int option) : Schema<int option> = SchemaCore.option SchemaCore.``int``
-    static member DefaultSchema(_: int list) : Schema<int list> = SchemaCore.list SchemaCore.``int``
     static member DefaultSchema(_: decimal) : Schema<decimal> = SchemaCore.``decimal``
     static member DefaultSchema(_: decimal option) : Schema<decimal option> = SchemaCore.option SchemaCore.``decimal``
-    static member DefaultSchema(_: decimal list) : Schema<decimal list> = SchemaCore.list SchemaCore.``decimal``
     static member DefaultSchema(_: bool) : Schema<bool> = SchemaCore.``bool``
     static member DefaultSchema(_: bool option) : Schema<bool option> = SchemaCore.option SchemaCore.``bool``
-    static member DefaultSchema(_: bool list) : Schema<bool list> = SchemaCore.list SchemaCore.``bool``
     static member DefaultSchema(_: System.DateTimeOffset) : Schema<System.DateTimeOffset> = SchemaCore.dateTime
     static member DefaultSchema(_: System.DateTimeOffset option) : Schema<System.DateTimeOffset option> = SchemaCore.option SchemaCore.dateTime
-    static member DefaultSchema(_: System.DateTimeOffset list) : Schema<System.DateTimeOffset list> = SchemaCore.list SchemaCore.dateTime
     static member DefaultSchema(_: System.Guid) : Schema<System.Guid> = SchemaCore.guid
     static member DefaultSchema(_: System.Guid option) : Schema<System.Guid option> = SchemaCore.option SchemaCore.guid
-    static member DefaultSchema(_: System.Guid list) : Schema<System.Guid list> = SchemaCore.list SchemaCore.guid
 #if NET8_0_OR_GREATER
     static member DefaultSchema(_: System.DateOnly) : Schema<System.DateOnly> = SchemaCore.date
     static member DefaultSchema(_: System.DateOnly option) : Schema<System.DateOnly option> = SchemaCore.option SchemaCore.date
-    static member DefaultSchema(_: System.DateOnly list) : Schema<System.DateOnly list> = SchemaCore.list SchemaCore.date
 #endif
 
     /// <summary>Resolves the default schema for a value type through the overload set above, or through a
@@ -107,6 +104,12 @@ type SchemaDefaults =
             ((^w or ^v): (static member DefaultSchema: ^v -> Schema< ^v>) marker)
 
         call (Unchecked.defaultof<SchemaDefaults>, Unchecked.defaultof< ^value>)
+
+    static member inline DefaultSchema(_: ^item list) : Schema< ^item list> =
+        SchemaDefaults.ListWith(SchemaDefaults.Resolve< ^item>())
+
+    static member inline DefaultSchema(_: Map<string, ^item>) : Schema<Map<string, ^item>> =
+        SchemaDefaults.MapWith(SchemaDefaults.Resolve< ^item>())
 
 /// <summary>
 /// Arity implementations behind <c>construct</c> and <c>constructResult</c>. Deliberately boring: one
@@ -119,133 +122,133 @@ type Constructors =
     static member Construct(f: 'a0 -> 'model, shape: ObjectShape<'model, (NoFields * 'a0)>) : Schema<'model> =
         match List.rev shape.RevFields with
         | [ f0 ] ->
-            SchemaBuilder(f, FieldsEnd<'model, 'a0 -> 'model>())
+            ShapeClosure(f, ShapeFieldsEmpty<'model, 'a0 -> 'model>())
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a0>> f0)
-            |> SchemaCore.build
+            |> SchemaCore.closeTotal
         | fields -> ShapeInternals.arityMismatch 1 fields
 
     static member ConstructResult(f: 'a0 -> Result<'model, string>, shape: ObjectShape<'model, (NoFields * 'a0)>) : Schema<'model> =
         match List.rev shape.RevFields with
         | [ f0 ] ->
-            SchemaBuilder(f, FieldsEnd<'model, 'a0 -> Result<'model, string>>())
+            ShapeClosure(f, ShapeFieldsEmpty<'model, 'a0 -> Result<'model, string>>())
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a0>> f0)
-            |> SchemaCore.buildResult
+            |> SchemaCore.closeResult
         | fields -> ShapeInternals.arityMismatch 1 fields
 
     static member Construct(f: 'a0 -> 'a1 -> 'model, shape: ObjectShape<'model, ((NoFields * 'a0) * 'a1)>) : Schema<'model> =
         match List.rev shape.RevFields with
         | [ f0; f1 ] ->
-            SchemaBuilder(f, FieldsEnd<'model, 'a0 -> 'a1 -> 'model>())
+            ShapeClosure(f, ShapeFieldsEmpty<'model, 'a0 -> 'a1 -> 'model>())
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a0>> f0)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a1>> f1)
-            |> SchemaCore.build
+            |> SchemaCore.closeTotal
         | fields -> ShapeInternals.arityMismatch 2 fields
 
     static member ConstructResult(f: 'a0 -> 'a1 -> Result<'model, string>, shape: ObjectShape<'model, ((NoFields * 'a0) * 'a1)>) : Schema<'model> =
         match List.rev shape.RevFields with
         | [ f0; f1 ] ->
-            SchemaBuilder(f, FieldsEnd<'model, 'a0 -> 'a1 -> Result<'model, string>>())
+            ShapeClosure(f, ShapeFieldsEmpty<'model, 'a0 -> 'a1 -> Result<'model, string>>())
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a0>> f0)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a1>> f1)
-            |> SchemaCore.buildResult
+            |> SchemaCore.closeResult
         | fields -> ShapeInternals.arityMismatch 2 fields
 
     static member Construct(f: 'a0 -> 'a1 -> 'a2 -> 'model, shape: ObjectShape<'model, (((NoFields * 'a0) * 'a1) * 'a2)>) : Schema<'model> =
         match List.rev shape.RevFields with
         | [ f0; f1; f2 ] ->
-            SchemaBuilder(f, FieldsEnd<'model, 'a0 -> 'a1 -> 'a2 -> 'model>())
+            ShapeClosure(f, ShapeFieldsEmpty<'model, 'a0 -> 'a1 -> 'a2 -> 'model>())
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a0>> f0)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a1>> f1)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a2>> f2)
-            |> SchemaCore.build
+            |> SchemaCore.closeTotal
         | fields -> ShapeInternals.arityMismatch 3 fields
 
     static member ConstructResult(f: 'a0 -> 'a1 -> 'a2 -> Result<'model, string>, shape: ObjectShape<'model, (((NoFields * 'a0) * 'a1) * 'a2)>) : Schema<'model> =
         match List.rev shape.RevFields with
         | [ f0; f1; f2 ] ->
-            SchemaBuilder(f, FieldsEnd<'model, 'a0 -> 'a1 -> 'a2 -> Result<'model, string>>())
+            ShapeClosure(f, ShapeFieldsEmpty<'model, 'a0 -> 'a1 -> 'a2 -> Result<'model, string>>())
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a0>> f0)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a1>> f1)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a2>> f2)
-            |> SchemaCore.buildResult
+            |> SchemaCore.closeResult
         | fields -> ShapeInternals.arityMismatch 3 fields
 
     static member Construct(f: 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'model, shape: ObjectShape<'model, ((((NoFields * 'a0) * 'a1) * 'a2) * 'a3)>) : Schema<'model> =
         match List.rev shape.RevFields with
         | [ f0; f1; f2; f3 ] ->
-            SchemaBuilder(f, FieldsEnd<'model, 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'model>())
+            ShapeClosure(f, ShapeFieldsEmpty<'model, 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'model>())
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a0>> f0)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a1>> f1)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a2>> f2)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a3>> f3)
-            |> SchemaCore.build
+            |> SchemaCore.closeTotal
         | fields -> ShapeInternals.arityMismatch 4 fields
 
     static member ConstructResult(f: 'a0 -> 'a1 -> 'a2 -> 'a3 -> Result<'model, string>, shape: ObjectShape<'model, ((((NoFields * 'a0) * 'a1) * 'a2) * 'a3)>) : Schema<'model> =
         match List.rev shape.RevFields with
         | [ f0; f1; f2; f3 ] ->
-            SchemaBuilder(f, FieldsEnd<'model, 'a0 -> 'a1 -> 'a2 -> 'a3 -> Result<'model, string>>())
+            ShapeClosure(f, ShapeFieldsEmpty<'model, 'a0 -> 'a1 -> 'a2 -> 'a3 -> Result<'model, string>>())
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a0>> f0)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a1>> f1)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a2>> f2)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a3>> f3)
-            |> SchemaCore.buildResult
+            |> SchemaCore.closeResult
         | fields -> ShapeInternals.arityMismatch 4 fields
 
     static member Construct(f: 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'model, shape: ObjectShape<'model, (((((NoFields * 'a0) * 'a1) * 'a2) * 'a3) * 'a4)>) : Schema<'model> =
         match List.rev shape.RevFields with
         | [ f0; f1; f2; f3; f4 ] ->
-            SchemaBuilder(f, FieldsEnd<'model, 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'model>())
+            ShapeClosure(f, ShapeFieldsEmpty<'model, 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'model>())
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a0>> f0)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a1>> f1)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a2>> f2)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a3>> f3)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a4>> f4)
-            |> SchemaCore.build
+            |> SchemaCore.closeTotal
         | fields -> ShapeInternals.arityMismatch 5 fields
 
     static member ConstructResult(f: 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> Result<'model, string>, shape: ObjectShape<'model, (((((NoFields * 'a0) * 'a1) * 'a2) * 'a3) * 'a4)>) : Schema<'model> =
         match List.rev shape.RevFields with
         | [ f0; f1; f2; f3; f4 ] ->
-            SchemaBuilder(f, FieldsEnd<'model, 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> Result<'model, string>>())
+            ShapeClosure(f, ShapeFieldsEmpty<'model, 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> Result<'model, string>>())
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a0>> f0)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a1>> f1)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a2>> f2)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a3>> f3)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a4>> f4)
-            |> SchemaCore.buildResult
+            |> SchemaCore.closeResult
         | fields -> ShapeInternals.arityMismatch 5 fields
 
     static member Construct(f: 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'model, shape: ObjectShape<'model, ((((((NoFields * 'a0) * 'a1) * 'a2) * 'a3) * 'a4) * 'a5)>) : Schema<'model> =
         match List.rev shape.RevFields with
         | [ f0; f1; f2; f3; f4; f5 ] ->
-            SchemaBuilder(f, FieldsEnd<'model, 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'model>())
+            ShapeClosure(f, ShapeFieldsEmpty<'model, 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'model>())
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a0>> f0)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a1>> f1)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a2>> f2)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a3>> f3)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a4>> f4)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a5>> f5)
-            |> SchemaCore.build
+            |> SchemaCore.closeTotal
         | fields -> ShapeInternals.arityMismatch 6 fields
 
     static member ConstructResult(f: 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> Result<'model, string>, shape: ObjectShape<'model, ((((((NoFields * 'a0) * 'a1) * 'a2) * 'a3) * 'a4) * 'a5)>) : Schema<'model> =
         match List.rev shape.RevFields with
         | [ f0; f1; f2; f3; f4; f5 ] ->
-            SchemaBuilder(f, FieldsEnd<'model, 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> Result<'model, string>>())
+            ShapeClosure(f, ShapeFieldsEmpty<'model, 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> Result<'model, string>>())
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a0>> f0)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a1>> f1)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a2>> f2)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a3>> f3)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a4>> f4)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a5>> f5)
-            |> SchemaCore.buildResult
+            |> SchemaCore.closeResult
         | fields -> ShapeInternals.arityMismatch 6 fields
 
     static member Construct(f: 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'model, shape: ObjectShape<'model, (((((((NoFields * 'a0) * 'a1) * 'a2) * 'a3) * 'a4) * 'a5) * 'a6)>) : Schema<'model> =
         match List.rev shape.RevFields with
         | [ f0; f1; f2; f3; f4; f5; f6 ] ->
-            SchemaBuilder(f, FieldsEnd<'model, 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'model>())
+            ShapeClosure(f, ShapeFieldsEmpty<'model, 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'model>())
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a0>> f0)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a1>> f1)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a2>> f2)
@@ -253,13 +256,13 @@ type Constructors =
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a4>> f4)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a5>> f5)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a6>> f6)
-            |> SchemaCore.build
+            |> SchemaCore.closeTotal
         | fields -> ShapeInternals.arityMismatch 7 fields
 
     static member ConstructResult(f: 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> Result<'model, string>, shape: ObjectShape<'model, (((((((NoFields * 'a0) * 'a1) * 'a2) * 'a3) * 'a4) * 'a5) * 'a6)>) : Schema<'model> =
         match List.rev shape.RevFields with
         | [ f0; f1; f2; f3; f4; f5; f6 ] ->
-            SchemaBuilder(f, FieldsEnd<'model, 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> Result<'model, string>>())
+            ShapeClosure(f, ShapeFieldsEmpty<'model, 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> Result<'model, string>>())
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a0>> f0)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a1>> f1)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a2>> f2)
@@ -267,13 +270,13 @@ type Constructors =
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a4>> f4)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a5>> f5)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a6>> f6)
-            |> SchemaCore.buildResult
+            |> SchemaCore.closeResult
         | fields -> ShapeInternals.arityMismatch 7 fields
 
     static member Construct(f: 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'a7 -> 'model, shape: ObjectShape<'model, ((((((((NoFields * 'a0) * 'a1) * 'a2) * 'a3) * 'a4) * 'a5) * 'a6) * 'a7)>) : Schema<'model> =
         match List.rev shape.RevFields with
         | [ f0; f1; f2; f3; f4; f5; f6; f7 ] ->
-            SchemaBuilder(f, FieldsEnd<'model, 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'a7 -> 'model>())
+            ShapeClosure(f, ShapeFieldsEmpty<'model, 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'a7 -> 'model>())
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a0>> f0)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a1>> f1)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a2>> f2)
@@ -282,13 +285,13 @@ type Constructors =
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a5>> f5)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a6>> f6)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a7>> f7)
-            |> SchemaCore.build
+            |> SchemaCore.closeTotal
         | fields -> ShapeInternals.arityMismatch 8 fields
 
     static member ConstructResult(f: 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'a7 -> Result<'model, string>, shape: ObjectShape<'model, ((((((((NoFields * 'a0) * 'a1) * 'a2) * 'a3) * 'a4) * 'a5) * 'a6) * 'a7)>) : Schema<'model> =
         match List.rev shape.RevFields with
         | [ f0; f1; f2; f3; f4; f5; f6; f7 ] ->
-            SchemaBuilder(f, FieldsEnd<'model, 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'a7 -> Result<'model, string>>())
+            ShapeClosure(f, ShapeFieldsEmpty<'model, 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'a7 -> Result<'model, string>>())
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a0>> f0)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a1>> f1)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a2>> f2)
@@ -297,13 +300,13 @@ type Constructors =
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a5>> f5)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a6>> f6)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a7>> f7)
-            |> SchemaCore.buildResult
+            |> SchemaCore.closeResult
         | fields -> ShapeInternals.arityMismatch 8 fields
 
     static member Construct(f: 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'a7 -> 'a8 -> 'model, shape: ObjectShape<'model, (((((((((NoFields * 'a0) * 'a1) * 'a2) * 'a3) * 'a4) * 'a5) * 'a6) * 'a7) * 'a8)>) : Schema<'model> =
         match List.rev shape.RevFields with
         | [ f0; f1; f2; f3; f4; f5; f6; f7; f8 ] ->
-            SchemaBuilder(f, FieldsEnd<'model, 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'a7 -> 'a8 -> 'model>())
+            ShapeClosure(f, ShapeFieldsEmpty<'model, 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'a7 -> 'a8 -> 'model>())
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a0>> f0)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a1>> f1)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a2>> f2)
@@ -313,13 +316,13 @@ type Constructors =
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a6>> f6)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a7>> f7)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a8>> f8)
-            |> SchemaCore.build
+            |> SchemaCore.closeTotal
         | fields -> ShapeInternals.arityMismatch 9 fields
 
     static member ConstructResult(f: 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'a7 -> 'a8 -> Result<'model, string>, shape: ObjectShape<'model, (((((((((NoFields * 'a0) * 'a1) * 'a2) * 'a3) * 'a4) * 'a5) * 'a6) * 'a7) * 'a8)>) : Schema<'model> =
         match List.rev shape.RevFields with
         | [ f0; f1; f2; f3; f4; f5; f6; f7; f8 ] ->
-            SchemaBuilder(f, FieldsEnd<'model, 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'a7 -> 'a8 -> Result<'model, string>>())
+            ShapeClosure(f, ShapeFieldsEmpty<'model, 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'a7 -> 'a8 -> Result<'model, string>>())
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a0>> f0)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a1>> f1)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a2>> f2)
@@ -329,13 +332,13 @@ type Constructors =
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a6>> f6)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a7>> f7)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a8>> f8)
-            |> SchemaCore.buildResult
+            |> SchemaCore.closeResult
         | fields -> ShapeInternals.arityMismatch 9 fields
 
     static member Construct(f: 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'a7 -> 'a8 -> 'a9 -> 'model, shape: ObjectShape<'model, ((((((((((NoFields * 'a0) * 'a1) * 'a2) * 'a3) * 'a4) * 'a5) * 'a6) * 'a7) * 'a8) * 'a9)>) : Schema<'model> =
         match List.rev shape.RevFields with
         | [ f0; f1; f2; f3; f4; f5; f6; f7; f8; f9 ] ->
-            SchemaBuilder(f, FieldsEnd<'model, 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'a7 -> 'a8 -> 'a9 -> 'model>())
+            ShapeClosure(f, ShapeFieldsEmpty<'model, 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'a7 -> 'a8 -> 'a9 -> 'model>())
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a0>> f0)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a1>> f1)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a2>> f2)
@@ -346,13 +349,13 @@ type Constructors =
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a7>> f7)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a8>> f8)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a9>> f9)
-            |> SchemaCore.build
+            |> SchemaCore.closeTotal
         | fields -> ShapeInternals.arityMismatch 10 fields
 
     static member ConstructResult(f: 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'a7 -> 'a8 -> 'a9 -> Result<'model, string>, shape: ObjectShape<'model, ((((((((((NoFields * 'a0) * 'a1) * 'a2) * 'a3) * 'a4) * 'a5) * 'a6) * 'a7) * 'a8) * 'a9)>) : Schema<'model> =
         match List.rev shape.RevFields with
         | [ f0; f1; f2; f3; f4; f5; f6; f7; f8; f9 ] ->
-            SchemaBuilder(f, FieldsEnd<'model, 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'a7 -> 'a8 -> 'a9 -> Result<'model, string>>())
+            ShapeClosure(f, ShapeFieldsEmpty<'model, 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'a7 -> 'a8 -> 'a9 -> Result<'model, string>>())
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a0>> f0)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a1>> f1)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a2>> f2)
@@ -363,13 +366,13 @@ type Constructors =
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a7>> f7)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a8>> f8)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a9>> f9)
-            |> SchemaCore.buildResult
+            |> SchemaCore.closeResult
         | fields -> ShapeInternals.arityMismatch 10 fields
 
     static member Construct(f: 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'a7 -> 'a8 -> 'a9 -> 'a10 -> 'model, shape: ObjectShape<'model, (((((((((((NoFields * 'a0) * 'a1) * 'a2) * 'a3) * 'a4) * 'a5) * 'a6) * 'a7) * 'a8) * 'a9) * 'a10)>) : Schema<'model> =
         match List.rev shape.RevFields with
         | [ f0; f1; f2; f3; f4; f5; f6; f7; f8; f9; f10 ] ->
-            SchemaBuilder(f, FieldsEnd<'model, 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'a7 -> 'a8 -> 'a9 -> 'a10 -> 'model>())
+            ShapeClosure(f, ShapeFieldsEmpty<'model, 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'a7 -> 'a8 -> 'a9 -> 'a10 -> 'model>())
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a0>> f0)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a1>> f1)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a2>> f2)
@@ -381,13 +384,13 @@ type Constructors =
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a8>> f8)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a9>> f9)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a10>> f10)
-            |> SchemaCore.build
+            |> SchemaCore.closeTotal
         | fields -> ShapeInternals.arityMismatch 11 fields
 
     static member ConstructResult(f: 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'a7 -> 'a8 -> 'a9 -> 'a10 -> Result<'model, string>, shape: ObjectShape<'model, (((((((((((NoFields * 'a0) * 'a1) * 'a2) * 'a3) * 'a4) * 'a5) * 'a6) * 'a7) * 'a8) * 'a9) * 'a10)>) : Schema<'model> =
         match List.rev shape.RevFields with
         | [ f0; f1; f2; f3; f4; f5; f6; f7; f8; f9; f10 ] ->
-            SchemaBuilder(f, FieldsEnd<'model, 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'a7 -> 'a8 -> 'a9 -> 'a10 -> Result<'model, string>>())
+            ShapeClosure(f, ShapeFieldsEmpty<'model, 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'a7 -> 'a8 -> 'a9 -> 'a10 -> Result<'model, string>>())
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a0>> f0)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a1>> f1)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a2>> f2)
@@ -399,13 +402,13 @@ type Constructors =
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a8>> f8)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a9>> f9)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a10>> f10)
-            |> SchemaCore.buildResult
+            |> SchemaCore.closeResult
         | fields -> ShapeInternals.arityMismatch 11 fields
 
     static member Construct(f: 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'a7 -> 'a8 -> 'a9 -> 'a10 -> 'a11 -> 'model, shape: ObjectShape<'model, ((((((((((((NoFields * 'a0) * 'a1) * 'a2) * 'a3) * 'a4) * 'a5) * 'a6) * 'a7) * 'a8) * 'a9) * 'a10) * 'a11)>) : Schema<'model> =
         match List.rev shape.RevFields with
         | [ f0; f1; f2; f3; f4; f5; f6; f7; f8; f9; f10; f11 ] ->
-            SchemaBuilder(f, FieldsEnd<'model, 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'a7 -> 'a8 -> 'a9 -> 'a10 -> 'a11 -> 'model>())
+            ShapeClosure(f, ShapeFieldsEmpty<'model, 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'a7 -> 'a8 -> 'a9 -> 'a10 -> 'a11 -> 'model>())
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a0>> f0)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a1>> f1)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a2>> f2)
@@ -418,13 +421,13 @@ type Constructors =
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a9>> f9)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a10>> f10)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a11>> f11)
-            |> SchemaCore.build
+            |> SchemaCore.closeTotal
         | fields -> ShapeInternals.arityMismatch 12 fields
 
     static member ConstructResult(f: 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'a7 -> 'a8 -> 'a9 -> 'a10 -> 'a11 -> Result<'model, string>, shape: ObjectShape<'model, ((((((((((((NoFields * 'a0) * 'a1) * 'a2) * 'a3) * 'a4) * 'a5) * 'a6) * 'a7) * 'a8) * 'a9) * 'a10) * 'a11)>) : Schema<'model> =
         match List.rev shape.RevFields with
         | [ f0; f1; f2; f3; f4; f5; f6; f7; f8; f9; f10; f11 ] ->
-            SchemaBuilder(f, FieldsEnd<'model, 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'a7 -> 'a8 -> 'a9 -> 'a10 -> 'a11 -> Result<'model, string>>())
+            ShapeClosure(f, ShapeFieldsEmpty<'model, 'a0 -> 'a1 -> 'a2 -> 'a3 -> 'a4 -> 'a5 -> 'a6 -> 'a7 -> 'a8 -> 'a9 -> 'a10 -> 'a11 -> Result<'model, string>>())
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a0>> f0)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a1>> f1)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a2>> f2)
@@ -437,7 +440,7 @@ type Constructors =
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a9>> f9)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a10>> f10)
             |> ShapeInternals.append (unbox<FieldDefinition<'model, 'a11>> f11)
-            |> SchemaCore.buildResult
+            |> SchemaCore.closeResult
         | fields -> ShapeInternals.arityMismatch 12 fields
 
     /// <summary>Dispatches <c>construct</c> to the arity overload selected by the shape's phantom type.</summary>
@@ -539,6 +542,16 @@ module Syntax =
                 :: committed
             )
         | [] -> invalidOp "Unreachable: the phantom type guarantees a current field."
+
+    /// <summary>Adds a typed constraint to every item described by a list schema.</summary>
+    let constrainItems (constraint': Constraint<'item>) (schema: Schema<'item list>) : Schema<'item list> =
+        if isNull (box constraint') then nullArg (nameof constraint')
+        SchemaCore.constrainItems constraint'.Untyped schema
+
+    /// <summary>Adds a typed constraint to every value described by a string-keyed map schema.</summary>
+    let constrainValues (constraint': Constraint<'item>) (schema: Schema<Map<string, 'item>>) : Schema<Map<string, 'item>> =
+        if isNull (box constraint') then nullArg (nameof constraint')
+        SchemaCore.constrainValues constraint'.Untyped schema
 
     /// <summary>Closes a shape with a total constructor. The constructor's curried parameters must match the
     /// declared fields in order and type.</summary>

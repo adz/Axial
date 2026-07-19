@@ -7,6 +7,7 @@ open Axial.Schema
 open Axial.Validation
 open Swensen.Unquote
 open Xunit
+open Axial.Schema.Syntax
 
 module SchemaValidationTests =
     type private Signup = { Email: string; Age: int }
@@ -17,11 +18,11 @@ module SchemaValidationTests =
     type private IGeneratedBuildChain<'model, 'constructorIn, 'constructorOut> =
         abstract member Apply: 'constructorIn -> obj array -> 'constructorOut
 
-    type private GeneratedFieldsEnd<'model, 'constructor>() =
+    type private GeneratedFieldsEmpty<'model, 'constructor>() =
         interface IGeneratedBuildChain<'model, 'constructor, 'constructor> with
             member _.Apply constructor _ = constructor
 
-    type private GeneratedFieldsAppend<'model, 'constructorIn, 'field, 'next, 'head
+    type private GeneratedFieldsCons<'model, 'constructorIn, 'field, 'next, 'head
         when 'head :> IGeneratedBuildChain<'model, 'constructorIn, 'field -> 'next>>
         (
             order: int,
@@ -34,40 +35,49 @@ module SchemaValidationTests =
                 constructorForField (unbox<'field> values[order])
 
     type private GeneratedBuildResult<'model, 'constructorIn, 'constructorOut>(value: obj) =
-        interface IFieldChainResult<'model, 'constructorIn, 'constructorOut> with
+        interface IRecordPlanState<'model, 'constructorIn, 'constructorOut> with
             member _.Value = value
 
-    type private GeneratedBuilder<'model, 'constructor>
-        (constructor: 'constructor, chain: IGeneratedBuildChain<'model, 'constructor, 'model>) =
+    type private GeneratedBuilder<'model, 'constructor, 'constructed>
+        (
+            constructor: 'constructor,
+            chain: IGeneratedBuildChain<'model, 'constructor, 'constructed>,
+            finish: 'constructed -> Result<'model, string>
+        ) =
 
         interface IGeneratedBuilder<'model> with
-            member _.Build values = chain.Apply constructor values
+            member _.Build values =
+                match finish (chain.Apply constructor values) with
+                | Ok model -> model
+                | Error message -> invalidOp message
 
     type private GeneratedBuilderFactory<'model>() =
-        interface IFieldChainFactory<'model, IGeneratedBuilder<'model>> with
+        interface IRecordPlanCompiler<'model, IGeneratedBuilder<'model>> with
             member _.OnEnd() =
                 let chain =
-                    GeneratedFieldsEnd<'model, 'constructor>()
+                    GeneratedFieldsEmpty<'model, 'constructor>()
                     :> IGeneratedBuildChain<'model, 'constructor, 'constructor>
 
-                GeneratedBuildResult<'model, 'constructor, 'constructor>(box chain) :> IFieldChainResult<_, _, _>
+                GeneratedBuildResult<'model, 'constructor, 'constructor>(box chain) :> IRecordPlanState<_, _, _>
 
             member _.OnField(order, _field: Field<'model, 'field>, head) =
                 let headChain = head.Value :?> IGeneratedBuildChain<'model, 'constructorIn, 'field -> 'next>
 
                 let chain =
-                    GeneratedFieldsAppend<'model, 'constructorIn, 'field, 'next, _>(order, headChain)
+                    GeneratedFieldsCons<'model, 'constructorIn, 'field, 'next, _>(order, headChain)
                     :> IGeneratedBuildChain<'model, 'constructorIn, 'next>
 
-                GeneratedBuildResult<'model, 'constructorIn, 'next>(box chain) :> IFieldChainResult<_, _, _>
+                GeneratedBuildResult<'model, 'constructorIn, 'next>(box chain) :> IRecordPlanState<_, _, _>
 
-            member _.OnComplete<'constructor>
+            member _.OnComplete<'constructor, 'constructed>
                 (
                     constructor: 'constructor,
-                    chain: IFieldChainResult<'model, 'constructor, 'model>
+                    chain: IRecordPlanState<'model, 'constructor, 'constructed>,
+                    finish: 'constructed -> Result<'model, string>
                 ) =
-                let generatedChain = chain.Value :?> IGeneratedBuildChain<'model, 'constructor, 'model>
-                GeneratedBuilder<'model, 'constructor>(constructor, generatedChain) :> IGeneratedBuilder<'model>
+                let generatedChain = chain.Value :?> IGeneratedBuildChain<'model, 'constructor, 'constructed>
+                GeneratedBuilder<'model, 'constructor, 'constructed>(constructor, generatedChain, finish)
+                :> IGeneratedBuilder<'model>
 
     type private SwappedFields =
         { Primary: string
@@ -101,30 +111,26 @@ module SchemaValidationTests =
                 Error "End date must be on or after start date."
 
     let private schema =
-        Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
-        |> Schema.field
-            "email"
-            _.Email
-            (Schema.text
-             |> Schema.constrainAll [ Constraint.required; Constraint.email; Constraint.maxLength 254 ])
-        |> Schema.field "age" _.Age (Schema.int |> Schema.constrain (Constraint.atLeast 18))
-        |> Schema.build
+        Schema.define<Signup>
+        |> fieldWith (Schema.text
+             |> Schema.constrainAll [ Constraint.required; Constraint.email; Constraint.maxLength 254 ]) "email" _.Email
+        |> fieldWith (Schema.int |> Schema.constrain (Constraint.atLeast 18)) "age" _.Age
+        |> construct (fun email age -> { Email = email; Age = age })
 
     let private contactMethodSchema =
-        Schema.recordFor<ContactMethod, _> (fun kind value -> { Kind = kind; Value = value })
-        |> Schema.field "kind" _.Kind (Schema.text |> Schema.constrain Constraint.required)
-        |> Schema.field "value" _.Value (Schema.text |> Schema.constrain Constraint.required)
-        |> Schema.build
+        Schema.define<ContactMethod>
+        |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "kind" _.Kind
+        |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "value" _.Value
+        |> construct (fun kind value -> { Kind = kind; Value = value })
 
     let private contactBookSchema =
-        Schema.recordFor<ContactBook, _> (fun name contacts -> { Name = name; Contacts = contacts })
-        |> Schema.field "name" _.Name (Schema.text |> Schema.constrain Constraint.required)
-        |> Schema.field "contacts" _.Contacts
-            (Schema.list contactMethodSchema |> Schema.constrainAll [ Constraint.minCount 1; Constraint.maxCount 2 ])
-        |> Schema.build
+        Schema.define<ContactBook>
+        |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "name" _.Name
+        |> fieldWith (Schema.listWith contactMethodSchema |> Schema.constrainAll [ Constraint.minCount 1; Constraint.maxCount 2 ]) "contacts" _.Contacts
+        |> construct (fun name contacts -> { Name = name; Contacts = contacts })
 
     let private generatedBuilder schema =
-        Schema.specialize (GeneratedBuilderFactory()) schema
+        Schema.compilePlan (GeneratedBuilderFactory()) schema
 
     [<Fact>]
     let ``validate returns the original model when schema constraints pass`` () =
@@ -181,18 +187,12 @@ module SchemaValidationTests =
     [<Fact>]
     let ``validate surfaces schema constraint custom messages through Check lowering`` () =
         let messageSchema =
-            Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
-            |> Schema.field
-                "email"
-                _.Email
-                (Schema.text
-                 |> Schema.constrain (Constraint.required |> Constraint.withMessage "Email is required."))
-            |> Schema.field
-                "age"
-                _.Age
-                (Schema.int
-                 |> Schema.constrain (Constraint.atLeast 18 |> Constraint.withMessage "Must be an adult."))
-            |> Schema.build
+            Schema.define<Signup>
+            |> fieldWith (Schema.text
+                 |> Schema.constrain (Constraint.required |> Constraint.withMessage "Email is required.")) "email" _.Email
+            |> fieldWith (Schema.int
+                 |> Schema.constrain (Constraint.atLeast 18 |> Constraint.withMessage "Must be an adult.")) "age" _.Age
+            |> construct (fun email age -> { Email = email; Age = age })
 
         let validation =
             Schema.check messageSchema { Email = ""; Age = 10 }
@@ -215,18 +215,12 @@ module SchemaValidationTests =
     [<Fact>]
     let ``validate reads existing model values through schema getters`` () =
         let swappedSchema =
-            Schema.recordFor<SwappedFields, _> (fun primary secondary ->
+            Schema.define<SwappedFields>
+            |> fieldWith (Schema.text |> Schema.constrain (Constraint.oneOf [ "primary-value" ])) "secondary-on-wire" _.Primary
+            |> fieldWith (Schema.text |> Schema.constrain (Constraint.oneOf [ "secondary-value" ])) "primary-on-wire" _.Secondary
+            |> construct (fun primary secondary ->
                 { Primary = primary
                   Secondary = secondary })
-            |> Schema.field
-                "secondary-on-wire"
-                _.Primary
-                (Schema.text |> Schema.constrain (Constraint.oneOf [ "primary-value" ]))
-            |> Schema.field
-                "primary-on-wire"
-                _.Secondary
-                (Schema.text |> Schema.constrain (Constraint.oneOf [ "secondary-value" ]))
-            |> Schema.build
 
         let validation =
             Schema.check
@@ -250,16 +244,16 @@ module SchemaValidationTests =
     [<Fact>]
     let ``validate checks nested model values through their nested schema`` () =
         let addressSchema =
-            Schema.recordFor<Address, _> (fun street city -> { Street = street; City = city })
-            |> Schema.field "street" _.Street (Schema.text |> Schema.constrain Constraint.required)
-            |> Schema.field "city" _.City (Schema.text |> Schema.constrain Constraint.required)
-            |> Schema.build
+            Schema.define<Address>
+            |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "street" _.Street
+            |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "city" _.City
+            |> construct (fun street city -> { Street = street; City = city })
 
         let customerSchema =
-            Schema.recordFor<Customer, _> (fun name address -> { Name = name; Address = address })
-            |> Schema.field "name" _.Name (Schema.text |> Schema.constrain Constraint.required)
-            |> Schema.field "address" _.Address addressSchema
-            |> Schema.build
+            Schema.define<Customer>
+            |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "name" _.Name
+            |> fieldWith addressSchema "address" _.Address
+            |> construct (fun name address -> { Name = name; Address = address })
 
         let validation =
             Schema.check
@@ -358,9 +352,9 @@ module SchemaValidationTests =
     [<Fact>]
     let ``validate reports primitive collection item constraints at index paths`` () =
         let schema =
-            Schema.recordFor<Tags, _> (fun values -> { Values = values })
-            |> Schema.field "values" _.Values (Schema.list (Schema.text |> Schema.constrain Constraint.required))
-            |> Schema.build
+            Schema.define<Tags>
+            |> fieldWith (Schema.listWith (Schema.text |> Schema.constrain Constraint.required)) "values" _.Values
+            |> construct (fun values -> { Values = values })
 
         let validation =
             Schema.check schema { Values = [ "fsharp"; "" ] }
@@ -436,10 +430,10 @@ module SchemaValidationTests =
     [<Fact>]
     let ``values produced by input parsing with constructor invariants validate through the same schema`` () =
         let rangeSchema =
-            Schema.recordFor<DateRange, _> DateRange.Create
-            |> Schema.field "start" _.Start Schema.date
-            |> Schema.field "end" _.End Schema.date
-            |> Schema.buildResult
+            Schema.define<DateRange>
+            |> fieldWith Schema.date "start" _.Start
+            |> fieldWith Schema.date "end" _.End
+            |> constructResult DateRange.Create
 
         let raw =
             RawInput.Object(

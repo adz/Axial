@@ -47,7 +47,7 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
   interpreters beside `Json.compile`, never as grammar features.
 - Record → schema generation (deriving a permissive wire schema from a hand-written DTO record) is under
   consideration as the low-ceremony wire-tier entry point; `.contract` remains the at-scale entry point. Both
-  produce the same kind of wire schema. See `dev-docs/current-ideas/schema-source-generation.md`.
+  produce the same kind of wire schema. The record frontend and contract frontend share the same resolver and emitter.
 - User docs teach this order: wire/domain split and the mapping function first, versioning when compatibility
   enters, then contracts as the concise way to generate what was just set up by hand.
 
@@ -186,7 +186,7 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
   `RefinedSchema` bridge into `Axial.Refined`); `Axial.Codec` depends on `Axial.Schema`. `Axial.Flow` stays
   independent of both. The `leaf packages stay independent of each other` API-shape test enforces this graph, and
   `` `Axial.Refined` was moved from `Axial.Schema` into `Axial.ErrorHandling` `` after finding it has zero actual
-  dependency on Schema — see the ApiShapeTests.fs comments and `dev-docs/current-ideas/schema-source-generation.md`
+  dependency on Schema — see the ApiShapeTests.fs comments
   for the reasoning.
 - Explicit dependencies live in `'env`. The ambient runtime is reserved for closed executor mechanics such as
   cancellation, scope, scheduling, interruption, and trace metadata.
@@ -228,46 +228,29 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 - `Axial.Schema` starts as its own package and project as soon as schema source work begins. Do not incubate schema
   definitions inside `Axial.Validation`; keep schema definitions independent and put input, validation, diagnostics, and
   rules integration in `Axial.Schema`.
-- The explicit schema core is a CodecMapper-style progressive typed builder:
-  `Schema.recordFor<Customer, _> ctor |> Schema.field "name" _.Name Schema.text |> ... |> Schema.build`.
-  `Schema.recordFor<'model, _>` is the everyday entry point because it anchors the model type before the first field,
-  allowing shorthand member getters. Plain `Schema.record ctor` remains available when the model type is already clear
-  or getters are annotated explicitly. Each field application peels one curried constructor argument and `Schema.build`
-  requires a fully applied constructor, so constructor/getter alignment is compiler-checked by argument position and
-  authoring scales to any field count. The former `Schema.map2`/`Schema.map3` proof shape is not the public authoring
-  direction, and Axial should not grow a hand-written `Schema.mapN` family. Do not route larger models through a
-  required `schema create { }` computation expression or `[<Schema>]` source generator; both are optional sugar over the
-  progressive builder. The built schema must keep its typed field chain reachable alongside the type-erased descriptor
-  view so codec interpreters can compile constructor-specialized plans from a `Schema<'model>` value alone, without
-  `obj array` constructor application.
+- Constructor-last object shapes are the sole public schema-authoring surface:
+  `Schema.define<Customer> |> field "name" _.Name |> ... |> construct ctor`. The shape phantom records field types;
+  `construct` and `constructResult` check the closing constructor by position and arity. Completed schemas retain a
+  typed record plan beside erased metadata so codecs apply constructors directly without `obj array` dispatch.
 - Primitive value schemas use the primitive names directly: `Schema.text`, `Schema.int`, `Schema.decimal`,
   `Schema.bool`, `Schema.date`, `Schema.dateTime`, and `Schema.guid`. They are `Schema<'value>` values supplied as
-  the third argument to `Schema.field "name" _.Name Schema.text`, alongside composites (`Schema.list`,
+  the explicit argument to `fieldWith Schema.text "name" _.Name`, alongside composites (`Schema.list`,
   `Schema.option`, `Schema.map`, `Schema.union`, `Schema.inlineUnion`, `Schema.enum`, `Schema.defer`) and custom
-  refined/domain schemas. `Axial.Schema.DSL` re-exports the same names unqualified for use inside a schema-definition
-  module. Do not add competing aliases such as `string`, `integer`, `boolean`, `uuid`, `dateOnly`, or `Field.text`;
+  refined/domain schemas. Common primitive, option, and list fields use inferred `field`; other schemas use
+  `fieldWith`. Do not add competing aliases such as `string`, `integer`, `boolean`, `uuid`, `dateOnly`, or `Field.text`;
   the `Value` module is internal and is not public vocabulary.
 - Non-validation interpreters start from the public `Inspect` API (`Inspect.model`, `Inspect.schema`, `Inspect.field`),
   which describes a built schema as plain metadata trees (`ModelDescription`, `FieldDescription`, `SchemaDescription`,
   `SchemaShape`). Inspection never parses input, runs checks, or constructs models. JSON Schema, documentation, and UI
   metadata generators are prototype interpreters over that read model, not core packages, until a consumer demands one.
 - CodecMapper-style codecs consume schema by referencing `Axial.Schema` only, in their own package: metadata comes from
-  `Inspect`, and hot-path plans come from `Schema.specialize` with an `IFieldChainFactory<'model, 'result>` that walks
-  the typed field chain to compile constructor-specialized record plans. `Axial.Schema` never references a codec
+  `Inspect`, and hot-path plans come from the record-plan compiler protocol that walks typed fields and a typed
+  constructor finalizer. `Axial.Schema` never references a codec
   package, and codec packages never reference `Axial.Schema`, so no dependency cycle can form.
-- The `schema create { ... }` computation expression is not shipped. A prototype over the progressive builder was
-  evaluated (see `schema-ce-evaluation.md` in this folder): the sketched bare-brace constraint blocks are not
-  expressible in F#, compile-error quality is a wash, and readability does not improve, so the pipeline builder stays
-  the single public authoring surface. `Axial.Schema.DSL` later delivered the CE's prefix-elimination motivation as a
-  curated open module over the same pipeline, further closing the case for a second authoring surface.
-- `Axial.Schema.DSL` is the one non-`RequireQualifiedAccess` schema module, designed to be opened inside a schema
-  definition module only. Field combinators take the constraint list first with `[]` for unconstrained fields;
-  `int`/`decimal`/`bool` deliberately shadow the core conversion functions within that scope. Do not add bare-name
-  aliases to other modules; curation lives in `DSL` alone.
-- Source generation is deferred and reflection stays rejected as a schema foundation. The `[<Schema>]` generation
-  target is pinned by `dev-docs/current-ideas/schema-source-generation.md` and compiled by
-  `tests/Axial.Schema.Tests/SchemaGenerationTargetProofTests.fs`; generated schemas may target public or `internal`
-  record representations, but not `private` ones, because F# has no partial types for same-scope emission.
+- `Axial.Schema.Syntax` contains only the constructor-last shape operations and typed field constraints intended for a
+  local declaration-module `open`. Primitive and composite value-schema functions remain qualified under `Schema`.
+- Build-time generation emits the same constructor-last syntax as handwritten schemas. Reflection remains rejected as
+  a schema foundation.
 - `Bind` is only for assigning or mapping a source error immediately before `flow { }` binds it. In pure code, use
   `Result.mapError` or `Validation.mapError`.
 - Generated reference docs come from XML comments and generator inputs. Do not hand-edit generated reference pages as the
@@ -287,7 +270,7 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 - Codec decode allocation work (beating STJ the way CodecMapper does) is deferred until performance becomes a pitch
   line; parity on speed with the 6x boundary-lane gap is the current story. If pursued, the pre-chosen approach is
   fixed-arity typed decoders for arities 1..8 with the slot decoder as fallback — no reflection, dispatch on field
-  count from the typed chain in `Schema.specialize` — with a target of ≤ 2.0 µs / ≤ 1.5 KB on the benchmark aggregate.
+  count from the compiled record plan in `Schema.compilePlan` — with a target of ≤ 2.0 µs / ≤ 1.5 KB on the benchmark aggregate.
 - There is no "checked codec" compile option. `Axial.Codec` enforces wire shape only; a consumer who wants constraint
   enforcement on trusted-lane decode composes `Json.deserialize` then `Schema.check` (one extra model walk). If
   that composition proves too slow for a real consumer, the pre-chosen answer is a `Json.deserializeValidated` helper
@@ -316,7 +299,8 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 - `RawInput.ofJsonElement`/`ofJsonDocument` stay gated to `net8.0 && !FABLE_COMPILER`. If a netstandard2.1 consumer
   ever asks, the pre-chosen answer is a TFM-conditional `System.Text.Json` package reference on netstandard2.1 only —
   not a split adapter package, which would force a different module name.
-- The `Schema` module hosts both declaration (`Schema.recordFor`, `Schema.field`, `Schema.build`) and the model
+- The `Schema` module starts declarations with `Schema.define`; `Axial.Schema.Syntax` provides fields and closing
+  constructors. `Schema` also hosts the model
   operations that use a schema as authority: `Schema.parse` / `Schema.parseWith` / `Schema.parseWithOptions`
   (untyped `RawInput` → `ParsedInput<'model, SchemaError>`) and `Schema.check` (an already-existing model value,
   re-checked through its field constraints and its constructor so cross-field invariants aren't silently skipped).
@@ -341,7 +325,7 @@ or in `AGENTS.md`, then delete the detailed sketch.
 - **`Model.construct`.** RESOLVED by reduction: there is no positional construction API or universal trust wrapper.
   Public wire/draft records use ordinary named-field construction followed by `Schema.check`; private domain types use
   their own smart constructors. The structural reason: `Schema<'model>` can't carry per-field types, so a typed
-  positional `Model.construct` is impossible without source generation (`schema-source-generation.md`); every
+  positional `Model.construct` is impossible without source generation; every
   runtime shape tried (builder ceremony, tuple-returning `buildWithConstruct`, reflection off a draft record, a
   `(string * obj) list`) was rejected.
 - **`Trusted<'model>`.** REJECTED after reference-app re-review. A universal wrapper made parse, contract, and ordinary

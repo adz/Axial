@@ -18,12 +18,14 @@ type Card =
 [<RequireQualifiedAccess>]
 module Card =
 
+    open Axial.Schema.Syntax
+
     /// The schema declared by payment.contract (Card.v1).
     let schema : Schema<Card> =
-        Schema.recordFor<Card, _> (fun number ->
+        Schema.define<Card>
+        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.minLength (12); Constraint.maxLength (19) ]) "number" _.Number
+        |> construct (fun number ->
             { Number = number })
-        |> Schema.field "number" _.Number (Schema.text |> Schema.constrainAll [ Constraint.minLength (12); Constraint.maxLength (19) ])
-        |> Schema.build
         |> Schema.describe "A card payment source."
 
     /// Checks a draft built with an ordinary record literal.
@@ -50,12 +52,14 @@ type Invoice =
 [<RequireQualifiedAccess>]
 module Invoice =
 
+    open Axial.Schema.Syntax
+
     /// The schema declared by payment.contract (Invoice.v1).
     let schema : Schema<Invoice> =
-        Schema.recordFor<Invoice, _> (fun reference ->
+        Schema.define<Invoice>
+        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.minLength (1) ]) "reference" _.Reference
+        |> construct (fun reference ->
             { Reference = reference })
-        |> Schema.field "reference" _.Reference (Schema.text |> Schema.constrainAll [ Constraint.minLength (1) ])
-        |> Schema.build
         |> Schema.describe "An invoice payment source."
 
     /// Checks a draft built with an ordinary record literal.
@@ -88,16 +92,18 @@ type Payment =
 [<RequireQualifiedAccess>]
 module Payment =
 
+    open Axial.Schema.Syntax
+
     let private sourceCases =
         [ UnionCase.create "card" PaymentSource.Card (function PaymentSource.Card payload -> Some payload | _ -> None) Card.schema
           UnionCase.create "invoice" PaymentSource.Invoice (function PaymentSource.Invoice payload -> Some payload | _ -> None) Invoice.schema ]
 
     /// The schema declared by payment.contract (Payment.v1).
     let schema : Schema<Payment> =
-        Schema.recordFor<Payment, _> (fun source ->
+        Schema.define<Payment>
+        |> fieldWith (Schema.inlineUnion "kind" sourceCases) "source" _.Source
+        |> construct (fun source ->
             { Source = source })
-        |> Schema.field "source" _.Source (Schema.inlineUnion "kind" sourceCases)
-        |> Schema.build
         |> Schema.describe "A payment method choice."
 
     /// Checks a draft built with an ordinary record literal.

@@ -194,7 +194,7 @@ module Program =
 
         printfn "Target: %s" targetName
 
-        let schemaSummary = Shared.buildSchemaBuilderSummary ()
+        let schemaSummary = Shared.buildSchemaPlanSummary ()
 
         if schemaSummary <> [ "0:name"; "1:age" ] then
             failwith $"Unexpected schema builder summary: %A{schemaSummary}"

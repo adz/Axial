@@ -12,14 +12,16 @@ open Axial.Schema
 [<RequireQualifiedAccess>]
 module WorkspaceCardV1 =
 
+    open Axial.Schema.Syntax
+
     /// The schema declared by workspace.fs (WorkspaceCard.v1).
     let schema : Schema<WorkspaceCardV1> =
-        Schema.recordFor<WorkspaceCardV1, _> (fun name owner ->
+        Schema.define<WorkspaceCardV1>
+        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.minLength (1); Constraint.maxLength (60) ] |> Schema.describe "Display name of the workspace.") "name" _.Name
+        |> fieldWith Schema.text "owner" _.Owner
+        |> construct (fun name owner ->
             { Name = name
               Owner = owner })
-        |> Schema.field "name" _.Name (Schema.text |> Schema.constrainAll [ Constraint.minLength (1); Constraint.maxLength (60) ] |> Schema.describe "Display name of the workspace.")
-        |> Schema.field "owner" _.Owner Schema.text
-        |> Schema.build
         |> Schema.describe "A workspace card as first exported: one owner string of the form \"Name <email>\"."
 
     /// Checks a draft built with an ordinary record literal.
@@ -41,6 +43,8 @@ module WorkspaceCardV1 =
 [<RequireQualifiedAccess>]
 module WorkspaceCard =
 
+    open Axial.Schema.Syntax
+
     let private visibilityCases =
         [ EnumCase.create "private" Visibility.Private
           EnumCase.create "team" Visibility.Team
@@ -48,12 +52,12 @@ module WorkspaceCard =
 
     /// The schema declared by workspace.fs (WorkspaceCard.v2).
     let schema : Schema<WorkspaceCard> =
-        Schema.recordFor<WorkspaceCard, _> (fun name ownerEmail visibility members -> WorkspaceCard.create name ownerEmail visibility members)
-        |> Schema.field "name" _.Name (Schema.text |> Schema.constrainAll [ Constraint.minLength (1); Constraint.maxLength (60) ] |> Schema.describe "Display name of the workspace.")
-        |> Schema.field "owner_email" _.OwnerEmail (Schema.text |> Schema.constrainAll [ Constraint.email ])
-        |> Schema.field "visibility" _.Visibility (Schema.enum visibilityCases |> Schema.withDefault Visibility.Private)
-        |> Schema.field "members" _.Members (Schema.list Schema.text |> Schema.constrainAll [ Constraint.distinct ])
-        |> Schema.build
+        Schema.define<WorkspaceCard>
+        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.minLength (1); Constraint.maxLength (60) ] |> Schema.describe "Display name of the workspace.") "name" _.Name
+        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.email ]) "owner_email" _.OwnerEmail
+        |> fieldWith (Schema.enum visibilityCases |> Schema.withDefault Visibility.Private) "visibility" _.Visibility
+        |> fieldWith (Schema.listWith Schema.text |> Schema.constrainAll [ Constraint.distinct ]) "members" _.Members
+        |> construct (fun name ownerEmail visibility members -> WorkspaceCard.create name ownerEmail visibility members)
         |> Schema.describe "A workspace card with a dedicated owner email, visibility, and member emails."
 
     /// Checks a draft built with an ordinary record literal.

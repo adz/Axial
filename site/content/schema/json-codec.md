@@ -23,7 +23,7 @@ Axial has two paths for JSON, and they exist because they optimize for different
 ```fsharp
 open Axial.Schema
 open Axial.Codec
-open Axial.Schema.DSL
+open Axial.Schema.Syntax
 
 type Address = { Street: string; City: string }
 
@@ -33,17 +33,17 @@ type Customer =
       Address: Address }
 
 let addressSchema =
-    recordFor<Address, _> (fun street city -> { Street = street; City = city })
-    |> field "street" _.Street text
-    |> field "city" _.City text
-    |> build
+    Schema.define<Address>
+    |> field "street" _.Street
+    |> field "city" _.City
+    |> construct (fun street city -> { Street = street; City = city })
 
 let customerSchema =
-    recordFor<Customer, _> (fun name age address -> { Name = name; Age = age; Address = address })
-    |> field "name" _.Name text
-    |> field "age" _.Age int
-    |> field "address" _.Address addressSchema
-    |> build
+    Schema.define<Customer>
+    |> field "name" _.Name
+    |> field "age" _.Age
+    |> fieldWith addressSchema "address" _.Address
+    |> construct (fun name age address -> { Name = name; Age = age; Address = address })
 
 let codec = Json.compile customerSchema   // compile once, typically at startup
 
@@ -53,7 +53,7 @@ let json = Json.serialize codec { Name = "Ada"; Age = 36; Address = { Street = "
 let customer = Json.deserialize codec json
 ```
 
-`Json.compile` walks the typed field chain that `Schema.build` retains and emits a direct record plan: ordered field
+`Json.compile` walks the typed record plan retained when the object shape closes and emits a direct plan: ordered field
 descriptors, cached UTF-8 wire-name bytes, typed field decoders, and the original curried constructor applied without
 boxing. There is no reflection at compile time or per value, so the codec is AOT- and trimming-safe by construction.
 
@@ -100,7 +100,7 @@ let roundTripped = Json.deserializeBytes codec bytes
 
 - It does not run constraint metadata such as `maxLength` or `between` — those belong to boundary parsing and
   validation. A value that only ever passes through trusted systems does not pay for checks it already passed.
-- Constructors from `Schema.buildResult` still run, so intrinsic cross-field invariants hold even on the trusted path;
+- Checked constructors from `constructResult` still run, so intrinsic cross-field invariants hold on the trusted path;
   their errors surface as `JsonCodecException`.
 
 ## From C#

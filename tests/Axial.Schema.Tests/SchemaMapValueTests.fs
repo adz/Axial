@@ -15,7 +15,7 @@ type MapVisibility =
 module SchemaMapValueTests =
     [<Fact>]
     let ``map builds a dictionary value schema from a primitive item schema`` () =
-        let thresholds = Schema.map (Schema.decimal |> Schema.constrain Constraint.required)
+        let thresholds = Schema.mapWith (Schema.decimal |> Schema.constrain Constraint.required)
 
         match thresholds.ValueDefinition.Shape with
         | MapValueDefinition collection ->
@@ -34,14 +34,14 @@ module SchemaMapValueTests =
         | OptionValueDefinition _ -> failwith "Expected a map value schema."
 
     [<Fact>]
-    let ``a map value schema built from Schema.map is not a refined or primitive value schema`` () =
-        let mapValue = Schema.map Schema.text
+    let ``a map value schema built from Schema.mapWith is not a refined or primitive value schema`` () =
+        let mapValue = Schema.mapWith Schema.text
 
         test <@ not (Schema.isRefined mapValue) @>
 
     [<Fact>]
     let ``BoxEntries builds a Map from parsed key/value entries`` () =
-        let mapValue = Schema.map Schema.``int``
+        let mapValue = Schema.mapWith Schema.``int``
 
         match mapValue.ValueDefinition.Shape with
         | MapValueDefinition collection ->
@@ -51,7 +51,7 @@ module SchemaMapValueTests =
 
     [<Fact>]
     let ``Entries projects a trusted Map back into type-erased key/value pairs`` () =
-        let mapValue = Schema.map Schema.``int``
+        let mapValue = Schema.mapWith Schema.``int``
 
         match mapValue.ValueDefinition.Shape with
         | MapValueDefinition collection ->
@@ -61,7 +61,7 @@ module SchemaMapValueTests =
 
     [<Fact>]
     let ``JsonSchema lowers a map value schema to object with additionalProperties`` () =
-        let document = JsonSchema.generateValue (Schema.map Schema.``int``)
+        let document = JsonSchema.generateValue (Schema.mapWith Schema.``int``)
 
         test <@ document.Contains "\"type\":\"object\"" @>
         test <@ document.Contains "\"additionalProperties\":{\"type\":\"integer\"}" @>

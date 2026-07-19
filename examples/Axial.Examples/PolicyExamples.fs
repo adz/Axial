@@ -7,6 +7,7 @@ open Axial.Flow
 open Axial.Refined
 open Axial.Schema
 open Axial.Validation
+open Axial.Schema.Syntax
 
 type Quantity = private Quantity of int
 
@@ -24,12 +25,12 @@ type OrderLine =
       Quantity: Quantity }
 
 let orderLineSchema =
-    Schema.recordFor<OrderLine, _> (fun sku quantity ->
+    Schema.define<OrderLine>
+    |> fieldWith Schema.text "sku" _.Sku
+    |> fieldWith Quantity.schema "quantity" _.Quantity
+    |> construct (fun sku quantity ->
         { Sku = sku
           Quantity = quantity })
-    |> Schema.field "sku" _.Sku Schema.text
-    |> Schema.field "quantity" _.Quantity Quantity.schema
-    |> Schema.build
 
 type OrderEnv =
     { MaxLineQuantity: int

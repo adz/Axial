@@ -50,7 +50,6 @@
     <Compile Include="ContextRules.fs" />
     <Compile Include="Model.fs" />
     <Compile Include="SchemaApi.fs" />
-    <Compile Include="DSL.fs" />
     <Compile Include="Contract.fs" />
     <Compile Include="RefinedSchemas.fs" />
     <Compile Include="Inspection.fs" />

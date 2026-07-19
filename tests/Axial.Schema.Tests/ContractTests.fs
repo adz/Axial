@@ -5,6 +5,7 @@ open Axial.Schema
 open Axial.Validation
 open Swensen.Unquote
 open Xunit
+open Axial.Schema.Syntax
 
 module ContractTests =
     type ConfigV1 = { Version: int; Name: string }
@@ -12,24 +13,24 @@ module ContractTests =
     type Config = { Version: int; Label: string; Port: int }
 
     let private v1Schema () =
-        Schema.recordFor<ConfigV1, _> (fun version name -> { Version = version; Name = name })
-        |> Schema.field "version" _.Version Schema.int
-        |> Schema.field "name" _.Name Schema.text
-        |> Schema.build
+        Schema.define<ConfigV1>
+        |> fieldWith Schema.int "version" _.Version
+        |> fieldWith Schema.text "name" _.Name
+        |> construct (fun version name -> { Version = version; Name = name })
 
     let private v2Schema () =
-        Schema.recordFor<ConfigV2, _> (fun version name port -> { Version = version; Name = name; Port = port })
-        |> Schema.field "version" _.Version Schema.int
-        |> Schema.field "name" _.Name Schema.text
-        |> Schema.field "port" _.Port Schema.int
-        |> Schema.build
+        Schema.define<ConfigV2>
+        |> fieldWith Schema.int "version" _.Version
+        |> fieldWith Schema.text "name" _.Name
+        |> fieldWith Schema.int "port" _.Port
+        |> construct (fun version name port -> { Version = version; Name = name; Port = port })
 
     let private currentSchema () =
-        Schema.recordFor<Config, _> (fun version label port -> { Version = version; Label = label; Port = port })
-        |> Schema.field "version" _.Version Schema.int
-        |> Schema.field "label" _.Label (Schema.text |> Schema.constrainAll [ Constraint.minLength 3 ])
-        |> Schema.field "port" _.Port (Schema.int |> Schema.constrainAll [ Constraint.between 1 65535 ])
-        |> Schema.build
+        Schema.define<Config>
+        |> fieldWith Schema.int "version" _.Version
+        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.minLength 3 ]) "label" _.Label
+        |> fieldWith (Schema.int |> Schema.constrainAll [ Constraint.between 1 65535 ]) "port" _.Port
+        |> construct (fun version label port -> { Version = version; Label = label; Port = port })
 
     let private migrateV1 (value: ConfigV1) : Result<ConfigV2, MigrationError> =
         Ok { Version = 2; Name = value.Name; Port = 8080 }

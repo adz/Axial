@@ -55,7 +55,7 @@ Consequences for ideas raised in the same thread:
   keeping it fresh; `--check` remains for CI without the package.
 - **Record → schema generation for wire DTOs** (the reverse direction: you write the record, generation derives
   the permissive schema, STJ-familiar) is DESIGNED (2026-07-17) as the low-ceremony wire-tier entry — full design
-  in `schema-source-generation.md`: same `ContractDecl` AST/resolver/emitter, FCS syntax-only frontend,
+  in the record frontend: the same `ContractDecl` AST/resolver/emitter, FCS syntax-only frontend,
   module-only emission with the compiler as drift detector.
 
 ## Goals

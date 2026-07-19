@@ -8,9 +8,11 @@ rather than keeping a historical spec that no longer matches the codebase.
 
 Active sketches:
 
+- `project-split.md` — proposal to separate Schema/ErrorHandling and Flow repositories, rename `Axial.Codec` to
+  format-specific Schema packages, split the documentation experience, and isolate .NET/Fable codec runtimes behind
+  concentrated compiler directives.
 - `contract-grammar.md` — the `.contract` grammar. Status: grammar library + generator IMPLEMENTED (single-version,
   wire tier); LSP and multi-version support pending.
-- `schema-source-generation.md` — generation targets. The attribute route stays deferred; the declaration-first
   route shipped via the contract grammar; the optics/checked-constructor sections fed `FieldRef` and
   `Model.validate`.
 - `zio-schema-comparison.md` — the ZIO Schema deep dive; source of the Phase 29/30 gap ranking in

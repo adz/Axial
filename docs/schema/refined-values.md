@@ -102,15 +102,15 @@ writing an interpreter that needs to distinguish those layers.
 Because every member returns `Schema<_>`, composition needs no adapter:
 
 ```fsharp
-open Axial.Schema.DSL
+open Axial.Schema.Syntax
 let tags =
     RefinedSchemas.nonEmptyList RefinedSchemas.slug
 
 let request =
-    recordFor<Request, _> (fun name tags -> { Name = name; Tags = tags })
-    |> field "name" _.Name RefinedSchemas.nonBlankString
-    |> field "tags" _.Tags tags
-    |> build
+    Schema.define<Request>
+    |> fieldWith RefinedSchemas.nonBlankString "name" _.Name
+    |> fieldWith tags "tags" _.Tags
+    |> construct (fun name tags -> { Name = name; Tags = tags })
 ```
 
 A refinement can also wrap a record, union, list, option, or map schema. Its constructor receives the successfully

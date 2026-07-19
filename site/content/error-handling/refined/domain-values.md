@@ -79,7 +79,7 @@ The raw constraints supply portable metadata for JSON Schema, forms, and generat
 refinement still returns diagnostics rather than admitting the value.
 
 Keep raw parsing and path-aware diagnostics in the schema layer. Keep value-only facts in `Check` and the smart
-constructor. Use `Schema.buildResult` for whole-record invariants that need multiple fields.
+constructor. Use `constructResult` for whole-record invariants that need multiple fields.
 
 ## Optional Parse Helper
 
@@ -102,9 +102,9 @@ type Signup =
     }
 
 let signupSchema =
-    Schema.recordFor<Signup, _> (fun email -> { Email = email })
-    |> Schema.field "email" _.Email ContactEmail.schema
-    |> Schema.build
+    Schema.define<Signup>
+    |> fieldWith ContactEmail.schema "email" _.Email
+    |> construct (fun email -> { Email = email })
 ```
 
 For built-in catalog types, prefer `Axial.Schema.RefinedSchemas` instead of re-authoring local wrappers.

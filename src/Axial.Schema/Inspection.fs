@@ -217,7 +217,7 @@ module Inspect =
     /// <summary>Describes a built model schema as inspectable field metadata.</summary>
     /// <param name="schema">The built model schema to describe.</param>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
-    /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="schema" /> was not produced by <c>Schema.build</c>.</exception>
+    /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="schema" /> is not a completed model schema.</exception>
     /// <example>
     /// <code>
     /// let description = Inspect.model customerSchema

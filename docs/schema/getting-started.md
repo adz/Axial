@@ -21,7 +21,7 @@ Every completed declaration has the same type:
 Schema.text                         // Schema<string>
 Schema.int                          // Schema<int>
 Schema.option Schema.guid           // Schema<Guid option>
-Schema.list Schema.text             // Schema<string list>
+Schema.list<string>()               // Schema<string list>
 RefinedSchemas.nonBlankString       // Schema<NonBlankString>
 ```
 
@@ -35,17 +35,15 @@ type Signup =
       Age: int }
 
 let signupSchema : Schema<Signup> =
-    Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
-    |> Schema.field "email" _.Email
-        (Schema.text
-         |> Schema.constrainAll [ Constraint.required; Constraint.email ])
-    |> Schema.field "age" _.Age
-        (Schema.int |> Schema.constrain (Constraint.atLeast 13))
-    |> Schema.build
+    Schema.define<Signup>
+    |> fieldWith (Schema.text
+         |> Schema.constrainAll [ Constraint.required; Constraint.email ]) "email" _.Email
+    |> fieldWith (Schema.int |> Schema.constrain (Constraint.atLeast 13)) "age" _.Age
+    |> construct (fun email age -> { Email = email; Age = age })
 ```
 
-`Schema.field` has one job: attach a completed field schema. Constraints, formats, descriptions, defaults,
-collections, options, and refinements belong to that field schema rather than to special field overloads.
+`field` infers common value schemas. `fieldWith` attaches an explicit completed value schema for nested models,
+maps, unions, refinements, or custom types.
 
 ## Parse boundary input
 
@@ -113,7 +111,7 @@ the application needs:
 - Use a private domain representation or complete smart constructor when cross-field invariants must hold for every
   value in application code.
 - Use `Schema.check` at imports where an already assembled value arrived from a serializer, database mapper, plugin,
-  or legacy API. It is not the normal constructor for a well-encapsulated domain type.
+  or external integration. It is not the normal constructor for a well-encapsulated domain type.
 - Use contextual rules for facts that vary by operation or environment, such as “assignee belongs to this workspace”
   or “demo names are forbidden in production.”
 
@@ -123,22 +121,24 @@ shows fallible smart constructors inside schemas.
 The [recommended patterns](patterns/) show complete module and project layouts for private aggregates, legal updates,
 generated wire records, and schema-derived tests.
 
-## Qualified and DSL forms
+## Schema-definition modules
 
-The qualified catalog is explicit and works well in application code. `open Axial.Schema.DSL` exposes the same
-functions without their qualifiers inside a schema-definition module:
+Open `Axial.Schema.Syntax` inside a schema-definition module to use fields, typed constraints, and closing constructors:
 
 ```fsharp
 module SignupSchemas =
     open Axial.Schema
-    open Axial.Schema.DSL
+    open Axial.Schema.Syntax
 
     let signup =
-        recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
-        |> field "email" _.Email (text |> constrainAll [ required; email ])
-        |> field "age" _.Age (int |> constrain (atLeast 13))
-        |> build
+        Schema.define<Signup>
+        |> field "email" _.Email
+        |> constrain email
+        |> field "age" _.Age
+        |> constrain (atLeast 13)
+        |> construct (fun email age -> { Email = email; Age = age })
 ```
 
-The DSL does not add a second grammar. `text`, `list`, `refine`, `field`, `parse`, and `check` delegate to the same
-catalog and return the same types.
+Primitive and composite value schemas remain qualified through `Schema.text`, `Schema.list<'item>()`, `Schema.refine`, and the
+rest of the `Schema` catalog. `field`, `fieldWith`, `constrain`, `construct`, and `constructResult` form the object-shape
+pipeline.

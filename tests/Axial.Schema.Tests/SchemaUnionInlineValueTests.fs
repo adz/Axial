@@ -4,6 +4,7 @@ open System
 open Axial.Schema
 open Swensen.Unquote
 open Xunit
+open Axial.Schema.Syntax
 
 module SchemaUnionInlineValueTests =
     type private CardDetails = { Number: string }
@@ -16,14 +17,14 @@ module SchemaUnionInlineValueTests =
     type private Checkout = { Payment: Payment }
 
     let private cardSchema () =
-        Schema.recordFor<CardDetails, _> (fun number -> { Number = number })
-        |> Schema.field "number" _.Number Schema.text
-        |> Schema.build
+        Schema.define<CardDetails>
+        |> fieldWith Schema.text "number" _.Number
+        |> construct (fun number -> { Number = number })
 
     let private invoiceSchema () =
-        Schema.recordFor<InvoiceDetails, _> (fun reference -> { Reference = reference })
-        |> Schema.field "reference" _.Reference Schema.text
-        |> Schema.build
+        Schema.define<InvoiceDetails>
+        |> fieldWith Schema.text "reference" _.Reference
+        |> construct (fun reference -> { Reference = reference })
 
     let private paymentSchema () =
         Schema.inlineUnion
@@ -38,9 +39,9 @@ module SchemaUnionInlineValueTests =
     [<Fact>]
     let ``union-inline value schema exposes discriminator and spliced case fields`` () =
         let schema =
-            Schema.recordFor<Checkout, _> (fun payment -> { Payment = payment })
-            |> Schema.field "payment" _.Payment (paymentSchema ())
-            |> Schema.build
+            Schema.define<Checkout>
+            |> fieldWith (paymentSchema ()) "payment" _.Payment
+            |> construct (fun payment -> { Payment = payment })
 
         let payment =
             Inspect.model schema
@@ -58,9 +59,9 @@ module SchemaUnionInlineValueTests =
     [<Fact>]
     let ``union-inline value schemas lower to json schema oneOf with spliced properties`` () =
         let schema =
-            Schema.recordFor<Checkout, _> (fun payment -> { Payment = payment })
-            |> Schema.field "payment" _.Payment (paymentSchema ())
-            |> Schema.build
+            Schema.define<Checkout>
+            |> fieldWith (paymentSchema ()) "payment" _.Payment
+            |> construct (fun payment -> { Payment = payment })
 
         let generated = JsonSchema.generate schema
 
@@ -77,9 +78,9 @@ module SchemaUnionInlineValueTests =
     [<Fact>]
     let ``unionInline rejects payload field names that collide with the discriminator`` () =
         let colliding =
-            Schema.recordFor<CardDetails, _> (fun number -> { Number = number })
-            |> Schema.field "type" _.Number Schema.text
-            |> Schema.build
+            Schema.define<CardDetails>
+            |> fieldWith Schema.text "type" _.Number
+            |> construct (fun number -> { Number = number })
 
         Assert.Throws<ArgumentException>(fun () ->
             Schema.inlineUnion

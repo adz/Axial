@@ -5,6 +5,7 @@ open Axial.Schema.Testing
 open FsCheck.FSharp
 open Swensen.Unquote
 open Xunit
+open Axial.Schema.Syntax
 
 module SchemaGenTests =
     type Contact = { Email: string }
@@ -13,23 +14,23 @@ module SchemaGenTests =
     type Category = { Name: string; Children: Category list }
 
     let private contactSchema () =
-        Schema.recordFor<Contact, _> (fun email -> { Email = email })
-        |> Schema.field "email" _.Email (Schema.text |> Schema.constrainAll [ Constraint.email ])
-        |> Schema.build
+        Schema.define<Contact>
+        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.email ]) "email" _.Email
+        |> construct (fun email -> { Email = email })
 
     let private profileSchema () =
         let kinds = [ EnumCase.create "personal" Personal; EnumCase.create "work" Work ]
-        Schema.recordFor<Profile, _> (fun age score active contact aliases labels kind note ->
+        Schema.define<Profile>
+        |> fieldWith (Schema.int |> Schema.constrainAll [ Constraint.between 18 90; Constraint.multipleOf 2 ]) "age" _.Age
+        |> fieldWith (Schema.decimal |> Schema.constrainAll [ Constraint.between 0m 10m ]) "score" _.Score
+        |> fieldWith Schema.bool "active" _.Active
+        |> fieldWith (contactSchema ()) "contact" _.Contact
+        |> fieldWith ((Schema.listWith (Schema.text |> Schema.constrain (Constraint.minLength 2))) |> Schema.constrainAll [ Constraint.countBetween 1 3 ]) "aliases" _.Aliases
+        |> fieldWith ((Schema.mapWith Schema.text) |> Schema.constrainAll [ Constraint.maxCount 2 ]) "labels" _.Labels
+        |> fieldWith (Schema.enum kinds) "kind" _.Kind
+        |> fieldWith (Schema.option Schema.text) "note" _.Note
+        |> construct (fun age score active contact aliases labels kind note ->
             { Age = age; Score = score; Active = active; Contact = contact; Aliases = aliases; Labels = labels; Kind = kind; Note = note })
-        |> Schema.field "age" _.Age (Schema.int |> Schema.constrainAll [ Constraint.between 18 90; Constraint.multipleOf 2 ])
-        |> Schema.field "score" _.Score (Schema.decimal |> Schema.constrainAll [ Constraint.between 0m 10m ])
-        |> Schema.field "active" _.Active Schema.bool
-        |> Schema.field "contact" _.Contact (contactSchema ())
-        |> Schema.field "aliases" _.Aliases ((Schema.list (Schema.text |> Schema.constrain (Constraint.minLength 2))) |> Schema.constrainAll [ Constraint.countBetween 1 3 ])
-        |> Schema.field "labels" _.Labels ((Schema.map Schema.text) |> Schema.constrainAll [ Constraint.maxCount 2 ])
-        |> Schema.field "kind" _.Kind (Schema.enum kinds)
-        |> Schema.field "note" _.Note (Schema.option Schema.text)
-        |> Schema.build
 
     [<Fact>]
     let ``generated raw inputs satisfy the complete schema`` () =
@@ -52,9 +53,9 @@ module SchemaGenTests =
     [<Fact>]
     let ``pattern constraints require a caller-owned generator`` () =
         let schema =
-            Schema.recordFor<Contact, _> (fun email -> { Email = email })
-            |> Schema.field "email" _.Email (Schema.text |> Schema.constrain (Constraint.pattern "^[A-Z]+$"))
-            |> Schema.build
+            Schema.define<Contact>
+            |> fieldWith (Schema.text |> Schema.constrain (Constraint.pattern "^[A-Z]+$")) "email" _.Email
+            |> construct (fun email -> { Email = email })
 
         match SchemaGen.raw schema with
         | Error error -> test <@ error = SchemaGenerationError.UnsupportedConstraint([ "email" ], "pattern") @>
@@ -68,10 +69,10 @@ module SchemaGenTests =
     let ``recursive generators terminate at the FsCheck size boundary`` () =
         let rec holder: Lazy<Schema<Category>> =
             lazy
-                (Schema.recordFor<Category, _> (fun name children -> { Name = name; Children = children })
-                 |> Schema.field "name" _.Name Schema.text
-                 |> Schema.field "children" _.Children (Schema.list (Schema.defer (fun () -> holder.Value)))
-                 |> Schema.build)
+                (Schema.define<Category>
+                 |> fieldWith Schema.text "name" _.Name
+                 |> fieldWith (Schema.listWith (Schema.defer (fun () -> holder.Value))) "children" _.Children
+                 |> construct (fun name children -> { Name = name; Children = children }))
 
         let schema = holder.Value
         let generator = SchemaGen.raw schema |> Result.defaultWith (failwithf "%A")

@@ -20,12 +20,12 @@ When the same scalar catalog value is used as a schema field, use the schema int
 open Axial.Schema
 
 let productSchema =
-    Schema.recordFor<Product, _> (fun name slug quantity ->
+    Schema.define<Product>
+    |> fieldWith RefinedSchemas.nonBlankString "name" _.Name
+    |> fieldWith RefinedSchemas.slug "slug" _.Slug
+    |> fieldWith RefinedSchemas.positiveInt "quantity" _.Quantity
+    |> construct (fun name slug quantity ->
         { Name = name; Slug = slug; Quantity = quantity })
-    |> Schema.field "name" _.Name RefinedSchemas.nonBlankString
-    |> Schema.field "slug" _.Slug RefinedSchemas.slug
-    |> Schema.field "quantity" _.Quantity RefinedSchemas.positiveInt
-    |> Schema.build
 ```
 
 The schema catalog lives outside `Axial.Refined` so the refined-value package stays usable without any schema dependency.

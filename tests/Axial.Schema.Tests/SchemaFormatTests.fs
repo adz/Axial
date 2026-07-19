@@ -4,12 +4,13 @@ open System
 open Axial.Schema
 open Swensen.Unquote
 open Xunit
+open Axial.Schema.Syntax
 
 /// <summary>
 /// Proves that value schemas carry portable <c>format</c> metadata such as <c>email</c>: the format is declarative
 /// annotation metadata for interpreters, it is independent of constraint metadata and executable checks, it stays
 /// inspectable through refinement layers with the nearest declaration winning, and formatted value schemas compose
-/// with the progressive schema builder like any other value schema.
+/// with constructor-last shapes like any other value schema.
 /// </summary>
 module SchemaFormatTests =
     /// <summary>A named refined/domain email type declaring the well-known <c>email</c> format.</summary>
@@ -100,12 +101,12 @@ module SchemaFormatTests =
         test <@ Schema.format formattedLast = Some SchemaFormat.email @>
 
     [<Fact>]
-    let ``formatted value schemas compose with the schema builder like any other value schema`` () =
+    let ``formatted value schemas compose with an object shape like any other value schema`` () =
         let schema =
-            Schema.recordFor<Contact, _> (fun email name -> { Email = email; Name = name })
-            |> Schema.field "email" _.Email ((Email.schema ()) |> Schema.constrainAll [ Constraint.required ])
-            |> Schema.field "name" _.Name Schema.text
-            |> Schema.build
+            Schema.define<Contact>
+            |> fieldWith ((Email.schema ()) |> Schema.constrainAll [ Constraint.required ]) "email" _.Email
+            |> fieldWith Schema.text "name" _.Name
+            |> construct (fun email name -> { Email = email; Name = name })
 
         match schema.Definition with
         | ModelDefinition model ->

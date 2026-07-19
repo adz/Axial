@@ -16,7 +16,7 @@ model can be valid in one workflow and unacceptable in another.
 A constructor invariant protects the model's own meaning. If it fails, Axial does not have a trusted model.
 
 ```fsharp
-open Axial.Schema.DSL
+open Axial.Schema.Syntax
 type DateRange =
     private
         { Start: DateOnly
@@ -29,10 +29,10 @@ type DateRange =
             Error "End date must be on or after start date."
 
 let dateRangeSchema =
-    recordFor<DateRange, _> DateRange.Create
-    |> field "start" _.Start date
-    |> field "end" _.End date
-    |> buildResult
+    Schema.define<DateRange>
+    |> field "start" _.Start
+    |> field "end" _.End
+    |> constructResult DateRange.Create
 ```
 
 `DateRange.Create` belongs in the schema because a range whose end is before its start is never a valid `DateRange`.
@@ -128,4 +128,3 @@ Use a contextual rule when:
 - the model remains meaningful even when the action is rejected
 - different applications or commands may apply different requirements to the same model
 - the check should run over an already trusted model
-

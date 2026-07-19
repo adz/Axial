@@ -660,7 +660,7 @@ and internal ValueSchemaShape =
     /// <summary>
     /// A nested model value described by another type-erased model schema, plus the boxed original
     /// <c>Schema&lt;'nested&gt;</c> so constructor-specialized interpreters such as codecs can recover the typed field
-    /// chain with <c>Schema.specialize</c> instead of falling back to boxed <c>obj array</c> dispatch.
+    /// chain with <c>Schema.compilePlan</c> instead of falling back to boxed <c>obj array</c> dispatch.
     /// </summary>
     | NestedValueDefinition of nested: ModelSchemaDefinition<obj> * source: obj
     /// <summary>A collection value whose items are each described by the same item value schema.</summary>
@@ -740,7 +740,7 @@ and [<ReferenceEquality>] internal MapValueDefinition =
       BoxEntries: (string * obj) list -> obj
       /// <summary>
       /// Projects a trusted, boxed <c>Map&lt;string,'item&gt;</c> back into a type-erased key/value entry list.
-      /// Captured at <c>Schema.map</c> call sites where the item CLR type is still statically known, so interpreters
+      /// Captured at <c>Schema.map</c>/<c>Schema.mapWith</c> call sites where the item CLR type is still statically known, so interpreters
       /// such as model validation and codec encoding can walk entries without reflection.
       /// </summary>
       Entries: obj -> (string * obj) list
@@ -848,63 +848,65 @@ type internal FieldDefinition<'model, 'value> =
 type Field<'model, 'value> internal (definition: FieldDefinition<'model, 'value>) =
     member internal _.Definition = definition
 
-/// <summary>Holds an interpreter-specific typed chain fragment while specializing a schema field chain.</summary>
+/// <summary>Holds an interpreter-specific typed record-plan fragment while compiling a schema.</summary>
 /// <remarks>
 /// Schema interpreters use this as the typed accumulator returned by
-/// <see cref="T:Axial.Schema.IFieldChainFactory`2" />. The value is intentionally opaque to <c>Axial.Schema</c>;
-/// each interpreter owns the concrete chain shape it stores here.
+/// <see cref="T:Axial.Schema.IRecordPlanCompiler`2" />. The value is intentionally opaque to <c>Axial.Schema</c>;
+/// each interpreter owns the concrete plan shape it stores here.
 /// </remarks>
-type IFieldChainResult<'model, 'constructorIn, 'constructorOut> =
-    /// <summary>Gets the interpreter-owned typed chain fragment.</summary>
+type IRecordPlanState<'model, 'constructorIn, 'constructorOut> =
+    /// <summary>Gets the interpreter-owned typed record-plan fragment.</summary>
     abstract member Value: obj
 
 /// <summary>
-/// Builds an interpreter-specific typed view of a model schema's authored field chain.
+/// Builds an interpreter-specific typed record plan from a model schema's authored shape.
 /// </summary>
 /// <remarks>
-/// The built <see cref="T:Axial.Schema.Schema`1" /> keeps this typed chain alongside its type-erased
+/// The built <see cref="T:Axial.Schema.Schema`1" /> keeps this typed shape alongside its type-erased
 /// <c>FieldDescriptor</c> metadata. Interpreters that need constructor-specialized plans, such as codecs, can walk the
-/// typed chain through this factory without asking callers to re-supply fields or constructors and without lowering
+/// record plan through this compiler without asking callers to re-supply fields or constructors and without lowering
 /// construction to <c>obj array</c> dispatch.
 /// </remarks>
-type IFieldChainFactory<'model, 'result> =
-    /// <summary>Starts a specialized chain for a constructor with no consumed fields.</summary>
-    abstract member OnEnd<'constructor> : unit -> IFieldChainResult<'model, 'constructor, 'constructor>
+type IRecordPlanCompiler<'model, 'result> =
+    /// <summary>Starts a record plan for a constructor with no consumed fields.</summary>
+    abstract member OnEnd<'constructor> : unit -> IRecordPlanState<'model, 'constructor, 'constructor>
 
-    /// <summary>Appends one typed field to an interpreter-specific chain.</summary>
+    /// <summary>Appends one typed field to an interpreter-specific record plan.</summary>
     abstract member OnField<'constructorIn, 'field, 'next> :
         order: int *
         field: Field<'model, 'field> *
-        head: IFieldChainResult<'model, 'constructorIn, 'field -> 'next> ->
-            IFieldChainResult<'model, 'constructorIn, 'next>
+        head: IRecordPlanState<'model, 'constructorIn, 'field -> 'next> ->
+            IRecordPlanState<'model, 'constructorIn, 'next>
 
-    /// <summary>Completes a specialized chain with the original typed constructor.</summary>
-    abstract member OnComplete<'constructor> :
-        constructor: 'constructor * chain: IFieldChainResult<'model, 'constructor, 'model> -> 'result
+    /// <summary>Completes a record plan with the original typed constructor.</summary>
+    abstract member OnComplete<'constructor, 'constructed> :
+        constructor: 'constructor *
+        plan: IRecordPlanState<'model, 'constructor, 'constructed> *
+        finish: ('constructed -> Result<'model, string>) -> 'result
 
-type IFieldChain<'model, 'constructor, 'remaining> =
+type IShapeFields<'model, 'constructor, 'remaining> =
     abstract member GetFields: int -> obj list * int
     abstract member Apply: constructor: obj * arguments: obj array -> obj
     abstract member Build<'result> :
-        factory: IFieldChainFactory<'model, 'result> -> IFieldChainResult<'model, 'constructor, 'remaining>
+        factory: IRecordPlanCompiler<'model, 'result> -> IRecordPlanState<'model, 'constructor, 'remaining>
 
-type FieldsEnd<'model, 'constructor>() =
-    interface IFieldChain<'model, 'constructor, 'constructor> with
+type internal ShapeFieldsEmpty<'model, 'constructor>() =
+    interface IShapeFields<'model, 'constructor, 'constructor> with
         member _.GetFields(index) = [], index
         member _.Apply(constructor, _) = constructor
         member _.Build(factory) = factory.OnEnd()
 
-type FieldsAppend<'model, 'constructor, 'field, 'next, 'head
-    when 'head :> IFieldChain<'model, 'constructor, 'field -> 'next>>
+type internal ShapeFieldsAppend<'model, 'constructor, 'field, 'next, 'head
+    when 'head :> IShapeFields<'model, 'constructor, 'field -> 'next>>
     internal
     (
         head: 'head,
         field: FieldDefinition<'model, 'field>
     ) =
 
-    interface IFieldChain<'model, 'constructor, 'next> with
+    interface IShapeFields<'model, 'constructor, 'next> with
         member _.GetFields(index) =
-            let fields, nextIndex = (head :> IFieldChain<'model, 'constructor, 'field -> 'next>).GetFields index
+            let fields, nextIndex = (head :> IShapeFields<'model, 'constructor, 'field -> 'next>).GetFields index
 
             let descriptor =
                 { FieldDescriptor.ExternalName = field.ExternalName
@@ -916,15 +918,15 @@ type FieldsAppend<'model, 'constructor, 'field, 'next, 'head
             fields @ [ box descriptor ], nextIndex + 1
 
         member _.Apply(constructor, arguments) =
-            let fieldIndex = (head :> IFieldChain<'model, 'constructor, 'field -> 'next>).GetFields(0) |> snd
+            let fieldIndex = (head :> IShapeFields<'model, 'constructor, 'field -> 'next>).GetFields(0) |> snd
             let appliedHead =
-                (head :> IFieldChain<'model, 'constructor, 'field -> 'next>).Apply(constructor, arguments)
+                (head :> IShapeFields<'model, 'constructor, 'field -> 'next>).Apply(constructor, arguments)
 
             let typedConstructor = unbox<'field -> 'next> appliedHead
             typedConstructor (unbox<'field> arguments[fieldIndex]) |> box
 
         member _.Build(factory) =
-            let headNode = head :> IFieldChain<'model, 'constructor, 'field -> 'next>
+            let headNode = head :> IShapeFields<'model, 'constructor, 'field -> 'next>
             let headResult = headNode.Build(factory)
             let order = headNode.GetFields(0) |> snd
 
@@ -937,41 +939,40 @@ type FieldsAppend<'model, 'constructor, 'field, 'next, 'head
             factory.OnField(order, typedField, headResult)
 
 /// <summary>
-/// Carries a trusted model constructor and a typed field chain while a model schema is being authored.
+/// Internal closing state that combines a constructor with the typed fields recovered from an object shape.
 /// </summary>
 /// <remarks>
-/// Each <c>Schema.field</c> application consumes one argument from the remaining constructor type. The builder can
-/// only be passed to <c>Schema.build</c> when the remaining constructor type is the model itself, which keeps
-/// constructor/getter alignment compiler-checked and scales authoring to any field count without a hand-written
-/// <c>mapN</c> family, computation expression, or source generator.
+/// Constructor-last arity dispatch creates this value after matching the shape's phantom field types against the
+/// constructor. It is not an authoring surface; it carries the typed plan into compiled interpreters.
 /// </remarks>
-type SchemaBuilder<'model, 'constructor, 'remaining, 'chain
-    when 'chain :> IFieldChain<'model, 'constructor, 'remaining>>
+type internal ShapeClosure<'model, 'constructor, 'remaining, 'chain
+    when 'chain :> IShapeFields<'model, 'constructor, 'remaining>>
     internal
     (
         constructor: 'constructor,
-        chain: 'chain
+        fields: 'chain
     ) =
     member internal _.Constructor = constructor
-    member internal _.Chain = chain
+    member internal _.Fields = fields
 
-type internal ISchemaSpecialization<'model> =
-    abstract member Specialize<'result> : factory: IFieldChainFactory<'model, 'result> -> 'result
+type internal ICompiledRecordPlan<'model> =
+    abstract member CompilePlan<'result> : factory: IRecordPlanCompiler<'model, 'result> -> 'result
 
-type internal SchemaSpecialization<'model, 'constructor, 'chain
-    when 'chain :> IFieldChain<'model, 'constructor, 'model>>
+type internal CompiledRecordPlan<'model, 'constructor, 'constructed, 'fields
+    when 'fields :> IShapeFields<'model, 'constructor, 'constructed>>
     (
         constructor: 'constructor,
-        chain: 'chain
+        fields: 'fields,
+        finish: 'constructed -> Result<'model, string>
     ) =
 
-    interface ISchemaSpecialization<'model> with
-        member _.Specialize(factory) =
+    interface ICompiledRecordPlan<'model> with
+        member _.CompilePlan(factory) =
             if isNull (box factory) then
                 nullArg (nameof factory)
 
-            let result = chain.Build(factory)
-            factory.OnComplete(constructor, result)
+            let result = fields.Build(factory)
+            factory.OnComplete(constructor, result, finish)
 
 module internal ModelSchemaDefinition =
     let private ensureContiguousOrders (fields: FieldDescriptor<'model> list) =
@@ -1025,19 +1026,19 @@ module internal ModelSchemaDefinition =
 /// </para>
 /// <para>
 /// Primitive, collection, optional, union, refined, and record declarations all produce <c>Schema&lt;'value&gt;</c>.
-/// Record declarations use <c>Schema.recordFor</c>, attach completed field schemas with <c>Schema.field</c>, and finish
-/// with <c>Schema.build</c> or a result-returning build operation.
+/// Object declarations start with <c>Schema.define</c>, add fields through <c>Syntax</c>, and finish with
+/// <c>Syntax.construct</c> or <c>Syntax.constructResult</c>.
 /// </para>
 /// </remarks>
 // No class-level `as this` self-identifier here: combined with the secondary constructor it makes
 // F# emit safe-initialization IL that Fable cannot compile. The one member that needs the instance
 // uses a member-level self-identifier instead.
 [<Sealed>]
-type Schema<'model> internal (definition: SchemaDefinition<'model>, specialization: ISchemaSpecialization<'model> option) =
+type Schema<'model> internal (definition: SchemaDefinition<'model>, recordPlan: ICompiledRecordPlan<'model> option) =
     internal new(definition: SchemaDefinition<'model>) = Schema(definition, None)
 
     member internal _.Definition = definition
-    member internal _.Specialization = specialization
+    member internal _.RecordPlan = recordPlan
 
     member internal this.ValueDefinition =
         match definition with
@@ -1146,10 +1147,10 @@ module internal Value =
     /// <example>
     /// <code>
     /// let rec categorySchema () =
-    ///     Schema.recordFor&lt;Category, _&gt; (fun name children -&gt; { Name = name; Children = children })
-    ///     |&gt; Schema.text "name" _.Name
-    ///     |&gt; Schema.field "children" _.Children (Schema.list (Schema.defer categorySchema))
-    ///     |&gt; Schema.build
+    ///     Schema.define&lt;Category&gt;
+    ///     |&gt; field "name" _.Name
+    ///     |&gt; fieldWith (Schema.listWith (Schema.defer categorySchema)) "children" _.Children
+    ///     |&gt; construct (fun name children -&gt; { Name = name; Children = children })
     /// </code>
     /// </example>
     let lazyOf (schema: unit -> Schema<'model>) : Schema<'model> =
@@ -1229,7 +1230,7 @@ module internal Value =
     /// <para>
     /// Refined value schemas built this way are portable metadata, matching primitive value schemas: they can be
     /// combined with <see cref="M:Axial.Schema.Schema.withConstraint``1" /> and used as the value schema for
-    /// <see cref="M:Axial.Schema.Schema.field``2" /> like any other <see cref="T:Axial.Schema.Schema`1" />.
+    /// <c>Syntax.fieldWith</c> like any other <see cref="T:Axial.Schema.Schema`1" />.
     /// </para>
     /// <para>
     /// The everyday raw schema is a primitive value schema, especially <see cref="P:Axial.Schema.Schema.text" /> for
@@ -1306,7 +1307,7 @@ module internal Value =
     /// such as input parsing, inspect the nested model schema directly instead.
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
-    /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="schema" /> was not produced by <c>Schema.build</c>.</exception>
+    /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="schema" /> is not a completed model schema.</exception>
     let nested (schema: Schema<'nested>) : Schema<'nested> =
         if isNull (box schema) then
             nullArg (nameof schema)
@@ -1365,7 +1366,7 @@ module internal Value =
     /// such as input parsing, inspect the item model schema directly instead.
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="itemSchema" /> is null.</exception>
-    /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="itemSchema" /> was not produced by <c>Schema.build</c>.</exception>
+    /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="itemSchema" /> is not a completed model schema.</exception>
     let many (itemSchema: Schema<'item>) : Schema<'item list> =
         let itemValueSchema = nested itemSchema
         manyOf itemValueSchema
@@ -1373,7 +1374,7 @@ module internal Value =
     /// <summary>Describes a JSON object as a dictionary from an already built item value schema.</summary>
     /// <remarks>
     /// Keys are always text: the object's field names become the map's keys, so there is no separate key schema.
-    /// <c>Schema.map</c> is the general dictionary constructor; each entry's value is described by
+    /// <c>Schema.mapWith</c> is the explicit dictionary constructor; each entry's value is described by
     /// <paramref name="itemSchema" />, and interpreters attach diagnostics to entry key paths.
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="itemSchema" /> is null.</exception>
@@ -1402,6 +1403,36 @@ module internal Value =
               Description = None
               Default = None }
         )
+
+    /// <summary>Adds a constraint to every item described by a list schema.</summary>
+    let constrainItems (constraint': Constraint) (schema: Schema<'item list>) : Schema<'item list> =
+        if isNull (box constraint') then nullArg (nameof constraint')
+        if isNull (box schema) then nullArg (nameof schema)
+
+        match schema.Definition with
+        | ValueDefinition definition ->
+            match definition.Shape with
+            | ManyValueDefinition collection ->
+                let item = { collection.Item with Constraints = collection.Item.Constraints @ [ constraint' ] }
+                let acceptItem (interpreter: ICollectionItemInterpreter) = interpreter.Item<'item> item
+                Schema(ValueDefinition { definition with Shape = ManyValueDefinition { collection with Item = item; AcceptItem = acceptItem } })
+            | _ -> invalidArg (nameof schema) "Expected a list schema."
+        | _ -> invalidArg (nameof schema) "Expected a list schema."
+
+    /// <summary>Adds a constraint to every value described by a string-keyed map schema.</summary>
+    let constrainValues (constraint': Constraint) (schema: Schema<Map<string, 'item>>) : Schema<Map<string, 'item>> =
+        if isNull (box constraint') then nullArg (nameof constraint')
+        if isNull (box schema) then nullArg (nameof schema)
+
+        match schema.Definition with
+        | ValueDefinition definition ->
+            match definition.Shape with
+            | MapValueDefinition collection ->
+                let item = { collection.Item with Constraints = collection.Item.Constraints @ [ constraint' ] }
+                let acceptItem (interpreter: ICollectionItemInterpreter) = interpreter.Item<'item> item
+                Schema(ValueDefinition { definition with Shape = MapValueDefinition { collection with Item = item; AcceptItem = acceptItem } })
+            | _ -> invalidArg (nameof schema) "Expected a map schema."
+        | _ -> invalidArg (nameof schema) "Expected a map schema."
 
     /// <summary>
     /// Describes a tagged union value using explicit cases and object input with discriminator and payload fields.
@@ -1568,7 +1599,7 @@ module internal Value =
     /// Optionality is a single boundary layer, not a nestable wrapper: <c>optionOf (optionOf ...)</c> is rejected
     /// because absent input could not distinguish <c>None</c> from <c>Some None</c>. Combining <c>optionOf</c> with
     /// the <c>required</c> constraint is contradictory and is rejected here when the payload carries it, by
-    /// <c>Schema.withConstraint</c> when attached to the optional schema itself, and by <c>Schema.build</c> when
+    /// <c>Schema.withConstraint</c> when attached to the optional schema itself, and when a shape is closed when
     /// attached at the field level.
     /// </para>
     /// </remarks>
@@ -2071,8 +2102,8 @@ module Field =
     /// </summary>
     /// <remarks>
     /// Standalone fields are useful for advanced composition and tests that need to inspect a <c>Field</c> value
-    /// directly. Ordinary record schemas should use <c>Schema.recordFor&lt;'model, _&gt;</c>, pipeline
-    /// <c>Schema.field</c> steps, and <c>Schema.build</c>.
+    /// directly. Ordinary object schemas use <c>Schema.define&lt;'model&gt;</c>, <c>Syntax.field</c> or
+    /// <c>Syntax.fieldWith</c>, and a constructor-last closing operation.
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">
     /// Thrown when <paramref name="externalName" />, <paramref name="getter" />, or <paramref name="value" /> is null.
@@ -2174,11 +2205,13 @@ module internal SchemaCore =
     /// <summary>Describes a globally unique identifier.</summary>
     let guid = Value.guid
     /// <summary>Describes a list whose items use the supplied schema.</summary>
-    let list item = Value.manyOf item
+    let listWith item = Value.manyOf item
     /// <summary>Describes an optional value.</summary>
     let option item = Value.optionOf item
-    /// <summary>Describes a string-keyed map.</summary>
-    let map item = Value.map item
+    /// <summary>Describes a string-keyed map whose values use the supplied schema.</summary>
+    let mapWith item = Value.map item
+    let constrainItems constraint' schema = Value.constrainItems constraint' schema
+    let constrainValues constraint' schema = Value.constrainValues constraint' schema
     /// <summary>Defers a recursive schema.</summary>
     let defer schema = Value.lazyOf schema
     /// <summary>Converts a schema through total construction and inspection functions.</summary>
@@ -2210,252 +2243,21 @@ module internal SchemaCore =
     let internal inspectUnderlying<'value, 'primitive> schema = Value.inspectUnderlying<'value, 'primitive> schema
     let internal allConstraints schema = Value.allConstraints schema
     /// <summary>
-    /// Starts a progressive typed model schema builder from a trusted curried constructor.
+    /// Closes a structural shape whose constructor has been fully applied by its fields.
     /// </summary>
     /// <remarks>
-    /// Each following <c>Schema.field</c> step consumes one argument from the constructor type. A partially-applied
-    /// builder will not type-check with <c>Schema.build</c>; the final remaining type must be the model. This builder
-    /// replaces the earlier fixed-arity <c>Schema.map2</c>/<c>Schema.map3</c> proof shape. Use
-    /// <c>Schema.recordFor&lt;'model, _&gt;</c> when field getters need shorthand member access such as <c>_.Name</c>; plain
-    /// <c>Schema.record</c> often requires annotating getter lambdas so F# can infer the model type.
-    /// </remarks>
-    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="constructor" /> is null.</exception>
-    let record (constructor: 'constructor) : SchemaBuilder<'model, 'constructor, 'constructor, FieldsEnd<'model, 'constructor>> =
-        if isNull (box constructor) then
-            nullArg (nameof constructor)
-
-        SchemaBuilder(constructor, FieldsEnd<'model, 'constructor>())
-
-    /// <summary>
-    /// Starts a progressive typed model schema builder while explicitly anchoring the model type.
-    /// </summary>
-    /// <remarks>
-    /// This is the everyday builder entry point for record schemas because the model-type anchor lets following field
-    /// getters use shorthand member access:
-    /// <code>
-    /// Schema.recordFor&lt;Customer, _&gt; create
-    /// |&gt; Schema.field "name" _.Name Value.text
-    /// |&gt; Schema.build
-    /// </code>
-    /// It preserves the same typed field chain as <c>Schema.record</c>; each field still consumes one constructor
-    /// argument and <c>Schema.build</c> still requires the constructor to be fully applied.
-    /// </remarks>
-    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="constructor" /> is null.</exception>
-    let recordFor<'model, 'constructor>
-        (constructor: 'constructor)
-        : SchemaBuilder<'model, 'constructor, 'constructor, FieldsEnd<'model, 'constructor>> =
-        if isNull (box constructor) then
-            nullArg (nameof constructor)
-
-        SchemaBuilder(constructor, FieldsEnd<'model, 'constructor>())
-
-    /// <summary>
-    /// Appends a typed field to a progressive schema builder.
-    /// </summary>
-    /// <remarks>
-    /// The field value type must match the next constructor argument. The returned builder carries the remaining
-    /// constructor type after that argument has been consumed, so field order and constructor application stay aligned
-    /// by ordinary F# type-checking.
-    /// </remarks>
-    /// <exception cref="T:System.ArgumentNullException">
-    /// Thrown when <paramref name="externalName" />, <paramref name="getter" />, <paramref name="value" />, or
-    /// <paramref name="builder" /> is null.
-    /// </exception>
-    /// <exception cref="T:System.ArgumentException">
-    /// Thrown when <paramref name="externalName" /> is empty or contains only whitespace.
-    /// </exception>
-    let field
-        externalName
-        (getter: 'model -> 'field)
-        (value: Schema<'field>)
-        (builder: SchemaBuilder<'model, 'constructor, 'field -> 'next, 'chain>)
-        : SchemaBuilder<'model, 'constructor, 'next, FieldsAppend<'model, 'constructor, 'field, 'next, 'chain>> =
-        if isNull (box getter) then
-            nullArg (nameof getter)
-
-        if isNull (box value) then
-            nullArg (nameof value)
-
-        if isNull (box builder) then
-            nullArg (nameof builder)
-
-        let definition =
-            { ExternalName = ExternalFieldName.create externalName
-              Order = FieldOrder.create 0
-              Getter = getter
-              ValueSchema = value.ValueDefinition
-              Constraints = [] }
-
-        SchemaBuilder(builder.Constructor, FieldsAppend(builder.Chain, definition))
-
-    /// <summary>
-    /// Appends a typed field with field-level constraint metadata to a progressive schema builder.
-    /// </summary>
-    /// <exception cref="T:System.ArgumentNullException">
-    /// Thrown when <paramref name="constraints" />, a constraint entry, <paramref name="externalName" />,
-    /// <paramref name="getter" />, <paramref name="value" />, or <paramref name="builder" /> is null.
-    /// </exception>
-    let fieldWith
-        (constraints: Constraint list)
-        externalName
-        (getter: 'model -> 'field)
-        (value: Schema<'field>)
-        (builder: SchemaBuilder<'model, 'constructor, 'field -> 'next, 'chain>)
-        : SchemaBuilder<'model, 'constructor, 'next, FieldsAppend<'model, 'constructor, 'field, 'next, 'chain>> =
-        if isNull (box constraints) then
-            nullArg (nameof constraints)
-
-        constraints
-        |> List.iter (fun constraint' ->
-            if isNull constraint' then
-                nullArg (nameof constraints))
-
-        if isNull (box getter) then
-            nullArg (nameof getter)
-
-        if isNull (box value) then
-            nullArg (nameof value)
-
-        if isNull (box builder) then
-            nullArg (nameof builder)
-
-        let definition =
-            { ExternalName = ExternalFieldName.create externalName
-              Order = FieldOrder.create 0
-              Getter = getter
-              ValueSchema = value.ValueDefinition
-              Constraints = constraints }
-
-        SchemaBuilder(builder.Constructor, FieldsAppend(builder.Chain, definition))
-
-    /// <summary>Appends a nested model field to a progressive schema builder from an already built nested model schema.</summary>
-    /// <exception cref="T:System.ArgumentNullException">
-    /// Thrown when <paramref name="externalName" />, <paramref name="getter" />, <paramref name="nestedSchema" />, or
-    /// <paramref name="builder" /> is null.
-    /// </exception>
-    let nested
-        externalName
-        (getter: 'model -> 'nested)
-        (nestedSchema: Schema<'nested>)
-        (builder: SchemaBuilder<'model, 'constructor, 'nested -> 'next, 'chain>)
-        : SchemaBuilder<'model, 'constructor, 'next, FieldsAppend<'model, 'constructor, 'nested, 'next, 'chain>> =
-        field externalName getter (Value.nested nestedSchema) builder
-
-    /// <summary>Appends a nested model field with field-level constraint metadata, such as <c>required</c>.</summary>
-    /// <exception cref="T:System.ArgumentNullException">
-    /// Thrown when <paramref name="constraints" />, a constraint entry, <paramref name="externalName" />,
-    /// <paramref name="getter" />, <paramref name="nestedSchema" />, or <paramref name="builder" /> is null.
-    /// </exception>
-    let nestedWith
-        (constraints: Constraint list)
-        externalName
-        (getter: 'model -> 'nested)
-        (nestedSchema: Schema<'nested>)
-        (builder: SchemaBuilder<'model, 'constructor, 'nested -> 'next, 'chain>)
-        : SchemaBuilder<'model, 'constructor, 'next, FieldsAppend<'model, 'constructor, 'nested, 'next, 'chain>> =
-        fieldWith constraints externalName getter (Value.nested nestedSchema) builder
-
-    /// <summary>Appends a collection field to a progressive schema builder from an already built item model schema.</summary>
-    /// <exception cref="T:System.ArgumentNullException">
-    /// Thrown when <paramref name="externalName" />, <paramref name="getter" />, <paramref name="itemSchema" />, or
-    /// <paramref name="builder" /> is null.
-    /// </exception>
-    let many
-        externalName
-        (getter: 'model -> 'item list)
-        (itemSchema: Schema<'item>)
-        (builder: SchemaBuilder<'model, 'constructor, 'item list -> 'next, 'chain>)
-        : SchemaBuilder<'model, 'constructor, 'next, FieldsAppend<'model, 'constructor, 'item list, 'next, 'chain>> =
-        field externalName getter (Value.many itemSchema) builder
-
-    /// <summary>Appends a collection field with field-level constraint metadata, such as <c>minCount</c>.</summary>
-    /// <exception cref="T:System.ArgumentNullException">
-    /// Thrown when <paramref name="constraints" />, a constraint entry, <paramref name="externalName" />,
-    /// <paramref name="getter" />, <paramref name="itemSchema" />, or <paramref name="builder" /> is null.
-    /// </exception>
-    let manyWith
-        (constraints: Constraint list)
-        externalName
-        (getter: 'model -> 'item list)
-        (itemSchema: Schema<'item>)
-        (builder: SchemaBuilder<'model, 'constructor, 'item list -> 'next, 'chain>)
-        : SchemaBuilder<'model, 'constructor, 'next, FieldsAppend<'model, 'constructor, 'item list, 'next, 'chain>> =
-        fieldWith constraints externalName getter (Value.many itemSchema) builder
-
-    /// <summary>Appends a text field represented as <see cref="T:System.String" /> to a progressive schema builder.</summary>
-    let private textField
-        externalName
-        (getter: 'model -> string)
-        (builder: SchemaBuilder<'model, 'constructor, string -> 'next, 'chain>)
-        : SchemaBuilder<'model, 'constructor, 'next, FieldsAppend<'model, 'constructor, string, 'next, 'chain>> =
-        field externalName getter Value.text builder
-
-    /// <summary>Appends a 32-bit signed integer field represented as <see cref="T:System.Int32" /> to a progressive schema builder.</summary>
-    let private intField
-        externalName
-        (getter: 'model -> int)
-        (builder: SchemaBuilder<'model, 'constructor, int -> 'next, 'chain>)
-        : SchemaBuilder<'model, 'constructor, 'next, FieldsAppend<'model, 'constructor, int, 'next, 'chain>> =
-        field externalName getter Value.``int`` builder
-
-    /// <summary>Appends a decimal field represented as <see cref="T:System.Decimal" /> to a progressive schema builder.</summary>
-    let private decimalField
-        externalName
-        (getter: 'model -> decimal)
-        (builder: SchemaBuilder<'model, 'constructor, decimal -> 'next, 'chain>)
-        : SchemaBuilder<'model, 'constructor, 'next, FieldsAppend<'model, 'constructor, decimal, 'next, 'chain>> =
-        field externalName getter Value.``decimal`` builder
-
-    /// <summary>Appends a Boolean field represented as <see cref="T:System.Boolean" /> to a progressive schema builder.</summary>
-    let private boolField
-        externalName
-        (getter: 'model -> bool)
-        (builder: SchemaBuilder<'model, 'constructor, bool -> 'next, 'chain>)
-        : SchemaBuilder<'model, 'constructor, 'next, FieldsAppend<'model, 'constructor, bool, 'next, 'chain>> =
-        field externalName getter Value.``bool`` builder
-
-#if NET8_0_OR_GREATER
-    /// <summary>Appends a calendar date field represented as <see cref="T:System.DateOnly" /> to a progressive schema builder.</summary>
-    let private dateField
-        externalName
-        (getter: 'model -> DateOnly)
-        (builder: SchemaBuilder<'model, 'constructor, DateOnly -> 'next, 'chain>)
-        : SchemaBuilder<'model, 'constructor, 'next, FieldsAppend<'model, 'constructor, DateOnly, 'next, 'chain>> =
-        field externalName getter Value.date builder
-#endif
-
-    /// <summary>Appends an instant-like date and time field represented as <see cref="T:System.DateTimeOffset" /> to a progressive schema builder.</summary>
-    let private dateTimeField
-        externalName
-        (getter: 'model -> DateTimeOffset)
-        (builder: SchemaBuilder<'model, 'constructor, DateTimeOffset -> 'next, 'chain>)
-        : SchemaBuilder<'model, 'constructor, 'next, FieldsAppend<'model, 'constructor, DateTimeOffset, 'next, 'chain>> =
-        field externalName getter Value.dateTime builder
-
-    /// <summary>Appends a globally unique identifier field represented as <see cref="T:System.Guid" /> to a progressive schema builder.</summary>
-    let private guidField
-        externalName
-        (getter: 'model -> Guid)
-        (builder: SchemaBuilder<'model, 'constructor, Guid -> 'next, 'chain>)
-        : SchemaBuilder<'model, 'constructor, 'next, FieldsAppend<'model, 'constructor, Guid, 'next, 'chain>> =
-        field externalName getter Value.guid builder
-
-    /// <summary>
-    /// Builds a model schema from a progressive typed builder whose constructor has been fully applied by fields.
-    /// </summary>
-    /// <remarks>
-    /// This is the arity-independent schema construction path. It preserves the existing type-erased model definition
-    /// for metadata interpreters while deriving constructor application and field ordering from the typed field chain,
+    /// This is the arity-independent schema construction path. It preserves the type-erased model definition
+    /// for metadata interpreters while deriving constructor application and field ordering from the typed shape,
     /// without adding more fixed-arity <c>Schema.mapN</c> helpers.
     /// </remarks>
-    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="builder" /> is null.</exception>
-    let build (builder: SchemaBuilder<'model, 'constructor, 'model, 'chain>) : Schema<'model> =
-        if isNull (box builder) then
-            nullArg (nameof builder)
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="closure" /> is null.</exception>
+    let closeTotal (closure: ShapeClosure<'model, 'constructor, 'model, 'chain>) : Schema<'model> =
+        if isNull (box closure) then
+            nullArg (nameof closure)
 
-        let chain = builder.Chain :> IFieldChain<'model, 'constructor, 'model>
+        let fieldsShape = closure.Fields :> IShapeFields<'model, 'constructor, 'model>
         let fields, count =
-            let fields, count = chain.GetFields 0
+            let fields, count = fieldsShape.GetFields 0
             fields |> List.map unbox<FieldDescriptor<'model>>, count
 
         let constructor =
@@ -2463,19 +2265,20 @@ module internal SchemaCore =
               ApplyTrusted =
                 fun arguments ->
                     ConstructorApplication.ensureArgumentCount count arguments
-                    chain.Apply(box builder.Constructor, arguments) |> unbox<'model>
+                    fieldsShape.Apply(box closure.Constructor, arguments) |> unbox<'model>
               TryApplyTrusted =
                 fun arguments ->
                     ConstructorApplication.ensureArgumentCount count arguments
-                    chain.Apply(box builder.Constructor, arguments) |> unbox<'model> |> Ok }
+                    fieldsShape.Apply(box closure.Constructor, arguments) |> unbox<'model> |> Ok }
 
         let specialization =
-            SchemaSpecialization<'model, 'constructor, 'chain>(builder.Constructor, builder.Chain) :> ISchemaSpecialization<'model>
+            CompiledRecordPlan<'model, 'constructor, 'model, 'chain>(closure.Constructor, closure.Fields, Ok)
+            :> ICompiledRecordPlan<'model>
 
         Schema(ModelDefinition(ModelSchemaDefinition.create constructor fields), Some specialization)
 
     /// <summary>
-    /// Builds a model schema from a progressive typed builder whose constructor returns
+    /// Closes a structural shape whose constructor returns
     /// <c>Result&lt;'model, 'error&gt;</c>.
     /// </summary>
     /// <remarks>
@@ -2487,27 +2290,27 @@ module internal SchemaCore =
     /// diagnostics from partially trusted values.
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">
-    /// Thrown when <paramref name="errorMessage" /> or <paramref name="builder" /> is null.
+    /// Thrown when <paramref name="errorMessage" /> or <paramref name="closure" /> is null.
     /// </exception>
-    let buildResultWith
+    let closeResultWith
         (errorMessage: 'error -> string)
-        (builder: SchemaBuilder<'model, 'constructor, Result<'model, 'error>, 'chain>)
+        (closure: ShapeClosure<'model, 'constructor, Result<'model, 'error>, 'chain>)
         : Schema<'model> =
         if isNull (box errorMessage) then
             nullArg (nameof errorMessage)
 
-        if isNull (box builder) then
-            nullArg (nameof builder)
+        if isNull (box closure) then
+            nullArg (nameof closure)
 
-        let chain = builder.Chain :> IFieldChain<'model, 'constructor, Result<'model, 'error>>
+        let fieldsShape = closure.Fields :> IShapeFields<'model, 'constructor, Result<'model, 'error>>
         let fields, count =
-            let fields, count = chain.GetFields 0
+            let fields, count = fieldsShape.GetFields 0
             fields |> List.map unbox<FieldDescriptor<'model>>, count
 
         let tryApply arguments =
             ConstructorApplication.ensureArgumentCount count arguments
 
-            match chain.Apply(box builder.Constructor, arguments) |> unbox<Result<'model, 'error>> with
+            match fieldsShape.Apply(box closure.Constructor, arguments) |> unbox<Result<'model, 'error>> with
             | Ok model -> Ok model
             | Error error -> Error(errorMessage error)
 
@@ -2520,45 +2323,51 @@ module internal SchemaCore =
                     | Error message -> invalidOp message
               TryApplyTrusted = tryApply }
 
-        Schema(ModelDefinition(ModelSchemaDefinition.create constructor fields), None)
+        let specialization =
+            CompiledRecordPlan<'model, 'constructor, Result<'model, 'error>, 'chain>(
+                closure.Constructor,
+                closure.Fields,
+                Result.mapError errorMessage
+            )
+            :> ICompiledRecordPlan<'model>
+
+        Schema(ModelDefinition(ModelSchemaDefinition.create constructor fields), Some specialization)
 
     /// <summary>
-    /// Builds a model schema from a progressive typed builder whose constructor returns
+    /// Closes a structural shape whose constructor returns
     /// <c>Result&lt;'model, string&gt;</c>.
     /// </summary>
     /// <remarks>
-    /// This is the short path for constructors that already return user-facing intrinsic-invariant messages. Use
-    /// <see cref="M:Axial.Schema.Schema.buildResultWith``5" /> when the constructor uses a domain-specific error type.
+    /// Constructor errors must already be rendered as user-facing intrinsic-invariant messages.
     /// </remarks>
-    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="builder" /> is null.</exception>
-    let buildResult
-        (builder: SchemaBuilder<'model, 'constructor, Result<'model, string>, 'chain>)
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="closure" /> is null.</exception>
+    let closeResult
+        (closure: ShapeClosure<'model, 'constructor, Result<'model, string>, 'chain>)
         : Schema<'model> =
-        buildResultWith id builder
+        closeResultWith id closure
 
     /// <summary>
-    /// Specializes a built model schema's retained typed field chain into an interpreter-specific result.
+    /// Compiles a built model schema's retained typed shape into an interpreter-specific record plan.
     /// </summary>
     /// <remarks>
     /// This is the constructor-specialized companion to the type-erased schema metadata exposed through ordinary
     /// schema inspection. It is intended for interpreters such as codecs that need to compile direct record plans from
     /// a <c>Schema&lt;'model&gt;</c> value without asking callers to re-supply the constructor or typed fields.
-    /// Schemas produced by <see cref="M:Axial.Schema.Schema.build``4" /> carry this typed view.
+    /// Schemas closed with <c>Syntax.construct</c> or <c>Syntax.constructResult</c> carry this typed view.
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="factory" /> or
     /// <paramref name="schema" /> is null.</exception>
-    /// <exception cref="T:System.ArgumentException">Thrown when the schema was not produced by the progressive typed
-    /// builder and therefore has no retained typed field chain.</exception>
-    let specialize (factory: IFieldChainFactory<'model, 'result>) (schema: Schema<'model>) : 'result =
+    /// <exception cref="T:System.ArgumentException">Thrown when the schema has no retained typed record plan.</exception>
+    let compilePlan (factory: IRecordPlanCompiler<'model, 'result>) (schema: Schema<'model>) : 'result =
         if isNull (box factory) then
             nullArg (nameof factory)
 
         if isNull (box schema) then
             nullArg (nameof schema)
 
-        match schema.Specialization with
-        | Some specialization -> specialization.Specialize factory
-        | None -> invalidArg (nameof schema) "The schema does not carry a typed field chain."
+        match schema.RecordPlan with
+        | Some specialization -> specialization.CompilePlan factory
+        | None -> invalidArg (nameof schema) "The schema does not carry a typed record plan."
 
     /// <summary>Returns a built model schema carrying the supplied description metadata.</summary>
     /// <remarks>
@@ -2569,7 +2378,7 @@ module internal SchemaCore =
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
     /// <exception cref="T:System.ArgumentException">
     /// Thrown when <paramref name="text" /> is null, empty, or whitespace, or when <paramref name="schema" /> was not
-    /// produced by <c>Schema.build</c>.
+    /// a completed model schema.
     /// </exception>
     let describe (text: string) (schema: Schema<'model>) : Schema<'model> =
         if String.IsNullOrWhiteSpace text then
@@ -2581,5 +2390,5 @@ module internal SchemaCore =
         match schema.Definition with
         | PendingDefinition -> invalidArg (nameof schema) "Expected a built model schema."
         | ModelDefinition definition ->
-            Schema(ModelDefinition { definition with Description = Some text }, schema.Specialization)
+            Schema(ModelDefinition { definition with Description = Some text }, schema.RecordPlan)
         | ValueDefinition _ -> Value.describe text schema

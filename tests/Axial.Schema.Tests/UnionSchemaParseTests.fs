@@ -7,6 +7,7 @@ open Axial.Schema
 open Axial.Validation
 open Swensen.Unquote
 open Xunit
+open Axial.Schema.Syntax
 
 module UnionSchemaParseTests =
     type private CardDetails =
@@ -24,9 +25,9 @@ module UnionSchemaParseTests =
         }
 
     let private cardSchema () =
-        Schema.recordFor<CardDetails, _> (fun number -> { Number = number })
-        |> Schema.field "number" _.Number RefinedSchemas.nonBlankString
-        |> Schema.build
+        Schema.define<CardDetails>
+        |> fieldWith RefinedSchemas.nonBlankString "number" _.Number
+        |> construct (fun number -> { Number = number })
 
     let private paymentValue () =
         Schema.union
@@ -36,9 +37,9 @@ module UnionSchemaParseTests =
               UnionCase.create "invoice" Invoice (function Invoice slug -> Some slug | _ -> None) RefinedSchemas.slug ]
 
     let private checkoutSchema () =
-        Schema.recordFor<Checkout, _> (fun payment -> { Payment = payment })
-        |> Schema.field "payment" _.Payment (paymentValue ())
-        |> Schema.build
+        Schema.define<Checkout>
+        |> fieldWith (paymentValue ()) "payment" _.Payment
+        |> construct (fun payment -> { Payment = payment })
 
     [<Fact>]
     let ``parse builds tagged union cases from discriminator and payload`` () =

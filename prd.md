@@ -62,7 +62,7 @@ LSP informed by that experience.
 The public story is a ladder, not three doors:
 
 1. Plain `Result` with your own error DU — simple code.
-2. The `Schema.recordFor` builder — domain models; this is what newcomers learn, and the only authoring surface.
+2. Constructor-last `Schema.define` shapes — domain models; this is what newcomers learn and the only authoring surface.
 3. `.contract` files and generation — for teams with many versioned boundaries. Positioning sentence: contracts
    generate the same Schema code you would write by hand; reading the generated file is understanding the system.
 

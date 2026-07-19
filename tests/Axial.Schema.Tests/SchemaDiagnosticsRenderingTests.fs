@@ -6,15 +6,16 @@ open Axial.Schema
 open Axial.Validation
 open Swensen.Unquote
 open Xunit
+open Axial.Schema.Syntax
 
 module SchemaDiagnosticsRenderingTests =
     type private Signup = { Email: string; Age: int }
 
     let private schema =
-        Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
-        |> Schema.field "email" _.Email (Schema.text |> Schema.constrain Constraint.required)
-        |> Schema.field "age" _.Age Schema.int
-        |> Schema.build
+        Schema.define<Signup>
+        |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "email" _.Email
+        |> fieldWith Schema.int "age" _.Age
+        |> construct (fun email age -> { Email = email; Age = age })
 
     [<Fact>]
     let ``toString renders a field name path for a single failing field`` () =

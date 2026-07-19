@@ -2,6 +2,7 @@ namespace Axial.Schema
 
 open Axial.Refined
 open Axial.Schema
+open Axial.Schema.Syntax
 
 /// <summary>Ready-made schema values for the built-in <c>Axial.Refined</c> catalog.</summary>
 /// <remarks>
@@ -83,7 +84,7 @@ module RefinedSchemas =
 
     /// <summary>Describes a non-empty list as a schema refined value over a collection of item schemas.</summary>
     let nonEmptyList (itemSchema: Schema<'value>) : Schema<NonEmptyList<'value>> =
-        Schema.list itemSchema
+        Schema.listWith itemSchema
         |> Schema.constrain (Constraint.minCount 1)
         |> Schema.refine
             Refine.nonEmptyList SchemaError.ofRefinementError
@@ -91,7 +92,7 @@ module RefinedSchemas =
 
     /// <summary>Describes a non-empty array as a schema refined value over a collection of item schemas.</summary>
     let nonEmptyArray (itemSchema: Schema<'value>) : Schema<NonEmptyArray<'value>> =
-        Schema.list itemSchema
+        Schema.listWith itemSchema
         |> Schema.constrain (Constraint.minCount 1)
         |> Schema.refine
             Refine.nonEmptyArray SchemaError.ofRefinementError
@@ -101,7 +102,7 @@ module RefinedSchemas =
     let distinctList<'value when 'value: equality>
         (itemSchema: Schema<'value>)
         : Schema<DistinctList<'value>> =
-        Schema.list itemSchema
+        Schema.listWith itemSchema
         |> Schema.constrain Constraint.distinct
         |> Schema.refine
             Refine.distinctList SchemaError.ofRefinementError
@@ -109,7 +110,7 @@ module RefinedSchemas =
 
     /// <summary>Describes a bounded list as a schema refined value over a collection with inclusive count bounds.</summary>
     let boundedList minCount maxCount (itemSchema: Schema<'value>) : Schema<BoundedList<'value>> =
-        Schema.list itemSchema
+        Schema.listWith itemSchema
         |> Schema.constrain (Constraint.countBetween minCount maxCount)
         |> Schema.refine
             (Refine.boundedList minCount maxCount) SchemaError.ofRefinementError
@@ -117,7 +118,7 @@ module RefinedSchemas =
 
     /// <summary>Describes a bounded array as a schema refined value over a collection with inclusive count bounds.</summary>
     let boundedArray minCount maxCount (itemSchema: Schema<'value>) : Schema<BoundedArray<'value>> =
-        Schema.list itemSchema
+        Schema.listWith itemSchema
         |> Schema.constrain (Constraint.countBetween minCount maxCount)
         |> Schema.refine
             (Refine.boundedArray minCount maxCount) SchemaError.ofRefinementError
@@ -125,17 +126,19 @@ module RefinedSchemas =
 
     /// <summary>Describes a date-time range as a record schema with <c>start</c> and <c>end</c> fields.</summary>
     let dateTimeOffsetRange : Schema<DateTimeOffsetRange> =
-        Schema.recordFor<DateTimeOffsetRange, _> Refine.dateTimeOffsetRange
-        |> Schema.field "start" _.Start Schema.dateTime
-        |> Schema.field "end" _.End Schema.dateTime
-        |> Schema.buildResultWith RefinementError.describe
+        Schema.define<DateTimeOffsetRange>
+        |> fieldWith Schema.dateTime "start" _.Start
+        |> fieldWith Schema.dateTime "end" _.End
+        |> constructResult (fun start finish ->
+            Refine.dateTimeOffsetRange start finish |> Result.mapError RefinementError.describe)
 
 #if NET8_0_OR_GREATER
     /// <summary>Describes a date-only range as a record schema with <c>start</c> and <c>end</c> fields.</summary>
     /// <remarks>netstandard2.1: not available.</remarks>
     let dateOnlyRange : Schema<DateOnlyRange> =
-        Schema.recordFor<DateOnlyRange, _> Refine.dateOnlyRange
-        |> Schema.field "start" _.Start Schema.date
-        |> Schema.field "end" _.End Schema.date
-        |> Schema.buildResultWith RefinementError.describe
+        Schema.define<DateOnlyRange>
+        |> fieldWith Schema.date "start" _.Start
+        |> fieldWith Schema.date "end" _.End
+        |> constructResult (fun start finish ->
+            Refine.dateOnlyRange start finish |> Result.mapError RefinementError.describe)
 #endif

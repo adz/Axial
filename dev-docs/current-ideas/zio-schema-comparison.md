@@ -39,7 +39,7 @@ derivation (`@fieldName`, aliases, `@discriminatorName`, `@rejectExtraFields`, `
 
 - **The arity wall is real for them too.** No variadic generics in Scala either: `CaseClass1..22` and `Enum1..22`
   are hand-rolled arity families — roughly 8,000 of `Schema.scala`'s 10,330 lines. Beyond 22: fall back to
-  `CaseSet`/`GenericRecord`. Axial's progressive typed chain (`FieldsAppend`/`IFieldChain`) has no cap and no
+  `CaseSet`/`GenericRecord`. Axial's constructor-last shape and typed record plan have no cap and no
   parallel class family. On this axis our core is genuinely ahead.
 - **Generic construction is boxed and marked unsafe.** `Record.construct(values: Chunk[Any])(implicit unsafe:
   Unsafe): Either[String, Z]` — the exact `obj array` shape we refused to ship as `Model.construct`, shipped behind
@@ -83,14 +83,14 @@ derivation (`@fieldName`, aliases, `@discriminatorName`, `@rejectExtraFields`, `
 5. **Refined-type integration** — proof-carrying field types bridged into schemas; their `Transform` node is the
    mechanical analogue but carries no proof discipline.
 6. **The wire/domain split with frozen versioned contracts** and typed manual migrations as a first-class design.
-7. **Uncapped compile-checked construction alignment** (typed chain) without `Unsafe` or 22-arity families.
+7. **Uncapped compile-checked construction alignment** (typed record plan) without `Unsafe` or 22-arity families.
 
 ## What This Changes About Our Plan
 
 - **Confirms the differentiator.** The two pillars we've been building — trusted construction and path-aware
   boundary diagnostics — are precisely what the most mature schema library in the adjacent ecosystem does *not*
   do. We are not reinventing ZIO Schema badly; we are building the part they skipped.
-- **Confirms the typed chain and the draft/validate route.** Their alternatives to both are the two shapes we
+- **Confirms the typed record plan and the draft/validate route.** Their alternatives to both are the two shapes we
   rejected (arity families, unsafe boxed construction).
 - **Sets the ergonomic bar honestly.** Their derived one-liner beats anything we can offer for "I have a type,
   give me a codec." Our *manual* pipeline crushes their *manual* story (their docs' `CaseClass2` example with

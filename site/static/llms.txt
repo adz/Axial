@@ -40,7 +40,7 @@ Data flows from left to right. Later stages can bind earlier stages directly.
 
 ## Schema Boundary Model
 - `Schema<'value>` is the universal typed declaration for primitives, refined values, collections, unions, and records. It executes nothing until an interpreter consumes it.
-- Author with `Schema.recordFor<'model,_> ctor |> Schema.field... |> Schema.build`; use `Schema.buildResult` for a constructor returning `Result`. `Axial.Schema.DSL` is the same pipeline without prefixes and should be opened only inside a schema-definition module.
+- Author with `Schema.define<'model> |> field... |> construct ctor`; open `Axial.Schema.Syntax` in the declaration module. Use `field` for inferred common schemas, `fieldWith` for an explicit value schema, `constrain` beside the current field, and `constructResult` for a checked constructor.
 - Catalog members include primitives (`text`, `int`, `decimal`, `bool`, `date`, `dateTime`, `guid`), `list`, `map`, `option`, externally tagged `union`, `inlineUnion`, scalar `enum`, recursive `defer`, total `convert`, and fallible `refine`.
 - `RawInput` is source-neutral boundary data. `Schema.parse schema raw` returns `ParsedInput<'model,SchemaError>`: a model or accumulated path-aware diagnostics plus the original input for redisplay. `ParsedInput.renderErrors` is the default English renderer.
 - `Schema.check schema value` rechecks an existing value and invokes a record schema's constructor again. It returns the original value on success; durable guarantees require private representations or complete smart constructors.

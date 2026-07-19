@@ -29,8 +29,8 @@ The app tracks workspaces, members, and work items across a CLI, an HTML form, a
 files. The features it leans on, and why they matter at this size:
 
 - **One schema catalog.** Primitives, collections, refined fields, and records all have type `Schema<_>`, so
-  `Schema.field name getter fieldSchema` composition is the only construction mechanism to learn
-  ([DSL]({{< relref "/schema/dsl.md" >}})).
+  `field`/`fieldWith` followed by a constructor-last closing operation is the only construction mechanism to learn
+  ([schema syntax]({{< relref "/schema/syntax.md" >}})).
 - **Refined fields call the domain's own smart constructors.** `WorkspaceName`, `PersonName`, and
   `WorkItemTitle` have private representations; `Schema.refine` runs the same fallible `create` the rest of the
   application uses, so there is no second copy of the invariant to drift

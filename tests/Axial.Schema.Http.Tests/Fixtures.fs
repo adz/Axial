@@ -1,6 +1,7 @@
 module Axial.Schema.Http.Tests.Fixtures
 
 open Axial.Schema
+open Axial.Schema.Syntax
 
 type Address = { Street: string; City: string }
 
@@ -11,22 +12,22 @@ type Signup =
       Tags: string list }
 
 let addressSchema () =
-    Schema.recordFor<Address, _> (fun street city -> { Street = street; City = city })
-    |> Schema.field "street" _.Street (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 120 ])
-    |> Schema.field "city" _.City (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 80 ])
-    |> Schema.build
+    Schema.define<Address>
+    |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 120 ]) "street" _.Street
+    |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 80 ]) "city" _.City
+    |> construct (fun street city -> { Street = street; City = city })
 
 let signupSchema () =
-    Schema.recordFor<Signup, _> (fun name age address tags ->
+    Schema.define<Signup>
+    |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 80 ]) "name" _.Name
+    |> fieldWith (Schema.int |> Schema.constrainAll [ Constraint.between 13 120 ]) "age" _.Age
+    |> fieldWith (addressSchema () |> Schema.constrainAll [ Constraint.required ]) "address" _.Address
+    |> fieldWith (Schema.listWith Schema.text |> Schema.constrainAll [ Constraint.maxCount 5 ]) "tags" _.Tags
+    |> construct (fun name age address tags ->
         { Name = name
           Age = age
           Address = address
           Tags = tags })
-    |> Schema.field "name" _.Name (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 80 ])
-    |> Schema.field "age" _.Age (Schema.int |> Schema.constrainAll [ Constraint.between 13 120 ])
-    |> Schema.field "address" _.Address (addressSchema () |> Schema.constrainAll [ Constraint.required ])
-    |> Schema.field "tags" _.Tags (Schema.list Schema.text |> Schema.constrainAll [ Constraint.maxCount 5 ])
-    |> Schema.build
 
 let validJson =
     """{"name":"Ada Lovelace","age":36,"address":{"street":"12 Analytical Way","city":"London"},"tags":["vip"]}"""

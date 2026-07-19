@@ -350,7 +350,7 @@ type Category =
         test <@ Resolver.resolve [ file ] = [] @>
         let emitted = Emitter.emit "Fallback" [ file ] file
         test <@ emitted.Contains "let rec schema" @>
-        test <@ emitted.Contains "Schema.list (Schema.defer (fun () -> schema))" @>
+        test <@ emitted.Contains "Schema.listWith (Schema.defer (fun () -> schema))" @>
         test <@ not (emitted.Contains "type Category") @>
 
     [<Fact>]

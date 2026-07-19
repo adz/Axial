@@ -27,6 +27,6 @@ weight: 1000
  diagnostics, validation, codecs, UI generation, or workflow execution.
  </p><p class='fsdocs-para'>
  Primitive, collection, optional, union, refined, and record declarations all produce <code>Schema&lt;&#39;value&gt;</code>.
- Record declarations use <code>Schema.recordFor</code>, attach completed field schemas with <code>Schema.field</code>, and finish
- with <code>Schema.build</code> or a result-returning build operation.
+ Object declarations start with <code>Schema.define</code>, add fields through <code>Syntax</code>, and finish with
+ <code>Syntax.construct</code> or <code>Syntax.constructResult</code>.
  </p>

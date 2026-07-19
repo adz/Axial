@@ -29,18 +29,18 @@ A library can guarantee the result of its own functions. It cannot prevent a cal
 constructor:
 
 ```fsharp
-open Axial.Schema.DSL
+open Axial.Schema.Syntax
 type Booking =
     { Start: DateOnly
       End: DateOnly }
 
 let bookingSchema =
-    recordFor<Booking, _> (fun start finish ->
+    Schema.define<Booking>
+    |> field "start" _.Start
+    |> field "end" _.End
+    |> constructResult (fun start finish ->
         if start <= finish then Ok { Start = start; End = finish }
         else Error "Start must not be after end.")
-    |> field "start" _.Start date
-    |> field "end" _.End date
-    |> buildResult
 
 let invalidAnyway =
     { Start = DateOnly(2026, 7, 20)
@@ -82,7 +82,7 @@ The schema participates in that construction; it is not the sole guardian.
 Use a private aggregate representation when every value must satisfy a relationship between fields:
 
 ```fsharp
-open Axial.Schema.DSL
+open Axial.Schema.Syntax
 type Booking =
     private
         { Start: DateOnly
@@ -97,10 +97,10 @@ module Booking =
     let finish booking = booking.End
 
     let schema =
-        recordFor<Booking, _> create
-        |> field "start" start date
-        |> field "end" finish date
-        |> buildResult
+        Schema.define<Booking>
+        |> field "start" start
+        |> field "end" finish
+        |> constructResult create
 ```
 
 The record schema invokes `Booking.create`, and ordinary callers cannot use a record literal. Updates must also go
@@ -117,7 +117,7 @@ A draft is a public record whose only job is to be assembled and edited freely b
 aggregate a draft type, and make the schema's constructor the one path from draft fields to the domain type:
 
 ```fsharp
-open Axial.Schema.DSL
+open Axial.Schema.Syntax
 type BookingDraft =
     { Start: DateOnly
       End: DateOnly }
@@ -136,10 +136,10 @@ module Booking =
         { Start = booking.Start; End = booking.End }
 
     let schema =
-        recordFor<Booking, _> (fun start finish -> create { Start = start; End = finish })
-        |> field "start" (fun b -> b.Start) date
-        |> field "end" (fun b -> b.End) date
-        |> buildResult
+        Schema.define<Booking>
+        |> field "start" (fun b -> b.Start)
+        |> field "end" (fun b -> b.End)
+        |> constructResult (fun start finish -> create { Start = start; End = finish })
 ```
 
 Construction keeps field names without exposing the representation:

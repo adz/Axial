@@ -4,22 +4,22 @@ linkTitle: "list"
 weight: 2106
 ---
 
-Describes a list whose items use <span class="fsdocs-param-name">item</span>.
+Describes a list by resolving its item schema from <typeparamref name="'item" />.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Schema.Schema.list&#32;<span>item</span></span></code>
+<code><span>Schema.Schema.list&#32;<span>()</span></span></code>
 </div>
 
 ## Parameters
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `item` | <code><span><a href="t-schema-schema.md">Schema</a>&lt;'a&gt;</span></code> |  |
+| `()` | <code>unit</code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="t-schema-schema.md">Schema</a>&lt;<span>'a&#32;list</span>&gt;</span></code> |  |
+| <code><span><a href="t-schema-schema.md">Schema</a>&lt;<span>^item&#32;list</span>&gt;</span></code> |  |

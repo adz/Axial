@@ -4,6 +4,7 @@ open System
 open Axial.Schema
 open Swensen.Unquote
 open Xunit
+open Axial.Schema.Syntax
 
 module SchemaEnumValueTests =
     type private Color =
@@ -19,9 +20,9 @@ module SchemaEnumValueTests =
     [<Fact>]
     let ``enum value schema exposes case tags`` () =
         let schema =
-            Schema.recordFor<Swatch, _> (fun color -> { Color = color })
-            |> Schema.field "color" _.Color (colorSchema ())
-            |> Schema.build
+            Schema.define<Swatch>
+            |> fieldWith (colorSchema ()) "color" _.Color
+            |> construct (fun color -> { Color = color })
 
         let color =
             Inspect.model schema
@@ -35,9 +36,9 @@ module SchemaEnumValueTests =
     [<Fact>]
     let ``enum value schemas lower to json schema string enum`` () =
         let schema =
-            Schema.recordFor<Swatch, _> (fun color -> { Color = color })
-            |> Schema.field "color" _.Color (colorSchema ())
-            |> Schema.build
+            Schema.define<Swatch>
+            |> fieldWith (colorSchema ()) "color" _.Color
+            |> construct (fun color -> { Color = color })
 
         let generated = JsonSchema.generate schema
 

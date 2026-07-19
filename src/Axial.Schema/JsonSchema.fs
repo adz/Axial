@@ -305,7 +305,7 @@ module JsonSchema =
     /// <summary>Generates a compact JSON Schema document from a built model schema's metadata.</summary>
     /// <param name="schema">The built model schema to lower.</param>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
-    /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="schema" /> was not produced by <c>Schema.build</c>.</exception>
+    /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="schema" /> is not a completed model schema.</exception>
     /// <example>
     /// <code>
     /// let document = JsonSchema.generate customerSchema

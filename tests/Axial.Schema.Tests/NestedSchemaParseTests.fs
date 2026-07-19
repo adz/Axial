@@ -6,6 +6,7 @@ open Axial.Schema
 open Axial.Validation
 open Swensen.Unquote
 open Xunit
+open Axial.Schema.Syntax
 
 module NestedSchemaParseTests =
     type private Address = { Street: string; City: string }
@@ -26,28 +27,28 @@ module NestedSchemaParseTests =
     type private VerifiedCustomer = { Name: string; Address: VerifiedAddress }
 
     let private addressSchema =
-        Schema.recordFor<Address, _> (fun street city -> ({ Street = street; City = city }: Address))
-        |> Schema.field "street" (fun address -> address.Street) (Schema.text |> Schema.constrain Constraint.required)
-        |> Schema.field "city" (fun address -> address.City) (Schema.text |> Schema.constrain Constraint.required)
-        |> Schema.build
+        Schema.define<Address>
+        |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "street" (fun address -> address.Street)
+        |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "city" (fun address -> address.City)
+        |> construct (fun street city -> ({ Street = street; City = city }: Address))
 
     let private customerSchema =
-        Schema.recordFor<Customer, _> (fun name address -> ({ Name = name; Address = address }: Customer))
-        |> Schema.field "name" (fun customer -> customer.Name) (Schema.text |> Schema.constrain Constraint.required)
-        |> Schema.field "address" (fun customer -> customer.Address) (addressSchema |> Schema.constrain Constraint.required)
-        |> Schema.build
+        Schema.define<Customer>
+        |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "name" (fun customer -> customer.Name)
+        |> fieldWith (addressSchema |> Schema.constrain Constraint.required) "address" (fun customer -> customer.Address)
+        |> construct (fun name address -> ({ Name = name; Address = address }: Customer))
 
     let private verifiedAddressSchema =
-        Schema.recordFor<VerifiedAddress, _> VerifiedAddress.Create
-        |> Schema.field "street" (fun address -> address.Street) (Schema.text |> Schema.constrain Constraint.required)
-        |> Schema.field "city" (fun address -> address.City) (Schema.text |> Schema.constrain Constraint.required)
-        |> Schema.buildResult
+        Schema.define<VerifiedAddress>
+        |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "street" (fun address -> address.Street)
+        |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "city" (fun address -> address.City)
+        |> constructResult VerifiedAddress.Create
 
     let private verifiedCustomerSchema =
-        Schema.recordFor<VerifiedCustomer, _> (fun name address -> ({ Name = name; Address = address }: VerifiedCustomer))
-        |> Schema.field "name" (fun customer -> customer.Name) (Schema.text |> Schema.constrain Constraint.required)
-        |> Schema.field "address" (fun customer -> customer.Address) (verifiedAddressSchema |> Schema.constrain Constraint.required)
-        |> Schema.build
+        Schema.define<VerifiedCustomer>
+        |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "name" (fun customer -> customer.Name)
+        |> fieldWith (verifiedAddressSchema |> Schema.constrain Constraint.required) "address" (fun customer -> customer.Address)
+        |> construct (fun name address -> ({ Name = name; Address = address }: VerifiedCustomer))
 
     let private validAddress =
         RawInput.Object(Map.ofList [ "street", RawInput.Scalar "1 Infinite Loop"; "city", RawInput.Scalar "Cupertino" ])

@@ -310,7 +310,7 @@ call site that constructs the contract fails to compile until the new migration 
   here are code.
 - **No schema algebra.** `allOf` and untagged `anyOf` are absent from the grammar on purpose; unions carry a
   discriminator.
-- **No second authoring surface.** The grammar emits the one existing `Schema` builder API; nothing generated is
-  something you could not have written yourself.
+- **Generated output is ordinary schema code.** The grammar emits `Schema.define`, fields, constraints, and a closing
+  constructor exactly as handwritten schemas do.
 
 See [Separate Wire And Domain Models](patterns/wire-and-domain-models/) for a complete build-to-domain pattern.

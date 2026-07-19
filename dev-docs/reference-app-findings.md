@@ -10,7 +10,7 @@ The current reference app supports a narrower construction recommendation than t
 draft direction:
 
 - A reusable field schema is an ordinary `Schema<'field>` value. It may be named (`Contracts.workspaceName`) or
-  written inline at `Schema.field`; these are the same mechanism.
+  attached through `fieldWith`; these are the same mechanism.
 - Portable constraints stay on that field schema because parsing, diagnostics, inspection, JSON Schema, and test-data
   generation need declarative metadata. They are not a second record-field API and they do not replace a domain
   constructor.
@@ -27,7 +27,7 @@ draft direction:
   `Schema.parse`; use `Schema.check` only when admitting an already assembled typed wire/draft value whose construction
   history is not trusted.
 
-The reference app should therefore continue to teach regular `Schema.field name getter fieldSchema` composition. It
+The reference app should therefore teach regular `field`/`fieldWith` composition with the constructor last. It
 should not add positional field constraints, primitive-specific field builders, a second value-schema catalog, or a
 universal trust wrapper.
 
@@ -87,14 +87,14 @@ This is substantially better than maintaining unrelated DTO validation, OpenAPI 
 generators, and serializers. The value is strongest when every interpreter is demonstrably driven by the same schema,
 not merely when several APIs happen to accept it.
 
-The progressive record builder was ergonomic in practice:
+The constructor-last shape is ergonomic in practice:
 
 ```fsharp
-Schema.recordFor<WorkspaceV2, _> ctor
-|> Schema.int "version" _.version
-|> Schema.guid "id" _.id
-|> Schema.field "name" _.name workspaceName
-|> Schema.build
+Schema.define<WorkspaceV2>
+|> field "version" _.version
+|> field "id" _.id
+|> fieldWith workspaceName "name" _.name
+|> construct ctor
 ```
 
 It is explicit, local, searchable, compiler-checked, and does not require reflection or a bespoke computation

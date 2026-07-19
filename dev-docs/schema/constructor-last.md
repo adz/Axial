@@ -1,6 +1,6 @@
 # Constructor-last schema authoring: design
 
-Status: shipped for handwritten schemas (`Shape.fs`, 2026-07-19). Generation not yet moved over.
+Status: sole public authoring surface (`Shape.fs`, 2026-07-19). Handwritten schemas, schemagen output, tests, examples, and codecs use it.
 
 ## Target
 
@@ -46,11 +46,10 @@ is a type mismatch on the `constrain` line.
 
 **Typed constraints.** `Constraint<'value>` wraps the untyped `Constraint` with a phantom value type.
 The vocabulary lives in `Syntax`: text constraints are `Constraint<string>`, list constraints
-`Constraint<'item list>`, comparisons generic. The untyped `Constraint` stays — interpreters and the
-constructor-first API use it unchanged.
+`Constraint<'item list>`, comparisons generic. The untyped `Constraint` stays as interpreter metadata and for value-schema composition.
 
 **Inference.** `field` resolves `Schema<'v>` from the getter's result type through
-`SchemaDefaults.Resolve()` — SRTP over an overload set (primitives, their `option`s and `list`s), with a
+`SchemaDefaults.Resolve()` — SRTP over an overload set (primitives, options, and recursively resolved lists and maps), with a
 hook for any type exposing `static member DefaultSchema: T -> Schema<T>` (generated types will use
 this). No match → compile error → `fieldWith explicitSchema`.
 
@@ -58,8 +57,7 @@ this). No match → compile error → `fieldWith explicitSchema`.
 (`'a -> 'm` matches any longer signature), so overloads on the constructor argument alone are ambiguous.
 The shape's phantom is not ambiguous. `construct`/`constructResult` are inline SRTP dispatchers passing
 *both* the constructor and the shape to an overload set (`Constructors`, one member per arity, 1–12).
-The overload rebuilds the existing constructor-first typed chain and finishes with
-`SchemaCore.build`/`buildResult`. Chosen over an HList encoding deliberately: the arity members are
+The overload closes erased model metadata and a retained typed record plan. Chosen over an HList encoding deliberately: the arity members are
 boring, inspectable, and produce concrete-type errors at the closing call.
 
 **Checked construction.** `constructResult` takes `... -> Result<'model, string>`. Parsing runs the
@@ -93,8 +91,7 @@ let bookingSchema =
 ## Known trades
 
 - **Positional matching.** The constructor's parameters must match field order and types. Two adjacent
-  same-typed fields swapped against the constructor compile and run wrong. The named record literal of
-  the constructor-first surface catches this; drafts (`Create(draft: BookingDraft)`) are also immune.
+  same-typed fields swapped against the constructor compile and run wrong. A constructor taking a draft record is immune because its record literal names every field.
   Accepted; documented.
 - **Error locality.** Field/constraint mistakes are caught on their own line; arity and type mismatches
   against the constructor are caught at `construct`, not per field.
@@ -103,16 +100,6 @@ let bookingSchema =
 
 ## Not done yet, in order
 
-1. **Typed admission errors.** `admit`/`constructResult` take `string` errors. Add `admitWith`/
-   `constructResultWith` mapping a domain error type, and consider structured (multi-path) constructor
-   diagnostics — today a constructor rejection lands at one path.
-2. **Specialization.** Schemas closed with `constructResult` or `admit` carry no typed chain
-   (`Specialization = None`), so chain-specializing interpreters (compiled codecs) fall back. Decide
-   whether to thread a chain through both.
-3. **Generation.** Emit `Person.Schema` (static member, not a same-named module), field values as
-   `Field<'model,'value>`, `DefaultSchema` members so generated types compose into handwritten shapes,
-   and `[<DeriveSchema(Draft = true)>]` drafts: generated `BookingDraft` + structural draft schema +
-   `admit` against the `[<SchemaConstructor>]` member, with an automatic structural projection where the
-   draft mirrors the record's fields — anything else needs an explicit projection.
-4. **Retire or demote the constructor-first DSL** once generation and the reference apps are on the new
-   surface. The internals (typed chain, `SchemaCore.build`) stay — the new surface compiles into them.
+1. **Admission diagnostics.** `admit`/`constructResult` take rendered `string` errors. Domain errors can be mapped inside the admission function. Consider structured, multi-path constructor diagnostics; today a rejection lands at one path.
+2. **Admission specialization.** `constructResult` retains the same typed record plan as `construct`. `Schema.admit` still rewrites erased metadata and lacks a typed plan.
+3. **Domain generation.** Emit `Person.Schema` and generated field definitions, then add draft generation when the transformation developer experience is proven.

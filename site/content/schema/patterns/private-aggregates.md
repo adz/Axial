@@ -70,21 +70,19 @@ then calls the authoritative constructor.
 
 ```fsharp
 open Axial.Schema
+open Axial.Schema.Syntax
 
 module Booking =
     // create, accessors, and toDraft from above
 
     let schema : Schema<Booking> =
-        Schema.recordFor<Booking, _>
-            (fun start finish ->
-                create
-                    { Start = start
-                      End = finish })
-        |> Schema.field "start" start Schema.date
-        |> Schema.field "end" finish Schema.date
-        |> Schema.buildResultWith (function
-            | BookingError.EndBeforeStart ->
-                "End must not be before start.")
+        Schema.define<Booking>
+        |> field "start" start
+        |> field "end" finish
+        |> constructResult (fun start finish ->
+            create { Start = start; End = finish }
+            |> Result.mapError (function
+                | BookingError.EndBeforeStart -> "End must not be before start."))
 ```
 
 Both direct construction and boundary parsing now use `Booking.create`.

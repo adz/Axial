@@ -19,14 +19,16 @@ type Geo =
 [<RequireQualifiedAccess>]
 module Geo =
 
+    open Axial.Schema.Syntax
+
     /// The schema declared by geo.contract (Geo.v1).
     let schema : Schema<Geo> =
-        Schema.recordFor<Geo, _> (fun lat lon ->
+        Schema.define<Geo>
+        |> fieldWith (Schema.decimal |> Schema.constrainAll [ Constraint.atLeast (-90m); Constraint.atMost (90m) ]) "lat" _.Lat
+        |> fieldWith (Schema.decimal |> Schema.constrainAll [ Constraint.atLeast (-180m); Constraint.atMost (180m) ]) "lon" _.Lon
+        |> construct (fun lat lon ->
             { Lat = lat
               Lon = lon })
-        |> Schema.field "lat" _.Lat (Schema.decimal |> Schema.constrainAll [ Constraint.atLeast (-90m); Constraint.atMost (90m) ])
-        |> Schema.field "lon" _.Lon (Schema.decimal |> Schema.constrainAll [ Constraint.atLeast (-180m); Constraint.atMost (180m) ])
-        |> Schema.build
         |> Schema.describe "A geographic coordinate."
 
     /// Checks a draft built with an ordinary record literal.

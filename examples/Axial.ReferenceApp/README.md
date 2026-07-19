@@ -53,7 +53,7 @@ Primitive, collection, refined, and record declarations all have type `Schema<_>
 ```fsharp
 Schema.text
 Schema.option Schema.guid
-Schema.list memberV2
+Schema.listWith memberV2
 RefinedSchemas.nonBlankString
 workspaceV2
 ```
@@ -62,14 +62,13 @@ Record fields attach a completed schema. This removed the need for separate valu
 or collection field operations:
 
 ```fsharp
-Schema.recordFor<WorkspaceV2, _> constructor
-|> Schema.field "name" _.name workspaceName
-|> Schema.field "members" _.members (Schema.list memberV2)
-|> Schema.build
+Schema.define<WorkspaceV2>
+|> fieldWith workspaceName "name" _.name
+|> fieldWith (Schema.listWith memberV2) "members" _.members
+|> construct constructor
 ```
 
-The DSL offers the same catalog without qualifiers for declaration-heavy modules; the reference app uses qualified
-calls because its schemas are short and the explicit modules remain readable.
+`Axial.Schema.Syntax` supplies the constructor-last shape operations. Value schemas remain qualified under `Schema`.
 
 ## Rules at the right level
 

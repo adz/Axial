@@ -4,6 +4,7 @@ open Axial.Schema
 open Axial.Validation
 open Swensen.Unquote
 open Xunit
+open Axial.Schema.Syntax
 
 module EnumSchemaParseTests =
     type private Color =
@@ -17,9 +18,9 @@ module EnumSchemaParseTests =
         Schema.enum [ EnumCase.create "red" Red; EnumCase.create "green" Green; EnumCase.create "blue" Blue ]
 
     let private swatchSchema () =
-        Schema.recordFor<Swatch, _> (fun color -> { Color = color })
-        |> Schema.field "color" _.Color (colorSchema ())
-        |> Schema.build
+        Schema.define<Swatch>
+        |> fieldWith (colorSchema ()) "color" _.Color
+        |> construct (fun color -> { Color = color })
 
     [<Fact>]
     let ``parse builds the enum case matching the tag`` () =

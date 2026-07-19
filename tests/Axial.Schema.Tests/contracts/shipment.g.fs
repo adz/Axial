@@ -12,12 +12,14 @@ open Axial.Schema
 [<RequireQualifiedAccess>]
 module PickupPoint =
 
+    open Axial.Schema.Syntax
+
     /// The schema declared by shipment.fs (PickupPoint.v1).
     let schema : Schema<PickupPoint> =
-        Schema.recordFor<PickupPoint, _> (fun code ->
+        Schema.define<PickupPoint>
+        |> fieldWith Schema.text "code" _.Code
+        |> construct (fun code ->
             { Code = code })
-        |> Schema.field "code" _.Code Schema.text
-        |> Schema.build
         |> Schema.describe "A named pickup location."
 
     /// Checks a draft built with an ordinary record literal.
@@ -38,12 +40,14 @@ module PickupPoint =
 [<RequireQualifiedAccess>]
 module CourierDelivery =
 
+    open Axial.Schema.Syntax
+
     /// The schema declared by shipment.fs (CourierDelivery.v1).
     let schema : Schema<CourierDelivery> =
-        Schema.recordFor<CourierDelivery, _> (fun trackingUrl ->
+        Schema.define<CourierDelivery>
+        |> fieldWith Schema.text "trackingUrl" _.TrackingUrl
+        |> construct (fun trackingUrl ->
             { TrackingUrl = trackingUrl })
-        |> Schema.field "trackingUrl" _.TrackingUrl Schema.text
-        |> Schema.build
         |> Schema.describe "A courier delivery with tracking."
 
     /// Checks a draft built with an ordinary record literal.
@@ -64,16 +68,18 @@ module CourierDelivery =
 [<RequireQualifiedAccess>]
 module ShipmentV1 =
 
+    open Axial.Schema.Syntax
+
     /// The schema declared by shipment.fs (Shipment.v1).
     let schema : Schema<ShipmentV1> =
-        Schema.recordFor<ShipmentV1, _> (fun reference notifyEmail items ->
+        Schema.define<ShipmentV1>
+        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.pattern ("^SH-[0-9]+$") ] |> Schema.describe "Public shipment reference.") "reference" _.Reference
+        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.email ]) "notifyEmail" _.NotifyEmail
+        |> fieldWith (Schema.mapWith Schema.int) "items" _.Items
+        |> construct (fun reference notifyEmail items ->
             { Reference = reference
               NotifyEmail = notifyEmail
               Items = items })
-        |> Schema.field "reference" _.Reference (Schema.text |> Schema.constrainAll [ Constraint.pattern ("^SH-[0-9]+$") ] |> Schema.describe "Public shipment reference.")
-        |> Schema.field "notifyEmail" _.NotifyEmail (Schema.text |> Schema.constrainAll [ Constraint.email ])
-        |> Schema.field "items" _.Items (Schema.map Schema.int)
-        |> Schema.build
         |> Schema.describe "A shipment as first stored."
 
     /// Checks a draft built with an ordinary record literal.
@@ -96,6 +102,8 @@ module ShipmentV1 =
 [<RequireQualifiedAccess>]
 module Shipment =
 
+    open Axial.Schema.Syntax
+
     let private priorityCases =
         [ EnumCase.create "standard" ShipmentPriority.Standard
           EnumCase.create "express" ShipmentPriority.Express
@@ -107,7 +115,17 @@ module Shipment =
 
     /// The schema declared by shipment.fs (Shipment.v2).
     let schema : Schema<Shipment> =
-        Schema.recordFor<Shipment, _> (fun reference notifyEmail items tags weightKg priority delivery origin boxes ->
+        Schema.define<Shipment>
+        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.pattern ("^SH-[0-9]+$") ] |> Schema.describe "Public shipment reference.") "reference" _.Reference
+        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.email ]) "notify_email" _.NotifyEmail
+        |> fieldWith (Schema.mapWith Schema.int) "items" _.Items
+        |> fieldWith (Schema.listWith Schema.text |> Schema.constrainAll [ Constraint.minCount (1); Constraint.distinct ]) "tags" _.Tags
+        |> fieldWith (Schema.decimal |> Schema.constrainAll [ Constraint.atLeast (0.5m) ]) "weightKg" _.WeightKg
+        |> fieldWith (Schema.enum priorityCases |> Schema.withDefault ShipmentPriority.Express) "priority" _.Priority
+        |> fieldWith (Schema.inlineUnion "kind" deliveryCases) "delivery" _.Delivery
+        |> fieldWith (Schema.option PickupPoint.schema) "origin" _.Origin
+        |> fieldWith (Schema.int |> Schema.constrainAll [ Constraint.atLeast (1) ] |> Schema.withDefault 1) "boxes" _.Boxes
+        |> construct (fun reference notifyEmail items tags weightKg priority delivery origin boxes ->
             { Reference = reference
               NotifyEmail = notifyEmail
               Items = items
@@ -117,16 +135,6 @@ module Shipment =
               Delivery = delivery
               Origin = origin
               Boxes = boxes })
-        |> Schema.field "reference" _.Reference (Schema.text |> Schema.constrainAll [ Constraint.pattern ("^SH-[0-9]+$") ] |> Schema.describe "Public shipment reference.")
-        |> Schema.field "notify_email" _.NotifyEmail (Schema.text |> Schema.constrainAll [ Constraint.email ])
-        |> Schema.field "items" _.Items (Schema.map Schema.int)
-        |> Schema.field "tags" _.Tags (Schema.list Schema.text |> Schema.constrainAll [ Constraint.minCount (1); Constraint.distinct ])
-        |> Schema.field "weightKg" _.WeightKg (Schema.decimal |> Schema.constrainAll [ Constraint.atLeast (0.5m) ])
-        |> Schema.field "priority" _.Priority (Schema.enum priorityCases |> Schema.withDefault ShipmentPriority.Express)
-        |> Schema.field "delivery" _.Delivery (Schema.inlineUnion "kind" deliveryCases)
-        |> Schema.field "origin" _.Origin (Schema.option PickupPoint.schema)
-        |> Schema.field "boxes" _.Boxes (Schema.int |> Schema.constrainAll [ Constraint.atLeast (1) ] |> Schema.withDefault 1)
-        |> Schema.build
         |> Schema.describe "A shipment with delivery method, priority, and weight."
 
     /// Checks a draft built with an ordinary record literal.

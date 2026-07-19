@@ -21,14 +21,16 @@ type Category =
 [<RequireQualifiedAccess>]
 module Category =
 
+    open Axial.Schema.Syntax
+
     /// The schema declared by category.contract (Category.v1).
     let rec schema : Schema<Category> =
-        Schema.recordFor<Category, _> (fun name children ->
+        Schema.define<Category>
+        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.minLength (1) ] |> Schema.describe "Stable display name.") "name" _.Name
+        |> fieldWith (Schema.listWith (Schema.defer (fun () -> schema)) |> Schema.describe "Child categories use the same wire contract.") "children" _.Children
+        |> construct (fun name children ->
             { Name = name
               Children = children })
-        |> Schema.field "name" _.Name (Schema.text |> Schema.constrainAll [ Constraint.minLength (1) ] |> Schema.describe "Stable display name.")
-        |> Schema.field "children" _.Children (Schema.list (Schema.defer (fun () -> schema)) |> Schema.describe "Child categories use the same wire contract.")
-        |> Schema.build
         |> Schema.describe "A recursive category tree used to prove self-references in generated schemas."
 
     /// Checks a draft built with an ordinary record literal.

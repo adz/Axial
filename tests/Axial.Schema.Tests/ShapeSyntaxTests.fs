@@ -145,6 +145,60 @@ module ShapeSyntaxTests =
             test <@ tagged.Note = None @>
         | Error errors -> failwithf "Expected a parse, got %A" errors
 
+    type Email =
+        private
+        | Email of string
+
+        member this.Value = let (Email value) = this in value
+        static member DefaultSchema(_: Email) = Schema.convert Email _.Value Schema.text
+
+    type ContactBook =
+        { Emails: Email list
+          Contacts: Map<string, Email> }
+
+        static member Create emails contacts = { Emails = emails; Contacts = contacts }
+
+    [<Fact>]
+    let ``field recursively infers a domain item schema for lists`` () =
+        let schema =
+            Schema.define<ContactBook>
+            |> field "emails" _.Emails
+            |> field "contacts" _.Contacts
+            |> construct ContactBook.Create
+
+        let input =
+            RawInput.ofJsonLikeValue (
+                JsonLikeValue.Object(
+                    Map.ofList
+                        [ "emails", JsonLikeValue.Array [ JsonLikeValue.String "ada@example.com" ]
+                          "contacts", JsonLikeValue.Object(Map.ofList [ "primary", JsonLikeValue.String "ada@example.com" ]) ]
+                )
+            )
+
+        match (Schema.parse schema input).Result with
+        | Ok contactBook -> test <@ contactBook.Emails |> List.map _.Value = [ "ada@example.com" ] @>
+        | Error errors -> failwithf "Expected a parse, got %A" errors
+
+    [<Fact>]
+    let ``type-directed list and map schemas resolve their member schema`` () =
+        let emails = Schema.list<Email>()
+        let contacts = Schema.map<Email>()
+        let emailInput = RawInput.ofJsonLikeValue (JsonLikeValue.Array [ JsonLikeValue.String "ada@example.com" ])
+        let contactInput = RawInput.ofJsonLikeValue (JsonLikeValue.Object(Map.ofList [ "primary", JsonLikeValue.String "ada@example.com" ]))
+
+        test <@ (Schema.parse emails emailInput).Result |> Result.isOk @>
+        test <@ (Schema.parse contacts contactInput).Result |> Result.isOk @>
+
+    [<Fact>]
+    let ``nested constraints apply to list items and map values`` () =
+        let names = Schema.list<string>() |> constrainItems (minLength 2)
+        let labels = Schema.map<string>() |> constrainValues (minLength 2)
+        let nameInput = RawInput.ofJsonLikeValue (JsonLikeValue.Array [ JsonLikeValue.String "x" ])
+        let labelInput = RawInput.ofJsonLikeValue (JsonLikeValue.Object(Map.ofList [ "short", JsonLikeValue.String "x" ]))
+
+        test <@ (Schema.parse names nameInput).Result |> Result.isError @>
+        test <@ (Schema.parse labels labelInput).Result |> Result.isError @>
+
     // ---- Schema.admit: the trusted-construction boundary over a draft ----
 
     type private BookingDraft =

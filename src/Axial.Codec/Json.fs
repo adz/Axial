@@ -10,7 +10,7 @@ open Axial.Codec.JsonRuntime
 /// <remarks>
 /// <para>
 /// Compile once with <see cref="M:Axial.Codec.Json.compile``1" /> and reuse the codec for every value. Compilation
-/// walks the schema's retained typed field chain into a direct record plan — ordered field descriptors, cached wire-name
+/// compiles the schema's retained typed shape into a direct record plan — ordered field descriptors, cached wire-name
 /// bytes, and typed field decoders applied to the original curried constructor — so per-value encoding and decoding
 /// use no reflection and no boxed <c>obj array</c> dispatch for record fields.
 /// </para>
@@ -355,7 +355,7 @@ module rec Json =
 
     // ---------------------------------------------------------------------
     // Type-erased value codecs (refined raw layers, union payloads, and
-    // schemas without a retained typed field chain)
+    // schemas without a retained compiled record plan)
     // ---------------------------------------------------------------------
 
     let private compileValueDecoderObj (definition: ValueSchemaDefinition) : Decoder<obj> =
@@ -772,7 +772,7 @@ module rec Json =
                 struct (unbox<'field> value, next)
         | NestedValueDefinition(model, source) ->
             match source with
-            | :? Schema<'field> as nestedSchema when Option.isSome nestedSchema.Specialization ->
+            | :? Schema<'field> as nestedSchema when Option.isSome nestedSchema.RecordPlan ->
                 compileTypedModelDecoder<'field> nestedSchema
             | _ ->
                 let objDecoder = compileErasedModelDecoder model
@@ -816,7 +816,7 @@ module rec Json =
         | PrimitiveValueDefinition kind -> unbox<Encoder<'field>> (primitiveTypedEncoder kind)
         | NestedValueDefinition(model, source) ->
             match source with
-            | :? Schema<'field> as nestedSchema when Option.isSome nestedSchema.Specialization ->
+            | :? Schema<'field> as nestedSchema when Option.isSome nestedSchema.RecordPlan ->
                 compileTypedModelEncoder<'field> nestedSchema
             | _ ->
                 let objEncoder = compileErasedModelEncoder model
@@ -853,24 +853,24 @@ module rec Json =
 
     type private DecodeChainResult<'model, 'constructorIn, 'constructorOut>
         (link: DecodeChainLink<'constructorIn, 'constructorOut>) =
-        interface IFieldChainResult<'model, 'constructorIn, 'constructorOut> with
+        interface IRecordPlanState<'model, 'constructorIn, 'constructorOut> with
             member _.Value = box link
 
     type private DecodeFactory<'model>() =
-        interface IFieldChainFactory<'model, Decoder<'model>> with
+        interface IRecordPlanCompiler<'model, Decoder<'model>> with
             member _.OnEnd<'constructor>() =
                 DecodeChainResult<'model, 'constructor, 'constructor>(
                     { Matchers = []
                       Apply = fun constructor' _ -> constructor' }
                 )
-                :> IFieldChainResult<'model, 'constructor, 'constructor>
+                :> IRecordPlanState<'model, 'constructor, 'constructor>
 
             member _.OnField<'constructorIn, 'field, 'next>
                 (
                     order: int,
                     field: Field<'model, 'field>,
-                    head: IFieldChainResult<'model, 'constructorIn, 'field -> 'next>
-                ) : IFieldChainResult<'model, 'constructorIn, 'next> =
+                    head: IRecordPlanState<'model, 'constructorIn, 'field -> 'next>
+                ) : IRecordPlanState<'model, 'constructorIn, 'next> =
                 let headLink = unbox<DecodeChainLink<'constructorIn, 'field -> 'next>> head.Value
                 let name = field |> Field.externalName |> ExternalFieldName.value
                 let fieldDecoder = compileValueDecoder<'field> field.Definition.ValueSchema
@@ -897,34 +897,37 @@ module rec Json =
                         fun constructor' slots ->
                             (headLink.Apply constructor' slots) (slots[order] :?> Slot<'field>).Value }
                 )
-                :> IFieldChainResult<'model, 'constructorIn, 'next>
+                :> IRecordPlanState<'model, 'constructorIn, 'next>
 
-            member _.OnComplete<'constructor>(constructor: 'constructor, chain) =
-                let link = unbox<DecodeChainLink<'constructor, 'model>> (chain :> IFieldChainResult<_, _, _>).Value
+            member _.OnComplete<'constructor, 'constructed>(constructor: 'constructor, chain, finish) =
+                let link = unbox<DecodeChainLink<'constructor, 'constructed>> (chain :> IRecordPlanState<_, _, _>).Value
                 let matchers = Array.ofList link.Matchers
-                objectDecoder matchers (fun slots -> link.Apply constructor slots)
+                objectDecoder matchers (fun slots ->
+                    match finish (link.Apply constructor slots) with
+                    | Ok model -> model
+                    | Error message -> decodeFailure message)
 
     let private compileTypedModelDecoder<'model> (schema: Schema<'model>) : Decoder<'model> =
-        SchemaCore.specialize (DecodeFactory<'model>()) schema
+        SchemaCore.compilePlan (DecodeFactory<'model>()) schema
 
     // The typed encode chain: each field contributes cached wire-name bytes
     // plus a writer over the typed getter.
     type private EncodeChainResult<'model, 'constructorIn, 'constructorOut>(fields: FieldWriter<'model> list) =
-        interface IFieldChainResult<'model, 'constructorIn, 'constructorOut> with
+        interface IRecordPlanState<'model, 'constructorIn, 'constructorOut> with
             member _.Value = box fields
 
     type private EncodeFactory<'model>() =
-        interface IFieldChainFactory<'model, Encoder<'model>> with
+        interface IRecordPlanCompiler<'model, Encoder<'model>> with
             member _.OnEnd<'constructor>() =
                 EncodeChainResult<'model, 'constructor, 'constructor>([])
-                :> IFieldChainResult<'model, 'constructor, 'constructor>
+                :> IRecordPlanState<'model, 'constructor, 'constructor>
 
             member _.OnField<'constructorIn, 'field, 'next>
                 (
                     order: int,
                     field: Field<'model, 'field>,
-                    head: IFieldChainResult<'model, 'constructorIn, 'field -> 'next>
-                ) : IFieldChainResult<'model, 'constructorIn, 'next> =
+                    head: IRecordPlanState<'model, 'constructorIn, 'field -> 'next>
+                ) : IRecordPlanState<'model, 'constructorIn, 'next> =
                 ignore order
                 let headFields = unbox<FieldWriter<'model> list> head.Value
                 let name = field |> Field.externalName |> ExternalFieldName.value
@@ -952,11 +955,16 @@ module rec Json =
                             true
 
                 EncodeChainResult<'model, 'constructorIn, 'next>(headFields @ [ writeField ])
-                :> IFieldChainResult<'model, 'constructorIn, 'next>
+                :> IRecordPlanState<'model, 'constructorIn, 'next>
 
-            member _.OnComplete<'constructor>(_: 'constructor, chain) =
+            member _.OnComplete<'constructor, 'constructed>
+                (
+                    _: 'constructor,
+                    chain: IRecordPlanState<'model, 'constructor, 'constructed>,
+                    _: 'constructed -> Result<'model, string>
+                ) =
                 let fields =
-                    unbox<FieldWriter<'model> list> (chain :> IFieldChainResult<_, _, _>).Value
+                    unbox<FieldWriter<'model> list> (chain :> IRecordPlanState<_, _, _>).Value
                     |> Array.ofList
 
                 fun writer model ->
@@ -970,7 +978,7 @@ module rec Json =
                     writer.WriteByte(byte '}')
 
     let private compileTypedModelEncoder<'model> (schema: Schema<'model>) : Encoder<'model> =
-        SchemaCore.specialize (EncodeFactory<'model>()) schema
+        SchemaCore.compilePlan (EncodeFactory<'model>()) schema
 
     // ---------------------------------------------------------------------
     // Public API
@@ -979,14 +987,13 @@ module rec Json =
     /// <summary>Compiles a completed schema into a reusable JSON codec.</summary>
     /// <remarks>
     /// <para>
-    /// Compile once per schema, typically at startup, and reuse the codec for every value. Schemas produced by
-    /// <c>SchemaCore.build</c> compile through the retained typed field chain into constructor-specialized plans. Schemas
-    /// produced by <c>SchemaCore.buildResult</c>/<c>SchemaCore.buildResultWith</c> compile through the type-erased plan, and
-    /// constructor errors surface as <see cref="T:Axial.Codec.JsonCodecException" /> during decoding.
+    /// Compile once per schema, typically at startup, and reuse the codec for every value. Constructor-last object
+    /// schemas retain a typed record plan, including checked constructors. Constructor failures surface as
+    /// <see cref="T:Axial.Codec.JsonCodecException" /> during decoding.
     /// </para>
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
-    /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="schema" /> is an incomplete record builder.</exception>
+    /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="schema" /> is incomplete.</exception>
     /// <example>
     /// <code>
     /// let codec = Json.compile customerSchema
@@ -1003,7 +1010,7 @@ module rec Json =
         | ValueDefinition definition ->
             JsonCodec(compileValueEncoder<'model> definition, compileValueDecoder<'model> definition)
         | ModelDefinition definition ->
-            match schema.Specialization with
+            match schema.RecordPlan with
             | Some _ -> JsonCodec(compileTypedModelEncoder schema, compileTypedModelDecoder schema)
             | None ->
                 let erased = ModelSchemaErasure.erase definition

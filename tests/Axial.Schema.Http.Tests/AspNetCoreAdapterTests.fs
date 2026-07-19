@@ -68,7 +68,7 @@ let private buildApp () =
     app.MapPost("/rejected-signups", endpoint rejectedEndpoint)
     |> ignore
 
-    let ageSchema = Axial.Schema.DSL.int
+    let ageSchema = Axial.Schema.Schema.int
 
     let ageEndpoint : Flow<HttpEndpointEnv<string>, EndpointError<string>, IResult> =
         flow {

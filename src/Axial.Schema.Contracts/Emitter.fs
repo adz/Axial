@@ -119,8 +119,8 @@ module Emitter =
         | Reference reference when reference.RefName = contractName && reference.RefVersion = contractVersion ->
             "Schema.defer (fun () -> schema)"
         | Reference reference -> $"{refTypeName reference}.schema"
-        | ListOf element -> $"Schema.list {parenthesize (baseValueExpr refTypeName (contractName, contractVersion) fieldName element)}"
-        | MapOf element -> $"Schema.map {parenthesize (baseValueExpr refTypeName (contractName, contractVersion) fieldName element)}"
+        | ListOf element -> $"Schema.listWith {parenthesize (baseValueExpr refTypeName (contractName, contractVersion) fieldName element)}"
+        | MapOf element -> $"Schema.mapWith {parenthesize (baseValueExpr refTypeName (contractName, contractVersion) fieldName element)}"
         | LiteralUnion _
         | ExternalEnum _ -> $"Schema.enum {camel fieldName}Cases"
         | UnionBlock(discriminator, _)
@@ -325,6 +325,8 @@ module Emitter =
             line "[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]"
             line "[<RequireQualifiedAccess>]"
             line $"module {contractTypeName} ="
+            line ""
+            line "    open Axial.Schema.Syntax"
 
             for field in caseFields do
                 line ""
@@ -387,26 +389,26 @@ module Emitter =
                 |> List.map (fun field -> escapeIdent (camel field.FieldName))
                 |> fun names -> String.Join(" ", names)
 
-            match contract.Constructor with
-            | Some constructorName ->
-                line $"        Schema.recordFor<{contractTypeName}, _> (fun {parameters} -> {constructorName} {parameters})"
-            | None ->
-                line $"        Schema.recordFor<{contractTypeName}, _> (fun {parameters} ->"
-
-                contract.Fields
-                |> List.iteri (fun index field ->
-                    let opener = if index = 0 then "{ " else "  "
-                    let closer = if index = List.length contract.Fields - 1 then " })" else ""
-                    line $"            {opener}{escapeIdent (fsFieldName field)} = {escapeIdent (camel field.FieldName)}{closer}")
+            line $"        Schema.define<{contractTypeName}>"
 
             for field in contract.Fields do
                 let wire = FieldDecl.wireName field
                 let getter = $"_.{escapeIdent (fsFieldName field)}"
                 let value = valueExpr refTypeName (contract.ContractName, contract.Version, contractTypeName) field
 
-                line $"        |> Schema.field \"{escapeString wire}\" {getter} {parenthesize value}"
+                line $"        |> fieldWith {parenthesize value} \"{escapeString wire}\" {getter}"
 
-            line "        |> Schema.build"
+            match contract.Constructor with
+            | Some constructorName ->
+                line $"        |> construct (fun {parameters} -> {constructorName} {parameters})"
+            | None ->
+                line $"        |> construct (fun {parameters} ->"
+
+                contract.Fields
+                |> List.iteri (fun index field ->
+                    let opener = if index = 0 then "{ " else "  "
+                    let closer = if index = List.length contract.Fields - 1 then " })" else ""
+                    line $"            {opener}{escapeIdent (fsFieldName field)} = {escapeIdent (camel field.FieldName)}{closer}")
 
             match contract.Doc with
             | [] -> ()

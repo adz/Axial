@@ -27,10 +27,9 @@ Compiles a completed schema into a reusable JSON codec.
 ## Remarks
 
 <p class='fsdocs-para'>
- Compile once per schema, typically at startup, and reuse the codec for every value. Schemas produced by
- <code>SchemaCore.build</code> compile through the retained typed field chain into constructor-specialized plans. Schemas
- produced by <code>SchemaCore.buildResult</code>/<code>SchemaCore.buildResultWith</code> compile through the type-erased plan, and
- constructor errors surface as <a href="t-codec-jsoncodecexception.md">JsonCodecException</a> during decoding.
+ Compile once per schema, typically at startup, and reuse the codec for every value. Constructor-last object
+ schemas retain a typed record plan, including checked constructors. Constructor failures surface as
+ <a href="t-codec-jsoncodecexception.md">JsonCodecException</a> during decoding.
  </p>
 
 ## Examples

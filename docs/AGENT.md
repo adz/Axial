@@ -28,10 +28,9 @@ with a user-owned error DU for simple code without a domain model), Schema (decl
 `Schema.parse` when modelling a domain), and Flow (the optional effects side). `Check`, `Validation`, and `Refined` are
 machinery inside those areas.
 
-When a schema lives in its own definition module, `open Axial.Schema.DSL` there and write the pipeline bare:
-`recordFor<Signup, _> create |> field "email" _.Email (text |> constrainAll [ required; email ]) |> field "age" _.Age (int |> constrain (atLeast 13)) |> build`.
-DSL `field` attaches a completed schema; decorate that schema with `constrain` or `constrainAll`. `int`/`decimal`/`bool`
-shadow the core conversion functions, so open `DSL` only inside the schema module.
+When a schema lives in its own definition module, open `Axial.Schema.Syntax` and use the constructor-last pipeline:
+`Schema.define<Signup> |> field "email" _.Email |> constrain email |> field "age" _.Age |> constrain (atLeast 13) |> construct create`.
+`field` infers common value schemas; use `fieldWith` when the field has a nested, refined, union, map, or custom schema.
 
 For schema boundaries, use `SchemaError` as the one interpreter error shape. Lower subsystem failures with
 `SchemaError.ofParseError`, `SchemaError.ofRefinementError`, or `SchemaError.ofCheckFailure`; render with
@@ -60,7 +59,8 @@ For built-in scalar refined values in schema fields, use `Axial.Schema.RefinedSc
 `RefinedSchemas.nonPositiveInt`.
 For refined collections, pass an item value schema:
 `RefinedSchemas.nonEmptyList RefinedSchemas.slug`, `RefinedSchemas.distinctList Schema.text`, or
-`RefinedSchemas.boundedList min max itemSchema`. Use `Schema.list itemSchema` for non-refined primitive/refined
+`RefinedSchemas.boundedList min max itemSchema`. Use `Schema.list<'item>()` when the item schema is type-directed and
+`Schema.listWith itemSchema` for an explicitly configured primitive/refined
 collections, including nested records.
 Use `Schema.union discriminatorField payloadField [ UnionCase.create tag construct tryPayload payloadSchema ]` for tagged
 F# discriminated unions. The raw input convention is an object with the discriminator field and payload field; wrong tags

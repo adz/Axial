@@ -23,7 +23,7 @@ A compiled JSON codec for one schema-described model.
 
 <p class='fsdocs-para'>
  Compile once with <a href="/reference/Axial/axial-codec-json.html">Json.compile</a> and reuse the codec for every value. Compilation
- walks the schema&#39;s retained typed field chain into a direct record plan — ordered field descriptors, cached wire-name
+ compiles the schema&#39;s retained typed shape into a direct record plan — ordered field descriptors, cached wire-name
  bytes, and typed field decoders applied to the original curried constructor — so per-value encoding and decoding
  use no reflection and no boxed <code>obj array</code> dispatch for record fields.
  </p><p class='fsdocs-para'>

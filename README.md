@@ -27,19 +27,18 @@ A schema describes fields, parsing, constraints, and construction in one value:
 
 ```fsharp
 open Axial.Schema
+open Axial.Schema.Syntax
 
 type Signup =
     { Email: string
       Age: int }
 
 let signupSchema =
-    Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
-    |> Schema.field "email" _.Email
-        (Schema.text
-         |> Schema.constrainAll [ Constraint.required; Constraint.email ])
-    |> Schema.field "age" _.Age
-        (Schema.int |> Schema.constrain (Constraint.atLeast 13))
-    |> Schema.build
+    Schema.define<Signup>
+    |> fieldWith (Schema.text
+         |> Schema.constrainAll [ Constraint.required; Constraint.email ]) "email" _.Email
+    |> fieldWith (Schema.int |> Schema.constrain (Constraint.atLeast 13)) "age" _.Age
+    |> construct (fun email age -> { Email = email; Age = age })
 
 match (Schema.parse signupSchema rawInput).Result with
 | Ok signup -> register signup

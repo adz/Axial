@@ -6,6 +6,7 @@ open Axial.Schema
 open Axial.Validation
 open Swensen.Unquote
 open Xunit
+open Axial.Schema.Syntax
 
 module SchemaErrorTests =
     type private Signup = { Email: string; Age: int }
@@ -47,10 +48,10 @@ module SchemaErrorTests =
     [<Fact>]
     let ``parsed input renders failed parse diagnostics with paths`` () =
         let schema =
-            Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
-            |> Schema.field "email" _.Email (Schema.text |> Schema.constrain Constraint.required)
-            |> Schema.field "age" _.Age Schema.int
-            |> Schema.build
+            Schema.define<Signup>
+            |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "email" _.Email
+            |> fieldWith Schema.int "age" _.Age
+            |> construct (fun email age -> { Email = email; Age = age })
 
         let raw =
             RawInput.Object(
@@ -67,10 +68,10 @@ module SchemaErrorTests =
     [<Fact>]
     let ``parsed input maps schema boundary errors to user owned errors with one function`` () =
         let schema =
-            Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
-            |> Schema.field "email" _.Email (Schema.text |> Schema.constrain Constraint.required)
-            |> Schema.field "age" _.Age Schema.int
-            |> Schema.build
+            Schema.define<Signup>
+            |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "email" _.Email
+            |> fieldWith Schema.int "age" _.Age
+            |> construct (fun email age -> { Email = email; Age = age })
 
         let parsed =
             RawInput.Object(Map.ofList [ "email", RawInput.Missing; "age", RawInput.Scalar "42" ])

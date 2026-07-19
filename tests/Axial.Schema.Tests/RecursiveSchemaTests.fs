@@ -5,6 +5,7 @@ open Axial.Schema
 open Axial.Validation
 open Swensen.Unquote
 open Xunit
+open Axial.Schema.Syntax
 
 module RecursiveSchemaTests =
     type Category = { Name: string; Children: Category list }
@@ -12,10 +13,10 @@ module RecursiveSchemaTests =
     let private categorySchema () =
         let rec schema: Lazy<Schema<Category>> =
             lazy
-                (Schema.recordFor<Category, _> (fun name children -> { Name = name; Children = children })
-                 |> Schema.field "name" _.Name Schema.text
-                 |> Schema.field "children" _.Children (Schema.list (Schema.defer (fun () -> schema.Value)))
-                 |> Schema.build)
+                (Schema.define<Category>
+                 |> fieldWith Schema.text "name" _.Name
+                 |> fieldWith (Schema.listWith (Schema.defer (fun () -> schema.Value))) "children" _.Children
+                 |> construct (fun name children -> { Name = name; Children = children }))
 
         schema.Value
 

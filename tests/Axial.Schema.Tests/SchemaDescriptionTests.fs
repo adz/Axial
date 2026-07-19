@@ -4,6 +4,7 @@ open System
 open Axial.Schema
 open Swensen.Unquote
 open Xunit
+open Axial.Schema.Syntax
 
 /// <summary>
 /// Proves that value schemas and model schemas carry portable description metadata: it is declarative annotation
@@ -75,10 +76,10 @@ module SchemaDescriptionTests =
     [<Fact>]
     let ``generate pins schema to json schema draft 2020-12`` () =
         let schema =
-            Schema.recordFor<Contact, _> (fun email name -> { Email = email; Name = name })
-            |> Schema.field "email" _.Email (Email.schema ())
-            |> Schema.field "name" _.Name Schema.text
-            |> Schema.build
+            Schema.define<Contact>
+            |> fieldWith (Email.schema ()) "email" _.Email
+            |> fieldWith Schema.text "name" _.Name
+            |> construct (fun email name -> { Email = email; Name = name })
 
         let generated = JsonSchema.generate schema
 
@@ -88,10 +89,10 @@ module SchemaDescriptionTests =
     [<Fact>]
     let ``describe lowers to the json schema description keyword on a field`` () =
         let schema =
-            Schema.recordFor<Contact, _> (fun email name -> { Email = email; Name = name })
-            |> Schema.field "email" _.Email (Email.schema ())
-            |> Schema.field "name" _.Name (Schema.text |> Schema.describe "The contact's full name.")
-            |> Schema.build
+            Schema.define<Contact>
+            |> fieldWith (Email.schema ()) "email" _.Email
+            |> fieldWith (Schema.text |> Schema.describe "The contact's full name.") "name" _.Name
+            |> construct (fun email name -> { Email = email; Name = name })
 
         let generated = JsonSchema.generate schema
 
@@ -100,10 +101,10 @@ module SchemaDescriptionTests =
     [<Fact>]
     let ``Schema.describe lowers to the json schema root title keyword`` () =
         let schema =
-            Schema.recordFor<Contact, _> (fun email name -> { Email = email; Name = name })
-            |> Schema.field "email" _.Email (Email.schema ())
-            |> Schema.field "name" _.Name Schema.text
-            |> Schema.build
+            Schema.define<Contact>
+            |> fieldWith (Email.schema ()) "email" _.Email
+            |> fieldWith Schema.text "name" _.Name
+            |> construct (fun email name -> { Email = email; Name = name })
             |> Schema.describe "A contact record."
 
         let generated = JsonSchema.generate schema
@@ -111,11 +112,12 @@ module SchemaDescriptionTests =
         test <@ generated.Contains "\"title\":\"A contact record.\"" @>
 
     [<Fact>]
-    let ``Schema.describe rejects empty descriptions and unbuilt schemas`` () =
-        let builder =
-            Schema.recordFor<Contact, _> (fun email name -> { Email = email; Name = name })
-            |> Schema.field "email" _.Email (Email.schema ())
-            |> Schema.field "name" _.Name Schema.text
+    let ``Schema.describe rejects empty descriptions`` () =
+        let schema =
+            Schema.define<Contact>
+            |> fieldWith (Email.schema ()) "email" _.Email
+            |> fieldWith Schema.text "name" _.Name
+            |> construct (fun email name -> { Email = email; Name = name })
 
-        raises<ArgumentException> <@ Schema.describe "" (Schema.build builder) |> ignore @>
+        raises<ArgumentException> <@ Schema.describe "" schema |> ignore @>
         raises<ArgumentNullException> <@ Schema.describe "title" Unchecked.defaultof<Schema<Contact>> |> ignore @>

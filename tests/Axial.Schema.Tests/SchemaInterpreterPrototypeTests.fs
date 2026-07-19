@@ -5,6 +5,7 @@ open System.Globalization
 open Axial.Schema
 open Swensen.Unquote
 open Xunit
+open Axial.Schema.Syntax
 
 /// <summary>
 /// Prototype non-validation interpreters over the public <c>Inspect</c> API: a documentation describer and a UI
@@ -179,29 +180,29 @@ module SchemaInterpreterPrototypeTests =
         |> Schema.withFormat SchemaFormat.email
 
     let private addressSchema () =
-        Schema.recordFor<Address, _> (fun street city -> { Street = street; City = city })
-        |> Schema.field "street" _.Street Schema.text
-        |> Schema.field "city" _.City Schema.text
-        |> Schema.build
+        Schema.define<Address>
+        |> fieldWith Schema.text "street" _.Street
+        |> fieldWith Schema.text "city" _.City
+        |> construct (fun street city -> { Street = street; City = city })
 
     let private tagSchema () =
-        Schema.recordFor<Tag, _> (fun label -> { Label = label })
-        |> Schema.field "label" _.Label Schema.text
-        |> Schema.build
+        Schema.define<Tag>
+        |> fieldWith Schema.text "label" _.Label
+        |> construct (fun label -> { Label = label })
 
     let private signupSchemaWith constructions getterReads =
-        Schema.recordFor<Signup, _> (fun email age newsletter address tags ->
+        Schema.define<Signup>
+        |> fieldWith (emailSchemaWith constructions getterReads) "email" _.Email
+        |> fieldWith (Schema.int |> Schema.constrain (Constraint.between 13 120)) "age" _.Age
+        |> fieldWith Schema.bool "newsletter" _.Newsletter
+        |> fieldWith (((addressSchema ())) |> Schema.constrainAll [ Constraint.required ]) "address" _.Address
+        |> fieldWith (Schema.listWith (tagSchema ()) |> Schema.constrainAll [ Constraint.minCount 1; Constraint.distinct ]) "tags" _.Tags
+        |> construct (fun email age newsletter address tags ->
             { Email = email
               Age = age
               Newsletter = newsletter
               Address = address
               Tags = tags })
-        |> Schema.field "email" _.Email (emailSchemaWith constructions getterReads)
-        |> Schema.field "age" _.Age (Schema.int |> Schema.constrain (Constraint.between 13 120))
-        |> Schema.field "newsletter" _.Newsletter Schema.bool
-        |> Schema.field "address" _.Address (((addressSchema ())) |> Schema.constrainAll [ Constraint.required ])
-        |> Schema.field "tags" _.Tags (Schema.list (tagSchema ()) |> Schema.constrainAll [ Constraint.minCount 1; Constraint.distinct ])
-        |> Schema.build
 
     [<Fact>]
     let ``json schema generation lowers constraint metadata without running validation`` () =
@@ -223,14 +224,13 @@ module SchemaInterpreterPrototypeTests =
     [<Fact>]
     let ``json schema generation lowers pattern one-of and length range metadata`` () =
         let generated =
-            Schema.recordFor<Tag, _> (fun label -> { Label = label })
-            |> Schema.field "label" _.Label
-                (Schema.text
+            Schema.define<Tag>
+            |> fieldWith (Schema.text
                  |> Schema.constrainAll
                      [ Constraint.lengthBetween 2 10
                        Constraint.pattern "^[a-z]+$"
-                       Constraint.oneOf [ "alpha"; "beta" ] ])
-            |> Schema.build
+                       Constraint.oneOf [ "alpha"; "beta" ] ]) "label" _.Label
+            |> construct (fun label -> { Label = label })
             |> JsonSchema.generate
 
         test <@ generated.Contains "\"minLength\":2" @>

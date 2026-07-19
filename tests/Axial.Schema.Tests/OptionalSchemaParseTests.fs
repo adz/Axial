@@ -5,6 +5,7 @@ open Axial.Schema
 open Axial.Validation
 open Swensen.Unquote
 open Xunit
+open Axial.Schema.Syntax
 
 /// <summary>
 /// Covers parsing and validating optional fields declared with <c>Schema.option</c>: absent (or JSON null) input is
@@ -18,17 +19,14 @@ module OptionalSchemaParseTests =
           Age: int option }
 
     let private profileSchema () =
-        Schema.recordFor<Profile, _> (fun name nickname age ->
+        Schema.define<Profile>
+        |> fieldWith Schema.text "name" _.Name
+        |> fieldWith (Schema.option (Schema.text |> Schema.constrain (Constraint.minLength 2))) "nickname" _.Nickname
+        |> fieldWith (Schema.option Schema.int) "age" _.Age
+        |> construct (fun name nickname age ->
             { Name = name
               Nickname = nickname
               Age = age })
-        |> Schema.field "name" _.Name Schema.text
-        |> Schema.field
-            "nickname"
-            _.Nickname
-            (Schema.option (Schema.text |> Schema.constrain (Constraint.minLength 2)))
-        |> Schema.field "age" _.Age (Schema.option Schema.int)
-        |> Schema.build
 
     [<Fact>]
     let ``parse maps missing optional fields to None`` () =

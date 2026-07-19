@@ -15,10 +15,10 @@ compile ahead of time.
 
 ## Why It Holds By Construction
 
-- **Schemas declare construction explicitly.** `Schema.recordFor<Customer, _> ctor |> Schema.field ... |> Schema.build`
+- **Schemas declare construction explicitly.** `Schema.define<Customer> |> field ... |> construct ctor`
   captures the real constructor and typed getters as values. There is no property discovery, no attribute scanning,
   and no `Activator.CreateInstance`.
-- **Codecs compile from the typed field chain.** `Json.compile` walks the schema's retained typed constructor chain
+- **Codecs compile from the typed shape.** `Json.compile` turns the schema's retained typed constructor and fields
   into encode/decode plans — cached wire-name bytes and typed field decoders — where `System.Text.Json`'s default path
   builds converters through reflection and asks you to switch to source generators for AOT. Axial has nothing to
   switch: the explicit path is the only path.

@@ -18,21 +18,22 @@ The schema declares each field once: external name, getter, and constraints.
 
 ```fsharp
 open Axial.Schema
-open Axial.Schema.DSL
+open Axial.Schema.Syntax
 
 type Signup = { Email: string; Age: int }
 
 let signupSchema =
-    recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
+    Schema.define<Signup>
     |> field "email" _.Email
-        (text
-         |> constrainAll [ required; email; maxLength 254 ])
-    |> field "age" _.Age (int |> constrainAll [ atLeast 13 ])
-    |> build
+    |> constrain email
+    |> constrain (maxLength 254)
+    |> field "age" _.Age
+    |> constrain (atLeast 13)
+    |> construct (fun email age -> { Email = email; Age = age })
 ```
 
-`Schema.recordFor<Signup, _>` anchors the model type so getters can use shorthand member access. Each field consumes
-one constructor argument, so a missing or misordered field is a compile error at `Schema.build`.
+`Schema.define<Signup>` anchors the model type so getters can use shorthand member access. The closing constructor must
+match every field in declaration order, so missing or mistyped arguments fail at `construct`.
 
 ## Adapt The Raw Input
 

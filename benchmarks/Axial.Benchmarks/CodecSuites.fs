@@ -6,6 +6,7 @@ open BenchmarkDotNet.Attributes
 open BenchmarkDotNet.Order
 open Axial.Schema
 open Axial.Codec
+open Axial.Schema.Syntax
 
 /// The shared benchmark model: a realistic aggregate with primitives, a nested record, and collections.
 module CodecModel =
@@ -26,19 +27,30 @@ module CodecModel =
           Scores: int list }
 
     let addressSchema =
-        Schema.recordFor<Address, _> (fun street city -> { Street = street; City = city })
-        |> Schema.field "street" _.Street Schema.text
-        |> Schema.field "city" _.City Schema.text
-        |> Schema.build
+        Schema.define<Address>
+        |> fieldWith Schema.text "street" _.Street
+        |> fieldWith Schema.text "city" _.City
+        |> construct (fun street city -> { Street = street; City = city })
 
     let contactSchema =
-        Schema.recordFor<Contact, _> (fun label value -> { Label = label; Value = value })
-        |> Schema.field "label" _.Label Schema.text
-        |> Schema.field "value" _.Value Schema.text
-        |> Schema.build
+        Schema.define<Contact>
+        |> fieldWith Schema.text "label" _.Label
+        |> fieldWith Schema.text "value" _.Value
+        |> construct (fun label value -> { Label = label; Value = value })
 
     let customerSchema =
-        Schema.recordFor<Customer, _> (fun id name age balance newsletter joined lastSeen address contacts scores ->
+        Schema.define<Customer>
+        |> fieldWith Schema.guid "id" _.Id
+        |> fieldWith Schema.text "name" _.Name
+        |> fieldWith Schema.int "age" _.Age
+        |> fieldWith Schema.decimal "balance" _.Balance
+        |> fieldWith Schema.bool "newsletter" _.Newsletter
+        |> fieldWith Schema.date "joined" _.Joined
+        |> fieldWith Schema.dateTime "lastSeen" _.LastSeen
+        |> fieldWith addressSchema "address" _.Address
+        |> fieldWith (Schema.listWith contactSchema) "contacts" _.Contacts
+        |> fieldWith (Schema.listWith Schema.int) "scores" _.Scores
+        |> construct (fun id name age balance newsletter joined lastSeen address contacts scores ->
             { Id = id
               Name = name
               Age = age
@@ -49,17 +61,6 @@ module CodecModel =
               Address = address
               Contacts = contacts
               Scores = scores })
-        |> Schema.field "id" _.Id Schema.guid
-        |> Schema.field "name" _.Name Schema.text
-        |> Schema.field "age" _.Age Schema.int
-        |> Schema.field "balance" _.Balance Schema.decimal
-        |> Schema.field "newsletter" _.Newsletter Schema.bool
-        |> Schema.field "joined" _.Joined Schema.date
-        |> Schema.field "lastSeen" _.LastSeen Schema.dateTime
-        |> Schema.field "address" _.Address addressSchema
-        |> Schema.field "contacts" _.Contacts (Schema.list contactSchema)
-        |> Schema.field "scores" _.Scores (Schema.list Schema.int)
-        |> Schema.build
 
     let sample =
         { Id = Guid.Parse "7d9a2f5e-95c8-4f2b-b1e3-2f6d3a1c9b42"

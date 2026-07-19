@@ -23,7 +23,7 @@ This page shows `Schema<'value>`, the universal catalog for primitive, collectio
 - [`Schema.bool`](./p-schema-schema-bool.md): Describes a Boolean value.
 - [`Schema.dateTime`](./p-schema-schema-datetime.md): Describes a date and time with an offset.
 - [`Schema.guid`](./p-schema-schema-guid.md): Describes a GUID.
-- [`Schema.list`](./m-schema-schema-list.md): Describes a list whose items use <span class="fsdocs-param-name">item</span>.
+- [`Schema.list`](./m-schema-schema-list.md): Describes a list by resolving its item schema from <typeparamref name="'item" />.
 - [`Schema.option`](./m-schema-schema-option.md): Describes an optional value.
 - [`Schema.refine`](./m-schema-schema-refine.md): Maps a schema through a fallible smart constructor and lowers its failures to schema errors.
 - [`Schema.union`](./m-schema-schema-union.md): Describes an externally tagged union.

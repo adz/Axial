@@ -4,13 +4,14 @@ open System
 open Axial.Schema
 open Swensen.Unquote
 open Xunit
+open Axial.Schema.Syntax
 
 /// <summary>
 /// Proves that <c>Schema.convert</c> describes a named refined/domain value as a portable
 /// <c>ValueSchema&lt;'value&gt;</c>: it retains the raw value schema as inspectable metadata, it round-trips a value
 /// through the supplied construction and inspection functions, it supports refinement over every primitive value
 /// schema — especially text — while keeping the primitive foundation and raw constraints inspectable, and the result
-/// composes with the rest of the schema core (constraints and the progressive schema builder) exactly like a
+/// composes with the rest of the schema core (constraints and constructor-last shapes) exactly like a
 /// primitive value schema.
 /// </summary>
 module SchemaRefinedValueTests =
@@ -106,7 +107,7 @@ module SchemaRefinedValueTests =
         test <@ Schema.constraints required |> List.map Constraint.code = [ "required" ] @>
 
     [<Fact>]
-    let ``refined value schemas compose with the schema builder like a primitive value schema`` () =
+    let ``refined value schemas compose with an object shape like a primitive value schema`` () =
         let emailField =
             Field.create "email" (fun (contact: Contact) -> contact.Email) Email.schema
             |> Field.withConstraint Constraint.required
@@ -114,10 +115,10 @@ module SchemaRefinedValueTests =
         let nameField = Field.create "name" (fun (contact: Contact) -> contact.Name) Schema.text
 
         let schema =
-            Schema.recordFor<Contact, _> (fun email name -> { Email = email; Name = name })
-            |> Schema.field "email" _.Email (Email.schema |> Schema.constrainAll [ Constraint.required ])
-            |> Schema.field "name" _.Name Schema.text
-            |> Schema.build
+            Schema.define<Contact>
+            |> fieldWith (Email.schema |> Schema.constrainAll [ Constraint.required ]) "email" _.Email
+            |> fieldWith Schema.text "name" _.Name
+            |> construct (fun email name -> { Email = email; Name = name })
 
         let contact = { Email = Email.create "ada@example.com"; Name = "Ada" }
 
@@ -135,10 +136,10 @@ module SchemaRefinedValueTests =
         let requiredEmail = Email.schema |> Schema.constrain Constraint.required
 
         let schema =
-            Schema.recordFor<Contact, _> (fun email name -> { Email = email; Name = name })
-            |> Schema.field "email" _.Email requiredEmail
-            |> Schema.field "name" _.Name Schema.text
-            |> Schema.build
+            Schema.define<Contact>
+            |> fieldWith requiredEmail "email" _.Email
+            |> fieldWith Schema.text "name" _.Name
+            |> construct (fun email name -> { Email = email; Name = name })
 
         match schema.Definition with
         | ModelDefinition model ->

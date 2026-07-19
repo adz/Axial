@@ -29,14 +29,14 @@ open Axial.Schema.Http.GenHttp
 type Signup = { Name: string; Email: string; Age: int }
 
 module Signup =
-    open Axial.Schema.DSL
+    open Axial.Schema.Syntax
 
     let schema =
-        recordFor<Signup, _> (fun name email age -> { Name = name; Email = email; Age = age })
-        |> field "name" _.Name (text |> constrainAll [ required; maxLength 80 ])
-        |> field "email" _.Email (text |> constrainAll [ required; email ])
-        |> field "age" _.Age (int |> constrain (between 13 120))
-        |> build
+        Schema.define<Signup>
+        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 80 ]) "name" _.Name
+        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.email ]) "email" _.Email
+        |> fieldWith (Schema.int |> Schema.constrain (Constraint.between 13 120)) "age" _.Age
+        |> construct (fun name email age -> { Name = name; Email = email; Age = age })
 
 module Boundary =
     let codec = Json.compile Signup.schema

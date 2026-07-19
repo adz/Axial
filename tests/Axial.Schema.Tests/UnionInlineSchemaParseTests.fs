@@ -4,6 +4,7 @@ open Axial.Schema
 open Axial.Validation
 open Swensen.Unquote
 open Xunit
+open Axial.Schema.Syntax
 
 module UnionInlineSchemaParseTests =
     type private CardDetails = { Number: string }
@@ -16,14 +17,14 @@ module UnionInlineSchemaParseTests =
     type private Checkout = { Payment: Payment }
 
     let private cardSchema () =
-        Schema.recordFor<CardDetails, _> (fun number -> { Number = number })
-        |> Schema.field "number" _.Number (Schema.text |> Schema.constrain Constraint.required)
-        |> Schema.build
+        Schema.define<CardDetails>
+        |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "number" _.Number
+        |> construct (fun number -> { Number = number })
 
     let private invoiceSchema () =
-        Schema.recordFor<InvoiceDetails, _> (fun reference -> { Reference = reference })
-        |> Schema.field "reference" _.Reference Schema.text
-        |> Schema.build
+        Schema.define<InvoiceDetails>
+        |> fieldWith Schema.text "reference" _.Reference
+        |> construct (fun reference -> { Reference = reference })
 
     let private paymentValue () =
         Schema.inlineUnion
@@ -36,9 +37,9 @@ module UnionInlineSchemaParseTests =
                   ((invoiceSchema ())) ]
 
     let private checkoutSchema () =
-        Schema.recordFor<Checkout, _> (fun payment -> { Payment = payment })
-        |> Schema.field "payment" _.Payment (paymentValue ())
-        |> Schema.build
+        Schema.define<Checkout>
+        |> fieldWith (paymentValue ()) "payment" _.Payment
+        |> construct (fun payment -> { Payment = payment })
 
     [<Fact>]
     let ``parse builds the case matching the discriminator from spliced fields`` () =

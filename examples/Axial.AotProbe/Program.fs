@@ -3,6 +3,7 @@ open Axial.Flow
 open Axial.ErrorHandling
 open Axial.Schema
 open Axial.Validation
+open Axial.Schema.Syntax
 
 type ProbeFailure(message: string) =
     inherit Exception(message)
@@ -52,14 +53,14 @@ type SchemaFieldSummary =
     }
 
 type SummaryChainResult<'model, 'constructorIn, 'constructorOut>(value: obj) =
-    interface IFieldChainResult<'model, 'constructorIn, 'constructorOut> with
+    interface IRecordPlanState<'model, 'constructorIn, 'constructorOut> with
         member _.Value = value
 
 type SummaryFactory<'model>() =
-    interface IFieldChainFactory<'model, SchemaFieldSummary list> with
+    interface IRecordPlanCompiler<'model, SchemaFieldSummary list> with
         member _.OnEnd() =
             SummaryChainResult<'model, 'constructor, 'constructor>(box ([]: SchemaFieldSummary list))
-            :> IFieldChainResult<_, _, _>
+            :> IRecordPlanState<_, _, _>
 
         member _.OnField(order, field: Field<'model, 'field>, head) =
             let fields = head.Value :?> SchemaFieldSummary list
@@ -67,9 +68,14 @@ type SummaryFactory<'model>() =
             let fieldSummary = { Order = order; ExternalName = name }
 
             SummaryChainResult<'model, 'constructorIn, 'next>(box (fields @ [ fieldSummary ]))
-            :> IFieldChainResult<_, _, _>
+            :> IRecordPlanState<_, _, _>
 
-        member _.OnComplete(_, chain) =
+        member _.OnComplete<'constructor, 'constructed>
+            (
+                _: 'constructor,
+                chain: IRecordPlanState<'model, 'constructor, 'constructed>,
+                _: 'constructed -> Result<'model, string>
+            ) =
             chain.Value :?> SchemaFieldSummary list
 
 type FormField<'root, 'value> =
@@ -206,14 +212,14 @@ let renderUserForm user =
             yield Form.renderField prefix line lineQuantity
     ]
 
-let probeSchemaBuilder () =
+let probeSchemaPlan () =
     let schema =
-        Schema.recordFor<SchemaContact, _> (fun name age -> { Name = name; Age = age })
-        |> Schema.field "name" _.Name Schema.text
-        |> Schema.field "age" _.Age Schema.int
-        |> Schema.build
+        Schema.define<SchemaContact>
+        |> fieldWith Schema.text "name" _.Name
+        |> fieldWith Schema.int "age" _.Age
+        |> construct (fun name age -> { Name = name; Age = age })
 
-    Schema.specialize (SummaryFactory<SchemaContact>()) schema
+    Schema.compilePlan (SummaryFactory<SchemaContact>()) schema
 
 let probe () =
     let user =
@@ -253,7 +259,7 @@ let probe () =
             "Lines[1].Quantity = 0"
         ]
 
-    probeSchemaBuilder ()
+    probeSchemaPlan ()
     |> Assert.equal
         [
             { Order = 0; ExternalName = "name" }

@@ -3,6 +3,7 @@ namespace Axial.Tests
 open Axial.Schema
 open Swensen.Unquote
 open Xunit
+open Axial.Schema.Syntax
 
 /// <summary>
 /// Proves that a nested model schema can be inspected as portable field metadata from an outer model schema, without
@@ -19,20 +20,20 @@ module SchemaNestedValueTests =
         | PendingDefinition -> failwith "Expected public schema API to create a model definition."
 
     let private buildAddressSchema () =
-        Schema.recordFor<Address, _> (fun street city -> { Street = street; City = city })
-        |> Schema.field "street" _.Street (Schema.text |> Schema.constrain Constraint.required)
-        |> Schema.field "city" _.City (Schema.text |> Schema.constrain Constraint.required)
-        |> Schema.build
+        Schema.define<Address>
+        |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "street" _.Street
+        |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "city" _.City
+        |> construct (fun street city -> { Street = street; City = city })
 
     [<Fact>]
     let ``nested field getter reads the nested model from an already trusted outer model`` () =
         let addressSchema = buildAddressSchema ()
 
         let schema =
-            Schema.recordFor<Customer, _> (fun name address -> { Name = name; Address = address })
-            |> Schema.field "name" _.Name (Schema.text |> Schema.constrain Constraint.required)
-            |> Schema.field "address" _.Address addressSchema
-            |> Schema.build
+            Schema.define<Customer>
+            |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "name" _.Name
+            |> fieldWith addressSchema "address" _.Address
+            |> construct (fun name address -> { Name = name; Address = address })
 
         let model = modelDefinition schema
 
@@ -49,10 +50,10 @@ module SchemaNestedValueTests =
         let addressSchema = buildAddressSchema ()
 
         let schema =
-            Schema.recordFor<Customer, _> (fun name address -> { Name = name; Address = address })
-            |> Schema.field "name" _.Name (Schema.text |> Schema.constrain Constraint.required)
-            |> Schema.field "address" _.Address (addressSchema |> Schema.constrainAll [ Constraint.required ])
-            |> Schema.build
+            Schema.define<Customer>
+            |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "name" _.Name
+            |> fieldWith (addressSchema |> Schema.constrainAll [ Constraint.required ]) "address" _.Address
+            |> construct (fun name address -> { Name = name; Address = address })
 
         let model = modelDefinition schema
 
@@ -74,10 +75,10 @@ module SchemaNestedValueTests =
         let addressSchema = buildAddressSchema ()
 
         let schema =
-            Schema.recordFor<Customer, _> (fun name address -> { Name = name; Address = address })
-            |> Schema.field "name" _.Name (Schema.text |> Schema.constrain Constraint.required)
-            |> Schema.field "address" _.Address addressSchema
-            |> Schema.build
+            Schema.define<Customer>
+            |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "name" _.Name
+            |> fieldWith addressSchema "address" _.Address
+            |> construct (fun name address -> { Name = name; Address = address })
 
         let model = modelDefinition schema
 

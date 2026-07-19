@@ -4,14 +4,15 @@ open Axial.Schema
 open Axial.Validation
 open Swensen.Unquote
 open Xunit
+open Axial.Schema.Syntax
 
 module MapSchemaParseTests =
     type private Thresholds = { Values: Map<string, decimal> }
 
     let private thresholdsSchema =
-        Schema.recordFor<Thresholds, _> (fun values -> { Values = values })
-        |> Schema.field "values" _.Values (Schema.map (Schema.decimal |> Schema.constrain Constraint.required))
-        |> Schema.build
+        Schema.define<Thresholds>
+        |> fieldWith (Schema.mapWith (Schema.decimal |> Schema.constrain Constraint.required)) "values" _.Values
+        |> construct (fun values -> { Values = values })
 
     [<Fact>]
     let ``parse builds a Map from object-shaped raw input`` () =

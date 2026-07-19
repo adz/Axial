@@ -5,6 +5,7 @@ open System.Threading
 open Axial.Flow
 open Axial.ErrorHandling
 open Axial.Schema
+open Axial.Schema.Syntax
 open Axial.Validation
 open Axial.Codec
 
@@ -37,14 +38,14 @@ module Shared =
         }
 
     type private SummaryChainResult<'model, 'constructorIn, 'constructorOut>(value: obj) =
-        interface IFieldChainResult<'model, 'constructorIn, 'constructorOut> with
+        interface IRecordPlanState<'model, 'constructorIn, 'constructorOut> with
             member _.Value = value
 
     type private SummaryFactory<'model>() =
-        interface IFieldChainFactory<'model, string list> with
+        interface IRecordPlanCompiler<'model, string list> with
             member _.OnEnd() =
                 SummaryChainResult<'model, 'constructor, 'constructor>(box ([]: SchemaFieldSummary list))
-                :> IFieldChainResult<_, _, _>
+                :> IRecordPlanState<_, _, _>
 
             member _.OnField(order, field: Field<'model, 'field>, head) =
                 let fields = head.Value :?> SchemaFieldSummary list
@@ -52,9 +53,14 @@ module Shared =
                 let fieldSummary = { Order = order; ExternalName = name }
 
                 SummaryChainResult<'model, 'constructorIn, 'next>(box (fields @ [ fieldSummary ]))
-                :> IFieldChainResult<_, _, _>
+                :> IRecordPlanState<_, _, _>
 
-            member _.OnComplete(_, chain) =
+            member _.OnComplete<'constructor, 'constructed>
+                (
+                    _: 'constructor,
+                    chain: IRecordPlanState<'model, 'constructor, 'constructed>,
+                    _: 'constructed -> Result<'model, string>
+                ) =
                 chain.Value
                 :?> SchemaFieldSummary list
                 |> List.map (fun field -> $"{field.Order}:{field.ExternalName}")
@@ -147,13 +153,13 @@ module Shared =
         workflow
 
     let private contactSchema =
-        SchemaCore.record (fun name age -> { Name = name; Age = age })
-        |> SchemaCore.field "name" (fun (contact: SchemaContact) -> contact.Name) SchemaCore.text
-        |> SchemaCore.field "age" (fun (contact: SchemaContact) -> contact.Age) SchemaCore.int
-        |> SchemaCore.build
+        ShapeOps.define<SchemaContact>
+        |> field "name" _.Name
+        |> field "age" _.Age
+        |> construct (fun name age -> { Name = name; Age = age })
 
-    let buildSchemaBuilderSummary () =
-        SchemaCore.specialize (SummaryFactory<SchemaContact>()) contactSchema
+    let buildSchemaPlanSummary () =
+        SchemaCore.compilePlan (SummaryFactory<SchemaContact>()) contactSchema
 
     let runCodecRoundTrip () =
         let codec = Json.compile contactSchema

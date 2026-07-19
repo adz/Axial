@@ -77,7 +77,7 @@ contract Kw.v1 {
         test <@ emitted.Contains "Method: int" @>
 
     [<Fact>]
-    let ``a schema constructor replaces the record literal in recordFor`` () =
+    let ``a schema constructor closes the generated shape`` () =
         let parsed =
             match
                 Records.parse SchemaNaming.CamelCase "wire.fs"
@@ -99,5 +99,5 @@ type Order =
 
         let emitted = Emitter.emit "Ns" [ parsed ] parsed
 
-        test <@ emitted.Contains "Schema.recordFor<Order, _> (fun sku quantity -> Order.create sku quantity)" @>
+        test <@ emitted.Contains "|> construct (fun sku quantity -> Order.create sku quantity)" @>
         test <@ not (emitted.Contains "{ Sku = sku") @>

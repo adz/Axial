@@ -17,48 +17,48 @@ type WorkspaceV2 =
 
 [<RequireQualifiedAccess>]
 module Contracts =
-    open Axial.Schema.DSL
+    open Axial.Schema.Syntax
 
     let private requiredText create inspect maximum : Schema<'value> =
-        text
-        |> constrainAll [ required; maxLength maximum ]
-        |> refine create SchemaError.ofRefinementError inspect
+        Schema.text
+        |> Schema.constrainAll [ Constraint.required; Constraint.maxLength maximum ]
+        |> Schema.refine create SchemaError.ofRefinementError inspect
 
     let workspaceName = requiredText WorkspaceName.create WorkspaceName.value 80
     let personName = requiredText PersonName.create PersonName.value 80
     let workItemTitle = requiredText WorkItemTitle.create WorkItemTitle.value 160
 
     let workspaceV1 =
-        recordFor<WorkspaceV1, _> (fun version id name -> { version = version; id = id; name = name })
-        |> field "version" _.version int
-        |> field "id" _.id guid
-        |> field "name" _.name (text |> constrainAll [ required; maxLength 80 ])
-        |> build
+        Schema.define<WorkspaceV1>
+        |> field "version" _.version
+        |> field "id" _.id
+        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 80 ]) "name" _.name
+        |> construct (fun version id name -> { version = version; id = id; name = name })
 
     let memberV2 =
-        recordFor<MemberV2, _> (fun id name -> { id = id; name = name })
-        |> field "id" _.id guid
-        |> field "name" _.name personName
-        |> build
+        Schema.define<MemberV2>
+        |> field "id" _.id
+        |> fieldWith personName "name" _.name
+        |> construct (fun id name -> { id = id; name = name })
 
     let workItemV2 =
-        recordFor<WorkItemV2, _> (fun id title assignee state ->
+        Schema.define<WorkItemV2>
+        |> field "id" _.id
+        |> fieldWith workItemTitle "title" _.title
+        |> fieldWith (Schema.option Schema.guid) "assignee" _.assignee
+        |> fieldWith (Schema.text |> Schema.constrain (Constraint.oneOf [ "todo"; "done" ])) "state" _.state
+        |> construct (fun id title assignee state ->
             { id = id; title = title; assignee = assignee; state = state })
-        |> field "id" _.id guid
-        |> field "title" _.title workItemTitle
-        |> field "assignee" _.assignee (option guid)
-        |> field "state" _.state (text |> constrain (oneOf [ "todo"; "done" ]))
-        |> build
 
     let workspaceV2 =
-        recordFor<WorkspaceV2, _> (fun version id name members items ->
+        Schema.define<WorkspaceV2>
+        |> field "version" _.version
+        |> field "id" _.id
+        |> fieldWith workspaceName "name" _.name
+        |> fieldWith (Schema.listWith memberV2) "members" _.members
+        |> fieldWith (Schema.listWith workItemV2) "items" _.items
+        |> construct (fun version id name members items ->
             { version = version; id = id; name = name; members = members; items = items })
-        |> field "version" _.version int
-        |> field "id" _.id guid
-        |> field "name" _.name workspaceName
-        |> field "members" _.members (list memberV2)
-        |> field "items" _.items (list workItemV2)
-        |> build
 
     let private migrateV1 (value: WorkspaceV1) =
         WorkspaceName.create value.name

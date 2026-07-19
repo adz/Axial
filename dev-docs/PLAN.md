@@ -82,50 +82,49 @@ field path when that gives better boundary feedback.
 
 Schema work should prove the portable metadata model before growing broad interpreters. The metadata slice — field
 ordering, primitive value schemas, schema constraints as inspectable metadata, lowering those constraints to `Check`,
-and constructor/getter alignment — is proven. The explicit core API is a CodecMapper-style progressive typed builder:
+and constructor/getter alignment — is proven. Constructor-last object shapes are the sole public authoring surface:
 
 ```fsharp
-Schema.recordFor<Customer, _> ctor
-|> Schema.field "id" _.Id Schema.int
-|> Schema.field "name" _.Name Schema.text
-|> Schema.build
+Schema.define<Customer>
+|> field "id" _.Id
+|> field "name" _.Name
+|> construct ctor
 ```
 
-`Schema.recordFor<'model, _>` is the everyday entry point because it anchors the model type before the first field, letting
-field getters use shorthand member access. Plain `Schema.record ctor` remains available when the model type is already
-clear or getters are annotated explicitly. Each field application peels one curried constructor argument and
-`Schema.build` only type-checks when the constructor is fully applied, so constructor/getter alignment is
-compiler-checked by argument position and authoring scales to any field count without a hand-written `mapN` family,
-computation expression, or source generator. The earlier `Schema.map2`/`Schema.map3` API was only a transitional proof
-of the metadata model. The `schema create { }` computation expression was evaluated and rejected (see
-`dev-docs/decisions/README.md`); `Axial.Schema.DSL` delivers its prefix-elimination motivation as an open module over
-the same pipeline. Build-time generation exists as wire-tier tooling only: `[<DeriveSchema>]`-marked records are the
+`Schema.define<'model>` anchors the model type before the first field. `field` infers common primitive, option, and list
+schemas; `fieldWith` accepts an explicit value schema. The shape's phantom type records field types and lets
+`construct` or `constructResult` match the closing constructor by arity and position. Constraints remain beside the
+current field through the typed `constrain` operation.
+Build-time generation exists as wire-tier tooling: `[<DeriveSchema>]`-marked records are the
 primary declaration (FCS syntax-only frontend in `src/Axial.Schema.Contracts`, run by `scripts/schemagen` or the
 `Axial.Schema.Contracts.Build` MSBuild package), with `.contract` files as the parked secondary form; domain-tier
-generation was designed and rejected. Raw input, schema validation, rules, and DSL work should build on the explicit
-builder core rather than bypass it.
+generation remains exploratory.
 
-The public schema-authoring vocabulary keeps one field operation and names value schemas by their primitive:
-`Schema.field "name" _.Name Schema.text`, where `Schema.text`, `Schema.int`, `Schema.decimal`, `Schema.bool`,
+The public schema-authoring vocabulary keeps inferred `field`, explicit `fieldWith`, and typed `constrain` operations.
+`Schema.text`, `Schema.int`, `Schema.decimal`, `Schema.bool`,
 `Schema.date`, `Schema.dateTime`, and `Schema.guid` are the primitive `Schema<'value>` values, and composites
-(`Schema.list`, `Schema.option`, `Schema.map`, `Schema.union`, `Schema.inlineUnion`, `Schema.enum`, `Schema.defer`)
-and refined/domain schemas fill the same argument slot. Opening `Axial.Schema.DSL` inside a schema definition module
-provides the same names unqualified. Do not introduce competing primitive aliases such as `string`, `integer`,
+(`Schema.list<'item>()`, `Schema.option`, `Schema.map<'item>()`, `Schema.union`, `Schema.inlineUnion`, `Schema.enum`, `Schema.defer`)
+and refined/domain schemas fill `fieldWith`'s schema slot. Do not introduce competing primitive aliases such as `string`, `integer`,
 `boolean`, `uuid`, `dateOnly`, or `Field.text`; the `Value` module is internal implementation, not public vocabulary.
+
+Collection members are type-directed. `field` recursively resolves list item schemas, while standalone lists and
+string-keyed maps use `Schema.list<'item>()` and `Schema.map<'item>()`. `listWith` and `mapWith` are the explicit escape
+hatches for recursive or locally configured member schemas. `Syntax.constrainItems` and `Syntax.constrainValues` apply
+typed constraints inside a collection; ordinary `Schema.constrain` applies to the collection itself. Non-string map
+keys have no inferred wire representation.
 
 Schema must also preserve a high-performance codec lowering path. The inspectable schema model may contain rich metadata,
 but JSON codecs should not interpret that metadata tree directly on the hot path. A codec interpreter must be able to
 compile schemas into direct record plans: ordered field descriptors, cached wire-name bytes, indexed field slots,
 typed field decoders, and constructor application that does not require per-value reflection or `obj array` dispatch.
 CodecMapper is the performance reference for this shape. This path now ships as `Axial.Codec` (`Json.compile` over the
-retained typed field chain, benchmarked against `System.Text.Json` in `benchmarks/Axial.Benchmarks/CodecSuites.fs`);
+retained compiled record plan, benchmarked against `System.Text.Json` in `benchmarks/Axial.Benchmarks/CodecSuites.fs`);
 remaining codec work is optimization and format breadth, not proving the shape.
 
 The built `Schema<'model>` value itself must retain typed constructor and field information sufficient for that codec
-specialization: type erasure at authoring time must not force interpreters onto boxed `obj array` dispatch or require
-callers to re-supply the constructor and typed fields alongside the schema. The typed field chain that powers the
-authoring builder is the same structure codec compilers walk to emit constructor-specialized plans (CodecMapper's
-`MappingDefinition` / `Specialize` dual-view pattern).
+compilation: type erasure at authoring time must not force interpreters onto boxed `obj array` dispatch or require
+callers to re-supply the constructor and typed fields alongside the schema. Codec compilers walk the retained typed
+shape to emit constructor-specialized record plans (CodecMapper's `MappingDefinition` / `Specialize` dual-view pattern).
 
 Runtime reflection must not be the foundation for schema construction, constructor binding, validation, or codec
 execution. Reflection can be an optional import/tooling path on .NET, but the core authored schema path must remain AOT-

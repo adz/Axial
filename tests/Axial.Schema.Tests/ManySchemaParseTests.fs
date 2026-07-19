@@ -6,6 +6,7 @@ open Axial.Schema
 open Axial.Validation
 open Swensen.Unquote
 open Xunit
+open Axial.Schema.Syntax
 
 module ManySchemaParseTests =
     type private ContactMethod = { Kind: string; Value: string }
@@ -28,34 +29,34 @@ module ManySchemaParseTests =
     type private Tags = { Values: string list }
 
     let private contactMethodSchema =
-        Schema.recordFor<ContactMethod, _> (fun kind value -> ({ Kind = kind; Value = value }: ContactMethod))
-        |> Schema.field "kind" (fun contact -> contact.Kind) (Schema.text |> Schema.constrain Constraint.required)
-        |> Schema.field "value" (fun contact -> contact.Value) (Schema.text |> Schema.constrain Constraint.required)
-        |> Schema.build
+        Schema.define<ContactMethod>
+        |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "kind" (fun contact -> contact.Kind)
+        |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "value" (fun contact -> contact.Value)
+        |> construct (fun kind value -> ({ Kind = kind; Value = value }: ContactMethod))
 
     let private verifiedContactMethodSchema =
-        Schema.recordFor<VerifiedContactMethod, _> VerifiedContactMethod.Create
-        |> Schema.field "kind" (fun contact -> contact.Kind) (Schema.text |> Schema.constrain Constraint.required)
-        |> Schema.field "value" (fun contact -> contact.Value) (Schema.text |> Schema.constrain Constraint.required)
-        |> Schema.buildResult
+        Schema.define<VerifiedContactMethod>
+        |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "kind" (fun contact -> contact.Kind)
+        |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "value" (fun contact -> contact.Value)
+        |> constructResult VerifiedContactMethod.Create
 
     let private customerSchema =
-        Schema.recordFor<Customer, _> (fun name contacts -> ({ Name = name; Contacts = contacts }: Customer))
-        |> Schema.field "name" (fun customer -> customer.Name) (Schema.text |> Schema.constrain Constraint.required)
-        |> Schema.field "contacts" (fun customer -> customer.Contacts) (Schema.list contactMethodSchema)
-        |> Schema.build
+        Schema.define<Customer>
+        |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "name" (fun customer -> customer.Name)
+        |> fieldWith (Schema.listWith contactMethodSchema) "contacts" (fun customer -> customer.Contacts)
+        |> construct (fun name contacts -> ({ Name = name; Contacts = contacts }: Customer))
 
     let private verifiedCustomerSchema =
-        Schema.recordFor<VerifiedCustomer, _> (fun name contacts -> ({ Name = name; Contacts = contacts }: VerifiedCustomer))
-        |> Schema.field "name" (fun customer -> customer.Name) (Schema.text |> Schema.constrain Constraint.required)
-        |> Schema.field "contacts" (fun customer -> customer.Contacts) (Schema.list verifiedContactMethodSchema)
-        |> Schema.build
+        Schema.define<VerifiedCustomer>
+        |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "name" (fun customer -> customer.Name)
+        |> fieldWith (Schema.listWith verifiedContactMethodSchema) "contacts" (fun customer -> customer.Contacts)
+        |> construct (fun name contacts -> ({ Name = name; Contacts = contacts }: VerifiedCustomer))
 
     let private constrainedCustomerSchema =
-        Schema.recordFor<Customer, _> (fun name contacts -> ({ Name = name; Contacts = contacts }: Customer))
-        |> Schema.field "name" (fun customer -> customer.Name) (Schema.text |> Schema.constrain Constraint.required)
-        |> Schema.field "contacts" (fun customer -> customer.Contacts) (Schema.list contactMethodSchema |> Schema.constrainAll [ Constraint.minCount 1; Constraint.maxCount 2 ])
-        |> Schema.build
+        Schema.define<Customer>
+        |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "name" (fun customer -> customer.Name)
+        |> fieldWith (Schema.listWith contactMethodSchema |> Schema.constrainAll [ Constraint.minCount 1; Constraint.maxCount 2 ]) "contacts" (fun customer -> customer.Contacts)
+        |> construct (fun name contacts -> ({ Name = name; Contacts = contacts }: Customer))
 
     let private validContact kind value =
         RawInput.Object(Map.ofList [ "kind", RawInput.Scalar kind; "value", RawInput.Scalar value ])
@@ -183,9 +184,9 @@ module ManySchemaParseTests =
     [<Fact>]
     let ``parse builds a collection from primitive item schemas`` () =
         let schema =
-            Schema.recordFor<Tags, _> (fun values -> { Values = values })
-            |> Schema.field "values" _.Values (Schema.list (Schema.text |> Schema.constrain Constraint.required))
-            |> Schema.build
+            Schema.define<Tags>
+            |> fieldWith (Schema.listWith (Schema.text |> Schema.constrain Constraint.required)) "values" _.Values
+            |> construct (fun values -> { Values = values })
 
         let raw =
             RawInput.Object(Map.ofList [ "values", RawInput.Many [ RawInput.Scalar "fsharp"; RawInput.Scalar "typed-errors" ] ])
@@ -197,9 +198,9 @@ module ManySchemaParseTests =
     [<Fact>]
     let ``parse reports primitive item failures at collection index paths`` () =
         let schema =
-            Schema.recordFor<Tags, _> (fun values -> { Values = values })
-            |> Schema.field "values" _.Values (Schema.list (Schema.text |> Schema.constrain Constraint.required))
-            |> Schema.build
+            Schema.define<Tags>
+            |> fieldWith (Schema.listWith (Schema.text |> Schema.constrain Constraint.required)) "values" _.Values
+            |> construct (fun values -> { Values = values })
 
         let raw =
             RawInput.Object(Map.ofList [ "values", RawInput.Many [ RawInput.Scalar "fsharp"; RawInput.Scalar "   " ] ])

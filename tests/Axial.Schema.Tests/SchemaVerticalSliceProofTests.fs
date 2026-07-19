@@ -6,10 +6,11 @@ open Axial.ErrorHandling
 open Axial.Schema
 open Swensen.Unquote
 open Xunit
+open Axial.Schema.Syntax
 
 /// <summary>
 /// Proves the vertical schema metadata slice required by task line 163 of <c>dev-docs/TASKS.md</c> before RawInput,
-/// schema validation, rules, or DSL work may start: one authored <c>Schema&lt;'model&gt;</c> instance must
+/// schema validation, rules, or syntax work may start: one authored <c>Schema&lt;'model&gt;</c> instance must
 /// simultaneously carry ordered fields, a primitive value schema, required and maxLength constraint metadata,
 /// constraint lowering to <c>Check</c>, metadata inspection without running validation, constructor/getter alignment,
 /// and enough typed information to compile a CodecMapper-style record plan. Earlier tests
@@ -57,7 +58,7 @@ module SchemaVerticalSliceProofTests =
         abstract member TryCollect: name: string * raw: string -> bool
         abstract member ApplyCollected: 'constructorIn -> 'constructorOut
 
-    type private CompiledFieldsEnd<'model, 'constructor>() =
+    type private CompiledFieldsEmpty<'model, 'constructor>() =
         interface ICompiledChain<'model, 'constructor, 'constructor> with
             member _.Slots = []
             member _.Encode(_) = []
@@ -65,7 +66,7 @@ module SchemaVerticalSliceProofTests =
             member _.TryCollect(_, _) = false
             member _.ApplyCollected(constructor) = constructor
 
-    type private CompiledFieldsAppend<'model, 'constructorIn, 'field, 'next, 'head
+    type private CompiledFieldsCons<'model, 'constructorIn, 'field, 'next, 'head
         when 'head :> ICompiledChain<'model, 'constructorIn, 'field -> 'next>>
         (
             head: 'head,
@@ -96,8 +97,12 @@ module SchemaVerticalSliceProofTests =
                 | ValueSome value -> constructorForField value
                 | ValueNone -> invalidArg "values" $"Missing required field '{field.ExternalName}'."
 
-    type private CompiledRecordPlan<'model, 'constructor>
-        (constructor: 'constructor, chain: ICompiledChain<'model, 'constructor, 'model>) =
+    type private CompiledRecordPlan<'model, 'constructor, 'constructed>
+        (
+            constructor: 'constructor,
+            chain: ICompiledChain<'model, 'constructor, 'constructed>,
+            finish: 'constructed -> Result<'model, string>
+        ) =
 
         interface ICompiledPlan<'model> with
             member _.Slots = chain.Slots |> List.toArray
@@ -109,10 +114,12 @@ module SchemaVerticalSliceProofTests =
                 for name, raw in values do
                     chain.TryCollect(name, raw) |> ignore
 
-                chain.ApplyCollected constructor
+                match finish (chain.ApplyCollected constructor) with
+                | Ok model -> model
+                | Error message -> invalidOp message
 
     type private PlanChainResult<'model, 'constructorIn, 'constructorOut>(value: obj) =
-        interface IFieldChainResult<'model, 'constructorIn, 'constructorOut> with
+        interface IRecordPlanState<'model, 'constructorIn, 'constructorOut> with
             member _.Value = value
 
     module private FieldCodecs =
@@ -123,35 +130,37 @@ module SchemaVerticalSliceProofTests =
                 invalidArg "field" $"No proof codec registered for field type {typeof<'value>.FullName}."
 
     type private CompiledRecordPlanFactory<'model>() =
-        interface IFieldChainFactory<'model, ICompiledPlan<'model>> with
+        interface IRecordPlanCompiler<'model, ICompiledPlan<'model>> with
             member _.OnEnd() =
-                let chain = CompiledFieldsEnd<'model, 'constructor>() :> ICompiledChain<'model, 'constructor, 'constructor>
-                PlanChainResult<'model, 'constructor, 'constructor>(box chain) :> IFieldChainResult<_, _, _>
+                let chain = CompiledFieldsEmpty<'model, 'constructor>() :> ICompiledChain<'model, 'constructor, 'constructor>
+                PlanChainResult<'model, 'constructor, 'constructor>(box chain) :> IRecordPlanState<_, _, _>
 
             member _.OnField(order, field: Field<'model, 'field>, head) =
                 let headChain = head.Value :?> ICompiledChain<'model, 'constructorIn, 'field -> 'next>
                 let right = compile order field (FieldCodecs.forField<'field> ())
                 let chain =
-                    CompiledFieldsAppend<'model, 'constructorIn, 'field, 'next, _>(headChain, right)
+                    CompiledFieldsCons<'model, 'constructorIn, 'field, 'next, _>(headChain, right)
                     :> ICompiledChain<'model, 'constructorIn, 'next>
 
-                PlanChainResult<'model, 'constructorIn, 'next>(box chain) :> IFieldChainResult<_, _, _>
+                PlanChainResult<'model, 'constructorIn, 'next>(box chain) :> IRecordPlanState<_, _, _>
 
-            member _.OnComplete<'constructor>
+            member _.OnComplete<'constructor, 'constructed>
                 (
                     constructor: 'constructor,
-                    chain: IFieldChainResult<'model, 'constructor, 'model>
+                    chain: IRecordPlanState<'model, 'constructor, 'constructed>,
+                    finish: 'constructed -> Result<'model, string>
                 ) =
-                let compiledChain = chain.Value :?> ICompiledChain<'model, 'constructor, 'model>
-                CompiledRecordPlan<'model, 'constructor>(constructor, compiledChain) :> ICompiledPlan<'model>
+                let compiledChain = chain.Value :?> ICompiledChain<'model, 'constructor, 'constructed>
+                CompiledRecordPlan<'model, 'constructor, 'constructed>(constructor, compiledChain, finish)
+                :> ICompiledPlan<'model>
 
     let private compileFromSchema (schema: Schema<'model>) =
-        Schema.specialize (CompiledRecordPlanFactory<'model>()) schema
+        Schema.compilePlan (CompiledRecordPlanFactory<'model>()) schema
 
     [<Fact>]
     let ``one authored schema proves ordering, primitive value schema, required/maxLength metadata, Check lowering, inspection, alignment, and a compiled plan together`` () =
         // Ordered fields + primitive value schema (`Schema.text`) + required and maxLength constraint metadata,
-        // authored through the progressive typed builder.
+        // authored through the constructor-last typed shape.
         let emailValue =
             Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 254 ]
 
@@ -160,10 +169,10 @@ module SchemaVerticalSliceProofTests =
         // Declare fields in reverse of the record's own field order to prove constructor/getter alignment
         // follows declared argument position, not the record's source order or external field name.
         let schema =
-            Schema.recordFor<Signup, _> (fun displayName email -> { Email = email; DisplayName = displayName })
-            |> Schema.field "displayName" _.DisplayName displayNameValue
-            |> Schema.field "email" _.Email emailValue
-            |> Schema.build
+            Schema.define<Signup>
+            |> fieldWith displayNameValue "displayName" _.DisplayName
+            |> fieldWith emailValue "email" _.Email
+            |> construct (fun displayName email -> { Email = email; DisplayName = displayName })
 
         let source = { Email = "ada@example.com"; DisplayName = "Ada" }
 

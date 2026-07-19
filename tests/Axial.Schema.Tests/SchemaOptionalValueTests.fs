@@ -3,6 +3,7 @@ namespace Axial.Tests
 open Axial.Schema
 open Swensen.Unquote
 open Xunit
+open Axial.Schema.Syntax
 
 /// <summary>
 /// Proves that optional value schemas built with <c>Schema.option</c> are portable metadata: the payload stays
@@ -15,13 +16,10 @@ module SchemaOptionalValueTests =
           Nickname: string option }
 
     let private profileSchema () =
-        Schema.recordFor<Profile, _> (fun name nickname -> { Name = name; Nickname = nickname })
-        |> Schema.field "name" _.Name Schema.text
-        |> Schema.field
-            "nickname"
-            _.Nickname
-            (Schema.option (Schema.text |> Schema.constrain (Constraint.minLength 2)))
-        |> Schema.build
+        Schema.define<Profile>
+        |> fieldWith Schema.text "name" _.Name
+        |> fieldWith (Schema.option (Schema.text |> Schema.constrain (Constraint.minLength 2))) "nickname" _.Nickname
+        |> construct (fun name nickname -> { Name = name; Nickname = nickname })
 
     [<Fact>]
     let ``optionOf describes an optional shape carrying the payload description`` () =
@@ -68,7 +66,7 @@ module SchemaOptionalValueTests =
     [<Fact>]
     let ``build rejects an optional field carrying the required field constraint`` () =
         raises<System.ArgumentException>
-            <@ Schema.recordFor<Profile, _> (fun name nickname -> { Name = name; Nickname = nickname })
-               |> Schema.field "name" _.Name Schema.text
-               |> Schema.field "nickname" _.Nickname ((Schema.option Schema.text) |> Schema.constrainAll [ Constraint.required ])
-               |> Schema.build @>
+            <@ Schema.define<Profile>
+               |> fieldWith Schema.text "name" _.Name
+               |> fieldWith ((Schema.option Schema.text) |> Schema.constrainAll [ Constraint.required ]) "nickname" _.Nickname
+               |> construct (fun name nickname -> { Name = name; Nickname = nickname })@>

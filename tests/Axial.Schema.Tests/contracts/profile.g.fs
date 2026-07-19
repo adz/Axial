@@ -19,14 +19,16 @@ type ProfileV1 =
 [<RequireQualifiedAccess>]
 module ProfileV1 =
 
+    open Axial.Schema.Syntax
+
     /// The schema declared by profile.contract (Profile.v1).
     let schema : Schema<ProfileV1> =
-        Schema.recordFor<ProfileV1, _> (fun name email ->
+        Schema.define<ProfileV1>
+        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.minLength (1); Constraint.maxLength (100) ]) "name" _.Name
+        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.email ]) "email" _.Email
+        |> construct (fun name email ->
             { Name = name
               Email = email })
-        |> Schema.field "name" _.Name (Schema.text |> Schema.constrainAll [ Constraint.minLength (1); Constraint.maxLength (100) ])
-        |> Schema.field "email" _.Email (Schema.text |> Schema.constrainAll [ Constraint.email ])
-        |> Schema.build
         |> Schema.describe "A user profile as first stored."
 
     /// Checks a draft built with an ordinary record literal.
@@ -56,16 +58,18 @@ type Profile =
 [<RequireQualifiedAccess>]
 module Profile =
 
+    open Axial.Schema.Syntax
+
     /// The schema declared by profile.contract (Profile.v2).
     let schema : Schema<Profile> =
-        Schema.recordFor<Profile, _> (fun name email marketingOptIn ->
+        Schema.define<Profile>
+        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.minLength (1); Constraint.maxLength (100) ]) "name" _.Name
+        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.email ]) "email" _.Email
+        |> fieldWith (Schema.bool |> Schema.withDefault false) "marketing_opt_in" _.MarketingOptIn
+        |> construct (fun name email marketingOptIn ->
             { Name = name
               Email = email
               MarketingOptIn = marketingOptIn })
-        |> Schema.field "name" _.Name (Schema.text |> Schema.constrainAll [ Constraint.minLength (1); Constraint.maxLength (100) ])
-        |> Schema.field "email" _.Email (Schema.text |> Schema.constrainAll [ Constraint.email ])
-        |> Schema.field "marketing_opt_in" _.MarketingOptIn (Schema.bool |> Schema.withDefault false)
-        |> Schema.build
         |> Schema.describe "A user profile with an explicit marketing consent decision."
 
     /// Checks a draft built with an ordinary record literal.

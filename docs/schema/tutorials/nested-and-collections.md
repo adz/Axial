@@ -7,13 +7,13 @@ description: Parse an order with a nested address and repeated line items.
 # Nested Models And Collections Tutorial
 
 This tutorial parses an order that contains a nested address and a collection of line items. Nested schemas and item
-schemas are ordinary `Schema<_>` values — composition is `Schema.field` with the nested schema or `Schema.list`.
+schemas are ordinary `Schema<_>` values — composition uses `fieldWith` with the nested schema or `Schema.listWith`.
 
 ## Declare The Schemas
 
 ```fsharp
 open Axial.Schema
-open Axial.Schema.DSL
+open Axial.Schema.Syntax
 
 type Address = { Street: string; City: string }
 type Item = { Sku: string; Quantity: int }
@@ -23,22 +23,24 @@ type Order =
       Items: Item list }
 
 let addressSchema =
-    recordFor<Address, _> (fun street city -> { Street = street; City = city })
-    |> field "street" _.Street (text |> constrainAll [ required ])
-    |> field "city" _.City (text |> constrainAll [ required ])
-    |> build
+    Schema.define<Address>
+    |> field "street" _.Street
+    |> field "city" _.City
+    |> construct (fun street city -> { Street = street; City = city })
 
 let itemSchema =
-    recordFor<Item, _> (fun sku quantity -> { Sku = sku; Quantity = quantity })
-    |> field "sku" _.Sku (text |> constrainAll [ required ])
-    |> field "quantity" _.Quantity (int |> constrainAll [ greaterThan 0 ])
-    |> build
+    Schema.define<Item>
+    |> field "sku" _.Sku
+    |> field "quantity" _.Quantity
+    |> constrain (greaterThan 0)
+    |> construct (fun sku quantity -> { Sku = sku; Quantity = quantity })
 
 let orderSchema =
-    recordFor<Order, _> (fun address items -> { Address = address; Items = items })
-    |> field "address" _.Address (addressSchema |> constrainAll [ required ])
-    |> field "items" _.Items ((list itemSchema) |> constrainAll [ minCount 1 ])
-    |> build
+    Schema.define<Order>
+    |> fieldWith addressSchema "address" _.Address
+    |> fieldWith (Schema.listWith itemSchema) "items" _.Items
+    |> constrain (minCount 1)
+    |> construct (fun address items -> { Address = address; Items = items })
 ```
 
 ## Adapt Nested Input

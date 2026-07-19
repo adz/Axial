@@ -7,6 +7,7 @@ open Axial.Validation
 open Axial.Schema
 open Axial.Schema.Http
 open Axial.Schema.Http.Tests.Fixtures
+open Axial.Schema.Syntax
 
 [<Fact>]
 let ``json pointers render names, keys, and indexes`` () =
@@ -55,10 +56,10 @@ let ``indexed form names become ordered collections`` () =
 [<Fact>]
 let ``query pairs parse flat models`` () =
     let schema =
-        Schema.recordFor<{| Page: int; Terms: string list |}, _> (fun page terms -> {| Page = page; Terms = terms |})
-        |> Schema.field "page" (fun value -> value.Page) Schema.int
-        |> Schema.field "terms" (fun value -> value.Terms) (Schema.list Schema.text)
-        |> Schema.build
+        Schema.define<{| Page: int; Terms: string list |}>
+        |> fieldWith Schema.int "page" (fun value -> value.Page)
+        |> fieldWith (Schema.listWith Schema.text) "terms" (fun value -> value.Terms)
+        |> construct (fun page terms -> {| Page = page; Terms = terms |})
 
     let parsed =
         Schema.parse schema (BoundaryInput.ofQuery [ "page", "3"; "terms", "one"; "terms", "two" ])

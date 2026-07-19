@@ -435,7 +435,7 @@ Source code:
 module RefinedValueSchemaExample
 
 open Axial.Schema
-open Axial.Schema.DSL
+open Axial.Schema.Syntax
 
 /// <summary>An email address refined over Axial's text primitive, carrying the well-known email format.</summary>
 type Email = private Email of string
@@ -445,11 +445,11 @@ module Email =
     let value (Email value) = value
 
     let schema : Schema<Email> =
-        text
-        |> constrain required
-        |> convert create value
-        |> constrain email
-        |> withFormat SchemaFormat.email
+        Schema.text
+        |> Schema.constrain Constraint.required
+        |> Schema.convert create value
+        |> Schema.constrain Constraint.email
+        |> Schema.withFormat SchemaFormat.email
 
 /// <summary>A bounded-text domain value whose length constraints live on the raw text schema.</summary>
 type ContactName = private ContactName of string
@@ -459,9 +459,9 @@ module ContactName =
     let value (ContactName value) = value
 
     let schema : Schema<ContactName> =
-        text
-        |> constrainAll [ minLength 2; maxLength 40 ]
-        |> convert create value
+        Schema.text
+        |> Schema.constrainAll [ Constraint.minLength 2; Constraint.maxLength 40 ]
+        |> Schema.convert create value
 
 /// <summary>A quantity that must always be positive (strictly greater than zero).</summary>
 type Quantity = private Quantity of int
@@ -471,9 +471,9 @@ module Quantity =
     let value (Quantity value) = value
 
     let schema : Schema<Quantity> =
-        int
-        |> constrain (greaterThan 0)
-        |> convert create value
+        Schema.int
+        |> Schema.constrain (Constraint.greaterThan 0)
+        |> Schema.convert create value
 
 /// <summary>A running total that must never go negative, but zero is allowed.</summary>
 type Balance = private Balance of decimal
@@ -483,9 +483,9 @@ module Balance =
     let value (Balance value) = value
 
     let schema : Schema<Balance> =
-        decimal
-        |> constrain (atLeast 0m)
-        |> convert create value
+        Schema.decimal
+        |> Schema.constrain (Constraint.atLeast 0m)
+        |> Schema.convert create value
 
 type Contact =
     { Email: Email
@@ -494,16 +494,16 @@ type Contact =
       Balance: Balance }
 
 let contactSchema =
-    recordFor<Contact, _> (fun email name quantity balance ->
+    Schema.define<Contact>
+    |> fieldWith Email.schema "email" _.Email
+    |> fieldWith ContactName.schema "name" _.Name
+    |> fieldWith Quantity.schema "quantity" _.Quantity
+    |> fieldWith Balance.schema "balance" _.Balance
+    |> construct (fun email name quantity balance ->
         { Email = email
           Name = name
           Quantity = quantity
           Balance = balance })
-    |> field "email" _.Email Email.schema
-    |> field "name" _.Name ContactName.schema
-    |> field "quantity" _.Quantity Quantity.schema
-    |> field "balance" _.Balance Balance.schema
-    |> build
 
 let run () =
     let contact =
@@ -583,13 +583,11 @@ type Email = private EmailValue of string
 module Email =
     let value (EmailValue raw) = raw
 
-    open Axial.Schema.DSL
-
     let schema: Schema<Email> =
-        text
-        |> constrainAll [ required; maxLength 254; email ]
-        |> convert EmailValue value
-        |> withFormat SchemaFormat.email
+        Schema.text
+        |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 254; Constraint.email ]
+        |> Schema.convert EmailValue value
+        |> Schema.withFormat SchemaFormat.email
 
 type Address = { Street: string; City: string }
 
@@ -601,27 +599,27 @@ type Signup =
       Tags: string list }
 
 module Signup =
-    open Axial.Schema.DSL
+    open Axial.Schema.Syntax
 
     let addressSchema =
-        recordFor<Address, _> (fun street city -> { Street = street; City = city })
-        |> field "street" _.Street (text |> constrainAll [ required; maxLength 120 ])
-        |> field "city" _.City (text |> constrainAll [ required; maxLength 80 ])
-        |> build
+        Schema.define<Address>
+        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 120 ]) "street" _.Street
+        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 80 ]) "city" _.City
+        |> construct (fun street city -> { Street = street; City = city })
 
     let schema =
-        recordFor<Signup, _> (fun name email age address tags ->
+        Schema.define<Signup>
+        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 80 ]) "name" _.Name
+        |> fieldWith Email.schema "email" _.Email
+        |> fieldWith (Schema.int |> Schema.constrain (Constraint.between 13 120)) "age" _.Age
+        |> fieldWith (addressSchema |> Schema.constrain Constraint.required) "address" _.Address
+        |> fieldWith (Schema.listWith Schema.text |> Schema.constrain (Constraint.maxCount 5)) "tags" _.Tags
+        |> construct (fun name email age address tags ->
             { Name = name
               Email = email
               Age = age
               Address = address
               Tags = tags })
-        |> field "name" _.Name (text |> constrainAll [ required; maxLength 80 ])
-        |> field "email" _.Email Email.schema
-        |> field "age" _.Age (int |> constrain (between 13 120))
-        |> field "address" _.Address (addressSchema |> constrain required)
-        |> field "tags" _.Tags (list text |> constrain (maxCount 5))
-        |> build
 
 // ---------------------------------------------------------------------------
 // Interpreters compiled once from the declaration above.
@@ -871,6 +869,7 @@ open Axial.Flow
 open Axial.Refined
 open Axial.Schema
 open Axial.Validation
+open Axial.Schema.Syntax
 
 type Quantity = private Quantity of int
 
@@ -888,12 +887,12 @@ type OrderLine =
       Quantity: Quantity }
 
 let orderLineSchema =
-    Schema.recordFor<OrderLine, _> (fun sku quantity ->
+    Schema.define<OrderLine>
+    |> fieldWith Schema.text "sku" _.Sku
+    |> fieldWith Quantity.schema "quantity" _.Quantity
+    |> construct (fun sku quantity ->
         { Sku = sku
           Quantity = quantity })
-    |> Schema.field "sku" _.Sku Schema.text
-    |> Schema.field "quantity" _.Quantity Quantity.schema
-    |> Schema.build
 
 type OrderEnv =
     { MaxLineQuantity: int

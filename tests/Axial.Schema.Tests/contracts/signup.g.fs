@@ -31,13 +31,23 @@ type Signup =
 [<RequireQualifiedAccess>]
 module Signup =
 
+    open Axial.Schema.Syntax
+
     let private planCases =
         [ EnumCase.create "free" SignupPlan.Free
           EnumCase.create "pro" SignupPlan.Pro ]
 
     /// The schema declared by signup.contract (Signup.v1).
     let schema : Schema<Signup> =
-        Schema.recordFor<Signup, _> (fun email displayName age plan tags limits location ->
+        Schema.define<Signup>
+        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.email; Constraint.maxLength (254) ] |> Schema.describe "Primary contact address.") "email" _.Email
+        |> fieldWith (Schema.option (Schema.text |> Schema.constrainAll [ Constraint.minLength (1); Constraint.maxLength (64) ])) "display_name" _.DisplayName
+        |> fieldWith (Schema.int |> Schema.constrainAll [ Constraint.atLeast (13) ]) "age" _.Age
+        |> fieldWith (Schema.enum planCases |> Schema.withDefault SignupPlan.Free) "plan" _.Plan
+        |> fieldWith (Schema.listWith Schema.text |> Schema.constrainAll [ Constraint.maxCount (8); Constraint.distinct ]) "tags" _.Tags
+        |> fieldWith (Schema.mapWith Schema.int) "limits" _.Limits
+        |> fieldWith (Schema.option Geo.schema) "location" _.Location
+        |> construct (fun email displayName age plan tags limits location ->
             { Email = email
               DisplayName = displayName
               Age = age
@@ -45,14 +55,6 @@ module Signup =
               Tags = tags
               Limits = limits
               Location = location })
-        |> Schema.field "email" _.Email (Schema.text |> Schema.constrainAll [ Constraint.email; Constraint.maxLength (254) ] |> Schema.describe "Primary contact address.")
-        |> Schema.field "display_name" _.DisplayName (Schema.option (Schema.text |> Schema.constrainAll [ Constraint.minLength (1); Constraint.maxLength (64) ]))
-        |> Schema.field "age" _.Age (Schema.int |> Schema.constrainAll [ Constraint.atLeast (13) ])
-        |> Schema.field "plan" _.Plan (Schema.enum planCases |> Schema.withDefault SignupPlan.Free)
-        |> Schema.field "tags" _.Tags (Schema.list Schema.text |> Schema.constrainAll [ Constraint.maxCount (8); Constraint.distinct ])
-        |> Schema.field "limits" _.Limits (Schema.map Schema.int)
-        |> Schema.field "location" _.Location (Schema.option Geo.schema)
-        |> Schema.build
         |> Schema.describe "A new account request."
 
     /// Checks a draft built with an ordinary record literal.

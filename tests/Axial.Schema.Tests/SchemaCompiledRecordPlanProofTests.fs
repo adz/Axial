@@ -5,9 +5,10 @@ open System.Text
 open Axial.Schema
 open Swensen.Unquote
 open Xunit
+open Axial.Schema.Syntax
 
 /// <summary>
-/// Proves that today's progressive <c>Schema</c> builder carries enough typed information to lower a flat
+/// Proves that a constructor-last <c>Schema</c> shape carries enough typed information to lower a flat
 /// record schema into a CodecMapper-style compiled record plan: ordered fields, cached UTF-8 external names, typed
 /// per-field decode/encode hooks, indexed field slots, and direct constructor application. Compare
 /// <c>CompiledRecordPlan2</c> below against CodecMapper's <c>RecordDecoder2&lt;'T,'A,'B&gt;</c> in
@@ -16,7 +17,7 @@ open Xunit
 /// </summary>
 /// <remarks>
 /// This lives as a test-only prototype rather than new `Axial.Schema` source. The key finding this test records: a
-/// zero-boxing compiled plan can be built from the typed field chain retained by the built
+/// zero-boxing compiled plan can be built from the typed shape retained by the built
 /// <c>Schema&lt;'model&gt;</c> value itself, not from caller-supplied fields and constructors and not from the
 /// type-erased <c>Schema&lt;'model&gt;.Definition</c> that metadata interpreters use. That erased shape stores fields as
 /// <c>'model -> obj</c> getters and applies constructors through <c>obj array</c>, which is the right trade for
@@ -74,7 +75,7 @@ module SchemaCompiledRecordPlanProofTests =
         abstract member TryCollect: name: string * raw: string -> bool
         abstract member ApplyCollected: 'constructorIn -> 'constructorOut
 
-    type private CompiledFieldsEnd<'model, 'constructor>() =
+    type private CompiledShapeFieldsEmpty<'model, 'constructor>() =
         interface ICompiledChain<'model, 'constructor, 'constructor> with
             member _.Slots = []
             member _.Encode(_) = []
@@ -82,7 +83,7 @@ module SchemaCompiledRecordPlanProofTests =
             member _.TryCollect(_, _) = false
             member _.ApplyCollected(constructor) = constructor
 
-    type private CompiledFieldsAppend<'model, 'constructorIn, 'field, 'next, 'head
+    type private CompiledShapeFieldsAppend<'model, 'constructorIn, 'field, 'next, 'head
         when 'head :> ICompiledChain<'model, 'constructorIn, 'field -> 'next>>
         (
             head: 'head,
@@ -116,8 +117,12 @@ module SchemaCompiledRecordPlanProofTests =
     /// A compiled plan for a flat record. Field slots stay strongly typed in the compiled chain, so `Decode` walks an
     /// ordered field-name chain and then applies the original curried constructor directly. There is no `obj array`, no
     /// per-value reflection, and no generic dictionary keyed by field name on the decode path.
-    type private CompiledRecordPlan<'model, 'constructor>
-        (constructor: 'constructor, chain: ICompiledChain<'model, 'constructor, 'model>) =
+    type private CompiledRecordPlan<'model, 'constructor, 'constructed>
+        (
+            constructor: 'constructor,
+            chain: ICompiledChain<'model, 'constructor, 'constructed>,
+            finish: 'constructed -> Result<'model, string>
+        ) =
 
         interface ICompiledPlan<'model> with
             member _.Slots = chain.Slots |> List.toArray
@@ -129,40 +134,44 @@ module SchemaCompiledRecordPlanProofTests =
                 for name, raw in values do
                     chain.TryCollect(name, raw) |> ignore
 
-                chain.ApplyCollected constructor
+                match finish (chain.ApplyCollected constructor) with
+                | Ok model -> model
+                | Error message -> invalidOp message
 
     type private PlanChainResult<'model, 'constructorIn, 'constructorOut>(value: obj) =
-        interface IFieldChainResult<'model, 'constructorIn, 'constructorOut> with
+        interface IRecordPlanState<'model, 'constructorIn, 'constructorOut> with
             member _.Value = value
 
-    /// Compiles a plan from the typed field chain retained by the built `Schema<'model>`. The generic factory methods
+    /// Compiles a plan from the typed shape retained by the built `Schema<'model>`. The generic compiler methods
     /// see each field's real value type and the original curried constructor, so the resulting decode path applies the
-    /// constructor directly through typed chain nodes rather than through `obj array`.
+    /// constructor directly through typed record-plan nodes rather than through `obj array`.
     type private CompiledRecordPlanFactory<'model>() =
-        interface IFieldChainFactory<'model, ICompiledPlan<'model>> with
+        interface IRecordPlanCompiler<'model, ICompiledPlan<'model>> with
             member _.OnEnd() =
-                let chain = CompiledFieldsEnd<'model, 'constructor>() :> ICompiledChain<'model, 'constructor, 'constructor>
-                PlanChainResult<'model, 'constructor, 'constructor>(box chain) :> IFieldChainResult<_, _, _>
+                let chain = CompiledShapeFieldsEmpty<'model, 'constructor>() :> ICompiledChain<'model, 'constructor, 'constructor>
+                PlanChainResult<'model, 'constructor, 'constructor>(box chain) :> IRecordPlanState<_, _, _>
 
             member _.OnField(order, field: Field<'model, 'field>, head) =
                 let headChain = head.Value :?> ICompiledChain<'model, 'constructorIn, 'field -> 'next>
                 let right = compile order field (FieldCodecs.forField<'field> ())
                 let chain =
-                    CompiledFieldsAppend<'model, 'constructorIn, 'field, 'next, _>(headChain, right)
+                    CompiledShapeFieldsAppend<'model, 'constructorIn, 'field, 'next, _>(headChain, right)
                     :> ICompiledChain<'model, 'constructorIn, 'next>
 
-                PlanChainResult<'model, 'constructorIn, 'next>(box chain) :> IFieldChainResult<_, _, _>
+                PlanChainResult<'model, 'constructorIn, 'next>(box chain) :> IRecordPlanState<_, _, _>
 
-            member _.OnComplete<'constructor>
+            member _.OnComplete<'constructor, 'constructed>
                 (
                     constructor: 'constructor,
-                    chain: IFieldChainResult<'model, 'constructor, 'model>
+                    chain: IRecordPlanState<'model, 'constructor, 'constructed>,
+                    finish: 'constructed -> Result<'model, string>
                 ) =
-                let compiledChain = chain.Value :?> ICompiledChain<'model, 'constructor, 'model>
-                CompiledRecordPlan<'model, 'constructor>(constructor, compiledChain) :> ICompiledPlan<'model>
+                let compiledChain = chain.Value :?> ICompiledChain<'model, 'constructor, 'constructed>
+                CompiledRecordPlan<'model, 'constructor, 'constructed>(constructor, compiledChain, finish)
+                :> ICompiledPlan<'model>
 
     let private compileFromSchema (schema: Schema<'model>) =
-        Schema.specialize (CompiledRecordPlanFactory<'model>()) schema
+        Schema.compilePlan (CompiledRecordPlanFactory<'model>()) schema
 
     type private Contact = { Name: string; Age: int }
 
@@ -174,10 +183,10 @@ module SchemaCompiledRecordPlanProofTests =
     [<Fact>]
     let ``flat record schema lowers to a compiled plan with ordered fields, cached UTF-8 names, and typed hooks`` () =
         let schema =
-            Schema.recordFor<Contact, _> (fun name age -> { Name = name; Age = age })
-            |> Schema.field "name" _.Name Schema.text
-            |> Schema.field "age" _.Age Schema.int
-            |> Schema.build
+            Schema.define<Contact>
+            |> fieldWith Schema.text "name" _.Name
+            |> fieldWith Schema.int "age" _.Age
+            |> construct (fun name age -> { Name = name; Age = age })
 
         let plan = compileFromSchema schema
 
@@ -206,10 +215,10 @@ module SchemaCompiledRecordPlanProofTests =
     [<Fact>]
     let ``decode raises when a required field is missing instead of partially applying the constructor`` () =
         let schema =
-            Schema.recordFor<Contact, _> (fun name age -> { Name = name; Age = age })
-            |> Schema.field "name" _.Name Schema.text
-            |> Schema.field "age" _.Age Schema.int
-            |> Schema.build
+            Schema.define<Contact>
+            |> fieldWith Schema.text "name" _.Name
+            |> fieldWith Schema.int "age" _.Age
+            |> construct (fun name age -> { Name = name; Age = age })
 
         let plan = compileFromSchema schema
 

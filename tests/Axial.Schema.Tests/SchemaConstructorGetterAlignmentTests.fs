@@ -3,9 +3,10 @@ namespace Axial.Tests
 open Axial.Schema
 open Swensen.Unquote
 open Xunit
+open Axial.Schema.Syntax
 
 /// <summary>
-/// Proves that the progressive schema builder binds each field's getter to the constructor argument at that field's
+/// Proves that a constructor-last shape binds each field's getter to the constructor argument at that field's
 /// declared position, not to the record field order or external field name. Fields use same-typed values so a misaligned
 /// implementation would produce a wrong-but-still-typed result instead of a crash.
 /// </summary>
@@ -23,12 +24,12 @@ module SchemaConstructorGetterAlignmentTests =
         | PendingDefinition -> failwith "Expected public schema API to create a model definition."
 
     [<Fact>]
-    let ``builder aligns each field's getter with its constructor argument position`` () =
+    let ``shape aligns each field's getter with its constructor argument position`` () =
         let schema =
-            Schema.recordFor<FullName, _> (fun first last -> { First = first; Last = last })
-            |> Schema.field "first" _.First Schema.text
-            |> Schema.field "last" _.Last Schema.text
-            |> Schema.build
+            Schema.define<FullName>
+            |> fieldWith Schema.text "first" _.First
+            |> fieldWith Schema.text "last" _.Last
+            |> construct (fun first last -> { First = first; Last = last })
         let source = { First = "Ada"; Last = "Lovelace" }
 
         let model = modelDefinition schema
@@ -40,12 +41,12 @@ module SchemaConstructorGetterAlignmentTests =
         test <@ ConstructorApplication.apply model.Constructor (values |> List.toArray) = source @>
 
     [<Fact>]
-    let ``builder binds argument position to declaration order, not external field name`` () =
+    let ``shape binds argument position to declaration order, not external field name`` () =
         let swapped =
-            Schema.recordFor<FullName, _> (fun a b -> { First = a; Last = b })
-            |> Schema.field "last" _.Last Schema.text
-            |> Schema.field "first" _.First Schema.text
-            |> Schema.build
+            Schema.define<FullName>
+            |> fieldWith Schema.text "last" _.Last
+            |> fieldWith Schema.text "first" _.First
+            |> construct (fun a b -> { First = a; Last = b })
         let source = { First = "Ada"; Last = "Lovelace" }
 
         let model = modelDefinition swapped
@@ -57,13 +58,13 @@ module SchemaConstructorGetterAlignmentTests =
         test <@ ConstructorApplication.apply model.Constructor (values |> List.toArray) = { First = "Lovelace"; Last = "Ada" } @>
 
     [<Fact>]
-    let ``builder aligns each of three same-typed fields with its constructor argument position`` () =
+    let ``shape aligns each of three same-typed fields with its constructor argument position`` () =
         let schema =
-            Schema.recordFor<Address, _> (fun line1 line2 city -> { Line1 = line1; Line2 = line2; City = city })
-            |> Schema.field "line1" _.Line1 Schema.text
-            |> Schema.field "line2" _.Line2 Schema.text
-            |> Schema.field "city" _.City Schema.text
-            |> Schema.build
+            Schema.define<Address>
+            |> fieldWith Schema.text "line1" _.Line1
+            |> fieldWith Schema.text "line2" _.Line2
+            |> fieldWith Schema.text "city" _.City
+            |> construct (fun line1 line2 city -> { Line1 = line1; Line2 = line2; City = city })
 
         let source = { Line1 = "221B Baker Street"; Line2 = "Flat 2"; City = "London" }
 
@@ -79,15 +80,15 @@ module SchemaConstructorGetterAlignmentTests =
         test <@ ConstructorApplication.apply model.Constructor (values |> List.toArray) = source @>
 
     [<Fact>]
-    let ``builder preserves alignment under a reordered declaration`` () =
+    let ``shape preserves alignment under a reordered declaration`` () =
         // Declare city first and construct the record accordingly; each getter must still land on the argument
         // matching its declared position rather than the record's source order or external field name.
         let reordered =
-            Schema.recordFor<Address, _> (fun city line1 line2 -> { Line1 = line1; Line2 = line2; City = city })
-            |> Schema.field "city" _.City Schema.text
-            |> Schema.field "line1" _.Line1 Schema.text
-            |> Schema.field "line2" _.Line2 Schema.text
-            |> Schema.build
+            Schema.define<Address>
+            |> fieldWith Schema.text "city" _.City
+            |> fieldWith Schema.text "line1" _.Line1
+            |> fieldWith Schema.text "line2" _.Line2
+            |> construct (fun city line1 line2 -> { Line1 = line1; Line2 = line2; City = city })
 
         let source = { Line1 = "221B Baker Street"; Line2 = "Flat 2"; City = "London" }
 

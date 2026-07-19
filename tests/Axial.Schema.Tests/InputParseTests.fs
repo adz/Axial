@@ -7,6 +7,7 @@ open Axial.Schema
 open Axial.Validation
 open Swensen.Unquote
 open Xunit
+open Axial.Schema.Syntax
 
 module InputParseTests =
     type private Signup = { Email: string; Age: int }
@@ -46,10 +47,10 @@ module InputParseTests =
                 Error "End date must be on or after start date."
 
     let private schema =
-        Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
-        |> Schema.field "email" _.Email (Schema.text |> Schema.constrain Constraint.required)
-        |> Schema.field "age" _.Age Schema.int
-        |> Schema.build
+        Schema.define<Signup>
+        |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "email" _.Email
+        |> fieldWith Schema.int "age" _.Age
+        |> construct (fun email age -> { Email = email; Age = age })
 
     [<Fact>]
     let ``parse builds model from object input`` () =
@@ -107,18 +108,12 @@ module InputParseTests =
     [<Fact>]
     let ``parse surfaces a constraint's custom message in place of the default error`` () =
         let messageSchema =
-            Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
-            |> Schema.field
-                "email"
-                _.Email
-                (Schema.text
-                 |> Schema.constrain (Constraint.required |> Constraint.withMessage "Email is required."))
-            |> Schema.field
-                "age"
-                _.Age
-                (Schema.int
-                 |> Schema.constrain (Constraint.atLeast 18 |> Constraint.withMessage "Must be an adult."))
-            |> Schema.build
+            Schema.define<Signup>
+            |> fieldWith (Schema.text
+                 |> Schema.constrain (Constraint.required |> Constraint.withMessage "Email is required.")) "email" _.Email
+            |> fieldWith (Schema.int
+                 |> Schema.constrain (Constraint.atLeast 18 |> Constraint.withMessage "Must be an adult.")) "age" _.Age
+            |> construct (fun email age -> { Email = email; Age = age })
 
         let raw =
             RawInput.Object(Map.ofList [ "email", RawInput.Missing; "age", RawInput.Scalar "10" ])
@@ -209,12 +204,12 @@ module InputParseTests =
         let mutable constructorCalls = 0
 
         let countingSchema =
-            Schema.recordFor<Signup, _> (fun email age ->
+            Schema.define<Signup>
+            |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "email" _.Email
+            |> fieldWith Schema.int "age" _.Age
+            |> construct (fun email age ->
                 constructorCalls <- constructorCalls + 1
                 { Email = email; Age = age })
-            |> Schema.field "email" _.Email (Schema.text |> Schema.constrain Constraint.required)
-            |> Schema.field "age" _.Age Schema.int
-            |> Schema.build
 
         let raw =
             RawInput.Object(
@@ -233,12 +228,12 @@ module InputParseTests =
         let mutable constructorCalls = 0
 
         let countingSchema =
-            Schema.recordFor<Signup, _> (fun email age ->
+            Schema.define<Signup>
+            |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "email" _.Email
+            |> fieldWith Schema.int "age" _.Age
+            |> construct (fun email age ->
                 constructorCalls <- constructorCalls + 1
                 { Email = email; Age = age })
-            |> Schema.field "email" _.Email (Schema.text |> Schema.constrain Constraint.required)
-            |> Schema.field "age" _.Age Schema.int
-            |> Schema.build
 
         let raw =
             RawInput.Object(
@@ -255,9 +250,9 @@ module InputParseTests =
     [<Fact>]
     let ``parse builds a model from a constructor returning Ok`` () =
         let ageSchema =
-            Schema.recordFor<AdultAge, _> AdultAge.Create
-            |> Schema.field "age" _.Age Schema.int
-            |> Schema.buildResult
+            Schema.define<AdultAge>
+            |> fieldWith Schema.int "age" _.Age
+            |> constructResult AdultAge.Create
 
         let raw =
             RawInput.Object(
@@ -273,9 +268,9 @@ module InputParseTests =
     [<Fact>]
     let ``parse reports a constructor error from a constructor returning Error`` () =
         let ageSchema =
-            Schema.recordFor<AdultAge, _> AdultAge.Create
-            |> Schema.field "age" _.Age Schema.int
-            |> Schema.buildResult
+            Schema.define<AdultAge>
+            |> fieldWith Schema.int "age" _.Age
+            |> constructResult AdultAge.Create
 
         let raw =
             RawInput.Object(
@@ -292,9 +287,9 @@ module InputParseTests =
     [<Fact>]
     let ``parse can attach a constructor error to a field path`` () =
         let ageSchema =
-            Schema.recordFor<AdultAge, _> AdultAge.Create
-            |> Schema.field "age" _.Age Schema.int
-            |> Schema.buildResult
+            Schema.define<AdultAge>
+            |> fieldWith Schema.int "age" _.Age
+            |> constructResult AdultAge.Create
 
         let raw =
             RawInput.Object(
@@ -315,11 +310,11 @@ module InputParseTests =
         let mutable constructorCalls = 0
 
         let gatedSchema =
-            Schema.recordFor<AdultAge, _> (fun age ->
+            Schema.define<AdultAge>
+            |> fieldWith (Schema.int |> Schema.constrain (Constraint.atLeast 0)) "age" _.Age
+            |> constructResult (fun age ->
                 constructorCalls <- constructorCalls + 1
                 AdultAge.Create age)
-            |> Schema.field "age" _.Age (Schema.int |> Schema.constrain (Constraint.atLeast 0))
-            |> Schema.buildResult
 
         let raw =
             RawInput.Object(
@@ -338,11 +333,13 @@ module InputParseTests =
             @>
 
     [<Fact>]
-    let ``parse maps constructor error values through buildResultWith`` () =
+    let ``parse maps domain constructor errors before closing the shape`` () =
         let ageSchema =
-            Schema.recordFor<MappedAdultAge, _> MappedAdultAge.Create
-            |> Schema.field "age" _.Age Schema.int
-            |> Schema.buildResultWith (function Underage -> "Adult age is required.")
+            Schema.define<MappedAdultAge>
+            |> fieldWith Schema.int "age" _.Age
+            |> constructResult (fun age ->
+                MappedAdultAge.Create age
+                |> Result.mapError (function Underage -> "Adult age is required."))
 
         let raw =
             RawInput.Object(
@@ -357,10 +354,10 @@ module InputParseTests =
     [<Fact>]
     let ``parse builds a DateRange when cross-field constructor invariant passes`` () =
         let rangeSchema =
-            Schema.recordFor<DateRange, _> DateRange.Create
-            |> Schema.field "start" _.Start Schema.date
-            |> Schema.field "end" _.End Schema.date
-            |> Schema.buildResult
+            Schema.define<DateRange>
+            |> fieldWith Schema.date "start" _.Start
+            |> fieldWith Schema.date "end" _.End
+            |> constructResult DateRange.Create
 
         let raw =
             RawInput.Object(
@@ -378,10 +375,10 @@ module InputParseTests =
     [<Fact>]
     let ``parse reports DateRange constructor invariant errors at root by default`` () =
         let rangeSchema =
-            Schema.recordFor<DateRange, _> DateRange.Create
-            |> Schema.field "start" _.Start Schema.date
-            |> Schema.field "end" _.End Schema.date
-            |> Schema.buildResult
+            Schema.define<DateRange>
+            |> fieldWith Schema.date "start" _.Start
+            |> fieldWith Schema.date "end" _.End
+            |> constructResult DateRange.Create
 
         let raw =
             RawInput.Object(
@@ -399,10 +396,10 @@ module InputParseTests =
     [<Fact>]
     let ``parse can attach DateRange constructor invariant errors to the end field`` () =
         let rangeSchema =
-            Schema.recordFor<DateRange, _> DateRange.Create
-            |> Schema.field "start" _.Start Schema.date
-            |> Schema.field "end" _.End Schema.date
-            |> Schema.buildResult
+            Schema.define<DateRange>
+            |> fieldWith Schema.date "start" _.Start
+            |> fieldWith Schema.date "end" _.End
+            |> constructResult DateRange.Create
 
         let raw =
             RawInput.Object(
@@ -424,12 +421,12 @@ module InputParseTests =
         let mutable constructorCalls = 0
 
         let rangeSchema =
-            Schema.recordFor<DateRange, _> (fun start endDate ->
+            Schema.define<DateRange>
+            |> fieldWith Schema.date "start" _.Start
+            |> fieldWith Schema.date "end" _.End
+            |> constructResult (fun start endDate ->
                 constructorCalls <- constructorCalls + 1
                 DateRange.Create start endDate)
-            |> Schema.field "start" _.Start Schema.date
-            |> Schema.field "end" _.End Schema.date
-            |> Schema.buildResult
 
         let raw =
             RawInput.Object(
@@ -462,10 +459,10 @@ module InputParseTests =
     [<Fact>]
     let ``parse maps a check failure from a value constraint to a schema error`` () =
         let minLengthSchema =
-            Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
-            |> Schema.field "email" _.Email (Schema.text |> Schema.constrain (Constraint.minLength 5))
-            |> Schema.field "age" _.Age Schema.int
-            |> Schema.build
+            Schema.define<Signup>
+            |> fieldWith (Schema.text |> Schema.constrain (Constraint.minLength 5)) "email" _.Email
+            |> fieldWith Schema.int "age" _.Age
+            |> construct (fun email age -> { Email = email; Age = age })
 
         let raw =
             RawInput.Object(
@@ -482,10 +479,10 @@ module InputParseTests =
     [<Fact>]
     let ``schema errors are identical across differently named fields, only the diagnostics path differs`` () =
         let makeSchema fieldName =
-            Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
-            |> Schema.field fieldName _.Email (Schema.text |> Schema.constrain Constraint.required)
-            |> Schema.field "age" _.Age Schema.int
-            |> Schema.build
+            Schema.define<Signup>
+            |> fieldWith (Schema.text |> Schema.constrain Constraint.required) fieldName _.Email
+            |> fieldWith Schema.int "age" _.Age
+            |> construct (fun email age -> { Email = email; Age = age })
 
         let rawFor fieldName =
             RawInput.Object(Map.ofList [ fieldName, RawInput.Missing; "age", RawInput.Scalar "42" ])
@@ -499,10 +496,10 @@ module InputParseTests =
     [<Fact>]
     let ``required reports blank non-text scalar as required`` () =
         let requiredAgeSchema =
-            Schema.recordFor<Signup, _> (fun email age -> { Email = email; Age = age })
-            |> Schema.field "email" _.Email Schema.text
-            |> Schema.field "age" _.Age (Schema.int |> Schema.constrain Constraint.required)
-            |> Schema.build
+            Schema.define<Signup>
+            |> fieldWith Schema.text "email" _.Email
+            |> fieldWith (Schema.int |> Schema.constrain Constraint.required) "age" _.Age
+            |> construct (fun email age -> { Email = email; Age = age })
 
         let raw =
             RawInput.Object(

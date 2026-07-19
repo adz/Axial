@@ -20,12 +20,18 @@ module Schema =
     /// <summary>Describes a GUID.</summary>
     let guid = SchemaCore.guid
 
-    /// <summary>Describes a list whose items use <paramref name="item" />.</summary>
-    let list item = SchemaCore.list item
+    /// <summary>Describes a list using an explicit item schema.</summary>
+    let listWith item = SchemaCore.listWith item
+    /// <summary>Describes a list by resolving its item schema from <typeparamref name="'item" />.</summary>
+    let inline list< ^item when (SchemaDefaults or ^item) : (static member DefaultSchema: ^item -> Schema< ^item>)> () : Schema< ^item list> =
+        listWith (SchemaDefaults.Resolve< ^item>())
     /// <summary>Describes an optional value.</summary>
     let option item = SchemaCore.option item
-    /// <summary>Describes a text-keyed map.</summary>
-    let map item = SchemaCore.map item
+    /// <summary>Describes a string-keyed map using an explicit value schema.</summary>
+    let mapWith item = SchemaCore.mapWith item
+    /// <summary>Describes a string-keyed map by resolving its value schema from <typeparamref name="'item" />.</summary>
+    let inline map< ^item when (SchemaDefaults or ^item) : (static member DefaultSchema: ^item -> Schema< ^item>)> () : Schema<Map<string, ^item>> =
+        mapWith (SchemaDefaults.Resolve< ^item>())
     /// <summary>Defers a recursive schema reference until an interpreter needs it.</summary>
     let defer schema = SchemaCore.defer schema
     /// <summary>Maps a schema through a total, reversible domain conversion.</summary>
@@ -62,20 +68,8 @@ module Schema =
     let inspectUnderlying schema = SchemaCore.inspectUnderlying schema
     let allConstraints schema = SchemaCore.allConstraints schema
 
-    /// <summary>Creates a progressive record-schema builder.</summary>
-    let record constructor = SchemaCore.record constructor
-    /// <summary>Creates a progressive record-schema builder anchored to an explicit model type.</summary>
-    let recordFor<'model, 'constructor> constructor = SchemaCore.recordFor<'model, 'constructor> constructor
-    /// <summary>Attaches a completed field schema to a record builder.</summary>
-    let field name getter schema builder = SchemaCore.field name getter schema builder
-    /// <summary>Completes a record schema whose constructor is total.</summary>
-    let build builder = SchemaCore.build builder
-    /// <summary>Completes a record schema whose constructor returns <c>Result&lt;_, string&gt;</c>.</summary>
-    let buildResult builder = SchemaCore.buildResult builder
-    /// <summary>Completes a record schema whose constructor returns a domain-typed error.</summary>
-    let buildResultWith render builder = SchemaCore.buildResultWith render builder
     /// <summary>Compiles a record schema with a typed interpreter factory.</summary>
-    let specialize factory schema = SchemaCore.specialize factory schema
+    let compilePlan factory schema = SchemaCore.compilePlan factory schema
 
     /// <summary>The default raw-input parsing options.</summary>
     let defaults = SchemaParsing.defaults

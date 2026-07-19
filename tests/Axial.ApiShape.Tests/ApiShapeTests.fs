@@ -9,6 +9,7 @@ open Axial.Flow
 open Axial.ErrorHandling
 open Axial.Refined
 open Axial.Schema
+open Axial.Schema.Syntax
 open Axial.Validation
 open Axial.Flow.Hosting
 open Axial.Flow.Telemetry
@@ -569,34 +570,11 @@ module ApiShapeTests =
             externalFieldNameType.GetConstructors(BindingFlags.Public ||| BindingFlags.Instance)
         let fieldDefinitionType =
             schemaAssembly.GetType("Axial.Schema.FieldDefinition`2", true)
-        let schemaFieldMethods =
-            publicStaticMethods schemaModule
-            |> Array.filter (fun methodInfo -> methodInfo.Name = "field")
         let fieldCreateMethods =
             publicStaticMethods fieldModule
             |> Array.filter (fun methodInfo -> methodInfo.Name = "create")
-        let schemaBuilderType = typedefof<SchemaBuilder<_, _, _, _>>
         let fieldTypeDefinition = typedefof<Field<_, _>>
-        let schemaFieldMethod = schemaFieldMethods |> Array.tryExactlyOne
         let fieldCreateMethod = fieldCreateMethods |> Array.tryExactlyOne
-        let schemaFieldParameterCount =
-            schemaFieldMethod
-            |> Option.map (fun methodInfo -> methodInfo.GetParameters().Length)
-            |> Option.defaultValue -1
-        let schemaFieldBuilderParameterType =
-            schemaFieldMethod
-            |> Option.bind (fun methodInfo ->
-                let parameters = methodInfo.GetParameters()
-
-                if parameters.Length = 4 then
-                    Some(parameters[3].ParameterType.GetGenericTypeDefinition())
-                else
-                    None)
-            |> Option.defaultValue typeof<obj>
-        let schemaFieldReturnType =
-            schemaFieldMethod
-            |> Option.map (fun methodInfo -> methodInfo.ReturnType.GetGenericTypeDefinition())
-            |> Option.defaultValue typeof<obj>
         let fieldCreateParameterCount =
             fieldCreateMethod
             |> Option.map (fun methodInfo -> methodInfo.GetParameters().Length)
@@ -632,29 +610,22 @@ module ApiShapeTests =
         test <@ publicFieldConstructors.Length = 0 @>
         test <@ publicConstraintConstructors.Length = 0 @>
         test <@ publicExternalFieldNameConstructors.Length = 0 @>
-        schemaModule
-        |> publicStaticMemberNames
+        let schemaMembers = schemaModule |> publicStaticMemberNames
+        schemaMembers
         |> assertContainsAll
-            [ "record"
-              "recordFor"
-              "field"
+            [ "define"
               "text"
               "int"
               "decimal"
               "bool"
               "date"
               "dateTime"
-              "guid"
-              "build"
-              "buildResult"
-              "buildResultWith" ]
+              "guid" ]
+        test <@ [ "record"; "recordFor"; "field"; "build"; "buildResult"; "buildResultWith" ]
+                 |> List.forall (fun removed -> not (schemaMembers |> Set.contains removed)) @>
         fieldModule
         |> publicStaticMemberNames
         |> assertContainsAll [ "create"; "externalName"; "order"; "getValue"; "constraints"; "withConstraint"; "withConstraints" ]
-        test <@ schemaFieldMethods.Length = 1 @>
-        test <@ schemaFieldParameterCount = 4 @>
-        test <@ schemaFieldBuilderParameterType = schemaBuilderType @>
-        test <@ schemaFieldReturnType = schemaBuilderType @>
         test <@ fieldCreateMethods.Length = 1 @>
         test <@ fieldCreateParameterCount = 3 @>
         test <@ fieldCreateReturnType = fieldTypeDefinition @>
@@ -1052,24 +1023,23 @@ module ApiShapeTests =
         raises<ArgumentNullException> <@ Field.order missingField |> ignore @>
 
     [<Fact>]
-    let ``schema field rejects invalid public construction arguments`` () =
-        let builder = Schema.recordFor<Customer, _> (fun name -> { Name = name; Age = 0 })
-        raises<ArgumentNullException> <@ Schema.field null (fun (model: Customer) -> model.Name) Schema.text builder |> ignore @>
-        raises<ArgumentException> <@ Schema.field " " (fun (model: Customer) -> model.Name) Schema.text builder |> ignore @>
-        raises<ArgumentNullException> <@ Schema.field "name" Unchecked.defaultof<Customer -> string> Schema.text builder |> ignore @>
-        raises<ArgumentNullException> <@ Schema.field "name" (fun (model: Customer) -> model.Name) Unchecked.defaultof<Schema<string>> builder |> ignore @>
-        raises<ArgumentNullException> <@ Schema.record Unchecked.defaultof<string -> Customer> |> ignore @>
-        raises<ArgumentNullException> <@ Schema.recordFor<Customer, _> Unchecked.defaultof<string -> Customer> |> ignore @>
+    let ``schema fields reject invalid construction arguments`` () =
+        let shape = Schema.define<Customer>
+        raises<ArgumentNullException> <@ fieldWith Schema.text null (fun (value: Customer) -> value.Name) shape |> ignore @>
+        raises<ArgumentException> <@ fieldWith Schema.text " " (fun (value: Customer) -> value.Name) shape |> ignore @>
+        raises<ArgumentNullException> <@ fieldWith Schema.text "name" Unchecked.defaultof<Customer -> string> shape |> ignore @>
+        raises<ArgumentNullException>
+            <@ fieldWith Unchecked.defaultof<Schema<string>> "name" (fun (value: Customer) -> value.Name) shape |> ignore @>
 
     [<Fact>]
-    let ``schema builder builds explicit ordered model schema with value schema constraints`` () =
+    let ``schema shape builds explicit ordered model schema with value schema constraints`` () =
         let requiredText = Schema.text |> Schema.constrain Constraint.required
 
         let schema =
-            Schema.recordFor<Customer, _> (fun name age -> { Name = name; Age = age })
-            |> Schema.field "name" _.Name (requiredText |> Schema.constrainAll [ Constraint.required ])
-            |> Schema.field "age" _.Age Schema.int
-            |> Schema.build
+            Schema.define<Customer>
+            |> fieldWith (requiredText |> Schema.constrainAll [ Constraint.required ]) "name" _.Name
+            |> fieldWith Schema.int "age" _.Age
+            |> construct (fun name age -> { Name = name; Age = age })
 
         let constructed =
             match schema.Definition with
@@ -1084,19 +1054,19 @@ module ApiShapeTests =
                 test <@ model.Fields[0].ValueSchema.Constraints |> List.map Constraint.code = [ "required"; "required" ] @>
                 test <@ model.Fields[0].Constraints = [] @>
                 ConstructorApplication.apply model.Constructor (values |> List.toArray)
-            | PendingDefinition -> failwith "Expected public schema API to create a model definition."
+            | _ -> failwith "Expected public schema API to create a model definition."
 
         test <@ constructed = { Name = "Ada"; Age = 37 } @>
 
     [<Fact>]
-    let ``schema builder builds explicit ordered three field model schema through primitive shorthand fields`` () =
+    let ``schema shape builds explicit ordered three field model schema through inferred primitive fields`` () =
         let create name age active = { Name = name; Age = age; Active = active }
         let schema =
-            Schema.recordFor<CustomerProfile, _> create
-            |> Schema.field "name" _.Name Schema.text
-            |> Schema.field "age" _.Age Schema.int
-            |> Schema.field "active" _.Active Schema.bool
-            |> Schema.build
+            Schema.define<CustomerProfile>
+            |> fieldWith Schema.text "name" _.Name
+            |> fieldWith Schema.int "age" _.Age
+            |> fieldWith Schema.bool "active" _.Active
+            |> construct create
 
         match schema.Definition with
         | ModelDefinition model ->
@@ -1114,11 +1084,11 @@ module ApiShapeTests =
     let ``schema recordFor anchors model type for primitive shorthand getters`` () =
         let create name age active = { Name = name; Age = age; Active = active }
         let schema =
-            Schema.recordFor<CustomerProfile, _> create
-            |> Schema.field "name" _.Name Schema.text
-            |> Schema.field "age" _.Age Schema.int
-            |> Schema.field "active" _.Active Schema.bool
-            |> Schema.build
+            Schema.define<CustomerProfile>
+            |> fieldWith Schema.text "name" _.Name
+            |> fieldWith Schema.int "age" _.Age
+            |> fieldWith Schema.bool "active" _.Active
+            |> construct create
 
         match schema.Definition with
         | ModelDefinition model ->
@@ -1143,15 +1113,15 @@ module ApiShapeTests =
               Id = id }
 
         let schema =
-            Schema.recordFor<PrimitiveProfile, _> create
-            |> Schema.field "name" _.Name Schema.text
-            |> Schema.field "age" _.Age Schema.int
-            |> Schema.field "balance" _.Balance Schema.decimal
-            |> Schema.field "active" _.Active Schema.bool
-            |> Schema.field "birthDate" _.BirthDate Schema.date
-            |> Schema.field "lastSeen" _.LastSeen Schema.dateTime
-            |> Schema.field "id" _.Id Schema.guid
-            |> Schema.build
+            Schema.define<PrimitiveProfile>
+            |> fieldWith Schema.text "name" _.Name
+            |> fieldWith Schema.int "age" _.Age
+            |> fieldWith Schema.decimal "balance" _.Balance
+            |> fieldWith Schema.bool "active" _.Active
+            |> fieldWith Schema.date "birthDate" _.BirthDate
+            |> fieldWith Schema.dateTime "lastSeen" _.LastSeen
+            |> fieldWith Schema.guid "id" _.Id
+            |> construct create
 
         match schema.Definition with
         | ModelDefinition model ->

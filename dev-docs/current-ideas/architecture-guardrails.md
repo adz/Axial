@@ -75,7 +75,7 @@ checks share one declaration.
 
 Only promote high-signal rules into analyzers. Candidates include:
 
-- A public record schema uses `Schema.buildResult` for a claimed durable aggregate invariant.
+- A public record schema uses `constructResult` for a claimed durable aggregate invariant.
 - A `Schema.check` result is discarded.
 - A Flow-producing application function calls an ambient operational effect.
 - `Service.resolve` appears outside a designated host-edge assembly.
@@ -89,7 +89,7 @@ Diagnostics should explain the safe alternative and allow an explicit local supp
 Add compile-negative tests or templates for important guarantees:
 
 - Private refined and aggregate constructors cannot be called from application code.
-- Incomplete or misordered progressive schema builders do not compile.
+- Incomplete object shapes and constructors whose parameters do not match field order do not compile.
 - Forbidden package references fail the architecture test.
 - A workflow cannot access a dependency missing from its environment interface.
 - A new wire version makes contract construction fail until its typed migration is supplied.
@@ -367,7 +367,7 @@ requires failure for the expected reason.
 This guards claims such as:
 
 - callers cannot construct an opaque aggregate;
-- partial schema builders cannot reach `Schema.build`;
+- incomplete object shapes cannot become `Schema<'model>` values;
 - a workflow cannot access an absent environment member;
 - a new contract version requires a typed migration.
 
