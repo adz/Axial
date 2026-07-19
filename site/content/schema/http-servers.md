@@ -51,7 +51,7 @@ its path as an RFC 6901 JSON pointer, so clients can attach errors to fields mec
 }
 ```
 
-`ProblemDetails.ofParsed` builds that value from any failed `ParsedInput`; `ProblemDetails.ofDiagnosticsWith` does
+`ProblemDetails.ofParsed` builds that value from any failed `RetainedParseResult`; `ProblemDetails.ofDiagnosticsWith` does
 the same for your own error type with your own renderer. `ProblemDetails.malformedJson` is the stable 400 value used
 when a JSON body is not syntactically valid. Schema diagnostics and malformed JSON therefore share one media type and
 response shape.
@@ -206,7 +206,7 @@ A composite cause containing defects takes the defect path. This prevents parall
 silently collapsed into one application response.
 
 The lower-level `SchemaRequest` and `SchemaResult` modules remain available for endpoints that need the complete
-`ParsedInput`, such as form redisplay.
+`RetainedParseResult`, such as form redisplay.
 
 Route text is untrusted too. Parse a scalar route value through its schema inside the same endpoint Flow:
 

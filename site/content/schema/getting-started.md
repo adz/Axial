@@ -28,6 +28,7 @@ Record schemas use those values directly:
 
 ```fsharp
 open Axial.Schema
+open Axial.Schema.Syntax
 
 type Signup =
     { Email: string
@@ -35,14 +36,17 @@ type Signup =
 
 let signupSchema : Schema<Signup> =
     Schema.define<Signup>
-    |> fieldWith (Schema.text
-         |> Schema.constrainAll [ Constraint.required; Constraint.email ]) "email" _.Email
-    |> fieldWith (Schema.int |> Schema.constrain (Constraint.atLeast 13)) "age" _.Age
+    |> field "email" _.Email
+    |> constrain emailFormat
+    |> field "age" _.Age
+    |> constrain (atLeast 13)
     |> construct (fun email age -> { Email = email; Age = age })
 ```
 
-`field` infers common value schemas. `fieldWith` attaches an explicit completed value schema for nested models,
-maps, unions, refinements, or custom types.
+`field` infers built-in schemas and the canonical schema declared by a user-owned or generated type. Inference is
+recursive through `option`, `list`, and `Map<string, _>`. See [Schema Syntax](syntax.md) for the custom
+`static member Schema` convention. Use `fieldWith` when a field needs an explicit local schema or its type cannot
+declare a canonical schema.
 
 ## Parse boundary input
 
@@ -53,7 +57,7 @@ let raw =
             [ "email", RawInput.Scalar "ada@example.com"
               "age", RawInput.Scalar "42" ])
 
-match (Schema.parse signupSchema raw).Result with
+match (Schema.parse signupSchema raw) with
 | Ok signup -> printfn "%s" signup.Email
 | Error diagnostics ->
     diagnostics
@@ -62,7 +66,7 @@ match (Schema.parse signupSchema raw).Result with
 ```
 
 Parsing performs shape conversion, runs constraints, and invokes the declared record constructor. Errors retain their
-paths, and `ParsedInput` retains the original `RawInput` for form redisplay.
+paths. Use `Schema.parseRetainingInput` when form redisplay or auditing also needs the original `RawInput`.
 
 The same interpreter works for a value schema:
 
@@ -132,7 +136,7 @@ module SignupSchemas =
     let signup =
         Schema.define<Signup>
         |> field "email" _.Email
-        |> constrain email
+        |> constrain emailFormat
         |> field "age" _.Age
         |> constrain (atLeast 13)
         |> construct (fun email age -> { Email = email; Age = age })

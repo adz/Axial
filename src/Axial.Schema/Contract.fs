@@ -72,7 +72,7 @@ module Contract =
         let head =
             {
                 Version = currentVersion
-                Parse = fun raw -> (Schema.parse currentSchema raw).Result |> Result.map box
+                Parse = fun raw -> Schema.parse currentSchema raw |> Result.map box
                 MigrateToNext = None
             }
 
@@ -96,7 +96,7 @@ module Contract =
         let entry =
             {
                 Version = version
-                Parse = fun raw -> (Schema.parse schema raw).Result |> Result.map box
+                Parse = fun raw -> Schema.parse schema raw |> Result.map box
                 MigrateToNext = Some(fun value -> migrate (unbox<'previous> value) |> Result.map box)
             }
 

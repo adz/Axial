@@ -7,7 +7,7 @@ open Axial.Schema
 open Swensen.Unquote
 open Xunit
 
-module ParsedInputTests =
+module RetainedParseResultTests =
     type private Signup = { Email: string }
 
     [<Fact>]
@@ -15,11 +15,8 @@ module ParsedInputTests =
         let raw =
             RawInput.Object(Map.ofList [ "email", RawInput.Scalar "ada@example.com" ])
 
-        let parsed: ParsedInput<Signup, string> =
-            {
-                Input = raw
-                Result = Ok { Email = "ada@example.com" }
-            }
+        let parsed: RetainedParseResult<Signup, string> =
+            RetainedParseResult.create raw (Ok { Email = "ada@example.com" })
 
         test <@ parsed.Input = raw @>
         test <@ parsed.Result = Ok { Email = "ada@example.com" } @>
@@ -42,7 +39,7 @@ module ParsedInputTests =
                 | Error diagnostics -> diagnostics
                 | Ok _ -> failwith "Expected diagnostics."
 
-        let parsed: ParsedInput<Signup, string> =
+        let parsed: RetainedParseResult<Signup, string> =
             {
                 Input = raw
                 Result = Error diagnostics
@@ -79,9 +76,9 @@ module ParsedInputTests =
                 | Error diagnostics -> diagnostics
                 | Ok _ -> failwith "Expected diagnostics."
 
-        let parsed: ParsedInput<Signup, string> = { Input = raw; Result = Error diagnostics }
+        let parsed: RetainedParseResult<Signup, string> = { Input = raw; Result = Error diagnostics }
 
-        let domainParsed = parsed |> ParsedInput.mapErrors MissingField
+        let domainParsed = parsed |> RetainedParseResult.mapErrors MissingField
 
         test <@ domainParsed.Input = raw @>
         test <@ not domainParsed.IsValid @>
@@ -96,13 +93,13 @@ module ParsedInputTests =
         let raw =
             RawInput.Object(Map.ofList [ "email", RawInput.Scalar "ada@example.com" ])
 
-        let parsed: ParsedInput<Signup, string> =
+        let parsed: RetainedParseResult<Signup, string> =
             {
                 Input = raw
                 Result = Ok { Email = "ada@example.com" }
             }
 
-        let domainParsed = parsed |> ParsedInput.mapErrors MissingField
+        let domainParsed = parsed |> RetainedParseResult.mapErrors MissingField
 
         test <@ domainParsed.IsValid @>
         test <@ domainParsed.Value = { Email = "ada@example.com" } @>

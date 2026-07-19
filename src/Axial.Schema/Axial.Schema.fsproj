@@ -45,7 +45,7 @@
     <Compile Include="Shape.fs" />
     <Compile Include="RawInput.fs" />
     <Compile Include="SchemaValidation.fs" />
-    <Compile Include="ParsedInput.fs" />
+    <Compile Include="RetainedParseResult.fs" />
     <Compile Include="FieldRef.fs" />
     <Compile Include="ContextRules.fs" />
     <Compile Include="Model.fs" />

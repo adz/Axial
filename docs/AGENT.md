@@ -36,7 +36,7 @@ declare that member.
 
 For schema boundaries, use `SchemaError` as the one interpreter error shape. Lower subsystem failures with
 `SchemaError.ofParseError`, `SchemaError.ofRefinementError`, or `SchemaError.ofCheckFailure`; render with
-`SchemaError.render` or `ParsedInput.renderErrors`; map to application errors with `ParsedInput.mapErrors`.
+`SchemaError.render` or `RetainedParseResult.renderErrors`; map to application errors with `RetainedParseResult.mapErrors`.
 
 For optional serialized primitives, use `Parse.optional parser` or a discoverable primitive helper such as
 `Parse.intOption`. Use `Parse.optionalOr fallback parser` or `Parse.intOrDefault fallback` when absence has a
@@ -145,7 +145,7 @@ Use `orElse` and `orElseWith` for alternate computations in the same family: `Re
 For ASP.NET Core or GenHTTP server endpoints, keep routing native and make the handler an ordinary Flow. Bind trusted
 input with `Request.json`/`form`/`query`, embed the HTTP-independent application workflow with `EndpointFlow.run`, and
 return a `Response` value. Configure `flowEndpoint` once with the per-request application-environment factory and
-typed-error renderer, then pass it the endpoint Flow at each route. Do not write `Func`, `Task`, `ParsedInput` matching,
+typed-error renderer, then pass it the endpoint Flow at each route. Do not write `Func`, `Task`, `RetainedParseResult` matching,
 or `Exit` lowering in the normal endpoint path; use the lower-level `SchemaRequest` API only when the endpoint needs
 the complete parse result, such as form redisplay.
 

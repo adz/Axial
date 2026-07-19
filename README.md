@@ -41,7 +41,7 @@ let signupSchema =
     |> constrain (atLeast 13)
     |> construct (fun email age -> { Email = email; Age = age })
 
-match (Schema.parse signupSchema rawInput).Result with
+match (Schema.parse signupSchema rawInput) with
 | Ok signup -> register signup
 | Error diagnostics -> display diagnostics
 ```

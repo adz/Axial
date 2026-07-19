@@ -29,7 +29,7 @@ module WorkspaceCardV1 =
         Schema.check schema draft
 
     /// Parses raw boundary input through the schema.
-    let parse (input: RawInput) : ParsedInput<WorkspaceCardV1, SchemaError> =
+    let parse (input: RawInput) : Result<WorkspaceCardV1, Diagnostics<SchemaError>> =
         Schema.parse schema input
 
     /// Typed field references for rules, redisplay, and UI binding.
@@ -65,7 +65,7 @@ module WorkspaceCard =
         Schema.check schema draft
 
     /// Parses raw boundary input through the schema.
-    let parse (input: RawInput) : ParsedInput<WorkspaceCard, SchemaError> =
+    let parse (input: RawInput) : Result<WorkspaceCard, Diagnostics<SchemaError>> =
         Schema.parse schema input
 
     /// Builds the versioned wire contract; supply each n-1 -> n migration and the version-detection source.

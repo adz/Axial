@@ -17,7 +17,7 @@ differences come from F# and .NET, not from a different philosophy.
 | zod | Axial |
 | --- | --- |
 | `z.object({ name: z.string().max(80) })` | `Schema.define<...> \|> field "name" _.Name \|> constrain (maxLength 80) \|> construct ctor` |
-| `schema.safeParse(input)` | `Schema.parse schema raw` → `ParsedInput` |
+| `schema.safeParse(input)` | `Schema.parse schema raw` → `Result` |
 | `result.error.issues` with paths | path-aware `Diagnostics` (`parsed.ErrorsFor "contacts[1].value"`) |
 | `z.string().email().brand<'Email'>()` | `Schema.refine` over a private representation and fallible constructor |
 | `z.discriminatedUnion("type", ...)` | `Schema.union "type" "value" [ UnionCase.create ... ]` |
@@ -43,7 +43,7 @@ alignment field by field.
 - **Fable**: the schema core, including `Axial.Codec`, compiles to JavaScript through Fable, so the browser and the
   server can share one declaration — encode and decode included — the role zod plays across the TypeScript stack.
 - **Errors are values with rendering**: `SchemaError` is a typed union with a default English renderer
-  (`ParsedInput.renderErrors`) and a one-function mapping into your own error union (`ParsedInput.mapErrors`), rather
+  (`RetainedParseResult.renderErrors`) and a one-function mapping into your own error union (`RetainedParseResult.mapErrors`), rather
   than a bag of issue objects.
 
 ## Where zod Fits Better

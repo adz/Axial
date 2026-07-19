@@ -88,7 +88,7 @@ module Booking =
 Both direct construction and boundary parsing now use `Booking.create`.
 
 ```fsharp
-match (Schema.parse Booking.schema raw).Result with
+match (Schema.parse Booking.schema raw) with
 | Ok booking -> save booking
 | Error diagnostics -> display diagnostics
 ```

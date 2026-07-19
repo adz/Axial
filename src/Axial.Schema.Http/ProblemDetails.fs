@@ -64,7 +64,7 @@ module ProblemDetails =
         ofDiagnosticsWith SchemaError.render diagnostics
 
     /// <summary>Builds a 400 problem-details value from a failed parse, or <c>None</c> when parsing succeeded.</summary>
-    let ofParsed (parsed: ParsedInput<'model, SchemaError>) : ProblemDetails option =
+    let ofParsed (parsed: RetainedParseResult<'model, SchemaError>) : ProblemDetails option =
         match parsed.Result with
         | Ok _ -> None
         | Error diagnostics -> Some(ofDiagnostics diagnostics)

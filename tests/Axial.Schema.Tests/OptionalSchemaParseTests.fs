@@ -32,7 +32,7 @@ module OptionalSchemaParseTests =
     let ``parse maps missing optional fields to None`` () =
         let raw = RawInput.Object(Map.ofList [ "name", RawInput.Scalar "Ada" ])
 
-        let parsed = Schema.parse (profileSchema ()) raw
+        let parsed = Schema.parseRetainingInput (profileSchema ()) raw
 
         test <@ parsed.Result = Ok { Name = "Ada"; Nickname = None; Age = None } @>
 
@@ -47,7 +47,7 @@ module OptionalSchemaParseTests =
             )
             |> RawInput.ofJsonLikeValue
 
-        let parsed = Schema.parse (profileSchema ()) raw
+        let parsed = Schema.parseRetainingInput (profileSchema ()) raw
 
         test <@ parsed.Result = Ok { Name = "Ada"; Nickname = None; Age = None } @>
 
@@ -61,7 +61,7 @@ module OptionalSchemaParseTests =
                       "age", RawInput.Scalar "36" ]
             )
 
-        let parsed = Schema.parse (profileSchema ()) raw
+        let parsed = Schema.parseRetainingInput (profileSchema ()) raw
 
         test <@ parsed.Result = Ok { Name = "Ada"; Nickname = Some "Lady A"; Age = Some 36 } @>
 
@@ -74,7 +74,7 @@ module OptionalSchemaParseTests =
                       "nickname", RawInput.Scalar "A" ]
             )
 
-        let parsed = Schema.parse (profileSchema ()) raw
+        let parsed = Schema.parseRetainingInput (profileSchema ()) raw
 
         test <@ not parsed.IsValid @>
 

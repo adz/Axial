@@ -26,7 +26,7 @@
     <Compile Include="SchemaInterpreterPrototypeTests.fs" />
     <Compile Include="SchemaGenerationTargetProofTests.fs" />
     <Compile Include="RawInputTests.fs" />
-    <Compile Include="ParsedInputTests.fs" />
+    <Compile Include="RetainedParseResultTests.fs" />
     <Compile Include="SchemaErrorTests.fs" />
     <Compile Include="InputParseTests.fs" />
     <Compile Include="NestedSchemaParseTests.fs" />

@@ -60,10 +60,10 @@ module SchemaErrorTests =
                       "age", RawInput.Scalar "not-an-int" ]
             )
 
-        let parsed = Schema.parse schema raw
+        let parsed = Schema.parseRetainingInput schema raw
 
         test
-            <@ ParsedInput.renderErrors parsed = [ "age: Expected int format."; "email: This value is required." ] @>
+            <@ RetainedParseResult.renderErrors parsed = [ "age: Expected int format."; "email: This value is required." ] @>
 
     [<Fact>]
     let ``parsed input maps schema boundary errors to user owned errors with one function`` () =
@@ -75,8 +75,8 @@ module SchemaErrorTests =
 
         let parsed =
             RawInput.Object(Map.ofList [ "email", RawInput.Missing; "age", RawInput.Scalar "42" ])
-            |> Schema.parse schema
-            |> ParsedInput.mapErrors Boundary
+            |> Schema.parseRetainingInput schema
+            |> RetainedParseResult.mapErrors Boundary
 
         test <@ parsed.ErrorsFor "email" = [ Boundary SchemaError.Required ] @>
 

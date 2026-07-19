@@ -386,7 +386,7 @@ module SchemaValidationTests =
                       "age", RawInput.Scalar "42" ]
             )
 
-        let parsed = Schema.parse schema raw
+        let parsed = Schema.parseRetainingInput schema raw
         let validation = Schema.check schema parsed.Value
 
         test <@ parsed.IsValid @>
@@ -442,7 +442,7 @@ module SchemaValidationTests =
                       "end", RawInput.Scalar "2026-01-12" ]
             )
 
-        let parsed = Schema.parse rangeSchema raw
+        let parsed = Schema.parseRetainingInput rangeSchema raw
         let validation = Schema.check rangeSchema parsed.Value
 
         test <@ parsed.IsValid @>

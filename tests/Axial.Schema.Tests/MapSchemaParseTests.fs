@@ -21,7 +21,7 @@ module MapSchemaParseTests =
                 Map.ofList [ "values", RawInput.Object(Map.ofList [ "low", RawInput.Scalar "1.5"; "high", RawInput.Scalar "9.5" ]) ]
             )
 
-        let parsed = Schema.parse thresholdsSchema raw
+        let parsed = Schema.parseRetainingInput thresholdsSchema raw
 
         test <@ parsed.Result = Ok { Values = Map.ofList [ "low", 1.5M; "high", 9.5M ] } @>
 
@@ -29,7 +29,7 @@ module MapSchemaParseTests =
     let ``parse builds an empty Map from an empty object`` () =
         let raw = RawInput.Object(Map.ofList [ "values", RawInput.Object Map.empty ])
 
-        let parsed = Schema.parse thresholdsSchema raw
+        let parsed = Schema.parseRetainingInput thresholdsSchema raw
 
         test <@ parsed.Result = Ok { Values = Map.empty } @>
 
@@ -37,7 +37,7 @@ module MapSchemaParseTests =
     let ``parse reports expected object when the map field raw input is a scalar`` () =
         let raw = RawInput.Object(Map.ofList [ "values", RawInput.Scalar "not-an-object" ])
 
-        let parsed = Schema.parse thresholdsSchema raw
+        let parsed = Schema.parseRetainingInput thresholdsSchema raw
 
         test <@ not parsed.IsValid @>
         test <@ parsed.Errors = [ { Path = [ PathSegment.Name "values" ]; Error = SchemaError.ExpectedObject } ] @>
@@ -46,7 +46,7 @@ module MapSchemaParseTests =
     let ``parse reports expected object when the map field raw input is a collection`` () =
         let raw = RawInput.Object(Map.ofList [ "values", RawInput.Many [ RawInput.Scalar "1.5" ] ])
 
-        let parsed = Schema.parse thresholdsSchema raw
+        let parsed = Schema.parseRetainingInput thresholdsSchema raw
 
         test <@ not parsed.IsValid @>
         test <@ parsed.Errors = [ { Path = [ PathSegment.Name "values" ]; Error = SchemaError.ExpectedObject } ] @>
@@ -58,7 +58,7 @@ module MapSchemaParseTests =
                 Map.ofList [ "values", RawInput.Object(Map.ofList [ "low", RawInput.Scalar "not-a-number" ]) ]
             )
 
-        let parsed = Schema.parse thresholdsSchema raw
+        let parsed = Schema.parseRetainingInput thresholdsSchema raw
 
         test <@ not parsed.IsValid @>
         test <@ parsed.Errors |> List.map (fun d -> d.Path) = [ [ PathSegment.Name "values"; PathSegment.Key "low" ] ] @>

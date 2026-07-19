@@ -44,7 +44,7 @@ let customerSchema =
     |> constrain (between 13 120)
     |> construct (fun name age -> { Name = name; Age = age })
 
-match (Schema.parse customerSchema raw).Result with
+match (Schema.parse customerSchema raw) with
 | Ok customer -> customer          // every Customer in the program passed the boundary
 | Error diagnostics -> reject diagnostics
 ```

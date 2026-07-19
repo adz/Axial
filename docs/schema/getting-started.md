@@ -58,7 +58,7 @@ let raw =
             [ "email", RawInput.Scalar "ada@example.com"
               "age", RawInput.Scalar "42" ])
 
-match (Schema.parse signupSchema raw).Result with
+match (Schema.parse signupSchema raw) with
 | Ok signup -> printfn "%s" signup.Email
 | Error diagnostics ->
     diagnostics
@@ -67,7 +67,7 @@ match (Schema.parse signupSchema raw).Result with
 ```
 
 Parsing performs shape conversion, runs constraints, and invokes the declared record constructor. Errors retain their
-paths, and `ParsedInput` retains the original `RawInput` for form redisplay.
+paths. Use `Schema.parseRetainingInput` when form redisplay or auditing also needs the original `RawInput`.
 
 The same interpreter works for a value schema:
 

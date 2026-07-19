@@ -42,7 +42,7 @@ Data flows from left to right. Later stages can bind earlier stages directly.
 - `Schema<'value>` is the universal typed declaration for primitives, refined values, collections, unions, and records. It executes nothing until an interpreter consumes it.
 - Author with `Schema.define<'model> |> field... |> construct ctor`; open `Axial.Schema.Syntax` in the declaration module. Use `field` for inferred common schemas, `fieldWith` for an explicit value schema, `constrain` beside the current field, and `constructResult` for a checked constructor.
 - Catalog members include primitives (`text`, `int`, `decimal`, `bool`, `date`, `dateTime`, `guid`), `list`, `map`, `option`, externally tagged `union`, `inlineUnion`, scalar `enum`, recursive `defer`, total `convert`, and fallible `refine`.
-- `RawInput` is source-neutral boundary data. `Schema.parse schema raw` returns `ParsedInput<'model,SchemaError>`: a model or accumulated path-aware diagnostics plus the original input for redisplay. `ParsedInput.renderErrors` is the default English renderer.
+- `RawInput` is source-neutral boundary data. `Schema.parse schema raw` returns `Result<'model, Diagnostics<SchemaError>>`. Use `Schema.parseRetainingInput` for `RetainedParseResult<'model, SchemaError>` when redisplay, auditing, or exact submitted formatting also needs the original input. `RetainedParseResult.renderErrors` is the default English renderer for that retained form.
 - `Schema.check schema value` rechecks an existing value and invokes a record schema's constructor again. It returns the original value on success; durable guarantees require private representations or complete smart constructors.
 - `FieldRef<'model,'value>` carries `Name`, `Get`, and immutable `Set`; generated contracts emit one per field. A setter updates a draft and does not establish schema trust.
 - `ContextRules.apply` runs operation-specific rules over an already trusted model. Use `failAtField` and `atField` to keep diagnostic paths tied to `FieldRef` values.
@@ -122,7 +122,7 @@ Use this when translating FsToolkit-style code into Axial. If a function is not 
 equivalent, Axial usually expects a different boundary shape rather than a 1:1 helper.
 
 ### Result<'T, 'E>
-- Axial uses the standard FSharp.Core `Result<'T, 'E>` directly with helpers in `Axial.ErrorHandling.Result`
+- Axial uses the standard FSharp.Core `Result<'T, 'E>` directly with helpers in `Axial.ErrorHandling.Outcome`
 - Axial replacements: use `result {}` for fail-fast sequencing, `Validation` for accumulation, `Check` for structured value constraints, `Predicate` for local boolean tests, `Result` for guards/extractions, and `Bind` when a flow bind source needs error assignment or mapping
 - For structured checks, use `Result.guard` or `Result.require` to attach a typed error
 

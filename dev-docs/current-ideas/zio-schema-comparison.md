@@ -74,7 +74,7 @@ derivation (`@fieldName`, aliases, `@discriminatorName`, `@rejectExtraFields`, `
    draft/validated distinction anywhere. Validation is advisory and detached: `Schema.validate` returns a flat
    `Chunk[ValidationError]` (values, no paths), is *not* run by any codec on decode, and nothing in the type system
    records that it ran. "Parse, don't validate" is not their concern; it is our center.
-2. **Path-aware accumulated boundary diagnostics + raw retention + redisplay** (`ParsedInput`). Their JSON decode
+2. **Path-aware accumulated boundary diagnostics + raw retention + redisplay** (`RetainedParseResult`). Their JSON decode
    is fail-fast with zio-json error strings.
 3. **Constraints as portable metadata** lowering simultaneously to executable checks, JSON Schema documents, and
    docs/UI metadata. ZIO Schema has *no JSON Schema generation module at all*; its validation predicates are

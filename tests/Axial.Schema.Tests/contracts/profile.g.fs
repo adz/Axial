@@ -36,7 +36,7 @@ module ProfileV1 =
         Schema.check schema draft
 
     /// Parses raw boundary input through the schema.
-    let parse (input: RawInput) : ParsedInput<ProfileV1, SchemaError> =
+    let parse (input: RawInput) : Result<ProfileV1, Diagnostics<SchemaError>> =
         Schema.parse schema input
 
     /// Typed field references for rules, redisplay, and UI binding.
@@ -77,7 +77,7 @@ module Profile =
         Schema.check schema draft
 
     /// Parses raw boundary input through the schema.
-    let parse (input: RawInput) : ParsedInput<Profile, SchemaError> =
+    let parse (input: RawInput) : Result<Profile, Diagnostics<SchemaError>> =
         Schema.parse schema input
 
     /// Builds the versioned wire contract; supply each n-1 -> n migration and the version-detection source.

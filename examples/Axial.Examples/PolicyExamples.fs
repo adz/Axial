@@ -53,7 +53,7 @@ let refinePositive : Policy<OrderEnv, OrderError, int, PositiveInt> =
 // 3. Schema input result: adapt Schema.parse over raw boundary input.
 let parseOrderLine : Policy<OrderEnv, OrderError, RawInput, OrderLine> =
     Policy.lift
-        (fun raw -> (Schema.parse orderLineSchema raw).Result)
+        (fun raw -> (Schema.parse orderLineSchema raw))
         (Diagnostics.flatten >> LineRejected)
 
 // 4. Validation result: adapt intrinsic validation of an existing model.

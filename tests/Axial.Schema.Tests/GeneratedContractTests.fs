@@ -30,9 +30,9 @@ module GeneratedContractTests =
             )
 
         match Axial.Tests.Generated.Category.parse raw with
-        | parsed when parsed.IsValid ->
-            test <@ parsed.Value.Children = [ { Axial.Tests.Generated.Category.Name = "leaf"; Children = [] } ] @>
-        | parsed -> failwithf "Expected recursive generated input to parse, got %A" parsed.Errors
+        | Ok parsed ->
+            test <@ parsed.Children = [ { Axial.Tests.Generated.Category.Name = "leaf"; Children = [] } ] @>
+        | Error diagnostics -> failwithf "Expected recursive generated input to parse, got %A" diagnostics
 
     [<Fact>]
     let ``validate promotes a draft record literal when every constraint passes`` () =
@@ -128,7 +128,7 @@ module GeneratedContractTests =
 
         let parsed = Signup.parse raw
 
-        match parsed.Result with
+        match parsed with
         | Ok signup ->
             test <@ signup.DisplayName = Some "Ada" @>
             test <@ signup.Plan = SignupPlan.Pro @>
@@ -202,7 +202,7 @@ module GeneratedContractTests =
                       ) ]
             )
 
-        match (Payment.parse raw).Result with
+        match (Payment.parse raw) with
         | Ok parsed ->
             match parsed.Source with
             | PaymentSource.Invoice invoice -> test <@ invoice.Reference = "inv-42" @>
@@ -290,7 +290,7 @@ module GeneratedContractTests =
                       "boxes", RawInput.Scalar "2" ]
             )
 
-        match (Shipment.parse raw).Result with
+        match (Shipment.parse raw) with
         | Ok shipment ->
             test <@ shipment.Reference = "SH-42" @>
             test <@ shipment.Priority = ShipmentPriority.SameDay @>
@@ -367,6 +367,6 @@ module GeneratedContractTests =
                 )
             )
 
-        match parsed.Result with
+        match parsed with
         | Ok v1 -> test <@ ProfileV1.Fields.name.Get v1 = "Ada" @>
         | Error diagnostics -> failwithf "Expected a v1 parse, got %A" diagnostics

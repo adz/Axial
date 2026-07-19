@@ -24,4 +24,4 @@ Parses raw input after configuring parser options.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="t-schema-parsedinput.md">ParsedInput</a>&lt;<span>'a,&#32;<a href="t-schema-schemaerror.md">SchemaError</a></span>&gt;</span></code> |  |
+| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'a,&#32;<span><a href="../../diagnostics/t-validation-diagnostics.md">Diagnostics</a>&lt;<a href="t-schema-schemaerror.md">SchemaError</a>&gt;</span></span>&gt;</span></code> |  |

@@ -453,7 +453,7 @@ module internal SchemaParsing =
         parseValue options field.ValueSchema field.Constraints path raw
 
     /// <summary>Parses raw boundary input through a trusted model schema using custom input parser options.</summary>
-    let parseWith (configure: SchemaParseOptions -> SchemaParseOptions) (schema: Schema<'model>) (input: RawInput) : ParsedInput<'model, SchemaError> =
+    let parseWith (configure: SchemaParseOptions -> SchemaParseOptions) (schema: Schema<'model>) (input: RawInput) : Result<'model, Diagnostics<SchemaError>> =
         if isNull (box configure) then
             nullArg (nameof configure)
 
@@ -488,11 +488,15 @@ module internal SchemaParsing =
                         | Error message -> errorAtConstructor options [] message
                 | diagnostics -> Error(mergeErrors diagnostics)
 
-        { Input = input; Result = result }
+        result
 
     /// <summary>Parses raw boundary input through a trusted model schema.</summary>
-    let parse (schema: Schema<'model>) (input: RawInput) : ParsedInput<'model, SchemaError> =
+    let parse (schema: Schema<'model>) (input: RawInput) : Result<'model, Diagnostics<SchemaError>> =
         parseWith id schema input
+
+    /// <summary>Parses raw boundary input while retaining that input for redisplay and error lookup.</summary>
+    let parseRetainingInput (schema: Schema<'model>) (input: RawInput) : RetainedParseResult<'model, SchemaError> =
+        RetainedParseResult.create input (parse schema input)
 
     /// <summary>
     /// Parses raw boundary input through a trusted model schema using custom input parser options, expressed as a
@@ -507,7 +511,7 @@ module internal SchemaParsing =
         (configure: System.Func<SchemaParseOptions, SchemaParseOptions>)
         (schema: Schema<'model>)
         (input: RawInput)
-        : ParsedInput<'model, SchemaError> =
+        : Result<'model, Diagnostics<SchemaError>> =
         if isNull (box configure) then
             nullArg (nameof configure)
 

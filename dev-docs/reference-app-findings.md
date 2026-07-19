@@ -200,7 +200,7 @@ ergonomics, not inheritance or transparent type identity.
 
 The current API has three conflicting shapes:
 
-- `Model.parse` returns `ParsedInput<'model, SchemaError>` whose success is bare `'model`;
+- `Model.parse` returns `RetainedParseResult<'model, SchemaError>` whose success is bare `'model`;
 - `Model.validate` returns `Model<'model>`;
 - `Contract.parse` returns `Model<'model>`.
 

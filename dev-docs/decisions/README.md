@@ -15,7 +15,7 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
   used only inside the environment factory; application workflows continue to receive typed environments.
 - The server still owns route registration, middleware, authorization, and endpoint metadata. Axial produces the
   native handler passed to `MapPost` or GenHTTP `Post`; it does not introduce a cross-host router. The lower-level
-  `SchemaRequest`/`SchemaResult` and `SchemaResponse` primitives remain for endpoints that need `ParsedInput` or
+  `SchemaRequest`/`SchemaResult` and `SchemaResponse` primitives remain for endpoints that need `RetainedParseResult` or
   other host-specific boundary control.
 
 ## 2026-07-17: Records are the primary wire-tier declaration; .contract is parked
@@ -302,7 +302,7 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 - The `Schema` module starts declarations with `Schema.define`; `Axial.Schema.Syntax` provides fields and closing
   constructors. `Schema` also hosts the model
   operations that use a schema as authority: `Schema.parse` / `Schema.parseWith` / `Schema.parseWithOptions`
-  (untyped `RawInput` → `ParsedInput<'model, SchemaError>`) and `Schema.check` (an already-existing model value,
+  (untyped `RawInput` → `RetainedParseResult<'model, SchemaError>`) and `Schema.check` (an already-existing model value,
   re-checked through its field constraints and its constructor so cross-field invariants aren't silently skipped).
   There is no separate public `Model` module.
 - `Schema.check` replaced the old `Axial.Schema.Validation.validate`, which only re-checked per-field constraints

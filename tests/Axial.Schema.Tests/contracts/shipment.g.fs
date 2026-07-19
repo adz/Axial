@@ -27,7 +27,7 @@ module PickupPoint =
         Schema.check schema draft
 
     /// Parses raw boundary input through the schema.
-    let parse (input: RawInput) : ParsedInput<PickupPoint, SchemaError> =
+    let parse (input: RawInput) : Result<PickupPoint, Diagnostics<SchemaError>> =
         Schema.parse schema input
 
     /// Typed field references for rules, redisplay, and UI binding.
@@ -55,7 +55,7 @@ module CourierDelivery =
         Schema.check schema draft
 
     /// Parses raw boundary input through the schema.
-    let parse (input: RawInput) : ParsedInput<CourierDelivery, SchemaError> =
+    let parse (input: RawInput) : Result<CourierDelivery, Diagnostics<SchemaError>> =
         Schema.parse schema input
 
     /// Typed field references for rules, redisplay, and UI binding.
@@ -87,7 +87,7 @@ module ShipmentV1 =
         Schema.check schema draft
 
     /// Parses raw boundary input through the schema.
-    let parse (input: RawInput) : ParsedInput<ShipmentV1, SchemaError> =
+    let parse (input: RawInput) : Result<ShipmentV1, Diagnostics<SchemaError>> =
         Schema.parse schema input
 
     /// Typed field references for rules, redisplay, and UI binding.
@@ -142,7 +142,7 @@ module Shipment =
         Schema.check schema draft
 
     /// Parses raw boundary input through the schema.
-    let parse (input: RawInput) : ParsedInput<Shipment, SchemaError> =
+    let parse (input: RawInput) : Result<Shipment, Diagnostics<SchemaError>> =
         Schema.parse schema input
 
     /// Builds the versioned wire contract; supply each n-1 -> n migration and the version-detection source.

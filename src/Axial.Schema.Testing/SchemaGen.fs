@@ -204,7 +204,7 @@ module SchemaGen =
         raw schema
         |> Result.map (fun rawGen ->
             rawGen
-            |> Gen.map (fun input -> (Schema.parse schema input).Result)
+            |> Gen.map (fun input -> (Schema.parse schema input))
             |> Gen.filter Result.isOk
             |> Gen.map (function
                 | Ok value ->

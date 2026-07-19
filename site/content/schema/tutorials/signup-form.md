@@ -25,7 +25,7 @@ type Signup = { Email: string; Age: int }
 let signupSchema =
     Schema.define<Signup>
     |> field "email" _.Email
-    |> constrain email
+    |> constrain emailFormat
     |> constrain (maxLength 254)
     |> field "age" _.Age
     |> constrain (atLeast 13)
@@ -52,7 +52,7 @@ let raw =
 let parsed = Schema.parse signupSchema raw
 ```
 
-`parsed` is a `ParsedInput<Signup, SchemaError>`. On success `parsed.Result` is `Ok signup` and every constraint
+`parsed` is a `RetainedParseResult<Signup, SchemaError>`. On success `parsed.Result` is `Ok signup` and every constraint
 already holds. Here both fields fail, so no `Signup` exists anywhere:
 
 ```fsharp
@@ -71,7 +71,7 @@ RawInput.redisplayPath "age" parsed.Input     // "12"
 ```
 
 A form template needs only `parsed.Input` and `parsed.ErrorsFor` — there is no half-valid model to guard against.
-Use `SchemaError.render` for field-level messages or `ParsedInput.renderErrors parsed` for a summary list.
+Use `SchemaError.render` for field-level messages or `RetainedParseResult.renderErrors parsed` for a summary list.
 
 ## Use The Trusted Model
 

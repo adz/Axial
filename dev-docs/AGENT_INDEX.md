@@ -31,7 +31,7 @@ Working on `src/Axial.Schema`? Read `dev-docs/schema/internals.md` first (implem
   `EndpointSpec` values. Depends on `Axial.Schema` only; never on `Axial.Flow`.
 - `Axial.Schema.Http.AspNetCore` / `Axial.Schema.Http.GenHttp` (`src/Axial.Schema.Http.*/`): host boundaries over
   `Axial.Schema.Http` and `Axial.Flow`. The default API lowers an ordinary endpoint Flow from schema-trusted request
-  input through explicit application services to a native response; lower-level `ParsedInput` adapters remain for
+  input through explicit application services to a native response; lower-level `RetainedParseResult` adapters remain for
   redisplay and custom boundaries. Routing and app wiring remain the host's idiom.
 - `Axial.Schema.Testing` (`src/Axial.Schema.Testing/`): non-packable FsCheck adapter deriving test data from Schema.
   Depends on `Axial.Schema` and FsCheck; never move the test-library dependency into a public package.
@@ -56,7 +56,7 @@ Working on `src/Axial.Schema`? Read `dev-docs/schema/internals.md` first (implem
   `tests/Axial.ErrorHandling.Tests/ValidationTests.fs`, and `dev-docs/PLAN.md`.
 - Schema metadata/builder: `src/Axial.Schema/Schema.fs`, `tests/Axial.Schema.Tests/Schema*Tests.fs`, and the schema section in
   `dev-docs/PLAN.md`.
-- Schema input/rules/interpreters: `src/Axial.Schema/{Model,RawInput,SchemaValidation,ParsedInput,Rules}.fs` and
+- Schema input/rules/interpreters: `src/Axial.Schema/{Model,RawInput,SchemaValidation,RetainedParseResult,Rules}.fs` and
   `tests/Axial.Schema.Tests/*ParseTests.fs`.
 - User-facing docs: read `dev-docs/DOCS.md` before editing `docs/**`, source comments, generated reference pages,
   `llms.txt`, or site content.

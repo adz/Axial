@@ -77,6 +77,8 @@ module Schema =
     let parseWith configure schema input = SchemaParsing.parseWith configure schema input
     /// <summary>Parses source-neutral raw input, runs constraints and refinements, and invokes record constructors.</summary>
     let parse schema input = SchemaParsing.parse schema input
+    /// <summary>Parses source-neutral raw input while retaining it for redisplay and error lookup.</summary>
+    let parseRetainingInput schema input = SchemaParsing.parseRetainingInput schema input
     /// <summary>Parses raw input with a C#-friendly options delegate.</summary>
     let parseWithOptions options schema input = SchemaParsing.parseWithOptions options schema input
     /// <summary>Checks an existing typed value, such as a freely constructed draft, through the schema's constraints, refinements, and record constructor.</summary>

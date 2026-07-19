@@ -37,7 +37,7 @@ module RecursiveSchemaTests =
                 [ rawCategory "one" []
                   rawCategory "two" [ rawCategory "leaf" [] ] ]
 
-        test <@ (Schema.parse schema input).Result = Ok sample @>
+        test <@ (Schema.parse schema input) = Ok sample @>
         test <@ Schema.check schema sample = Ok sample @>
 
     [<Fact>]
@@ -48,13 +48,13 @@ module RecursiveSchemaTests =
             |> Schema.convert id id
 
         let input = rawCategory "root" []
-        test <@ (Schema.parse refinedDeferred input).Result = Ok { Name = "root"; Children = [] } @>
+        test <@ (Schema.parse refinedDeferred input) = Ok { Name = "root"; Children = [] } @>
 
     [<Fact>]
     let ``nested and defer reject value schemas with argument errors`` () =
         raises<System.ArgumentException> <@ Value.nested Schema.text @>
         let deferred = Value.lazyOf (fun () -> Schema.text)
-        raises<System.ArgumentException> <@ Schema.parse deferred (RawInput.Scalar "value") @>
+        raises<System.ArgumentException> <@ Schema.parseRetainingInput deferred (RawInput.Scalar "value") @>
 
     [<Fact>]
     let ``recursive schema compiles to a reusable codec`` () =

@@ -1,7 +1,7 @@
 ---
 title: "Schema.parse"
 linkTitle: "parse"
-weight: 2101
+weight: 2100
 type: docs
 ---
 
@@ -24,4 +24,4 @@ Parses source-neutral raw input, runs constraints and refinements, and invokes r
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="t-schema-parsedinput.md">ParsedInput</a>&lt;<span>'a,&#32;<a href="t-schema-schemaerror.md">SchemaError</a></span>&gt;</span></code> |  |
+| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'a,&#32;<span><a href="../../diagnostics/t-validation-diagnostics.md">Diagnostics</a>&lt;<a href="t-schema-schemaerror.md">SchemaError</a>&gt;</span></span>&gt;</span></code> |  |

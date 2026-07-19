@@ -36,7 +36,7 @@ module Geo =
         Schema.check schema draft
 
     /// Parses raw boundary input through the schema.
-    let parse (input: RawInput) : ParsedInput<Geo, SchemaError> =
+    let parse (input: RawInput) : Result<Geo, Diagnostics<SchemaError>> =
         Schema.parse schema input
 
     /// Typed field references for rules, redisplay, and UI binding.

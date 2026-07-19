@@ -9,14 +9,14 @@ description: Failed parses that keep the user's input.
 This page shows how failed schema parses retain raw input, path-aware field errors, and default display strings.
 
 When boundary input fails to parse, a form should show the user's original text next to each field's errors. Axial's
-`ParsedInput` keeps both: the raw input exactly as submitted, and diagnostics addressed by path.
+`RetainedParseResult` keeps both: the raw input exactly as submitted, and diagnostics addressed by path.
 
 ## The Handoff Value
 
-`Schema.parse` always returns a `ParsedInput<'model, SchemaError>`:
+Use `Schema.parseRetainingInput` when the boundary needs the submitted representation after parsing:
 
 ```fsharp
-let parsed = Schema.parse customerSchema raw
+let parsed = Schema.parseRetainingInput customerSchema raw
 
 parsed.IsValid        // true when a trusted model exists
 parsed.Result         // Ok model | Error diagnostics
@@ -67,17 +67,17 @@ from raw input and diagnostics only.
 For summary output, render every failed diagnostic in one line:
 
 ```fsharp
-let messages = ParsedInput.renderErrors parsed
+let messages = RetainedParseResult.renderErrors parsed
 // [ "email: Expected email format."; "age: Must satisfy atLeast 13; got 12." ]
 ```
 
 ## Mapping To Domain Errors
 
-`ParsedInput.mapErrors` translates interpreter errors into a domain or application error type at the boundary while
+`RetainedParseResult.mapErrors` translates interpreter errors into a domain or application error type at the boundary while
 preserving the raw input and paths:
 
 ```fsharp
-let domainParsed = parsed |> ParsedInput.mapErrors SignupError.ofSchemaError
+let domainParsed = parsed |> RetainedParseResult.mapErrors SignupError.ofSchemaError
 ```
 
 That mapping is the boundary between Axial's interpreter errors and your application errors. Keep your user-owned error

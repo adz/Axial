@@ -22,7 +22,7 @@ constraints. It executes nothing by itself — interpreters decide what it means
 ## Input
 
 `Schema.parse schema raw` is the boundary interpreter: it parses raw field values, runs constraint checks, calls the
-constructor only when every argument is trusted, and returns `ParsedInput` carrying either the model or path-aware
+constructor only when every argument is trusted, and returns `RetainedParseResult` carrying either the model or path-aware
 diagnostics plus the original input for redisplay.
 
 Use `Schema.check schema model` when the value already exists (imported rows, hand-built values) and needs the

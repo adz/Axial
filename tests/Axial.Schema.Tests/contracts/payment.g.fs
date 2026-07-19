@@ -33,7 +33,7 @@ module Card =
         Schema.check schema draft
 
     /// Parses raw boundary input through the schema.
-    let parse (input: RawInput) : ParsedInput<Card, SchemaError> =
+    let parse (input: RawInput) : Result<Card, Diagnostics<SchemaError>> =
         Schema.parse schema input
 
     /// Typed field references for rules, redisplay, and UI binding.
@@ -67,7 +67,7 @@ module Invoice =
         Schema.check schema draft
 
     /// Parses raw boundary input through the schema.
-    let parse (input: RawInput) : ParsedInput<Invoice, SchemaError> =
+    let parse (input: RawInput) : Result<Invoice, Diagnostics<SchemaError>> =
         Schema.parse schema input
 
     /// Typed field references for rules, redisplay, and UI binding.
@@ -111,7 +111,7 @@ module Payment =
         Schema.check schema draft
 
     /// Parses raw boundary input through the schema.
-    let parse (input: RawInput) : ParsedInput<Payment, SchemaError> =
+    let parse (input: RawInput) : Result<Payment, Diagnostics<SchemaError>> =
         Schema.parse schema input
 
     /// Typed field references for rules, redisplay, and UI binding.

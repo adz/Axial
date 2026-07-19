@@ -130,7 +130,7 @@ module Application =
     /// here; the rest of the application receives the invariant-preserving domain value.
     let admitProduction raw =
         let parsed = Schema.parse Contracts.workspaceV2 raw
-        match parsed.Result with
+        match parsed with
         | Error diagnostics -> Error(AppError.InvalidInput diagnostics)
         | Ok value ->
             Ok value

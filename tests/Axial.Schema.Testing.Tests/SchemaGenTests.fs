@@ -38,9 +38,9 @@ module SchemaGenTests =
         let generator = SchemaGen.raw schema |> Result.defaultWith (failwithf "%A")
         let inputs = Gen.sample 200 generator
 
-        test <@ inputs |> Array.forall (fun input -> (Schema.parse schema input).IsValid) @>
+        test <@ inputs |> Array.forall (fun input -> (Schema.parse schema input |> Result.isOk)) @>
 
-        let models = inputs |> Array.map (fun input -> (Schema.parse schema input).Value)
+        let models = inputs |> Array.map (fun input -> Schema.parse schema input |> Result.defaultWith (failwithf "%A"))
         test <@ models |> Array.forall (fun model -> model.Age >= 18 && model.Age <= 90 && model.Age % 2 = 0) @>
         test <@ models |> Array.forall (fun model -> model.Aliases.Length >= 1 && model.Aliases.Length <= 3) @>
 
@@ -63,7 +63,7 @@ module SchemaGenTests =
 
         let custom = Map.ofList [ "email", Gen.constant (RawInput.Scalar "AXIAL") ]
         let generated = SchemaGen.rawWith custom schema |> Result.defaultWith (failwithf "%A") |> Gen.sample 10
-        test <@ generated |> Array.forall (fun input -> (Schema.parse schema input).IsValid) @>
+        test <@ generated |> Array.forall (fun input -> (Schema.parse schema input |> Result.isOk)) @>
 
     [<Fact>]
     let ``recursive generators terminate at the FsCheck size boundary`` () =
@@ -77,4 +77,4 @@ module SchemaGenTests =
         let schema = holder.Value
         let generator = SchemaGen.raw schema |> Result.defaultWith (failwithf "%A")
         let inputs = Gen.sample 100 generator
-        test <@ inputs |> Array.forall (fun input -> (Schema.parse schema input).IsValid) @>
+        test <@ inputs |> Array.forall (fun input -> (Schema.parse schema input |> Result.isOk)) @>

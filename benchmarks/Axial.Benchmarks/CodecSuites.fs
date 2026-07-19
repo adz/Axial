@@ -120,4 +120,4 @@ type BoundaryParseBenchmarks() =
     member _.BoundaryParse() =
         use document = JsonDocument.Parse json
         let input = RawInput.ofJsonDocument document
-        (Schema.parse CodecModel.customerSchema input).Result
+        Schema.parse CodecModel.customerSchema input

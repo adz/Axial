@@ -50,7 +50,7 @@ module UnionInlineSchemaParseTests =
                       RawInput.Object(Map.ofList [ "type", RawInput.Scalar "card"; "number", RawInput.Scalar "4242" ]) ]
             )
 
-        let parsed = Schema.parse (checkoutSchema ()) raw
+        let parsed = Schema.parseRetainingInput (checkoutSchema ()) raw
 
         test <@ parsed.Result = Ok { Payment = Card { Number = "4242" } } @>
 
@@ -62,7 +62,7 @@ module UnionInlineSchemaParseTests =
                     [ "payment", RawInput.Object(Map.ofList [ "type", RawInput.Scalar "cash"; "number", RawInput.Scalar "4242" ]) ]
             )
 
-        let parsed = Schema.parse (checkoutSchema ()) raw
+        let parsed = Schema.parseRetainingInput (checkoutSchema ()) raw
 
         test
             <@ parsed.Errors = [ { Path = [ PathSegment.Name "payment"; PathSegment.Name "type" ]
@@ -73,7 +73,7 @@ module UnionInlineSchemaParseTests =
         let raw =
             RawInput.Object(Map.ofList [ "payment", RawInput.Object(Map.ofList [ "type", RawInput.Scalar "card" ]) ])
 
-        let parsed = Schema.parse (checkoutSchema ()) raw
+        let parsed = Schema.parseRetainingInput (checkoutSchema ()) raw
 
         test
             <@ parsed.Errors = [ { Path = [ PathSegment.Name "payment"; PathSegment.Name "number" ]

@@ -26,7 +26,7 @@ module EnumSchemaParseTests =
     let ``parse builds the enum case matching the tag`` () =
         let raw = RawInput.Object(Map.ofList [ "color", RawInput.Scalar "green" ])
 
-        let parsed = Schema.parse (swatchSchema ()) raw
+        let parsed = Schema.parseRetainingInput (swatchSchema ()) raw
 
         test <@ parsed.Result = Ok { Color = Green } @>
 
@@ -34,7 +34,7 @@ module EnumSchemaParseTests =
     let ``parse reports an unknown tag at the field path`` () =
         let raw = RawInput.Object(Map.ofList [ "color", RawInput.Scalar "purple" ])
 
-        let parsed = Schema.parse (swatchSchema ()) raw
+        let parsed = Schema.parseRetainingInput (swatchSchema ()) raw
 
         test
             <@ parsed.Errors = [ { Path = [ PathSegment.Name "color" ]

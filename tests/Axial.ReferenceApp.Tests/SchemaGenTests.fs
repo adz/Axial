@@ -18,7 +18,7 @@ module SchemaGenTests =
         let generator = SchemaGen.raw Contracts.workspaceV2 |> Result.defaultWith (failwithf "%A")
         let inputs = Gen.sample 100 generator
 
-        test <@ inputs |> Array.forall (fun input -> (Schema.parse Contracts.workspaceV2 input).IsValid) @>
+        test <@ inputs |> Array.forall (fun input -> (Schema.parse Contracts.workspaceV2 input |> Result.isOk)) @>
 
     [<Fact>]
     let ``schema-generated models survive a codec round-trip`` () =
@@ -29,7 +29,7 @@ module SchemaGenTests =
             let json = Json.serialize codec model
             use document = JsonDocument.Parse json
             let reparsed = Schema.parse Contracts.workspaceV2 (RawInput.ofJsonDocument document)
-            reparsed.Result = Ok model
+            reparsed = Ok model
 
         test <@ Gen.sample 50 generator |> Array.forall roundTrips @>
 

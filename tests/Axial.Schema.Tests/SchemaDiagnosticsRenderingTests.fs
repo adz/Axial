@@ -22,7 +22,7 @@ module SchemaDiagnosticsRenderingTests =
         let raw =
             RawInput.Object(Map.ofList [ "email", RawInput.Missing; "age", RawInput.Scalar "42" ])
 
-        let parsed = Schema.parse schema raw
+        let parsed = Schema.parseRetainingInput schema raw
 
         let text =
             match parsed.Result with
@@ -42,7 +42,7 @@ module SchemaDiagnosticsRenderingTests =
                       "age", RawInput.Scalar "not-an-int" ]
             )
 
-        let parsed = Schema.parse schema raw
+        let parsed = Schema.parseRetainingInput schema raw
 
         let text =
             match parsed.Result with
@@ -58,7 +58,7 @@ module SchemaDiagnosticsRenderingTests =
     [<Fact>]
     let ``toString renders a root path error without a nested branch when input is not an object`` () =
         let raw = RawInput.Scalar "not-an-object"
-        let parsed = Schema.parse schema raw
+        let parsed = Schema.parseRetainingInput schema raw
 
         let text =
             match parsed.Result with
@@ -78,7 +78,7 @@ module SchemaDiagnosticsRenderingTests =
                       "age", RawInput.Scalar "not-an-int" ]
             )
 
-        let parsed = Schema.parse schema raw
+        let parsed = Schema.parseRetainingInput schema raw
 
         let flattened =
             match parsed.Result with
@@ -95,7 +95,7 @@ module SchemaDiagnosticsRenderingTests =
     [<Fact>]
     let ``flatten reports an empty path for a root-level schema error`` () =
         let raw = RawInput.Many [ RawInput.Scalar "1" ]
-        let parsed = Schema.parse schema raw
+        let parsed = Schema.parseRetainingInput schema raw
 
         let flattened =
             match parsed.Result with
@@ -113,7 +113,7 @@ module SchemaDiagnosticsRenderingTests =
                       "age", RawInput.Scalar "not-an-int" ]
             )
 
-        let parsed = Schema.parse schema raw
+        let parsed = Schema.parseRetainingInput schema raw
 
         match parsed.Result with
         | Error diagnostics ->

@@ -10,32 +10,32 @@ open Axial.Schema.Http
 open Axial.Codec
 open Axial.Flow
 
-/// <summary>Parses GenHTTP requests into <see cref="T:Axial.Schema.ParsedInput`2" /> through a schema.</summary>
+/// <summary>Parses GenHTTP requests into <see cref="T:Axial.Schema.RetainedParseResult`2" /> through a schema.</summary>
 [<RequireQualifiedAccess>]
 module SchemaRequest =
     /// <summary>Parses the JSON request body through the schema; a missing body parses as missing input.</summary>
-    let json (schema: Schema<'model>) (request: IRequest) : ValueTask<ParsedInput<'model, SchemaError>> =
+    let json (schema: Schema<'model>) (request: IRequest) : ValueTask<RetainedParseResult<'model, SchemaError>> =
         match request.Content with
-        | null -> ValueTask<_>(Schema.parse schema RawInput.Missing)
+        | null -> ValueTask<_>(Schema.parseRetainingInput schema RawInput.Missing)
         | content ->
-            let parse: Task<ParsedInput<'model, SchemaError>> =
+            let parse: Task<RetainedParseResult<'model, SchemaError>> =
                 task {
                     use! document = JsonDocument.ParseAsync content
-                    return Schema.parse schema (RawInput.ofJsonDocument document)
+                    return Schema.parseRetainingInput schema (RawInput.ofJsonDocument document)
                 }
 
-            ValueTask<ParsedInput<'model, SchemaError>> parse
+            ValueTask<RetainedParseResult<'model, SchemaError>> parse
 
     /// <summary>Parses the query string through the schema.</summary>
-    let query (schema: Schema<'model>) (request: IRequest) : ParsedInput<'model, SchemaError> =
+    let query (schema: Schema<'model>) (request: IRequest) : RetainedParseResult<'model, SchemaError> =
         let pairs = request.Query |> Seq.map (fun pair -> pair.Key, pair.Value)
-        Schema.parse schema (BoundaryInput.ofQuery pairs)
+        Schema.parseRetainingInput schema (BoundaryInput.ofQuery pairs)
 
 /// <summary>Builds GenHTTP responses for schema-driven endpoints.</summary>
 [<RequireQualifiedAccess>]
 module SchemaResponse =
     /// <summary>A 400 <c>application/problem+json</c> response rendering the failed parse's diagnostics.</summary>
-    let problem (request: IRequest) (parsed: ParsedInput<'model, SchemaError>) : IResponse =
+    let problem (request: IRequest) (parsed: RetainedParseResult<'model, SchemaError>) : IResponse =
         match ProblemDetails.ofParsed parsed with
         | Some details ->
             request
@@ -63,7 +63,7 @@ module SchemaResponse =
     let handleParsed
         (request: IRequest)
         (handler: 'model -> ValueTask<IResponse>)
-        (parsed: ParsedInput<'model, SchemaError>)
+        (parsed: RetainedParseResult<'model, SchemaError>)
         : ValueTask<IResponse> =
         match parsed.Result with
         | Ok model -> handler model
@@ -93,7 +93,7 @@ type HttpResponse = private HttpResponse of (IRequest -> IResponse)
 /// <summary>Request decoders that contribute trusted values to an endpoint Flow.</summary>
 [<RequireQualifiedAccess>]
 module Request =
-    let private fromParsed (parsed: ParsedInput<'model, SchemaError>) =
+    let private fromParsed (parsed: RetainedParseResult<'model, SchemaError>) =
         match parsed.Result with
         | Ok model -> Flow.succeed model
         | Error diagnostics ->

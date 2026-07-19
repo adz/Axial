@@ -17,7 +17,7 @@ Builds a 400 problem-details value from a failed parse, or <code>None</code> whe
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `parsed` | <code><span><a href="../interpreters/t-schema-parsedinput.md">ParsedInput</a>&lt;<span>'model,&#32;<a href="../interpreters/t-schema-schemaerror.md">SchemaError</a></span>&gt;</span></code> |  |
+| `parsed` | <code><span><a href="../interpreters/t-schema-retainedparseresult.md">RetainedParseResult</a>&lt;<span>'model,&#32;<a href="../interpreters/t-schema-schemaerror.md">SchemaError</a></span>&gt;</span></code> |  |
 
 ## Returns
 

@@ -9,18 +9,18 @@ open Axial.Schema.Http
 open Axial.Codec
 open Axial.Flow
 
-/// <summary>Parses ASP.NET Core requests into <see cref="T:Axial.Schema.ParsedInput`2" /> through a schema.</summary>
+/// <summary>Parses ASP.NET Core requests into <see cref="T:Axial.Schema.RetainedParseResult`2" /> through a schema.</summary>
 [<RequireQualifiedAccess>]
 module SchemaRequest =
     /// <summary>Parses the JSON request body through the schema.</summary>
-    let json (schema: Schema<'model>) (request: HttpRequest) : Task<ParsedInput<'model, SchemaError>> =
+    let json (schema: Schema<'model>) (request: HttpRequest) : Task<RetainedParseResult<'model, SchemaError>> =
         task {
             use! document = JsonDocument.ParseAsync request.Body
-            return Schema.parse schema (RawInput.ofJsonDocument document)
+            return Schema.parseRetainingInput schema (RawInput.ofJsonDocument document)
         }
 
     /// <summary>Parses the posted form through the schema; dotted field names such as <c>address.street</c> nest.</summary>
-    let form (schema: Schema<'model>) (request: HttpRequest) : Task<ParsedInput<'model, SchemaError>> =
+    let form (schema: Schema<'model>) (request: HttpRequest) : Task<RetainedParseResult<'model, SchemaError>> =
         task {
             let! form = request.ReadFormAsync()
 
@@ -28,16 +28,16 @@ module SchemaRequest =
                 form
                 |> Seq.collect (fun pair -> pair.Value |> Seq.map (fun value -> pair.Key, value))
 
-            return Schema.parse schema (BoundaryInput.ofForm pairs)
+            return Schema.parseRetainingInput schema (BoundaryInput.ofForm pairs)
         }
 
     /// <summary>Parses the query string through the schema.</summary>
-    let query (schema: Schema<'model>) (request: HttpRequest) : ParsedInput<'model, SchemaError> =
+    let query (schema: Schema<'model>) (request: HttpRequest) : RetainedParseResult<'model, SchemaError> =
         let pairs =
             request.Query
             |> Seq.collect (fun pair -> pair.Value |> Seq.map (fun value -> pair.Key, value))
 
-        Schema.parse schema (BoundaryInput.ofQuery pairs)
+        Schema.parseRetainingInput schema (BoundaryInput.ofQuery pairs)
 
 /// <summary>Writes a trusted model straight to the response body through a compiled codec, without an intermediate string.</summary>
 type private CodecResult<'model>(codec: JsonCodec<'model>, value: 'model, statusCode: int) =
@@ -57,7 +57,7 @@ type private CodecResult<'model>(codec: JsonCodec<'model>, value: 'model, status
 [<RequireQualifiedAccess>]
 module SchemaResult =
     /// <summary>A 400 <c>application/problem+json</c> response rendering the failed parse's diagnostics.</summary>
-    let problem (parsed: ParsedInput<'model, SchemaError>) : IResult =
+    let problem (parsed: RetainedParseResult<'model, SchemaError>) : IResult =
         match ProblemDetails.ofParsed parsed with
         | Some details -> Results.Text(ProblemDetails.toJson details, ProblemDetails.ContentType, statusCode = details.Status)
         | None -> Results.StatusCode 500
@@ -73,7 +73,7 @@ module SchemaResult =
     /// <summary>Runs the handler with the trusted model, or short-circuits to the problem-details response.</summary>
     let handleParsed
         (handler: 'model -> Task<IResult>)
-        (parsed: ParsedInput<'model, SchemaError>)
+        (parsed: RetainedParseResult<'model, SchemaError>)
         : Task<IResult> =
         match parsed.Result with
         | Ok model -> handler model
@@ -99,14 +99,14 @@ type EndpointError<'error> =
 /// <summary>Request decoders that contribute trusted values to an endpoint Flow.</summary>
 [<RequireQualifiedAccess>]
 module Request =
-    let private fromParsed (parsed: ParsedInput<'model, SchemaError>) =
+    let private fromParsed (parsed: RetainedParseResult<'model, SchemaError>) =
         match parsed.Result with
         | Ok model -> Flow.succeed model
         | Error diagnostics ->
             Flow.fail (EndpointError.InvalidRequest(ProblemDetails.ofDiagnostics diagnostics))
 
     let private parsed
-        (parse: HttpRequest -> Task<ParsedInput<'model, SchemaError>>)
+        (parse: HttpRequest -> Task<RetainedParseResult<'model, SchemaError>>)
         : Flow<HttpEndpointEnv<'app>, EndpointError<'error>, 'model> =
         Flow.read _.Request
         |> Flow.bind (fun request ->
@@ -165,7 +165,7 @@ module Request =
                 if not found || isNull value then RawInput.Missing
                 else RawInput.Scalar(string value)
 
-            Schema.parse schema input |> fromParsed)
+            Schema.parseRetainingInput schema input |> fromParsed)
 
     /// <summary>Projects untrusted input directly from the native request without schema parsing.</summary>
     /// <param name="projection">The direct projection from the native request.</param>

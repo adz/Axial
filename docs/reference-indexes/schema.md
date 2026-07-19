@@ -20,7 +20,7 @@ Schemas are consumed by interpreters that stay independent of workflow execution
 
 - [`Schema Interpreters`](./schema/interpreters/) — the boundary-parsing and rule-evaluation surface:
   - [`RawInput`](./schema/interpreters/#raw-input) — source-agnostic raw input captured at a data boundary.
-  - [`Schema.parse` / `ParsedInput`](./schema/interpreters/#input-parsing) — parsing boundary input through a schema,
+  - [`Schema.parse` / `RetainedParseResult`](./schema/interpreters/#input-parsing) — parsing boundary input through a schema,
     plus `Schema.check` for giving an already-existing value (a draft or an import) the same trust guarantee.
   - [`SchemaError`](./schema/interpreters/#errors) — schema input, checking, and rule failures.
   - [`RefinedSchemas`](./schema/interpreters/#refined-catalog-schemas) — bridges `Axial.Refined` types (see the

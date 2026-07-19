@@ -133,7 +133,7 @@ module FormPage =
         | _ -> "text"
 
     /// Renders one flat form from the schema description, redisplaying raw input and attaching errors by path.
-    let render (parsed: ParsedInput<Signup, SchemaError> option) =
+    let render (parsed: RetainedParseResult<Signup, SchemaError> option) =
         let input =
             parsed |> Option.map _.Input |> Option.defaultValue (RawInput.Object Map.empty)
 

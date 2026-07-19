@@ -3,7 +3,7 @@ title: "Schema HTTP ASP.NET Core"
 weight: 500
 ---
 
-This page shows `Axial.Schema.Http.AspNetCore`. `Request` contributes schema-trusted values to an endpoint Flow, `EndpointFlow.run` embeds an HTTP-independent application workflow, `Response` constructs successful `IResult` values, and `flowEndpoint` lowers the completed Flow to the delegate accepted by ASP.NET Core routing. ASP.NET Core continues to own paths, verbs, middleware, authorization, filters, and endpoint metadata. The lower-level `SchemaRequest` and `SchemaResult` modules remain available when an endpoint needs the complete `ParsedInput` or direct host control.
+This page shows `Axial.Schema.Http.AspNetCore`. `Request` contributes schema-trusted values to an endpoint Flow, `EndpointFlow.run` embeds an HTTP-independent application workflow, `Response` constructs successful `IResult` values, and `flowEndpoint` lowers the completed Flow to the delegate accepted by ASP.NET Core routing. ASP.NET Core continues to own paths, verbs, middleware, authorization, filters, and endpoint metadata. The lower-level `SchemaRequest` and `SchemaResult` modules remain available when an endpoint needs the complete `RetainedParseResult` or direct host control.
 
 ## Endpoint model
 

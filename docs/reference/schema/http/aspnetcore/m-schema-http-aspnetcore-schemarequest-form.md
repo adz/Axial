@@ -23,4 +23,4 @@ Parses the posted form through the schema; dotted field names such as <code>addr
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1">Task</a>&lt;<span><a href="../../interpreters/t-schema-parsedinput.md">ParsedInput</a>&lt;<span>'model,&#32;<a href="../../interpreters/t-schema-schemaerror.md">SchemaError</a></span>&gt;</span>&gt;</span></code> |  |
+| <code><span><a href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1">Task</a>&lt;<span><a href="../../interpreters/t-schema-retainedparseresult.md">RetainedParseResult</a>&lt;<span>'model,&#32;<a href="../../interpreters/t-schema-schemaerror.md">SchemaError</a></span>&gt;</span>&gt;</span></code> |  |

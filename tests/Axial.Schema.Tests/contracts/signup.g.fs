@@ -62,7 +62,7 @@ module Signup =
         Schema.check schema draft
 
     /// Parses raw boundary input through the schema.
-    let parse (input: RawInput) : ParsedInput<Signup, SchemaError> =
+    let parse (input: RawInput) : Result<Signup, Diagnostics<SchemaError>> =
         Schema.parse schema input
 
     /// Typed field references for rules, redisplay, and UI binding.

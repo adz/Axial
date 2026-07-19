@@ -39,12 +39,12 @@ module ReferenceAppTests =
     [<Fact>]
     let ``schema constructs refined fields and reports boundary paths`` () =
         let valid =
-            Schema.parse Contracts.workspaceV2
+            Schema.parseRetainingInput Contracts.workspaceV2
                 (object' [ "version", scalar 2; "id", scalar(Guid.NewGuid()); "name", scalar "Delivery"; "members", RawInput.Many []; "items", RawInput.Many [] ])
         test <@ valid.Value.name |> WorkspaceName.value = "Delivery" @>
 
         let invalid =
-            Schema.parse Contracts.workspaceV2
+            Schema.parseRetainingInput Contracts.workspaceV2
                 (object' [ "version", scalar 2; "id", scalar(Guid.NewGuid()); "name", scalar " "; "members", RawInput.Many []; "items", RawInput.Many [] ])
         test <@ invalid.Errors |> List.map _.Path = [ [ Axial.Validation.PathSegment.Name "name" ] ] @>
 
@@ -66,7 +66,7 @@ module ReferenceAppTests =
     [<Fact>]
     let ``contextual production rules are separate from intrinsic schema validity`` () =
         let raw = object' [ "version", scalar 2; "id", scalar(Guid.NewGuid()); "name", scalar "sales-demo"; "members", RawInput.Many []; "items", RawInput.Many [] ]
-        test <@ (Schema.parse Contracts.workspaceV2 raw).IsValid @>
+        test <@ (Schema.parse Contracts.workspaceV2 raw |> Result.isOk) @>
         match Application.admitProduction raw with
         | Error(AppError.InvalidInput diagnostics) ->
             test <@ diagnostics |> Axial.Validation.Diagnostics.flatten |> List.map (SchemaError.render << _.Error) = [ "Production workspace names cannot end in -demo." ] @>

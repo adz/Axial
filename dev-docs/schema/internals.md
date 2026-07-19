@@ -22,7 +22,7 @@ metadata, or a new interpreter over existing metadata? Most features are the sec
 | `Shape.fs` | The constructor-last authoring surface: `ObjectShape`, `Syntax`, `Schema.admit`. |
 | `RawInput.fs` | Source-neutral boundary input (`RawInput`, `JsonLikeValue`) and its constructors. |
 | `SchemaValidation.fs` | The parse/check interpreter (`SchemaParsing`). |
-| `ParsedInput.fs` | `ParsedInput` — parse results plus redisplay data. |
+| `RetainedParseResult.fs` | `RetainedParseResult` — parse results plus redisplay data. |
 | `FieldRef.fs` | `FieldRef` — typed get/set field references used by rules and generated code. |
 | `ContextRules.fs` | Contextual (cross-field, per-context) rules over built schemas. |
 | `Model.fs` | Higher-level model helpers. |

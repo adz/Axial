@@ -258,7 +258,7 @@ Assembly metadata can check public parameter, return, property, field, base, and
 
 For Domain and Application projects, reject public interfaces containing:
 
-- `RawInput` or `ParsedInput`;
+- `RawInput` or `RetainedParseResult`;
 - types from configured Contracts assemblies;
 - generated wire types carrying a stable marker;
 - draft types carrying an optional draft marker;

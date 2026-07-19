@@ -420,7 +420,7 @@ module Emitter =
             line "        Schema.check schema draft"
             line ""
             line "    /// Parses raw boundary input through the schema."
-            line $"    let parse (input: RawInput) : ParsedInput<{contractTypeName}, SchemaError> ="
+            line $"    let parse (input: RawInput) : Result<{contractTypeName}, Diagnostics<SchemaError>> ="
             line "        Schema.parse schema input"
 
             // The latest version of a multi-version chain gets the Contract wiring. Migrations stay

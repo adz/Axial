@@ -3,16 +3,17 @@ namespace Axial.Schema
 open Axial.Validation
 
 /// <summary>
-/// The result of parsing boundary input through a schema while retaining the original raw input.
+/// A parse result that retains the original raw input for redisplay and error lookup.
 /// </summary>
 /// <remarks>
 /// <para>
-/// <c>ParsedInput</c> is the stable handoff value for schema input parsing. Successful parses carry the trusted model in
-/// <see cref="P:Axial.Schema.ParsedInput`2.Result" />; failed parses carry path-aware diagnostics while the
+/// <c>RetainedParseResult</c> is an opt-in handoff value for boundaries that need the source representation after
+/// parsing. Successful parses carry the trusted value in <see cref="P:Axial.Schema.RetainedParseResult`2.Result" />;
+/// failed parses carry path-aware diagnostics while the
 /// original <see cref="T:Axial.Schema.RawInput" /> remains available for redisplay and error lookup.
 /// </para>
 /// </remarks>
-type ParsedInput<'value, 'error> =
+type RetainedParseResult<'value, 'error> =
     {
         /// <summary>The raw boundary input that was parsed.</summary>
         Input: RawInput
@@ -63,7 +64,11 @@ type ParsedInput<'value, 'error> =
 
 /// <summary>Functions for adapting parsed input, most notably to translate interpreter errors into domain errors.</summary>
 [<RequireQualifiedAccess>]
-module ParsedInput =
+module RetainedParseResult =
+    /// <summary>Retains raw input alongside an existing parse result.</summary>
+    let create input result : RetainedParseResult<'value, 'error> =
+        { Input = input; Result = result }
+
     /// <summary>Maps a failed parse's errors to a domain or application error type, preserving the raw input and paths.</summary>
     /// <remarks>
     /// Use this at the boundary between schema input parsing and application code, where <c>SchemaError</c> (or any
@@ -72,13 +77,13 @@ module ParsedInput =
     /// </remarks>
     /// <param name="mapper">A function of type <c>'error -> 'nextError</c>.</param>
     /// <param name="parsed">The parsed input to map.</param>
-    /// <returns>A <see cref="T:Axial.Schema.ParsedInput`2" /> with the same input and model, and mapped errors.</returns>
+    /// <returns>A <see cref="T:Axial.Schema.RetainedParseResult`2" /> with the same input and value, and mapped errors.</returns>
     /// <example>
     /// <code>
-    /// let domainParsed = parsed |> ParsedInput.mapErrors SignupError.ofSchemaError
+    /// let domainParsed = parsed |> RetainedParseResult.mapErrors SignupError.ofSchemaError
     /// </code>
     /// </example>
-    let mapErrors (mapper: 'error -> 'nextError) (parsed: ParsedInput<'model, 'error>) : ParsedInput<'model, 'nextError> =
+    let mapErrors (mapper: 'error -> 'nextError) (parsed: RetainedParseResult<'value, 'error>) : RetainedParseResult<'value, 'nextError> =
         {
             Input = parsed.Input
             Result = parsed.Result |> Result.mapError (Diagnostics.map mapper)
@@ -86,10 +91,10 @@ module ParsedInput =
 
     /// <summary>Renders a failed schema parse as default English display strings, preserving diagnostics paths.</summary>
     /// <remarks>
-    /// This is the one-line display path for boundary parsing failures. Use <c>ParsedInput.mapErrors</c> when the same
+    /// This is the one-line display path for boundary parsing failures. Use <c>RetainedParseResult.mapErrors</c> when the same
     /// boundary failures should become an application-owned error type instead.
     /// </remarks>
-    let renderErrors (parsed: ParsedInput<'model, SchemaError>) : string list =
+    let renderErrors (parsed: RetainedParseResult<'value, SchemaError>) : string list =
         match parsed.Result with
         | Ok _ -> []
         | Error diagnostics -> SchemaError.renderDiagnostics diagnostics

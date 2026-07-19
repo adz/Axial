@@ -4,7 +4,7 @@ weight: 500
 type: docs
 ---
 
-This page shows raw boundary input, universal schema parsing into `ParsedInput`, checking of existing values, refined schemas, and contextual rules. Core schema metadata stays in [Schema](../); interpreters attach diagnostics, raw input, and redisplay behavior to it.
+This page shows raw boundary input, universal schema parsing into `Result`, opt-in input retention with `RetainedParseResult`, checking of existing values, refined schemas, and contextual rules. Core schema metadata stays in [Schema](../); interpreters attach diagnostics and optional redisplay behavior to it.
 
 ## Raw input
 
@@ -28,14 +28,16 @@ This page shows raw boundary input, universal schema parsing into `ParsedInput`,
 
 ## Input parsing
 
-- [`Schema.ParsedInput`](./t-schema-parsedinput.md):
- The result of parsing boundary input through a schema while retaining the original raw input.
-
 - [`Schema.parse`](./m-schema-schema-parse.md): Parses source-neutral raw input, runs constraints and refinements, and invokes record constructors.
+- [`Schema.parseRetainingInput`](./m-schema-schema-parseretaininginput.md): Parses source-neutral raw input while retaining it for redisplay and error lookup.
 - [`Schema.parseWith`](./m-schema-schema-parsewith.md): Parses raw input after configuring parser options.
 - [`Schema.SchemaParseOptions`](./t-schema-schemaparseoptions.md): Options that customize how raw input is parsed through a schema.
-- [`Schema.ParsedInput.mapErrors`](./m-schema-parsedinput-maperrors.md): Maps a failed parse&#39;s errors to a domain or application error type, preserving the raw input and paths.
-- [`Schema.ParsedInput.renderErrors`](./m-schema-parsedinput-rendererrors.md): Renders a failed schema parse as default English display strings, preserving diagnostics paths.
+- [`Schema.RetainedParseResult`](./t-schema-retainedparseresult.md):
+ A parse result that retains the original raw input for redisplay and error lookup.
+
+- [`Schema.RetainedParseResult.create`](./m-schema-retainedparseresult-create.md): Retains raw input alongside an existing parse result.
+- [`Schema.RetainedParseResult.mapErrors`](./m-schema-retainedparseresult-maperrors.md): Maps a failed parse&#39;s errors to a domain or application error type, preserving the raw input and paths.
+- [`Schema.RetainedParseResult.renderErrors`](./m-schema-retainedparseresult-rendererrors.md): Renders a failed schema parse as default English display strings, preserving diagnostics paths.
 
 ## Errors
 

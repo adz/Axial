@@ -103,7 +103,7 @@ children, never override those children, so real layered `IConfiguration` output
 ## One Parse For All Of Them
 
 ```fsharp
-let parsed = Schema.parse customerSchema raw
+let parsed = Schema.parseRetainingInput customerSchema raw
 
 match parsed.Result with
 | Ok customer -> customer
@@ -131,7 +131,7 @@ RawInput raw = RawInputModule.ofDictionary(new Dictionary<string, string> { ["na
 // ofConfiguration's C# equivalent — takes the pairs IConfiguration.AsEnumerable() already returns:
 RawInput fromConfig = RawInputModule.ofConfigurationPairs(configuration.AsEnumerable());
 
-ParsedInput<Customer, SchemaError> parsed = Schema.parse(customerSchema, raw);
+RetainedParseResult<Customer, SchemaError> parsed = Schema.parseRetainingInput(customerSchema, raw);
 
 if (parsed.IsValid)
 {

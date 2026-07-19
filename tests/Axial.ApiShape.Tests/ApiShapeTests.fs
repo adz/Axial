@@ -417,9 +417,9 @@ module ApiShapeTests =
               "redisplayAt"
               "redisplayPath" ]
 
-        moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.ParsedInput"
+        moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.RetainedParseResult"
         |> publicStaticMemberNames
-        |> assertContainsAll [ "mapErrors" ]
+        |> assertContainsAll [ "create"; "mapErrors"; "renderErrors" ]
 
     [<Fact>]
     let ``codec compiles json codecs from schemas without extra package coupling`` () =

@@ -70,7 +70,7 @@ module ManySchemaParseTests =
                       "contacts", RawInput.Many [ validContact "email" "ada@example.com" ] ]
             )
 
-        let parsed = Schema.parse customerSchema raw
+        let parsed = Schema.parseRetainingInput customerSchema raw
 
         test <@ parsed.IsValid @>
         test <@ parsed.Value = { Name = "Ada"; Contacts = [ { Kind = "email"; Value = "ada@example.com" } ] } @>
@@ -79,7 +79,7 @@ module ManySchemaParseTests =
     let ``parse builds an empty collection from an empty collection-shaped raw input`` () =
         let raw = RawInput.Object(Map.ofList [ "name", RawInput.Scalar "Ada"; "contacts", RawInput.Many [] ])
 
-        let parsed = Schema.parse customerSchema raw
+        let parsed = Schema.parseRetainingInput customerSchema raw
 
         test <@ parsed.IsValid @>
         test <@ parsed.Value = { Name = "Ada"; Contacts = [] } @>
@@ -96,7 +96,7 @@ module ManySchemaParseTests =
                             validContact "phone" "+61 400 000 000" ] ]
             )
 
-        let parsed = Schema.parse constrainedCustomerSchema raw
+        let parsed = Schema.parseRetainingInput constrainedCustomerSchema raw
 
         test <@ parsed.IsValid @>
         test
@@ -112,7 +112,7 @@ module ManySchemaParseTests =
     let ``parse reports min count constraint failures at the collection field path`` () =
         let raw = RawInput.Object(Map.ofList [ "name", RawInput.Scalar "Ada"; "contacts", RawInput.Many [] ])
 
-        let parsed = Schema.parse constrainedCustomerSchema raw
+        let parsed = Schema.parseRetainingInput constrainedCustomerSchema raw
 
         test <@ not parsed.IsValid @>
         test
@@ -134,7 +134,7 @@ module ManySchemaParseTests =
                             validContact "sms" "+61 400 000 000" ] ]
             )
 
-        let parsed = Schema.parse constrainedCustomerSchema raw
+        let parsed = Schema.parseRetainingInput constrainedCustomerSchema raw
 
         test <@ not parsed.IsValid @>
         test
@@ -150,7 +150,7 @@ module ManySchemaParseTests =
                 Map.ofList [ "name", RawInput.Scalar "Ada"; "contacts", RawInput.Object(Map.ofList [ "kind", RawInput.Scalar "email" ]) ]
             )
 
-        let parsed = Schema.parse customerSchema raw
+        let parsed = Schema.parseRetainingInput customerSchema raw
 
         test <@ not parsed.IsValid @>
         test <@ parsed.Errors = [ { Path = [ PathSegment.Name "contacts" ]; Error = SchemaError.ExpectedMany } ] @>
@@ -160,7 +160,7 @@ module ManySchemaParseTests =
         let raw =
             RawInput.Object(Map.ofList [ "name", RawInput.Scalar "Ada"; "contacts", RawInput.Scalar "not-a-collection" ])
 
-        let parsed = Schema.parse customerSchema raw
+        let parsed = Schema.parseRetainingInput customerSchema raw
 
         test <@ not parsed.IsValid @>
         test <@ parsed.Errors = [ { Path = [ PathSegment.Name "contacts" ]; Error = SchemaError.ExpectedMany } ] @>
@@ -172,7 +172,7 @@ module ManySchemaParseTests =
                 Map.ofList [ "name", RawInput.Scalar "Ada"; "contacts", RawInput.Many [ RawInput.Scalar "not-an-object" ] ]
             )
 
-        let parsed = Schema.parse customerSchema raw
+        let parsed = Schema.parseRetainingInput customerSchema raw
 
         test <@ not parsed.IsValid @>
         test
@@ -191,7 +191,7 @@ module ManySchemaParseTests =
         let raw =
             RawInput.Object(Map.ofList [ "values", RawInput.Many [ RawInput.Scalar "fsharp"; RawInput.Scalar "typed-errors" ] ])
 
-        let parsed = Schema.parse schema raw
+        let parsed = Schema.parseRetainingInput schema raw
 
         test <@ parsed.Result = Ok { Values = [ "fsharp"; "typed-errors" ] } @>
 
@@ -205,7 +205,7 @@ module ManySchemaParseTests =
         let raw =
             RawInput.Object(Map.ofList [ "values", RawInput.Many [ RawInput.Scalar "fsharp"; RawInput.Scalar "   " ] ])
 
-        let parsed = Schema.parse schema raw
+        let parsed = Schema.parseRetainingInput schema raw
 
         test
             <@ parsed.Errors = [ { Path = [ PathSegment.Name "values"; PathSegment.Index 1 ]
@@ -223,7 +223,7 @@ module ManySchemaParseTests =
                             RawInput.Object(Map.ofList [ "kind", RawInput.Scalar "email"; "value", RawInput.Scalar "" ]) ] ]
             )
 
-        let parsed = Schema.parse customerSchema raw
+        let parsed = Schema.parseRetainingInput customerSchema raw
 
         test <@ not parsed.IsValid @>
 
@@ -250,7 +250,7 @@ module ManySchemaParseTests =
                             RawInput.Object(Map.ofList [ "kind", RawInput.Scalar "same"; "value", RawInput.Scalar "same" ]) ] ]
             )
 
-        let parsed = Schema.parse verifiedCustomerSchema raw
+        let parsed = Schema.parseRetainingInput verifiedCustomerSchema raw
 
         test <@ not parsed.IsValid @>
 
@@ -272,7 +272,7 @@ module ManySchemaParseTests =
                             RawInput.Object(Map.ofList [ "kind", RawInput.Scalar ""; "value", RawInput.Scalar "" ]) ] ]
             )
 
-        let parsed = Schema.parse customerSchema raw
+        let parsed = Schema.parseRetainingInput customerSchema raw
 
         test <@ not parsed.IsValid @>
 

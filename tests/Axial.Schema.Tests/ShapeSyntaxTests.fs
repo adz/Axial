@@ -40,7 +40,7 @@ module ShapeSyntaxTests =
                       "birthDate", "1815-12-10T00:00:00Z" ]
             )
 
-        match (Schema.parse personSchema input).Result with
+        match (Schema.parse personSchema input) with
         | Ok person ->
             test <@ person.FirstName = "Ada" @>
             test <@ person.LastName = "Lovelace" @>
@@ -57,7 +57,7 @@ module ShapeSyntaxTests =
                       "birthDate", "1815-12-10T00:00:00Z" ]
             )
 
-        match (Schema.parse personSchema input).Result with
+        match (Schema.parse personSchema input) with
         | Ok person -> failwithf "Expected a minLength diagnostic, parsed %A" person
         | Error errors ->
             let flattened = Diagnostics.flatten errors
@@ -97,7 +97,7 @@ module ShapeSyntaxTests =
     let ``constructResult admits values the constructor accepts`` () =
         let input = RawInput.ofMap (Map.ofList [ "low", "1"; "high", "5" ])
 
-        match (Schema.parse rangeSchema input).Result with
+        match (Schema.parse rangeSchema input) with
         | Ok range -> test <@ range.Bounds = (1, 5) @>
         | Error errors -> failwithf "Expected a parse, got %A" errors
 
@@ -105,7 +105,7 @@ module ShapeSyntaxTests =
     let ``constructResult reports constructor rejections as diagnostics`` () =
         let input = RawInput.ofMap (Map.ofList [ "low", "9"; "high", "5" ])
 
-        match (Schema.parse rangeSchema input).Result with
+        match (Schema.parse rangeSchema input) with
         | Ok range -> failwithf "Expected a constructor rejection, parsed %A" range
         | Error errors ->
             let flattened = Diagnostics.flatten errors
@@ -139,7 +139,7 @@ module ShapeSyntaxTests =
                 )
             )
 
-        match (Schema.parse taggedSchema input).Result with
+        match (Schema.parse taggedSchema input) with
         | Ok tagged ->
             test <@ tagged.Tags = [ "fsharp" ] @>
             test <@ tagged.Note = None @>
@@ -180,7 +180,7 @@ module ShapeSyntaxTests =
                 )
             )
 
-        match (Schema.parse schema input).Result with
+        match (Schema.parse schema input) with
         | Ok contactBook ->
             test <@ contactBook.Emails |> List.map _.Value = [ "ada@example.com" ] @>
             test <@ contactBook.Preferred = None @>
@@ -193,8 +193,8 @@ module ShapeSyntaxTests =
         let emailInput = RawInput.ofJsonLikeValue (JsonLikeValue.Array [ JsonLikeValue.String "ada@example.com" ])
         let contactInput = RawInput.ofJsonLikeValue (JsonLikeValue.Object(Map.ofList [ "primary", JsonLikeValue.String "ada@example.com" ]))
 
-        test <@ (Schema.parse emails emailInput).Result |> Result.isOk @>
-        test <@ (Schema.parse contacts contactInput).Result |> Result.isOk @>
+        test <@ (Schema.parse emails emailInput) |> Result.isOk @>
+        test <@ (Schema.parse contacts contactInput) |> Result.isOk @>
 
     [<Fact>]
     let ``nested constraints apply to list items and map values`` () =
@@ -203,8 +203,8 @@ module ShapeSyntaxTests =
         let nameInput = RawInput.ofJsonLikeValue (JsonLikeValue.Array [ JsonLikeValue.String "x" ])
         let labelInput = RawInput.ofJsonLikeValue (JsonLikeValue.Object(Map.ofList [ "short", JsonLikeValue.String "x" ]))
 
-        test <@ (Schema.parse names nameInput).Result |> Result.isError @>
-        test <@ (Schema.parse labels labelInput).Result |> Result.isError @>
+        test <@ (Schema.parse names nameInput) |> Result.isError @>
+        test <@ (Schema.parse labels labelInput) |> Result.isError @>
 
     // ---- Schema.admit: the trusted-construction boundary over a draft ----
 
@@ -246,7 +246,7 @@ module ShapeSyntaxTests =
                       "end", "2026-08-05T00:00:00Z" ]
             )
 
-        match (Schema.parse bookingSchema input).Result with
+        match (Schema.parse bookingSchema input) with
         | Ok booking -> test <@ booking.Nights = 4 @>
         | Error errors -> failwithf "Expected a parse, got %A" errors
 
@@ -259,7 +259,7 @@ module ShapeSyntaxTests =
                       "end", "2026-08-01T00:00:00Z" ]
             )
 
-        match (Schema.parse bookingSchema input).Result with
+        match (Schema.parse bookingSchema input) with
         | Ok booking -> failwithf "Expected an admission failure, parsed %A" booking
         | Error errors ->
             let flattened = Diagnostics.flatten errors
