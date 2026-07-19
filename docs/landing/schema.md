@@ -39,6 +39,7 @@ without checking it again.
 <a class="docs-home-cta" href="{{< relref "/schema/getting-started.md" >}}">Get started &gt;</a>
 <a class="docs-chip" href="{{< relref "/schema/getting-started.md" >}}">Getting started guide</a>
 <a class="docs-chip" href="{{< relref "/schema/overview-examples.md" >}}">Overview examples</a>
+<a class="docs-chip" href="{{< relref "/schema/reference-apps.md" >}}">Reference apps walkthrough</a>
 </div>
 </div>
 

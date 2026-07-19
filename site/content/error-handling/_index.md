@@ -51,6 +51,8 @@ path-aware diagnostics tree, rather than stopping at the first one — ships in 
 - [Validation](./validation/): accumulate sibling failures into a path-aware diagnostics tree, instead of stopping at
   the first one.
 - [Tutorials](./tutorials/): build a small validation flow end to end.
+- [Walkthrough: Registration Desk](./reference-app/): the introductory reference app — all four stages of this
+  section in one runnable program.
 
 ## Reference
 

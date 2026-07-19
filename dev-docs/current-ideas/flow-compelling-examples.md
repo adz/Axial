@@ -1,6 +1,8 @@
 # Compelling Flow Examples
 
-Status: IDEA — candidate scenarios for examples and comparative documentation.
+Status: IMPLEMENTED 2026-07-17 — all seven scenarios are built in `examples/Axial.Flow.Comparisons` with
+failure-path tests in `tests/Axial.Flow.Comparisons.Tests`, and documented in
+`docs/flow/comparisons/task-vs-flow-scenarios.md`. This file remains the design brief and generation rules.
 
 ## Purpose
 

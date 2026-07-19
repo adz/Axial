@@ -32,6 +32,7 @@ retry scheduling, resource scopes, and child fibers.
 <a class="docs-home-cta" href="{{< relref "/flow/tutorials/" >}}">Get started &gt;</a>
 <a class="docs-chip" href="{{< relref "/flow/getting-started.md" >}}">Getting started guide</a>
 <a class="docs-chip" href="{{< relref "/reference/flow/" >}}">Flow API</a>
+<a class="docs-chip" href="{{< relref "/flow/comparisons/task-vs-flow-scenarios.md" >}}">Task vs Flow, seven scenarios</a>
 </div>
 </div>
 
