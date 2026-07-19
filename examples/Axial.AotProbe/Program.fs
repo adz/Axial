@@ -123,10 +123,8 @@ module Rule =
 
     let whenNotBlank (error: 'error) (field: FormField<'root, string>) : Rule<'root, 'error> =
         fun root ->
-            let checkResult: Result<string, CheckFailure list> =
-                field.Get root |> present
-
-            checkResult
+            field.Get root
+            |> present
             |> Result.mapError (fun _ -> error)
             |> lift field.Path root
 
@@ -223,6 +221,29 @@ let probeSchemaPlan () =
 
     Schema.compilePlan (SummaryFactory<SchemaContact>()) schema
 
+let inline eraseCheckedValue check value =
+    check value |> Result.map (fun _ -> ())
+
+let probeTypeDirectedChecks () =
+    eraseCheckedValue Check.present "Ada" |> Assert.equal (Ok())
+    eraseCheckedValue Check.empty "" |> Assert.equal (Ok())
+    eraseCheckedValue Check.notEmpty "Ada" |> Assert.equal (Ok())
+    eraseCheckedValue Check.present (Some 1) |> Assert.equal (Ok())
+    eraseCheckedValue Check.empty (None: int option) |> Assert.equal (Ok())
+    eraseCheckedValue Check.notEmpty (Some 1) |> Assert.equal (Ok())
+    eraseCheckedValue Check.present (ValueSome 1) |> Assert.equal (Ok())
+    eraseCheckedValue Check.empty (ValueNone: int voption) |> Assert.equal (Ok())
+    eraseCheckedValue Check.notEmpty (ValueSome 1) |> Assert.equal (Ok())
+    eraseCheckedValue Check.present (System.Nullable 1) |> Assert.equal (Ok())
+    eraseCheckedValue Check.empty (System.Nullable<int>()) |> Assert.equal (Ok())
+    eraseCheckedValue Check.notEmpty (System.Nullable 1) |> Assert.equal (Ok())
+    eraseCheckedValue Check.present [ 1 ] |> Assert.equal (Ok())
+    eraseCheckedValue Check.empty ([]: int list) |> Assert.equal (Ok())
+    eraseCheckedValue Check.notEmpty [ 1 ] |> Assert.equal (Ok())
+    eraseCheckedValue Check.present [| 1 |] |> Assert.equal (Ok())
+    eraseCheckedValue Check.empty ([||]: int array) |> Assert.equal (Ok())
+    eraseCheckedValue Check.notEmpty [| 1 |] |> Assert.equal (Ok())
+
 let probe () =
     let user =
         {
@@ -267,6 +288,8 @@ let probe () =
             { Order = 0; ExternalName = "name" }
             { Order = 1; ExternalName = "age" }
         ]
+
+    probeTypeDirectedChecks ()
 
 [<EntryPoint>]
 let main _ =

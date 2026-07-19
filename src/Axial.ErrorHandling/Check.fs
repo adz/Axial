@@ -626,99 +626,71 @@ module Check =
     let moreThanOne (values: #seq<'value>) : Result<#seq<'value>, CheckFailure list> =
         Seq.moreThanOne values
 
-    // The 'result witness stays a genuinely free type parameter (not tied to ^value in its own signature): binding
-    // it to Result< ^value, CheckFailure list> directly at each Apply overload causes the F# compiler to resolve
-    // the SRTP constraint prematurely at Invoke's own definition, monomorphizing every caller to whichever overload
-    // was declared first. Leaving 'result free defers resolution correctly to each call site; overload selection is
-    // still driven purely by the concrete value type at that call site, so the box/cast is sound in practice even
-    // though 'result isn't statically tied to the chosen overload's real return type.
     [<System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>]
     type Present =
-        static member Apply(value: string, _: 'result, _: Present) : 'result =
-            String.present value |> box :?> 'result
+        static member inline Invoke(value: ^value) : Result<^value, CheckFailure list> =
+            let inline call (method: ^method, input: ^input, output: ^output) =
+                ((^method or ^input or ^output): (static member Apply: _ * _ * _ -> _) (input, output, method))
 
-        static member Apply(value: 'value option, _: 'result, _: Present) : 'result =
-            Option.present value |> box :?> 'result
-
-        static member Apply(value: 'value voption, _: 'result, _: Present) : 'result =
-            ValueOption.present value |> box :?> 'result
-
-        static member Apply(value: System.Nullable<'value>, _: 'result, _: Present) : 'result =
-            Nullable.present value |> box :?> 'result
-
-        static member Apply(value: 'value list, _: 'result, _: Present) : 'result =
-            Seq.notEmpty value |> box :?> 'result
-
-        static member Apply(value: 'value array, _: 'result, _: Present) : 'result =
-            Seq.notEmpty value |> box :?> 'result
-
-        static member inline Invoke(value: ^value) : 'result =
-            ((^value or Present): (static member Apply: ^value * 'result * Present -> 'result)
-                (value, Unchecked.defaultof<'result>, Unchecked.defaultof<Present>))
+            call (Unchecked.defaultof<Present>, value, Unchecked.defaultof<Result<^value, CheckFailure list>>)
 
     [<System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>]
     type Empty =
-        static member Apply(value: string, _: 'result, _: Empty) : 'result =
-            String.empty value |> box :?> 'result
+        static member inline Invoke(value: ^value) : Result<^value, CheckFailure list> =
+            let inline call (method: ^method, input: ^input, output: ^output) =
+                ((^method or ^input or ^output): (static member Apply: _ * _ * _ -> _) (input, output, method))
 
-        static member Apply(value: 'value option, _: 'result, _: Empty) : 'result =
-            Option.empty value |> box :?> 'result
-
-        static member Apply(value: 'value voption, _: 'result, _: Empty) : 'result =
-            ValueOption.empty value |> box :?> 'result
-
-        static member Apply(value: System.Nullable<'value>, _: 'result, _: Empty) : 'result =
-            Nullable.empty value |> box :?> 'result
-
-        static member Apply(value: 'value list, _: 'result, _: Empty) : 'result =
-            Seq.empty value |> box :?> 'result
-
-        static member Apply(value: 'value array, _: 'result, _: Empty) : 'result =
-            Seq.empty value |> box :?> 'result
-
-        static member inline Invoke(value: ^value) : 'result =
-            ((^value or Empty): (static member Apply: ^value * 'result * Empty -> 'result)
-                (value, Unchecked.defaultof<'result>, Unchecked.defaultof<Empty>))
+            call (Unchecked.defaultof<Empty>, value, Unchecked.defaultof<Result<^value, CheckFailure list>>)
 
     [<System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>]
     type NotEmpty =
-        static member Apply(value: string, _: 'result, _: NotEmpty) : 'result =
-            String.notEmpty value |> box :?> 'result
+        static member inline Invoke(value: ^value) : Result<^value, CheckFailure list> =
+            let inline call (method: ^method, input: ^input, output: ^output) =
+                ((^method or ^input or ^output): (static member Apply: _ * _ * _ -> _) (input, output, method))
 
-        static member Apply(value: 'value option, _: 'result, _: NotEmpty) : 'result =
-            Option.notEmpty value |> box :?> 'result
-
-        static member Apply(value: 'value voption, _: 'result, _: NotEmpty) : 'result =
-            ValueOption.notEmpty value |> box :?> 'result
-
-        static member Apply(value: System.Nullable<'value>, _: 'result, _: NotEmpty) : 'result =
-            Nullable.notEmpty value |> box :?> 'result
-
-        static member Apply(value: 'value list, _: 'result, _: NotEmpty) : 'result =
-            Seq.notEmpty value |> box :?> 'result
-
-        static member Apply(value: 'value array, _: 'result, _: NotEmpty) : 'result =
-            Seq.notEmpty value |> box :?> 'result
-
-        static member inline Invoke(value: ^value) : 'result =
-            ((^value or NotEmpty): (static member Apply: ^value * 'result * NotEmpty -> 'result)
-                (value, Unchecked.defaultof<'result>, Unchecked.defaultof<NotEmpty>))
+            call (Unchecked.defaultof<NotEmpty>, value, Unchecked.defaultof<Result<^value, CheckFailure list>>)
 
     /// <summary>Runs the type-directed presence check for an already parsed optional, nullable, text, or sequence-shaped value.</summary>
-    let inline present value : Result<'value, CheckFailure list> =
+    let inline present (value: ^value) : Result<^value, CheckFailure list> =
         Present.Invoke value
 
     /// <summary>
     /// Runs the type-directed empty check for an already parsed optional, nullable, text, or supported sequence-shaped value.
     /// </summary>
-    let inline empty value : Result<'value, CheckFailure list> =
+    let inline empty (value: ^value) : Result<^value, CheckFailure list> =
         Empty.Invoke value
 
     /// <summary>
     /// Runs the type-directed non-empty check for an already parsed optional, nullable, text, or supported sequence-shaped value.
     /// </summary>
-    let inline notEmpty value : Result<'value, CheckFailure list> =
+    let inline notEmpty (value: ^value) : Result<^value, CheckFailure list> =
         NotEmpty.Invoke value
+
+    // These overloads must remain after the inline facades. Otherwise F# visits the first concrete overload while
+    // compiling the facade and fixes the supposedly generic function to that overload's type.
+    type Present with
+        static member Apply(value: string, _: Result<string, CheckFailure list>, _: Present) = String.present value
+        static member Apply(value: 'value option, _: Result<'value option, CheckFailure list>, _: Present) = Option.present value
+        static member Apply(value: 'value voption, _: Result<'value voption, CheckFailure list>, _: Present) = ValueOption.present value
+        static member Apply(value: System.Nullable<'value>, _: Result<System.Nullable<'value>, CheckFailure list>, _: Present) = Nullable.present value
+        static member Apply(value: 'value list, _: Result<'value list, CheckFailure list>, _: Present) = Seq.notEmpty value
+        static member Apply(value: 'value array, _: Result<'value array, CheckFailure list>, _: Present) = Seq.notEmpty value
+
+    type Empty with
+        static member Apply(value: string, _: Result<string, CheckFailure list>, _: Empty) = String.empty value
+        static member Apply(value: 'value option, _: Result<'value option, CheckFailure list>, _: Empty) = Option.empty value
+        static member Apply(value: 'value voption, _: Result<'value voption, CheckFailure list>, _: Empty) = ValueOption.empty value
+        static member Apply(value: System.Nullable<'value>, _: Result<System.Nullable<'value>, CheckFailure list>, _: Empty) = Nullable.empty value
+        static member Apply(value: 'value list, _: Result<'value list, CheckFailure list>, _: Empty) = Seq.empty value
+        static member Apply(value: 'value array, _: Result<'value array, CheckFailure list>, _: Empty) = Seq.empty value
+
+    type NotEmpty with
+        static member Apply(value: string, _: Result<string, CheckFailure list>, _: NotEmpty) = String.notEmpty value
+        static member Apply(value: 'value option, _: Result<'value option, CheckFailure list>, _: NotEmpty) = Option.notEmpty value
+        static member Apply(value: 'value voption, _: Result<'value voption, CheckFailure list>, _: NotEmpty) = ValueOption.notEmpty value
+        static member Apply(value: System.Nullable<'value>, _: Result<System.Nullable<'value>, CheckFailure list>, _: NotEmpty) = Nullable.notEmpty value
+        static member Apply(value: 'value list, _: Result<'value list, CheckFailure list>, _: NotEmpty) = Seq.notEmpty value
+        static member Apply(value: 'value array, _: Result<'value array, CheckFailure list>, _: NotEmpty) = Seq.notEmpty value
 
     /// <summary>Returns a value check requiring equality with the supplied expected value.</summary>
     let equalTo (expected: 'value) : Check<'value> =
@@ -733,6 +705,11 @@ module Check =
             else fail (Custom(sprintf "notEqualTo:%O" unexpected))
 
     /// <summary>Combines checks conjunctively by running every check against the value and accumulating all failures. An empty list succeeds.</summary>
+    /// <remarks>
+    /// F# visits list elements from left to right. When the first check is a type-directed inline check such as
+    /// <c>Check.present</c>, declare the composed program's value type so the compiler can select its SRTP overload:
+    /// <c>let requiredName : Check&lt;string&gt; = Check.all [ Check.present; Check.lengthBetween 2 40 ]</c>.
+    /// </remarks>
     let all (checks: Check<'value> list) : Check<'value> =
         fun value ->
             let failures =
@@ -745,6 +722,10 @@ module Check =
             if List.isEmpty failures then Ok value else Error failures
 
     /// <summary>Combines checks disjunctively by running checks until one succeeds, or returns accumulated failures when every check fails. An empty list fails with no failures.</summary>
+    /// <remarks>
+    /// As with <c>Check.all</c>, declare the composed program's value type when its first list element is a
+    /// type-directed inline check; F# visits that first check before later elements can constrain its SRTP overload.
+    /// </remarks>
     let any (checks: Check<'value> list) : Check<'value> =
         fun value ->
             let rec loop failures remaining =

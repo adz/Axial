@@ -436,10 +436,8 @@ module CheckResultTests =
             assertSame Check.Seq.atLeastOne Check.atLeastOne [ seq []; seq [ 1 ]; nullValues ]
             assertSame Check.Seq.moreThanOne Check.moreThanOne [ seq [ 1 ]; seq [ 1; 2 ]; nullValues ]
 
-        // These facade comparisons bind the type-directed Check.present/empty/notEmpty side through an explicitly
-        // typed `let` first: calling the inline SRTP facade directly inside a quotation or an overloaded xUnit
-        // assertion leaves its free 'result witness unpinned, which the F# compiler then defaults incorrectly.
-        // An explicit `let` annotation resolves 'result before the value ever reaches the quotation/assertion.
+        // Quotations and overloaded assertions can obscure the concrete result type, so bind each facade result
+        // before comparing it with the direct type-specific implementation.
         [<Fact>]
         let ``Check top-level presence facade delegates to the String module`` () =
             let nullString: string = null
@@ -530,7 +528,9 @@ module CheckResultTests =
 
         [<Fact>]
         let ``Check composition accepts tightened top-level checks`` () =
-            let requiredName =
+            // F# visits check lists from left to right. Because the first check is an SRTP facade, the program type
+            // must be known here rather than inferred later from a call to requiredName.
+            let requiredName : Check<string> =
                 Check.all [ Check.present; Check.lengthBetween 2 40 ]
 
             test <@ requiredName "Ada" = Ok "Ada" @>
@@ -547,12 +547,54 @@ module CheckResultTests =
             test <@ shortCode "USA" = Ok "USA" @>
             test <@ shortCode "United States" = Error [ InvalidLength(ExactLength 2, Some 13); InvalidLength(ExactLength 3, Some 13) ] @>
 
-            let requiredDistinctIds =
+            let requiredDistinctIds : Check<int list> =
                 Check.all [ Check.notEmpty; Check.distinct; Check.maxCount 3 ]
 
             test <@ requiredDistinctIds [ 1; 2; 3 ] = Ok [ 1; 2; 3 ] @>
             test <@ requiredDistinctIds [] = Error [ InvalidCount(MinimumCount 1, Some 0) ] @>
             test <@ requiredDistinctIds [ 1; 2; 1; 3 ] = Error [ Duplicate; InvalidCount(MaximumCount 3, Some 4) ] @>
+
+        [<Fact>]
+        let ``Check all resolves every type-directed facade when the program type is declared`` () =
+            let stringPresent : Check<string> = Check.all [ Check.present ]
+            let stringEmpty : Check<string> = Check.all [ Check.empty ]
+            let stringNotEmpty : Check<string> = Check.all [ Check.notEmpty ]
+            let optionPresent : Check<int option> = Check.all [ Check.present ]
+            let optionEmpty : Check<int option> = Check.all [ Check.empty ]
+            let optionNotEmpty : Check<int option> = Check.all [ Check.notEmpty ]
+            let valueOptionPresent : Check<int voption> = Check.all [ Check.present ]
+            let valueOptionEmpty : Check<int voption> = Check.all [ Check.empty ]
+            let valueOptionNotEmpty : Check<int voption> = Check.all [ Check.notEmpty ]
+            let nullablePresent : Check<System.Nullable<int>> = Check.all [ Check.present ]
+            let nullableEmpty : Check<System.Nullable<int>> = Check.all [ Check.empty ]
+            let nullableNotEmpty : Check<System.Nullable<int>> = Check.all [ Check.notEmpty ]
+            let listPresent : Check<int list> = Check.all [ Check.present ]
+            let listEmpty : Check<int list> = Check.all [ Check.empty ]
+            let listNotEmpty : Check<int list> = Check.all [ Check.notEmpty ]
+            let arrayPresent : Check<int array> = Check.all [ Check.present ]
+            let arrayEmpty : Check<int array> = Check.all [ Check.empty ]
+            let arrayNotEmpty : Check<int array> = Check.all [ Check.notEmpty ]
+            let anyStringPresence : Check<string> = Check.any [ Check.present; Check.empty ]
+
+            test <@ stringPresent "Ada" = Ok "Ada" @>
+            test <@ stringEmpty "" = Ok "" @>
+            test <@ stringNotEmpty "Ada" = Ok "Ada" @>
+            test <@ optionPresent (Some 1) = Ok(Some 1) @>
+            test <@ optionEmpty None = Ok(None: int option) @>
+            test <@ optionNotEmpty (Some 1) = Ok(Some 1) @>
+            test <@ valueOptionPresent (ValueSome 1) = Ok(ValueSome 1) @>
+            test <@ valueOptionEmpty ValueNone = Ok(ValueNone: int voption) @>
+            test <@ valueOptionNotEmpty (ValueSome 1) = Ok(ValueSome 1) @>
+            test <@ nullablePresent (System.Nullable 1) = Ok(System.Nullable 1) @>
+            test <@ nullableEmpty (System.Nullable<int>()) = Ok(System.Nullable<int>()) @>
+            test <@ nullableNotEmpty (System.Nullable 1) = Ok(System.Nullable 1) @>
+            test <@ listPresent [ 1 ] = Ok [ 1 ] @>
+            test <@ listEmpty [] = Ok([]: int list) @>
+            test <@ listNotEmpty [ 1 ] = Ok [ 1 ] @>
+            test <@ arrayPresent [| 1 |] = Ok [| 1 |] @>
+            test <@ arrayEmpty [||] = Ok([||]: int array) @>
+            test <@ arrayNotEmpty [| 1 |] = Ok [| 1 |] @>
+            test <@ anyStringPresence "Ada" = Ok "Ada" @>
 
         [<Fact>]
         let ``Check Option exposes executable option value checks`` () =
@@ -618,6 +660,10 @@ module CheckResultTests =
             let nullString: string = null
             let nullValues: seq<int> = null
 
+            Assert.True(Predicate.present "Ada")
+            Assert.True(Predicate.empty "")
+            Assert.True(Predicate.notEmpty "Ada")
+
             test <@ (Some 1).IsPresent @>
             test <@ (None: int option).IsAbsent @>
             Assert.True(Predicate.present (Some 1))
@@ -635,6 +681,11 @@ module CheckResultTests =
             Assert.True(Predicate.present (System.Nullable 1))
             Assert.True(Predicate.empty (System.Nullable<int>()))
             Assert.True(Predicate.notEmpty (System.Nullable 1))
+
+            Assert.True(Predicate.empty ([]: int list))
+            Assert.True(Predicate.notEmpty [ 1 ])
+            Assert.True(Predicate.empty ([||]: int array))
+            Assert.True(Predicate.notEmpty [| 1 |])
 
             test <@ (Ok 1).IsOk @>
             test <@ (Error "missing").IsError @>

@@ -231,69 +231,27 @@ module Predicate =
 
     [<System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>]
     type Present =
-        static member Apply(value: string, _: 'result, _: Present) : 'result =
-            value.IsNotBlank |> box :?> 'result
+        static member inline Invoke(value: ^value) : bool =
+            let inline call (method: ^method, input: ^input, output: ^output) =
+                ((^method or ^input or ^output): (static member Apply: _ * _ * _ -> _) (input, output, method))
 
-        static member Apply(value: 'value option, _: 'result, _: Present) : 'result =
-            value.IsPresent |> box :?> 'result
-
-        static member Apply(value: 'value voption, _: 'result, _: Present) : 'result =
-            value.IsPresent |> box :?> 'result
-
-        static member Apply(value: System.Nullable<'value>, _: 'result, _: Present) : 'result =
-            value.IsPresent |> box :?> 'result
-
-        static member inline Invoke(value: ^value) : 'result =
-            ((^value or Present): (static member Apply: ^value * 'result * Present -> 'result)
-                (value, Unchecked.defaultof<'result>, Unchecked.defaultof<Present>))
+            call (Unchecked.defaultof<Present>, value, false)
 
     [<System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>]
     type Empty =
-        static member Apply(value: string, _: 'result, _: Empty) : 'result =
-            value.IsEmpty |> box :?> 'result
+        static member inline Invoke(value: ^value) : bool =
+            let inline call (method: ^method, input: ^input, output: ^output) =
+                ((^method or ^input or ^output): (static member Apply: _ * _ * _ -> _) (input, output, method))
 
-        static member Apply(value: 'value option, _: 'result, _: Empty) : 'result =
-            value.IsAbsent |> box :?> 'result
-
-        static member Apply(value: 'value voption, _: 'result, _: Empty) : 'result =
-            value.IsAbsent |> box :?> 'result
-
-        static member Apply(value: System.Nullable<'value>, _: 'result, _: Empty) : 'result =
-            value.IsAbsent |> box :?> 'result
-
-        static member Apply(value: 'value list, _: 'result, _: Empty) : 'result =
-            value.HasNoItems |> box :?> 'result
-
-        static member Apply(value: 'value array, _: 'result, _: Empty) : 'result =
-            value.HasNoItems |> box :?> 'result
-
-        static member inline Invoke(value: ^value) : 'result =
-            ((^value or Empty): (static member Apply: ^value * 'result * Empty -> 'result)
-                (value, Unchecked.defaultof<'result>, Unchecked.defaultof<Empty>))
+            call (Unchecked.defaultof<Empty>, value, false)
 
     [<System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>]
     type NotEmpty =
-        static member Apply(value: string, _: 'result, _: NotEmpty) : 'result =
-            value.IsNotEmpty |> box :?> 'result
+        static member inline Invoke(value: ^value) : bool =
+            let inline call (method: ^method, input: ^input, output: ^output) =
+                ((^method or ^input or ^output): (static member Apply: _ * _ * _ -> _) (input, output, method))
 
-        static member Apply(value: 'value option, _: 'result, _: NotEmpty) : 'result =
-            value.IsPresent |> box :?> 'result
-
-        static member Apply(value: 'value voption, _: 'result, _: NotEmpty) : 'result =
-            value.IsPresent |> box :?> 'result
-
-        static member Apply(value: System.Nullable<'value>, _: 'result, _: NotEmpty) : 'result =
-            value.IsPresent |> box :?> 'result
-
-        static member Apply(value: 'value list, _: 'result, _: NotEmpty) : 'result =
-            value.HasItems |> box :?> 'result
-
-        static member Apply(value: 'value array, _: 'result, _: NotEmpty) : 'result =
-            value.HasItems |> box :?> 'result
-
-        static member inline Invoke(value: ^value) : 'result =
-            ((^value or NotEmpty): (static member Apply: ^value * 'result * NotEmpty -> 'result)
-                (value, Unchecked.defaultof<'result>, Unchecked.defaultof<NotEmpty>))
+            call (Unchecked.defaultof<NotEmpty>, value, false)
 
     /// <summary>Runs the type-directed presence predicate for an already parsed optional, nullable, or text value.</summary>
     let inline present value : bool =
@@ -312,3 +270,26 @@ module Predicate =
     /// </summary>
     let inline notEmpty value : bool =
         NotEmpty.Invoke value
+
+    // Keep the overloads after the inline facades so F# preserves their SRTP constraints until each applied call.
+    type Present with
+        static member Apply(value: string, _: bool, _: Present) = value.IsNotBlank
+        static member Apply(value: 'value option, _: bool, _: Present) = value.IsPresent
+        static member Apply(value: 'value voption, _: bool, _: Present) = value.IsPresent
+        static member Apply(value: System.Nullable<'value>, _: bool, _: Present) = value.IsPresent
+
+    type Empty with
+        static member Apply(value: string, _: bool, _: Empty) = value.IsEmpty
+        static member Apply(value: 'value option, _: bool, _: Empty) = value.IsAbsent
+        static member Apply(value: 'value voption, _: bool, _: Empty) = value.IsAbsent
+        static member Apply(value: System.Nullable<'value>, _: bool, _: Empty) = value.IsAbsent
+        static member Apply(value: 'value list, _: bool, _: Empty) = value.HasNoItems
+        static member Apply(value: 'value array, _: bool, _: Empty) = value.HasNoItems
+
+    type NotEmpty with
+        static member Apply(value: string, _: bool, _: NotEmpty) = value.IsNotEmpty
+        static member Apply(value: 'value option, _: bool, _: NotEmpty) = value.IsPresent
+        static member Apply(value: 'value voption, _: bool, _: NotEmpty) = value.IsPresent
+        static member Apply(value: System.Nullable<'value>, _: bool, _: NotEmpty) = value.IsPresent
+        static member Apply(value: 'value list, _: bool, _: NotEmpty) = value.HasItems
+        static member Apply(value: 'value array, _: bool, _: NotEmpty) = value.HasItems
