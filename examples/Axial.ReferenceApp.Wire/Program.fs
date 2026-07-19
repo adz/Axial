@@ -1,5 +1,5 @@
 // The generated-wire reference slice: the same boundary discipline as Axial.ReferenceApp,
-// but the wire tier is generated from [<WireSchema>] records instead of hand-written.
+// but the wire tier is generated from [<DeriveSchema>] records instead of hand-written.
 //
 // wire/workspace.fs   — user-owned records with constraint attributes (you edit this)
 // wire/workspace.g.fs — schemas, parse/validate, Fields, and the contract builder (generated)

@@ -395,6 +395,7 @@ module Parser =
                                   Fields = List.ofSeq fields
                                   OwnsType = true
                                   ExternalTypeName = None
+                                  Constructor = None
                                   ContractLine = headerLine }
 
                             openContract <- None

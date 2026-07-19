@@ -1,7 +1,8 @@
 ---
-title: "Schema.Wire.MaxAttribute"
+title: "Schema.Derive.MaxAttribute"
 linkTitle: "MaxAttribute"
-weight: 1405
+weight: 1406
+type: docs
 ---
 
 Bounds the natural size of the field's type from above: text length, list count, or map count.

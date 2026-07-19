@@ -71,7 +71,7 @@ let overrides =
     Map.ofList [ "reference", Gen.constant (RawInput.Scalar "BK-42") ]
 
 let rawGenerator =
-    SchemaGen.rawWith overrides bookingWireSchema
+    SchemaGen.rawWith overrides bookingDeriveSchema
     |> Result.defaultWith (failwithf "%A")
 ```
 

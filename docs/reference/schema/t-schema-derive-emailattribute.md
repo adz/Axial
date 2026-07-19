@@ -1,7 +1,7 @@
 ---
-title: "Schema.Wire.EmailAttribute"
+title: "Schema.Derive.EmailAttribute"
 linkTitle: "EmailAttribute"
-weight: 1412
+weight: 1413
 ---
 
 Constrains a text field to the email format.

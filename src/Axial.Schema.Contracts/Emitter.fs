@@ -387,13 +387,17 @@ module Emitter =
                 |> List.map (fun field -> escapeIdent (camel field.FieldName))
                 |> fun names -> String.Join(" ", names)
 
-            line $"        Schema.recordFor<{contractTypeName}, _> (fun {parameters} ->"
+            match contract.Constructor with
+            | Some constructorName ->
+                line $"        Schema.recordFor<{contractTypeName}, _> (fun {parameters} -> {constructorName} {parameters})"
+            | None ->
+                line $"        Schema.recordFor<{contractTypeName}, _> (fun {parameters} ->"
 
-            contract.Fields
-            |> List.iteri (fun index field ->
-                let opener = if index = 0 then "{ " else "  "
-                let closer = if index = List.length contract.Fields - 1 then " })" else ""
-                line $"            {opener}{escapeIdent (fsFieldName field)} = {escapeIdent (camel field.FieldName)}{closer}")
+                contract.Fields
+                |> List.iteri (fun index field ->
+                    let opener = if index = 0 then "{ " else "  "
+                    let closer = if index = List.length contract.Fields - 1 then " })" else ""
+                    line $"            {opener}{escapeIdent (fsFieldName field)} = {escapeIdent (camel field.FieldName)}{closer}")
 
             for field in contract.Fields do
                 let wire = FieldDecl.wireName field

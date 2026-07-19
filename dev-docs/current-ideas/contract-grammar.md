@@ -50,7 +50,7 @@ Consequences for ideas raised in the same thread:
   are generated records by definition.
 - **MSBuild targets package: SHIPPED 2026-07-17** as `Axial.Schema.Contracts.Build` (targets-only package,
   Grpc.Tools-style: ships the published schemagen framework-dependent in `tools/`, a `BeforeTargets="CoreCompile"`
-  target over explicit `<AxialWireSchema>`/`<AxialContract>` items with timestamp `Inputs`/`Outputs`
+  target over explicit `<AxialDeriveSchema>`/`<AxialContract>` items with timestamp `Inputs`/`Outputs`
   incrementality). Checked-in emission stays the default so generated code remains reviewable, with the target
   keeping it fresh; `--check` remains for CI without the package.
 - **Record → schema generation for wire DTOs** (the reverse direction: you write the record, generation derives
@@ -134,7 +134,7 @@ named custom constraints (metadata + F#-supplied `Check`), cross-field logic sta
 
 ## Language Server
 
-SUPERSEDED 2026-07-17: with `[<WireSchema>]` records as the primary wire-tier declaration (see
+SUPERSEDED 2026-07-17: with `[<DeriveSchema>]` records as the primary wire-tier declaration (see
 `dev-docs/decisions/README.md`), the F# compiler and IDE tooling replace the LSP for the primary path —
 highlighting, rename, find-references, and hover come free. `.contract` is parked with no LSP investment; the
 plan below is kept for history in case the grammar is ever revived for non-F# consumers.

@@ -67,7 +67,7 @@ dotnet run --project examples/Axial.ReferenceApp/Axial.ReferenceApp.fsproj -- cr
 dotnet run --project examples/Axial.ReferenceApp/Axial.ReferenceApp.fsproj -- web --urls http://localhost:5080
 ```
 
-Generated-wire reference slice (`[<WireSchema>]` records, contract migration, head-version codec):
+Generated-wire reference slice (`[<DeriveSchema>]` records, contract migration, head-version codec):
 
 ```bash
 dotnet run --project examples/Axial.ReferenceApp.Wire/Axial.ReferenceApp.Wire.fsproj --nologo
@@ -153,7 +153,7 @@ form, a JSON API, and focused architecture tests. Its README also records the wr
 ## Generated-Wire Reference Slice
 
 The wire slice in [`examples/Axial.ReferenceApp.Wire`](./Axial.ReferenceApp.Wire/) dogfoods the contract
-generator: `[<WireSchema>]` records produce the schemas, parse functions, typed field references, and the
+generator: `[<DeriveSchema>]` records produce the schemas, parse functions, typed field references, and the
 versioned-contract builder, while the hand-written parts shrink to the v1 → v2 migration, a strict domain
 mapping, and a head-version codec write.
 

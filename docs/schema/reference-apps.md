@@ -16,7 +16,7 @@ runnable:
 2. `examples/Axial.ReferenceApp` — the workspace tracker: hand-written schemas, refined domain values, versioned
    contracts, contextual rules, codecs, and Flow use cases.
 3. `examples/Axial.ReferenceApp.Wire` — the same boundary discipline with the wire tier **generated** from
-   `[<WireSchema>]` records.
+   `[<DeriveSchema>]` records.
 
 ## The workspace tracker
 
@@ -71,12 +71,16 @@ The wire slice answers the question the hand-written tier leaves open: what does
 experience look like once wire schemas are generated? You own an ordinary record with constraint attributes:
 
 ```fsharp
-[<WireSchema>]
+[<DeriveSchema; SchemaConstructor "WorkspaceCard.create">]
 type WorkspaceCard =
     { [<Min 1; Max 60>] Name: string
-      [<Email; WireName "owner_email">] OwnerEmail: string
+      [<Email; SchemaName "owner_email">] OwnerEmail: string
       [<Default "private">] Visibility: Visibility
       [<Distinct>] Members: string list }
+
+    // Called by the generated schema instead of a record literal.
+    static member create name (ownerEmail: string) visibility members =
+        { Name = name; OwnerEmail = ownerEmail.ToLowerInvariant(); Visibility = visibility; Members = members }
 ```
 
 `schemagen` writes the sibling `workspace.g.fs`: the schema pipeline you would have written by hand, `parse` and

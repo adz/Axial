@@ -7,15 +7,15 @@ open FSharp.Compiler.Syntax
 open FSharp.Compiler.Text
 open FSharp.Compiler.Xml
 
-/// How field names and nullary union case names become wire names when no [<WireName>] override is present.
+/// How field names and nullary union case names become external names when no [<SchemaName>] override is present.
 [<RequireQualifiedAccess>]
-type WireNaming =
+type SchemaNaming =
     | CamelCase
     | SnakeCase
     | Verbatim
 
 /// <summary>The record frontend: parses F# source with the F# compiler's syntax tree (no type checking) and
-/// lowers <c>[&lt;WireSchema&gt;]</c>-marked records into the same <c>ContractDecl</c> AST the .contract
+/// lowers <c>[&lt;DeriveSchema&gt;]</c>-marked records into the same <c>ContractDecl</c> AST the .contract
 /// parser produces, so both entry points share the resolver and emitter. Attributes and literals are read
 /// from source text; nothing runs at runtime.</summary>
 [<RequireQualifiedAccess>]
@@ -25,11 +25,11 @@ module Records =
 
     let private wireName naming (name: string) =
         match naming with
-        | WireNaming.Verbatim -> name
-        | WireNaming.CamelCase ->
+        | SchemaNaming.Verbatim -> name
+        | SchemaNaming.CamelCase ->
             if name.Length = 0 then name
             else string (Char.ToLowerInvariant name.[0]) + name.Substring 1
-        | WireNaming.SnakeCase ->
+        | SchemaNaming.SnakeCase ->
             let builder = Text.StringBuilder()
 
             for index in 0 .. name.Length - 1 do
@@ -153,8 +153,8 @@ module Records =
                 fsName, 0 // resolved to latest+0 sentinel below
 
     /// <summary>Parses one F# source file and lowers its marked records. Returns a contract file whose
-    /// <c>Contracts</c> list is empty when the file declares no <c>[&lt;WireSchema&gt;]</c> records.</summary>
-    let parse (naming: WireNaming) (filePath: string) (sourceText: string) : Result<ContractFile, ContractDiagnostic list> =
+    /// <c>Contracts</c> list is empty when the file declares no <c>[&lt;DeriveSchema&gt;]</c> records.</summary>
+    let parse (naming: SchemaNaming) (filePath: string) (sourceText: string) : Result<ContractFile, ContractDiagnostic list> =
         let source = SourceText.ofString sourceText
         let parsingOptions = { FSharpParsingOptions.Default with SourceFiles = [| filePath |] }
 
@@ -180,15 +180,28 @@ module Records =
         // ---- walk the tree ----
 
         let mutable namespaceName: string option = None
-        let records = ResizeArray<SynAttribute * SynComponentInfo * SynField list * PreXmlDoc * int>()
+        let records = ResizeArray<SynAttribute * string option * SynComponentInfo * SynField list * PreXmlDoc * int>()
         let unions = Collections.Generic.Dictionary<string, UnionInfo>()
 
         let inspectTypeDefn (SynTypeDefn(componentInfo, typeRepr, _, _, range, _)) =
             let (SynComponentInfo(attributes, typeParams, _, longId, xmlDoc, _, accessibility, _)) = componentInfo
             let fsName = (List.last longId).idText
             let attrs = attributesOf attributes
-            let wireSchema = attrs |> List.tryFind (fun (name, _) -> name = "WireSchema") |> Option.map snd
-            let wireUnion = attrs |> List.tryPick (fun (name, attribute) -> if name = "WireUnion" then Some attribute else None)
+            let wireSchema = attrs |> List.tryFind (fun (name, _) -> name = "DeriveSchema") |> Option.map snd
+            let wireUnion = attrs |> List.tryPick (fun (name, attribute) -> if name = "DeriveUnion" then Some attribute else None)
+
+            let schemaConstructor =
+                attrs
+                |> List.tryPick (fun (name, attribute) -> if name = "SchemaConstructor" then Some attribute else None)
+                |> Option.bind (fun attribute ->
+                    match attributeArgs source attribute with
+                    | [ LString functionName ], _ -> Some functionName
+                    | _ ->
+                        report range.StartLine "[<SchemaConstructor>] takes one string literal: the function name as the generated code should reference it"
+                        None)
+
+            if schemaConstructor.IsSome && wireSchema.IsNone then
+                report range.StartLine $"[<SchemaConstructor>] on '{fsName}' needs [<DeriveSchema>] on the same record"
 
             match typeRepr with
             | SynTypeDefnRepr.Simple(SynTypeDefnSimpleRepr.Record(reprAccess, fields, _), _) ->
@@ -204,7 +217,7 @@ module Records =
                     match accessibility, reprAccess with
                     | Some _, _
                     | _, Some _ -> report range.StartLine $"wire DTO '{fsName}' must be public; wire records carry no invariants to protect"
-                    | None, None -> records.Add(attribute, componentInfo, fields, xmlDoc, range.StartLine)
+                    | None, None -> records.Add(attribute, schemaConstructor, componentInfo, fields, xmlDoc, range.StartLine)
             | SynTypeDefnRepr.Simple(SynTypeDefnSimpleRepr.Union(_, cases, _), _) ->
                 unions.[fsName] <-
                     { UnionFsName = fsName
@@ -219,17 +232,17 @@ module Records =
 
                 if wireSchema.IsSome then
                     report range.StartLine
-                        $"'{fsName}' is a union; [<WireSchema>] marks records — unions participate as field types (nullary cases as an enum, [<WireUnion>] for tagged payloads)"
+                        $"'{fsName}' is a union; [<DeriveSchema>] marks records — unions participate as field types (nullary cases as an enum, [<DeriveUnion>] for tagged payloads)"
             | _ ->
                 if wireSchema.IsSome then
-                    report range.StartLine $"[<WireSchema>] applies to record types; '{fsName}' is not a record"
+                    report range.StartLine $"[<DeriveSchema>] applies to record types; '{fsName}' is not a record"
 
         let rec inspectDecl nested (decl: SynModuleDecl) =
             match decl with
             | SynModuleDecl.Types(typeDefns, _) ->
                 if nested then
                     for SynTypeDefn(SynComponentInfo(attributes, _, _, longId, _, _, _, _), _, _, _, range, _) in typeDefns do
-                        if attributesOf attributes |> List.exists (fun (name, _) -> name = "WireSchema") then
+                        if attributesOf attributes |> List.exists (fun (name, _) -> name = "DeriveSchema") then
                             report range.StartLine
                                 $"wire DTO '{(List.last longId).idText}' must be declared at namespace level, not inside a module"
                 else
@@ -258,7 +271,7 @@ module Records =
                             match decl with
                             | SynModuleDecl.Types(typeDefns, _) ->
                                 for SynTypeDefn(SynComponentInfo(attributes, _, _, longId, _, _, _, _), _, _, _, typeRange, _) in typeDefns do
-                                    if attributesOf attributes |> List.exists (fun (name, _) -> name = "WireSchema") then
+                                    if attributesOf attributes |> List.exists (fun (name, _) -> name = "DeriveSchema") then
                                         report typeRange.StartLine
                                             $"wire DTO '{(List.last longId).idText}' is in namespace '{thisNamespace}', but this file's wire schemas generate into '{first}'; keep one namespace per wire file"
                             | _ -> ()
@@ -271,7 +284,7 @@ module Records =
                             | SynModuleDecl.Types(typeDefns, _) ->
                                 typeDefns
                                 |> List.exists (fun (SynTypeDefn(SynComponentInfo(attributes, _, _, _, _, _, _, _), _, _, _, _, _)) ->
-                                    attributesOf attributes |> List.exists (fun (name, _) -> name = "WireSchema"))
+                                    attributesOf attributes |> List.exists (fun (name, _) -> name = "DeriveSchema"))
                             | _ -> false)
 
                     if hasMarked then
@@ -281,11 +294,11 @@ module Records =
         // ---- pass 2: lower marked records in declaration order ----
 
         let markedNames =
-            records |> Seq.map (fun (_, SynComponentInfo(longId = longId), _, _, _) -> (List.last longId).idText) |> Set.ofSeq
+            records |> Seq.map (fun (_, _, SynComponentInfo(longId = longId), _, _, _) -> (List.last longId).idText) |> Set.ofSeq
 
         let chains =
             records
-            |> Seq.map (fun (attribute, SynComponentInfo(longId = longId), _, _, _) ->
+            |> Seq.map (fun (attribute, _, SynComponentInfo(longId = longId), _, _, _) ->
                 let fsName = (List.last longId).idText
                 fsName, chainOf source attribute fsName markedNames)
             |> Map.ofSeq
@@ -311,7 +324,7 @@ module Records =
             match Map.tryFind name resolvedChains with
             | Some(chain, version) -> Some { RefName = chain; RefVersion = version }
             | None ->
-                report line $"'{name}' is not a [<WireSchema>] record in this file; wire references stay within one file"
+                report line $"'{name}' is not a [<DeriveSchema>] record in this file; wire references stay within one file"
                 None
 
         let rec lowerType line (synType: SynType) : FieldType option =
@@ -375,7 +388,7 @@ module Records =
             let caseWireName (SynUnionCase(attributes = attributes)) fallback =
                 attributesOf attributes
                 |> List.tryPick (fun (name, attribute) ->
-                    if name = "WireName" then
+                    if name = "SchemaName" then
                         match attributeArgs source attribute with
                         | [ LString wire ], _ -> Some wire
                         | _ -> None
@@ -401,7 +414,7 @@ module Records =
                 Some(ExternalEnum(union.UnionFsName, cases))
             | None ->
                 report line
-                    $"union '{union.UnionFsName}' has payload cases; mark it [<WireUnion \"discriminator\">] with one marked-record payload per case, or make every case nullary for an enum"
+                    $"union '{union.UnionFsName}' has payload cases; mark it [<DeriveUnion \"discriminator\">] with one marked-record payload per case, or make every case nullary for an enum"
                 None
             | Some discriminator ->
                 let cases =
@@ -422,7 +435,7 @@ module Records =
                                   ExtLine = caseRange.StartLine })
                         | _ ->
                             report caseRange.StartLine
-                                $"case '{fsCase}' of wire union '{union.UnionFsName}' must carry exactly one [<WireSchema>] record payload"
+                                $"case '{fsCase}' of wire union '{union.UnionFsName}' must carry exactly one [<DeriveSchema>] record payload"
                             None)
 
                 Some(ExternalUnion(union.UnionFsName, discriminator, cases))
@@ -490,7 +503,7 @@ module Records =
                     let wireOverride =
                         attrs
                         |> List.tryPick (fun (name, attribute) ->
-                            if name = "WireName" then
+                            if name = "SchemaName" then
                                 match attributeArgs source attribute with
                                 | [ LString wire ], _ -> Some wire
                                 | _ -> None
@@ -514,7 +527,7 @@ module Records =
 
         let contracts =
             records
-            |> Seq.map (fun (_, SynComponentInfo(longId = longId), fields, xmlDoc, headerLine) ->
+            |> Seq.map (fun (_, schemaConstructor, SynComponentInfo(longId = longId), fields, xmlDoc, headerLine) ->
                 let fsName = (List.last longId).idText
                 let chain, version = Map.find fsName resolvedChains
 
@@ -525,6 +538,7 @@ module Records =
                   Fields = fields |> List.choose lowerField
                   OwnsType = false
                   ExternalTypeName = Some fsName
+                  Constructor = schemaConstructor
                   ContractLine = headerLine })
             |> List.ofSeq
 

@@ -1,7 +1,7 @@
 ---
-title: "Schema.Wire.PatternAttribute"
+title: "Schema.Derive.PatternAttribute"
 linkTitle: "PatternAttribute"
-weight: 1403
+weight: 1404
 ---
 
 Constrains a text field to the given regular expression.

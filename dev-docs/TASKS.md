@@ -29,8 +29,8 @@ the `Contract<'model>` versioning engine (`Contract.parse`/`Contract.parseVersio
 migrations), `Schema.defer` recursion with finite inspection and `$defs`-based JSON Schema output, the
 non-packable `Axial.Schema.Testing` FsCheck adapter (`SchemaGen`), (2026-07-16) multi-version `schemagen`
 generation with the user-facing `docs/schema/contracts.md` guide, and (2026-07-17) record-first wire schema
-generation (`[<WireSchema>]` records through an FCS syntax-only frontend into the shared AST/resolver/emitter,
-`Axial.Schema.Wire` attributes, `.contract` parked as the secondary declaration form).
+generation (`[<DeriveSchema>]` records through an FCS syntax-only frontend into the shared AST/resolver/emitter,
+`Axial.Schema.Derive` attributes, `.contract` parked as the secondary declaration form).
 
 ## Phase 30: Contracts milestone bundle (gated on Phase 28 + a real consumer)
 

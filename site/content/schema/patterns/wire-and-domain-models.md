@@ -16,19 +16,19 @@ Keep those jobs in separate types.
 
 ## Define a permissive wire record
 
-`[<WireSchema>]` marks a public, namespace-level record whose Axial schema is generated from its source declaration. The
+`[<DeriveSchema>]` marks a public, namespace-level record whose Axial schema is generated from its source declaration. The
 schema describes how input fields parse and which portable constraints apply.
 
 ```fsharp
 namespace MyApp.Contracts
 
-open Axial.Schema.Wire
+open Axial.Schema.Derive
 
-[<WireSchema>]
+[<DeriveSchema>]
 type BookingWire =
     { Start: DateOnly
       End: DateOnly
-      [<WireName "customer_note">]
+      [<SchemaName "customer_note">]
       Note: string option }
 ```
 
@@ -49,7 +49,7 @@ order.
 </ItemGroup>
 
 <ItemGroup>
-  <AxialWireSchema Include="Contracts/Booking.fs" />
+  <AxialDeriveSchema Include="Contracts/Booking.fs" />
   <Compile Include="Contracts/Booking.fs" />
   <Compile Include="Contracts/Booking.g.fs" />
 </ItemGroup>

@@ -1,7 +1,7 @@
 ---
-title: "Schema.Wire.GreaterThanAttribute"
+title: "Schema.Derive.GreaterThanAttribute"
 linkTitle: "GreaterThanAttribute"
-weight: 1407
+weight: 1408
 type: docs
 ---
 

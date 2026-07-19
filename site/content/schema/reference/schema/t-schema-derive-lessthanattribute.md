@@ -1,7 +1,7 @@
 ---
-title: "Schema.Wire.LessThanAttribute"
+title: "Schema.Derive.LessThanAttribute"
 linkTitle: "LessThanAttribute"
-weight: 1409
+weight: 1410
 type: docs
 ---
 

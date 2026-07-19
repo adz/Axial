@@ -21,7 +21,7 @@ module EmitterGoldenTests =
             if name.EndsWith ".contract" then
                 Parser.parse path (File.ReadAllText path)
             else
-                Records.parse WireNaming.CamelCase path (File.ReadAllText path)
+                Records.parse SchemaNaming.CamelCase path (File.ReadAllText path)
 
         match result with
         | Ok file -> file
@@ -75,3 +75,25 @@ contract Kw.v1 {
         test <@ emitted.Contains "let ``type`` : FieldRef<Kw, string>" @>
         test <@ emitted.Contains "Type: string" @>
         test <@ emitted.Contains "Method: int" @>
+
+    [<Fact>]
+    let ``a schema constructor replaces the record literal in recordFor`` () =
+        let parsed =
+            match
+                Records.parse SchemaNaming.CamelCase "wire.fs"
+                    """
+namespace My.Wire
+
+open Axial.Schema.Derive
+
+[<DeriveSchema; SchemaConstructor "Order.create">]
+type Order = { Sku: string; Quantity: int }
+"""
+            with
+            | Ok file -> file
+            | Error diagnostics -> failwithf "Expected a clean parse, got %A" diagnostics
+
+        let emitted = Emitter.emit "Ns" [ parsed ] parsed
+
+        test <@ emitted.Contains "Schema.recordFor<Order, _> (fun sku quantity -> Order.create sku quantity)" @>
+        test <@ not (emitted.Contains "{ Sku = sku") @>

@@ -20,7 +20,7 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 
 ## 2026-07-17: Records are the primary wire-tier declaration; .contract is parked
 
-- `[<WireSchema>]`-marked plain F# records are the primary way to declare the wire tier. The generator derives
+- `[<DeriveSchema>]`-marked plain F# records are the primary way to declare the wire tier. The generator derives
   the permissive schema from the record through an FCS syntax-only frontend into the same AST, resolver, and
   emitter as `.contract` files, emitting a schema module only — the F# compiler catches record/schema drift.
 - `.contract` files stay shipped and compiling but receive no further investment: no LSP, no new grammar

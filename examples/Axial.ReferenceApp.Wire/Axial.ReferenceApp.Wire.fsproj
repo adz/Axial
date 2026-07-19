@@ -5,7 +5,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <!--
       Package consumers reference Axial.Schema.Contracts.Build (PrivateAssets="all") and the same
-      AxialWireSchema items; generation then runs before compile. Inside this repository the generator
+      AxialDeriveSchema items; generation then runs before compile. Inside this repository the generator
       is the scripts/schemagen project, so regenerate by hand after editing wire/workspace.fs:
 
         dotnet run \-\-project scripts/schemagen \-\- examples/Axial.ReferenceApp.Wire/wire
@@ -13,7 +13,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <AxialWireSchema Include="wire/workspace.fs" />
+    <AxialDeriveSchema Include="wire/workspace.fs" />
     <Compile Include="wire/workspace.fs" />
     <Compile Include="wire/workspace.g.fs" />
     <Compile Include="Program.fs" />

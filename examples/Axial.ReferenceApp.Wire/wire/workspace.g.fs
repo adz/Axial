@@ -48,11 +48,7 @@ module WorkspaceCard =
 
     /// The schema declared by workspace.fs (WorkspaceCard.v2).
     let schema : Schema<WorkspaceCard> =
-        Schema.recordFor<WorkspaceCard, _> (fun name ownerEmail visibility members ->
-            { Name = name
-              OwnerEmail = ownerEmail
-              Visibility = visibility
-              Members = members })
+        Schema.recordFor<WorkspaceCard, _> (fun name ownerEmail visibility members -> WorkspaceCard.create name ownerEmail visibility members)
         |> Schema.field "name" _.Name (Schema.text |> Schema.constrainAll [ Constraint.minLength (1); Constraint.maxLength (60) ] |> Schema.describe "Display name of the workspace.")
         |> Schema.field "owner_email" _.OwnerEmail (Schema.text |> Schema.constrainAll [ Constraint.email ])
         |> Schema.field "visibility" _.Visibility (Schema.enum visibilityCases |> Schema.withDefault Visibility.Private)

@@ -1,7 +1,7 @@
 ---
 weight: 65
 title: Versioned Contracts
-description: Permissive wire schemas mapped to strict domain types, explicit versioning when the wire evolves, and schema generation from your own [<WireSchema>] records.
+description: Permissive wire schemas mapped to strict domain types, explicit versioning when the wire evolves, and schema generation from your own [<DeriveSchema>] records.
 type: docs
 ---
 
@@ -11,7 +11,7 @@ Stored configuration, queued messages, and saved events keep the shape they had 
 domain model is neither shaped by a wire format nor frozen in time. The pattern is: a permissive **wire schema**
 per format, a strict **domain schema**, an ordinary mapping function between them, and the `Contract<'model>`
 engine when the wire needs versioning. When wire schemas multiply, you stop hand-writing them: mark your DTO
-record with `[<WireSchema>]` and `schemagen` derives the schema from it.
+record with `[<DeriveSchema>]` and `schemagen` derives the schema from it.
 
 Generated contract types remain wire types. Keep them public and easy to serialize. Map them into private or refined
 domain types before business code relies on their values.
@@ -120,9 +120,9 @@ mechanical work. That mechanical part is generated — from the record you would
 // wire/orders.fs — ordinary user-owned F#
 namespace MyApp.Wire
 
-open Axial.Schema.Wire
+open Axial.Schema.Derive
 
-[<WireSchema>]
+[<DeriveSchema>]
 type OrderWire =
     { /// Stock keeping unit.
       [<Pattern @"^[A-Z]{3}-\d+$">]
@@ -134,32 +134,32 @@ type OrderWire =
 
 Running `schemagen` over the file writes a checked-in sibling `orders.g.fs` containing the module you would have
 written by hand: `OrderWire.schema`, `OrderWire.parse`, `OrderWire.validate`, and typed `OrderWire.Fields`
-references. You own the record; the schema is derived. A bare `[<WireSchema>]` record with no other attributes is
+references. You own the record; the schema is derived. A bare `[<DeriveSchema>]` record with no other attributes is
 the everyday case — a shape-only permissive schema, exactly the ceremony of a `System.Text.Json` DTO.
 
 The details:
 
 - **Constraints are opt-in attributes** mirroring the schema constraint vocabulary: `Pattern`, `Min`/`Max` (text
   length, list/map count), `AtLeast`/`GreaterThan`/`AtMost`/`LessThan`/`MultipleOf`, `Distinct`, `Email`, and
-  `Default` (schema metadata, surfaced in generated JSON Schema). `[<WireName "customer_note">]` overrides one
-  wire name; otherwise fields are camelCased (`--wire-naming snake` switches the policy per run).
+  `Default` (schema metadata, surfaced in generated JSON Schema). `[<SchemaName "customer_note">]` overrides one
+  wire name; otherwise fields are camelCased (`--naming snake` switches the policy per run).
 - **The compiler is the drift detector.** The generated module constructs your record by name — rename, add, or
   remove a field without regenerating and the stale `.g.fs` fails to compile, pointing at the exact field.
 - **The type vocabulary is the wire vocabulary**: `string`, `int`, `decimal`, `bool`, `DateOnly`,
-  `DateTimeOffset`, `Guid`, `option`, `list`, `Map<string, _>`, references to other `[<WireSchema>]` records in
-  the same file, nullary unions (an enum: case names become wire tags), and `[<WireUnion "kind">]` unions whose
+  `DateTimeOffset`, `Guid`, `option`, `list`, `Map<string, _>`, references to other `[<DeriveSchema>]` records in
+  the same file, nullary unions (an enum: case names become wire tags), and `[<DeriveUnion "kind">]` unions whose
   cases each carry one marked record payload (an internally tagged union). Anything else — `float`, tuples,
   arrays, generics — is a generation-time error with guidance.
 - **Version chains use the same naming convention the generator emits**: `ProfileV1`, `ProfileV2` are frozen
   superseded versions, the bare `Profile` is current, and the current module gains a `contract` builder taking
-  your migrations as typed parameters. `[<WireSchema(Chain = "Profile", Version = 1)>]` overrides the convention
+  your migrations as typed parameters. `[<DeriveSchema(Chain = "Profile", Version = 1)>]` overrides the convention
   when a name doesn't fit it.
 
   ```fsharp
-  [<WireSchema>]
+  [<DeriveSchema>]
   type ProfileV1 = { Name: string }          // frozen v1 wire shape
 
-  [<WireSchema>]
+  [<DeriveSchema>]
   type Profile = { Name: string; Email: string }  // current (v2)
 
   // Generated: Profile.contract takes the v1 -> v2 migration and the VersionSource.
@@ -168,6 +168,12 @@ The details:
           (fun v1 -> Ok { Name = v1.Name; Email = "" })
           (VersionSource.Field "schemaVersion")
   ```
+- **A custom constructor replaces the record literal** when you want to normalise values on the way in.
+  `[<SchemaConstructor "OrderWire.create">]` on the record makes the generated schema call that function —
+  fields in declaration order, returning the record type — instead of assembling a record literal. Declare it
+  as a static member on the record (`static member create sku quantity = ...`): the generated module takes the
+  record's name, so a user module of the same name would not compile. The name is emitted verbatim into the
+  generated code.
 - **Doc comments carry through** to the schema, generated JSON Schema, and XML docs.
 - **Nothing runs at runtime.** Attributes are inert metadata read from source text at generation time — no
   reflection, and the generated output is ordinary schema code, so Fable and NativeAOT/trimming support are
@@ -229,13 +235,13 @@ and unchanged files cost nothing on rebuild (the target is timestamp-incremental
 </ItemGroup>
 
 <ItemGroup>
-  <AxialWireSchema Include="wire/orders.fs" />
+  <AxialDeriveSchema Include="wire/orders.fs" />
   <Compile Include="wire/orders.fs" />
   <Compile Include="wire/orders.g.fs" />
 </ItemGroup>
 ```
 
-`AxialWireNaming` (camel | snake | verbatim) sets the naming policy, `AxialSchemaGenEnabled=false` skips
+`AxialSchemaNaming` (camel | snake | verbatim) sets the naming policy, `AxialSchemaGenEnabled=false` skips
 generation, and `.contract` files ride along as `<AxialContract>` items with `AxialContractNamespace`.
 
 The same generator is also a plain CLI for repository development and one-off generation:

@@ -4,17 +4,17 @@ open System
 open System.IO
 open Axial.Schema.Contracts
 
-/// axial schemagen: generates checked-in F# from .contract files and [<WireSchema>]-marked records.
+/// axial schemagen: generates checked-in F# from .contract files and [<DeriveSchema>]-marked records.
 ///
 /// Usage:
-///   schemagen [--namespace <ns>] [--wire-naming camel|snake|verbatim] [--check] <file-or-directory>...
+///   schemagen [--namespace <ns>] [--naming camel|snake|verbatim] [--check] <file-or-directory>...
 ///
 /// Each x.contract emits a sibling x.g.fs into the namespace given by --namespace (required for .contract
-/// inputs). Each .fs file containing [<WireSchema>] records emits a sibling x.g.fs into the source file's
+/// inputs). Each .fs file containing [<DeriveSchema>] records emits a sibling x.g.fs into the source file's
 /// own namespace; .fs files without marked records are skipped. With --check, no files are written; the
 /// tool exits with code 2 if any generated file is missing or differs from what would be emitted.
 let private usage () =
-    eprintfn "usage: schemagen [--namespace <ns>] [--wire-naming camel|snake|verbatim] [--check] <file-or-directory>..."
+    eprintfn "usage: schemagen [--namespace <ns>] [--naming camel|snake|verbatim] [--check] <file-or-directory>..."
     1
 
 let private collectInputFiles (paths: string list) =
@@ -35,7 +35,7 @@ let private collectInputFiles (paths: string list) =
 [<EntryPoint>]
 let main argv =
     let mutable namespaceName = None
-    let mutable naming = WireNaming.CamelCase
+    let mutable naming = SchemaNaming.CamelCase
     let mutable check = false
     let mutable paths = []
     let mutable badArgs = false
@@ -46,13 +46,13 @@ let main argv =
         | "--namespace" :: value :: rest ->
             namespaceName <- Some value
             parseArgs rest
-        | "--wire-naming" :: value :: rest ->
+        | "--naming" :: value :: rest ->
             match value with
-            | "camel" -> naming <- WireNaming.CamelCase
-            | "snake" -> naming <- WireNaming.SnakeCase
-            | "verbatim" -> naming <- WireNaming.Verbatim
+            | "camel" -> naming <- SchemaNaming.CamelCase
+            | "snake" -> naming <- SchemaNaming.SnakeCase
+            | "verbatim" -> naming <- SchemaNaming.Verbatim
             | other ->
-                eprintfn $"unknown wire naming '{other}' (expected camel, snake, or verbatim)"
+                eprintfn $"unknown naming '{other}' (expected camel, snake, or verbatim)"
                 badArgs <- true
 
             parseArgs rest

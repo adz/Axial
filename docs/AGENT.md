@@ -45,8 +45,8 @@ Treat raw, wire, and draft records as untrusted shapes. Pass private refined val
 code when later callers must rely on an invariant. Expose named domain transitions instead of generating record-copy
 updates against private aggregates. See [Recommended Patterns]({{< relref "/schema/patterns/" >}}).
 
-`[<WireSchema>]` belongs on public, namespace-level wire records. The `Axial.Schema.Contracts.Build` package generates
-their `.g.fs` siblings before compile from `<AxialWireSchema>` items. Map the generated wire value into a hand-written
+`[<DeriveSchema>]` belongs on public, namespace-level wire records. The `Axial.Schema.Contracts.Build` package generates
+their `.g.fs` siblings before compile from `<AxialDeriveSchema>` items. Map the generated wire value into a hand-written
 domain type through the domain constructor; do not use generated wire records as invariant-bearing domain types.
 
 For larger applications, keep Contracts, Domain, Application, Infrastructure, and Host dependencies one-way. Resolve
@@ -203,7 +203,7 @@ Translate common patterns from other libraries into idiomatic Axial.
 | editable schema field | `FieldRef` with `Get` and immutable `Set`, followed by `Schema.check` when trust is required |
 | `with` update on a private-representation aggregate | lower to its public draft record, edit with `with`, re-admit through the aggregate's `create` |
 | versioned wire input | `Contract.parse` with an explicit `VersionSource` and typed migrations |
-| hand-written schema for a plain wire DTO | `[<WireSchema>]` on the record; `schemagen` (or the `Axial.Schema.Contracts.Build` package) derives `schema`/`parse`/`validate`/`Fields` |
+| hand-written schema for a plain wire DTO | `[<DeriveSchema>]` on the record; `schemagen` (or the `Axial.Schema.Contracts.Build` package) derives `schema`/`parse`/`validate`/`Fields` |
 | cross-field invariant used throughout the app | private aggregate + public draft + fallible constructor; use an `.fsi` file for an opaque interface |
 | update to an invariant-bearing aggregate | named transition returning `Result` when the update can be refused |
 | wire DTO entering business code | explicit wire-to-domain mapping through the domain constructor |

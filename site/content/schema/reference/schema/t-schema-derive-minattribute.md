@@ -1,7 +1,7 @@
 ---
-title: "Schema.Wire.MinAttribute"
+title: "Schema.Derive.MinAttribute"
 linkTitle: "MinAttribute"
-weight: 1404
+weight: 1405
 type: docs
 ---
 

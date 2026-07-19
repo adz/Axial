@@ -1,8 +1,7 @@
 ---
-title: "Schema.Wire.DistinctAttribute"
+title: "Schema.Derive.DistinctAttribute"
 linkTitle: "DistinctAttribute"
-weight: 1411
-type: docs
+weight: 1412
 ---
 
 Requires the elements of a list field to be distinct.

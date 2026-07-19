@@ -100,6 +100,9 @@ type ContractDecl =
       Fields: FieldDecl list
       OwnsType: bool
       ExternalTypeName: string option
+      /// A user function the schema calls to assemble the record instead of a record literal
+      /// ([<SchemaConstructor>]; record frontend only, .contract files leave it None).
+      Constructor: string option
       ContractLine: int }
 
 /// <summary>A parsed contract source file. <c>Namespace</c> is set by the record frontend from the source

@@ -1,17 +1,17 @@
 namespace Axial.Tests.Generated
 
-open Axial.Schema.Wire
+open Axial.Schema.Derive
 
 /// A named pickup location.
-[<WireSchema>]
+[<DeriveSchema>]
 type PickupPoint = { Code: string }
 
 /// A courier delivery with tracking.
-[<WireSchema>]
+[<DeriveSchema>]
 type CourierDelivery = { TrackingUrl: string }
 
 /// How a shipment reaches the customer.
-[<WireUnion "kind">]
+[<DeriveUnion "kind">]
 type DeliveryMethod =
     | Pickup of PickupPoint
     | Courier of CourierDelivery
@@ -20,10 +20,10 @@ type DeliveryMethod =
 type ShipmentPriority =
     | Standard
     | Express
-    | [<WireName "same-day">] SameDay
+    | [<SchemaName "same-day">] SameDay
 
 /// A shipment as first stored.
-[<WireSchema>]
+[<DeriveSchema>]
 type ShipmentV1 =
     { /// Public shipment reference.
       [<Pattern "^SH-[0-9]+$">]
@@ -33,12 +33,12 @@ type ShipmentV1 =
       Items: Map<string, int> }
 
 /// A shipment with delivery method, priority, and weight.
-[<WireSchema>]
+[<DeriveSchema>]
 type Shipment =
     { /// Public shipment reference.
       [<Pattern "^SH-[0-9]+$">]
       Reference: string
-      [<Email; WireName "notify_email">]
+      [<Email; SchemaName "notify_email">]
       NotifyEmail: string
       Items: Map<string, int>
       [<Min 1; Distinct>]

@@ -1,7 +1,8 @@
 ---
-title: "Schema.Wire.MultipleOfAttribute"
+title: "Schema.Derive.MultipleOfAttribute"
 linkTitle: "MultipleOfAttribute"
-weight: 1410
+weight: 1411
+type: docs
 ---
 
 Constrains a numeric field's value to whole multiples of the given step.

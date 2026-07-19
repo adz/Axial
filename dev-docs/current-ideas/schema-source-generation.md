@@ -1,7 +1,7 @@
 # Record → Schema Generation for Wire DTOs
 
-Status: SHIPPED 2026-07-17 as designed below (`Axial.Schema.Wire` attributes, `Records` FCS frontend in
-`Axial.Schema.Contracts`, schemagen `.fs` inputs with `--wire-naming`, `shipment.fs` golden corpus + behavior
+Status: SHIPPED 2026-07-17 as designed below (`Axial.Schema.Derive` attributes, `Records` FCS frontend in
+`Axial.Schema.Contracts`, schemagen `.fs` inputs with `--naming`, `shipment.fs` golden corpus + behavior
 tests, `docs/schema/contracts.md` leads with records; MSBuild integration shipped the same day as
 `Axial.Schema.Contracts.Build` — see `contract-grammar.md`). Deviations from the design: none of substance;
 defaults are schema metadata (not parse-time fill), matching the `.contract` path. Supersedes the earlier
@@ -31,20 +31,20 @@ module**, targeting the user's type — so the F# compiler is the drift detector
 // wire/orders.fs — ordinary user-owned F#
 namespace MyApp.Wire
 
-open Axial.Schema.Wire
+open Axial.Schema.Derive
 
-[<WireSchema>]
+[<DeriveSchema>]
 type OrderWire =
     { /// Stock keeping unit.
       [<Pattern @"^[A-Z]{3}-\d+$">]
       Sku: string
       [<AtLeast 1>]
       Quantity: int
-      [<WireName "customer_note">]
+      [<SchemaName "customer_note">]
       Note: string option }
 ```
 
-A bare `[<WireSchema>]` record with no other annotations is fully valid and generates a shape-only permissive
+A bare `[<DeriveSchema>]` record with no other annotations is fully valid and generates a shape-only permissive
 schema — the STJ-familiar zero-ceremony case. Annotations are opt-in refinements.
 
 Resolved decisions:
@@ -55,18 +55,18 @@ Resolved decisions:
   only — the zero-expression rule in F#-hosted form), and frozen superseded versions keep their own attributed
   records, so version-freezing works.
 - **Attribute vocabulary mirrors the `.contract` constraint grammar one-to-one**, nothing more:
-  `WireSchema` (marker; optional named args below), `WireName` (per-field wire-name override), `Pattern`, `Min` /
+  `DeriveSchema` (marker; optional named args below), `SchemaName` (per-field wire-name override), `Pattern`, `Min` /
   `Max` (size of text/list/map), `AtLeast` / `GreaterThan` / `AtMost` / `LessThan` / `MultipleOf` (numeric value),
   `Distinct`, `Email`, `Default`. New constraint ideas go into the grammar AST first and both frontends pick them
   up — never attribute-only features.
-- **Attributes live in `Axial.Schema` under the `Axial.Schema.Wire` namespace.** Inert attribute classes, zero
+- **Attributes live in `Axial.Schema` under the `Axial.Schema.Derive` namespace.** Inert attribute classes, zero
   dependencies, Fable-safe metadata; no new package. They are read at generation time from *source text*, never
   by runtime reflection, which keeps Requirement 4 intact and sidesteps attribute constant limits (a
   `[<AtLeast 0.5>]` on a decimal field is read as the literal source text and parsed as decimal exactly).
 - **Doc comments**: `///` on the record and fields flow to `Schema.describe` exactly as contract doc comments do.
 - **Wire names**: default is the camelCased field name (`MarketingOptIn` → `marketingOptIn`), matching STJ's
-  default and matching what `.contract` authors write by hand; a `--wire-naming` CLI option sets the policy per
-  generation run, `[<WireName>]` overrides per field. Not resolved by reading STJ's `JsonPropertyName` — owning
+  default and matching what `.contract` authors write by hand; a `--naming` CLI option sets the policy per
+  generation run, `[<SchemaName>]` overrides per field. Not resolved by reading STJ's `JsonPropertyName` — owning
   the vocabulary avoids coupling to another library's semantics (noted as a possible future adoption bridge,
   deliberately not v1).
 
@@ -83,9 +83,9 @@ guidance:
 | `'t option` | optional field (one absence axis, same rules: no defaults on optionals) |
 | `'t list` | `list T` |
 | `Map<string, 't>` | `map T` |
-| another `[<WireSchema>]` record | contract reference (self-reference ⇒ `Schema.defer`) |
-| nullary-case DU | literal union / enum (wire tags = camelCased case names, `WireName` on cases overrides) |
-| DU marked `[<WireUnion "kind">]`, all cases carrying one marked-record payload | internally tagged union |
+| another `[<DeriveSchema>]` record | contract reference (self-reference ⇒ `Schema.defer`) |
+| nullary-case DU | literal union / enum (wire tags = camelCased case names, `SchemaName` on cases overrides) |
+| DU marked `[<DeriveUnion "kind">]`, all cases carrying one marked-record payload | internally tagged union |
 
 Rejected with diagnostics: `float`/`float32` (wire numbers are `decimal` in this vocabulary), `int64`, arrays,
 tuples, anonymous records, generic records, private representations (wire DTOs are public by definition — this
@@ -96,9 +96,9 @@ members and interface implementations; the generator reads fields only. Struct r
 
 The emitter's own multi-version output convention is the input convention, so the two directions are symmetric:
 `ProfileV1`, `ProfileV2`, … are frozen superseded versions and the bare `Profile` is current. All must carry
-`[<WireSchema>]`, live in one file, and be contiguous — the existing resolver rules apply unchanged because the
+`[<DeriveSchema>]`, live in one file, and be contiguous — the existing resolver rules apply unchanged because the
 frontend lowers each record to a versioned `ContractDecl` (`XxxVn` ⇒ version n of chain `Xxx`; a bare marked
-record with no `Vn` siblings is simply version 1 of itself). `[<WireSchema(Chain = "Profile", Version = 2)>]`
+record with no `Vn` siblings is simply version 1 of itself). `[<DeriveSchema(Chain = "Profile", Version = 2)>]`
 overrides the convention for names it doesn't fit. The generated module for the current version gains the same
 `contract` builder taking each typed n-1 → n migration as a parameter — identical emission to the `.contract`
 path.
@@ -110,7 +110,7 @@ path.
   (Fantomas, Myriad) and everything needed — attributes, fields, types, XML docs, namespace — is in the untyped
   tree. The restricted type vocabulary is validated by the frontend itself, so no checked/typed tree is needed.
 - **FCS is a dependency of the tool only**, never of any package. `schemagen` (later `axial-contracts generate`)
-  accepts `.fs` inputs alongside `.contract` inputs; `.fs` files are scanned for `[<WireSchema>]` and lowered.
+  accepts `.fs` inputs alongside `.contract` inputs; `.fs` files are scanned for `[<DeriveSchema>]` and lowered.
 - **One resolution set**: record-derived and `.contract`-derived declarations register in the same registry, so a
   `.contract` can reference a record-defined wire type (`Profile.v2`) and vice versa. Same-file declaration-order
   rules apply per source; the fsproj compilation order of `.g.fs` siblings is the user's usual responsibility.
@@ -163,7 +163,7 @@ error at the exact field, until regeneration.
 
 ## Implementation Order
 
-1. `Axial.Schema.Wire` attribute classes (inert, in `Axial.Schema`).
+1. `Axial.Schema.Derive` attribute classes (inert, in `Axial.Schema`).
 2. AST extension (`OwnsType`, external enum/union type names) + emitter mode; golden tests over hand-written
    `ContractDecl` values prove the module-only emission before any frontend exists.
 3. FCS frontend: `.fs` → `ContractDecl list` with frontend diagnostics (unsupported types, chain conventions);

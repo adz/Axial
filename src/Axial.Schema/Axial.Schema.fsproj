@@ -39,7 +39,7 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Platform.fs" />
-    <Compile Include="Wire.fs" />
+    <Compile Include="Derive.fs" />
     <Compile Include="SchemaError.fs" />
     <Compile Include="Schema.fs" />
     <Compile Include="RawInput.fs" />

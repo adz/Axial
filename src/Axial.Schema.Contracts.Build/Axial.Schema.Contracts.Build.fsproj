@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!-- Targets-only package: MSBuild integration for axial schemagen. Referencing it runs wire schema
-       generation before compile, so [<WireSchema>] records and .contract files keep their checked-in
+       generation before compile, so [<DeriveSchema>] records and .contract files keep their checked-in
        .g.fs siblings fresh without anyone running a tool by hand. -->
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -11,7 +11,7 @@
     <NoWarn>$(NoWarn);NU5128</NoWarn>
     <PackageId>Axial.Schema.Contracts.Build</PackageId>
     <Authors>Adam Davies</Authors>
-    <Description>MSBuild integration for Axial wire schema generation: derives permissive wire schemas from [&lt;WireSchema&gt;]-marked records and .contract files before compile, keeping checked-in .g.fs sources fresh.</Description>
+    <Description>MSBuild integration for Axial schema generation: derives permissive wire schemas from [&lt;DeriveSchema&gt;]-marked records and .contract files before compile, keeping checked-in .g.fs sources fresh.</Description>
     <PackageProjectUrl>https://github.com/adz/Axial</PackageProjectUrl>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>

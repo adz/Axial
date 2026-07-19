@@ -267,7 +267,7 @@ For Domain and Application projects, reject public interfaces containing:
 This guards the interface consumers compile against. It does not reject local boundary variables inside host mapping
 functions.
 
-`[<WireSchema>]` already provides a source classification. Generated `.contract` types should receive an equivalent
+`[<DeriveSchema>]` already provides a source classification. Generated `.contract` types should receive an equivalent
 stable compiled marker if public-surface tooling needs to recognize them without naming conventions.
 
 Do not infer wire or draft meaning from suffixes such as `Dto`, `Wire`, `V1`, or `Draft`. Names are useful to readers but
@@ -395,7 +395,7 @@ Inputs should be:
 
 - MSBuild project roles;
 - assembly references and public metadata;
-- explicit markers such as `WireSchema`, `WireContract`, or `InvariantAggregate`;
+- explicit markers such as `DeriveSchema`, `WireContract`, or `InvariantAggregate`;
 - results from compiled-call and public-surface audits.
 
 Consumers may include CI reports, LSP hints, documentation, semantic diffs, and compact LLM context.

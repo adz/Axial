@@ -4,17 +4,17 @@ open Axial.Schema.Contracts
 open Swensen.Unquote
 open Xunit
 
-/// Specs for the record frontend: F# source with [<WireSchema>] records lowering into the shared
+/// Specs for the record frontend: F# source with [<DeriveSchema>] records lowering into the shared
 /// ContractDecl AST. Parsing is syntax-only, so these tests feed source strings directly.
 module RecordsTests =
 
     let private parse source =
-        match Records.parse WireNaming.CamelCase "wire.fs" source with
+        match Records.parse SchemaNaming.CamelCase "wire.fs" source with
         | Ok file -> file
         | Error diagnostics -> failwithf "Expected a clean parse, got %A" diagnostics
 
     let private parseErrors source =
-        match Records.parse WireNaming.CamelCase "wire.fs" source with
+        match Records.parse SchemaNaming.CamelCase "wire.fs" source with
         | Ok file -> failwithf "Expected diagnostics, got a clean parse of %d contracts" (List.length file.Contracts)
         | Error diagnostics -> diagnostics |> List.map _.Message
 
@@ -25,9 +25,9 @@ module RecordsTests =
                 """
 namespace My.Wire
 
-open Axial.Schema.Wire
+open Axial.Schema.Derive
 
-[<WireSchema>]
+[<DeriveSchema>]
 type Order = { Sku: string; Quantity: int }
 """
 
@@ -50,11 +50,11 @@ type Order = { Sku: string; Quantity: int }
                 """
 namespace My.Wire
 
-open Axial.Schema.Wire
+open Axial.Schema.Derive
 
 type NotWire = { A: int }
 
-[<WireSchema>]
+[<DeriveSchema>]
 type Order = { Sku: string }
 
 module Helpers =
@@ -70,9 +70,9 @@ module Helpers =
                 """
 namespace My.Wire
 
-open Axial.Schema.Wire
+open Axial.Schema.Derive
 
-[<WireSchema>]
+[<DeriveSchema>]
 type Order =
     { [<Pattern "^SKU-">] Sku: string
       [<AtLeast 0.5>] Weight: decimal
@@ -98,10 +98,10 @@ type Order =
                 """
 namespace My.Wire
 
-open Axial.Schema.Wire
+open Axial.Schema.Derive
 
 /// An order.
-[<WireSchema>]
+[<DeriveSchema>]
 type Order =
     { /// Optional customer note.
       Note: string option }
@@ -120,12 +120,12 @@ type Order =
                 """
 namespace My.Wire
 
-open Axial.Schema.Wire
+open Axial.Schema.Derive
 
-[<WireSchema>]
+[<DeriveSchema>]
 type OrderV1 = { Sku: string }
 
-[<WireSchema>]
+[<DeriveSchema>]
 type Order = { Sku: string; Quantity: int }
 """
 
@@ -136,9 +136,9 @@ type Order = { Sku: string; Quantity: int }
                 """
 namespace My.Wire
 
-open Axial.Schema.Wire
+open Axial.Schema.Derive
 
-[<WireSchema>]
+[<DeriveSchema>]
 type ApolloV2 = { Crew: int }
 """
 
@@ -151,12 +151,12 @@ type ApolloV2 = { Crew: int }
                 """
 namespace My.Wire
 
-open Axial.Schema.Wire
+open Axial.Schema.Derive
 
-[<WireSchema(Chain = "Order", Version = 1)>]
+[<DeriveSchema(Chain = "Order", Version = 1)>]
 type LegacyOrder = { Sku: string }
 
-[<WireSchema(Chain = "Order", Version = 2)>]
+[<DeriveSchema(Chain = "Order", Version = 2)>]
 type Order = { Sku: string; Quantity: int }
 """
 
@@ -170,24 +170,24 @@ type Order = { Sku: string; Quantity: int }
                 """
 namespace My.Wire
 
-open Axial.Schema.Wire
+open Axial.Schema.Derive
 
-[<WireSchema>]
+[<DeriveSchema>]
 type Card = { Number: string }
 
-[<WireSchema>]
+[<DeriveSchema>]
 type Invoice = { Reference: string }
 
-[<WireUnion "kind">]
+[<DeriveUnion "kind">]
 type Source =
     | ByCard of Card
     | ByInvoice of Invoice
 
 type Plan =
     | Free
-    | [<WireName "super-pro">] Pro
+    | [<SchemaName "super-pro">] Pro
 
-[<WireSchema>]
+[<DeriveSchema>]
 type Signup = { Plan: Plan; Source: Source }
 """
 
@@ -213,9 +213,9 @@ type Signup = { Plan: Plan; Source: Source }
                 """
 namespace My.Wire
 
-open Axial.Schema.Wire
+open Axial.Schema.Derive
 
-[<WireSchema>]
+[<DeriveSchema>]
 type Order =
     { Weight: float
       Count: int64
@@ -235,9 +235,9 @@ type Order =
                 """
 namespace My.Wire
 
-open Axial.Schema.Wire
+open Axial.Schema.Derive
 
-[<WireSchema>]
+[<DeriveSchema>]
 type Order = private { Sku: string }
 """
 
@@ -248,10 +248,10 @@ type Order = private { Sku: string }
                 """
 namespace My.Wire
 
-open Axial.Schema.Wire
+open Axial.Schema.Derive
 
 module Inner =
-    [<WireSchema>]
+    [<DeriveSchema>]
     type Order = { Sku: string }
 """
 
@@ -262,9 +262,9 @@ module Inner =
                 """
 module My.Wire
 
-open Axial.Schema.Wire
+open Axial.Schema.Derive
 
-[<WireSchema>]
+[<DeriveSchema>]
 type Order = { Sku: string }
 """
 
@@ -277,9 +277,9 @@ type Order = { Sku: string }
                 """
 namespace My.Wire
 
-open Axial.Schema.Wire
+open Axial.Schema.Derive
 
-[<WireSchema>]
+[<DeriveSchema>]
 type Box<'t> = { Value: string }
 """
 
@@ -290,9 +290,9 @@ type Box<'t> = { Value: string }
                 """
 namespace My.Wire
 
-open Axial.Schema.Wire
+open Axial.Schema.Derive
 
-[<WireSchema>]
+[<DeriveSchema>]
 type Choice =
     | A
     | B
@@ -307,9 +307,9 @@ type Choice =
                 """
 namespace My.Wire
 
-open Axial.Schema.Wire
+open Axial.Schema.Derive
 
-[<WireSchema>]
+[<DeriveSchema>]
 type Order = { Location: Elsewhere }
 """
 
@@ -320,17 +320,17 @@ type Order = { Location: Elsewhere }
                 """
 namespace My.Wire
 
-open Axial.Schema.Wire
+open Axial.Schema.Derive
 
-[<WireUnion "kind">]
+[<DeriveUnion "kind">]
 type Source =
     | Inline of string
 
-[<WireSchema>]
+[<DeriveSchema>]
 type Order = { Source: Source }
 """
 
-        test <@ badUnionPayload |> List.exists (fun m -> m.Contains "exactly one [<WireSchema>] record payload") @>
+        test <@ badUnionPayload |> List.exists (fun m -> m.Contains "exactly one [<DeriveSchema>] record payload") @>
 
     [<Fact>]
     let ``a self-referencing record emits a deferred schema`` () =
@@ -339,9 +339,9 @@ type Order = { Source: Source }
                 """
 namespace My.Wire
 
-open Axial.Schema.Wire
+open Axial.Schema.Derive
 
-[<WireSchema>]
+[<DeriveSchema>]
 type Category =
     { Name: string
       Children: Category list }
@@ -360,12 +360,12 @@ type Category =
                 """
 namespace My.Wire
 
-open Axial.Schema.Wire
+open Axial.Schema.Derive
 
-[<WireSchema(Chain = "Order", Version = 1)>]
+[<DeriveSchema(Chain = "Order", Version = 1)>]
 type LegacyOrder = { Sku: string }
 
-[<WireSchema(Chain = "Order", Version = 2)>]
+[<DeriveSchema(Chain = "Order", Version = 2)>]
 type Order = { Sku: string; Quantity: int }
 """
 
@@ -384,16 +384,16 @@ type Order = { Sku: string; Quantity: int }
                 """
 namespace My.Wire
 
-open Axial.Schema.Wire
+open Axial.Schema.Derive
 
-[<WireSchema>]
+[<DeriveSchema>]
 type Order = { Sku: string }
 
 namespace My.Other
 
-open Axial.Schema.Wire
+open Axial.Schema.Derive
 
-[<WireSchema>]
+[<DeriveSchema>]
 type Stray = { A: int }
 """
 
@@ -403,13 +403,13 @@ type Stray = { A: int }
     let ``snake case naming policy applies to fields and enum tags`` () =
         let file =
             match
-                Records.parse WireNaming.SnakeCase "wire.fs"
+                Records.parse SchemaNaming.SnakeCase "wire.fs"
                     """
 namespace My.Wire
 
-open Axial.Schema.Wire
+open Axial.Schema.Derive
 
-[<WireSchema>]
+[<DeriveSchema>]
 type Order = { MarketingOptIn: bool }
 """
             with
@@ -417,3 +417,63 @@ type Order = { MarketingOptIn: bool }
             | Error diagnostics -> failwithf "Expected a clean parse, got %A" diagnostics
 
         test <@ file.Contracts.Head.Fields |> List.map FieldDecl.wireName = [ "marketing_opt_in" ] @>
+
+    [<Fact>]
+    let ``a schema constructor attribute lowers to the contract's constructor`` () =
+        let file =
+            parse
+                """
+namespace My.Wire
+
+open Axial.Schema.Derive
+
+[<DeriveSchema; SchemaConstructor "Order.create">]
+type Order = { Sku: string; Quantity: int }
+"""
+
+        test <@ file.Contracts.Head.Constructor = Some "Order.create" @>
+
+    [<Fact>]
+    let ``a marked record without a constructor attribute has no constructor`` () =
+        let file =
+            parse
+                """
+namespace My.Wire
+
+open Axial.Schema.Derive
+
+[<DeriveSchema>]
+type Order = { Sku: string }
+"""
+
+        test <@ file.Contracts.Head.Constructor = None @>
+
+    [<Fact>]
+    let ``a schema constructor without the derive attribute is rejected`` () =
+        let messages =
+            parseErrors
+                """
+namespace My.Wire
+
+open Axial.Schema.Derive
+
+[<SchemaConstructor "Order.create">]
+type Order = { Sku: string }
+"""
+
+        test <@ messages |> List.exists (fun m -> m.Contains "[<SchemaConstructor>]" && m.Contains "[<DeriveSchema>]") @>
+
+    [<Fact>]
+    let ``a schema constructor needs a string literal argument`` () =
+        let messages =
+            parseErrors
+                """
+namespace My.Wire
+
+open Axial.Schema.Derive
+
+[<DeriveSchema; SchemaConstructor 3>]
+type Order = { Sku: string }
+"""
+
+        test <@ messages |> List.exists (fun m -> m.Contains "one string literal") @>

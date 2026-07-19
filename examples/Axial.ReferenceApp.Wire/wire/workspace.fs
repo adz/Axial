@@ -2,16 +2,16 @@
 // regenerate it after editing this file (the build target does this when the tool is present).
 namespace Axial.ReferenceApp.Wire
 
-open Axial.Schema.Wire
+open Axial.Schema.Derive
 
 /// Who can see a workspace card.
 type Visibility =
     | Private
     | Team
-    | [<WireName "org-wide">] OrgWide
+    | [<SchemaName "org-wide">] OrgWide
 
 /// A workspace card as first exported: one owner string of the form "Name <email>".
-[<WireSchema>]
+[<DeriveSchema>]
 type WorkspaceCardV1 =
     { /// Display name of the workspace.
       [<Min 1; Max 60>]
@@ -19,14 +19,23 @@ type WorkspaceCardV1 =
       Owner: string }
 
 /// A workspace card with a dedicated owner email, visibility, and member emails.
-[<WireSchema>]
+[<DeriveSchema; SchemaConstructor "WorkspaceCard.create">]
 type WorkspaceCard =
     { /// Display name of the workspace.
       [<Min 1; Max 60>]
       Name: string
-      [<Email; WireName "owner_email">]
+      [<Email; SchemaName "owner_email">]
       OwnerEmail: string
       [<Default "private">]
       Visibility: Visibility
       [<Distinct>]
       Members: string list }
+
+    /// Called by the generated schema instead of a record literal: normalises the owner email
+    /// to lower case on the way in. Static member, not a module — the generated module already
+    /// takes the record's name.
+    static member create name (ownerEmail: string) visibility members =
+        { Name = name
+          OwnerEmail = ownerEmail.ToLowerInvariant()
+          Visibility = visibility
+          Members = members }
