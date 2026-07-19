@@ -95,6 +95,10 @@ value type left to right (`(NoFields * string) * int`). The phantom is what make
 - `Schema.list<'item>()` and `Schema.map<'item>()` use the same resolver. `listWith`/`mapWith` accept an explicit member
   schema for recursion or local configuration. `constrainItems`/`constrainValues` rewrite the nested value definition;
   collection constraints remain on the outer definition.
+- `Axial.Schema.Contracts.Emitter` mirrors handwritten authoring: it emits `field` for canonically resolvable fields,
+  `fieldWith` when a field carries an explicit value schema (documentation, defaults, unions, recursion, or generated
+  references), and adjacent `constrain` lines for non-optional field constraints. Optional constraints stay inside the
+  explicit inner schema because their type is `Constraint<'item>`, not `Constraint<'item option>`.
 
 `Schema.admit create project draft` composes over the draft's `ModelSchemaDefinition`: field getters
 become `project >> getter`, the constructor becomes `draftCtor >> Result.bind create`. Nothing else

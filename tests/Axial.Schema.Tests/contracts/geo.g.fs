@@ -25,8 +25,12 @@ module Geo =
     /// The schema declared by geo.contract (Geo.v1).
     let schema : Schema<Geo> =
         Schema.define<Geo>
-        |> fieldWith (Schema.decimal |> Schema.constrainAll [ Constraint.atLeast (-90m); Constraint.atMost (90m) ]) "lat" _.Lat
-        |> fieldWith (Schema.decimal |> Schema.constrainAll [ Constraint.atLeast (-180m); Constraint.atMost (180m) ]) "lon" _.Lon
+        |> field "lat" _.Lat
+        |> constrain (atLeast (-90m))
+        |> constrain (atMost 90m)
+        |> field "lon" _.Lon
+        |> constrain (atLeast (-180m))
+        |> constrain (atMost 180m)
         |> construct (fun lat lon ->
             { Lat = lat
               Lon = lon })

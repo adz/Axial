@@ -438,54 +438,70 @@ open Axial.Schema
 open Axial.Schema.Syntax
 
 /// <summary>An email address refined over Axial's text primitive, carrying the well-known email format.</summary>
-type Email = private Email of string
+type Email =
+    private
+    | Email of string
+
+    static member Schema(_: Email) : Schema<Email> =
+        Schema.text
+        |> Schema.constrain Constraint.required
+        |> Schema.convert Email (fun (Email value) -> value)
+        |> Schema.constrain Constraint.email
+        |> Schema.withFormat SchemaFormat.email
 
 module Email =
     let create (value: string) = Email value
     let value (Email value) = value
 
-    let schema : Schema<Email> =
-        Schema.text
-        |> Schema.constrain Constraint.required
-        |> Schema.convert create value
-        |> Schema.constrain Constraint.email
-        |> Schema.withFormat SchemaFormat.email
+    let schema : Schema<Email> = SchemaDefaults.Resolve()
 
 /// <summary>A bounded-text domain value whose length constraints live on the raw text schema.</summary>
-type ContactName = private ContactName of string
+type ContactName =
+    private
+    | ContactName of string
+
+    static member Schema(_: ContactName) : Schema<ContactName> =
+        Schema.text
+        |> Schema.constrainAll [ Constraint.minLength 2; Constraint.maxLength 40 ]
+        |> Schema.convert ContactName (fun (ContactName value) -> value)
 
 module ContactName =
     let create (value: string) = ContactName value
     let value (ContactName value) = value
 
-    let schema : Schema<ContactName> =
-        Schema.text
-        |> Schema.constrainAll [ Constraint.minLength 2; Constraint.maxLength 40 ]
-        |> Schema.convert create value
+    let schema : Schema<ContactName> = SchemaDefaults.Resolve()
 
 /// <summary>A quantity that must always be positive (strictly greater than zero).</summary>
-type Quantity = private Quantity of int
+type Quantity =
+    private
+    | Quantity of int
+
+    static member Schema(_: Quantity) : Schema<Quantity> =
+        Schema.int
+        |> Schema.constrain (Constraint.greaterThan 0)
+        |> Schema.convert Quantity (fun (Quantity value) -> value)
 
 module Quantity =
     let create (value: int) = Quantity value
     let value (Quantity value) = value
 
-    let schema : Schema<Quantity> =
-        Schema.int
-        |> Schema.constrain (Constraint.greaterThan 0)
-        |> Schema.convert create value
+    let schema : Schema<Quantity> = SchemaDefaults.Resolve()
 
 /// <summary>A running total that must never go negative, but zero is allowed.</summary>
-type Balance = private Balance of decimal
+type Balance =
+    private
+    | Balance of decimal
+
+    static member Schema(_: Balance) : Schema<Balance> =
+        Schema.decimal
+        |> Schema.constrain (Constraint.atLeast 0m)
+        |> Schema.convert Balance (fun (Balance value) -> value)
 
 module Balance =
     let create (value: decimal) = Balance value
     let value (Balance value) = value
 
-    let schema : Schema<Balance> =
-        Schema.decimal
-        |> Schema.constrain (Constraint.atLeast 0m)
-        |> Schema.convert create value
+    let schema : Schema<Balance> = SchemaDefaults.Resolve()
 
 type Contact =
     { Email: Email
@@ -495,10 +511,10 @@ type Contact =
 
 let contactSchema =
     Schema.define<Contact>
-    |> fieldWith Email.schema "email" _.Email
-    |> fieldWith ContactName.schema "name" _.Name
-    |> fieldWith Quantity.schema "quantity" _.Quantity
-    |> fieldWith Balance.schema "balance" _.Balance
+    |> field "email" _.Email
+    |> field "name" _.Name
+    |> field "quantity" _.Quantity
+    |> field "balance" _.Balance
     |> construct (fun email name quantity balance ->
         { Email = email
           Name = name
@@ -579,16 +595,22 @@ open Axial.Flow
 // schema (or its own tryParse), so a Signup in hand is always trusted.
 // ---------------------------------------------------------------------------
 
-type Email = private EmailValue of string
+type Email =
+    private
+    | EmailValue of string
 
-module Email =
-    let value (EmailValue raw) = raw
+    member this.Value = let (EmailValue value) = this in value
 
-    let schema: Schema<Email> =
+    static member Schema(_: Email) : Schema<Email> =
         Schema.text
         |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 254; Constraint.email ]
-        |> Schema.convert EmailValue value
+        |> Schema.convert EmailValue _.Value
         |> Schema.withFormat SchemaFormat.email
+
+module Email =
+    let value (email: Email) = email.Value
+
+    let schema: Schema<Email> = SchemaDefaults.Resolve()
 
 type Address = { Street: string; City: string }
 
@@ -604,17 +626,25 @@ module Signup =
 
     let addressSchema =
         Schema.define<Address>
-        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 120 ]) "street" _.Street
-        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 80 ]) "city" _.City
+        |> field "street" _.Street
+        |> constrain (minLength 1)
+        |> constrain (maxLength 120)
+        |> field "city" _.City
+        |> constrain (minLength 1)
+        |> constrain (maxLength 80)
         |> construct (fun street city -> { Street = street; City = city })
 
     let schema =
         Schema.define<Signup>
-        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 80 ]) "name" _.Name
-        |> fieldWith Email.schema "email" _.Email
-        |> fieldWith (Schema.int |> Schema.constrain (Constraint.between 13 120)) "age" _.Age
+        |> field "name" _.Name
+        |> constrain (minLength 1)
+        |> constrain (maxLength 80)
+        |> field "email" _.Email
+        |> field "age" _.Age
+        |> constrain (between 13 120)
         |> fieldWith (addressSchema |> Schema.constrain Constraint.required) "address" _.Address
-        |> fieldWith (Schema.listWith Schema.text |> Schema.constrain (Constraint.maxCount 5)) "tags" _.Tags
+        |> field "tags" _.Tags
+        |> constrain (maxCount 5)
         |> construct (fun name email age address tags ->
             { Name = name
               Email = email
@@ -873,16 +903,20 @@ open Axial.Schema
 open Axial.Validation
 open Axial.Schema.Syntax
 
-type Quantity = private Quantity of int
+type Quantity =
+    private
+    | Quantity of int
+
+    static member Schema(_: Quantity) : Schema<Quantity> =
+        Schema.int
+        |> Schema.constrain (Constraint.greaterThan 0)
+        |> Schema.convert Quantity (fun (Quantity value) -> value)
 
 module Quantity =
     let create (value: int) = Quantity value
     let value (Quantity value) = value
 
-    let schema : Schema<Quantity> =
-        Schema.int
-        |> Schema.constrain (Constraint.greaterThan 0)
-        |> Schema.convert create value
+    let schema : Schema<Quantity> = SchemaDefaults.Resolve()
 
 type OrderLine =
     { Sku: string
@@ -890,8 +924,8 @@ type OrderLine =
 
 let orderLineSchema =
     Schema.define<OrderLine>
-    |> fieldWith Schema.text "sku" _.Sku
-    |> fieldWith Quantity.schema "quantity" _.Quantity
+    |> field "sku" _.Sku
+    |> field "quantity" _.Quantity
     |> construct (fun sku quantity ->
         { Sku = sku
           Quantity = quantity })

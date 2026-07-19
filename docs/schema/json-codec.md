@@ -25,24 +25,25 @@ open Axial.Schema
 open Axial.Codec
 open Axial.Schema.Syntax
 
-type Address = { Street: string; City: string }
+type Address =
+    { Street: string; City: string }
+
+    static member Schema(_: Address) : Schema<Address> =
+        Schema.define<Address>
+        |> field "street" _.Street
+        |> field "city" _.City
+        |> construct (fun street city -> { Street = street; City = city })
 
 type Customer =
     { Name: string
       Age: int
       Address: Address }
 
-let addressSchema =
-    Schema.define<Address>
-    |> field "street" _.Street
-    |> field "city" _.City
-    |> construct (fun street city -> { Street = street; City = city })
-
 let customerSchema =
     Schema.define<Customer>
     |> field "name" _.Name
     |> field "age" _.Age
-    |> fieldWith addressSchema "address" _.Address
+    |> field "address" _.Address
     |> construct (fun name age address -> { Name = name; Age = age; Address = address })
 
 let codec = Json.compile customerSchema   // compile once, typically at startup

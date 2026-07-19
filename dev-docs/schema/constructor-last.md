@@ -50,8 +50,9 @@ The vocabulary lives in `Syntax`: text constraints are `Constraint<string>`, lis
 
 **Inference.** `field` resolves `Schema<'v>` from the getter's result type through
 `SchemaDefaults.Resolve()` — SRTP over an overload set (primitives, options, and recursively resolved lists and maps), with a
-hook for any type exposing `static member Schema: T -> Schema<T>` (generated types will use
-this). No match → compile error → `fieldWith explicitSchema`.
+hook for any type exposing `static member Schema: T -> Schema<T>`. Generated contracts use inferred fields for
+resolvable F# types and explicit module schemas for generated references. No match → compile error →
+`fieldWith explicitSchema`.
 
 **Constructor-last application.** F# has no variadic application, and curried function types overlap
 (`'a -> 'm` matches any longer signature), so overloads on the constructor argument alone are ambiguous.

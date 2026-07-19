@@ -18,7 +18,7 @@ module PickupPoint =
     /// The schema declared by shipment.fs (PickupPoint.v1).
     let schema : Schema<PickupPoint> =
         Schema.define<PickupPoint>
-        |> fieldWith Schema.text "code" _.Code
+        |> field "code" _.Code
         |> construct (fun code ->
             { Code = code })
         |> Schema.describe "A named pickup location."
@@ -46,7 +46,7 @@ module CourierDelivery =
     /// The schema declared by shipment.fs (CourierDelivery.v1).
     let schema : Schema<CourierDelivery> =
         Schema.define<CourierDelivery>
-        |> fieldWith Schema.text "trackingUrl" _.TrackingUrl
+        |> field "trackingUrl" _.TrackingUrl
         |> construct (fun trackingUrl ->
             { TrackingUrl = trackingUrl })
         |> Schema.describe "A courier delivery with tracking."
@@ -74,9 +74,11 @@ module ShipmentV1 =
     /// The schema declared by shipment.fs (Shipment.v1).
     let schema : Schema<ShipmentV1> =
         Schema.define<ShipmentV1>
-        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.pattern ("^SH-[0-9]+$") ] |> Schema.describe "Public shipment reference.") "reference" _.Reference
-        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.email ]) "notifyEmail" _.NotifyEmail
-        |> fieldWith (Schema.mapWith Schema.int) "items" _.Items
+        |> fieldWith (Schema.text |> Schema.describe "Public shipment reference.") "reference" _.Reference
+        |> constrain (pattern "^SH-[0-9]+$")
+        |> field "notifyEmail" _.NotifyEmail
+        |> constrain emailFormat
+        |> field "items" _.Items
         |> construct (fun reference notifyEmail items ->
             { Reference = reference
               NotifyEmail = notifyEmail
@@ -117,15 +119,21 @@ module Shipment =
     /// The schema declared by shipment.fs (Shipment.v2).
     let schema : Schema<Shipment> =
         Schema.define<Shipment>
-        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.pattern ("^SH-[0-9]+$") ] |> Schema.describe "Public shipment reference.") "reference" _.Reference
-        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.email ]) "notify_email" _.NotifyEmail
-        |> fieldWith (Schema.mapWith Schema.int) "items" _.Items
-        |> fieldWith (Schema.listWith Schema.text |> Schema.constrainAll [ Constraint.minCount (1); Constraint.distinct ]) "tags" _.Tags
-        |> fieldWith (Schema.decimal |> Schema.constrainAll [ Constraint.atLeast (0.5m) ]) "weightKg" _.WeightKg
+        |> fieldWith (Schema.text |> Schema.describe "Public shipment reference.") "reference" _.Reference
+        |> constrain (pattern "^SH-[0-9]+$")
+        |> field "notify_email" _.NotifyEmail
+        |> constrain emailFormat
+        |> field "items" _.Items
+        |> field "tags" _.Tags
+        |> constrain (minCount 1)
+        |> constrain distinct
+        |> field "weightKg" _.WeightKg
+        |> constrain (atLeast 0.5m)
         |> fieldWith (Schema.enum priorityCases |> Schema.withDefault ShipmentPriority.Express) "priority" _.Priority
         |> fieldWith (Schema.inlineUnion "kind" deliveryCases) "delivery" _.Delivery
         |> fieldWith (Schema.option PickupPoint.schema) "origin" _.Origin
-        |> fieldWith (Schema.int |> Schema.constrainAll [ Constraint.atLeast (1) ] |> Schema.withDefault 1) "boxes" _.Boxes
+        |> fieldWith (Schema.int |> Schema.withDefault 1) "boxes" _.Boxes
+        |> constrain (atLeast 1)
         |> construct (fun reference notifyEmail items tags weightKg priority delivery origin boxes ->
             { Reference = reference
               NotifyEmail = notifyEmail

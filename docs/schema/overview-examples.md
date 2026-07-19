@@ -12,16 +12,17 @@ Open the constructor-last syntax in the module that owns schema declarations:
 open Axial.Schema
 open Axial.Schema.Syntax
 
-type Address = { City: string }
+type Address =
+    { City: string }
 
-let addressSchema =
-    Schema.define<Address>
-    |> field "city" _.City
-    |> constrain (minLength 1)
-    |> construct (fun city -> { City = city })
+    static member Schema(_: Address) : Schema<Address> =
+        Schema.define<Address>
+        |> field "city" _.City
+        |> constrain (minLength 1)
+        |> construct (fun city -> { City = city })
 ```
 
-`field` infers built-in schemas and canonical schemas declared by user-owned or generated types, recursively through
+`field` infers built-in schemas and canonical schemas declared by owned types, recursively through
 option, list, and string-keyed map schemas. Use `fieldWith` when supplying an explicit value schema for that field:
 
 ```fsharp
@@ -34,8 +35,8 @@ type Customer =
 let customerSchema =
     Schema.define<Customer>
     |> field "id" _.Id
-    |> fieldWith addressSchema "address" _.Address
-    |> fieldWith (Schema.map<string>()) "labels" _.Labels
+    |> field "address" _.Address
+    |> field "labels" _.Labels
     |> field "note" _.Note
     |> construct (fun id address labels note ->
         { Id = id; Address = address; Labels = labels; Note = note })

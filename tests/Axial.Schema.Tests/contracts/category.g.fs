@@ -27,7 +27,8 @@ module Category =
     /// The schema declared by category.contract (Category.v1).
     let rec schema : Schema<Category> =
         Schema.define<Category>
-        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.minLength (1) ] |> Schema.describe "Stable display name.") "name" _.Name
+        |> fieldWith (Schema.text |> Schema.describe "Stable display name.") "name" _.Name
+        |> constrain (minLength 1)
         |> fieldWith (Schema.listWith (Schema.defer (fun () -> schema)) |> Schema.describe "Child categories use the same wire contract.") "children" _.Children
         |> construct (fun name children ->
             { Name = name

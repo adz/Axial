@@ -41,12 +41,17 @@ module Signup =
     /// The schema declared by signup.contract (Signup.v1).
     let schema : Schema<Signup> =
         Schema.define<Signup>
-        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.email; Constraint.maxLength (254) ] |> Schema.describe "Primary contact address.") "email" _.Email
+        |> fieldWith (Schema.text |> Schema.describe "Primary contact address.") "email" _.Email
+        |> constrain emailFormat
+        |> constrain (maxLength 254)
         |> fieldWith (Schema.option (Schema.text |> Schema.constrainAll [ Constraint.minLength (1); Constraint.maxLength (64) ])) "display_name" _.DisplayName
-        |> fieldWith (Schema.int |> Schema.constrainAll [ Constraint.atLeast (13) ]) "age" _.Age
+        |> field "age" _.Age
+        |> constrain (atLeast 13)
         |> fieldWith (Schema.enum planCases |> Schema.withDefault SignupPlan.Free) "plan" _.Plan
-        |> fieldWith (Schema.listWith Schema.text |> Schema.constrainAll [ Constraint.maxCount (8); Constraint.distinct ]) "tags" _.Tags
-        |> fieldWith (Schema.mapWith Schema.int) "limits" _.Limits
+        |> field "tags" _.Tags
+        |> constrain (maxCount 8)
+        |> constrain distinct
+        |> field "limits" _.Limits
         |> fieldWith (Schema.option Geo.schema) "location" _.Location
         |> construct (fun email displayName age plan tags limits location ->
             { Email = email

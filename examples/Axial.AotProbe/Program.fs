@@ -215,8 +215,8 @@ let renderUserForm user =
 let probeSchemaPlan () =
     let schema =
         Schema.define<SchemaContact>
-        |> fieldWith Schema.text "name" _.Name
-        |> fieldWith Schema.int "age" _.Age
+        |> field "name" _.Name
+        |> field "age" _.Age
         |> construct (fun name age -> { Name = name; Age = age })
 
     Schema.compilePlan (SummaryFactory<SchemaContact>()) schema

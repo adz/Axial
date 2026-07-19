@@ -504,9 +504,8 @@ module internal ShapeOps =
 /// </summary>
 module Syntax =
 
-    /// <summary>Adds a field whose value schema is inferred from the getter's result type. Supported types
-    /// are the <see cref="T:Axial.Schema.SchemaDefaults" /> overload set plus any type exposing
-    /// <c>static member Schema</c>. For anything else, use <c>fieldWith</c> with an explicit schema.</summary>
+    /// <summary>Adds a field using the supplied completed value schema. Prefer <c>field</c> when the field type has a
+    /// canonical schema; use <c>fieldWith</c> for a local override, recursion, or a type that cannot contribute one.</summary>
     let fieldWith
         (valueSchema: Schema<'value>)
         (name: string)
@@ -588,6 +587,9 @@ module Syntax =
 
     /// <summary>Requires a field to be less than the supplied value (exclusive).</summary>
     let lessThan (maximum: 'value) : Constraint<'value> = Constraint<'value>(Constraint.lessThan maximum)
+
+    /// <summary>Requires a numeric field to be an exact multiple of the supplied value.</summary>
+    let multipleOf (factor: 'value) : Constraint<'value> = Constraint<'value>(Constraint.multipleOf factor)
 
     /// <summary>Requires a field to fall inside the supplied inclusive bounds.</summary>
     let between (minimum: 'value) (maximum: 'value) : Constraint<'value> =

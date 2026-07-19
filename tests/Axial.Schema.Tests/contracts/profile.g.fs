@@ -25,8 +25,11 @@ module ProfileV1 =
     /// The schema declared by profile.contract (Profile.v1).
     let schema : Schema<ProfileV1> =
         Schema.define<ProfileV1>
-        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.minLength (1); Constraint.maxLength (100) ]) "name" _.Name
-        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.email ]) "email" _.Email
+        |> field "name" _.Name
+        |> constrain (minLength 1)
+        |> constrain (maxLength 100)
+        |> field "email" _.Email
+        |> constrain emailFormat
         |> construct (fun name email ->
             { Name = name
               Email = email })
@@ -64,8 +67,11 @@ module Profile =
     /// The schema declared by profile.contract (Profile.v2).
     let schema : Schema<Profile> =
         Schema.define<Profile>
-        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.minLength (1); Constraint.maxLength (100) ]) "name" _.Name
-        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.email ]) "email" _.Email
+        |> field "name" _.Name
+        |> constrain (minLength 1)
+        |> constrain (maxLength 100)
+        |> field "email" _.Email
+        |> constrain emailFormat
         |> fieldWith (Schema.bool |> Schema.withDefault false) "marketing_opt_in" _.MarketingOptIn
         |> construct (fun name email marketingOptIn ->
             { Name = name

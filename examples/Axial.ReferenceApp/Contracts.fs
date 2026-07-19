@@ -32,7 +32,9 @@ module Contracts =
         Schema.define<WorkspaceV1>
         |> field "version" _.version
         |> field "id" _.id
-        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 80 ]) "name" _.name
+        |> field "name" _.name
+        |> constrain (minLength 1)
+        |> constrain (maxLength 80)
         |> construct (fun version id name -> { version = version; id = id; name = name })
 
     let memberV2 =
@@ -45,8 +47,9 @@ module Contracts =
         Schema.define<WorkItemV2>
         |> field "id" _.id
         |> fieldWith workItemTitle "title" _.title
-        |> fieldWith (Schema.option Schema.guid) "assignee" _.assignee
-        |> fieldWith (Schema.text |> Schema.constrain (Constraint.oneOf [ "todo"; "done" ])) "state" _.state
+        |> field "assignee" _.assignee
+        |> field "state" _.state
+        |> constrain (oneOf [ "todo"; "done" ])
         |> construct (fun id title assignee state ->
             { id = id; title = title; assignee = assignee; state = state })
 

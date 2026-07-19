@@ -86,6 +86,31 @@ module Emitter =
         | Distinct -> "Constraint.distinct"
         | CheckRef name -> failwith $"check reference '{name}' should have been rejected by the resolver"
 
+    /// Renders the typed Axial.Schema.Syntax form used after an inferred or explicit field.
+    let private renderFieldConstraint fieldType constraint' =
+        let argument (value: string) = if value.StartsWith "-" then $"({value})" else value
+
+        let sized minName maxName size =
+            match constraint' with
+            | MinSize n -> $"{minName} {n}"
+            | MaxSize n -> $"{maxName} {n}"
+            | _ -> size
+
+        match constraint' with
+        | AtLeast literal -> $"atLeast {renderNumericLiteral (numericKind fieldType) literal |> argument}"
+        | GreaterThan literal -> $"greaterThan {renderNumericLiteral (numericKind fieldType) literal |> argument}"
+        | AtMost literal -> $"atMost {renderNumericLiteral (numericKind fieldType) literal |> argument}"
+        | LessThan literal -> $"lessThan {renderNumericLiteral (numericKind fieldType) literal |> argument}"
+        | MultipleOf literal -> $"multipleOf {renderNumericLiteral (numericKind fieldType) literal |> argument}"
+        | MinSize _
+        | MaxSize _ ->
+            match fieldType with
+            | ListOf _ -> sized "minCount" "maxCount" ""
+            | _ -> sized "minLength" "maxLength" ""
+        | Pattern value -> $"pattern \"{escapeString value}\""
+        | Distinct -> "distinct"
+        | CheckRef name -> failwith $"check reference '{name}' should have been rejected by the resolver"
+
     /// The F# type of a field as written in the record and FieldRef declarations. `refTypeName` maps a
     /// pinned contract reference to its generated type name.
     let rec private fsType (refTypeName: ContractRef -> string) contractTypeName fieldName fieldType =
@@ -144,7 +169,7 @@ module Emitter =
     let private valueExpr refTypeName (contractName, contractVersion, contractTypeName) (field: FieldDecl) =
         let mutable expression = baseValueExpr refTypeName (contractName, contractVersion) field.FieldName field.FieldType
 
-        if not (List.isEmpty field.Constraints) then
+        if field.Optional && not (List.isEmpty field.Constraints) then
             let emailPrefix =
                 match field.FieldType with
                 | Primitive PEmail -> [ "Constraint.email" ]
@@ -155,7 +180,7 @@ module Emitter =
 
             let joined = String.Join("; ", rendered)
             expression <- $"{expression} |> Schema.constrainAll [ {joined} ]"
-        else
+        elif field.Optional then
             match field.FieldType with
             | Primitive PEmail -> expression <- $"{expression} |> Schema.constrainAll [ Constraint.email ]"
             | _ -> ()
@@ -193,11 +218,29 @@ module Emitter =
         else
             let emailPrefix =
                 match field.FieldType with
-                | Primitive PEmail -> [ "Constraint.email" ]
+                | Primitive PEmail -> [ "emailFormat" ]
                 | _ -> []
 
             emailPrefix
-            @ (field.Constraints |> List.map (fun (constraint', _) -> renderConstraint field.FieldType constraint'))
+            @ (field.Constraints |> List.map (fun (constraint', _) -> renderFieldConstraint field.FieldType constraint'))
+
+    /// True when SchemaDefaults can resolve the generated F# field type without an explicit value schema.
+    let rec private hasCanonicalSchema fieldType =
+        match fieldType with
+        | Primitive _ -> true
+        | ListOf item
+        | MapOf item -> hasCanonicalSchema item
+        | Reference _
+        | LiteralUnion _
+        | UnionBlock _
+        | ExternalEnum _
+        | ExternalUnion _ -> false
+
+    let private canInferField (field: FieldDecl) =
+        hasCanonicalSchema field.FieldType
+        && List.isEmpty field.Doc
+        && Option.isNone field.Default
+        && (not field.Optional || List.isEmpty field.Constraints && field.FieldType <> Primitive PEmail)
 
     let private fieldTypeOf (field: FieldDecl) =
         let inner = field.FieldType
@@ -397,9 +440,15 @@ module Emitter =
             for field in contract.Fields do
                 let wire = FieldDecl.wireName field
                 let getter = $"_.{escapeIdent (fsFieldName field)}"
-                let value = valueExpr refTypeName (contract.ContractName, contract.Version, contractTypeName) field
 
-                line $"        |> fieldWith {parenthesize value} \"{escapeString wire}\" {getter}"
+                if canInferField field then
+                    line $"        |> field \"{escapeString wire}\" {getter}"
+                else
+                    let value = valueExpr refTypeName (contract.ContractName, contract.Version, contractTypeName) field
+                    line $"        |> fieldWith {parenthesize value} \"{escapeString wire}\" {getter}"
+
+                for constraint' in fieldLevelConstraints field do
+                    line $"        |> constrain {parenthesize constraint'}"
 
             match contract.Constructor with
             | Some constructorName ->

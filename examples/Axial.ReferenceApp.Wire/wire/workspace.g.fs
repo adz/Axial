@@ -18,8 +18,10 @@ module WorkspaceCardV1 =
     /// The schema declared by workspace.fs (WorkspaceCard.v1).
     let schema : Schema<WorkspaceCardV1> =
         Schema.define<WorkspaceCardV1>
-        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.minLength (1); Constraint.maxLength (60) ] |> Schema.describe "Display name of the workspace.") "name" _.Name
-        |> fieldWith Schema.text "owner" _.Owner
+        |> fieldWith (Schema.text |> Schema.describe "Display name of the workspace.") "name" _.Name
+        |> constrain (minLength 1)
+        |> constrain (maxLength 60)
+        |> field "owner" _.Owner
         |> construct (fun name owner ->
             { Name = name
               Owner = owner })
@@ -54,10 +56,14 @@ module WorkspaceCard =
     /// The schema declared by workspace.fs (WorkspaceCard.v2).
     let schema : Schema<WorkspaceCard> =
         Schema.define<WorkspaceCard>
-        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.minLength (1); Constraint.maxLength (60) ] |> Schema.describe "Display name of the workspace.") "name" _.Name
-        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.email ]) "owner_email" _.OwnerEmail
+        |> fieldWith (Schema.text |> Schema.describe "Display name of the workspace.") "name" _.Name
+        |> constrain (minLength 1)
+        |> constrain (maxLength 60)
+        |> field "owner_email" _.OwnerEmail
+        |> constrain emailFormat
         |> fieldWith (Schema.enum visibilityCases |> Schema.withDefault Visibility.Private) "visibility" _.Visibility
-        |> fieldWith (Schema.listWith Schema.text |> Schema.constrainAll [ Constraint.distinct ]) "members" _.Members
+        |> field "members" _.Members
+        |> constrain distinct
         |> construct (fun name ownerEmail visibility members -> WorkspaceCard.create name ownerEmail visibility members)
         |> Schema.describe "A workspace card with a dedicated owner email, visibility, and member emails."
 

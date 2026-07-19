@@ -31,16 +31,22 @@ open Axial.Flow
 // schema (or its own tryParse), so a Signup in hand is always trusted.
 // ---------------------------------------------------------------------------
 
-type Email = private EmailValue of string
+type Email =
+    private
+    | EmailValue of string
 
-module Email =
-    let value (EmailValue raw) = raw
+    member this.Value = let (EmailValue value) = this in value
 
-    let schema: Schema<Email> =
+    static member Schema(_: Email) : Schema<Email> =
         Schema.text
         |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 254; Constraint.email ]
-        |> Schema.convert EmailValue value
+        |> Schema.convert EmailValue _.Value
         |> Schema.withFormat SchemaFormat.email
+
+module Email =
+    let value (email: Email) = email.Value
+
+    let schema: Schema<Email> = SchemaDefaults.Resolve()
 
 type Address = { Street: string; City: string }
 
@@ -56,17 +62,25 @@ module Signup =
 
     let addressSchema =
         Schema.define<Address>
-        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 120 ]) "street" _.Street
-        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 80 ]) "city" _.City
+        |> field "street" _.Street
+        |> constrain (minLength 1)
+        |> constrain (maxLength 120)
+        |> field "city" _.City
+        |> constrain (minLength 1)
+        |> constrain (maxLength 80)
         |> construct (fun street city -> { Street = street; City = city })
 
     let schema =
         Schema.define<Signup>
-        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 80 ]) "name" _.Name
-        |> fieldWith Email.schema "email" _.Email
-        |> fieldWith (Schema.int |> Schema.constrain (Constraint.between 13 120)) "age" _.Age
+        |> field "name" _.Name
+        |> constrain (minLength 1)
+        |> constrain (maxLength 80)
+        |> field "email" _.Email
+        |> field "age" _.Age
+        |> constrain (between 13 120)
         |> fieldWith (addressSchema |> Schema.constrain Constraint.required) "address" _.Address
-        |> fieldWith (Schema.listWith Schema.text |> Schema.constrain (Constraint.maxCount 5)) "tags" _.Tags
+        |> field "tags" _.Tags
+        |> constrain (maxCount 5)
         |> construct (fun name email age address tags ->
             { Name = name
               Email = email

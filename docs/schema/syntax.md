@@ -26,14 +26,16 @@ module SignupSchemas =
 `Schema.define<Signup>` describes structure but cannot construct a `Signup`. Each `field` grows the shape's
 compile-time field list. `construct` closes the shape only when its argument order and types match.
 
-Use `fieldWith` when the value schema cannot be inferred:
+Use `fieldWith` when this field intentionally supplies a local schema instead of using its type's canonical schema:
 
 ```fsharp
+let inviteEmail =
+    Schema.option (Schema.text |> Schema.constrain Constraint.email)
+
 let schema =
     Schema.define<Signup>
-    |> fieldWith Email.schema "email" _.Email
-    |> fieldWith (Schema.listWith Tag.schema) "tags" _.Tags
-    |> construct (fun email tags -> { Email = email; Tags = tags })
+    |> fieldWith inviteEmail "email" _.Email
+    |> construct (fun email -> { Email = email })
 ```
 
 Typed constraints apply to the current field, so invalid placements fail where they are written:
@@ -43,8 +45,8 @@ fieldWith (Schema.listWith memberSchema) "members" _.Members
 |> constrain (minCount 1)
 ```
 
-Primitive `string`, `int`, `decimal`, `bool`, `DateOnly`, `DateTimeOffset`, and `Guid` fields are inferred. A user-owned
-or generated type contributes its canonical schema with a static member:
+Primitive `string`, `int`, `decimal`, `bool`, `DateOnly`, `DateTimeOffset`, and `Guid` fields are inferred. An owned
+type contributes its canonical schema with a static member:
 
 ```fsharp
 type EmailAddress =
@@ -91,3 +93,6 @@ Schema.list<string>()
 Schema.map<string>()
 |> constrainValues (minLength 1)
 ```
+
+For the exact relationship between `field`, `fieldWith`, adjacent constraints, and standalone value schemas, see
+[How inferred fields expand](field-desugaring.md).

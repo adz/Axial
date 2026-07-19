@@ -137,6 +137,24 @@ written by hand: `OrderWire.schema`, `OrderWire.parse`, `OrderWire.validate`, an
 references. You own the record; the schema is derived. A bare `[<DeriveSchema>]` record with no other attributes is
 the everyday case — a shape-only permissive schema, exactly the ceremony of a `System.Text.Json` DTO.
 
+The generated declaration uses the same constructor-last surface as handwritten code:
+
+```fsharp
+let schema : Schema<OrderWire> =
+    Schema.define<OrderWire>
+    |> fieldWith (Schema.text |> Schema.describe "Stock keeping unit.") "sku" _.Sku
+    |> constrain (pattern @"^[A-Z]{3}-\d+$")
+    |> field "quantity" _.Quantity
+    |> constrain (atLeast 1)
+    |> field "note" _.Note
+    |> construct (fun sku quantity note ->
+        { Sku = sku; Quantity = quantity; Note = note })
+```
+
+`Sku` uses `fieldWith` only because its field documentation decorates that particular value schema. Its constraint is
+still adjacent. Undecorated primitives and recursively resolvable options/lists/maps use `field`; unions, recursion,
+defaults, and generated cross-record module schemas remain explicit where the value schema is part of the field.
+
 The details:
 
 - **Constraints are opt-in attributes** mirroring the schema constraint vocabulary: `Pattern`, `Min`/`Max` (text

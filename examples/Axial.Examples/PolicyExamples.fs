@@ -10,16 +10,20 @@ open Axial.Schema
 open Axial.Validation
 open Axial.Schema.Syntax
 
-type Quantity = private Quantity of int
+type Quantity =
+    private
+    | Quantity of int
+
+    static member Schema(_: Quantity) : Schema<Quantity> =
+        Schema.int
+        |> Schema.constrain (Constraint.greaterThan 0)
+        |> Schema.convert Quantity (fun (Quantity value) -> value)
 
 module Quantity =
     let create (value: int) = Quantity value
     let value (Quantity value) = value
 
-    let schema : Schema<Quantity> =
-        Schema.int
-        |> Schema.constrain (Constraint.greaterThan 0)
-        |> Schema.convert create value
+    let schema : Schema<Quantity> = SchemaDefaults.Resolve()
 
 type OrderLine =
     { Sku: string
@@ -27,8 +31,8 @@ type OrderLine =
 
 let orderLineSchema =
     Schema.define<OrderLine>
-    |> fieldWith Schema.text "sku" _.Sku
-    |> fieldWith Quantity.schema "quantity" _.Quantity
+    |> field "sku" _.Sku
+    |> field "quantity" _.Quantity
     |> construct (fun sku quantity ->
         { Sku = sku
           Quantity = quantity })

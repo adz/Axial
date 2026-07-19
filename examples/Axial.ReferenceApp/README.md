@@ -52,14 +52,14 @@ Primitive, collection, refined, and record declarations all have type `Schema<_>
 
 ```fsharp
 Schema.text
-Schema.option Schema.guid
-Schema.listWith memberV2
+Schema.list<string>()
+Schema.map<int>()
 RefinedSchemas.nonBlankString
 workspaceV2
 ```
 
-Record fields attach a completed schema. This removed the need for separate value/model catalogs and special nested
-or collection field operations:
+Record fields infer built-ins and canonical type schemas. `fieldWith` remains for the deliberately local refined and
+nested schemas in this application:
 
 ```fsharp
 Schema.define<WorkspaceV2>

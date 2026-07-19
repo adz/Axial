@@ -99,5 +99,9 @@ type Order =
 
         let emitted = Emitter.emit "Ns" [ parsed ] parsed
 
+        test <@ emitted.Contains "|> field \"sku\" _.Sku" @>
+        test <@ emitted.Contains "|> field \"quantity\" _.Quantity" @>
+        test <@ not (emitted.Contains "|> fieldWith Schema.text") @>
+        test <@ not (emitted.Contains "|> fieldWith Schema.int") @>
         test <@ emitted.Contains "|> construct (fun sku quantity -> Order.create sku quantity)" @>
         test <@ not (emitted.Contains "{ Sku = sku") @>

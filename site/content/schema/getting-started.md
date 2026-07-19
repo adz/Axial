@@ -43,7 +43,7 @@ let signupSchema : Schema<Signup> =
     |> construct (fun email age -> { Email = email; Age = age })
 ```
 
-`field` infers built-in schemas and the canonical schema declared by a user-owned or generated type. Inference is
+`field` infers built-in schemas and the canonical schema declared by an owned type. Inference is
 recursive through `option`, `list`, and `Map<string, _>`. See [Schema Syntax](syntax.md) for the custom
 `static member Schema` convention. Use `fieldWith` when a field needs an explicit local schema or its type cannot
 declare a canonical schema.
@@ -143,4 +143,5 @@ module SignupSchemas =
 
 Primitive and composite value schemas remain qualified through `Schema.text`, `Schema.list<'item>()`, `Schema.refine`, and the
 rest of the `Schema` catalog. `field`, `fieldWith`, `constrain`, `construct`, and `constructResult` form the object-shape
-pipeline.
+pipeline. [How inferred fields expand](field-desugaring.md) explains the lower-level relationship between those shape
+operations and standalone value schemas.

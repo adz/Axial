@@ -31,6 +31,9 @@ let customerSchema =
         { Name = name; Address = address; Contacts = contacts })
 ```
 
+Here `addressSchema` and `contactSchema` are intentionally local value schemas. If `Address` and `Contact` declare
+canonical intrinsic schemas, both lines can use ordinary `field` and the contact list resolves recursively.
+
 Nested fields expect object-shaped input and prefix their diagnostics with the field name; collection fields expect
 `Data.List`, parse every item, accumulate every item error, and prefix diagnostics with the item index.
 

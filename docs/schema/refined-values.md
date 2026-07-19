@@ -13,7 +13,22 @@ This page shows how a fallible refined-value constructor becomes an ordinary `Sc
 interpreters. `Schema.refine` connects them without making either package depend in the opposite direction.
 
 ```fsharp
-type Email = private Email of string
+type Email =
+    private
+    | Email of string
+
+    static member Schema(_: Email) : Schema<Email> =
+        let create raw =
+            if System.Net.Mail.MailAddress.TryCreate raw |> fst then Ok(Email raw)
+            else Error "email.invalid"
+
+        Schema.text
+        |> Schema.constrainAll [ Constraint.required; Constraint.email ]
+        |> Schema.refine
+            create
+            (fun code -> [ SchemaError.Custom(code, None) ])
+            (fun (Email raw) -> raw)
+        |> Schema.withFormat SchemaFormat.email
 
 module Email =
     let create raw =
@@ -22,15 +37,10 @@ module Email =
 
     let value (Email raw) = raw
 
-    let schema : Schema<Email> =
-        Schema.text
-        |> Schema.constrainAll [ Constraint.required; Constraint.email ]
-        |> Schema.refine
-            create
-            (fun code -> [ SchemaError.Custom(code, None) ])
-            value
-        |> Schema.withFormat SchemaFormat.email
 ```
+
+Because `Email` owns that canonical schema, object declarations use `field "email" _.Email`. The same inference works
+for `Email option`, `Email list`, and `Map<string, Email>`.
 
 The arguments are:
 

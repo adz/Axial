@@ -6,8 +6,8 @@ description: Parse an order with a nested address and repeated line items.
 
 # Nested Models And Collections Tutorial
 
-This tutorial parses an order that contains a nested address and a collection of line items. Nested schemas and item
-schemas are ordinary `Schema<_>` values — composition uses `fieldWith` with the nested schema or `Schema.listWith`.
+This tutorial parses an order that contains a nested address and a collection of line items. `Address` and `Item`
+own their canonical schemas, so `Order` can infer both the nested field and the list item schema.
 
 ## Declare The Schemas
 
@@ -15,30 +15,33 @@ schemas are ordinary `Schema<_>` values — composition uses `fieldWith` with th
 open Axial.Schema
 open Axial.Schema.Syntax
 
-type Address = { Street: string; City: string }
-type Item = { Sku: string; Quantity: int }
+type Address =
+    { Street: string; City: string }
+
+    static member Schema(_: Address) : Schema<Address> =
+        Schema.define<Address>
+        |> field "street" _.Street
+        |> field "city" _.City
+        |> construct (fun street city -> { Street = street; City = city })
+
+type Item =
+    { Sku: string; Quantity: int }
+
+    static member Schema(_: Item) : Schema<Item> =
+        Schema.define<Item>
+        |> field "sku" _.Sku
+        |> field "quantity" _.Quantity
+        |> constrain (greaterThan 0)
+        |> construct (fun sku quantity -> { Sku = sku; Quantity = quantity })
 
 type Order =
     { Address: Address
       Items: Item list }
 
-let addressSchema =
-    Schema.define<Address>
-    |> field "street" _.Street
-    |> field "city" _.City
-    |> construct (fun street city -> { Street = street; City = city })
-
-let itemSchema =
-    Schema.define<Item>
-    |> field "sku" _.Sku
-    |> field "quantity" _.Quantity
-    |> constrain (greaterThan 0)
-    |> construct (fun sku quantity -> { Sku = sku; Quantity = quantity })
-
 let orderSchema =
     Schema.define<Order>
-    |> fieldWith addressSchema "address" _.Address
-    |> fieldWith (Schema.listWith itemSchema) "items" _.Items
+    |> field "address" _.Address
+    |> field "items" _.Items
     |> constrain (minCount 1)
     |> construct (fun address items -> { Address = address; Items = items })
 ```
@@ -81,6 +84,9 @@ Data.redisplayPath "items[1].quantity" parsed.Input   // "0"
 
 Collection constraints (`minCount`, `maxCount`, `count`, `distinct`) attach to the collection field itself and report
 on the collection path (`items`), separately from per-item errors.
+
+Use `fieldWith` instead when a nested field needs a schema that is local to its parent, when wrapping a third-party
+type, or for recursive composition with `Schema.defer`.
 
 ## Next
 

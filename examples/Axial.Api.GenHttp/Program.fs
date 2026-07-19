@@ -33,9 +33,13 @@ module Signup =
 
     let schema =
         Schema.define<Signup>
-        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 80 ]) "name" _.Name
-        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.email ]) "email" _.Email
-        |> fieldWith (Schema.int |> Schema.constrain (Constraint.between 13 120)) "age" _.Age
+        |> field "name" _.Name
+        |> constrain (minLength 1)
+        |> constrain (maxLength 80)
+        |> field "email" _.Email
+        |> constrain emailFormat
+        |> field "age" _.Age
+        |> constrain (between 13 120)
         |> construct (fun name email age -> { Name = name; Email = email; Age = age })
 
 module Boundary =
