@@ -12,4 +12,18 @@ bash "$root_dir/scripts/populate-hugo-content.sh"
 
 hugo --source "$root_dir/site" --destination "$validate_dir" --baseURL "$HUGO_BASEURL" --cleanDestinationDir
 
+assert_edit_link() {
+  local rendered_page="$1"
+  local source_path="$2"
+  local expected="https://github.com/adz/Axial/edit/main/$source_path"
+
+  if ! grep -Fq "$expected" "$validate_dir/$rendered_page"; then
+    echo "Missing expected Edit link in $rendered_page: $expected" >&2
+    exit 1
+  fi
+}
+
+assert_edit_link "schema/getting-started/index.html" "docs/schema/getting-started.md"
+assert_edit_link "schema/reference/schema/t-schema-schema/index.html" "docs/reference/schema/t-schema-schema.md"
+
 echo "Docs validation build written to $validate_dir"
