@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.1;net8.0</TargetFrameworks>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsAotCompatible Condition="'$(TargetFramework)' == 'net8.0'">true</IsAotCompatible>
+    <PackageId>Axial.Data</PackageId>
+    <AssemblyName>Axial.Data</AssemblyName>
+    <RootNamespace>Axial</RootNamespace>
+    <Authors>Adam Davies</Authors>
+    <Description>Portable structured data values and concise F# construction syntax.</Description>
+    <PackageProjectUrl>https://github.com/adz/Axial</PackageProjectUrl>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <PackageTags>fsharp;data;structured-data;json;aot;fable</PackageTags>
+    <PackageReadmeFile>Axial.Data.README.md</PackageReadmeFile>
+    <FsDocsCollectionName>Axial</FsDocsCollectionName>
+    <FsDocsLogoSource>content/img/axial-inline-light.svg</FsDocsLogoSource>
+    <FsDocsLogoAlt>Axial.Data</FsDocsLogoAlt>
+    <FsDocsLogoLink>https://github.com/adz/Axial</FsDocsLogoLink>
+    <FsDocsLicenseLink>https://github.com/adz/Axial/blob/main/LICENSE</FsDocsLicenseLink>
+    <FsDocsReleaseNotesLink>https://github.com/adz/Axial/blob/main/RELEASE_NOTES.md</FsDocsReleaseNotesLink>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Fable.Core" Version="4.3.0" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="Axial.Data.README.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Data.fs" />
+  </ItemGroup>
+
+</Project>

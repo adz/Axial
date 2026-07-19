@@ -36,6 +36,7 @@
     <Project Path="src/Axial.Flow.HttpClient/Axial.Flow.HttpClient.fsproj" />
     <Project Path="src/Axial.Flow.Process/Axial.Flow.Process.fsproj" />
     <Project Path="src/Axial.Flow/Axial.Flow.fsproj" />
+    <Project Path="src/Axial.Data/Axial.Data.fsproj" />
     <Project Path="src/Axial.ErrorHandling/Axial.ErrorHandling.fsproj" />
     <Project Path="src/Axial.Codec/Axial.Codec.fsproj" />
     <Project Path="src/Axial.Schema/Axial.Schema.fsproj" />
@@ -53,6 +54,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Axial.Flow.Tests/Axial.Flow.Tests.fsproj" />
+    <Project Path="tests/Axial.Data.Tests/Axial.Data.Tests.fsproj" />
     <Project Path="tests/Axial.ErrorHandling.Tests/Axial.ErrorHandling.Tests.fsproj" />
     <Project Path="tests/Axial.Codec.Tests/Axial.Codec.Tests.fsproj" />
     <Project Path="tests/Axial.Schema.Tests/Axial.Schema.Tests.fsproj" />

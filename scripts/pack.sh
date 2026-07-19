@@ -21,6 +21,7 @@ done
 
 projects=(
   "src/Axial.Flow/Axial.Flow.fsproj"
+  "src/Axial.Data/Axial.Data.fsproj"
   "src/Axial.ErrorHandling/Axial.ErrorHandling.fsproj"
   "src/Axial.Schema/Axial.Schema.fsproj"
   "src/Axial.Schema.Http/Axial.Schema.Http.fsproj"
