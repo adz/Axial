@@ -42,7 +42,7 @@ The same explicitness is what makes Fable compilation work: `Axial.Flow`, `Axial
 `Validation`), and `Axial.Schema` (including `Refined`) all compile to JavaScript, so a browser front end can parse
 and redisplay through the same schema declaration the server uses. CI compiles the Fable JavaScript surface
 (`bash scripts/check-fable-js-surface.sh`), and the [benchmarks]({{< relref "/schema/benchmarks.md" >}}) include
-Node and Erlang runs of the same workloads. .NET-only conveniences — such as `RawInput.ofJsonDocument` and the
+Node and Erlang runs of the same workloads. .NET-only conveniences — such as `Data.ofJsonDocument` and the
 `DateOnly` field type — are compile-time gated so the Fable surface never references them.
 
 ## What This Buys You

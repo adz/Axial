@@ -5,7 +5,7 @@ weight: 1000
 type: docs
 ---
 
-Describes why an executable value check failed, without attaching source paths or raw input.
+Describes why an executable value check failed, without attaching source paths or structured data.
 
 ## Signature
 

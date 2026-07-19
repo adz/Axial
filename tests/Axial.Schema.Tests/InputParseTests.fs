@@ -1,5 +1,7 @@
 namespace Axial.Tests
 
+open Axial
+
 open Axial.ErrorHandling
 
 open System
@@ -55,10 +57,9 @@ module InputParseTests =
     [<Fact>]
     let ``parse builds model from object input`` () =
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "email", RawInput.Scalar "ada@example.com"
-                      "age", RawInput.Scalar "42" ]
+            Data.objectOfMap (Map.ofList
+                    [ "email", Data.Text "ada@example.com"
+                      "age", Data.Text "42" ]
             )
 
         let parsed = Schema.parseRetainingInput schema raw
@@ -71,10 +72,9 @@ module InputParseTests =
     [<Fact>]
     let ``parse reports field diagnostics for invalid scalar input`` () =
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "email", RawInput.Scalar "ada@example.com"
-                      "age", RawInput.Scalar "not-an-int" ]
+            Data.objectOfMap (Map.ofList
+                    [ "email", Data.Text "ada@example.com"
+                      "age", Data.Text "not-an-int" ]
             )
 
         let parsed = Schema.parseRetainingInput schema raw
@@ -88,10 +88,9 @@ module InputParseTests =
     [<Fact>]
     let ``parse accumulates diagnostics for every failing sibling field`` () =
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "email", RawInput.Scalar "   "
-                      "age", RawInput.Scalar "not-an-int" ]
+            Data.objectOfMap (Map.ofList
+                    [ "email", Data.Text "   "
+                      "age", Data.Text "not-an-int" ]
             )
 
         let parsed = Schema.parseRetainingInput schema raw
@@ -116,7 +115,7 @@ module InputParseTests =
             |> construct (fun email age -> { Email = email; Age = age })
 
         let raw =
-            RawInput.Object(Map.ofList [ "email", RawInput.Missing; "age", RawInput.Scalar "10" ])
+            Data.objectOfMap (Map.ofList [ "email", Data.Null; "age", Data.Text "10" ])
 
         let parsed = Schema.parseRetainingInput messageSchema raw
 
@@ -127,10 +126,9 @@ module InputParseTests =
     [<Fact>]
     let ``parse falls back to the default error when a constraint has no custom message`` () =
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "email", RawInput.Scalar "   "
-                      "age", RawInput.Scalar "42" ]
+            Data.objectOfMap (Map.ofList
+                    [ "email", Data.Text "   "
+                      "age", Data.Text "42" ]
             )
 
         let parsed = Schema.parseRetainingInput schema raw
@@ -139,7 +137,7 @@ module InputParseTests =
 
     [<Fact>]
     let ``parse reports root diagnostic when model input is not an object`` () =
-        let raw = RawInput.Scalar "ada@example.com"
+        let raw = Data.Text "ada@example.com"
         let parsed = Schema.parseRetainingInput schema raw
 
         test <@ parsed.Input = raw @>
@@ -148,7 +146,7 @@ module InputParseTests =
 
     [<Fact>]
     let ``required reports missing raw field as required`` () =
-        let raw = RawInput.Object(Map.ofList [ "age", RawInput.Scalar "42" ])
+        let raw = Data.objectOfMap (Map.ofList [ "age", Data.Text "42" ])
 
         let parsed = Schema.parseRetainingInput schema raw
 
@@ -158,12 +156,11 @@ module InputParseTests =
         test <@ parsed.Errors = [ { Path = [ PathSegment.Name "email" ]; Error = SchemaError.Required } ] @>
 
     [<Fact>]
-    let ``parse retains raw input on failure`` () =
+    let ``parse retains structured data on failure`` () =
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "email", RawInput.Scalar "   "
-                      "age", RawInput.Scalar "not-an-int" ]
+            Data.objectOfMap (Map.ofList
+                    [ "email", Data.Text "   "
+                      "age", Data.Text "not-an-int" ]
             )
 
         let parsed = Schema.parseRetainingInput schema raw
@@ -174,10 +171,9 @@ module InputParseTests =
     [<Fact>]
     let ``required reports explicit missing raw scalar as required`` () =
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "email", RawInput.Missing
-                      "age", RawInput.Scalar "42" ]
+            Data.objectOfMap (Map.ofList
+                    [ "email", Data.Null
+                      "age", Data.Text "42" ]
             )
 
         let parsed = Schema.parseRetainingInput schema raw
@@ -188,10 +184,9 @@ module InputParseTests =
     [<Fact>]
     let ``required reports blank text scalar as required`` () =
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "email", RawInput.Scalar "   "
-                      "age", RawInput.Scalar "42" ]
+            Data.objectOfMap (Map.ofList
+                    [ "email", Data.Text "   "
+                      "age", Data.Text "42" ]
             )
 
         let parsed = Schema.parseRetainingInput schema raw
@@ -212,10 +207,9 @@ module InputParseTests =
                 { Email = email; Age = age })
 
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "email", RawInput.Scalar "ada@example.com"
-                      "age", RawInput.Scalar "not-an-int" ]
+            Data.objectOfMap (Map.ofList
+                    [ "email", Data.Text "ada@example.com"
+                      "age", Data.Text "not-an-int" ]
             )
 
         let parsed = Schema.parseRetainingInput countingSchema raw
@@ -236,10 +230,9 @@ module InputParseTests =
                 { Email = email; Age = age })
 
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "email", RawInput.Scalar "ada@example.com"
-                      "age", RawInput.Scalar "42" ]
+            Data.objectOfMap (Map.ofList
+                    [ "email", Data.Text "ada@example.com"
+                      "age", Data.Text "42" ]
             )
 
         let parsed = Schema.parseRetainingInput countingSchema raw
@@ -255,9 +248,8 @@ module InputParseTests =
             |> constructResult AdultAge.Create
 
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "age", RawInput.Scalar "21" ]
+            Data.objectOfMap (Map.ofList
+                    [ "age", Data.Text "21" ]
             )
 
         let parsed = Schema.parseRetainingInput ageSchema raw
@@ -273,9 +265,8 @@ module InputParseTests =
             |> constructResult AdultAge.Create
 
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "age", RawInput.Scalar "17" ]
+            Data.objectOfMap (Map.ofList
+                    [ "age", Data.Text "17" ]
             )
 
         let parsed = Schema.parseRetainingInput ageSchema raw
@@ -292,9 +283,8 @@ module InputParseTests =
             |> constructResult AdultAge.Create
 
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "age", RawInput.Scalar "17" ]
+            Data.objectOfMap (Map.ofList
+                    [ "age", Data.Text "17" ]
             )
 
         let parsed =
@@ -319,9 +309,8 @@ module InputParseTests =
                 AdultAge.Create age)
 
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "age", RawInput.Scalar "-1" ]
+            Data.objectOfMap (Map.ofList
+                    [ "age", Data.Text "-1" ]
             )
 
         let parsed = Schema.parseRetainingInput gatedSchema raw
@@ -344,9 +333,8 @@ module InputParseTests =
                 |> Result.mapError (function Underage -> "Adult age is required."))
 
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "age", RawInput.Scalar "17" ]
+            Data.objectOfMap (Map.ofList
+                    [ "age", Data.Text "17" ]
             )
 
         let parsed = Schema.parseRetainingInput ageSchema raw
@@ -362,10 +350,9 @@ module InputParseTests =
             |> constructResult DateRange.Create
 
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "start", RawInput.Scalar "2026-01-10"
-                      "end", RawInput.Scalar "2026-01-12" ]
+            Data.objectOfMap (Map.ofList
+                    [ "start", Data.Text "2026-01-10"
+                      "end", Data.Text "2026-01-12" ]
             )
 
         let parsed = Schema.parseRetainingInput rangeSchema raw
@@ -383,10 +370,9 @@ module InputParseTests =
             |> constructResult DateRange.Create
 
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "start", RawInput.Scalar "2026-01-12"
-                      "end", RawInput.Scalar "2026-01-10" ]
+            Data.objectOfMap (Map.ofList
+                    [ "start", Data.Text "2026-01-12"
+                      "end", Data.Text "2026-01-10" ]
             )
 
         let parsed = Schema.parseRetainingInput rangeSchema raw
@@ -404,10 +390,9 @@ module InputParseTests =
             |> constructResult DateRange.Create
 
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "start", RawInput.Scalar "2026-01-12"
-                      "end", RawInput.Scalar "2026-01-10" ]
+            Data.objectOfMap (Map.ofList
+                    [ "start", Data.Text "2026-01-12"
+                      "end", Data.Text "2026-01-10" ]
             )
 
         let parsed =
@@ -433,10 +418,9 @@ module InputParseTests =
                 DateRange.Create start endDate)
 
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "start", RawInput.Scalar "not-a-date"
-                      "end", RawInput.Scalar "2026-01-10" ]
+            Data.objectOfMap (Map.ofList
+                    [ "start", Data.Text "not-a-date"
+                      "end", Data.Text "2026-01-10" ]
             )
 
         let parsed = Schema.parseRetainingInput rangeSchema raw
@@ -446,19 +430,18 @@ module InputParseTests =
         test <@ parsed.Errors = [ { Path = [ PathSegment.Name "start" ]; Error = SchemaError.InvalidFormat "date" } ] @>
 
     [<Fact>]
-    let ``parse retains raw input for redisplay after a failed parse`` () =
+    let ``parse retains structured data for redisplay after a failed parse`` () =
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "email", RawInput.Scalar "ada@example.com"
-                      "age", RawInput.Scalar "not-an-int" ]
+            Data.objectOfMap (Map.ofList
+                    [ "email", Data.Text "ada@example.com"
+                      "age", Data.Text "not-an-int" ]
             )
 
         let parsed = Schema.parseRetainingInput schema raw
 
         test <@ not parsed.IsValid @>
-        test <@ RawInput.redisplayPath "email" parsed.Input = "ada@example.com" @>
-        test <@ RawInput.redisplayPath "age" parsed.Input = "not-an-int" @>
+        test <@ Data.redisplayPath "email" parsed.Input = "ada@example.com" @>
+        test <@ Data.redisplayPath "age" parsed.Input = "not-an-int" @>
 
     [<Fact>]
     let ``parse maps a check failure from a value constraint to a schema error`` () =
@@ -469,10 +452,9 @@ module InputParseTests =
             |> construct (fun email age -> { Email = email; Age = age })
 
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "email", RawInput.Scalar "ab"
-                      "age", RawInput.Scalar "42" ]
+            Data.objectOfMap (Map.ofList
+                    [ "email", Data.Text "ab"
+                      "age", Data.Text "42" ]
             )
 
         let parsed = Schema.parseRetainingInput minLengthSchema raw
@@ -489,7 +471,7 @@ module InputParseTests =
             |> construct (fun email age -> { Email = email; Age = age })
 
         let rawFor fieldName =
-            RawInput.Object(Map.ofList [ fieldName, RawInput.Missing; "age", RawInput.Scalar "42" ])
+            Data.objectOfMap (Map.ofList [ fieldName, Data.Null; "age", Data.Text "42" ])
 
         let shortNameParsed = Schema.parseRetainingInput (makeSchema "email") (rawFor "email")
         let longNameParsed = Schema.parseRetainingInput (makeSchema "emailAddress") (rawFor "emailAddress")
@@ -506,10 +488,9 @@ module InputParseTests =
             |> construct (fun email age -> { Email = email; Age = age })
 
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "email", RawInput.Scalar "ada@example.com"
-                      "age", RawInput.Scalar "   " ]
+            Data.objectOfMap (Map.ofList
+                    [ "email", Data.Text "ada@example.com"
+                      "age", Data.Text "   " ]
             )
 
         let parsed = Schema.parseRetainingInput requiredAgeSchema raw

@@ -1,5 +1,7 @@
 namespace Axial.Schema.Tests
 
+open Axial
+
 open Axial.ErrorHandling
 open Axial.Schema
 open Axial.Validation
@@ -43,8 +45,8 @@ module ContractTests =
         |> Contract.supersedes 2 (v2Schema ()) migrateV2
         |> Contract.supersedes 1 (v1Schema ()) migrateV1
 
-    let private raw fields = RawInput.Object(Map.ofList fields)
-    let private scalar value = RawInput.Scalar(string value)
+    let private raw fields = Data.objectOfMap (Map.ofList fields)
+    let private scalar value = Data.Text(string value)
 
     [<Fact>]
     let ``head version parses directly and returns a trusted model`` () =

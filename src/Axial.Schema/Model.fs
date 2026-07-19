@@ -1,5 +1,7 @@
 namespace Axial.Schema
 
+open Axial
+
 open System
 open System.Globalization
 open Axial.ErrorHandling
@@ -7,7 +9,7 @@ open Axial.Refined
 open Axial.Schema
 open Axial.Validation
 
-/// <summary>Options that customize how raw input is parsed through a schema.</summary>
+/// <summary>Options that customize how structured data is parsed through a schema.</summary>
 type SchemaParseOptions =
     internal
         {
@@ -18,12 +20,18 @@ type SchemaParseOptions =
 [<RequireQualifiedAccess>]
 module internal SchemaParsing =
 
+    let private diagnosticsPath (path: DataPath) : Path =
+        path
+        |> List.map (function
+            | DataPathSegment.Name name -> PathSegment.Name name
+            | DataPathSegment.Index index -> PathSegment.Index index)
+
     /// <summary>The default input parser options.</summary>
     let defaults =
         { ConstructorErrorPath = None }
 
     /// <summary>
-    /// Attaches model constructor errors to the supplied raw input path instead of the current object path.
+    /// Attaches model constructor errors to the supplied structured data path instead of the current object path.
     /// </summary>
     /// <remarks>
     /// The path is interpreted relative to the model whose constructor failed. For a root model,
@@ -31,13 +39,13 @@ module internal SchemaParsing =
     /// <c>range</c>, the same option attaches the error to <c>range.end</c>.
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="path" /> is null.</exception>
-    /// <exception cref="T:System.FormatException">Thrown when <paramref name="path" /> is not a valid raw input path.</exception>
+    /// <exception cref="T:System.FormatException">Thrown when <paramref name="path" /> is not a valid structured data path.</exception>
     let constructorErrorAt (path: string) (options: SchemaParseOptions) =
         if isNull (box options) then
             nullArg (nameof options)
 
         { options with
-            ConstructorErrorPath = path |> InputPath.parse |> InputPath.toDiagnosticsPath |> Some }
+            ConstructorErrorPath = path |> DataPath.parse |> diagnosticsPath |> Some }
 
     let private diagnosticsAt path error =
         Validation.fail (Diagnostics.singleton error)
@@ -178,14 +186,16 @@ module internal SchemaParsing =
         | LazyValueDefinition deferred ->
             parseValue options (deferred.Force()) (valueSchema.Constraints @ fieldConstraints) path raw
         | OptionValueDefinition optional ->
-            // Absence is a legal parse result for optional values: missing (and JSON null, which raw input adapters
+            // Absence is a legal parse result for optional values: missing (and JSON null, which structured data adapters
             // lower to Missing) becomes None, while present input parses through the payload schema into Some. The
             // constraints attached to the optional layer and the field run against the payload.
             match raw with
-            | RawInput.Missing -> Ok optional.NoneValue
-            | RawInput.Scalar _
-            | RawInput.Object _
-            | RawInput.Many _ ->
+            | Data.Null -> Ok optional.NoneValue
+            | Data.Text _
+            | Data.Number _
+            | Data.Bool _
+            | Data.Object _
+            | Data.List _ ->
                 parseValue options optional.Payload (valueSchema.Constraints @ fieldConstraints) path raw
                 |> Result.map optional.WrapSome
         | PrimitiveValueDefinition _
@@ -201,15 +211,17 @@ module internal SchemaParsing =
         let constraints = allConstraints valueSchema @ fieldConstraints
 
         match raw with
-        | RawInput.Missing ->
+        | Data.Null ->
             errorAt path (SchemaCheckFailure.withCustomMessageForCode constraints "required" SchemaError.Required)
-        | RawInput.Object fields ->
+        | Data.Object fields ->
+            let fields = Map.ofList fields
+
             match valueSchema.Shape with
             | NestedValueDefinition(nestedModel, _) -> parseObject options path nestedModel fields
             | UnionValueDefinition union -> parseUnion options path union fields
             | UnionInlineValueDefinition union -> parseUnionInline options path union fields
             | MapValueDefinition collection -> parseMap options path collection constraints fields
-            | LazyValueDefinition _ -> parseValue options valueSchema fieldConstraints path (RawInput.Object fields)
+            | LazyValueDefinition _ -> parseValue options valueSchema fieldConstraints path (Data.Object(Map.toList fields))
             | RefinedValueDefinition(raw, _) ->
                 match raw.Shape with
                 | NestedValueDefinition(nestedModel, _) ->
@@ -225,37 +237,37 @@ module internal SchemaParsing =
                     parseMap options path collection constraints fields
                     |> Result.bind (constructValue path valueSchema)
                 | LazyValueDefinition _ ->
-                    parseValue options raw [] path (RawInput.Object fields)
+                    parseValue options raw [] path (Data.Object(Map.toList fields))
                     |> Result.bind (constructValue path valueSchema)
                 | OptionValueDefinition _ ->
-                    parseValue options raw [] path (RawInput.Object fields)
+                    parseValue options raw [] path (Data.Object(Map.toList fields))
                     |> Result.bind (constructValue path valueSchema)
                 | PrimitiveValueDefinition _
                 | RefinedValueDefinition _
                 | EnumValueDefinition _ -> errorAt path SchemaError.ExpectedScalar
                 | ManyValueDefinition _ -> errorAt path SchemaError.ExpectedMany
             | ManyValueDefinition _ -> errorAt path SchemaError.ExpectedMany
-            | OptionValueDefinition _ -> invalidOp "Optional value schemas are parsed before raw input dispatch."
+            | OptionValueDefinition _ -> invalidOp "Optional value schemas are parsed before structured data dispatch."
             | PrimitiveValueDefinition _
             | EnumValueDefinition _ -> errorAt path SchemaError.ExpectedScalar
-        | RawInput.Many rawItems ->
+        | Data.List rawItems ->
             match valueSchema.Shape with
             | NestedValueDefinition _
             | UnionValueDefinition _
             | UnionInlineValueDefinition _
             | MapValueDefinition _ -> errorAt path SchemaError.ExpectedObject
             | ManyValueDefinition collection -> parseMany options path collection constraints rawItems
-            | LazyValueDefinition _ -> parseValue options valueSchema fieldConstraints path (RawInput.Many rawItems)
+            | LazyValueDefinition _ -> parseValue options valueSchema fieldConstraints path (Data.List rawItems)
             | RefinedValueDefinition(raw, _) ->
                 match raw.Shape with
                 | ManyValueDefinition collection ->
                     parseMany options path collection constraints rawItems
                     |> Result.bind (constructValue path valueSchema)
                 | LazyValueDefinition _ ->
-                    parseValue options raw [] path (RawInput.Many rawItems)
+                    parseValue options raw [] path (Data.List rawItems)
                     |> Result.bind (constructValue path valueSchema)
                 | OptionValueDefinition _ ->
-                    parseValue options raw [] path (RawInput.Many rawItems)
+                    parseValue options raw [] path (Data.List rawItems)
                     |> Result.bind (constructValue path valueSchema)
                 | NestedValueDefinition _
                 | UnionValueDefinition _
@@ -264,20 +276,23 @@ module internal SchemaParsing =
                 | PrimitiveValueDefinition _
                 | RefinedValueDefinition _
                 | EnumValueDefinition _ -> errorAt path SchemaError.ExpectedScalar
-            | OptionValueDefinition _ -> invalidOp "Optional value schemas are parsed before raw input dispatch."
+            | OptionValueDefinition _ -> invalidOp "Optional value schemas are parsed before structured data dispatch."
             | PrimitiveValueDefinition _
             | EnumValueDefinition _ -> errorAt path SchemaError.ExpectedScalar
-        | RawInput.Scalar text when hasRequiredConstraint constraints && String.IsNullOrWhiteSpace text ->
+        | Data.Number token -> parsePresentValue options valueSchema fieldConstraints path (Data.Text token)
+        | Data.Bool value ->
+            parsePresentValue options valueSchema fieldConstraints path (Data.Text(if value then "true" else "false"))
+        | Data.Text text when hasRequiredConstraint constraints && String.IsNullOrWhiteSpace text ->
             errorAt path (SchemaCheckFailure.withCustomMessageForCode constraints "required" SchemaError.Required)
-        | RawInput.Scalar text ->
+        | Data.Text text ->
             match valueSchema.Shape with
             | NestedValueDefinition _
             | UnionValueDefinition _
             | UnionInlineValueDefinition _
             | MapValueDefinition _ -> errorAt path SchemaError.ExpectedObject
             | ManyValueDefinition _ -> errorAt path SchemaError.ExpectedMany
-            | LazyValueDefinition _ -> parseValue options valueSchema fieldConstraints path (RawInput.Scalar text)
-            | OptionValueDefinition _ -> invalidOp "Optional value schemas are parsed before raw input dispatch."
+            | LazyValueDefinition _ -> parseValue options valueSchema fieldConstraints path (Data.Text text)
+            | OptionValueDefinition _ -> invalidOp "Optional value schemas are parsed before structured data dispatch."
             | EnumValueDefinition enum -> parseEnum path enum text
             | RefinedValueDefinition(raw, _) ->
                 match raw.Shape with
@@ -287,10 +302,10 @@ module internal SchemaParsing =
                 | MapValueDefinition _ -> errorAt path SchemaError.ExpectedObject
                 | ManyValueDefinition _ -> errorAt path SchemaError.ExpectedMany
                 | LazyValueDefinition _ ->
-                    parseValue options raw [] path (RawInput.Scalar text)
+                    parseValue options raw [] path (Data.Text text)
                     |> Result.bind (constructValue path valueSchema)
                 | OptionValueDefinition _ ->
-                    parseValue options raw [] path (RawInput.Scalar text)
+                    parseValue options raw [] path (Data.Text text)
                     |> Result.bind (constructValue path valueSchema)
                 | EnumValueDefinition enum ->
                     parseEnum path enum text |> Result.bind (constructValue path valueSchema)
@@ -322,15 +337,15 @@ module internal SchemaParsing =
                         |> Error
                     | Ok checkedPrimitive -> constructValue path valueSchema checkedPrimitive
 
-    and private parseUnion options path (union: TaggedUnionValueDefinition) (fields: Map<string, RawInput>) =
+    and private parseUnion options path (union: TaggedUnionValueDefinition) (fields: Map<string, Data>) =
         let discriminatorName = ExternalFieldName.value union.DiscriminatorField
         let payloadName = ExternalFieldName.value union.PayloadField
         let discriminatorPath = path @ [ PathSegment.Name discriminatorName ]
         let payloadPath = path @ [ PathSegment.Name payloadName ]
 
-        match fields |> Map.tryFind discriminatorName |> Option.defaultValue RawInput.Missing with
-        | RawInput.Missing -> errorAt discriminatorPath SchemaError.Required
-        | RawInput.Scalar tag ->
+        match fields |> Map.tryFind discriminatorName |> Option.defaultValue Data.Null with
+        | Data.Null -> errorAt discriminatorPath SchemaError.Required
+        | Data.Text tag ->
             match union.Cases |> List.tryFind (fun case -> case.Tag = tag) with
             | None ->
                 union.Cases
@@ -339,20 +354,23 @@ module internal SchemaParsing =
                 |> SchemaError.NotOneOf
                 |> errorAt discriminatorPath
             | Some case ->
-                let payloadRaw = fields |> Map.tryFind payloadName |> Option.defaultValue RawInput.Missing
+                let payloadRaw = fields |> Map.tryFind payloadName |> Option.defaultValue Data.Null
 
                 parseValue options case.Payload [] payloadPath payloadRaw
                 |> Result.map case.Construct
-        | RawInput.Object _
-        | RawInput.Many _ -> errorAt discriminatorPath SchemaError.ExpectedScalar
+        | Data.Object _
+        | Data.List _ -> errorAt discriminatorPath SchemaError.ExpectedScalar
+        | Data.Number token -> parseUnion options path union (fields |> Map.add discriminatorName (Data.Text token))
+        | Data.Bool value ->
+            parseUnion options path union (fields |> Map.add discriminatorName (Data.Text(if value then "true" else "false")))
 
-    and private parseUnionInline options path (union: InlineTaggedUnionValueDefinition) (fields: Map<string, RawInput>) =
+    and private parseUnionInline options path (union: InlineTaggedUnionValueDefinition) (fields: Map<string, Data>) =
         let discriminatorName = ExternalFieldName.value union.DiscriminatorField
         let discriminatorPath = path @ [ PathSegment.Name discriminatorName ]
 
-        match fields |> Map.tryFind discriminatorName |> Option.defaultValue RawInput.Missing with
-        | RawInput.Missing -> errorAt discriminatorPath SchemaError.Required
-        | RawInput.Scalar tag ->
+        match fields |> Map.tryFind discriminatorName |> Option.defaultValue Data.Null with
+        | Data.Null -> errorAt discriminatorPath SchemaError.Required
+        | Data.Text tag ->
             match union.Cases |> List.tryFind (fun case -> case.Tag = tag) with
             | None ->
                 union.Cases
@@ -365,8 +383,11 @@ module internal SchemaParsing =
                 | NestedValueDefinition(nestedModel, _) ->
                     parseObject options path nestedModel fields |> Result.map case.Construct
                 | _ -> invalidOp "Union-inline case payloads must be nested model schemas."
-        | RawInput.Object _
-        | RawInput.Many _ -> errorAt discriminatorPath SchemaError.ExpectedScalar
+        | Data.Object _
+        | Data.List _ -> errorAt discriminatorPath SchemaError.ExpectedScalar
+        | Data.Number token -> parseUnionInline options path union (fields |> Map.add discriminatorName (Data.Text token))
+        | Data.Bool value ->
+            parseUnionInline options path union (fields |> Map.add discriminatorName (Data.Text(if value then "true" else "false")))
 
     and private parseEnum path (enum: TaggedEnumValueDefinition) (text: string) =
         match enum.Cases |> List.tryFind (fun case -> case.Tag = text) with
@@ -378,13 +399,13 @@ module internal SchemaParsing =
             |> SchemaError.NotOneOf
             |> errorAt path
 
-    and private parseNestedField options basePath (fields: Map<string, RawInput>) (field: FieldDescriptor<obj>) =
+    and private parseNestedField options basePath (fields: Map<string, Data>) (field: FieldDescriptor<obj>) =
         let name = ExternalFieldName.value field.ExternalName
         let path = basePath @ [ PathSegment.Name name ]
-        let raw = fields |> Map.tryFind name |> Option.defaultValue RawInput.Missing
+        let raw = fields |> Map.tryFind name |> Option.defaultValue Data.Null
         parseValue options field.ValueSchema field.Constraints path raw
 
-    and private parseObject options path (model: ModelSchemaDefinition<obj>) (fields: Map<string, RawInput>) =
+    and private parseObject options path (model: ModelSchemaDefinition<obj>) (fields: Map<string, Data>) =
         let parsedFields = model.Fields |> List.map (parseNestedField options path fields)
         let errors = parsedFields |> List.choose (function Error diagnostics -> Some diagnostics | Ok _ -> None)
 
@@ -425,7 +446,7 @@ module internal SchemaParsing =
             | Error diagnostics -> Error diagnostics
         | diagnostics -> Error(mergeErrors diagnostics)
 
-    and private parseMap options path (collection: MapValueDefinition) constraints (fields: Map<string, RawInput>) =
+    and private parseMap options path (collection: MapValueDefinition) constraints (fields: Map<string, Data>) =
         let entries = fields |> Map.toList
 
         let parsedEntries =
@@ -446,14 +467,14 @@ module internal SchemaParsing =
             | Error diagnostics -> Error diagnostics
         | diagnostics -> Error(mergeErrors diagnostics)
 
-    let private parseRootField options basePath (fields: Map<string, RawInput>) (field: FieldDescriptor<'model>) =
+    let private parseRootField options basePath (fields: Map<string, Data>) (field: FieldDescriptor<'model>) =
         let name = ExternalFieldName.value field.ExternalName
         let path = basePath @ [ PathSegment.Name name ]
-        let raw = fields |> Map.tryFind name |> Option.defaultValue RawInput.Missing
+        let raw = fields |> Map.tryFind name |> Option.defaultValue Data.Null
         parseValue options field.ValueSchema field.Constraints path raw
 
-    /// <summary>Parses raw boundary input through a trusted model schema using custom input parser options.</summary>
-    let parseWith (configure: SchemaParseOptions -> SchemaParseOptions) (schema: Schema<'model>) (input: RawInput) : Result<'model, Diagnostics<SchemaError>> =
+    /// <summary>Parses structured boundary data through a trusted model schema using custom input parser options.</summary>
+    let parseWith (configure: SchemaParseOptions -> SchemaParseOptions) (schema: Schema<'model>) (input: Data) : Result<'model, Diagnostics<SchemaError>> =
         if isNull (box configure) then
             nullArg (nameof configure)
 
@@ -470,11 +491,13 @@ module internal SchemaParsing =
             | PendingDefinition, _ -> invalidArg (nameof schema) "Expected a built model schema."
             | ValueDefinition value, raw ->
                 parseValue options value [] [] raw |> Result.map unbox<'model>
-            | ModelDefinition _, RawInput.Missing -> Error(diagnosticsAt [] SchemaError.ExpectedObject)
-            | ModelDefinition _, RawInput.Scalar _ -> Error(diagnosticsAt [] SchemaError.ExpectedObject)
-            | ModelDefinition _, RawInput.Many _ -> Error(diagnosticsAt [] SchemaError.ExpectedObject)
-            | ModelDefinition model, RawInput.Object fields ->
-                let parsedFields = model.Fields |> List.map (parseRootField options [] fields)
+            | ModelDefinition _, Data.Null -> Error(diagnosticsAt [] SchemaError.ExpectedObject)
+            | ModelDefinition _, Data.Text _ -> Error(diagnosticsAt [] SchemaError.ExpectedObject)
+            | ModelDefinition _, Data.Number _ -> Error(diagnosticsAt [] SchemaError.ExpectedObject)
+            | ModelDefinition _, Data.Bool _ -> Error(diagnosticsAt [] SchemaError.ExpectedObject)
+            | ModelDefinition _, Data.List _ -> Error(diagnosticsAt [] SchemaError.ExpectedObject)
+            | ModelDefinition model, Data.Object fields ->
+                let parsedFields = model.Fields |> List.map (parseRootField options [] (Map.ofList fields))
                 let errors = parsedFields |> List.choose (function Error diagnostics -> Some diagnostics | Ok _ -> None)
 
                 match errors with
@@ -490,16 +513,16 @@ module internal SchemaParsing =
 
         result
 
-    /// <summary>Parses raw boundary input through a trusted model schema.</summary>
-    let parse (schema: Schema<'model>) (input: RawInput) : Result<'model, Diagnostics<SchemaError>> =
+    /// <summary>Parses structured boundary data through a trusted model schema.</summary>
+    let parse (schema: Schema<'model>) (input: Data) : Result<'model, Diagnostics<SchemaError>> =
         parseWith id schema input
 
-    /// <summary>Parses raw boundary input while retaining that input for redisplay and error lookup.</summary>
-    let parseRetainingInput (schema: Schema<'model>) (input: RawInput) : RetainedParseResult<'model, SchemaError> =
+    /// <summary>Parses structured boundary data while retaining that input for redisplay and error lookup.</summary>
+    let parseRetainingInput (schema: Schema<'model>) (input: Data) : RetainedParseResult<'model, SchemaError> =
         RetainedParseResult.create input (parse schema input)
 
     /// <summary>
-    /// Parses raw boundary input through a trusted model schema using custom input parser options, expressed as a
+    /// Parses structured boundary data through a trusted model schema using custom input parser options, expressed as a
     /// .NET delegate.
     /// </summary>
     /// <remarks>
@@ -510,7 +533,7 @@ module internal SchemaParsing =
     let parseWithOptions
         (configure: System.Func<SchemaParseOptions, SchemaParseOptions>)
         (schema: Schema<'model>)
-        (input: RawInput)
+        (input: Data)
         : Result<'model, Diagnostics<SchemaError>> =
         if isNull (box configure) then
             nullArg (nameof configure)

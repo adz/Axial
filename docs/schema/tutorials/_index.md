@@ -6,7 +6,7 @@ description: Tutorials for parsing boundary input into trusted models.
 
 # Schema Tutorials
 
-These tutorials build up the schema toolkit one step at a time: declare a schema, parse raw input, handle nested
+These tutorials build up the schema toolkit one step at a time: declare a schema, parse structured data, handle nested
 models and collections, apply contextual rules inside a workflow, and read schema metadata without running validation.
 
 ## Guides

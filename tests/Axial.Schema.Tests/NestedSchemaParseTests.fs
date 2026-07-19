@@ -1,5 +1,7 @@
 namespace Axial.Tests
 
+open Axial
+
 open Axial.ErrorHandling
 
 open Axial.Schema
@@ -51,12 +53,12 @@ module NestedSchemaParseTests =
         |> construct (fun name address -> ({ Name = name; Address = address }: VerifiedCustomer))
 
     let private validAddress =
-        RawInput.Object(Map.ofList [ "street", RawInput.Scalar "1 Infinite Loop"; "city", RawInput.Scalar "Cupertino" ])
+        Data.objectOfMap (Map.ofList [ "street", Data.Text "1 Infinite Loop"; "city", Data.Text "Cupertino" ])
 
     [<Fact>]
-    let ``parse builds a nested model from object-shaped raw input`` () =
+    let ``parse builds a nested model from object-shaped structured data`` () =
         let raw =
-            RawInput.Object(Map.ofList [ "name", RawInput.Scalar "Ada"; "address", validAddress ])
+            Data.objectOfMap (Map.ofList [ "name", Data.Text "Ada"; "address", validAddress ])
 
         let parsed = Schema.parseRetainingInput customerSchema raw
 
@@ -66,10 +68,9 @@ module NestedSchemaParseTests =
     [<Fact>]
     let ``parse prefixes nested field diagnostics with the nested field's name`` () =
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "name", RawInput.Scalar "Ada"
-                      "address", RawInput.Object(Map.ofList [ "street", RawInput.Scalar "1 Infinite Loop"; "city", RawInput.Missing ]) ]
+            Data.objectOfMap (Map.ofList
+                    [ "name", Data.Text "Ada"
+                      "address", Data.objectOfMap (Map.ofList [ "street", Data.Text "1 Infinite Loop"; "city", Data.Null ]) ]
             )
 
         let parsed = Schema.parseRetainingInput customerSchema raw
@@ -80,10 +81,9 @@ module NestedSchemaParseTests =
     [<Fact>]
     let ``parse attaches nested constructor errors to the nested object root by default`` () =
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "name", RawInput.Scalar "Ada"
-                      "address", RawInput.Object(Map.ofList [ "street", RawInput.Scalar "Same"; "city", RawInput.Scalar "Same" ]) ]
+            Data.objectOfMap (Map.ofList
+                    [ "name", Data.Text "Ada"
+                      "address", Data.objectOfMap (Map.ofList [ "street", Data.Text "Same"; "city", Data.Text "Same" ]) ]
             )
 
         let parsed = Schema.parseRetainingInput verifiedCustomerSchema raw
@@ -96,9 +96,9 @@ module NestedSchemaParseTests =
             @>
 
     [<Fact>]
-    let ``parse reports expected object when nested raw input is a scalar`` () =
+    let ``parse reports expected object when nested structured data is a scalar`` () =
         let raw =
-            RawInput.Object(Map.ofList [ "name", RawInput.Scalar "Ada"; "address", RawInput.Scalar "not-an-object" ])
+            Data.objectOfMap (Map.ofList [ "name", Data.Text "Ada"; "address", Data.Text "not-an-object" ])
 
         let parsed = Schema.parseRetainingInput customerSchema raw
 
@@ -106,10 +106,9 @@ module NestedSchemaParseTests =
         test <@ parsed.Errors = [ { Path = [ PathSegment.Name "address" ]; Error = SchemaError.ExpectedObject } ] @>
 
     [<Fact>]
-    let ``parse reports expected object when nested raw input is a collection`` () =
+    let ``parse reports expected object when nested structured data is a collection`` () =
         let raw =
-            RawInput.Object(
-                Map.ofList [ "name", RawInput.Scalar "Ada"; "address", RawInput.Many [ RawInput.Scalar "not-an-object" ] ]
+            Data.objectOfMap (Map.ofList [ "name", Data.Text "Ada"; "address", Data.List [ Data.Text "not-an-object" ] ]
             )
 
         let parsed = Schema.parseRetainingInput customerSchema raw
@@ -119,7 +118,7 @@ module NestedSchemaParseTests =
 
     [<Fact>]
     let ``parse reports required when the nested raw field is missing`` () =
-        let raw = RawInput.Object(Map.ofList [ "name", RawInput.Scalar "Ada" ])
+        let raw = Data.objectOfMap (Map.ofList [ "name", Data.Text "Ada" ])
 
         let parsed = Schema.parseRetainingInput customerSchema raw
 
@@ -129,10 +128,9 @@ module NestedSchemaParseTests =
     [<Fact>]
     let ``parse accumulates every failing nested field alongside sibling failures`` () =
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "name", RawInput.Missing
-                      "address", RawInput.Object(Map.ofList [ "street", RawInput.Missing; "city", RawInput.Missing ]) ]
+            Data.objectOfMap (Map.ofList
+                    [ "name", Data.Null
+                      "address", Data.objectOfMap (Map.ofList [ "street", Data.Null; "city", Data.Null ]) ]
             )
 
         let parsed = Schema.parseRetainingInput customerSchema raw

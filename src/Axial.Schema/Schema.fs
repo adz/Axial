@@ -8,7 +8,7 @@ open System.Collections.Generic
 /// </summary>
 /// <remarks>
 /// <para>
-/// External field names are the names interpreters use at data boundaries, such as raw input keys, JSON property names,
+/// External field names are the names interpreters use at data boundaries, such as structured data keys, JSON property names,
 /// diagnostic paths, generated documentation, and UI field identifiers.
 /// </para>
 /// <para>
@@ -835,7 +835,7 @@ type internal FieldDefinition<'model, 'value> =
 /// <para>
 /// A field definition records typed field metadata without tying that metadata to input parsing, diagnostics,
 /// validation, codecs, UI generation, or workflow execution. The field's external name is the portable boundary-facing
-/// name interpreters use for raw input lookup, diagnostic paths, codecs, generated documentation, and UI metadata.
+/// name interpreters use for structured data lookup, diagnostic paths, codecs, generated documentation, and UI metadata.
 /// Its getter reads the field value from an already trusted model so inspection interpreters can observe existing
 /// values without using reflection.
 /// </para>
@@ -1219,7 +1219,7 @@ module internal Value =
     /// Both functions are required, and this is deliberately the only way to author a refined value schema: a
     /// construct-only schema would hide refined values from inspection interpreters that read existing trusted models,
     /// and an inspect-only schema would leave construction interpreters unable to produce the refined value from
-    /// parsed raw input.
+    /// parsed structured data.
     /// </para>
     /// <para>
     /// <paramref name="construct" /> is expected to run only after the raw value has already satisfied whatever
@@ -1590,7 +1590,7 @@ module internal Value =
     /// <remarks>
     /// <para>
     /// Optional value schemas make absence a legal parse result rather than a diagnostic: input parsing maps missing
-    /// or null raw input to <c>None</c> and parses present input through <paramref name="payload" /> into <c>Some</c>,
+    /// or null structured data to <c>None</c> and parses present input through <paramref name="payload" /> into <c>Some</c>,
     /// with the payload schema's constraints running on the payload. Codecs decode an absent or <c>null</c> JSON field
     /// to <c>None</c> and omit <c>None</c> fields when encoding, and JSON Schema generation leaves optional fields out
     /// of the object's <c>required</c> list.

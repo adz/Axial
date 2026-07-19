@@ -7,7 +7,7 @@ This page shows Axial's fail-fast helpers over the standard F# `Result<'value, '
 
 ## Structured errors
 
-- [`ErrorHandling.CheckFailure`](./t-errorhandling-checkfailure.md): Describes why an executable value check failed, without attaching source paths or raw input.
+- [`ErrorHandling.CheckFailure`](./t-errorhandling-checkfailure.md): Describes why an executable value check failed, without attaching source paths or structured data.
 
 ## Core helpers
 

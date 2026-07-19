@@ -32,6 +32,7 @@
     <ProjectReference Include="..\Axial.ErrorHandling\Axial.ErrorHandling.fsproj" />
     <ProjectReference Include="..\Axial.Schema\Axial.Schema.fsproj" />
     <ProjectReference Include="..\Axial.Codec\Axial.Codec.fsproj" />
+    <ProjectReference Include="..\Axial.Data\Axial.Data.fsproj" />
   </ItemGroup>
 
   <ItemGroup>

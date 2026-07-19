@@ -1,5 +1,7 @@
 module Axial.ReferenceApp.Program
 
+open Axial
+
 open System
 open System.Net
 open System.Threading.Tasks
@@ -42,7 +44,7 @@ let private summary workspace =
 let private formRaw (form: IFormCollection) =
     form
     |> Seq.collect (fun field -> field.Value |> Seq.map (fun value -> field.Key.Replace(".", ":"), value))
-    |> RawInput.ofConfiguration
+    |> Data.ofConfiguration
 
 let buildWebApp (env: AppEnv) (args: string array) =
     let builder = WebApplication.CreateBuilder(args)
@@ -63,7 +65,7 @@ let buildWebApp (env: AppEnv) (args: string array) =
 
     app.MapPost("/api/workspaces", Func<HttpRequest, Task<IResult>>(fun request -> task {
         use! document = JsonDocument.ParseAsync(request.Body)
-        let raw = RawInput.ofJsonDocument document
+        let raw = Data.ofJsonDocument document
         match Application.admitProduction raw with
         | Error error -> return Results.BadRequest(renderError error)
         | Ok workspace ->

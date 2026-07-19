@@ -6,7 +6,7 @@ namespace Axial.Schema
 /// <remarks>
 /// <para>
 /// Shape descriptions carry no getters, constructors, or executable checks. JSON Schema emitters, documentation
-/// generators, and UI metadata producers can walk them without parsing raw input or running validation.
+/// generators, and UI metadata producers can walk them without parsing structured data or running validation.
 /// </para>
 /// </remarks>
 [<RequireQualifiedAccess>]
@@ -83,9 +83,9 @@ and UnionCaseDescription =
 /// <summary>Describes a tagged union value schema.</summary>
 and UnionDescription =
     {
-        /// <summary>The raw input field name that carries the case tag.</summary>
+        /// <summary>The structured data field name that carries the case tag.</summary>
         DiscriminatorField: string
-        /// <summary>The raw input field name that carries the case payload.</summary>
+        /// <summary>The structured data field name that carries the case payload.</summary>
         PayloadField: string
         /// <summary>The union cases in declaration order.</summary>
         Cases: UnionCaseDescription list
@@ -103,7 +103,7 @@ and UnionInlineCaseDescription =
 /// <summary>Describes an internally-tagged union value schema.</summary>
 and UnionInlineDescription =
     {
-        /// <summary>The raw input field name that carries the case tag.</summary>
+        /// <summary>The structured data field name that carries the case tag.</summary>
         DiscriminatorField: string
         /// <summary>The union cases in declaration order.</summary>
         Cases: UnionInlineCaseDescription list

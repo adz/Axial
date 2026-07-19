@@ -1,22 +1,31 @@
 namespace Axial.Schema
 
+open Axial
+
 open Axial.Validation
 
+module private DataPathConversion =
+    let diagnosticsPath (path: DataPath) : Path =
+        path
+        |> List.map (function
+            | DataPathSegment.Name name -> PathSegment.Name name
+            | DataPathSegment.Index index -> PathSegment.Index index)
+
 /// <summary>
-/// A parse result that retains the original raw input for redisplay and error lookup.
+/// A parse result that retains the original structured data for redisplay and error lookup.
 /// </summary>
 /// <remarks>
 /// <para>
 /// <c>RetainedParseResult</c> is an opt-in handoff value for boundaries that need the source representation after
 /// parsing. Successful parses carry the trusted value in <see cref="P:Axial.Schema.RetainedParseResult`2.Result" />;
 /// failed parses carry path-aware diagnostics while the
-/// original <see cref="T:Axial.Schema.RawInput" /> remains available for redisplay and error lookup.
+/// original <see cref="T:Axial.Schema.Data" /> remains available for redisplay and error lookup.
 /// </para>
 /// </remarks>
 type RetainedParseResult<'value, 'error> =
     {
-        /// <summary>The raw boundary input that was parsed.</summary>
-        Input: RawInput
+        /// <summary>The structured boundary data that was parsed.</summary>
+        Input: Data
         /// <summary>The parsed model or path-aware parse diagnostics.</summary>
         Result: Result<'value, Diagnostics<'error>>
     }
@@ -55,21 +64,21 @@ type RetainedParseResult<'value, 'error> =
             else
                 None)
 
-    /// <summary>Returns errors attached exactly to the supplied raw input path text.</summary>
+    /// <summary>Returns errors attached exactly to the supplied structured data path text.</summary>
     member this.ErrorsFor(path: string) =
         path
-        |> InputPath.parse
-        |> InputPath.toDiagnosticsPath
+        |> DataPath.parse
+        |> DataPathConversion.diagnosticsPath
         |> this.ErrorsFor
 
 /// <summary>Functions for adapting parsed input, most notably to translate interpreter errors into domain errors.</summary>
 [<RequireQualifiedAccess>]
 module RetainedParseResult =
-    /// <summary>Retains raw input alongside an existing parse result.</summary>
+    /// <summary>Retains structured data alongside an existing parse result.</summary>
     let create input result : RetainedParseResult<'value, 'error> =
         { Input = input; Result = result }
 
-    /// <summary>Maps a failed parse's errors to a domain or application error type, preserving the raw input and paths.</summary>
+    /// <summary>Maps a failed parse's errors to a domain or application error type, preserving the structured data and paths.</summary>
     /// <remarks>
     /// Use this at the boundary between schema input parsing and application code, where <c>SchemaError</c> (or any
     /// other interpreter error type) should become the caller's own domain/application error type before flowing

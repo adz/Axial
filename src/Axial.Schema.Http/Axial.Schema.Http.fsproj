@@ -8,7 +8,7 @@
     <AssemblyName>Axial.Schema.Http</AssemblyName>
     <RootNamespace>Axial.Schema.Http</RootNamespace>
     <Authors>Adam Davies</Authors>
-    <Description>Host-neutral HTTP boundary support for Axial schemas: query and form raw input, RFC 9457 problem details from parse diagnostics, and OpenAPI documents assembled from endpoint specifications.</Description>
+    <Description>Host-neutral HTTP boundary support for Axial schemas: query and form structured data, RFC 9457 problem details from parse diagnostics, and OpenAPI documents assembled from endpoint specifications.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -24,6 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Axial.Data\Axial.Data.fsproj" />
     <ProjectReference Include="..\Axial.Schema\Axial.Schema.fsproj" />
   </ItemGroup>
 

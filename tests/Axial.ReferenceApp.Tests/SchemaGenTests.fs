@@ -1,5 +1,7 @@
 namespace Axial.ReferenceApp.Tests
 
+open Axial
+
 open System.Text.Json
 open Axial.Codec
 open Axial.ReferenceApp
@@ -14,7 +16,7 @@ open Xunit
 module SchemaGenTests =
 
     [<Fact>]
-    let ``schema-generated raw inputs parse through the workspace schema`` () =
+    let ``schema-generated structured datas parse through the workspace schema`` () =
         let generator = SchemaGen.raw Contracts.workspaceV2 |> Result.defaultWith (failwithf "%A")
         let inputs = Gen.sample 100 generator
 
@@ -28,7 +30,7 @@ module SchemaGenTests =
         let roundTrips (model: WorkspaceV2) =
             let json = Json.serialize codec model
             use document = JsonDocument.Parse json
-            let reparsed = Schema.parse Contracts.workspaceV2 (RawInput.ofJsonDocument document)
+            let reparsed = Schema.parse Contracts.workspaceV2 (Data.ofJsonDocument document)
             reparsed = Ok model
 
         test <@ Gen.sample 50 generator |> Array.forall roundTrips @>

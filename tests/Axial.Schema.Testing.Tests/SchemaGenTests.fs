@@ -1,5 +1,7 @@
 namespace Axial.Schema.Testing.Tests
 
+open Axial
+
 open Axial.Schema
 open Axial.Schema.Testing
 open FsCheck.FSharp
@@ -33,7 +35,7 @@ module SchemaGenTests =
             { Age = age; Score = score; Active = active; Contact = contact; Aliases = aliases; Labels = labels; Kind = kind; Note = note })
 
     [<Fact>]
-    let ``generated raw inputs satisfy the complete schema`` () =
+    let ``generated structured datas satisfy the complete schema`` () =
         let schema = profileSchema ()
         let generator = SchemaGen.raw schema |> Result.defaultWith (failwithf "%A")
         let inputs = Gen.sample 200 generator
@@ -61,7 +63,7 @@ module SchemaGenTests =
         | Error error -> test <@ error = SchemaGenerationError.UnsupportedConstraint([ "email" ], "pattern") @>
         | Ok _ -> failwith "Expected pattern generation to require a custom generator."
 
-        let custom = Map.ofList [ "email", Gen.constant (RawInput.Scalar "AXIAL") ]
+        let custom = Map.ofList [ "email", Gen.constant (Data.Text "AXIAL") ]
         let generated = SchemaGen.rawWith custom schema |> Result.defaultWith (failwithf "%A") |> Gen.sample 10
         test <@ generated |> Array.forall (fun input -> (Schema.parse schema input |> Result.isOk)) @>
 

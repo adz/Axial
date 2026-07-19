@@ -38,6 +38,7 @@
 
   <ItemGroup>
     <Compile Include="Data.fs" />
+    <Compile Include="DataOperations.fs" />
   </ItemGroup>
 
 </Project>

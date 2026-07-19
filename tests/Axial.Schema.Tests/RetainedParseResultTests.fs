@@ -1,5 +1,7 @@
 namespace Axial.Tests
 
+open Axial
+
 open Axial.ErrorHandling
 
 open Axial.Validation
@@ -11,9 +13,9 @@ module RetainedParseResultTests =
     type private Signup = { Email: string }
 
     [<Fact>]
-    let ``parsed input retains raw input with successful model result`` () =
+    let ``parsed input retains structured data with successful model result`` () =
         let raw =
-            RawInput.Object(Map.ofList [ "email", RawInput.Scalar "ada@example.com" ])
+            Data.objectOfMap (Map.ofList [ "email", Data.Text "ada@example.com" ])
 
         let parsed: RetainedParseResult<Signup, string> =
             RetainedParseResult.create raw (Ok { Email = "ada@example.com" })
@@ -27,9 +29,9 @@ module RetainedParseResultTests =
         test <@ parsed.ErrorsFor "email" = [] @>
 
     [<Fact>]
-    let ``parsed input retains raw input with path aware diagnostics`` () =
+    let ``parsed input retains structured data with path aware diagnostics`` () =
         let raw =
-            RawInput.Object(Map.ofList [ "email", RawInput.Scalar "" ])
+            Data.objectOfMap (Map.ofList [ "email", Data.Text "" ])
 
         let diagnostics =
             Validation.fail (Diagnostics.singleton "Required")
@@ -66,7 +68,7 @@ module RetainedParseResultTests =
     [<Fact>]
     let ``mapErrors translates a failed parse's errors while preserving input and paths`` () =
         let raw =
-            RawInput.Object(Map.ofList [ "email", RawInput.Scalar "" ])
+            Data.objectOfMap (Map.ofList [ "email", Data.Text "" ])
 
         let diagnostics =
             Validation.fail (Diagnostics.singleton "Required")
@@ -91,7 +93,7 @@ module RetainedParseResultTests =
     [<Fact>]
     let ``mapErrors leaves a successful parse's model unchanged`` () =
         let raw =
-            RawInput.Object(Map.ofList [ "email", RawInput.Scalar "ada@example.com" ])
+            Data.objectOfMap (Map.ofList [ "email", Data.Text "ada@example.com" ])
 
         let parsed: RetainedParseResult<Signup, string> =
             {

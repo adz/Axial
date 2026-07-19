@@ -34,6 +34,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Axial.Schema\Axial.Schema.fsproj" />
+    <ProjectReference Include="..\Axial.Data\Axial.Data.fsproj" />
   </ItemGroup>
 
   <ItemGroup>

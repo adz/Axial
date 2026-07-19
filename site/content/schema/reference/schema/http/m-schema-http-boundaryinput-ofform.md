@@ -5,7 +5,7 @@ weight: 2001
 type: docs
 ---
 
-Builds raw input from form pairs, where dotted names such as <code>address.street</code> nest.
+Builds structured data from form pairs, where dotted names such as <code>address.street</code> nest.
 
 ## Signature
 
@@ -23,7 +23,7 @@ Builds raw input from form pairs, where dotted names such as <code>address.stree
 
 | Type | Description |
 | --- | --- |
-| <code><a href="../interpreters/t-schema-rawinput.md">RawInput</a></code> |  |
+| <code><a href="../interpreters/t-data.md">Data</a></code> |  |
 
 ## Remarks
 

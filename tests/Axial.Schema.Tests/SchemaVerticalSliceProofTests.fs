@@ -1,5 +1,7 @@
 namespace Axial.Tests
 
+open Axial
+
 open System
 open System.Text
 open Axial.ErrorHandling
@@ -9,7 +11,7 @@ open Xunit
 open Axial.Schema.Syntax
 
 /// <summary>
-/// Proves the vertical schema metadata slice required by task line 163 of <c>dev-docs/TASKS.md</c> before RawInput,
+/// Proves the vertical schema metadata slice required by task line 163 of <c>dev-docs/TASKS.md</c> before Data,
 /// schema validation, rules, or syntax work may start: one authored <c>Schema&lt;'model&gt;</c> instance must
 /// simultaneously carry ordered fields, a primitive value schema, required and maxLength constraint metadata,
 /// constraint lowering to <c>Check</c>, metadata inspection without running validation, constructor/getter alignment,

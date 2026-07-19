@@ -1,15 +1,15 @@
 ---
-title: "Schema.RawInput.ofNameValues"
+title: "Data.ofNameValues"
 linkTitle: "ofNameValues"
-weight: 2003
+weight: 2004
 ---
 
-Builds object-shaped raw input from name/value pairs, grouping repeated names into <code>Many</code>.
+Builds object-shaped structured data from name/value pairs, grouping repeated names into <code>Many</code>.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Schema.RawInput.ofNameValues&#32;<span>values</span></span></code>
+<code><span>Data.ofNameValues&#32;<span>values</span></span></code>
 </div>
 
 ## Parameters
@@ -22,4 +22,4 @@ Builds object-shaped raw input from name/value pairs, grouping repeated names in
 
 | Type | Description |
 | --- | --- |
-| <code><a href="t-schema-rawinput.md">RawInput</a></code> |  |
+| <code><a href="t-data.md">Data</a></code> |  |

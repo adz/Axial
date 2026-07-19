@@ -35,13 +35,13 @@ let signupSchema =
 `Schema.define<Signup>` anchors the model type so getters can use shorthand member access. The closing constructor must
 match every field in declaration order, so missing or mistyped arguments fail at `construct`.
 
-## Adapt The Raw Input
+## Adapt The structured data
 
 Form posts are name/value pairs:
 
 ```fsharp
 let raw =
-    RawInput.ofNameValues
+    Data.ofNameValues
         [ "email", "not-an-email"
           "age", "12" ]
 ```
@@ -66,8 +66,8 @@ parsed.ErrorsFor "age"      // [ SchemaError.OutOfRange ... ]
 The original input is retained on the parsed value, addressed by the same paths:
 
 ```fsharp
-RawInput.redisplayPath "email" parsed.Input   // "not-an-email", exactly as typed
-RawInput.redisplayPath "age" parsed.Input     // "12"
+Data.redisplayPath "email" parsed.Input   // "not-an-email", exactly as typed
+Data.redisplayPath "age" parsed.Input     // "12"
 ```
 
 A form template needs only `parsed.Input` and `parsed.ErrorsFor` — there is no half-valid model to guard against.

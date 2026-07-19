@@ -13,5 +13,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Axial\Axial.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Codec\Axial.Codec.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Data\Axial.Data.fsproj" />
   </ItemGroup>
 </Project>

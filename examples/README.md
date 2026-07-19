@@ -126,7 +126,7 @@ The playground example in [`examples/Axial.Playground/Program.fs`](./Axial.Playg
 The API sample in [`examples/Axial.Api/Program.fs`](./Axial.Api/Program.fs) is a complete ASP.NET Core minimal API
 where one schema declaration drives everything at the boundary:
 
-- `POST /signups` parses the JSON body through the schema (`RawInput.ofJsonDocument` + `Input.parse`); invalid input
+- `POST /signups` parses the JSON body through the schema (`Data.ofJsonDocument` + `Input.parse`); invalid input
   gets a 400 with path diagnostics, valid input becomes a trusted model serialized back through the compiled
   `Axial.Codec` JSON codec
 - `GET /openapi.json` serves an OpenAPI document whose request schema comes from `JsonSchema.generate`

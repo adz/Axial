@@ -50,7 +50,7 @@ naturally. Both produce the same shape:
 
 ```fsharp
 let raw =
-    RawInput.ofConfiguration
+    Data.ofConfiguration
         [ "address:street", "12 Analytical Way"
           "address:city", "London"
           "items:0:sku", "SKU-1"
@@ -74,7 +74,7 @@ Nested diagnostics are prefixed with the field name (`address.city`), collection
 (`items[1].quantity`), and the raw values redisplay by the same paths:
 
 ```fsharp
-RawInput.redisplayPath "items[1].quantity" parsed.Input   // "0"
+Data.redisplayPath "items[1].quantity" parsed.Input   // "0"
 ```
 
 ## Count Constraints

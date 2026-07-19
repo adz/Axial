@@ -1,5 +1,7 @@
 namespace Axial.Tests
 
+open Axial
+
 open Axial.Schema
 open Axial.Validation
 open Swensen.Unquote
@@ -44,10 +46,9 @@ module UnionInlineSchemaParseTests =
     [<Fact>]
     let ``parse builds the case matching the discriminator from spliced fields`` () =
         let raw =
-            RawInput.Object(
-                Map.ofList
+            Data.objectOfMap (Map.ofList
                     [ "payment",
-                      RawInput.Object(Map.ofList [ "type", RawInput.Scalar "card"; "number", RawInput.Scalar "4242" ]) ]
+                      Data.objectOfMap (Map.ofList [ "type", Data.Text "card"; "number", Data.Text "4242" ]) ]
             )
 
         let parsed = Schema.parseRetainingInput (checkoutSchema ()) raw
@@ -57,9 +58,8 @@ module UnionInlineSchemaParseTests =
     [<Fact>]
     let ``parse reports an unknown tag at the discriminator field`` () =
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "payment", RawInput.Object(Map.ofList [ "type", RawInput.Scalar "cash"; "number", RawInput.Scalar "4242" ]) ]
+            Data.objectOfMap (Map.ofList
+                    [ "payment", Data.objectOfMap (Map.ofList [ "type", Data.Text "cash"; "number", Data.Text "4242" ]) ]
             )
 
         let parsed = Schema.parseRetainingInput (checkoutSchema ()) raw
@@ -71,7 +71,7 @@ module UnionInlineSchemaParseTests =
     [<Fact>]
     let ``parse reports missing spliced payload fields at their own path`` () =
         let raw =
-            RawInput.Object(Map.ofList [ "payment", RawInput.Object(Map.ofList [ "type", RawInput.Scalar "card" ]) ])
+            Data.objectOfMap (Map.ofList [ "payment", Data.objectOfMap (Map.ofList [ "type", Data.Text "card" ]) ])
 
         let parsed = Schema.parseRetainingInput (checkoutSchema ()) raw
 

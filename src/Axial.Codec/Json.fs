@@ -1,5 +1,7 @@
 namespace Axial.Codec
 
+open Axial
+
 open System
 open System.Globalization
 open System.Text

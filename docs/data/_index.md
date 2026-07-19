@@ -11,11 +11,15 @@ menu:
 
 # Data
 
-`Axial.Data` provides one source-neutral tree for nulls, primitive values, lists, and objects. It has no dependency on
-Schema, Flow, a serializer, or a runtime service.
+`Axial.Data` represents the meaning and shape of unowned structured data. It provides one source-neutral tree for
+nulls, primitive values, lists, and objects, with no dependency on Schema, Flow, a serializer, or a runtime service.
 
-Use it when a value has document structure but does not yet belong to an application-owned type: test fixtures,
-configuration fragments, JSON-like documents, or input passed to an adapter.
+Use it between a source adapter and the code that assigns an application-owned type: for example, test fixtures,
+configuration fragments, JSON-like documents, or boundary input awaiting schema parsing.
+
+`Data` is a structured-value model, not a source syntax tree. It distinguishes text, numbers, Booleans, nulls, lists,
+and objects, but it does not model whitespace, comments, source locations, or other format-specific syntax. It is not a
+promise of exact source-document round-tripping.
 
 ## Install
 
@@ -77,9 +81,10 @@ match direct with
 | Data.Null -> []
 ```
 
-`Data.Number` stores the lexical token rather than narrowing every number to `decimal` or `float`. This preserves
-arbitrary-size integers, decimal precision, and exponent notation. The DSL turns `42` into `Data.Number "42"`, while
-`"42"` remains `Data.Text "42"`.
+`Data.Number` currently stores a lexical token rather than narrowing every number to `decimal` or `float`. This lets
+source adapters carry arbitrary-size integers, decimal precision, and exponent notation through the structured-value
+tree. The token is the number's portable storage, not a claim that `Data` models the source document's complete syntax.
+The DSL turns `42` into `Data.Number "42"`, while `"42"` remains `Data.Text "42"`.
 
 `Data.Object` preserves field order and duplicate names. Consumers decide whether duplicates are meaningful, rejected,
 or resolved according to a boundary format's rules.

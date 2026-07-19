@@ -1,5 +1,7 @@
 namespace Axial.Tests
 
+open Axial
+
 open Axial.Schema
 open Axial.Validation
 open Swensen.Unquote
@@ -15,10 +17,9 @@ module MapSchemaParseTests =
         |> construct (fun values -> { Values = values })
 
     [<Fact>]
-    let ``parse builds a Map from object-shaped raw input`` () =
+    let ``parse builds a Map from object-shaped structured data`` () =
         let raw =
-            RawInput.Object(
-                Map.ofList [ "values", RawInput.Object(Map.ofList [ "low", RawInput.Scalar "1.5"; "high", RawInput.Scalar "9.5" ]) ]
+            Data.objectOfMap (Map.ofList [ "values", Data.objectOfMap (Map.ofList [ "low", Data.Text "1.5"; "high", Data.Text "9.5" ]) ]
             )
 
         let parsed = Schema.parseRetainingInput thresholdsSchema raw
@@ -27,15 +28,15 @@ module MapSchemaParseTests =
 
     [<Fact>]
     let ``parse builds an empty Map from an empty object`` () =
-        let raw = RawInput.Object(Map.ofList [ "values", RawInput.Object Map.empty ])
+        let raw = Data.objectOfMap (Map.ofList [ "values", Data.Object [] ])
 
         let parsed = Schema.parseRetainingInput thresholdsSchema raw
 
         test <@ parsed.Result = Ok { Values = Map.empty } @>
 
     [<Fact>]
-    let ``parse reports expected object when the map field raw input is a scalar`` () =
-        let raw = RawInput.Object(Map.ofList [ "values", RawInput.Scalar "not-an-object" ])
+    let ``parse reports expected object when the map field structured data is a scalar`` () =
+        let raw = Data.objectOfMap (Map.ofList [ "values", Data.Text "not-an-object" ])
 
         let parsed = Schema.parseRetainingInput thresholdsSchema raw
 
@@ -43,8 +44,8 @@ module MapSchemaParseTests =
         test <@ parsed.Errors = [ { Path = [ PathSegment.Name "values" ]; Error = SchemaError.ExpectedObject } ] @>
 
     [<Fact>]
-    let ``parse reports expected object when the map field raw input is a collection`` () =
-        let raw = RawInput.Object(Map.ofList [ "values", RawInput.Many [ RawInput.Scalar "1.5" ] ])
+    let ``parse reports expected object when the map field structured data is a collection`` () =
+        let raw = Data.objectOfMap (Map.ofList [ "values", Data.List [ Data.Text "1.5" ] ])
 
         let parsed = Schema.parseRetainingInput thresholdsSchema raw
 
@@ -54,8 +55,7 @@ module MapSchemaParseTests =
     [<Fact>]
     let ``parse reports entry failures at the entry's key path`` () =
         let raw =
-            RawInput.Object(
-                Map.ofList [ "values", RawInput.Object(Map.ofList [ "low", RawInput.Scalar "not-a-number" ]) ]
+            Data.objectOfMap (Map.ofList [ "values", Data.objectOfMap (Map.ofList [ "low", Data.Text "not-a-number" ]) ]
             )
 
         let parsed = Schema.parseRetainingInput thresholdsSchema raw

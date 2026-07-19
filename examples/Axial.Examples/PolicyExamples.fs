@@ -3,6 +3,7 @@
 /// into one workflow error type that Flow.verify can run inside a flow.
 module PolicyExamples
 
+open Axial
 open Axial.Flow
 open Axial.Refined
 open Axial.Schema
@@ -50,8 +51,8 @@ let parseQuantityText : Policy<OrderEnv, OrderError, string, int> =
 let refinePositive : Policy<OrderEnv, OrderError, int, PositiveInt> =
     Policy.withError Refine.positiveInt QuantityNotPositive
 
-// 3. Schema input result: adapt Schema.parse over raw boundary input.
-let parseOrderLine : Policy<OrderEnv, OrderError, RawInput, OrderLine> =
+// 3. Schema input result: adapt Schema.parse over structured boundary data.
+let parseOrderLine : Policy<OrderEnv, OrderError, Data, OrderLine> =
     Policy.lift
         (fun raw -> (Schema.parse orderLineSchema raw))
         (Diagnostics.flatten >> LineRejected)
@@ -77,12 +78,12 @@ let underQuantityCap : Policy<OrderEnv, OrderError, OrderLine, OrderLine> =
 
 // Policies over the same input/output compose, and environment predicates can
 // switch a policy off without changing the workflow shape.
-let acceptOrderLine : Policy<OrderEnv, OrderError, RawInput, OrderLine> =
+let acceptOrderLine : Policy<OrderEnv, OrderError, Data, OrderLine> =
     Policy.compose
         parseOrderLine
         (Policy.optional (fun env -> env.EnforceQuantityCap) underQuantityCap)
 
-let acceptLine (raw: RawInput) : Flow<OrderEnv, OrderError, OrderLine> =
+let acceptLine (raw: Data) : Flow<OrderEnv, OrderError, OrderLine> =
     flow {
         let! line = raw |> Flow.verify acceptOrderLine
         return line
@@ -94,8 +95,7 @@ let run () =
           EnforceQuantityCap = true }
 
     let raw quantity =
-        RawInput.Object(
-            Map [ "sku", RawInput.Scalar "SKU-1"; "quantity", RawInput.Scalar quantity ])
+        Data.Object [ "sku", Data.Text "SKU-1"; "quantity", Data.Text quantity ]
 
     printfn "Policy examples"
     printfn "  parse text quantity: %A" (parseQuantityText env "3")

@@ -4,7 +4,7 @@ linkTitle: "ofQuery"
 weight: 2000
 ---
 
-Builds object-shaped raw input from query-string pairs, grouping repeated names into collections.
+Builds object-shaped structured data from query-string pairs, grouping repeated names into collections.
 
 ## Signature
 
@@ -22,7 +22,7 @@ Builds object-shaped raw input from query-string pairs, grouping repeated names 
 
 | Type | Description |
 | --- | --- |
-| <code><a href="../interpreters/t-schema-rawinput.md">RawInput</a></code> |  |
+| <code><a href="../interpreters/t-data.md">Data</a></code> |  |
 
 ## Remarks
 

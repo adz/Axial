@@ -65,12 +65,12 @@ For refined collections, pass an item value schema:
 `Schema.listWith itemSchema` for an explicitly configured primitive/refined
 collections, including nested records.
 Use `Schema.union discriminatorField payloadField [ UnionCase.create tag construct tryPayload payloadSchema ]` for tagged
-F# discriminated unions. The raw input convention is an object with the discriminator field and payload field; wrong tags
+F# discriminated unions. The structured data convention is an object with the discriminator field and payload field; wrong tags
 diagnose at the discriminator path and payload failures diagnose under the payload path.
 Use `RefinedSchemas.dateTimeOffsetRange` as a record-shaped model schema, not a field value schema. `dateOnlyRange` is
 also available when targeting frameworks that support `DateOnly`.
 
-For JSON, pick the path by trust: untrusted bodies go `RawInput.ofJsonDocument` (or `ofJsonLikeValue`) then
+For JSON, pick the path by trust: untrusted bodies go `Data.ofJsonDocument` (or `ofData`) then
 `Schema.parse` for diagnostics; trusted payloads use `Axial.Codec` — compile once with `Json.compile schema`, then
 `Json.serialize` / `Json.deserialize`. Serve the contract with `JsonSchema.generate schema`. Do not hand-write
 `System.Text.Json` converters for schema-described models.
@@ -200,7 +200,7 @@ Translate common patterns from other libraries into idiomatic Axial.
 | repeat policy | `flow |> Schedule.repeat schedule` |
 | ActiveModel / FluentValidation validators | `Schema<'model>` + `Schema.parse` — constraints declared once, invalid models never constructed |
 | DTO + manual mapping into domain types | schema fields over refined value schemas (`Schema.convert`) |
-| form redisplay with per-field errors | `parsed.Input` + `RawInput.tryRedisplayPath`, `parsed.ErrorsFor "contacts[1].value"` |
+| form redisplay with per-field errors | `parsed.Input` + `Data.tryRedisplayPath`, `parsed.ErrorsFor "contacts[1].value"` |
 | workflow-specific business rules | a plain rule list + `ContextRules.apply` over the already-trusted model |
 | editable schema field | `FieldRef` with `Get` and immutable `Set`, followed by `Schema.check` when trust is required |
 | `with` update on a private-representation aggregate | lower to its public draft record, edit with `with`, re-admit through the aggregate's `create` |

@@ -1,5 +1,7 @@
 namespace Axial.Tests
 
+open Axial
+
 open Axial.ErrorHandling
 
 open Axial.Schema
@@ -20,7 +22,7 @@ module SchemaDiagnosticsRenderingTests =
     [<Fact>]
     let ``toString renders a field name path for a single failing field`` () =
         let raw =
-            RawInput.Object(Map.ofList [ "email", RawInput.Missing; "age", RawInput.Scalar "42" ])
+            Data.objectOfMap (Map.ofList [ "email", Data.Null; "age", Data.Text "42" ])
 
         let parsed = Schema.parseRetainingInput schema raw
 
@@ -36,10 +38,9 @@ module SchemaDiagnosticsRenderingTests =
     [<Fact>]
     let ``toString renders sibling field paths for every failing field`` () =
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "email", RawInput.Missing
-                      "age", RawInput.Scalar "not-an-int" ]
+            Data.objectOfMap (Map.ofList
+                    [ "email", Data.Null
+                      "age", Data.Text "not-an-int" ]
             )
 
         let parsed = Schema.parseRetainingInput schema raw
@@ -57,7 +58,7 @@ module SchemaDiagnosticsRenderingTests =
 
     [<Fact>]
     let ``toString renders a root path error without a nested branch when input is not an object`` () =
-        let raw = RawInput.Scalar "not-an-object"
+        let raw = Data.Text "not-an-object"
         let parsed = Schema.parseRetainingInput schema raw
 
         let text =
@@ -72,10 +73,9 @@ module SchemaDiagnosticsRenderingTests =
     [<Fact>]
     let ``flatten preserves one diagnostic per failing field with its own path`` () =
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "email", RawInput.Missing
-                      "age", RawInput.Scalar "not-an-int" ]
+            Data.objectOfMap (Map.ofList
+                    [ "email", Data.Null
+                      "age", Data.Text "not-an-int" ]
             )
 
         let parsed = Schema.parseRetainingInput schema raw
@@ -94,7 +94,7 @@ module SchemaDiagnosticsRenderingTests =
 
     [<Fact>]
     let ``flatten reports an empty path for a root-level schema error`` () =
-        let raw = RawInput.Many [ RawInput.Scalar "1" ]
+        let raw = Data.List [ Data.Text "1" ]
         let parsed = Schema.parseRetainingInput schema raw
 
         let flattened =
@@ -107,10 +107,9 @@ module SchemaDiagnosticsRenderingTests =
     [<Fact>]
     let ``flatten and toString agree on which fields failed`` () =
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "email", RawInput.Scalar "   "
-                      "age", RawInput.Scalar "not-an-int" ]
+            Data.objectOfMap (Map.ofList
+                    [ "email", Data.Text "   "
+                      "age", Data.Text "not-an-int" ]
             )
 
         let parsed = Schema.parseRetainingInput schema raw

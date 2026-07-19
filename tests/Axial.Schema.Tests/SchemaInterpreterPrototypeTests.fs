@@ -10,7 +10,7 @@ open Axial.Schema.Syntax
 /// <summary>
 /// Prototype non-validation interpreters over the public <c>Inspect</c> API: a documentation describer and a UI
 /// metadata producer. They exist to prove that schema metadata alone — shapes, formats, and portable constraints — is
-/// sufficient for these consumers, without parsing raw input, running checks, or constructing models. The JSON Schema
+/// sufficient for these consumers, without parsing structured data, running checks, or constructing models. The JSON Schema
 /// emitter that started here has been promoted to the shipped <c>Axial.Schema.JsonSchema</c> module.
 /// </summary>
 module SchemaInterpreterPrototypes =

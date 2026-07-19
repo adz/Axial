@@ -33,6 +33,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Axial.Data\Axial.Data.fsproj" />
     <ProjectReference Include="..\Axial.ErrorHandling\Axial.ErrorHandling.fsproj" />
   </ItemGroup>
 
@@ -43,7 +44,6 @@
     <Compile Include="SchemaError.fs" />
     <Compile Include="Schema.fs" />
     <Compile Include="Shape.fs" />
-    <Compile Include="RawInput.fs" />
     <Compile Include="SchemaValidation.fs" />
     <Compile Include="RetainedParseResult.fs" />
     <Compile Include="FieldRef.fs" />

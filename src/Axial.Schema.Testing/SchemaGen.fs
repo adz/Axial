@@ -1,5 +1,7 @@
 namespace Axial.Schema.Testing
 
+open Axial
+
 open System
 open Axial.Schema
 open FsCheck
@@ -101,10 +103,10 @@ module SchemaGen =
         roots |> List.iter value
         definitions
 
-    let private rawGenerator (custom: Map<string, Gen<RawInput>>) (roots: SchemaDescription list) =
+    let private rawGenerator (custom: Map<string, Gen<Data>>) (roots: SchemaDescription list) =
         let definitions = buildDefinitions roots
 
-        let rec value path size fieldConstraints (description: SchemaDescription) : Result<Gen<RawInput>, SchemaGenerationError> =
+        let rec value path size fieldConstraints (description: SchemaDescription) : Result<Gen<Data>, SchemaGenerationError> =
             let constraints = fieldConstraints @ description.Constraints
             let customGenerator = custom |> Map.tryFind (path |> List.rev |> String.concat ".")
             let unsupportedConstraint =
@@ -122,49 +124,49 @@ module SchemaGen =
             | None, Some constraint' -> unsupported path constraint'
             | None, None ->
                 match description.Shape with
-                | SchemaShape.Primitive PrimitiveValueKind.Text -> textGenerator path constraints |> Result.map (Gen.map RawInput.Scalar)
-                | SchemaShape.Primitive PrimitiveValueKind.Int -> Ok(intGenerator constraints |> Gen.map (string >> RawInput.Scalar))
-                | SchemaShape.Primitive PrimitiveValueKind.Decimal -> Ok(decimalGenerator constraints |> Gen.map (fun value -> RawInput.Scalar(value.ToString(Globalization.CultureInfo.InvariantCulture))))
-                | SchemaShape.Primitive PrimitiveValueKind.Bool -> Ok(ArbMap.defaults.ArbFor<bool>().Generator |> Gen.map (string >> RawInput.Scalar))
-                | SchemaShape.Primitive PrimitiveValueKind.Date -> Ok(Gen.choose(0, 3650) |> Gen.map (fun days -> DateOnly(2020, 1, 1).AddDays days |> string |> RawInput.Scalar))
-                | SchemaShape.Primitive PrimitiveValueKind.DateTime -> Ok(Gen.choose(0, 100000) |> Gen.map (fun minutes -> DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero).AddMinutes minutes |> string |> RawInput.Scalar))
-                | SchemaShape.Primitive PrimitiveValueKind.Guid -> Ok(ArbMap.defaults.ArbFor<Guid>().Generator |> Gen.map (string >> RawInput.Scalar))
+                | SchemaShape.Primitive PrimitiveValueKind.Text -> textGenerator path constraints |> Result.map (Gen.map Data.Text)
+                | SchemaShape.Primitive PrimitiveValueKind.Int -> Ok(intGenerator constraints |> Gen.map (string >> Data.Text))
+                | SchemaShape.Primitive PrimitiveValueKind.Decimal -> Ok(decimalGenerator constraints |> Gen.map (fun value -> Data.Text(value.ToString(Globalization.CultureInfo.InvariantCulture))))
+                | SchemaShape.Primitive PrimitiveValueKind.Bool -> Ok(ArbMap.defaults.ArbFor<bool>().Generator |> Gen.map (string >> Data.Text))
+                | SchemaShape.Primitive PrimitiveValueKind.Date -> Ok(Gen.choose(0, 3650) |> Gen.map (fun days -> DateOnly(2020, 1, 1).AddDays days |> string |> Data.Text))
+                | SchemaShape.Primitive PrimitiveValueKind.DateTime -> Ok(Gen.choose(0, 100000) |> Gen.map (fun minutes -> DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero).AddMinutes minutes |> string |> Data.Text))
+                | SchemaShape.Primitive PrimitiveValueKind.Guid -> Ok(ArbMap.defaults.ArbFor<Guid>().Generator |> Gen.map (string >> Data.Text))
                 | SchemaShape.Refined raw -> value path size constraints raw
                 | SchemaShape.Nested model -> modelValue path size model
                 | SchemaShape.Many item ->
                     let low, high = countBounds constraints size
                     if size <= 0 && low = 0 then
-                        Ok(Gen.constant (RawInput.Many []))
+                        Ok(Gen.constant (Data.List []))
                     else
                         value ("[]" :: path) (size / 2) [] item
                         |> Result.map (fun itemGen ->
                         gen {
                             let! count = Gen.choose(low, high)
                             let! items = Gen.listOfLength count itemGen
-                            return RawInput.Many items
+                            return Data.List items
                         })
                 | SchemaShape.MapOf item ->
                     let low, high = countBounds constraints size
                     if size <= 0 && low = 0 then
-                        Ok(Gen.constant (RawInput.Object Map.empty))
+                        Ok(Gen.constant (Data.Object []))
                     else
                         value ("{}" :: path) (size / 2) [] item
                         |> Result.map (fun itemGen ->
                         gen {
                             let! count = Gen.choose(low, high)
                             let! items = Gen.listOfLength count itemGen
-                            return items |> List.mapi (fun index item -> string index, item) |> Map.ofList |> RawInput.Object
+                            return items |> List.mapi (fun index item -> string index, item) |> Data.Object
                         })
                 | SchemaShape.Optional payload ->
-                    value path size constraints payload |> Result.map (fun present -> Gen.frequency [ 1, Gen.constant RawInput.Missing; 3, present ])
-                | SchemaShape.Enum enum -> Ok(enum.Cases |> List.map _.Tag |> choose |> Gen.map RawInput.Scalar)
+                    value path size constraints payload |> Result.map (fun present -> Gen.frequency [ 1, Gen.constant Data.Null; 3, present ])
+                | SchemaShape.Enum enum -> Ok(enum.Cases |> List.map _.Tag |> choose |> Gen.map Data.Text)
                 | SchemaShape.Union union ->
                     union.Cases
-                    |> List.map (fun case -> value path (size / 2) [] case.Payload |> Result.map (fun payload -> Gen.map (fun raw -> RawInput.Object(Map.ofList [ union.DiscriminatorField, RawInput.Scalar case.Tag; union.PayloadField, raw ])) payload))
+                    |> List.map (fun case -> value path (size / 2) [] case.Payload |> Result.map (fun payload -> Gen.map (fun raw -> Data.Object [ union.DiscriminatorField, Data.Text case.Tag; union.PayloadField, raw ]) payload))
                     |> traverse |> Result.map Gen.oneof
                 | SchemaShape.UnionInline union ->
                     union.Cases
-                    |> List.map (fun case -> modelValue path (size / 2) case.Payload |> Result.map (Gen.map (function RawInput.Object fields -> RawInput.Object(fields.Add(union.DiscriminatorField, RawInput.Scalar case.Tag)) | _ -> failwith "model generators produce objects")))
+                    |> List.map (fun case -> modelValue path (size / 2) case.Payload |> Result.map (Gen.map (function Data.Object fields -> Data.Object((union.DiscriminatorField, Data.Text case.Tag) :: fields) | _ -> failwith "model generators produce objects")))
                     |> traverse |> Result.map Gen.oneof
                 | SchemaShape.Deferred(_, expanded) -> if size <= 0 then modelLeaf path expanded else value path (size / 2) constraints expanded
                 | SchemaShape.Recursive reference ->
@@ -179,12 +181,12 @@ module SchemaGen =
             model.Fields
             |> List.map (fun field -> value (field.Name :: path) size field.Constraints field.Schema |> Result.map (Gen.map (fun raw -> field.Name, raw)))
             |> traverse
-            |> Result.map (fun fields -> Gen.sequenceToList fields |> Gen.map (Map.ofList >> RawInput.Object))
+            |> Result.map (fun fields -> Gen.sequenceToList fields |> Gen.map Data.Object)
 
         value
 
-    /// Derives constraint-satisfying raw input, using field-path overrides for unsupported constraints or domain-specific distributions.
-    let rawWith (custom: Map<string, Gen<RawInput>>) (schema: Schema<'model>) : Result<Gen<RawInput>, SchemaGenerationError> =
+    /// Derives constraint-satisfying structured data, using field-path overrides for unsupported constraints or domain-specific distributions.
+    let rawWith (custom: Map<string, Gen<Data>>) (schema: Schema<'model>) : Result<Gen<Data>, SchemaGenerationError> =
         let model = Inspect.model schema
         let roots = model.Fields |> List.map _.Schema
         let generate = rawGenerator custom roots
@@ -195,11 +197,11 @@ module SchemaGen =
                 generate [] size [] root
                 |> Result.defaultWith (fun _ -> invalidOp "Schema generation support changed after inspection.")))
 
-    /// Derives a generator of constraint-satisfying raw input for a built schema.
-    let raw (schema: Schema<'model>) : Result<Gen<RawInput>, SchemaGenerationError> =
+    /// Derives a generator of constraint-satisfying structured data for a built schema.
+    let raw (schema: Schema<'model>) : Result<Gen<Data>, SchemaGenerationError> =
         rawWith Map.empty schema
 
-    /// Derives models by generating raw input and parsing it through the schema.
+    /// Derives models by generating structured data and parsing it through the schema.
     let model (schema: Schema<'model>) : Result<Gen<'model>, SchemaGenerationError> =
         raw schema
         |> Result.map (fun rawGen ->

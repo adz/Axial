@@ -20,4 +20,7 @@
     <Compile Include="ReferenceAppTests.fs" />
     <Compile Include="SchemaGenTests.fs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Axial.Data\Axial.Data.fsproj" />
+  </ItemGroup>
 </Project>

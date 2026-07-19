@@ -4,6 +4,7 @@
 // </auto-generated>
 namespace Axial.Tests.Generated
 
+open Axial
 open Axial.Validation
 open Axial.Schema
 
@@ -35,8 +36,8 @@ module ProfileV1 =
     let validate (draft: ProfileV1) : Result<ProfileV1, Diagnostics<SchemaError>> =
         Schema.check schema draft
 
-    /// Parses raw boundary input through the schema.
-    let parse (input: RawInput) : Result<ProfileV1, Diagnostics<SchemaError>> =
+    /// Parses structured boundary data through the schema.
+    let parse (input: Data) : Result<ProfileV1, Diagnostics<SchemaError>> =
         Schema.parse schema input
 
     /// Typed field references for rules, redisplay, and UI binding.
@@ -76,8 +77,8 @@ module Profile =
     let validate (draft: Profile) : Result<Profile, Diagnostics<SchemaError>> =
         Schema.check schema draft
 
-    /// Parses raw boundary input through the schema.
-    let parse (input: RawInput) : Result<Profile, Diagnostics<SchemaError>> =
+    /// Parses structured boundary data through the schema.
+    let parse (input: Data) : Result<Profile, Diagnostics<SchemaError>> =
         Schema.parse schema input
 
     /// Builds the versioned wire contract; supply each n-1 -> n migration and the version-detection source.

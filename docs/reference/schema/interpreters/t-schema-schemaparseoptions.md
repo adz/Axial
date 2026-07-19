@@ -4,7 +4,7 @@ linkTitle: "SchemaParseOptions"
 weight: 1103
 ---
 
-Options that customize how raw input is parsed through a schema.
+Options that customize how structured data is parsed through a schema.
 
 ## Signature
 

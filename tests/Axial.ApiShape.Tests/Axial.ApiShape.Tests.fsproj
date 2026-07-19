@@ -30,6 +30,7 @@
     <ProjectReference Include="..\..\src\Axial.Flow.FileSystem\Axial.Flow.FileSystem.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Flow.HttpClient\Axial.Flow.HttpClient.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Flow.Process\Axial.Flow.Process.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Data\Axial.Data.fsproj" />
   </ItemGroup>
 
 </Project>

@@ -25,7 +25,7 @@
     <Compile Include="SchemaOptionalValueTests.fs" />
     <Compile Include="SchemaInterpreterPrototypeTests.fs" />
     <Compile Include="SchemaGenerationTargetProofTests.fs" />
-    <Compile Include="RawInputTests.fs" />
+    <Compile Include="DataTests.fs" />
     <Compile Include="RetainedParseResultTests.fs" />
     <Compile Include="SchemaErrorTests.fs" />
     <Compile Include="InputParseTests.fs" />
@@ -69,6 +69,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Axial.Schema\Axial.Schema.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Codec\Axial.Codec.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Data\Axial.Data.fsproj" />
   </ItemGroup>
 
 </Project>

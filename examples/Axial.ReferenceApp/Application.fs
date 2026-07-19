@@ -1,5 +1,7 @@
 namespace Axial.ReferenceApp
 
+open Axial
+
 open System
 open System.IO
 open System.Text.Json
@@ -40,7 +42,7 @@ module FileWorkspaceStore =
         let loadFile file =
             try
                 use document = JsonDocument.Parse(File.ReadAllText file)
-                match Contract.parse Contracts.workspace (RawInput.ofJsonDocument document) with
+                match Contract.parse Contracts.workspace (Data.ofJsonDocument document) with
                 | Ok current -> Ok(Contracts.toDomain current)
                 | Error error -> Error(AppError.InvalidContract error)
             with error -> Error(AppError.Storage error.Message)

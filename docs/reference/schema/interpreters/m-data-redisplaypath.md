@@ -1,15 +1,15 @@
 ---
-title: "Schema.RawInput.redisplayPath"
+title: "Data.redisplayPath"
 linkTitle: "redisplayPath"
 weight: 2010
 ---
 
-Parses an input path and redisplays the addressed scalar raw input value.
+Parses an input path and redisplays the addressed scalar structured data value.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Schema.RawInput.redisplayPath&#32;<span>path&#32;input</span></span></code>
+<code><span>Data.redisplayPath&#32;<span>path&#32;input</span></span></code>
 </div>
 
 ## Parameters
@@ -17,7 +17,7 @@ Parses an input path and redisplays the addressed scalar raw input value.
 | Name | Type | Description |
 | --- | --- | --- |
 | `path` | <code>string</code> |  |
-| `input` | <code><a href="t-schema-rawinput.md">RawInput</a></code> |  |
+| `input` | <code><a href="t-data.md">Data</a></code> |  |
 
 ## Returns
 

@@ -1,5 +1,7 @@
 namespace Axial.Schema.Tests
 
+open Axial
+
 open Axial.Codec
 open Axial.Schema
 open Axial.Validation
@@ -21,7 +23,7 @@ module RecursiveSchemaTests =
         schema.Value
 
     let private rawCategory name children =
-        RawInput.Object(Map.ofList [ "name", RawInput.Scalar name; "children", RawInput.Many children ])
+        Data.objectOfMap (Map.ofList [ "name", Data.Text name; "children", Data.List children ])
 
     let private sample =
         { Name = "root"
@@ -54,7 +56,7 @@ module RecursiveSchemaTests =
     let ``nested and defer reject value schemas with argument errors`` () =
         raises<System.ArgumentException> <@ Value.nested Schema.text @>
         let deferred = Value.lazyOf (fun () -> Schema.text)
-        raises<System.ArgumentException> <@ Schema.parseRetainingInput deferred (RawInput.Scalar "value") @>
+        raises<System.ArgumentException> <@ Schema.parseRetainingInput deferred (Data.Text "value") @>
 
     [<Fact>]
     let ``recursive schema compiles to a reusable codec`` () =

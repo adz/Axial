@@ -1,5 +1,7 @@
 namespace Axial.Tests
 
+open Axial
+
 open Axial.ErrorHandling
 open Axial.Schema
 open Axial.Validation
@@ -30,7 +32,7 @@ module OptionalSchemaParseTests =
 
     [<Fact>]
     let ``parse maps missing optional fields to None`` () =
-        let raw = RawInput.Object(Map.ofList [ "name", RawInput.Scalar "Ada" ])
+        let raw = Data.objectOfMap (Map.ofList [ "name", Data.Text "Ada" ])
 
         let parsed = Schema.parseRetainingInput (profileSchema ()) raw
 
@@ -39,14 +41,10 @@ module OptionalSchemaParseTests =
     [<Fact>]
     let ``parse maps json null optional fields to None`` () =
         let raw =
-            JsonLikeValue.Object(
-                Map.ofList
-                    [ "name", JsonLikeValue.String "Ada"
-                      "nickname", JsonLikeValue.Null
-                      "age", JsonLikeValue.Null ]
-            )
-            |> RawInput.ofJsonLikeValue
-
+            Data.Object
+                [ "name", Data.Text "Ada"
+                  "nickname", Data.Null
+                  "age", Data.Null ]
         let parsed = Schema.parseRetainingInput (profileSchema ()) raw
 
         test <@ parsed.Result = Ok { Name = "Ada"; Nickname = None; Age = None } @>
@@ -54,11 +52,10 @@ module OptionalSchemaParseTests =
     [<Fact>]
     let ``parse wraps present optional payloads in Some`` () =
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "name", RawInput.Scalar "Ada"
-                      "nickname", RawInput.Scalar "Lady A"
-                      "age", RawInput.Scalar "36" ]
+            Data.objectOfMap (Map.ofList
+                    [ "name", Data.Text "Ada"
+                      "nickname", Data.Text "Lady A"
+                      "age", Data.Text "36" ]
             )
 
         let parsed = Schema.parseRetainingInput (profileSchema ()) raw
@@ -68,10 +65,9 @@ module OptionalSchemaParseTests =
     [<Fact>]
     let ``parse runs payload constraints on present optional values`` () =
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "name", RawInput.Scalar "Ada"
-                      "nickname", RawInput.Scalar "A" ]
+            Data.objectOfMap (Map.ofList
+                    [ "name", Data.Text "Ada"
+                      "nickname", Data.Text "A" ]
             )
 
         let parsed = Schema.parseRetainingInput (profileSchema ()) raw

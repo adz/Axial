@@ -4,6 +4,7 @@
 // </auto-generated>
 namespace Axial.Tests.Generated
 
+open Axial
 open Axial.Validation
 open Axial.Schema
 
@@ -26,8 +27,8 @@ module PickupPoint =
     let validate (draft: PickupPoint) : Result<PickupPoint, Diagnostics<SchemaError>> =
         Schema.check schema draft
 
-    /// Parses raw boundary input through the schema.
-    let parse (input: RawInput) : Result<PickupPoint, Diagnostics<SchemaError>> =
+    /// Parses structured boundary data through the schema.
+    let parse (input: Data) : Result<PickupPoint, Diagnostics<SchemaError>> =
         Schema.parse schema input
 
     /// Typed field references for rules, redisplay, and UI binding.
@@ -54,8 +55,8 @@ module CourierDelivery =
     let validate (draft: CourierDelivery) : Result<CourierDelivery, Diagnostics<SchemaError>> =
         Schema.check schema draft
 
-    /// Parses raw boundary input through the schema.
-    let parse (input: RawInput) : Result<CourierDelivery, Diagnostics<SchemaError>> =
+    /// Parses structured boundary data through the schema.
+    let parse (input: Data) : Result<CourierDelivery, Diagnostics<SchemaError>> =
         Schema.parse schema input
 
     /// Typed field references for rules, redisplay, and UI binding.
@@ -86,8 +87,8 @@ module ShipmentV1 =
     let validate (draft: ShipmentV1) : Result<ShipmentV1, Diagnostics<SchemaError>> =
         Schema.check schema draft
 
-    /// Parses raw boundary input through the schema.
-    let parse (input: RawInput) : Result<ShipmentV1, Diagnostics<SchemaError>> =
+    /// Parses structured boundary data through the schema.
+    let parse (input: Data) : Result<ShipmentV1, Diagnostics<SchemaError>> =
         Schema.parse schema input
 
     /// Typed field references for rules, redisplay, and UI binding.
@@ -141,8 +142,8 @@ module Shipment =
     let validate (draft: Shipment) : Result<Shipment, Diagnostics<SchemaError>> =
         Schema.check schema draft
 
-    /// Parses raw boundary input through the schema.
-    let parse (input: RawInput) : Result<Shipment, Diagnostics<SchemaError>> =
+    /// Parses structured boundary data through the schema.
+    let parse (input: Data) : Result<Shipment, Diagnostics<SchemaError>> =
         Schema.parse schema input
 
     /// Builds the versioned wire contract; supply each n-1 -> n migration and the version-detection source.

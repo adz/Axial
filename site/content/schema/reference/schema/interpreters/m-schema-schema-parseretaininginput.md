@@ -5,7 +5,7 @@ weight: 2101
 type: docs
 ---
 
-Parses source-neutral raw input while retaining it for redisplay and error lookup.
+Parses source-neutral structured data while retaining it for redisplay and error lookup.
 
 ## Signature
 
@@ -18,7 +18,7 @@ Parses source-neutral raw input while retaining it for redisplay and error looku
 | Name | Type | Description |
 | --- | --- | --- |
 | `schema` | <code><span><a href="../t-schema-schema.md">Schema</a>&lt;'a&gt;</span></code> |  |
-| `input` | <code><a href="t-schema-rawinput.md">RawInput</a></code> |  |
+| `input` | <code><a href="t-data.md">Data</a></code> |  |
 
 ## Returns
 

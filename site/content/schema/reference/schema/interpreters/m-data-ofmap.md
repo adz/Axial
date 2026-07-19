@@ -1,15 +1,16 @@
 ---
-title: "Schema.RawInput.ofMap"
+title: "Data.ofMap"
 linkTitle: "ofMap"
-weight: 2002
+weight: 2003
+type: docs
 ---
 
-Builds object-shaped raw input from a map of scalar field values.
+Builds object-shaped structured data from a map of scalar field values.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Schema.RawInput.ofMap&#32;<span>values</span></span></code>
+<code><span>Data.ofMap&#32;<span>values</span></span></code>
 </div>
 
 ## Parameters
@@ -22,4 +23,4 @@ Builds object-shaped raw input from a map of scalar field values.
 
 | Type | Description |
 | --- | --- |
-| <code><a href="t-schema-rawinput.md">RawInput</a></code> |  |
+| <code><a href="t-data.md">Data</a></code> |  |

@@ -1,5 +1,7 @@
 namespace Axial.Schema.Http.AspNetCore
 
+open Axial
+
 open System
 open System.Text.Json
 open System.Threading.Tasks
@@ -16,7 +18,7 @@ module SchemaRequest =
     let json (schema: Schema<'model>) (request: HttpRequest) : Task<RetainedParseResult<'model, SchemaError>> =
         task {
             use! document = JsonDocument.ParseAsync request.Body
-            return Schema.parseRetainingInput schema (RawInput.ofJsonDocument document)
+            return Schema.parseRetainingInput schema (Data.ofJsonDocument document)
         }
 
     /// <summary>Parses the posted form through the schema; dotted field names such as <c>address.street</c> nest.</summary>
@@ -162,8 +164,8 @@ module Request =
             let found, value = request.RouteValues.TryGetValue name
 
             let input =
-                if not found || isNull value then RawInput.Missing
-                else RawInput.Scalar(string value)
+                if not found || isNull value then Data.Null
+                else Data.Text(string value)
 
             Schema.parseRetainingInput schema input |> fromParsed)
 

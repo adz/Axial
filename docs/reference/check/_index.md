@@ -10,7 +10,7 @@ This page shows the `Check` surface for reusable, path-free value constraints. `
 - [`ErrorHandling.Check`](./t-errorhandling-check.md):
  Typed value-check programs for local structural facts.
 
-- [`ErrorHandling.CheckFailure`](./t-errorhandling-checkfailure.md): Describes why an executable value check failed, without attaching source paths or raw input.
+- [`ErrorHandling.CheckFailure`](./t-errorhandling-checkfailure.md): Describes why an executable value check failed, without attaching source paths or structured data.
 - [`ErrorHandling.CheckLengthExpectation`](./t-errorhandling-checklengthexpectation.md): Describes the length requirement that a value check expected a string-like value to satisfy.
 - [`ErrorHandling.CheckRangeExpectation`](./t-errorhandling-checkrangeexpectation.md): <pre>Describes the ordering requirement that a value check expected a comparable value to satisfy against a
  caller-supplied bound.</pre>

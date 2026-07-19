@@ -33,7 +33,7 @@ broader claim that an invalid value of a publicly constructible type can never b
 
 ## Domain Types And Project Structure
 
-- Parse at every external boundary, then pass domain types inward rather than `RawInput`, DTOs, drafts, or wire records.
+- Parse at every external boundary, then pass domain types inward rather than `Data`, DTOs, drafts, or wire records.
 - Prefer private refined fields as the first resort because they preserve ordinary record syntax and make illegal field
   values unrepresentable.
 - Use private aggregate representations for cross-field invariants that must hold for every value.
@@ -63,7 +63,7 @@ Provide reusable tests, templates, or tooling for adopter repositories:
 - Ban ambient clock, GUID, random, environment, filesystem, console, and network access in designated domain and
   application projects.
 - Restrict `IServiceProvider` resolution to host-edge projects.
-- Reject `RawInput`, generated wire records, and draft types in domain or application public interfaces.
+- Reject `Data`, generated wire records, and draft types in domain or application public interfaces.
 - Check that domain aggregates do not expose public unchecked construction or mutation.
 - Check that expected domain failures use typed error channels rather than exceptions or strings.
 - Make generated contract/schema output an incremental, deterministic dependency of normal MSBuild compilation.
@@ -169,7 +169,7 @@ exercise semantic claims the F# compiler cannot prove.
 | Project direction | Domain cannot import boundary or infrastructure code | Project references plus build validation | Whether the chosen project split matches ownership |
 | Ambient effects | Selected projects do not call operational APIs | Project references plus compiled-call audit | Whether an exception is legitimate |
 | Container lookup | Dynamic resolution stays at hosts | Package/project placement plus compiled-call audit | Host composition choices |
-| Boundary leakage | DTO, draft, or `RawInput` types do not enter core interfaces | Project isolation plus public-surface audit | Classification of unusual boundary types |
+| Boundary leakage | DTO, draft, or `Data` types do not enter core interfaces | Project isolation plus public-surface audit | Classification of unusual boundary types |
 | Typed failures | Expected refusal remains visible | Domain DUs and `Result`/Flow error channels | Which failures are expected rather than defects |
 | Constraint drift | Schema metadata agrees with constructors | Schema-derived law tests | Custom constraints and missing test distributions |
 | Transition preservation | Total transitions keep intrinsic invariants | Opaque module plus property law | Correctness of the property and generator |
@@ -258,7 +258,7 @@ Assembly metadata can check public parameter, return, property, field, base, and
 
 For Domain and Application projects, reject public interfaces containing:
 
-- `RawInput` or `RetainedParseResult`;
+- `Data` or `RetainedParseResult`;
 - types from configured Contracts assemblies;
 - generated wire types carrying a stable marker;
 - draft types carrying an optional draft marker;

@@ -11,7 +11,7 @@ description: Schema vs Input vs Rules — the three tools inside Axial.Schema.
 | Tool | Question it answers |
 | :--- | :--- |
 | `Schema<'model>` | What is the model's shape, order, construction, and constraint metadata? |
-| `Schema.parse` / `Schema.check` | Can this raw input, or this already-existing value, become a trusted model? |
+| `Schema.parse` / `Schema.check` | Can this structured data, or this already-existing value, become a trusted model? |
 | `ContextRules.apply` | Is this already-trusted model acceptable in this context? |
 
 ## Schema
@@ -26,7 +26,7 @@ constructor only when every argument is trusted, and returns `RetainedParseResul
 diagnostics plus the original input for redisplay.
 
 Use `Schema.check schema model` when the value already exists (imported rows, hand-built values) and needs the
-same intrinsic constraints re-checked through getters, instead of parsed from raw input. It gives the same trust
+same intrinsic constraints re-checked through getters, instead of parsed from structured data. It gives the same trust
 strength as `Schema.parse` — including re-invoking the model's own constructor, so cross-field invariants are
 re-checked too, not just per-field constraints.
 

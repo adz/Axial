@@ -1,5 +1,7 @@
 namespace Axial.ReferenceApp.Tests
 
+open Axial
+
 open System
 open System.IO
 open System.Net.Http
@@ -13,8 +15,8 @@ open Axial.ReferenceApp
 
 module ReferenceAppTests =
     let private tempDirectory () = Path.Combine(Path.GetTempPath(), "axial-reference-" + Guid.NewGuid().ToString("N"))
-    let private scalar value = RawInput.Scalar(string value)
-    let private object' fields = RawInput.Object(Map.ofList fields)
+    let private scalar value = Data.Text(string value)
+    let private object' fields = Data.objectOfMap (Map.ofList fields)
 
     [<Fact>]
     let ``direct smart-constructor failures are structured admission errors`` () =
@@ -40,12 +42,12 @@ module ReferenceAppTests =
     let ``schema constructs refined fields and reports boundary paths`` () =
         let valid =
             Schema.parseRetainingInput Contracts.workspaceV2
-                (object' [ "version", scalar 2; "id", scalar(Guid.NewGuid()); "name", scalar "Delivery"; "members", RawInput.Many []; "items", RawInput.Many [] ])
+                (object' [ "version", scalar 2; "id", scalar(Guid.NewGuid()); "name", scalar "Delivery"; "members", Data.List []; "items", Data.List [] ])
         test <@ valid.Value.name |> WorkspaceName.value = "Delivery" @>
 
         let invalid =
             Schema.parseRetainingInput Contracts.workspaceV2
-                (object' [ "version", scalar 2; "id", scalar(Guid.NewGuid()); "name", scalar " "; "members", RawInput.Many []; "items", RawInput.Many [] ])
+                (object' [ "version", scalar 2; "id", scalar(Guid.NewGuid()); "name", scalar " "; "members", Data.List []; "items", Data.List [] ])
         test <@ invalid.Errors |> List.map _.Path = [ [ Axial.Validation.PathSegment.Name "name" ] ] @>
 
     [<Fact>]
@@ -65,7 +67,7 @@ module ReferenceAppTests =
 
     [<Fact>]
     let ``contextual production rules are separate from intrinsic schema validity`` () =
-        let raw = object' [ "version", scalar 2; "id", scalar(Guid.NewGuid()); "name", scalar "sales-demo"; "members", RawInput.Many []; "items", RawInput.Many [] ]
+        let raw = object' [ "version", scalar 2; "id", scalar(Guid.NewGuid()); "name", scalar "sales-demo"; "members", Data.List []; "items", Data.List [] ]
         test <@ (Schema.parse Contracts.workspaceV2 raw |> Result.isOk) @>
         match Application.admitProduction raw with
         | Error(AppError.InvalidInput diagnostics) ->

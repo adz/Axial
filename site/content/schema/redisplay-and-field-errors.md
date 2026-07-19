@@ -6,10 +6,10 @@ description: Failed parses that keep the user's input.
 ---
 
 
-This page shows how failed schema parses retain raw input, path-aware field errors, and default display strings.
+This page shows how failed schema parses retain structured data, path-aware field errors, and default display strings.
 
 When boundary input fails to parse, a form should show the user's original text next to each field's errors. Axial's
-`RetainedParseResult` keeps both: the raw input exactly as submitted, and diagnostics addressed by path.
+`RetainedParseResult` keeps both: the structured data exactly as submitted, and diagnostics addressed by path.
 
 ## The Handoff Value
 
@@ -20,7 +20,7 @@ let parsed = Schema.parseRetainingInput customerSchema raw
 
 parsed.IsValid        // true when a trusted model exists
 parsed.Result         // Ok model | Error diagnostics
-parsed.Input          // the original RawInput, always retained
+parsed.Input          // the original Data, always retained
 parsed.Errors         // flattened path-aware errors ([] when valid)
 ```
 
@@ -29,7 +29,7 @@ failures, and path-free `CheckFailure` values all lower to the same boundary tax
 
 ## Field Error Lookup
 
-`ErrorsFor` addresses errors with the same path text used by raw input, including collection indexes:
+`ErrorsFor` addresses errors with the same path text used by structured data, including collection indexes:
 
 ```fsharp
 parsed.ErrorsFor "email"                // errors attached exactly to the email field
@@ -41,14 +41,14 @@ renders correctly wherever it is attached.
 
 ## Redisplay
 
-`RawInput` addresses submitted values by the same paths:
+`Data` addresses submitted values by the same paths:
 
 ```fsharp
-RawInput.redisplayPath "email" parsed.Input          // "not-an-email", exactly as typed
-RawInput.redisplayPath "contacts[1].value" parsed.Input
+Data.redisplayPath "email" parsed.Input          // "not-an-email", exactly as typed
+Data.redisplayPath "contacts[1].value" parsed.Input
 ```
 
-Missing input redisplays as blank text, so form templates never special-case absent fields.
+Absent input looks up as `Data.Null` and redisplays as blank text, so form templates never special-case absent fields.
 
 ## Rendering A Form
 
@@ -56,13 +56,13 @@ The typical loop over a failed parse:
 
 ```fsharp
 for field in formFields do
-    let value = RawInput.redisplayPath field.Path parsed.Input
+    let value = Data.redisplayPath field.Path parsed.Input
     let errors = parsed.ErrorsFor field.Path |> List.map SchemaError.render
     render field value errors
 ```
 
 Because failed parses never construct the model, there is no half-valid object to guard against — the template works
-from raw input and diagnostics only.
+from structured data and diagnostics only.
 
 For summary output, render every failed diagnostic in one line:
 
@@ -74,7 +74,7 @@ let messages = RetainedParseResult.renderErrors parsed
 ## Mapping To Domain Errors
 
 `RetainedParseResult.mapErrors` translates interpreter errors into a domain or application error type at the boundary while
-preserving the raw input and paths:
+preserving the structured data and paths:
 
 ```fsharp
 let domainParsed = parsed |> RetainedParseResult.mapErrors SignupError.ofSchemaError

@@ -54,7 +54,7 @@ derivation (`@fieldName`, aliases, `@discriminatorName`, `@rejectExtraFields`, `
 ## What They Have That We Lack (honest gap list)
 
 1. **Recursion** (`Schema.Lazy`) — our builder cannot express recursive models at all (known, now written down).
-2. **DynamicValue** — a typed generic intermediate; our `RawInput` is boundary-only and stringly.
+2. **DynamicValue** — a typed generic intermediate; our `Data` is boundary-only and stringly.
 3. **Diff/Patch** derived from schema.
 4. **MetaSchema / serializable schemas** — directly relevant to the remote-config scenario (ship the schema to the
    editor as data rather than as compiled Fable code); worth remembering when contracts get built.

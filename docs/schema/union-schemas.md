@@ -10,7 +10,7 @@ description: Tagged discriminated unions as schema fields.
 This page shows how to describe F# discriminated unions as schema fields with explicit tags and payload schemas.
 
 Use union schemas when a domain field naturally has a small set of cases, and each case carries a different payload
-shape. The raw input convention is an object with a discriminator field and a payload field:
+shape. The structured data convention is an object with a discriminator field and a payload field:
 
 ```fsharp
 { type = "card"; value = { number = "4242" } }
@@ -71,20 +71,14 @@ Parsing attaches diagnostics to the discriminator or payload path:
 
 ```fsharp
 let raw =
-    RawInput.Object(
-        Map.ofList [
-            "payment",
-            RawInput.Object(
-                Map.ofList [
-                    "type", RawInput.Scalar "card"
-                    "value", RawInput.Object(Map.ofList [ "number", RawInput.Scalar "" ])
-                ]
-            )
-        ]
-    )
+    Data.Object
+        [ "payment",
+          Data.Object
+              [ "type", Data.Text "card"
+                "value", Data.Object [ "number", Data.Text "" ] ] ]
 
 let parsed = Schema.parse checkoutSchema raw
-let errors = parsed.Errors
+let errors = parsed |> Result.mapError Diagnostics.flatten
 ```
 
 The failing payload field reports at `payment.value.number`. An unknown tag reports at `payment.type`.

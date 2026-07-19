@@ -1,31 +1,30 @@
-namespace Axial.Schema
+namespace Axial
 
 open System
 open System.Collections.Specialized
 open System.Text
-open Axial.Validation
 
-/// <summary>A segment in a raw input path.</summary>
+/// <summary>A segment in a structured data path.</summary>
 /// <remarks>
 /// <para>
-/// Raw input paths address boundary data by source field names and zero-based collection indexes. They are intentionally
+/// Structured data paths address boundary data by source field names and zero-based collection indexes. They are intentionally
 /// separate from diagnostics graphs, but can be lowered to diagnostics paths when schema input errors are interpreted.
 /// </para>
 /// </remarks>
 [<RequireQualifiedAccess>]
-type InputPathSegment =
+type DataPathSegment =
     /// <summary>A named source field or object member.</summary>
     | Name of string
     /// <summary>A zero-based collection index.</summary>
     | Index of int
 
-/// <summary>A path that addresses a location in raw input.</summary>
-type InputPath = InputPathSegment list
+/// <summary>A path that addresses a location in structured data.</summary>
+type DataPath = DataPathSegment list
 
-/// <summary>Helpers for constructing, parsing, and rendering raw input paths.</summary>
+/// <summary>Helpers for constructing, parsing, and rendering structured data paths.</summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
-module InputPath =
+module DataPath =
     let private validateName (name: string) =
         if isNull name then
             nullArg (nameof name)
@@ -104,7 +103,7 @@ module InputPath =
                 if name = "" then
                     parseError ()
                 else
-                    Some(InputPathSegment.Name name, index + 1)
+                    Some(DataPathSegment.Name name, index + 1)
         else
             let mutable index = contentStart
 
@@ -115,72 +114,72 @@ module InputPath =
                 parseError ()
             else
                 match Int32.TryParse(text.Substring(contentStart, index - contentStart)) with
-                | true, value -> Some(InputPathSegment.Index value, index + 1)
+                | true, value -> Some(DataPathSegment.Index value, index + 1)
                 | false, _ -> parseError ()
 
-    /// <summary>The root raw input path.</summary>
-    let empty : InputPath = []
+    /// <summary>The root structured data path.</summary>
+    let empty : DataPath = []
 
     /// <summary>Creates a one-segment path for a named source field.</summary>
-    let name (name: string) : InputPath =
+    let name (name: string) : DataPath =
         validateName name
-        [ InputPathSegment.Name name ]
+        [ DataPathSegment.Name name ]
 
     /// <summary>Creates a one-segment path for a zero-based collection index.</summary>
-    let index (index: int) : InputPath =
+    let index (index: int) : DataPath =
         validateIndex index
-        [ InputPathSegment.Index index ]
+        [ DataPathSegment.Index index ]
 
     /// <summary>Appends a named source field segment to an input path.</summary>
-    let appendName (name: string) (path: InputPath) : InputPath =
+    let appendName (name: string) (path: DataPath) : DataPath =
         validateName name
-        path @ [ InputPathSegment.Name name ]
+        path @ [ DataPathSegment.Name name ]
 
     /// <summary>Appends a zero-based collection index segment to an input path.</summary>
-    let appendIndex (index: int) (path: InputPath) : InputPath =
+    let appendIndex (index: int) (path: DataPath) : DataPath =
         validateIndex index
-        path @ [ InputPathSegment.Index index ]
+        path @ [ DataPathSegment.Index index ]
 
     /// <summary>Creates a path from validated segments.</summary>
-    let ofSegments (segments: InputPathSegment seq) : InputPath =
+    let ofSegments (segments: DataPathSegment seq) : DataPath =
         if isNull (box segments) then
             nullArg (nameof segments)
 
         segments
         |> Seq.map (function
-            | InputPathSegment.Name name ->
+            | DataPathSegment.Name name ->
                 validateName name
-                InputPathSegment.Name name
-            | InputPathSegment.Index index ->
+                DataPathSegment.Name name
+            | DataPathSegment.Index index ->
                 validateIndex index
-                InputPathSegment.Index index)
+                DataPathSegment.Index index)
         |> Seq.toList
 
     /// <summary>Returns the segments in an input path.</summary>
-    let segments (path: InputPath) : InputPathSegment list = path
+    let segments (path: DataPath) : DataPathSegment list = path
 
-    /// <summary>Renders a raw input path using names, dot separators, and bracketed indexes.</summary>
-    let toString (path: InputPath) : string =
+    /// <summary>Renders a structured data path using names, dot separators, and bracketed indexes.</summary>
+    let toString (path: DataPath) : string =
         let builder = StringBuilder()
 
         path
         |> List.iteri (fun position segment ->
             match segment with
-            | InputPathSegment.Name name ->
+            | DataPathSegment.Name name ->
                 let rendered = renderName name
 
                 if position = 0 || rendered.StartsWith("[", StringComparison.Ordinal) then
                     builder.Append(rendered) |> ignore
                 else
                     builder.Append('.').Append(rendered) |> ignore
-            | InputPathSegment.Index index ->
+            | DataPathSegment.Index index ->
                 validateIndex index
                 builder.Append('[').Append(index).Append(']') |> ignore)
 
         builder.ToString()
 
-    /// <summary>Attempts to parse a raw input path such as <c>contacts[1].value</c>.</summary>
-    let tryParse (text: string) : InputPath option =
+    /// <summary>Attempts to parse a structured data path such as <c>contacts[1].value</c>.</summary>
+    let tryParse (text: string) : DataPath option =
         if isNull text then
             nullArg (nameof text)
 
@@ -199,87 +198,62 @@ module InputPath =
                         | None -> None
                     | _ when expectSegment ->
                         match parseBareName text index with
-                        | Some(name, nextIndex) -> loop nextIndex false (InputPathSegment.Name name :: segments)
+                        | Some(name, nextIndex) -> loop nextIndex false (DataPathSegment.Name name :: segments)
                         | None -> None
                     | _ -> None
 
             loop 0 true []
 
-    /// <summary>Parses a raw input path or raises <see cref="T:System.FormatException" /> when the text is invalid.</summary>
-    let parse (text: string) : InputPath =
+    /// <summary>Parses a structured data path or raises <see cref="T:System.FormatException" /> when the text is invalid.</summary>
+    let parse (text: string) : DataPath =
         match tryParse text with
         | Some path -> path
         | None -> raise (FormatException($"Invalid input path: {text}"))
 
-    /// <summary>Converts a raw input path into a diagnostics path with name and index segments.</summary>
-    let toDiagnosticsPath (path: InputPath) : Axial.Validation.Path =
-        path
-        |> List.map (function
-            | InputPathSegment.Name name ->
-                validateName name
-                PathSegment.Name name
-            | InputPathSegment.Index index ->
-                validateIndex index
-                PathSegment.Index index)
-
-/// <summary>
-/// Source-agnostic raw input captured at a data boundary before schema parsing and diagnostics interpretation.
-/// </summary>
-/// <remarks>
-/// <para>
-/// <c>RawInput</c> models the small set of shapes shared by form posts, command-line arguments, configuration, JSON-like
-/// values, and other boundary sources. It deliberately does not carry source-specific metadata, parsed model values, or
-/// diagnostics; those concerns belong to later input parsing and validation layers.
-/// </para>
-/// </remarks>
-[<RequireQualifiedAccess>]
-type RawInput =
-    /// <summary>The source did not provide a value for the requested input.</summary>
-    | Missing
-    /// <summary>A single scalar value represented in its boundary-facing text form.</summary>
-    | Scalar of value: string
-    /// <summary>An ordered collection of raw input items.</summary>
-    | Many of items: RawInput list
-    /// <summary>A named collection of raw input fields.</summary>
-    | Object of fields: Map<string, RawInput>
-
-/// <summary>A small dependency-free value model for adapting JSON-shaped data into <see cref="T:Axial.Schema.RawInput" />.</summary>
-[<RequireQualifiedAccess>]
-type JsonLikeValue =
-    /// <summary>A JSON null value.</summary>
-    | Null
-    /// <summary>A JSON string value.</summary>
-    | String of string
-    /// <summary>A JSON number, preserved in its boundary-facing text form.</summary>
-    | Number of string
-    /// <summary>A JSON boolean value.</summary>
-    | Bool of bool
-    /// <summary>A JSON array value.</summary>
-    | Array of JsonLikeValue list
-    /// <summary>A JSON object value.</summary>
-    | Object of Map<string, JsonLikeValue>
-
-/// <summary>Helpers for inspecting source-agnostic raw input.</summary>
+/// <summary>Helpers for inspecting source-agnostic structured data.</summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
-module RawInput =
+module Data =
+    /// <summary>Builds an object from an F# map, ordered by key.</summary>
+    let objectOfMap (fields: Map<string, Data>) : Data =
+        if isNull (box fields) then nullArg (nameof fields)
+        fields |> Map.toList |> Data.Object
+
+    /// <summary>Concise, opt-in syntax for constructing structured objects.</summary>
+    module Syntax =
+        /// <summary>Associates a field name with a supported primitive, structured value, or recursive list.</summary>
+        let inline (=>) (name: string) (value: ^value) : string * Data =
+            if isNull name then nullArg (nameof name)
+
+            let inline convert (witness: ^w) (value: ^v) =
+                ((^w or ^v): (static member From: ^v -> Data) value)
+
+            name, convert Unchecked.defaultof<Data> value
+
+        /// <summary>Builds an object from ordered name/value pairs produced with <c>=&gt;</c>.</summary>
+        let data (fields: (string * Data) list) : Data =
+            if isNull (box fields) then nullArg (nameof fields)
+            Data.Object fields
+
     type private ConfigurationNode =
-        | Value of RawInput
+        | Value of Data
         | Branch of Map<string, ConfigurationNode>
 
-    let private tryRedisplayValue (input: RawInput) =
+    let private tryRedisplayValue (input: Data) =
         match input with
-        | RawInput.Missing -> Some ""
-        | RawInput.Scalar value -> Some value
-        | RawInput.Many _
-        | RawInput.Object _ -> None
+        | Data.Null -> Some ""
+        | Data.Text value -> Some value
+        | Data.Number token -> Some token
+        | Data.Bool value -> Some(if value then "true" else "false")
+        | Data.List _
+        | Data.Object _ -> None
 
     let private ensureName (name: string) =
         if isNull name then
             nullArg (nameof name)
 
         if name = "" then
-            invalidArg (nameof name) "Raw input field names cannot be empty."
+            invalidArg (nameof name) "Structured data field names cannot be empty."
 
         name
 
@@ -289,20 +263,20 @@ module RawInput =
 
         values
 
-    let private scalarOrMissing (value: string) =
-        if isNull value then RawInput.Missing else RawInput.Scalar value
+    let private textOrNull (value: string) =
+        if isNull value then Data.Null else Data.Text value
 
     let private fieldValue (values: string list) =
         match values with
-        | [] -> RawInput.Missing
-        | [ value ] -> scalarOrMissing value
-        | values -> values |> List.map scalarOrMissing |> RawInput.Many
+        | [] -> Data.Null
+        | [ value ] -> textOrNull value
+        | values -> values |> List.map textOrNull |> Data.List
 
     let private objectFromGroupedValues (values: seq<string * string list>) =
         values
         |> Seq.map (fun (name, values) -> ensureName name, fieldValue values)
-        |> Map.ofSeq
-        |> RawInput.Object
+        |> Seq.toList
+        |> Data.Object
 
     let private addField name value fields =
         let name = ensureName name
@@ -310,8 +284,8 @@ module RawInput =
         let append existing =
             match existing with
             | None -> Some value
-            | Some(RawInput.Many values) -> Some(RawInput.Many(values @ [ value ]))
-            | Some existing -> Some(RawInput.Many [ existing; value ])
+            | Some(Data.List values) -> Some(Data.List(values @ [ value ]))
+            | Some existing -> Some(Data.List [ existing; value ])
 
         fields |> Map.change name append
 
@@ -326,7 +300,7 @@ module RawInput =
             // Last write wins, matching .NET configuration layering — except that a null value never
             // overrides an existing section, because IConfiguration.AsEnumerable() emits every section
             // key with a null value alongside that section's children.
-            | [], Branch children when not children.IsEmpty && value = RawInput.Missing -> current
+            | [], Branch children when not children.IsEmpty && value = Data.Null -> current
             | [], _ -> Value value
             // A later section path replaces an earlier scalar at the same key: last write wins there too.
             | _ :: _, Value _ -> insert remaining (Branch Map.empty)
@@ -337,11 +311,11 @@ module RawInput =
 
         insert segments node
 
-    let private configurationNodeToRawInput node =
+    let private configurationNodeToData node =
         let rec convert node =
             match node with
             | Value value -> value
-            | Branch children when children.IsEmpty -> RawInput.Object Map.empty
+            | Branch children when children.IsEmpty -> Data.Object []
             | Branch children ->
                 let indexed =
                     children
@@ -356,65 +330,65 @@ module RawInput =
                           byIndex
                           |> Map.tryFind index
                           |> Option.map convert
-                          |> Option.defaultValue RawInput.Missing ]
-                    |> RawInput.Many
+                          |> Option.defaultValue Data.Null ]
+                    |> Data.List
                 else
                     children
-                    |> Map.map (fun _ child -> convert child)
-                    |> RawInput.Object
+                    |> Map.toList
+                    |> List.map (fun (name, child) -> name, convert child)
+                    |> Data.Object
 
         convert node
 
-    /// <summary>Builds object-shaped raw input from a list of named raw input fields.</summary>
-    /// <remarks>When a field name occurs more than once, the last value wins.</remarks>
+    /// <summary>Builds object-shaped structured data from a list of named structured data fields.</summary>
+    /// <remarks>Field order and repeated names are preserved.</remarks>
     /// <example>
     /// <code>
-    /// [ "email", RawInput.Scalar "ada@example.com"
-    ///   "age", RawInput.Scalar "42" ]
-    /// |> RawInput.objectOfList
+    /// [ "email", Data.Text "ada@example.com"
+    ///   "age", Data.Text "42" ]
+    /// |> Data.objectOfList
     /// </code>
     /// </example>
-    let objectOfList (fields: (string * RawInput) list) : RawInput =
+    let objectOfList (fields: (string * Data) list) : Data =
         ensureValues (nameof fields) fields
         |> List.map (fun (name, value) -> ensureName name, value)
-        |> Map.ofList
-        |> RawInput.Object
+        |> Data.Object
 
-    /// <summary>Builds object-shaped raw input from a map of scalar field values.</summary>
-    let ofMap (values: Map<string, string>) : RawInput =
+    /// <summary>Builds object-shaped structured data from a map of scalar field values.</summary>
+    let ofMap (values: Map<string, string>) : Data =
         if isNull (box values) then
             nullArg (nameof values)
 
         values
         |> Map.toSeq
-        |> Seq.map (fun (name, value) -> ensureName name, scalarOrMissing value)
-        |> Map.ofSeq
-        |> RawInput.Object
+        |> Seq.map (fun (name, value) -> ensureName name, textOrNull value)
+        |> Seq.toList
+        |> Data.Object
 
-    /// <summary>Builds object-shaped raw input from a .NET dictionary of scalar field values.</summary>
+    /// <summary>Builds object-shaped structured data from a .NET dictionary of scalar field values.</summary>
     /// <remarks>
     /// A C#-friendly equivalent of <c>ofMap</c>: takes <see cref="T:System.Collections.Generic.IDictionary`2" />
     /// instead of an F# <c>Map</c>, so callers do not need to construct an F# map value.
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="values" /> is null.</exception>
-    let ofDictionary (values: System.Collections.Generic.IDictionary<string, string>) : RawInput =
+    let ofDictionary (values: System.Collections.Generic.IDictionary<string, string>) : Data =
         if isNull values then
             nullArg (nameof values)
 
         values
-        |> Seq.map (fun pair -> ensureName pair.Key, scalarOrMissing pair.Value)
-        |> Map.ofSeq
-        |> RawInput.Object
+        |> Seq.map (fun pair -> ensureName pair.Key, textOrNull pair.Value)
+        |> Seq.toList
+        |> Data.Object
 
-    /// <summary>Builds object-shaped raw input from name/value pairs, grouping repeated names into <c>Many</c>.</summary>
-    let ofNameValues (values: seq<string * string>) : RawInput =
+    /// <summary>Builds object-shaped structured data from name/value pairs, grouping repeated names into <c>Many</c>.</summary>
+    let ofNameValues (values: seq<string * string>) : Data =
         ensureValues (nameof values) values
         |> Seq.groupBy fst
         |> Seq.map (fun (name, grouped) -> name, grouped |> Seq.map snd |> Seq.toList)
         |> objectFromGroupedValues
 
-    /// <summary>Builds object-shaped raw input from a .NET name-value collection.</summary>
-    let ofNameValueCollection (values: NameValueCollection) : RawInput =
+    /// <summary>Builds object-shaped structured data from a .NET name-value collection.</summary>
+    let ofNameValueCollection (values: NameValueCollection) : Data =
         if isNull values then
             nullArg (nameof values)
 
@@ -431,7 +405,7 @@ module RawInput =
         |> objectFromGroupedValues
 
     /// <summary>
-    /// Builds raw input from command-line arguments.
+    /// Builds structured data from command-line arguments.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -439,7 +413,7 @@ module RawInput =
     /// options. Positional arguments are stored under the <c>_</c> field as a collection.
     /// </para>
     /// </remarks>
-    let ofCliArgs (args: seq<string>) : RawInput =
+    let ofCliArgs (args: seq<string>) : Data =
         let args = ensureValues (nameof args) args |> Seq.toList
 
         let rec loop remaining fields positionals =
@@ -448,16 +422,16 @@ module RawInput =
                 let fields =
                     match List.rev positionals with
                     | [] -> fields
-                    | positionals -> fields |> addField "_" (positionals |> List.map RawInput.Scalar |> RawInput.Many)
+                    | positionals -> fields |> addField "_" (positionals |> List.map Data.Text |> Data.List)
 
-                RawInput.Object fields
+                fields |> Map.toList |> Data.Object
             | "--" :: rest ->
                 loop [] fields (List.rev rest @ positionals)
             | arg :: rest when isNull arg ->
                 nullArg (nameof args)
             | arg :: rest when arg.StartsWith("--no-", StringComparison.Ordinal) && arg.Length > 5 ->
                 let name = arg.Substring 5
-                loop rest (fields |> addField name (RawInput.Scalar "false")) positionals
+                loop rest (fields |> addField name (Data.Text "false")) positionals
             | arg :: rest when arg.StartsWith("--", StringComparison.Ordinal) && arg.Length > 2 ->
                 let optionText = arg.Substring 2
                 let equalsIndex = optionText.IndexOf('=')
@@ -465,12 +439,12 @@ module RawInput =
                 if equalsIndex >= 0 then
                     let name = optionText.Substring(0, equalsIndex)
                     let value = optionText.Substring(equalsIndex + 1)
-                    loop rest (fields |> addField name (RawInput.Scalar value)) positionals
+                    loop rest (fields |> addField name (Data.Text value)) positionals
                 else
                     match rest with
                     | value :: tail when not (isNull value) && not (value.StartsWith("-", StringComparison.Ordinal)) ->
-                        loop tail (fields |> addField optionText (RawInput.Scalar value)) positionals
-                    | _ -> loop rest (fields |> addField optionText (RawInput.Scalar "true")) positionals
+                        loop tail (fields |> addField optionText (Data.Text value)) positionals
+                    | _ -> loop rest (fields |> addField optionText (Data.Text "true")) positionals
             | arg :: rest when arg.StartsWith("-", StringComparison.Ordinal) && arg.Length > 1 ->
                 let optionText = arg.Substring 1
                 let equalsIndex = optionText.IndexOf('=')
@@ -478,67 +452,51 @@ module RawInput =
                 if equalsIndex >= 0 then
                     let name = optionText.Substring(0, equalsIndex)
                     let value = optionText.Substring(equalsIndex + 1)
-                    loop rest (fields |> addField name (RawInput.Scalar value)) positionals
+                    loop rest (fields |> addField name (Data.Text value)) positionals
                 else
                     match rest with
                     | value :: tail when not (isNull value) && not (value.StartsWith("-", StringComparison.Ordinal)) ->
-                        loop tail (fields |> addField optionText (RawInput.Scalar value)) positionals
-                    | _ -> loop rest (fields |> addField optionText (RawInput.Scalar "true")) positionals
+                        loop tail (fields |> addField optionText (Data.Text value)) positionals
+                    | _ -> loop rest (fields |> addField optionText (Data.Text "true")) positionals
             | arg :: rest -> loop rest fields (arg :: positionals)
 
         loop args Map.empty []
 
-    /// <summary>Builds raw input from dependency-free JSON-shaped values.</summary>
-    let rec ofJsonLikeValue (value: JsonLikeValue) : RawInput =
-        match value with
-        | JsonLikeValue.Null -> RawInput.Missing
-        | JsonLikeValue.String value -> scalarOrMissing value
-        | JsonLikeValue.Number value -> scalarOrMissing value
-        | JsonLikeValue.Bool value -> RawInput.Scalar(if value then "true" else "false")
-        | JsonLikeValue.Array values -> values |> List.map ofJsonLikeValue |> RawInput.Many
-        | JsonLikeValue.Object fields ->
-            fields
-            |> Map.toSeq
-            |> Seq.map (fun (name, value) -> ensureName name, ofJsonLikeValue value)
-            |> Map.ofSeq
-            |> RawInput.Object
-
 #if NET8_0_OR_GREATER && !FABLE_COMPILER
-    /// <summary>Builds raw input from a <see cref="T:System.Text.Json.JsonElement" />.</summary>
+    /// <summary>Builds structured data from a <see cref="T:System.Text.Json.JsonElement" />.</summary>
     /// <remarks>
     /// <para>
     /// This is the boundary adapter for JSON bodies parsed with <c>System.Text.Json</c>, such as ASP.NET Core request
     /// payloads: convert the element once, then parse it with <c>Schema.parse</c> to get path-aware diagnostics or a
-    /// trusted model. JSON null and undefined become <c>Missing</c>, numbers keep their exact boundary text, and
-    /// booleans become <c>"true"</c>/<c>"false"</c> scalars.
+    /// trusted model. JSON value kinds remain distinct, and number tokens are carried without narrowing them to one
+    /// CLR numeric type. Other JSON syntax, such as whitespace and source locations, is not represented.
     /// </para>
     /// <para>
     /// The adapter is available on .NET 8+ targets where <c>System.Text.Json</c> ships in-box, keeping the package
-    /// dependency-free and Fable-safe on other targets. Fable and .NET Standard callers can adapt JSON-shaped data
-    /// through <see cref="M:Axial.Schema.RawInputModule.ofJsonLikeValue" /> instead.
+    /// dependency-free and Fable-safe on other targets.
     /// </para>
     /// <para>netstandard2.1: not available.</para>
     /// </remarks>
-    let rec ofJsonElement (element: System.Text.Json.JsonElement) : RawInput =
+    let rec ofJsonElement (element: System.Text.Json.JsonElement) : Data =
         match element.ValueKind with
         | System.Text.Json.JsonValueKind.Null
-        | System.Text.Json.JsonValueKind.Undefined -> RawInput.Missing
-        | System.Text.Json.JsonValueKind.String -> scalarOrMissing (element.GetString())
-        | System.Text.Json.JsonValueKind.Number -> RawInput.Scalar(element.GetRawText())
-        | System.Text.Json.JsonValueKind.True -> RawInput.Scalar "true"
-        | System.Text.Json.JsonValueKind.False -> RawInput.Scalar "false"
+        | System.Text.Json.JsonValueKind.Undefined -> Data.Null
+        | System.Text.Json.JsonValueKind.String -> textOrNull (element.GetString())
+        | System.Text.Json.JsonValueKind.Number -> Data.Number(element.GetRawText())
+        | System.Text.Json.JsonValueKind.True -> Data.Bool true
+        | System.Text.Json.JsonValueKind.False -> Data.Bool false
         | System.Text.Json.JsonValueKind.Array ->
-            element.EnumerateArray() |> Seq.map ofJsonElement |> Seq.toList |> RawInput.Many
+            element.EnumerateArray() |> Seq.map ofJsonElement |> Seq.toList |> Data.List
         | _ ->
             element.EnumerateObject()
             |> Seq.map (fun property -> ensureName property.Name, ofJsonElement property.Value)
-            |> Map.ofSeq
-            |> RawInput.Object
+            |> Seq.toList
+            |> Data.Object
 
-    /// <summary>Builds raw input from the root element of a <see cref="T:System.Text.Json.JsonDocument" />.</summary>
+    /// <summary>Builds structured data from the root element of a <see cref="T:System.Text.Json.JsonDocument" />.</summary>
     /// <remarks>netstandard2.1: not available.</remarks>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="document" /> is null.</exception>
-    let ofJsonDocument (document: System.Text.Json.JsonDocument) : RawInput =
+    let ofJsonDocument (document: System.Text.Json.JsonDocument) : Data =
         if isNull document then
             nullArg (nameof document)
 
@@ -546,7 +504,7 @@ module RawInput =
 #endif
 
     /// <summary>
-    /// Builds raw input from flattened configuration keys using <c>:</c> as the path separator.
+    /// Builds structured data from flattened configuration keys using <c>:</c> as the path separator.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -562,7 +520,7 @@ module RawInput =
     /// section's children.
     /// </para>
     /// </remarks>
-    let ofConfiguration (values: seq<string * string>) : RawInput =
+    let ofConfiguration (values: seq<string * string>) : Data =
         let values = ensureValues (nameof values) values
 
         values
@@ -574,11 +532,11 @@ module RawInput =
                 if segments |> List.exists ((=) "") then
                     invalidArg (nameof values) $"Configuration key cannot contain an empty segment: {key}"
 
-                insertConfigurationValue segments (scalarOrMissing value) node)
+                insertConfigurationValue segments (textOrNull value) node)
             (Branch Map.empty)
-        |> configurationNodeToRawInput
+        |> configurationNodeToData
 
-    /// <summary>Builds raw input from configuration key/value pairs, such as .NET <c>IConfiguration.AsEnumerable()</c>.</summary>
+    /// <summary>Builds structured data from configuration key/value pairs, such as .NET <c>IConfiguration.AsEnumerable()</c>.</summary>
     /// <remarks>
     /// A C#-friendly equivalent of <c>ofConfiguration</c>: takes
     /// <see cref="T:System.Collections.Generic.IEnumerable`1" /> of
@@ -588,66 +546,69 @@ module RawInput =
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="values" /> is null.</exception>
     let ofConfigurationPairs
         (values: System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>)
-        : RawInput =
+        : Data =
         if isNull values then
             nullArg (nameof values)
 
         values |> Seq.map (fun pair -> pair.Key, pair.Value) |> ofConfiguration
 
-    /// <summary>Attempts to find a raw input value at a parsed input path.</summary>
-    let tryFind (path: InputPath) (input: RawInput) : RawInput option =
-        let path = InputPath.ofSegments path
+    /// <summary>Attempts to find a structured data value at a parsed input path.</summary>
+    let tryFind (path: DataPath) (input: Data) : Data option =
+        let path = DataPath.ofSegments path
 
         let rec loop current remaining =
             match remaining, current with
             | [], _ -> Some current
-            | InputPathSegment.Name name :: rest, RawInput.Object fields ->
-                fields |> Map.tryFind name |> Option.bind (fun field -> loop field rest)
-            | InputPathSegment.Index index :: rest, RawInput.Many items ->
+            | DataPathSegment.Name name :: rest, Data.Object fields ->
+                fields
+                |> List.tryFindBack (fun (fieldName, _) -> fieldName = name)
+                |> Option.map snd
+                |> Option.bind (fun field -> loop field rest)
+            | DataPathSegment.Index index :: rest, Data.List items ->
                 items |> List.tryItem index |> Option.bind (fun item -> loop item rest)
             | _ -> None
 
         loop input path
 
-    /// <summary>Looks up a raw input value at a parsed input path, returning <c>Missing</c> when the path is absent.</summary>
-    let lookup (path: InputPath) (input: RawInput) : RawInput =
-        tryFind path input |> Option.defaultValue RawInput.Missing
+    /// <summary>Looks up a structured data value at a parsed input path, returning <c>Null</c> when the path is absent.</summary>
+    let lookup (path: DataPath) (input: Data) : Data =
+        tryFind path input |> Option.defaultValue Data.Null
 
-    /// <summary>Attempts to parse an input path and find the addressed raw input value.</summary>
-    let tryFindPath (path: string) (input: RawInput) : RawInput option =
-        InputPath.tryParse path |> Option.bind (fun parsedPath -> tryFind parsedPath input)
+    /// <summary>Attempts to parse an input path and find the addressed structured data value.</summary>
+    let tryFindPath (path: string) (input: Data) : Data option =
+        DataPath.tryParse path |> Option.bind (fun parsedPath -> tryFind parsedPath input)
 
-    /// <summary>Parses an input path and looks up the addressed raw input value.</summary>
-    let lookupPath (path: string) (input: RawInput) : RawInput =
-        InputPath.parse path |> fun parsedPath -> lookup parsedPath input
+    /// <summary>Parses an input path and looks up the addressed structured data value.</summary>
+    let lookupPath (path: string) (input: Data) : Data =
+        DataPath.parse path |> fun parsedPath -> lookup parsedPath input
 
     /// <summary>
-    /// Attempts to redisplay a scalar raw input value, returning blank text for explicitly missing input.
+    /// Attempts to redisplay a scalar structured data value, returning blank text for explicitly missing input.
     /// </summary>
-    let tryRedisplay (input: RawInput) : string option =
+    let tryRedisplay (input: Data) : string option =
         tryRedisplayValue input
 
     /// <summary>
-    /// Redisplays a scalar raw input value, returning blank text for missing, object-shaped, or collection-shaped input.
+    /// Redisplays a scalar structured data value, returning blank text for missing, object-shaped, or collection-shaped input.
     /// </summary>
-    let redisplay (input: RawInput) : string =
+    let redisplay (input: Data) : string =
         tryRedisplay input |> Option.defaultValue ""
 
-    /// <summary>Attempts to redisplay the scalar raw input value at a parsed input path.</summary>
-    let tryRedisplayAt (path: InputPath) (input: RawInput) : string option =
+    /// <summary>Attempts to redisplay the scalar structured data value at a parsed input path.</summary>
+    let tryRedisplayAt (path: DataPath) (input: Data) : string option =
         lookup path input |> tryRedisplayValue
 
     /// <summary>
-    /// Redisplays the scalar raw input value at a parsed input path, returning blank text when the value cannot be
+    /// Redisplays the scalar structured data value at a parsed input path, returning blank text when the value cannot be
     /// redisplayed as a scalar.
     /// </summary>
-    let redisplayAt (path: InputPath) (input: RawInput) : string =
+    let redisplayAt (path: DataPath) (input: Data) : string =
         tryRedisplayAt path input |> Option.defaultValue ""
 
-    /// <summary>Attempts to parse an input path and redisplay the addressed scalar raw input value.</summary>
-    let tryRedisplayPath (path: string) (input: RawInput) : string option =
-        InputPath.tryParse path |> Option.bind (fun parsedPath -> tryRedisplayAt parsedPath input)
+    /// <summary>Attempts to parse an input path and redisplay the addressed scalar structured data value.</summary>
+    let tryRedisplayPath (path: string) (input: Data) : string option =
+        DataPath.tryParse path |> Option.bind (fun parsedPath -> tryRedisplayAt parsedPath input)
 
-    /// <summary>Parses an input path and redisplays the addressed scalar raw input value.</summary>
-    let redisplayPath (path: string) (input: RawInput) : string =
-        InputPath.parse path |> fun parsedPath -> redisplayAt parsedPath input
+    /// <summary>Parses an input path and redisplays the addressed scalar structured data value.</summary>
+    let redisplayPath (path: string) (input: Data) : string =
+        DataPath.parse path |> fun parsedPath -> redisplayAt parsedPath input

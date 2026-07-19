@@ -1,5 +1,7 @@
 namespace Axial.Benchmarks
 
+open Axial
+
 open System
 open System.Text.Json
 open BenchmarkDotNet.Attributes
@@ -116,8 +118,8 @@ type BoundaryParseBenchmarks() =
     [<Benchmark(Baseline = true, Description = "Axial Json.deserialize (trusted lane)")>]
     member _.CodecDeserialize() = Json.deserialize codec json
 
-    [<Benchmark(Description = "JsonDocument + RawInput + Schema.parse (boundary lane)")>]
+    [<Benchmark(Description = "JsonDocument + Data + Schema.parse (boundary lane)")>]
     member _.BoundaryParse() =
         use document = JsonDocument.Parse json
-        let input = RawInput.ofJsonDocument document
+        let input = Data.ofJsonDocument document
         Schema.parse CodecModel.customerSchema input

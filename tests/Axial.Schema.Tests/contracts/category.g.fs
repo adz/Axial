@@ -4,6 +4,7 @@
 // </auto-generated>
 namespace Axial.Tests.Generated
 
+open Axial
 open Axial.Validation
 open Axial.Schema
 
@@ -37,8 +38,8 @@ module Category =
     let validate (draft: Category) : Result<Category, Diagnostics<SchemaError>> =
         Schema.check schema draft
 
-    /// Parses raw boundary input through the schema.
-    let parse (input: RawInput) : Result<Category, Diagnostics<SchemaError>> =
+    /// Parses structured boundary data through the schema.
+    let parse (input: Data) : Result<Category, Diagnostics<SchemaError>> =
         Schema.parse schema input
 
     /// Typed field references for rules, redisplay, and UI binding.

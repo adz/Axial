@@ -38,7 +38,7 @@ let createUser (rawId: string) (rawEmail: string) : Result<User, RefinementError
 
 ## Parsing Helpers
 
-`Parse` contains pure functions that parse raw inputs, usually string representations, and return `Result<'value, ParseError>`:
+`Parse` contains pure functions that parse untrusted values, usually string representations, and return `Result<'value, ParseError>`:
 
 - `Parse.int`, `Parse.bool`, `Parse.decimal`, `Parse.float`
 - `Parse.guid`, `Parse.dateTime`, `Parse.dateTimeOffset`, `Parse.dateOnly`, `Parse.timeOnly`

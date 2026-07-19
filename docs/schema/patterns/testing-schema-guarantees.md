@@ -19,7 +19,7 @@ Use generated examples to check those claims near the owning module.
 
 ## Generate accepted models
 
-`Axial.Schema.Testing` is a test-only FsCheck adapter. `SchemaGen.model` derives values by generating raw input, parsing
+`Axial.Schema.Testing` is a test-only FsCheck adapter. `SchemaGen.model` derives values by generating structured data, parsing
 it, and immediately checking the result.
 
 ```fsharp
@@ -68,7 +68,7 @@ Patterns, custom constraints, and application-specific distributions cannot alwa
 
 ```fsharp
 let overrides =
-    Map.ofList [ "reference", Gen.constant (RawInput.Scalar "BK-42") ]
+    Map.ofList [ "reference", Gen.constant (Data.Text "BK-42") ]
 
 let rawGenerator =
     SchemaGen.rawWith overrides bookingDeriveSchema

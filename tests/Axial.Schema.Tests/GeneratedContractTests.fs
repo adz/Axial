@@ -1,5 +1,7 @@
 namespace Axial.Tests
 
+open Axial
+
 open Axial.Validation
 open Axial.Schema
 open Axial.Tests.Generated
@@ -21,12 +23,11 @@ module GeneratedContractTests =
     [<Fact>]
     let ``generated recursive contract parses child trees`` () =
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "name", RawInput.Scalar "root"
+            Data.objectOfMap (Map.ofList
+                    [ "name", Data.Text "root"
                       "children",
-                      RawInput.Many
-                          [ RawInput.Object(Map.ofList [ "name", RawInput.Scalar "leaf"; "children", RawInput.Many [] ]) ] ]
+                      Data.List
+                          [ Data.objectOfMap (Map.ofList [ "name", Data.Text "leaf"; "children", Data.List [] ]) ] ]
             )
 
         match Axial.Tests.Generated.Category.parse raw with
@@ -116,14 +117,13 @@ module GeneratedContractTests =
     [<Fact>]
     let ``parse accepts wire names and enum tags`` () =
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "email", RawInput.Scalar "ada@example.com"
-                      "display_name", RawInput.Scalar "Ada"
-                      "age", RawInput.Scalar "42"
-                      "plan", RawInput.Scalar "pro"
-                      "tags", RawInput.Many [ RawInput.Scalar "one" ]
-                      "limits", RawInput.Object(Map.ofList [ "daily", RawInput.Scalar "10" ]) ]
+            Data.objectOfMap (Map.ofList
+                    [ "email", Data.Text "ada@example.com"
+                      "display_name", Data.Text "Ada"
+                      "age", Data.Text "42"
+                      "plan", Data.Text "pro"
+                      "tags", Data.List [ Data.Text "one" ]
+                      "limits", Data.objectOfMap (Map.ofList [ "daily", Data.Text "10" ]) ]
             )
 
         let parsed = Signup.parse raw
@@ -194,11 +194,9 @@ module GeneratedContractTests =
         | Error _ -> ()
 
         let raw =
-            RawInput.Object(
-                Map.ofList
+            Data.objectOfMap (Map.ofList
                     [ "source",
-                      RawInput.Object(
-                          Map.ofList [ "kind", RawInput.Scalar "invoice"; "reference", RawInput.Scalar "inv-42" ]
+                      Data.objectOfMap (Map.ofList [ "kind", Data.Text "invoice"; "reference", Data.Text "inv-42" ]
                       ) ]
             )
 
@@ -234,11 +232,10 @@ module GeneratedContractTests =
     [<Fact>]
     let ``the generated contract builder migrates a superseded version to the current model`` () =
         let rawV1 =
-            RawInput.Object(
-                Map.ofList
-                    [ "schemaVersion", RawInput.Scalar "1"
-                      "name", RawInput.Scalar "Ada"
-                      "email", RawInput.Scalar "ada@example.com" ]
+            Data.objectOfMap (Map.ofList
+                    [ "schemaVersion", Data.Text "1"
+                      "name", Data.Text "Ada"
+                      "email", Data.Text "ada@example.com" ]
             )
 
         match Contract.parse (profileContract ()) rawV1 with
@@ -248,12 +245,11 @@ module GeneratedContractTests =
     [<Fact>]
     let ``the generated contract builder parses the current version directly`` () =
         let rawV2 =
-            RawInput.Object(
-                Map.ofList
-                    [ "schemaVersion", RawInput.Scalar "2"
-                      "name", RawInput.Scalar "Ada"
-                      "email", RawInput.Scalar "ada@example.com"
-                      "marketing_opt_in", RawInput.Scalar "true" ]
+            Data.objectOfMap (Map.ofList
+                    [ "schemaVersion", Data.Text "2"
+                      "name", Data.Text "Ada"
+                      "email", Data.Text "ada@example.com"
+                      "marketing_opt_in", Data.Text "true" ]
             )
 
         match Contract.parse (profileContract ()) rawV2 with
@@ -263,11 +259,10 @@ module GeneratedContractTests =
     [<Fact>]
     let ``the generated contract builder rejects versions newer than the chain`` () =
         let rawV3 =
-            RawInput.Object(
-                Map.ofList
-                    [ "schemaVersion", RawInput.Scalar "3"
-                      "name", RawInput.Scalar "Ada"
-                      "email", RawInput.Scalar "ada@example.com" ]
+            Data.objectOfMap (Map.ofList
+                    [ "schemaVersion", Data.Text "3"
+                      "name", Data.Text "Ada"
+                      "email", Data.Text "ada@example.com" ]
             )
 
         test <@ Contract.parse (profileContract ()) rawV3 = Error(ContractError.VersionTooNew(3, 2)) @>
@@ -275,19 +270,17 @@ module GeneratedContractTests =
     [<Fact>]
     let ``record-derived schemas parse wire payloads with enums unions and defaults`` () =
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "reference", RawInput.Scalar "SH-42"
-                      "notify_email", RawInput.Scalar "ada@example.com"
-                      "items", RawInput.Object(Map.ofList [ "widget", RawInput.Scalar "3" ])
-                      "tags", RawInput.Many [ RawInput.Scalar "fragile" ]
-                      "weightKg", RawInput.Scalar "2.5"
-                      "priority", RawInput.Scalar "same-day"
+            Data.objectOfMap (Map.ofList
+                    [ "reference", Data.Text "SH-42"
+                      "notify_email", Data.Text "ada@example.com"
+                      "items", Data.objectOfMap (Map.ofList [ "widget", Data.Text "3" ])
+                      "tags", Data.List [ Data.Text "fragile" ]
+                      "weightKg", Data.Text "2.5"
+                      "priority", Data.Text "same-day"
                       "delivery",
-                      RawInput.Object(
-                          Map.ofList [ "kind", RawInput.Scalar "pickup"; "code", RawInput.Scalar "LOCKER-9" ]
+                      Data.objectOfMap (Map.ofList [ "kind", Data.Text "pickup"; "code", Data.Text "LOCKER-9" ]
                       )
-                      "boxes", RawInput.Scalar "2" ]
+                      "boxes", Data.Text "2" ]
             )
 
         match (Shipment.parse raw) with
@@ -344,12 +337,11 @@ module GeneratedContractTests =
                 (VersionSource.Field "schemaVersion")
 
         let rawV1 =
-            RawInput.Object(
-                Map.ofList
-                    [ "schemaVersion", RawInput.Scalar "1"
-                      "reference", RawInput.Scalar "SH-7"
-                      "notifyEmail", RawInput.Scalar "ada@example.com"
-                      "items", RawInput.Object(Map.ofList [ "widget", RawInput.Scalar "1" ]) ]
+            Data.objectOfMap (Map.ofList
+                    [ "schemaVersion", Data.Text "1"
+                      "reference", Data.Text "SH-7"
+                      "notifyEmail", Data.Text "ada@example.com"
+                      "items", Data.objectOfMap (Map.ofList [ "widget", Data.Text "1" ]) ]
             )
 
         match Contract.parse shipmentContract rawV1 with
@@ -362,8 +354,7 @@ module GeneratedContractTests =
     let ``superseded generated versions keep their own frozen schema and fields`` () =
         let parsed =
             ProfileV1.parse (
-                RawInput.Object(
-                    Map.ofList [ "name", RawInput.Scalar "Ada"; "email", RawInput.Scalar "ada@example.com" ]
+                Data.objectOfMap (Map.ofList [ "name", Data.Text "Ada"; "email", Data.Text "ada@example.com" ]
                 )
             )
 

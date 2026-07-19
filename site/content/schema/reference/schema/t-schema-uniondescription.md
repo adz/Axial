@@ -17,6 +17,6 @@ Describes a tagged union value schema.
 
 | Field | Description |
 | --- | --- |
-| `DiscriminatorField` | The raw input field name that carries the case tag. |
-| `PayloadField` | The raw input field name that carries the case payload. |
+| `DiscriminatorField` | The structured data field name that carries the case tag. |
+| `PayloadField` | The structured data field name that carries the case payload. |
 | `Cases` | The union cases in declaration order. |

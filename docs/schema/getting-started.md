@@ -53,10 +53,9 @@ declare a canonical schema.
 
 ```fsharp
 let raw =
-    RawInput.Object(
-        Map.ofList
-            [ "email", RawInput.Scalar "ada@example.com"
-              "age", RawInput.Scalar "42" ])
+    Data.Object
+        [ "email", Data.Text "ada@example.com"
+          "age", Data.Number "42" ]
 
 match (Schema.parse signupSchema raw) with
 | Ok signup -> printfn "%s" signup.Email
@@ -67,12 +66,12 @@ match (Schema.parse signupSchema raw) with
 ```
 
 Parsing performs shape conversion, runs constraints, and invokes the declared record constructor. Errors retain their
-paths. Use `Schema.parseRetainingInput` when form redisplay or auditing also needs the original `RawInput`.
+paths. Use `Schema.parseRetainingInput` when form redisplay or auditing also needs the original `Data`.
 
 The same interpreter works for a value schema:
 
 ```fsharp
-let parsedName = Schema.parse RefinedSchemas.nonBlankString (RawInput.Scalar "Ada")
+let parsedName = Schema.parse RefinedSchemas.nonBlankString (Data.Text "Ada")
 ```
 
 ## One catalog for values and models
@@ -93,7 +92,7 @@ scalar, a collection, or a whole model; whatever distinction the implementation 
 
 ## What successful parsing proves
 
-`Schema.parse schema raw` proves that this operation accepted the raw input and constructed its result through the
+`Schema.parse schema raw` proves that this operation accepted the structured data and constructed its result through the
 schema. `Schema.check schema value` proves the same checks for an already assembled value and re-runs a record
 constructor where one exists.
 

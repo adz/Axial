@@ -1,5 +1,7 @@
 namespace Axial.Schema
 
+open Axial
+
 open System
 open Axial.Validation
 
@@ -28,7 +30,7 @@ type ContractError =
 type private ContractVersion =
     {
         Version: int
-        Parse: RawInput -> Result<obj, Diagnostics<SchemaError>>
+        Parse: Data -> Result<obj, Diagnostics<SchemaError>>
         MigrateToNext: (obj -> Result<obj, MigrationError>) option
     }
 
@@ -137,17 +139,17 @@ module Contract =
                         | Error diagnostics -> Error(ContractError.Migration(MigrationError.RevalidationFailed diagnostics))
 
     /// Parses input using an out-of-band version value.
-    let parseVersion (contract: Contract<'model>) (version: int) (raw: RawInput) : Result<'model, ContractError> =
+    let parseVersion (contract: Contract<'model>) (version: int) (raw: Data) : Result<'model, ContractError> =
         validateVersion (nameof version) version
         parseSelected contract version raw
 
     /// Detects the input version according to the contract and parses it into the current trusted model.
-    let parse (contract: Contract<'model>) (raw: RawInput) : Result<'model, ContractError> =
+    let parse (contract: Contract<'model>) (raw: Data) : Result<'model, ContractError> =
         match contract.Source with
         | VersionSource.External -> Error ContractError.VersionMissing
         | VersionSource.UnversionedMeans version -> parseSelected contract version raw
         | VersionSource.Field wireName ->
-            match RawInput.tryRedisplayPath wireName raw with
+            match Data.tryRedisplayPath wireName raw with
             | None
             | Some "" -> Error ContractError.VersionMissing
             | Some text ->

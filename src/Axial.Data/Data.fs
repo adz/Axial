@@ -3,12 +3,17 @@ namespace Axial
 open System
 open System.Globalization
 
-/// <summary>A portable tree of null, primitive, list, and named object values.</summary>
+/// <summary>A portable tree representing the meaning and shape of unowned structured data.</summary>
 /// <remarks>
 /// <para>
-/// <c>Data</c> preserves the distinction between text, numbers, and Boolean values while remaining independent of a
-/// particular serializer, schema system, or boundary source. Number tokens are retained as text so arbitrary-size
-/// integers, decimal precision, and exponent notation are not narrowed to one runtime numeric type.
+/// Use <c>Data</c> between a source adapter and the code that assigns an application-owned type. It preserves null,
+/// text, number, Boolean, list, and object distinctions without depending on a serializer, schema system, or boundary
+/// source.
+/// </para>
+/// <para>
+/// <c>Data</c> is a structured-value model, not a source syntax tree. It does not model whitespace, comments, source
+/// locations, or other format-specific syntax. Number values currently retain a lexical token so adapters do not
+/// narrow arbitrary-size integers, decimal precision, or exponent notation to one runtime numeric type.
 /// </para>
 /// </remarks>
 [<RequireQualifiedAccess>]
@@ -17,7 +22,7 @@ type Data =
     | Null
     /// <summary>A text value.</summary>
     | Text of value: string
-    /// <summary>A number represented by its portable lexical token.</summary>
+    /// <summary>A number whose portable lexical token avoids narrowing it to one runtime numeric type.</summary>
     | Number of token: string
     /// <summary>A Boolean value.</summary>
     | Bool of value: bool
@@ -59,41 +64,3 @@ type Data =
             values
             |> List.map (convert Unchecked.defaultof<Data>)
             |> Data.List
-
-/// <summary>Construction and inspection helpers for <see cref="T:Axial.Data" />.</summary>
-[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module Data =
-    /// <summary>Concise, opt-in syntax for constructing structured objects.</summary>
-    module Syntax =
-        /// <summary>Associates a field name with a supported primitive, structured value, or recursive list.</summary>
-        /// <example>
-        /// <code>
-        /// "age" =&gt; 42
-        /// "tags" =&gt; [ "fsharp"; "schema" ]
-        /// </code>
-        /// </example>
-        let inline (=>) (name: string) (value: ^value) : string * Data =
-            if isNull name then
-                nullArg (nameof name)
-
-            let inline convert (witness: ^w) (value: ^v) =
-                ((^w or ^v): (static member From: ^v -> Data) value)
-
-            let converted = convert Unchecked.defaultof<Data> value
-
-            name, converted
-
-        /// <summary>Builds an object from ordered name/value pairs produced with <c>=&gt;</c>.</summary>
-        /// <example>
-        /// <code>
-        /// data [
-        ///     "name" =&gt; "Ada"
-        ///     "age" =&gt; 42
-        /// ]
-        /// </code>
-        /// </example>
-        let data (fields: (string * Data) list) : Data =
-            if isNull (box fields) then
-                nullArg (nameof fields)
-
-            Data.Object fields

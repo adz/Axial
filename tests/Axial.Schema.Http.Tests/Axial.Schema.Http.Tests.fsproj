@@ -36,6 +36,7 @@
     <ProjectReference Include="..\..\src\Axial.Schema.Http\Axial.Schema.Http.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Schema.Http.AspNetCore\Axial.Schema.Http.AspNetCore.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Schema.Http.GenHttp\Axial.Schema.Http.GenHttp.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Data\Axial.Data.fsproj" />
   </ItemGroup>
 
 </Project>

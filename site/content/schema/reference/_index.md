@@ -19,7 +19,7 @@ separates declaration from interpreter.
 Schemas are consumed by interpreters that stay independent of workflow execution and diagnostics:
 
 - [`Schema Interpreters`](./schema/interpreters/) — the boundary-parsing and rule-evaluation surface:
-  - [`RawInput`](./schema/interpreters/#raw-input) — source-agnostic raw input captured at a data boundary.
+  - [`Data`](./schema/interpreters/#raw-input) — source-agnostic structured data captured at a data boundary.
   - [`Schema.parse` / `RetainedParseResult`](./schema/interpreters/#input-parsing) — parsing boundary input through a schema,
     plus `Schema.check` for giving an already-existing value (a draft or an import) the same trust guarantee.
   - [`SchemaError`](./schema/interpreters/#errors) — schema input, checking, and rule failures.
@@ -32,7 +32,7 @@ Schemas are consumed by interpreters that stay independent of workflow execution
 ## Axial.Schema.Http
 
 - [`Schema HTTP Boundary`](./schema/http/) — host-neutral server boundary support (namespace `Axial.Schema.Http`):
-  `BoundaryInput` for query and form raw input, `ProblemDetails` for RFC 9457 error bodies with JSON-pointer paths,
+  `BoundaryInput` for query and form structured data, `ProblemDetails` for RFC 9457 error bodies with JSON-pointer paths,
   and `EndpointSpec`/`OpenApi` for assembling OpenAPI 3.1 documents.
 - [`ASP.NET Core adapter`](./schema/http/aspnetcore/) — schema-trusted request operations, application Flow embedding,
   successful responses, native handler lowering, and the lower-level `SchemaRequest`/`SchemaResult` surface.

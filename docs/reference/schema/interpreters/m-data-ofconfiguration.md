@@ -1,17 +1,17 @@
 ---
-title: "Schema.RawInput.ofConfiguration"
+title: "Data.ofConfiguration"
 linkTitle: "ofConfiguration"
 weight: 2008
 ---
 
 
- Builds raw input from flattened configuration keys using <code>:</code> as the path separator.
+ Builds structured data from flattened configuration keys using <code>:</code> as the path separator.
 
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Schema.RawInput.ofConfiguration&#32;<span>values</span></span></code>
+<code><span>Data.ofConfiguration&#32;<span>values</span></span></code>
 </div>
 
 ## Parameters
@@ -24,7 +24,7 @@ weight: 2008
 
 | Type | Description |
 | --- | --- |
-| <code><a href="t-schema-rawinput.md">RawInput</a></code> |  |
+| <code><a href="t-data.md">Data</a></code> |  |
 
 ## Remarks
 

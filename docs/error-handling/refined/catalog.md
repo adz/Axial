@@ -213,7 +213,7 @@ handles absence, never parsing failure.
 
 ## Choice
 
-Use `Choice` when one raw input may parse into several refined shapes and you want to return your own domain union.
+Use `Choice` when one source value may parse into several refined shapes and you want to return your own domain union.
 
 ```fsharp
 type Discount =

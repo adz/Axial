@@ -3,39 +3,37 @@ title: "Schema Interpreters"
 weight: 500
 ---
 
-This page shows raw boundary input, universal schema parsing into `Result`, opt-in input retention with `RetainedParseResult`, checking of existing values, refined schemas, and contextual rules. Core schema metadata stays in [Schema](../); interpreters attach diagnostics and optional redisplay behavior to it.
+This page shows structured boundary data, universal schema parsing into `Result`, opt-in input retention with `RetainedParseResult`, checking of existing values, refined schemas, and contextual rules. Core schema metadata stays in [Schema](../); interpreters attach diagnostics and optional redisplay behavior to it.
 
-## Raw input
+## Structured data
 
-- [`Schema.RawInput`](./t-schema-rawinput.md):
- Source-agnostic raw input captured at a data boundary before schema parsing and diagnostics interpretation.
+- [`Data`](./t-data.md): A portable tree representing the meaning and shape of unowned structured data.
+- [`DataPathSegment`](./t-datapathsegment.md): A segment in a structured data path.
+- [`DataPath`](./t-datapath.md): Helpers for constructing, parsing, and rendering structured data paths.
+- [`Data.ofMap`](./m-data-ofmap.md): Builds object-shaped structured data from a map of scalar field values.
+- [`Data.ofNameValues`](./m-data-ofnamevalues.md): Builds object-shaped structured data from name/value pairs, grouping repeated names into <code>Many</code>.
+- [`Data.ofCliArgs`](./m-data-ofcliargs.md):
+ Builds structured data from command-line arguments.
 
-- [`Schema.JsonLikeValue`](./t-schema-jsonlikevalue.md): A small dependency-free value model for adapting JSON-shaped data into <a href="t-schema-rawinput.md">RawInput</a>.
-- [`Schema.RawInput.ofMap`](./m-schema-rawinput-ofmap.md): Builds object-shaped raw input from a map of scalar field values.
-- [`Schema.RawInput.ofNameValues`](./m-schema-rawinput-ofnamevalues.md): Builds object-shaped raw input from name/value pairs, grouping repeated names into <code>Many</code>.
-- [`Schema.RawInput.ofCliArgs`](./m-schema-rawinput-ofcliargs.md):
- Builds raw input from command-line arguments.
+- [`Data.ofJsonElement`](./m-data-ofjsonelement.md): Builds structured data from a <a href="https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement">JsonElement</a>.
+- [`Data.ofJsonDocument`](./m-data-ofjsondocument.md): Builds structured data from the root element of a <a href="https://learn.microsoft.com/dotnet/api/system.text.json.jsondocument">JsonDocument</a>.
+- [`Data.ofConfiguration`](./m-data-ofconfiguration.md):
+ Builds structured data from flattened configuration keys using <code>:</code> as the path separator.
 
-- [`Schema.RawInput.ofJsonLikeValue`](./m-schema-rawinput-ofjsonlikevalue.md): Builds raw input from dependency-free JSON-shaped values.
-- [`Schema.RawInput.ofJsonElement`](./m-schema-rawinput-ofjsonelement.md): Builds raw input from a <a href="https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement">JsonElement</a>.
-- [`Schema.RawInput.ofJsonDocument`](./m-schema-rawinput-ofjsondocument.md): Builds raw input from the root element of a <a href="https://learn.microsoft.com/dotnet/api/system.text.json.jsondocument">JsonDocument</a>.
-- [`Schema.RawInput.ofConfiguration`](./m-schema-rawinput-ofconfiguration.md):
- Builds raw input from flattened configuration keys using <code>:</code> as the path separator.
-
-- [`Schema.RawInput.redisplay`](./m-schema-rawinput-redisplay.md):  Redisplays a scalar raw input value, returning blank text for missing, object-shaped, or collection-shaped input.
-- [`Schema.RawInput.redisplayPath`](./m-schema-rawinput-redisplaypath.md): Parses an input path and redisplays the addressed scalar raw input value.
+- [`Data.redisplay`](./m-data-redisplay.md):  Redisplays a scalar structured data value, returning blank text for missing, object-shaped, or collection-shaped input.
+- [`Data.redisplayPath`](./m-data-redisplaypath.md): Parses an input path and redisplays the addressed scalar structured data value.
 
 ## Input parsing
 
-- [`Schema.parse`](./m-schema-schema-parse.md): Parses source-neutral raw input, runs constraints and refinements, and invokes record constructors.
-- [`Schema.parseRetainingInput`](./m-schema-schema-parseretaininginput.md): Parses source-neutral raw input while retaining it for redisplay and error lookup.
-- [`Schema.parseWith`](./m-schema-schema-parsewith.md): Parses raw input after configuring parser options.
-- [`Schema.SchemaParseOptions`](./t-schema-schemaparseoptions.md): Options that customize how raw input is parsed through a schema.
+- [`Schema.parse`](./m-schema-schema-parse.md): Parses source-neutral structured data, runs constraints and refinements, and invokes record constructors.
+- [`Schema.parseRetainingInput`](./m-schema-schema-parseretaininginput.md): Parses source-neutral structured data while retaining it for redisplay and error lookup.
+- [`Schema.parseWith`](./m-schema-schema-parsewith.md): Parses structured data after configuring parser options.
+- [`Schema.SchemaParseOptions`](./t-schema-schemaparseoptions.md): Options that customize how structured data is parsed through a schema.
 - [`Schema.RetainedParseResult`](./t-schema-retainedparseresult.md):
- A parse result that retains the original raw input for redisplay and error lookup.
+ A parse result that retains the original structured data for redisplay and error lookup.
 
-- [`Schema.RetainedParseResult.create`](./m-schema-retainedparseresult-create.md): Retains raw input alongside an existing parse result.
-- [`Schema.RetainedParseResult.mapErrors`](./m-schema-retainedparseresult-maperrors.md): Maps a failed parse&#39;s errors to a domain or application error type, preserving the raw input and paths.
+- [`Schema.RetainedParseResult.create`](./m-schema-retainedparseresult-create.md): Retains structured data alongside an existing parse result.
+- [`Schema.RetainedParseResult.mapErrors`](./m-schema-retainedparseresult-maperrors.md): Maps a failed parse&#39;s errors to a domain or application error type, preserving the structured data and paths.
 - [`Schema.RetainedParseResult.renderErrors`](./m-schema-retainedparseresult-rendererrors.md): Renders a failed schema parse as default English display strings, preserving diagnostics paths.
 
 ## Errors

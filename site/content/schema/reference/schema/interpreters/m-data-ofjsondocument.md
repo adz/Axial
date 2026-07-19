@@ -1,16 +1,16 @@
 ---
-title: "Schema.RawInput.ofJsonDocument"
+title: "Data.ofJsonDocument"
 linkTitle: "ofJsonDocument"
 weight: 2007
 type: docs
 ---
 
-Builds raw input from the root element of a <a href="https://learn.microsoft.com/dotnet/api/system.text.json.jsondocument">JsonDocument</a>.
+Builds structured data from the root element of a <a href="https://learn.microsoft.com/dotnet/api/system.text.json.jsondocument">JsonDocument</a>.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Schema.RawInput.ofJsonDocument&#32;<span>document</span></span></code>
+<code><span>Data.ofJsonDocument&#32;<span>document</span></span></code>
 </div>
 
 ## Parameters
@@ -23,7 +23,7 @@ Builds raw input from the root element of a <a href="https://learn.microsoft.com
 
 | Type | Description |
 | --- | --- |
-| <code><a href="t-schema-rawinput.md">RawInput</a></code> |  |
+| <code><a href="t-data.md">Data</a></code> |  |
 
 ## Remarks
 

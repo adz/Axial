@@ -1,5 +1,7 @@
 namespace Axial.Tests
 
+open Axial
+
 open Axial.ErrorHandling
 
 open System
@@ -45,11 +47,10 @@ module RefinedCatalogSchemaTests =
     [<Fact>]
     let ``refined catalog schemas parse trusted scalar values`` () =
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "name", RawInput.Scalar "Ada"
-                      "slug", RawInput.Scalar "ada-2026"
-                      "quantity", RawInput.Scalar "3" ]
+            Data.objectOfMap (Map.ofList
+                    [ "name", Data.Text "Ada"
+                      "slug", Data.Text "ada-2026"
+                      "quantity", Data.Text "3" ]
             )
 
         let parsed = Schema.parseRetainingInput (productSchema ()) raw
@@ -62,11 +63,10 @@ module RefinedCatalogSchemaTests =
     [<Fact>]
     let ``refined catalog schemas report the same failures as standalone refinement`` () =
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "name", RawInput.Scalar "   "
-                      "slug", RawInput.Scalar "Ada"
-                      "quantity", RawInput.Scalar "0" ]
+            Data.objectOfMap (Map.ofList
+                    [ "name", Data.Text "   "
+                      "slug", Data.Text "Ada"
+                      "quantity", Data.Text "0" ]
             )
 
         let parsed = Schema.parseRetainingInput (productSchema ()) raw
@@ -100,7 +100,7 @@ module RefinedCatalogSchemaTests =
             |> construct (fun command offset -> { Command = command; Offset = offset })
 
         let raw =
-            RawInput.Object(Map.ofList [ "command", RawInput.Scalar " deploy "; "offset", RawInput.Scalar "0" ])
+            Data.objectOfMap (Map.ofList [ "command", Data.Text " deploy "; "offset", Data.Text "0" ])
 
         let parsed = Schema.parseRetainingInput schema raw
 
@@ -125,10 +125,9 @@ module RefinedCatalogSchemaTests =
             |> construct (fun tags codes -> { Tags = tags; Codes = codes })
 
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "tags", RawInput.Many [ RawInput.Scalar "fsharp"; RawInput.Scalar "typed-errors" ]
-                      "codes", RawInput.Many [ RawInput.Scalar "A"; RawInput.Scalar "B" ] ]
+            Data.objectOfMap (Map.ofList
+                    [ "tags", Data.List [ Data.Text "fsharp"; Data.Text "typed-errors" ]
+                      "codes", Data.List [ Data.Text "A"; Data.Text "B" ] ]
             )
 
         let parsed = Schema.parseRetainingInput schema raw
@@ -147,10 +146,9 @@ module RefinedCatalogSchemaTests =
             |> construct (fun tags codes -> { Tags = tags; Codes = codes })
 
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "tags", RawInput.Many []
-                      "codes", RawInput.Many [ RawInput.Scalar "A"; RawInput.Scalar "A" ] ]
+            Data.objectOfMap (Map.ofList
+                    [ "tags", Data.List []
+                      "codes", Data.List [ Data.Text "A"; Data.Text "A" ] ]
             )
 
         let parsed = Schema.parseRetainingInput schema raw
@@ -164,10 +162,9 @@ module RefinedCatalogSchemaTests =
     [<Fact>]
     let ``date time range schema parses trusted ranges`` () =
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "start", RawInput.Scalar "2026-01-01T00:00:00+00:00"
-                      "end", RawInput.Scalar "2026-01-02T00:00:00+00:00" ]
+            Data.objectOfMap (Map.ofList
+                    [ "start", Data.Text "2026-01-01T00:00:00+00:00"
+                      "end", Data.Text "2026-01-02T00:00:00+00:00" ]
             )
 
         let parsed = Schema.parseRetainingInput RefinedSchemas.dateTimeOffsetRange raw
@@ -183,10 +180,9 @@ module RefinedCatalogSchemaTests =
     [<Fact>]
     let ``date time range schema reports constructor failures after fields parse`` () =
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "start", RawInput.Scalar "2026-01-02T00:00:00+00:00"
-                      "end", RawInput.Scalar "2026-01-01T00:00:00+00:00" ]
+            Data.objectOfMap (Map.ofList
+                    [ "start", Data.Text "2026-01-02T00:00:00+00:00"
+                      "end", Data.Text "2026-01-01T00:00:00+00:00" ]
             )
 
         let parsed = Schema.parseRetainingInput RefinedSchemas.dateTimeOffsetRange raw
@@ -200,7 +196,7 @@ module RefinedCatalogSchemaTests =
     [<Fact>]
     let ``date only range schema parses trusted ranges`` () =
         let raw =
-            RawInput.Object(Map.ofList [ "start", RawInput.Scalar "2026-01-01"; "end", RawInput.Scalar "2026-01-02" ])
+            Data.objectOfMap (Map.ofList [ "start", Data.Text "2026-01-01"; "end", Data.Text "2026-01-02" ])
 
         let parsed = Schema.parseRetainingInput RefinedSchemas.dateOnlyRange raw
 

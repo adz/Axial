@@ -51,10 +51,10 @@ it is the honest companion to this page.
 ### Schema-derived property tests
 
 `tests/Axial.ReferenceApp.Tests/SchemaGenTests.fs` uses the non-packable `Axial.Schema.Testing` FsCheck adapter:
-`SchemaGen.raw` derives a generator of valid raw boundary inputs from the workspace schema, and `SchemaGen.model`
+`SchemaGen.raw` derives a generator of valid structured boundary values from the workspace schema, and `SchemaGen.model`
 derives trusted model values. The properties pin three claims with no hand-written fixtures:
 
-- every generated raw input parses through the schema;
+- every generated structured data parses through the schema;
 - every generated model survives a codec round-trip byte-for-byte;
 - every schema-valid wire value maps into the domain (`toDomain` is total over what the schema admits).
 
@@ -107,6 +107,6 @@ AXIAL_EXAMPLE=smoke dotnet run --project examples/Axial.Api/Axial.Api.fsproj --n
 AXIAL_EXAMPLE=smoke dotnet run --project examples/Axial.Api.GenHttp/Axial.Api.GenHttp.fsproj --nologo
 ```
 
-The point of the twin is that nothing schema-facing changes between hosts: `Axial.Schema.Http` owns raw input,
+The point of the twin is that nothing schema-facing changes between hosts: `Axial.Schema.Http` owns structured data,
 problem details, and OpenAPI assembly; each host package adapts its own request/response idiom. Routing and app
 wiring remain the host's ([HTTP Servers]({{< relref "/schema/http-servers.md" >}})).

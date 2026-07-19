@@ -55,7 +55,7 @@ Axial has two pieces worth being loud about:
 The strongest product is not “many validation abstractions.” It is one trusted-boundary story:
 
 ```text
-untrusted input -> RawInput -> Schema -> path diagnostics -> domain value
+untrusted input -> Data -> Schema -> path diagnostics -> domain value
 ```
 
 with optional interpreters around the same declaration.
@@ -100,13 +100,13 @@ Schema.define<WorkspaceV2>
 It is explicit, local, searchable, compiler-checked, and does not require reflection or a bespoke computation
 expression. This is one of Axial's clearest differentiators and should be shown prominently.
 
-### RawInput as a common boundary currency
+### Data as a common boundary currency
 
-`RawInput` provided real value. JSON and HTML forms could converge before schema parsing without forcing the domain or
-schema to know which transport produced the data. Retaining raw input for redisplay is particularly valuable for HTML
+`Data` provided real value. JSON and HTML forms could converge before schema parsing without forcing the domain or
+schema to know which transport produced the data. Retaining structured data for redisplay is particularly valuable for HTML
 forms and configuration editors.
 
-The model works because `RawInput` stays small and JSON-like. It should remain a boundary representation, not become a
+The model works because `Data` stays small and JSON-like. It should remain a boundary representation, not become a
 general dynamic-value system.
 
 ### Path-aware accumulated diagnostics
@@ -373,8 +373,8 @@ and established test hosts. Do not build an Axial test framework.
 
 The same adaptation appeared repeatedly:
 
-- JSON body -> `JsonDocument` -> `RawInput` -> schema parse -> HTTP result;
-- form collection -> configuration paths -> `RawInput` -> schema parse -> redisplay;
+- JSON body -> `JsonDocument` -> `Data` -> schema parse -> HTTP result;
+- form collection -> configuration paths -> `Data` -> schema parse -> redisplay;
 - schema/context diagnostics -> application error -> transport representation;
 - Flow exit -> HTTP/CLI response.
 
@@ -427,7 +427,7 @@ that dogfood, generator value remains only partly demonstrated.
 3. Contract migration revalidation is stronger than expected and prevented a real category of trust hole.
 4. The explicit schema builder remained readable with nested and versioned records. It did not need a computation
    expression or reflection to feel usable.
-5. `RawInput` was more valuable than expected because form redisplay and JSON parsing genuinely shared it.
+5. `Data` was more valuable than expected because form redisplay and JSON parsing genuinely shared it.
 6. Refined values do preserve their invariant; the real problem is primitive interop and wrapper stacking, not loss of
    validity.
 7. The reference app needed much less of Axial's catalog than the size of the repository suggests. Schema, diagnostics,
@@ -472,7 +472,7 @@ These claims should be backed by runnable examples and benchmarks, not broad “
 ## Bottom line
 
 The reference app validated Axial's central thesis but not its full surface area. Schema plus interpreters is a strong,
-differentiated product. Contracts, diagnostics, RawInput, and the typed builder materially improve real boundary code.
+differentiated product. Contracts, diagnostics, Data, and the typed builder materially improve real boundary code.
 Flow is useful when orchestration complexity warrants it.
 
 The wrapper story is not ready. `Model<'value>` is inconsistent, refined-schema construction duplicates smart

@@ -1,5 +1,7 @@
 namespace Axial.Schema.Http.GenHttp
 
+open Axial
+
 open System
 open System.Text.Json
 open System.Threading.Tasks
@@ -16,12 +18,12 @@ module SchemaRequest =
     /// <summary>Parses the JSON request body through the schema; a missing body parses as missing input.</summary>
     let json (schema: Schema<'model>) (request: IRequest) : ValueTask<RetainedParseResult<'model, SchemaError>> =
         match request.Content with
-        | null -> ValueTask<_>(Schema.parseRetainingInput schema RawInput.Missing)
+        | null -> ValueTask<_>(Schema.parseRetainingInput schema Data.Null)
         | content ->
             let parse: Task<RetainedParseResult<'model, SchemaError>> =
                 task {
                     use! document = JsonDocument.ParseAsync content
-                    return Schema.parseRetainingInput schema (RawInput.ofJsonDocument document)
+                    return Schema.parseRetainingInput schema (Data.ofJsonDocument document)
                 }
 
             ValueTask<RetainedParseResult<'model, SchemaError>> parse

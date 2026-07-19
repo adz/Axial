@@ -224,7 +224,7 @@ Reading a field line left to right: name, optional `as "wire_name"` rename, `?` 
   `@deprecated "message"` and friends attach metadata.
 
 Generation buys more than the record and schema. Each contract emits `validate` (check an assembled draft),
-`parse` (raw boundary input), and a typed `Fields` module of field references for rules, redisplay, and UI
+`parse` (structured boundary data), and a typed `Fields` module of field references for rules, redisplay, and UI
 binding — and because the output is an ordinary `Schema`, everything schemas already do comes along: JSON Schema
 output via `JsonSchema.generate` (reject broken payloads before they enter storage), compiled codecs via
 `Json.compile`, inspection metadata, and doc comments carried through to XML docs and generated JSON Schema.

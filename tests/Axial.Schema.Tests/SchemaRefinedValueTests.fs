@@ -1,5 +1,7 @@
 namespace Axial.Tests
 
+open Axial
+
 open System
 open Axial.Schema
 open Swensen.Unquote
@@ -63,7 +65,7 @@ module SchemaRefinedValueTests =
 
     [<Fact>]
     let ``parse interprets a refined schema at the root`` () =
-        let parsed = Schema.parseRetainingInput Email.schema (RawInput.Scalar "ada@example.com")
+        let parsed = Schema.parseRetainingInput Email.schema (Data.Text "ada@example.com")
         test <@ parsed.Result = Ok(Email.create "ada@example.com") @>
 
     [<Fact>]
@@ -75,7 +77,7 @@ module SchemaRefinedValueTests =
                 (fun code -> [ SchemaError.Custom(code, Some "This address is blocked.") ])
                 Email.value
 
-        let parsed = Schema.parseRetainingInput schema (RawInput.Scalar "ada@example.com")
+        let parsed = Schema.parseRetainingInput schema (Data.Text "ada@example.com")
 
         match parsed.Result with
         | Ok _ -> failwith "Expected refinement to reject the value."

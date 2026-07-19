@@ -20,7 +20,7 @@ metadata, or a new interpreter over existing metadata? Most features are the sec
 | `SchemaError.fs` | `SchemaError` — the portable error vocabulary interpreters report. |
 | `Schema.fs` | The core: constraints, value/model definitions, `Schema<'value>`, and compiled record plans. Large; map below. |
 | `Shape.fs` | The constructor-last authoring surface: `ObjectShape`, `Syntax`, `Schema.admit`. |
-| `RawInput.fs` | Source-neutral boundary input (`RawInput`, `JsonLikeValue`) and its constructors. |
+| `Data.fs` | Source-neutral boundary input (`Data`, `Data`) and its constructors. |
 | `SchemaValidation.fs` | The parse/check interpreter (`SchemaParsing`). |
 | `RetainedParseResult.fs` | `RetainedParseResult` — parse results plus redisplay data. |
 | `FieldRef.fs` | `FieldRef` — typed get/set field references used by rules and generated code. |
@@ -68,12 +68,12 @@ Schema.define |> field ... |> construct ctor        (Shape.fs)
 Closing the shape produces ordered `FieldDescriptor`s, a `ConstructorApplication`, and a typed record
 plan for compilers that need direct constructor application.
 
-Parsing (`SchemaValidation.fs`): for each field, look up the wire name in `RawInput`, parse the value
+Parsing (`SchemaValidation.fs`): for each field, look up the wire name in `Data`, parse the value
 shape, run constraints, collect diagnostics by path. Only if every field succeeded, call
 `TryApplyTrusted` with the boxed arguments; a constructor `Error` becomes
 `SchemaError.ConstructorFailed` placed by `Schema.constructorErrorAt`.
 
-Checking (`Schema.check`): same pipeline, but values come from the model's getters instead of raw input.
+Checking (`Schema.check`): same pipeline, but values come from the model's getters instead of structured data.
 
 ## The constructor-last surface (Shape.fs)
 

@@ -76,7 +76,7 @@ should never encounter them. Docs follow the three-area, problem-first framing a
 2. The small, idiomatic F# surface is preserved while capability expands. Existing workflows and computation
    expressions stay source-compatible unless a breaking change is explicitly accepted; Scala names are not copied
    mechanically where they hurt F# usage.
-3. One declaration, many interpreters. Schema definitions stay independent of diagnostics, raw input, and flow
+3. One declaration, many interpreters. Schema definitions stay independent of diagnostics, structured data, and flow
    execution; interpreters (parsing, validation, codec, JSON Schema, inspection) consume the same declaration. No
    interpreter duplicates another's lowering rules.
 4. Reflection is never the foundation. The authored schema path stays AOT-, trimming-, and Fable-compatible;

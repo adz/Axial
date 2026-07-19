@@ -332,9 +332,9 @@ let pageSpecs = [
         OutPath = ["schema"; "interpreters"; "_index.md"]
         Title = "Schema Interpreters"
         Description = "Source-documented schema input parsing, validation, and rules interpreters."
-        Intro = "This page shows raw boundary input, universal schema parsing into `Result`, opt-in input retention with `RetainedParseResult`, checking of existing values, refined schemas, and contextual rules. Core schema metadata stays in [Schema](../); interpreters attach diagnostics and optional redisplay behavior to it."
+        Intro = "This page shows structured boundary data, universal schema parsing into `Result`, opt-in input retention with `RetainedParseResult`, checking of existing values, refined schemas, and contextual rules. Core schema metadata stays in [Schema](../); interpreters attach diagnostics and optional redisplay behavior to it."
         SymbolIds = [
-            "Raw input", ["T:Axial.Schema.RawInput"; "T:Axial.Schema.JsonLikeValue"; "M:Axial.Schema.RawInputModule.ofMap"; "M:Axial.Schema.RawInputModule.ofNameValues"; "M:Axial.Schema.RawInputModule.ofCliArgs"; "M:Axial.Schema.RawInputModule.ofJsonLikeValue"; "M:Axial.Schema.RawInputModule.ofJsonElement"; "M:Axial.Schema.RawInputModule.ofJsonDocument"; "M:Axial.Schema.RawInputModule.ofConfiguration"; "M:Axial.Schema.RawInputModule.redisplay"; "M:Axial.Schema.RawInputModule.redisplayPath"]
+            "Structured data", ["T:Axial.Data"; "T:Axial.DataPathSegment"; "T:Axial.DataPath"; "M:Axial.DataModule.ofMap"; "M:Axial.DataModule.ofNameValues"; "M:Axial.DataModule.ofCliArgs"; "M:Axial.DataModule.ofJsonElement"; "M:Axial.DataModule.ofJsonDocument"; "M:Axial.DataModule.ofConfiguration"; "M:Axial.DataModule.redisplay"; "M:Axial.DataModule.redisplayPath"]
             "Input parsing", ["M:Axial.Schema.Schema.parse"; "M:Axial.Schema.Schema.parseRetainingInput"; "M:Axial.Schema.Schema.parseWith"; "T:Axial.Schema.SchemaParseOptions"; "T:Axial.Schema.RetainedParseResult`2"; "M:Axial.Schema.RetainedParseResultModule.create"; "M:Axial.Schema.RetainedParseResultModule.mapErrors"; "M:Axial.Schema.RetainedParseResultModule.renderErrors"]
             "Errors", ["T:Axial.Schema.SchemaError"]
             "Refined catalog schemas", ["P:Axial.Schema.RefinedSchemas.nonBlankString"; "P:Axial.Schema.RefinedSchemas.trimmedString"; "M:Axial.Schema.RefinedSchemas.boundedString"; "P:Axial.Schema.RefinedSchemas.slug"; "P:Axial.Schema.RefinedSchemas.positiveInt"; "P:Axial.Schema.RefinedSchemas.nonNegativeInt"; "P:Axial.Schema.RefinedSchemas.nonZeroInt"; "P:Axial.Schema.RefinedSchemas.negativeInt"; "P:Axial.Schema.RefinedSchemas.nonPositiveInt"; "M:Axial.Schema.RefinedSchemas.nonEmptyList"; "M:Axial.Schema.RefinedSchemas.nonEmptyArray"; "M:Axial.Schema.RefinedSchemas.distinctList"; "M:Axial.Schema.RefinedSchemas.boundedList"; "M:Axial.Schema.RefinedSchemas.boundedArray"; "P:Axial.Schema.RefinedSchemas.dateTimeOffsetRange"]
@@ -358,7 +358,7 @@ let pageSpecs = [
         OutPath = ["schema"; "http"; "_index.md"]
         Title = "Schema HTTP Boundary"
         Description = "Source-documented host-neutral HTTP boundary support for schemas."
-        Intro = "This page shows the host-neutral server boundary in `Axial.Schema.Http`: `BoundaryInput` builds raw input from the name/value surfaces HTTP servers hand over, `ProblemDetails` renders failed parses as RFC 9457 bodies with RFC 6901 JSON pointers, and `EndpointSpec` values assemble into OpenAPI 3.1 documents whose schemas are embedded from `JsonSchema.generate` output. Host-specific Flow lowering is documented under [ASP.NET Core](./aspnetcore/) and [GenHTTP](./genhttp/); see the [HTTP servers guide](/schema/http-servers/) for complete usage."
+        Intro = "This page shows the host-neutral server boundary in `Axial.Schema.Http`: `BoundaryInput` builds structured data from the name/value surfaces HTTP servers hand over, `ProblemDetails` renders failed parses as RFC 9457 bodies with RFC 6901 JSON pointers, and `EndpointSpec` values assemble into OpenAPI 3.1 documents whose schemas are embedded from `JsonSchema.generate` output. Host-specific Flow lowering is documented under [ASP.NET Core](./aspnetcore/) and [GenHTTP](./genhttp/); see the [HTTP servers guide](/schema/http-servers/) for complete usage."
         SymbolIds = [
             "Boundary input", ["M:Axial.Schema.Http.BoundaryInput.ofQuery"; "M:Axial.Schema.Http.BoundaryInput.ofForm"]
             "Problem details", ["T:Axial.Schema.Http.ProblemDetails"; "T:Axial.Schema.Http.ProblemError"; "P:Axial.Schema.Http.ProblemDetailsModule.malformedJson"; "M:Axial.Schema.Http.ProblemDetailsModule.ofParsed"; "M:Axial.Schema.Http.ProblemDetailsModule.ofDiagnostics"; "M:Axial.Schema.Http.ProblemDetailsModule.ofDiagnosticsWith"; "M:Axial.Schema.Http.ProblemDetailsModule.toJson"; "M:Axial.Schema.Http.ProblemDetailsModule.writeTo"; "M:Axial.Schema.Http.JsonPointer.ofPath"]
@@ -1218,6 +1218,7 @@ let main argv =
     let dllPaths = [
         Path.Combine(artifactsDir, "Axial.Flow/debug_net8.0/Axial.Flow.dll")
         Path.Combine(artifactsDir, "Axial.ErrorHandling/debug_net8.0/Axial.ErrorHandling.dll")
+        Path.Combine(artifactsDir, "Axial.Data/debug_net8.0/Axial.Data.dll")
         Path.Combine(artifactsDir, "Axial.Schema/debug_net8.0/Axial.Schema.dll")
         Path.Combine(artifactsDir, "Axial.Codec/debug_net8.0/Axial.Codec.dll")
         Path.Combine(artifactsDir, "Axial.Schema.Http/debug/Axial.Schema.Http.dll")

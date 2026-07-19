@@ -147,7 +147,7 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 - Recursive authoring uses a delayed schema holder so the thunk returns the same built schema. Calling a schema
   factory afresh from the thunk would create an endless sequence of distinct deferred nodes and defeat cycle identity.
 
-## 2026-07-13: Schema test data is a non-packable FsCheck adapter over RawInput
+## 2026-07-13: Schema test data is a non-packable FsCheck adapter over Data
 
 - The repository contains no property-test dependency from the adoption target, so there was no evidence for its
   actual choice. The first adapter uses FsCheck 3.3.3 because this repository already uses xUnit and FsCheck has the
@@ -155,7 +155,7 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
   Hedgehog adapter.
 - `Axial.Schema.Testing` is non-packable and references `Axial.Schema` plus FsCheck. `Axial.Schema` remains
   dependency-free from test frameworks.
-- Generation produces constraint-satisfying `RawInput` from `Inspect` metadata. `SchemaGen.model` then parses it and
+- Generation produces constraint-satisfying `Data` from `Inspect` metadata. `SchemaGen.model` then parses it and
   filters constructor rejections, so successful samples are schema-checked `'model` values and constructor
   invariants are not duplicated in the generator.
 - Built-in lowering covers primitives, refined representations, nested models, collections and maps with count
@@ -258,7 +258,7 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 - Compiled JSON codecs live in `Axial.Codec`, a package that references only `Axial.Schema` (through
   `InternalsVisibleTo` for the type-erased definitions) and mirrors CodecMapper's byte-level runtime. The codec is the
   trusted hot path: it enforces wire shape and required fields but does not run constraint metadata. Untrusted boundary
-  input keeps going through `RawInput` + `Schema.parse` for complete path-aware diagnostics. Do not fold codecs into
+  input keeps going through `Data` + `Schema.parse` for complete path-aware diagnostics. Do not fold codecs into
   `Axial.Schema`: codecs must not pull diagnostics into the schema package, and the schema core stays free of any
   wire runtime.
 - A `dotnet new axial-api` template is evaluated and deferred until the public surface stabilizes (at or near 1.0).
@@ -296,13 +296,13 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
   its raw-retaining redisplay contract. If demand appears, the pre-chosen shape is a separate entry point
   (`Schema.parseUtf8` — diagnostics-on-failure, no redisplay, API bodies), prototyped in the benchmarks project first,
   exactly how the codec earned promotion. Never an optimization flag on `Schema.parse`.
-- `RawInput.ofJsonElement`/`ofJsonDocument` stay gated to `net8.0 && !FABLE_COMPILER`. If a netstandard2.1 consumer
+- `Data.ofJsonElement`/`ofJsonDocument` stay gated to `net8.0 && !FABLE_COMPILER`. If a netstandard2.1 consumer
   ever asks, the pre-chosen answer is a TFM-conditional `System.Text.Json` package reference on netstandard2.1 only —
   not a split adapter package, which would force a different module name.
 - The `Schema` module starts declarations with `Schema.define`; `Axial.Schema.Syntax` provides fields and closing
   constructors. `Schema` also hosts the model
   operations that use a schema as authority: `Schema.parse` / `Schema.parseWith` / `Schema.parseWithOptions`
-  (untyped `RawInput` → `RetainedParseResult<'model, SchemaError>`) and `Schema.check` (an already-existing model value,
+  (untyped `Data` → `RetainedParseResult<'model, SchemaError>`) and `Schema.check` (an already-existing model value,
   re-checked through its field constraints and its constructor so cross-field invariants aren't silently skipped).
   There is no separate public `Model` module.
 - `Schema.check` replaced the old `Axial.Schema.Validation.validate`, which only re-checked per-field constraints
@@ -312,7 +312,7 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 - `RuleSet<'model,'error>`/`Rules` (contextual, workflow-dependent rules over an already-trusted model) is a known
   unresolved design problem, not a settled API — see the Open Ideas pointer below before extending it.
 - `Model.construct` (typed field values in, schema-checked model out, without going through `Schema.parse`'s
-  untyped `RawInput`) does not exist as a library function and cannot be added as one without either breaking the
+  untyped `Data`) does not exist as a library function and cannot be added as one without either breaking the
   zero-reflection/AOT/Fable rule or capping arity with numbered overloads — see the Open Ideas pointer below. Do not
   attempt to add `Model.construct schema arg1 arg2 ...` as a plain function; the type-erasure wall is structural, not
   a missing-effort gap.

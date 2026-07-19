@@ -26,7 +26,7 @@ Working on `src/Axial.Schema`? Read `dev-docs/schema/internals.md` first (implem
   `.reconstruct`, `Rules`, `Inspect`, `JsonSchema`, `RefinedSchema`) in one package. Depends on
   `Axial.ErrorHandling`.
 - `Axial.Codec` (`src/Axial.Codec/`): compiled JSON codecs. Depends on `Axial.Schema`.
-- `Axial.Schema.Http` (`src/Axial.Schema.Http/`): host-neutral HTTP boundary support — query/form raw input
+- `Axial.Schema.Http` (`src/Axial.Schema.Http/`): host-neutral HTTP boundary support — query/form structured data
   (`BoundaryInput`), RFC 9457 problem details from parse diagnostics, and OpenAPI 3.1 documents assembled from
   `EndpointSpec` values. Depends on `Axial.Schema` only; never on `Axial.Flow`.
 - `Axial.Schema.Http.AspNetCore` / `Axial.Schema.Http.GenHttp` (`src/Axial.Schema.Http.*/`): host boundaries over
@@ -56,7 +56,7 @@ Working on `src/Axial.Schema`? Read `dev-docs/schema/internals.md` first (implem
   `tests/Axial.ErrorHandling.Tests/ValidationTests.fs`, and `dev-docs/PLAN.md`.
 - Schema metadata/builder: `src/Axial.Schema/Schema.fs`, `tests/Axial.Schema.Tests/Schema*Tests.fs`, and the schema section in
   `dev-docs/PLAN.md`.
-- Schema input/rules/interpreters: `src/Axial.Schema/{Model,RawInput,SchemaValidation,RetainedParseResult,Rules}.fs` and
+- Schema input/rules/interpreters: `src/Axial.Schema/{Model,Data,SchemaValidation,RetainedParseResult,Rules}.fs` and
   `tests/Axial.Schema.Tests/*ParseTests.fs`.
 - User-facing docs: read `dev-docs/DOCS.md` before editing `docs/**`, source comments, generated reference pages,
   `llms.txt`, or site content.

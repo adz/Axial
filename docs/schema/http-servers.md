@@ -14,7 +14,7 @@ error contract, and the published API document — and stays out of routing enti
 The package split matters:
 
 - `Axial.Schema.Http` is host-neutral. It depends only on `Axial.Schema` and defines the boundary contract: how
-  name/value input becomes `RawInput`, how parse diagnostics render as an error response, and how endpoint
+  name/value input becomes `Data`, how parse diagnostics render as an error response, and how endpoint
   declarations assemble into an OpenAPI document.
 - `Axial.Schema.Http.AspNetCore` and `Axial.Schema.Http.GenHttp` adapt one host each. Their default API turns an
   ordinary `Flow` into that host's native handler; lower-level request parsing and response construction remain
@@ -165,7 +165,7 @@ ASP.NET Core request operations are:
 | `Request.json schema` | Parses the JSON body; malformed JSON and schema failures become 400 problem details. |
 | `Request.form schema` | Reads the posted form and parses its name/value input. |
 | `Request.query schema` | Parses the complete query string. |
-| `Request.route name schema` | Parses one scalar route value, or `RawInput.Missing` when absent. |
+| `Request.route name schema` | Parses one scalar route value, or `Data.Null` when absent. |
 | `Request.raw projection` | Projects an untrusted value directly from `HttpRequest` without establishing schema trust. |
 | `Request.native` | Returns `HttpRequest` for deliberately host-specific handling. |
 
@@ -287,7 +287,7 @@ lower-level `SchemaRequest`, `SchemaResult`, and `SchemaResponse` surfaces.
 
 ## Form and query input
 
-The core package also owns the host-neutral input rules, so every adapter produces identical `RawInput` for
+The core package also owns the host-neutral input rules, so every adapter produces identical `Data` for
 identical wire data:
 
 - `BoundaryInput.ofQuery` builds flat input from query pairs; repeated names become collections.

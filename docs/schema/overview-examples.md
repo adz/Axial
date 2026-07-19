@@ -81,7 +81,7 @@ let rec categorySchema () =
 The completed `Schema<'model>` drives parsing, checking, inspection, JSON Schema, codecs, and test generation:
 
 ```fsharp
-let parsed = Schema.parse customerSchema rawInput
+let parsed = Schema.parse customerSchema dataInput
 let checked = Schema.check customerSchema customer
 let description = Inspect.model customerSchema
 let jsonSchema = JsonSchema.generate customerSchema

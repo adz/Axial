@@ -13,6 +13,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Axial.Schema.Testing\Axial.Schema.Testing.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Data\Axial.Data.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="SchemaGenTests.fs" />

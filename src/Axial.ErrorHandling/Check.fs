@@ -42,7 +42,7 @@ type CheckCountExpectation =
     /// <summary>The sequence was expected to contain a count inside the inclusive bounds.</summary>
     | CountBetween of minimum: int * maximum: int
 
-/// <summary>Describes why an executable value check failed, without attaching source paths or raw input.</summary>
+/// <summary>Describes why an executable value check failed, without attaching source paths or structured data.</summary>
 type CheckFailure =
     /// <summary>A required value was missing.</summary>
     | Required
@@ -175,7 +175,7 @@ module CheckFailure =
 /// A check succeeds with the original value (<c>Ok value</c>, unchanged) or returns one or more structured
 /// <see cref="T:Axial.ErrorHandling.CheckFailure" /> values. A passing check never transforms its input — the same
 /// value that went in comes back out — so a check result is directly pipeable into the next step without a separate
-/// "keep the value" helper. Checks do not carry input paths, raw input, schema metadata, or refined-value
+/// "keep the value" helper. Checks do not carry input paths, structured data, schema metadata, or refined-value
 /// construction; keep those concerns in validation, parsing, schema, or refinement layers.
 /// </remarks>
 type Check<'value> = 'value -> Result<'value, CheckFailure list>

@@ -4,6 +4,7 @@
 // </auto-generated>
 namespace Axial.Tests.Generated
 
+open Axial
 open Axial.Validation
 open Axial.Schema
 
@@ -32,8 +33,8 @@ module Card =
     let validate (draft: Card) : Result<Card, Diagnostics<SchemaError>> =
         Schema.check schema draft
 
-    /// Parses raw boundary input through the schema.
-    let parse (input: RawInput) : Result<Card, Diagnostics<SchemaError>> =
+    /// Parses structured boundary data through the schema.
+    let parse (input: Data) : Result<Card, Diagnostics<SchemaError>> =
         Schema.parse schema input
 
     /// Typed field references for rules, redisplay, and UI binding.
@@ -66,8 +67,8 @@ module Invoice =
     let validate (draft: Invoice) : Result<Invoice, Diagnostics<SchemaError>> =
         Schema.check schema draft
 
-    /// Parses raw boundary input through the schema.
-    let parse (input: RawInput) : Result<Invoice, Diagnostics<SchemaError>> =
+    /// Parses structured boundary data through the schema.
+    let parse (input: Data) : Result<Invoice, Diagnostics<SchemaError>> =
         Schema.parse schema input
 
     /// Typed field references for rules, redisplay, and UI binding.
@@ -110,8 +111,8 @@ module Payment =
     let validate (draft: Payment) : Result<Payment, Diagnostics<SchemaError>> =
         Schema.check schema draft
 
-    /// Parses raw boundary input through the schema.
-    let parse (input: RawInput) : Result<Payment, Diagnostics<SchemaError>> =
+    /// Parses structured boundary data through the schema.
+    let parse (input: Data) : Result<Payment, Diagnostics<SchemaError>> =
         Schema.parse schema input
 
     /// Typed field references for rules, redisplay, and UI binding.

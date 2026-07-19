@@ -51,16 +51,16 @@ One schema declaration, several interpreters:
 
 | Input | Interpreter | Result |
 | --- | --- | --- |
-| `RawInput` | `Schema.parse schema` | model or `Diagnostics` |
+| `Data` | `Schema.parse schema` | model or `Diagnostics` |
 | draft or imported value | `Schema.check schema` | the same value or `Diagnostics` |
 | trusted model | `ContextRules.apply rules` | accepted model or contextual `Diagnostics` |
 | schema | `Inspect.model` | finite metadata without execution |
 | schema | `Json.compile` | reusable compiled JSON codec |
 | schema | `JsonSchema.generate` | JSON Schema document |
-| versioned `RawInput` | `Contract.parse` | current model or `ContractError` |
+| versioned `Data` | `Contract.parse` | current model or `ContractError` |
 | schema | `SchemaGen.raw` / `SchemaGen.model` | FsCheck generators |
 
-`Schema.check` covers typed values that did not arrive as raw input: a draft assembled with an ordinary record
+`Schema.check` covers typed values that did not arrive as structured data: a draft assembled with an ordinary record
 literal (named fields, any order, compiler-checked completeness), or an existing value from an import or database
 mapper. It runs every field's constraints and refinements again and re-invokes the record constructor, so
 cross-field invariants hold too. Success returns the value itself, not a proof wrapper — when every value of a type
@@ -74,7 +74,7 @@ wire-name strings. `Contract` keeps frozen wire versions and typed migrations ou
 
 ## Guides
 
-- [Getting Started](./getting-started/) — declare a schema once and parse raw input into a trusted model.
+- [Getting Started](./getting-started/) — declare a schema once and parse structured data into a trusted model.
 - [Schema Overview Examples](./overview-examples/) — short, commented examples covering every Schema subsystem.
 - [Tutorials](./tutorials/) — parse a signup form, nest models, apply rules, and inspect metadata.
 - [Trusted Construction](./trusted-construction/) — ActiveModel ergonomics with F# trusted construction.
@@ -115,7 +115,7 @@ around them.
 Install the core package with `dotnet add package Axial.Schema`.
 
 Schema metadata, input parsing, checking, and rules live in this one package; `Refined` and `Validation` arrive with
-it as the `Axial.ErrorHandling` dependency — declaring a schema, parsing raw input, and inspecting metadata never
+it as the `Axial.ErrorHandling` dependency — declaring a schema, parsing structured data, and inspecting metadata never
 require a second install.
 
 `Axial.Codec` is separate and optional: add it only if you want a compiled, reflection-free JSON codec generated from

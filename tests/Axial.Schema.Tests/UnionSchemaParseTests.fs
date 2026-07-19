@@ -1,5 +1,7 @@
 namespace Axial.Tests
 
+open Axial
+
 open Axial.ErrorHandling
 
 open Axial.Refined
@@ -44,13 +46,11 @@ module UnionSchemaParseTests =
     [<Fact>]
     let ``parse builds tagged union cases from discriminator and payload`` () =
         let raw =
-            RawInput.Object(
-                Map.ofList
+            Data.objectOfMap (Map.ofList
                     [ "payment",
-                      RawInput.Object(
-                          Map.ofList
-                              [ "type", RawInput.Scalar "card"
-                                "value", RawInput.Object(Map.ofList [ "number", RawInput.Scalar "4242" ]) ]
+                      Data.objectOfMap (Map.ofList
+                              [ "type", Data.Text "card"
+                                "value", Data.objectOfMap (Map.ofList [ "number", Data.Text "4242" ]) ]
                       ) ]
             )
 
@@ -67,10 +67,9 @@ module UnionSchemaParseTests =
     [<Fact>]
     let ``parse attaches wrong tag diagnostics to the discriminator field`` () =
         let raw =
-            RawInput.Object(
-                Map.ofList
+            Data.objectOfMap (Map.ofList
                     [ "payment",
-                      RawInput.Object(Map.ofList [ "type", RawInput.Scalar "cash"; "value", RawInput.Scalar "ignored" ]) ]
+                      Data.objectOfMap (Map.ofList [ "type", Data.Text "cash"; "value", Data.Text "ignored" ]) ]
             )
 
         let parsed = Schema.parseRetainingInput (checkoutSchema ()) raw
@@ -82,13 +81,11 @@ module UnionSchemaParseTests =
     [<Fact>]
     let ``parse prefixes case payload diagnostics under the payload field`` () =
         let raw =
-            RawInput.Object(
-                Map.ofList
+            Data.objectOfMap (Map.ofList
                     [ "payment",
-                      RawInput.Object(
-                          Map.ofList
-                              [ "type", RawInput.Scalar "card"
-                                "value", RawInput.Object(Map.ofList [ "number", RawInput.Scalar "" ]) ]
+                      Data.objectOfMap (Map.ofList
+                              [ "type", Data.Text "card"
+                                "value", Data.objectOfMap (Map.ofList [ "number", Data.Text "" ]) ]
                       ) ]
             )
 
@@ -101,9 +98,8 @@ module UnionSchemaParseTests =
     [<Fact>]
     let ``parse supports refined scalar case payloads`` () =
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "payment", RawInput.Object(Map.ofList [ "type", RawInput.Scalar "invoice"; "value", RawInput.Scalar "inv-42" ]) ]
+            Data.objectOfMap (Map.ofList
+                    [ "payment", Data.objectOfMap (Map.ofList [ "type", Data.Text "invoice"; "value", Data.Text "inv-42" ]) ]
             )
 
         let parsed = Schema.parseRetainingInput (checkoutSchema ()) raw

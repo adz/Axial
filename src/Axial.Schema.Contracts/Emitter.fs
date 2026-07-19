@@ -1,5 +1,7 @@
 namespace Axial.Schema.Contracts
 
+open Axial
+
 open System
 open System.Text
 
@@ -248,6 +250,7 @@ module Emitter =
         line "// </auto-generated>"
         line $"namespace {namespaceName}"
         line ""
+        line "open Axial"
         line "open Axial.Validation"
         line "open Axial.Schema"
 
@@ -419,8 +422,8 @@ module Emitter =
             line $"    let validate (draft: {contractTypeName}) : Result<{contractTypeName}, Diagnostics<SchemaError>> ="
             line "        Schema.check schema draft"
             line ""
-            line "    /// Parses raw boundary input through the schema."
-            line $"    let parse (input: RawInput) : Result<{contractTypeName}, Diagnostics<SchemaError>> ="
+            line "    /// Parses structured boundary data through the schema."
+            line $"    let parse (input: Data) : Result<{contractTypeName}, Diagnostics<SchemaError>> ="
             line "        Schema.parse schema input"
 
             // The latest version of a multi-version chain gets the Contract wiring. Migrations stay

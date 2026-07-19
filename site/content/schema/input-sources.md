@@ -6,8 +6,8 @@ description: HTTP form-like, CLI, JSON-like, and configuration input through one
 ---
 
 
-`RawInput` is the source-agnostic boundary shape: `Missing`, `Scalar`, `Many`, and `Object`. Adapters turn common
-sources into `RawInput`, and one schema parses them all.
+`Data` is the source-agnostic boundary shape: `Null`, `Text`, `Number`, `Bool`, `List`, and `Object`. Adapters turn common
+sources into `Data`, and one schema parses them all.
 
 ## The Schema
 
@@ -31,28 +31,28 @@ let customerSchema =
 ```
 
 Nested fields expect object-shaped input and prefix their diagnostics with the field name; collection fields expect
-`RawInput.Many`, parse every item, accumulate every item error, and prefix diagnostics with the item index.
+`Data.List`, parse every item, accumulate every item error, and prefix diagnostics with the item index.
 
 ## HTTP Form-Like Input
 
-Form posts and query strings are name/value pairs; repeated names become `Many`:
+Form posts and query strings are name/value pairs; repeated names become `Data.List` values:
 
 ```fsharp
 let raw =
-    RawInput.ofNameValues
+    Data.ofNameValues
         [ "name", "Ada Lovelace"
           "tag", "vip"
-          "tag", "beta" ]      // repeated names accumulate into Many
+          "tag", "beta" ]      // repeated names accumulate into Data.List
 ```
 
-`RawInput.ofMap` handles single-valued maps, and `RawInput.ofNameValueCollection` adapts
+`Data.ofMap` handles single-valued maps, and `Data.ofNameValueCollection` adapts
 `System.Collections.Specialized.NameValueCollection` directly from ASP.NET-style APIs. Name/value sources are flat; use
 the configuration or JSON adapters below when the input carries nested models or indexed collections.
 
 ## CLI Arguments
 
 ```fsharp
-let raw = RawInput.ofCliArgs [ "--name"; "Ada Lovelace"; "--verbose"; "--no-color" ]
+let raw = Data.ofCliArgs [ "--name"; "Ada Lovelace"; "--verbose"; "--no-color" ]
 ```
 
 `--name value`, `--name=value`, `-n value`, boolean flags, `--no-name`, and repeated options are supported; positional
@@ -65,21 +65,21 @@ request bodies:
 
 ```fsharp
 use! document = JsonDocument.ParseAsync request.Body
-let raw = RawInput.ofJsonDocument document
+let raw = Data.ofJsonDocument document
 ```
 
-JSON null becomes `Missing`, numbers keep their exact boundary text, and arrays and objects map to `Many` and
-`Object`. The adapter uses the in-box `System.Text.Json`, so the package stays dependency-free.
+JSON null, numbers, Booleans, arrays, and objects retain their corresponding `Data` cases. Number tokens keep their
+exact lexical representation. The adapter uses the in-box `System.Text.Json`, so the package stays dependency-free.
 
-## JSON-Like Input
+## Other JSON libraries
 
-On other targets (including Fable), deserialize with any JSON library into `JsonLikeValue`, then adapt:
+On other targets (including Fable), deserialize with any JSON library directly into `Data`:
 
 ```fsharp
-let raw = RawInput.ofJsonLikeValue jsonValue   // objects, arrays, scalars, null
+let data = jsonValue // already a Data value
 ```
 
-Arrays map to `Many` and objects to `Object`, so nested models and collections parse with no extra shaping.
+Nested `Data.List` and `Data.Object` values parse with no extra shaping.
 
 ## Configuration
 
@@ -87,7 +87,7 @@ Configuration keys use `:`-separated sections and numeric segments for collectio
 
 ```fsharp
 let raw =
-    RawInput.ofConfiguration
+    Data.ofConfiguration
         [ "name", "Ada Lovelace"
           "address:city", "London"
           "contacts:0:kind", "email"
@@ -118,7 +118,7 @@ For running the parse inside a workflow — including workflow-specific acceptan
 ## From C#
 
 Consume-don't-author: F# declares the schema, C# parses and reads diagnostics. Most adapters take plain .NET types
-already — `ofNameValueCollection` takes `NameValueCollection`, `ofCliArgs` and `ofJsonLikeValue` take ordinary
+already — `ofNameValueCollection` takes `NameValueCollection`, `ofCliArgs` and `ofData` take ordinary
 sequences and values — and call as plain static methods. `ofMap` and `ofConfiguration` take F#-only types (`Map` and
 a sequence of F# tuples), so use their C#-friendly equivalents instead:
 
@@ -126,10 +126,10 @@ a sequence of F# tuples), so use their C#-friendly equivalents instead:
 using Axial.Schema;
 
 // ofMap's C# equivalent — takes IDictionary<string, string> instead of an F# Map:
-RawInput raw = RawInputModule.ofDictionary(new Dictionary<string, string> { ["name"] = "Ada Lovelace" });
+Data raw = DataModule.ofDictionary(new Dictionary<string, string> { ["name"] = "Ada Lovelace" });
 
 // ofConfiguration's C# equivalent — takes the pairs IConfiguration.AsEnumerable() already returns:
-RawInput fromConfig = RawInputModule.ofConfigurationPairs(configuration.AsEnumerable());
+Data fromConfig = DataModule.ofConfigurationPairs(configuration.AsEnumerable());
 
 RetainedParseResult<Customer, SchemaError> parsed = Schema.parseRetainingInput(customerSchema, raw);
 

@@ -30,6 +30,7 @@
     <ProjectReference Include="..\Axial.Flow\Axial.Flow.fsproj" />
     <ProjectReference Include="..\Axial.Schema.Http\Axial.Schema.Http.fsproj" />
     <ProjectReference Include="..\Axial.Codec\Axial.Codec.fsproj" />
+    <ProjectReference Include="..\Axial.Data\Axial.Data.fsproj" />
   </ItemGroup>
 
   <ItemGroup>

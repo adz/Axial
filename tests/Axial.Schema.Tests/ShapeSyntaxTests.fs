@@ -1,5 +1,7 @@
 namespace Axial.Tests
 
+open Axial
+
 open System
 open Axial.Schema
 open Axial.Schema.Syntax
@@ -33,7 +35,7 @@ module ShapeSyntaxTests =
     [<Fact>]
     let ``the target handwritten syntax parses valid input`` () =
         let input =
-            RawInput.ofMap (
+            Data.ofMap (
                 Map.ofList
                     [ "firstName", "Ada"
                       "lastName", "Lovelace"
@@ -50,7 +52,7 @@ module ShapeSyntaxTests =
     [<Fact>]
     let ``a constraint attaches to the field it follows`` () =
         let input =
-            RawInput.ofMap (
+            Data.ofMap (
                 Map.ofList
                     [ "firstName", ""
                       "lastName", "Lovelace"
@@ -95,7 +97,7 @@ module ShapeSyntaxTests =
 
     [<Fact>]
     let ``constructResult admits values the constructor accepts`` () =
-        let input = RawInput.ofMap (Map.ofList [ "low", "1"; "high", "5" ])
+        let input = Data.ofMap (Map.ofList [ "low", "1"; "high", "5" ])
 
         match (Schema.parse rangeSchema input) with
         | Ok range -> test <@ range.Bounds = (1, 5) @>
@@ -103,7 +105,7 @@ module ShapeSyntaxTests =
 
     [<Fact>]
     let ``constructResult reports constructor rejections as diagnostics`` () =
-        let input = RawInput.ofMap (Map.ofList [ "low", "9"; "high", "5" ])
+        let input = Data.ofMap (Map.ofList [ "low", "9"; "high", "5" ])
 
         match (Schema.parse rangeSchema input) with
         | Ok range -> failwithf "Expected a constructor rejection, parsed %A" range
@@ -131,11 +133,10 @@ module ShapeSyntaxTests =
     [<Fact>]
     let ``option and list fields infer their schemas`` () =
         let input =
-            RawInput.ofJsonLikeValue (
-                JsonLikeValue.Object(
-                    Map.ofList
-                        [ "name", JsonLikeValue.String "axial"
-                          "tags", JsonLikeValue.Array [ JsonLikeValue.String "fsharp" ] ]
+            (
+                Data.objectOfMap (Map.ofList
+                        [ "name", Data.Text "axial"
+                          "tags", Data.List [ Data.Text "fsharp" ] ]
                 )
             )
 
@@ -172,11 +173,10 @@ module ShapeSyntaxTests =
             |> construct ContactBook.Create
 
         let input =
-            RawInput.ofJsonLikeValue (
-                JsonLikeValue.Object(
-                    Map.ofList
-                        [ "emails", JsonLikeValue.Array [ JsonLikeValue.String "ada@example.com" ]
-                          "contacts", JsonLikeValue.Object(Map.ofList [ "primary", JsonLikeValue.String "ada@example.com" ]) ]
+            (
+                Data.objectOfMap (Map.ofList
+                        [ "emails", Data.List [ Data.Text "ada@example.com" ]
+                          "contacts", Data.objectOfMap (Map.ofList [ "primary", Data.Text "ada@example.com" ]) ]
                 )
             )
 
@@ -190,8 +190,8 @@ module ShapeSyntaxTests =
     let ``type-directed list and map schemas resolve their member schema`` () =
         let emails = Schema.list<Email>()
         let contacts = Schema.map<Email>()
-        let emailInput = RawInput.ofJsonLikeValue (JsonLikeValue.Array [ JsonLikeValue.String "ada@example.com" ])
-        let contactInput = RawInput.ofJsonLikeValue (JsonLikeValue.Object(Map.ofList [ "primary", JsonLikeValue.String "ada@example.com" ]))
+        let emailInput = (Data.List [ Data.Text "ada@example.com" ])
+        let contactInput = (Data.objectOfMap (Map.ofList [ "primary", Data.Text "ada@example.com" ]))
 
         test <@ (Schema.parse emails emailInput) |> Result.isOk @>
         test <@ (Schema.parse contacts contactInput) |> Result.isOk @>
@@ -200,8 +200,8 @@ module ShapeSyntaxTests =
     let ``nested constraints apply to list items and map values`` () =
         let names = Schema.list<string>() |> constrainItems (minLength 2)
         let labels = Schema.map<string>() |> constrainValues (minLength 2)
-        let nameInput = RawInput.ofJsonLikeValue (JsonLikeValue.Array [ JsonLikeValue.String "x" ])
-        let labelInput = RawInput.ofJsonLikeValue (JsonLikeValue.Object(Map.ofList [ "short", JsonLikeValue.String "x" ]))
+        let nameInput = (Data.List [ Data.Text "x" ])
+        let labelInput = (Data.objectOfMap (Map.ofList [ "short", Data.Text "x" ]))
 
         test <@ (Schema.parse names nameInput) |> Result.isError @>
         test <@ (Schema.parse labels labelInput) |> Result.isError @>
@@ -240,7 +240,7 @@ module ShapeSyntaxTests =
     [<Fact>]
     let ``admit parses through the draft shape into the domain type`` () =
         let input =
-            RawInput.ofMap (
+            Data.ofMap (
                 Map.ofList
                     [ "start", "2026-08-01T00:00:00Z"
                       "end", "2026-08-05T00:00:00Z" ]
@@ -253,7 +253,7 @@ module ShapeSyntaxTests =
     [<Fact>]
     let ``admit reports admission failures as diagnostics`` () =
         let input =
-            RawInput.ofMap (
+            Data.ofMap (
                 Map.ofList
                     [ "start", "2026-08-05T00:00:00Z"
                       "end", "2026-08-01T00:00:00Z" ]

@@ -35,5 +35,5 @@ type: docs
 
 <p class='fsdocs-para'>
  Shape descriptions carry no getters, constructors, or executable checks. JSON Schema emitters, documentation
- generators, and UI metadata producers can walk them without parsing raw input or running validation.
+ generators, and UI metadata producers can walk them without parsing structured data or running validation.
  </p>

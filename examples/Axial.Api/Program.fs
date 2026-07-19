@@ -10,6 +10,7 @@
 /// self-contained smoke pass with `AXIAL_EXAMPLE=smoke`, which is what CI and the docs build execute.
 module Axial.Api.Program
 
+open Axial
 open System
 open System.Net
 open System.Net.Http
@@ -132,10 +133,10 @@ module FormPage =
         | _, SchemaShape.Primitive PrimitiveValueKind.Int -> "number"
         | _ -> "text"
 
-    /// Renders one flat form from the schema description, redisplaying raw input and attaching errors by path.
+    /// Renders one flat form from the schema description, redisplaying structured data and attaching errors by path.
     let render (parsed: RetainedParseResult<Signup, SchemaError> option) =
         let input =
-            parsed |> Option.map _.Input |> Option.defaultValue (RawInput.Object Map.empty)
+            parsed |> Option.map _.Input |> Option.defaultValue (Data.Object [])
 
         let errorsFor path =
             match parsed with
@@ -144,7 +145,7 @@ module FormPage =
 
         let fieldRow prefix (field: FieldDescription) =
             let path = if prefix = "" then field.Name else $"{prefix}.{field.Name}"
-            let value = RawInput.redisplayPath path input
+            let value = Data.redisplayPath path input
 
             let errors =
                 errorsFor path

@@ -1,3 +1,5 @@
+open Axial
+
 // The generated-wire reference slice: the same boundary discipline as Axial.ReferenceApp,
 // but the wire tier is generated from [<DeriveSchema>] records instead of hand-written.
 //
@@ -56,9 +58,9 @@ module TrustedCard =
 // Demo driver.
 // ---------------------------------------------------------------------------
 
-let private parseJson (json: string) : RawInput =
+let private parseJson (json: string) : Data =
     use document = JsonDocument.Parse json
-    RawInput.ofJsonDocument document
+    Data.ofJsonDocument document
 
 let private showContractParse (label: string) (json: string) =
     printfn "%s" label

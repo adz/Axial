@@ -4,7 +4,7 @@ linkTitle: "mapErrors"
 weight: 2106
 ---
 
-Maps a failed parse&#39;s errors to a domain or application error type, preserving the raw input and paths.
+Maps a failed parse&#39;s errors to a domain or application error type, preserving the structured data and paths.
 
 ## Signature
 

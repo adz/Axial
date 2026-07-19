@@ -32,7 +32,7 @@ alignment field by field.
 
 - **Trusted-path serialization**: `Json.compile` turns the same declaration into a compiled JSON codec on par with
   `System.Text.Json` — zod validates on the way in but does not own the way out.
-- **Redisplay**: failed parses keep the raw input, so form fields re-render with the user's values next to their
+- **Redisplay**: failed parses keep the structured data, so form fields re-render with the user's values next to their
   errors without extra state.
 - **Contextual rules and workflow policies**: requirements over already-trusted models, applied per workflow.
 

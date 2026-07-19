@@ -1,5 +1,7 @@
 namespace Axial.Tests
 
+open Axial
+
 open Axial.ErrorHandling
 
 open System
@@ -380,10 +382,9 @@ module SchemaValidationTests =
     [<Fact>]
     let ``values produced by input parsing validate through the same schema`` () =
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "email", RawInput.Scalar "ada@example.com"
-                      "age", RawInput.Scalar "42" ]
+            Data.objectOfMap (Map.ofList
+                    [ "email", Data.Text "ada@example.com"
+                      "age", Data.Text "42" ]
             )
 
         let parsed = Schema.parseRetainingInput schema raw
@@ -436,10 +437,9 @@ module SchemaValidationTests =
             |> constructResult DateRange.Create
 
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "start", RawInput.Scalar "2026-01-10"
-                      "end", RawInput.Scalar "2026-01-12" ]
+            Data.objectOfMap (Map.ofList
+                    [ "start", Data.Text "2026-01-10"
+                      "end", Data.Text "2026-01-12" ]
             )
 
         let parsed = Schema.parseRetainingInput rangeSchema raw

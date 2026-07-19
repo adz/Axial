@@ -1,17 +1,18 @@
 ---
-title: "Schema.RawInput.ofCliArgs"
+title: "Data.ofCliArgs"
 linkTitle: "ofCliArgs"
-weight: 2004
+weight: 2005
+type: docs
 ---
 
 
- Builds raw input from command-line arguments.
+ Builds structured data from command-line arguments.
 
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Schema.RawInput.ofCliArgs&#32;<span>args</span></span></code>
+<code><span>Data.ofCliArgs&#32;<span>args</span></span></code>
 </div>
 
 ## Parameters
@@ -24,7 +25,7 @@ weight: 2004
 
 | Type | Description |
 | --- | --- |
-| <code><a href="t-schema-rawinput.md">RawInput</a></code> |  |
+| <code><a href="t-data.md">Data</a></code> |  |
 
 ## Remarks
 

@@ -1,5 +1,7 @@
 namespace Axial.Schema.Contracts
 
+open Axial
+
 open System
 open System.Text.RegularExpressions
 open FSharp.Compiler.CodeAnalysis

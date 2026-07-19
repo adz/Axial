@@ -28,7 +28,7 @@ other product.
 
 The current repository asks maintainers and coding agents to keep two unrelated vocabularies in working memory.
 
-Schema work uses terms such as raw input, schema, constraint, diagnostic, refined value, wire contract, codec, and
+Schema work uses terms such as structured data, schema, constraint, diagnostic, refined value, wire contract, codec, and
 migration. Flow work uses environment, effect, scope, layer, fiber, cancellation, service, and host.
 
 Combining these products makes searches noisier and lengthens contributor instructions. It also makes a single release

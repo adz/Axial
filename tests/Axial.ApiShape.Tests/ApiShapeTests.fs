@@ -1,5 +1,7 @@
 namespace Axial.Tests
 
+open Axial
+
 open System
 open System.Diagnostics
 open System.IO
@@ -402,14 +404,13 @@ module ApiShapeTests =
 
         assertTypeAbsentFromAssembly "Axial.Schema" "Axial.Schema.ValueSchema`1"
 
-        moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.RawInputModule"
+        moduleTypeFromAssembly "Axial.Data" "Axial.DataModule"
         |> publicStaticMemberNames
         |> assertContainsAll
             [ "ofMap"
               "ofNameValues"
               "ofNameValueCollection"
               "ofCliArgs"
-              "ofJsonLikeValue"
               "ofJsonElement"
               "ofJsonDocument"
               "ofConfiguration"
@@ -1257,7 +1258,7 @@ module ApiShapeTests =
               "Custom" ]
 
         let forbiddenCheckFailureFieldNames =
-            set [ "Path"; "Raw"; "RawInput"; "Input"; "Schema"; "Diagnostic"; "Diagnostics" ]
+            set [ "Path"; "Raw"; "Data"; "Input"; "Schema"; "Diagnostic"; "Diagnostics" ]
 
         let forbiddenCheckFailureTypeNamespaces =
             [ "Axial.Schema"; "Axial.Validation"; "Axial.Refined" ]

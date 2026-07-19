@@ -1,5 +1,7 @@
 namespace Axial.Tests
 
+open Axial
+
 open Axial.Schema
 open Axial.Validation
 open Swensen.Unquote
@@ -24,7 +26,7 @@ module EnumSchemaParseTests =
 
     [<Fact>]
     let ``parse builds the enum case matching the tag`` () =
-        let raw = RawInput.Object(Map.ofList [ "color", RawInput.Scalar "green" ])
+        let raw = Data.objectOfMap (Map.ofList [ "color", Data.Text "green" ])
 
         let parsed = Schema.parseRetainingInput (swatchSchema ()) raw
 
@@ -32,7 +34,7 @@ module EnumSchemaParseTests =
 
     [<Fact>]
     let ``parse reports an unknown tag at the field path`` () =
-        let raw = RawInput.Object(Map.ofList [ "color", RawInput.Scalar "purple" ])
+        let raw = Data.objectOfMap (Map.ofList [ "color", Data.Text "purple" ])
 
         let parsed = Schema.parseRetainingInput (swatchSchema ()) raw
 

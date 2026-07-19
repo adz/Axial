@@ -4,6 +4,7 @@
 // </auto-generated>
 namespace Axial.ReferenceApp.Wire
 
+open Axial
 open Axial.Validation
 open Axial.Schema
 
@@ -28,8 +29,8 @@ module WorkspaceCardV1 =
     let validate (draft: WorkspaceCardV1) : Result<WorkspaceCardV1, Diagnostics<SchemaError>> =
         Schema.check schema draft
 
-    /// Parses raw boundary input through the schema.
-    let parse (input: RawInput) : Result<WorkspaceCardV1, Diagnostics<SchemaError>> =
+    /// Parses structured boundary data through the schema.
+    let parse (input: Data) : Result<WorkspaceCardV1, Diagnostics<SchemaError>> =
         Schema.parse schema input
 
     /// Typed field references for rules, redisplay, and UI binding.
@@ -64,8 +65,8 @@ module WorkspaceCard =
     let validate (draft: WorkspaceCard) : Result<WorkspaceCard, Diagnostics<SchemaError>> =
         Schema.check schema draft
 
-    /// Parses raw boundary input through the schema.
-    let parse (input: RawInput) : Result<WorkspaceCard, Diagnostics<SchemaError>> =
+    /// Parses structured boundary data through the schema.
+    let parse (input: Data) : Result<WorkspaceCard, Diagnostics<SchemaError>> =
         Schema.parse schema input
 
     /// Builds the versioned wire contract; supply each n-1 -> n migration and the version-detection source.

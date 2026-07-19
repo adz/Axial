@@ -4,7 +4,7 @@ linkTitle: "parse"
 weight: 2100
 ---
 
-Parses source-neutral raw input, runs constraints and refinements, and invokes record constructors.
+Parses source-neutral structured data, runs constraints and refinements, and invokes record constructors.
 
 ## Signature
 
@@ -17,7 +17,7 @@ Parses source-neutral raw input, runs constraints and refinements, and invokes r
 | Name | Type | Description |
 | --- | --- | --- |
 | `schema` | <code><span><a href="../t-schema-schema.md">Schema</a>&lt;'a&gt;</span></code> |  |
-| `input` | <code><a href="t-schema-rawinput.md">RawInput</a></code> |  |
+| `input` | <code><a href="t-data.md">Data</a></code> |  |
 
 ## Returns
 

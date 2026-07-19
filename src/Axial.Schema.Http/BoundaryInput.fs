@@ -1,17 +1,19 @@
 namespace Axial.Schema.Http
 
+open Axial
+
 open Axial.Schema
 
-/// <summary>Builds <see cref="T:Axial.Schema.RawInput" /> from the name/value surfaces an HTTP server hands over.</summary>
+/// <summary>Builds <see cref="T:Axial.Data" /> from the name/value surfaces an HTTP server hands over.</summary>
 /// <remarks>
 /// These constructors are host-neutral: adapters extract plain name/value pairs from their request type and the
-/// conversion rules live here, so every host produces identical raw input for identical wire data.
+/// conversion rules live here, so every host produces identical structured data for identical wire data.
 /// </remarks>
 [<RequireQualifiedAccess>]
 module BoundaryInput =
-    /// <summary>Builds object-shaped raw input from query-string pairs, grouping repeated names into collections.</summary>
+    /// <summary>Builds object-shaped structured data from query-string pairs, grouping repeated names into collections.</summary>
     /// <remarks>Names are used verbatim; query strings do not carry nesting.</remarks>
-    let ofQuery (pairs: seq<string * string>) : RawInput = RawInput.ofNameValues pairs
+    let ofQuery (pairs: seq<string * string>) : Data = Data.ofNameValues pairs
 
     [<RequireQualifiedAccess>]
     type private Node =
@@ -31,10 +33,10 @@ module BoundaryInput =
             Node.Fields(fields.Add(segment, insert child rest value))
         | _ :: _, Node.Values _ -> node
 
-    let rec private toJsonLike (node: Node) : JsonLikeValue =
+    let rec private toData (node: Node) : Data =
         match node with
-        | Node.Values [ value ] -> JsonLikeValue.String value
-        | Node.Values values -> values |> List.map JsonLikeValue.String |> JsonLikeValue.Array
+        | Node.Values [ value ] -> Data.Text value
+        | Node.Values values -> values |> List.map Data.Text |> Data.List
         | Node.Fields fields ->
             let indexed =
                 fields
@@ -48,12 +50,12 @@ module BoundaryInput =
                 indexed
                 |> List.choose id
                 |> List.sortBy fst
-                |> List.map (snd >> toJsonLike)
-                |> JsonLikeValue.Array
+                |> List.map (snd >> toData)
+                |> Data.List
             else
-                fields |> Map.map (fun _ child -> toJsonLike child) |> JsonLikeValue.Object
+                fields |> Map.toList |> List.map (fun (name, child) -> name, toData child) |> Data.Object
 
-    /// <summary>Builds raw input from form pairs, where dotted names such as <c>address.street</c> nest.</summary>
+    /// <summary>Builds structured data from form pairs, where dotted names such as <c>address.street</c> nest.</summary>
     /// <remarks>
     /// Repeated names become collections, matching how HTML forms post multi-value fields, and sibling numeric
     /// segments such as <c>tags.0</c>/<c>tags.1</c> become ordered collections. The dot convention matches the flat
@@ -61,7 +63,7 @@ module BoundaryInput =
     /// stays a scalar, so a list field submitted with a single selection should be posted as a repeated or indexed
     /// name; only the schema knows which fields are collections, and this builder deliberately does not.
     /// </remarks>
-    let ofForm (pairs: seq<string * string>) : RawInput =
+    let ofForm (pairs: seq<string * string>) : Data =
         if isNull (box pairs) then
             nullArg (nameof pairs)
 
@@ -75,4 +77,4 @@ module BoundaryInput =
                         insert node (name.Split '.' |> List.ofArray) value)
                 (Node.Fields Map.empty)
 
-        RawInput.ofJsonLikeValue (toJsonLike root)
+        toData root

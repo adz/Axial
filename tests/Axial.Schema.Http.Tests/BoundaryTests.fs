@@ -1,5 +1,7 @@
 module Axial.Schema.Http.Tests.BoundaryTests
 
+open Axial
+
 open System.Text.Json
 open Xunit
 open Swensen.Unquote
@@ -71,7 +73,7 @@ let ``query pairs parse flat models`` () =
 [<Fact>]
 let ``failed parses render problem details with json pointers`` () =
     use document = JsonDocument.Parse invalidJson
-    let parsed = Schema.parseRetainingInput (signupSchema ()) (RawInput.ofJsonDocument document)
+    let parsed = Schema.parseRetainingInput (signupSchema ()) (Data.ofJsonDocument document)
 
     let details =
         match ProblemDetails.ofParsed parsed with
@@ -90,7 +92,7 @@ let ``failed parses render problem details with json pointers`` () =
 [<Fact>]
 let ``successful parses produce no problem details`` () =
     use document = JsonDocument.Parse validJson
-    let parsed = Schema.parseRetainingInput (signupSchema ()) (RawInput.ofJsonDocument document)
+    let parsed = Schema.parseRetainingInput (signupSchema ()) (Data.ofJsonDocument document)
     test <@ ProblemDetails.ofParsed parsed = None @>
 
 [<Fact>]

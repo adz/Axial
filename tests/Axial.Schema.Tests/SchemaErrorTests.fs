@@ -1,5 +1,7 @@
 namespace Axial.Tests
 
+open Axial
+
 open Axial.ErrorHandling
 open Axial.Refined
 open Axial.Schema
@@ -54,10 +56,9 @@ module SchemaErrorTests =
             |> construct (fun email age -> { Email = email; Age = age })
 
         let raw =
-            RawInput.Object(
-                Map.ofList
-                    [ "email", RawInput.Missing
-                      "age", RawInput.Scalar "not-an-int" ]
+            Data.objectOfMap (Map.ofList
+                    [ "email", Data.Null
+                      "age", Data.Text "not-an-int" ]
             )
 
         let parsed = Schema.parseRetainingInput schema raw
@@ -74,7 +75,7 @@ module SchemaErrorTests =
             |> construct (fun email age -> { Email = email; Age = age })
 
         let parsed =
-            RawInput.Object(Map.ofList [ "email", RawInput.Missing; "age", RawInput.Scalar "42" ])
+            Data.objectOfMap (Map.ofList [ "email", Data.Null; "age", Data.Text "42" ])
             |> Schema.parseRetainingInput schema
             |> RetainedParseResult.mapErrors Boundary
 
