@@ -1,7 +1,7 @@
 ---
 title: "Data.ofCliArgs"
 linkTitle: "ofCliArgs"
-weight: 2005
+weight: 2102
 ---
 
 
@@ -24,7 +24,7 @@ weight: 2005
 
 | Type | Description |
 | --- | --- |
-| <code><a href="../../data/t-data.md">Data</a></code> |  |
+| <code><a href="t-data.md">Data</a></code> |  |
 
 ## Remarks
 

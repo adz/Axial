@@ -1,7 +1,7 @@
 ---
 title: "Data.ofJsonDocument"
 linkTitle: "ofJsonDocument"
-weight: 2007
+weight: 2104
 ---
 
 Builds structured data from the root element of a <a href="https://learn.microsoft.com/dotnet/api/system.text.json.jsondocument">JsonDocument</a>.
@@ -22,7 +22,7 @@ Builds structured data from the root element of a <a href="https://learn.microso
 
 | Type | Description |
 | --- | --- |
-| <code><a href="../../data/t-data.md">Data</a></code> |  |
+| <code><a href="t-data.md">Data</a></code> |  |
 
 ## Remarks
 

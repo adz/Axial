@@ -17,7 +17,7 @@ Streams a trusted value as JSON through a compiled codec.
 | Name | Type | Description |
 | --- | --- | --- |
 | `statusCode` | <code>int</code> | The successful HTTP status code. |
-| `codec` | <code><span><a href="../../../codec/t-codec-jsoncodec.md">JsonCodec</a>&lt;'model&gt;</span></code> | The compiled codec for the trusted output type. |
+| `codec` | <code><span><a href="../../../codec/t-schema-codec-jsoncodec.md">JsonCodec</a>&lt;'model&gt;</span></code> | The compiled codec for the trusted output type. |
 | `value` | <code>'model</code> | The trusted output value. |
 
 ## Returns

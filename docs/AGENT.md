@@ -71,7 +71,7 @@ Use `RefinedSchemas.dateTimeOffsetRange` as a record-shaped model schema, not a 
 also available when targeting frameworks that support `DateOnly`.
 
 For JSON, pick the path by trust: untrusted bodies go `Data.ofJsonDocument` (or `ofData`) then
-`Schema.parse` for diagnostics; trusted payloads use `Axial.Codec` — compile once with `Json.compile schema`, then
+`Schema.parse` for diagnostics; trusted payloads use `Axial.Schema.Codec` — compile once with `Json.compile schema`, then
 `Json.serialize` / `Json.deserialize`. Serve the contract with `JsonSchema.generate schema`. Do not hand-write
 `System.Text.Json` converters for schema-described models.
 

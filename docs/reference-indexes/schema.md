@@ -41,9 +41,9 @@ Schemas are consumed by interpreters that stay independent of workflow execution
 
 See the [HTTP servers guide]({{< relref "/schema/http-servers/" >}}) for the complete authoring model and outcome rules.
 
-## Axial.Codec
+## Axial.Schema.Codec
 
-- [`Codec`](./codec/) — compiled JSON codecs from the same declaration (namespace `Axial.Codec`). Optional:
+- [`Codec`](./codec/) — compiled JSON codecs from the same declaration (namespace `Axial.Schema.Codec`). Optional:
   install it alongside `Axial.Schema` only when you need the compiled hot path.
 
 `Axial.Refined` (parse and refine single values) and accumulating validation (`Validation`, `Diagnostics`) both

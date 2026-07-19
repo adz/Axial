@@ -1,7 +1,7 @@
 ---
 title: "Data.ofNameValues"
 linkTitle: "ofNameValues"
-weight: 2004
+weight: 2101
 ---
 
 Builds object-shaped structured data from name/value pairs, grouping repeated names into <code>Many</code>.
@@ -22,4 +22,4 @@ Builds object-shaped structured data from name/value pairs, grouping repeated na
 
 | Type | Description |
 | --- | --- |
-| <code><a href="../../data/t-data.md">Data</a></code> |  |
+| <code><a href="t-data.md">Data</a></code> |  |

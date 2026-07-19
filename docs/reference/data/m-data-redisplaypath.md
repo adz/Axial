@@ -1,7 +1,7 @@
 ---
 title: "Data.redisplayPath"
 linkTitle: "redisplayPath"
-weight: 2010
+weight: 2201
 ---
 
 Parses an input path and redisplays the addressed scalar structured data value.
@@ -17,7 +17,7 @@ Parses an input path and redisplays the addressed scalar structured data value.
 | Name | Type | Description |
 | --- | --- | --- |
 | `path` | <code>string</code> |  |
-| `input` | <code><a href="../../data/t-data.md">Data</a></code> |  |
+| `input` | <code><a href="t-data.md">Data</a></code> |  |
 
 ## Returns
 

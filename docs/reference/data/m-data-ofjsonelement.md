@@ -1,7 +1,7 @@
 ---
 title: "Data.ofJsonElement"
 linkTitle: "ofJsonElement"
-weight: 2006
+weight: 2103
 ---
 
 Builds structured data from a <a href="https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement">JsonElement</a>.
@@ -22,7 +22,7 @@ Builds structured data from a <a href="https://learn.microsoft.com/dotnet/api/sy
 
 | Type | Description |
 | --- | --- |
-| <code><a href="../../data/t-data.md">Data</a></code> |  |
+| <code><a href="t-data.md">Data</a></code> |  |
 
 ## Remarks
 

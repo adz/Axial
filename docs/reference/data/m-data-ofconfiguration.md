@@ -1,7 +1,7 @@
 ---
 title: "Data.ofConfiguration"
 linkTitle: "ofConfiguration"
-weight: 2008
+weight: 2105
 ---
 
 
@@ -24,7 +24,7 @@ weight: 2008
 
 | Type | Description |
 | --- | --- |
-| <code><a href="../../data/t-data.md">Data</a></code> |  |
+| <code><a href="t-data.md">Data</a></code> |  |
 
 ## Remarks
 

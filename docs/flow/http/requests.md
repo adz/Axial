@@ -88,7 +88,7 @@ request |> formBody [ "q", "axial"; "page", "2" ] // application/x-www-form-urle
 request |> Request.bytesBody "application/octet-stream" payload
 ```
 
-`jsonBodyOf` takes any `'value -> string` function, so it works with `Axial.Codec`, hand-written serializers, or
+`jsonBodyOf` takes any `'value -> string` function, so it works with `Axial.Schema.Codec`, hand-written serializers, or
 any other JSON library without coupling this package to one.
 
 ## Plans Show What Would Be Sent

@@ -1,7 +1,7 @@
 ---
 title: "Data.redisplay"
 linkTitle: "redisplay"
-weight: 2009
+weight: 2200
 ---
 
  Redisplays a scalar structured data value, returning blank text for missing, object-shaped, or collection-shaped input.
@@ -16,7 +16,7 @@ weight: 2009
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `input` | <code><a href="../../data/t-data.md">Data</a></code> |  |
+| `input` | <code><a href="t-data.md">Data</a></code> |  |
 
 ## Returns
 

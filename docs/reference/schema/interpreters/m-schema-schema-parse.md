@@ -17,7 +17,7 @@ Parses source-neutral structured data, runs constraints and refinements, and inv
 | Name | Type | Description |
 | --- | --- | --- |
 | `schema` | <code><span><a href="../t-schema-schema.md">Schema</a>&lt;'a&gt;</span></code> |  |
-| `input` | <code><a href="t-data.md">Data</a></code> |  |
+| `input` | <code><a href="../../data/t-data.md">Data</a></code> |  |
 
 ## Returns
 

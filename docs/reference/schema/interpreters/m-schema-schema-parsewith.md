@@ -18,7 +18,7 @@ Parses structured data after configuring parser options.
 | --- | --- | --- |
 | `configure` | <code><span><a href="t-schema-schemaparseoptions.md">SchemaParseOptions</a>&#32;->&#32;<a href="t-schema-schemaparseoptions.md">SchemaParseOptions</a></span></code> |  |
 | `schema` | <code><span><a href="../t-schema-schema.md">Schema</a>&lt;'a&gt;</span></code> |  |
-| `input` | <code><a href="t-data.md">Data</a></code> |  |
+| `input` | <code><a href="../../data/t-data.md">Data</a></code> |  |
 
 ## Returns
 

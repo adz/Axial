@@ -40,7 +40,7 @@ alignment field by field.
 
 - **No reflection**: Axial schemas are explicit declarations compiled into plans; nothing depends on runtime type
   inspection, so NativeAOT and aggressive trimming work by construction.
-- **Fable**: the schema core, including `Axial.Codec`, compiles to JavaScript through Fable, so the browser and the
+- **Fable**: the schema core, including `Axial.Schema.Codec`, compiles to JavaScript through Fable, so the browser and the
   server can share one declaration — encode and decode included — the role zod plays across the TypeScript stack.
 - **Errors are values with rendering**: `SchemaError` is a typed union with a default English renderer
   (`RetainedParseResult.renderErrors`) and a one-function mapping into your own error union (`RetainedParseResult.mapErrors`), rather

@@ -344,13 +344,25 @@ let pageSpecs = [
         Alias = None
     }
     {
+        OutPath = ["data"; "_index.md"]
+        Title = "Data"
+        Description = "Source-documented portable structured values."
+        Intro = "This page shows `Axial.Data`: one source-neutral tree for nulls, primitives, lists, and objects, with constructors for maps, name/value pairs, CLI arguments, JSON, and configuration. Use it to shape data in tests and fixtures, to carry boundary input before a type is assigned, and to redisplay raw values by path. It has no dependencies on other Axial packages."
+        SymbolIds = [
+            "The tree", ["T:Axial.Data"; "T:Axial.DataPathSegment"; "T:Axial.DataPath"]
+            "Constructors", ["M:Axial.DataModule.ofMap"; "M:Axial.DataModule.ofNameValues"; "M:Axial.DataModule.ofCliArgs"; "M:Axial.DataModule.ofJsonElement"; "M:Axial.DataModule.ofJsonDocument"; "M:Axial.DataModule.ofConfiguration"]
+            "Redisplay", ["M:Axial.DataModule.redisplay"; "M:Axial.DataModule.redisplayPath"]
+        ]
+        Alias = None
+    }
+    {
         OutPath = ["codec"; "_index.md"]
         Title = "Codec"
         Description = "Source-documented compiled JSON codecs over built model schemas."
-        Intro = "This page shows the `Axial.Codec` surface: `Json.compile` turns a built `Schema<'model>` into a reusable `JsonCodec<'model>` with reflection-free, constructor-specialized encode and decode plans. The codec is the trusted hot path for serialization; parse untrusted boundary input with [schema input parsing](../schema/interpreters/) when path-aware diagnostics matter."
+        Intro = "This page shows the `Axial.Schema.Codec` surface: `Json.compile` turns a built `Schema<'model>` into a reusable `JsonCodec<'model>` with compiler-directed, runtime-reflection-free, constructor-specialized encode and decode plans. The codec is the trusted hot path for serialization; parse untrusted boundary input with [schema input parsing](../schema/interpreters/) when path-aware diagnostics matter."
         SymbolIds = [
-            "Core types", ["T:Axial.Codec.JsonCodec`1"; "T:Axial.Codec.JsonCodecException"]
-            "Module functions", ["M:Axial.Codec.Json.compile"; "M:Axial.Codec.Json.serialize"; "M:Axial.Codec.Json.serializeBytes"; "M:Axial.Codec.Json.serializeToStream"; "M:Axial.Codec.Json.deserialize"; "M:Axial.Codec.Json.deserializeBytes"; "M:Axial.Codec.Json.deserializeStreamAsync"; "M:Axial.Codec.Json.tryDeserialize"]
+            "Core types", ["T:Axial.Schema.Codec.JsonCodec`1"; "T:Axial.Schema.Codec.JsonCodecException"]
+            "Module functions", ["M:Axial.Schema.Codec.Json.compile"; "M:Axial.Schema.Codec.Json.serialize"; "M:Axial.Schema.Codec.Json.serializeBytes"; "M:Axial.Schema.Codec.Json.serializeToStream"; "M:Axial.Schema.Codec.Json.deserialize"; "M:Axial.Schema.Codec.Json.deserializeBytes"; "M:Axial.Schema.Codec.Json.deserializeStreamAsync"; "M:Axial.Schema.Codec.Json.tryDeserialize"]
         ]
         Alias = None
     }
@@ -1220,7 +1232,8 @@ let main argv =
         Path.Combine(artifactsDir, "Axial.ErrorHandling/debug_net8.0/Axial.ErrorHandling.dll")
         Path.Combine(artifactsDir, "Axial.Data/debug_net8.0/Axial.Data.dll")
         Path.Combine(artifactsDir, "Axial.Schema/debug_net8.0/Axial.Schema.dll")
-        Path.Combine(artifactsDir, "Axial.Codec/debug_net8.0/Axial.Codec.dll")
+        Path.Combine(artifactsDir, "Axial.Schema.JsonSchema/debug_net8.0/Axial.Schema.JsonSchema.dll")
+        Path.Combine(artifactsDir, "Axial.Schema.Codec/debug_net8.0/Axial.Schema.Codec.dll")
         Path.Combine(artifactsDir, "Axial.Schema.Http/debug/Axial.Schema.Http.dll")
         Path.Combine(artifactsDir, "Axial.Schema.Http.AspNetCore/debug/Axial.Schema.Http.AspNetCore.dll")
         Path.Combine(artifactsDir, "Axial.Schema.Http.GenHttp/debug/Axial.Schema.Http.GenHttp.dll")
