@@ -30,7 +30,9 @@ metadata, or a new interpreter over existing metadata? Most features are the sec
 | `Contract.fs` | Versioned contracts: version detection + stepwise migrations. |
 | `RefinedSchemas.fs` | Stock refined schemas (ranges etc.). |
 | `Inspection.fs` | The metadata interpreter: `Inspect.model`, `Inspect.schema`. |
-| `JsonSchema.fs` | The JSON Schema interpreter. |
+
+The JSON Schema interpreter lives in its own package (`src/Axial.Schema.JsonSchema`), and the compiled
+JSON codecs in `src/Axial.Schema.Codec`; both keep the `Axial.Schema` namespace family.
 
 ## Map of Schema.fs
 
@@ -77,16 +79,30 @@ Checking (`Schema.check`): same pipeline, but values come from the model's gette
 
 ## The constructor-last surface (Shape.fs)
 
-`ObjectShape<'model,'fields>` is a structural shape with no constructor: a list of boxed
-`FieldDefinition<'model,_>` values plus a phantom type parameter `'fields` that records each field's
-value type left to right (`(NoFields * string) * int`). The phantom is what makes the surface safe:
+`Schema.define<'model>` returns a `DefineShape<'model>`; the first `field` turns it into an
+`ObjectShape<'model,'constructor,'remaining,'last>`. The phantom parameters record the curried
+constructor type the declared fields demand: `'constructor` is the full constructor, `'remaining` is
+what is left of it after the declared fields consume their arguments, and `'last` is the current
+field's value type. Runtime state is a boxed committed `IShapeFields` chain plus the current field as
+a boxed `FieldDefinition<'model,'last>` — the cursor.
 
-- `constrain (c: Constraint<'v>)` only accepts a shape whose *last* phantom entry is `'v` — a
-  misplaced constraint is a type mismatch at the `constrain` line.
-- `construct`/`constructResult` dispatch through an SRTP witness (`Constructors.ApplyTotal/ApplyResult`)
-  to one overload per arity. The overload unboxes each stored `FieldDefinition` at its known type,
-  closes erased metadata and the typed record plan. Constructor mismatches surface at the closing call
-  with concrete types.
+- Each `field`/`fieldWith` commits the cursor onto the chain (`ShapeFieldsAppend`) and installs the
+  new field, peeling one curried argument at the type level: a shape at `'f -> 'n` becomes a shape at
+  `'n`. This is ordinary unification, so **field count is unbounded** — there is no per-arity code.
+- `constrain (c: Constraint<'v>)` only accepts a shape whose `'last` is `'v` — a misplaced constraint
+  is a type mismatch at the `constrain` line. It rewrites the cursor in place.
+- `construct (f: 'constructor)` requires `'remaining = 'model` (`constructResult` requires
+  `Result<'model, string>`); both are plain functions that commit the cursor and close via
+  `ShapeClosure` into erased metadata plus the typed record plan. A constructor mismatch surfaces at
+  the closing call with concrete types.
+- `field`/`fieldWith` are inline and dispatch on the shape via an SRTP static member (`Field`) present
+  on both `DefineShape` and `ObjectShape` — that is how `define` stays single-type-parameter (F# has
+  no partial explicit type application) while the first field fixes `'constructor`.
+- `open type Axial.Schema.Syntax` adds the overloaded `field` member: the same named form, plus a
+  bare-getter form (`field _.Name`) that reads the property name from the getter quotation
+  (`ReflectedDefinition(includeValue = true)`) once at schema build, camelCases it, and keeps the
+  compiled getter for the hot path. Explicit names are never transformed; the camelCase policy applies
+  only to derived names. Verified under NativeAOT by the AOT probe.
 - `field` (no explicit schema) resolves the value schema from the getter's result type via
   `SchemaDefaults.Resolve()` — an overload set, extendable by giving a type a
   `static member Schema: T -> Schema<T>`. Its generic option/list/map overloads resolve member schemas recursively. Optional
@@ -106,22 +122,24 @@ changes, so wire names, constraints, docs, parsing, and checking all survive int
 
 ## Rules that keep this codebase what it is
 
-- **No reflection, ever.** Fable and NativeAOT are first-class. Type erasure is done with typed closures
-  and `unbox` at points where the static type is known.
+- **No runtime reflection — always compiler-directed.** Fable and NativeAOT are first-class; the goal
+  is maximal deterministic verification. Type erasure is done with typed closures and `unbox` at points
+  where the static type is known. One-time, build-phase metadata reading (the bare `field _.Name`
+  quotation) is fine; reflection on the parse/encode paths is not.
 - **Descriptions don't execute.** If you're adding behavior to `Schema.fs`, you're probably building an
   interpreter and it belongs in its own file.
 - **One erased view, one typed view.** `FieldDescriptor` serves metadata interpreters; the typed record
   plan serves compilers that need direct construction. Don't invent a third.
 - **The facade is thin.** `SchemaApi.fs` delegates; logic lives in the implementation modules.
-- **Arity code is generated-by-hand and boring.** `ConstructorApplication.createN`, the
-  `Constructors` overloads: extend by copying the previous arity. Do not replace them with cleverness.
+- **What remains of arity code is boring.** The authoring surface has none (the chain peels one
+  curried argument per field); the small `ConstructorApplication.createN` helpers that remain extend by
+  copying the previous arity.
 
 ## Where to add things
 
 | You want to… | Touch |
 |---|---|
-| Add a constraint | `Constraint` module (`Schema.fs`), its check in `SchemaValidation.fs`, JSON Schema lowering in `JsonSchema.fs`, typed wrapper in `Syntax` (`Shape.fs`) |
+| Add a constraint | `Constraint` module (`Schema.fs`), its check in `SchemaValidation.fs`, JSON Schema lowering in `Axial.Schema.JsonSchema`, typed wrapper in `Syntax` (`Shape.fs`) |
 | Add a primitive | `PrimitiveValueKind`, `Value` module, parsing in `SchemaValidation.fs`, `SchemaDefaults` overloads |
-| Add an interpreter | New file after `SchemaApi.fs`; walk `Inspect.model` output or compile the typed record plan |
-| Extend construct arity | Next overload pair in `Constructors` (`Shape.fs`), next `createN` if needed |
+| Add an interpreter | New file after `SchemaApi.fs` (or a new package, like `Axial.Schema.JsonSchema`); walk `Inspect.model` output or compile the typed record plan |
 | Change generated code | `src/Axial.Schema.Contracts` (Emitter) — not this project |

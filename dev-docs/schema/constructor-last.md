@@ -1,6 +1,6 @@
 # Constructor-last schema authoring: design
 
-Status: sole public authoring surface (`Shape.fs`, 2026-07-19). Handwritten schemas, schemagen output, tests, examples, and codecs use it.
+Status: sole public authoring surface (`Shape.fs`; chain rework 2026-07-20). Handwritten schemas, schemagen output, tests, examples, and codecs use it. Field count is unbounded.
 
 ## Target
 
@@ -21,10 +21,10 @@ information. No `build`.
 ## The important separation
 
 `Schema.define<Person>` cannot be a `Schema<Person>` — it doesn't know how to construct a `Person`.
-It is an `ObjectShape<Person, NoFields>`:
+It is a `DefineShape<Person>`; the first field turns it into an `ObjectShape`:
 
 ```
-define + fields         = structural shape      (ObjectShape<'model,'fields>)
+define + fields         = structural shape      (ObjectShape<'model,'ctor,'remaining,'last>)
 structural shape + ctor = schema                (construct / constructResult)
 ```
 
@@ -34,15 +34,24 @@ constructor.
 
 ## How each piece works
 
-**Phantom accumulation.** `'fields` grows one tuple layer per field: after `string`, `string`,
-`DateTimeOffset` it is `((NoFields * string) * string) * DateTimeOffset`. The shape's runtime state is
-just boxed `FieldDefinition<'model,_>` values, newest first; the phantom lets every operation recover
-them at their real types with `unbox` — no reflection.
+**Constructor peeling.** The shape's phantom parameters record the curried constructor type the
+declared fields demand. After `string`, `string`, `DateTimeOffset` fields, the shape demands a
+`string -> string -> DateTimeOffset -> 'model` constructor. Each `field` peels one curried argument by
+ordinary unification (`'f -> 'n` becomes `'n`), so any number of fields closes with one `construct`
+call — there is no per-arity code anywhere. Runtime state is a boxed committed `IShapeFields` chain
+plus the current field as a typed cursor; the phantom lets every operation recover them with `unbox` —
+no runtime reflection.
 
-**`constrain` binds to the current field.** Its signature demands the phantom's last entry:
-`Constraint<'v> -> ObjectShape<'m, 'rest * 'v> -> ObjectShape<'m, 'rest * 'v>`. Adding another field
-commits the previous one; `construct` commits the last. `constrain (minLength 1)` after an `int` field
-is a type mismatch on the `constrain` line.
+**`constrain` binds to the current field.** Its signature demands the cursor's type:
+`Constraint<'v> -> ObjectShape<'m,'c,'r,'v> -> ObjectShape<'m,'c,'r,'v>`. Adding another field commits
+the previous one; `construct` commits the last. `constrain (minLength 1)` after an `int` field is a
+type mismatch on the `constrain` line.
+
+**The bare-getter form.** `open type Axial.Schema.Syntax` overloads `field` with a bare form:
+`field _.FirstName` derives the wire name from the property (camelCased) by reading the getter
+quotation once at schema build (`ReflectedDefinition(includeValue = true)`), and keeps the compiled
+getter for parsing and checking. Explicit names are never transformed. Build-phase metadata reading,
+zero hot-path reflection, AOT-verified.
 
 **Typed constraints.** `Constraint<'value>` wraps the untyped `Constraint` with a phantom value type.
 The vocabulary lives in `Syntax`: text constraints are `Constraint<string>`, list constraints
@@ -54,12 +63,11 @@ hook for any type exposing `static member Schema: T -> Schema<T>`. Generated con
 resolvable F# types and explicit module schemas for generated references. No match → compile error →
 `fieldWith explicitSchema`.
 
-**Constructor-last application.** F# has no variadic application, and curried function types overlap
-(`'a -> 'm` matches any longer signature), so overloads on the constructor argument alone are ambiguous.
-The shape's phantom is not ambiguous. `construct`/`constructResult` are inline SRTP dispatchers passing
-*both* the constructor and the shape to an overload set (`Constructors`, one member per arity, 1–12).
-The overload closes erased model metadata and a retained typed record plan. Chosen over an HList encoding deliberately: the arity members are
-boring, inspectable, and produce concrete-type errors at the closing call.
+**Constructor-last application.** `construct` is a plain function demanding
+`ObjectShape<'m,'ctor,'m,'last>` — a shape whose remaining constructor type is exactly the model —
+and `constructResult` demands `Result<'m, string>` in that position. Closing commits the cursor and
+produces erased model metadata plus the retained typed record plan. The former per-arity overload set
+(`Constructors`, 1–12) is gone; the chain made it unnecessary.
 
 **Checked construction.** `constructResult` takes `... -> Result<'model, string>`. Parsing runs the
 constructor only after all fields pass, and a rejection becomes `SchemaError.ConstructorFailed`, placed
@@ -92,7 +100,8 @@ let bookingSchema =
 ## Known trades
 
 - **Positional matching.** The constructor's parameters must match field order and types. Two adjacent
-  same-typed fields swapped against the constructor compile and run wrong. A constructor taking a draft record is immune because its record literal names every field.
+  same-typed fields swapped against the constructor compile and run wrong. A constructor taking a draft record is immune because its record literal names every field,
+  and an encode/decode round-trip test catches a swap immediately (getters and constructor disagree).
   Accepted; documented.
 - **Error locality.** Field/constraint mistakes are caught on their own line; arity and type mismatches
   against the constructor are caught at `construct`, not per field.
