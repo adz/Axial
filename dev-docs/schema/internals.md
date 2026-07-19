@@ -13,30 +13,38 @@ metadata, or a new interpreter over existing metadata? Most features are the sec
 
 ## File map (compile order matters — F# reads top to bottom)
 
+Each file opens with a short grounding comment saying what it holds and where it fits; the table is
+the overview, the comments are the ground truth.
+
 | File | What it holds |
 |---|---|
 | `Platform.fs` | Small shims so the same code compiles for .NET, Fable, and AOT. |
 | `Derive.fs` | Inert attributes read by `schemagen` from source text. Never used at runtime. |
 | `SchemaError.fs` | `SchemaError` — the portable error vocabulary interpreters report. |
-| `Schema.fs` | The core: constraints, value/model definitions, `Schema<'value>`, and compiled record plans. Large; map below. |
-| `Shape.fs` | The constructor-last authoring surface: `ObjectShape`, `Syntax`, `Schema.admit`. |
-| `Data.fs` | Source-neutral boundary input (`Data`, `Data`) and its constructors. |
-| `SchemaValidation.fs` | The parse/check interpreter (`SchemaParsing`). |
+| `Names.fs` | `ExternalFieldName`, `FieldOrder` — validated wrappers for a field's wire name and position. |
+| `Constraints.fs` | `ConstraintMetadata`, `Constraint` — the portable constraint vocabulary (no check logic). |
+| `Definitions.fs` | The type-erased description layer: `ConstructorApplication`, value-shape definitions, `FieldDescriptor`/`ModelSchemaDefinition`, typed `FieldDefinition`/`Field`. |
+| `RecordPlan.fs` | The typed record plan: `IShapeFields` chain nodes, `ShapeClosure`, `IRecordPlanCompiler`/`CompiledRecordPlan`. |
+| `SchemaType.fs` | `Schema<'model>` itself plus `UnionCase`/`EnumCase` companions. |
+| `ValueCatalog.fs` | The internal `Value` module behind the `Schema.*` value catalog. |
+| `SchemaCore.fs` | The internal core module `SchemaApi.fs` re-exports; `closeTotal`/`closeResult`. |
+| `Shape.fs` | The constructor-last authoring surface: `DefineShape`, `ObjectShape`, `Syntax` (module and type), `Schema.admit`. |
+| `SchemaValidation.fs` | Constraint interpretation: each portable constraint's runtime meaning. |
 | `RetainedParseResult.fs` | `RetainedParseResult` — parse results plus redisplay data. |
 | `FieldRef.fs` | `FieldRef` — typed get/set field references used by rules and generated code. |
 | `ContextRules.fs` | Contextual (cross-field, per-context) rules over built schemas. |
-| `Model.fs` | Higher-level model helpers. |
+| `Parsing.fs` | The parse/check interpreter (`SchemaParsing`). |
 | `SchemaApi.fs` | The public `Schema` module. A facade: every function delegates to an internal implementation. |
 | `Contract.fs` | Versioned contracts: version detection + stepwise migrations. |
 | `RefinedSchemas.fs` | Stock refined schemas (ranges etc.). |
 | `Inspection.fs` | The metadata interpreter: `Inspect.model`, `Inspect.schema`. |
 
+`Data` lives in its own dependency-free package (`src/Axial.Data`).
+
 The JSON Schema interpreter lives in its own package (`src/Axial.Schema.JsonSchema`), and the compiled
 JSON codecs in `src/Axial.Schema.Codec`; both keep the `Axial.Schema` namespace family.
 
-## Map of Schema.fs
-
-Top to bottom:
+## Map of the core files (former Schema.fs), in compile order:
 
 1. **`ExternalFieldName`, `FieldOrder`** — validated wrappers for a field's wire name and position.
 2. **`ConstraintMetadata`, `Constraint`** — one constraint = a code (`"minLength"`), typed metadata for

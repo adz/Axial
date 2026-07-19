@@ -1,3 +1,7 @@
+// The parse interpreter: walks a schema against boundary Data — shape conversion, constraint
+// checks, then the record constructor only when every field passed — collecting path-addressed
+// diagnostics. Internal; Schema.parse / parseRetainingInput / check in SchemaApi.fs are the doors.
+// (Checking existing values reuses this pipeline with getters as the value source.)
 namespace Axial.Schema
 
 open Axial

@@ -1,3 +1,6 @@
+// A named catalog of stock schemas for Axial.Refined types (non-blank strings, positive ints,
+// bounded collections, ranges). Members are ordinary Schema<'value> values — this module exists so
+// common refinements need no hand-written schema.
 namespace Axial.Schema
 
 open Axial.Refined

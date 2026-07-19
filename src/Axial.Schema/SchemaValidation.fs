@@ -1,3 +1,6 @@
+// Constraint interpretation: gives each portable Constraint (Constraints.fs) its runtime meaning at
+// parse/check time, plus the failure vocabulary those checks report. Parsing.fs drives this per
+// field; it has no knowledge of input sources or of whole-model construction.
 namespace Axial.Schema
 
 open System

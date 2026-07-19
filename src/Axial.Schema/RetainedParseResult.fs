@@ -1,3 +1,6 @@
+// A parse result that keeps the original boundary Data alongside the outcome, so forms can redisplay
+// exactly what the user typed next to each field error and boundaries can audit raw input. Produced
+// by Schema.parseRetainingInput; renderErrors/mapErrors adapt it to application error types.
 namespace Axial.Schema
 
 open Axial
