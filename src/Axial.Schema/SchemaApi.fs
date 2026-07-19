@@ -89,3 +89,12 @@ module Schema =
     let parseWithOptions options schema input = SchemaParsing.parseWithOptions options schema input
     /// <summary>Checks an existing typed value, such as a freely constructed draft, through the schema's constraints, refinements, and record constructor.</summary>
     let check schema value = SchemaParsing.check schema value
+
+    /// <summary>Starts a constructor-last structural shape for a model: add fields with <c>Syntax.field</c>,
+    /// then close the shape with <c>construct</c> or <c>constructResult</c>.</summary>
+    let define<'model> : ObjectShape<'model, NoFields> = ShapeOps.define<'model>
+
+    /// <summary>Admits a permissive draft model schema into a trusted domain schema through an admission
+    /// function and a projection, preserving fields, wire names, constraints, and metadata.</summary>
+    let admit (create: 'draft -> Result<'domain, string>) (project: 'domain -> 'draft) (draft: Schema<'draft>) : Schema<'domain> =
+        ShapeOps.admit create project draft

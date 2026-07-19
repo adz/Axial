@@ -42,6 +42,7 @@
     <Compile Include="Derive.fs" />
     <Compile Include="SchemaError.fs" />
     <Compile Include="Schema.fs" />
+    <Compile Include="Shape.fs" />
     <Compile Include="RawInput.fs" />
     <Compile Include="SchemaValidation.fs" />
     <Compile Include="ParsedInput.fs" />
