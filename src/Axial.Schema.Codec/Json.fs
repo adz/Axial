@@ -1,4 +1,4 @@
-namespace Axial.Codec
+namespace Axial.Schema.Codec
 
 open Axial
 
@@ -6,12 +6,12 @@ open System
 open System.Globalization
 open System.Text
 open Axial.Schema
-open Axial.Codec.JsonRuntime
+open Axial.Schema.Codec.JsonRuntime
 
 /// <summary>A compiled JSON codec for one schema-described model.</summary>
 /// <remarks>
 /// <para>
-/// Compile once with <see cref="M:Axial.Codec.Json.compile``1" /> and reuse the codec for every value. Compilation
+/// Compile once with <see cref="M:Axial.Schema.Codec.Json.compile``1" /> and reuse the codec for every value. Compilation
 /// compiles the schema's retained typed shape into a direct record plan — ordered field descriptors, cached wire-name
 /// bytes, and typed field decoders applied to the original curried constructor — so per-value encoding and decoding
 /// use no reflection and no boxed <c>obj array</c> dispatch for record fields.
@@ -991,7 +991,7 @@ module rec Json =
     /// <para>
     /// Compile once per schema, typically at startup, and reuse the codec for every value. Constructor-last object
     /// schemas retain a typed record plan, including checked constructors. Constructor failures surface as
-    /// <see cref="T:Axial.Codec.JsonCodecException" /> during decoding.
+    /// <see cref="T:Axial.Schema.Codec.JsonCodecException" /> during decoding.
     /// </para>
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
@@ -1066,7 +1066,7 @@ module rec Json =
 
     /// <summary>Deserializes UTF-8 JSON bytes to a trusted model through a compiled codec.</summary>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="codec" /> or <paramref name="bytes" /> is null.</exception>
-    /// <exception cref="T:Axial.Codec.JsonCodecException">Thrown when the JSON does not match the schema's wire shape.</exception>
+    /// <exception cref="T:Axial.Schema.Codec.JsonCodecException">Thrown when the JSON does not match the schema's wire shape.</exception>
     let deserializeBytes (codec: JsonCodec<'model>) (bytes: byte[]) : 'model =
         if isNull (box codec) then
             nullArg (nameof codec)
@@ -1078,7 +1078,7 @@ module rec Json =
 
     /// <summary>Deserializes a JSON string to a trusted model through a compiled codec.</summary>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="codec" /> or <paramref name="json" /> is null.</exception>
-    /// <exception cref="T:Axial.Codec.JsonCodecException">Thrown when the JSON does not match the schema's wire shape.</exception>
+    /// <exception cref="T:Axial.Schema.Codec.JsonCodecException">Thrown when the JSON does not match the schema's wire shape.</exception>
     let deserialize (codec: JsonCodec<'model>) (json: string) : 'model =
         if isNull (box codec) then
             nullArg (nameof codec)
@@ -1125,7 +1125,7 @@ module rec Json =
     /// on Fable.
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="codec" /> or <paramref name="stream" /> is null.</exception>
-    /// <exception cref="T:Axial.Codec.JsonCodecException">Thrown when the JSON does not match the schema's wire shape.</exception>
+    /// <exception cref="T:Axial.Schema.Codec.JsonCodecException">Thrown when the JSON does not match the schema's wire shape.</exception>
     let deserializeStreamAsync
         (codec: JsonCodec<'model>)
         (stream: System.IO.Stream)

@@ -11,7 +11,7 @@ open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Logging
 open Xunit
 open Swensen.Unquote
-open Axial.Codec
+open Axial.Schema.Codec
 open Axial.Flow
 open Axial.Schema.Http
 open Axial.Schema.Http.AspNetCore

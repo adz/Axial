@@ -7,7 +7,7 @@ open Axial.ErrorHandling
 open Axial.Schema
 open Axial.Schema.Syntax
 open Axial.Validation
-open Axial.Codec
+open Axial.Schema.Codec
 
 [<RequireQualifiedAccess>]
 module Shared =

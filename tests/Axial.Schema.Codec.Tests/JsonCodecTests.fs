@@ -1,7 +1,7 @@
-namespace Axial.Codec.Tests
+namespace Axial.Schema.Codec.Tests
 
 open System
-open Axial.Codec
+open Axial.Schema.Codec
 open Axial.Schema
 open Swensen.Unquote
 open Xunit

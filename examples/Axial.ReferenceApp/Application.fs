@@ -7,7 +7,7 @@ open System.IO
 open System.Text.Json
 open Axial.Flow
 open Axial.Schema
-open Axial.Codec
+open Axial.Schema.Codec
 open Axial.Refined
 open Axial.Validation
 

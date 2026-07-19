@@ -587,7 +587,7 @@ open Microsoft.Extensions.Logging
 open Axial.Schema
 open Axial.Schema.Http
 open Axial.Schema.Http.AspNetCore
-open Axial.Codec
+open Axial.Schema.Codec
 open Axial.Flow
 
 // ---------------------------------------------------------------------------

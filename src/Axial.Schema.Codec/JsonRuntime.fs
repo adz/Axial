@@ -1,4 +1,4 @@
-namespace Axial.Codec
+namespace Axial.Schema.Codec
 
 open Axial
 

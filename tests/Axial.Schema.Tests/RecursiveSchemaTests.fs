@@ -2,7 +2,7 @@ namespace Axial.Schema.Tests
 
 open Axial
 
-open Axial.Codec
+open Axial.Schema.Codec
 open Axial.Schema
 open Axial.Validation
 open Swensen.Unquote

@@ -16,7 +16,7 @@ open System.Threading.Tasks
 open GenHTTP.Api.Protocol
 open GenHTTP.Engine.Internal
 open GenHTTP.Modules.Functional
-open Axial.Codec
+open Axial.Schema.Codec
 open Axial.Flow
 open Axial.Schema
 open Axial.Schema.Http

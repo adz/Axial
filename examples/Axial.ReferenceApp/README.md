@@ -84,7 +84,7 @@ specific workflow.
 
 ## Integration boundaries
 
-`Data` handles untrusted source-neutral data. `Contract` selects and migrates persisted versions. `Axial.Codec`
+`Data` handles untrusted source-neutral data. `Contract` selects and migrates persisted versions. `Axial.Schema.Codec`
 handles trusted current-version JSON output. `Flow` expresses store dependencies and application failures. Schema
 does not replace any of those jobs.
 
