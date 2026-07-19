@@ -12,12 +12,10 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup>
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <ProjectReference Include="..\..\examples\Axial.ReferenceApp\Axial.ReferenceApp.fsproj" />
-    <ProjectReference Include="..\..\src\Axial.Schema.Testing\Axial.Schema.Testing.fsproj" />
+    <ProjectReference Include="..\..\examples\Axial.Flow.Comparisons\Axial.Flow.Comparisons.fsproj" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ReferenceAppTests.fs" />
-    <Compile Include="SchemaGenTests.fs" />
+    <Compile Include="TestSupport.fs" />
+    <Compile Include="ComparisonTests.fs" />
   </ItemGroup>
 </Project>

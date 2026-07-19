@@ -54,11 +54,29 @@ dotnet run --project examples/Axial.Api/Axial.Api.fsproj
 AXIAL_EXAMPLE=smoke dotnet run --project examples/Axial.Api/Axial.Api.fsproj --nologo
 ```
 
+Introductory reference app (Axial.ErrorHandling only — checks, `result {}`, `refine {}`, `validate {}`):
+
+```bash
+dotnet run --project examples/Axial.ReferenceApp.Intro/Axial.ReferenceApp.Intro.fsproj --nologo
+```
+
 Reference architecture app (CLI, HTML forms, JSON API, versioned local files, schemas, refined domain types, and Flow):
 
 ```bash
 dotnet run --project examples/Axial.ReferenceApp/Axial.ReferenceApp.fsproj -- create-workspace Delivery
 dotnet run --project examples/Axial.ReferenceApp/Axial.ReferenceApp.fsproj -- web --urls http://localhost:5080
+```
+
+Generated-wire reference slice (`[<WireSchema>]` records, contract migration, head-version codec):
+
+```bash
+dotnet run --project examples/Axial.ReferenceApp.Wire/Axial.ReferenceApp.Wire.fsproj --nologo
+```
+
+GenHTTP API twin (the Axial.Api boundary contract on a different host):
+
+```bash
+AXIAL_EXAMPLE=smoke dotnet run --project examples/Axial.Api.GenHttp/Axial.Api.GenHttp.fsproj --nologo
 ```
 
 NativeAOT probe:
@@ -118,12 +136,41 @@ where one schema declaration drives everything at the boundary:
 Set `AXIAL_EXAMPLE=smoke` to start the server on an ephemeral port, exercise every endpoint, and exit; CI runs that
 mode on every push.
 
+## Introductory Reference App
+
+The intro app in [`examples/Axial.ReferenceApp.Intro`](./Axial.ReferenceApp.Intro/) is the first reference tier:
+a conference registration desk using only `Axial.ErrorHandling`. It shows reusable checks with your own error
+union, fail-fast `result {}` pipelines, refined domain values through `refine {}`, and accumulated form
+validation with named diagnostics through `validate {}` — with no schemas and no Flow.
+
 ## Reference Architecture App
 
 The reference app in [`examples/Axial.ReferenceApp`](./Axial.ReferenceApp/) shows how the pieces behave across a
 non-trivial domain. It includes four related schemas, refined fields and smart constructors, contextual rules,
 v1-to-v2 contract migration, latest-version JSON persistence, Flow-based CRUD/task workflows, CLI commands, an HTML
 form, a JSON API, and focused architecture tests. Its README also records the wrapper friction the example exposes.
+
+## Generated-Wire Reference Slice
+
+The wire slice in [`examples/Axial.ReferenceApp.Wire`](./Axial.ReferenceApp.Wire/) dogfoods the contract
+generator: `[<WireSchema>]` records produce the schemas, parse functions, typed field references, and the
+versioned-contract builder, while the hand-written parts shrink to the v1 → v2 migration, a strict domain
+mapping, and a head-version codec write.
+
+## GenHTTP API Twin
+
+The GenHTTP sample in [`examples/Axial.Api.GenHttp`](./Axial.Api.GenHttp/) serves the same schema-driven
+boundary as `Axial.Api` — schema-parsed requests, problem-details 400s, codec 201s, and assembled OpenAPI —
+from GenHTTP instead of ASP.NET Core, proving the boundary contract is host-neutral. Run the self-contained
+pass with `AXIAL_EXAMPLE=smoke`.
+
+## Flow Comparisons
+
+The comparisons library in [`examples/Axial.Flow.Comparisons`](./Axial.Flow.Comparisons/) implements seven
+scenarios twice — once with ordinary `Task`/exception/token code and once with Flow — over identical domain
+types, with failure-path tests for every claimed guarantee in
+[`tests/Axial.Flow.Comparisons.Tests`](../tests/Axial.Flow.Comparisons.Tests/). It exercises core Flow plus
+the HttpClient, FileSystem, Console, Process, PlatformService, and Telemetry packages.
 
 ## Smallest Docs-First Examples
 
