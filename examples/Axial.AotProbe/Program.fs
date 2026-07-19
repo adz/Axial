@@ -123,8 +123,10 @@ module Rule =
 
     let whenNotBlank (error: 'error) (field: FormField<'root, string>) : Rule<'root, 'error> =
         fun root ->
-            field.Get root
-            |> present
+            let checkResult: Result<string, CheckFailure list> =
+                field.Get root |> present
+
+            checkResult
             |> Result.mapError (fun _ -> error)
             |> lift field.Path root
 
