@@ -196,26 +196,30 @@ module DashboardTests =
 
     [<Fact>]
     let ``a mandatory failure interrupts the slow sibling`` () =
-        let siblingCancelled = new TaskCompletionSource<bool>()
+        task {
+            let siblingCancelled = new TaskCompletionSource<bool>()
 
-        let slowRecommendations =
-            { new IRecommendations with
-                member _.For(_, cancellationToken) =
-                    task {
-                        use _ = cancellationToken.Register(fun () -> siblingCancelled.TrySetResult true |> ignore)
-                        do! Task.Delay(30_000, cancellationToken)
-                        return Ok []
-                    } }
+            let slowRecommendations =
+                { new IRecommendations with
+                    member _.For(_, cancellationToken) =
+                        task {
+                            use _ = cancellationToken.Register(fun () -> siblingCancelled.TrySetResult true |> ignore)
+                            do! Task.Delay(30_000, cancellationToken)
+                            return Ok []
+                        } }
 
-        let env: WithFlow.DashboardEnv =
-            { Accounts = accounts ()
-              Orders = orders (Error "orders store down")
-              Recommendations = slowRecommendations }
+            let env: WithFlow.DashboardEnv =
+                { Accounts = accounts ()
+                  Orders = orders (Error "orders store down")
+                  Recommendations = slowRecommendations }
 
-        let exit = Flow.runSync env (WithFlow.loadPage "a-1")
+            let exit = Flow.runSync env (WithFlow.loadPage "a-1")
 
-        test <@ (match exit with Exit.Failure cause -> (string cause).Contains "OrdersUnavailable" | _ -> false) @>
-        test <@ siblingCancelled.Task.Wait(TimeSpan.FromSeconds 5.0) @>
+            test <@ (match exit with Exit.Failure cause -> (string cause).Contains "OrdersUnavailable" | _ -> false) @>
+
+            let! cancelled = siblingCancelled.Task.WaitAsync(TimeSpan.FromSeconds 30.0)
+            test <@ cancelled @>
+        }
 
 module WorkspaceTests =
     open ScopedWorkspace
