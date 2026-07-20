@@ -196,30 +196,29 @@ module DashboardTests =
 
     [<Fact>]
     let ``a mandatory failure interrupts the slow sibling`` () =
-        task {
-            let siblingCancelled = new TaskCompletionSource<bool>()
+        let mutable siblingCancelled = false
 
-            let slowRecommendations =
-                { new IRecommendations with
-                    member _.For(_, cancellationToken) =
-                        task {
-                            use _ = cancellationToken.Register(fun () -> siblingCancelled.TrySetResult true |> ignore)
+        let slowRecommendations =
+            { new IRecommendations with
+                member _.For(_, cancellationToken) =
+                    task {
+                        try
                             do! Task.Delay(30_000, cancellationToken)
                             return Ok []
-                        } }
+                        with :? OperationCanceledException ->
+                            siblingCancelled <- true
+                            return Ok []
+                    } }
 
-            let env: WithFlow.DashboardEnv =
-                { Accounts = accounts ()
-                  Orders = orders (Error "orders store down")
-                  Recommendations = slowRecommendations }
+        let env: WithFlow.DashboardEnv =
+            { Accounts = accounts ()
+              Orders = orders (Error "orders store down")
+              Recommendations = slowRecommendations }
 
-            let exit = Flow.runSync env (WithFlow.loadPage "a-1")
+        let exit = Flow.runSync env (WithFlow.loadPage "a-1")
 
-            test <@ (match exit with Exit.Failure cause -> (string cause).Contains "OrdersUnavailable" | _ -> false) @>
-
-            let! cancelled = siblingCancelled.Task.WaitAsync(TimeSpan.FromSeconds 30.0)
-            test <@ cancelled @>
-        }
+        test <@ (match exit with Exit.Failure cause -> (string cause).Contains "OrdersUnavailable" | _ -> false) @>
+        test <@ siblingCancelled @>
 
 module WorkspaceTests =
     open ScopedWorkspace
