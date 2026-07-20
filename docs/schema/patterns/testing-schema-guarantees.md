@@ -19,8 +19,10 @@ Use generated examples to check those claims near the owning module.
 
 ## Generate accepted models
 
-`Axial.Schema.Testing` is a test-only FsCheck adapter. `SchemaGen.model` derives values by generating structured data, parsing
-it, and immediately checking the result.
+The repository contains a non-packable `Axial.Schema.Testing` project as a test-only FsCheck adapter. It is not
+published on NuGet. The example below documents the adapter used by Axial's own tests and a pattern an application can
+adapt locally. `SchemaGen.model` derives values by generating structured data, parsing it, and immediately checking the
+result.
 
 ```fsharp
 open Axial.Schema.Testing
@@ -33,7 +35,7 @@ let bookingGenerator =
 let bookings = Gen.sample 100 bookingGenerator
 ```
 
-Keep the package in the test project; it is not a runtime dependency.
+Keep an adapter like this in test code; it is not a runtime dependency.
 
 ## Check total transitions
 

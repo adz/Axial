@@ -1,5 +1,5 @@
 ---
-weight: 25
+weight: 30
 title: Redisplay And Field Errors
 type: docs
 description: Failed parses that keep the user's input.
@@ -25,7 +25,7 @@ parsed.Input          // the original Data, always retained
 parsed.Errors         // flattened path-aware errors ([] when valid)
 ```
 
-Schema parsing, schema validation, contextual rules that use `SchemaError`, primitive `Parse` failures, `Refine`
+Schema parsing, schema validation, primitive `Parse` failures, `Refine`
 failures, and path-free `CheckFailure` values all lower to the same boundary taxonomy: `SchemaError`.
 
 ## Field Error Lookup

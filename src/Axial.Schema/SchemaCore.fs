@@ -123,59 +123,59 @@ module Field =
 [<RequireQualifiedAccess>]
 module internal SchemaCore =
     /// <summary>Describes text.</summary>
-    let text = Value.text
+    let text = ValueSchema.text
     /// <summary>Describes a 32-bit signed integer.</summary>
-    let ``int`` = Value.``int``
+    let ``int`` = ValueSchema.``int``
     /// <summary>Describes a decimal number.</summary>
-    let ``decimal`` = Value.``decimal``
+    let ``decimal`` = ValueSchema.``decimal``
     /// <summary>Describes a Boolean value.</summary>
-    let ``bool`` = Value.``bool``
+    let ``bool`` = ValueSchema.``bool``
 #if NET8_0_OR_GREATER
     /// <summary>Describes a calendar date.</summary>
-    let date = Value.date
+    let date = ValueSchema.date
 #endif
     /// <summary>Describes a date and time with an offset.</summary>
-    let dateTime = Value.dateTime
+    let dateTime = ValueSchema.dateTime
     /// <summary>Describes a globally unique identifier.</summary>
-    let guid = Value.guid
+    let guid = ValueSchema.guid
     /// <summary>Describes a list whose items use the supplied schema.</summary>
-    let listWith item = Value.manyOf item
+    let listWith item = ValueSchema.manyOf item
     /// <summary>Describes an optional value.</summary>
-    let option item = Value.optionOf item
+    let option item = ValueSchema.optionOf item
     /// <summary>Describes a string-keyed map whose values use the supplied schema.</summary>
-    let mapWith item = Value.map item
-    let constrainItems constraint' schema = Value.constrainItems constraint' schema
-    let constrainValues constraint' schema = Value.constrainValues constraint' schema
+    let mapWith item = ValueSchema.map item
+    let constrainItems constraint' schema = ValueSchema.constrainItems constraint' schema
+    let constrainValues constraint' schema = ValueSchema.constrainValues constraint' schema
     /// <summary>Defers a recursive schema.</summary>
-    let defer schema = Value.lazyOf schema
+    let defer schema = ValueSchema.lazyOf schema
     /// <summary>Converts a schema through total construction and inspection functions.</summary>
-    let convert construct inspect schema = Value.refined construct inspect schema
-    let refine construct mapError inspect schema = Value.refine construct mapError inspect schema
+    let convert construct inspect schema = ValueSchema.refined construct inspect schema
+    let refine construct mapError inspect schema = ValueSchema.refine construct mapError inspect schema
     /// <summary>Describes a tagged union.</summary>
-    let union discriminator payload cases = Value.union discriminator payload cases
+    let union discriminator payload cases = ValueSchema.union discriminator payload cases
     /// <summary>Describes an internally tagged union.</summary>
-    let inlineUnion discriminator cases = Value.unionInline discriminator cases
+    let inlineUnion discriminator cases = ValueSchema.unionInline discriminator cases
     /// <summary>Describes a payload-less tagged enum.</summary>
-    let enum cases = Value.enumOf cases
+    let enum cases = ValueSchema.enumOf cases
     /// <summary>Appends one portable constraint.</summary>
-    let constrain constraint' schema = Value.withConstraint constraint' schema
+    let constrain constraint' schema = ValueSchema.withConstraint constraint' schema
     /// <summary>Appends portable constraints in declaration order.</summary>
-    let constrainAll constraints schema = Value.withConstraints constraints schema
+    let constrainAll constraints schema = ValueSchema.withConstraints constraints schema
     /// <summary>Attaches boundary format metadata.</summary>
-    let withFormat format schema = Value.withFormat format schema
+    let withFormat format schema = ValueSchema.withFormat format schema
     /// <summary>Attaches descriptive metadata.</summary>
     /// <summary>Attaches a default value.</summary>
-    let withDefault value schema = Value.withDefault value schema
-    let format schema = Value.format schema
-    let description schema = Value.description schema
-    let defaultValue schema = Value.defaultValue schema
-    let constraints schema = Value.constraints schema
-    let isRefined schema = Value.isRefined schema
-    let primitiveKind schema = Value.primitiveKind schema
-    let underlyingPrimitiveKind schema = Value.underlyingPrimitiveKind schema
-    let rawConstraints schema = Value.rawConstraints schema
-    let internal inspectUnderlying<'value, 'primitive> schema = Value.inspectUnderlying<'value, 'primitive> schema
-    let internal allConstraints schema = Value.allConstraints schema
+    let withDefault value schema = ValueSchema.withDefault value schema
+    let format schema = ValueSchema.format schema
+    let description schema = ValueSchema.description schema
+    let defaultValue schema = ValueSchema.defaultValue schema
+    let constraints schema = ValueSchema.constraints schema
+    let isRefined schema = ValueSchema.isRefined schema
+    let primitiveKind schema = ValueSchema.primitiveKind schema
+    let underlyingPrimitiveKind schema = ValueSchema.underlyingPrimitiveKind schema
+    let rawConstraints schema = ValueSchema.rawConstraints schema
+    let internal inspectUnderlying<'value, 'primitive> schema = ValueSchema.inspectUnderlying<'value, 'primitive> schema
+    let internal allConstraints schema = ValueSchema.allConstraints schema
     /// <summary>
     /// Closes a structural shape whose constructor has been fully applied by its fields.
     /// </summary>
@@ -325,4 +325,4 @@ module internal SchemaCore =
         | PendingDefinition -> invalidArg (nameof schema) "Expected a built model schema."
         | ModelDefinition definition ->
             Schema(ModelDefinition { definition with Description = Some text }, schema.RecordPlan)
-        | ValueDefinition _ -> Value.describe text schema
+        | ValueDefinition _ -> ValueSchema.describe text schema

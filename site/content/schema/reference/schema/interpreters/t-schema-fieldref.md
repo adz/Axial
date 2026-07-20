@@ -32,7 +32,7 @@ A typed, named reference to one field of a schema-described model.
 
 <p class='fsdocs-para'>
  A field reference pairs the field&#39;s external (wire) name with typed getter and immutable setter functions, so code that needs to talk about
- a field — contextual rules, redisplay, UI binding — can reference it as an ordinary value instead of re-typing
+ a field — redisplay, UI binding, generated updates — can reference it as an ordinary value instead of re-typing
  the wire name as a string that can silently drift from the schema. Generated schema declarations emit one
  <code>FieldRef</code> per field; hand-written schemas can declare them alongside the schema.
  </p>

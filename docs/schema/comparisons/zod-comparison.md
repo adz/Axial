@@ -22,7 +22,7 @@ differences come from F# and .NET, not from a different philosophy.
 | `z.string().email().brand<'Email'>()` | `Schema.refine` over a private representation and fallible constructor |
 | `z.discriminatedUnion("type", ...)` | `Schema.union "type" "value" [ UnionCase.create ... ]` |
 | `z.infer<typeof schema>` | not needed — the schema is declared against your record type directly |
-| `zod-to-json-schema` | `JsonSchema.generate` (built in, from the same metadata) |
+| `zod-to-json-schema` | `JsonSchema.generate` (optional `Axial.Schema.JsonSchema` package, from the same metadata) |
 
 One inversion worth noticing: zod derives the static type from the schema; Axial declares the schema against a type
 you own. Your domain type stays an ordinary F# record with real members, and the compiler checks constructor/getter
@@ -34,7 +34,7 @@ alignment field by field.
   `System.Text.Json` — zod validates on the way in but does not own the way out.
 - **Redisplay**: failed parses keep the structured data, so form fields re-render with the user's values next to their
   errors without extra state.
-- **Contextual rules and workflow policies**: requirements over already-trusted models, applied per workflow.
+- **Workflow policies**: environment-aware requirements over already-trusted models, applied per workflow.
 
 ## Runtime Differences That Matter
 

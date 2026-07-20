@@ -332,11 +332,10 @@ or in `AGENTS.md`, then delete the detailed sketch.
   domain construction carry library proof ceremony without establishing durable F# invariants. `Schema.check` returns
   the ordinary checked value for boundary admission; private representations and smart constructors provide durable
   guarantees where required. See `docs/schema/trusted-construction.md`.
-- **`RuleSet`/`Rules`.** RESOLVED by reduction (2026-07-12): renamed to `ContextRules`, the `RuleSet` container
-  type deleted. A rule is a plain `'model -> Result<unit, Diagnostics<'error>>`; a rule set is a plain list;
-  context selection is the caller's own `match`/`Map`. `ContextRules` keeps only failure constructors
-  (`fail`/`failAt`/`failAtField`/`custom`/`failCustom`), path scoping (`at`/`atField`/`name`/`key`/`index` —
-  prefer `atField` over `name` so wire names can't drift), and `apply` over lists.
+- **Context-dependent model rules.** REMOVED (2026-07-20): the schema-specific helper API duplicated application
+  functions while requiring a parallel field-path identity system. Operation-specific admission remains an ordinary
+  result-returning function or an environment-aware `Policy`; intrinsic admission remains in `Schema.parse` and
+  `Schema.check`.
 - **SRTP common names for `Check`.** RESOLVED (2026-07-14): the current hybrid is the decided surface. Top-level
   type-directed `Check.present`/`Check.empty`/`Check.notEmpty` exist (Check.fs `Present`/`Empty`/`NotEmpty`
   dispatch types) over `string`/`option`/`voption`/`Nullable`/`list`/`array`, for direct application to a value.

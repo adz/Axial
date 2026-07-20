@@ -80,23 +80,3 @@ module SchemaErrorTests =
             |> RetainedParseResult.mapErrors Boundary
 
         test <@ parsed.ErrorsFor "email" = [ Boundary SchemaError.Required ] @>
-
-    [<Fact>]
-    let ``rules using schema boundary errors render with the same display path`` () =
-        let rules =
-            [ fun ticket ->
-                  if ticket.Priority >= 4 && not ticket.HasAssignee then
-                      ContextRules.failAt
-                          [ PathSegment.Name "assignee" ]
-                          (ContextRules.custom "ticket.assignee.required" "High-priority tickets need an assignee.")
-                  else
-                      Ok () ]
-
-        let ticket = { Priority = 5; HasAssignee = false }
-
-        let messages =
-            match ContextRules.apply rules ticket with
-            | Ok _ -> failwith "Expected rule diagnostics."
-            | Error diagnostics -> SchemaError.renderDiagnostics diagnostics
-
-        test <@ messages = [ "assignee: High-priority tickets need an assignee." ] @>

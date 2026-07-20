@@ -22,10 +22,12 @@ Working on `src/Axial.Schema`? Read `dev-docs/schema/internals.md` first (implem
   (`Check`, `CheckFailure`, `Result`, `Collection`, `result { }`), `Axial.Validation` (`Validation`, `Diagnostics`,
   paths, `validate { }`), and `Axial.Refined` (`Parse`, `Refine`, `refine { }`). Independent leaf — no dependency on
   `Axial.Schema` or `Axial.Flow`.
-- `Axial.Schema` (`src/Axial.Schema/`): schema declaration (`Schema` module) and interpreters (`Model.parse`/
-  `.reconstruct`, `Rules`, `Inspect`, `JsonSchema`, `RefinedSchema`) in one package. Depends on
-  `Axial.ErrorHandling`.
-- `Axial.Codec` (`src/Axial.Codec/`): compiled JSON codecs. Depends on `Axial.Schema`.
+- `Axial.Schema` (`src/Axial.Schema/`): schema declaration (`Schema` module), parsing and checking (`Schema.parse`,
+  `Schema.parseRetainingInput`, `Schema.check`), inspection (`Inspect`), contracts,
+  and refined schema adapters (`RefinedSchemas`) in one package. Depends on `Axial.Data` and `Axial.ErrorHandling`.
+- `Axial.Schema.JsonSchema` (`src/Axial.Schema.JsonSchema/`): JSON Schema generation (`JsonSchema.generate`) in the
+  `Axial.Schema` namespace. Depends on `Axial.Schema`.
+- `Axial.Schema.Codec` (`src/Axial.Schema.Codec/`): compiled JSON codecs. Depends on `Axial.Schema`.
 - `Axial.Schema.Http` (`src/Axial.Schema.Http/`): host-neutral HTTP boundary support — query/form structured data
   (`BoundaryInput`), RFC 9457 problem details from parse diagnostics, and OpenAPI 3.1 documents assembled from
   `EndpointSpec` values. Depends on `Axial.Schema` only; never on `Axial.Flow`.

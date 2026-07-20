@@ -100,10 +100,10 @@ module Order =
 Use this for lifecycle states that change what operations are legal. A single discriminated union field is simpler when
 all states share the same operations and callers already handle them by pattern matching.
 
-## Keep contextual rules separate
+## Keep operation policies separate
 
 A transition belongs to the aggregate when the rule is always true for those related values. Tenant permissions,
 current time, feature flags, and operation-specific approval rules belong outside it.
 
-Apply those requirements with ordinary functions, `ContextRules`, or a Flow policy after intrinsic construction has
-succeeded. See [Rules](../rules/) for that separation.
+Apply those requirements with ordinary result-returning functions or a Flow policy after intrinsic construction has
+succeeded.

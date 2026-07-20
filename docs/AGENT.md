@@ -203,7 +203,7 @@ Translate common patterns from other libraries into idiomatic Axial.
 | ActiveModel / FluentValidation validators | `Schema<'model>` + `Schema.parse` — constraints declared once, invalid models never constructed |
 | DTO + manual mapping into domain types | schema fields over refined value schemas (`Schema.convert`) |
 | form redisplay with per-field errors | `parsed.Input` + `Data.tryRedisplayPath`, `parsed.ErrorsFor "contacts[1].value"` |
-| workflow-specific business rules | a plain rule list + `ContextRules.apply` over the already-trusted model |
+| workflow-specific business rules | an ordinary result-returning function or an environment-aware `Policy` |
 | editable schema field | `FieldRef` with `Get` and immutable `Set`, followed by `Schema.check` when trust is required |
 | `with` update on a private-representation aggregate | lower to its public draft record, edit with `with`, re-admit through the aggregate's `create` |
 | versioned wire input | `Contract.parse` with an explicit `VersionSource` and typed migrations |
@@ -222,7 +222,7 @@ Later types can bind earlier types directly within their computation expressions
 2. **Result**: Fail-fast typed errors (`Result<'T, 'E>`).
 3. **Refined**: Parsing and structural refined values.
 4. **Validation**: Accumulating diagnostics.
-5. **Schema**: Portable model metadata (`Schema<'model>`) interpreted by `Schema.parse`, `Schema.check`, `ContextRules.apply`, `Inspect`, contracts, codecs, and test generators.
+5. **Schema**: Portable model metadata (`Schema<'model>`) interpreted by `Schema.parse`, `Schema.check`, `Inspect`, contracts, codecs, and test generators.
 6. **Flow**: Environment-aware workflows (`Flow<'Env, 'E, 'T>`) for synchronous, async, and task-based composition.
 
 ## Machine-Readable Reference

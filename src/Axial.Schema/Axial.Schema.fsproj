@@ -47,13 +47,12 @@
     <Compile Include="Definitions.fs" />
     <Compile Include="RecordPlan.fs" />
     <Compile Include="SchemaType.fs" />
-    <Compile Include="ValueCatalog.fs" />
+    <Compile Include="ValueSchema.fs" />
     <Compile Include="SchemaCore.fs" />
     <Compile Include="Shape.fs" />
     <Compile Include="SchemaValidation.fs" />
     <Compile Include="RetainedParseResult.fs" />
     <Compile Include="FieldRef.fs" />
-    <Compile Include="ContextRules.fs" />
     <Compile Include="Parsing.fs" />
     <Compile Include="SchemaApi.fs" />
     <Compile Include="Contract.fs" />

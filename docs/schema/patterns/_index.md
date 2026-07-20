@@ -1,6 +1,6 @@
 ---
 title: Recommended Patterns
-weight: 20
+weight: 70
 description: Practical ways to keep untrusted input, trusted domain values, and legal updates separate.
 ---
 
@@ -20,8 +20,8 @@ private type is useful when many callers must rely on the same invariant without
   then admit them into hand-written domain types.
 - [Split a larger application](./project-structure/) — use project references to stop boundary and infrastructure
   types from reaching the domain.
-- [Test schema guarantees](./testing-schema-guarantees/) — derive accepted values from schemas and test constructors,
-  transitions, codecs, and migrations.
+- [Test schema guarantees](./testing-schema-guarantees/) — study the repository-only FsCheck adapter pattern for
+  testing constructors, transitions, codecs, and migrations.
 
 Start with [Construction Guarantees](../trusted-construction/) if you are deciding whether a public record, refined
 field, or private aggregate fits the model.

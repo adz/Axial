@@ -38,7 +38,6 @@
     <Compile Include="UnionInlineSchemaParseTests.fs" />
     <Compile Include="OptionalSchemaParseTests.fs" />
     <Compile Include="SchemaValidationTests.fs" />
-    <Compile Include="ContextRulesTests.fs" />
     <Compile Include="ContractTests.fs" />
     <Compile Include="RecursiveSchemaTests.fs" />
     <Compile Include="SchemaDiagnosticsRenderingTests.fs" />

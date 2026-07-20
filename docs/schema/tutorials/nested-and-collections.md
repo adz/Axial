@@ -90,5 +90,4 @@ type, or for recursive composition with `Schema.defer`.
 
 ## Next
 
-- [Rules And Policies](../rules-in-a-workflow/) to accept the parsed order into a workflow.
 - [Input Sources](../../input-sources/) for the full adapter catalog.

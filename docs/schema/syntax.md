@@ -1,5 +1,5 @@
 ---
-weight: 20
+weight: 15
 title: Schema Syntax
 type: docs
 description: Constructor-last object schema declarations with inferred fields and adjacent constraints.

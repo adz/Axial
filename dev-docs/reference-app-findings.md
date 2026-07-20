@@ -36,7 +36,7 @@ Direct smart-constructor failures from `createWorkspace`, `addMember`, `addWorkI
 transition failures without being mislabeled as persistence errors or flattened to strings before rendering.
 
 This report evaluates Axial through the implementation of `examples/Axial.ReferenceApp`: a workspace tracker with
-related domain types, four schemas, refined values, smart constructors, contextual rules, Flow application services,
+related domain types, four schemas, refined values, smart constructors, application admission, Flow application services,
 CLI commands, HTML forms, a JSON API, versioned JSON files, migration, and focused tests.
 
 This is not an API inventory or a roadmap argument. It records what was useful while building application code, what
@@ -62,7 +62,7 @@ with optional interpreters around the same declaration.
 
 The weakest area is the trust-wrapper and refined-value ergonomics. `Model<'value>` currently makes the trust story
 less coherent, not more coherent. The built-in refined catalog proves useful invariants, but ordinary programming pays
-repeated unwrapping costs and `Value.refined` does not compose naturally with the `Result`-returning smart constructors
+repeated unwrapping costs and `ValueSchema.refined` does not compose naturally with the `Result`-returning smart constructors
 the rest of Axial encourages.
 
 The reference app also reinforced a scope warning: Axial should own semantic boundary machinery and Flow composition,
@@ -161,15 +161,10 @@ The recommended architecture should be conditional:
   distinction valuable;
 - do not mandate DTO duplication as ceremony.
 
-### Contextual rules
+### Production admission
 
-Plain functions plus `ContextRules.apply` were appropriately small. They kept production-only policy separate from
-intrinsic schema validity and accumulated failures correctly.
-
-The middle ground is discoverability. A list of functions is flexible but does not itself explain which context chose
-the list, whether rules are exhaustive, or where they run. This is probably the right tradeoff; a richer rules engine
-would add more concepts than value. Documentation should show rule selection beside the use case that supplies the
-context.
+Production-only policy stays separate from intrinsic schema validity as an ordinary result-returning application
+function. This keeps the operation and the context that selects it visible at the use case.
 
 ### Compiled codecs
 
@@ -225,7 +220,7 @@ Recommended change before 1.0:
 
 ### Let refined schemas use fallible smart constructors
 
-`Value.refined` accepts:
+`ValueSchema.refined` accepts:
 
 ```fsharp
 'raw -> 'value
@@ -315,7 +310,7 @@ model from Process and the next real streaming consumer, test it against `IAsync
 
 ### More validation layers
 
-Axial already has `Check`, `Result`, `Refined`, `Validation`, `Diagnostics`, `Schema`, contextual rules, policies, and
+Axial already has `Check`, `Result`, `Refined`, `Validation`, `Diagnostics`, `Schema`, policies, and
 `Model`. Each can be explained individually, but the total cognitive load is high. Adding advisory validation, another
 rules container, dynamic values, or more wrapper types would make the product worse.
 
@@ -422,7 +417,7 @@ that dogfood, generator value remains only partly demonstrated.
 
 1. `Model.parse` does not return `Model<'model>`, despite the name and documentation framing, while `Model.validate` and
    `Contract.parse` do. This inconsistency was more confusing than the wrapper itself.
-2. `Value.refined` is total. The natural smart-constructor shape used throughout the domain is fallible, so the schema
+2. `ValueSchema.refined` is total. The natural smart-constructor shape used throughout the domain is fallible, so the schema
    bridge requires duplicated assumptions.
 3. Contract migration revalidation is stronger than expected and prevented a real category of trust hole.
 4. The explicit schema builder remained readable with nested and versioned records. It did not need a computation

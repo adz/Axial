@@ -1,5 +1,5 @@
 /// Shows how Policy adapts each Axial verification boundary — raw parsing, refined
-/// construction, schema input parsing, intrinsic validation, and contextual rules —
+/// construction, schema input parsing, intrinsic validation, and environment-aware policy —
 /// into one workflow error type that Flow.verify can run inside a flow.
 module PolicyExamples
 
@@ -67,18 +67,14 @@ let validateOrderLine : Policy<OrderEnv, OrderError, OrderLine, OrderLine> =
         (fun line -> Schema.check orderLineSchema line)
         (Diagnostics.flatten >> LineRejected)
 
-// 5. Contextual rules: plain rule functions selected by the workflow environment.
-let quantityCapRules (env: OrderEnv) : (OrderLine -> Result<unit, Diagnostics<OrderError>>) list =
-    [ fun line ->
-          if Quantity.value line.Quantity > env.MaxLineQuantity then
-              ContextRules.failAt [ PathSegment.Name "quantity" ] (QuantityOverCap env.MaxLineQuantity)
-          else
-              Ok () ]
-
 let underQuantityCap : Policy<OrderEnv, OrderError, OrderLine, OrderLine> =
     Policy.context
-        (fun env line -> ContextRules.apply (quantityCapRules env) line)
-        (Diagnostics.flatten >> List.map _.Error >> List.head)
+        (fun env line ->
+            if Quantity.value line.Quantity > env.MaxLineQuantity then
+                Error(QuantityOverCap env.MaxLineQuantity)
+            else
+                Ok line)
+        id
 
 // Policies over the same input/output compose, and environment predicates can
 // switch a policy off without changing the workflow shape.

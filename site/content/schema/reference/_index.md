@@ -20,14 +20,18 @@ Schemas are consumed by interpreters that stay independent of workflow execution
 
 - [`Schema Interpreters`](./schema/interpreters/) — the boundary-parsing and rule-evaluation surface:
   - [`Data`](./schema/interpreters/#raw-input) — source-agnostic structured data captured at a data boundary.
-  - [`Schema.parse` / `RetainedParseResult`](./schema/interpreters/#input-parsing) — parsing boundary input through a schema,
-    plus `Schema.check` for giving an already-existing value (a draft or an import) the same trust guarantee.
+  - [`Schema.parse` / `Schema.parseRetainingInput`](./schema/interpreters/#input-parsing) — parsing boundary input through
+    a schema, with `RetainedParseResult` for redisplay, plus `Schema.check` for giving an already-existing value (a draft
+    or an import) the same trust guarantee.
   - [`SchemaError`](./schema/interpreters/#errors) — schema input, checking, and rule failures.
   - [`RefinedSchemas`](./schema/interpreters/#refined-catalog-schemas) — bridges `Axial.Refined` types (see the
     [Error Handling reference]({{< relref "/error-handling/reference/" >}})) into schema field declarations.
-  - [`ContextRules`](./schema/interpreters/#context-rules) — contextual rules evaluated over an already-trusted model.
+
+## Axial.Schema.JsonSchema
+
 - [`JsonSchema`](./schema/#json-schema-generation) — generates a JSON Schema document from a built schema's
-  metadata (still `Axial.Schema`, no extra package).
+  metadata. The module remains in the `Axial.Schema` namespace, but installation requires the separate
+  `Axial.Schema.JsonSchema` package.
 
 ## Axial.Schema.Http
 

@@ -179,7 +179,8 @@ intrinsic invariants, smart constructors where cross-field invariants must hold 
 - [Schema syntax](syntax.md) — every declaration form: inference, explicit schemas, bare getters,
   options, lists, maps, unions.
 - [Input sources](input-sources.md) — the full menu of `Data` conversions.
+- [Construction guarantees](trusted-construction.md) — decide what parsing proves and when the type itself must
+  preserve an invariant.
 - [Runnable examples](examples.md) — complete executable programs, mirrored from real code.
-- [Choosing a tool](choosing-a-tool.md) — when to reach for Schema, plain `Result`, or `Check`.
 - [Patterns](patterns/) — project layouts for wire/domain splits, private aggregates, and
   schema-derived tests.

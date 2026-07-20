@@ -9,7 +9,7 @@ direction is `dev-docs/PLAN.md`; the active queue is `dev-docs/TASKS.md`; durabl
 Axial is an F#/.NET library with two groups, presented in this order:
 
 - **Parse-don't-validate results.** `Schema<'model>` is the front door for domain models: one declaration drives input
-  parsing, intrinsic validation, redisplay, contextual rules, JSON codecs, JSON Schema output, and metadata
+  parsing, intrinsic validation, redisplay, JSON codecs, JSON Schema output, and metadata
   interpreters. Plain `Result` with a user-owned error DU is the blessed lane for simple code without domain models.
 - **Effects in Flow.** `Flow<'env, 'error, 'value>`, a ZIO-inspired Reader-Async-Result workflow model with typed
   errors, explicit services and layers, scoped resources, and cancellation semantics. Useful with or without schemas,
@@ -21,7 +21,7 @@ The boundary stack ships 1.0 first; the Flow group follows demand.
 
 - **The 1.0 gate is the boundary stack**: the `Axial.ErrorHandling` package (hosting the `Axial.ErrorHandling`,
   `Axial.Validation`, and `Axial.Refined` namespaces), `Axial.Schema` (declaration + interpreters in one package,
-  including `Schema.check` boundary admission and `ContextRules`), and `Axial.Codec`. Scope: the current queue in
+  including `Schema.check` boundary admission), and `Axial.Codec`. Scope: the current queue in
   `dev-docs/TASKS.md` (schema-depth candidates, now that the contract versioning engine has shipped) plus its
   acceptance checks.
 - **The Flow group's remaining pre-1.0 scope is demand-driven**, tracked in `LATER_TODO.md`. Its current surface

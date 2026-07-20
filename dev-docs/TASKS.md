@@ -6,14 +6,14 @@ Keep speculative design sketches in `dev-docs/current-ideas/` and high-level dur
 `dev-docs/decisions/`.
 
 Work this queue from top to bottom, with one caveat: the schema surface has just been through heavy churn
-(`Schema.check`, `ContextRules`, the contract generator and versioning engine — see `dev-docs/decisions/README.md`,
+(`Schema.check`, the contract generator and versioning engine — see `dev-docs/decisions/README.md`,
 2026-07-11..13 entries) and the shape is settling, not settled. Phase 30 below is current thinking with enough
 detail to pick up cold; re-read the decisions file and sanity-check the ordering before starting any of them.
 
 Axial has two main groups, and everything in this queue serves that split:
 
 - **Parse-don't-validate results**: `Schema` is the front door for domain models — parsing, validation, redisplay,
-  contextual rules, and metadata fall out of one declaration. Plain `Result` with the user's own error DU is the
+  and metadata fall out of one declaration. Plain `Result` with the user's own error DU is the
   blessed lane for simple code. `Check`, `Validation`, `Refined`, and the interpreter error types are machinery
   behind those two doors, not peer entry points.
 - **Effects in Flow**: the ZIO-style Reader-Async-Result workflow model. Useful with or without schemas, and never
@@ -22,8 +22,8 @@ Axial has two main groups, and everything in this queue serves that split:
 
 Phases 19–28-prelude are complete and recorded in `dev-docs/decisions/README.md` and git history; the most recent
 completions (2026-07-09..13): the Schema value/model catalog consolidation, `Axial.Refined` moved into
-`Axial.ErrorHandling`, `Schema.check` for already assembled typed values, `FieldRef` (with `Set`) +
-`ContextRules` (RuleSet deleted), the `.contract` grammar/generator as wire-tier tooling
+`Axial.ErrorHandling`, `Schema.check` for already assembled typed values, `FieldRef` (with `Set`),
+the `.contract` grammar/generator as wire-tier tooling
 (`src/Axial.Schema.Contracts`, `scripts/schemagen`, golden corpus in `tests/Axial.Schema.Tests/contracts/`),
 the `Contract<'model>` versioning engine (`Contract.parse`/`Contract.parseVersion`, typed contiguous n-1 → n
 migrations), `Schema.defer` recursion with finite inspection and `$defs`-based JSON Schema output, the

@@ -53,12 +53,11 @@ One schema declaration, several interpreters:
 | --- | --- | --- |
 | `Data` | `Schema.parse schema` | model or `Diagnostics` |
 | draft or imported value | `Schema.check schema` | the same value or `Diagnostics` |
-| trusted model | `ContextRules.apply rules` | accepted model or contextual `Diagnostics` |
 | schema | `Inspect.model` | finite metadata without execution |
 | schema | `Json.compile` | reusable compiled JSON codec |
 | schema | `JsonSchema.generate` | JSON Schema document |
 | versioned `Data` | `Contract.parse` | current model or `ContractError` |
-| schema | `SchemaGen.raw` / `SchemaGen.model` | FsCheck generators |
+| schema | repository-only `SchemaGen.raw` / `SchemaGen.model` adapter | FsCheck generators |
 
 `Schema.check` covers typed values that did not arrive as structured data: a draft assembled with an ordinary record
 literal (named fields, any order, compiler-checked completeness), or an existing value from an import or database
@@ -75,19 +74,22 @@ wire-name strings. `Contract` keeps frozen wire versions and typed migrations ou
 ## Guides
 
 - [Getting Started](./getting-started/) — declare a schema once and parse structured data into a trusted model.
-- [Schema Overview Examples](./overview-examples/) — short, commented examples covering every Schema subsystem.
+- [Schema Overview Examples](./overview-examples/) — short examples of inference, checked construction, refinement,
+  recursion, and core interpreters.
 - [Tutorials](./tutorials/) — parse a signup form, nest models, apply rules, and inspect metadata.
-- [Trusted Construction](./trusted-construction/) — ActiveModel ergonomics with F# trusted construction.
-- [Recommended Patterns](./patterns/) — private aggregates, legal transitions, wire/domain separation, project layout,
-  and schema-derived tests.
-- [The Schema DSL](./dsl/) — open one module inside a schema definition and drop the qualified prefixes.
-- [Choosing A Tool](./choosing-a-tool/) — Schema vs Input vs Rules, the three tools inside this package.
+- [Schema Syntax](./syntax/) — constructor-last declarations, inferred fields, explicit schemas, and adjacent constraints.
+- [How Inferred Fields Expand](./field-desugaring/) — the exact relationship between `field`, `fieldWith`, and
+  standalone value schemas.
+- [Input Sources](./input-sources/) — HTTP form-like, CLI, JSON-like, and configuration input.
+- [Redisplay And Field Errors](./redisplay-and-field-errors/) — failed parses that keep the user's input.
+- [Trusted Construction](./trusted-construction/) — choose between checked public records, refined fields, and private aggregates.
 - [Refined Value Schemas](./refined-values/) — domain values like `Email` as portable field schemas.
 - [Union Schemas](./union-schemas/) — tagged discriminated unions as schema fields.
-- [Redisplay And Field Errors](./redisplay-and-field-errors/) — failed parses that keep the user's input.
-- [Rules](./rules/) — contextual requirements over an already-trusted model.
 - [JSON Codec](./json-codec/) — compile the same declaration into a runtime-reflection-free JSON codec for trusted payloads.
-- [Input Sources](./input-sources/) — HTTP form-like, CLI, JSON-like, and configuration input.
+- [HTTP Servers](./http-servers/) — schema-trusted requests, problem details, and generated OpenAPI.
+- [Versioned Contracts](./contracts/) — evolve wire formats without freezing the domain model.
+- [Recommended Patterns](./patterns/) — private aggregates, legal transitions, wire/domain separation, project layout,
+  and the repository's test-adapter pattern.
 
 ## In Practice
 
@@ -103,11 +105,11 @@ Schema uses them, they aren't Schema-specific:
 
 - [Refined]({{< relref "/error-handling/refined/" >}}) — single values whose types carry their own proof:
   `PositiveInt`, `NonBlankString`, your own.
-- [Validation]({{< relref "/validation/" >}}) — accumulate every sibling failure as a path-aware diagnostics tree.
+- [Validation]({{< relref "/error-handling/validation/" >}}) — accumulate every sibling failure as a path-aware diagnostics tree.
 
-Axial consists of three packages: [Error Handling]({{< relref "/error-handling/" >}}) for pure fail-fast checks with
-plain `Result`, Schema for domain models at data boundaries, and [Flow]({{< relref "/flow/" >}}) for the effects
-around them.
+Axial has two main groups: parse-don't-validate tools, led by Schema for domain models and plain `Result` for smaller
+problems; and [Flow]({{< relref "/flow/" >}}) for effects around them. [Error Handling]({{< relref "/error-handling/" >}})
+contains the `Result`, `Check`, `Validation`, and `Refined` machinery used by the first group.
 
 ## Install
 
@@ -118,10 +120,13 @@ it as the `Axial.ErrorHandling` dependency — declaring a schema, parsing struc
 require a second install.
 
 `Axial.Schema.Codec` is separate and optional: add it only if you want a compiled, runtime-reflection-free JSON codec generated from
-your schema (`Json.compile`). Everything else — parsing, validation, rules, redisplay, JSON Schema generation — works
-without it.
+your schema (`Json.compile`). `Axial.Schema.JsonSchema` is also separate and optional; it supplies
+`JsonSchema.generate` in the `Axial.Schema` namespace. Parsing, checking, rules, redisplay, and metadata inspection need
+neither optional package.
 
 Install the optional codec with `dotnet add package Axial.Schema.Codec`.
+
+Install JSON Schema generation with `dotnet add package Axial.Schema.JsonSchema`.
 
 See [JSON Codec](./json-codec/) for what that package buys you.
 

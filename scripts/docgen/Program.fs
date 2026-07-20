@@ -331,15 +331,14 @@ let pageSpecs = [
     {
         OutPath = ["schema"; "interpreters"; "_index.md"]
         Title = "Schema Interpreters"
-        Description = "Source-documented schema input parsing, validation, and rules interpreters."
-        Intro = "This page shows structured boundary data, universal schema parsing into `Result`, opt-in input retention with `RetainedParseResult`, checking of existing values, refined schemas, and contextual rules. Core schema metadata stays in [Schema](../); interpreters attach diagnostics and optional redisplay behavior to it."
+        Description = "Source-documented schema input parsing, checking, and refined-value interpreters."
+        Intro = "This page shows structured boundary data, universal schema parsing into `Result`, opt-in input retention with `RetainedParseResult`, checking of existing values, and refined schemas. Core schema metadata stays in [Schema](../); interpreters attach diagnostics and optional redisplay behavior to it."
         SymbolIds = [
             "Structured data", ["T:Axial.Data"; "T:Axial.DataPathSegment"; "T:Axial.DataPath"; "M:Axial.DataModule.ofMap"; "M:Axial.DataModule.ofNameValues"; "M:Axial.DataModule.ofCliArgs"; "M:Axial.DataModule.ofJsonElement"; "M:Axial.DataModule.ofJsonDocument"; "M:Axial.DataModule.ofConfiguration"; "M:Axial.DataModule.redisplay"; "M:Axial.DataModule.redisplayPath"]
             "Input parsing", ["M:Axial.Schema.Schema.parse"; "M:Axial.Schema.Schema.parseRetainingInput"; "M:Axial.Schema.Schema.parseWith"; "T:Axial.Schema.SchemaParseOptions"; "T:Axial.Schema.RetainedParseResult`2"; "M:Axial.Schema.RetainedParseResultModule.create"; "M:Axial.Schema.RetainedParseResultModule.mapErrors"; "M:Axial.Schema.RetainedParseResultModule.renderErrors"]
             "Errors", ["T:Axial.Schema.SchemaError"]
             "Refined catalog schemas", ["P:Axial.Schema.RefinedSchemas.nonBlankString"; "P:Axial.Schema.RefinedSchemas.trimmedString"; "M:Axial.Schema.RefinedSchemas.boundedString"; "P:Axial.Schema.RefinedSchemas.slug"; "P:Axial.Schema.RefinedSchemas.positiveInt"; "P:Axial.Schema.RefinedSchemas.nonNegativeInt"; "P:Axial.Schema.RefinedSchemas.nonZeroInt"; "P:Axial.Schema.RefinedSchemas.negativeInt"; "P:Axial.Schema.RefinedSchemas.nonPositiveInt"; "M:Axial.Schema.RefinedSchemas.nonEmptyList"; "M:Axial.Schema.RefinedSchemas.nonEmptyArray"; "M:Axial.Schema.RefinedSchemas.distinctList"; "M:Axial.Schema.RefinedSchemas.boundedList"; "M:Axial.Schema.RefinedSchemas.boundedArray"; "P:Axial.Schema.RefinedSchemas.dateTimeOffsetRange"]
             "Existing values", ["M:Axial.Schema.Schema.check"; "T:Axial.Schema.FieldRef`2"]
-            "Context rules", ["M:Axial.Schema.ContextRules.apply"; "M:Axial.Schema.ContextRules.at"; "M:Axial.Schema.ContextRules.atField"; "M:Axial.Schema.ContextRules.failAt"; "M:Axial.Schema.ContextRules.failAtField"; "M:Axial.Schema.ContextRules.custom"]
         ]
         Alias = None
     }
@@ -1225,7 +1224,7 @@ let main argv =
         Directory.CreateDirectory(outRoot) |> ignore
 
     // All inputs load their net8.0 build so the reference always reflects the widest TFM-gated
-    // surface (e.g. Value.date, Value.dateOnly, ofJsonElement); netstandard2.1-only builds would
+    // surface (e.g. ValueSchema.date and ofJsonElement); netstandard2.1-only builds would
     // silently drop those members from the docs instead of describing them as unavailable there.
     let dllPaths = [
         Path.Combine(artifactsDir, "Axial.Flow/debug_net8.0/Axial.Flow.dll")

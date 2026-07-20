@@ -152,35 +152,6 @@ module GeneratedContractTests =
         test <@ Signup.Fields.email.Get draft = "ada@example.com" @>
 
     [<Fact>]
-    let ``context rules scope diagnostics through generated field references`` () =
-        let needsDisplayName (signup: Signup) =
-            match signup.DisplayName with
-            | Some _ -> Ok()
-            | None ->
-                ContextRules.failAtField
-                    Signup.Fields.displayName
-                    (ContextRules.custom "signup.displayName.required" "Pro plans need a display name.")
-
-        let rule =
-            (fun (signup: Signup) ->
-                if signup.Plan = SignupPlan.Pro then needsDisplayName signup else Ok())
-
-        let proWithoutName =
-            { Email = "ada@example.com"
-              DisplayName = None
-              Age = 42
-              Plan = SignupPlan.Pro
-              Tags = []
-              Limits = Map.empty
-              Location = None }
-
-        match ContextRules.apply [ rule ] proWithoutName with
-        | Ok _ -> failwith "Expected rule failure."
-        | Error diagnostics ->
-            let paths = diagnostics |> Diagnostics.flatten |> List.map _.Path
-            test <@ paths = [ [ PathSegment.Name "display_name" ] ] @>
-
-    [<Fact>]
     let ``tagged union contracts validate and parse through the generated inline union`` () =
         let payment =
             Payment.validate { Source = PaymentSource.Card { Number = "4242424242424242" } }

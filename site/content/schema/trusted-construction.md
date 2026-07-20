@@ -1,5 +1,5 @@
 ---
-weight: 50
+weight: 35
 title: Construction Guarantees
 type: docs
 description: Which correctness claims Schema can enforce, and which require an invariant-preserving F# type.

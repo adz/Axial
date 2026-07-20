@@ -1,5 +1,5 @@
 ---
-weight: 25
+weight: 20
 title: How Inferred Fields Expand
 type: docs
 description: The relationship between field, fieldWith, adjacent constraints, and standalone value schemas.

@@ -26,13 +26,12 @@ the overview, the comments are the ground truth.
 | `Definitions.fs` | The type-erased description layer: `ConstructorApplication`, value-shape definitions, `FieldDescriptor`/`ModelSchemaDefinition`, typed `FieldDefinition`/`Field`. |
 | `RecordPlan.fs` | The typed record plan: `IShapeFields` chain nodes, `ShapeClosure`, `IRecordPlanCompiler`/`CompiledRecordPlan`. |
 | `SchemaType.fs` | `Schema<'model>` itself plus `UnionCase`/`EnumCase` companions. |
-| `ValueCatalog.fs` | The internal `Value` module behind the `Schema.*` value catalog. |
+| `ValueSchema.fs` | The internal `ValueSchema` module behind the `Schema.*` value-schema surface. |
 | `SchemaCore.fs` | The internal core module `SchemaApi.fs` re-exports; `closeTotal`/`closeResult`. |
 | `Shape.fs` | The constructor-last authoring surface: `DefineShape`, `ObjectShape`, `Syntax` (module and type), `Schema.admit`. |
 | `SchemaValidation.fs` | Constraint interpretation: each portable constraint's runtime meaning. |
 | `RetainedParseResult.fs` | `RetainedParseResult` — parse results plus redisplay data. |
-| `FieldRef.fs` | `FieldRef` — typed get/set field references used by rules and generated code. |
-| `ContextRules.fs` | Contextual (cross-field, per-context) rules over built schemas. |
+| `FieldRef.fs` | `FieldRef` — typed get/set field references used by generated code and editing helpers. |
 | `Parsing.fs` | The parse/check interpreter (`SchemaParsing`). |
 | `SchemaApi.fs` | The public `Schema` module. A facade: every function delegates to an internal implementation. |
 | `Contract.fs` | Versioned contracts: version detection + stepwise migrations. |

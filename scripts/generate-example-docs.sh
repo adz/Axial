@@ -136,7 +136,7 @@ render_example_section \
 
 render_example_section \
   "Policy Example" \
-  "This example shows Policy adapting every verification boundary — raw parsing, refined construction, schema input parsing, intrinsic validation, and contextual rules — into one workflow error type run with Flow.verify." \
+  "This example shows Policy adapting raw parsing, refined construction, schema input parsing, intrinsic validation, and environment-aware admission into one workflow error type run with Flow.verify." \
   "$root_dir/examples/Axial.Examples/Axial.Examples.fsproj" \
   "$root_dir/examples/Axial.Examples/PolicyExamples.fs" \
   "https://github.com/adz/Axial/blob/main/examples/Axial.Examples/PolicyExamples.fs" \

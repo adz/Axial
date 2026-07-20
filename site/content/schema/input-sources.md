@@ -1,5 +1,5 @@
 ---
-weight: 35
+weight: 25
 title: Input Sources
 type: docs
 description: HTTP form-like, CLI, JSON-like, and configuration input through one schema.
@@ -115,9 +115,6 @@ match parsed.Result with
     // same paths for every source:
     parsed.ErrorsFor "contacts[0].value" |> render
 ```
-
-For running the parse inside a workflow — including workflow-specific acceptance rules — see
-[Rules](../rules/).
 
 ## From C#
 

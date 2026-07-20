@@ -439,7 +439,7 @@ User-facing material should repeat these points:
 - Axial is not primarily a validator.
 - Schema converts untrusted representations into admitted values or diagnostics.
 - The type system, not schema metadata, carries durable invariants through the application.
-- Contextual rules decide whether an already trusted value is acceptable for one operation.
+- Application functions decide whether an already trusted value is acceptable for one operation.
 - Flow makes effect dependencies and expected failures visible in interfaces.
 - Project references, analyzers, and CI turn architectural intent into guardrails.
 

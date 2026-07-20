@@ -485,7 +485,7 @@ Axial Schema
   Build domain values
   Result, checks, and diagnostics
   Refined values
-  Contextual rules
+  Application admission
   JSON
   Wire contracts and migrations
   HTTP boundaries

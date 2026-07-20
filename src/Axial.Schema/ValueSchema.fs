@@ -8,7 +8,7 @@ open System.Collections.Generic
 
 /// <summary>Functions for creating and inspecting value schemas.</summary>
 [<RequireQualifiedAccess>]
-module internal Value =
+module internal ValueSchema =
     let private primitive kind =
         Schema(ValueDefinition
             { Shape = PrimitiveValueDefinition kind

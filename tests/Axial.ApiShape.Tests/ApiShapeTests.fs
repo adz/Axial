@@ -505,47 +505,6 @@ module ApiShapeTests =
         |> publicStaticMemberNames
         |> assertContainsAll [ "fromUnderlying"; "text"; "ordered" ]
 
-        moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.ContextRules"
-        |> publicStaticMemberNames
-        |> assertContainsAll
-            [ "fail"
-              "custom"
-              "failCustom"
-              "failAt"
-              "failAtField"
-              "at"
-              "atField"
-              "name"
-              "key"
-              "index"
-              "apply" ]
-
-    [<Fact>]
-    let ``schema contextual rules are reserved for schema validation interpreters`` () =
-        // Contextual rules are plain functions plus a minimal helper module; there is
-        // deliberately no rule-set container type anywhere in the library.
-        let forbiddenCoreRuleModules =
-            [ "Rules"
-              "SchemaRules"
-              "ContextRules"
-              "ContextualRules" ]
-
-        let forbiddenCoreRuleTypes =
-            [ "RuleSet`2"
-              "RuleFailure"
-              "RuleBuilder`2" ]
-
-        for moduleName in forbiddenCoreRuleModules do
-            assertModuleAbsentFromAssembly "Axial.ErrorHandling" $"Axial.ErrorHandling.{moduleName}"
-            assertModuleAbsentFromAssembly "Axial.ErrorHandling" $"Axial.Validation.{moduleName}"
-
-        for typeName in forbiddenCoreRuleTypes do
-            assertTypeAbsentFromAssembly "Axial.ErrorHandling" $"Axial.ErrorHandling.{typeName}"
-            assertTypeAbsentFromAssembly "Axial.ErrorHandling" $"Axial.Validation.{typeName}"
-
-        assertTypeAbsentFromAssembly "Axial.Schema" "Axial.Schema.RuleSet`2"
-        assertModuleAbsentFromAssembly "Axial.Schema" "Axial.Schema.Rules"
-
     [<Fact>]
     let ``schema types stay out of the flow package`` () =
         let schemaType = typedefof<Schema<_>>

@@ -9,12 +9,12 @@ This page shows the performance tradeoffs of using Axial compared to manual comp
 
 The benchmark harness lives in [benchmarks/Axial.Benchmarks/Suites.fs](https://github.com/adz/Axial/blob/main/benchmarks/Axial.Benchmarks/Suites.fs) and the shared helpers live in [benchmarks/Axial.Benchmarks/Common.fs](https://github.com/adz/Axial/blob/main/benchmarks/Axial.Benchmarks/Common.fs).
 The Fable runner lives in [benchmarks/Axial.Benchmarks.Fable/Program.fs](https://github.com/adz/Axial/blob/main/benchmarks/Axial.Benchmarks.Fable/Program.fs) and shares its workload definitions from [benchmarks/Axial.Benchmarks.Fable/Shared.fs](https://github.com/adz/Axial/blob/main/benchmarks/Axial.Benchmarks.Fable/Shared.fs).
-The Fable benchmark project is self-contained by source inclusion, so it can be compiled directly with Fable against the library code in [src/Axial](https://github.com/adz/Axial/tree/main/src/Axial). Its local tool manifest lives in [benchmarks/Axial.Benchmarks.Fable/mise.toml](https://github.com/adz/Axial/blob/main/benchmarks/Axial.Benchmarks.Fable/mise.toml), with [benchmarks/Axial.Benchmarks.Fable/package.json](https://github.com/adz/Axial/blob/main/benchmarks/Axial.Benchmarks.Fable/package.json) for Node ESM execution and [scripts/run-fable-benchmarks.sh](https://github.com/adz/Axial/blob/main/scripts/run-fable-benchmarks.sh) for the target-specific runner.
+The Fable benchmark project is self-contained by source inclusion, so it can be compiled directly with Fable against the library projects under [src](https://github.com/adz/Axial/tree/main/src). Its local tool manifest lives in [benchmarks/Axial.Benchmarks.Fable/mise.toml](https://github.com/adz/Axial/blob/main/benchmarks/Axial.Benchmarks.Fable/mise.toml), with [benchmarks/Axial.Benchmarks.Fable/package.json](https://github.com/adz/Axial/blob/main/benchmarks/Axial.Benchmarks.Fable/package.json) for Node ESM execution and [scripts/run-fable-benchmarks.sh](https://github.com/adz/Axial/blob/main/scripts/run-fable-benchmarks.sh) for the target-specific runner.
 
 The implementation split matters:
 
-- [src/Axial/Core.fs](https://github.com/adz/Axial/blob/main/src/Axial/Core.fs) defines `Execution<'value, 'error>` and flips its concrete shape by compiler target.
-- [src/Axial/Flow.fs](https://github.com/adz/Axial/blob/main/src/Axial/Flow.fs) exposes execution members such as `ToTask`, `ToValueTask`, `ToAsync`, and `RunSynchronously`.
+- [src/Axial.Flow/Core.fs](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs) defines `Execution<'value, 'error>` and flips its concrete shape by compiler target.
+- [src/Axial.Flow/Flow.fs](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs) exposes execution members such as `ToTask`, `ToValueTask`, `ToAsync`, and `RunSynchronously`.
 - [benchmarks/Axial.Benchmarks/Suites.fs](https://github.com/adz/Axial/blob/main/benchmarks/Axial.Benchmarks/Suites.fs) shows the manual baselines beside the `Flow` versions.
 - [scripts/run-benchmarks.sh](https://github.com/adz/Axial/blob/main/scripts/run-benchmarks.sh) prompts before starting the .NET benchmark run so you can stop other processes first.
 

@@ -4,7 +4,7 @@ weight: 500
 type: docs
 ---
 
-This page shows structured boundary data, universal schema parsing into `Result`, opt-in input retention with `RetainedParseResult`, checking of existing values, refined schemas, and contextual rules. Core schema metadata stays in [Schema](../); interpreters attach diagnostics and optional redisplay behavior to it.
+This page shows structured boundary data, universal schema parsing into `Result`, opt-in input retention with `RetainedParseResult`, checking of existing values, and refined schemas. Core schema metadata stays in [Schema](../); interpreters attach diagnostics and optional redisplay behavior to it.
 
 ## Structured data
 
@@ -63,12 +63,3 @@ This page shows structured boundary data, universal schema parsing into `Result`
 
 - [`Schema.check`](./m-schema-schema-check.md): Checks an existing typed value, such as a freely constructed draft, through the schema's constraints, refinements, and record constructor.
 - [`Schema.FieldRef`](./t-schema-fieldref.md): A typed, named reference to one field of a schema-described model.
-
-## Context rules
-
-- [`Schema.ContextRules.apply`](./m-schema-contextrules-apply.md): Applies contextual rules to an already-trusted model, accumulating any diagnostics.
-- [`Schema.ContextRules.at`](./m-schema-contextrules-at.md): Scopes a rule&#39;s diagnostics under the supplied path when the rule fails.
-- [`Schema.ContextRules.atField`](./m-schema-contextrules-atfield.md): Scopes a rule&#39;s diagnostics under a schema field reference when the rule fails.
-- [`Schema.ContextRules.failAt`](./m-schema-contextrules-failat.md): Creates a rule failure attached to the supplied diagnostics path.
-- [`Schema.ContextRules.failAtField`](./m-schema-contextrules-failatfield.md): Creates a rule failure attached to a schema field reference&#39;s diagnostics path.
-- [`Schema.ContextRules.custom`](./m-schema-contextrules-custom.md): Creates a custom schema rule error with a stable code and display message.

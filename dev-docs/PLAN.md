@@ -13,8 +13,8 @@ a real adoption target (a ~100-variant versioned config system). The Flow group'
 thread originally sequenced versioning/migration machinery before the grammar; in practice the grammar and generator
 shipped first (2026-07-12, single-version wire-tier scope), and the versioning/migration engine shipped on 2026-07-13.
 Record-first `[<DeriveSchema>]` generation is now the primary generated path; `.contract` remains a secondary wire-tier
-form with no planned LSP investment. The schema surface has been through heavy recent churn (direct `Result` returns,
-`ContextRules`, contracts) and should be treated as settling rather than settled.
+form with no planned LSP investment. The schema surface has been through heavy recent churn (direct `Result` returns
+and contracts) and should be treated as settling rather than settled.
 
 ## Current Direction
 
@@ -23,7 +23,7 @@ full parse-don't-validate toolkit. The library is therefore two main groups, and
 present them as such:
 
 - **Parse-don't-validate results**: `Schema<'model>` is the front door for domain models — input parsing, intrinsic
-  validation, redisplay, contextual rules, and metadata interpreters all fall out of one declaration. Plain `Result`
+  validation, redisplay, and metadata interpreters all fall out of one declaration. Plain `Result`
   with a user-owned error DU is the blessed lane for simple code without domain models. `Check`, `Validation`,
   `Refined`, and interpreter error types are machinery behind those two doors, not peer entry points.
 - **Effects in Flow**: the workflow group below. Useful with or without schemas, and never part of the entry price
@@ -53,8 +53,8 @@ The active direction splits concerns like this:
 
 - explicit services and app/domain dependencies live in `'env`
 - executor mechanics live in a closed ambient runtime
-- data boundaries are described with portable schemas, reusable value checks, path-aware input/validation interpreters,
-  contextual rules, and environment-aware policies
+- data boundaries are described with portable schemas, reusable value checks, and path-aware input/validation interpreters;
+  operation-specific admission uses ordinary functions or environment-aware policies
 
 First-party service packages and standard operational services should be expressed as explicit services, not runtime
 slots.
@@ -67,9 +67,7 @@ Axial's data-boundary direction splits concerns like this:
   constructor. Successful operations return the ordinary value rather than a universal trust wrapper.
 - schema interpreters parse structured data, check existing values, produce diagnostics, and drive non-validation metadata
   consumers
-- contextual rules are plain functions over already-trusted models; `ContextRules` supplies only failure constructors,
-  `FieldRef`-based path scoping, and `apply` — context selection is the caller's own `match`/`Map`
-- policies adapt checks, parsers, validations, and rules into `Flow`
+- policies adapt checks, parsers, validations, and application admission functions into `Flow`
 
 Core schema declarations and their interpreters share the single `Axial.Schema` namespace and package (module names,
 not namespaces, separate declaration from interpretation); the package stays independent of flow execution.
