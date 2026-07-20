@@ -88,13 +88,17 @@ Flow.zipPar (Flow.zipPar account recent) recommended
 
 The ordinary `Task.WhenAll` version must cancel siblings by hand through a linked token source, and two simultaneous
 failures surface as whichever exception `WhenAll` publishes first. With `zipPar` the interruption is the runtime's
-job — the test registers a callback on the slow sibling's token and asserts it fires — and concurrent failures merge
-as `Cause.Both`. First-success semantics are a different contract, so they appear as a separate `Flow.race` example
-rather than a subtle change to this one. ZIO correspondence: `zipPar`, typed `catchAll` (here `orElse`), `race`.
+job — the test's slow sibling awaits `Task.Delay` on its runtime token and asserts the resulting
+`OperationCanceledException` was observed — and concurrent failures merge as `Cause.Both`. First-success semantics
+are a different contract, so they appear as a separate `Flow.race` example rather than a subtle change to this one.
+ZIO correspondence: `zipPar`, typed `catchAll` (here `orElse`), `race`.
 
 - **Made visible by the type**: which branch may fail silently (none — the fallback is explicit at the composition).
 - **Enforced by the runtime**: loser interruption and cause merging.
-- **Still the application's responsibility**: Flow cannot prove an arbitrary adapter honours cancellation.
+- **Still the application's responsibility**: Flow cannot prove an arbitrary adapter honours cancellation, and an
+  adapter that registers its own extra observer on the runtime token — instead of catching the cancellation the
+  operation it's already awaiting throws — can silently miss the interrupt; see
+  [Task and Async Interop](../core-concepts/task-async-interop.md#pitfall-dont-register-a-second-cancellation-observer-on-the-same-token).
 
 ## 4. Scoped temporary workspace
 

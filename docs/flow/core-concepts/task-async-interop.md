@@ -106,6 +106,50 @@ let myFlow =
     }
 ```
 
+### Pitfall: Don't Register a Second Cancellation Observer on the Same Token
+
+`Flow.zipPar`, `Flow.race`, and `Flow.Runtime.timeout` interrupt a branch by cancelling the
+`CancellationToken` your adapter was handed. If your adapter already awaits a cancellation-aware
+operation on that token (`Task.Delay(ms, ct)`, an `HttpClient` call, `File.ReadAllTextAsync(path, ct)`,
+etc.), that is sufficient — the awaited call will throw `OperationCanceledException` /
+`TaskCanceledException` when interrupted, and `flow {}` turns that into `Cause.Interrupt` for you.
+
+Do not *also* call `ct.Register(callback)` to observe the same cancellation as a side channel:
+
+```fsharp
+// Don't do this — two observers racing on one token.
+task {
+    use _ = ct.Register(fun () -> sideEffect ())   // manual observer #1
+    do! Task.Delay(30_000, ct)                     // observer #2, built into Task.Delay
+    return result
+}
+```
+
+`CancellationTokenSource.Cancel()` runs every registered callback synchronously, in unspecified
+order, on whichever thread called `Cancel()`. If the framework's own registration (the one behind
+`Task.Delay`) happens to run first, its continuation can execute *reentrantly*, inside that same
+`Cancel()` call — and if that continuation disposes your registration (e.g. a `use` binding going
+out of scope in a `finally`) before your callback has run, your callback is silently skipped, not
+delayed. This isn't a race that resolves given enough time; it's a real chance the side effect
+never happens, and it reproduces more often under contention (many concurrent fibers, CI runners
+under load), which is exactly the kind of environment that makes it feel like "just flakiness."
+
+Instead, observe cancellation from the operation you're already awaiting:
+
+```fsharp
+task {
+    try
+        do! Task.Delay(30_000, ct)
+        return result
+    with :? OperationCanceledException ->
+        sideEffect ()
+        return fallback
+}
+```
+
+This applies to any adapter written against a `Flow`-supplied token, not just tests — anywhere you
+combine a manual `Register` with another cancellation-aware call on the same token is at risk.
+
 ## Bind: Bridging with Error Packaging
 
 When a source needs its error assigned or mapped before `flow {}` binds it, use **`Bind`** at the binding site.
