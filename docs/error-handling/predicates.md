@@ -6,9 +6,7 @@ description: Plain bool facts for local branching, distinct from Check.
 
 # Predicates
 
-Sometimes you don't want a `Result` at all — you're inside an `if`, a `match` guard, or a short-circuiting
-`&&`/`||` chain, and a structured failure would just get unwrapped again a line later. `Predicate` and
-`PredicateExtensions` give you the same structural facts as `Check`, but as plain `bool`.
+`Predicate` and `PredicateExtensions` give you the same structural facts as `Check`, but as plain `bool`.
 
 ```fsharp
 open Axial
