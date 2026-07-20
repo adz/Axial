@@ -78,35 +78,55 @@ type DomainError =
     | WorkItemNotFound of WorkItemId
     | WorkItemAlreadyDone of WorkItemId
     | DuplicateMember of PersonName
+    | AssigneeNotMember of MemberId
 
 [<RequireQualifiedAccess>]
 module Workspace =
     let create (id: WorkspaceId) (name: WorkspaceName) : Workspace =
         { Id = id; Name = name; Members = []; Items = [] }
 
+    let restore (id: WorkspaceId) (name: WorkspaceName) (members: Member list) (items: WorkItem list) =
+        let memberIds = members |> List.map _.Id |> Set.ofList
+
+        items
+        |> List.choose _.Assignee
+        |> Collection.traverseResult (fun assignee ->
+            memberIds
+            |> Check.Seq.contains assignee
+            |> Result.orError (DomainError.AssigneeNotMember assignee))
+        |> Result.map (fun _ -> { Id = id; Name = name; Members = members; Items = items })
+
+    let rename (name: WorkspaceName) (workspace: Workspace) = { workspace with Name = name }
+
     let addMember (member': Member) (workspace: Workspace) =
-        if workspace.Members |> List.exists (fun item -> item.Name = member'.Name) then
-            Error(DomainError.DuplicateMember member'.Name)
-        else
-            Ok { workspace with Members = workspace.Members @ [ member' ] }
+        workspace
+        |> Result.failIf (fun workspace -> workspace.Members |> List.exists (fun item -> item.Name = member'.Name))
+        |> Result.orError (DomainError.DuplicateMember member'.Name)
+        |> Result.map (fun workspace -> { workspace with Members = workspace.Members @ [ member' ] })
 
     let addWorkItem (item: WorkItem) (workspace: Workspace) =
         Ok { workspace with Items = workspace.Items @ [ item ] }
 
     let assign itemId memberId workspace =
-        if workspace.Members |> List.exists (fun member' -> member'.Id = memberId) |> not then
-            Error(DomainError.MemberNotFound memberId)
-        else
-            match workspace.Items |> List.tryFindIndex (fun item -> item.Id = itemId) with
-            | None -> Error(DomainError.WorkItemNotFound itemId)
-            | Some index ->
-                let item = workspace.Items[index]
-                Ok { workspace with Items = workspace.Items |> List.updateAt index { item with Assignee = Some memberId } }
+        workspace.Members
+        |> Result.okIf (List.exists (fun member' -> member'.Id = memberId))
+        |> Result.orError (DomainError.MemberNotFound memberId)
+        |> Result.bind (fun _ ->
+            workspace.Items
+            |> List.tryFindIndex (fun item -> item.Id = itemId)
+            |> Result.someOr (DomainError.WorkItemNotFound itemId))
+        |> Result.map (fun index ->
+            let item = workspace.Items[index]
+            { workspace with Items = workspace.Items |> List.updateAt index { item with Assignee = Some memberId } })
 
     let complete itemId workspace =
-        match workspace.Items |> List.tryFindIndex (fun item -> item.Id = itemId) with
-        | None -> Error(DomainError.WorkItemNotFound itemId)
-        | Some index when workspace.Items[index].State = WorkItemState.Done -> Error(DomainError.WorkItemAlreadyDone itemId)
-        | Some index ->
+        workspace.Items
+        |> List.tryFindIndex (fun item -> item.Id = itemId)
+        |> Result.someOr (DomainError.WorkItemNotFound itemId)
+        |> Result.bind (fun index ->
+            index
+            |> Result.failIf (fun index -> workspace.Items[index].State = WorkItemState.Done)
+            |> Result.orError (DomainError.WorkItemAlreadyDone itemId))
+        |> Result.map (fun index ->
             let item = workspace.Items[index]
-            Ok { workspace with Items = workspace.Items |> List.updateAt index { item with State = WorkItemState.Done } }
+            { workspace with Items = workspace.Items |> List.updateAt index { item with State = WorkItemState.Done } })

@@ -302,10 +302,9 @@ module JsonSchema =
         | [] -> []
         | definitions -> [ sprintf "\"$defs\":{%s}" (String.concat "," definitions) ]
 
-    /// <summary>Generates a compact JSON Schema document from a built model schema's metadata.</summary>
-    /// <param name="schema">The built model schema to lower.</param>
+    /// <summary>Generates a compact JSON Schema document from any completed schema declaration.</summary>
+    /// <param name="schema">The record, primitive, collection, union, or other completed schema to lower.</param>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
-    /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="schema" /> is not a completed model schema.</exception>
     /// <example>
     /// <code>
     /// let document = JsonSchema.generate customerSchema
@@ -313,19 +312,14 @@ module JsonSchema =
     /// </code>
     /// </example>
     let generate (schema: Schema<'model>) : string =
-        let model = Inspect.model schema
-        let roots = model.Fields |> List.map _.Schema
+        let value = Inspect.schema schema
         sprintf
             "{%s}"
-            (sprintf "\"$schema\":%s" (literal draft2020_12) :: (modelKeywords model @ definitionsKeyword roots)
+            (sprintf "\"$schema\":%s" (literal draft2020_12) :: (valueKeywords [] value @ definitionsKeyword [ value ])
              |> String.concat ",")
 
     /// <summary>Generates a compact JSON Schema document for a standalone value schema.</summary>
     /// <param name="schema">The value schema to lower.</param>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
     let generateValue (schema: Schema<'value>) : string =
-        let value = Inspect.schema schema
-        sprintf
-            "{%s}"
-            (sprintf "\"$schema\":%s" (literal draft2020_12) :: (valueKeywords [] value @ definitionsKeyword [ value ])
-             |> String.concat ",")
+        generate schema

@@ -87,6 +87,13 @@ module SchemaDescriptionTests =
         test <@ (JsonSchema.generateValue Schema.text).StartsWith "{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\"," @>
 
     [<Fact>]
+    let ``generate accepts a collection schema at the document root`` () =
+        let generated = JsonSchema.generate (Schema.listWith Schema.text)
+
+        test <@ generated.Contains "\"type\":\"array\"" @>
+        test <@ generated.Contains "\"items\":{\"type\":\"string\"}" @>
+
+    [<Fact>]
     let ``describe lowers to the json schema description keyword on a field`` () =
         let schema =
             Schema.define<Contact>

@@ -14,7 +14,7 @@ runnable:
    refined values, and accumulated validation, with no schemas at all. Start there if you are new; this page
    covers the schema tiers.
 2. `examples/Axial.ReferenceApp` — the workspace tracker: hand-written schemas, refined domain values, versioned
-   contracts, contextual rules, codecs, and Flow use cases.
+   contracts, application admission, codecs, and Flow use cases.
 3. `examples/Axial.ReferenceApp.Wire` — the same boundary discipline with the wire tier **generated** from
    `[<DeriveSchema>]` records.
 
@@ -39,14 +39,17 @@ files. The features it leans on, and why they matter at this size:
   hand-written typed functions, and the migrated output is re-checked against the current schema — migration code
   cannot quietly produce invalid current values ([Versioned Contracts]({{< relref "/schema/contracts.md" >}})).
 - **One declaration, several interpreters.** The same schemas drive path-aware parse diagnostics rendered at
-  three boundaries, HTML form metadata and redisplay, compiled trusted JSON codecs for storage writes
-  ([JSON Codec]({{< relref "/schema/json-codec.md" >}})), and production-only
-  [contextual rules]({{< relref "/schema/rules.md" >}}).
+  three boundaries, HTML form metadata and retained-input redisplay, compiled trusted JSON codecs for storage and
+  successful HTTP responses, and `/openapi.json`
+  ([JSON Codec]({{< relref "/schema/json-codec.md" >}})), while production-only admission remains an ordinary
+  result-returning application function.
 - **Flow where orchestration warrants it.** Persistence and id generation are environment services; use cases
-  are readable typed workflows. Flow is never part of the schema entry price.
+  are readable typed workflows. `BaseRuntime.liveValue` supplies the standard platform-service bundle,
+  `Axial.Flow.FileSystem` makes persistence effects explicit, and
+  `Axial.Schema.Http.AspNetCore` parses routes, JSON, and forms before embedding those application workflows with
+  `EndpointFlow.run`. Flow is never part of the schema entry price.
 
-`examples/Axial.ReferenceApp/README.md` records the friction this exercise exposed and the API changes it drove —
-it is the honest companion to this page.
+`examples/Axial.ReferenceApp/README.md` explains the current boundary and domain split in the runnable app.
 
 ### Schema-derived property tests
 
@@ -56,7 +59,7 @@ derives trusted model values. The properties pin three claims with no hand-writt
 
 - every generated structured data parses through the schema;
 - every generated model survives a codec round-trip byte-for-byte;
-- every schema-valid wire value maps into the domain (`toDomain` is total over what the schema admits).
+- schema-generated wire values exercise parsing and codec guarantees independently of fallible domain admission.
 
 The generator honours the schema's own constraints — lengths, ranges, `oneOf`, required — because it reads the
 same declaration the parser executes.

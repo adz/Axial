@@ -34,12 +34,3 @@ module SchemaGenTests =
             reparsed = Ok model
 
         test <@ Gen.sample 50 generator |> Array.forall roundTrips @>
-
-    [<Fact>]
-    let ``schema-generated models satisfy the domain mapping`` () =
-        let generator = SchemaGen.model Contracts.workspaceV2 |> Result.defaultWith (failwithf "%A")
-
-        // Every value the schema admits must be representable in the domain: toDomain is total
-        // over schema-valid wire values, so generation cannot invent an unmappable state.
-        let models = Gen.sample 50 generator
-        test <@ models |> Array.map Contracts.toDomain |> Array.length = models.Length @>

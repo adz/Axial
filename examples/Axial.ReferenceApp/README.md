@@ -1,6 +1,7 @@
 # Axial reference application
 
-This page shows Schema, refined domain values, versioned contracts, contextual rules, codecs, and Flow in one small application.
+This page shows Axial's boundary and workflow packages cooperating in one application rather than as isolated API
+samples.
 
 The application tracks workspaces, members, and work items. It includes a CLI, JSON and HTML boundaries, file
 persistence, v1-to-v2 migration, business transitions, and tests. The breadth matters: API friction that disappears in
@@ -19,10 +20,11 @@ Data is written to `.axial-reference-data` unless `AXIAL_REFERENCE_DATA` names a
 ## Layout
 
 1. `Domain.fs` defines private refined values and business transitions.
-2. `Contracts.fs` defines universal schemas, version migration, domain mapping, and production-only rules.
-3. `Application.fs` defines persistence and Flow use cases over an explicit environment.
-4. `Program.fs` adapts CLI, forms, and JSON requests.
-5. `tests/Axial.ReferenceApp.Tests` covers parsing, migration, rules, transitions, persistence, and HTTP.
+2. `Contracts.fs` defines schemas, version migration, fallible domain mapping, and production admission.
+3. `Application.fs` defines persistence and Flow use cases over an explicit store, `BaseRuntime`, and `IFileSystem`.
+4. `Program.fs` adapts CLI commands and uses `Axial.Schema.Http.AspNetCore` for routes, JSON, forms, endpoint Flow,
+   problem details, compiled responses, schema-derived OpenAPI, inspection, and retained-input redisplay.
+5. `tests/Axial.ReferenceApp.Tests` covers parsing, migration, admission, transitions, persistence, and HTTP.
 
 ## Construction and trust
 
@@ -43,8 +45,10 @@ let private requiredText refine inspect maximum =
 The raw constraints supply portable metadata and standard boundary diagnostics. The smart constructor supplies the
 durable domain invariant. There is no unchecked constructor justified by an assumption that constraints ran first.
 
-`Workspace` is the business model. Code maps into it once after schema and contextual checks, then uses the bare
-domain value. Persisted data is parsed again on read because storage is an external construction path.
+`Workspace` is the business model. Code maps into it once after schema parsing and operation-specific admission, then
+uses the bare domain value. The mapping is fallible because member/assignee consistency is an application invariant
+that a wire schema cannot establish. Persisted data passes through the same schema and domain mapping on read because
+storage is an external construction path.
 
 ## One schema catalog
 
@@ -77,7 +81,7 @@ Three kinds of rule appear in the application:
 - non-blank important text is intrinsic and belongs in private refined types;
 - wire length, requiredness, and state tags belong in schemas;
 - “production names cannot end in `-demo`” and “assignees must be members” depend on admission context and use
-  `ContextRules`.
+  an ordinary result-returning application function.
 
 Putting all three into one validator would either weaken domain construction or make a reusable schema depend on a
 specific workflow.
@@ -85,21 +89,20 @@ specific workflow.
 ## Integration boundaries
 
 `Data` handles untrusted source-neutral data. `Contract` selects and migrates persisted versions. `Axial.Schema.Codec`
-handles trusted current-version JSON output. `Flow` expresses store dependencies and application failures. Schema
-does not replace any of those jobs.
+handles trusted current-version JSON for storage, HTTP responses, and CLI output. `Axial.Schema.Http` and its ASP.NET
+Core adapter parse route, JSON, and form input before embedding application Flow into native endpoints. The same schema
+catalog generates `/openapi.json`; `Inspect` renders the new-workspace form; `RetainedParseResult` redisplays invalid
+form values beside their path-specific diagnostics.
+
+`Check` and `Result` express path-free admission and domain transitions. `Flow` then orchestrates those fallible values
+with the workspace store. The file adapter performs its operational work through `Axial.Flow.FileSystem`, so filesystem
+failures enter the typed application error channel instead of escaping from ambient `System.IO`. `BaseRuntime.liveValue`
+supplies the standard live clock, logging, randomness, GUID, and environment-variable services as one bundle; tests
+replace only the GUID service when deterministic identifiers matter.
+
+That separation is the point of the app: Schema proves boundary shape, refined types retain intrinsic guarantees,
+ordinary Result values admit domain relationships, and Flow coordinates explicit effects. No layer substitutes for the
+next one.
 
 The file store uses temporary-file replacement, but it is not suitable for concurrent processes or large datasets.
 Use a database adapter with the same `IWorkspaceStore` boundary for those scenarios.
-
-## Findings carried into the API
-
-The earlier reference app exposed three avoidable costs:
-
-- `Value.*`, `Schema.*`, and `Model.*` forced users to classify a declaration before using common operations;
-- total refined conversion encouraged an unchecked constructor beside the real `Result`-returning constructor;
-- a trust wrapper differed across parse, check, and contract APIs while private domain types already carried the
-  useful durable guarantee.
-
-The current app uses one `Schema` catalog, fallible `Schema.refine`, bare successful results, and explicit guidance
-about what a schema operation proves. The remaining unwrap calls on nominal text types are real F# representation
-costs; convenience functions can reduce them, but a nominal type cannot also be `System.String`.

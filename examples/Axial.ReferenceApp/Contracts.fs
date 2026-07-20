@@ -1,8 +1,8 @@
 namespace Axial.ReferenceApp
 
 open System
+open Axial.ErrorHandling
 open Axial.Schema
-open Axial.Validation
 
 // Wire records can represent untrusted drafts and old persisted versions.
 type WorkspaceV1 = { version: int; id: Guid; name: string }
@@ -14,6 +14,19 @@ type WorkspaceV2 =
       name: WorkspaceName
       members: MemberV2 list
       items: WorkItemV2 list }
+
+type NameInput = { name: string }
+type TitleInput = { title: string }
+type AssignmentInput = { memberId: Guid }
+
+[<RequireQualifiedAccess>]
+type ProductionAdmissionError =
+    | DemoWorkspaceName
+
+[<RequireQualifiedAccess>]
+module ProductionAdmissionError =
+    let describe = function
+        | ProductionAdmissionError.DemoWorkspaceName -> "Production workspace names cannot end in -demo."
 
 [<RequireQualifiedAccess>]
 module Contracts =
@@ -27,6 +40,26 @@ module Contracts =
     let workspaceName = requiredText WorkspaceName.create WorkspaceName.value 80
     let personName = requiredText PersonName.create PersonName.value 80
     let workItemTitle = requiredText WorkItemTitle.create WorkItemTitle.value 160
+    let workspaceId = Schema.guid |> Schema.convert WorkspaceId.create WorkspaceId.value
+    let memberId = Schema.guid |> Schema.convert MemberId.create MemberId.value
+    let workItemId = Schema.guid |> Schema.convert WorkItemId.create WorkItemId.value
+
+    let nameInput =
+        Schema.define<NameInput>
+        |> field "name" _.name
+        |> constrain (minLength 1)
+        |> construct (fun name -> { name = name })
+
+    let titleInput =
+        Schema.define<TitleInput>
+        |> field "title" _.title
+        |> constrain (minLength 1)
+        |> construct (fun title -> { title = title })
+
+    let assignmentInput =
+        Schema.define<AssignmentInput>
+        |> field "memberId" _.memberId
+        |> construct (fun memberId -> { memberId = memberId })
 
     let workspaceV1 =
         Schema.define<WorkspaceV1>
@@ -74,16 +107,16 @@ module Contracts =
         |> Contract.build (VersionSource.Field "version")
 
     let toDomain wire =
-        { Id = WorkspaceId.create wire.id
-          Name = wire.name
-          Members = wire.members |> List.map (fun member' -> { Id = MemberId.create member'.id; Name = member'.name })
-          Items =
-              wire.items
-              |> List.map (fun item ->
-                  { Id = WorkItemId.create item.id
-                    Title = item.title
-                    Assignee = item.assignee |> Option.map MemberId.create
-                    State = if item.state = "done" then WorkItemState.Done else WorkItemState.Todo }) }
+        let members = wire.members |> List.map (fun member' -> { Id = MemberId.create member'.id; Name = member'.name })
+        let items =
+            wire.items
+            |> List.map (fun item ->
+                { Id = WorkItemId.create item.id
+                  Title = item.title
+                  Assignee = item.assignee |> Option.map MemberId.create
+                  State = if item.state = "done" then WorkItemState.Done else WorkItemState.Todo })
+
+        Workspace.restore (WorkspaceId.create wire.id) wire.name members items
 
     let fromDomain workspace =
         { version = 2
@@ -98,13 +131,8 @@ module Contracts =
                     assignee = item.Assignee |> Option.map MemberId.value
                     state = if item.State = WorkItemState.Done then "done" else "todo" }) }
 
-    let productionRules : (WorkspaceV2 -> Result<unit, Diagnostics<SchemaError>>) list =
-        [ fun value ->
-              if (WorkspaceName.value value.name).EndsWith("-demo", StringComparison.OrdinalIgnoreCase) then
-                  ContextRules.failCustom "workspace.demo-name" "Production workspace names cannot end in -demo."
-              else Ok ()
-          fun value ->
-              let memberIds = value.members |> List.map _.id |> Set.ofList
-              match value.items |> List.tryFind (fun item -> item.assignee |> Option.exists (memberIds.Contains >> not)) with
-              | Some _ -> ContextRules.failCustom "workspace.assignee.unknown" "Every assignee must be a workspace member."
-              | None -> Ok () ]
+    let admitProduction (value: WorkspaceV2) : Result<WorkspaceV2, ProductionAdmissionError> =
+        value
+        |> Result.failIf (fun value ->
+            (WorkspaceName.value value.name).EndsWith("-demo", StringComparison.OrdinalIgnoreCase))
+        |> Result.orError ProductionAdmissionError.DemoWorkspaceName
