@@ -1,7 +1,7 @@
 ---
 weight: 90
 title: Comparisons
-description: How Schema relates to Validus, FluentValidation, and zod.
+description: How Schema relates to FluentValidation and zod.
 ---
 
 # Comparisons

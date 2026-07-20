@@ -121,7 +121,8 @@ Two rules keep this predictable:
   used for parsing and checking, so there is no reflection on any per-value path).
 
 The bare form requires a plain property getter (`_.Name`); anything else — a computed value, a tuple
-projection — uses the named form.
+projection — uses the named form. It reads the getter expression, which Fable cannot interpret, so on
+Fable use the named form; everything else on this page compiles for .NET, NativeAOT, and Fable alike.
 
 ## Checked constructors
 
