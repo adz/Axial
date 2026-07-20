@@ -39,11 +39,6 @@ module Card =
     let parse (input: Data) : Result<Card, Diagnostics<SchemaError>> =
         Schema.parse schema input
 
-    /// Typed field references for rules, redisplay, and UI binding.
-    [<RequireQualifiedAccess>]
-    module Fields =
-        let number : FieldRef<Card, string> = { Name = "number"; Get = _.Number; Set = fun draft value -> { draft with Number = value } }
-
 /// An invoice payment source.
 type Invoice =
     {
@@ -73,11 +68,6 @@ module Invoice =
     /// Parses structured boundary data through the schema.
     let parse (input: Data) : Result<Invoice, Diagnostics<SchemaError>> =
         Schema.parse schema input
-
-    /// Typed field references for rules, redisplay, and UI binding.
-    [<RequireQualifiedAccess>]
-    module Fields =
-        let reference : FieldRef<Invoice, string> = { Name = "reference"; Get = _.Reference; Set = fun draft value -> { draft with Reference = value } }
 
 /// The "source" cases of Payment (payment.contract, Payment.v1).
 [<RequireQualifiedAccess>]
@@ -117,8 +107,3 @@ module Payment =
     /// Parses structured boundary data through the schema.
     let parse (input: Data) : Result<Payment, Diagnostics<SchemaError>> =
         Schema.parse schema input
-
-    /// Typed field references for rules, redisplay, and UI binding.
-    [<RequireQualifiedAccess>]
-    module Fields =
-        let source : FieldRef<Payment, PaymentSource> = { Name = "source"; Get = _.Source; Set = fun draft value -> { draft with Source = value } }

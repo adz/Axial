@@ -35,12 +35,6 @@ module WorkspaceCardV1 =
     let parse (input: Data) : Result<WorkspaceCardV1, Diagnostics<SchemaError>> =
         Schema.parse schema input
 
-    /// Typed field references for rules, redisplay, and UI binding.
-    [<RequireQualifiedAccess>]
-    module Fields =
-        let name : FieldRef<WorkspaceCardV1, string> = { Name = "name"; Get = _.Name; Set = fun draft value -> { draft with Name = value } }
-        let owner : FieldRef<WorkspaceCardV1, string> = { Name = "owner"; Get = _.Owner; Set = fun draft value -> { draft with Owner = value } }
-
 /// Schema and boundary functions for WorkspaceCard (workspace.fs, WorkspaceCard.v2).
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
@@ -83,11 +77,3 @@ module WorkspaceCard =
         Contract.create "WorkspaceCard" 2 schema
         |> Contract.supersedes 1 WorkspaceCardV1.schema migrateV1ToV2
         |> Contract.build source
-
-    /// Typed field references for rules, redisplay, and UI binding.
-    [<RequireQualifiedAccess>]
-    module Fields =
-        let name : FieldRef<WorkspaceCard, string> = { Name = "name"; Get = _.Name; Set = fun draft value -> { draft with Name = value } }
-        let ownerEmail : FieldRef<WorkspaceCard, string> = { Name = "owner_email"; Get = _.OwnerEmail; Set = fun draft value -> { draft with OwnerEmail = value } }
-        let visibility : FieldRef<WorkspaceCard, Visibility> = { Name = "visibility"; Get = _.Visibility; Set = fun draft value -> { draft with Visibility = value } }
-        let members : FieldRef<WorkspaceCard, string list> = { Name = "members"; Get = _.Members; Set = fun draft value -> { draft with Members = value } }

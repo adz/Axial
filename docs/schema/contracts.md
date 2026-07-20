@@ -133,8 +133,8 @@ type OrderWire =
 ```
 
 Running `schemagen` over the file writes a checked-in sibling `orders.g.fs` containing the module you would have
-written by hand: `OrderWire.schema`, `OrderWire.parse`, `OrderWire.validate`, and typed `OrderWire.Fields`
-references. You own the record; the schema is derived. A bare `[<DeriveSchema>]` record with no other attributes is
+written by hand: `OrderWire.schema`, `OrderWire.parse`, and `OrderWire.validate`. You own the record; the schema is
+derived. A bare `[<DeriveSchema>]` record with no other attributes is
 the everyday case — a shape-only permissive schema, exactly the ceremony of a `System.Text.Json` DTO.
 
 The generated declaration uses the same constructor-last surface as handwritten code:
@@ -241,32 +241,27 @@ Reading a field line left to right: name, optional `as "wire_name"` rename, `?` 
 - **`///` doc comments** become XML docs on the generated types and descriptions in generated JSON Schema.
   `@deprecated "message"` and friends attach metadata.
 
-Generation buys more than the record and schema. Each contract emits `validate` (check an assembled draft),
-`parse` (structured boundary data), and a typed `Fields` module of field references for rules, redisplay, and UI
-binding — and because the output is an ordinary `Schema`, everything schemas already do comes along: JSON Schema
+Generation buys more than the record and schema. Each contract emits `validate` (check an assembled draft) and
+`parse` (structured boundary data), and because the output is an ordinary `Schema`, everything schemas already do comes along: JSON Schema
 output via `JsonSchema.generate` (reject broken payloads before they enter storage), compiled codecs via
 `Json.compile`, inspection metadata, and doc comments carried through to XML docs and generated JSON Schema.
 
 ## Generation Runs in Your Build
 
-Reference the `Axial.Schema.Contracts.Build` package and declare which sources carry wire declarations; the
-generator then runs before compile and keeps the checked-in `.g.fs` siblings fresh — nobody runs a tool by hand,
-and unchanged files cost nothing on rebuild (the target is timestamp-incremental):
+Reference the `Axial.Schema.Contracts.Build` package. The build discovers `[<DeriveSchema>]` records in ordinary
+F# compile files, generates under `obj`, and inserts each generated file immediately after its declaration file:
 
 ```xml
 <ItemGroup>
   <PackageReference Include="Axial.Schema.Contracts.Build" Version="..." PrivateAssets="all" />
 </ItemGroup>
 
-<ItemGroup>
-  <AxialDeriveSchema Include="wire/orders.fs" />
-  <Compile Include="wire/orders.fs" />
-  <Compile Include="wire/orders.g.fs" />
-</ItemGroup>
 ```
 
 `AxialSchemaNaming` (camel | snake | verbatim) sets the naming policy, `AxialSchemaGenEnabled=false` skips
-generation, and `.contract` files ride along as `<AxialContract>` items with `AxialContractNamespace`.
+generation, and `.contract` files ride along as `<AxialContract>` items with `AxialContractNamespace`. Set
+`AxialSchemaGeneratedFiles=CheckedIn` to write `.g.fs` siblings instead; the build still inserts them in the right
+F# compile order, so do not add generated files to `<Compile>` yourself.
 
 The same generator is also a plain CLI for repository development and one-off generation:
 

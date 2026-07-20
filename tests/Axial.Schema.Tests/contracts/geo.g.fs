@@ -43,9 +43,3 @@ module Geo =
     /// Parses structured boundary data through the schema.
     let parse (input: Data) : Result<Geo, Diagnostics<SchemaError>> =
         Schema.parse schema input
-
-    /// Typed field references for rules, redisplay, and UI binding.
-    [<RequireQualifiedAccess>]
-    module Fields =
-        let lat : FieldRef<Geo, decimal> = { Name = "lat"; Get = _.Lat; Set = fun draft value -> { draft with Lat = value } }
-        let lon : FieldRef<Geo, decimal> = { Name = "lon"; Get = _.Lon; Set = fun draft value -> { draft with Lon = value } }

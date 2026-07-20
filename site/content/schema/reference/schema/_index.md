@@ -48,7 +48,7 @@ This page shows `Schema<'value>`, the universal catalog for primitive, collectio
 
 ## JSON Schema generation
 
-- [`Schema.JsonSchema.generate`](./m-schema-jsonschema-generate.md): Generates a compact JSON Schema document from a built model schema&#39;s metadata.
+- [`Schema.JsonSchema.generate`](./m-schema-jsonschema-generate.md): Generates a compact JSON Schema document from any completed schema declaration.
 - [`Schema.JsonSchema.generateValue`](./m-schema-jsonschema-generatevalue.md): Generates a compact JSON Schema document for a standalone value schema.
 
 ## Schema derivation attributes (read by schemagen at generation time)

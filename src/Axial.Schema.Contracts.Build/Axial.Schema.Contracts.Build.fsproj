@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Targets-only package: MSBuild integration for axial schemagen. Referencing it runs wire schema
-       generation before compile, so [<DeriveSchema>] records and .contract files keep their checked-in
-       .g.fs siblings fresh without anyone running a tool by hand. -->
+  <!-- Targets-only package: MSBuild integration for axial schemagen. Referencing it discovers
+       [<DeriveSchema>] records, generates before compile, and preserves F# source ordering. -->
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <IncludeBuildOutput>false</IncludeBuildOutput>
@@ -11,7 +10,7 @@
     <NoWarn>$(NoWarn);NU5128</NoWarn>
     <PackageId>Axial.Schema.Contracts.Build</PackageId>
     <Authors>Adam Davies</Authors>
-    <Description>MSBuild integration for Axial schema generation: derives permissive wire schemas from [&lt;DeriveSchema&gt;]-marked records and .contract files before compile, keeping checked-in .g.fs sources fresh.</Description>
+    <Description>MSBuild integration for Axial schema generation: discovers [&lt;DeriveSchema&gt;]-marked F# records, derives wire schemas before compile, and supports intermediate or checked-in generated files.</Description>
     <PackageProjectUrl>https://github.com/adz/Axial</PackageProjectUrl>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
@@ -30,7 +29,7 @@
   <Target Name="PublishSchemagen">
     <MSBuild
       Projects="$(MSBuildThisFileDirectory)../../scripts/schemagen/schemagen.fsproj"
-      Targets="Publish"
+      Targets="Restore;Publish"
       Properties="Configuration=Release;PublishDir=$(_SchemagenPublishDir)/;SelfContained=false" />
   </Target>
 

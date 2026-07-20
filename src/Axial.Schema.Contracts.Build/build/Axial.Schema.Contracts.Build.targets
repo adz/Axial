@@ -1,50 +1,50 @@
 <Project>
 
   <!--
-    Schema generation before compile.
-
-    Declare the sources that carry schema declarations, alongside their ordinary Compile entries:
+    [<DeriveSchema>] records are discovered automatically in ordinary F# Compile items.
+    Only .contract declarations need a separate MSBuild item:
 
       <ItemGroup>
-        <AxialDeriveSchema Include="wire/orders.fs" />   [<DeriveSchema>] records; emits wire/orders.g.fs
-        <AxialContract Include="contracts/*.contract" />  .contract files; needs $(AxialContractNamespace)
+        <AxialContract Include="contracts/*.contract" />
       </ItemGroup>
 
-    Generated .g.fs siblings are ordinary checked-in sources: list them in <Compile> after their source.
-    The target is timestamp-incremental — unchanged declarations cost nothing on rebuild.
+    Generated files go under obj by default and are inserted into F# compilation immediately after
+    their declaration file. CheckedIn mode writes sibling .g.fs files but still manages Compile ordering.
 
     Properties:
-      AxialSchemaGenEnabled    - set false to skip generation (default true)
+      AxialSchemaGenEnabled      - set false to skip generation (default true)
       AxialSchemaNaming          - camel | snake | verbatim (default camel)
-      AxialContractNamespace   - namespace for .contract-generated code (required with AxialContract items)
-      AxialSchemaGenToolPath   - override the generator path (defaults to the copy in this package)
+      AxialSchemaGeneratedFiles  - Intermediate | CheckedIn (default Intermediate)
+      AxialContractNamespace     - namespace for .contract code (required with AxialContract items)
+      AxialSchemaGenToolPath     - override the task assembly path
   -->
 
   <PropertyGroup>
     <AxialSchemaGenEnabled Condition="'$(AxialSchemaGenEnabled)' == ''">true</AxialSchemaGenEnabled>
     <AxialSchemaNaming Condition="'$(AxialSchemaNaming)' == ''">camel</AxialSchemaNaming>
+    <AxialSchemaGeneratedFiles Condition="'$(AxialSchemaGeneratedFiles)' == ''">Intermediate</AxialSchemaGeneratedFiles>
     <AxialSchemaGenToolPath Condition="'$(AxialSchemaGenToolPath)' == ''">$(MSBuildThisFileDirectory)../tools/schemagen.dll</AxialSchemaGenToolPath>
   </PropertyGroup>
 
-  <Target
-    Name="AxialSchemaGen"
-    BeforeTargets="CoreCompile"
-    Condition="'$(AxialSchemaGenEnabled)' == 'true' and ('@(AxialDeriveSchema)' != '' or '@(AxialContract)' != '')"
-    Inputs="@(AxialDeriveSchema);@(AxialContract)"
-    Outputs="@(AxialDeriveSchema->'%(RootDir)%(Directory)%(Filename).g.fs');@(AxialContract->'%(RootDir)%(Directory)%(Filename).g.fs')">
+  <UsingTask TaskName="Axial.Schema.Contracts.Build.GenerateSchemas" AssemblyFile="$(AxialSchemaGenToolPath)" />
 
-    <Error
-      Condition="'@(AxialContract)' != '' and '$(AxialContractNamespace)' == ''"
-      Text="AxialContractNamespace must be set when AxialContract items are declared." />
+  <Target Name="AxialSchemaGen" BeforeTargets="CoreCompile" Condition="'$(AxialSchemaGenEnabled)' == 'true'">
+    <GenerateSchemas
+      Sources="@(Compile)"
+      Contracts="@(AxialContract)"
+      CompileItems="@(Compile)"
+      Naming="$(AxialSchemaNaming)"
+      ContractNamespace="$(AxialContractNamespace)"
+      ProjectDirectory="$(MSBuildProjectDirectory)"
+      IntermediateOutputPath="$(IntermediateOutputPath)"
+      OutputMode="$(AxialSchemaGeneratedFiles)">
+      <Output TaskParameter="GeneratedCompileItems" ItemName="_AxialCompile" />
+    </GenerateSchemas>
 
-    <PropertyGroup>
-      <_AxialNamespaceArg Condition="'$(AxialContractNamespace)' != ''">--namespace "$(AxialContractNamespace)"</_AxialNamespaceArg>
-      <_AxialDeriveSchemaArgs>@(AxialDeriveSchema->'"%(FullPath)"', ' ')</_AxialDeriveSchemaArgs>
-      <_AxialContractArgs>@(AxialContract->'"%(FullPath)"', ' ')</_AxialContractArgs>
-    </PropertyGroup>
-
-    <Exec Command="dotnet exec &quot;$(AxialSchemaGenToolPath)&quot; --naming $(AxialSchemaNaming) $(_AxialNamespaceArg) $(_AxialDeriveSchemaArgs) $(_AxialContractArgs)" />
-
+    <ItemGroup>
+      <Compile Remove="@(Compile)" />
+      <Compile Include="@(_AxialCompile)" />
+    </ItemGroup>
   </Target>
 
 </Project>

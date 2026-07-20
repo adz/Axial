@@ -62,4 +62,3 @@ This page shows structured boundary data, universal schema parsing into `Result`
 ## Existing values
 
 - [`Schema.check`](./m-schema-schema-check.md): Checks an existing typed value, such as a freely constructed draft, through the schema's constraints, refinements, and record constructor.
-- [`Schema.FieldRef`](./t-schema-fieldref.md): A typed, named reference to one field of a schema-described model.

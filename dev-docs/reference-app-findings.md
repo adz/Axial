@@ -115,8 +115,8 @@ The diagnostics model worked well. Errors could be associated with `name`, neste
 rendered differently at CLI, form, and HTTP boundaries. Accumulation is materially better than fail-fast smart
 constructor chains for user-facing forms and configuration files.
 
-Typed `FieldRef` paths are also a strong idea. They prevent contextual-rule paths from silently drifting when a wire
-field is renamed. That is exactly the sort of small safety feature users appreciate after the first refactor.
+The prototype's typed field paths were not consumed by the finished reference application or any interpreter. They
+were removed from the pre-1.0 surface; a future UI or patch consumer should establish the required abstraction.
 
 ### Versioned contracts that revalidate migrations
 

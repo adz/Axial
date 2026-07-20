@@ -42,9 +42,3 @@ module Category =
     /// Parses structured boundary data through the schema.
     let parse (input: Data) : Result<Category, Diagnostics<SchemaError>> =
         Schema.parse schema input
-
-    /// Typed field references for rules, redisplay, and UI binding.
-    [<RequireQualifiedAccess>]
-    module Fields =
-        let name : FieldRef<Category, string> = { Name = "name"; Get = _.Name; Set = fun draft value -> { draft with Name = value } }
-        let children : FieldRef<Category, Category list> = { Name = "children"; Get = _.Children; Set = fun draft value -> { draft with Children = value } }

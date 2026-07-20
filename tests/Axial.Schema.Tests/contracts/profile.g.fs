@@ -43,12 +43,6 @@ module ProfileV1 =
     let parse (input: Data) : Result<ProfileV1, Diagnostics<SchemaError>> =
         Schema.parse schema input
 
-    /// Typed field references for rules, redisplay, and UI binding.
-    [<RequireQualifiedAccess>]
-    module Fields =
-        let name : FieldRef<ProfileV1, string> = { Name = "name"; Get = _.Name; Set = fun draft value -> { draft with Name = value } }
-        let email : FieldRef<ProfileV1, string> = { Name = "email"; Get = _.Email; Set = fun draft value -> { draft with Email = value } }
-
 /// A user profile with an explicit marketing consent decision.
 type Profile =
     {
@@ -95,10 +89,3 @@ module Profile =
         Contract.create "Profile" 2 schema
         |> Contract.supersedes 1 ProfileV1.schema migrateV1ToV2
         |> Contract.build source
-
-    /// Typed field references for rules, redisplay, and UI binding.
-    [<RequireQualifiedAccess>]
-    module Fields =
-        let name : FieldRef<Profile, string> = { Name = "name"; Get = _.Name; Set = fun draft value -> { draft with Name = value } }
-        let email : FieldRef<Profile, string> = { Name = "email"; Get = _.Email; Set = fun draft value -> { draft with Email = value } }
-        let marketingOptIn : FieldRef<Profile, bool> = { Name = "marketing_opt_in"; Get = _.MarketingOptIn; Set = fun draft value -> { draft with MarketingOptIn = value } }

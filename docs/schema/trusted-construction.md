@@ -173,23 +173,18 @@ let renamed = { workspace with Name = newName }   // newName: WorkspaceName, pro
 This is why refined field types should be the first resort: they leave record syntax, `with`, and structural equality
 untouched while making the invalid states unrepresentable.
 
-**Single field, schema-described model.** A `FieldRef` pairs a field's wire name with a typed getter and an immutable
-setter, declared alongside the schema. Setting through it and re-checking runs the schema's constraints and record
-constructor against the changed value. With the public `Booking` from the first section:
+**Schema-described public record.** Update the record with ordinary `with`, then re-check it to run the schema's
+constraints and record constructor against the changed value. With the public `Booking` from the first section:
 
 ```fsharp
-let endField : FieldRef<Booking, DateOnly> =
-    { Name = "end"; Get = _.End; Set = fun booking value -> { booking with End = value } }
-
-let extended = endField.Set booking newEnd
+let extended = { booking with End = newEnd }
 
 match Schema.check bookingSchema extended with
 | Ok booking -> save booking
 | Error diagnostics -> reject diagnostics
 ```
 
-This suits models that remain publicly constructible, where `Schema.check` is the admission decision rather than the
-type.
+This suits models that remain publicly constructible, where `Schema.check` is the admission decision rather than the type.
 
 **Several fields, private aggregate.** When fields must move together — shifting a booking changes both dates — lower
 to the draft, edit with ordinary record syntax, and re-admit:

@@ -11,11 +11,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="BuildTask.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Axial.Schema.Contracts\Axial.Schema.Contracts.fsproj" />
+    <PackageReference Include="Microsoft.Build.Framework" Version="17.11.4" PrivateAssets="all" ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.11.4" PrivateAssets="all" ExcludeAssets="runtime" />
   </ItemGroup>
 
 </Project>

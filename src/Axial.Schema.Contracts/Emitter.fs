@@ -111,7 +111,7 @@ module Emitter =
         | Distinct -> "distinct"
         | CheckRef name -> failwith $"check reference '{name}' should have been rejected by the resolver"
 
-    /// The F# type of a field as written in the record and FieldRef declarations. `refTypeName` maps a
+    /// The F# type of a field as written in the record. `refTypeName` maps a
     /// pinned contract reference to its generated type name.
     let rec private fsType (refTypeName: ContractRef -> string) contractTypeName fieldName fieldType =
         match fieldType with
@@ -503,18 +503,5 @@ module Emitter =
                     line $"        |> Contract.supersedes {step} {typeNameOf contract.ContractName step}.schema migrateV{step}ToV{step + 1}"
 
                 line "        |> Contract.build source"
-
-            line ""
-            line "    /// Typed field references for rules, redisplay, and UI binding."
-            line "    [<RequireQualifiedAccess>]"
-            line "    module Fields ="
-
-            for field in contract.Fields do
-                let wire = FieldDecl.wireName field
-                let optionSuffix = if field.Optional then " option" else ""
-                let fieldType = $"{fsType refTypeName contractTypeName field.FieldName (fieldTypeOf field)}{optionSuffix}"
-
-                line
-                    $"        let {escapeIdent (camel field.FieldName)} : FieldRef<{contractTypeName}, {fieldType}> = {{ Name = \"{escapeString wire}\"; Get = _.{escapeIdent (fsFieldName field)}; Set = fun draft value -> {{ draft with {escapeIdent (fsFieldName field)} = value }} }}"
 
         builder.ToString().Replace("\r\n", "\n")

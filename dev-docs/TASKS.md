@@ -22,7 +22,7 @@ Axial has two main groups, and everything in this queue serves that split:
 
 Phases 19–28-prelude are complete and recorded in `dev-docs/decisions/README.md` and git history; the most recent
 completions (2026-07-09..13): the Schema value/model catalog consolidation, `Axial.Refined` moved into
-`Axial.ErrorHandling`, `Schema.check` for already assembled typed values, `FieldRef` (with `Set`),
+`Axial.ErrorHandling`, `Schema.check` for already assembled typed values,
 the `.contract` grammar/generator as wire-tier tooling
 (`src/Axial.Schema.Contracts`, `scripts/schemagen`, golden corpus in `tests/Axial.Schema.Tests/contracts/`),
 the `Contract<'model>` versioning engine (`Contract.parse`/`Contract.parseVersion`, typed contiguous n-1 → n
@@ -44,7 +44,8 @@ From the same ZIO comparison; these belong *with* the remote-config milestone, n
   which is where the serialization design effort actually lives.
 - **Diff/Patch**: schema-derived structural diff of two values ("what changed between desired and reported
   config"), rendered over the same `Path` vocabulary as diagnostics so display infrastructure is shared. Read-only
-  walk over erased getters suffices for diff; patch application uses `FieldRef.Set`, which has shipped.
+  walk over erased getters suffices for diff; patch application should be designed once a real consumer establishes
+  whether it needs typed field lenses or a schema-directed patch representation.
 - **Deliberately rejected** from the ZIO list (recorded so nobody re-litigates casually): automatic structural
   migrations (conflicts with manual-typed-migrations; their own docs show it silently deleting fields), advisory
   validation, multi-format codecs before a consumer asks, `DynamicValue` as a public surface (at most internal

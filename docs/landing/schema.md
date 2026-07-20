@@ -68,8 +68,8 @@ must satisfy an invariant, give the type a private representation and a fallible
 that guarantee.
 
 The declaration vocabulary covers primitive and refined values, nested models, lists, maps, optional values, three
-tagged-union shapes, and recursive models. `FieldRef` values name, read, and copy-update draft fields without repeating
-wire-name strings. `Contract` keeps frozen wire versions and typed migrations outside the current domain model.
+tagged-union shapes, and recursive models. `Contract` keeps frozen wire versions and typed migrations outside the
+current domain model.
 
 ## Guides
 

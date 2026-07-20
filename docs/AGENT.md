@@ -49,8 +49,9 @@ code when later callers must rely on an invariant. Expose named domain transitio
 updates against private aggregates. See [Recommended Patterns]({{< relref "/schema/patterns/" >}}).
 
 `[<DeriveSchema>]` belongs on public, namespace-level wire records. The `Axial.Schema.Contracts.Build` package generates
-their `.g.fs` siblings before compile from `<AxialDeriveSchema>` items. Map the generated wire value into a hand-written
-domain type through the domain constructor; do not use generated wire records as invariant-bearing domain types.
+their schema code before compile by discovering the attribute in ordinary F# compile files. Map the generated wire
+value into a hand-written domain type through the domain constructor; do not use generated wire records as
+invariant-bearing domain types.
 
 For larger applications, keep Contracts, Domain, Application, Infrastructure, and Host dependencies one-way. Resolve
 `IServiceProvider` in Host, then give Application a typed Flow environment. Domain should not reference wire or
@@ -204,10 +205,10 @@ Translate common patterns from other libraries into idiomatic Axial.
 | DTO + manual mapping into domain types | schema fields over refined value schemas (`Schema.convert`) |
 | form redisplay with per-field errors | `parsed.Input` + `Data.tryRedisplayPath`, `parsed.ErrorsFor "contacts[1].value"` |
 | workflow-specific business rules | an ordinary result-returning function or an environment-aware `Policy` |
-| editable schema field | `FieldRef` with `Get` and immutable `Set`, followed by `Schema.check` when trust is required |
+| editable schema model | update its public draft record with `with`, followed by `Schema.check` when trust is required |
 | `with` update on a private-representation aggregate | lower to its public draft record, edit with `with`, re-admit through the aggregate's `create` |
 | versioned wire input | `Contract.parse` with an explicit `VersionSource` and typed migrations |
-| hand-written schema for a plain wire DTO | `[<DeriveSchema>]` on the record; `schemagen` (or the `Axial.Schema.Contracts.Build` package) derives `schema`/`parse`/`validate`/`Fields` |
+| hand-written schema for a plain wire DTO | `[<DeriveSchema>]` on the record; `schemagen` (or the `Axial.Schema.Contracts.Build` package) derives `schema`/`parse`/`validate` |
 | cross-field invariant used throughout the app | private aggregate + public draft + fallible constructor; use an `.fsi` file for an opaque interface |
 | update to an invariant-bearing aggregate | named transition returning `Result` when the update can be refused |
 | wire DTO entering business code | explicit wire-to-domain mapping through the domain constructor |

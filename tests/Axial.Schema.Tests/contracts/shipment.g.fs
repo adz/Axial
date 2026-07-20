@@ -31,11 +31,6 @@ module PickupPoint =
     let parse (input: Data) : Result<PickupPoint, Diagnostics<SchemaError>> =
         Schema.parse schema input
 
-    /// Typed field references for rules, redisplay, and UI binding.
-    [<RequireQualifiedAccess>]
-    module Fields =
-        let code : FieldRef<PickupPoint, string> = { Name = "code"; Get = _.Code; Set = fun draft value -> { draft with Code = value } }
-
 /// Schema and boundary functions for CourierDelivery (shipment.fs, CourierDelivery.v1).
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
@@ -58,11 +53,6 @@ module CourierDelivery =
     /// Parses structured boundary data through the schema.
     let parse (input: Data) : Result<CourierDelivery, Diagnostics<SchemaError>> =
         Schema.parse schema input
-
-    /// Typed field references for rules, redisplay, and UI binding.
-    [<RequireQualifiedAccess>]
-    module Fields =
-        let trackingUrl : FieldRef<CourierDelivery, string> = { Name = "trackingUrl"; Get = _.TrackingUrl; Set = fun draft value -> { draft with TrackingUrl = value } }
 
 /// Schema and boundary functions for ShipmentV1 (shipment.fs, Shipment.v1).
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -92,13 +82,6 @@ module ShipmentV1 =
     /// Parses structured boundary data through the schema.
     let parse (input: Data) : Result<ShipmentV1, Diagnostics<SchemaError>> =
         Schema.parse schema input
-
-    /// Typed field references for rules, redisplay, and UI binding.
-    [<RequireQualifiedAccess>]
-    module Fields =
-        let reference : FieldRef<ShipmentV1, string> = { Name = "reference"; Get = _.Reference; Set = fun draft value -> { draft with Reference = value } }
-        let notifyEmail : FieldRef<ShipmentV1, string> = { Name = "notifyEmail"; Get = _.NotifyEmail; Set = fun draft value -> { draft with NotifyEmail = value } }
-        let items : FieldRef<ShipmentV1, Map<string, int>> = { Name = "items"; Get = _.Items; Set = fun draft value -> { draft with Items = value } }
 
 /// Schema and boundary functions for Shipment (shipment.fs, Shipment.v2).
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -162,16 +145,3 @@ module Shipment =
         Contract.create "Shipment" 2 schema
         |> Contract.supersedes 1 ShipmentV1.schema migrateV1ToV2
         |> Contract.build source
-
-    /// Typed field references for rules, redisplay, and UI binding.
-    [<RequireQualifiedAccess>]
-    module Fields =
-        let reference : FieldRef<Shipment, string> = { Name = "reference"; Get = _.Reference; Set = fun draft value -> { draft with Reference = value } }
-        let notifyEmail : FieldRef<Shipment, string> = { Name = "notify_email"; Get = _.NotifyEmail; Set = fun draft value -> { draft with NotifyEmail = value } }
-        let items : FieldRef<Shipment, Map<string, int>> = { Name = "items"; Get = _.Items; Set = fun draft value -> { draft with Items = value } }
-        let tags : FieldRef<Shipment, string list> = { Name = "tags"; Get = _.Tags; Set = fun draft value -> { draft with Tags = value } }
-        let weightKg : FieldRef<Shipment, decimal> = { Name = "weightKg"; Get = _.WeightKg; Set = fun draft value -> { draft with WeightKg = value } }
-        let priority : FieldRef<Shipment, ShipmentPriority> = { Name = "priority"; Get = _.Priority; Set = fun draft value -> { draft with Priority = value } }
-        let delivery : FieldRef<Shipment, DeliveryMethod> = { Name = "delivery"; Get = _.Delivery; Set = fun draft value -> { draft with Delivery = value } }
-        let origin : FieldRef<Shipment, PickupPoint option> = { Name = "origin"; Get = _.Origin; Set = fun draft value -> { draft with Origin = value } }
-        let boxes : FieldRef<Shipment, int> = { Name = "boxes"; Get = _.Boxes; Set = fun draft value -> { draft with Boxes = value } }

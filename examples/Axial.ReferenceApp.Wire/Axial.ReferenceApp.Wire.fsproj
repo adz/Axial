@@ -3,19 +3,14 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
-    <!--
-      Package consumers reference Axial.Schema.Contracts.Build (PrivateAssets="all") and the same
-      AxialDeriveSchema items; generation then runs before compile. Inside this repository the generator
-      is the scripts/schemagen project, so regenerate by hand after editing wire/workspace.fs:
-
-        dotnet run \-\-project scripts/schemagen \-\- examples/Axial.ReferenceApp.Wire/wire
-    -->
+    <!-- Dogfood checked-in generation. Package consumers only need the Contracts.Build reference;
+         the source-tree task path and import below stand in for that package during repository builds. -->
+    <AxialSchemaGeneratedFiles>CheckedIn</AxialSchemaGeneratedFiles>
+    <AxialSchemaGenToolPath>$(ArtifactsPath)/bin/schemagen/$([System.String]::Copy('$(Configuration)').ToLowerInvariant())/schemagen.dll</AxialSchemaGenToolPath>
   </PropertyGroup>
 
   <ItemGroup>
-    <AxialDeriveSchema Include="wire/workspace.fs" />
     <Compile Include="wire/workspace.fs" />
-    <Compile Include="wire/workspace.g.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
@@ -24,6 +19,9 @@
     <ProjectReference Include="..\..\src\Axial.Schema.JsonSchema\Axial.Schema.JsonSchema.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Schema.Codec\Axial.Schema.Codec.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Data\Axial.Data.fsproj" />
+    <ProjectReference Include="..\..\scripts\schemagen\schemagen.fsproj" ReferenceOutputAssembly="false" PrivateAssets="all" />
   </ItemGroup>
+
+  <Import Project="..\..\src\Axial.Schema.Contracts.Build\build\Axial.Schema.Contracts.Build.targets" />
 
 </Project>

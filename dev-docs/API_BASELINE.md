@@ -126,7 +126,7 @@ the named modules, types, and members users and examples are expected to depend 
 - `Check`, `Bind`, `BindError`, `Validation`, `Diagnostics`
 - `Schema`, `Value`, `Field`, `SchemaConstraint`, `Inspect` and its description types, `JsonSchema`
 - `Axial.Codec` `Json` module and `JsonCodec`
-- `Data`, `Schema.parse`/`Schema.check`, `RetainedParseResult`, `SchemaError`, `FieldRef`, `Contract`
+- `Data`, `Schema.parse`/`Schema.check`, `RetainedParseResult`, `SchemaError`, `Contract`
 - `Policy` and `Flow.verify`
 - the leaf-package dependency graph (`leaf packages stay independent of each other`)
 - `Schedule`, `FlowStream`, `STM`, `TRef`, `Ref`

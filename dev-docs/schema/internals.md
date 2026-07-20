@@ -31,7 +31,6 @@ the overview, the comments are the ground truth.
 | `Shape.fs` | The constructor-last authoring surface: `DefineShape`, `ObjectShape`, `Syntax` (module and type), `Schema.admit`. |
 | `SchemaValidation.fs` | Constraint interpretation: each portable constraint's runtime meaning. |
 | `RetainedParseResult.fs` | `RetainedParseResult` — parse results plus redisplay data. |
-| `FieldRef.fs` | `FieldRef` — typed get/set field references used by generated code and editing helpers. |
 | `Parsing.fs` | The parse/check interpreter (`SchemaParsing`). |
 | `SchemaApi.fs` | The public `Schema` module. A facade: every function delegates to an internal implementation. |
 | `Contract.fs` | Versioned contracts: version detection + stepwise migrations. |

@@ -37,8 +37,8 @@ hold.
 
 ## Run generation as part of the build
 
-Reference the build package and list the declaration source. Keep the generated sibling after its source in F# compile
-order.
+Reference the build package. `[<DeriveSchema>]` records are discovered in the project's ordinary F# compile files;
+generated code is placed under `obj` and inserted in the correct compile order automatically.
 
 ```xml
 <ItemGroup>
@@ -48,17 +48,13 @@ order.
       PrivateAssets="all" />
 </ItemGroup>
 
-<ItemGroup>
-  <AxialDeriveSchema Include="Contracts/Booking.fs" />
-  <Compile Include="Contracts/Booking.fs" />
-  <Compile Include="Contracts/Booking.g.fs" />
-</ItemGroup>
 ```
 
-The target runs before `CoreCompile`. It is timestamp-incremental, so unchanged declarations do not regenerate.
+Set `AxialSchemaGeneratedFiles` to `CheckedIn` when the repository deliberately commits generated siblings. Do not add
+those `.g.fs` files to `<Compile>`; the target inserts them after their declaration files.
 
-The generated module contains `schema`, `parse`, `validate`, and typed `Fields`. Stale generated code is replaced during
-the normal build; no separate generator command is needed.
+The generated module contains `schema`, `parse`, and `validate`. Stale generated code is replaced during the normal
+build; no separate generator command is needed.
 
 ## Admit the wire value into the domain
 

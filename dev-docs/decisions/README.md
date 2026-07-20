@@ -174,6 +174,10 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 - Setters operate on draft model values. Code that requires schema trust must pass the updated draft through
   `Schema.check`; a field setter does not imply that cross-field constructor invariants still hold.
 
+Superseded 2026-07-20: no Axial interpreter or reference application consumed the generated references. The generator
+and `Axial.Schema` no longer expose `Fields`/`FieldRef`; a future diff/patch or UI consumer should establish the
+required update abstraction before it becomes public API again.
+
 ## Current Invariants
 
 - `Flow<'env, 'error, 'value>` is the public workflow model. Platform carriers are execution/adaptation boundaries, not

@@ -72,7 +72,6 @@ contract Kw.v1 {
         let emitted = Emitter.emit "Ns" [ parsed ] parsed
 
         test <@ emitted.Contains "fun ``type`` ``method``" @>
-        test <@ emitted.Contains "let ``type`` : FieldRef<Kw, string>" @>
         test <@ emitted.Contains "Type: string" @>
         test <@ emitted.Contains "Method: int" @>
 

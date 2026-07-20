@@ -52,7 +52,6 @@
     <Compile Include="Shape.fs" />
     <Compile Include="SchemaValidation.fs" />
     <Compile Include="RetainedParseResult.fs" />
-    <Compile Include="FieldRef.fs" />
     <Compile Include="Parsing.fs" />
     <Compile Include="SchemaApi.fs" />
     <Compile Include="Contract.fs" />

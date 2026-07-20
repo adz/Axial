@@ -14,7 +14,7 @@ Active sketches:
   format-specific Schema packages, split the documentation experience, and isolate .NET/Fable codec runtimes behind
   concentrated compiler directives.
 - `database.md` — direction sketch for a typed relational layer (generated immutable query AST interpreted through
-  Flow, building on `Schema` and `FieldRef`).
+  Flow, building on `Schema`; its older `FieldRef` references need redesign if the idea is promoted).
 - `flow-stream-proving.md` — pre-1.0 plan to prove and freeze resource-safe, portable FlowStream semantics through
   Process and narrow TCP, Serial, WebSocket, and SSE slices.
 - `flow-transport-packages.md` — package and API direction layered on the FlowStream proving plan for Transport,

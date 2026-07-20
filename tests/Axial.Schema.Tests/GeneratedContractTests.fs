@@ -14,13 +14,6 @@ open Xunit
 module GeneratedContractTests =
 
     [<Fact>]
-    let ``generated field references update one field immutably`` () =
-        let original: Axial.Tests.Generated.Geo = { Lat = 1m; Lon = 2m }
-        let changed = Axial.Tests.Generated.Geo.Fields.lat.Set original 3m
-        test <@ changed = { Lat = 3m; Lon = 2m } @>
-        test <@ original = { Lat = 1m; Lon = 2m } @>
-
-    [<Fact>]
     let ``generated recursive contract parses child trees`` () =
         let raw =
             Data.objectOfMap (Map.ofList
@@ -134,22 +127,6 @@ module GeneratedContractTests =
             test <@ signup.Plan = SignupPlan.Pro @>
             test <@ signup.Location = None @>
         | Error diagnostics -> failwithf "Expected parse success, got %A" diagnostics
-
-    [<Fact>]
-    let ``field references carry wire names and typed getters`` () =
-        test <@ Signup.Fields.displayName.Name = "display_name" @>
-        test <@ Signup.Fields.age.Path = [ PathSegment.Name "age" ] @>
-
-        let draft =
-            { Email = "ada@example.com"
-              DisplayName = None
-              Age = 42
-              Plan = SignupPlan.Free
-              Tags = []
-              Limits = Map.empty
-              Location = None }
-
-        test <@ Signup.Fields.email.Get draft = "ada@example.com" @>
 
     [<Fact>]
     let ``tagged union contracts validate and parse through the generated inline union`` () =
@@ -322,7 +299,7 @@ module GeneratedContractTests =
         | Error error -> failwithf "Expected a migrated v1 shipment, got %A" error
 
     [<Fact>]
-    let ``superseded generated versions keep their own frozen schema and fields`` () =
+    let ``superseded generated versions keep their own frozen schema`` () =
         let parsed =
             ProfileV1.parse (
                 Data.objectOfMap (Map.ofList [ "name", Data.Text "Ada"; "email", Data.Text "ada@example.com" ]
@@ -330,5 +307,5 @@ module GeneratedContractTests =
             )
 
         match parsed with
-        | Ok v1 -> test <@ ProfileV1.Fields.name.Get v1 = "Ada" @>
+        | Ok v1 -> test <@ v1.Name = "Ada" @>
         | Error diagnostics -> failwithf "Expected a v1 parse, got %A" diagnostics
