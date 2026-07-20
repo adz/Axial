@@ -29,7 +29,7 @@
     <Compile Include="..\..\src\Axial.Schema\Definitions.fs" />
     <Compile Include="..\..\src\Axial.Schema\RecordPlan.fs" />
     <Compile Include="..\..\src\Axial.Schema\SchemaType.fs" />
-    <Compile Include="..\..\src\Axial.Schema\ValueCatalog.fs" />
+    <Compile Include="..\..\src\Axial.Schema\ValueSchema.fs" />
     <Compile Include="..\..\src\Axial.Schema\SchemaCore.fs" />
     <Compile Include="..\..\src\Axial.Schema\Shape.fs" />
     <Compile Include="..\..\src\Axial.Schema.Codec\AssemblyInfo.fs" />
