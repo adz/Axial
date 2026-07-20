@@ -1,3 +1,7 @@
+// SchemaError: the one portable error vocabulary every schema interpreter reports through, so
+// parsing, checking, and refinement failures render and compose the same way regardless of which
+// interpreter raised them. AXIAL_SCHEMA_CORE_ONLY trims the Refined/Validation-dependent cases for
+// consumers that only need the core shape.
 namespace Axial.Schema
 
 open Axial.ErrorHandling

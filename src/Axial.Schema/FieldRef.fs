@@ -1,3 +1,7 @@
+// FieldRef<'model,'value>: a typed, named reference to one field (external name + typed getter and
+// immutable setter), used where code needs to talk about a specific field rather than a whole model
+// — contextual rules, generated code, and anywhere a field path needs to survive as a first-class
+// value instead of a lambda.
 namespace Axial.Schema
 
 open Axial.Validation

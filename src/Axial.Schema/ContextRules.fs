@@ -1,3 +1,6 @@
+// Contextual (cross-field, per-context) rules over an already-trusted model — requirements that vary
+// by workflow, user, tenant, or feature flag rather than being intrinsic to the type. Rules never
+// construct or transform the model; they run after Schema.parse/check has already produced one.
 namespace Axial.Schema
 
 open Axial.Validation

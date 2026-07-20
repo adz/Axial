@@ -1,3 +1,7 @@
+// The metadata interpreter: walks a completed Schema/model definition into inspectable shape
+// descriptions (SchemaShape, ModelDescription, FieldDescription, ...) with no getters, constructors,
+// or executable checks. Non-validation interpreters — JSON Schema, docs, UI generators — read this
+// instead of the erased definitions directly.
 namespace Axial.Schema
 
 /// <summary>

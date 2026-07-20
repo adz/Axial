@@ -1,19 +1,18 @@
-namespace Axial.Schema
+// The constructor-last authoring surface: DefineShape/ObjectShape build a typed field chain one
+// field at a time (see RecordPlan.fs for the chain itself), Syntax (module and type) is the public
+// field/constrain/construct vocabulary, and Schema.admit rewrites a draft's definition through a
+// checked projection. This is the file schema-definition modules actually open.
 
 // FS0064: the SRTP witness pattern (`(^w or ^s) : ...` with ^w fixed to a concrete witness class)
 // intentionally constrains the witness type variable; the warning is noise here.
+namespace Axial.Schema
+
 #nowarn "64"
 
 #if !FABLE_COMPILER
 open Microsoft.FSharp.Quotations
 open Microsoft.FSharp.Quotations.Patterns
 #endif
-
-// The constructor-last authoring surface. An ObjectShape is a structural record shape that does not
-// yet know how to construct its model: define + fields = structural shape; shape + constructor =
-// schema. The shape's phantom parameters record the curried constructor type the declared fields
-// demand, one argument per field, so any number of fields closes with a single `construct` call —
-// there is no per-arity dispatch anywhere.
 
 /// <summary>A typed field constraint: a <see cref="T:Axial.Schema.Constraint" /> that only applies to
 /// fields whose value type is <typeparamref name="'value" />. Produced by the typed constraint
