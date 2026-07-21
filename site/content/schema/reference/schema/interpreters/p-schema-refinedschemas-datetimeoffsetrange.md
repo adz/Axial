@@ -17,4 +17,4 @@ Describes a date-time range as a record schema with <code>start</code> and <code
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<a href="../../refined/t-refined-datetimeoffsetrange.md">DateTimeOffsetRange</a>&gt;</span></code> |  |
+| <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<a href="../../error-handling/refined/t-refined-datetimeoffsetrange.md">DateTimeOffsetRange</a>&gt;</span></code> |  |

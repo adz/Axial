@@ -17,7 +17,7 @@ Returns the native GenHTTP request for host-specific boundary handling.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="../../../flow/t-flow-flow.md">Flow</a>&lt;<span><span><a href="t-schema-http-genhttp-httpendpointenv.md">HttpEndpointEnv</a>&lt;'app&gt;</span>,&#32;<span><a href="t-schema-http-genhttp-endpointerror.md">EndpointError</a>&lt;'error&gt;</span>,&#32;<a href="https://learn.microsoft.com/dotnet/api/genhttp.api.protocol.irequest">IRequest</a></span>&gt;</span></code> | An endpoint Flow containing the current native request. |
+| <code><span><a href="https://learn.microsoft.com/dotnet/api/axial.flow.flow-3">Flow</a>&lt;<span><span><a href="t-schema-http-genhttp-httpendpointenv.md">HttpEndpointEnv</a>&lt;'app&gt;</span>,&#32;<span><a href="t-schema-http-genhttp-endpointerror.md">EndpointError</a>&lt;'error&gt;</span>,&#32;<a href="https://learn.microsoft.com/dotnet/api/genhttp.api.protocol.irequest">IRequest</a></span>&gt;</span></code> | An endpoint Flow containing the current native request. |
 
 ## Examples
 

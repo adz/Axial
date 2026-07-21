@@ -3,6 +3,18 @@
 This folder keeps only high-level durable decisions. Detailed historical specs are deleted once their useful rules have
 been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 
+## 2026-07-21: Documentation has two product homes
+
+- `/schema/` is the complete input-to-domain documentation home. It owns the guides and generated reference for
+  `Axial.Data`, `Axial.ErrorHandling`, Schema, codecs, contracts, and Schema HTTP adapters while continuing to state
+  their individual NuGet package boundaries.
+- `/flow/` is the complete workflow documentation home. The Axial root is a short index linking the two products;
+  ErrorHandling and Data are no longer peer top-level documentation areas.
+- Hand-written guides, generated API reference, AI-agent guidance, and `llms.txt` context are product-local. API and
+  example generation plus Hugo validation can run through `validate-schema-docs.sh` or `validate-flow-docs.sh`.
+- Platform matrices distinguish .NET, host-neutral Fable JavaScript, Node-only, browser-only, and portable APIs whose
+  first-party live implementation remains .NET-only.
+
 ## 2026-07-16: HTTP hosts lower schema-trusted endpoint Flows without owning routing
 
 - `Axial.Schema.Http.AspNetCore` and `.GenHttp` depend on both `Axial.Schema.Http` and `Axial.Flow`. Their default

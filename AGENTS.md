@@ -56,7 +56,7 @@ Refer to [`dev-docs/PLAN.md`](dev-docs/PLAN.md) for architectural direction and
 
 ## Doc Workflow
 
-- Treat `docs/reference/**`, `docs/examples/README.md`, `llms.txt`, and versioned docs as generated outputs or generator-backed outputs.
+- Treat `docs/schema/reference/**`, `docs/flow/reference/**`, `docs/examples/README.md`, and versioned docs as generated outputs or generator-backed outputs. The three `llms.txt` files are hand-written product entry points.
 - When changing an API, update the source comments and the doc generator inputs first, then regenerate the docs. Do not hand-edit generated reference pages as the primary fix.
 - When a user-facing guide needs to cite a new or renamed API, update the source comments and reference pages in the same pass, then run the generators immediately.
 - For small checkbox tasks, regenerate directly affected docs as needed but defer `bash scripts/validate-docs.sh` until the phase end or a release/deploy checkpoint. `dev-docs/**` idea/planning notes do not require validation. For release/deploy checks, also run `npm run build` in `site`.

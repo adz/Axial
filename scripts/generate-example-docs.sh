@@ -3,8 +3,16 @@
 set -euo pipefail
 
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+product="${1:-all}"
 schema_output="${DOCS_SCHEMA_EXAMPLES_OUTPUT:-$root_dir/docs/schema/examples.md}"
 flow_output="${DOCS_FLOW_EXAMPLES_OUTPUT:-$root_dir/docs/flow/examples.md}"
+
+case "$product" in
+  schema) emit_schema=true; emit_flow=false ;;
+  flow) emit_schema=false; emit_flow=true ;;
+  all) emit_schema=true; emit_flow=true ;;
+  *) echo "Usage: $0 [schema|flow|all]" >&2; exit 2 ;;
+esac
 
 mkdir -p "$(dirname "$schema_output")" "$(dirname "$flow_output")"
 
@@ -84,9 +92,14 @@ write_page_header() {
   } > "$file"
 }
 
-write_page_header "$schema_staging" "Executable schema, refined, diagnostics, and policy examples mirrored back into the docs."
-write_page_header "$flow_staging" "Executable workflow boundary examples mirrored back into the docs."
+if $emit_schema; then
+  write_page_header "$schema_staging" "Executable schema, refined, diagnostics, and policy examples mirrored back into the docs."
+fi
+if $emit_flow; then
+  write_page_header "$flow_staging" "Executable workflow boundary examples mirrored back into the docs."
+fi
 
+if $emit_flow; then
 output_file="$flow_staging"
 render_example_section \
   "Request Boundary Example" \
@@ -96,7 +109,9 @@ render_example_section \
   "https://github.com/adz/Axial/blob/main/examples/Axial.Examples/RequestBoundaryExample.fs" \
   "AXIAL_EXAMPLE=request-boundary dotnet run --project examples/Axial.Examples/Axial.Examples.fsproj --nologo" \
   "request-boundary"
+fi
 
+if $emit_schema; then
 output_file="$schema_staging"
 render_example_section \
   "Diagnostics Example" \
@@ -142,7 +157,9 @@ render_example_section \
   "https://github.com/adz/Axial/blob/main/examples/Axial.Examples/PolicyExamples.fs" \
   "AXIAL_EXAMPLE=policy dotnet run --project examples/Axial.Examples/Axial.Examples.fsproj --nologo" \
   "policy"
+fi
 
+if $emit_flow; then
 output_file="$flow_staging"
 render_example_section \
   'Playground Example' \
@@ -168,8 +185,14 @@ render_example_section \
   "https://github.com/adz/Axial/blob/main/examples/Axial.Examples/SupervisionExample.fs" \
   "AXIAL_EXAMPLE=supervision dotnet run --project examples/Axial.Examples/Axial.Examples.fsproj --nologo" \
   "supervision"
+fi
 
 # mktemp creates the staging files with mode 600; the docs should stay world-readable.
-chmod 644 "$schema_staging" "$flow_staging"
-mv "$schema_staging" "$schema_output"
-mv "$flow_staging" "$flow_output"
+if $emit_schema; then
+  chmod 644 "$schema_staging"
+  mv "$schema_staging" "$schema_output"
+fi
+if $emit_flow; then
+  chmod 644 "$flow_staging"
+  mv "$flow_staging" "$flow_output"
+fi

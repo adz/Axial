@@ -25,4 +25,4 @@ Describes a bounded list as a schema refined value over a collection with inclus
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<span><a href="../../refined/t-refined-boundedlist.md">BoundedList</a>&lt;'value&gt;</span>&gt;</span></code> |  |
+| <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<span><a href="../../error-handling/refined/t-refined-boundedlist.md">BoundedList</a>&lt;'value&gt;</span>&gt;</span></code> |  |

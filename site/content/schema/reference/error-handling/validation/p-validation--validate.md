@@ -17,4 +17,4 @@ The accumulating <code>validate { }</code> computation expression.
 
 | Type | Description |
 | --- | --- |
-| <code><a href="builders-validate.md">ValidateBuilder</a></code> |  |
+| <code><a href="../../validation/builders-validate.md">ValidateBuilder</a></code> |  |

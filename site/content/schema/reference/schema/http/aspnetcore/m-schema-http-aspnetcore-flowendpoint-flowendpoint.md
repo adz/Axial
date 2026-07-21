@@ -19,7 +19,7 @@ Lowers an endpoint Flow to the native ASP.NET Core handler expected by minimal-A
 | --- | --- | --- |
 | `getAppEnvironment` | <code><span><a href="https://learn.microsoft.com/dotnet/api/microsoft.aspnetcore.http.httpcontext">HttpContext</a>&#32;->&#32;'app</span></code> | Constructs or resolves the explicit application environment for the current request. |
 | `mapApplicationError` | <code><span>'error&#32;->&#32;<a href="https://learn.microsoft.com/dotnet/api/microsoft.aspnetcore.http.iresult">IResult</a></span></code> | Maps one expected application failure to an ASP.NET result. |
-| `workflow` | <code><span><a href="../../../flow/t-flow-flow.md">Flow</a>&lt;<span><span><a href="t-schema-http-aspnetcore-httpendpointenv.md">HttpEndpointEnv</a>&lt;'app&gt;</span>,&#32;<span><a href="t-schema-http-aspnetcore-endpointerror.md">EndpointError</a>&lt;'error&gt;</span>,&#32;<a href="https://learn.microsoft.com/dotnet/api/microsoft.aspnetcore.http.iresult">IResult</a></span>&gt;</span></code> | The complete endpoint Flow to execute. |
+| `workflow` | <code><span><a href="https://learn.microsoft.com/dotnet/api/axial.flow.flow-3">Flow</a>&lt;<span><span><a href="t-schema-http-aspnetcore-httpendpointenv.md">HttpEndpointEnv</a>&lt;'app&gt;</span>,&#32;<span><a href="t-schema-http-aspnetcore-endpointerror.md">EndpointError</a>&lt;'error&gt;</span>,&#32;<a href="https://learn.microsoft.com/dotnet/api/microsoft.aspnetcore.http.iresult">IResult</a></span>&gt;</span></code> | The complete endpoint Flow to execute. |
 
 ## Returns
 

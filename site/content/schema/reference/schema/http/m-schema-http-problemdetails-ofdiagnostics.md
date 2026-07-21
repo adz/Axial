@@ -17,7 +17,7 @@ Builds a 400 problem-details value from failed schema parse diagnostics.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `diagnostics` | <code><span><a href="../../diagnostics/t-validation-diagnostics.md">Diagnostics</a>&lt;<a href="../interpreters/t-schema-schemaerror.md">SchemaError</a>&gt;</span></code> |  |
+| `diagnostics` | <code><span><a href="../../error-handling/diagnostics/t-validation-diagnostics.md">Diagnostics</a>&lt;<a href="../interpreters/t-schema-schemaerror.md">SchemaError</a>&gt;</span></code> |  |
 
 ## Returns
 

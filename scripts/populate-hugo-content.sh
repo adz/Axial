@@ -55,33 +55,12 @@ mkdir -p "$schema_dir" "$flow_dir"
 
 cp -r "$root_dir/docs/schema/." "$schema_dir/"
 cp -r "$root_dir/docs/flow/." "$flow_dir/"
-rm -rf "$schema_dir/reference-indexes" "$flow_dir/reference-indexes"
+rm -f "$schema_dir/llms.txt" "$flow_dir/llms.txt"
 
-# Distribute the generated API reference (docs/reference/<group>) into the
-# three areas, then apply weights and per-area index pages.
+# Product-local generated API reference is copied with the guides. Apply the
+# navigation weights needed by the rendered site.
 schema_ref="$schema_dir/reference"
 flow_ref="$flow_dir/reference"
-
-copy_ref_group() {
-  local dest="$1"
-  local group="$2"
-  mkdir -p "$dest"
-  cp -r "$root_dir/docs/reference/$group" "$dest/"
-}
-
-for group in check predicate result validation diagnostics refined; do
-  copy_ref_group "$schema_ref/error-handling" "$group"
-done
-for group in schema codec data; do
-  copy_ref_group "$schema_ref" "$group"
-done
-for group in app flow fiber exit cause concurrency schedule ref stm stream bind service layer scope hosting hosting-node hosting-browser; do
-  copy_ref_group "$flow_ref" "$group"
-done
-
-cp "$root_dir/docs/schema/reference-indexes/error-handling.md" "$schema_ref/error-handling/_index.md"
-cp "$root_dir/docs/schema/reference-indexes/schema.md" "$schema_ref/_index.md"
-cp "$root_dir/docs/flow/reference-indexes/flow.md" "$flow_ref/_index.md"
 
 upsert_frontmatter "$flow_ref/flow/_index.md" "weight" "10"
 upsert_frontmatter "$flow_ref/flow/runtime/_index.md" "weight" "10"
@@ -140,6 +119,9 @@ find "$schema_dir" "$flow_dir" -type f -name "*.md" -print0 |
 
 # Copy root assets
 cp "$root_dir/llms.txt" "$root_dir/site/static/" 2>/dev/null || true
+mkdir -p "$root_dir/site/static/schema" "$root_dir/site/static/flow"
+cp "$root_dir/docs/schema/llms.txt" "$root_dir/site/static/schema/llms.txt"
+cp "$root_dir/docs/flow/llms.txt" "$root_dir/site/static/flow/llms.txt"
 mkdir -p "$root_dir/site/static/content"
 cp -r "$root_dir/docs/content/"* "$root_dir/site/static/content/" 2>/dev/null || true
 

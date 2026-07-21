@@ -68,7 +68,8 @@ Working on `src/Axial.Schema`? Read `dev-docs/schema/internals.md` first (implem
 
 Default `rg` ignores generated/vendor-heavy paths through `.rgignore`:
 
-- `docs/reference/**`
+- `docs/schema/reference/**`
+- `docs/flow/reference/**`
 - `site/content/reference/**`
 - `site/_vendor/**`
 - `site/public/**`

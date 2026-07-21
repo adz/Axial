@@ -17,4 +17,4 @@ Describes a positive integer as a schema refined value over an integer greater t
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<a href="../../refined/t-refined-positiveint.md">PositiveInt</a>&gt;</span></code> |  |
+| <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<a href="../../error-handling/refined/t-refined-positiveint.md">PositiveInt</a>&gt;</span></code> |  |

@@ -17,4 +17,4 @@ Describes a trimmed string as a schema refined value over text with no leading o
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<a href="../../refined/t-refined-trimmedstring.md">TrimmedString</a>&gt;</span></code> |  |
+| <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<a href="../../error-handling/refined/t-refined-trimmedstring.md">TrimmedString</a>&gt;</span></code> |  |

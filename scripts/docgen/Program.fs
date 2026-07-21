@@ -1208,26 +1208,38 @@ let normalizeGeneratedMarkdown (content: string) =
 let main argv =
     let root = Path.GetFullPath(Path.Combine(__SOURCE_DIRECTORY__, "../.."))
     let artifactsDir = Path.Combine(root, "artifacts/bin")
+
+    let product =
+        match Environment.GetEnvironmentVariable "AXIAL_DOCS_PRODUCT" with
+        | null | "" -> "all"
+        | value -> value.Trim().ToLowerInvariant()
+
+    if product <> "all" && product <> "schema" && product <> "flow" then
+        invalidArg "AXIAL_DOCS_PRODUCT" "Expected 'schema' or 'flow'."
     
     let outRoot =
         match Environment.GetEnvironmentVariable "AXIAL_DOCS_OUT_ROOT" with
-        | null | "" -> Path.Combine(root, "docs/reference")
+        | null | "" ->
+            match product with
+            | "schema" -> Path.Combine(root, "docs/schema/reference")
+            | "flow" -> Path.Combine(root, "docs/flow/reference")
+            | _ -> Path.Combine(root, "docs/reference")
         | path -> Path.GetFullPath path
     
     if Directory.Exists outRoot then
-        for d in Directory.GetDirectories(outRoot) do
-            Directory.Delete(d, true)
-        for f in Directory.GetFiles(outRoot) do
+        for f in Directory.GetFiles(outRoot, "*", SearchOption.AllDirectories) do
             if Path.GetFileName(f) <> "_index.md" then
                 File.Delete(f)
+
+        for d in Directory.GetDirectories(outRoot, "*", SearchOption.AllDirectories) |> Array.sortByDescending String.length do
+            if not (Directory.EnumerateFileSystemEntries(d) |> Seq.isEmpty) then () else Directory.Delete(d)
     else
         Directory.CreateDirectory(outRoot) |> ignore
 
     // All inputs load their net8.0 build so the reference always reflects the widest TFM-gated
     // surface (e.g. ValueSchema.date and ofJsonElement); netstandard2.1-only builds would
     // silently drop those members from the docs instead of describing them as unavailable there.
-    let dllPaths = [
-        Path.Combine(artifactsDir, "Axial.Flow/debug_net8.0/Axial.Flow.dll")
+    let schemaDllPaths = [
         Path.Combine(artifactsDir, "Axial.ErrorHandling/debug_net8.0/Axial.ErrorHandling.dll")
         Path.Combine(artifactsDir, "Axial.Data/debug_net8.0/Axial.Data.dll")
         Path.Combine(artifactsDir, "Axial.Schema/debug_net8.0/Axial.Schema.dll")
@@ -1236,6 +1248,10 @@ let main argv =
         Path.Combine(artifactsDir, "Axial.Schema.Http/debug/Axial.Schema.Http.dll")
         Path.Combine(artifactsDir, "Axial.Schema.Http.AspNetCore/debug/Axial.Schema.Http.AspNetCore.dll")
         Path.Combine(artifactsDir, "Axial.Schema.Http.GenHttp/debug/Axial.Schema.Http.GenHttp.dll")
+    ]
+
+    let flowDllPaths = [
+        Path.Combine(artifactsDir, "Axial.Flow/debug_net8.0/Axial.Flow.dll")
         Path.Combine(artifactsDir, "Axial.Flow.PlatformService/debug_net8.0/Axial.Flow.PlatformService.dll")
         Path.Combine(artifactsDir, "Axial.Flow.Console/debug_net8.0/Axial.Flow.Console.dll")
         Path.Combine(artifactsDir, "Axial.Flow.FileSystem/debug_net8.0/Axial.Flow.FileSystem.dll")
@@ -1245,6 +1261,12 @@ let main argv =
         Path.Combine(artifactsDir, "Axial.Flow.Hosting.Node/debug/Axial.Flow.Hosting.Node.dll")
         Path.Combine(artifactsDir, "Axial.Flow.Hosting.Browser/debug/Axial.Flow.Hosting.Browser.dll")
     ]
+
+    let dllPaths =
+        match product with
+        | "schema" -> schemaDllPaths
+        | "flow" -> flowDllPaths
+        | _ -> schemaDllPaths @ flowDllPaths
 
     let apiDocInputs = [
         for dll in dllPaths do
@@ -1259,7 +1281,8 @@ let main argv =
           typeof<Microsoft.Extensions.Hosting.IHostedService>.Assembly.Location
           typeof<Microsoft.AspNetCore.Http.HttpContext>.Assembly.Location
           typeof<GenHTTP.Api.Protocol.IRequest>.Assembly.Location
-          typeof<Fable.Core.JS.Promise<_>>.Assembly.Location ]
+          typeof<Fable.Core.JS.Promise<_>>.Assembly.Location
+          Path.Combine(artifactsDir, "Axial.Flow/debug_net8.0/Axial.Flow.dll") ]
         |> List.map Path.GetDirectoryName
         |> List.distinct
 
@@ -1278,10 +1301,28 @@ let main argv =
         |> Seq.collect collectAllEntities
         |> Seq.toList
 
+    let schemaReferenceGroups =
+        set [ "check"; "predicate"; "result"; "validation"; "diagnostics"; "refined"; "schema"; "codec"; "data" ]
+
+    let errorHandlingReferenceGroups =
+        set [ "check"; "predicate"; "result"; "validation"; "diagnostics"; "refined" ]
+
     let selectedPageSpecs =
+        let forProduct =
+            match product with
+            | "schema" -> pageSpecs |> List.filter (fun spec -> schemaReferenceGroups.Contains spec.OutPath.Head)
+            | "flow" -> pageSpecs |> List.filter (fun spec -> not (schemaReferenceGroups.Contains spec.OutPath.Head))
+            | _ -> pageSpecs
+
         match Environment.GetEnvironmentVariable "AXIAL_DOCS_PAGE_PREFIX" with
-        | null | "" -> pageSpecs
-        | prefix -> pageSpecs |> List.filter (fun spec -> String.concat "/" spec.OutPath |> fun path -> path.StartsWith(prefix, StringComparison.Ordinal))
+        | null | "" -> forProduct
+        | prefix -> forProduct |> List.filter (fun spec -> String.concat "/" spec.OutPath |> fun path -> path.StartsWith(prefix, StringComparison.Ordinal))
+
+    let productOutPath (spec: PageSpec) =
+        if product = "schema" && errorHandlingReferenceGroups.Contains spec.OutPath.Head then
+            "error-handling" :: spec.OutPath
+        else
+            spec.OutPath
 
     let referenceTargetMap = Dictionary<string, string>()
 
@@ -1294,7 +1335,7 @@ let main argv =
         referenceTargetMap[formatterApiSlug rawName] <- absolutePath
 
     for spec in selectedPageSpecs do
-        let outPath = Path.Combine(outRoot, Path.Combine(Array.ofList spec.OutPath))
+        let outPath = Path.Combine(outRoot, Path.Combine(Array.ofList (productOutPath spec)))
 
         for sectionTitle, ids in spec.SymbolIds do
             for id in ids do
@@ -1362,7 +1403,7 @@ let main argv =
     // for e in allEntities do printfn "Entity: %s" (safeFullName e.Symbol)
 
     for spec in selectedPageSpecs do
-        let outPath = Path.Combine(outRoot, Path.Combine(Array.ofList spec.OutPath))
+        let outPath = Path.Combine(outRoot, Path.Combine(Array.ofList (productOutPath spec)))
         Directory.CreateDirectory(Path.GetDirectoryName(outPath)) |> ignore
         
         let mutable indexContent = 

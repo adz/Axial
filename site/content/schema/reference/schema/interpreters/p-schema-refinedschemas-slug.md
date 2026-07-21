@@ -17,4 +17,4 @@ Describes an ASCII slug as a schema refined value over required text with the bu
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<a href="../../refined/t-refined-slug.md">Slug</a>&gt;</span></code> |  |
+| <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<a href="../../error-handling/refined/t-refined-slug.md">Slug</a>&gt;</span></code> |  |

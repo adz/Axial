@@ -23,7 +23,7 @@ Projects untrusted input directly from the native request without schema parsing
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="../../../flow/t-flow-flow.md">Flow</a>&lt;<span><span><a href="t-schema-http-aspnetcore-httpendpointenv.md">HttpEndpointEnv</a>&lt;'app&gt;</span>,&#32;<span><a href="t-schema-http-aspnetcore-endpointerror.md">EndpointError</a>&lt;'error&gt;</span>,&#32;'input</span>&gt;</span></code> | An endpoint Flow containing the projected, still-untrusted value. |
+| <code><span><a href="https://learn.microsoft.com/dotnet/api/axial.flow.flow-3">Flow</a>&lt;<span><span><a href="t-schema-http-aspnetcore-httpendpointenv.md">HttpEndpointEnv</a>&lt;'app&gt;</span>,&#32;<span><a href="t-schema-http-aspnetcore-endpointerror.md">EndpointError</a>&lt;'error&gt;</span>,&#32;'input</span>&gt;</span></code> | An endpoint Flow containing the projected, still-untrusted value. |
 
 ## Examples
 

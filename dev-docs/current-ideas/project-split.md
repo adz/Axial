@@ -1,6 +1,7 @@
 # Repository, Package, And Documentation Split
 
-Status: proposed direction. This note has not yet been promoted into `dev-docs/PLAN.md` or the durable decisions.
+Status: proposed repository direction. Documentation phase 1 was implemented and promoted to the durable decisions on
+2026-07-21; the source/release repository split remains proposed.
 
 This proposal separates Axial into products that can be understood, released, and used independently. It also defines
 how .NET and Fable implementations should share an API without sharing the wrong runtime assumptions.
@@ -644,14 +645,14 @@ does not require solving every package-versioning question at once.
 
 ### Phase 1: Separate The Documentation Experience
 
-1. Give Schema and Flow independent home pages and navigation trees.
-2. Move ErrorHandling into the Schema learning path while preserving its independent-package explanation.
-3. Remove combined getting-started material.
-4. Keep only small, explicit cross-product links.
-5. Update `README.md`, `docs/AGENT.md`, `llms.txt`, and generated reference indexes.
-6. Validate all links and both site entry paths.
+Completed 2026-07-21:
 
-This phase tests the conceptual boundary before moving source history.
+1. Schema and Flow have independent home pages, guide trees, generated reference roots, agent pages, and machine-readable context.
+2. ErrorHandling and Data live in the Schema learning path while retaining their independent-package explanations.
+3. The root docs page is a short two-product index; product getting-started paths are self-contained.
+4. Cross-product links are small and explicit.
+5. Product-aware example/reference generators and validation commands establish build ownership before repository extraction.
+6. Both product validation commands render the complete site and assert their entry and reference paths.
 
 ### Phase 2: Concentrate Platform Differences
 

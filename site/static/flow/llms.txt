@@ -1,0 +1,36 @@
+# Axial Flow: LLM context
+
+## Product boundary
+
+- `Flow<'env,'error,'value>` is a cold workflow description with explicit dependencies and typed expected failures.
+- Flow does not depend on `Axial.Schema` or `Axial.ErrorHandling`; it binds standard F# `Result` and `Option` directly.
+- Use `Flow<'value>`, `Flow<'error,'value>`, `EnvFlow<'env,'value>`, `ExnFlow<'value>`, or
+  `ExnEnvFlow<'env,'value>` when the shorter channel combination is sufficient.
+
+## Execution and dependencies
+
+- Use `Flow.read` for record environments and `Service<'service>.get()` for nominal `IHas<'service>` dependencies.
+- Use `Layer` plus `Flow.provide` to build explicit environments and own scoped cleanup.
+- Use `Flow.fromTask`/`fromAsync` when thrown exceptions are defects; use `attemptTask`/`attemptAsync` when expected
+  exceptions belong in the typed failure channel.
+- Use `Bind.error` or `Bind.mapError` only at a `flow {}` bind site where the source error needs immediate assignment.
+- Execute finite roots with `App.run`. Use `App.start` when an outer host owns stopping and awaits cleanup.
+
+## Effects and resources
+
+- Process and HttpClient implementations perform only their named `IProcess` or `IHttp` effect. Inject clock,
+  randomness, GUID, environment-variable, filesystem, console, and other operational effects explicitly.
+- Use `Flow.acquireReleaseWith` for lexical acquire/use/release and `Flow.acquireRelease` or `Layer.acquireRelease` for
+  current-scope lifetime.
+- Use `Flow.fork`, `join`, and `interrupt` for owned fibers; `forkDetached` states intentional fire-and-forget.
+- Use `Schedule.retry` for typed failures, `Schedule.repeat` for successful repetition, `FlowStream` for effectful pull
+  streams, and STM for composable transactional coordination.
+
+## Hosts
+
+- `Axial.Flow.Hosting` is .NET-only.
+- `Axial.Flow.Hosting.Node` is Fable JavaScript for Node only.
+- `Axial.Flow.Hosting.Browser` is Fable JavaScript for browsers only.
+- Core Flow is supported in Fable JavaScript on both Node and browsers.
+
+See `/flow/packages-and-platforms/` for the complete package matrix.

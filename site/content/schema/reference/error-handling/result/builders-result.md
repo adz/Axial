@@ -17,4 +17,4 @@ The fail-fast <code>result { }</code> computation expression.
 
 | Type | Description |
 | --- | --- |
-| <code><a href="builders-result.md">ResultBuilder</a></code> |  |
+| <code><a href="../../result/builders-result.md">ResultBuilder</a></code> |  |

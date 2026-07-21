@@ -17,14 +17,14 @@ Supplies <code>HttpEndpointEnv.App</code> to the application workflow and marks 
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `operation` | <code><span>'input&#32;->&#32;<span><a href="../../../flow/t-flow-flow.md">Flow</a>&lt;<span>'app,&#32;'error,&#32;'output</span>&gt;</span></span></code> | The HTTP-independent application workflow factory. |
+| `operation` | <code><span>'input&#32;->&#32;<span><a href="https://learn.microsoft.com/dotnet/api/axial.flow.flow-3">Flow</a>&lt;<span>'app,&#32;'error,&#32;'output</span>&gt;</span></span></code> | The HTTP-independent application workflow factory. |
 | `input` | <code>'input</code> | The trusted input supplied to the application operation. |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="../../../flow/t-flow-flow.md">Flow</a>&lt;<span><span><a href="t-schema-http-genhttp-httpendpointenv.md">HttpEndpointEnv</a>&lt;'app&gt;</span>,&#32;<span><a href="t-schema-http-genhttp-endpointerror.md">EndpointError</a>&lt;'error&gt;</span>,&#32;'output</span>&gt;</span></code> | The application operation adapted to the endpoint environment and error channel. |
+| <code><span><a href="https://learn.microsoft.com/dotnet/api/axial.flow.flow-3">Flow</a>&lt;<span><span><a href="t-schema-http-genhttp-httpendpointenv.md">HttpEndpointEnv</a>&lt;'app&gt;</span>,&#32;<span><a href="t-schema-http-genhttp-endpointerror.md">EndpointError</a>&lt;'error&gt;</span>,&#32;'output</span>&gt;</span></code> | The application operation adapted to the endpoint environment and error channel. |
 
 ## Examples
 
