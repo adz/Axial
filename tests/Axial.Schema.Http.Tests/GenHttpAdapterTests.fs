@@ -12,7 +12,7 @@ open GenHTTP.Engine.Internal
 open GenHTTP.Modules.Functional
 open Xunit
 open Swensen.Unquote
-open Axial.Schema.Codec
+open Axial.Schema.Json
 open Axial.Flow
 open Axial.Schema.Http
 open Axial.Schema.Http.GenHttp

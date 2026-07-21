@@ -40,7 +40,7 @@ the overview, the comments are the ground truth.
 `Data` lives in its own dependency-free package (`src/Axial.Data`).
 
 The JSON Schema interpreter lives in its own package (`src/Axial.Schema.JsonSchema`), and the compiled
-JSON codecs in `src/Axial.Schema.Codec`; both keep the `Axial.Schema` namespace family.
+JSON codecs in `src/Axial.Schema.Json`; both keep the `Axial.Schema` namespace family.
 
 ## Map of the core files (former Schema.fs), in compile order:
 
@@ -58,7 +58,7 @@ JSON codecs in `src/Axial.Schema.Codec`; both keep the `Axial.Schema` namespace 
    `ConstructorApplication`. Interpreters that don't need field value types work from this.
 6. **`FieldDefinition<'model,'value>` / `Field<'model,'value>`** — the *typed* view of one field.
 7. **The typed record plan** (`IRecordPlanCompiler`, `IRecordPlanState`, internal `IShapeFields`) — the
-   interpreter-facing typed view retained when a constructor-last shape closes. `Axial.Codec` folds it
+   interpreter-facing typed view retained when a constructor-last shape closes. `Axial.Schema.Json` folds it
    into direct typed encoders and decoders. Checked constructors use the same compiled path as total constructors.
 8. **`Schema<'model>`** — a sealed wrapper over `SchemaDefinition` (model or value) plus an optional compiled
    record plan.

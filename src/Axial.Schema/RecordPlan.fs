@@ -1,7 +1,7 @@
 // The typed record plan retained when a constructor-last shape closes: IShapeFields is the typed
 // field chain (empty + append nodes, one curried constructor argument peeled per field),
 // ShapeClosure pairs a chain with its constructor, and IRecordPlanCompiler/CompiledRecordPlan let
-// interpreters such as Axial.Schema.Codec fold the chain into direct typed encode/decode plans
+// interpreters such as Axial.Schema.Json fold the chain into direct typed encode/decode plans
 // without reconstructing types. Shape.fs builds these; interpreters consume them.
 namespace Axial.Schema
 

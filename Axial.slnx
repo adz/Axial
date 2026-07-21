@@ -38,7 +38,7 @@
     <Project Path="src/Axial.Flow/Axial.Flow.fsproj" />
     <Project Path="src/Axial.Data/Axial.Data.fsproj" />
     <Project Path="src/Axial.ErrorHandling/Axial.ErrorHandling.fsproj" />
-    <Project Path="src/Axial.Schema.Codec/Axial.Schema.Codec.fsproj" />
+    <Project Path="src/Axial.Schema.Json/Axial.Schema.Json.fsproj" />
     <Project Path="src/Axial.Schema/Axial.Schema.fsproj" />
     <Project Path="src/Axial.Schema.JsonSchema/Axial.Schema.JsonSchema.fsproj" />
     <Project Path="src/Axial.Schema.Http/Axial.Schema.Http.fsproj" />
@@ -57,7 +57,7 @@
     <Project Path="tests/Axial.Flow.Tests/Axial.Flow.Tests.fsproj" />
     <Project Path="tests/Axial.Data.Tests/Axial.Data.Tests.fsproj" />
     <Project Path="tests/Axial.ErrorHandling.Tests/Axial.ErrorHandling.Tests.fsproj" />
-    <Project Path="tests/Axial.Schema.Codec.Tests/Axial.Schema.Codec.Tests.fsproj" />
+    <Project Path="tests/Axial.Schema.Json.Tests/Axial.Schema.Json.Tests.fsproj" />
     <Project Path="tests/Axial.Schema.Tests/Axial.Schema.Tests.fsproj" />
     <Project Path="tests/Axial.Schema.Http.Tests/Axial.Schema.Http.Tests.fsproj" />
     <Project Path="tests/Axial.Schema.Contracts.Tests/Axial.Schema.Contracts.Tests.fsproj" />

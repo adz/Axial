@@ -8,7 +8,7 @@
     <AssemblyName>Axial</AssemblyName>
     <RootNamespace>Axial</RootNamespace>
     <Authors>Adam Davies</Authors>
-    <Description>Umbrella package for Axial.Flow, Axial.ErrorHandling, Axial.Schema, and Axial.Schema.Codec.</Description>
+    <Description>Umbrella package for Axial.Flow, Axial.ErrorHandling, Axial.Schema, and Axial.Schema.Json.</Description>
     <PackageProjectUrl>https://github.com/adz/Axial</PackageProjectUrl>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
@@ -32,7 +32,7 @@
     <ProjectReference Include="..\Axial.ErrorHandling\Axial.ErrorHandling.fsproj" />
     <ProjectReference Include="..\Axial.Schema\Axial.Schema.fsproj" />
     <ProjectReference Include="..\Axial.Schema.JsonSchema\Axial.Schema.JsonSchema.fsproj" />
-    <ProjectReference Include="..\Axial.Schema.Codec\Axial.Schema.Codec.fsproj" />
+    <ProjectReference Include="..\Axial.Schema.Json\Axial.Schema.Json.fsproj" />
     <ProjectReference Include="..\Axial.Data\Axial.Data.fsproj" />
   </ItemGroup>
 

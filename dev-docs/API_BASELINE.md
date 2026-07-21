@@ -44,7 +44,7 @@ Additional validated commands for this refresh:
 ```text
 dotnet test tests/Axial.ApiShape.Tests --nologo (36 passed)
 dotnet test tests/Axial.Schema.Tests --nologo (56 passed)
-dotnet test tests/Axial.Codec.Tests --nologo (13 passed)
+dotnet test tests/Axial.Schema.Json.Tests --nologo (13 passed)
 dotnet test tests/Axial.Schema.Tests --nologo (stale count; re-baseline after the 2026-07 renames)
 dotnet test tests/Axial.Flow.Tests --nologo (89 passed)
 bash scripts/validate-docs.sh
@@ -65,7 +65,7 @@ run.
 The old monolithic `tests/Axial.Tests/Axial.Tests.fsproj` harness has been replaced by package-boundary test projects:
 
 - `tests/Axial.ApiShape.Tests/Axial.ApiShape.Tests.fsproj`
-- `tests/Axial.Codec.Tests/Axial.Codec.Tests.fsproj`
+- `tests/Axial.Schema.Json.Tests/Axial.Schema.Json.Tests.fsproj`
 - `tests/Axial.ErrorHandling.Tests/Axial.ErrorHandling.Tests.fsproj`
 - `tests/Axial.Flow.FileSystem.Tests/Axial.Flow.FileSystem.Tests.fsproj`
 - `tests/Axial.Flow.Hosting.Tests/Axial.Flow.Hosting.Tests.fsproj`
@@ -125,7 +125,7 @@ the named modules, types, and members users and examples are expected to depend 
 - computation builders
 - `Check`, `Bind`, `BindError`, `Validation`, `Diagnostics`
 - `Schema`, `Value`, `Field`, `SchemaConstraint`, `Inspect` and its description types, `JsonSchema`
-- `Axial.Codec` `Json` module and `JsonCodec`
+- `Axial.Schema.Json` `Json` module and `JsonCodec`
 - `Data`, `Schema.parse`/`Schema.check`, `RetainedParseResult`, `SchemaError`, `Contract`
 - `Policy` and `Flow.verify`
 - the leaf-package dependency graph (`leaf packages stay independent of each other`)

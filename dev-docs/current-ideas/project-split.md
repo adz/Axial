@@ -2,9 +2,8 @@
 
 Status: proposed direction. This note has not yet been promoted into `dev-docs/PLAN.md` or the durable decisions.
 
-This proposal separates Axial into products that can be understood, released, and used independently. It also renames
-the generic JSON codec package and defines how .NET and Fable implementations should share an API without sharing the
-wrong runtime assumptions.
+This proposal separates Axial into products that can be understood, released, and used independently. It also defines
+how .NET and Fable implementations should share an API without sharing the wrong runtime assumptions.
 
 ## Decision Summary
 
@@ -18,8 +17,7 @@ They should live in separate repositories. Their core packages already have no d
 `Axial.ErrorHandling` should remain a separate package but live in the Schema repository. Schema depends on it, and
 the two evolve around the same parsing, diagnostic, constraint, and refined-value vocabulary.
 
-`Axial.Codec` should become `Axial.Schema.Json`. Future formats should receive separate packages rather than being
-collected behind one generic codec package.
+Future formats should receive separate packages rather than being collected behind one generic codec package.
 
 Schema and Flow should have separate documentation homes. Neither getting-started path should require knowledge of the
 other product.
@@ -215,28 +213,6 @@ the current version when practical.
 Release notes should describe only the product and packages in that repository. Avoid a global Axial release note that
 mixes unrelated changes.
 
-## Rename `Axial.Codec` To `Axial.Schema.Json`
-
-The current package implements JSON. Its generic name suggests that it owns an abstraction shared by all formats, but
-that abstraction has not been established.
-
-Rename:
-
-```text
-Axial.Codec       → Axial.Schema.Json
-Axial.Codec.Json  → Axial.Schema.Json, unless a narrower namespace is chosen during implementation
-JsonCodec<'value> remains an acceptable public type name
-Json module       remains the main API
-```
-
-Because Axial is pre-1.0, remove the old package and namespace rather than preserving compatibility aliases.
-
-Update package references, namespaces, assembly names, `InternalsVisibleTo` entries, docs, examples, benchmarks,
-generated reference inputs, source inventories, release scripts, and tests in one change.
-
-The package description should say that it compiles Axial schemas into JSON encoders and decoders. It should not claim
-to be a general serialization framework.
-
 ## One Package Per Format
 
 Future representation formats should use separate packages:
@@ -256,7 +232,7 @@ support, release timing, and performance work.
 Do not add empty packages in anticipation of demand. Create a package only when its format has an implemented consumer
 and tests.
 
-Do not create a public `Axial.Schema.Codec` package merely to hold interfaces. First prove that two or more formats share
+Do not create a public format-neutral package merely to hold interfaces. First prove that two or more formats share
 substantial code with the same semantics.
 
 If shared compiler machinery emerges, keep it internal to the repository or in an internal package until its boundary
@@ -677,18 +653,7 @@ does not require solving every package-versioning question at once.
 
 This phase tests the conceptual boundary before moving source history.
 
-### Phase 2: Rename The JSON Package
-
-1. Rename the project, package, assembly, folder, and namespace from `Axial.Codec` to `Axial.Schema.Json`.
-2. Update every source reference, test, example, benchmark, build script, pack list, and doc link.
-3. Update `InternalsVisibleTo` and API-shape tests.
-4. Remove old names and compatibility aliases.
-5. Run .NET, NativeAOT, trimming, Fable, package-consumer, and documentation checks.
-6. Publish a prerelease and verify installation in a clean project.
-
-Renaming before the repository split gives the filtered Schema history its intended package vocabulary.
-
-### Phase 3: Concentrate Platform Differences
+### Phase 2: Concentrate Platform Differences
 
 1. Inventory every `#if` in the current codec.
 2. Classify each branch as a small platform primitive, a coherent runtime subsystem, or a public .NET-only API.
@@ -703,7 +668,7 @@ Renaming before the repository split gives the filtered Schema history its inten
 Do not block the repository split on every possible runtime optimization. Require a passing baseline and a design that
 does not scatter new conditionals.
 
-### Phase 4: Prepare Independent Builds
+### Phase 3: Prepare Independent Builds
 
 1. Remove assumptions about one solution, one version property, one release note, and one docs site.
 2. Change cross-product project references to package references in a migration branch.
@@ -712,7 +677,7 @@ does not scatter new conditionals.
 5. Decide where the combined reference application will live.
 6. Verify that Flow builds with no Schema files and Schema builds against released Flow packages.
 
-### Phase 5: Extract The Repositories
+### Phase 4: Extract The Repositories
 
 1. freeze broad cross-product moves for the extraction window;
 2. filter history into Schema and Flow repositories;
@@ -733,7 +698,6 @@ The split is complete when:
 - Schema's Flow-based HTTP adapters consume supported released Flow packages;
 - `Axial.ErrorHandling` remains independently installable;
 - `Axial.Schema` depends on ErrorHandling but Flow depends on neither;
-- `Axial.Codec` has been replaced by `Axial.Schema.Json` with no stale public aliases;
 - the Fable JSON executable check passes;
 - .NET JSON fast paths use UTF-8 spans or caller-owned buffers where appropriate;
 - platform directives are concentrated in internal platform/runtime modules;
@@ -757,11 +721,6 @@ Mitigation: test the current stable Flow version in Schema CI and update only wh
 
 Mitigation: each repository owns its docs and references. Keep cross-links sparse and check them during deployment.
 
-### The JSON Rename Creates Confusion
-
-Mitigation: make one pre-1.0 breaking rename, update all examples together, and publish clear release notes. Do not keep
-two names alive.
-
 ### Platform Abstraction Reduces .NET Performance
 
 Mitigation: keep span-heavy work inside the .NET runtime module, benchmark allocations and throughput, and avoid
@@ -783,7 +742,6 @@ Mitigation: extract history first and make semantic changes in later ordinary co
 - Flow remains independent of Schema and ErrorHandling.
 - Flow-based Schema HTTP adapters remain with Schema.
 - The umbrella package should be removed unless a concrete use justifies a tiny independent release repository.
-- `Axial.Codec` becomes `Axial.Schema.Json`.
 - Each future format gets its own package.
 - One JSON package serves .NET and Fable.
 - The schema-to-codec compiler is shared.
@@ -797,7 +755,6 @@ These choices do not change the main direction:
 
 - final GitHub repository names and documentation URLs;
 - whether the combined reference application receives its own repository;
-- whether the `Axial.Schema.Json` namespace is exactly `Axial.Schema.Json` or keeps a shorter opened module path;
 - which .NET byte, memory, writer, stream, and pipe overloads belong in the first release;
 - whether Fable's primary representation is string, `Uint8Array`, or both;
 - whether Schema repository packages continue sharing a version after 1.0;

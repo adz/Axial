@@ -10,7 +10,7 @@ open Axial.Flow
 open Axial.Flow.FileSystem
 open Axial.Flow.PlatformService
 open Axial.Schema
-open Axial.Schema.Codec
+open Axial.Schema.Json
 open Axial.Refined
 open Axial.Validation
 

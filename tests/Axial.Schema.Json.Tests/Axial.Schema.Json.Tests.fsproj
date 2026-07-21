@@ -25,7 +25,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Axial.Schema\Axial.Schema.fsproj" />
-    <ProjectReference Include="..\..\src\Axial.Schema.Codec\Axial.Schema.Codec.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Schema.Json\Axial.Schema.Json.fsproj" />
   </ItemGroup>
 
 </Project>

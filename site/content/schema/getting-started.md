@@ -147,7 +147,7 @@ annotation:
 let contract = JsonSchema.generate signupSchema
 
 // A compiled JSON codec for trusted hot-path serialization
-open Axial.Schema.Codec // package Axial.Schema.Codec
+open Axial.Schema.Json // package Axial.Schema.Json
 
 let codec = Json.compile signupSchema
 let json = Json.serialize codec { Email = "ada@example.com"; Age = 42 }

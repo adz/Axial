@@ -32,10 +32,10 @@
     <Compile Include="..\..\src\Axial.Schema\ValueSchema.fs" />
     <Compile Include="..\..\src\Axial.Schema\SchemaCore.fs" />
     <Compile Include="..\..\src\Axial.Schema\Shape.fs" />
-    <Compile Include="..\..\src\Axial.Schema.Codec\AssemblyInfo.fs" />
-    <Compile Include="..\..\src\Axial.Schema.Codec\Buffers.fs" />
-    <Compile Include="..\..\src\Axial.Schema.Codec\JsonRuntime.fs" />
-    <Compile Include="..\..\src\Axial.Schema.Codec\Json.fs" />
+    <Compile Include="..\..\src\Axial.Schema.Json\AssemblyInfo.fs" />
+    <Compile Include="..\..\src\Axial.Schema.Json\Buffers.fs" />
+    <Compile Include="..\..\src\Axial.Schema.Json\JsonRuntime.fs" />
+    <Compile Include="..\..\src\Axial.Schema.Json\Json.fs" />
     <Compile Include="..\..\src\Axial.Flow\Runtime.fs" />
     <Compile Include="..\..\src\Axial.Flow\RuntimeLayer.fs" />
     <Compile Include="..\..\src\Axial.Flow\Policy.fs" />

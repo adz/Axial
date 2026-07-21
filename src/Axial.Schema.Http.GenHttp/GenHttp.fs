@@ -9,7 +9,7 @@ open GenHTTP.Api.Protocol
 open GenHTTP.Modules.IO
 open Axial.Schema
 open Axial.Schema.Http
-open Axial.Schema.Codec
+open Axial.Schema.Json
 open Axial.Flow
 
 /// <summary>Parses GenHTTP requests into <see cref="T:Axial.Schema.RetainedParseResult`2" /> through a schema.</summary>

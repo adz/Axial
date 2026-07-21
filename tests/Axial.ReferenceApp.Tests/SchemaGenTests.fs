@@ -3,7 +3,7 @@ namespace Axial.ReferenceApp.Tests
 open Axial
 
 open System.Text.Json
-open Axial.Schema.Codec
+open Axial.Schema.Json
 open Axial.ReferenceApp
 open Axial.Schema
 open Axial.Schema.Testing

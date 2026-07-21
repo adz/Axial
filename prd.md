@@ -21,7 +21,7 @@ The boundary stack ships 1.0 first; the Flow group follows demand.
 
 - **The 1.0 gate is the boundary stack**: the `Axial.ErrorHandling` package (hosting the `Axial.ErrorHandling`,
   `Axial.Validation`, and `Axial.Refined` namespaces), `Axial.Schema` (declaration + interpreters in one package,
-  including `Schema.check` boundary admission), and `Axial.Codec`. Scope: the current queue in
+  including `Schema.check` boundary admission), and `Axial.Schema.Json`. Scope: the current queue in
   `dev-docs/TASKS.md` (schema-depth candidates, now that the contract versioning engine has shipped) plus its
   acceptance checks.
 - **The Flow group's remaining pre-1.0 scope is demand-driven**, tracked in `LATER_TODO.md`. Its current surface
@@ -82,7 +82,7 @@ should never encounter them. Docs follow the three-area, problem-first framing a
 4. Reflection is never the foundation. The authored schema path stays AOT-, trimming-, and Fable-compatible;
    boilerplate relief comes from build-time generation over explicit schemas, not runtime discovery.
 5. .NET, Fable, and AOT are separate compatibility tracks with explicit gates: .NET tests are the baseline, the
-   supported Fable surface is compiled and tested (including `Axial.Codec` with a Node round-trip), and
+   supported Fable surface is compiled and tested (including `Axial.Schema.Json` with a Node round-trip), and
    trimming/NativeAOT smoke coverage guards the .NET deployment surface.
 6. Tests grow with features: cancellation, finalization, concurrent races, boundary diagnostics, codec round-trips,
    and migration paths each get focused suites; existing tests are regression anchors.

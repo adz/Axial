@@ -424,7 +424,7 @@ module ApiShapeTests =
 
     [<Fact>]
     let ``codec compiles json codecs from schemas without extra package coupling`` () =
-        moduleTypeFromAssembly "Axial.Schema.Codec" "Axial.Schema.Codec.Json"
+        moduleTypeFromAssembly "Axial.Schema.Json" "Axial.Schema.Json.Json"
         |> publicStaticMemberNames
         |> assertContainsAll
             [ "compile"; "serialize"; "serializeBytes"; "deserialize"; "deserializeBytes"; "tryDeserialize" ]
@@ -435,7 +435,7 @@ module ApiShapeTests =
         |> publicStaticMemberNames
         |> assertContainsAll [ "generate"; "generateValue" ]
 
-        referencedAssemblyNames (Assembly.Load "Axial.Schema.Codec")
+        referencedAssemblyNames (Assembly.Load "Axial.Schema.Json")
         |> assertContainsNone [ "Axial.Flow" ]
 
     [<Fact>]

@@ -119,12 +119,12 @@ Schema metadata, input parsing, checking, and rules live in this one package; `R
 it as the `Axial.ErrorHandling` dependency — declaring a schema, parsing structured data, and inspecting metadata never
 require a second install.
 
-`Axial.Schema.Codec` is separate and optional: add it only if you want a compiled, runtime-reflection-free JSON codec generated from
+`Axial.Schema.Json` is separate and optional: add it only if you want a compiled, runtime-reflection-free JSON codec generated from
 your schema (`Json.compile`). `Axial.Schema.JsonSchema` is also separate and optional; it supplies
 `JsonSchema.generate` in the `Axial.Schema` namespace. Parsing, checking, rules, redisplay, and metadata inspection need
 neither optional package.
 
-Install the optional codec with `dotnet add package Axial.Schema.Codec`.
+Install the optional codec with `dotnet add package Axial.Schema.Json`.
 
 Install JSON Schema generation with `dotnet add package Axial.Schema.JsonSchema`.
 

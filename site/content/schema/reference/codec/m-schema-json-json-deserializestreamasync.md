@@ -1,5 +1,5 @@
 ---
-title: "Schema.Codec.Json.deserializeStreamAsync"
+title: "Schema.Json.deserializeStreamAsync"
 linkTitle: "deserializeStreamAsync"
 weight: 2106
 type: docs
@@ -10,14 +10,14 @@ Reads a stream to end into a pooled buffer, then deserializes it as UTF-8 JSON t
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Schema.Codec.Json.deserializeStreamAsync&#32;<span>codec&#32;stream</span></span></code>
+<code><span>Schema.Json.Json.deserializeStreamAsync&#32;<span>codec&#32;stream</span></span></code>
 </div>
 
 ## Parameters
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `codec` | <code><span><a href="t-schema-codec-jsoncodec.md">JsonCodec</a>&lt;'model&gt;</span></code> |  |
+| `codec` | <code><span><a href="t-schema-json-jsoncodec.md">JsonCodec</a>&lt;'model&gt;</span></code> |  |
 | `stream` | <code><a href="https://learn.microsoft.com/dotnet/api/system.io.stream">Stream</a></code> |  |
 
 ## Returns

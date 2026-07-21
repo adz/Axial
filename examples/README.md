@@ -128,7 +128,7 @@ where one schema declaration drives everything at the boundary:
 
 - `POST /signups` parses the JSON body through the schema (`Data.ofJsonDocument` + `Schema.parse`); invalid input
   gets a 400 with path diagnostics, valid input becomes a trusted model serialized back through the compiled
-  `Axial.Schema.Codec` JSON codec
+  `Axial.Schema.Json` JSON codec
 - `GET /openapi.json` serves an OpenAPI document whose request schema comes from `JsonSchema.generate`
 - `GET /signup` renders an HTML form from `Inspect` metadata, and `POST /signup` redisplays submitted values next to
   their errors

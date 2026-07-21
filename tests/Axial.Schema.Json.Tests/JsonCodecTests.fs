@@ -1,7 +1,7 @@
-namespace Axial.Schema.Codec.Tests
+namespace Axial.Schema.Json.Tests
 
 open System
-open Axial.Schema.Codec
+open Axial.Schema.Json
 open Axial.Schema
 open Swensen.Unquote
 open Xunit

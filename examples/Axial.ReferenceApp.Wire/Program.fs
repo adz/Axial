@@ -11,7 +11,7 @@ open Axial
 
 open System.Text.Json
 open Axial.Schema
-open Axial.Schema.Codec
+open Axial.Schema.Json
 open Axial.ReferenceApp.Wire
 
 // ---------------------------------------------------------------------------

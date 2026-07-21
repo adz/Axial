@@ -187,7 +187,7 @@ required update abstraction before it becomes public API again.
   (accumulating diagnostics), and `Axial.Refined` (single-value parsing and refinement) — because none of the three
   depend on Schema or Flow and all three are single-value/error-vocabulary concerns, not model-declaration concerns.
   `Axial.Schema` legitimately depends on `Axial.ErrorHandling` (for `Check`-based constraint lowering and the
-  `RefinedSchema` bridge into `Axial.Refined`); `Axial.Codec` depends on `Axial.Schema`. `Axial.Flow` stays
+  `RefinedSchema` bridge into `Axial.Refined`); `Axial.Schema.Json` depends on `Axial.Schema`. `Axial.Flow` stays
   independent of both. The `leaf packages stay independent of each other` API-shape test enforces this graph, and
   `` `Axial.Refined` was moved from `Axial.Schema` into `Axial.ErrorHandling` `` after finding it has zero actual
   dependency on Schema — see the ApiShapeTests.fs comments
@@ -259,7 +259,7 @@ required update abstraction before it becomes public API again.
   `Result.mapError` or `Validation.mapError`.
 - Generated reference docs come from XML comments and generator inputs. Do not hand-edit generated reference pages as the
   primary source of truth.
-- Compiled JSON codecs live in `Axial.Codec`, a package that references only `Axial.Schema` (through
+- Compiled JSON codecs live in `Axial.Schema.Json`, a package that references only `Axial.Schema` (through
   `InternalsVisibleTo` for the type-erased definitions) and mirrors CodecMapper's byte-level runtime. The codec is the
   trusted hot path: it enforces wire shape and required fields but does not run constraint metadata. Untrusted boundary
   input keeps going through `Data` + `Schema.parse` for complete path-aware diagnostics. Do not fold codecs into
@@ -275,11 +275,11 @@ required update abstraction before it becomes public API again.
   line; parity on speed with the 6x boundary-lane gap is the current story. If pursued, the pre-chosen approach is
   fixed-arity typed decoders for arities 1..8 with the slot decoder as fallback — no reflection, dispatch on field
   count from the compiled record plan in `Schema.compilePlan` — with a target of ≤ 2.0 µs / ≤ 1.5 KB on the benchmark aggregate.
-- There is no "checked codec" compile option. `Axial.Codec` enforces wire shape only; a consumer who wants constraint
+- There is no "checked codec" compile option. `Axial.Schema.Json` enforces wire shape only; a consumer who wants constraint
   enforcement on trusted-lane decode composes `Json.deserialize` then `Schema.check` (one extra model walk). If
   that composition proves too slow for a real consumer, the pre-chosen answer is a `Json.deserializeValidated` helper
   in `Axial.Schema` (interpreters may reference Codec, never the reverse). Duplicating constraint lowering
-  inside `Axial.Codec` stays rejected.
+  inside `Axial.Schema.Json` stays rejected.
 - Unions support three wire shapes: the externally-wrapped `{discriminator, payload}` object (`Schema.union`, the
   default), internally-tagged objects (`Schema.inlineUnion` — valid only when every payload is an object whose field
   names don't collide with the discriminator, checked at construction), and bare-string enums (`Schema.enum`) for
@@ -292,7 +292,7 @@ required update abstraction before it becomes public API again.
 - The UI-metadata interpreter stays a prototype. Promotion waits for an external consumer; if promoted, the API sample
   must consume the shipped module, otherwise the duplication just moves. UI scope stays field list + control kinds —
   layout, localization, and widget options are application concerns.
-- `Axial.Codec` is part of the supported Fable surface: the package compiles in `check-fable-js-surface.sh` and a Node
+- `Axial.Schema.Json` is part of the supported Fable surface: the package compiles in `check-fable-js-surface.sh` and a Node
   round-trip test exercises it. The `FABLE_COMPILER` gates are load-bearing, and every future codec optimization must
   keep the JS branch working. This completes the zod-comparison story — one declaration shared between server and
   browser covers serialization as well as parsing.

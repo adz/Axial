@@ -7,7 +7,7 @@ Speculative sketches live in `dev-docs/current-ideas/`, but this file is the liv
 ## Release Strategy
 
 Per `prd.md`: the boundary stack — the `Axial.ErrorHandling` package (hosting the `Axial.ErrorHandling`,
-`Axial.Validation`, and `Axial.Refined` namespaces), `Axial.Schema`, and `Axial.Codec` — is the 1.0 gate, driven by
+`Axial.Validation`, and `Axial.Refined` namespaces), `Axial.Schema`, and `Axial.Schema.Json` — is the 1.0 gate, driven by
 a real adoption target (a ~100-variant versioned config system). The Flow group's remaining pre-1.0 scope in
 `LATER_TODO.md` is demand-driven — pulled forward when a concrete application needs it. The contract-declaration
 thread originally sequenced versioning/migration machinery before the grammar; in practice the grammar and generator
@@ -115,7 +115,7 @@ Schema must also preserve a high-performance codec lowering path. The inspectabl
 but JSON codecs should not interpret that metadata tree directly on the hot path. A codec interpreter must be able to
 compile schemas into direct record plans: ordered field descriptors, cached wire-name bytes, indexed field slots,
 typed field decoders, and constructor application that does not require per-value reflection or `obj array` dispatch.
-CodecMapper is the performance reference for this shape. This path now ships as `Axial.Codec` (`Json.compile` over the
+CodecMapper is the performance reference for this shape. This path now ships as `Axial.Schema.Json` (`Json.compile` over the
 retained compiled record plan, benchmarked against `System.Text.Json` in `benchmarks/Axial.Benchmarks/CodecSuites.fs`);
 remaining codec work is optimization and format breadth, not proving the shape.
 

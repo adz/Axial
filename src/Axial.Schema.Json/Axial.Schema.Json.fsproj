@@ -4,9 +4,9 @@
     <TargetFrameworks>netstandard2.1;net8.0</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IsAotCompatible Condition="'$(TargetFramework)' == 'net8.0'">true</IsAotCompatible>
-    <PackageId>Axial.Schema.Codec</PackageId>
-    <AssemblyName>Axial.Schema.Codec</AssemblyName>
-    <RootNamespace>Axial.Schema.Codec</RootNamespace>
+    <PackageId>Axial.Schema.Json</PackageId>
+    <AssemblyName>Axial.Schema.Json</AssemblyName>
+    <RootNamespace>Axial.Schema.Json</RootNamespace>
     <Authors>Adam Davies</Authors>
     <Description>Compiled, runtime-reflection-free, compiler-directed JSON codecs over Axial.Schema declarations for trusted hot-path serialization.</Description>
     <PackageProjectUrl>https://github.com/adz/Axial</PackageProjectUrl>
@@ -18,7 +18,7 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <FsDocsCollectionName>Axial</FsDocsCollectionName>
     <FsDocsLogoSource>content/img/axial-inline-light.svg</FsDocsLogoSource>
-    <FsDocsLogoAlt>Axial.Schema.Codec</FsDocsLogoAlt>
+    <FsDocsLogoAlt>Axial.Schema.Json</FsDocsLogoAlt>
     <FsDocsLogoLink>https://github.com/adz/Axial</FsDocsLogoLink>
     <FsDocsLicenseLink>https://github.com/adz/Axial/blob/main/LICENSE</FsDocsLicenseLink>
     <FsDocsReleaseNotesLink>https://github.com/adz/Axial/blob/main/RELEASE_NOTES.md</FsDocsReleaseNotesLink>

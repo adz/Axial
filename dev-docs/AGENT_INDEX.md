@@ -27,7 +27,7 @@ Working on `src/Axial.Schema`? Read `dev-docs/schema/internals.md` first (implem
   and refined schema adapters (`RefinedSchemas`) in one package. Depends on `Axial.Data` and `Axial.ErrorHandling`.
 - `Axial.Schema.JsonSchema` (`src/Axial.Schema.JsonSchema/`): JSON Schema generation (`JsonSchema.generate`) in the
   `Axial.Schema` namespace. Depends on `Axial.Schema`.
-- `Axial.Schema.Codec` (`src/Axial.Schema.Codec/`): compiled JSON codecs. Depends on `Axial.Schema`.
+- `Axial.Schema.Json` (`src/Axial.Schema.Json/`): compiled JSON codecs. Depends on `Axial.Schema`.
 - `Axial.Schema.Http` (`src/Axial.Schema.Http/`): host-neutral HTTP boundary support — query/form structured data
   (`BoundaryInput`), RFC 9457 problem details from parse diagnostics, and OpenAPI 3.1 documents assembled from
   `EndpointSpec` values. Depends on `Axial.Schema` only; never on `Axial.Flow`.

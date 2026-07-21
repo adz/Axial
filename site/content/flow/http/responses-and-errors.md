@@ -37,7 +37,7 @@ open Axial.Flow.HttpClient.DSL
 
 let user : Flow<#IHas<IHttp>, HttpError, User> =
     GET $"https://api.example.com/users/{userId}"
-    |> fetchJson (Json.deserializeResult userCodec)   // Axial.Schema.Codec, Thoth, or hand-written
+    |> fetchJson (Json.deserializeResult userCodec)   // Axial.Schema.Json, Thoth, or hand-written
 ```
 
 A decoder failure becomes `HttpError.DecodeFailed(message, response)` — the full transcript rides along, so the

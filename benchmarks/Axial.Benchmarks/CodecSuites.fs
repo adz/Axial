@@ -7,7 +7,7 @@ open System.Text.Json
 open BenchmarkDotNet.Attributes
 open BenchmarkDotNet.Order
 open Axial.Schema
-open Axial.Schema.Codec
+open Axial.Schema.Json
 open Axial.Schema.Syntax
 
 /// The shared benchmark model: a realistic aggregate with primitives, a nested record, and collections.

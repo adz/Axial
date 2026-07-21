@@ -1,7 +1,8 @@
 ---
-title: "Schema.Codec.Json.compile"
+title: "Schema.Json.compile"
 linkTitle: "compile"
 weight: 2100
+type: docs
 ---
 
 Compiles a completed schema into a reusable JSON codec.
@@ -9,7 +10,7 @@ Compiles a completed schema into a reusable JSON codec.
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Schema.Codec.Json.compile&#32;<span>schema</span></span></code>
+<code><span>Schema.Json.Json.compile&#32;<span>schema</span></span></code>
 </div>
 
 ## Parameters
@@ -22,14 +23,14 @@ Compiles a completed schema into a reusable JSON codec.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="t-schema-codec-jsoncodec.md">JsonCodec</a>&lt;'model&gt;</span></code> |  |
+| <code><span><a href="t-schema-json-jsoncodec.md">JsonCodec</a>&lt;'model&gt;</span></code> |  |
 
 ## Remarks
 
 <p class='fsdocs-para'>
  Compile once per schema, typically at startup, and reuse the codec for every value. Constructor-last object
  schemas retain a typed record plan, including checked constructors. Constructor failures surface as
- <a href="t-schema-codec-jsoncodecexception.md">JsonCodecException</a> during decoding.
+ <a href="t-schema-json-jsoncodecexception.md">JsonCodecException</a> during decoding.
  </p>
 
 ## Examples

@@ -122,7 +122,7 @@ The practical read is unchanged: `Flow` stays competitive with the direct baseli
 
 ### Schema JSON Codec
 
-The codec suites measure `Axial.Schema.Codec` — the JSON codec compiled from a `Schema<'model>` declaration — on a realistic aggregate (seven primitive fields, one nested record, and two collections) against `System.Text.Json` on the same model. Both suites live in [benchmarks/Axial.Benchmarks/CodecSuites.fs](https://github.com/adz/Axial/blob/main/benchmarks/Axial.Benchmarks/CodecSuites.fs).
+The codec suites measure `Axial.Schema.Json` — the JSON codec compiled from a `Schema<'model>` declaration — on a realistic aggregate (seven primitive fields, one nested record, and two collections) against `System.Text.Json` on the same model. Both suites live in [benchmarks/Axial.Benchmarks/CodecSuites.fs](https://github.com/adz/Axial/blob/main/benchmarks/Axial.Benchmarks/CodecSuites.fs).
 
 Run them:
 

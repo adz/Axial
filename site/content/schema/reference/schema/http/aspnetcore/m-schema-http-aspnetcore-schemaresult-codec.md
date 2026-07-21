@@ -17,7 +17,7 @@ A JSON response streaming the trusted model through the compiled codec.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `codec` | <code><span><a href="../../../codec/t-schema-codec-jsoncodec.md">JsonCodec</a>&lt;'model&gt;</span></code> |  |
+| `codec` | <code><span><a href="../../../codec/t-schema-json-jsoncodec.md">JsonCodec</a>&lt;'model&gt;</span></code> |  |
 | `statusCode` | <code>int</code> |  |
 | `value` | <code>'model</code> |  |
 

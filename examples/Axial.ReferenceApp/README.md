@@ -88,7 +88,7 @@ specific workflow.
 
 ## Integration boundaries
 
-`Data` handles untrusted source-neutral data. `Contract` selects and migrates persisted versions. `Axial.Schema.Codec`
+`Data` handles untrusted source-neutral data. `Contract` selects and migrates persisted versions. `Axial.Schema.Json`
 handles trusted current-version JSON for storage, HTTP responses, and CLI output. `Axial.Schema.Http` and its ASP.NET
 Core adapter parse route, JSON, and form input before embedding application Flow into native endpoints. The same schema
 catalog generates `/openapi.json`; `Inspect` renders the new-workspace form; `RetainedParseResult` redisplays invalid

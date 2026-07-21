@@ -1,5 +1,5 @@
 ---
-title: "Schema.Codec.JsonCodecException"
+title: "Schema.Json.JsonCodecException"
 linkTitle: "JsonCodecException"
 weight: 1001
 ---

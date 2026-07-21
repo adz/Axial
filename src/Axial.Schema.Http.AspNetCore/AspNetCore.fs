@@ -8,7 +8,7 @@ open System.Threading.Tasks
 open Microsoft.AspNetCore.Http
 open Axial.Schema
 open Axial.Schema.Http
-open Axial.Schema.Codec
+open Axial.Schema.Json
 open Axial.Flow
 
 /// <summary>Parses ASP.NET Core requests into <see cref="T:Axial.Schema.RetainedParseResult`2" /> through a schema.</summary>

@@ -16,7 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Axial.Schema\Axial.Schema.fsproj" />
-    <ProjectReference Include="..\..\src\Axial.Schema.Codec\Axial.Schema.Codec.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Schema.Json\Axial.Schema.Json.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Schema.Http\Axial.Schema.Http.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Schema.Http.GenHttp\Axial.Schema.Http.GenHttp.fsproj" />
   </ItemGroup>

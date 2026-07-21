@@ -16,7 +16,7 @@ A JSON response rendering the trusted model through the compiled codec.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `codec` | <code><span><a href="../../../codec/t-schema-codec-jsoncodec.md">JsonCodec</a>&lt;'model&gt;</span></code> |  |
+| `codec` | <code><span><a href="../../../codec/t-schema-json-jsoncodec.md">JsonCodec</a>&lt;'model&gt;</span></code> |  |
 | `status` | <code><a href="https://learn.microsoft.com/dotnet/api/genhttp.api.protocol.responsestatus">ResponseStatus</a></code> |  |
 | `request` | <code><a href="https://learn.microsoft.com/dotnet/api/genhttp.api.protocol.irequest">IRequest</a></code> |  |
 | `value` | <code>'model</code> |  |

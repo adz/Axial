@@ -26,8 +26,8 @@ error bodies and publish the same OpenAPI fragments from the same schema declara
 The host adapters intentionally have a larger dependency surface than the host-neutral package:
 
 - `Axial.Schema.Http` depends on `Axial.Schema` and does not require Flow.
-- `Axial.Schema.Http.AspNetCore` depends on `Axial.Schema.Http`, `Axial.Schema.Codec`, `Axial.Flow`, and ASP.NET Core.
-- `Axial.Schema.Http.GenHttp` depends on `Axial.Schema.Http`, `Axial.Schema.Codec`, `Axial.Flow`, and GenHTTP.
+- `Axial.Schema.Http.AspNetCore` depends on `Axial.Schema.Http`, `Axial.Schema.Json`, `Axial.Flow`, and ASP.NET Core.
+- `Axial.Schema.Http.GenHttp` depends on `Axial.Schema.Http`, `Axial.Schema.Json`, `Axial.Flow`, and GenHTTP.
 
 Use the host-neutral package when parsing and rendering are enough. Install one host adapter when an HTTP handler should
 run as a Flow.

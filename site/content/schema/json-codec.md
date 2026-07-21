@@ -6,7 +6,7 @@ type: docs
 ---
 
 
-This page shows how `Axial.Schema.Codec` turns the schema you already declared into a compiled JSON codec, so trusted
+This page shows how `Axial.Schema.Json` turns the schema you already declared into a compiled JSON codec, so trusted
 serialization and boundary parsing come from one declaration.
 
 Axial has two paths for JSON, and they exist because they optimize for different things:
@@ -22,7 +22,7 @@ Axial has two paths for JSON, and they exist because they optimize for different
 
 ```fsharp
 open Axial.Schema
-open Axial.Schema.Codec
+open Axial.Schema.Json
 open Axial.Schema.Syntax
 
 type Address =
@@ -111,7 +111,7 @@ function takes plain positional arguments, so it calls as an ordinary static met
 
 ```csharp
 using Axial.Schema;
-using Axial.Schema.Codec;
+using Axial.Schema.Json;
 
 JsonCodec<Customer> codec = Json.compile(customerSchema);
 
