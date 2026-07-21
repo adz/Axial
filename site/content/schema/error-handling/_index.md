@@ -4,9 +4,6 @@ title: Error Handling
 type: docs
 notoc: true
 description: Helpers for constraints, fail-fast results, accumulated diagnostics, and refined values.
-menu:
-  main:
-    weight: 4
 ---
 
 

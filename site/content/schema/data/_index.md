@@ -4,9 +4,6 @@ title: Data
 type: docs
 notoc: true
 description: Portable structured values for documents, fixtures, boundaries, and adapters.
-menu:
-  main:
-    weight: 3
 ---
 
 
