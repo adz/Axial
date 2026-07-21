@@ -76,9 +76,3 @@ defaultContentLanguage = "en"
     mediaType = "text/html"
     path = "print"
     rel = "alternate"
-
-[menu]
-  [[menu.main]]
-    name = "GitHub"
-    url = "https://github.com/adz/Axial"
-    weight = 30
