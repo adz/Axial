@@ -65,7 +65,7 @@ inferred.
 ## Give it input: Data
 
 A schema parses *structured data*, not strings of JSON. The input type is
-[`Data`]({{< relref "/data/" >}}) — a small, source-neutral tree of objects, lists, text, numbers,
+[`Data`]({{< relref "/schema/data/" >}}) — a small, source-neutral tree of objects, lists, text, numbers,
 booleans, and nulls. Anything that can produce that shape can feed a schema: JSON, form posts, CLI
 arguments, configuration, or values you write by hand.
 
@@ -98,7 +98,7 @@ let fromMap = Data.ofMap (Map.ofList [ "email", "ada@example.com"; "age", "42" ]
 Note that `"42"` arriving as text is fine: parsing performs shape conversion, so a number field
 accepts a numeric token whether the source delivered it as JSON `42` or form-post `"42"`.
 `Data` is its own package with no dependencies, useful on its own for shaping test fixtures — see
-[its docs]({{< relref "/data/" >}}).
+[its docs]({{< relref "/schema/data/" >}}).
 
 ## Parse it
 

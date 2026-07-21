@@ -110,6 +110,7 @@ dotnet add package Axial.Flow.HttpClient
 - [Building a Base Runtime](./services-and-runtimes/building-a-base-runtime/) — standard operational services.
 - [Service Provider Boundaries](./services-and-runtimes/service-provider-boundaries/) — deliberate `IServiceProvider` edges.
 - [Hosting](./hosting/) — standalone .NET, Generic Host, Node, and browser application edges.
+- [Packages and Platforms](./packages-and-platforms/) — package boundaries and .NET, Node, and browser support.
 
 ## State and Concurrency
 
@@ -127,7 +128,7 @@ dotnet add package Axial.Flow.HttpClient
 - Comparisons: [vs Effect-TS](./comparisons/effect-ts-comparison/), [FSharpPlus integration](./comparisons/fsharpplus-comparison/).
 
 Flow is one of the three packages Axial consists of — each usable independently, all working together. If the code
-is still pure, start in [Error Handling]({{< relref "/error-handling/" >}}) or [Schema]({{< relref "/schema/" >}})
+is still pure, start in [Error Handling]({{< relref "/schema/error-handling/" >}}) or [Schema]({{< relref "/schema/" >}})
 instead; both work without Flow.
 
 </div>

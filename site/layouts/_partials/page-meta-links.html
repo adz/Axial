@@ -17,22 +17,22 @@
   <a href="{{ $gh_url }}" target="_blank"><i class="fa-solid fa-pen-to-square fa-fw"></i> {{ T "post_edit_this" }}</a>
 {{ else if $gh_repo -}}
 
-  {{/* Landing and reference indexes are renamed while content is synced into the site. */ -}}
+  {{/* Product sources retain their paths; generated reference is redistributed into each product. */ -}}
   {{ if eq $path "content/_index.md" -}}
     {{ $path = "docs/index.md" -}}
   {{ else if eq $path "content/schema/_index.md" -}}
-    {{ $path = "docs/landing/schema.md" -}}
+    {{ $path = "docs/schema/_index.md" -}}
   {{ else if eq $path "content/flow/_index.md" -}}
-    {{ $path = "docs/landing/flow.md" -}}
-  {{ else if eq $path "content/error-handling/reference/_index.md" -}}
-    {{ $path = "docs/reference-indexes/error-handling.md" -}}
+    {{ $path = "docs/flow/_index.md" -}}
+  {{ else if eq $path "content/schema/reference/error-handling/_index.md" -}}
+    {{ $path = "docs/schema/reference-indexes/error-handling.md" -}}
   {{ else if eq $path "content/schema/reference/_index.md" -}}
-    {{ $path = "docs/reference-indexes/schema.md" -}}
+    {{ $path = "docs/schema/reference-indexes/schema.md" -}}
   {{ else if eq $path "content/flow/reference/_index.md" -}}
-    {{ $path = "docs/reference-indexes/flow.md" -}}
+    {{ $path = "docs/flow/reference-indexes/flow.md" -}}
   {{/* API references are redistributed by area; guides retain their area beneath docs/. */ -}}
-  {{ else if strings.HasPrefix $path "content/error-handling/reference/" -}}
-    {{ $path = strings.Replace $path "content/error-handling/reference/" "docs/reference/" 1 -}}
+  {{ else if strings.HasPrefix $path "content/schema/reference/error-handling/" -}}
+    {{ $path = strings.Replace $path "content/schema/reference/error-handling/" "docs/reference/" 1 -}}
   {{ else if strings.HasPrefix $path "content/schema/reference/" -}}
     {{ $path = strings.Replace $path "content/schema/reference/" "docs/reference/" 1 -}}
   {{ else if strings.HasPrefix $path "content/flow/reference/" -}}

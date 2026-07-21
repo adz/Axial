@@ -7,9 +7,9 @@ description: HTTP form-like, CLI, JSON-like, and configuration input through one
 
 # Input Sources
 
-[`Data`]({{< relref "/data/" >}}) is the source-agnostic boundary shape: `Null`, `Text`, `Number`, `Bool`, `List`, and
+[`Data`]({{< relref "/schema/data/" >}}) is the source-agnostic boundary shape: `Null`, `Text`, `Number`, `Bool`, `List`, and
 `Object`. Adapters turn common sources into `Data`, and one schema parses them all. (`Data` is its own dependency-free
-package, useful beyond schemas — see [its docs]({{< relref "/data/" >}}).)
+package, useful beyond schemas — see [its docs]({{< relref "/schema/data/" >}}).)
 
 ## The Schema
 
