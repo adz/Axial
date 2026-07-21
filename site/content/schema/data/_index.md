@@ -119,6 +119,6 @@ to re-show exactly what the user typed, or a log needs the offending input fragm
 
 ## Going further
 
-- [API reference]({{< relref "/schema/schema/reference/data/" >}}) — every constructor and helper, source-documented.
+- [API reference]({{< relref "/schema/reference/data/" >}}) — every constructor and helper, source-documented.
 - [Using Data with the rest of Axial](with-axial.md) — feeding schemas, boundary parsing, and
   redisplay-aware error reporting.

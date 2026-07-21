@@ -91,31 +91,28 @@ upsert_frontmatter "$schema_ref/schema/_index.md" "weight" "10"
 upsert_frontmatter "$schema_ref/codec/_index.md" "weight" "20"
 upsert_frontmatter "$schema_ref/data/_index.md" "weight" "30"
 
-# Rewrite absolute /reference/<group> links (in hand-written guides and any
-# generated pages) to the split locations.
-declare -A ref_home=(
-  [check]=schema/reference/error-handling [predicate]=schema/reference/error-handling [result]=schema/reference/error-handling
-  [validation]=schema/reference/error-handling [diagnostics]=schema/reference/error-handling [refined]=schema/reference/error-handling
-  [schema]=schema/reference [codec]=schema/reference [data]=schema/reference
-  [app]=flow/reference [flow]=flow/reference [fiber]=flow/reference [exit]=flow/reference [cause]=flow/reference
-  [concurrency]=flow/reference [schedule]=flow/reference [ref]=flow/reference [stm]=flow/reference [stream]=flow/reference
-  [bind]=flow/reference [service]=flow/reference [layer]=flow/reference [scope]=flow/reference
-  [hosting]=flow/reference [hosting-node]=flow/reference [hosting-browser]=flow/reference
-)
-sed_args=()
-for group in "${!ref_home[@]}"; do
-  sed_args+=(-e "s|/reference/$group\b|/${ref_home[$group]}/$group|g")
-done
-find "$schema_dir" "$flow_dir" -name "*.md" -type f -exec sed -i "${sed_args[@]}" {} \;
-
-# Fix all files: remove body titles to avoid double headings in Hugo
-find "$schema_dir" "$flow_dir" -name "*.md" -type f -exec sed -i '/^# /d' {} \;
-
-# Ensure all pages are marked as docs type
+# Hugo's docs layout supplies the page title. Keep generated content uniform
+# with pages whose source already omits a body-level H1.
 find "$schema_dir" "$flow_dir" -type f -name "*.md" -print0 |
-  while IFS= read -r -d '' page; do
-    upsert_frontmatter "$page" "type" "docs"
-  done
+  node -e '
+    const fs = require("node:fs");
+    for (const path of fs.readFileSync(0, "utf8").split("\0")) {
+      if (!path) continue;
+      const content = fs.readFileSync(path, "utf8")
+        .split(/(?<=\n)/)
+        .filter(line => !line.startsWith("# "))
+        .join("");
+      const frontmatterEnd = content.indexOf("\n---", 4);
+      if (frontmatterEnd < 0) throw new Error(`missing frontmatter: ${path}`);
+      let frontmatter = content.slice(0, frontmatterEnd);
+      if (/^type:/m.test(frontmatter)) {
+        frontmatter = frontmatter.replace(/^type:.*$/m, "type: docs");
+      } else {
+        frontmatter += "\ntype: docs";
+      }
+      fs.writeFileSync(path, frontmatter + content.slice(frontmatterEnd));
+    }
+  '
 
 # Copy root assets
 cp "$root_dir/llms.txt" "$root_dir/site/static/" 2>/dev/null || true

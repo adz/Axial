@@ -53,16 +53,18 @@ validate {
 
 ## Relationship with Result
 
-[`Validation<'value, 'error>`]({{< relref "/reference/validation/t-validation-validation.md" >}}) is structurally similar to `Result<'value, Diagnostics<'error>>`. You can convert between them easily:
+[`Validation<'value, 'error>`]({{< relref "/schema/reference/error-handling/validation/t-validation-validation.md" >}}) is structurally similar to `Result<'value, Diagnostics<'error>>`. You can convert between them easily:
 
-- Use [`Validation.toResult`]({{< relref "/reference/validation/m-validation-validation-toresult.md" >}}) to get a standard result back.
-- Use [`Validation.fromResult`]({{< relref "/reference/validation/m-validation-validation-fromresult.md" >}}), the canonical result-to-validation bridge, to start an accumulating block from an existing result.
+- Use [`Validation.toResult`]({{< relref "/schema/reference/error-handling/validation/m-validation-validation-toresult.md" >}}) to get a standard result back.
+- Use [`Validation.fromResult`]({{< relref "/schema/reference/error-handling/validation/m-validation-validation-fromresult.md" >}}), the canonical result-to-validation bridge, to start an accumulating block from an existing result.
 
-In general, use [`validate {}`]({{< relref "/reference/validation/builders-validate.md" >}}) at the "leaves" of your application (like form parsing) and [`flow {}`]({{< relref "/reference/flow/builders-flow.md" >}}) for the "branches" (the main business logic).
+Choose [`validate {}`]({{< relref "/schema/reference/error-handling/validation/builders-validate.md" >}}) when independent
+steps should accumulate diagnostics. If the same operation also uses Flow, convert or bind the resulting value at the
+point where the two concerns meet; neither builder determines the application's overall structure.
 
 ## Nested Scopes
 
-To build a structured report (e.g., for JSON APIs), use the [`validate.key`]({{< relref "/reference/validation/m-validation-validation-key.md" >}}), `validate.index`, and `validate.name` helpers. These prefix any diagnostics produced inside the block.
+To build a structured report (e.g., for JSON APIs), use the [`validate.key`]({{< relref "/schema/reference/error-handling/validation/m-validation-validation-key.md" >}}), `validate.index`, and `validate.name` helpers. These prefix any diagnostics produced inside the block.
 
 ```fsharp
 let validateCustomer customer =

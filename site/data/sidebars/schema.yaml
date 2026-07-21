@@ -1,0 +1,78 @@
+groups:
+  - title: Axial.Data
+    home: /schema/data
+    children_of:
+      - /schema/data
+    entries:
+      - /schema/reference/data
+
+  - title: Axial.ErrorHandling
+    home: /schema/error-handling
+    entries:
+      - /schema/error-handling/getting-started
+      - /schema/error-handling/result-builder
+      - /schema/error-handling/checks
+      - /schema/error-handling/validation
+      - /schema/error-handling/refined
+      - /schema/error-handling/predicates
+      - /schema/error-handling/tutorials
+      - /schema/error-handling/reference-app
+      - /schema/error-handling/fstoolkit-comparison
+      - /schema/reference/error-handling
+
+  - title: Axial.Schema
+    home: /schema
+    descendants: false
+    entries:
+      - /schema/getting-started
+      - /schema/overview-examples
+      - /schema/tutorials
+      - /schema/syntax
+      - /schema/field-desugaring
+      - /schema/input-sources
+      - /schema/redisplay-and-field-errors
+      - /schema/trusted-construction
+      - /schema/refined-values
+      - /schema/union-schemas
+      - /schema/patterns
+      - /schema/benchmarks
+      - /schema/aot-trimming-fable
+      - /schema/examples
+      - /schema/reference-apps
+      - /schema/comparisons
+      - /schema/reference/schema
+    exclude:
+      - /schema/reference/schema/http
+
+  - title: Axial.Schema.Json
+    home: /schema/json-codec
+    entries:
+      - /schema/reference/codec
+
+  - title: Axial.Schema.JsonSchema
+    home: /schema/reference/schema/m-schema-jsonschema-generate
+
+  - title: Axial.Schema.Contracts.Build
+    home: /schema/contracts
+
+  - title: Axial.Schema.Http
+    home: /schema/http-servers
+    entries:
+      - /schema/reference/schema/http
+    exclude:
+      - /schema/reference/schema/http/aspnetcore
+      - /schema/reference/schema/http/genhttp
+
+  - title: Axial.Schema.Http.AspNetCore
+    home: /schema/reference/schema/http/aspnetcore
+
+  - title: Axial.Schema.Http.GenHttp
+    home: /schema/reference/schema/http/genhttp
+
+  - title: Axial.Schema.Testing
+    home: /schema/patterns/testing-schema-guarantees
+
+  - title: Product information
+    home: /schema/packages-and-platforms
+    entries:
+      - /schema/agent

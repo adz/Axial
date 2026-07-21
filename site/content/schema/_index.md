@@ -108,9 +108,9 @@ Schema uses them, they aren't Schema-specific:
   `PositiveInt`, `NonBlankString`, your own.
 - [Validation]({{< relref "/schema/error-handling/validation/" >}}) — accumulate every sibling failure as a path-aware diagnostics tree.
 
-Axial has two main groups: parse-don't-validate tools, led by Schema for domain models and plain `Result` for smaller
-problems; and [Flow]({{< relref "/flow/" >}}) for effects around them. [Error Handling]({{< relref "/schema/error-handling/" >}})
-contains the `Result`, `Check`, `Validation`, and `Refined` machinery used by the first group.
+The packages are usable independently. [Error Handling]({{< relref "/schema/error-handling/" >}}) contains reusable
+constraints, refined-value construction, accumulated diagnostics, and Result helpers. [Flow]({{< relref "/flow/" >}})
+models effects and dependencies; neither package is a required next step after Schema.
 
 ## Install
 

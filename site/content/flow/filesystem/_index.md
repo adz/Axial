@@ -7,5 +7,5 @@ type: docs
 
 This page shows where to start with explicit file, directory, path, stream, and metadata operations.
 
-- [FileSystem API reference](/flow/flow/reference/service/filesystem/)
+- [FileSystem API reference](/flow/reference/service/filesystem/)
 - [Explicit services](../services-and-runtimes/explicit-services/)

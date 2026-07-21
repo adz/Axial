@@ -58,7 +58,9 @@ validate {
 - Use [`Validation.toResult`]({{< relref "/schema/reference/error-handling/validation/m-validation-validation-toresult.md" >}}) to get a standard result back.
 - Use [`Validation.fromResult`]({{< relref "/schema/reference/error-handling/validation/m-validation-validation-fromresult.md" >}}), the canonical result-to-validation bridge, to start an accumulating block from an existing result.
 
-In general, use [`validate {}`]({{< relref "/schema/reference/error-handling/validation/builders-validate.md" >}}) at the "leaves" of your application (like form parsing) and [`flow {}`]({{< relref "/flow/reference/flow/builders-flow.md" >}}) for the "branches" (the main business logic).
+Choose [`validate {}`]({{< relref "/schema/reference/error-handling/validation/builders-validate.md" >}}) when independent
+steps should accumulate diagnostics. If the same operation also uses Flow, convert or bind the resulting value at the
+point where the two concerns meet; neither builder determines the application's overall structure.
 
 ## Nested Scopes
 

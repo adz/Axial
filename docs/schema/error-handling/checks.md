@@ -52,7 +52,7 @@ being proven.
 
 ## The `CheckFailure` Type
 
-Every `Check` that fails produces one or more [`CheckFailure`]({{< relref "/reference/check/t-errorhandling-checkfailure.md" >}})
+Every `Check` that fails produces one or more [`CheckFailure`]({{< relref "/schema/reference/error-handling/check/t-errorhandling-checkfailure.md" >}})
 values — a closed set of describable reasons, not free-form text:
 
 ```fsharp
@@ -68,7 +68,7 @@ type CheckFailure =
 ```
 
 Because the reason is a real value instead of a string, it can be rendered (`CheckFailure.describe`/`describeAll`,
-with a swappable [`CheckFailureResources`]({{< relref "/reference/check/" >}}) for localization), pattern-matched
+with a swappable [`CheckFailureResources`]({{< relref "/schema/reference/error-handling/check/" >}}) for localization), pattern-matched
 on, or lowered into a `SchemaError` when the check runs as part of schema input parsing. Most application code just
 maps the whole list to a domain error, which is what the rest of this page shows — but the structure is there when
 you need more than "it failed."

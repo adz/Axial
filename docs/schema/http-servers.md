@@ -278,9 +278,9 @@ GenHTTP's `IRequest` does not expose an equivalent of `HttpContext.RequestAborte
 
 ## Complete API reference
 
-- [Host-neutral schema HTTP boundary]({{< relref "/reference/schema/http/" >}})
-- [ASP.NET Core adapter]({{< relref "/reference/schema/http/aspnetcore/" >}})
-- [GenHTTP adapter]({{< relref "/reference/schema/http/genhttp/" >}})
+- [Host-neutral schema HTTP boundary]({{< relref "/schema/reference/schema/http/" >}})
+- [ASP.NET Core adapter]({{< relref "/schema/reference/schema/http/aspnetcore/" >}})
+- [GenHTTP adapter]({{< relref "/schema/reference/schema/http/genhttp/" >}})
 
 The adapter reference pages include every `Request`, `Response`, `EndpointFlow`, and `flowEndpoint` member plus the
 lower-level `SchemaRequest`, `SchemaResult`, and `SchemaResponse` surfaces.

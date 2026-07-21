@@ -3,32 +3,34 @@ weight: 6
 title: Error Handling
 type: docs
 notoc: true
-description: Pure fail-fast logic with Check and standard F# Result.
+description: Helpers for constraints, fail-fast results, accumulated diagnostics, and refined values.
 menu:
   main:
     weight: 4
 ---
 
 
-F# already has `Result<'value, 'error>` for functions that either return a value or a known failure. Application code
-still repeats the same work around it: blank-string checks, option extraction, Boolean guards, and error mapping.
+`Axial.ErrorHandling` adds focused tools around standard F# values: reusable constraints, helpers over
+`Result<'value, 'error>`, accumulated diagnostics, and refined values. These tools can be used independently; they do
+not prescribe one error model for an application.
 
-This package keeps the standard type and removes that repeated plumbing. Use it for small parsing and decision
-functions where a whole model schema or workflow runtime would add more structure than the problem needs.
+The package is useful when ordinary functions need more structure than hand-written guards, but do not need a schema
+or an effect runtime. Existing F# and third-party Result helpers continue to compose with it.
 
-Three pieces do the work:
+The main choices are:
 
-- **`Predicate`** — plain `bool` facts, for local branching (`if`, `match`, guard clauses).
-- **`Check`** — the same facts as reusable, named, structured checks that return `Result<'value, CheckFailure list>`.
-- **`Result`'s focused helpers and the `result {}` builder** — attach domain errors and compose fail-fast steps over
-  standard `Result`.
+- **`Check`** for reusable value constraints with structured `CheckFailure` values.
+- **`Refined`** when a value's type should record that construction succeeded.
+- **`Validation` and `Diagnostics`** when independent failures should accumulate with paths or names.
+- **`Result` helpers and `result {}`** for fail-fast composition over ordinary F# Result values.
+- **`Predicate`** for the underlying `bool` facts when local branching is enough.
 
-Your functions still return ordinary F# `Result` values with your own error type.
+These shapes solve different problems rather than forming a required progression. A function may use one of them and
+return an ordinary F# `Result`, or expose the more specific type when that communicates useful semantics.
 
-This is one of three packages Axial consists of, each usable on its own: this one for single-value fail-fast logic,
-[Schema]({{< relref "/schema/" >}}) for whole domain models parsed at a boundary, and [Flow]({{< relref "/flow/" >}})
-for effects, dependencies, and runtime policy. The rest of this section stands on its own — it doesn't assume you'll
-ever reach for the other two.
+`Axial.Data`, `Axial.ErrorHandling`, and `Axial.Schema` are separate packages in the Data and Schema documentation
+site. [Schema]({{< relref "/schema/" >}}) uses ErrorHandling internally, but application code can use this package
+without Schema or [Flow]({{< relref "/flow/" >}}).
 
 ## Install
 
@@ -38,18 +40,18 @@ This section is one NuGet package:
 dotnet add package Axial.ErrorHandling
 ```
 
-`Check`, `Result`, `Predicate`, and `result {}` live here. `Validation` — accumulating sibling failures into a
-path-aware diagnostics tree, rather than stopping at the first one — ships in this same package too; see the
-[Validation docs](./validation/) for that half of the surface.
+`Result` helpers, `result {}`, `Check`, `Predicate`, `Validation`, `Diagnostics`, and `Refined` all live in this
+package.
 
 ## Guides
 
-- [Getting Started](./getting-started/): why `Check` and `Result` exist, and the smallest useful example.
-- [Predicates](./predicates/): plain `bool` facts for local branching.
-- [Checks](./checks/): reusable, named, structured checks and how they attach to `Result`.
+- [Getting Started](./getting-started/): choose a tool from the package and see the smallest useful example.
 - [Result Builder](./result-builder/): fail-fast composition over standard `Result` with `result {}`.
+- [Checks](./checks/): reusable, named constraints and how they attach to `Result`.
 - [Validation](./validation/): accumulate sibling failures into a path-aware diagnostics tree, instead of stopping at
   the first one.
+- [Refined](./refined/): construct values whose types record an invariant.
+- [Predicates](./predicates/): plain `bool` facts for local branching.
 - [Tutorials](./tutorials/): build a small validation flow end to end.
 - [Walkthrough: Registration Desk](./reference-app/): the introductory reference app — all four stages of this
   section in one runnable program.

@@ -1,0 +1,28 @@
+{{- $current := .current -}}
+{{- $node := .node -}}
+{{- $depth := .depth -}}
+{{- $excludes := .excludes -}}
+{{- $excluded := in $excludes $node.Path -}}
+{{- if and (not $excluded) (ne $node.Params.toc_hide true) -}}
+  {{- $children := where (union $node.Pages $node.Sections).ByWeight ".Params.toc_hide" "!=" true -}}
+  {{- $active := eq $current $node -}}
+  {{- $activePath := or $active ($current.IsDescendant $node) -}}
+  {{- $id := printf "package-%s" ($node.RelPermalink | anchorize) -}}
+  <li class="axial-package-nav__item{{ if $activePath }} active-path{{ end }}{{ if gt (len $children) 0 }} with-child{{ end }}">
+    {{- if gt (len $children) 0 -}}
+      <input type="checkbox" id="{{ $id }}-check"{{ if $activePath }} checked{{ end }}>
+      <label for="{{ $id }}-check">
+    {{- end -}}
+    <a id="{{ $id }}" href="{{ $node.RelPermalink }}" class="td-sidebar-link{{ if $node.IsPage }} td-sidebar-link__page{{ else }} td-sidebar-link__section{{ end }}{{ if $active }} active{{ end }}">
+      <span{{ if $active }} class="td-sidebar-nav-active-item"{{ end }}>{{ $node.LinkTitle }}</span>
+    </a>
+    {{- if gt (len $children) 0 -}}
+      </label>
+      <ul class="axial-package-nav__children depth-{{ $depth }}">
+        {{- range $children -}}
+          {{ partial "package-sidebar-node.html" (dict "current" $current "node" . "depth" (add $depth 1) "excludes" $excludes) }}
+        {{- end -}}
+      </ul>
+    {{- end -}}
+  </li>
+{{- end -}}

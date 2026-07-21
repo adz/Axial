@@ -1,50 +1,50 @@
 ---
 weight: 2
 title: Getting Started
-description: Plain F# Result with your own error type, without the boilerplate.
+description: Choosing among Result helpers, Check, Validation, Refined, and Predicate.
 type: docs
 ---
 
 
-Most validation code fails the same way: not through a missing framework, but through boilerplate. Null and blank
-guards, option unwrapping, boolean conditions hand-rolled into `Error` branches — each team reinvents them, and most
-checks don't deserve more machinery than that.
+Start with the return type that communicates the behavior your function needs. `Axial.ErrorHandling` offers several
+related tools, but an application does not need to adopt all of them.
 
-Axial's answer is to keep standard F# `Result<'value, 'error>` with your own error union and make it terse. No Axial
-types appear in your signatures.
+`Check` is a useful starting point when a constraint should be named, reused, or inspected. It preserves the checked
+value on success and reports structured `CheckFailure` values on failure:
 
 ```fsharp
 open Axial
 
-type UserError = | NameTooShort
+let checkName (name: string) =
+    name |> Check.minLength 3
 
-let validateName (name: string) : Result<string, UserError> =
-    name
-    |> Check.minLength 3
-    |> Result.orError NameTooShort
-
-// This is a standard F# Result.
-let result = validateName "Ad" // Error NameTooShort
+let result = checkName "Ad"
+// Error [MinLength (3, 2)]
 ```
 
-`Check.minLength` is one of many reusable named checks — it already keeps the input value on success, so no
-separate `Result` wrapper is needed. `Result.orError` attaches your own error, discarding whatever `Check` produced.
+That failure can remain structural, be used to construct a [refined value](./refined/), or be translated at a domain
+or presentation boundary. If a function exposes its own error union, `Result.orError` replaces the check failures;
+`Result.mapError` can preserve more detail by translating them.
 
-## The Three Pieces
+## Choose by behavior
 
 | You need | Reach for | Shape |
 | --- | --- | --- |
-| A raw `bool` for an `if`/`match` branch | [`Predicate`](./predicates/) | `bool` |
-| A reusable, named constraint that becomes a typed failure | [`Check`](./checks/) | `Result<'value, CheckFailure list>` |
-| To attach a domain error, extract a value, or sequence steps | [`Result`'s helpers and `result {}`](./result-builder/) | `Result<'value, 'error>` |
+| A reusable value constraint | [`Check`](./checks/) | `Result<'value, CheckFailure list>` |
+| A type that records successful construction | [`Refined`](./refined/) | A refined value type |
+| All independent failures, with locations | [`Validation`](./validation/) | `Validation<'value, 'error>` |
+| Fail-fast composition over ordinary F# results | [`Result` helpers and `result {}`](./result-builder/) | `Result<'value, 'error>` |
+| A local fact for an `if` or `match` | [`Predicate`](./predicates/) | `bool` |
 
-They compose in that order: `Predicate` answers "is this true right now," `Check` turns the same kind of fact into a
-structured, reusable, pipeable result, and `Result` carries it the rest of the way to your domain error and through
-the rest of the workflow.
+The tools interoperate, but the table is not a ladder. For example, a `Check` can feed a Result-returning function,
+while a `Validation` block can accumulate several existing Results. Use the smallest shape that preserves the
+semantics callers need.
 
 ## Guides
 
-- [Predicates](./predicates/) covers the `bool` layer for local branching.
-- [Checks](./checks/) covers the full `Check` surface, the `CheckDSL`, and composition with `Check.all`/`Check.any`.
 - [Result Builder](./result-builder/) covers `result {}` for sequencing dependent fail-fast steps.
+- [Checks](./checks/) covers the full `Check` surface, the `CheckDSL`, and composition with `Check.all`/`Check.any`.
+- [Validation](./validation/) covers accumulated failures and structured diagnostics.
+- [Refined](./refined/) covers types constructed from checked values.
+- [Predicates](./predicates/) covers `bool` facts for local branching.
 - The [tutorial](./tutorials/) walks through building a small validation flow end to end.

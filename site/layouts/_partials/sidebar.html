@@ -1,0 +1,63 @@
+{{- $context := . -}}
+{{- $sidebar := false -}}
+{{- if eq .Section "schema" -}}
+  {{- $sidebar = hugo.Data.sidebars.schema -}}
+{{- else if eq .Section "flow" -}}
+  {{- $sidebar = hugo.Data.sidebars.flow -}}
+{{- end -}}
+
+<div id="td-sidebar-menu" class="td-sidebar__inner">
+  <form class="td-sidebar__search d-flex align-items-center">
+    {{ partial "search-input.html" . }}
+    <button class="btn btn-link td-sidebar__toggle" type="button"
+      data-bs-toggle="collapse" data-bs-target="#td-section-nav"
+      aria-controls="td-section-nav" aria-expanded="false" aria-label="Toggle section navigation">
+    </button>
+  </form>
+
+  <nav class="td-sidebar-nav collapse show" id="td-section-nav">
+    {{- if $sidebar -}}
+      {{- range $sidebar.groups -}}
+        {{- $home := $context.Site.GetPage .home -}}
+        {{- if $home -}}
+          {{- $activeGroup := eq $context $home -}}
+          {{- if and (ne .descendants false) ($context.IsDescendant $home) -}}
+            {{- $activeGroup = true -}}
+          {{- end -}}
+          {{- range .entries -}}
+            {{- $entry := $context.Site.GetPage . -}}
+            {{- if and $entry (or (eq $context $entry) ($context.IsDescendant $entry)) -}}
+              {{- $activeGroup = true -}}
+            {{- end -}}
+          {{- end -}}
+          <section class="axial-package-nav{{ if $activeGroup }} active-path{{ end }}">
+            <h2 class="axial-package-nav__title">
+              <a href="{{ $home.RelPermalink }}"{{ if eq $context $home }} class="active"{{ end }}>{{ .title }}</a>
+            </h2>
+            {{- if $activeGroup -}}
+            <ul class="td-sidebar-nav__section axial-package-nav__items">
+              {{- $excludes := .exclude | default slice -}}
+              {{- range .children_of -}}
+                {{- $root := $context.Site.GetPage . -}}
+                {{- if $root -}}
+                  {{- range (union $root.Pages $root.Sections).ByWeight -}}
+                    {{ partial "package-sidebar-node.html" (dict "current" $context "node" . "depth" 1 "excludes" $excludes) }}
+                  {{- end -}}
+                {{- end -}}
+              {{- end -}}
+              {{- range .entries -}}
+                {{- $entry := $context.Site.GetPage . -}}
+                {{- if $entry -}}
+                  {{ partial "package-sidebar-node.html" (dict "current" $context "node" $entry "depth" 1 "excludes" $excludes) }}
+                {{- end -}}
+              {{- end -}}
+            </ul>
+            {{- end -}}
+          </section>
+        {{- end -}}
+      {{- end -}}
+    {{- else -}}
+      {{ partial "sidebar-tree.html" (dict "context" . "cacheSidebar" false "sidebarRoot" .FirstSection "sidebarRootID" .FirstSection.RelPermalink) }}
+    {{- end -}}
+  </nav>
+</div>

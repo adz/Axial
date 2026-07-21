@@ -127,6 +127,6 @@ directly against `HttpContext.Response.Body` / `Request.Body` in an ASP.NET Core
 
 ## Next
 
-- Serve the same declaration as a contract with [`JsonSchema.generate`]({{< relref "/reference/schema/" >}}).
+- Serve the same declaration as a contract with [`JsonSchema.generate`]({{< relref "/schema/reference/schema/" >}}).
 - See the two paths together in the runnable
   [minimal API sample]({{< relref "/schema/examples.md#minimal-api-boundary-example" >}}).
