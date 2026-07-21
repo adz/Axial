@@ -4,7 +4,7 @@ linkTitle: "generate"
 weight: 2300
 ---
 
-Generates a compact JSON Schema document from a built model schema&#39;s metadata.
+Generates a compact JSON Schema document from any completed schema declaration.
 
 ## Signature
 
@@ -16,7 +16,7 @@ Generates a compact JSON Schema document from a built model schema&#39;s metadat
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `schema` | <code><span><a href="t-schema-schema.md">Schema</a>&lt;'model&gt;</span></code> | The built model schema to lower. |
+| `schema` | <code><span><a href="t-schema-schema.md">Schema</a>&lt;'model&gt;</span></code> | The record, primitive, collection, union, or other completed schema to lower. |
 
 ## Returns
 

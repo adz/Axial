@@ -39,11 +39,15 @@ files. The features it leans on, and why they matter at this size:
   hand-written typed functions, and the migrated output is re-checked against the current schema — migration code
   cannot quietly produce invalid current values ([Versioned Contracts]({{< relref "/schema/contracts.md" >}})).
 - **One declaration, several interpreters.** The same schemas drive path-aware parse diagnostics rendered at
-  three boundaries, HTML form metadata and redisplay, compiled trusted JSON codecs for storage writes
+  three boundaries, HTML form metadata and retained-input redisplay, compiled trusted JSON codecs for storage and
+  successful HTTP responses, and `/openapi.json`
   ([JSON Codec]({{< relref "/schema/json-codec.md" >}})), while production-only admission remains an ordinary
   result-returning application function.
 - **Flow where orchestration warrants it.** Persistence and id generation are environment services; use cases
-  are readable typed workflows. Flow is never part of the schema entry price.
+  are readable typed workflows. `BaseRuntime.liveValue` supplies the standard platform-service bundle,
+  `Axial.Flow.FileSystem` makes persistence effects explicit, and
+  `Axial.Schema.Http.AspNetCore` parses routes, JSON, and forms before embedding those application workflows with
+  `EndpointFlow.run`. Flow is never part of the schema entry price.
 
 `examples/Axial.ReferenceApp/README.md` explains the current boundary and domain split in the runnable app.
 
