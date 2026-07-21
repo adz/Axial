@@ -58,6 +58,233 @@ samp,
   padding-inline: 0.7rem;
 }
 
+// Forged product rail: a recessed graphite panel held between bevelled steel
+// edges. Product links are physical plates; the selected plate is energized.
+.td-navbar {
+  min-height: 5.4rem;
+  padding: 0.62rem 0.9rem;
+  border: 0;
+  background:
+    radial-gradient(circle at 18% 20%, rgba(255, 255, 255, 0.055) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 72% 66%, rgba(255, 255, 255, 0.035) 0 1px, transparent 1.5px),
+    linear-gradient(180deg, #25292d, #15181c 68%, #090b0e);
+  background-size: 19px 17px, 23px 21px, auto;
+  box-shadow: inset 0 -1px #000, 0 3px 12px rgba(0, 0, 0, 0.45);
+
+  .td-navbar-container {
+    position: relative;
+    min-height: 4.12rem;
+    padding: 0.25rem 1.7rem;
+    border: 1px solid #596068;
+    border-top-color: #a0a5aa;
+    border-bottom-color: #0b0d0f;
+    background:
+      radial-gradient(ellipse at 14% 25%, rgba(255, 255, 255, 0.035), transparent 25%),
+      repeating-linear-gradient(112deg, rgba(255, 255, 255, 0.012) 0 1px, transparent 1px 6px),
+      linear-gradient(180deg, #292c2f 0%, #1a1c1f 48%, #111315 100%);
+    box-shadow:
+      inset 0 2px 0 rgba(255, 255, 255, 0.10),
+      inset 0 -3px 0 rgba(0, 0, 0, 0.56),
+      inset 0 0 18px rgba(0, 0, 0, 0.34),
+      0 -2px 0 #0a0c0e,
+      0 2px 0 #70767b,
+      0 4px 0 #090b0d;
+
+    &::before,
+    &::after {
+      content: "";
+      position: absolute;
+      z-index: 2;
+      top: 50%;
+      width: 0.66rem;
+      height: 0.66rem;
+      border: 1px solid #858b90;
+      border-radius: 50%;
+      background: radial-gradient(circle at 38% 34%, #c4c8ca 0 8%, #656a6e 18%, #17191b 52%, #050607 68%);
+      box-shadow: inset 0 0 2px #000, 0 1px 1px #000;
+      transform: translateY(-50%);
+    }
+
+    &::before { left: 0.52rem; }
+    &::after { right: 0.52rem; }
+  }
+
+  .navbar-brand {
+    position: relative;
+    z-index: 1;
+    margin: 0;
+    padding: 0;
+  }
+
+  .navbar-brand__logo {
+    display: block;
+    width: auto;
+    height: 3.45rem;
+    filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.72));
+
+    img {
+      display: block;
+      width: auto;
+      height: 100%;
+    }
+  }
+
+  .navbar-nav {
+    align-items: stretch;
+    gap: 2.1rem;
+  }
+
+  .nav-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    & + .nav-item::before {
+      content: "";
+      position: absolute;
+      left: -1.08rem;
+      top: 0.35rem;
+      bottom: 0.35rem;
+      width: 2px;
+      border-left: 1px solid #070809;
+      border-right: 1px solid #767b7f;
+      background: #25282a;
+      box-shadow: 1px 0 rgba(255, 255, 255, 0.06);
+    }
+
+    & + .nav-item::after {
+      content: "";
+      position: absolute;
+      left: -1.28rem;
+      top: 50%;
+      width: 0.42rem;
+      height: 0.42rem;
+      border: 1px solid #73787c;
+      border-radius: 50%;
+      background: radial-gradient(circle at 38% 34%, #b9bdc0 0 9%, #53575a 22%, #111315 60%);
+      box-shadow: 0 1px 1px #000;
+      transform: translateY(-50%);
+    }
+  }
+
+  .nav-link {
+    position: relative;
+    z-index: 0;
+    min-width: 7.6rem;
+    padding: 0.68rem 1.15rem;
+    border: 1px solid transparent;
+    border-radius: 2px;
+    color: #aeb1b3;
+    font-family: "DIN Alternate", "Bahnschrift SemiCondensed", "Arial Narrow", $axial-text;
+    font-size: 0.9rem;
+    font-stretch: condensed;
+    font-weight: 720;
+    letter-spacing: 0.075em;
+    text-align: center;
+    text-transform: uppercase;
+    text-shadow: 0 -1px 0 #050607, 0 1px 0 rgba(255, 255, 255, 0.12);
+    transition: 140ms ease;
+
+    &::before {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      top: -0.42rem;
+      right: -0.48rem;
+      bottom: -0.34rem;
+      left: -0.48rem;
+      border: 1px solid transparent;
+      clip-path: polygon(5px 0, calc(100% - 5px) 0, 100% 5px, 100% calc(100% - 5px), calc(100% - 5px) 100%, 5px 100%, 0 calc(100% - 5px), 0 5px);
+      transition: 140ms ease;
+      pointer-events: none;
+    }
+
+    &:hover {
+      color: #d9e3e5;
+      border-color: rgba(177, 194, 198, 0.25);
+      background: linear-gradient(180deg, rgba(157, 174, 178, 0.10), rgba(50, 59, 62, 0.04));
+      text-shadow: 0 0 5px rgba(202, 240, 244, 0.18), 0 1px 1px #000;
+
+      &::before {
+        border-color: rgba(153, 170, 174, 0.20);
+        background: rgba(187, 207, 211, 0.025);
+        box-shadow: inset 0 1px rgba(255, 255, 255, 0.05), 0 0 8px rgba(162, 225, 234, 0.08);
+      }
+    }
+
+    &.active,
+    &[aria-current="page"] {
+      color: #f0fbfc;
+      border-color: rgba(205, 220, 222, 0.64);
+      background:
+        repeating-linear-gradient(110deg, rgba(255, 255, 255, 0.024) 0 1px, transparent 1px 5px),
+        linear-gradient(180deg, rgba(157, 181, 185, 0.24), rgba(57, 74, 78, 0.20) 55%, rgba(13, 20, 22, 0.22));
+      box-shadow:
+        inset 0 1px rgba(255, 255, 255, 0.30),
+        inset 0 -2px rgba(0, 0, 0, 0.65),
+        0 0 4px rgba(203, 244, 247, 0.48),
+        0 0 14px rgba(118, 229, 237, 0.26);
+      text-shadow: 0 0 5px rgba(226, 253, 255, 0.55), 0 2px 1px #000;
+      transform: translateY(-2px);
+
+      &::before {
+        border-color: #777f82;
+        border-top-color: #c1c7c9;
+        border-bottom-color: #171b1d;
+        background: linear-gradient(180deg, rgba(172, 190, 194, 0.12), rgba(17, 25, 27, 0.06));
+        box-shadow:
+          inset 0 1px rgba(255, 255, 255, 0.16),
+          0 2px 0 #080a0b,
+          0 0 16px rgba(116, 230, 238, 0.14);
+      }
+    }
+  }
+
+  .td-version-menu .dropdown-toggle {
+    border-color: #555b60;
+    border-radius: 2px;
+    background: linear-gradient(#303438, #181b1e);
+    color: #c6cacd;
+    box-shadow: inset 0 1px rgba(255, 255, 255, 0.08), 0 1px 1px #000;
+  }
+
+  .td-search__input {
+    border-color: #50565b;
+    border-radius: 2px;
+    background: #101316;
+    color: #e1e5e7;
+    box-shadow: inset 0 2px 5px #050607, 0 1px rgba(255, 255, 255, 0.07);
+
+    &::placeholder { color: #979da1; }
+  }
+}
+
+@media (max-width: 767.98px) {
+  .td-navbar {
+    min-height: 4rem;
+    padding: 0.35rem;
+
+    .td-navbar-container {
+      min-height: 3.3rem;
+      padding-inline: 1rem;
+    }
+
+    .navbar-nav { gap: 0.6rem; }
+
+    .nav-item + .nav-item::before,
+    .nav-item + .nav-item::after { display: none; }
+
+    .nav-link {
+      min-width: 0;
+      padding-inline: 0.65rem;
+    }
+
+    .navbar-brand__logo {
+      height: 2.8rem;
+    }
+  }
+}
+
 .axial-pre1-banner {
   width: 100%;
   min-height: 2.75rem;
@@ -70,6 +297,12 @@ samp,
   font-size: 0.95rem;
   line-height: 1.35;
   text-align: center;
+}
+
+@media (min-width: 768px) {
+  body .axial-pre1-banner {
+    margin-top: 5.4rem;
+  }
 }
 
 .axial-pre1-banner p {
