@@ -1,14 +1,34 @@
 groups:
   - title: Axial.ErrorHandling
     home: /error-handling
+    descendants: false
     entries:
       - /error-handling/getting-started
-      - /error-handling/result-builder
-      - /error-handling/checks
-      - /error-handling/diagnostics
-      - /error-handling/refined
-      - /error-handling/predicates
       - /error-handling/tutorials
       - /error-handling/reference-app
       - /error-handling/fstoolkit-comparison
-      - /error-handling/reference
+
+  - title: Axial.Result
+    home: /error-handling/result-builder
+    descendants: false
+    entries:
+      - /error-handling/checks
+      - /error-handling/predicates
+      - /error-handling/reference/result
+      - /error-handling/reference/check
+      - /error-handling/reference/predicate
+
+  - title: Axial.Diagnostics
+    home: /error-handling/diagnostics
+    children_of:
+      - /error-handling/diagnostics
+    entries:
+      - /error-handling/reference/validation
+      - /error-handling/reference/diagnostics
+
+  - title: Axial.Refined
+    home: /error-handling/refined
+    children_of:
+      - /error-handling/refined
+    entries:
+      - /error-handling/reference/refined
