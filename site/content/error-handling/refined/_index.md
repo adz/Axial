@@ -14,8 +14,8 @@ receiving the refined value does not need to repeat the check.
 
 Refined values live in ErrorHandling and can be used on their own.
 
-`Parse` reads primitive input, `Refine` builds a refined value, and `refine {}` connects several dependent parsing
-and refinement steps.
+`Parse` reads primitive input, `Refine` builds a refined value, and `refine {}` selects either operation from the type
+annotation on the left side of `let!` while sequencing dependent steps.
 
 ## Install
 
@@ -54,11 +54,11 @@ type Product =
 
 let createProduct rawId rawSlug rawQuantity : Result<Product, RefinementError> =
     refine {
-        let! parsedId = Parse.int rawId
-        let! id = Refine.nonZeroInt parsedId
-        let! slug = Refine.slug rawSlug
-        let! parsedQuantity = Parse.int rawQuantity
-        let! quantity = Refine.positiveInt parsedQuantity
+        let! (parsedId: int) = rawId
+        let! (id: NonZeroInt) = parsedId
+        let! (slug: Slug) = rawSlug
+        let! (parsedQuantity: int) = rawQuantity
+        let! (quantity: PositiveInt) = parsedQuantity
 
         return {
             Id = ProductId id
@@ -70,9 +70,8 @@ let createProduct rawId rawSlug rawQuantity : Result<Product, RefinementError> =
 
 ```fsharp
 refine {
-    let! (parsedId: int) = (Parse.int rawId: Result<int, ParseError>)
-    let! (id: NonZeroInt) =
-        (Refine.nonZeroInt parsedId: Result<NonZeroInt, RefinementError>)
+    let! (parsedId: int) = (rawId: string)
+    let! (id: NonZeroInt) = (parsedId: int)
 
     return { ... }
 }

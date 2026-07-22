@@ -19,6 +19,8 @@
 
 - In `result {}`, `let!` binds the value inside `Ok`; `do!` binds `Result<unit, _>`; `return!` returns another Result.
 - In `validate {}`, sibling `and!` bindings run independently and collect their diagnostics.
-- In `refine {}`, parse failures become `RefinementError.ParseFailed` and refinement failures remain structured.
+- In `refine {}`, the type on the left of `let!` selects parsing or refinement for raw input. Add an explicit left-hand
+  annotation when several targets share the same raw type. Parse failures become `RefinementError.ParseFailed`; refinement
+  failures remain structured.
 
 See `/error-handling/getting-started/` for the main guide and `/error-handling/reference/` for generated API documentation.

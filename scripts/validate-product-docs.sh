@@ -26,11 +26,17 @@ case "$product" in
     test -f "$validate_dir/error-handling/getting-started/index.html"
     test -f "$validate_dir/error-handling/diagnostics/index.html"
     test -f "$validate_dir/error-handling/reference/check/t-errorhandling-check/index.html"
+    duplicate_sidebar_ids="$(grep -o 'id="[^"]*"' "$validate_dir/error-handling/reference/result/index.html" | sort | uniq -d)"
+    test -z "$duplicate_sidebar_ids"
     ;;
   schema)
     test -f "$validate_dir/schema/getting-started/index.html"
     test -f "$validate_dir/schema/data/index.html"
     test -f "$validate_dir/schema/reference/schema/t-schema-schema/index.html"
+    grep -q 'id="package-schema-reference-check" checked' "$validate_dir/schema/reference/schema/index.html"
+    grep -q 'id="package-schemadata-reference-check" checked' "$validate_dir/schema/reference/data/index.html"
+    grep -q 'id="package-schemajson-codec-reference-check" checked' "$validate_dir/schema/reference/codec/index.html"
+    grep -q 'id="package-schemahttp-servers-reference-check" checked' "$validate_dir/schema/reference/schema/http/index.html"
     ;;
   flow)
     test -f "$validate_dir/flow/getting-started/index.html"

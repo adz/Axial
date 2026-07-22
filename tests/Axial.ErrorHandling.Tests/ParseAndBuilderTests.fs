@@ -116,8 +116,8 @@ module ParseAndBuilderTests =
 
         let inferredRawBinding : Result<NonBlankString * PositiveInt, RefinementError> =
             refine {
-                let! name = "Ada"
-                let! quantity = 3
+                let! (name: NonBlankString) = "Ada"
+                let! (quantity: PositiveInt) = 3
                 return name, quantity
             }
 
@@ -137,3 +137,125 @@ module ParseAndBuilderTests =
         test <@ (inferredRawBinding |> Result.map (fun (name, quantity) -> name.Value, quantity.Value)) = Ok("Ada", 3) @>
         test <@ parseFailure = Error(ParseFailed(ParseError.InvalidFormat("int", "nope"))) @>
         test <@ parseReturnFrom = Ok 42 @>
+
+    [<Fact>]
+    let ``refine computation expression selects non-zero integer refinement from the bound type`` () =
+        let actual =
+            refine {
+                let! (value: NonZeroInt) = 42
+                return value.Value
+            }
+
+        test <@ actual = Ok 42 @>
+
+    [<Fact>]
+    let ``refine computation expression selects string refinements from the bound type`` () =
+        let actual =
+            refine {
+                let! (trimmed: TrimmedString) = "Ada"
+                let! (slug: Slug) = "ada-lovelace"
+                let! (bounded: BoundedString) = ("Axial", 3, 10)
+                return trimmed.Value, slug.Value, bounded.Value
+            }
+
+        test <@ actual = Ok("Ada", "ada-lovelace", "Axial") @>
+
+    [<Fact>]
+    let ``refine computation expression selects every integer refinement from the bound type`` () =
+        let actual =
+            refine {
+                let! (positive: PositiveInt) = 1
+                let! (nonNegative: NonNegativeInt) = 0
+                let! (nonZero: NonZeroInt) = -1
+                let! (negative: NegativeInt) = -2
+                let! (nonPositive: NonPositiveInt) = 0
+                return positive.Value, nonNegative.Value, nonZero.Value, negative.Value, nonPositive.Value
+            }
+
+        test <@ actual = Ok(1, 0, -1, -2, 0) @>
+
+    [<Fact>]
+    let ``refine computation expression selects collection and range refinements from the bound type`` () =
+        let start = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
+        let finish = start.AddDays 1
+
+        let actual =
+            refine {
+                let! (nonEmptyList: NonEmptyList<int>) = [ 1; 2 ]
+                let! (nonEmptyArray: NonEmptyArray<int>) = [ 1; 2 ]
+                let! (distinct: DistinctList<int>) = [ 1; 2 ]
+                let! (boundedList: BoundedList<int>) = ([ 1; 2 ], 1, 3)
+                let! (boundedArray: BoundedArray<int>) = ([| 1; 2 |], 1, 3)
+                let! (range: DateTimeOffsetRange) = (start, finish)
+                let! (dateRange: DateOnlyRange) = (DateOnly(2026, 1, 1), DateOnly(2026, 1, 2))
+
+                return
+                    nonEmptyList.ToList(),
+                    nonEmptyArray.ToArray(),
+                    distinct.ToList(),
+                    boundedList.ToList(),
+                    boundedArray.ToArray(),
+                    range.End,
+                    dateRange.End
+            }
+
+        let expected =
+            Ok([ 1; 2 ], [| 1; 2 |], [ 1; 2 ], [ 1; 2 ], [| 1; 2 |], finish, DateOnly(2026, 1, 2))
+
+        test <@ actual = expected @>
+
+    [<Fact>]
+    let ``refine computation expression selects primitive parsers from the bound type`` () =
+        let expectedGuid = Guid.Parse "6f9619ff-8b86-d011-b42d-00cf4fc964ff"
+
+        let actual =
+            refine {
+                let! (intValue: int) = "42"
+                let! (longValue: int64) = "43"
+                let! (decimalValue: decimal) = "44.5"
+                let! (floatValue: float) = "45.5"
+                let! (boolValue: bool) = "true"
+                let! (guidValue: Guid) = expectedGuid.ToString()
+                let! (dateTimeValue: DateTime) = "2026-01-02T03:04:05"
+                let! (offsetValue: DateTimeOffset) = "2026-01-02T03:04:05+00:00"
+                let! (dateValue: DateOnly) = "2026-01-02"
+                let! (timeValue: TimeOnly) = "03:04:05"
+
+                return
+                    intValue,
+                    longValue,
+                    decimalValue,
+                    floatValue,
+                    boolValue,
+                    guidValue,
+                    dateTimeValue.Year,
+                    offsetValue.Year,
+                    dateValue,
+                    timeValue
+            }
+
+        let expected =
+            Ok(42, 43L, 44.5M, 45.5, true, expectedGuid, 2026, 2026, DateOnly(2026, 1, 2), TimeOnly(3, 4, 5))
+
+        test <@ actual = expected @>
+
+    [<Fact>]
+    let ``automatic refine bindings preserve parse and refinement failures`` () =
+        let parseFailure =
+            refine {
+                let! (_: int) = "not-an-int"
+                return ()
+            }
+
+        let refinementFailure =
+            refine {
+                let! (_: NonZeroInt) = 0
+                return ()
+            }
+
+        test <@ parseFailure = Error(ParseFailed(ParseError.InvalidFormat("int", "not-an-int"))) @>
+
+        let expectedRefinementFailure : Result<unit, RefinementError> =
+            Error(CheckFailed("NonZeroInt", [ CheckFailure.Custom "notEqualTo:0" ]))
+
+        test <@ refinementFailure = expectedRefinementFailure @>

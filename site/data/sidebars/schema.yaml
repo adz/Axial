@@ -3,8 +3,9 @@ groups:
     home: /schema/data
     children_of:
       - /schema/data
-    entries:
-      - /schema/reference/data
+    reference:
+      children_of:
+        - /schema/reference/data
 
   - title: Axial.Schema
     home: /schema
@@ -26,14 +27,17 @@ groups:
       - /schema/examples
       - /schema/reference-apps
       - /schema/comparisons
-      - /schema/reference/schema
+    reference:
+      children_of:
+        - /schema/reference/schema
     exclude:
       - /schema/reference/schema/http
 
   - title: Axial.Schema.Json
     home: /schema/json-codec
-    entries:
-      - /schema/reference/codec
+    reference:
+      children_of:
+        - /schema/reference/codec
 
   - title: Axial.Schema.JsonSchema
     home: /schema/reference/schema/m-schema-jsonschema-generate
@@ -43,8 +47,9 @@ groups:
 
   - title: Axial.Schema.Http
     home: /schema/http-servers
-    entries:
-      - /schema/reference/schema/http
+    reference:
+      children_of:
+        - /schema/reference/schema/http
     exclude:
       - /schema/reference/schema/http/aspnetcore
       - /schema/reference/schema/http/genhttp

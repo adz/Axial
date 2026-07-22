@@ -23,89 +23,138 @@ menu:
 Install the meta-package when a project uses all three. Install an individual package when it only needs one part.
 The [Getting Started guide](./getting-started/) has the installation commands and helps choose between them.
 
-Start with `CheckDSL` when you need to test values and return your own errors:
+## `Axial.Result`
+
+Use `Axial.Result` for ordinary F# `Result` workflows where the first failure stops the operation. It provides:
+
+- `Check<'value>` programs for reusable value constraints
+- `Axial.ErrorHandling.CheckDSL` for concise check pipelines
+- focused `Result` helpers for guards, extraction, conversion, and traversal
+- the `result {}` computation expression for dependent fail-fast steps
+- `Predicate` functions when a local branch only needs a `bool`
+
+Open `CheckDSL` in a module that defines several checks. A passing check returns the original value, so checks can
+attach application errors and bind directly inside `result {}`:
 
 ```fsharp
 open Axial.ErrorHandling
 open Axial.ErrorHandling.CheckDSL
 
-type SignUpError = NameRequired | NameTooShort
+type SignUpError =
+    | NameRequired
+    | NameTooShort of CheckFailure list
+    | EmailInvalid of CheckFailure list
 
-let checkName name =
-    name
-    |> present
-    |> orError NameRequired
-    |> Result.bind (minLength 3 >> mapError (fun _ -> NameTooShort))
+let signUp name emailAddress =
+    result {
+        let! name = name |> present |> orError NameRequired
+        let! name = name |> minLength 3 |> mapError NameTooShort
+        let! emailAddress = emailAddress |> email |> mapError EmailInvalid
+        return name, emailAddress
+    }
 ```
-
-Use these packages when ordinary functions need more structure than hand-written guards, but do not need a schema or
-an effect runtime. Existing F# and third-party Result helpers continue to compose with them.
-
-The main choices are:
-
-- **`Check`** for reusable value constraints with structured `CheckFailure` values.
-- **`Refined`** when a value's type should record that construction succeeded.
-- **`Validation` and `Diagnostics`** when independent failures should accumulate with paths or names.
-- **`Result` helpers and `result {}`** for fail-fast composition over ordinary F# Result values.
-- **`Predicate`** for the underlying `bool` facts when local branching is enough.
-
-These shapes solve different problems rather than forming a required progression. A function may use one of them and
-return an ordinary F# `Result`, or expose the more specific type when that communicates useful semantics.
-
-Error Handling, [Schema]({{< relref "/schema/" >}}), and [Flow]({{< relref "/flow/" >}}) are separate entry points.
-Schema depends on the focused packages for checks, diagnostics, and refined fields. Error Handling itself needs neither Schema nor
-Flow.
-
-## The Check DSL
-
-Open `Axial.ErrorHandling.CheckDSL` in a module that checks several values. It removes the `Check.` and `Result.`
-prefixes from the functions used in most check pipelines.
-
-```fsharp
-open Axial.ErrorHandling.CheckDSL
-
-let adultAge : Check<int> = atLeast 18
-let contactEmail : Check<string> = Check.all [ present; email ]
-
-let requireAdult age = age |> adultAge |> orError AgeInvalid
-let requireEmail value = value |> contactEmail |> mapError InvalidEmail
-```
-
-The full DSL is small enough to scan:
-
-| Values | Functions |
-| --- | --- |
-| Presence | `present`, `empty`, `notEmpty` |
-| Strings | `minLength`, `maxLength`, `lengthBetween`, `exactLength`, `email`, `matches` |
-| Numbers | `greaterThan`, `lessThan`, `atLeast`, `atMost`, `positive`, `nonNegative`, `negative`, `nonPositive` |
-| Collections | `minCount`, `maxCount`, `countBetween` |
-| General values | `oneOf`, `equalTo`, `notEqualTo` |
-| Failures | `mapFailure`, `orError`, `mapError` |
 
 Some names stay qualified because they would hide common F# functions. Use `Check.all`, `Check.any`,
 `Check.``not```, `Check.contains`, `Check.distinct`, `Check.length`, and `Check.between`.
 
-The [Check guide](./checks/) explains each group. The [Check API]({{< relref "/error-handling/reference/check/" >}})
-lists the qualified modules and every available function.
+Go deeper:
 
-## Guides
-
-- [Getting Started](./getting-started/): choose a tool from the package and see the smallest useful example.
-- [Result Builder](./result-builder/): fail-fast composition over standard `Result` with `result {}`.
-- [Checks](./checks/): reusable, named constraints and how they attach to `Result`.
-- [Diagnostics](./diagnostics/): accumulate sibling failures into a path-aware diagnostics tree, instead of stopping at
-  the first one.
-- [Refined](./refined/): construct values whose types record an invariant.
+- [Result](./result/): the package overview.
+- [Checks](./checks/): the Check DSL, composition, and the complete constraint catalog.
+- [Result Builder](./result-builder/): dependent fail-fast steps with `result {}`.
 - [Predicates](./predicates/): plain `bool` facts for local branching.
-- [Tutorials](./tutorials/): build a small validation flow end to end.
-- [Walkthrough: Registration Desk](./reference-app/): the introductory reference app — all four stages of this
-  section in one runnable program.
+- API reference: [Result]({{< relref "/error-handling/reference/result/" >}}),
+  [Check]({{< relref "/error-handling/reference/check/" >}}), and
+  [Predicate]({{< relref "/error-handling/reference/predicate/" >}}).
 
-## Reference
+## `Axial.Diagnostics`
 
-- [Predicate API]({{< relref "/error-handling/reference/predicate/" >}})
-- [Check API]({{< relref "/error-handling/reference/check/" >}})
-- [Result builder API]({{< relref "/error-handling/reference/result/" >}})
+Use `Axial.Diagnostics` when independent checks should all run and report every failure. It provides
+`Validation<'value, 'error>`, the path-aware `Diagnostics<'error>` error tree, and the `validate {}` computation
+expression.
+
+Use `and!` for independent fields and `validate.name` to put each failure at its field path:
+
+```fsharp
+open Axial.Validation
+
+let validateRegistration name email =
+    validate {
+        let! name =
+            validate.name "name" {
+                return! validateName name
+            }
+
+        and! email =
+            validate.name "email" {
+                return! validateEmail email
+            }
+
+        return name, email
+    }
+```
+
+If both fields fail, the result contains one Diagnostics tree with separate `name` and `email` branches. Flatten it
+only at a boundary that needs a list:
+
+```fsharp
+validateRegistration name email
+|> Validation.toResult
+|> Result.mapError Diagnostics.flatten
+```
+
+Go deeper:
+
+- [Validation and Diagnostics](./diagnostics/): the package overview.
+- [Validate Builder](./diagnostics/validate-builder/): accumulation with `validate {}` and `and!`.
+- [Diagnostics trees](./diagnostics/diagnostics/): paths, merging, flattening, and rendering.
+- [Validation API]({{< relref "/error-handling/reference/validation/" >}}) and [Diagnostics API]({{< relref "/error-handling/reference/diagnostics/" >}}).
+
+## `Axial.Refined`
+
+Use `Axial.Refined` at boundaries where a successful check should be visible in the value's type. It provides
+primitive parsers, built-in refined types and constructors, and the `refine {}` computation expression. The builder
+parses or refines raw values according to the type on the left side of `let!`. It also binds explicit `Parse.*` and
+`Refine.*` results without manual error conversion.
+
+```fsharp
+open Axial.Refined
+
+type ProductName = ProductName of NonBlankString
+type Quantity = Quantity of PositiveInt
+
+let createLine rawId rawName rawQuantity : Result<int * ProductName * Quantity, RefinementError> =
+    refine {
+        let! (id: int) = rawId
+        let! (name: NonBlankString) = rawName
+        let! (quantity: PositiveInt) = rawQuantity
+        return id, ProductName name, Quantity quantity
+    }
+```
+
+The left-hand types direct `rawId` through `Parse.int`, `rawName` through `Refine.nonBlankString`, and `rawQuantity`
+through `Refine.positiveInt`. After the function succeeds, callers receive parsed and refined values rather than
+unchecked input.
+
+Go deeper:
+
+- [Refined](./refined/): the package overview and first complete example.
+- [Refine Builder](./refined/refine-builder/): dependent parsing and construction with `refine {}`.
+- [Refined Catalog](./refined/catalog/): built-in text, numeric, collection, temporal, character, and choice types.
+- [Refined API]({{< relref "/error-handling/reference/refined/" >}}).
+
+## How the packages fit together
+
+The packages compose but do not form a required progression. Use `Axial.Result` for fail-fast operations,
+`Axial.Diagnostics` for independent failures that should accumulate, and `Axial.Refined` when successful
+construction should change the value's type. Install only the package whose behavior the caller needs.
+
+Error Handling, [Schema]({{< relref "/schema/" >}}), and [Flow]({{< relref "/flow/" >}}) are separate entry points.
+Schema depends on these focused packages for checks, diagnostics, and refined fields. Error Handling itself needs
+neither Schema nor Flow.
+
+For one end-to-end example, use the [Registration Desk walkthrough](./reference-app/). The
+[tutorials](./tutorials/) build the same ideas in smaller steps.
 
 ## Comparisons
 

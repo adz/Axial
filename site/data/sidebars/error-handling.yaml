@@ -12,7 +12,6 @@ groups:
     descendants: false
     entries:
       - /error-handling/tutorials
-      - /error-handling/reference/result
       - /error-handling/result-builder
       - /error-handling/checks
       - /error-handling/predicates
