@@ -6,17 +6,19 @@ type: docs
 ---
 
 
-Axial returns a structured **Diagnostics Graph** for validation failures. The graph records where each failure occurred.
+`Validation<'value, 'error>` uses `Diagnostics<'error>` as its failure value. Validation decides whether checks
+succeed or accumulate; Diagnostics stores the accumulated errors and their locations.
 
-## The Structure
+A Diagnostics value is a tree. Each node can hold errors for its current location and child nodes for fields, list
+indexes, or named validation branches.
 
-The graph is a tree where each node can contain local errors and child branches.
+## The structure
 
 ```fsharp
 type PathSegment =
-    | Key of string    // A record field or property
-    | Index of int     // A position in a list or sequence
-    | Name of string   // A custom label for a validation branch
+    | Key of string
+    | Index of int
+    | Name of string
 
 type Diagnostic<'error> =
     { Path: PathSegment list
@@ -27,51 +29,60 @@ type Diagnostics<'error> =
       Children: Map<PathSegment, Diagnostics<'error>> }
 ```
 
-## Creating Scoped Diagnostics
+Most code does not construct this record directly. It creates a Validation and adds a path with `Validation.key`,
+`Validation.index`, or `Validation.name`. The `validate` builder provides the same operations.
 
-Inside a `validate {}` block, you use helpers to push diagnostics into the tree:
+## Attach locations while validating
 
-- `validate.key "address"` -> Failures appear under `.address`
-- `validate.index 0` -> Failures appear under `.[0]`
-- `validate.name "Shipping"` -> Failures appear under `.Shipping`
+Inside `validate {}`, path helpers put any failures from the nested block under a child node:
+
+- `validate.key "address"` puts failures under the key `address`.
+- `validate.index 0` puts failures under list index `0`.
+- `validate.name "Shipping"` puts failures under a named branch.
 
 ```fsharp
-let validateAddress addr = 
+let validateAddress address =
     validate.key "address" {
-        let! city = validate.name "City" { ... }
-        return ...
+        let! city = validate.name "city" { return! requireCity address.City }
+        return { address with City = city }
     }
 ```
 
-## Consuming Diagnostics
+If `requireCity` fails, the resulting path is `address.city`. Nesting another key or index extends that same path.
 
-Once you have a `Validation<'v, 'e>` result, you can transform the graph for the user:
+## Consume diagnostics at a boundary
 
-### 1. Flattening for APIs
-Use `Diagnostics.flatten` to turn the tree into a flat list of path-bearing errors. This is the standard pattern for JSON APIs.
+Keep Diagnostics structured while composing validations. Convert it only when a boundary needs a particular output
+shape.
+
+### Flatten for an API
+
+`Diagnostics.flatten` returns `Diagnostic<'error> list`. Each item contains the full path and one error.
 
 ```fsharp
-// Path: [Key "customer"; Key "address"; Name "City"]
+// Path: [Key "customer"; Key "address"; Name "city"]
 // Error: "Required"
-// Flat: "customer.address.City: Required"
 ```
 
-### 2. Human-Readable Output
-Use `Diagnostics.toString` to render the graph as a compact, YAML-like tree for logs or console output.
+### Render for logs
+
+`Diagnostics.toString` renders the tree as compact text suitable for logs or console output.
 
 ```yaml
 customer:
   address:
-    City:
+    city:
       - Required
 ```
 
-## Mapping and Filtering
+## Change the error type
 
-Diagnostics are generic over the `'error` type. You can use `Validation.mapError` (or `Diagnostics.map` directly) to translate internal domain errors into user-facing localized strings at the application boundary.
+Diagnostics is generic over the error type. Use `Validation.mapError` while working with a Validation, or
+`Diagnostics.map` once you have the Diagnostics value.
 
 ## Example
 
-For a runnable example with nested validation, path rendering, and JSON API error formatting, see the [Diagnostics Example]({{< relref "/schema/examples.md" >}}#diagnostics-example) in the examples gallery.
+For nested validation, path rendering, and JSON API formatting, see the
+[Diagnostics Example]({{< relref "/schema/examples.md" >}}#diagnostics-example).
 
 You can also view the [source code directly on GitHub](https://github.com/adz/Axial/blob/main/examples/Axial.Examples/DiagnosticsExample.fs).

@@ -1,5 +1,5 @@
 ---
-weight: 5
+weight: 50
 title: Predicates
 description: Plain bool facts for local branching, distinct from Check.
 type: docs

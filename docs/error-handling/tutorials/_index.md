@@ -1,5 +1,5 @@
 ---
-weight: 15
+weight: 60
 title: Result Tutorials
 description: Tutorials for pure fail-fast checks and typed Result values.
 ---

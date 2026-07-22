@@ -27,7 +27,11 @@ You meet that gap constantly:
 booleans, nulls, lists, and objects, but does not model whitespace, comments, or source locations,
 and it does not promise byte-exact round-tripping of source documents.
 
-## Install
+## Installation
+
+`Axial.Data` installs as part of `Axial.Schema` and `Axial`.
+
+Or install it individually:
 
 ```sh
 dotnet add package Axial.Data

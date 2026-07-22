@@ -6,40 +6,65 @@ description: Accumulating sibling failures with Validation and Diagnostics.
 ---
 
 
-Standard `Result` composition stops at the first failure. That is appropriate when later steps depend on earlier
-ones, but less useful when several independent fields can be checked together and a caller wants every failure.
+Use `Validation<'value, 'error>` when several independent checks should run and report all their failures. It is the
+accumulating counterpart to a fail-fast `Result`.
 
-`Validation<'value, 'error>` can collect errors from sibling checks. `Diagnostics<'error>` stores those errors with
-paths, indexes, and names. In `validate {}`, join independent checks with `and!`.
+Every failed Validation contains `Diagnostics<'error>`. Diagnostics is the error structure: it stores errors at the
+current location and under child paths such as `email`, `address.city`, or `lines[2]`.
 
-This is also machinery used by [Schema]({{< relref "/schema/" >}}): schema input parsing produces `Diagnostics` for you. Use it directly
-when values already exist and their independent failures should be collected without declaring a schema.
+The relationship is:
+
+```fsharp
+Validation<'value, 'error>
+// success: 'value
+// failure: Diagnostics<'error>
+```
+
+`validate {}` builds a Validation. Use `and!` for independent checks; their Diagnostics trees are merged when more
+than one check fails.
+
+```fsharp
+let validateRegistration name email =
+    validate {
+        let! validName = checkName name |> Validation.fromResult |> Validation.name "name"
+        and! validEmail = checkEmail email |> Validation.fromResult |> Validation.name "email"
+        return validName, validEmail
+    }
+```
+
+If both checks fail, the result contains one Diagnostics value with failures under `name` and `email`. Flatten it at
+an API boundary when a list is easier to return:
+
+```fsharp
+validateRegistration "" "not-an-email"
+|> Validation.toResult
+|> Result.mapError Diagnostics.flatten
+// Error [ { Path = [ Name "email" ]; Error = ... }
+//         { Path = [ Name "name" ]; Error = ... } ]
+```
+
+Schema uses the same Diagnostics type for parse and construction failures. Use Validation directly when values
+already exist and several checks should run without declaring a schema.
 
 If a failure should stop dependent work, an ordinary `Result` may express that more directly. Async execution and
 dependency management are separate concerns; `Validation` can be used with or without [Flow]({{< relref "/flow/" >}}).
 
-## Install
+## Installation
 
-Install Diagnostics on its own:
+`Axial.Diagnostics` installs as part of `Axial.ErrorHandling` and `Axial.Schema`.
+
+Or install it individually:
 
 ```sh
 dotnet add package Axial.Diagnostics
 ```
-
-## Mental Model
-
-```text
-Result -> Validation
-```
-
-`Validation` is Result-like, but its error side is a diagnostics tree. That lets sibling failures accumulate with paths, indexes, and names attached.
 
 ## Guides
 
 - [Tutorials](./tutorials/): validate independent fields and return all sibling failures.
 - [Validate Builder](./validate-builder/): accumulating validation with `validate {}` and `and!`.
 - [Schema section]({{< relref "/schema/" >}}): portable model schemas, input parsing, redisplay, rules, and policies.
-- [Diagnostics](./diagnostics/): structured error graphs and rendering.
+- [Diagnostics](./diagnostics/): the tree structure, path operations, flattening, and rendering.
 
 ## Interop
 

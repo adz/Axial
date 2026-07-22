@@ -45,6 +45,29 @@ The tools interoperate, but the table is not a ladder. For example, a `Check` ca
 while a `Validation` block can accumulate several existing Results. Use the smallest shape that preserves the
 semantics callers need.
 
+## Validation and Diagnostics belong together
+
+`Validation<'value, 'error>` represents either a successful value or accumulated failures. Those failures are always
+stored in `Diagnostics<'error>`.
+
+Diagnostics records both the error and where it occurred. This lets two failed sibling checks become one error value
+with separate `name` and `email` branches instead of an unstructured list.
+
+```fsharp
+let registration =
+    validate {
+        let! name = validate.name "name" { return! validateName input.Name }
+        and! email = validate.name "email" { return! validateEmail input.Email }
+        return name, email
+    }
+
+// Validation<(string * string), RegistrationError>
+// A failure contains Diagnostics<RegistrationError>.
+```
+
+Use `Validation.toResult` when the caller needs a normal Result. Use `Diagnostics.flatten` when the boundary needs a
+flat list of path-bearing errors.
+
 ## Guides
 
 - [Result Builder](./result-builder/) covers `result {}` for sequencing dependent fail-fast steps.

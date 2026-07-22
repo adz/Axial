@@ -1,5 +1,5 @@
 ---
-weight: 22
+weight: 40
 title: Refined
 type: docs
 description: Type-safe boundaries with Parse, Refine, and the refine {} builder.

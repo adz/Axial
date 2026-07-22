@@ -74,7 +74,9 @@ other. Flow is the seam where structure meets execution &mdash; on .NET, NativeA
 
 <div style="max-width: 68ch;">
 
-## Install
+## Installation
+
+Flow is independent from the `Axial` package. Install it individually:
 
 ```sh
 dotnet add package Axial.Flow

@@ -48,15 +48,17 @@ Error Handling, [Schema]({{< relref "/schema/" >}}), and [Flow]({{< relref "/flo
 Schema depends on the focused packages for checks, diagnostics, and refined fields. Error Handling itself needs neither Schema nor
 Flow.
 
-## Install
+## Installation
 
-Install the whole section:
+Error Handling installs as part of `Axial`.
+
+Or install the Error Handling meta-package individually:
 
 ```sh
 dotnet add package Axial.ErrorHandling
 ```
 
-Or install only what a project uses: `Axial.Result`, `Axial.Diagnostics`, or `Axial.Refined`.
+For a smaller dependency, install only what the project uses: `Axial.Result`, `Axial.Diagnostics`, or `Axial.Refined`.
 
 ## The Check DSL
 

@@ -105,9 +105,11 @@ current domain model.
 uses. It can also be installed and used on its own. [Flow]({{< relref "/flow/" >}}) models effects and dependencies;
 Schema does not require it.
 
-## Install
+## Installation
 
-Install the core package with `dotnet add package Axial.Schema`.
+Schema installs as part of `Axial`.
+
+Or install it individually with `dotnet add package Axial.Schema`.
 
 Schema metadata, input parsing, checking, and rules live in this package. Checks, diagnostics, and refined values
 arrive through its focused package dependencies, so Schema users do not need a second install.
@@ -117,7 +119,7 @@ your schema (`Json.compile`). `Axial.Schema.JsonSchema` is also separate and opt
 `JsonSchema.generate` in the `Axial.Schema` namespace. Parsing, checking, rules, redisplay, and metadata inspection need
 neither optional package.
 
-Install the optional codec with `dotnet add package Axial.Schema.Json`.
+`Axial.Schema.Json` also installs as part of `Axial`, or individually with `dotnet add package Axial.Schema.Json`.
 
 Install JSON Schema generation with `dotnet add package Axial.Schema.JsonSchema`.
 

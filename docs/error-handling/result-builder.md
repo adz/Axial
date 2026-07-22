@@ -1,5 +1,5 @@
 ---
-weight: 20
+weight: 10
 title: Result CE
 description: Fail-fast composition with the result { } builder.
 ---

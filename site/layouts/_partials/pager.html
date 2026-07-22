@@ -7,12 +7,12 @@
   {{- if $hasPrev -}}
   <a class="docs-home-cta docs-page-nav__link docs-page-nav__prev" href="{{ $prevPage.RelPermalink }}" aria-label="{{ T "ui_pager_prev" }} - {{ $prevPage.Title }}">
     <span class="docs-page-nav__arrow" aria-hidden="true">←</span>
-    <span>{{ T "ui_pager_prev" }}</span>
+    <span class="docs-page-nav__label"><span class="docs-page-nav__direction">{{ T "ui_pager_prev" }}</span><span class="docs-page-nav__title">{{ $prevPage.LinkTitle }}</span></span>
   </a>
   {{- end -}}
   {{- if $hasNext -}}
   <a class="docs-home-cta docs-page-nav__link docs-page-nav__next" href="{{ $nextPage.RelPermalink }}" aria-label="{{ T "ui_pager_next" }} - {{ $nextPage.Title }}">
-    <span>{{ T "ui_pager_next" }}</span>
+    <span class="docs-page-nav__label"><span class="docs-page-nav__direction">{{ T "ui_pager_next" }}</span><span class="docs-page-nav__title">{{ $nextPage.LinkTitle }}</span></span>
     <span class="docs-page-nav__arrow" aria-hidden="true">→</span>
   </a>
   {{- end -}}

@@ -1,5 +1,5 @@
 ---
-weight: 10
+weight: 20
 title: Check
 description: Reusable, named structural checks that attach to Result.
 type: docs
