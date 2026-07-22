@@ -1,9 +1,10 @@
 ---
 weight: 20
 title: Core Concepts
-description: Execution semantics, outcomes, defects, Bind, and Task/Async interop.
+description: Detailed defects, Bind, Task and Async interop, and type troubleshooting.
 type: docs
 ---
 
 
-How Flow executes: semantics, outcomes, defects, precondition checking with Bind, and interop with Task and Async.
+Detailed guides for defects, bind-site error handling, Task and Async interop, and type troubleshooting. Start with
+[Getting Started](../getting-started/) for the progressive introduction to Flow itself.

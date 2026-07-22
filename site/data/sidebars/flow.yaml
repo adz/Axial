@@ -4,7 +4,6 @@ groups:
     descendants: false
     entries:
       - /flow/getting-started
-      - /flow/basic-examples
       - /flow/applications
       - /flow/core-concepts
       - /flow/tutorials

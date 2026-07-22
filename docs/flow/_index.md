@@ -30,7 +30,7 @@ retry scheduling, resource scopes, and child fibers.
 
 <div class="docs-home-meta">
 <a class="docs-home-cta" href="{{< relref "/flow/tutorials/" >}}">Get started &gt;</a>
-<a class="docs-chip" href="{{< relref "/flow/getting-started.md" >}}">Getting started guide</a>
+<a class="docs-chip" href="{{< relref "/flow/getting-started/" >}}">Getting started guide</a>
 <a class="docs-chip" href="{{< relref "/flow/reference/flow/" >}}">Flow API</a>
 <a class="docs-chip" href="{{< relref "/flow/comparisons/task-vs-flow-scenarios.md" >}}">Task vs Flow, seven scenarios</a>
 </div>
@@ -93,30 +93,11 @@ integration at a time.
 | `Axial.Flow.Telemetry` | Runtime telemetry contracts | [Telemetry](./telemetry/) |
 | `Axial.Flow.Telemetry.JavaScript` | JavaScript telemetry integration | [JavaScript telemetry](./telemetry/javascript/) |
 
-## Installation
-
-Flow is independent from the `Axial` package. Install it individually:
-
-```sh
-dotnet add package Axial.Flow
-```
-
-`Flow<'env, 'error, 'value>`, the `flow {}` builder, and the runtime live in this one package. Reach for a satellite
-package only for the specific integration it wraps — `Axial.Flow.HttpClient`, `Axial.Flow.Console`,
-`Axial.Flow.FileSystem`, `Axial.Flow.Process`, the .NET/Node/browser hosting packages, and telemetry packages are
-optional; none is required to use `flow {}` or `App` itself.
-
-```sh
-dotnet add package Axial.Flow.HttpClient
-```
-
 ## Core Flow
 
-- [Getting Started](./getting-started/) — the smallest flow, execution, `Exit`, and the environment.
+- [Getting Started](./getting-started/) — learn the Flow type, creation, execution, composition, failures,
+  dependencies, and application lifecycle one step at a time.
 - [Application Lifecycle](./applications/) — root applications with `App.run`, `App.start`, and coordinated stop.
-- [Straightforward Examples](./basic-examples/) — quick, practical flows without full application setup.
-- [Semantics](./core-concepts/semantics/) — cold workflows, execution, and how Flow fits the Axial model.
-- [Execution and Outcomes](./core-concepts/execution-and-outcomes/) — running flows and reading `Exit`.
 - [Task and Async Interop](./core-concepts/task-async-interop/) — binding `Async`, `Task`, `ValueTask`, and attempt constructors.
 - [Defects and Exceptions](./core-concepts/defects/) — typed failures, defects, interruption, and exception recovery.
 - [Bind](./core-concepts/bind/) — bind-site error assignment and mapping inside `flow {}`.

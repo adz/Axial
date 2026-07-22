@@ -11,7 +11,7 @@ For the big picture — how traces, logs, and metrics fit together and how to wi
 package is `Axial.Flow.Telemetry.JavaScript` (`Otel.trace`, same tag vocabulary, emitting through
 OpenTelemetry JS); its wiring is shown on the Observability page.
 
-- [Execution and outcomes](../core-concepts/execution-and-outcomes/)
+- [Running Flows](../getting-started/running-flows/) and [Failures and Defects](../getting-started/failures-and-defects/)
 - [Explicit services and runtimes](../services-and-runtimes/)
 
 ## Workflow spans
