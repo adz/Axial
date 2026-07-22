@@ -44,3 +44,10 @@ the typed error channel.
 
 The [Task and Async interop guide]({{< relref "/flow/core-concepts/task-async-interop/" >}}) covers cancellation and
 all supported carriers.
+
+## Go Further
+
+- [Flow construction reference]({{< relref "/flow/reference/flow/construction/" >}}) lists every constructor and
+  conversion.
+- [Defects]({{< relref "/flow/core-concepts/defects/" >}}) explains when an exception should remain a defect and
+  when an attempt constructor is appropriate.

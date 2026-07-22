@@ -42,3 +42,12 @@ owns cancellation, child work, scopes, and cleanup for that execution.
 
 Use Flow for application orchestration and operational work. Keep local validation and ordinary pure composition in
 `Result` or another focused type until the code actually needs Flow's execution model.
+
+## Go Further
+
+- [Task vs Flow: seven scenarios]({{< relref "/flow/comparisons/task-vs-flow-scenarios/" >}}) compares ownership,
+  cancellation, retries, and background work in concrete examples.
+- [Flow compared with Effect-TS]({{< relref "/flow/comparisons/effect-ts-comparison/" >}}) explains the shared model
+  and the places where F# leads to a different API.
+- [Compiler-directed, AOT, and Fable]({{< relref "/flow/packages-and-platforms/" >}}) describes the supported runtime
+  targets and package boundaries.

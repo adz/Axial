@@ -39,3 +39,12 @@ libraries, provisioning, startup failure, or scope-owned resources.
 
 Continue with the [Explicit Dependencies tutorial]({{< relref "/flow/tutorials/explicit-dependencies/" >}}) before
 introducing Layers.
+
+## Go Further
+
+- [Dependencies]({{< relref "/flow/services-and-runtimes/dependencies/" >}}) compares arguments, records, named
+  services, and Layers.
+- [App Record tutorial]({{< relref "/flow/tutorials/app-record/" >}}) builds a feature over a concrete environment record.
+- [Creating Reusable Services]({{< relref "/flow/tutorials/custom-services/" >}}) introduces nominal service
+  contracts when helpers must be shared across environment shapes.
+- [Layers]({{< relref "/flow/services-and-runtimes/layers/" >}}) covers construction, composition, and provisioning failure.

@@ -35,3 +35,10 @@ Every call starts a fresh execution with its own root scope. Await the returned 
 
 Direct execution is useful at interop boundaries. A complete application normally starts its root workflow with
 `App.run`, introduced at the end of this section.
+
+## Go Further
+
+- [App reference]({{< relref "/flow/reference/app/" >}}) covers root application execution and lifecycle handles.
+- [Exit reference]({{< relref "/flow/reference/exit/" >}}) covers completed outcomes and boundary conversions.
+- [Runtime operations tutorial]({{< relref "/flow/tutorials/runtime-operations/" >}}) adds timeout, retry,
+  cancellation, and annotations around an execution.

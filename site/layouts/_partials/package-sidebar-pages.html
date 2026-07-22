@@ -1,0 +1,10 @@
+{{- $pages := slice -}}
+{{- $node := .node -}}
+{{- $excludes := .excludes | default slice -}}
+{{- if and (not (in $excludes $node.Path)) (ne $node.Params.toc_hide true) -}}
+  {{- $pages = $pages | append $node -}}
+  {{- range (where (union $node.Pages $node.Sections).ByWeight ".Params.toc_hide" "!=" true) -}}
+    {{- $pages = union $pages (partial "package-sidebar-pages.html" (dict "node" . "excludes" $excludes)) -}}
+  {{- end -}}
+{{- end -}}
+{{- return $pages -}}

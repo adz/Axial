@@ -39,3 +39,11 @@ use `Flow.zipPar` only when both branches are safe to run at the same time.
 
 Prefer `flow {}` for a longer dependent sequence and pipelines for a short transformation. They create the same Flow
 model and differ only in how the code reads.
+
+## Go Further
+
+- [Composition reference]({{< relref "/flow/reference/flow/composition/" >}}) lists mapping, binding, recovery,
+  traversal, and sequential combination functions.
+- [Fibers]({{< relref "/flow/concurrency/fibers/" >}}) introduces explicit child workflows.
+- [Schedules]({{< relref "/flow/concurrency/schedule/" >}}) adds retry and repetition policies without changing the
+  underlying workflow.

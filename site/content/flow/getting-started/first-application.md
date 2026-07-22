@@ -37,3 +37,10 @@ guides show the .NET, Node, and browser boundaries.
 
 You now have the complete introductory path: describe work, compose it, distinguish outcomes, provide dependencies,
 and run one root workflow.
+
+## Go Further
+
+- [Application Lifecycle]({{< relref "/flow/applications/" >}}) covers `App.start`, coordinated stop, and lifecycle ownership.
+- [Scopes and Resources]({{< relref "/flow/services-and-runtimes/scopes-and-resources/" >}}) explains finalizers and
+  acquisition/release safety.
+- [Hosting]({{< relref "/flow/hosting/" >}}) connects the root application to .NET, Node, or browser hosts.

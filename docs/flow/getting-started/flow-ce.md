@@ -44,3 +44,12 @@ flow {
 description; execution still waits for an explicit boundary.
 
 Normal F# `if`, `match`, `for`, and `while` expressions work inside the computation expression.
+
+## Go Further
+
+- [Flow builder reference]({{< relref "/flow/reference/flow/builders-flow/" >}}) lists the values accepted by each
+  computation-expression operation.
+- [Bind]({{< relref "/flow/core-concepts/bind/" >}}) covers bind-site error assignment and mapping when the source
+  error does not already match the workflow.
+- [Task and Async interop]({{< relref "/flow/core-concepts/task-async-interop/" >}}) gives the detailed carrier and
+  cancellation rules.

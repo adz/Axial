@@ -12,20 +12,22 @@ groups:
       - /flow/observability
       - /flow/examples
       - /flow/comparisons
-      - /flow/reference/app
-      - /flow/reference/bind
-      - /flow/reference/cause
-      - /flow/reference/concurrency
-      - /flow/reference/exit
-      - /flow/reference/fiber
-      - /flow/reference/flow
-      - /flow/reference/layer
-      - /flow/reference/ref
-      - /flow/reference/schedule
-      - /flow/reference/scope
-      - /flow/reference/service
-      - /flow/reference/stm
-      - /flow/reference/stream
+    reference:
+      entries:
+        - /flow/reference/app
+        - /flow/reference/bind
+        - /flow/reference/cause
+        - /flow/reference/concurrency
+        - /flow/reference/exit
+        - /flow/reference/fiber
+        - /flow/reference/flow
+        - /flow/reference/layer
+        - /flow/reference/ref
+        - /flow/reference/schedule
+        - /flow/reference/scope
+        - /flow/reference/service
+        - /flow/reference/stm
+        - /flow/reference/stream
     exclude:
       - /flow/reference/service/core
       - /flow/reference/service/console
@@ -37,57 +39,71 @@ groups:
     home: /flow/platform-service
     children_of:
       - /flow/platform-service
-    entries:
-      - /flow/reference/service/core
+    reference:
+      entries:
+        - /flow/reference/service/core
 
   - title: Axial.Flow.Console
     home: /flow/console
     children_of:
       - /flow/console
-    entries:
-      - /flow/reference/service/console
+    reference:
+      entries:
+        - /flow/reference/service/console
 
   - title: Axial.Flow.FileSystem
     home: /flow/filesystem
     children_of:
       - /flow/filesystem
-    entries:
-      - /flow/reference/service/filesystem
+    reference:
+      entries:
+        - /flow/reference/service/filesystem
 
   - title: Axial.Flow.HttpClient
     home: /flow/http
     children_of:
       - /flow/http
-    entries:
-      - /flow/reference/service/http
+    reference:
+      entries:
+        - /flow/reference/service/http
 
   - title: Axial.Flow.Process
     home: /flow/processes
     children_of:
       - /flow/processes
-    entries:
-      - /flow/reference/service/process
+    reference:
+      entries:
+        - /flow/reference/service/process
 
   - title: Axial.Flow.Hosting
     home: /flow/hosting
-    entries:
-      - /flow/reference/hosting
+    reference:
+      entries:
+        - /flow/reference/hosting
 
   - title: Axial.Flow.Hosting.Node
     home: /flow/hosting/node
-    entries:
-      - /flow/reference/hosting-node
+    reference:
+      entries:
+        - /flow/reference/hosting-node
 
   - title: Axial.Flow.Hosting.Browser
     home: /flow/hosting/browser
-    entries:
-      - /flow/reference/hosting-browser
+    reference:
+      entries:
+        - /flow/reference/hosting-browser
 
   - title: Axial.Flow.Telemetry
     home: /flow/telemetry
+    reference:
+      entries:
+        - /flow/telemetry/reference
 
   - title: Axial.Flow.Telemetry.JavaScript
     home: /flow/telemetry/javascript
+    reference:
+      entries:
+        - /flow/telemetry/javascript-reference
 
   - title: Product information
     home: /flow/packages-and-platforms

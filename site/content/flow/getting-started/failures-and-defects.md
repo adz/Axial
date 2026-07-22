@@ -38,3 +38,9 @@ when the application deliberately translates a defect into a typed error.
 
 `Exit.toResult` is intentionally lossy. Use it only at a boundary that has decided how defects, interruption, and
 combined causes should be represented.
+
+## Go Further
+
+- [Defects]({{< relref "/flow/core-concepts/defects/" >}}) covers exception capture and intentional recovery in detail.
+- [Cause reference]({{< relref "/flow/reference/cause/" >}}) lists cause transformations and rendering.
+- [Supervision]({{< relref "/flow/concurrency/supervision/" >}}) explains how unjoined child defects are reported.

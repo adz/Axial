@@ -40,3 +40,10 @@ Short aliases remove a channel that is not used:
 | `ExnEnvFlow<'env, 'value>` | Environment and recoverable exceptions |
 
 Start by reading the full shape. Use an alias when it makes a real signature shorter without hiding information.
+
+## Go Further
+
+- [Flow API reference]({{< relref "/flow/reference/flow/" >}}) maps the construction, environment, composition,
+  execution, resource, and concurrency functions.
+- [Troubleshooting Types]({{< relref "/flow/core-concepts/troubleshooting-types/" >}}) explains the compiler errors
+  produced when environment or error channels do not line up.

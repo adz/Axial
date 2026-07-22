@@ -29,3 +29,9 @@ dotnet add package Axial.Flow.Hosting
 ```
 
 See [Packages and Platforms]({{< relref "/flow/packages-and-platforms/" >}}) for the complete package map.
+
+## Go Further
+
+- [Hosting]({{< relref "/flow/hosting/" >}}) chooses between standalone .NET, Generic Host, Node, and browser entry points.
+- [Platform services]({{< relref "/flow/platform-service/" >}}) introduces the explicit clock, logging, random,
+  GUID, and environment-variable contracts.

@@ -1,16 +1,80 @@
-{{- $prevPage := .NextInSection -}}
-{{- $nextPage := .PrevInSection -}}
-{{- $hasPrev := $prevPage -}}
-{{- $hasNext := $nextPage -}}
-{{- if or $hasPrev $hasNext -}}
-<nav class="docs-page-nav{{ if and $hasNext (not $hasPrev) }} docs-page-nav--next-only{{ else if and $hasPrev (not $hasNext) }} docs-page-nav--prev-only{{ end }}">
-  {{- if $hasPrev -}}
+{{- $context := . -}}
+{{- $sidebar := false -}}
+{{- if eq .Section "schema" -}}
+  {{- $sidebar = hugo.Data.sidebars.schema -}}
+{{- else if eq .Section "error-handling" -}}
+  {{- $sidebar = index hugo.Data.sidebars "error-handling" -}}
+{{- else if eq .Section "flow" -}}
+  {{- $sidebar = hugo.Data.sidebars.flow -}}
+{{- end -}}
+
+{{- $ordered := slice -}}
+{{- if $sidebar -}}
+  {{- range $sidebar.groups -}}
+    {{- $home := $context.Site.GetPage .home -}}
+    {{- $groupPages := slice -}}
+    {{- if $home -}}
+      {{- $groupPages = $groupPages | append $home -}}
+    {{- end -}}
+    {{- $excludes := .exclude | default slice -}}
+    {{- range .children_of -}}
+      {{- $root := $context.Site.GetPage . -}}
+      {{- if $root -}}
+        {{- range (union $root.Pages $root.Sections).ByWeight -}}
+          {{- $groupPages = union $groupPages (partial "package-sidebar-pages.html" (dict "node" . "excludes" $excludes)) -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+    {{- range .entries -}}
+      {{- $entry := $context.Site.GetPage . -}}
+      {{- if $entry -}}
+        {{- $groupPages = union $groupPages (partial "package-sidebar-pages.html" (dict "node" $entry "excludes" $excludes)) -}}
+      {{- end -}}
+    {{- end -}}
+    {{- with .reference -}}
+      {{- range .children_of -}}
+        {{- $root := $context.Site.GetPage . -}}
+        {{- if $root -}}
+          {{- range (union $root.Pages $root.Sections).ByWeight -}}
+            {{- $groupPages = union $groupPages (partial "package-sidebar-pages.html" (dict "node" . "excludes" $excludes)) -}}
+          {{- end -}}
+        {{- end -}}
+      {{- end -}}
+      {{- range .entries -}}
+        {{- $entry := $context.Site.GetPage . -}}
+        {{- if $entry -}}
+          {{- $groupPages = union $groupPages (partial "package-sidebar-pages.html" (dict "node" $entry "excludes" $excludes)) -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+    {{- if in $groupPages $context -}}
+      {{- $ordered = $groupPages -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+
+{{- $prevPage := false -}}
+{{- $nextPage := false -}}
+{{- range $index, $page := $ordered -}}
+  {{- if eq $page $context -}}
+    {{- if gt $index 0 -}}
+      {{- $prevPage = index $ordered (sub $index 1) -}}
+    {{- end -}}
+    {{- if lt (add $index 1) (len $ordered) -}}
+      {{- $nextPage = index $ordered (add $index 1) -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+
+{{- if or $prevPage $nextPage -}}
+<nav class="docs-page-nav{{ if and $nextPage (not $prevPage) }} docs-page-nav--next-only{{ else if and $prevPage (not $nextPage) }} docs-page-nav--prev-only{{ end }}">
+  {{- if $prevPage -}}
   <a class="docs-home-cta docs-page-nav__link docs-page-nav__prev" href="{{ $prevPage.RelPermalink }}" aria-label="{{ T "ui_pager_prev" }} - {{ $prevPage.Title }}">
     <span class="docs-page-nav__arrow" aria-hidden="true">←</span>
     <span class="docs-page-nav__label"><span class="docs-page-nav__direction">{{ T "ui_pager_prev" }}</span><span class="docs-page-nav__title">{{ $prevPage.LinkTitle }}</span></span>
   </a>
   {{- end -}}
-  {{- if $hasNext -}}
+  {{- if $nextPage -}}
   <a class="docs-home-cta docs-page-nav__link docs-page-nav__next" href="{{ $nextPage.RelPermalink }}" aria-label="{{ T "ui_pager_next" }} - {{ $nextPage.Title }}">
     <span class="docs-page-nav__label"><span class="docs-page-nav__direction">{{ T "ui_pager_next" }}</span><span class="docs-page-nav__title">{{ $nextPage.LinkTitle }}</span></span>
     <span class="docs-page-nav__arrow" aria-hidden="true">→</span>
