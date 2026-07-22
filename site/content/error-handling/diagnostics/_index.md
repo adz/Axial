@@ -1,6 +1,6 @@
 ---
 weight: 30
-title: Validation
+title: "Validation & Diagnostics"
 type: docs
 description: Accumulating sibling failures with Validation and Diagnostics.
 ---
