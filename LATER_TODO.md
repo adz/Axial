@@ -111,7 +111,7 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 - [ ] Audit APIs guarded by `#if !FABLE_COMPILER`, especially `AsyncAdapter`, `TaskAdapter`, `Ref`, `STM`, `Stream`, `Schedule`, `Task`, `ValueTask`, process, live console, filesystem, hosting, and telemetry APIs.
 - [ ] Provide Fable-safe alternatives or document unsupported modules.
 - [ ] Add trimming analyzer warnings as build failures for the `net8.0` target.
-- [x] Add and run a small NativeAOT sample in CI that exercises core `Flow`, explicit services/layers, validation, resources, and host-provider boundaries (`examples/Axial.AotProbe`).
+- [x] Add product-scoped NativeAOT probes for Validation, Schema, and Flow (`examples/Axial.*.AotProbe`).
 - [ ] Audit reflection usage in builders, tests, hosting, telemetry, and DI integration.
 - [ ] Document unsupported dynamic patterns where trimming cannot be made safe.
 

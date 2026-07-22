@@ -8,7 +8,6 @@ namespace Axial.Flow
 [<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.MaintenanceExamples")>]
 [<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.ReadmeExample")>]
 [<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Flow.PlatformService.Examples")>]
-[<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.AotProbe")>]
 [<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Flow.PlatformService")>]
 [<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Flow.Console")>]
 [<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Flow.FileSystem")>]

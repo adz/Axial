@@ -10,7 +10,7 @@ The reference apps exercise the schema group the way an application does — val
 storage boundaries — so that API friction invisible in a snippet has nowhere to hide. There are three tiers, each
 runnable:
 
-1. [`Axial.ReferenceApp.Intro`]({{< relref "/schema/error-handling/reference-app.md" >}}) — plain `Result`, checks,
+1. [`Axial.ReferenceApp.Intro`]({{< relref "/validation/reference-app.md" >}}) — plain `Result`, checks,
    refined values, and accumulated validation, with no schemas at all. Start there if you are new; this page
    covers the schema tiers.
 2. `examples/Axial.ReferenceApp` — the workspace tracker: hand-written schemas, refined domain values, versioned

@@ -22,7 +22,7 @@ Builds a host-native response plan from the current GenHTTP request.
 
 | Type | Description |
 | --- | --- |
-| <code><a href="t-schema-http-genhttp-httpresponse.md">HttpResponse</a></code> | A request-relative response plan. |
+| <code><a href="../../../../../flow/reference/service/http/t-flow-httpclient-httpresponse.md">HttpResponse</a></code> | A request-relative response plan. |
 
 ## Examples
 

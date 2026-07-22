@@ -2,6 +2,8 @@
 {{- $sidebar := false -}}
 {{- if eq .Section "schema" -}}
   {{- $sidebar = hugo.Data.sidebars.schema -}}
+{{- else if eq .Section "validation" -}}
+  {{- $sidebar = hugo.Data.sidebars.validation -}}
 {{- else if eq .Section "flow" -}}
   {{- $sidebar = hugo.Data.sidebars.flow -}}
 {{- end -}}

@@ -18,7 +18,7 @@ Builds a 400 problem-details value from parse diagnostics, rendering each error 
 | Name | Type | Description |
 | --- | --- | --- |
 | `render` | <code><span>'error&#32;->&#32;string</span></code> |  |
-| `diagnostics` | <code><span><a href="../../error-handling/diagnostics/t-validation-diagnostics.md">Diagnostics</a>&lt;'error&gt;</span></code> |  |
+| `diagnostics` | <code><span><a href="../../../../validation/reference/diagnostics/t-validation-diagnostics.md">Diagnostics</a>&lt;'error&gt;</span></code> |  |
 
 ## Returns
 

@@ -25,7 +25,7 @@ Serializes a trusted value as JSON through a compiled codec.
 
 | Type | Description |
 | --- | --- |
-| <code><a href="t-schema-http-genhttp-httpresponse.md">HttpResponse</a></code> | A request-relative GenHTTP response plan. |
+| <code><a href="../../../../../flow/reference/service/http/t-flow-httpclient-httpresponse.md">HttpResponse</a></code> | A request-relative GenHTTP response plan. |
 
 ## Examples
 

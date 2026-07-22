@@ -7,6 +7,11 @@ root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 product="${1:-all}"
 
 case "$product" in
+  validation)
+    dotnet build "$root_dir/src/Axial.Validation/Axial.Validation.fsproj" --nologo --verbosity quiet --disable-build-servers -p:UseSharedCompilation=false
+    cd "$root_dir/scripts/docgen"
+    AXIAL_DOCS_PRODUCT="$product" dotnet run
+    ;;
   schema)
     dotnet build "$root_dir/src/Axial.Schema.Json/Axial.Schema.Json.fsproj" --nologo --verbosity quiet --disable-build-servers -p:UseSharedCompilation=false
     dotnet build "$root_dir/src/Axial.Schema.JsonSchema/Axial.Schema.JsonSchema.fsproj" --nologo --verbosity quiet --disable-build-servers -p:UseSharedCompilation=false
@@ -24,11 +29,12 @@ case "$product" in
     AXIAL_DOCS_PRODUCT="$product" dotnet run
     ;;
   all)
+    "$root_dir/scripts/generate-api-docs.sh" validation
     "$root_dir/scripts/generate-api-docs.sh" schema
     "$root_dir/scripts/generate-api-docs.sh" flow
     ;;
   *)
-    echo "Usage: $0 [schema|flow|all]" >&2
+    echo "Usage: $0 [validation|schema|flow|all]" >&2
     exit 2
     ;;
 esac

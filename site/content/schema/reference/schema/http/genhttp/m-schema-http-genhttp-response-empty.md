@@ -23,7 +23,7 @@ Returns an empty response with the supplied status.
 
 | Type | Description |
 | --- | --- |
-| <code><a href="t-schema-http-genhttp-httpresponse.md">HttpResponse</a></code> | A request-relative empty response plan. |
+| <code><a href="../../../../../flow/reference/service/http/t-flow-httpclient-httpresponse.md">HttpResponse</a></code> | A request-relative empty response plan. |
 
 ## Examples
 

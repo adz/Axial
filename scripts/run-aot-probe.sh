@@ -3,10 +3,10 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PROJECT="$ROOT_DIR/examples/Axial.AotProbe/Axial.AotProbe.fsproj"
-LIBRARY_PROJECT="$ROOT_DIR/src/Axial/Axial.fsproj"
-PUBLISH_DIR="$ROOT_DIR/artifacts/publish/Axial.AotProbe/linux-x64"
+for product in Validation Schema Flow; do
+  project="$ROOT_DIR/examples/Axial.$product.AotProbe/Axial.$product.AotProbe.fsproj"
+  publish_dir="$ROOT_DIR/artifacts/publish/Axial.$product.AotProbe/linux-x64"
 
-dotnet build "$LIBRARY_PROJECT" -c Release -f net8.0 --nologo -v minimal /m:1
-dotnet publish "$PROJECT" -c Release -r linux-x64 -p:PublishAot=true -p:UsePrebuiltAxial=true -o "$PUBLISH_DIR"
-"$PUBLISH_DIR/Axial.AotProbe"
+  dotnet publish "$project" -c Release -r linux-x64 -p:PublishAot=true -o "$publish_dir"
+  "$publish_dir/Axial.$product.AotProbe"
+done

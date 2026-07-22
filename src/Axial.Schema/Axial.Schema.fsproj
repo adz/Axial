@@ -34,7 +34,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Axial.Data\Axial.Data.fsproj" />
-    <ProjectReference Include="..\Axial.ErrorHandling\Axial.ErrorHandling.fsproj" />
+    <ProjectReference Include="..\Axial.Validation\Axial.Validation.fsproj" />
   </ItemGroup>
 
   <ItemGroup>

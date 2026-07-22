@@ -23,7 +23,7 @@ Returns a plain-text response.
 
 | Type | Description |
 | --- | --- |
-| <code><a href="t-schema-http-genhttp-httpresponse.md">HttpResponse</a></code> | A request-relative plain-text response plan. |
+| <code><a href="../../../../../flow/reference/service/http/t-flow-httpclient-httpresponse.md">HttpResponse</a></code> | A request-relative plain-text response plan. |
 
 ## Examples
 

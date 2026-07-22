@@ -15,5 +15,5 @@ models and collections, and read schema metadata without running validation.
 - [Nested Models And Collections](./nested-and-collections/): an order with an address and line items.
 - [Inspecting Schema Metadata](./inspecting-metadata/): walk the same schema as data for docs and JSON Schema.
 
-Use [Validation tutorials]({{< relref "/schema/error-handling/validation/tutorials/" >}}) for accumulating failures over values you already hold, and
+Use [Validation tutorials]({{< relref "/validation/diagnostics/tutorials/" >}}) for accumulating failures over values you already hold, and
 [Flow tutorials]({{< relref "/flow/tutorials/" >}}) for workflows around the boundary.

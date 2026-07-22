@@ -6,20 +6,6 @@ groups:
     entries:
       - /schema/reference/data
 
-  - title: Axial.ErrorHandling
-    home: /schema/error-handling
-    entries:
-      - /schema/error-handling/getting-started
-      - /schema/error-handling/result-builder
-      - /schema/error-handling/checks
-      - /schema/error-handling/validation
-      - /schema/error-handling/refined
-      - /schema/error-handling/predicates
-      - /schema/error-handling/tutorials
-      - /schema/error-handling/reference-app
-      - /schema/error-handling/fstoolkit-comparison
-      - /schema/reference/error-handling
-
   - title: Axial.Schema
     home: /schema
     descendants: false

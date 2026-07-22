@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Axial\Axial.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Flow\Axial.Flow.fsproj" />
   </ItemGroup>
 
 </Project>

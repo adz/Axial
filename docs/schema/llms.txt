@@ -2,9 +2,8 @@
 
 ## Product boundary
 
-- Schema owns the input-to-domain product documentation, including the independently installable `Axial.Data` and
-  `Axial.ErrorHandling` packages.
-- Schema and ErrorHandling do not depend on `Axial.Flow`.
+- Schema owns structured data declarations, parsing, inspection, codecs, contracts, and HTTP boundary support.
+- Schema depends on `Axial.Validation` and `Axial.Data`, but does not depend on `Axial.Flow`.
 - `Data` is a source-neutral boundary tree. `Schema<'value>` is the typed declaration interpreted by parsing, checking,
   inspection, codecs, JSON Schema, contracts, and test generation.
 
@@ -19,13 +18,12 @@
 - Successful admission does not make a public record impossible to construct incorrectly. Use refined fields, a private
   aggregate, or an `.fsi` boundary when invariants must persist.
 
-## ErrorHandling and refined values
+## Validation integration
 
-- `Check<'value> = 'value -> Result<unit, CheckFailure list>` is path-free and raw-input-free.
-- Use plain `Result<'value,'error>` and `result {}` for fail-fast application operations.
-- Use `Validation<'value,'error>` and `validate { and! }` for accumulated, path-aware sibling failures.
-- Use `Parse` for serialized primitives and `Refine` for built-in refined types. Use `RefinedSchemas` to place refined
-  values in schema fields.
+- Use `Schema.constrain` with reusable checks from `Axial.Validation`.
+- Schema parsing and checking return path-aware `Diagnostics<SchemaError>` values.
+- Use `RefinedSchemas` to place refined values in schema fields.
+- See `/validation/llms.txt` for Result, Check, Diagnostics, Validation, Parse, and Refine guidance.
 
 ## Formats and tooling
 

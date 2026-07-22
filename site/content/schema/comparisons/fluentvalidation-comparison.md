@@ -66,7 +66,7 @@ errors. With FluentValidation, each of those is a separate artifact to keep in s
 - Teams that want C#-first fluent syntax rather than F# declarations.
 
 Axial's equivalent of "validate an existing object" exists — `Schema.check schema model` (the
-`Axial.Schema` module, not [`Axial.Validation.Validation`]({{< relref "/schema/error-handling/validation/" >}}) from Error
+`Axial.Schema` module, not [`Axial.Validation.Validation`]({{< relref "/validation/diagnostics/" >}}) from Error
 Handling, which it's built on) re-checks a trusted model, and `Rules` add contextual requirements — but they run
 against schema metadata, not a second rulebook.
 

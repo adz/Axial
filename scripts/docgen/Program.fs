@@ -654,7 +654,7 @@ let pageSpecs = [
         OutPath = ["result"; "_index.md"]
         Title = "Result"
         Description = "Source-documented fail-fast Result helpers for Axial."
-        Intro = "This page shows Axial's fail-fast helpers over the standard F# `Result<'value, 'error>` type. Use `Result.requireTrue` when a bare `bool` condition should become a `Result` (nothing to preserve). Use `Result.okIf`/`Result.failIf` (mirroring `Option.filter`) when a predicate over the value itself should keep that value on success, then attach the real error afterward with `Result.orError`. Extraction helpers such as `Result.someOr` change the success shape. `Check.*` is available when a reusable constraint and its structured failure are useful. Sequence cardinality extraction (`exactlyOne`, `atMostOne`) lives on [Refine]({{< relref \"/schema/reference/error-handling/refined/\" >}}), since it is a structural refinement rather than a generic Result concern. The `result { }` builder sequences ordinary fail-fast `Result` workflows."
+        Intro = "This page shows Axial's fail-fast helpers over the standard F# `Result<'value, 'error>` type. Use `Result.requireTrue` when a bare `bool` condition should become a `Result` (nothing to preserve). Use `Result.okIf`/`Result.failIf` (mirroring `Option.filter`) when a predicate over the value itself should keep that value on success, then attach the real error afterward with `Result.orError`. Extraction helpers such as `Result.someOr` change the success shape. `Check.*` is available when a reusable constraint and its structured failure are useful. Sequence cardinality extraction (`exactlyOne`, `atMostOne`) lives on [Refine]({{< relref \"/validation/reference/refined/\" >}}), since it is a structural refinement rather than a generic Result concern. The `result { }` builder sequences ordinary fail-fast `Result` workflows."
         SymbolIds = [
             "Structured errors", ["T:Axial.ErrorHandling.CheckFailure"]
             "Core helpers", ["M:Axial.ErrorHandling.Result.ok"; "M:Axial.ErrorHandling.Result.error"; "M:Axial.ErrorHandling.Result.map"; "M:Axial.ErrorHandling.Result.mapError"; "M:Axial.ErrorHandling.Result.bind"; "M:Axial.ErrorHandling.Result.orElse"; "M:Axial.ErrorHandling.Result.orElseWith"]
@@ -1214,13 +1214,14 @@ let main argv =
         | null | "" -> "all"
         | value -> value.Trim().ToLowerInvariant()
 
-    if product <> "all" && product <> "schema" && product <> "flow" then
-        invalidArg "AXIAL_DOCS_PRODUCT" "Expected 'schema' or 'flow'."
+    if product <> "all" && product <> "validation" && product <> "schema" && product <> "flow" then
+        invalidArg "AXIAL_DOCS_PRODUCT" "Expected 'validation', 'schema', or 'flow'."
     
     let outRoot =
         match Environment.GetEnvironmentVariable "AXIAL_DOCS_OUT_ROOT" with
         | null | "" ->
             match product with
+            | "validation" -> Path.Combine(root, "docs/validation/reference")
             | "schema" -> Path.Combine(root, "docs/schema/reference")
             | "flow" -> Path.Combine(root, "docs/flow/reference")
             | _ -> Path.Combine(root, "docs/reference")
@@ -1239,8 +1240,12 @@ let main argv =
     // All inputs load their net8.0 build so the reference always reflects the widest TFM-gated
     // surface (e.g. ValueSchema.date and ofJsonElement); netstandard2.1-only builds would
     // silently drop those members from the docs instead of describing them as unavailable there.
+    let validationDllPaths = [
+        Path.Combine(artifactsDir, "Axial.Validation/debug_net8.0/Axial.Validation.dll")
+    ]
+
     let schemaDllPaths = [
-        Path.Combine(artifactsDir, "Axial.ErrorHandling/debug_net8.0/Axial.ErrorHandling.dll")
+        yield! validationDllPaths
         Path.Combine(artifactsDir, "Axial.Data/debug_net8.0/Axial.Data.dll")
         Path.Combine(artifactsDir, "Axial.Schema/debug_net8.0/Axial.Schema.dll")
         Path.Combine(artifactsDir, "Axial.Schema.JsonSchema/debug_net8.0/Axial.Schema.JsonSchema.dll")
@@ -1264,6 +1269,7 @@ let main argv =
 
     let dllPaths =
         match product with
+        | "validation" -> validationDllPaths
         | "schema" -> schemaDllPaths
         | "flow" -> flowDllPaths
         | _ -> schemaDllPaths @ flowDllPaths
@@ -1301,28 +1307,33 @@ let main argv =
         |> Seq.collect collectAllEntities
         |> Seq.toList
 
-    let schemaReferenceGroups =
-        set [ "check"; "predicate"; "result"; "validation"; "diagnostics"; "refined"; "schema"; "codec"; "data" ]
-
-    let errorHandlingReferenceGroups =
+    let validationReferenceGroups =
         set [ "check"; "predicate"; "result"; "validation"; "diagnostics"; "refined" ]
+
+    let schemaReferenceGroups =
+        set [ "schema"; "codec"; "data" ]
 
     let selectedPageSpecs =
         let forProduct =
             match product with
+            | "validation" -> pageSpecs |> List.filter (fun spec -> validationReferenceGroups.Contains spec.OutPath.Head)
             | "schema" -> pageSpecs |> List.filter (fun spec -> schemaReferenceGroups.Contains spec.OutPath.Head)
-            | "flow" -> pageSpecs |> List.filter (fun spec -> not (schemaReferenceGroups.Contains spec.OutPath.Head))
+            | "flow" -> pageSpecs |> List.filter (fun spec -> not (schemaReferenceGroups.Contains spec.OutPath.Head || validationReferenceGroups.Contains spec.OutPath.Head))
             | _ -> pageSpecs
 
         match Environment.GetEnvironmentVariable "AXIAL_DOCS_PAGE_PREFIX" with
         | null | "" -> forProduct
         | prefix -> forProduct |> List.filter (fun spec -> String.concat "/" spec.OutPath |> fun path -> path.StartsWith(prefix, StringComparison.Ordinal))
 
-    let productOutPath (spec: PageSpec) =
-        if product = "schema" && errorHandlingReferenceGroups.Contains spec.OutPath.Head then
-            "error-handling" :: spec.OutPath
+    let productOutPath (spec: PageSpec) = spec.OutPath
+
+    let referenceRootForSpec (spec: PageSpec) =
+        if validationReferenceGroups.Contains spec.OutPath.Head then
+            Path.Combine(root, "docs/validation/reference")
+        elif schemaReferenceGroups.Contains spec.OutPath.Head then
+            Path.Combine(root, "docs/schema/reference")
         else
-            spec.OutPath
+            Path.Combine(root, "docs/flow/reference")
 
     let referenceTargetMap = Dictionary<string, string>()
 
@@ -1334,8 +1345,8 @@ let main argv =
         let rawName = id.Substring(2).Split('(').[0]
         referenceTargetMap[formatterApiSlug rawName] <- absolutePath
 
-    for spec in selectedPageSpecs do
-        let outPath = Path.Combine(outRoot, Path.Combine(Array.ofList (productOutPath spec)))
+    for spec in pageSpecs do
+        let outPath = Path.Combine(referenceRootForSpec spec, Path.Combine(Array.ofList spec.OutPath))
 
         for sectionTitle, ids in spec.SymbolIds do
             for id in ids do

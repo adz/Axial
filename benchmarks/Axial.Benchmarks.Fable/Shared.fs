@@ -153,13 +153,13 @@ module Shared =
         workflow
 
     let private contactSchema =
-        ShapeOps.define<SchemaContact>
+        Schema.define<SchemaContact>
         |> field "name" _.Name
         |> field "age" _.Age
         |> construct (fun name age -> { Name = name; Age = age })
 
     let buildSchemaPlanSummary () =
-        SchemaCore.compilePlan (SummaryFactory<SchemaContact>()) contactSchema
+        Schema.compilePlan (SummaryFactory<SchemaContact>()) contactSchema
 
     let runCodecRoundTrip () =
         let codec = Json.compile contactSchema

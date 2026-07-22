@@ -16,4 +16,4 @@ Describes a non-blank string as a schema refined value over required text.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<a href="../../error-handling/refined/t-refined-nonblankstring.md">NonBlankString</a>&gt;</span></code> |  |
+| <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<a href="../../../../validation/reference/refined/t-refined-nonblankstring.md">NonBlankString</a>&gt;</span></code> |  |

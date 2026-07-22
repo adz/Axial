@@ -6,7 +6,7 @@ Speculative sketches live in `dev-docs/current-ideas/`, but this file is the liv
 
 ## Release Strategy
 
-Per `prd.md`: the boundary stack — the `Axial.ErrorHandling` package (hosting the `Axial.ErrorHandling`,
+Per `prd.md`: the boundary stack — the `Axial.Validation` package (hosting the `Axial.ErrorHandling`,
 `Axial.Validation`, and `Axial.Refined` namespaces), `Axial.Schema`, and `Axial.Schema.Json` — is the 1.0 gate, driven by
 a real adoption target (a ~100-variant versioned config system). The Flow group's remaining pre-1.0 scope in
 `LATER_TODO.md` is demand-driven — pulled forward when a concrete application needs it. The contract-declaration
@@ -19,15 +19,14 @@ and contracts) and should be treated as settling rather than settled.
 ## Current Direction
 
 Axial began as a Reader-Async-Result workflow monad in the ZIO tradition; the result side has since expanded into a
-full parse-don't-validate toolkit. The library is therefore two main groups, and public positioning should always
-present them as such:
+full input and value toolkit. The public surface has three identities:
 
-- **Parse-don't-validate results**: `Schema<'model>` is the front door for domain models — input parsing, intrinsic
-  validation, redisplay, and metadata interpreters all fall out of one declaration. Plain `Result`
-  with a user-owned error DU is the blessed lane for simple code without domain models. `Check`, `Validation`,
-  `Refined`, and interpreter error types are machinery behind those two doors, not peer entry points.
-- **Effects in Flow**: the workflow group below. Useful with or without schemas, and never part of the entry price
-  for the results group.
+- **Validation**: checks, ordinary `Result`, accumulated diagnostics, and refined values. The NuGet package is
+  `Axial.Validation`; its focused namespaces remain `Axial.ErrorHandling`, `Axial.Validation`, and `Axial.Refined`.
+- **Schema**: structured input, model construction, codecs, contracts, and boundary interpreters.
+- **Flow**: effectful workflows. Useful with or without Schema, and always installed separately.
+
+The `Axial` umbrella installs Validation and Schema together. It does not install or re-export Flow.
 
 Within the effects group, Axial has one fully expanded workflow shape:
 
@@ -116,7 +115,7 @@ but JSON codecs should not interpret that metadata tree directly on the hot path
 compile schemas into direct record plans: ordered field descriptors, cached wire-name bytes, indexed field slots,
 typed field decoders, and constructor application that does not require per-value reflection or `obj array` dispatch.
 CodecMapper is the performance reference for this shape. This path now ships as `Axial.Schema.Json` (`Json.compile` over the
-retained compiled record plan, benchmarked against `System.Text.Json` in `benchmarks/Axial.Benchmarks/CodecSuites.fs`);
+retained compiled record plan, benchmarked against `System.Text.Json` in `benchmarks/Axial.Schema.Benchmarks/CodecSuites.fs`);
 remaining codec work is optimization and format breadth, not proving the shape.
 
 The built `Schema<'model>` value itself must retain typed constructor and field information sufficient for that codec

@@ -10,7 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Axial.ErrorHandling\Axial.ErrorHandling.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Validation\Axial.Validation.fsproj" />
   </ItemGroup>
 
 </Project>

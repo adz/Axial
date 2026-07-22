@@ -42,23 +42,25 @@ upsert_frontmatter() {
   mv "$tmp" "$file"
 }
 
-# Axial has two product documentation areas: /schema/ and /flow/. Schema owns
-# the Data and ErrorHandling package documentation while keeping their package
-# boundaries visible. Generated API reference is distributed under the product
-# that owns each package.
+# Axial has three product documentation areas: /validation/, /schema/, and
+# /flow/. Generated API reference is distributed under the product that owns
+# each package.
+validation_dir="$root_dir/site/content/validation"
 schema_dir="$root_dir/site/content/schema"
 flow_dir="$root_dir/site/content/flow"
 rm -rf "$root_dir/site/content/error-handling" "$root_dir/site/content/data" \
-  "$schema_dir" "$flow_dir" \
+  "$validation_dir" "$schema_dir" "$flow_dir" \
   "$root_dir/site/content/docs" "$root_dir/site/content/reference" "$root_dir/site/content/parse"
-mkdir -p "$schema_dir" "$flow_dir"
+mkdir -p "$validation_dir" "$schema_dir" "$flow_dir"
 
+cp -r "$root_dir/docs/validation/." "$validation_dir/"
 cp -r "$root_dir/docs/schema/." "$schema_dir/"
 cp -r "$root_dir/docs/flow/." "$flow_dir/"
-rm -f "$schema_dir/llms.txt" "$flow_dir/llms.txt"
+rm -f "$validation_dir/llms.txt" "$schema_dir/llms.txt" "$flow_dir/llms.txt"
 
 # Product-local generated API reference is copied with the guides. Apply the
 # navigation weights needed by the rendered site.
+validation_ref="$validation_dir/reference"
 schema_ref="$schema_dir/reference"
 flow_ref="$flow_dir/reference"
 
@@ -81,19 +83,19 @@ upsert_frontmatter "$flow_ref/service/console/_index.md" "weight" "20"
 upsert_frontmatter "$flow_ref/service/filesystem/_index.md" "weight" "30"
 upsert_frontmatter "$flow_ref/service/http/_index.md" "weight" "40"
 upsert_frontmatter "$flow_ref/service/process/_index.md" "weight" "50"
-upsert_frontmatter "$schema_ref/error-handling/check/_index.md" "weight" "10"
-upsert_frontmatter "$schema_ref/error-handling/predicate/_index.md" "weight" "15"
-upsert_frontmatter "$schema_ref/error-handling/result/_index.md" "weight" "20"
-upsert_frontmatter "$schema_ref/error-handling/validation/_index.md" "weight" "30"
-upsert_frontmatter "$schema_ref/error-handling/diagnostics/_index.md" "weight" "40"
-upsert_frontmatter "$schema_ref/error-handling/refined/_index.md" "weight" "50"
+upsert_frontmatter "$validation_ref/check/_index.md" "weight" "10"
+upsert_frontmatter "$validation_ref/predicate/_index.md" "weight" "15"
+upsert_frontmatter "$validation_ref/result/_index.md" "weight" "20"
+upsert_frontmatter "$validation_ref/validation/_index.md" "weight" "30"
+upsert_frontmatter "$validation_ref/diagnostics/_index.md" "weight" "40"
+upsert_frontmatter "$validation_ref/refined/_index.md" "weight" "50"
 upsert_frontmatter "$schema_ref/schema/_index.md" "weight" "10"
 upsert_frontmatter "$schema_ref/codec/_index.md" "weight" "20"
 upsert_frontmatter "$schema_ref/data/_index.md" "weight" "30"
 
 # Hugo's docs layout supplies the page title. Keep generated content uniform
 # with pages whose source already omits a body-level H1.
-find "$schema_dir" "$flow_dir" -type f -name "*.md" -print0 |
+find "$validation_dir" "$schema_dir" "$flow_dir" -type f -name "*.md" -print0 |
   node -e '
     const fs = require("node:fs");
     for (const path of fs.readFileSync(0, "utf8").split("\0")) {

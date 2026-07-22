@@ -5,7 +5,9 @@
     <Platform Name="x86" />
   </Configurations>
   <Folder Name="/examples/">
-    <Project Path="examples/Axial.AotProbe/Axial.AotProbe.fsproj" />
+    <Project Path="examples/Axial.Validation.AotProbe/Axial.Validation.AotProbe.fsproj" />
+    <Project Path="examples/Axial.Schema.AotProbe/Axial.Schema.AotProbe.fsproj" />
+    <Project Path="examples/Axial.Flow.AotProbe/Axial.Flow.AotProbe.fsproj" />
     <Project Path="examples/Axial.Api/Axial.Api.fsproj" />
     <Project Path="examples/Axial.Examples/Axial.Examples.fsproj" />
     <Project Path="examples/Axial.ReadmeExample/Axial.ReadmeExample.fsproj" />
@@ -25,7 +27,8 @@
     <Project Path="examples/Axial.Hosting.Browser/Axial.Hosting.Browser.fsproj" />
   </Folder>
   <Folder Name="/benchmarks/">
-    <Project Path="benchmarks/Axial.Benchmarks/Axial.Benchmarks.fsproj" />
+    <Project Path="benchmarks/Axial.Flow.Benchmarks/Axial.Flow.Benchmarks.fsproj" />
+    <Project Path="benchmarks/Axial.Schema.Benchmarks/Axial.Schema.Benchmarks.fsproj" />
     <Project Path="benchmarks/Axial.Benchmarks.Fable/Axial.Benchmarks.Fable.fsproj" />
   </Folder>
   <Folder Name="/src/">
@@ -37,7 +40,7 @@
     <Project Path="src/Axial.Flow.Process/Axial.Flow.Process.fsproj" />
     <Project Path="src/Axial.Flow/Axial.Flow.fsproj" />
     <Project Path="src/Axial.Data/Axial.Data.fsproj" />
-    <Project Path="src/Axial.ErrorHandling/Axial.ErrorHandling.fsproj" />
+    <Project Path="src/Axial.Validation/Axial.Validation.fsproj" />
     <Project Path="src/Axial.Schema.Json/Axial.Schema.Json.fsproj" />
     <Project Path="src/Axial.Schema/Axial.Schema.fsproj" />
     <Project Path="src/Axial.Schema.JsonSchema/Axial.Schema.JsonSchema.fsproj" />
@@ -56,7 +59,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/Axial.Flow.Tests/Axial.Flow.Tests.fsproj" />
     <Project Path="tests/Axial.Data.Tests/Axial.Data.Tests.fsproj" />
-    <Project Path="tests/Axial.ErrorHandling.Tests/Axial.ErrorHandling.Tests.fsproj" />
+    <Project Path="tests/Axial.Validation.Tests/Axial.Validation.Tests.fsproj" />
     <Project Path="tests/Axial.Schema.Json.Tests/Axial.Schema.Json.Tests.fsproj" />
     <Project Path="tests/Axial.Schema.Tests/Axial.Schema.Tests.fsproj" />
     <Project Path="tests/Axial.Schema.Http.Tests/Axial.Schema.Http.Tests.fsproj" />

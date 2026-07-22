@@ -54,7 +54,7 @@ dotnet run --project examples/Axial.Api/Axial.Api.fsproj
 AXIAL_EXAMPLE=smoke dotnet run --project examples/Axial.Api/Axial.Api.fsproj --nologo
 ```
 
-Introductory reference app (Axial.ErrorHandling only — checks, `result {}`, `refine {}`, `validate {}`):
+Introductory reference app (Axial.Validation only — checks, `result {}`, `refine {}`, `validate {}`):
 
 ```bash
 dotnet run --project examples/Axial.ReferenceApp.Intro/Axial.ReferenceApp.Intro.fsproj --nologo
@@ -139,7 +139,7 @@ mode on every push.
 ## Introductory Reference App
 
 The intro app in [`examples/Axial.ReferenceApp.Intro`](./Axial.ReferenceApp.Intro/) is the first reference tier:
-a conference registration desk using only `Axial.ErrorHandling`. It shows reusable checks with your own error
+a conference registration desk using only `Axial.Validation`. It shows reusable checks with your own error
 union, fail-fast `result {}` pipelines, refined domain values through `refine {}`, and accumulated form
 validation with named diagnostics through `validate {}` — with no schemas and no Flow.
 

@@ -18,8 +18,8 @@ Lowers an endpoint Flow to the native handler expected by GenHTTP routing.
 | Name | Type | Description |
 | --- | --- | --- |
 | `getAppEnvironment` | <code><span><a href="https://learn.microsoft.com/dotnet/api/genhttp.api.protocol.irequest">IRequest</a>&#32;->&#32;'app</span></code> | Constructs or resolves the explicit application environment for the current request. |
-| `mapApplicationError` | <code><span>'error&#32;->&#32;<a href="t-schema-http-genhttp-httpresponse.md">HttpResponse</a></span></code> | Maps one expected application failure to a GenHTTP response plan. |
-| `workflow` | <code><span><a href="https://learn.microsoft.com/dotnet/api/axial.flow.flow-3">Flow</a>&lt;<span><span><a href="t-schema-http-genhttp-httpendpointenv.md">HttpEndpointEnv</a>&lt;'app&gt;</span>,&#32;<span><a href="t-schema-http-genhttp-endpointerror.md">EndpointError</a>&lt;'error&gt;</span>,&#32;<a href="t-schema-http-genhttp-httpresponse.md">HttpResponse</a></span>&gt;</span></code> | The complete endpoint Flow to execute. |
+| `mapApplicationError` | <code><span>'error&#32;->&#32;<a href="../../../../../flow/reference/service/http/t-flow-httpclient-httpresponse.md">HttpResponse</a></span></code> | Maps one expected application failure to a GenHTTP response plan. |
+| `workflow` | <code><span><a href="https://learn.microsoft.com/dotnet/api/axial.flow.flow-3">Flow</a>&lt;<span><span><a href="t-schema-http-genhttp-httpendpointenv.md">HttpEndpointEnv</a>&lt;'app&gt;</span>,&#32;<span><a href="t-schema-http-genhttp-endpointerror.md">EndpointError</a>&lt;'error&gt;</span>,&#32;<a href="../../../../../flow/reference/service/http/t-flow-httpclient-httpresponse.md">HttpResponse</a></span>&gt;</span></code> | The complete endpoint Flow to execute. |
 
 ## Returns
 

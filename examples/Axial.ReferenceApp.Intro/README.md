@@ -1,6 +1,6 @@
-# Introductory reference app (Axial.ErrorHandling only)
+# Introductory reference app (Axial.Validation only)
 
-A conference registration desk built with only the `Axial.ErrorHandling` package. It is the first tier of the
+A conference registration desk built with only the `Axial.Validation` package. It is the first tier of the
 reference apps: everything here is plain F# `Result` with your own error union, and no Axial type appears in a
 domain signature unless you choose a refined value.
 

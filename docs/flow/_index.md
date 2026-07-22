@@ -127,8 +127,8 @@ dotnet add package Axial.Flow.HttpClient
 - [Troubleshooting Types](./core-concepts/troubleshooting-types/) — the compiler errors that mean a wrapper boundary was crossed.
 - Comparisons: [vs Effect-TS](./comparisons/effect-ts-comparison/), [FSharpPlus integration](./comparisons/fsharpplus-comparison/).
 
-Flow is one of the three packages Axial consists of — each usable independently, all working together. If the code
-is still pure, start in [Error Handling]({{< relref "/schema/error-handling/" >}}) or [Schema]({{< relref "/schema/" >}})
+Flow is one of Axial's three entry points. If the code is still pure, start in
+[Validation]({{< relref "/validation/" >}}) or [Schema]({{< relref "/schema/" >}})
 instead; both work without Flow.
 
 </div>

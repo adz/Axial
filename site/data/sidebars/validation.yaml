@@ -1,0 +1,14 @@
+groups:
+  - title: Axial.Validation
+    home: /validation
+    entries:
+      - /validation/getting-started
+      - /validation/result-builder
+      - /validation/checks
+      - /validation/diagnostics
+      - /validation/refined
+      - /validation/predicates
+      - /validation/tutorials
+      - /validation/reference-app
+      - /validation/fstoolkit-comparison
+      - /validation/reference

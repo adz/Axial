@@ -6,24 +6,30 @@ root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 product="${1:-}"
 
 case "$product" in
-  schema|flow) ;;
-  *) echo "Usage: $0 <schema|flow>" >&2; exit 2 ;;
+  validation|schema|flow) ;;
+  *) echo "Usage: $0 <validation|schema|flow>" >&2; exit 2 ;;
 esac
 
 HUGO_BASEURL="${HUGO_BASEURL:-http://localhost:3000/}"
 validate_dir="${AXIAL_DOCS_VALIDATE_DIR:-$root_dir/.fsdocs/validate-$product}"
 
-"$root_dir/scripts/generate-example-docs.sh" "$product"
+if [[ "$product" != "validation" ]]; then
+  "$root_dir/scripts/generate-example-docs.sh" "$product"
+fi
 bash "$root_dir/scripts/generate-api-docs.sh" "$product"
 bash "$root_dir/scripts/populate-hugo-content.sh"
 
 hugo --source "$root_dir/site" --destination "$validate_dir" --baseURL "$HUGO_BASEURL" --cleanDestinationDir
 
 case "$product" in
+  validation)
+    test -f "$validate_dir/validation/getting-started/index.html"
+    test -f "$validate_dir/validation/diagnostics/index.html"
+    test -f "$validate_dir/validation/reference/check/t-errorhandling-check/index.html"
+    ;;
   schema)
     test -f "$validate_dir/schema/getting-started/index.html"
     test -f "$validate_dir/schema/data/index.html"
-    test -f "$validate_dir/schema/error-handling/index.html"
     test -f "$validate_dir/schema/reference/schema/t-schema-schema/index.html"
     ;;
   flow)

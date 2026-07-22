@@ -6,12 +6,12 @@ This document defines what Axial is, what its 1.0 must contain, and in what orde
 direction is `dev-docs/PLAN.md`; the active queue is `dev-docs/TASKS.md`; durable decisions are
 `dev-docs/decisions/README.md`. This file changes only when the product definition changes.
 
-Axial is an F#/.NET library with two groups, presented in this order:
+Axial is an F#/.NET library with three public identities:
 
-- **Parse-don't-validate results.** `Schema<'model>` is the front door for domain models: one declaration drives input
-  parsing, intrinsic validation, redisplay, JSON codecs, JSON Schema output, and metadata
-  interpreters. Plain `Result` with a user-owned error DU is the blessed lane for simple code without domain models.
-- **Effects in Flow.** `Flow<'env, 'error, 'value>`, a ZIO-inspired Reader-Async-Result workflow model with typed
+- **Validation.** Checks, ordinary Results, accumulated diagnostics, and refined values.
+- **Schema.** `Schema<'model>` describes how structured input becomes a domain model and drives parsing, redisplay,
+  JSON codecs, JSON Schema output, and metadata interpreters.
+- **Flow.** `Flow<'env, 'error, 'value>`, a ZIO-inspired Reader-Async-Result workflow model with typed
   errors, explicit services and layers, scoped resources, and cancellation semantics. Useful with or without schemas,
   and never part of the entry price for the results group.
 
@@ -19,7 +19,7 @@ Axial is an F#/.NET library with two groups, presented in this order:
 
 The boundary stack ships 1.0 first; the Flow group follows demand.
 
-- **The 1.0 gate is the boundary stack**: the `Axial.ErrorHandling` package (hosting the `Axial.ErrorHandling`,
+- **The 1.0 gate is the boundary stack**: the `Axial.Validation` package (hosting the `Axial.ErrorHandling`,
   `Axial.Validation`, and `Axial.Refined` namespaces), `Axial.Schema` (declaration + interpreters in one package,
   including `Schema.check` boundary admission), and `Axial.Schema.Json`. Scope: the current queue in
   `dev-docs/TASKS.md` (schema-depth candidates, now that the contract versioning engine has shipped) plus its

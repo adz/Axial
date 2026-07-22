@@ -99,26 +99,18 @@ current domain model.
 - [Compiler-Directed, AOT, and Fable](./aot-trimming-fable/) — why the guarantees hold by construction.
 - Comparisons: [vs zod](./comparisons/zod-comparison/), [vs FluentValidation](./comparisons/fluentvalidation-comparison/).
 
-## The Machinery
+## Related Products
 
-Two subsections hold the tools schemas are built from — both ship in `Axial.ErrorHandling`, not this package;
-Schema uses them, they aren't Schema-specific:
-
-- [Refined]({{< relref "/schema/error-handling/refined/" >}}) — single values whose types carry their own proof:
-  `PositiveInt`, `NonBlankString`, your own.
-- [Validation]({{< relref "/schema/error-handling/validation/" >}}) — accumulate every sibling failure as a path-aware diagnostics tree.
-
-The packages are usable independently. [Error Handling]({{< relref "/schema/error-handling/" >}}) contains reusable
-constraints, refined-value construction, accumulated diagnostics, and Result helpers. [Flow]({{< relref "/flow/" >}})
-models effects and dependencies; neither package is a required next step after Schema.
+[Validation]({{< relref "/validation/" >}}) provides the reusable checks, diagnostics, and refined values that Schema
+uses. It can also be installed and used on its own. [Flow]({{< relref "/flow/" >}}) models effects and dependencies;
+Schema does not require it.
 
 ## Install
 
 Install the core package with `dotnet add package Axial.Schema`.
 
-Schema metadata, input parsing, checking, and rules live in this one package; `Refined` and `Validation` arrive with
-it as the `Axial.ErrorHandling` dependency — declaring a schema, parsing structured data, and inspecting metadata never
-require a second install.
+Schema metadata, input parsing, checking, and rules live in this package. Checks, diagnostics, and refined values
+arrive through its `Axial.Validation` dependency, so Schema users do not need a second install.
 
 `Axial.Schema.Json` is separate and optional: add it only if you want a compiled, runtime-reflection-free JSON codec generated from
 your schema (`Json.compile`). `Axial.Schema.JsonSchema` is also separate and optional; it supplies

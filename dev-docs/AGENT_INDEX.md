@@ -16,15 +16,15 @@ Working on `src/Axial.Schema`? Read `dev-docs/schema/internals.md` first (implem
 
 ## Package Graph
 
-- `Axial.Flow`: independent workflow package (`src/Axial.Flow/`). Must not depend on `Axial.ErrorHandling` or
+- `Axial.Flow`: independent workflow package (`src/Axial.Flow/`). Must not depend on `Axial.Validation` or
   `Axial.Schema`.
-- `Axial.ErrorHandling` (`src/Axial.ErrorHandling/`): three namespaces in one package — `Axial.ErrorHandling`
+- `Axial.Validation` (`src/Axial.Validation/`): three namespaces in one package — `Axial.ErrorHandling`
   (`Check`, `CheckFailure`, `Result`, `Collection`, `result { }`), `Axial.Validation` (`Validation`, `Diagnostics`,
   paths, `validate { }`), and `Axial.Refined` (`Parse`, `Refine`, `refine { }`). Independent leaf — no dependency on
   `Axial.Schema` or `Axial.Flow`.
 - `Axial.Schema` (`src/Axial.Schema/`): schema declaration (`Schema` module), parsing and checking (`Schema.parse`,
   `Schema.parseRetainingInput`, `Schema.check`), inspection (`Inspect`), contracts,
-  and refined schema adapters (`RefinedSchemas`) in one package. Depends on `Axial.Data` and `Axial.ErrorHandling`.
+  and refined schema adapters (`RefinedSchemas`) in one package. Depends on `Axial.Data` and `Axial.Validation`.
 - `Axial.Schema.JsonSchema` (`src/Axial.Schema.JsonSchema/`): JSON Schema generation (`JsonSchema.generate`) in the
   `Axial.Schema` namespace. Depends on `Axial.Schema`.
 - `Axial.Schema.Json` (`src/Axial.Schema.Json/`): compiled JSON codecs. Depends on `Axial.Schema`.
@@ -44,18 +44,19 @@ Working on `src/Axial.Schema`? Read `dev-docs/schema/internals.md` first (implem
 - `Axial.Schema.Contracts.Build` (`src/Axial.Schema.Contracts.Build/`): packable targets-only MSBuild package
   running `scripts/schemagen` before compile over `<AxialDeriveSchema>`/`<AxialContract>` items.
 - `Axial.Flow.*` add-on packages depend on `Axial.Flow`.
-- `Axial` umbrella package references the public packages for convenience.
+- `Axial` umbrella package references Validation, Schema, and the Schema add-ons for convenience. Flow remains a
+  separate install.
 
 ## Open These First
 
 - Flow/runtime/layers/services: `src/Axial.Flow/**`, relevant `src/Axial.Flow.*/*`, `tests/Axial.Flow.Tests/*Workflow*`,
   `tests/Axial.Flow.PlatformService.Tests/**`, and `dev-docs/PLAN.md`.
-- Check/Result: `src/Axial.ErrorHandling/Check.fs`, `src/Axial.ErrorHandling/Result.fs`,
-  `tests/Axial.ErrorHandling.Tests/CheckResultTests.fs`, `tests/Axial.ApiShape.Tests/ApiShapeTests.fs`, and `dev-docs/PLAN.md`.
-- Refined values: `src/Axial.ErrorHandling/Refine.fs`, `src/Axial.ErrorHandling/Parse.fs`,
-  `tests/Axial.ErrorHandling.Tests/{ParseAndBuilderTests,CatalogTests}.fs`, and the Check/Result files only as needed.
-- Validation/diagnostics: `src/Axial.ErrorHandling/{Validation,Diagnostics,ValidateBuilder}.fs`,
-  `tests/Axial.ErrorHandling.Tests/ValidationTests.fs`, and `dev-docs/PLAN.md`.
+- Check/Result: `src/Axial.Validation/Check.fs`, `src/Axial.Validation/Result.fs`,
+  `tests/Axial.Validation.Tests/CheckResultTests.fs`, `tests/Axial.ApiShape.Tests/ApiShapeTests.fs`, and `dev-docs/PLAN.md`.
+- Refined values: `src/Axial.Validation/Refine.fs`, `src/Axial.Validation/Parse.fs`,
+  `tests/Axial.Validation.Tests/{ParseAndBuilderTests,CatalogTests}.fs`, and the Check/Result files only as needed.
+- Validation/diagnostics: `src/Axial.Validation/{Validation,Diagnostics,ValidateBuilder}.fs`,
+  `tests/Axial.Validation.Tests/ValidationTests.fs`, and `dev-docs/PLAN.md`.
 - Schema metadata/builder: `src/Axial.Schema/Schema.fs`, `tests/Axial.Schema.Tests/Schema*Tests.fs`, and the schema section in
   `dev-docs/PLAN.md`.
 - Schema input/rules/interpreters: `src/Axial.Schema/{Model,Data,SchemaValidation,RetainedParseResult,Rules}.fs` and

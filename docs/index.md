@@ -1,6 +1,6 @@
 ---
 title: Axial
-description: Independent Schema and Flow libraries for F# on .NET and Fable JavaScript.
+description: Independent Validation, Schema, and Flow libraries for F# on .NET and Fable JavaScript.
 ---
 
 <div class="docs-home-container axial-landing">
@@ -11,19 +11,26 @@ description: Independent Schema and Flow libraries for F# on .NET and Fable Java
 <h1>Choose the package for the problem.</h1>
 
 <div class="lede">
-Axial contains two independent products. Schema turns untrusted boundary input into application values. Flow describes
-effectful work with explicit dependencies, typed failures, cancellation, and resources. Use either without the other.
+Axial has three entry points. Validation checks and refines values, Schema describes structured data boundaries, and
+Flow runs effectful work with explicit dependencies, typed failures, cancellation, and resources.
 </div>
 </div>
 
 <div class="axial-doors">
 
+<a class="axial-door axial-door--validation" href="{{< relref "/validation/" >}}">
+<span class="axial-door-kicker">Checks and typed failures</span>
+<h2>Axial.Validation</h2>
+<p>Compose ordinary Results, reuse value checks, collect path-aware diagnostics, and construct refined values. Use it
+without Schema or Flow.</p>
+<span class="axial-door-cta">Validation documentation &rarr;</span>
+</a>
+
 <a class="axial-door axial-door--parse" href="{{< relref "/schema/" >}}">
 <span class="axial-door-kicker">Input and domain values</span>
 <h2>Axial.Schema</h2>
-<p>Declare how structured input becomes a model, reuse value checks and refined types, compile JSON codecs, generate
-contracts, and report path-aware diagnostics. The Schema documentation also covers the independently installable
-<code>Axial.Data</code> and <code>Axial.ErrorHandling</code> packages.</p>
+<p>Declare how structured input becomes a model, compile JSON codecs, generate contracts, and reuse the same field
+structure across parsers, documentation, forms, and tests.</p>
 <span class="axial-door-cta">Schema documentation &rarr;</span>
 </a>
 

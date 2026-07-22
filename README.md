@@ -6,12 +6,13 @@
   <img alt="Axial" src="docs/content/img/axial-readme-light.svg" width="160">
 </picture>
 
-Axial is a set of F# libraries for two common application problems:
+Axial is a set of F# libraries with three entry points:
 
-- turning untrusted input into domain values without constructing a failed model;
-- composing async work while keeping dependencies and expected failures visible.
+- Validation for reusable checks, ordinary Results, diagnostics, and refined values;
+- Schema for turning structured input into domain values;
+- Flow for async work with explicit dependencies and expected failures.
 
-Use either part on its own.
+Use each package on its own, or install `Axial` for Validation and Schema together.
 
 [![ci](https://github.com/adz/Axial/actions/workflows/ci.yml/badge.svg)](https://github.com/adz/Axial/actions/workflows/ci.yml)
 [![NuGet](https://img.shields.io/nuget/v/Axial.svg)](https://www.nuget.org/packages/Axial)
@@ -20,6 +21,29 @@ Use either part on its own.
 > [!WARNING]
 > Axial 0.7.0 is the first planned release under the Axial name. It replaces the former monolithic FsFlow package with
 > smaller packages. The public surface is still pre-1.0 and may change.
+
+## Check and refine values
+
+`Axial.Validation` adds reusable checks and focused helpers while keeping ordinary
+`Result<'value, 'error>` in your interfaces.
+
+```fsharp
+open Axial.ErrorHandling
+open Axial.ErrorHandling.CheckDSL
+
+let requireName value =
+    value
+    |> present
+    |> orError NameMissing
+```
+
+- [Validation overview](docs/validation/_index.md)
+- [Checks and Result](docs/validation/getting-started.md)
+- [Refined domain values](docs/validation/refined/domain-values.md)
+
+```bash
+dotnet add package Axial.Validation
+```
 
 ## Parse input into domain values
 
@@ -105,24 +129,6 @@ Install Flow:
 ```bash
 dotnet add package Axial.Flow
 ```
-
-## Plain Result remains the simple option
-
-Small functions do not need schemas or workflows. `Axial.ErrorHandling` adds reusable checks and focused helpers while
-keeping ordinary `Result<'value, 'error>` in your interfaces.
-
-```fsharp
-open Axial.ErrorHandling
-
-let requireName value =
-    value
-    |> Check.String.present
-    |> Result.orError NameMissing
-```
-
-- [Error Handling overview](docs/error-handling/_index.md)
-- [Checks and Result](docs/error-handling/getting-started.md)
-- [Refined domain values](docs/error-handling/refined/domain-values.md)
 
 ## Platforms and examples
 

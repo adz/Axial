@@ -22,4 +22,4 @@ Describes a non-empty array as a schema refined value over a collection of item 
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<span><a href="../../error-handling/refined/t-refined-nonemptyarray.md">NonEmptyArray</a>&lt;'value&gt;</span>&gt;</span></code> |  |
+| <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<span><a href="../../../../validation/reference/refined/t-refined-nonemptyarray.md">NonEmptyArray</a>&lt;'value&gt;</span>&gt;</span></code> |  |
