@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Axial axis mark">
+  <defs>
+    <linearGradient id="plate" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#454b4e"/>
+      <stop offset="0.48" stop-color="#303538"/>
+      <stop offset="1" stop-color="#202427"/>
+    </linearGradient>
+    <linearGradient id="steel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e1e4e4"/>
+      <stop offset="0.45" stop-color="#9ea5a7"/>
+      <stop offset="1" stop-color="#5f6669"/>
+    </linearGradient>
+    <filter id="recess" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="1" stdDeviation="0.45" flood-color="#000" flood-opacity="0.95"/>
+    </filter>
+  </defs>
+
+  <path d="M8 1h48l7 7v48l-7 7H8l-7-7V8z" fill="url(#plate)" stroke="#171a1c" stroke-width="2"/>
+  <path d="M9 3h46l6 6v46l-6 6H9l-6-6V9z" fill="none" stroke="#7d8588" stroke-width="1" opacity="0.9"/>
+
+  <g fill="none" stroke="#07090a" stroke-width="4" stroke-linecap="square" stroke-linejoin="miter">
+    <path d="M32 9v46M9 32h46"/>
+    <path d="M32 7l-4 7h8zM32 57l-4-7h8zM7 32l7-4v8zM57 32l-7-4v8z" fill="#07090a" stroke="none"/>
+    <circle cx="32" cy="32" r="16"/>
+    <circle cx="32" cy="32" r="5"/>
+  </g>
+
+  <g fill="none" stroke="url(#steel)" stroke-width="1.35" stroke-linecap="square" stroke-linejoin="miter" filter="url(#recess)">
+    <path d="M32 9v46M9 32h46"/>
+    <path d="M32 7l-4 7h8zM32 57l-4-7h8zM7 32l7-4v8zM57 32l-7-4v8z" fill="#92999b"/>
+    <circle cx="32" cy="32" r="16"/>
+    <circle cx="32" cy="32" r="5"/>
+  </g>
+  <circle cx="32" cy="32" r="1.8" fill="#111416" stroke="#aab0b2" stroke-width="0.8"/>
+</svg>

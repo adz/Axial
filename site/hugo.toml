@@ -63,6 +63,7 @@ defaultContentLanguage = "en"
     desc = "Source Code"
 
 [params.ui]
+  showLightDarkModeMenu = true
   sidebar_menu_foldable = true
   sidebar_menu_compact = false
   sidebar_menu_truncate = 5000

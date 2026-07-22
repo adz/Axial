@@ -1,10 +1,64 @@
 // Custom styles for Axial docs
+@font-face {
+  font-family: "Rajdhani";
+  src: url("/content/fonts/Rajdhani-Medium.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Rajdhani";
+  src: url("/content/fonts/Rajdhani-SemiBold.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+}
+
 $axial-text: "Inter", "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
 $axial-code: "JetBrains Mono", "Cascadia Code", "Fira Code", "SFMono-Regular", Consolas, monospace;
+$axial-display: "Rajdhani", "Arial Narrow", $axial-text;
+
+:root,
+[data-bs-theme="light"] {
+  --axial-masthead-bg: var(--bs-body-bg, #fff);
+  --axial-masthead-border: #dfe3e5;
+  --axial-brand: #303b40;
+  --axial-nav: #667177;
+  --axial-nav-hover: #34464d;
+  --axial-nav-active: #172e37;
+  --axial-mark: #46565d;
+  --axial-mark-highlight: #829097;
+  --axial-mark-shadow: rgba(255, 255, 255, 0.8);
+  --axial-core: #39474d;
+  --axial-bore: #d0d6d8;
+  --axial-control-bg: #fff;
+  --axial-control-border: #d5dbde;
+}
+
+[data-bs-theme="dark"] {
+  --axial-masthead-bg: var(--bs-body-bg, #15191b);
+  --axial-masthead-border: #30383c;
+  --axial-brand: #d3d8d6;
+  --axial-nav: #9ca8a6;
+  --axial-nav-hover: #c3cfcc;
+  --axial-nav-active: #e0e5e2;
+  --axial-mark: #aeb9b8;
+  --axial-mark-highlight: #e0e5e2;
+  --axial-mark-shadow: rgba(0, 0, 0, 0.85);
+  --axial-core: #b7c1bf;
+  --axial-bore: #202629;
+  --axial-control-bg: #202629;
+  --axial-control-border: #3c464a;
+}
 
 body {
   font-family: $axial-text;
   color: #243041;
+}
+
+[data-bs-theme="dark"] body {
+  color: #c4ced2;
 }
 
 .td-content {
@@ -29,6 +83,16 @@ body {
   }
 }
 
+[data-bs-theme="dark"] .td-content {
+  p,
+  li,
+  table,
+  blockquote,
+  .lead {
+    color: #b8c3c8;
+  }
+}
+
 code,
 kbd,
 pre,
@@ -44,29 +108,90 @@ samp,
 .td-navbar {
   min-height: 4.7rem;
   padding: 0.32rem 0.9rem;
-  border-bottom: 1px solid #080a0c;
-  background: #171a1e;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
+  border-bottom: 1px solid var(--axial-masthead-border);
+  background: var(--axial-masthead-bg);
+  box-shadow: none;
 
   .td-navbar-container {
     min-height: 4rem;
   }
 
   .navbar-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.06rem;
     margin: 0;
     padding: 0 0.5rem;
+    color: var(--axial-brand);
+    text-decoration: none;
+
+    &:hover {
+      color: var(--axial-nav-active);
+    }
   }
 
   .navbar-brand__logo {
     display: block;
-    width: auto;
-    height: 3.65rem;
+    width: 2.3rem;
+    height: 2.45rem;
 
-    img {
+    svg {
       display: block;
-      width: auto;
+      width: 100%;
       height: 100%;
+      overflow: visible;
     }
+
+    .axial-lettermark__axis-shadow {
+      fill: none;
+      stroke: var(--axial-mark-shadow);
+      stroke-width: 2.8;
+      opacity: 0.35;
+    }
+
+    .axial-lettermark__axis {
+      fill: none;
+      stroke: var(--axial-mark-highlight);
+      stroke-width: 1.15;
+      stroke-linecap: square;
+      stroke-linejoin: miter;
+      opacity: 0.82;
+    }
+
+    .axial-lettermark__beam-shadow {
+      fill: none;
+      stroke: var(--axial-mark-shadow);
+      stroke-width: 6.8;
+      stroke-linecap: square;
+      stroke-linejoin: miter;
+      opacity: 0.42;
+      transform: translateY(1px);
+    }
+
+    .axial-lettermark__beam {
+      fill: none;
+      stroke: url("#axial-letter-metal");
+      stroke-width: 5.2;
+      stroke-linecap: square;
+      stroke-linejoin: miter;
+    }
+
+    .axial-lettermark__joint {
+      fill: var(--axial-core);
+      stroke: var(--axial-mark-highlight);
+      stroke-width: 0.75;
+    }
+  }
+
+  .navbar-brand__name {
+    color: inherit;
+    font-family: $axial-display;
+    font-size: 1.72rem;
+    font-weight: 600;
+    letter-spacing: 0.075em;
+    line-height: 1;
+    margin-left: -0.2rem;
+    text-shadow: none;
   }
 
   .navbar-nav {
@@ -77,45 +202,48 @@ samp,
   .nav-link {
     padding: 0.58rem 0.85rem 0.48rem;
     border-bottom: 2px solid transparent;
-    color: #b9bec3;
-    font-family: "DIN Alternate", "Bahnschrift SemiCondensed", "Arial Narrow", $axial-text;
-    font-size: 0.9rem;
-    font-stretch: condensed;
-    font-weight: 660;
-    letter-spacing: 0.07em;
+    color: var(--axial-nav);
+    font-family: $axial-display;
+    font-size: 0.98rem;
+    font-weight: 600;
+    letter-spacing: 0.075em;
     text-transform: uppercase;
     transition: color 130ms ease, border-color 130ms ease, text-shadow 130ms ease;
 
     &:hover {
-      color: #e2e8ea;
-      border-bottom-color: rgba(198, 223, 228, 0.30);
-      text-shadow: 0 0 6px rgba(213, 243, 248, 0.13);
+      color: var(--axial-nav-hover);
+      border-bottom-color: color-mix(in srgb, var(--axial-nav-hover) 38%, transparent);
+      text-shadow: none;
     }
 
     &.active,
     &[aria-current="page"] {
-      color: #f4fbfc;
-      border-bottom-color: #bdcfd3;
-      text-shadow: 0 0 7px rgba(217, 247, 251, 0.25);
+      color: var(--axial-nav-active);
+      border-bottom-color: var(--axial-nav-active);
+      text-shadow: none;
     }
   }
 
   .td-version-menu .dropdown-toggle {
-    border: 1px solid #444a50;
+    border: 1px solid var(--axial-control-border);
     border-radius: 3px;
-    background: #20242a;
-    color: #c7ccd0;
+    background: var(--axial-control-bg);
+    color: var(--axial-brand);
+    font-family: $axial-display;
+    font-size: 0.94rem;
+    font-weight: 600;
+    letter-spacing: 0.045em;
     padding-inline: 0.7rem;
   }
 
   .td-search__input {
-    border-color: #41474d;
+    border-color: var(--axial-control-border);
     border-radius: 3px;
-    background: #101317;
-    color: #e1e5e7;
+    background: var(--axial-control-bg);
+    color: var(--axial-brand);
 
     &::placeholder {
-      color: #92999f;
+      color: #747d84;
     }
   }
 }
@@ -126,7 +254,12 @@ samp,
     padding: 0.25rem 0.4rem;
 
     .navbar-brand__logo {
-      height: 2.85rem;
+      width: 2.15rem;
+      height: 2.3rem;
+    }
+
+    .navbar-brand__name {
+      font-size: 1.35rem;
     }
 
     .navbar-nav {
@@ -136,6 +269,27 @@ samp,
     .nav-link {
       padding-inline: 0.55rem;
     }
+  }
+}
+
+.axial-sidebar-collapse-toggle {
+  display: none;
+}
+
+@media (max-width: 767.98px) {
+  .axial-sidebar-collapse-toggle {
+    display: block;
+    width: 100%;
+    margin: 0.35rem 0 0.75rem;
+    padding: 0.4rem 0.6rem;
+    border: 1px solid #d7dce0;
+    border-radius: 6px;
+    background: #fff;
+    color: #596269;
+    font-size: 0.78rem;
+    font-weight: 650;
+    text-align: left;
+    text-decoration: none;
   }
 }
 
@@ -168,6 +322,16 @@ samp,
   background: rgba(124, 45, 18, 0.08);
 }
 
+[data-bs-theme="dark"] .axial-pre1-banner {
+  border-color: rgba(202, 148, 103, 0.2);
+  background: #28221f;
+  color: #d5b49c;
+
+  code {
+    background: rgba(213, 180, 156, 0.08);
+  }
+}
+
 @media (min-width: 768px) {
   .axial-pre1-banner + .row > main {
     padding-top: var(--td-main-padding-top);
@@ -179,6 +343,37 @@ samp,
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 2rem;
+}
+
+[data-bs-theme="dark"] {
+  .docs-home-copy h1,
+  .axial-door h2 {
+    color: #d7dfe1;
+  }
+
+  .lede,
+  .docs-card p,
+  .axial-door p,
+  .axial-diag,
+  .axial-checks li,
+  .axial-lane > p,
+  .axial-machinery p,
+  .axial-strip p,
+  .coord-pill {
+    color: #aebbc0;
+  }
+
+  .docs-chip,
+  .docs-card,
+  .docs-home-cta,
+  .axial-door,
+  .axial-panel,
+  .axial-lane,
+  .coord-pill,
+  .coord-hub {
+    border-color: #384247;
+    background: #202629;
+  }
 }
 
 .docs-home-hero {

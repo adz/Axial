@@ -8,10 +8,25 @@
       {{- if $cover }} td-navbar-cover td-navbar-transparent {{- end }}"
       {{- if eq (.Param "ui.navbar_theme") "dark" }} data-bs-theme="dark" {{- end }}>
 <div class="td-navbar-container container-fluid flex-column flex-md-row">
-  <a class="navbar-brand" href="{{ .Site.Home.RelPermalink }}">
+  <a class="navbar-brand" href="{{ .Site.Home.RelPermalink }}" aria-label="Axial home">
     <span class="navbar-brand__logo navbar-logo">
-      <img src="{{ "/content/img/axial-masthead-v2.png" | relURL }}" alt="Axial">
+      <svg viewBox="0 0 46 50" aria-hidden="true" focusable="false">
+        <defs>
+          <linearGradient id="axial-letter-metal" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="var(--axial-mark-highlight)" />
+            <stop offset="0.5" stop-color="var(--axial-mark)" />
+            <stop offset="1" stop-color="var(--axial-core)" />
+          </linearGradient>
+        </defs>
+        <path class="axial-lettermark__axis-shadow" d="M2 31h42M23 2v18" />
+        <path class="axial-lettermark__axis" d="M2 30h42M23 2v18" />
+        <path class="axial-lettermark__axis" d="M2 27v6M41 27l3 3-3 3M20 5l3-3 3 3" />
+        <path class="axial-lettermark__beam-shadow" d="M8 45 23 10l15 35M14 31h18" />
+        <path class="axial-lettermark__beam" d="M8 44 23 9l15 35M14 30h18" />
+        <rect class="axial-lettermark__joint" x="20.5" y="27.5" width="5" height="5" rx="0.5" />
+      </svg>
     </span>
+    <span class="navbar-brand__name">xial</span>
   </a>
   <div class="td-navbar__main td-navbar-nav-scroll td-navbar-nav-scroll--indicator" id="main_navbar">
     <div class="scroll-indicator scroll-left"></div>
