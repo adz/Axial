@@ -3,12 +3,13 @@
 This folder keeps only high-level durable decisions. Detailed historical specs are deleted once their useful rules have
 been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 
-## 2026-07-22: Validation, Schema, and Flow are separate public identities
+## 2026-07-22: Error Handling, Schema, and Flow are separate public identities
 
-- `/validation/`, `/schema/`, and `/flow/` each have their own homepage, guides, generated reference, `llms.txt`, and
+- `/error-handling/`, `/schema/`, and `/flow/` each have their own homepage, guides, generated reference, `llms.txt`, and
   agent context. Validation and Schema can remain in one repository initially; Flow can move independently.
-- The former `Axial.ErrorHandling` package is named `Axial.Validation`. It still hosts the focused
-  `Axial.ErrorHandling`, `Axial.Validation`, and `Axial.Refined` namespaces.
+- `Axial.Result`, `Axial.Diagnostics`, and `Axial.Refined` are focused implementation packages.
+  `Axial.ErrorHandling` is their meta-package; the public namespaces remain `Axial.ErrorHandling`,
+  `Axial.Validation`, and `Axial.Refined`.
 - The `Axial` umbrella installs Validation, Schema, and the core Schema interpreters. `Axial.Flow` remains an
   independent package and is not re-exported by the umbrella.
 
@@ -203,16 +204,9 @@ required update abstraction before it becomes public API again.
 
 - `Flow<'env, 'error, 'value>` is the public workflow model. Platform carriers are execution/adaptation boundaries, not
   user-facing workflow types.
-- There are two leaf packages: `Axial.Flow` and `Axial.Validation`. `Axial.Validation` has no internal Axial
-  dependencies and hosts three namespaces — `Axial.ErrorHandling` (`Check`, `Predicate`, `Result`), `Axial.Validation`
-  (accumulating diagnostics), and `Axial.Refined` (single-value parsing and refinement) — because none of the three
-  depend on Schema or Flow and all three are single-value/error-vocabulary concerns, not model-declaration concerns.
-  `Axial.Schema` legitimately depends on `Axial.Validation` (for `Check`-based constraint lowering and the
-  `RefinedSchema` bridge into `Axial.Refined`); `Axial.Schema.Json` depends on `Axial.Schema`. `Axial.Flow` stays
-  independent of both. The `leaf packages stay independent of each other` API-shape test enforces this graph, and
-  `` `Axial.Refined` was moved from `Axial.Schema` into `Axial.Validation` `` after finding it has zero actual
-  dependency on Schema — see the ApiShapeTests.fs comments
-  for the reasoning.
+- `Axial.Result` and `Axial.Flow` are independent leaves. `Axial.Diagnostics` and `Axial.Refined` depend only on
+  `Axial.Result`; `Axial.ErrorHandling` is their meta-package. `Axial.Schema` depends on Result, Diagnostics, and
+  Refined for constraints, parse diagnostics, and refined fields. Flow stays independent of the whole group.
 - Explicit dependencies live in `'env`. The ambient runtime is reserved for closed executor mechanics such as
   cancellation, scope, scheduling, interruption, and trace metadata.
 - Operational services are explicit services provisioned through records, nominal `IHas<'service>` contracts, host-edge
@@ -223,7 +217,8 @@ required update abstraction before it becomes public API again.
   portable and host-specific capabilities such as process environment access are injected at the boundary.
 - `Check` and `Result` helpers belong to the `Axial.ErrorHandling` namespace; `Parse`, `Refine`, and the `refine { }`
   builder belong to `Axial.Refined`; `Validation` and `Diagnostics` belong to `Axial.Validation`; `Policy`, `Bind`,
-  and `BindError` belong to `Axial.Flow`. All of the first three ship in the `Axial.Validation` package.
+  and `BindError` belong to `Axial.Flow`. The first three ship in `Axial.Result`, `Axial.Diagnostics`, and
+  `Axial.Refined`, with `Axial.ErrorHandling` as their meta-package.
 - `Check` is a complete typed value-constraint subsystem:
   `Check<'value> = 'value -> Result<'value, CheckFailure list>`. Checks are path-free, raw-input-free value programs;
   value-preserving guards and extraction helpers belong in `Result`, and parsing and refined value construction belong in
@@ -237,7 +232,7 @@ required update abstraction before it becomes public API again.
   `SchemaConstraint` metadata and tests the lowered boundary failures. Do not move `SchemaConstraint` into
   `Axial.Refined` or add an extra shared metadata package unless a second integration package needs that abstraction.
 - `Result` keeps fail-fast adapters around `Check`, not a second accumulating constraint language. The current
-  surface (`src/Axial.Validation/Result.fs`) is: generic combinators and conversions (`ok`, `error`, `map`,
+  surface (`src/Axial.Result/Result.fs`) is: generic combinators and conversions (`ok`, `error`, `map`,
   `mapError`, `bind`, `orElse`, `orElseWith`, `requireTrue`, `okIf`, `failIf`, `orError`, `fromTry`, `fromChoice`,
   `toOption`, `toValueOption`, `defaultValue`) and extraction helpers for option, value option, nullable, result, and
   sequence values (`someOr`, `noneOr`, `valueSomeOr`, `valueNoneOr`, `nullableOr`, `notNullOr`, `okOr`, `errorOr`,

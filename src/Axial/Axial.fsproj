@@ -8,7 +8,7 @@
     <AssemblyName>Axial</AssemblyName>
     <RootNamespace>Axial</RootNamespace>
     <Authors>Adam Davies</Authors>
-    <Description>Umbrella package for Axial.Validation, Axial.Schema, and the core Schema interpreters.</Description>
+    <Description>Umbrella package for Axial.ErrorHandling, Axial.Schema, and the core Schema interpreters.</Description>
     <PackageProjectUrl>https://github.com/adz/Axial</PackageProjectUrl>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
@@ -28,7 +28,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Axial.Validation\Axial.Validation.fsproj" />
+    <ProjectReference Include="..\Axial.ErrorHandling\Axial.ErrorHandling.fsproj" />
     <ProjectReference Include="..\Axial.Schema\Axial.Schema.fsproj" />
     <ProjectReference Include="..\Axial.Schema.JsonSchema\Axial.Schema.JsonSchema.fsproj" />
     <ProjectReference Include="..\Axial.Schema.Json\Axial.Schema.Json.fsproj" />

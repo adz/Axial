@@ -8,7 +8,7 @@ product="${1:-all}"
 
 case "$product" in
   validation)
-    dotnet build "$root_dir/src/Axial.Validation/Axial.Validation.fsproj" --nologo --verbosity quiet --disable-build-servers -p:UseSharedCompilation=false
+    dotnet build "$root_dir/src/Axial.ErrorHandling/Axial.ErrorHandling.fsproj" --nologo --verbosity quiet --disable-build-servers -p:UseSharedCompilation=false
     cd "$root_dir/scripts/docgen"
     AXIAL_DOCS_PRODUCT="$product" dotnet run
     ;;

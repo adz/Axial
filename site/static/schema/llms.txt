@@ -3,7 +3,7 @@
 ## Product boundary
 
 - Schema owns structured data declarations, parsing, inspection, codecs, contracts, and HTTP boundary support.
-- Schema depends on `Axial.Validation` and `Axial.Data`, but does not depend on `Axial.Flow`.
+- Schema depends on `Axial.Result`, `Axial.Diagnostics`, `Axial.Refined`, and `Axial.Data`, but does not depend on `Axial.Flow`.
 - `Data` is a source-neutral boundary tree. `Schema<'value>` is the typed declaration interpreted by parsing, checking,
   inspection, codecs, JSON Schema, contracts, and test generation.
 
@@ -20,10 +20,10 @@
 
 ## Validation integration
 
-- Use `Schema.constrain` with reusable checks from `Axial.Validation`.
+- Use `Schema.constrain` with reusable checks from `Axial.Result`.
 - Schema parsing and checking return path-aware `Diagnostics<SchemaError>` values.
 - Use `RefinedSchemas` to place refined values in schema fields.
-- See `/validation/llms.txt` for Result, Check, Diagnostics, Validation, Parse, and Refine guidance.
+- See `/error-handling/llms.txt` for Result, Check, Diagnostics, Validation, Parse, and Refine guidance.
 
 ## Formats and tooling
 

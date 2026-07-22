@@ -1,6 +1,6 @@
 ---
 title: Axial
-description: Independent Validation, Schema, and Flow libraries for F# on .NET and Fable JavaScript.
+description: Independent Error Handling, Schema, and Flow libraries for F# on .NET and Fable JavaScript.
 ---
 
 <div class="docs-home-container axial-landing">
@@ -11,19 +11,19 @@ description: Independent Validation, Schema, and Flow libraries for F# on .NET a
 <h1>Choose the package for the problem.</h1>
 
 <div class="lede">
-Axial has three entry points. Validation checks and refines values, Schema describes structured data boundaries, and
+Axial has three entry points. Error Handling covers Results, diagnostics, and refined values; Schema describes structured data boundaries; and
 Flow runs effectful work with explicit dependencies, typed failures, cancellation, and resources.
 </div>
 </div>
 
 <div class="axial-doors">
 
-<a class="axial-door axial-door--validation" href="{{< relref "/validation/" >}}">
+<a class="axial-door axial-door--validation" href="{{< relref "/error-handling/" >}}">
 <span class="axial-door-kicker">Checks and typed failures</span>
-<h2>Axial.Validation</h2>
+<h2>Axial.ErrorHandling</h2>
 <p>Compose ordinary Results, reuse value checks, collect path-aware diagnostics, and construct refined values. Use it
 without Schema or Flow.</p>
-<span class="axial-door-cta">Validation documentation &rarr;</span>
+<span class="axial-door-cta">Error Handling documentation &rarr;</span>
 </a>
 
 <a class="axial-door axial-door--parse" href="{{< relref "/schema/" >}}">

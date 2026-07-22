@@ -7,7 +7,7 @@
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Axial.Validation\Axial.Validation.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.ErrorHandling\Axial.ErrorHandling.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Flow.Hosting\Axial.Flow.Hosting.fsproj" />
   </ItemGroup>
 </Project>

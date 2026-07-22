@@ -654,7 +654,7 @@ let pageSpecs = [
         OutPath = ["result"; "_index.md"]
         Title = "Result"
         Description = "Source-documented fail-fast Result helpers for Axial."
-        Intro = "This page shows Axial's fail-fast helpers over the standard F# `Result<'value, 'error>` type. Use `Result.requireTrue` when a bare `bool` condition should become a `Result` (nothing to preserve). Use `Result.okIf`/`Result.failIf` (mirroring `Option.filter`) when a predicate over the value itself should keep that value on success, then attach the real error afterward with `Result.orError`. Extraction helpers such as `Result.someOr` change the success shape. `Check.*` is available when a reusable constraint and its structured failure are useful. Sequence cardinality extraction (`exactlyOne`, `atMostOne`) lives on [Refine]({{< relref \"/validation/reference/refined/\" >}}), since it is a structural refinement rather than a generic Result concern. The `result { }` builder sequences ordinary fail-fast `Result` workflows."
+        Intro = "This page shows Axial's fail-fast helpers over the standard F# `Result<'value, 'error>` type. Use `Result.requireTrue` when a bare `bool` condition should become a `Result` (nothing to preserve). Use `Result.okIf`/`Result.failIf` (mirroring `Option.filter`) when a predicate over the value itself should keep that value on success, then attach the real error afterward with `Result.orError`. Extraction helpers such as `Result.someOr` change the success shape. `Check.*` is available when a reusable constraint and its structured failure are useful. Sequence cardinality extraction (`exactlyOne`, `atMostOne`) lives on [Refine]({{< relref \"/error-handling/reference/refined/\" >}}), since it is a structural refinement rather than a generic Result concern. The `result { }` builder sequences ordinary fail-fast `Result` workflows."
         SymbolIds = [
             "Structured errors", ["T:Axial.ErrorHandling.CheckFailure"]
             "Core helpers", ["M:Axial.ErrorHandling.Result.ok"; "M:Axial.ErrorHandling.Result.error"; "M:Axial.ErrorHandling.Result.map"; "M:Axial.ErrorHandling.Result.mapError"; "M:Axial.ErrorHandling.Result.bind"; "M:Axial.ErrorHandling.Result.orElse"; "M:Axial.ErrorHandling.Result.orElseWith"]
@@ -1221,7 +1221,7 @@ let main argv =
         match Environment.GetEnvironmentVariable "AXIAL_DOCS_OUT_ROOT" with
         | null | "" ->
             match product with
-            | "validation" -> Path.Combine(root, "docs/validation/reference")
+            | "validation" -> Path.Combine(root, "docs/error-handling/reference")
             | "schema" -> Path.Combine(root, "docs/schema/reference")
             | "flow" -> Path.Combine(root, "docs/flow/reference")
             | _ -> Path.Combine(root, "docs/reference")
@@ -1241,7 +1241,9 @@ let main argv =
     // surface (e.g. ValueSchema.date and ofJsonElement); netstandard2.1-only builds would
     // silently drop those members from the docs instead of describing them as unavailable there.
     let validationDllPaths = [
-        Path.Combine(artifactsDir, "Axial.Validation/debug_net8.0/Axial.Validation.dll")
+        Path.Combine(artifactsDir, "Axial.Result/debug_net8.0/Axial.Result.dll")
+        Path.Combine(artifactsDir, "Axial.Diagnostics/debug_net8.0/Axial.Diagnostics.dll")
+        Path.Combine(artifactsDir, "Axial.Refined/debug_net8.0/Axial.Refined.dll")
     ]
 
     let schemaDllPaths = [
@@ -1329,7 +1331,7 @@ let main argv =
 
     let referenceRootForSpec (spec: PageSpec) =
         if validationReferenceGroups.Contains spec.OutPath.Head then
-            Path.Combine(root, "docs/validation/reference")
+            Path.Combine(root, "docs/error-handling/reference")
         elif schemaReferenceGroups.Contains spec.OutPath.Head then
             Path.Combine(root, "docs/schema/reference")
         else

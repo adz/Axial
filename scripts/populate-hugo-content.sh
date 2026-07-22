@@ -42,18 +42,18 @@ upsert_frontmatter() {
   mv "$tmp" "$file"
 }
 
-# Axial has three product documentation areas: /validation/, /schema/, and
+# Axial has three product documentation areas: /error-handling/, /schema/, and
 # /flow/. Generated API reference is distributed under the product that owns
 # each package.
-validation_dir="$root_dir/site/content/validation"
+validation_dir="$root_dir/site/content/error-handling"
 schema_dir="$root_dir/site/content/schema"
 flow_dir="$root_dir/site/content/flow"
-rm -rf "$root_dir/site/content/error-handling" "$root_dir/site/content/data" \
+rm -rf "$root_dir/site/content/error-handling" "$root_dir/site/content/validation" "$root_dir/site/content/data" \
   "$validation_dir" "$schema_dir" "$flow_dir" \
   "$root_dir/site/content/docs" "$root_dir/site/content/reference" "$root_dir/site/content/parse"
 mkdir -p "$validation_dir" "$schema_dir" "$flow_dir"
 
-cp -r "$root_dir/docs/validation/." "$validation_dir/"
+cp -r "$root_dir/docs/error-handling/." "$validation_dir/"
 cp -r "$root_dir/docs/schema/." "$schema_dir/"
 cp -r "$root_dir/docs/flow/." "$flow_dir/"
 rm -f "$validation_dir/llms.txt" "$schema_dir/llms.txt" "$flow_dir/llms.txt"
@@ -86,7 +86,7 @@ upsert_frontmatter "$flow_ref/service/process/_index.md" "weight" "50"
 upsert_frontmatter "$validation_ref/check/_index.md" "weight" "10"
 upsert_frontmatter "$validation_ref/predicate/_index.md" "weight" "15"
 upsert_frontmatter "$validation_ref/result/_index.md" "weight" "20"
-upsert_frontmatter "$validation_ref/validation/_index.md" "weight" "30"
+upsert_frontmatter "$validation_ref/error-handling/_index.md" "weight" "30"
 upsert_frontmatter "$validation_ref/diagnostics/_index.md" "weight" "40"
 upsert_frontmatter "$validation_ref/refined/_index.md" "weight" "50"
 upsert_frontmatter "$schema_ref/schema/_index.md" "weight" "10"

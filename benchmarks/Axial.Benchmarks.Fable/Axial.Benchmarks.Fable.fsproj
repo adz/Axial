@@ -8,6 +8,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Axial.Flow\Axial.Flow.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.ErrorHandling\Axial.ErrorHandling.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Flow.Hosting.Node\Axial.Flow.Hosting.Node.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Flow.Hosting.Browser\Axial.Flow.Hosting.Browser.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Flow.Telemetry.JavaScript\Axial.Flow.Telemetry.JavaScript.fsproj" />

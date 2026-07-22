@@ -5,7 +5,9 @@
     <Platform Name="x86" />
   </Configurations>
   <Folder Name="/examples/">
-    <Project Path="examples/Axial.Validation.AotProbe/Axial.Validation.AotProbe.fsproj" />
+    <Project Path="examples/Axial.Result.AotProbe/Axial.Result.AotProbe.fsproj" />
+    <Project Path="examples/Axial.Diagnostics.AotProbe/Axial.Diagnostics.AotProbe.fsproj" />
+    <Project Path="examples/Axial.Refined.AotProbe/Axial.Refined.AotProbe.fsproj" />
     <Project Path="examples/Axial.Schema.AotProbe/Axial.Schema.AotProbe.fsproj" />
     <Project Path="examples/Axial.Flow.AotProbe/Axial.Flow.AotProbe.fsproj" />
     <Project Path="examples/Axial.Api/Axial.Api.fsproj" />
@@ -40,7 +42,10 @@
     <Project Path="src/Axial.Flow.Process/Axial.Flow.Process.fsproj" />
     <Project Path="src/Axial.Flow/Axial.Flow.fsproj" />
     <Project Path="src/Axial.Data/Axial.Data.fsproj" />
-    <Project Path="src/Axial.Validation/Axial.Validation.fsproj" />
+    <Project Path="src/Axial.Result/Axial.Result.fsproj" />
+    <Project Path="src/Axial.Diagnostics/Axial.Diagnostics.fsproj" />
+    <Project Path="src/Axial.Refined/Axial.Refined.fsproj" />
+    <Project Path="src/Axial.ErrorHandling/Axial.ErrorHandling.fsproj" />
     <Project Path="src/Axial.Schema.Json/Axial.Schema.Json.fsproj" />
     <Project Path="src/Axial.Schema/Axial.Schema.fsproj" />
     <Project Path="src/Axial.Schema.JsonSchema/Axial.Schema.JsonSchema.fsproj" />
@@ -59,7 +64,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/Axial.Flow.Tests/Axial.Flow.Tests.fsproj" />
     <Project Path="tests/Axial.Data.Tests/Axial.Data.Tests.fsproj" />
-    <Project Path="tests/Axial.Validation.Tests/Axial.Validation.Tests.fsproj" />
+    <Project Path="tests/Axial.ErrorHandling.Tests/Axial.ErrorHandling.Tests.fsproj" />
     <Project Path="tests/Axial.Schema.Json.Tests/Axial.Schema.Json.Tests.fsproj" />
     <Project Path="tests/Axial.Schema.Tests/Axial.Schema.Tests.fsproj" />
     <Project Path="tests/Axial.Schema.Http.Tests/Axial.Schema.Http.Tests.fsproj" />

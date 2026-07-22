@@ -108,7 +108,14 @@ module ApiShapeTests =
         | _, found -> found
 
     let private moduleTypeFromAssembly (assemblyName: string) (fullName: string) =
-        let assembly = Assembly.Load assemblyName
+        let resolvedAssemblyName =
+            match assemblyName, fullName with
+            | "Axial.Validation", name when name.StartsWith("Axial.ErrorHandling", StringComparison.Ordinal) -> "Axial.Result"
+            | "Axial.Validation", name when name.StartsWith("Axial.Refined", StringComparison.Ordinal) -> "Axial.Refined"
+            | "Axial.Validation", _ -> "Axial.Diagnostics"
+            | _ -> assemblyName
+
+        let assembly = Assembly.Load resolvedAssemblyName
 
         match assembly.GetType(fullName, false), assembly.GetType(fullName + "Module", false) with
         | null, null -> failwithf "Could not find module type %s in %s." fullName assembly.FullName
@@ -440,12 +447,11 @@ module ApiShapeTests =
 
     [<Fact>]
     let ``leaf packages stay independent of each other`` () =
-        // Axial has two independent leaves: Axial.Validation (which hosts the ErrorHandling, Validation, and
-        // Axial.Refined, so it has no internal Axial dependencies) and Axial.Schema (which legitimately depends
-        // Refined namespaces) and Axial.Flow. Schema depends on Validation for Check plumbing and refined values.
-        let leafPackages = [ "Axial.Flow"; "Axial.Validation"; "Axial.Schema" ]
+        // Result and Flow are independent leaves. Diagnostics and Refined depend only on Result;
+        // Schema depends on all three error-handling implementation packages.
+        let leafPackages = [ "Axial.Flow"; "Axial.Result"; "Axial.Schema" ]
 
-        let allowedReferences = [ "Axial.Schema", "Axial.Validation" ]
+        let allowedReferences = [ "Axial.Schema", "Axial.Result" ]
 
         for package in leafPackages do
             let forbidden =
@@ -465,7 +471,7 @@ module ApiShapeTests =
         test <@ flowAssembly.GetName().Name = "Axial.Flow" @>
 
         referencedAssemblyNames flowAssembly
-        |> assertContainsNone [ "Axial.Schema"; "Axial.Validation" ]
+        |> assertContainsNone [ "Axial.Schema"; "Axial.Result"; "Axial.Diagnostics"; "Axial.Refined"; "Axial.ErrorHandling" ]
 
         moduleTypeFromAssembly "Axial.Flow" "Axial.Flow.PolicyModule"
         |> publicStaticMemberNames
@@ -481,17 +487,17 @@ module ApiShapeTests =
         let schemaAssembly = Assembly.Load "Axial.Schema"
         let schemaReferences = referencedAssemblyNames schemaAssembly
 
-        test <@ errorHandlingAssembly.GetName().Name = "Axial.Validation" @>
+        test <@ errorHandlingAssembly.GetName().Name = "Axial.Diagnostics" @>
 
-        assertModuleAbsentFromAssembly "Axial.Validation" "Axial.Schema.SchemaValidation"
-        assertModuleAbsentFromAssembly "Axial.Validation" "Axial.Schema.ConstraintCheck"
-        assertModuleAbsentFromAssembly "Axial.Validation" "Axial.Schema.SchemaCheck"
-        assertModuleAbsentFromAssembly "Axial.Validation" "Axial.Schema.ModelModule"
+        assertModuleAbsentFromAssembly "Axial.Diagnostics" "Axial.Schema.SchemaValidation"
+        assertModuleAbsentFromAssembly "Axial.Diagnostics" "Axial.Schema.ConstraintCheck"
+        assertModuleAbsentFromAssembly "Axial.Diagnostics" "Axial.Schema.SchemaCheck"
+        assertModuleAbsentFromAssembly "Axial.Diagnostics" "Axial.Schema.ModelModule"
 
         test <@ schemaAssembly.GetName().Name = "Axial.Schema" @>
 
         schemaReferences
-        |> assertContainsAll [ "Axial.Validation" ]
+        |> assertContainsAll [ "Axial.Result"; "Axial.Diagnostics"; "Axial.Refined" ]
 
         moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.SchemaValidation"
         |> publicStaticMemberNames
@@ -1366,7 +1372,7 @@ module ApiShapeTests =
               "atLeastOne"
               "moreThanOne" ]
 
-        assertModuleAbsentFromAssembly "Axial.Validation" "Axial.ErrorHandling.CheckModule+Collection"
+        assertModuleAbsentFromAssembly "Axial.Result" "Axial.ErrorHandling.CheckModule+Collection"
 
         let checkOptionModule =
             moduleTypeFromAssembly "Axial.Validation" "Axial.ErrorHandling.CheckModule+Option"
@@ -1409,7 +1415,7 @@ module ApiShapeTests =
         |> assertMethodsReturnCheckResult [ "ok"; "error" ]
 
         let checkNestedTypeNames =
-            Assembly.Load "Axial.Validation"
+            Assembly.Load "Axial.Result"
             |> _.GetTypes()
             |> Array.choose (fun targetType ->
                 match targetType.FullName with
@@ -1556,8 +1562,8 @@ module ApiShapeTests =
             moduleTypeFromAssembly "Axial.Validation" "Axial.Refined.Parse"
             |> publicStaticMemberNames
 
-        test <@ typeof<ParseError>.Assembly.GetName().Name = "Axial.Validation" @>
-        assertModuleAbsentFromAssembly "Axial.Validation" "Axial.ErrorHandling.Parse"
+        test <@ typeof<ParseError>.Assembly.GetName().Name = "Axial.Refined" @>
+        assertModuleAbsentFromAssembly "Axial.Result" "Axial.ErrorHandling.Parse"
         assertModuleAbsentFromAssembly "Axial.Schema" "Axial.Refined.Parse"
 
         parseMembers

@@ -22,4 +22,4 @@ Describes a distinct list as a schema refined value over a distinct collection o
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<span><a href="../../../../validation/reference/refined/t-refined-distinctlist.md">DistinctList</a>&lt;'value&gt;</span>&gt;</span></code> |  |
+| <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<span><a href="../../../../error-handling/reference/refined/t-refined-distinctlist.md">DistinctList</a>&lt;'value&gt;</span>&gt;</span></code> |  |

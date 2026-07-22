@@ -128,7 +128,7 @@ dotnet add package Axial.Flow.HttpClient
 - Comparisons: [vs Effect-TS](./comparisons/effect-ts-comparison/), [FSharpPlus integration](./comparisons/fsharpplus-comparison/).
 
 Flow is one of Axial's three entry points. If the code is still pure, start in
-[Validation]({{< relref "/validation/" >}}) or [Schema]({{< relref "/schema/" >}})
+[Validation]({{< relref "/error-handling/" >}}) or [Schema]({{< relref "/schema/" >}})
 instead; both work without Flow.
 
 </div>

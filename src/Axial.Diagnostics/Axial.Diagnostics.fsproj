@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.1;net8.0</TargetFrameworks>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsAotCompatible Condition="'$(TargetFramework)' == 'net8.0'">true</IsAotCompatible>
+    <PackageId>Axial.Diagnostics</PackageId>
+    <AssemblyName>Axial.Diagnostics</AssemblyName>
+    <RootNamespace>Axial.Validation</RootNamespace>
+    <Authors>Adam Davies</Authors>
+    <Description>Accumulating validation and path-aware diagnostics for F#.</Description>
+    <PackageProjectUrl>https://github.com/adz/Axial</PackageProjectUrl>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <PackageTags>fsharp;validation;diagnostics;error-handling</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Fable.Core" Version="4.3.0" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+    <ProjectReference Include="..\Axial.Result\Axial.Result.fsproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Diagnostics.fs" />
+    <Compile Include="Validation.fs" />
+    <Compile Include="ValidateBuilder.fs" />
+    <Compile Include="Builders.fs" />
+  </ItemGroup>
+</Project>

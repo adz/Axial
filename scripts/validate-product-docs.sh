@@ -23,9 +23,9 @@ hugo --source "$root_dir/site" --destination "$validate_dir" --baseURL "$HUGO_BA
 
 case "$product" in
   validation)
-    test -f "$validate_dir/validation/getting-started/index.html"
-    test -f "$validate_dir/validation/diagnostics/index.html"
-    test -f "$validate_dir/validation/reference/check/t-errorhandling-check/index.html"
+    test -f "$validate_dir/error-handling/getting-started/index.html"
+    test -f "$validate_dir/error-handling/diagnostics/index.html"
+    test -f "$validate_dir/error-handling/reference/check/t-errorhandling-check/index.html"
     ;;
   schema)
     test -f "$validate_dir/schema/getting-started/index.html"

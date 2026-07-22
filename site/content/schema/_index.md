@@ -101,7 +101,7 @@ current domain model.
 
 ## Related Products
 
-[Validation]({{< relref "/validation/" >}}) provides the reusable checks, diagnostics, and refined values that Schema
+[Error Handling]({{< relref "/error-handling/" >}}) provides the reusable checks, diagnostics, and refined values that Schema
 uses. It can also be installed and used on its own. [Flow]({{< relref "/flow/" >}}) models effects and dependencies;
 Schema does not require it.
 
@@ -110,7 +110,7 @@ Schema does not require it.
 Install the core package with `dotnet add package Axial.Schema`.
 
 Schema metadata, input parsing, checking, and rules live in this package. Checks, diagnostics, and refined values
-arrive through its `Axial.Validation` dependency, so Schema users do not need a second install.
+arrive through its focused package dependencies, so Schema users do not need a second install.
 
 `Axial.Schema.Json` is separate and optional: add it only if you want a compiled, runtime-reflection-free JSON codec generated from
 your schema (`Json.compile`). `Axial.Schema.JsonSchema` is also separate and optional; it supplies

@@ -1,0 +1,14 @@
+groups:
+  - title: Axial.ErrorHandling
+    home: /error-handling
+    entries:
+      - /error-handling/getting-started
+      - /error-handling/result-builder
+      - /error-handling/checks
+      - /error-handling/diagnostics
+      - /error-handling/refined
+      - /error-handling/predicates
+      - /error-handling/tutorials
+      - /error-handling/reference-app
+      - /error-handling/fstoolkit-comparison
+      - /error-handling/reference

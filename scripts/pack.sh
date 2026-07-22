@@ -22,7 +22,10 @@ done
 projects=(
   "src/Axial.Flow/Axial.Flow.fsproj"
   "src/Axial.Data/Axial.Data.fsproj"
-  "src/Axial.Validation/Axial.Validation.fsproj"
+  "src/Axial.Result/Axial.Result.fsproj"
+  "src/Axial.Diagnostics/Axial.Diagnostics.fsproj"
+  "src/Axial.Refined/Axial.Refined.fsproj"
+  "src/Axial.ErrorHandling/Axial.ErrorHandling.fsproj"
   "src/Axial.Schema/Axial.Schema.fsproj"
   "src/Axial.Schema.Http/Axial.Schema.Http.fsproj"
   "src/Axial.Schema.Http.AspNetCore/Axial.Schema.Http.AspNetCore.fsproj"

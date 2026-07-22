@@ -6,8 +6,8 @@ Speculative sketches live in `dev-docs/current-ideas/`, but this file is the liv
 
 ## Release Strategy
 
-Per `prd.md`: the boundary stack — the `Axial.Validation` package (hosting the `Axial.ErrorHandling`,
-`Axial.Validation`, and `Axial.Refined` namespaces), `Axial.Schema`, and `Axial.Schema.Json` — is the 1.0 gate, driven by
+Per `prd.md`: the boundary stack — `Axial.Result`, `Axial.Diagnostics`, and `Axial.Refined` under the
+`Axial.ErrorHandling` meta-package, plus `Axial.Schema` and `Axial.Schema.Json` — is the 1.0 gate, driven by
 a real adoption target (a ~100-variant versioned config system). The Flow group's remaining pre-1.0 scope in
 `LATER_TODO.md` is demand-driven — pulled forward when a concrete application needs it. The contract-declaration
 thread originally sequenced versioning/migration machinery before the grammar; in practice the grammar and generator
@@ -21,8 +21,8 @@ and contracts) and should be treated as settling rather than settled.
 Axial began as a Reader-Async-Result workflow monad in the ZIO tradition; the result side has since expanded into a
 full input and value toolkit. The public surface has three identities:
 
-- **Validation**: checks, ordinary `Result`, accumulated diagnostics, and refined values. The NuGet package is
-  `Axial.Validation`; its focused namespaces remain `Axial.ErrorHandling`, `Axial.Validation`, and `Axial.Refined`.
+- **Error Handling**: checks and ordinary `Result` in `Axial.Result`, accumulated diagnostics in
+  `Axial.Diagnostics`, and refined values in `Axial.Refined`. `Axial.ErrorHandling` installs all three.
 - **Schema**: structured input, model construction, codecs, contracts, and boundary interpreters.
 - **Flow**: effectful workflows. Useful with or without Schema, and always installed separately.
 

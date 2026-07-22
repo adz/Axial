@@ -11,8 +11,8 @@ documentation.
 - Node.js used locally: `v26.1.0`
 
 Note (2026-07-12): the validated-command record below is historical — it predates the 2026-07-09..13 renames and
-references test projects that have since been restructured (`Axial.Refined.Tests` and `Axial.Validation.Tests`
-folded into `Axial.Validation.Tests`). The project lists in this file were corrected on 2026-07-12; a fresh
+references test projects that have since been restructured (`Axial.Refined.Tests` and `Axial.ErrorHandling.Tests`
+folded into `Axial.ErrorHandling.Tests`). The project lists in this file were corrected on 2026-07-12; a fresh
 validated-command pass is queued in `dev-docs/TASKS.md`.
 
 Validated commands for this refresh:
@@ -22,7 +22,7 @@ bash scripts/check-source-inventory.sh
 => Source inventory covers src/tests .fs and .fsproj files.
 
 dotnet build tests/Axial.ApiShape.Tests/Axial.ApiShape.Tests.fsproj --no-restore --nologo -v minimal
-dotnet build tests/Axial.Validation.Tests/Axial.Validation.Tests.fsproj --no-restore --nologo -v minimal
+dotnet build tests/Axial.ErrorHandling.Tests/Axial.ErrorHandling.Tests.fsproj --no-restore --nologo -v minimal
 dotnet build tests/Axial.Flow.FileSystem.Tests/Axial.Flow.FileSystem.Tests.fsproj --no-restore --nologo -v minimal
 dotnet build tests/Axial.Flow.Hosting.Tests/Axial.Flow.Hosting.Tests.fsproj --no-restore --nologo -v minimal
 dotnet build tests/Axial.Flow.Integration.Tests/Axial.Flow.Integration.Tests.fsproj --no-restore --nologo -v minimal
@@ -32,7 +32,7 @@ dotnet build tests/Axial.Flow.Tests/Axial.Flow.Tests.fsproj --no-restore --nolog
 dotnet build tests/Axial.Refined.Tests/Axial.Refined.Tests.fsproj --no-restore --nologo -v minimal
 dotnet build tests/Axial.Schema.Tests/Axial.Schema.Tests.fsproj --no-restore --nologo -v minimal
 dotnet build tests/Axial.Schema.Tests/Axial.Schema.Tests.fsproj --no-restore --nologo -v minimal
-dotnet build tests/Axial.Validation.Tests/Axial.Validation.Tests.fsproj --no-restore --nologo -v minimal
+dotnet build tests/Axial.ErrorHandling.Tests/Axial.ErrorHandling.Tests.fsproj --no-restore --nologo -v minimal
 => Build succeeded for each package-boundary test project.
 
 bash scripts/run-aot-probe.sh
@@ -66,7 +66,7 @@ The old monolithic `tests/Axial.Tests/Axial.Tests.fsproj` harness has been repla
 
 - `tests/Axial.ApiShape.Tests/Axial.ApiShape.Tests.fsproj`
 - `tests/Axial.Schema.Json.Tests/Axial.Schema.Json.Tests.fsproj`
-- `tests/Axial.Validation.Tests/Axial.Validation.Tests.fsproj`
+- `tests/Axial.ErrorHandling.Tests/Axial.ErrorHandling.Tests.fsproj`
 - `tests/Axial.Flow.FileSystem.Tests/Axial.Flow.FileSystem.Tests.fsproj`
 - `tests/Axial.Flow.Hosting.Tests/Axial.Flow.Hosting.Tests.fsproj`
 - `tests/Axial.Flow.HttpClient.Tests/Axial.Flow.HttpClient.Tests.fsproj`

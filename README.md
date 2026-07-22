@@ -8,11 +8,12 @@
 
 Axial is a set of F# libraries with three entry points:
 
-- Validation for reusable checks, ordinary Results, diagnostics, and refined values;
+- Error Handling for reusable checks, ordinary Results, diagnostics, and refined values;
 - Schema for turning structured input into domain values;
 - Flow for async work with explicit dependencies and expected failures.
 
-Use each package on its own, or install `Axial` for Validation and Schema together.
+Use each package on its own, install `Axial.ErrorHandling` for Result, Diagnostics, and Refined together, or install
+`Axial` for Error Handling and Schema together.
 
 [![ci](https://github.com/adz/Axial/actions/workflows/ci.yml/badge.svg)](https://github.com/adz/Axial/actions/workflows/ci.yml)
 [![NuGet](https://img.shields.io/nuget/v/Axial.svg)](https://www.nuget.org/packages/Axial)
@@ -22,9 +23,9 @@ Use each package on its own, or install `Axial` for Validation and Schema togeth
 > Axial 0.7.0 is the first planned release under the Axial name. It replaces the former monolithic FsFlow package with
 > smaller packages. The public surface is still pre-1.0 and may change.
 
-## Check and refine values
+## Handle expected errors and refine values
 
-`Axial.Validation` adds reusable checks and focused helpers while keeping ordinary
+`Axial.ErrorHandling` installs reusable checks, focused Result helpers, diagnostics, and refined values while keeping ordinary
 `Result<'value, 'error>` in your interfaces.
 
 ```fsharp
@@ -37,12 +38,12 @@ let requireName value =
     |> orError NameMissing
 ```
 
-- [Validation overview](docs/validation/_index.md)
-- [Checks and Result](docs/validation/getting-started.md)
-- [Refined domain values](docs/validation/refined/domain-values.md)
+- [Error Handling overview](docs/error-handling/_index.md)
+- [Checks and Result](docs/error-handling/getting-started.md)
+- [Refined domain values](docs/error-handling/refined/domain-values.md)
 
 ```bash
-dotnet add package Axial.Validation
+dotnet add package Axial.ErrorHandling
 ```
 
 ## Parse input into domain values

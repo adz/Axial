@@ -16,15 +16,18 @@ Working on `src/Axial.Schema`? Read `dev-docs/schema/internals.md` first (implem
 
 ## Package Graph
 
-- `Axial.Flow`: independent workflow package (`src/Axial.Flow/`). Must not depend on `Axial.Validation` or
+- `Axial.Flow`: independent workflow package (`src/Axial.Flow/`). Must not depend on the ErrorHandling packages or
   `Axial.Schema`.
-- `Axial.Validation` (`src/Axial.Validation/`): three namespaces in one package — `Axial.ErrorHandling`
-  (`Check`, `CheckFailure`, `Result`, `Collection`, `result { }`), `Axial.Validation` (`Validation`, `Diagnostics`,
-  paths, `validate { }`), and `Axial.Refined` (`Parse`, `Refine`, `refine { }`). Independent leaf — no dependency on
-  `Axial.Schema` or `Axial.Flow`.
+- `Axial.Result` (`src/Axial.Result/`): `Check`, `Predicate`, Result helpers, and `result { }` in the
+  `Axial.ErrorHandling` namespace. Independent leaf.
+- `Axial.Diagnostics` (`src/Axial.Diagnostics/`): `Validation`, `Diagnostics`, paths, and `validate { }` in the
+  `Axial.Validation` namespace. Depends only on `Axial.Result`.
+- `Axial.Refined` (`src/Axial.Refined/`): parsing, refined types, and `refine { }`. Depends only on `Axial.Result`.
+- `Axial.ErrorHandling` (`src/Axial.ErrorHandling/`): meta-package installing Result, Diagnostics, and Refined.
 - `Axial.Schema` (`src/Axial.Schema/`): schema declaration (`Schema` module), parsing and checking (`Schema.parse`,
   `Schema.parseRetainingInput`, `Schema.check`), inspection (`Inspect`), contracts,
-  and refined schema adapters (`RefinedSchemas`) in one package. Depends on `Axial.Data` and `Axial.Validation`.
+  and refined schema adapters (`RefinedSchemas`) in one package. Depends on `Axial.Data`, `Axial.Result`,
+  `Axial.Diagnostics`, and `Axial.Refined`.
 - `Axial.Schema.JsonSchema` (`src/Axial.Schema.JsonSchema/`): JSON Schema generation (`JsonSchema.generate`) in the
   `Axial.Schema` namespace. Depends on `Axial.Schema`.
 - `Axial.Schema.Json` (`src/Axial.Schema.Json/`): compiled JSON codecs. Depends on `Axial.Schema`.
@@ -51,12 +54,12 @@ Working on `src/Axial.Schema`? Read `dev-docs/schema/internals.md` first (implem
 
 - Flow/runtime/layers/services: `src/Axial.Flow/**`, relevant `src/Axial.Flow.*/*`, `tests/Axial.Flow.Tests/*Workflow*`,
   `tests/Axial.Flow.PlatformService.Tests/**`, and `dev-docs/PLAN.md`.
-- Check/Result: `src/Axial.Validation/Check.fs`, `src/Axial.Validation/Result.fs`,
-  `tests/Axial.Validation.Tests/CheckResultTests.fs`, `tests/Axial.ApiShape.Tests/ApiShapeTests.fs`, and `dev-docs/PLAN.md`.
-- Refined values: `src/Axial.Validation/Refine.fs`, `src/Axial.Validation/Parse.fs`,
-  `tests/Axial.Validation.Tests/{ParseAndBuilderTests,CatalogTests}.fs`, and the Check/Result files only as needed.
-- Validation/diagnostics: `src/Axial.Validation/{Validation,Diagnostics,ValidateBuilder}.fs`,
-  `tests/Axial.Validation.Tests/ValidationTests.fs`, and `dev-docs/PLAN.md`.
+- Check/Result: `src/Axial.Result/Check.fs`, `src/Axial.Result/Result.fs`,
+  `tests/Axial.ErrorHandling.Tests/CheckResultTests.fs`, `tests/Axial.ApiShape.Tests/ApiShapeTests.fs`, and `dev-docs/PLAN.md`.
+- Refined values: `src/Axial.Refined/Refine.fs`, `src/Axial.Refined/Parse.fs`,
+  `tests/Axial.ErrorHandling.Tests/{ParseAndBuilderTests,CatalogTests}.fs`, and the Check/Result files only as needed.
+- Validation/diagnostics: `src/Axial.Diagnostics/{Validation,Diagnostics,ValidateBuilder}.fs`,
+  `tests/Axial.ErrorHandling.Tests/ValidationTests.fs`, and `dev-docs/PLAN.md`.
 - Schema metadata/builder: `src/Axial.Schema/Schema.fs`, `tests/Axial.Schema.Tests/Schema*Tests.fs`, and the schema section in
   `dev-docs/PLAN.md`.
 - Schema input/rules/interpreters: `src/Axial.Schema/{Model,Data,SchemaValidation,RetainedParseResult,Rules}.fs` and

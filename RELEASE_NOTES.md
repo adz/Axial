@@ -43,7 +43,8 @@
 - First public release under the `Axial` package and repository identity, replacing the previous `FsFlow` naming.
 - Split the library into the coordinated Axial package family: `Axial.Flow`, `Axial.Result`, `Axial.Validation`, the umbrella `Axial` package, and focused `Axial.Flow.*` service packages.
 - Made `Axial.Flow` the primary effect package for explicit environment, typed failure, async/task interop, runtime policy, layers, scoped cleanup, fibers, STM, streams, and scheduling.
-- Added independent `Axial.Result` and `Axial.Validation` packages for fail-fast result helpers, `Check`, `result {}`, diagnostics, accumulating validation, and `validate {}`.
+- Added focused `Axial.Result`, `Axial.Diagnostics`, and `Axial.Refined` packages, plus the `Axial.ErrorHandling`
+  meta-package that installs all three.
 - Refreshed package metadata, README content, examples, generated reference pages, and documentation site content for the Axial identity and split package surface.
 - Standardized pre-1.0 release versioning so every public Axial package in the release train ships at the same version from `Directory.Build.props`.
 
