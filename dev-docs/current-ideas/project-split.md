@@ -74,6 +74,7 @@ It should contain:
 
 ```text
 Axial.ErrorHandling
+Axial.Data
 Axial.Schema
 Axial.Schema.Json
 Axial.Schema.Testing
@@ -102,6 +103,12 @@ dependency because Schema would still consume it.
 
 The repository placement must not blur the NuGet boundary. Users who only need `Result` helpers, checks, validation, or
 refined values should still install `Axial.ErrorHandling` without installing Schema.
+
+### Why Data Stays Here
+
+`Axial.Data` provides source-neutral structured input values. `Schema.parse` consumes `Data` directly, and it has no
+independent user journey outside of describing input to a schema, so it belongs in the Schema repository rather than
+as a third leaf package alongside ErrorHandling.
 
 ### Schema Repository Dependency Graph
 
