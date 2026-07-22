@@ -31,6 +31,18 @@ let run () = task {
 
 Use `flow {}` to mix pure `Result` logic, `Async` blocks, and other flows.
 
+`let!` binds each successful value to the name on its left. `do!` binds a step returning `unit`, and `return!` uses
+another flow as the result of the block.
+
+```fsharp
+flow {
+    let! (validId: int) = (validateId id: Result<int, string>)
+    let! (user: User) = (fetchUser validId: Async<User>)
+    return user.Name
+}
+// Flow<string, string>
+```
+
 ```fsharp
 let validateId id =
     id

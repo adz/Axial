@@ -87,8 +87,10 @@ let describeName name =
     if name.IsBlank then "unnamed" else name
 
 // Check: the failure needs to become a typed Result for a caller.
+open Axial.ErrorHandling.CheckDSL
+
 let validateName name : Result<string, NameError> =
-    name |> Check.present |> Result.orError NameMissing
+    name |> present |> orError NameMissing
 ```
 
 If you start with a `Predicate` and find yourself converting its `bool` into an `Error` by hand

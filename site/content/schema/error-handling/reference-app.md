@@ -21,27 +21,32 @@ The program is four stages, each one step up in structure. Read `Program.fs` top
 ## Stage 1 — Checks: constraints without boilerplate
 
 ```fsharp
+open Axial.ErrorHandling.CheckDSL
+
 type BadgeError = | NameTooShort | NameTooLong
 
 let validateBadgeName (name: string) : Result<string, BadgeError> =
     name
-    |> Check.minLength 3
-    |> Result.orError NameTooShort
-    |> Result.bind (fun name -> name |> Check.maxLength 40 |> Result.orError NameTooLong)
+    |> minLength 3
+    |> orError NameTooShort
+    |> Result.bind (fun name -> name |> maxLength 40 |> orError NameTooLong)
 ```
 
 What improves over hand-rolled `if name.Length < 3 then Error ...`: the constraint is a reusable named value that
-already keeps the input on success, and `Result.orError` swaps in *your* error union — the signature stays plain
+already keeps the input on success, and `orError` swaps in your error union. The signature stays plain
 `Result<string, BadgeError>`. See [Checks]({{< relref "/schema/error-handling/checks/" >}}).
 
 ## Stage 2 — `result {}`: dependent steps fail fast
 
 Ticket parsing is three dependent steps: the tier must parse before quantity limits mean anything.
 
+`let!` binds the value inside `Ok` to the name on its left. `do!` binds a step whose successful value is `unit`.
+`return!` would use another `Result` as the result of the block.
+
 ```fsharp
 result {
     let! tier = parseTier rawTier
-    let! quantity = Parse.int rawQuantity |> Result.orError (QuantityNotANumber rawQuantity)
+    let! quantity = Parse.int rawQuantity |> orError (QuantityNotANumber rawQuantity)
     do! (quantity >= 1 && quantity <= 6) |> Result.requireTrue (QuantityOutOfRange quantity)
     return tier, quantity
 }
@@ -51,7 +56,27 @@ The first failure stops the pipeline — the demo shows an unknown tier reported
 inspected. No nested `match` staircases, and still ordinary `Result`. See
 [Result Builder]({{< relref "/schema/error-handling/result-builder/" >}}).
 
+```fsharp
+result {
+    let! (tier: Tier) =
+        (parseTier rawTier: Result<Tier, TicketError>)
+
+    let! (quantity: int) =
+        (Parse.int rawQuantity |> orError (QuantityNotANumber rawQuantity):
+            Result<int, TicketError>)
+
+    do!
+        ((quantity >= 1 && quantity <= 6)
+         |> Result.requireTrue (QuantityOutOfRange quantity): Result<unit, TicketError>)
+    return tier, quantity
+}
+// Result<Tier * int, TicketError>
+```
+
 ## Stage 3 — `refine {}`: values that carry their proof
+
+`let!` binds the parsed or refined value to the name on its left. `do!` binds a step returning `unit`.
+`return!` would use another refinement result as the result of the block.
 
 ```fsharp
 type AttendeeId = AttendeeId of PositiveInt
@@ -66,6 +91,20 @@ let createContact (rawId: string) (rawEmail: string) : Result<Contact, Refinemen
     }
 ```
 
+```fsharp
+refine {
+    let! (parsedId: int) = (Parse.int rawId: Result<int, ParseError>)
+    let! (positiveId: PositiveInt) =
+        (Refine.positiveInt parsedId: Result<PositiveInt, RefinementError>)
+
+    let! (email: NonBlankString) =
+        (Refine.nonBlankString rawEmail: Result<NonBlankString, RefinementError>)
+
+    return { Id = AttendeeId positiveId; Email = ContactEmail email }
+}
+// Result<Contact, RefinementError>
+```
+
 A `Contact` cannot exist unless every parse and refinement succeeded; downstream code takes `Contact` and checks
 nothing. The catalog types (`PositiveInt`, `NonBlankString`) preserve their invariant for the value's lifetime; the
 demo shows the structured `RefinementError` a zero id produces. See
@@ -75,13 +114,31 @@ demo shows the structured `RefinementError` a zero id produces. See
 
 Fail-fast is wrong for forms: the user should learn about the bad email and the bad quantity together.
 
+`let!` binds a successful field value to the name on its left. Sibling `and!` bindings run independently and collect
+their errors.
+`return!` would use another `Validation` as the result of the block.
+
 ```fsharp
 validate {
-    let! name = validate.name "name" { return! validateBadgeName form.Name |> Result.mapError BadName }
+    let! name = validate.name "name" { return! validateBadgeName form.Name |> mapError BadName }
     and! email = validate.name "email" { ... }
     and! ticket = validate.name "ticket" { ... }
     return { ... }
 }
+```
+
+```fsharp
+validate {
+    let! (name: string) =
+        (validateBadgeName form.Name |> mapError BadName:
+            Result<string, FormError>)
+
+    and! (email: string) =
+        (validateEmail form.Email: Validation<string, FormError>)
+
+    return { ... }
+}
+// Validation<Registration, FormError>
 ```
 
 `and!` runs the fields independently and accumulates failures into a `Diagnostics<FormError>` tree;

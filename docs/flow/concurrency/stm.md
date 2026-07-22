@@ -28,7 +28,31 @@ that need to wait on state changes or fall back to alternate branches.
 
 ### Defining a Transaction
 
-Transactions are defined using the `stm {}` builder. You can read, write, and update multiple `TRef` values within a single block.
+Use `stm {}` to combine reads and writes into one transaction.
+
+`let!` binds the value produced by an STM step to the name on its left. `do!` binds an STM step returning `unit`.
+`return!` uses another STM value as the result of the transaction.
+
+```fsharp
+stm {
+    let! balance = TRef.get account
+    do! TRef.set (balance - amount) account
+    return! TRef.get account
+}
+```
+
+Here is the same transaction with the left- and right-hand types shown:
+
+```fsharp
+stm {
+    let! (balance: decimal) =
+        (TRef.get account: STM<decimal>)
+
+    do! (TRef.set (balance - amount) account: STM<unit>)
+    return! (TRef.get account: STM<decimal>)
+}
+// STM<decimal>
+```
 
 ```fsharp
 let transferFunds (fromAcc: TRef<decimal>) (toAcc: TRef<decimal>) (amount: decimal) =

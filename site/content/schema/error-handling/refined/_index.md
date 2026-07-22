@@ -6,23 +6,17 @@ description: Type-safe boundaries with Parse, Refine, and the refine {} builder.
 ---
 
 
-Most domain bugs sneak in through primitives. A `string` that must never be blank, an `int` that must be positive, a
-slug that must match a format — the type system happily accepts the invalid versions of all of them, so every function
-that touches the value re-checks it defensively, or worse, trusts it and breaks later. Validating at the boundary
-helps, but a plain `string` that "was validated somewhere" carries no proof: nothing stops unvalidated data from
-reaching the same code path.
+Plain primitives often allow values your domain rejects: a blank name still fits in `string`, and zero still fits in
+`int`. Checking at the boundary helps, but the primitive type does not show that the check happened.
 
-Refined values fix this by making the proof part of the type. A `PositiveInt` or `NonBlankString` can only be
-constructed through a check that succeeded, so once your domain model holds one, every downstream function can trust
-it without re-checking. This section shows how to parse untrusted boundary data into those stronger values before the
-data reaches your domain model.
+A refined type records that fact. A `PositiveInt` or `NonBlankString` can only be built after its rule passes, so code
+receiving the refined value does not need to repeat the check.
 
-This is single-value machinery in the Error Handling package, and also the foundation
-[Schema]({{< relref "/schema/" >}}) builds on: for whole models, refined values usually arrive as schema fields
-(`Schema.refine`), and `Schema.parse` runs the parsing for you. Come here directly for single values or when building
-the domain value types your schemas will use.
+Refined values live in ErrorHandling and can be used on their own. Schema can also use them as model fields through
+`Schema.refine`.
 
-Use `Parse` for serialized primitive input, `Refine` for built-in refined values, submodules such as `Text`, `Numeric`, `Collection`, `Temporal`, and `Choice` for discoverability, and `refine {}` to sequence fail-fast construction.
+`Parse` reads primitive input, `Refine` builds a refined value, and `refine {}` connects several dependent parsing
+and refinement steps.
 
 ## Install
 
@@ -43,6 +37,9 @@ By parsing and refining values before executing core business logic, you prevent
 ## Tutorial
 
 Start at a boundary where everything is still a string:
+
+`let!` takes the value from a successful parse or refinement. `do!` runs a step returning `unit`.
+`return!` uses another refinement result as the result of the block.
 
 ```fsharp
 open Axial.Refined
@@ -72,7 +69,18 @@ let createProduct rawId rawSlug rawQuantity : Result<Product, RefinementError> =
     }
 ```
 
-After this function succeeds, `Product` cannot contain `0` as an id, a malformed slug, or a non-positive quantity unless code deliberately unwraps and bypasses the refined values.
+```fsharp
+refine {
+    let! (parsedId: int) = (Parse.int rawId: Result<int, ParseError>)
+    let! (id: NonZeroInt) =
+        (Refine.nonZeroInt parsedId: Result<NonZeroInt, RefinementError>)
+
+    return { ... }
+}
+// Result<Product, RefinementError>
+```
+
+After this function succeeds, the `Product` fields hold refined types instead of unchecked primitives.
 
 `refine {}` is fail-fast. Use it when later checks depend on earlier values or when the first error is enough. Use `validate {}` from `Axial.Validation` when independent sibling fields should all report diagnostics at once.
 

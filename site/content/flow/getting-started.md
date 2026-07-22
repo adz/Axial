@@ -24,6 +24,38 @@ let hello : Flow<string> =
 
 A `Flow` is a description of a computation. It does not do anything until you run it.
 
+Suppose the block calls these functions:
+
+```fsharp
+let loadUser (id: UserId) : Flow<AppEnv, AppError, User> = ...
+let auditUser (user: User) : Flow<AppEnv, AppError, unit> = ...
+let sendGreeting (user: User) : Flow<AppEnv, AppError, string> = ...
+```
+
+`let!` binds a flow's successful value to the name on its left. `do!` binds a flow returning `unit`.
+`return!` uses another flow as the result of the block.
+
+```fsharp
+flow {
+    let! user = loadUser userId
+    do! auditUser user
+    return! sendGreeting user
+}
+```
+
+Here is the same block with the left- and right-hand types shown:
+
+```fsharp
+flow {
+    let! (user: User) =
+        (loadUser userId: Flow<AppEnv, AppError, User>)
+
+    do! (auditUser user: Flow<AppEnv, AppError, unit>)
+    return! (sendGreeting user: Flow<AppEnv, AppError, string>)
+}
+// Flow<AppEnv, AppError, string>
+```
+
 The shortest forms remove channels you are not using:
 
 | Alias | Meaning |

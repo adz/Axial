@@ -1,12 +1,12 @@
 namespace Axial.ErrorHandling
 
 /// <summary>
-/// A curated, unqualified check-authoring vocabulary designed to be opened inside a validation module.
+/// Check functions that can be used without the <c>Check.</c> prefix inside a module that checks values.
 /// </summary>
 /// <remarks>
 /// <para>
-/// Opens the deduplicated <c>Check</c> root names bare, so a call reads <c>minLength 3 name</c> instead of
-/// <c>Check.minLength 3 name</c>. Every name here is unique within <c>Check</c> itself — the type-directed
+/// Opens the common <c>Check</c> names, so a call reads <c>minLength 3 name</c> instead of
+/// <c>Check.minLength 3 name</c>. Every check name here is unique within <c>Check</c> itself. The type-directed
 /// <c>present</c>/<c>empty</c>/<c>notEmpty</c> facade already resolves across string, option, voption, nullable,
 /// and sequence-shaped values, so there is nothing to disambiguate.
 /// </para>
@@ -17,12 +17,17 @@ namespace Axial.ErrorHandling
 /// <c>Check.contains</c>, <c>Check.distinct</c>, <c>Check.all</c>, <c>Check.any</c>, <c>Check.length</c>, and
 /// <c>Check.between</c> even inside a module that has opened this DSL.
 /// </para>
+/// <para>
+/// <c>orError</c> and <c>mapError</c> are short forms of the matching <c>Result</c> functions. They let a check
+/// pipeline finish with the application's error type without leaving the opened DSL.
+/// </para>
 /// <code>
 /// module SignupChecks =
 ///     open Axial.ErrorHandling.CheckDSL
 ///
 ///     let validateAge : Check&lt;int&gt; = atLeast 13
 ///     let validateEmail : Check&lt;string&gt; = Check.all [ present; email ]
+///     let requireEmail value = value |> validateEmail |> orError EmailRequired
 /// </code>
 /// </remarks>
 module CheckDSL =
@@ -97,3 +102,11 @@ module CheckDSL =
 
     /// <summary>Alias for <see cref="M:Axial.ErrorHandling.Check.mapFailure" />.</summary>
     let mapFailure = Check.mapFailure
+
+    /// <summary>Replaces a failed check's errors with the supplied error.</summary>
+    /// <example><code>value |> present |> orError NameRequired</code></example>
+    let inline orError failure result = global.Axial.ErrorHandling.Result.orError failure result
+
+    /// <summary>Changes a failed check's errors with the supplied function.</summary>
+    /// <example><code>value |> positive |> mapError InvalidQuantity</code></example>
+    let inline mapError mapper result = global.Axial.ErrorHandling.Result.mapError mapper result

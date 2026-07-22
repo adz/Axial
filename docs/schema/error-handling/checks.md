@@ -6,37 +6,42 @@ description: Reusable, named structural checks that attach to Result.
 
 # Check
 
+Open the Check DSL in a module that checks several values:
+
+```fsharp
+open Axial.ErrorHandling.CheckDSL
+
+let requiredName : Check<string> = Check.all [ present; minLength 2 ]
+let adultAge : Check<int> = atLeast 18
+
+let checkName value = value |> requiredName |> orError NameInvalid
+```
+
 A `Check<'value>` is a function from a value to itself-or-a-failure:
 
 ```fsharp
 type Check<'value> = 'value -> Result<'value, CheckFailure list>
 ```
 
-That's the whole shape. What makes it worth reaching for instead of writing the same `if`/`Error` by hand is that a
-`Check` is **named** and **reusable** — `Check.present`, `Check.atLeast 18`, `Check.email` are each written once and
-called from everywhere that fact matters — and its failure side is **structured**, not a bare `unit` or `string`.
+A `Check` is useful when the same rule is needed in several places. It keeps the original value when the rule passes
+and returns a `CheckFailure` value, rather than a loose string, when the rule fails.
 
-## Reach For The Root Names First
+## Use the DSL for check modules
 
-The common facts live directly on `Check`, and the three presence names are type-directed: `Check.present`,
-`Check.empty`, and `Check.notEmpty` accept a `string`, `option`, `voption`, `Nullable<'value>`, `list`, or `array`,
-and each call site resolves to the right rule for that type:
+The presence functions work with strings, options, value options, nullable values, lists, and arrays:
 
 ```fsharp
-Check.present "Ada"           // Result<string, CheckFailure list>       — non-blank
-Check.present (Some 1)        // Result<int option, CheckFailure list>   — is Some
-Check.present (Nullable 1)    // Result<Nullable<int>, CheckFailure list> — has a value
-Check.present [ 1; 2 ]        // Result<int list, CheckFailure list>     — non-empty
+present "Ada"           // Result<string, CheckFailure list>
+present (Some 1)        // Result<int option, CheckFailure list>
+present (Nullable 1)    // Result<Nullable<int>, CheckFailure list>
+present [ 1; 2 ]        // Result<int list, CheckFailure list>
 ```
 
-The dispatch is F#'s statically resolved type parameters (SRTP), resolved entirely at compile time — no runtime type
-test, no reflection; each call compiles directly against the matching type-specific implementation. The result type
-comes from context rather than the input, so a surrounding annotation (a function's return type, a binding's type)
-must pin it; in the middle of an inference chain with nothing pinning the result, use the type-specific form
-(`Check.String.present`) instead.
+F# chooses the right function from the value's type. If it cannot work out the type, add a type annotation or use a
+specific name such as `Check.String.present`.
 
-The rest of the root catalog is ordinary named functions: `Check.atLeast`, `Check.email`, `Check.minLength`,
-`Check.maxCount`, `Check.matches`, `Check.oneOf`, and so on. Start here; most call sites never need anything else.
+The ErrorHandling introduction has the [full DSL list](./). It includes `orError` and `mapError`, so a complete check
+pipeline can use the same short style.
 
 ## Dot Into A Type's Module To Browse
 
@@ -67,37 +72,13 @@ type CheckFailure =
     | Custom of code: string
 ```
 
-Because the reason is a real value instead of a string, it can be rendered (`CheckFailure.describe`/`describeAll`,
-with a swappable [`CheckFailureResources`]({{< relref "/schema/reference/error-handling/check/" >}}) for localization), pattern-matched
-on, or lowered into a `SchemaError` when the check runs as part of schema input parsing. Most application code just
-maps the whole list to a domain error, which is what the rest of this page shows — but the structure is there when
-you need more than "it failed."
-
-## The CheckDSL
-
-Open `Axial.ErrorHandling.CheckDSL` inside a module that runs several checks, and write them bare:
-
-```fsharp
-module SignupChecks =
-    open Axial.ErrorHandling.CheckDSL
-
-    let validateAge : Check<int> = atLeast 13
-    let validateEmail : Check<string> = Check.all [ present; email ]
-```
-
-`present`, `atLeast`, `email`, `minLength`, `maxLength`, `lengthBetween`, `exactLength`, `matches`, `oneOf`,
-`greaterThan`, `lessThan`, `atMost`, `positive`, `nonNegative`, `negative`, `nonPositive`, `minCount`, `maxCount`,
-`countBetween`, `equalTo`, `notEqualTo`, `empty`, `notEmpty`, and `mapFailure` are all here unqualified. `Check.all`,
-`Check.any`, and `Check.``not``` stay qualified even with the DSL open — they, along with `contains`, `distinct`,
-`length`, and `between`, shadow FSharp.Core names, so the DSL deliberately leaves them off its surface.
-
-Only open this inside the module that runs the checks, the same way `Schema.DSL` is scoped to schema definition
-modules — it isn't worth it for a single check call; reach for the qualified `Check.present value` form instead.
+The failure can be rendered with `CheckFailure.describe` or `describeAll`, matched in code, or changed into a schema
+error. `CheckFailureResources` supplies translated messages when the default English text is not suitable.
 
 ## Attach a Domain Error
 
-`Check` failures are reusable structural facts. Map them to a domain error at the boundary with `Result.orError`
-(discards whatever error was there and replaces it) or `Result.mapError` (transforms it):
+When the caller needs an application error, use `orError` to replace the check details or `mapError` to carry those
+details into the new error:
 
 ```fsharp
 type SignUpError =
@@ -106,37 +87,35 @@ type SignUpError =
 
 let requireAdult age : Result<int, SignUpError> =
     age
-    |> Check.atLeast 18
-    |> Result.orError AgeInvalid
+    |> atLeast 18
+    |> orError AgeInvalid
 
 let requireName name : Result<string, SignUpError> =
-    Check.present name |> Result.orError NameRequired
+    name |> present |> orError NameRequired
 ```
 
-Some helpers already return a useful diagnostic error. Use `Result.mapError` for those:
+For example, `mapError` can keep the complete failure list:
 
 ```fsharp
 type OrderError = InvalidQuantity of CheckFailure list
 
 let quantity value : Result<int, OrderError> =
     value
-    |> Check.greaterThan 0
-    |> Result.mapError InvalidQuantity
+    |> greaterThan 0
+    |> mapError InvalidQuantity
 ```
 
 ## Check Is Not Result
 
-`Check` and `Result`'s generic helpers are not two ways to do the same thing — they answer different questions, and
-neither is a drop-in substitute for the other:
+Use `Check` for a rule you want to name and reuse. A `Result` helper fits better when a condition only matters at one
+call site, or when success changes the shape of the value.
 
-- `Check` proves a **named, reusable structural fact about a value** — "this string is present," "this number is at
-  least 18" — and hands the same value back unchanged on success. It exists so the fact can be written once, given a
-  name, and reused across every place that needs it.
-- `Result`'s generic helpers (`Result.requireTrue`, `Result.okIf`, `Result.someOr`, and friends) exist for everything
-  a `Check` doesn't cover: one-off conditions that don't deserve a name, extracting an inner value from an `option`
-  or `Nullable`, or shaping a success value differently from its source.
+- `Check` handles rules such as “this string is present” or “this number is at least 18.” It returns the same value
+  when the rule passes.
+- `Result.requireTrue` and `Result.okIf` handle one-off conditions. Helpers such as `Result.someOr` take a value out
+  of another shape.
 
-Reach for `Result.requireTrue` when the condition is bespoke to one call site, not a reusable fact:
+Use `Result.requireTrue` for a condition used in one place:
 
 ```fsharp
 type RegistrationError = PasswordRequired
@@ -146,22 +125,18 @@ let validatePassword password : Result<unit, RegistrationError> =
     |> Result.requireTrue PasswordRequired
 ```
 
-Reach for `Result.someOr` when success means unwrapping a different shape than the input, not merely re-affirming it:
+Use `Result.someOr` when success takes the value out of an option:
 
 ```fsharp
 let user : Result<User, LoginError> =
     tryFindUser username |> Result.someOr UserNotFound
 ```
 
-If you find yourself writing the same `Result.requireTrue`/`Result.okIf` condition in more than one place, that's the
-signal to promote it to a `Check` instead, so it gets a name and composes with `Check.all`/`Check.any`.
+If the same condition appears more than once, give it a name as a `Check`. If a `bool` is used directly by `if` or
+`match`, see [Predicates](./predicates/).
 
-For a raw `bool` that never needs to become a `Result` at all — an `if` guard, a `match` condition — see
-[Predicates](./predicates/); that's a third, separate concern from both of these.
-
-A `Check` piped into `Result.orError`/`Result.mapError` is already a plain `Result`, so it binds directly inside
-`flow {}` (a separate package — see [Flow]({{< relref "/flow/" >}})) the same way it does in a `result {}`; no
-adapter is needed either direction.
+A check followed by `orError` or `mapError` is an ordinary `Result`. It works directly in `result {}` and in
+[`flow {}`]({{< relref "/flow/" >}}).
 
 ## Check Or Extract
 
@@ -193,8 +168,8 @@ ids |> Refine.exactlyOne // extracts the single element
 `Check.all`, `Check.any`, `Check.not`, and `Check.mapFailure` combine `Check<'value>` values:
 
 ```fsharp
-let requiredName =
-    Check.all [ Check.present; Check.lengthBetween 2 40 ]
+let requiredName : Check<string> =
+    Check.all [ present; lengthBetween 2 40 ]
 ```
 
 `Check.all` runs every check and accumulates all failures; `Check.any` stops at the first success and accumulates

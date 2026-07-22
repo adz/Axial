@@ -6,11 +6,31 @@ description: Direct binding rules for async and task work in Axial.
 
 # Task and Async Interop
 
-Axial provides a single, unified computation expression—**`flow {}`**—that handles synchronous code, F# `Async`, and .NET `Task` interop natively. You don't have to choose between different builders; the same flow can orchestrate all these effect types.
+Use `flow {}` for flows, results, F# async work, and .NET tasks. The same block can use all of them.
 
 ## Direct Binds
 
-Inside a `flow {}` block, you can use `let!` to bind many common F# and .NET types directly. Axial handles the conversion to its internal execution model automatically.
+`let!` binds the completed value to the name on its left. `do!` binds work returning `unit`.
+`return!` uses another flow as the result of the block.
+
+```fsharp
+flow {
+    let! user = fetchUser userId
+    do! saveUser user
+    return! notifyUser user
+}
+```
+
+Here is the same block with the left- and right-hand types shown:
+
+```fsharp
+flow {
+    let! (user: User) = (fetchUser userId: Task<User>)
+    do! (saveUser user: Async<unit>)
+    return! (notifyUser user: Flow<AppEnv, AppError, Receipt>)
+}
+// Flow<AppEnv, AppError, Receipt>
+```
 
 | Type | Outcome |
 | :--- | :--- |

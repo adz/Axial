@@ -14,6 +14,7 @@ Use `Validation` when the user can fix several fields at once. Use `Result` when
 
 ```fsharp
 open Axial
+open Axial.ErrorHandling.CheckDSL
 
 type RegistrationError =
     | NameMissing
@@ -27,18 +28,34 @@ Use `Check` to build typed field results, then let `validate {}` lift them into 
 ```fsharp
 let validateName name : Result<string, RegistrationError> =
     name
-    |> Check.present
-    |> Result.orError NameMissing
+    |> present
+    |> orError NameMissing
 
 let validateEmail email : Result<string, RegistrationError> =
     email
-    |> Check.present
-    |> Result.orError EmailMissing
+    |> present
+    |> orError EmailMissing
 ```
 
 ## Accumulate With validate
 
 Use `and!` for independent fields. Both checks run, and both errors can be returned.
+
+`let!` and `and!` bind the successful strings to the names on their left. The right-hand results keep their error
+type, and the whole block returns a `Validation`:
+
+```fsharp
+validate {
+    let! (validName: string) =
+        (validateName name: Result<string, RegistrationError>)
+
+    and! (validEmail: string) =
+        (validateEmail email: Result<string, RegistrationError>)
+
+    return { Name = validName; Email = validEmail }
+}
+// Validation<Registration, RegistrationError>
+```
 
 ```fsharp
 type Registration =

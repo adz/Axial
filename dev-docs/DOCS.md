@@ -66,6 +66,11 @@ Use `bash scripts/build-docs-site.sh` only when preparing or checking deployment
 - Use F# code blocks with syntax highlighting (` ```fsharp `).
 - Include "Source-Lifted Notes" for implementation-derived insights.
 - Use small, credible examples before semantic deep-dives.
+- Prefer plain descriptions of what code does. Technical terms are useful when they make the explanation shorter or
+  more exact. Explain a term such as "bind" the first time it appears instead of replacing it with vague wording.
+- When a computation expression is introduced, follow any statement that it "binds" a type with two small examples:
+  first show what `let!`, `do!`, `return!`, and any builder-specific keyword do; then repeat the example with type
+  annotations on the right-hand expressions and the names bound on the left.
 - Add an XML doc comment with an example to every public function.
 - Avoid FAQ-style rhetorical questions.
 - Avoid justifying why a section exists.

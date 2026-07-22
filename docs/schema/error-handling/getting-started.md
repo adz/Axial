@@ -9,22 +9,27 @@ description: Choosing among Result helpers, Check, Validation, Refined, and Pred
 Start with the return type that communicates the behavior your function needs. `Axial.ErrorHandling` offers several
 related tools, but an application does not need to adopt all of them.
 
-`Check` is a useful starting point when a constraint should be named, reused, or inspected. It preserves the checked
-value on success and reports structured `CheckFailure` values on failure:
+Start with `Check` when the same rule is used in more than one place. Open `CheckDSL` in a module that contains several
+checks:
 
 ```fsharp
 open Axial
+open Axial.ErrorHandling.CheckDSL
 
 let checkName (name: string) =
-    name |> Check.minLength 3
+    name |> minLength 3
 
 let result = checkName "Ad"
-// Error [MinLength (3, 2)]
+// Error [InvalidLength (MinimumLength 3, Some 2)]
 ```
 
-That failure can remain structural, be used to construct a [refined value](./refined/), or be translated at a domain
-or presentation boundary. If a function exposes its own error union, `Result.orError` replaces the check failures;
-`Result.mapError` can preserve more detail by translating them.
+The result keeps the original value when the check passes and returns `CheckFailure` values when it fails. At the
+application boundary, `orError` can replace those details with one error, while `mapError` can carry them forward.
+
+```fsharp
+let requireName name = name |> present |> orError NameRequired
+let checkAge age = age |> atLeast 18 |> mapError InvalidAge
+```
 
 ## Choose by behavior
 

@@ -70,16 +70,16 @@ Attach the domain error at the boundary, once per field:
 
 ```fsharp
 let private validateName request : Result<string, SignupError> =
-    request.Name |> nameCheck |> Result.orError NameInvalid
+    request.Name |> nameCheck |> orError NameInvalid
 
 let private validateEmail request : Result<string, SignupError> =
-    request.Email |> emailCheck |> Result.orError EmailInvalid
+    request.Email |> emailCheck |> orError EmailInvalid
 
 let private validateAge request : Result<int, SignupError> =
-    request.Age |> ageCheck |> Result.orError AgeInvalid
+    request.Age |> ageCheck |> orError AgeInvalid
 ```
 
-`Result.orError` discards the `CheckFailure list` and replaces it with the domain error — the right choice here
+`orError` discards the `CheckFailure list` and replaces it with the domain error. That fits here
 because `SignupError` doesn't need to describe *which* constraint failed, only that the field did.
 
 ## Result: The Condition That Isn't A Check
@@ -105,6 +105,20 @@ let private validateTerms request : Result<unit, SignupError> =
 
 Every piece above is an independent `Result`. `result {}` sequences them fail-fast — the first failure stops the
 workflow, and later steps never run against a request that already failed:
+
+`let!` binds the value inside `Ok` to the name on its left. `do!` binds a `Result<unit, _>` step.
+`return!` would use another `Result` as the result of the whole block.
+
+```fsharp
+result {
+    do! (validateTerms request: Result<unit, SignupError>)
+    let! (name: string) =
+        (validateName request: Result<string, SignupError>)
+
+    return { Name = name; Email = email; Age = age }
+}
+// Result<Signup, SignupError>
+```
 
 ```fsharp
 let validateSignup (request: SignupRequest) : Result<Signup, SignupError> =
@@ -140,7 +154,7 @@ be unit-tested by calling `validateSignup` directly.
 
 - **`Predicate`** (`isBlankRequest`) — a `bool` consumed immediately by an `if`, never became a `Result`.
 - **`Check`** (`nameCheck`, `emailCheck`, `ageCheck`) — reusable, named constraints, combined with `Check.all`,
-  attached to `SignupError` with `Result.orError`.
+  attached to `SignupError` with `orError`.
 - **`Result`** (`validatePasswords`, `validateTerms`) — conditions bespoke to this workflow, via
   `Result.requireTrue`, composed with the `Check`-backed steps in one `result {}`.
 

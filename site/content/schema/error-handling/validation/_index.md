@@ -9,10 +9,8 @@ description: Accumulating sibling failures with Validation and Diagnostics.
 Standard `Result` composition stops at the first failure. That is appropriate when later steps depend on earlier
 ones, but less useful when several independent fields can be checked together and a caller wants every failure.
 
-`Validation<'value, 'error>` accumulates sibling failures instead of stopping at
-the first, and its error side is `Diagnostics<'error>` — a structured tree that keeps paths, indexes, and names
-attached to each failure. The `validate {}` builder with `and!` gives you the accumulation without the applicative
-ceremony.
+`Validation<'value, 'error>` can collect errors from sibling checks. `Diagnostics<'error>` stores those errors with
+paths, indexes, and names. In `validate {}`, join independent checks with `and!`.
 
 This is also machinery used by [Schema]({{< relref "/schema/" >}}): schema input parsing produces `Diagnostics` for you. Use it directly
 when values already exist and their independent failures should be collected without declaring a schema.

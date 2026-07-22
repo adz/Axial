@@ -18,6 +18,7 @@ Start with a private constructor, a value extractor, and a smart constructor:
 
 ```fsharp
 open Axial.ErrorHandling
+open Axial.ErrorHandling.CheckDSL
 open Axial.Refined
 
 type ContactEmail = private ContactEmail of string
@@ -29,9 +30,9 @@ module ContactEmail =
         Refine.withCheck
             "ContactEmail"
             (Check.all [
-                Check.String.present
-                Check.String.email
-                Check.String.maxLength 254
+                present
+                email
+                maxLength 254
             ])
             ContactEmail
             value
@@ -54,9 +55,9 @@ module ContactEmail =
         Refine.withCheck
             "ContactEmail"
             (Check.all [
-                Check.String.present
-                Check.String.email
-                Check.String.maxLength 254
+                present
+                email
+                maxLength 254
             ])
             ContactEmail
             value

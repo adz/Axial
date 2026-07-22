@@ -757,6 +757,18 @@ module CheckResultTests =
             test <@ Check.single [ 5 ] = Ok [ 5 ] @>
 
         [<Fact>]
+        let ``Check DSL maps check failures to application errors`` () =
+            let requiredName value =
+                value |> CheckDSL.present |> CheckDSL.orError "name-required"
+
+            let invalidLength value =
+                value |> CheckDSL.minLength 3 |> CheckDSL.mapError List.length
+
+            test <@ requiredName "Ada" = Ok "Ada" @>
+            test <@ requiredName "" = Error "name-required" @>
+            test <@ invalidLength "Ad" = Error 1 @>
+
+        [<Fact>]
         let ``Result covers fail-fast helpers and the result computation expression`` () =
             let workflow =
                 result {

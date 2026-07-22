@@ -6,13 +6,52 @@ description: Sequencing parsing and refinement with the refine { } builder.
 
 # Refine CE
 
-This page shows how to use the `refine {}` computation expression when you need to parse and refine multiple input fields into a domain record in a fail-fast manner.
+Use `refine {}` to connect parsing and refinement steps. Each successful step passes its value to the next line, and
+the block stops at the first error.
 
-Inside `refine {}`, you can bind parse operations, refinement helpers, and standard F# `Result` values that use `RefinementError`. Parse failures are wrapped as `RefinementError.ParseFailed`.
+## What the keywords do
+
+Suppose the block calls these functions:
+
+```fsharp
+let parseInt (text: string) : Result<int, ParseError> = Parse.int text
+let checkAllowed (id: PositiveInt) : Result<unit, RefinementError> = ...
+let createAccount (id: PositiveInt) : Result<Account, RefinementError> = ...
+```
+
+`let!` binds the successful value to the name on its left. `do!` binds a step whose successful value is `unit`.
+`return!` uses another refinement result as the result of the block.
+
+```fsharp
+refine {
+    let! parsed = Parse.int rawId
+    let! id = Refine.positiveInt parsed
+    do! checkAllowed id
+    return! createAccount id
+}
+```
+
+Here is the same block with the left- and right-hand types shown:
+
+```fsharp
+refine {
+    let! (parsed: int) =
+        (Parse.int rawId: Result<int, ParseError>)
+
+    let! (id: PositiveInt) =
+        (Refine.positiveInt parsed: Result<PositiveInt, RefinementError>)
+
+    do! (checkAllowed id: Result<unit, RefinementError>)
+    return! (createAccount id: Result<Account, RefinementError>)
+}
+// Result<Account, RefinementError>
+```
+
+A parse error becomes `RefinementError.ParseFailed`. Other bound results use `RefinementError` directly.
 
 ## Basic Usage
 
-The `refine {}` builder is optimized for constructing type-safe domain models at boundary points:
+This example builds a domain value from two strings:
 
 ```fsharp
 open Axial

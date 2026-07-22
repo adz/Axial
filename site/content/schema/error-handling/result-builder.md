@@ -6,25 +6,59 @@ type: docs
 ---
 
 
-Use the `result {}` computation expression when you have a sequence of steps where each step depends on the previous one, and you want to **stop at the first failure**.
+Use `result {}` to connect steps that return `Result`. Each successful step passes its value to the next line, while
+the first `Error` becomes the result of the whole block.
 
-This is "fail-fast" semantics.
+## What the keywords do
 
-## Basic Usage
+Suppose the block calls these functions:
 
-The `result {}` builder binds standard F# `Result<'value, 'error>` types.
+```fsharp
+let checkName (name: string) : Result<string, UserError> = ...
+let checkPermission (input: Input) : Result<unit, UserError> = ...
+let save (name: string) : Result<User, UserError> = ...
+```
+
+`let!` binds the value inside `Ok` to the name on its left. `do!` binds a step whose successful value is `unit`, so
+there is no name on the left. `return!` uses a complete `Result` as the result of the block.
+
+```fsharp
+result {
+    let! name = checkName input.Name
+    do! checkPermission input
+    return! save name
+}
+```
+
+Here is the same block with only the important types shown:
+
+```fsharp
+result {
+    let! (name: string) =
+        (checkName input.Name: Result<string, UserError>)
+
+    do! (checkPermission input: Result<unit, UserError>)
+
+    return! (save name: Result<User, UserError>)
+}
+// Result<User, UserError>
+```
+
+## Basic usage
 
 ```fsharp
 type UserError = | MissingName | MissingEmail
 type User = { Name: string; Email: string }
 
+open Axial.ErrorHandling.CheckDSL
+
 let validateUser name email : Result<User, UserError> =
     result {
         // If name is blank, it returns Error MissingName and stops.
-        let! validName = name |> Check.present |> Result.orError MissingName
+        let! validName = name |> present |> orError MissingName
         
         // This line only runs if the name was valid.
-        let! validEmail = email |> Check.present |> Result.orError MissingEmail
+        let! validEmail = email |> present |> orError MissingEmail
         
         return { Name = validName; Email = validEmail }
     }
@@ -32,8 +66,9 @@ let validateUser name email : Result<User, UserError> =
 
 ## Options and Checks
 
-`result {}` binds `Result` directly.
-Use `Result.someOr` when the source must expose an option value, and call a `Check<'value>` directly when the source is an executable check — `Check` already preserves the value on success, so no separate wrapper is needed.
+`result {}` binds `Result` directly. Use `Result.someOr` when success should take a value out of an option.
+
+A `Check` already returns the checked value on success, so it can appear directly on the right of `let!`.
 
 ```fsharp
 type User = { Name: string }
@@ -47,8 +82,8 @@ let login username password =
         let! user = tryGetUser username |> Result.someOr Unauthorized
         let! _ =
             password
-            |> Check.present
-            |> Result.orError MissingPassword
+            |> present
+            |> orError MissingPassword
 
         return user
     }

@@ -10,6 +10,7 @@
 
 open Axial
 open Axial.ErrorHandling
+open Axial.ErrorHandling.CheckDSL
 open Axial.Validation
 open Axial.Refined
 
@@ -24,9 +25,9 @@ type BadgeError =
 /// A badge name must print on one line: 3 to 40 characters.
 let validateBadgeName (name: string) : Result<string, BadgeError> =
     name
-    |> Check.minLength 3
-    |> Result.orError NameTooShort
-    |> Result.bind (fun name -> name |> Check.maxLength 40 |> Result.orError NameTooLong)
+    |> minLength 3
+    |> orError NameTooShort
+    |> Result.bind (fun name -> name |> maxLength 40 |> orError NameTooLong)
 
 // ---------------------------------------------------------------------------
 // 2. result {}: fail-fast sequencing of dependent steps.
@@ -51,7 +52,7 @@ let parseTier (raw: string) : Result<Tier, TicketError> =
 let parseTicketRequest (rawTier: string) (rawQuantity: string) : Result<Tier * int, TicketError> =
     result {
         let! tier = parseTier rawTier
-        let! quantity = Parse.int rawQuantity |> Result.orError (QuantityNotANumber rawQuantity)
+        let! quantity = Parse.int rawQuantity |> orError (QuantityNotANumber rawQuantity)
         do! (quantity >= 1 && quantity <= 6) |> Result.requireTrue (QuantityOutOfRange quantity)
         return tier, quantity
     }
@@ -102,16 +103,16 @@ type Registration =
 let validateRegistration (form: RegistrationForm) : Validation<Registration, FormError> =
     validate {
         let! name =
-            validate.name "name" { return! validateBadgeName form.Name |> Result.mapError BadName }
+            validate.name "name" { return! validateBadgeName form.Name |> mapError BadName }
 
         and! email =
             validate.name "email" {
-                let! present = form.Email |> Check.present |> Result.orError Required
-                return! present |> Check.email |> Result.orError InvalidEmail
+                let! presentEmail = form.Email |> present |> orError Required
+                return! presentEmail |> email |> orError InvalidEmail
             }
 
         and! ticket =
-            validate.name "ticket" { return! parseTicketRequest form.Tier form.Quantity |> Result.mapError BadTicket }
+            validate.name "ticket" { return! parseTicketRequest form.Tier form.Quantity |> mapError BadTicket }
 
         let company = if form.Company.Trim() = "" then None else Some(form.Company.Trim())
         let tier, quantity = ticket

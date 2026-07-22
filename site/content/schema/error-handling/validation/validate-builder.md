@@ -6,9 +6,49 @@ type: docs
 ---
 
 
-Use the `validate {}` computation expression when you have multiple independent checks and you want to **collect every failure** into a single report.
+Use `validate {}` when independent checks should report all their errors together instead of stopping after the
+first failure.
 
-While the standard `result {}` or `flow {}` blocks "fail fast" (stopping at the first error), `validate {}` continues checking even after a failure occurs. This is often called "accumulating" semantics.
+## What the keywords do
+
+Suppose the block calls these functions:
+
+```fsharp
+let checkName (name: string) : Result<string, RegError> = ...
+let checkEmail (email: string) : Result<string, RegError> = ...
+let checkAccount (input: Input) : Result<unit, RegError> = ...
+let buildRegistration name email : Validation<Registration, RegError> = ...
+```
+
+`let!` binds a successful value to the name on its left. Sibling `and!` bindings run independently and collect their
+errors. `do!` binds a step returning `unit`, and `return!` uses another validation as the block's result.
+
+```fsharp
+validate {
+    let! name = checkName input.Name
+    and! email = checkEmail input.Email
+    do! checkAccount input
+    return! buildRegistration name email
+}
+```
+
+Here is the same block with the left- and right-hand types shown:
+
+```fsharp
+validate {
+    let! (name: string) =
+        (checkName input.Name: Result<string, RegError>)
+
+    and! (email: string) =
+        (checkEmail input.Email: Result<string, RegError>)
+
+    do! (checkAccount input: Result<unit, RegError>)
+
+    return!
+        (buildRegistration name email: Validation<Registration, RegError>)
+}
+// Validation<Registration, RegError>
+```
 
 ## Accumulating with `and!`
 
@@ -18,10 +58,12 @@ The key to accumulation is the `and!` keyword. Steps joined by `and!` are evalua
 type Registration = { Name: string; Email: string }
 type RegError = NameRequired | EmailRequired
 
+open Axial.ErrorHandling.CheckDSL
+
 let validateRegistration input =
     validate {
-        let! name = input.Name |> Check.present |> Result.orError NameRequired
-        and! email = input.Email |> Check.present |> Result.orError EmailRequired
+        let! name = input.Name |> present |> orError NameRequired
+        and! email = input.Email |> present |> orError EmailRequired
         return { Name = name; Email = email }
     }
 
@@ -44,8 +86,8 @@ validate {
     let! input = input |> Result.notNullOr ObjectMissing
     
     // These run only if input was not null, but they run independently of each other
-    let! name = input.Name |> Check.present |> Result.orError NameRequired
-    and! email = input.Email |> Check.present |> Result.orError EmailRequired
+    let! name = input.Name |> present |> orError NameRequired
+    and! email = input.Email |> present |> orError EmailRequired
     
     return { Name = name; Email = email }
 }
@@ -71,7 +113,7 @@ let validateCustomer customer =
     validate.key "customer" {
         let! name = 
             validate.name "Name" {
-                return! customer.Name |> Check.present |> Result.orError "Required"
+                return! customer.Name |> present |> orError "Required"
             }
         return name
     }

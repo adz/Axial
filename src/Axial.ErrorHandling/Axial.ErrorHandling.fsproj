@@ -35,8 +35,8 @@
   <ItemGroup>
     <Compile Include="Predicate.fs" />
     <Compile Include="Check.fs" />
-    <Compile Include="CheckDSL.fs" />
     <Compile Include="Result.fs" />
+    <Compile Include="CheckDSL.fs" />
     <Compile Include="Collection.fs" />
     <Compile Include="ResultBuilder.fs" />
     <Compile Include="Diagnostics.fs" />

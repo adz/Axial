@@ -21,6 +21,39 @@ let runnable : Flow<IServiceProvider, AppError, unit> =
 
 Use `layer { }` for application environment construction:
 
+`let!` binds a layer's output to the name on its left. `do!` binds a layer returning `unit`, while `return!` uses
+another layer as the block's result. Sibling `and!` bindings build independent layers in parallel.
+
+```fsharp
+layer {
+    let! config = configLayer
+    let! orders = ordersLayerFromConfig config
+    and! clock = clockLayer
+    return! appLayerFrom config orders clock
+}
+```
+
+Here is the same block with the left- and right-hand types shown:
+
+```fsharp
+layer {
+    let! (config: Config) =
+        (configLayer: Layer<IServiceProvider, AppError, Config>)
+
+    let! (orders: IOrderRepository) =
+        (ordersLayerFromConfig config:
+            Layer<IServiceProvider, AppError, IOrderRepository>)
+
+    and! (clock: IClock) =
+        (clockLayer: Layer<IServiceProvider, AppError, IClock>)
+
+    return!
+        (appLayerFrom config orders clock:
+            Layer<IServiceProvider, AppError, AppEnv>)
+}
+// Layer<IServiceProvider, AppError, AppEnv>
+```
+
 ```fsharp
 let appLayer =
     layer {
