@@ -17,4 +17,4 @@ Describes a non-negative integer as a schema refined value over an integer great
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<a href="../../../../error-handling/reference/refined/t-refined-nonnegativeint.md">NonNegativeInt</a>&gt;</span></code> |  |
+| <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<a href="../../../../error-handling/reference/refined/types/t-refined-nonnegativeint.md">NonNegativeInt</a>&gt;</span></code> |  |

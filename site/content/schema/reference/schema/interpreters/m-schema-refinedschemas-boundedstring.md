@@ -24,4 +24,4 @@ Describes a bounded string as a schema refined value over required text with inc
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<a href="../../../../error-handling/reference/refined/t-refined-boundedstring.md">BoundedString</a>&gt;</span></code> |  |
+| <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<a href="../../../../error-handling/reference/refined/types/t-refined-boundedstring.md">BoundedString</a>&gt;</span></code> |  |

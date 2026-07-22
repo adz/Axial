@@ -23,4 +23,4 @@ Describes a non-empty list as a schema refined value over a collection of item s
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<span><a href="../../../../error-handling/reference/refined/t-refined-nonemptylist.md">NonEmptyList</a>&lt;'value&gt;</span>&gt;</span></code> |  |
+| <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<span><a href="../../../../error-handling/reference/refined/types/t-refined-nonemptylist.md">NonEmptyList</a>&lt;'value&gt;</span>&gt;</span></code> |  |
