@@ -7,7 +7,13 @@ open System.Net
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Http
+open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
+open Microsoft.Extensions.Logging
+open OpenTelemetry.Logs
+open OpenTelemetry.Metrics
+open OpenTelemetry.Resources
+open OpenTelemetry.Trace
 open Axial.ErrorHandling
 open Axial.Flow
 open Axial.Flow.FileSystem
@@ -17,6 +23,8 @@ open Axial.Schema.Http
 open Axial.Schema.Http.AspNetCore
 open Axial.Schema.Json
 open Axial.Flow.PlatformService
+open Axial.Flow.Hosting
+open Axial.Flow.Telemetry
 open Axial.Validation
 open Axial.ReferenceApp
 
@@ -93,6 +101,22 @@ module Boundary =
 module FormPage =
     let private encode (text: string) = WebUtility.HtmlEncode text
 
+    let renderHome () =
+        """<!doctype html><html><head><title>Axial reference application</title><style>
+body { font-family: system-ui, sans-serif; max-width: 44rem; margin: 3rem auto; padding: 0 1rem; }
+li { margin: .75rem 0; } code { background: #eee; padding: .15rem .3rem; }
+</style></head><body><h1>Axial reference application</h1>
+<p>This runnable application demonstrates Axial schemas, refined values, typed failures, Flow, and observability.</p>
+<ul>
+<li><a href="/workspaces/new">Create a workspace</a></li>
+<li><a href="/api/workspaces">List workspaces as JSON</a></li>
+<li><a href="/openapi.json">OpenAPI document</a></li>
+<li><a href="/observability/demo">Run the observability demo</a></li>
+<li><a href="http://localhost:18888">Open the Aspire dashboard</a></li>
+</ul>
+<p>The observability demo creates structured logs, a traced Flow, named fiber spans, a fiber-dump event, and fiber metrics.</p>
+</body></html>"""
+
     let private attributes (field: FieldDescription) =
         let metadata =
             (field.Constraints |> List.map _.Metadata)
@@ -136,9 +160,45 @@ label {{ display: block; margin-top: 1rem; }} input {{ width: 100%%; padding: .4
 
 let private summary = Contracts.fromDomain
 
-let buildWebApp (env: AppEnv) (args: string array) =
+let buildWebApp (baseEnvironment: AppEnv) (args: string array) =
     let builder = WebApplication.CreateBuilder(args)
+
+    builder.Services
+        .AddOpenTelemetry()
+        .ConfigureResource(fun resource -> resource.AddService("axial-reference-app") |> ignore)
+        .WithTracing(fun tracing ->
+            tracing
+                .AddSource("Axial.Flow")
+                .AddAspNetCoreInstrumentation()
+                .AddHttpClientInstrumentation()
+                .AddOtlpExporter()
+            |> ignore)
+        .WithMetrics(fun metrics ->
+            metrics
+                .AddMeter("Axial.Flow")
+                .AddAspNetCoreInstrumentation()
+                .AddHttpClientInstrumentation()
+                .AddRuntimeInstrumentation()
+                .AddOtlpExporter()
+            |> ignore)
+    |> ignore
+
+    builder.Logging.AddOpenTelemetry(fun logging ->
+        logging.IncludeFormattedMessage <- true
+        logging.IncludeScopes <- true
+        logging.ParseStateValues <- true
+        logging.AddOtlpExporter() |> ignore)
+    |> ignore
+
     let app = builder.Build()
+    let loggerFactory = app.Services.GetRequiredService<ILoggerFactory>()
+    let logger = loggerFactory.CreateLogger("Axial.ReferenceApp")
+    let runtime =
+        { baseEnvironment.Runtime with
+            Log = MicrosoftLogging.fromFactory "Axial.ReferenceApp.Flow" loggerFactory }
+
+    let env = { baseEnvironment with Runtime = runtime }
+    let registry = FiberRegistry()
 
     let mapApplicationError error : IResult =
         match error with
@@ -146,7 +206,13 @@ let buildWebApp (env: AppEnv) (args: string array) =
         | AppError.Storage _ -> Results.Problem(renderError error, statusCode = 500)
         | _ -> Results.BadRequest(renderError error)
 
-    let endpoint = flowEndpoint (fun _ -> env) mapApplicationError
+    let endpoint name application =
+        application
+        |> Activity.traceWith (fun error -> string error) name
+        |> Flow.withFiberRegistry registry
+        |> FiberTelemetry.observeWithSpans
+        |> FiberMetrics.observe
+        |> flowEndpoint (fun _ -> env) mapApplicationError
 
     let listWorkspaces =
         flow {
@@ -228,28 +294,63 @@ let buildWebApp (env: AppEnv) (args: string array) =
             let! workspaceId = Request.route "workspaceId" Contracts.workspaceId
             let! workspace = EndpointFlow.run Application.get workspaceId
             let wid = WorkspaceId.value workspace.Id
+            let membersById = workspace.Members |> List.map (fun member' -> member'.Id, member') |> Map.ofList
+            let members =
+                workspace.Members
+                |> List.map (fun member' ->
+                    $"<li>{WebUtility.HtmlEncode(PersonName.value member'.Name)} <code>{MemberId.value member'.Id}</code></li>")
+                |> String.concat ""
+
+            let memberOptions =
+                workspace.Members
+                |> List.map (fun member' ->
+                    $"<option value=\"{MemberId.value member'.Id}\">{WebUtility.HtmlEncode(PersonName.value member'.Name)}</option>")
+                |> String.concat ""
+
             let items =
                 workspace.Items
                 |> List.map (fun item ->
                     let iid = WorkItemId.value item.Id
-                    $"""<li>{WebUtility.HtmlEncode(WorkItemTitle.value item.Title)} ({item.State}) <form method="post" action="/workspaces/{wid}/items/{iid}/complete" style="display:inline"><button>Complete</button></form><form method="post" action="/workspaces/{wid}/items/{iid}/assign" style="display:inline"><input name="memberId" placeholder="Member id"><button>Assign</button></form></li>""")
+                    let assignee =
+                        item.Assignee
+                        |> Option.bind (fun memberId -> membersById |> Map.tryFind memberId)
+                        |> Option.map (fun member' -> $" — assigned to {WebUtility.HtmlEncode(PersonName.value member'.Name)}")
+                        |> Option.defaultValue ""
+                    let complete =
+                        match item.State with
+                        | WorkItemState.Todo -> $"<form method=\"post\" action=\"/workspaces/{wid}/items/{iid}/complete\" style=\"display:inline\"><button>Complete</button></form>"
+                        | WorkItemState.Done -> ""
+                    let assign =
+                        if List.isEmpty workspace.Members then
+                            "<span>Add a member before assigning this item.</span>"
+                        else
+                            $"<form method=\"post\" action=\"/workspaces/{wid}/items/{iid}/assign\" style=\"display:inline\"><select name=\"memberId\">{memberOptions}</select><button>Assign</button></form>"
+                    $"<li>{WebUtility.HtmlEncode(WorkItemTitle.value item.Title)} ({item.State}){assignee} {complete}{assign}</li>")
                 |> String.concat ""
             let html =
-                $"""<!doctype html><html><body><h1>{WebUtility.HtmlEncode(WorkspaceName.value workspace.Name)}</h1><ul>{items}</ul><form method="post" action="/workspaces/{wid}/members"><input name="name" placeholder="Member name"><button>Add member</button></form><form method="post" action="/workspaces/{wid}/items"><input name="title" placeholder="Work item"><button>Add item</button></form></body></html>"""
-            return Response.text 200 html
+                $"""<!doctype html><html><head><title>{WebUtility.HtmlEncode(WorkspaceName.value workspace.Name)}</title><style>
+body {{ font-family: system-ui, sans-serif; max-width: 52rem; margin: 2rem auto; padding: 0 1rem; }}
+li {{ margin: .75rem 0; }} form {{ margin: .5rem 0; }} li form {{ display: inline; margin-left: .5rem; }}
+input, select, button {{ padding: .35rem; }} code {{ background: #eee; padding: .15rem .3rem; }}
+</style></head><body><p><a href="/">Home</a></p><h1>{WebUtility.HtmlEncode(WorkspaceName.value workspace.Name)}</h1>
+<h2>Members</h2><ul>{members}</ul><form method="post" action="/workspaces/{wid}/members"><input name="name" placeholder="Member name" required><button>Add member</button></form>
+<h2>Work items</h2><ul>{items}</ul><form method="post" action="/workspaces/{wid}/items"><input name="title" placeholder="Work item" required><button>Add item</button></form></body></html>"""
+            return Response.native (Results.Content(html, "text/html"))
         }
 
     let apiResponse _ workspace = Response.json 200 Boundary.workspaceCodec (Contracts.fromDomain workspace)
     let htmlResponse workspaceId _ = Response.native (Results.Redirect($"/workspaces/{WorkspaceId.value workspaceId}"))
 
-    app.MapGet("/api/workspaces", endpoint listWorkspaces) |> ignore
-    app.MapGet("/api/workspaces/{workspaceId}", endpoint getWorkspace) |> ignore
-    app.MapPost("/api/workspaces", endpoint (createWorkspace Request.json)) |> ignore
-    app.MapPost("/api/workspaces/{workspaceId}/members", endpoint (addMember Request.json apiResponse)) |> ignore
-    app.MapPost("/api/workspaces/{workspaceId}/items", endpoint (addItem Request.json apiResponse)) |> ignore
-    app.MapPost("/api/workspaces/{workspaceId}/items/{itemId}/complete", endpoint (completeItem apiResponse)) |> ignore
-    app.MapPost("/api/workspaces/{workspaceId}/items/{itemId}/assign/{memberId}", endpoint assignItemFromRoute) |> ignore
-    app.MapDelete("/api/workspaces/{workspaceId}", endpoint deleteWorkspace) |> ignore
+    app.MapGet("/", Func<IResult>(fun () -> Results.Text(FormPage.renderHome (), "text/html"))) |> ignore
+    app.MapGet("/favicon.ico", Func<IResult>(fun () -> Results.NoContent())) |> ignore
+    app.MapGet("/api/workspaces", endpoint "workspaces.list" listWorkspaces) |> ignore
+    app.MapGet("/api/workspaces/{workspaceId}", endpoint "workspaces.get" getWorkspace) |> ignore
+    app.MapPost("/api/workspaces", endpoint "workspaces.import" (createWorkspace Request.json)) |> ignore
+    app.MapPost("/api/workspaces/{workspaceId}/members", endpoint "workspaces.members.add" (addMember Request.json apiResponse)) |> ignore
+    app.MapPost("/api/workspaces/{workspaceId}/items", endpoint "workspaces.items.add" (addItem Request.json apiResponse)) |> ignore
+    app.MapPost("/api/workspaces/{workspaceId}/items/{itemId}/complete", endpoint "workspaces.items.complete" (completeItem apiResponse)) |> ignore
+    app.MapPost("/api/workspaces/{workspaceId}/items/{itemId}/assign/{memberId}", endpoint "workspaces.items.assign" assignItemFromRoute) |> ignore
+    app.MapDelete("/api/workspaces/{workspaceId}", endpoint "workspaces.delete" deleteWorkspace) |> ignore
     app.MapGet("/openapi.json", Func<IResult>(fun () -> SchemaResult.openApi Boundary.openApiDocument)) |> ignore
 
     app.MapGet("/workspaces/new", Func<IResult>(fun () -> Results.Text(FormPage.renderNewWorkspace None, "text/html"))) |> ignore
@@ -264,12 +365,39 @@ let buildWebApp (env: AppEnv) (args: string array) =
             | Ok workspace -> return Results.Redirect($"/workspaces/{WorkspaceId.value workspace.Id}")
             | Error error -> return Results.BadRequest(error) })) |> ignore
 
-    app.MapGet("/workspaces/{workspaceId}", endpoint workspacePage) |> ignore
+    app.MapGet("/workspaces/{workspaceId}", endpoint "workspaces.page" workspacePage) |> ignore
 
-    app.MapPost("/workspaces/{workspaceId}/members", endpoint (addMember Request.form htmlResponse)) |> ignore
-    app.MapPost("/workspaces/{workspaceId}/items", endpoint (addItem Request.form htmlResponse)) |> ignore
-    app.MapPost("/workspaces/{workspaceId}/items/{itemId}/complete", endpoint (completeItem htmlResponse)) |> ignore
-    app.MapPost("/workspaces/{workspaceId}/items/{itemId}/assign", endpoint assignItemFromForm) |> ignore
+    app.MapPost("/workspaces/{workspaceId}/members", endpoint "workspaces.members.add-form" (addMember Request.form htmlResponse)) |> ignore
+    app.MapPost("/workspaces/{workspaceId}/items", endpoint "workspaces.items.add-form" (addItem Request.form htmlResponse)) |> ignore
+    app.MapPost("/workspaces/{workspaceId}/items/{itemId}/complete", endpoint "workspaces.items.complete-form" (completeItem htmlResponse)) |> ignore
+    app.MapPost("/workspaces/{workspaceId}/items/{itemId}/assign", endpoint "workspaces.items.assign-form" assignItemFromForm) |> ignore
+
+    app.MapGet("/observability/demo", Func<IResult>(fun () ->
+        let demonstration =
+            flow {
+                do! Log.info "Starting the observability demonstration"
+                let! first = Flow.forkNamed "demo-fast" (Flow.Runtime.sleep(TimeSpan.FromMilliseconds 150.0))
+                let! second = Flow.forkNamed "demo-slow" (Flow.Runtime.sleep(TimeSpan.FromMilliseconds 350.0))
+                do FiberDumpTelemetry.record registry
+                do! Flow.join first
+                do! Flow.join second
+                do! Log.info "Finished the observability demonstration"
+            }
+            |> Flow.annotate "demo.kind" "concurrent-work"
+            |> Activity.traceWith renderError "observability.demo"
+            |> Flow.withFiberRegistry registry
+            |> FiberTelemetry.observeWithSpans
+            |> FiberMetrics.observe
+
+        logger.LogInformation(
+            "Running observability demo {DemoKind} with {ExpectedFibers} fibers",
+            "concurrent-work",
+            2)
+
+        match run env demonstration with
+        | Ok () -> Results.Ok({| message = "Demo complete. Inspect traces, structured logs, and metrics in the Aspire dashboard." |})
+        | Error error -> Results.Problem(error)))
+    |> ignore
     app
 
 let private usage () =

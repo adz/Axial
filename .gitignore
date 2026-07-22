@@ -14,3 +14,4 @@ site/public/
 site/output/
 site/.hugo_build.lock
 BenchmarkDotNet.Artifacts/
+examples/Axial.ReferenceApp/.axial-reference-data/

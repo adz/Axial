@@ -18,6 +18,15 @@
     <ProjectReference Include="..\..\src\Axial.Schema.Http.AspNetCore\Axial.Schema.Http.AspNetCore.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Flow.PlatformService\Axial.Flow.PlatformService.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Flow.FileSystem\Axial.Flow.FileSystem.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Flow.Hosting\Axial.Flow.Hosting.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Flow.Telemetry\Axial.Flow.Telemetry.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Data\Axial.Data.fsproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.14.0" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.14.0" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.14.0" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.14.0" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.14.0" />
   </ItemGroup>
 </Project>

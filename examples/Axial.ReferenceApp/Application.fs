@@ -132,6 +132,7 @@ module Application =
 
     let createWorkspace name : Flow<AppEnv, AppError, Workspace> =
         flow {
+            do! Log.info "Creating workspace"
             let! generatedId = Guid.newGuid
             let! name = WorkspaceName.create name |> invalidValue
             let workspace = Workspace.create (WorkspaceId.create generatedId) name
@@ -141,6 +142,7 @@ module Application =
 
     let addMember workspaceId name =
         flow {
+            do! Log.info $"Adding member to workspace {WorkspaceId.value workspaceId}"
             let! generatedId = Guid.newGuid
             let! name = PersonName.create name |> invalidValue
             let member' = { Id = MemberId.create generatedId; Name = name }
@@ -149,14 +151,24 @@ module Application =
 
     let addWorkItem workspaceId title =
         flow {
+            do! Log.info $"Adding work item to workspace {WorkspaceId.value workspaceId}"
             let! generatedId = Guid.newGuid
             let! title = WorkItemTitle.create title |> invalidValue
             let item = { Id = WorkItemId.create generatedId; Title = title; Assignee = None; State = WorkItemState.Todo }
             return! update workspaceId (Workspace.addWorkItem item)
         }
 
-    let assign workspaceId itemId memberId = update workspaceId (Workspace.assign itemId memberId)
-    let complete workspaceId itemId = update workspaceId (Workspace.complete itemId)
+    let assign workspaceId itemId memberId =
+        flow {
+            do! Log.info $"Assigning item {WorkItemId.value itemId} in workspace {WorkspaceId.value workspaceId}"
+            return! update workspaceId (Workspace.assign itemId memberId)
+        }
+
+    let complete workspaceId itemId =
+        flow {
+            do! Log.info $"Completing item {WorkItemId.value itemId} in workspace {WorkspaceId.value workspaceId}"
+            return! update workspaceId (Workspace.complete itemId)
+        }
     let rename workspaceId name =
         flow {
             let! name = WorkspaceName.create name |> invalidValue

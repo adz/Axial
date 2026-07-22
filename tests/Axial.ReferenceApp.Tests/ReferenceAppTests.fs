@@ -125,6 +125,7 @@ module ReferenceAppTests =
         let app = Axial.ReferenceApp.Program.buildWebApp env [| "--urls"; "http://127.0.0.1:0" |]
         do! app.StartAsync()
         use client = new HttpClient(BaseAddress = Uri(Seq.head app.Urls))
+        let! home = client.GetStringAsync("/")
         let id = Guid.NewGuid()
         use content = new StringContent($"""{{"version":2,"id":"{id}","name":"Web","members":[],"items":[]}}""", Encoding.UTF8, "application/json")
         let! created = client.PostAsync("/api/workspaces", content)
@@ -136,7 +137,11 @@ module ReferenceAppTests =
         use invalidForm = new StringContent("name=", Encoding.UTF8, "application/x-www-form-urlencoded")
         let! invalid = client.PostAsync("/workspaces/new", invalidForm)
         let! invalidHtml = invalid.Content.ReadAsStringAsync()
+        let! workspacePage = client.GetAsync($"/workspaces/{id}")
+        let! workspaceHtml = workspacePage.Content.ReadAsStringAsync()
         do! app.StopAsync()
+        test <@ home.Contains("Axial reference application") @>
+        test <@ home.Contains("/observability/demo") @>
         test <@ created.StatusCode = Net.HttpStatusCode.Created @>
         Assert.True(listedResponse.StatusCode = Net.HttpStatusCode.OK, listed)
         test <@ listed.Contains("Web") @>
@@ -146,4 +151,6 @@ module ReferenceAppTests =
         test <@ form.Contains("name=\"name\"") @>
         test <@ invalid.StatusCode = Net.HttpStatusCode.BadRequest @>
         test <@ invalidHtml.Contains("class=\"error\"") @>
+        test <@ workspacePage.Content.Headers.ContentType.MediaType = "text/html" @>
+        test <@ workspaceHtml.Contains("Web") @>
     }
