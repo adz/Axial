@@ -4,7 +4,6 @@ groups:
     descendants: false
     entries:
       - /error-handling/getting-started
-      - /error-handling/tutorials
       - /error-handling/reference-app
       - /error-handling/fstoolkit-comparison
 
@@ -12,6 +11,7 @@ groups:
     home: /error-handling/result
     descendants: false
     entries:
+      - /error-handling/tutorials
       - /error-handling/reference/result
       - /error-handling/result-builder
       - /error-handling/checks

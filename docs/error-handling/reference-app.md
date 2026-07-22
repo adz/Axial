@@ -7,10 +7,8 @@ description: The introductory reference app — checks, result {}, refine {}, an
 # Walkthrough: Registration Desk
 
 [`examples/Axial.ReferenceApp.Intro`](https://github.com/adz/Axial/tree/main/examples/Axial.ReferenceApp.Intro)
-is a conference registration desk built with only the `Axial.ErrorHandling` package: no schemas, no Flow, and no
-Axial type in a domain signature unless you choose a refined value. It is the first tier of the reference apps —
-the [schema reference app]({{< relref "/schema/reference-apps.md" >}}) continues the same domain philosophy at
-structured boundaries.
+is a conference registration desk that exercises the packages installed by `Axial.ErrorHandling`. Its four stages
+demonstrate checks, fail-fast results, refined values, and validation with diagnostics in one small program.
 
 ```bash
 dotnet run --project examples/Axial.ReferenceApp.Intro/Axial.ReferenceApp.Intro.fsproj --nologo
