@@ -663,7 +663,7 @@ let pageSpecs = [
             "Traversal", ["M:Axial.ErrorHandling.Collection.traverseResult"; "M:Axial.ErrorHandling.Collection.sequenceResult"]
             "Builder", ["P:Axial.ErrorHandling.Builders.result"]
         ]
-        Alias = Some "builders-result.md"
+        Alias = None
     }
     {
         OutPath = ["refined"; "_index.md"]
@@ -983,6 +983,23 @@ let serviceFileSystemSectionDirectories =
 
 let sectionDirectory (spec: PageSpec) (sectionTitle: string) (id: string) =
     match spec.OutPath, sectionTitle with
+    | ["result"; "_index.md"], "Structured errors" -> Some "errors"
+    | ["result"; "_index.md"], "Traversal" -> Some "collection"
+    | ["result"; "_index.md"], "Builder" -> Some "result-ce"
+    | ["result"; "_index.md"], _ -> Some "result"
+    | ["refined"; "_index.md"], "Errors and refined types" -> Some "types"
+    | ["refined"; "_index.md"], "Parse" -> Some "parse"
+    | ["refined"; "_index.md"], "Text" -> Some "text"
+    | ["refined"; "_index.md"], "Numeric" -> Some "numeric"
+    | ["refined"; "_index.md"], "Collection" -> Some "collection"
+    | ["refined"; "_index.md"], "Temporal" -> Some "temporal"
+    | ["refined"; "_index.md"], "Character" -> Some "character"
+    | ["refined"; "_index.md"], "Choice" -> Some "choice"
+    | ["refined"; "_index.md"], "Re-certifying helpers" when id.Contains(".NonBlankString.") -> Some "non-blank-string"
+    | ["refined"; "_index.md"], "Re-certifying helpers" when id.Contains(".PositiveInt.") -> Some "positive-int"
+    | ["refined"; "_index.md"], "Re-certifying helpers" when id.Contains(".NonEmptyList.") -> Some "non-empty-list"
+    | ["refined"; "_index.md"], "Refine facade" -> Some "refine"
+    | ["refined"; "_index.md"], "Builder" -> Some "refine-ce"
     | ["flow"; "_index.md"], "Core type" -> None
     | ["flow"; "_index.md"], "Module functions" when groupedFlowEnvironmentMembers.Contains id -> Some "environment"
     | ["flow"; "_index.md"], "Module functions" when groupedFlowConstructionMembers.Contains id -> Some "construction"
@@ -999,6 +1016,21 @@ let sectionDirectory (spec: PageSpec) (sectionTitle: string) (id: string) =
     | _ -> None
 
 let sectionTitleForDirectory = function
+    | "result" -> "Result"
+    | "result-ce" -> "Result CE"
+    | "types" -> "Types"
+    | "parse" -> "Parse"
+    | "text" -> "Text"
+    | "numeric" -> "Numeric"
+    | "collection" -> "Collection"
+    | "temporal" -> "Temporal"
+    | "character" -> "Character"
+    | "choice" -> "Choice"
+    | "non-blank-string" -> "NonBlankString"
+    | "positive-int" -> "PositiveInt"
+    | "non-empty-list" -> "NonEmptyList"
+    | "refine" -> "Refine"
+    | "refine-ce" -> "Refine CE"
     | "construction" -> "Construction"
     | "environment" -> "Environment"
     | "composition" -> "Composition"
@@ -1023,6 +1055,21 @@ let sectionTitleForDirectory = function
     | other -> other
 
 let sectionIntroForDirectory = function
+    | "result" -> "This page shows the helpers on the `Result` module."
+    | "result-ce" -> "This page shows the `result { }` computation expression."
+    | "types" -> "This page shows the error and refined value types in `Axial.Refined`."
+    | "parse" -> "This page shows the `Parse` module for converting serialized strings into primitive values."
+    | "text" -> "This page shows the `Text` refinement constructors."
+    | "numeric" -> "This page shows the `Numeric` refinement constructors."
+    | "collection" -> "This page shows collection helpers and refinements."
+    | "temporal" -> "This page shows temporal refinement constructors."
+    | "character" -> "This page shows character predicates used by refinements."
+    | "choice" -> "This page shows fallback helpers for alternative refinements."
+    | "non-blank-string" -> "This page shows the `NonBlankString` value helpers."
+    | "positive-int" -> "This page shows the `PositiveInt` value helpers."
+    | "non-empty-list" -> "This page shows the `NonEmptyList` value helpers."
+    | "refine" -> "This page shows the `Refine` facade over the focused refinement modules."
+    | "refine-ce" -> "This page shows the `refine { }` computation expression."
     | "construction" -> "This page shows the helpers that create or adapt flows before you start composing them with domain logic."
     | "environment" -> "This page shows the helpers that read, reshape, and provide explicit environments for flows."
     | "composition" -> "This page shows the everyday Flow combinators for mapping, binding, zipping, and otherwise shaping workflow logic."
@@ -1379,13 +1426,13 @@ let main argv =
             formatterApiSlug "Axial.LayerBuilder", Path.Combine(outRoot, "layer", "p-layer.md")
             formatterApiSlug "Axial.FlowBuilder", Path.Combine(outRoot, "flow", "builders-flow.md")
             formatterApiSlug "Axial.ValidateBuilder", Path.Combine(outRoot, "validation", "builders-validate.md")
-            formatterApiSlug "Axial.ResultBuilder", Path.Combine(outRoot, "result", "builders-result.md")
-            formatterApiSlug "Axial.RefineBuilder", Path.Combine(outRoot, "refined", "p-refined--refine.md")
+            formatterApiSlug "Axial.ResultBuilder", Path.Combine(outRoot, "result", "result-ce", "p-errorhandling--result.md")
+            formatterApiSlug "Axial.RefineBuilder", Path.Combine(outRoot, "refined", "refine-ce", "p-refined--refine.md")
             formatterApiSlug "Axial.Flow.LayerBuilder", Path.Combine(outRoot, "layer", "p-flow--layer.md")
             formatterApiSlug "Axial.Flow.FlowBuilder", Path.Combine(outRoot, "flow", "builders-flow.md")
             formatterApiSlug "Axial.Validation.ValidateBuilder", Path.Combine(outRoot, "validation", "builders-validate.md")
-            formatterApiSlug "Axial.ErrorHandling.ResultBuilder", Path.Combine(outRoot, "result", "builders-result.md")
-            formatterApiSlug "Axial.Refined.RefineBuilder", Path.Combine(outRoot, "refined", "p-refined--refine.md")
+            formatterApiSlug "Axial.ErrorHandling.ResultBuilder", Path.Combine(outRoot, "result", "result-ce", "p-errorhandling--result.md")
+            formatterApiSlug "Axial.Refined.RefineBuilder", Path.Combine(outRoot, "refined", "refine-ce", "p-refined--refine.md")
             formatterApiSlug "Axial.StmBuilder", Path.Combine(outRoot, "stm", "t-flow-stmbuilder.md")
             formatterApiSlug "Axial.BindError`3", Path.Combine(outRoot, "bind", "t-binderror.md")
             formatterApiSlug "Axial.Path", Path.Combine(outRoot, "diagnostics", "t-path.md")

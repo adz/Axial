@@ -9,14 +9,17 @@ groups:
       - /error-handling/fstoolkit-comparison
 
   - title: Axial.Result
-    home: /error-handling/result-builder
+    home: /error-handling/result
     descendants: false
     entries:
+      - /error-handling/reference/result
+      - /error-handling/result-builder
       - /error-handling/checks
       - /error-handling/predicates
     reference:
-      entries:
+      children_of:
         - /error-handling/reference/result
+      entries:
         - /error-handling/reference/check
         - /error-handling/reference/predicate
 
@@ -34,5 +37,5 @@ groups:
     children_of:
       - /error-handling/refined
     reference:
-      entries:
+      children_of:
         - /error-handling/reference/refined

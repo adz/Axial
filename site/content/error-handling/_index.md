@@ -15,7 +15,7 @@ menu:
 
 | Package | Use it for | Documentation |
 | --- | --- | --- |
-| `Axial.Result` | Fail-fast Results, reusable checks, predicates, and `result {}` | [Result and Check](./result-builder/) |
+| `Axial.Result` | Fail-fast Results, reusable checks, predicates, and `result {}` | [Result](./result/) |
 | `Axial.Diagnostics` | Accumulating independent failures with paths and names | [Validation and Diagnostics](./diagnostics/) |
 | `Axial.Refined` | Parsing and constructing values whose types record successful checks | [Refined](./refined/) |
 

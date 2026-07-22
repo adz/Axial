@@ -33,6 +33,12 @@
             {{- end -}}
           {{- end -}}
           {{- with .reference -}}
+            {{- range .children_of -}}
+              {{- $root := $context.Site.GetPage . -}}
+              {{- if and $root (or (eq $context $root) ($context.IsDescendant $root)) -}}
+                {{- $activeGroup = true -}}
+              {{- end -}}
+            {{- end -}}
             {{- range .entries -}}
               {{- $entry := $context.Site.GetPage . -}}
               {{- if and $entry (or (eq $context $entry) ($context.IsDescendant $entry)) -}}
@@ -64,6 +70,12 @@
               {{- end -}}
               {{- with .reference -}}
                 {{- $referenceActive := false -}}
+                {{- range .children_of -}}
+                  {{- $root := $context.Site.GetPage . -}}
+                  {{- if and $root (or (eq $context $root) ($context.IsDescendant $root)) -}}
+                    {{- $referenceActive = true -}}
+                  {{- end -}}
+                {{- end -}}
                 {{- range .entries -}}
                   {{- $entry := $context.Site.GetPage . -}}
                   {{- if and $entry (or (eq $context $entry) ($context.IsDescendant $entry)) -}}
@@ -76,6 +88,14 @@
                     <span class="td-sidebar-link td-sidebar-link__section">Reference</span>
                   </label>
                   <ul class="ul-2 foldable">
+                    {{- range .children_of -}}
+                      {{- $root := $context.Site.GetPage . -}}
+                      {{- if $root -}}
+                        {{- range (union $root.Pages $root.Sections).ByWeight -}}
+                          {{ partial "package-sidebar-node.html" (dict "current" $context "node" . "depth" 2 "excludes" $excludes) }}
+                        {{- end -}}
+                      {{- end -}}
+                    {{- end -}}
                     {{- range .entries -}}
                       {{- $entry := $context.Site.GetPage . -}}
                       {{- if $entry -}}
