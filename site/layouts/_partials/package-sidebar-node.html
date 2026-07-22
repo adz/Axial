@@ -18,7 +18,7 @@
     </a>
     {{- if gt (len $children) 0 -}}
       </label>
-      <ul class="axial-package-nav__children depth-{{ $depth }}">
+      <ul class="ul-{{ add $depth 1 }}{{ if (gt $depth 1) }} foldable{{ end }}">
         {{- range $children -}}
           {{ partial "package-sidebar-node.html" (dict "current" $current "node" . "depth" (add $depth 1) "excludes" $excludes) }}
         {{- end -}}

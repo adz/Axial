@@ -11,9 +11,16 @@ menu:
 ---
 
 
-`Axial.ErrorHandling` installs the Result, Diagnostics, and Refined packages together. They help functions accept or
-reject values without losing useful failure information through
-reusable checks, helpers over `Result<'value, 'error>`, accumulated diagnostics, and refined values.
+`Axial.ErrorHandling` is a meta-package. It has no API of its own; it installs these three packages together:
+
+| Package | Use it for | Documentation |
+| --- | --- | --- |
+| `Axial.Result` | Fail-fast Results, reusable checks, predicates, and `result {}` | [Result and Check](./result-builder/) |
+| `Axial.Diagnostics` | Accumulating independent failures with paths and names | [Validation and Diagnostics](./diagnostics/) |
+| `Axial.Refined` | Parsing and constructing values whose types record successful checks | [Refined](./refined/) |
+
+Install the meta-package when a project uses all three. Install an individual package when it only needs one part.
+The [Getting Started guide](./getting-started/) has the installation commands and helps choose between them.
 
 Start with `CheckDSL` when you need to test values and return your own errors:
 
@@ -30,8 +37,8 @@ let checkName name =
     |> Result.bind (minLength 3 >> mapError (fun _ -> NameTooShort))
 ```
 
-Use it when ordinary functions need more structure than hand-written guards, but do not need a schema or an effect
-runtime. Existing F# and third-party Result helpers continue to compose with it.
+Use these packages when ordinary functions need more structure than hand-written guards, but do not need a schema or
+an effect runtime. Existing F# and third-party Result helpers continue to compose with them.
 
 The main choices are:
 
@@ -47,18 +54,6 @@ return an ordinary F# `Result`, or expose the more specific type when that commu
 Error Handling, [Schema]({{< relref "/schema/" >}}), and [Flow]({{< relref "/flow/" >}}) are separate entry points.
 Schema depends on the focused packages for checks, diagnostics, and refined fields. Error Handling itself needs neither Schema nor
 Flow.
-
-## Installation
-
-Error Handling installs as part of `Axial`.
-
-Or install the Error Handling meta-package individually:
-
-```sh
-dotnet add package Axial.ErrorHandling
-```
-
-For a smaller dependency, install only what the project uses: `Axial.Result`, `Axial.Diagnostics`, or `Axial.Refined`.
 
 ## The Check DSL
 

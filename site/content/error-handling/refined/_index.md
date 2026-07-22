@@ -12,8 +12,7 @@ Plain primitives often allow values your domain rejects: a blank name still fits
 A refined type records that fact. A `PositiveInt` or `NonBlankString` can only be built after its rule passes, so code
 receiving the refined value does not need to repeat the check.
 
-Refined values live in ErrorHandling and can be used on their own. Schema can also use them as model fields through
-`Schema.refine`.
+Refined values live in ErrorHandling and can be used on their own.
 
 `Parse` reads primitive input, `Refine` builds a refined value, and `refine {}` connects several dependent parsing
 and refinement steps.
@@ -89,7 +88,8 @@ After this function succeeds, the `Product` fields hold refined types instead of
 - [Tutorials](./tutorials/): parse strings into refined values and a caller-owned domain type.
 - [Refine Builder](./refine-builder/): fail-fast parsing and refinement with `refine {}`.
 - [Refined Catalog](./catalog/): built-in numeric, text, collection, temporal, character, and choice helpers.
-- [Domain Values](./domain-values/): author caller-owned refined values for standalone use and schema fields.
+- [Domain Values](./domain-values/): author caller-owned refined values for standalone use.
+- [Relation to Schema](./schema/): use refined values as fields in an `Axial.Schema` model.
 
 ## Reference
 

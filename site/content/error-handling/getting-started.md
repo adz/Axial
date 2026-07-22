@@ -9,6 +9,18 @@ type: docs
 Start with the return type that communicates the behavior your function needs. `Axial.ErrorHandling` offers several
 related tools, but an application does not need to adopt all of them.
 
+## Installation
+
+Error Handling installs as part of `Axial`.
+
+Or install the Error Handling meta-package individually:
+
+```sh
+dotnet add package Axial.ErrorHandling
+```
+
+For a smaller dependency, install only what the project uses: `Axial.Result`, `Axial.Diagnostics`, or `Axial.Refined`.
+
 Start with `Check` when the same rule is used in more than one place. Open `CheckDSL` in a module that contains several
 checks:
 

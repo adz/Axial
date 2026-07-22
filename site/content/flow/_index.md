@@ -74,6 +74,25 @@ other. Flow is the seam where structure meets execution &mdash; on .NET, NativeA
 
 <div style="max-width: 68ch;">
 
+## Packages
+
+`Axial.Flow` contains the workflow model and runtime. The other packages add one platform service, host, or telemetry
+integration at a time.
+
+| Package | Use it for | Documentation |
+| --- | --- | --- |
+| `Axial.Flow` | Workflows, environments, typed failures, concurrency, and runtime execution | [Getting Started](./getting-started/) |
+| `Axial.Flow.PlatformService` | Shared clock and platform service contracts | [Platform services](./platform-service/) |
+| `Axial.Flow.Console` | Console input and output | [Console](./console/) |
+| `Axial.Flow.FileSystem` | Filesystem operations | [FileSystem](./filesystem/) |
+| `Axial.Flow.HttpClient` | HTTP client requests | [HTTP client](./http/) |
+| `Axial.Flow.Process` | Child processes | [Processes](./processes/) |
+| `Axial.Flow.Hosting` | .NET application hosting | [Hosting](./hosting/) |
+| `Axial.Flow.Hosting.Node` | Node application hosting | [Node hosting](./hosting/node/) |
+| `Axial.Flow.Hosting.Browser` | Browser application hosting | [Browser hosting](./hosting/browser/) |
+| `Axial.Flow.Telemetry` | Runtime telemetry contracts | [Telemetry](./telemetry/) |
+| `Axial.Flow.Telemetry.JavaScript` | JavaScript telemetry integration | [JavaScript telemetry](./telemetry/javascript/) |
+
 ## Installation
 
 Flow is independent from the `Axial` package. Install it individually:

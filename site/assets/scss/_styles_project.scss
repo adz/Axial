@@ -1112,6 +1112,10 @@ $axial-result: #0a7d62;
 
 // Package-first product navigation. Only the active package expands; package
 // names remain visible as peer entry points throughout each product site.
+.td-sidebar-nav {
+  margin-left: 0;
+}
+
 .axial-package-nav {
   margin: 0 0 0.45rem;
   padding: 0;
@@ -1152,20 +1156,14 @@ $axial-result: #0a7d62;
   }
 }
 
-.axial-package-nav__items,
-.axial-package-nav__children {
+.axial-package-nav__items {
   margin: 0;
   padding: 0;
 }
 
-.axial-package-nav__items {
+.axial-package-nav .axial-package-nav__items {
   margin-left: 0 !important;
   padding-inline: 0.75rem;
-}
-
-.axial-package-nav__children {
-  margin-left: 0 !important;
-  padding-left: 1.35rem;
 }
 
 .axial-package-nav__item {

@@ -32,12 +32,21 @@
               {{- $activeGroup = true -}}
             {{- end -}}
           {{- end -}}
+          {{- with .reference -}}
+            {{- range .entries -}}
+              {{- $entry := $context.Site.GetPage . -}}
+              {{- if and $entry (or (eq $context $entry) ($context.IsDescendant $entry)) -}}
+                {{- $activeGroup = true -}}
+              {{- end -}}
+            {{- end -}}
+          {{- end -}}
           <section class="axial-package-nav{{ if $activeGroup }} active-path{{ end }}">
             <h2 class="axial-package-nav__title">
               <a href="{{ $home.RelPermalink }}"{{ if eq $context $home }} class="active"{{ end }}>{{ .title }}</a>
             </h2>
             {{- if $activeGroup -}}
-            <ul class="td-sidebar-nav__section axial-package-nav__items">
+            <div class="td-sidebar-nav__section">
+            <ul class="axial-package-nav__items ul-1">
               {{- $excludes := .exclude | default slice -}}
               {{- range .children_of -}}
                 {{- $root := $context.Site.GetPage . -}}
@@ -53,7 +62,31 @@
                   {{ partial "package-sidebar-node.html" (dict "current" $context "node" $entry "depth" 1 "excludes" $excludes) }}
                 {{- end -}}
               {{- end -}}
+              {{- with .reference -}}
+                {{- $referenceActive := false -}}
+                {{- range .entries -}}
+                  {{- $entry := $context.Site.GetPage . -}}
+                  {{- if and $entry (or (eq $context $entry) ($context.IsDescendant $entry)) -}}
+                    {{- $referenceActive = true -}}
+                  {{- end -}}
+                {{- end -}}
+                <li class="axial-package-nav__item with-child{{ if $referenceActive }} active-path{{ end }}">
+                  <input type="checkbox" id="package-{{ $home.RelPermalink | anchorize }}-reference-check"{{ if $referenceActive }} checked{{ end }}>
+                  <label for="package-{{ $home.RelPermalink | anchorize }}-reference-check">
+                    <span class="td-sidebar-link td-sidebar-link__section">Reference</span>
+                  </label>
+                  <ul class="ul-2 foldable">
+                    {{- range .entries -}}
+                      {{- $entry := $context.Site.GetPage . -}}
+                      {{- if $entry -}}
+                        {{ partial "package-sidebar-node.html" (dict "current" $context "node" $entry "depth" 2 "excludes" $excludes) }}
+                      {{- end -}}
+                    {{- end -}}
+                  </ul>
+                </li>
+              {{- end -}}
             </ul>
+            </div>
             {{- end -}}
           </section>
         {{- end -}}

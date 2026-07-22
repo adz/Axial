@@ -14,21 +14,25 @@ groups:
     entries:
       - /error-handling/checks
       - /error-handling/predicates
-      - /error-handling/reference/result
-      - /error-handling/reference/check
-      - /error-handling/reference/predicate
+    reference:
+      entries:
+        - /error-handling/reference/result
+        - /error-handling/reference/check
+        - /error-handling/reference/predicate
 
   - title: Axial.Diagnostics
     home: /error-handling/diagnostics
     children_of:
       - /error-handling/diagnostics
-    entries:
-      - /error-handling/reference/validation
-      - /error-handling/reference/diagnostics
+    reference:
+      entries:
+        - /error-handling/reference/validation
+        - /error-handling/reference/diagnostics
 
   - title: Axial.Refined
     home: /error-handling/refined
     children_of:
       - /error-handling/refined
-    entries:
-      - /error-handling/reference/refined
+    reference:
+      entries:
+        - /error-handling/reference/refined
