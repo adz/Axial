@@ -30,12 +30,13 @@ type OrderLine =
       Quantity: Quantity }
 
 let orderLineSchema =
-    Schema.define<OrderLine>
-    |> field "sku" _.Sku
-    |> field "quantity" _.Quantity
-    |> construct (fun sku quantity ->
-        { Sku = sku
-          Quantity = quantity })
+    SchemaCE.schema<OrderLine> {
+        SchemaCE.field "sku" _.Sku
+        SchemaCE.field "quantity" _.Quantity
+        SchemaCE.construct (fun sku quantity ->
+            { Sku = sku
+              Quantity = quantity })
+    }
 
 type OrderEnv =
     { MaxLineQuantity: int

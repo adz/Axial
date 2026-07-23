@@ -61,32 +61,42 @@ module Signup =
     open Axial.Schema.Syntax
 
     let addressSchema =
-        Schema.define<Address>
-        |> field "street" _.Street
-        |> constrain (minLength 1)
-        |> constrain (maxLength 120)
-        |> field "city" _.City
-        |> constrain (minLength 1)
-        |> constrain (maxLength 80)
-        |> construct (fun street city -> { Street = street; City = city })
+        SchemaCE.schema<Address> {
+            SchemaCE.field "street" _.Street {
+                constrain (minLength 1)
+                constrain (maxLength 120)
+            }
+            SchemaCE.field "city" _.City {
+                constrain (minLength 1)
+                constrain (maxLength 80)
+            }
+            SchemaCE.construct (fun street city -> { Street = street; City = city })
+        }
 
     let schema =
-        Schema.define<Signup>
-        |> field "name" _.Name
-        |> constrain (minLength 1)
-        |> constrain (maxLength 80)
-        |> field "email" _.Email
-        |> field "age" _.Age
-        |> constrain (between 13 120)
-        |> fieldWith (addressSchema |> Schema.constrain Constraint.required) "address" _.Address
-        |> field "tags" _.Tags
-        |> constrain (maxCount 5)
-        |> construct (fun name email age address tags ->
-            { Name = name
-              Email = email
-              Age = age
-              Address = address
-              Tags = tags })
+        SchemaCE.schema<Signup> {
+            SchemaCE.field "name" _.Name {
+                constrain (minLength 1)
+                constrain (maxLength 80)
+            }
+            SchemaCE.field "email" _.Email
+            SchemaCE.field "age" _.Age {
+                constrain (between 13 120)
+            }
+            SchemaCE.field "address" _.Address {
+                withSchema (addressSchema |> Schema.constrain Constraint.required)
+            }
+            SchemaCE.field "tags" _.Tags {
+                withSchema (Schema.listWith Schema.text)
+                constrain (maxCount 5)
+            }
+            SchemaCE.construct (fun name email age address tags ->
+                { Name = name
+                  Email = email
+                  Age = age
+                  Address = address
+                  Tags = tags })
+        }
 
 // ---------------------------------------------------------------------------
 // Interpreters compiled once from the declaration above.

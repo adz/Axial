@@ -153,10 +153,11 @@ module Shared =
         workflow
 
     let private contactSchema =
-        Schema.define<SchemaContact>
-        |> field "name" _.Name
-        |> field "age" _.Age
-        |> construct (fun name age -> { Name = name; Age = age })
+        SchemaCE.schema<SchemaContact> {
+            SchemaCE.field "name" _.Name
+            SchemaCE.field "age" _.Age
+            SchemaCE.construct (fun name age -> { Name = name; Age = age })
+        }
 
     let buildSchemaPlanSummary () =
         Schema.compilePlan (SummaryFactory<SchemaContact>()) contactSchema
