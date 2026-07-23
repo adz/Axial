@@ -20,20 +20,30 @@ module SchemaNestedValueTests =
         | PendingDefinition -> failwith "Expected public schema API to create a model definition."
 
     let private buildAddressSchema () =
-        Schema.define<Address>
-        |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "street" _.Street
-        |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "city" _.City
-        |> construct (fun street city -> { Street = street; City = city })
+        SchemaCE.schema<Address> {
+            SchemaCE.field "street" _.Street {
+                withSchema (Schema.text |> Schema.constrain Constraint.required)
+            }
+            SchemaCE.field "city" _.City {
+                withSchema (Schema.text |> Schema.constrain Constraint.required)
+            }
+            SchemaCE.construct (fun street city -> { Street = street; City = city })
+        }
 
     [<Fact>]
     let ``nested field getter reads the nested model from an already trusted outer model`` () =
         let addressSchema = buildAddressSchema ()
 
         let schema =
-            Schema.define<Customer>
-            |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "name" _.Name
-            |> fieldWith addressSchema "address" _.Address
-            |> construct (fun name address -> { Name = name; Address = address })
+            SchemaCE.schema<Customer> {
+                SchemaCE.field "name" _.Name {
+                    withSchema (Schema.text |> Schema.constrain Constraint.required)
+                }
+                SchemaCE.field "address" _.Address {
+                    withSchema addressSchema
+                }
+                SchemaCE.construct (fun name address -> { Name = name; Address = address })
+            }
 
         let model = modelDefinition schema
 
@@ -50,10 +60,15 @@ module SchemaNestedValueTests =
         let addressSchema = buildAddressSchema ()
 
         let schema =
-            Schema.define<Customer>
-            |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "name" _.Name
-            |> fieldWith (addressSchema |> Schema.constrainAll [ Constraint.required ]) "address" _.Address
-            |> construct (fun name address -> { Name = name; Address = address })
+            SchemaCE.schema<Customer> {
+                SchemaCE.field "name" _.Name {
+                    withSchema (Schema.text |> Schema.constrain Constraint.required)
+                }
+                SchemaCE.field "address" _.Address {
+                    withSchema (addressSchema |> Schema.constrainAll [ Constraint.required ])
+                }
+                SchemaCE.construct (fun name address -> { Name = name; Address = address })
+            }
 
         let model = modelDefinition schema
 
@@ -75,10 +90,15 @@ module SchemaNestedValueTests =
         let addressSchema = buildAddressSchema ()
 
         let schema =
-            Schema.define<Customer>
-            |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "name" _.Name
-            |> fieldWith addressSchema "address" _.Address
-            |> construct (fun name address -> { Name = name; Address = address })
+            SchemaCE.schema<Customer> {
+                SchemaCE.field "name" _.Name {
+                    withSchema (Schema.text |> Schema.constrain Constraint.required)
+                }
+                SchemaCE.field "address" _.Address {
+                    withSchema addressSchema
+                }
+                SchemaCE.construct (fun name address -> { Name = name; Address = address })
+            }
 
         let model = modelDefinition schema
 

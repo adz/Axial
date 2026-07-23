@@ -21,20 +21,30 @@ module SchemaManyValueTests =
         | PendingDefinition -> failwith "Expected public schema API to create a model definition."
 
     let private buildContactMethodSchema () =
-        Schema.define<ContactMethod>
-        |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "kind" _.Kind
-        |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "value" _.Value
-        |> construct (fun kind value -> { Kind = kind; Value = value })
+        SchemaCE.schema<ContactMethod> {
+            SchemaCE.field "kind" _.Kind {
+                withSchema (Schema.text |> Schema.constrain Constraint.required)
+            }
+            SchemaCE.field "value" _.Value {
+                withSchema (Schema.text |> Schema.constrain Constraint.required)
+            }
+            SchemaCE.construct (fun kind value -> { Kind = kind; Value = value })
+        }
 
     [<Fact>]
     let ``many field getter reads the item collection from an already trusted outer model`` () =
         let contactMethodSchema = buildContactMethodSchema ()
 
         let schema =
-            Schema.define<Customer>
-            |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "name" _.Name
-            |> fieldWith (Schema.listWith contactMethodSchema) "contacts" _.Contacts
-            |> construct (fun name contacts -> { Name = name; Contacts = contacts })
+            SchemaCE.schema<Customer> {
+                SchemaCE.field "name" _.Name {
+                    withSchema (Schema.text |> Schema.constrain Constraint.required)
+                }
+                SchemaCE.field "contacts" _.Contacts {
+                    withSchema (Schema.listWith contactMethodSchema)
+                }
+                SchemaCE.construct (fun name contacts -> { Name = name; Contacts = contacts })
+            }
 
         let model = modelDefinition schema
 
@@ -53,10 +63,18 @@ module SchemaManyValueTests =
         let contactMethodSchema = buildContactMethodSchema ()
 
         let schema =
-            Schema.define<Customer>
-            |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "name" _.Name
-            |> fieldWith (Schema.listWith contactMethodSchema |> Schema.constrainAll [ Constraint.minCount 1 ]) "contacts" _.Contacts
-            |> construct (fun name contacts -> { Name = name; Contacts = contacts })
+            SchemaCE.schema<Customer> {
+                SchemaCE.field "name" _.Name {
+                    withSchema (Schema.text |> Schema.constrain Constraint.required)
+                }
+                SchemaCE.field "contacts" _.Contacts {
+                    withSchema (
+                        Schema.listWith contactMethodSchema
+                        |> Schema.constrainAll [ Constraint.minCount 1 ]
+                    )
+                }
+                SchemaCE.construct (fun name contacts -> { Name = name; Contacts = contacts })
+            }
 
         let model = modelDefinition schema
 
@@ -95,10 +113,15 @@ module SchemaManyValueTests =
         let contactMethodSchema = buildContactMethodSchema ()
 
         let schema =
-            Schema.define<Customer>
-            |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "name" _.Name
-            |> fieldWith (Schema.listWith contactMethodSchema) "contacts" _.Contacts
-            |> construct (fun name contacts -> { Name = name; Contacts = contacts })
+            SchemaCE.schema<Customer> {
+                SchemaCE.field "name" _.Name {
+                    withSchema (Schema.text |> Schema.constrain Constraint.required)
+                }
+                SchemaCE.field "contacts" _.Contacts {
+                    withSchema (Schema.listWith contactMethodSchema)
+                }
+                SchemaCE.construct (fun name contacts -> { Name = name; Contacts = contacts })
+            }
 
         let model = modelDefinition schema
 
