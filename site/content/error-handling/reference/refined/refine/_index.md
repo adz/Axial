@@ -5,6 +5,10 @@ type: docs
 
 This page shows the `Refine` facade over the focused refinement modules.
 
+- [`Refined.Refine.from`](./m-refined-refine-from.md):
+ Runs the <code>RefineFrom</code> implementation for the source value and expected destination type.
+ Your destination type participates by defining a static <code>RefineFrom</code> member.
+
 - [`Refined.Refine.withCheck`](./m-refined-refine-withcheck.md): Builds a refined value by running a reusable <a href="../../check/t-errorhandling-check.md">Check</a> program
  before calling the constructor. Failures carry the check&#39;s own <a href="../../result/errors/t-errorhandling-checkfailure.md">CheckFailure</a>
  values, so callers never need to reinterpret or re-describe them.

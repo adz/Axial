@@ -1,5 +1,7 @@
 namespace Axial.Refined
 
+#nowarn "0064" // SRTP dispatch intentionally constrains its marker type while preserving source and destination types.
+
 open System
 open System.Collections.Generic
 open Axial.ErrorHandling
@@ -547,10 +549,10 @@ module Temporal =
             Error(RefinementError.InvalidStructure("DateOnlyRange", "Expected Start to be less than or equal to End."))
 #endif
 
-/// <summary>Parser-choice combinators for constructing caller-owned domain unions.</summary>
+/// <summary>Parser-choice combinators for constructing your own domain unions.</summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Choice =
-    /// <summary>Tries the left parser first, then the right parser, mapping either success into a caller-owned output type.</summary>
+    /// <summary>Tries the left parser first, then the right parser, mapping either success into your output type.</summary>
     let orElse
         (leftMap: 'left -> 'output)
         (left: 'raw -> Result<'left, 'error>)
@@ -584,9 +586,54 @@ module Choice =
                 | Some value -> Ok value
                 | None -> Error fallbackError
 
+/// <summary>
+/// Compile-time dispatch for type-directed refinements. Your destination type participates by defining one
+/// static <c>RefineFrom</c> member for each supported source type.
+/// </summary>
+/// <example>
+/// <code>
+/// type CustomerId = private CustomerId of int
+///
+/// type CustomerId with
+///     static member RefineFrom(raw: string, _: CustomerId) : Result&lt;CustomerId, RefinementError&gt; =
+///         Parse.int raw
+///         |> Result.mapError RefinementError.ParseFailed
+///         |> Result.map CustomerId
+/// </code>
+/// </example>
+type RefineFrom =
+    static member inline Invoke(raw: ^raw) : Result<^value, RefinementError> =
+        let inline call (target: ^value, input: ^raw, dispatch: ^dispatch) =
+            ((^value or ^dispatch):
+                (static member RefineFrom:
+                    ^raw * ^value -> Result<^value, RefinementError>)
+                    (input, target))
+
+        call (Unchecked.defaultof<^value>, raw, Unchecked.defaultof<RefineFrom>)
+
+    static member inline Bind
+        (
+            raw: ^raw,
+            binder: ^value -> Result<'next, RefinementError>
+        ) : Result<'next, RefinementError> =
+        RefineFrom.Invoke raw
+        |> Result.bind binder
+
 /// <summary>Smart constructors for built-in structural refined values.</summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Refine =
+    /// <summary>
+    /// Runs the <c>RefineFrom</c> implementation for the source value and expected destination type.
+    /// Your destination type participates by defining a static <c>RefineFrom</c> member.
+    /// </summary>
+    /// <example>
+    /// <code>
+    /// let id : Result&lt;int, RefinementError&gt; = Refine.from "42"
+    /// </code>
+    /// </example>
+    let inline from (raw: ^raw) : Result<^value, RefinementError> =
+        RefineFrom.Invoke raw
+
     /// <summary>Builds a refined value by running a reusable <see cref="T:Axial.ErrorHandling.Check`1" /> program
     /// before calling the constructor. Failures carry the check's own <see cref="T:Axial.ErrorHandling.CheckFailure" />
     /// values, so callers never need to reinterpret or re-describe them.</summary>
@@ -671,4 +718,141 @@ module Refine =
     /// <remarks>netstandard2.1: not available.</remarks>
     let dateOnlyRange start finish =
         Temporal.dateOnlyRange start finish
+#endif
+
+/// <summary>Computation expression builder for fail-fast structural refinement.</summary>
+/// <exclude/>
+type RefineBuilder() =
+    member _.Return(value: 'value) : Result<'value, RefinementError> =
+        Ok value
+
+    member _.ReturnFrom(result: Result<'value, RefinementError>) : Result<'value, RefinementError> =
+        result
+
+    member _.ReturnFrom(result: Result<'value, ParseError>) : Result<'value, RefinementError> =
+        result |> Result.mapError RefinementError.ParseFailed
+
+    member _.Zero() : Result<unit, RefinementError> =
+        Ok ()
+
+    member inline _.Bind
+        (
+            value: ^raw,
+            binder: ^value -> Result<'next, RefinementError>
+        ) : Result<'next, RefinementError> =
+        RefineFrom.Bind(value, binder)
+
+    member _.Delay(factory: unit -> Result<'value, RefinementError>) : Result<'value, RefinementError> =
+        factory ()
+
+    member _.Run(result: Result<'value, RefinementError>) : Result<'value, RefinementError> =
+        result
+
+    member _.Combine
+        (
+            first: Result<unit, RefinementError>,
+            second: Result<'value, RefinementError>
+        ) : Result<'value, RefinementError> =
+        Result.bind (fun () -> second) first
+
+module private BuiltInRefinementInternals =
+    let parse parser value =
+        parser value
+        |> Result.mapError RefinementError.ParseFailed
+
+// Keep these instances after Refine.from and RefineBuilder. F# must preserve their inline SRTP constraints before it
+// sees a concrete overload; otherwise it specializes the supposedly generic facade to the first instance.
+type RefineFrom with
+    static member RefineFrom(result: Result<'value, RefinementError>, _: 'value) =
+        result
+
+    static member RefineFrom(result: Result<'value, ParseError>, _: 'value) =
+        result
+        |> Result.mapError RefinementError.ParseFailed
+
+    static member RefineFrom(value: string, _: int) =
+        BuiltInRefinementInternals.parse Parse.int value
+
+    static member RefineFrom(value: string, _: int64) =
+        BuiltInRefinementInternals.parse Parse.long value
+
+    static member RefineFrom(value: string, _: decimal) =
+        BuiltInRefinementInternals.parse Parse.decimal value
+
+    static member RefineFrom(value: string, _: float) =
+        BuiltInRefinementInternals.parse Parse.float value
+
+    static member RefineFrom(value: string, _: bool) =
+        BuiltInRefinementInternals.parse Parse.bool value
+
+    static member RefineFrom(value: string, _: Guid) =
+        BuiltInRefinementInternals.parse Parse.guid value
+
+    static member RefineFrom(value: string, _: DateTime) =
+        BuiltInRefinementInternals.parse Parse.dateTime value
+
+    static member RefineFrom(value: string, _: DateTimeOffset) =
+        BuiltInRefinementInternals.parse Parse.dateTimeOffset value
+
+#if NET8_0_OR_GREATER
+    static member RefineFrom(value: string, _: DateOnly) =
+        BuiltInRefinementInternals.parse Parse.dateOnly value
+
+    static member RefineFrom(value: string, _: TimeOnly) =
+        BuiltInRefinementInternals.parse Parse.timeOnly value
+#endif
+
+    static member RefineFrom(value: string, _: NonBlankString) =
+        Refine.nonBlankString value
+
+    static member RefineFrom(value: string, _: TrimmedString) =
+        Refine.trimmedString value
+
+    static member RefineFrom(value: string, _: Slug) =
+        Refine.slug value
+
+    static member RefineFrom(input: string * int * int, _: BoundedString) =
+        let value, minLength, maxLength = input
+        Refine.boundedString minLength maxLength value
+
+    static member RefineFrom(value: int, _: PositiveInt) =
+        Refine.positiveInt value
+
+    static member RefineFrom(value: int, _: NonNegativeInt) =
+        Refine.nonNegativeInt value
+
+    static member RefineFrom(value: int, _: NonZeroInt) =
+        Refine.nonZeroInt value
+
+    static member RefineFrom(value: int, _: NegativeInt) =
+        Refine.negativeInt value
+
+    static member RefineFrom(value: int, _: NonPositiveInt) =
+        Refine.nonPositiveInt value
+
+    static member RefineFrom(values: seq<'value>, _: NonEmptyList<'value>) =
+        Refine.nonEmptyList values
+
+    static member RefineFrom(values: seq<'value>, _: NonEmptyArray<'value>) =
+        Refine.nonEmptyArray values
+
+    static member RefineFrom(values: seq<'value>, _: DistinctList<'value>) =
+        Refine.distinctList values
+
+    static member RefineFrom(input: 'value list * int * int, _: BoundedList<'value>) =
+        let values, minCount, maxCount = input
+        Refine.boundedList minCount maxCount values
+
+    static member RefineFrom(input: 'value array * int * int, _: BoundedArray<'value>) =
+        let values, minCount, maxCount = input
+        Refine.boundedArray minCount maxCount values
+
+    static member RefineFrom(input: DateTimeOffset * DateTimeOffset, _: DateTimeOffsetRange) =
+        let start, finish = input
+        Refine.dateTimeOffsetRange start finish
+
+#if NET8_0_OR_GREATER
+    static member RefineFrom(input: DateOnly * DateOnly, _: DateOnlyRange) =
+        let start, finish = input
+        Refine.dateOnlyRange start finish
 #endif

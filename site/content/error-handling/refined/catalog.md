@@ -6,11 +6,11 @@ type: docs
 ---
 
 
-This page shows the built-in refined values available from `Axial.Refined` and how to choose the right helper at a request boundary.
+This page lists the built-in refined values in `Axial.Refined`, together with the input and output type of each helper.
 
 `Axial.Refined` is not only a type catalog: it also owns primitive parsing, smart constructors, the `refine {}` builder, and parser-choice helpers.
 
-For caller-owned domain values, use the single authoring pattern in [Domain Values](../domain-values/): private
+For your own domain values, use the single authoring pattern in [Domain Values](../domain-values/): private
 constructor, smart constructor, optional standalone helper, and `Schema.refine` schema when the type appears in a model.
 
 When the same scalar catalog value is used as a schema field, use the schema integration catalog in

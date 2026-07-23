@@ -4,7 +4,7 @@ weight: 50
 type: docs
 ---
 
-This page shows the `Axial.Refined` surface for turning untrusted boundary data into stronger structural values. Use `Parse` to convert serialized strings into primitive values, focused modules such as `Text`, `Numeric`, `Collection`, and `Temporal` to construct refined values such as `Slug`, `NonZeroInt`, and `DateTimeOffsetRange`, and `refine { }` to sequence fail-fast parsing and refinement before workflow execution.
+This page shows the `Axial.Refined` surface for turning untrusted boundary data into stronger structural values. `Refine.from` runs the refinement defined for its source and destination types. `Parse` converts serialized strings into primitive values. Focused modules such as `Text`, `Numeric`, `Collection`, and `Temporal` construct named refined values such as `Slug`, `NonZeroInt`, and `DateTimeOffsetRange`. `refine { }` sequences dependent parsing and refinement and stops at the first failure.
 
 ## Errors and refined types
 
@@ -90,7 +90,7 @@ This page shows the `Axial.Refined` surface for turning untrusted boundary data 
 
 ## Choice
 
-- [`Refined.Choice.orElse`](./choice/m-refined-choice-orelse.md): Tries the left parser first, then the right parser, mapping either success into a caller-owned output type.
+- [`Refined.Choice.orElse`](./choice/m-refined-choice-orelse.md): Tries the left parser first, then the right parser, mapping either success into your output type.
 - [`Refined.Choice.tryAny`](./choice/m-refined-choice-tryany.md): Tries parser strategies in order and returns the first success.
 
 ## Re-certifying helpers
@@ -110,6 +110,10 @@ This page shows the `Axial.Refined` surface for turning untrusted boundary data 
 - [`Refined.NonEmptyList.tryFilter`](./non-empty-list/m-refined-nonemptylist-tryfilter.md): Filters the list and re-certifies that at least one item remains.
 
 ## Refine facade
+
+- [`Refined.Refine.from`](./refine/m-refined-refine-from.md):
+ Runs the <code>RefineFrom</code> implementation for the source value and expected destination type.
+ Your destination type participates by defining a static <code>RefineFrom</code> member.
 
 - [`Refined.Refine.withCheck`](./refine/m-refined-refine-withcheck.md): Builds a refined value by running a reusable <a href="../../check/t-errorhandling-check.md">Check</a> program
  before calling the constructor. Failures carry the check&#39;s own <a href="../../result/errors/t-errorhandling-checkfailure.md">CheckFailure</a>

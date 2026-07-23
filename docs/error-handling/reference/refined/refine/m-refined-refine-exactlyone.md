@@ -1,7 +1,7 @@
 ---
 title: "Refined.Refine.exactlyOne"
 linkTitle: "exactlyOne"
-weight: 2918
+weight: 2919
 ---
 
 Extracts the only item from a sequence.

@@ -11,6 +11,50 @@ module ParseAndBuilderTests =
         | First = 1
         | Second = 2
 
+    type CustomerId =
+        private
+        | CustomerId of PositiveInt
+
+        member this.Value =
+            let (CustomerId value) = this
+            value.Value
+
+    module CustomerId =
+        let create raw : Result<CustomerId, RefinementError> =
+            refine {
+                let! (parsed: int) = raw
+                let! (positive: PositiveInt) = parsed
+                return CustomerId positive
+            }
+
+    type CustomerId with
+        static member RefineFrom(raw: string, _: CustomerId) : Result<CustomerId, RefinementError> =
+            CustomerId.create raw
+
+    [<Fact>]
+    let ``Refine from supports built-in refinements and refinements defined on application types`` () =
+        let parsed: Result<int, RefinementError> = Refine.from "42"
+        let positive: Result<PositiveInt, RefinementError> = Refine.from 3
+        let customerId: Result<CustomerId, RefinementError> = Refine.from "43"
+        let invalidInt: Result<int, RefinementError> = Refine.from "not-an-int"
+        let invalidCustomerId: Result<CustomerId, RefinementError> = Refine.from "0"
+
+        test <@ parsed = Ok 42 @>
+        test <@ positive |> Result.map _.Value = Ok 3 @>
+        test <@ customerId |> Result.map _.Value = Ok 43 @>
+        test <@ invalidInt = Error(ParseFailed(ParseError.InvalidFormat("int", "not-an-int"))) @>
+        test <@ invalidCustomerId |> Result.isError @>
+
+    [<Fact>]
+    let ``refine computation expression binds refinements defined on application types`` () =
+        let actual =
+            refine {
+                let! (customerId: CustomerId) = "44"
+                return customerId.Value
+            }
+
+        test <@ actual = Ok 44 @>
+
     [<Fact>]
     let ``Parse covers primitive parser success and failure`` () =
         let guidText = "11111111-1111-1111-1111-111111111111"
@@ -102,7 +146,7 @@ module ParseAndBuilderTests =
         let explicitBinding =
             refine {
                 let! count = Parse.int "42"
-                let! positive = Refine.positiveInt count
+                let! (positive: PositiveInt) = Refine.positiveInt count
                 return positive.Value
             }
 

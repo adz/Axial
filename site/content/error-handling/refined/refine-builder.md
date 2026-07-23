@@ -9,6 +9,15 @@ type: docs
 Use `refine {}` to parse and refine raw values from the type expected on the left side of `let!`. Each successful step
 passes its value to the next line, and the block stops at the first error.
 
+One value needs no computation expression:
+
+```fsharp
+let id : Result<int, RefinementError> =
+    Refine.from rawId
+```
+
+`refine {}` sequences several dependent refinements and stops at the first failure.
+
 ## What the keywords do
 
 `let!` selects a parser or refined constructor when its right side is raw input. `do!` binds a step whose successful
@@ -66,7 +75,7 @@ let createUser (rawId: string) (rawEmail: string) : Result<User, RefinementError
 ```
 
 The annotations are required here because a `string` can target several parsed and refined types, while an `int` can
-target several integer refinements. F# must choose the `Bind` overload before the final `return` establishes the
+target several integer refinements. F# must resolve the `Bind` overload before the final `return` establishes the
 block's result type.
 
 ## Automatic parsing
@@ -133,6 +142,37 @@ refine {
     return name
 }
 ```
+
+## Define your own destination type
+
+The builder uses the same type selection as `Refine.from`. Define a static `RefineFrom` member on your destination
+type:
+
+```fsharp
+type CustomerId =
+    private
+    | CustomerId of PositiveInt
+
+    static member RefineFrom(raw: string, _: CustomerId) : Result<CustomerId, RefinementError> =
+        refine {
+            let! (parsed: int) = raw
+            let! (positive: PositiveInt) = parsed
+            return CustomerId positive
+        }
+```
+
+The type then binds like a built-in refinement:
+
+```fsharp
+refine {
+    let! (customerId: CustomerId) = rawCustomerId
+    let! (quantity: PositiveInt) = rawQuantity
+    return customerId, quantity
+}
+```
+
+Define one `RefineFrom` member for each source and destination pair. Two interpretations with the same pair have no
+type-level distinction, so they require explicitly named functions.
 
 ## When to use `refine {}`
 

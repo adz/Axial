@@ -5,7 +5,7 @@ weight: 2700
 type: docs
 ---
 
-Tries the left parser first, then the right parser, mapping either success into a caller-owned output type.
+Tries the left parser first, then the right parser, mapping either success into your output type.
 
 ## Signature
 

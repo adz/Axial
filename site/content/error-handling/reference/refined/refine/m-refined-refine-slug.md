@@ -1,7 +1,7 @@
 ---
 title: "Refined.Refine.slug"
 linkTitle: "slug"
-weight: 2905
+weight: 2906
 type: docs
 ---
 

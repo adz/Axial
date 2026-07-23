@@ -14,6 +14,8 @@
 - Use `Validation<'value, 'error>` and `validate { let! ... and! ... }` when independent failures should accumulate.
 - Use `Diagnostics<'error>` when failures need paths, indexes, or names.
 - Use `Parse` for serialized primitives and `Refine` for values whose type should record a successful check.
+- `Refine.from` runs the conversion defined for its source and annotated `Result` destination types. Your destination
+  type participates through a static `RefineFrom` member.
 
 ## Computation expressions
 

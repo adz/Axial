@@ -27,7 +27,6 @@
     <Compile Include="Errors.fs" />
     <Compile Include="Parse.fs" />
     <Compile Include="Refine.fs" />
-    <Compile Include="RefineBuilder.fs" />
     <Compile Include="Builders.fs" />
   </ItemGroup>
 </Project>

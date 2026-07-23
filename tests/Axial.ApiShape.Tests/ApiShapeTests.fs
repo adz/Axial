@@ -1594,7 +1594,7 @@ module ApiShapeTests =
             |> publicStaticMemberNames
 
         refineMembers
-        |> assertContainsAll [ "nonBlankString"; "positiveInt"; "nonEmptyList"; "exactlyOne"; "atMostOne" ]
+        |> assertContainsAll [ "from"; "nonBlankString"; "positiveInt"; "nonEmptyList"; "exactlyOne"; "atMostOne" ]
 
         moduleType typeof<Flow<unit, unit, unit>> "Axial.Flow.Bind"
         |> publicStaticMemberNames

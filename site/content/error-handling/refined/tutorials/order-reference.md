@@ -1,7 +1,7 @@
 ---
 weight: 10
 title: Order Reference Tutorial
-description: Parse strings into refined values and a caller-owned domain type.
+description: Parse strings into refined values and your own domain type.
 type: docs
 ---
 
@@ -11,7 +11,7 @@ hold invalid values. Once construction succeeds, no downstream code re-checks an
 
 ## The Target Domain Type
 
-Wrap refined values in caller-owned types so signatures speak the domain's language:
+Wrap refined values in your own types so signatures use the domain's language:
 
 ```fsharp
 open Axial

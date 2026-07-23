@@ -15,8 +15,19 @@ receiving the refined value does not need to repeat the check.
 
 Refined values live in ErrorHandling and can be used on their own.
 
-`Parse` reads primitive input, `Refine` builds a refined value, and `refine {}` selects either operation from the type
-annotation on the left side of `let!` while sequencing dependent steps.
+`Refine.from` is the type-directed entry point. Its source type and expected result type determine the parser or
+refined constructor at compile time:
+
+```fsharp
+let id : Result<int, RefinementError> =
+    Refine.from rawId
+
+let quantity : Result<PositiveInt, RefinementError> =
+    Refine.from parsedQuantity
+```
+
+Named `Parse` and `Refine` functions handle operations that require parameters or share the same source and destination
+types. `refine {}` applies type-directed refinement at each `let!` while sequencing dependent steps.
 
 ## Install
 
@@ -31,6 +42,29 @@ dotnet add package Axial.Refined
 ```text
 Untrusted Input -> Parse -> Refine -> Strongly-Typed Value
 ```
+
+## Define your own refinement
+
+Your destination type joins `Refine.from` by defining a static `RefineFrom` member:
+
+```fsharp
+type CustomerId =
+    private
+    | CustomerId of PositiveInt
+
+    static member RefineFrom(raw: string, _: CustomerId) : Result<CustomerId, RefinementError> =
+        refine {
+            let! (parsed: int) = raw
+            let! (positive: PositiveInt) = parsed
+            return CustomerId positive
+        }
+
+let customerId : Result<CustomerId, RefinementError> =
+    Refine.from rawCustomerId
+```
+
+Define one `RefineFrom` member for each source and destination pair. Two interpretations with the same pair have no
+type-level distinction; expose them as named functions such as `CustomerId.fromHexText`.
 
 By parsing and refining values before executing core business logic, you prevent invalid states from corrupting your domain model.
 
@@ -81,14 +115,15 @@ refine {
 
 After this function succeeds, the `Product` fields hold refined types instead of unchecked primitives.
 
-`refine {}` is fail-fast. Use it when later checks depend on earlier values or when the first error is enough. Use `validate {}` from `Axial.Validation` when independent sibling fields should all report diagnostics at once.
+`refine {}` stops at the first failure, so a later step can depend on every earlier success. `validate {}` from
+`Axial.Validation` runs independent sibling fields and reports all of their diagnostics together.
 
 ## Guides
 
-- [Tutorials](./tutorials/): parse strings into refined values and a caller-owned domain type.
+- [Tutorials](./tutorials/): parse strings into refined values and your own domain type.
 - [Refine Builder](./refine-builder/): fail-fast parsing and refinement with `refine {}`.
 - [Refined Catalog](./catalog/): built-in numeric, text, collection, temporal, character, and choice helpers.
-- [Domain Values](./domain-values/): author caller-owned refined values for standalone use.
+- [Domain Values](./domain-values/): define your own refined values for standalone use.
 - [Relation to Schema](./schema/): use refined values as fields in an `Axial.Schema` model.
 
 ## Reference

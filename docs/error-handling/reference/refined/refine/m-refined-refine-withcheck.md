@@ -1,7 +1,7 @@
 ---
 title: "Refined.Refine.withCheck"
 linkTitle: "withCheck"
-weight: 2900
+weight: 2901
 ---
 
 Builds a refined value by running a reusable <a href="../../check/t-errorhandling-check.md">Check</a> program
