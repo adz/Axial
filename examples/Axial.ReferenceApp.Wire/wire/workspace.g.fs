@@ -17,14 +17,17 @@ module WorkspaceCardV1 =
 
     /// The schema declared by workspace.fs (WorkspaceCard.v1).
     let schema : Schema<WorkspaceCardV1> =
-        Schema.define<WorkspaceCardV1>
-        |> fieldWith (Schema.text |> Schema.describe "Display name of the workspace.") "name" _.Name
-        |> constrain (minLength 1)
-        |> constrain (maxLength 60)
-        |> field "owner" _.Owner
-        |> construct (fun name owner ->
-            { Name = name
-              Owner = owner })
+        SchemaCE.schema<WorkspaceCardV1> {
+            SchemaCE.field "name" (fun (value: WorkspaceCardV1) -> value.Name) {
+                withSchema (Schema.text |> Schema.describe "Display name of the workspace.")
+                constrain (minLength 1)
+                constrain (maxLength 60)
+            }
+            SchemaCE.field "owner" (fun (value: WorkspaceCardV1) -> value.Owner)
+            SchemaCE.construct (fun name owner ->
+                { Name = name
+                  Owner = owner })
+        }
         |> Schema.describe "A workspace card as first exported: one owner string of the form \"Name <email>\"."
 
     /// Checks a draft built with an ordinary record literal.
@@ -49,16 +52,24 @@ module WorkspaceCard =
 
     /// The schema declared by workspace.fs (WorkspaceCard.v2).
     let schema : Schema<WorkspaceCard> =
-        Schema.define<WorkspaceCard>
-        |> fieldWith (Schema.text |> Schema.describe "Display name of the workspace.") "name" _.Name
-        |> constrain (minLength 1)
-        |> constrain (maxLength 60)
-        |> field "owner_email" _.OwnerEmail
-        |> constrain emailFormat
-        |> fieldWith (Schema.enum visibilityCases |> Schema.withDefault Visibility.Private) "visibility" _.Visibility
-        |> field "members" _.Members
-        |> constrain distinct
-        |> construct (fun name ownerEmail visibility members -> WorkspaceCard.create name ownerEmail visibility members)
+        SchemaCE.schema<WorkspaceCard> {
+            SchemaCE.field "name" (fun (value: WorkspaceCard) -> value.Name) {
+                withSchema (Schema.text |> Schema.describe "Display name of the workspace.")
+                constrain (minLength 1)
+                constrain (maxLength 60)
+            }
+            SchemaCE.field "owner_email" (fun (value: WorkspaceCard) -> value.OwnerEmail) {
+                constrain emailFormat
+            }
+            SchemaCE.field "visibility" (fun (value: WorkspaceCard) -> value.Visibility) {
+                withSchema (Schema.enum visibilityCases |> Schema.withDefault Visibility.Private)
+            }
+            SchemaCE.field "members" (fun (value: WorkspaceCard) -> value.Members) {
+                withSchema (Schema.listWith Schema.text)
+                constrain distinct
+            }
+            SchemaCE.construct (fun name ownerEmail visibility members -> WorkspaceCard.create name ownerEmail visibility members)
+        }
         |> Schema.describe "A workspace card with a dedicated owner email, visibility, and member emails."
 
     /// Checks a draft built with an ordinary record literal.

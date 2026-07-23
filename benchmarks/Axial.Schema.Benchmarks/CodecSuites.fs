@@ -28,40 +28,49 @@ module CodecModel =
           Scores: int list }
 
     let addressSchema =
-        Schema.define<Address>
-        |> fieldWith Schema.text "street" _.Street
-        |> fieldWith Schema.text "city" _.City
-        |> construct (fun street city -> { Street = street; City = city })
+        SchemaCE.schema<Address> {
+            SchemaCE.field "street" _.Street
+            SchemaCE.field "city" _.City
+            SchemaCE.construct (fun street city -> { Street = street; City = city })
+        }
 
     let contactSchema =
-        Schema.define<Contact>
-        |> fieldWith Schema.text "label" _.Label
-        |> fieldWith Schema.text "value" _.Value
-        |> construct (fun label value -> { Label = label; Value = value })
+        SchemaCE.schema<Contact> {
+            SchemaCE.field "label" _.Label
+            SchemaCE.field "value" _.Value
+            SchemaCE.construct (fun label value -> { Label = label; Value = value })
+        }
 
     let customerSchema =
-        Schema.define<Customer>
-        |> fieldWith Schema.guid "id" _.Id
-        |> fieldWith Schema.text "name" _.Name
-        |> fieldWith Schema.int "age" _.Age
-        |> fieldWith Schema.decimal "balance" _.Balance
-        |> fieldWith Schema.bool "newsletter" _.Newsletter
-        |> fieldWith Schema.date "joined" _.Joined
-        |> fieldWith Schema.dateTime "lastSeen" _.LastSeen
-        |> fieldWith addressSchema "address" _.Address
-        |> fieldWith (Schema.listWith contactSchema) "contacts" _.Contacts
-        |> fieldWith (Schema.listWith Schema.int) "scores" _.Scores
-        |> construct (fun id name age balance newsletter joined lastSeen address contacts scores ->
-            { Id = id
-              Name = name
-              Age = age
-              Balance = balance
-              Newsletter = newsletter
-              Joined = joined
-              LastSeen = lastSeen
-              Address = address
-              Contacts = contacts
-              Scores = scores })
+        SchemaCE.schema<Customer> {
+            SchemaCE.field "id" _.Id
+            SchemaCE.field "name" _.Name
+            SchemaCE.field "age" _.Age
+            SchemaCE.field "balance" _.Balance
+            SchemaCE.field "newsletter" _.Newsletter
+            SchemaCE.field "joined" _.Joined
+            SchemaCE.field "lastSeen" _.LastSeen
+            SchemaCE.field "address" _.Address {
+                withSchema addressSchema
+            }
+            SchemaCE.field "contacts" _.Contacts {
+                withSchema (Schema.listWith contactSchema)
+            }
+            SchemaCE.field "scores" _.Scores {
+                withSchema (Schema.listWith Schema.int)
+            }
+            SchemaCE.construct (fun id name age balance newsletter joined lastSeen address contacts scores ->
+                { Id = id
+                  Name = name
+                  Age = age
+                  Balance = balance
+                  Newsletter = newsletter
+                  Joined = joined
+                  LastSeen = lastSeen
+                  Address = address
+                  Contacts = contacts
+                  Scores = scores })
+        }
 
     let sample =
         { Id = Guid.Parse "7d9a2f5e-95c8-4f2b-b1e3-2f6d3a1c9b42"
