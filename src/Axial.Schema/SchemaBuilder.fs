@@ -196,6 +196,22 @@ type FieldBuilder<'model, 'target> internal (name: string, getter: 'model -> 'ta
         : FieldDeclaration<'model, 'target> =
         invalidOp $"Field '{field.Initial.Name}' has an unfinished raw schema."
 
+#if !FABLE_COMPILER
+[<AutoOpen>]
+module SyntaxExtensions =
+    type Syntax with
+        /// <summary>Declares a field from a property getter and derives its camel-cased wire name.</summary>
+        static member field
+            ([<ReflectedDefinition(includeValue = true)>] getter: Expr<'model -> 'value>)
+            : FieldBuilder<'model, 'value> =
+            let name, get = Syntax.DerivedField getter
+            FieldBuilder(name, get)
+
+        /// <summary>Declares a field with an explicit wire name.</summary>
+        static member field(name: string) : (('model -> 'value) -> FieldBuilder<'model, 'value>) =
+            fun getter -> FieldBuilder(name, getter)
+#endif
+
 [<EditorBrowsable(EditorBrowsableState.Never)>]
 type FieldStep<'model, 'value> internal (definition: FieldDefinition<'model, 'value>) =
     member internal _.Definition = definition

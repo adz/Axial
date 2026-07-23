@@ -365,26 +365,4 @@ type Syntax =
                 (nameof getter)
                 "The bare field form requires a property getter such as `_.Name`; use `field \"name\" getter` for anything else."
 
-    /// <summary>Adds a field from a bare property getter such as <c>field _.Name</c>: the wire name is the
-    /// camelCased property name and the value schema is inferred like the named <c>field</c> form.</summary>
-    static member inline field([<ReflectedDefinition(includeValue = true)>] getter: Expr<'model -> ^value>) : ^shape -> ^shape' =
-        let name, get = Syntax.DerivedField getter
-        let valueSchema: Schema< ^value> = SchemaDefaults.Resolve()
-
-        fun shape ->
-            (^shape: (static member Field: ^shape * string * ('model -> ^value) * Schema< ^value> -> ^shape') (shape,
-                                                                                                              name,
-                                                                                                              get,
-                                                                                                              valueSchema))
-
-    /// <summary>Adds a field with an explicit wire name and inferred value schema; identical to the module-level
-    /// <c>field</c>, provided here so <c>open type</c> users keep the named form under the same word.</summary>
-    static member inline field(name: string) : (('model -> ^value) -> ^shape -> ^shape') =
-        fun getter shape ->
-            let valueSchema: Schema< ^value> = SchemaDefaults.Resolve()
-
-            (^shape: (static member Field: ^shape * string * ('model -> ^value) * Schema< ^value> -> ^shape') (shape,
-                                                                                                              name,
-                                                                                                              getter,
-                                                                                                              valueSchema))
 #endif

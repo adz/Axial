@@ -2,7 +2,6 @@ namespace Axial.Tests
 
 open Axial
 open Axial.Schema
-open Axial.Schema.Syntax
 open Axial.Validation
 open Swensen.Unquote
 open Xunit
@@ -48,23 +47,24 @@ module SchemaWideShapeTests =
               F15 = o }
 
     let private wideSchema =
-        Schema.define<Wide>
-        |> field "f01" _.F01
-        |> field "f02" _.F02
-        |> field "f03" _.F03
-        |> field "f04" _.F04
-        |> field "f05" _.F05
-        |> field "f06" _.F06
-        |> field "f07" _.F07
-        |> field "f08" _.F08
-        |> field "f09" _.F09
-        |> field "f10" _.F10
-        |> field "f11" _.F11
-        |> field "f12" _.F12
-        |> field "f13" _.F13
-        |> field "f14" _.F14
-        |> field "f15" _.F15
-        |> construct Wide.Create
+        schema<Wide> {
+            field "f01" _.F01
+            field "f02" _.F02
+            field "f03" _.F03
+            field "f04" _.F04
+            field "f05" _.F05
+            field "f06" _.F06
+            field "f07" _.F07
+            field "f08" _.F08
+            field "f09" _.F09
+            field "f10" _.F10
+            field "f11" _.F11
+            field "f12" _.F12
+            field "f13" _.F13
+            field "f14" _.F14
+            field "f15" _.F15
+            construct Wide.Create
+        }
 
     [<Fact>]
     let ``fifteen fields close with a single construct call`` () =
@@ -142,12 +142,16 @@ module SchemaWideShapeTests =
         static member Create name age tags = { Name = name; Age = age; Tags = tags }
 
     let private contactSchema =
-        Schema.define<Contact>
-        |> field _.Name
-        |> constrain (minLength 1)
-        |> field _.Age
-        |> field _.Tags
-        |> construct Contact.Create
+        schema<Contact> {
+            field _.Name {
+                constrain (Syntax.minLength 1)
+            }
+            field _.Age
+            field _.Tags {
+                withSchema (Schema.listWith Schema.text)
+            }
+            construct Contact.Create
+        }
 
     [<Fact>]
     let ``bare getters derive camelCased wire names`` () =
@@ -191,11 +195,14 @@ module SchemaWideShapeTests =
     let ``the named field form still works under open type`` () =
         // `open type` must not shadow away the named spelling: both live on the same overloaded member.
         let schema =
-            Schema.define<Contact>
-            |> field "fullName" _.Name
-            |> field _.Age
-            |> field _.Tags
-            |> construct Contact.Create
+            schema<Contact> {
+                field "fullName" _.Name
+                field _.Age
+                field _.Tags {
+                    withSchema (Schema.listWith Schema.text)
+                }
+                construct Contact.Create
+            }
 
         let description = Inspect.model schema
         test <@ description.Fields |> List.map _.Name = [ "fullName"; "age"; "tags" ] @>

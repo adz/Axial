@@ -2,7 +2,6 @@ open System
 open Axial.ErrorHandling
 open Axial.Schema
 open Axial.Validation
-open Axial.Schema.Syntax
 open type Axial.Schema.Syntax
 
 type ProbeFailure(message: string) =
@@ -214,10 +213,11 @@ let renderUserForm user =
 
 let probeSchemaPlan () =
     let schema =
-        Schema.define<SchemaContact>
-        |> field "name" _.Name
-        |> field "age" _.Age
-        |> construct (fun name age -> { Name = name; Age = age })
+        schema<SchemaContact> {
+            field "name" _.Name
+            field "age" _.Age
+            construct (fun name age -> { Name = name; Age = age })
+        }
 
     Schema.compilePlan (SummaryFactory<SchemaContact>()) schema
 
@@ -225,11 +225,13 @@ let probeBareGetterFields () =
     // The bare field form derives wire names from getter quotations; this proves the quotation
     // pattern-match and the compiled-getter extraction both survive native AOT.
     let schema =
-        Schema.define<SchemaContact>
-        |> field _.Name
-        |> constrain (minLength 1)
-        |> field _.Age
-        |> construct (fun name age -> { Name = name; Age = age })
+        schema<SchemaContact> {
+            field _.Name {
+                constrain (Syntax.minLength 1)
+            }
+            field _.Age
+            construct (fun name age -> { Name = name; Age = age })
+        }
 
     let description = Inspect.model schema
     description.Fields |> List.map _.Name |> Assert.equal [ "name"; "age" ]
