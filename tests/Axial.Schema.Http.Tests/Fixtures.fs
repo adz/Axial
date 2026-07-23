@@ -12,31 +12,31 @@ type Signup =
       Tags: string list }
 
 let addressSchema () =
-    SchemaCE.schema<Address> {
-        SchemaCE.field "street" _.Street {
+    schema<Address> {
+        field "street" _.Street {
             withSchema (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 120 ])
         }
-        SchemaCE.field "city" _.City {
+        field "city" _.City {
             withSchema (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 80 ])
         }
-        SchemaCE.construct (fun street city -> { Street = street; City = city })
+        construct (fun street city -> { Street = street; City = city })
     }
 
 let signupSchema () =
-    SchemaCE.schema<Signup> {
-        SchemaCE.field "name" _.Name {
+    schema<Signup> {
+        field "name" _.Name {
             withSchema (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 80 ])
         }
-        SchemaCE.field "age" _.Age {
+        field "age" _.Age {
             withSchema (Schema.int |> Schema.constrainAll [ Constraint.between 13 120 ])
         }
-        SchemaCE.field "address" _.Address {
+        field "address" _.Address {
             withSchema (addressSchema () |> Schema.constrainAll [ Constraint.required ])
         }
-        SchemaCE.field "tags" _.Tags {
+        field "tags" _.Tags {
             withSchema (Schema.listWith Schema.text |> Schema.constrainAll [ Constraint.maxCount 5 ])
         }
-        SchemaCE.construct (fun name age address tags ->
+        construct (fun name age address tags ->
             { Name = name
               Age = age
               Address = address

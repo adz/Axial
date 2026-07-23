@@ -34,14 +34,14 @@ module ConstraintInspectionTests =
         let ageValue = Schema.int |> Schema.constrain (Constraint.between 13 120)
 
         let schema =
-            SchemaCE.schema<Signup> {
-                SchemaCE.field "email" _.Email {
+            schema<Signup> {
+                field "email" _.Email {
                     withSchema (emailValue |> Schema.constrainAll [ Constraint.required ])
                 }
-                SchemaCE.field "age" _.Age {
+                field "age" _.Age {
                     withSchema ageValue
                 }
-                SchemaCE.construct (fun email age -> { Email = email; Age = age })
+                construct (fun email age -> { Email = email; Age = age })
             }
 
         // Everything below reads metadata off `schema` alone: no `Signup` value is constructed, and no `Check` or
@@ -82,20 +82,20 @@ module ConstraintInspectionTests =
     [<Fact>]
     let ``shape schema constraints preserve per field ordering and metadata independent of a model instance`` () =
         let schema =
-            SchemaCE.schema<Address> {
-                SchemaCE.field "street" _.Street {
+            schema<Address> {
+                field "street" _.Street {
                     withSchema (Schema.text |> Schema.constrain Constraint.required)
                 }
-                SchemaCE.field "city" _.City {
+                field "city" _.City {
                     withSchema (Schema.text |> Schema.constrain (Constraint.lengthBetween 1 100))
                 }
-                SchemaCE.field "postalCode" _.PostalCode {
+                field "postalCode" _.PostalCode {
                     withSchema (
                         Schema.text
                         |> Schema.constrainAll [ Constraint.required; Constraint.pattern "^[0-9]{5}$" ]
                     )
                 }
-                SchemaCE.construct (fun street city postalCode ->
+                construct (fun street city postalCode ->
                     { Street = street
                       City = city
                       PostalCode = postalCode })

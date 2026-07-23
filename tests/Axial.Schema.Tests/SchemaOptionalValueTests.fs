@@ -16,12 +16,12 @@ module SchemaOptionalValueTests =
           Nickname: string option }
 
     let private profileSchema () =
-        SchemaCE.schema<Profile> {
-            SchemaCE.field "name" _.Name
-            SchemaCE.field "nickname" _.Nickname {
+        schema<Profile> {
+            field "name" _.Name
+            field "nickname" _.Nickname {
                 withSchema (Schema.option (Schema.text |> Schema.constrain (Constraint.minLength 2)))
             }
-            SchemaCE.construct (fun name nickname -> { Name = name; Nickname = nickname })
+            construct (fun name nickname -> { Name = name; Nickname = nickname })
         }
 
     [<Fact>]
@@ -71,12 +71,12 @@ module SchemaOptionalValueTests =
         // A plain thunk rather than an Unquote quotation: the quotation interpreter cannot build the
         // private record's constructor lambda, while the compiled pipeline exercises the real path.
         Assert.Throws<System.ArgumentException>(fun () ->
-            SchemaCE.schema<Profile> {
-                SchemaCE.field "name" _.Name
-                SchemaCE.field "nickname" _.Nickname {
+            schema<Profile> {
+                field "name" _.Name
+                field "nickname" _.Nickname {
                     withSchema ((Schema.option Schema.text) |> Schema.constrainAll [ Constraint.required ])
                 }
-                SchemaCE.construct (fun name nickname -> { Name = name; Nickname = nickname })
+                construct (fun name nickname -> { Name = name; Nickname = nickname })
             }
             |> ignore)
         |> ignore

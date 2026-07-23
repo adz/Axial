@@ -57,31 +57,31 @@ module SchemaCeTests =
             Error(SchemaError.Custom("company-email", Some "Expected an example.com address."))
 
     let private signupSchema =
-        SchemaCE.schema<CeSignup> {
-            SchemaCE.field "email" _.Email {
+        schema<CeSignup> {
+            field "email" _.Email {
                 withSchema Schema.text
                 constrain (Syntax.minLength 3)
                 refine
                 validate validateCompanyEmail
             }
 
-            SchemaCE.field "age" _.Age
-            SchemaCE.construct CeSignup.create
+            field "age" _.Age
+            construct CeSignup.create
         }
 
     let private checkedSignupSchema =
-        SchemaCE.schema<CeSignup> {
-            SchemaCE.field "email" _.Email {
+        schema<CeSignup> {
+            field "email" _.Email {
                 withSchema Schema.text
                 refine
             }
 
-            SchemaCE.field "age" _.Age {
+            field "age" _.Age {
                 withSchema Schema.int
                 constrain (Syntax.atLeast 0)
             }
 
-            SchemaCE.constructResult CeSignup.createChecked
+            constructResult CeSignup.createChecked
         }
 
     let private input age =

@@ -48,12 +48,12 @@ module SchemaErrorTests =
     [<Fact>]
     let ``parsed input renders failed parse diagnostics with paths`` () =
         let schema =
-            SchemaCE.schema<Signup> {
-                SchemaCE.field "email" _.Email {
+            schema<Signup> {
+                field "email" _.Email {
                     withSchema (Schema.text |> Schema.constrain Constraint.required)
                 }
-                SchemaCE.field "age" _.Age
-                SchemaCE.construct (fun email age -> { Email = email; Age = age })
+                field "age" _.Age
+                construct (fun email age -> { Email = email; Age = age })
             }
 
         let raw =
@@ -70,12 +70,12 @@ module SchemaErrorTests =
     [<Fact>]
     let ``schema issues can be mapped into application errors after parsing`` () =
         let schema =
-            SchemaCE.schema<Signup> {
-                SchemaCE.field "email" _.Email {
+            schema<Signup> {
+                field "email" _.Email {
                     withSchema (Schema.text |> Schema.constrain Constraint.required)
                 }
-                SchemaCE.field "age" _.Age
-                SchemaCE.construct (fun email age -> { Email = email; Age = age })
+                field "age" _.Age
+                construct (fun email age -> { Email = email; Age = age })
             }
 
         let result =

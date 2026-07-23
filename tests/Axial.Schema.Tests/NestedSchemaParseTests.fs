@@ -28,47 +28,47 @@ module NestedSchemaParseTests =
     type private VerifiedCustomer = { Name: string; Address: VerifiedAddress }
 
     let private addressSchema =
-        SchemaCE.schema<Address> {
-            SchemaCE.field "street" (fun (address: Address) -> address.Street) {
+        schema<Address> {
+            field "street" (fun (address: Address) -> address.Street) {
                 withSchema (Schema.text |> Schema.constrain Constraint.required)
             }
-            SchemaCE.field "city" (fun (address: Address) -> address.City) {
+            field "city" (fun (address: Address) -> address.City) {
                 withSchema (Schema.text |> Schema.constrain Constraint.required)
             }
-            SchemaCE.construct (fun street city -> ({ Street = street; City = city }: Address))
+            construct (fun street city -> ({ Street = street; City = city }: Address))
         }
 
     let private customerSchema =
-        SchemaCE.schema<Customer> {
-            SchemaCE.field "name" (fun (customer: Customer) -> customer.Name) {
+        schema<Customer> {
+            field "name" (fun (customer: Customer) -> customer.Name) {
                 withSchema (Schema.text |> Schema.constrain Constraint.required)
             }
-            SchemaCE.field "address" (fun (customer: Customer) -> customer.Address) {
+            field "address" (fun (customer: Customer) -> customer.Address) {
                 withSchema (addressSchema |> Schema.constrain Constraint.required)
             }
-            SchemaCE.construct (fun name address -> ({ Name = name; Address = address }: Customer))
+            construct (fun name address -> ({ Name = name; Address = address }: Customer))
         }
 
     let private verifiedAddressSchema =
-        SchemaCE.schema<VerifiedAddress> {
-            SchemaCE.field "street" (fun (address: VerifiedAddress) -> address.Street) {
+        schema<VerifiedAddress> {
+            field "street" (fun (address: VerifiedAddress) -> address.Street) {
                 withSchema (Schema.text |> Schema.constrain Constraint.required)
             }
-            SchemaCE.field "city" (fun (address: VerifiedAddress) -> address.City) {
+            field "city" (fun (address: VerifiedAddress) -> address.City) {
                 withSchema (Schema.text |> Schema.constrain Constraint.required)
             }
-            SchemaCE.constructResult VerifiedAddress.Create
+            constructResult VerifiedAddress.Create
         }
 
     let private verifiedCustomerSchema =
-        SchemaCE.schema<VerifiedCustomer> {
-            SchemaCE.field "name" (fun (customer: VerifiedCustomer) -> customer.Name) {
+        schema<VerifiedCustomer> {
+            field "name" (fun (customer: VerifiedCustomer) -> customer.Name) {
                 withSchema (Schema.text |> Schema.constrain Constraint.required)
             }
-            SchemaCE.field "address" (fun (customer: VerifiedCustomer) -> customer.Address) {
+            field "address" (fun (customer: VerifiedCustomer) -> customer.Address) {
                 withSchema (verifiedAddressSchema |> Schema.constrain Constraint.required)
             }
-            SchemaCE.construct (fun name address -> ({ Name = name; Address = address }: VerifiedCustomer))
+            construct (fun name address -> ({ Name = name; Address = address }: VerifiedCustomer))
         }
 
     let private validAddress =

@@ -397,6 +397,36 @@ module ApiShapeTests =
         |> publicStaticMemberNames
         |> assertContainsAll [ "create"; "renderErrors" ]
 
+        test <@ typeof<SchemaErrors>.Assembly.GetName().Name = "Axial.Schema" @>
+        test <@ typeof<SchemaIssue>.Assembly.GetName().Name = "Axial.Schema" @>
+        test <@ typeof<Axial.Schema.Path>.Assembly.GetName().Name = "Axial.Schema" @>
+
+        Assembly.Load("Axial.Schema").GetType("Axial.Schema.SchemaErrorsModule", true)
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "toList"; "count"; "isEmpty"; "toString" ]
+
+        Assembly.Load("Axial.Schema").GetType("Axial.Schema.PathModule", true)
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "root"; "key"; "index"; "append"; "format"; "fold" ]
+
+    [<Fact>]
+    let ``removed validation surface is absent`` () =
+        let assemblies =
+            [ Assembly.Load "Axial.Result"
+              Assembly.Load "Axial.Refined"
+              Assembly.Load "Axial.Schema"
+              Assembly.Load "Axial" ]
+
+        let removedTypes =
+            [ "Axial.Validation.Validation`2"
+              "Axial.Validation.Diagnostics`1"
+              "Axial.Validation.PathSegment"
+              "Axial.Validation.ValidateBuilder" ]
+
+        for assembly in assemblies do
+            for fullName in removedTypes do
+                test <@ isNull (assembly.GetType(fullName, false)) @>
+
     [<Fact>]
     let ``codec compiles json codecs from schemas without extra package coupling`` () =
         moduleTypeFromAssembly "Axial.Schema.Json" "Axial.Schema.Json.Json"
@@ -546,7 +576,7 @@ module ApiShapeTests =
               "date"
               "dateTime"
               "guid" ]
-        test <@ [ "record"; "recordFor"; "field"; "build"; "buildResult"; "buildResultWith" ]
+        test <@ [ "define"; "record"; "recordFor"; "field"; "fieldWith"; "build"; "buildResult"; "buildResultWith" ]
                  |> List.forall (fun removed -> not (schemaMembers |> Set.contains removed)) @>
         fieldModule
         |> publicStaticMemberNames
@@ -948,29 +978,29 @@ module ApiShapeTests =
     [<Fact>]
     let ``schema fields reject invalid construction arguments`` () =
         Assert.Throws<ArgumentNullException>(fun () ->
-            SchemaCE.field null (fun (value: Customer) -> value.Name) |> ignore)
+            field null (fun (value: Customer) -> value.Name) |> ignore)
         |> ignore
 
         Assert.Throws<ArgumentException>(fun () ->
-            SchemaCE.schema<Customer> {
-                SchemaCE.field " " (fun (value: Customer) -> value.Name)
-                SchemaCE.field "age" (fun (value: Customer) -> value.Age)
-                SchemaCE.construct (fun name age -> { Name = name; Age = age })
+            schema<Customer> {
+                field " " (fun (value: Customer) -> value.Name)
+                field "age" (fun (value: Customer) -> value.Age)
+                construct (fun name age -> { Name = name; Age = age })
             }
             |> ignore)
         |> ignore
 
         Assert.Throws<ArgumentNullException>(fun () ->
-            SchemaCE.field "name" Unchecked.defaultof<Customer -> string> |> ignore)
+            field "name" Unchecked.defaultof<Customer -> string> |> ignore)
         |> ignore
 
         Assert.Throws<ArgumentNullException>(fun () ->
-            SchemaCE.schema<Customer> {
-                SchemaCE.field "name" (fun (value: Customer) -> value.Name) {
+            schema<Customer> {
+                field "name" (fun (value: Customer) -> value.Name) {
                     withSchema Unchecked.defaultof<Schema<string>>
                 }
-                SchemaCE.field "age" (fun (value: Customer) -> value.Age)
-                SchemaCE.construct (fun name age -> { Name = name; Age = age })
+                field "age" (fun (value: Customer) -> value.Age)
+                construct (fun name age -> { Name = name; Age = age })
             }
             |> ignore)
         |> ignore
@@ -980,12 +1010,12 @@ module ApiShapeTests =
         let requiredText = Schema.text |> Schema.constrain Constraint.required
 
         let schema =
-            SchemaCE.schema<Customer> {
-                SchemaCE.field "name" (fun (value: Customer) -> value.Name) {
+            schema<Customer> {
+                field "name" (fun (value: Customer) -> value.Name) {
                     withSchema (requiredText |> Schema.constrainAll [ Constraint.required ])
                 }
-                SchemaCE.field "age" (fun (value: Customer) -> value.Age)
-                SchemaCE.construct (fun name age -> { Name = name; Age = age })
+                field "age" (fun (value: Customer) -> value.Age)
+                construct (fun name age -> { Name = name; Age = age })
             }
 
         let constructed =
@@ -1009,11 +1039,11 @@ module ApiShapeTests =
     let ``schema shape builds explicit ordered three field model schema through inferred primitive fields`` () =
         let create name age active = { Name = name; Age = age; Active = active }
         let schema =
-            SchemaCE.schema<CustomerProfile> {
-                SchemaCE.field "name" (fun (value: CustomerProfile) -> value.Name)
-                SchemaCE.field "age" (fun (value: CustomerProfile) -> value.Age)
-                SchemaCE.field "active" (fun (value: CustomerProfile) -> value.Active)
-                SchemaCE.construct create
+            schema<CustomerProfile> {
+                field "name" (fun (value: CustomerProfile) -> value.Name)
+                field "age" (fun (value: CustomerProfile) -> value.Age)
+                field "active" (fun (value: CustomerProfile) -> value.Active)
+                construct create
             }
 
         match schema.Definition with
@@ -1032,11 +1062,11 @@ module ApiShapeTests =
     let ``schema recordFor anchors model type for primitive shorthand getters`` () =
         let create name age active = { Name = name; Age = age; Active = active }
         let schema =
-            SchemaCE.schema<CustomerProfile> {
-                SchemaCE.field "name" (fun (value: CustomerProfile) -> value.Name)
-                SchemaCE.field "age" (fun (value: CustomerProfile) -> value.Age)
-                SchemaCE.field "active" (fun (value: CustomerProfile) -> value.Active)
-                SchemaCE.construct create
+            schema<CustomerProfile> {
+                field "name" (fun (value: CustomerProfile) -> value.Name)
+                field "age" (fun (value: CustomerProfile) -> value.Age)
+                field "active" (fun (value: CustomerProfile) -> value.Active)
+                construct create
             }
 
         match schema.Definition with
@@ -1062,15 +1092,15 @@ module ApiShapeTests =
               Id = id }
 
         let schema =
-            SchemaCE.schema<PrimitiveProfile> {
-                SchemaCE.field "name" (fun (value: PrimitiveProfile) -> value.Name)
-                SchemaCE.field "age" (fun (value: PrimitiveProfile) -> value.Age)
-                SchemaCE.field "balance" (fun (value: PrimitiveProfile) -> value.Balance)
-                SchemaCE.field "active" (fun (value: PrimitiveProfile) -> value.Active)
-                SchemaCE.field "birthDate" (fun (value: PrimitiveProfile) -> value.BirthDate)
-                SchemaCE.field "lastSeen" (fun (value: PrimitiveProfile) -> value.LastSeen)
-                SchemaCE.field "id" (fun (value: PrimitiveProfile) -> value.Id)
-                SchemaCE.construct create
+            schema<PrimitiveProfile> {
+                field "name" (fun (value: PrimitiveProfile) -> value.Name)
+                field "age" (fun (value: PrimitiveProfile) -> value.Age)
+                field "balance" (fun (value: PrimitiveProfile) -> value.Balance)
+                field "active" (fun (value: PrimitiveProfile) -> value.Active)
+                field "birthDate" (fun (value: PrimitiveProfile) -> value.BirthDate)
+                field "lastSeen" (fun (value: PrimitiveProfile) -> value.LastSeen)
+                field "id" (fun (value: PrimitiveProfile) -> value.Id)
+                construct create
             }
 
         match schema.Definition with

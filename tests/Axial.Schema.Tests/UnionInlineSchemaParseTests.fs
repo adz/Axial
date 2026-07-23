@@ -18,17 +18,17 @@ module UnionInlineSchemaParseTests =
     type private Checkout = { Payment: Payment }
 
     let private cardSchema () =
-        SchemaCE.schema<CardDetails> {
-            SchemaCE.field "number" _.Number {
+        schema<CardDetails> {
+            field "number" _.Number {
                 withSchema (Schema.text |> Schema.constrain Constraint.required)
             }
-            SchemaCE.construct (fun number -> { Number = number })
+            construct (fun number -> { Number = number })
         }
 
     let private invoiceSchema () =
-        SchemaCE.schema<InvoiceDetails> {
-            SchemaCE.field "reference" _.Reference
-            SchemaCE.construct (fun reference -> { Reference = reference })
+        schema<InvoiceDetails> {
+            field "reference" _.Reference
+            construct (fun reference -> { Reference = reference })
         }
 
     let private paymentValue () =
@@ -42,11 +42,11 @@ module UnionInlineSchemaParseTests =
                   ((invoiceSchema ())) ]
 
     let private checkoutSchema () =
-        SchemaCE.schema<Checkout> {
-            SchemaCE.field "payment" _.Payment {
+        schema<Checkout> {
+            field "payment" _.Payment {
                 withSchema (paymentValue ())
             }
-            SchemaCE.construct (fun payment -> { Payment = payment })
+            construct (fun payment -> { Payment = payment })
         }
 
     [<Fact>]

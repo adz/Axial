@@ -26,10 +26,10 @@ module SchemaConstructorGetterAlignmentTests =
     [<Fact>]
     let ``shape aligns each field's getter with its constructor argument position`` () =
         let schema =
-            SchemaCE.schema<FullName> {
-                SchemaCE.field "first" _.First
-                SchemaCE.field "last" _.Last
-                SchemaCE.construct (fun first last -> { First = first; Last = last })
+            schema<FullName> {
+                field "first" _.First
+                field "last" _.Last
+                construct (fun first last -> { First = first; Last = last })
             }
         let source = { First = "Ada"; Last = "Lovelace" }
 
@@ -44,10 +44,10 @@ module SchemaConstructorGetterAlignmentTests =
     [<Fact>]
     let ``shape binds argument position to declaration order, not external field name`` () =
         let swapped =
-            SchemaCE.schema<FullName> {
-                SchemaCE.field "last" _.Last
-                SchemaCE.field "first" _.First
-                SchemaCE.construct (fun a b -> { First = a; Last = b })
+            schema<FullName> {
+                field "last" _.Last
+                field "first" _.First
+                construct (fun a b -> { First = a; Last = b })
             }
         let source = { First = "Ada"; Last = "Lovelace" }
 
@@ -62,11 +62,11 @@ module SchemaConstructorGetterAlignmentTests =
     [<Fact>]
     let ``shape aligns each of three same-typed fields with its constructor argument position`` () =
         let schema =
-            SchemaCE.schema<Address> {
-                SchemaCE.field "line1" _.Line1
-                SchemaCE.field "line2" _.Line2
-                SchemaCE.field "city" _.City
-                SchemaCE.construct (fun line1 line2 city -> { Line1 = line1; Line2 = line2; City = city })
+            schema<Address> {
+                field "line1" _.Line1
+                field "line2" _.Line2
+                field "city" _.City
+                construct (fun line1 line2 city -> { Line1 = line1; Line2 = line2; City = city })
             }
 
         let source = { Line1 = "221B Baker Street"; Line2 = "Flat 2"; City = "London" }
@@ -87,11 +87,11 @@ module SchemaConstructorGetterAlignmentTests =
         // Declare city first and construct the record accordingly; each getter must still land on the argument
         // matching its declared position rather than the record's source order or external field name.
         let reordered =
-            SchemaCE.schema<Address> {
-                SchemaCE.field "city" _.City
-                SchemaCE.field "line1" _.Line1
-                SchemaCE.field "line2" _.Line2
-                SchemaCE.construct (fun city line1 line2 -> { Line1 = line1; Line2 = line2; City = city })
+            schema<Address> {
+                field "city" _.City
+                field "line1" _.Line1
+                field "line2" _.Line2
+                construct (fun city line1 line2 -> { Line1 = line1; Line2 = line2; City = city })
             }
 
         let source = { Line1 = "221B Baker Street"; Line2 = "Flat 2"; City = "London" }

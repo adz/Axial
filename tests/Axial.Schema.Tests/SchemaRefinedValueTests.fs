@@ -124,12 +124,12 @@ module SchemaRefinedValueTests =
         let nameField = Field.create "name" (fun (contact: Contact) -> contact.Name) Schema.text
 
         let schema =
-            SchemaCE.schema<Contact> {
-                SchemaCE.field "email" _.Email {
+            schema<Contact> {
+                field "email" _.Email {
                     withSchema (Email.schema |> Schema.constrainAll [ Constraint.required ])
                 }
-                SchemaCE.field "name" _.Name
-                SchemaCE.construct (fun email name -> { Email = email; Name = name })
+                field "name" _.Name
+                construct (fun email name -> { Email = email; Name = name })
             }
 
         let contact = { Email = Email.create "ada@example.com"; Name = "Ada" }
@@ -148,12 +148,12 @@ module SchemaRefinedValueTests =
         let requiredEmail = Email.schema |> Schema.constrain Constraint.required
 
         let schema =
-            SchemaCE.schema<Contact> {
-                SchemaCE.field "email" _.Email {
+            schema<Contact> {
+                field "email" _.Email {
                     withSchema requiredEmail
                 }
-                SchemaCE.field "name" _.Name
-                SchemaCE.construct (fun email name -> { Email = email; Name = name })
+                field "name" _.Name
+                construct (fun email name -> { Email = email; Name = name })
             }
 
         match schema.Definition with

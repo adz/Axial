@@ -114,60 +114,60 @@ module SchemaValidationTests =
             else
                 Error "End date must be on or after start date."
 
-    let private schema =
-        SchemaCE.schema<Signup> {
-            SchemaCE.field "email" _.Email {
+    let private signupSchema =
+        schema<Signup> {
+            field "email" _.Email {
                 withSchema (
                     Schema.text
                     |> Schema.constrainAll [ Constraint.required; Constraint.email; Constraint.maxLength 254 ]
                 )
             }
-            SchemaCE.field "age" _.Age {
+            field "age" _.Age {
                 withSchema (Schema.int |> Schema.constrain (Constraint.atLeast 18))
             }
-            SchemaCE.construct (fun email age -> { Email = email; Age = age })
+            construct (fun email age -> { Email = email; Age = age })
         }
 
     let private contactMethodSchema =
-        SchemaCE.schema<ContactMethod> {
-            SchemaCE.field "kind" _.Kind {
+        schema<ContactMethod> {
+            field "kind" _.Kind {
                 withSchema (Schema.text |> Schema.constrain Constraint.required)
             }
-            SchemaCE.field "value" _.Value {
+            field "value" _.Value {
                 withSchema (Schema.text |> Schema.constrain Constraint.required)
             }
-            SchemaCE.construct (fun kind value -> { Kind = kind; Value = value })
+            construct (fun kind value -> { Kind = kind; Value = value })
         }
 
     let private contactBookSchema =
-        SchemaCE.schema<ContactBook> {
-            SchemaCE.field "name" _.Name {
+        schema<ContactBook> {
+            field "name" _.Name {
                 withSchema (Schema.text |> Schema.constrain Constraint.required)
             }
-            SchemaCE.field "contacts" _.Contacts {
+            field "contacts" _.Contacts {
                 withSchema (
                     Schema.listWith contactMethodSchema
                     |> Schema.constrainAll [ Constraint.minCount 1; Constraint.maxCount 2 ]
                 )
             }
-            SchemaCE.construct (fun name contacts -> { Name = name; Contacts = contacts })
+            construct (fun name contacts -> { Name = name; Contacts = contacts })
         }
 
-    let private generatedBuilder schema =
-        Schema.compilePlan (GeneratedBuilderFactory()) schema
+    let private generatedBuilder signupSchema =
+        Schema.compilePlan (GeneratedBuilderFactory()) signupSchema
 
     [<Fact>]
     let ``validate returns the original model when schema constraints pass`` () =
         let model = { Email = "ada@example.com"; Age = 42 }
 
-        let validation = Schema.check schema model
+        let validation = Schema.check signupSchema model
 
         test <@ validation = Ok model @>
 
     [<Fact>]
     let ``validate reports diagnostics for existing model values that violate schema constraints`` () =
         let validation =
-            Schema.check schema { Email = ""; Age = 10 }
+            Schema.check signupSchema { Email = ""; Age = 10 }
 
         test
             <@
@@ -183,7 +183,7 @@ module SchemaValidationTests =
     let ``validate reports diagnostics for imported hand-built values that bypass input parsing`` () =
         let imported = { Email = "not-an-email"; Age = 16 }
 
-        let validation = Schema.check schema imported
+        let validation = Schema.check signupSchema imported
 
         test
             <@
@@ -197,20 +197,20 @@ module SchemaValidationTests =
     [<Fact>]
     let ``validate surfaces schema constraint custom messages through Check lowering`` () =
         let messageSchema =
-            SchemaCE.schema<Signup> {
-                SchemaCE.field "email" _.Email {
+            schema<Signup> {
+                field "email" _.Email {
                     withSchema (
                         Schema.text
                         |> Schema.constrain (Constraint.required |> Constraint.withMessage "Email is required.")
                     )
                 }
-                SchemaCE.field "age" _.Age {
+                field "age" _.Age {
                     withSchema (
                         Schema.int
                         |> Schema.constrain (Constraint.atLeast 18 |> Constraint.withMessage "Must be an adult.")
                     )
                 }
-                SchemaCE.construct (fun email age -> { Email = email; Age = age })
+                construct (fun email age -> { Email = email; Age = age })
             }
 
         let validation =
@@ -229,14 +229,14 @@ module SchemaValidationTests =
     [<Fact>]
     let ``validate reads existing model values through schema getters`` () =
         let swappedSchema =
-            SchemaCE.schema<SwappedFields> {
-                SchemaCE.field "secondary-on-wire" _.Primary {
+            schema<SwappedFields> {
+                field "secondary-on-wire" _.Primary {
                     withSchema (Schema.text |> Schema.constrain (Constraint.oneOf [ "primary-value" ]))
                 }
-                SchemaCE.field "primary-on-wire" _.Secondary {
+                field "primary-on-wire" _.Secondary {
                     withSchema (Schema.text |> Schema.constrain (Constraint.oneOf [ "secondary-value" ]))
                 }
-                SchemaCE.construct (fun primary secondary ->
+                construct (fun primary secondary ->
                     { Primary = primary
                       Secondary = secondary })
             }
@@ -258,25 +258,25 @@ module SchemaValidationTests =
     [<Fact>]
     let ``validate checks nested model values through their nested schema`` () =
         let addressSchema =
-            SchemaCE.schema<Address> {
-                SchemaCE.field "street" _.Street {
+            schema<Address> {
+                field "street" _.Street {
                     withSchema (Schema.text |> Schema.constrain Constraint.required)
                 }
-                SchemaCE.field "city" _.City {
+                field "city" _.City {
                     withSchema (Schema.text |> Schema.constrain Constraint.required)
                 }
-                SchemaCE.construct (fun street city -> { Street = street; City = city })
+                construct (fun street city -> { Street = street; City = city })
             }
 
         let customerSchema =
-            SchemaCE.schema<Customer> {
-                SchemaCE.field "name" (fun (value: Customer) -> value.Name) {
+            schema<Customer> {
+                field "name" (fun (value: Customer) -> value.Name) {
                     withSchema (Schema.text |> Schema.constrain Constraint.required)
                 }
-                SchemaCE.field "address" _.Address {
+                field "address" _.Address {
                     withSchema addressSchema
                 }
-                SchemaCE.construct (fun name address -> { Name = name; Address = address })
+                construct (fun name address -> { Name = name; Address = address })
             }
 
         let validation =
@@ -344,16 +344,16 @@ module SchemaValidationTests =
 
     [<Fact>]
     let ``validate reports primitive collection item constraints at index paths`` () =
-        let schema =
-            SchemaCE.schema<Tags> {
-                SchemaCE.field "values" _.Values {
+        let tagsSchema =
+            schema<Tags> {
+                field "values" _.Values {
                     withSchema (Schema.listWith (Schema.text |> Schema.constrain Constraint.required))
                 }
-                SchemaCE.construct (fun values -> { Values = values })
+                construct (fun values -> { Values = values })
             }
 
         let validation =
-            Schema.check schema { Values = [ "fsharp"; "" ] }
+            Schema.check tagsSchema { Values = [ "fsharp"; "" ] }
 
         test
             <@
@@ -371,28 +371,28 @@ module SchemaValidationTests =
                       "age", Data.Text "42" ]
             )
 
-        let parsed = Schema.parseRetainingInput schema raw
-        let validation = Schema.check schema parsed.Value
+        let parsed = Schema.parseRetainingInput signupSchema raw
+        let validation = Schema.check signupSchema parsed.Value
 
         test <@ parsed.IsValid @>
         test <@ validation = Ok parsed.Value @>
 
     [<Fact>]
     let ``values produced by a generated builder validate through the same schema`` () =
-        let builder = generatedBuilder schema
+        let builder = generatedBuilder signupSchema
         let generated = builder.Build [| box "ada@example.com"; box 42 |]
 
-        let validation = Schema.check schema generated
+        let validation = Schema.check signupSchema generated
 
         test <@ generated = { Email = "ada@example.com"; Age = 42 } @>
         test <@ validation = Ok generated @>
 
     [<Fact>]
     let ``validate reports diagnostics for generated builder values that bypass input parsing`` () =
-        let builder = generatedBuilder schema
+        let builder = generatedBuilder signupSchema
         let generated = builder.Build [| box ""; box 17 |]
 
-        let validation = Schema.check schema generated
+        let validation = Schema.check signupSchema generated
 
         test
             <@
@@ -407,10 +407,10 @@ module SchemaValidationTests =
     [<Fact>]
     let ``values produced by input parsing with constructor invariants validate through the same schema`` () =
         let rangeSchema =
-            SchemaCE.schema<DateRange> {
-                SchemaCE.field "start" _.Start
-                SchemaCE.field "end" _.End
-                SchemaCE.constructResult DateRange.Create
+            schema<DateRange> {
+                field "start" _.Start
+                field "end" _.End
+                constructResult DateRange.Create
             }
 
         let raw =

@@ -20,15 +20,15 @@ module OptionalSchemaParseTests =
           Age: int option }
 
     let private profileSchema () =
-        SchemaCE.schema<Profile> {
-            SchemaCE.field "name" _.Name
-            SchemaCE.field "nickname" _.Nickname {
+        schema<Profile> {
+            field "name" _.Name
+            field "nickname" _.Nickname {
                 withSchema (Schema.option (Schema.text |> Schema.constrain (Constraint.minLength 2)))
             }
-            SchemaCE.field "age" _.Age {
+            field "age" _.Age {
                 withSchema (Schema.option Schema.int)
             }
-            SchemaCE.construct (fun name nickname age ->
+            construct (fun name nickname age ->
                 { Name = name
                   Nickname = nickname
                   Age = age })

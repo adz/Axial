@@ -12,13 +12,13 @@ open Axial.Schema.Syntax
 module SchemaDiagnosticsRenderingTests =
     type private Signup = { Email: string; Age: int }
 
-    let private schema =
-        SchemaCE.schema<Signup> {
-            SchemaCE.field "email" _.Email {
+    let private signupSchema =
+        schema<Signup> {
+            field "email" _.Email {
                 withSchema (Schema.text |> Schema.constrain Constraint.required)
             }
-            SchemaCE.field "age" _.Age
-            SchemaCE.construct (fun email age -> { Email = email; Age = age })
+            field "age" _.Age
+            construct (fun email age -> { Email = email; Age = age })
         }
 
     [<Fact>]
@@ -26,7 +26,7 @@ module SchemaDiagnosticsRenderingTests =
         let raw =
             Data.objectOfMap (Map.ofList [ "email", Data.Null; "age", Data.Text "42" ])
 
-        let parsed = Schema.parseRetainingInput schema raw
+        let parsed = Schema.parseRetainingInput signupSchema raw
 
         let text =
             match parsed.Result with
@@ -43,7 +43,7 @@ module SchemaDiagnosticsRenderingTests =
                       "age", Data.Text "not-an-int" ]
             )
 
-        let parsed = Schema.parseRetainingInput schema raw
+        let parsed = Schema.parseRetainingInput signupSchema raw
 
         let text =
             match parsed.Result with
@@ -56,7 +56,7 @@ module SchemaDiagnosticsRenderingTests =
     [<Fact>]
     let ``toString renders a root path error without a nested branch when input is not an object`` () =
         let raw = Data.Text "not-an-object"
-        let parsed = Schema.parseRetainingInput schema raw
+        let parsed = Schema.parseRetainingInput signupSchema raw
 
         let text =
             match parsed.Result with
@@ -73,7 +73,7 @@ module SchemaDiagnosticsRenderingTests =
                       "age", Data.Text "not-an-int" ]
             )
 
-        let parsed = Schema.parseRetainingInput schema raw
+        let parsed = Schema.parseRetainingInput signupSchema raw
 
         let flattened =
             match parsed.Result with
@@ -90,7 +90,7 @@ module SchemaDiagnosticsRenderingTests =
     [<Fact>]
     let ``flatten reports an empty path for a root-level schema error`` () =
         let raw = Data.List [ Data.Text "1" ]
-        let parsed = Schema.parseRetainingInput schema raw
+        let parsed = Schema.parseRetainingInput signupSchema raw
 
         let flattened =
             match parsed.Result with
@@ -107,7 +107,7 @@ module SchemaDiagnosticsRenderingTests =
                       "age", Data.Text "not-an-int" ]
             )
 
-        let parsed = Schema.parseRetainingInput schema raw
+        let parsed = Schema.parseRetainingInput signupSchema raw
 
         match parsed.Result with
         | Error diagnostics ->

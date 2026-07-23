@@ -76,12 +76,12 @@ module SchemaDescriptionTests =
     [<Fact>]
     let ``generate pins schema to json schema draft 2020-12`` () =
         let schema =
-            SchemaCE.schema<Contact> {
-                SchemaCE.field "email" _.Email {
+            schema<Contact> {
+                field "email" _.Email {
                     withSchema (Email.schema ())
                 }
-                SchemaCE.field "name" _.Name
-                SchemaCE.construct (fun email name -> { Email = email; Name = name })
+                field "name" _.Name
+                construct (fun email name -> { Email = email; Name = name })
             }
 
         let generated = JsonSchema.generate schema
@@ -99,14 +99,14 @@ module SchemaDescriptionTests =
     [<Fact>]
     let ``describe lowers to the json schema description keyword on a field`` () =
         let schema =
-            SchemaCE.schema<Contact> {
-                SchemaCE.field "email" _.Email {
+            schema<Contact> {
+                field "email" _.Email {
                     withSchema (Email.schema ())
                 }
-                SchemaCE.field "name" _.Name {
+                field "name" _.Name {
                     withSchema (Schema.text |> Schema.describe "The contact's full name.")
                 }
-                SchemaCE.construct (fun email name -> { Email = email; Name = name })
+                construct (fun email name -> { Email = email; Name = name })
             }
 
         let generated = JsonSchema.generate schema
@@ -116,12 +116,12 @@ module SchemaDescriptionTests =
     [<Fact>]
     let ``Schema.describe lowers to the json schema root title keyword`` () =
         let schema =
-            SchemaCE.schema<Contact> {
-                SchemaCE.field "email" _.Email {
+            schema<Contact> {
+                field "email" _.Email {
                     withSchema (Email.schema ())
                 }
-                SchemaCE.field "name" _.Name
-                SchemaCE.construct (fun email name -> { Email = email; Name = name })
+                field "name" _.Name
+                construct (fun email name -> { Email = email; Name = name })
             }
             |> Schema.describe "A contact record."
 
@@ -132,12 +132,12 @@ module SchemaDescriptionTests =
     [<Fact>]
     let ``Schema.describe rejects empty descriptions`` () =
         let schema =
-            SchemaCE.schema<Contact> {
-                SchemaCE.field "email" _.Email {
+            schema<Contact> {
+                field "email" _.Email {
                     withSchema (Email.schema ())
                 }
-                SchemaCE.field "name" _.Name
-                SchemaCE.construct (fun email name -> { Email = email; Name = name })
+                field "name" _.Name
+                construct (fun email name -> { Email = email; Name = name })
             }
 
         raises<ArgumentException> <@ Schema.describe "" schema |> ignore @>

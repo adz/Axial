@@ -11,11 +11,11 @@ module MapSchemaParseTests =
     type private Thresholds = { Values: Map<string, decimal> }
 
     let private thresholdsSchema =
-        SchemaCE.schema<Thresholds> {
-            SchemaCE.field "values" _.Values {
+        schema<Thresholds> {
+            field "values" _.Values {
                 withSchema (Schema.mapWith (Schema.decimal |> Schema.constrain Constraint.required))
             }
-            SchemaCE.construct (fun values -> { Values = values })
+            construct (fun values -> { Values = values })
         }
 
     [<Fact>]

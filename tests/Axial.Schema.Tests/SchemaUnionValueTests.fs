@@ -15,11 +15,11 @@ module SchemaUnionValueTests =
     type private Checkout = { Payment: Payment }
 
     let private cardSchema () =
-        SchemaCE.schema<CardDetails> {
-            SchemaCE.field "number" _.Number {
+        schema<CardDetails> {
+            field "number" _.Number {
                 withSchema (Schema.text |> Schema.constrain Constraint.required)
             }
-            SchemaCE.construct (fun number -> { Number = number })
+            construct (fun number -> { Number = number })
         }
 
     let private paymentSchema () =
@@ -32,11 +32,11 @@ module SchemaUnionValueTests =
     [<Fact>]
     let ``union value schema exposes discriminator payload and case descriptions`` () =
         let schema =
-            SchemaCE.schema<Checkout> {
-                SchemaCE.field "payment" _.Payment {
+            schema<Checkout> {
+                field "payment" _.Payment {
                     withSchema (paymentSchema ())
                 }
-                SchemaCE.construct (fun payment -> { Payment = payment })
+                construct (fun payment -> { Payment = payment })
             }
 
         let payment =
@@ -62,11 +62,11 @@ module SchemaUnionValueTests =
     [<Fact>]
     let ``union value schemas lower to json schema oneOf with const discriminators`` () =
         let schema =
-            SchemaCE.schema<Checkout> {
-                SchemaCE.field "payment" _.Payment {
+            schema<Checkout> {
+                field "payment" _.Payment {
                     withSchema (paymentSchema ())
                 }
-                SchemaCE.construct (fun payment -> { Payment = payment })
+                construct (fun payment -> { Payment = payment })
             }
 
         let generated = JsonSchema.generate schema

@@ -32,17 +32,17 @@ module RefinedCatalogSchemaTests =
         }
 
     let private productSchema () =
-        SchemaCE.schema<Product> {
-            SchemaCE.field "name" _.Name {
+        schema<Product> {
+            field "name" _.Name {
                 withSchema RefinedSchemas.nonBlankString
             }
-            SchemaCE.field "slug" _.Slug {
+            field "slug" _.Slug {
                 withSchema RefinedSchemas.slug
             }
-            SchemaCE.field "quantity" _.Quantity {
+            field "quantity" _.Quantity {
                 withSchema RefinedSchemas.positiveInt
             }
-            SchemaCE.construct (fun name slug quantity ->
+            construct (fun name slug quantity ->
                 { Name = name
                   Slug = slug
                   Quantity = quantity })
@@ -98,14 +98,14 @@ module RefinedCatalogSchemaTests =
     [<Fact>]
     let ``remaining scalar catalog schemas report the same failures as standalone refinement`` () =
         let schema =
-            SchemaCE.schema<Scalars> {
-                SchemaCE.field "command" _.Command {
+            schema<Scalars> {
+                field "command" _.Command {
                     withSchema RefinedSchemas.trimmedString
                 }
-                SchemaCE.field "offset" _.Offset {
+                field "offset" _.Offset {
                     withSchema RefinedSchemas.nonZeroInt
                 }
-                SchemaCE.construct (fun command offset -> { Command = command; Offset = offset })
+                construct (fun command offset -> { Command = command; Offset = offset })
             }
 
         let raw =
@@ -128,14 +128,14 @@ module RefinedCatalogSchemaTests =
     [<Fact>]
     let ``refined collection catalog schemas parse trusted values`` () =
         let schema =
-            SchemaCE.schema<Tagged> {
-                SchemaCE.field "tags" _.Tags {
+            schema<Tagged> {
+                field "tags" _.Tags {
                     withSchema (RefinedSchemas.nonEmptyList RefinedSchemas.slug)
                 }
-                SchemaCE.field "codes" _.Codes {
+                field "codes" _.Codes {
                     withSchema (RefinedSchemas.distinctList Schema.text)
                 }
-                SchemaCE.construct (fun tags codes -> { Tags = tags; Codes = codes })
+                construct (fun tags codes -> { Tags = tags; Codes = codes })
             }
 
         let raw =
@@ -154,14 +154,14 @@ module RefinedCatalogSchemaTests =
     [<Fact>]
     let ``refined collection catalog schemas report collection and item failures`` () =
         let schema =
-            SchemaCE.schema<Tagged> {
-                SchemaCE.field "tags" _.Tags {
+            schema<Tagged> {
+                field "tags" _.Tags {
                     withSchema (RefinedSchemas.nonEmptyList RefinedSchemas.slug)
                 }
-                SchemaCE.field "codes" _.Codes {
+                field "codes" _.Codes {
                     withSchema (RefinedSchemas.distinctList Schema.text)
                 }
-                SchemaCE.construct (fun tags codes -> { Tags = tags; Codes = codes })
+                construct (fun tags codes -> { Tags = tags; Codes = codes })
             }
 
         let raw =

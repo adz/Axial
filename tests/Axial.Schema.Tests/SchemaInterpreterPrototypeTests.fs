@@ -180,37 +180,37 @@ module SchemaInterpreterPrototypeTests =
         |> Schema.withFormat SchemaFormat.email
 
     let private addressSchema () =
-        SchemaCE.schema<Address> {
-            SchemaCE.field "street" _.Street
-            SchemaCE.field "city" _.City
-            SchemaCE.construct (fun street city -> { Street = street; City = city })
+        schema<Address> {
+            field "street" _.Street
+            field "city" _.City
+            construct (fun street city -> { Street = street; City = city })
         }
 
     let private tagSchema () =
-        SchemaCE.schema<Tag> {
-            SchemaCE.field "label" _.Label
-            SchemaCE.construct (fun label -> { Label = label })
+        schema<Tag> {
+            field "label" _.Label
+            construct (fun label -> { Label = label })
         }
 
     let private signupSchemaWith constructions getterReads =
-        SchemaCE.schema<Signup> {
-            SchemaCE.field "email" _.Email {
+        schema<Signup> {
+            field "email" _.Email {
                 withSchema (emailSchemaWith constructions getterReads)
             }
-            SchemaCE.field "age" _.Age {
+            field "age" _.Age {
                 withSchema (Schema.int |> Schema.constrain (Constraint.between 13 120))
             }
-            SchemaCE.field "newsletter" _.Newsletter
-            SchemaCE.field "address" _.Address {
+            field "newsletter" _.Newsletter
+            field "address" _.Address {
                 withSchema ((addressSchema ()) |> Schema.constrainAll [ Constraint.required ])
             }
-            SchemaCE.field "tags" _.Tags {
+            field "tags" _.Tags {
                 withSchema (
                     Schema.listWith (tagSchema ())
                     |> Schema.constrainAll [ Constraint.minCount 1; Constraint.distinct ]
                 )
             }
-            SchemaCE.construct (fun email age newsletter address tags ->
+            construct (fun email age newsletter address tags ->
                 { Email = email
                   Age = age
                   Newsletter = newsletter
@@ -238,8 +238,8 @@ module SchemaInterpreterPrototypeTests =
     [<Fact>]
     let ``json schema generation lowers pattern one-of and length range metadata`` () =
         let generated =
-            SchemaCE.schema<Tag> {
-                SchemaCE.field "label" _.Label {
+            schema<Tag> {
+                field "label" _.Label {
                     withSchema (
                         Schema.text
                         |> Schema.constrainAll
@@ -248,7 +248,7 @@ module SchemaInterpreterPrototypeTests =
                               Constraint.oneOf [ "alpha"; "beta" ] ]
                     )
                 }
-                SchemaCE.construct (fun label -> { Label = label })
+                construct (fun label -> { Label = label })
             }
             |> JsonSchema.generate
 

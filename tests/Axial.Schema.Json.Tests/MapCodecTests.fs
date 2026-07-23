@@ -11,11 +11,11 @@ module MapCodecTests =
     type private Thresholds = { Values: Map<string, decimal> }
 
     let private thresholdsSchema () =
-        SchemaCE.schema<Thresholds> {
-            SchemaCE.field "values" _.Values {
+        schema<Thresholds> {
+            field "values" _.Values {
                 withSchema (Schema.mapWith Schema.decimal)
             }
-            SchemaCE.construct (fun values -> { Values = values })
+            construct (fun values -> { Values = values })
         }
 
     [<Fact>]

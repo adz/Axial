@@ -26,11 +26,11 @@ module UnionSchemaParseTests =
         }
 
     let private cardSchema () =
-        SchemaCE.schema<CardDetails> {
-            SchemaCE.field "number" _.Number {
+        schema<CardDetails> {
+            field "number" _.Number {
                 withSchema RefinedSchemas.nonBlankString
             }
-            SchemaCE.construct (fun number -> { Number = number })
+            construct (fun number -> { Number = number })
         }
 
     let private paymentValue () =
@@ -41,11 +41,11 @@ module UnionSchemaParseTests =
               UnionCase.create "invoice" Invoice (function Invoice slug -> Some slug | _ -> None) RefinedSchemas.slug ]
 
     let private checkoutSchema () =
-        SchemaCE.schema<Checkout> {
-            SchemaCE.field "payment" _.Payment {
+        schema<Checkout> {
+            field "payment" _.Payment {
                 withSchema (paymentValue ())
             }
-            SchemaCE.construct (fun payment -> { Payment = payment })
+            construct (fun payment -> { Payment = payment })
         }
 
     [<Fact>]

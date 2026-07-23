@@ -19,14 +19,14 @@ module SchemaGenerationTargetProofTests =
     // The hand-written equivalent of generated output for:
     //   [<Schema>] type Signup = { [<Required; MaxLength 254; Email>] Email: string; [<AtLeast 13>] Age: int }
     let private generatedSignupSchema () : Schema<Signup> =
-        SchemaCE.schema<Signup> {
-            SchemaCE.field "email" _.Email {
+        schema<Signup> {
+            field "email" _.Email {
                 withSchema (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 254; Constraint.email ])
             }
-            SchemaCE.field "age" _.Age {
+            field "age" _.Age {
                 withSchema (Schema.int |> Schema.constrainAll [ Constraint.atLeast 13 ])
             }
-            SchemaCE.construct (fun email age -> { Email = email; Age = age })
+            construct (fun email age -> { Email = email; Age = age })
         }
 
     [<Fact>]

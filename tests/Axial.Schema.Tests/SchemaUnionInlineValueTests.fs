@@ -17,15 +17,15 @@ module SchemaUnionInlineValueTests =
     type private Checkout = { Payment: Payment }
 
     let private cardSchema () =
-        SchemaCE.schema<CardDetails> {
-            SchemaCE.field "number" _.Number
-            SchemaCE.construct (fun number -> { Number = number })
+        schema<CardDetails> {
+            field "number" _.Number
+            construct (fun number -> { Number = number })
         }
 
     let private invoiceSchema () =
-        SchemaCE.schema<InvoiceDetails> {
-            SchemaCE.field "reference" _.Reference
-            SchemaCE.construct (fun reference -> { Reference = reference })
+        schema<InvoiceDetails> {
+            field "reference" _.Reference
+            construct (fun reference -> { Reference = reference })
         }
 
     let private paymentSchema () =
@@ -41,11 +41,11 @@ module SchemaUnionInlineValueTests =
     [<Fact>]
     let ``union-inline value schema exposes discriminator and spliced case fields`` () =
         let schema =
-            SchemaCE.schema<Checkout> {
-                SchemaCE.field "payment" _.Payment {
+            schema<Checkout> {
+                field "payment" _.Payment {
                     withSchema (paymentSchema ())
                 }
-                SchemaCE.construct (fun payment -> { Payment = payment })
+                construct (fun payment -> { Payment = payment })
             }
 
         let payment =
@@ -64,11 +64,11 @@ module SchemaUnionInlineValueTests =
     [<Fact>]
     let ``union-inline value schemas lower to json schema oneOf with spliced properties`` () =
         let schema =
-            SchemaCE.schema<Checkout> {
-                SchemaCE.field "payment" _.Payment {
+            schema<Checkout> {
+                field "payment" _.Payment {
                     withSchema (paymentSchema ())
                 }
-                SchemaCE.construct (fun payment -> { Payment = payment })
+                construct (fun payment -> { Payment = payment })
             }
 
         let generated = JsonSchema.generate schema
@@ -86,9 +86,9 @@ module SchemaUnionInlineValueTests =
     [<Fact>]
     let ``unionInline rejects payload field names that collide with the discriminator`` () =
         let colliding =
-            SchemaCE.schema<CardDetails> {
-                SchemaCE.field "type" _.Number
-                SchemaCE.construct (fun number -> { Number = number })
+            schema<CardDetails> {
+                field "type" _.Number
+                construct (fun number -> { Number = number })
             }
 
         Assert.Throws<ArgumentException>(fun () ->

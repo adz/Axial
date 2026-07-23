@@ -16,42 +16,42 @@ module SchemaGenTests =
     type Category = { Name: string; Children: Category list }
 
     let private contactSchema () =
-        SchemaCE.schema<Contact> {
-            SchemaCE.field "email" _.Email {
+        schema<Contact> {
+            field "email" _.Email {
                 withSchema (Schema.text |> Schema.constrainAll [ Constraint.email ])
             }
-            SchemaCE.construct (fun email -> { Email = email })
+            construct (fun email -> { Email = email })
         }
 
     let private profileSchema () =
         let kinds = [ EnumCase.create "personal" Personal; EnumCase.create "work" Work ]
-        SchemaCE.schema<Profile> {
-            SchemaCE.field "age" _.Age {
+        schema<Profile> {
+            field "age" _.Age {
                 withSchema (Schema.int |> Schema.constrainAll [ Constraint.between 18 90; Constraint.multipleOf 2 ])
             }
-            SchemaCE.field "score" _.Score {
+            field "score" _.Score {
                 withSchema (Schema.decimal |> Schema.constrainAll [ Constraint.between 0m 10m ])
             }
-            SchemaCE.field "active" _.Active
-            SchemaCE.field "contact" _.Contact {
+            field "active" _.Active
+            field "contact" _.Contact {
                 withSchema (contactSchema ())
             }
-            SchemaCE.field "aliases" _.Aliases {
+            field "aliases" _.Aliases {
                 withSchema (
                     Schema.listWith (Schema.text |> Schema.constrain (Constraint.minLength 2))
                     |> Schema.constrainAll [ Constraint.countBetween 1 3 ]
                 )
             }
-            SchemaCE.field "labels" _.Labels {
+            field "labels" _.Labels {
                 withSchema ((Schema.mapWith Schema.text) |> Schema.constrainAll [ Constraint.maxCount 2 ])
             }
-            SchemaCE.field "kind" _.Kind {
+            field "kind" _.Kind {
                 withSchema (Schema.enum kinds)
             }
-            SchemaCE.field "note" _.Note {
+            field "note" _.Note {
                 withSchema (Schema.option Schema.text)
             }
-            SchemaCE.construct (fun age score active contact aliases labels kind note ->
+            construct (fun age score active contact aliases labels kind note ->
                 { Age = age
                   Score = score
                   Active = active
@@ -83,11 +83,11 @@ module SchemaGenTests =
     [<Fact>]
     let ``pattern constraints require a caller-owned generator`` () =
         let schema =
-            SchemaCE.schema<Contact> {
-                SchemaCE.field "email" _.Email {
+            schema<Contact> {
+                field "email" _.Email {
                     withSchema (Schema.text |> Schema.constrain (Constraint.pattern "^[A-Z]+$"))
                 }
-                SchemaCE.construct (fun email -> { Email = email })
+                construct (fun email -> { Email = email })
             }
 
         match SchemaGen.raw schema with
@@ -102,12 +102,12 @@ module SchemaGenTests =
     let ``recursive generators terminate at the FsCheck size boundary`` () =
         let rec holder: Lazy<Schema<Category>> =
             lazy
-                (SchemaCE.schema<Category> {
-                    SchemaCE.field "name" _.Name
-                    SchemaCE.field "children" _.Children {
+                (schema<Category> {
+                    field "name" _.Name
+                    field "children" _.Children {
                         withSchema (Schema.listWith (Schema.defer (fun () -> holder.Value)))
                     }
-                    SchemaCE.construct (fun name children -> { Name = name; Children = children })
+                    construct (fun name children -> { Name = name; Children = children })
                 })
 
         let schema = holder.Value

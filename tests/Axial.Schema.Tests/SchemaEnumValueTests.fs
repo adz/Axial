@@ -20,11 +20,11 @@ module SchemaEnumValueTests =
     [<Fact>]
     let ``enum value schema exposes case tags`` () =
         let schema =
-            SchemaCE.schema<Swatch> {
-                SchemaCE.field "color" _.Color {
+            schema<Swatch> {
+                field "color" _.Color {
                     withSchema (colorSchema ())
                 }
-                SchemaCE.construct (fun color -> { Color = color })
+                construct (fun color -> { Color = color })
             }
 
         let color =
@@ -39,11 +39,11 @@ module SchemaEnumValueTests =
     [<Fact>]
     let ``enum value schemas lower to json schema string enum`` () =
         let schema =
-            SchemaCE.schema<Swatch> {
-                SchemaCE.field "color" _.Color {
+            schema<Swatch> {
+                field "color" _.Color {
                     withSchema (colorSchema ())
                 }
-                SchemaCE.construct (fun color -> { Color = color })
+                construct (fun color -> { Color = color })
             }
 
         let generated = JsonSchema.generate schema
