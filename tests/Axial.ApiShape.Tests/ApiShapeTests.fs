@@ -991,23 +991,31 @@ module ApiShapeTests =
 
     [<Fact>]
     let ``schema fields reject invalid construction arguments`` () =
-        let shape = Schema.define<Customer>
-        // Plain thunks rather than Unquote quotations: the quotation interpreter cannot dynamically
-        // invoke the inline field dispatch, while compiled calls exercise the real validation.
         Assert.Throws<ArgumentNullException>(fun () ->
-            fieldWith Schema.text null (fun (value: Customer) -> value.Name) shape |> ignore)
+            SchemaCE.field null (fun (value: Customer) -> value.Name) |> ignore)
         |> ignore
 
         Assert.Throws<ArgumentException>(fun () ->
-            fieldWith Schema.text " " (fun (value: Customer) -> value.Name) shape |> ignore)
+            SchemaCE.schema<Customer> {
+                SchemaCE.field " " (fun (value: Customer) -> value.Name)
+                SchemaCE.field "age" (fun (value: Customer) -> value.Age)
+                SchemaCE.construct (fun name age -> { Name = name; Age = age })
+            }
+            |> ignore)
         |> ignore
 
         Assert.Throws<ArgumentNullException>(fun () ->
-            fieldWith Schema.text "name" Unchecked.defaultof<Customer -> string> shape |> ignore)
+            SchemaCE.field "name" Unchecked.defaultof<Customer -> string> |> ignore)
         |> ignore
 
         Assert.Throws<ArgumentNullException>(fun () ->
-            fieldWith Unchecked.defaultof<Schema<string>> "name" (fun (value: Customer) -> value.Name) shape
+            SchemaCE.schema<Customer> {
+                SchemaCE.field "name" (fun (value: Customer) -> value.Name) {
+                    withSchema Unchecked.defaultof<Schema<string>>
+                }
+                SchemaCE.field "age" (fun (value: Customer) -> value.Age)
+                SchemaCE.construct (fun name age -> { Name = name; Age = age })
+            }
             |> ignore)
         |> ignore
 
@@ -1016,10 +1024,13 @@ module ApiShapeTests =
         let requiredText = Schema.text |> Schema.constrain Constraint.required
 
         let schema =
-            Schema.define<Customer>
-            |> fieldWith (requiredText |> Schema.constrainAll [ Constraint.required ]) "name" _.Name
-            |> fieldWith Schema.int "age" _.Age
-            |> construct (fun name age -> { Name = name; Age = age })
+            SchemaCE.schema<Customer> {
+                SchemaCE.field "name" (fun (value: Customer) -> value.Name) {
+                    withSchema (requiredText |> Schema.constrainAll [ Constraint.required ])
+                }
+                SchemaCE.field "age" (fun (value: Customer) -> value.Age)
+                SchemaCE.construct (fun name age -> { Name = name; Age = age })
+            }
 
         let constructed =
             match schema.Definition with
@@ -1042,11 +1053,12 @@ module ApiShapeTests =
     let ``schema shape builds explicit ordered three field model schema through inferred primitive fields`` () =
         let create name age active = { Name = name; Age = age; Active = active }
         let schema =
-            Schema.define<CustomerProfile>
-            |> fieldWith Schema.text "name" _.Name
-            |> fieldWith Schema.int "age" _.Age
-            |> fieldWith Schema.bool "active" _.Active
-            |> construct create
+            SchemaCE.schema<CustomerProfile> {
+                SchemaCE.field "name" (fun (value: CustomerProfile) -> value.Name)
+                SchemaCE.field "age" (fun (value: CustomerProfile) -> value.Age)
+                SchemaCE.field "active" (fun (value: CustomerProfile) -> value.Active)
+                SchemaCE.construct create
+            }
 
         match schema.Definition with
         | ModelDefinition model ->
@@ -1064,11 +1076,12 @@ module ApiShapeTests =
     let ``schema recordFor anchors model type for primitive shorthand getters`` () =
         let create name age active = { Name = name; Age = age; Active = active }
         let schema =
-            Schema.define<CustomerProfile>
-            |> fieldWith Schema.text "name" _.Name
-            |> fieldWith Schema.int "age" _.Age
-            |> fieldWith Schema.bool "active" _.Active
-            |> construct create
+            SchemaCE.schema<CustomerProfile> {
+                SchemaCE.field "name" (fun (value: CustomerProfile) -> value.Name)
+                SchemaCE.field "age" (fun (value: CustomerProfile) -> value.Age)
+                SchemaCE.field "active" (fun (value: CustomerProfile) -> value.Active)
+                SchemaCE.construct create
+            }
 
         match schema.Definition with
         | ModelDefinition model ->
@@ -1093,15 +1106,16 @@ module ApiShapeTests =
               Id = id }
 
         let schema =
-            Schema.define<PrimitiveProfile>
-            |> fieldWith Schema.text "name" _.Name
-            |> fieldWith Schema.int "age" _.Age
-            |> fieldWith Schema.decimal "balance" _.Balance
-            |> fieldWith Schema.bool "active" _.Active
-            |> fieldWith Schema.date "birthDate" _.BirthDate
-            |> fieldWith Schema.dateTime "lastSeen" _.LastSeen
-            |> fieldWith Schema.guid "id" _.Id
-            |> construct create
+            SchemaCE.schema<PrimitiveProfile> {
+                SchemaCE.field "name" (fun (value: PrimitiveProfile) -> value.Name)
+                SchemaCE.field "age" (fun (value: PrimitiveProfile) -> value.Age)
+                SchemaCE.field "balance" (fun (value: PrimitiveProfile) -> value.Balance)
+                SchemaCE.field "active" (fun (value: PrimitiveProfile) -> value.Active)
+                SchemaCE.field "birthDate" (fun (value: PrimitiveProfile) -> value.BirthDate)
+                SchemaCE.field "lastSeen" (fun (value: PrimitiveProfile) -> value.LastSeen)
+                SchemaCE.field "id" (fun (value: PrimitiveProfile) -> value.Id)
+                SchemaCE.construct create
+            }
 
         match schema.Definition with
         | ModelDefinition model ->
