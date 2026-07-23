@@ -202,6 +202,31 @@ module internal ValueSchema =
               Description = None
               Default = None })
 
+    let validate
+        (validation: 'value -> Result<unit, SchemaError>)
+        (schema: Schema<'value>)
+        : Schema<'value> =
+        if isNull (box validation) then nullArg (nameof validation)
+        if isNull (box schema) then nullArg (nameof schema)
+
+        let ops =
+            RefinedValueOps(
+                (fun value ->
+                    let typed = unbox<'value> value
+
+                    match validation typed with
+                    | Ok () -> Ok value
+                    | Error error -> Error [ error ]),
+                id
+            )
+
+        Schema(ValueDefinition
+            { Shape = RefinedValueDefinition(schema.ValueDefinition, ops)
+              Format = None
+              Constraints = []
+              Description = None
+              Default = None })
+
     /// <summary>Describes a nested model value from an already built nested model schema.</summary>
     /// <remarks>
     /// Nested value schemas let a field carry another trusted model, such as an address nested inside a customer.

@@ -410,31 +410,44 @@ module internal ModelFieldCheck =
         | LazyValueDefinition deferred ->
             validateValue (deferred.Force()) (valueSchema.Constraints @ fieldConstraints) path value
         | RefinedValueDefinition(raw, ops) ->
-            match raw.Shape with
-            | NestedValueDefinition _
-            | ManyValueDefinition _
-            | UnionValueDefinition _
-            | UnionInlineValueDefinition _
-            | EnumValueDefinition _
-            | OptionValueDefinition _
-            | MapValueDefinition _ ->
-                validateValue raw (valueSchema.Constraints @ fieldConstraints) path (ops.Inspect value)
-                |> Axial.Validation.Validation.map (fun _ -> value)
-            | LazyValueDefinition _ ->
-                validateValue raw (valueSchema.Constraints @ fieldConstraints) path (ops.Inspect value)
-                |> Axial.Validation.Validation.map (fun _ -> value)
-            | PrimitiveValueDefinition _
-            | RefinedValueDefinition _ ->
-                let kind = underlyingPrimitiveKind valueSchema
-                let primitive = inspectUnderlying valueSchema value
+            let rawValidation =
+                match raw.Shape with
+                | NestedValueDefinition _
+                | ManyValueDefinition _
+                | UnionValueDefinition _
+                | UnionInlineValueDefinition _
+                | EnumValueDefinition _
+                | OptionValueDefinition _
+                | MapValueDefinition _
+                | LazyValueDefinition _ ->
+                    validateValue raw (valueSchema.Constraints @ fieldConstraints) path (ops.Inspect value)
+                    |> Axial.Validation.Validation.map (fun _ -> value)
+                | PrimitiveValueDefinition _
+                | RefinedValueDefinition _ ->
+                    let kind = underlyingPrimitiveKind valueSchema
+                    let primitive = inspectUnderlying valueSchema value
 
-                match checkPrimitive kind constraints primitive with
+                    match checkPrimitive kind constraints primitive with
+                    | Ok _ -> Axial.Validation.Validation.ok value
+                    | Error errors ->
+                        errors
+                        |> List.map (diagnosticsAt path)
+                        |> mergeErrors
+                        |> Axial.Validation.Validation.error
+
+            let refinementValidation =
+                match ops.Construct(ops.Inspect value) with
                 | Ok _ -> Axial.Validation.Validation.ok value
                 | Error errors ->
                     errors
                     |> List.map (diagnosticsAt path)
                     |> mergeErrors
                     |> Axial.Validation.Validation.error
+
+            Axial.Validation.Validation.map2
+                (fun _ _ -> value)
+                rawValidation
+                refinementValidation
         | PrimitiveValueDefinition _ ->
             let kind = underlyingPrimitiveKind valueSchema
             let primitive = inspectUnderlying valueSchema value

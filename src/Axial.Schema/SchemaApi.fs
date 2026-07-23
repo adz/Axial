@@ -43,6 +43,13 @@ module Schema =
     /// <remarks>The smart constructor runs during parsing. Inspection supplies the raw representation during checking and encoding.</remarks>
     let refine (refinement: Refinement<'raw, 'value>) (schema: Schema<'raw>) : Schema<'value> =
         SchemaCore.refine refinement schema
+    /// <summary>Adds executable value validation to a schema.</summary>
+    /// <remarks>The validation runs during parsing and when checking an existing value. It remains executable behavior and is not emitted as portable constraint metadata.</remarks>
+    let validate
+        (validation: 'value -> Result<unit, SchemaError>)
+        (schema: Schema<'value>)
+        : Schema<'value> =
+        SchemaCore.validate validation schema
     /// <summary>Describes an externally tagged union.</summary>
     let union discriminator payload cases = SchemaCore.union discriminator payload cases
     /// <summary>Describes an internally tagged union.</summary>

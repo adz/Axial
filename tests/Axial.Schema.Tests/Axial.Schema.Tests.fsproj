@@ -12,6 +12,7 @@
     <Compile Include="SchemaConstraintInspectionTests.fs" />
     <Compile Include="SchemaConstructorGetterAlignmentTests.fs" />
     <Compile Include="ShapeSyntaxTests.fs" />
+    <Compile Include="SchemaCeTests.fs" />
     <Compile Include="SchemaWideShapeTests.fs" />
     <Compile Include="SchemaCompiledRecordPlanProofTests.fs" />
     <Compile Include="SchemaRefinedValueTests.fs" />
