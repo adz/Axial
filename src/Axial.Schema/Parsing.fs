@@ -11,24 +11,23 @@ open System.Globalization
 open Axial.ErrorHandling
 open Axial.Refined
 open Axial.Schema
-open Axial.Validation
 
 /// <summary>Options that customize how structured data is parsed through a schema.</summary>
 type SchemaParseOptions =
     internal
         {
-            ConstructorErrorPath: Path option
+            ConstructorErrorPath: PathComponent list option
         }
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
 module internal SchemaParsing =
 
-    let private diagnosticsPath (path: DataPath) : Path =
+    let private diagnosticsPath (path: DataPath) : PathComponent list =
         path
         |> List.map (function
-            | DataPathSegment.Name name -> PathSegment.Name name
-            | DataPathSegment.Index index -> PathSegment.Index index)
+            | DataPathSegment.Name name -> KeyComponent name
+            | DataPathSegment.Index index -> IndexComponent index)
 
     /// <summary>The default input parser options.</summary>
     let defaults =
@@ -52,12 +51,7 @@ module internal SchemaParsing =
             ConstructorErrorPath = path |> DataPath.parse |> diagnosticsPath |> Some }
 
     let private diagnosticsAt path error =
-        Validation.fail (Diagnostics.singleton error)
-        |> Validation.at path
-        |> Validation.toResult
-        |> function
-            | Error diagnostics -> diagnostics
-            | Ok _ -> Diagnostics.empty
+        SchemaErrors.singleton (Path path) error
 
     let private errorAt path error =
         Error(diagnosticsAt path error)
@@ -70,9 +64,8 @@ module internal SchemaParsing =
 
         errorAt errorPath (SchemaError.ConstructorFailed message)
 
-    let private mergeErrors diagnostics =
-        diagnostics
-        |> List.reduce Diagnostics.merge
+    let private mergeErrors errors =
+        SchemaErrors.collect errors
 
     let private allConstraints definition =
         let rec gather valueDefinition =
@@ -344,8 +337,8 @@ module internal SchemaParsing =
     and private parseUnion options path (union: TaggedUnionValueDefinition) (fields: Map<string, Data>) =
         let discriminatorName = ExternalFieldName.value union.DiscriminatorField
         let payloadName = ExternalFieldName.value union.PayloadField
-        let discriminatorPath = path @ [ PathSegment.Name discriminatorName ]
-        let payloadPath = path @ [ PathSegment.Name payloadName ]
+        let discriminatorPath = path @ [ KeyComponent discriminatorName ]
+        let payloadPath = path @ [ KeyComponent payloadName ]
 
         match fields |> Map.tryFind discriminatorName |> Option.defaultValue Data.Null with
         | Data.Null -> errorAt discriminatorPath SchemaError.Required
@@ -370,7 +363,7 @@ module internal SchemaParsing =
 
     and private parseUnionInline options path (union: InlineTaggedUnionValueDefinition) (fields: Map<string, Data>) =
         let discriminatorName = ExternalFieldName.value union.DiscriminatorField
-        let discriminatorPath = path @ [ PathSegment.Name discriminatorName ]
+        let discriminatorPath = path @ [ KeyComponent discriminatorName ]
 
         match fields |> Map.tryFind discriminatorName |> Option.defaultValue Data.Null with
         | Data.Null -> errorAt discriminatorPath SchemaError.Required
@@ -405,7 +398,7 @@ module internal SchemaParsing =
 
     and private parseNestedField options basePath (fields: Map<string, Data>) (field: FieldDescriptor<obj>) =
         let name = ExternalFieldName.value field.ExternalName
-        let path = basePath @ [ PathSegment.Name name ]
+        let path = basePath @ [ KeyComponent name ]
         let raw = fields |> Map.tryFind name |> Option.defaultValue Data.Null
         parseValue options field.ValueSchema field.Constraints path raw
 
@@ -436,7 +429,7 @@ module internal SchemaParsing =
     and private parseMany options path (collection: CollectionValueDefinition) constraints rawItems =
         let parsedItems =
             rawItems
-            |> List.mapi (fun index rawItem -> parseValue options collection.Item [] (path @ [ PathSegment.Index index ]) rawItem)
+            |> List.mapi (fun index rawItem -> parseValue options collection.Item [] (path @ [ IndexComponent index ]) rawItem)
         let errors = parsedItems |> List.choose (function Error diagnostics -> Some diagnostics | Ok _ -> None)
 
         match errors with
@@ -456,7 +449,7 @@ module internal SchemaParsing =
         let parsedEntries =
             entries
             |> List.map (fun (key, rawItem) ->
-                key, parseValue options collection.Item [] (path @ [ PathSegment.Key key ]) rawItem)
+                key, parseValue options collection.Item [] (path @ [ KeyComponent key ]) rawItem)
 
         let errors =
             parsedEntries |> List.choose (fun (_, result) -> match result with Error diagnostics -> Some diagnostics | Ok _ -> None)
@@ -473,16 +466,16 @@ module internal SchemaParsing =
 
     let private parseRootField options basePath (fields: Map<string, Data>) (field: FieldDescriptor<'model>) =
         let name = ExternalFieldName.value field.ExternalName
-        let path = basePath @ [ PathSegment.Name name ]
+        let path = basePath @ [ KeyComponent name ]
         let raw = fields |> Map.tryFind name |> Option.defaultValue Data.Null
         parseValue options field.ValueSchema field.Constraints path raw
 
     /// <summary>Parses structured boundary data through a trusted model schema using custom input parser options.</summary>
-    let private parseWithDiagnostics
+    let private parseWithErrors
         (configure: SchemaParseOptions -> SchemaParseOptions)
         (schema: Schema<'model>)
         (input: Data)
-        : Result<'model, Diagnostics<SchemaError>> =
+        : Result<'model, SchemaErrors> =
         if isNull (box configure) then
             nullArg (nameof configure)
 
@@ -527,8 +520,7 @@ module internal SchemaParsing =
         (schema: Schema<'model>)
         (input: Data)
         : Result<'model, SchemaErrors> =
-        parseWithDiagnostics configure schema input
-        |> Result.mapError SchemaErrors.ofDiagnostics
+        parseWithErrors configure schema input
 
     /// <summary>Parses structured boundary data through a trusted model schema.</summary>
     let parse (schema: Schema<'model>) (input: Data) : Result<'model, SchemaErrors> =
@@ -583,9 +575,9 @@ module internal SchemaParsing =
             match schema.Definition with
             | PendingDefinition -> invalidArg (nameof schema) "Expected a built model schema."
             | ValueDefinition _ ->
-                ModelFieldCheck.check schema model |> Axial.Validation.Validation.toResult
+                ModelFieldCheck.check schema model |> SchemaResult.toResult
             | ModelDefinition modelSchema ->
-                match ModelFieldCheck.check schema model |> Axial.Validation.Validation.toResult with
+                match ModelFieldCheck.check schema model |> SchemaResult.toResult with
                 | Error diagnostics -> Error diagnostics
                 | Ok checkedModel ->
                     let arguments =
@@ -597,4 +589,4 @@ module internal SchemaParsing =
                     | Ok _ -> Ok model
                     | Error message -> errorAtConstructor defaults [] message
 
-        result |> Result.mapError SchemaErrors.ofDiagnostics
+        result

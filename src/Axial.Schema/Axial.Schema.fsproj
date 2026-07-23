@@ -35,7 +35,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Axial.Data\Axial.Data.fsproj" />
     <ProjectReference Include="..\Axial.Result\Axial.Result.fsproj" />
-    <ProjectReference Include="..\Axial.Diagnostics\Axial.Diagnostics.fsproj" />
     <ProjectReference Include="..\Axial.Refined\Axial.Refined.fsproj" />
   </ItemGroup>
 

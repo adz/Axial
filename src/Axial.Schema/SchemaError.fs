@@ -1,13 +1,12 @@
 // SchemaError: the one portable error vocabulary every schema interpreter reports through, so
 // parsing, checking, and refinement failures render and compose the same way regardless of which
-// interpreter raised them. AXIAL_SCHEMA_CORE_ONLY trims the Refined/Validation-dependent cases for
+// interpreter raised them. AXIAL_SCHEMA_CORE_ONLY trims the Refined-dependent cases for
 // consumers that only need the core shape.
 namespace Axial.Schema
 
 open Axial.ErrorHandling
 #if !AXIAL_SCHEMA_CORE_ONLY
 open Axial.Refined
-open Axial.Validation
 #endif
 
 /// <summary>Schema input, checking, and contextual rule failures attached to diagnostics paths.</summary>
@@ -120,19 +119,4 @@ module SchemaError =
         | SchemaError.Custom(_, Some message) -> message
         | SchemaError.Custom(code, None) -> code
 
-    let renderDiagnostic (diagnostic: Diagnostic<SchemaError>) =
-        let message = render diagnostic.Error
-        let segmentText = function
-            | PathSegment.Key key -> key
-            | PathSegment.Index index -> $"[{index}]"
-            | PathSegment.Name name -> name
-
-        match diagnostic.Path with
-        | [] -> message
-        | path ->
-            let pathText = path |> List.map segmentText |> String.concat "."
-            $"{pathText}: {message}"
-
-    let renderDiagnostics diagnostics =
-        diagnostics |> Diagnostics.flatten |> List.map renderDiagnostic
 #endif

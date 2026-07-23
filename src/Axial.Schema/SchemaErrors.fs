@@ -1,7 +1,6 @@
 namespace Axial.Schema
 
 open System
-open Axial.Validation
 
 type internal PathComponent =
     | KeyComponent of string
@@ -87,45 +86,20 @@ type SchemaErrors internal (issues: SchemaIssue list) =
 /// <summary>Functions for inspecting and rendering accumulated schema failures.</summary>
 [<RequireQualifiedAccess>]
 module SchemaErrors =
-    let private pathFromSegments segments =
-        segments
-        |> List.map (function
-            | PathSegment.Key key
-            | PathSegment.Name key -> KeyComponent key
-            | PathSegment.Index index -> IndexComponent index)
-        |> Path
+    let internal empty = SchemaErrors []
 
-    let internal ofDiagnostics diagnostics =
-        diagnostics
-        |> Diagnostics.flatten
-        |> List.map (fun diagnostic ->
-            { Path = pathFromSegments diagnostic.Path
-              Error = diagnostic.Error })
+    let internal singleton path error =
+        SchemaErrors [ { Path = path; Error = error } ]
+
+    let internal merge (left: SchemaErrors) (right: SchemaErrors) =
+        left.Issues @ right.Issues
+        |> List.sortBy (fun issue -> issue.Path)
         |> SchemaErrors
 
-    let internal toDiagnostics (errors: SchemaErrors) =
-        let segment = function
-            | KeyComponent key -> PathSegment.Key key
-            | IndexComponent index -> PathSegment.Index index
+    let internal collect errors =
+        errors |> List.fold merge empty
 
-        errors.Issues
-        |> List.map (fun issue ->
-            issue.Path.Components
-            |> List.map segment,
-            issue.Error)
-        |> List.map (fun (path, error) ->
-            match
-                Validation.fail (Diagnostics.singleton error)
-                |> Validation.at path
-                |> Validation.toResult
-            with
-            | Error diagnostics -> diagnostics
-            | Ok _ -> invalidOp "Expected a failed validation.")
-        |> function
-            | [] -> Diagnostics.empty
-            | head :: tail -> tail |> List.fold Diagnostics.merge head
-
-    /// <summary>Returns failures in deterministic schema traversal order.</summary>
+    /// <summary>Returns failures in deterministic path order.</summary>
     let toList (errors: SchemaErrors) =
         if isNull errors then nullArg (nameof errors)
         errors.Issues
@@ -144,3 +118,17 @@ module SchemaErrors =
             let path = Path.format issue.Path
             if String.IsNullOrEmpty path then message else $"{path}: {message}")
         |> String.concat Environment.NewLine
+
+[<RequireQualifiedAccess>]
+module internal SchemaResult =
+    let ok value : Result<'value, SchemaErrors> = Ok value
+    let error errors : Result<'value, SchemaErrors> = Error errors
+    let map mapper result = Result.map mapper result
+    let toResult result = result
+
+    let map2 mapper left right =
+        match left, right with
+        | Ok leftValue, Ok rightValue -> Ok(mapper leftValue rightValue)
+        | Error leftErrors, Error rightErrors -> Error(SchemaErrors.merge leftErrors rightErrors)
+        | Error errors, _
+        | _, Error errors -> Error errors

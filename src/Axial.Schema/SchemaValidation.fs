@@ -7,7 +7,6 @@ open System
 open Axial.ErrorHandling
 open Axial.Refined
 open Axial.Schema
-open Axial.Validation
 
 /// <summary>
 /// Marks the package that owns schema input, diagnostics, validation, and rules interpreters.
@@ -305,16 +304,10 @@ module SchemaCheck =
 [<RequireQualifiedAccess>]
 module internal ModelFieldCheck =
     let private diagnosticsAt path error =
-        Axial.Validation.Validation.fail (Diagnostics.singleton error)
-        |> Axial.Validation.Validation.at path
-        |> Axial.Validation.Validation.toResult
-        |> function
-            | Error diagnostics -> diagnostics
-            | Ok _ -> Diagnostics.empty
+        SchemaErrors.singleton (Path path) error
 
-    let private mergeErrors diagnostics =
-        diagnostics
-        |> List.reduce Diagnostics.merge
+    let private mergeErrors errors =
+        SchemaErrors.collect errors
 
     let private allConstraints definition =
         let rec gather valueDefinition =
@@ -421,30 +414,30 @@ module internal ModelFieldCheck =
                 | MapValueDefinition _
                 | LazyValueDefinition _ ->
                     validateValue raw (valueSchema.Constraints @ fieldConstraints) path (ops.Inspect value)
-                    |> Axial.Validation.Validation.map (fun _ -> value)
+                    |> SchemaResult.map (fun _ -> value)
                 | PrimitiveValueDefinition _
                 | RefinedValueDefinition _ ->
                     let kind = underlyingPrimitiveKind valueSchema
                     let primitive = inspectUnderlying valueSchema value
 
                     match checkPrimitive kind constraints primitive with
-                    | Ok _ -> Axial.Validation.Validation.ok value
+                    | Ok _ -> SchemaResult.ok value
                     | Error errors ->
                         errors
                         |> List.map (diagnosticsAt path)
                         |> mergeErrors
-                        |> Axial.Validation.Validation.error
+                        |> SchemaResult.error
 
             let refinementValidation =
                 match ops.Construct(ops.Inspect value) with
-                | Ok _ -> Axial.Validation.Validation.ok value
+                | Ok _ -> SchemaResult.ok value
                 | Error errors ->
                     errors
                     |> List.map (diagnosticsAt path)
                     |> mergeErrors
-                    |> Axial.Validation.Validation.error
+                    |> SchemaResult.error
 
-            Axial.Validation.Validation.map2
+            SchemaResult.map2
                 (fun _ _ -> value)
                 rawValidation
                 refinementValidation
@@ -453,40 +446,40 @@ module internal ModelFieldCheck =
             let primitive = inspectUnderlying valueSchema value
 
             match checkPrimitive kind constraints primitive with
-            | Ok _ -> Axial.Validation.Validation.ok value
+            | Ok _ -> SchemaResult.ok value
             | Error errors ->
                 errors
                 |> List.map (diagnosticsAt path)
                 |> mergeErrors
-                |> Axial.Validation.Validation.error
+                |> SchemaResult.error
         | NestedValueDefinition(nestedModel, _) ->
             validateObject path nestedModel value
-            |> Axial.Validation.Validation.map (fun _ -> value)
+            |> SchemaResult.map (fun _ -> value)
         | ManyValueDefinition collection ->
             validateMany path collection constraints (value :?> System.Collections.IEnumerable)
-            |> Axial.Validation.Validation.map (fun _ -> value)
+            |> SchemaResult.map (fun _ -> value)
         | MapValueDefinition collection ->
             validateMap path collection constraints value
-            |> Axial.Validation.Validation.map (fun _ -> value)
+            |> SchemaResult.map (fun _ -> value)
         | UnionValueDefinition union ->
             validateUnion path union value
-            |> Axial.Validation.Validation.map (fun _ -> value)
+            |> SchemaResult.map (fun _ -> value)
         | UnionInlineValueDefinition union ->
             validateUnionInline path union value
-            |> Axial.Validation.Validation.map (fun _ -> value)
+            |> SchemaResult.map (fun _ -> value)
         | EnumValueDefinition enum ->
             validateEnum path enum value
-            |> Axial.Validation.Validation.map (fun _ -> value)
+            |> SchemaResult.map (fun _ -> value)
         | OptionValueDefinition optional ->
             match optional.TryUnwrap value with
-            | None -> Axial.Validation.Validation.ok value
+            | None -> SchemaResult.ok value
             | Some payload ->
                 validateValue optional.Payload (valueSchema.Constraints @ fieldConstraints) path payload
-                |> Axial.Validation.Validation.map (fun _ -> value)
+                |> SchemaResult.map (fun _ -> value)
 
     and private validateField basePath model (field: FieldDescriptor<obj>) =
         let name = ExternalFieldName.value field.ExternalName
-        let path = basePath @ [ PathSegment.Name name ]
+        let path = basePath @ [ KeyComponent name ]
         let value = field.Getter model
         validateValue field.ValueSchema field.Constraints path value
 
@@ -495,62 +488,62 @@ module internal ModelFieldCheck =
         let errors =
             validatedFields
             |> List.choose (fun validation ->
-                match Axial.Validation.Validation.toResult validation with
+                match SchemaResult.toResult validation with
                 | Ok _ -> None
                 | Error diagnostics -> Some diagnostics)
 
         match errors with
-        | [] -> Axial.Validation.Validation.ok model
-        | diagnostics -> diagnostics |> mergeErrors |> Axial.Validation.Validation.error
+        | [] -> SchemaResult.ok model
+        | diagnostics -> diagnostics |> mergeErrors |> SchemaResult.error
 
     and private checkMany constraints path items =
         match items |> runCheck constraints (ConstraintCheck.sequence<obj> constraints) with
-        | Ok checkedItems -> Axial.Validation.Validation.ok checkedItems
+        | Ok checkedItems -> SchemaResult.ok checkedItems
         | Error errors ->
             errors
             |> List.map (diagnosticsAt path)
             |> mergeErrors
-            |> Axial.Validation.Validation.error
+            |> SchemaResult.error
 
     and private validateMany path (collection: CollectionValueDefinition) constraints (items: System.Collections.IEnumerable) =
         let items = items |> Seq.cast<obj> |> Seq.toList
 
         let validatedItems =
             items
-            |> List.mapi (fun index item -> validateValue collection.Item [] (path @ [ PathSegment.Index index ]) item)
+            |> List.mapi (fun index item -> validateValue collection.Item [] (path @ [ IndexComponent index ]) item)
 
         let errors =
             validatedItems
             |> List.choose (fun validation ->
-                match Axial.Validation.Validation.toResult validation with
+                match SchemaResult.toResult validation with
                 | Ok _ -> None
                 | Error diagnostics -> Some diagnostics)
 
         match errors with
         | [] -> checkMany constraints path items
-        | diagnostics -> diagnostics |> mergeErrors |> Axial.Validation.Validation.error
+        | diagnostics -> diagnostics |> mergeErrors |> SchemaResult.error
 
     and private validateMap path (collection: MapValueDefinition) constraints (value: obj) =
         let entries = collection.Entries value
 
         let validatedEntries =
             entries
-            |> List.map (fun (key, item) -> validateValue collection.Item [] (path @ [ PathSegment.Key key ]) item)
+            |> List.map (fun (key, item) -> validateValue collection.Item [] (path @ [ KeyComponent key ]) item)
 
         let errors =
             validatedEntries
             |> List.choose (fun validation ->
-                match Axial.Validation.Validation.toResult validation with
+                match SchemaResult.toResult validation with
                 | Ok _ -> None
                 | Error diagnostics -> Some diagnostics)
 
         match errors with
         | [] -> checkMany constraints path (entries |> List.map snd)
-        | diagnostics -> diagnostics |> mergeErrors |> Axial.Validation.Validation.error
+        | diagnostics -> diagnostics |> mergeErrors |> SchemaResult.error
 
     and private validateUnion path (union: TaggedUnionValueDefinition) value =
         let payloadName = ExternalFieldName.value union.PayloadField
-        let payloadPath = path @ [ PathSegment.Name payloadName ]
+        let payloadPath = path @ [ KeyComponent payloadName ]
 
         match union.Cases |> List.tryPick (fun case -> case.TryInspect value |> Option.map (fun payload -> case, payload)) with
         | Some(case, payload) ->
@@ -558,7 +551,7 @@ module internal ModelFieldCheck =
         | None ->
             SchemaError.Custom("union.case", Some "The value did not match any configured union case.")
             |> diagnosticsAt path
-            |> Axial.Validation.Validation.error
+            |> SchemaResult.error
 
     and private validateUnionInline path (union: InlineTaggedUnionValueDefinition) value =
         match union.Cases |> List.tryPick (fun case -> case.TryInspect value |> Option.map (fun payload -> case, payload)) with
@@ -566,19 +559,19 @@ module internal ModelFieldCheck =
         | None ->
             SchemaError.Custom("union.case", Some "The value did not match any configured union case.")
             |> diagnosticsAt path
-            |> Axial.Validation.Validation.error
+            |> SchemaResult.error
 
     and private validateEnum path (enum: TaggedEnumValueDefinition) (value: obj) =
         if enum.Cases |> List.exists (fun case -> case.Value.Equals value) then
-            Axial.Validation.Validation.ok value
+            SchemaResult.ok value
         else
             SchemaError.Custom("enum.case", Some "The value did not match any configured enum case.")
             |> diagnosticsAt path
-            |> Axial.Validation.Validation.error
+            |> SchemaResult.error
 
     let private validateRootField model (field: FieldDescriptor<'model>) =
         let name = ExternalFieldName.value field.ExternalName
-        let path = [ PathSegment.Name name ]
+        let path = [ KeyComponent name ]
         let value = field.Getter model
         validateValue field.ValueSchema field.Constraints path value
 
@@ -591,7 +584,7 @@ module internal ModelFieldCheck =
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
     /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="schema" /> is not a built model schema.</exception>
-    let check (schema: Schema<'model>) (model: 'model) : Axial.Validation.Validation<'model, SchemaError> =
+    let check (schema: Schema<'model>) (model: 'model) : Result<'model, SchemaErrors> =
         if isNull (box schema) then
             nullArg (nameof schema)
 
@@ -599,16 +592,16 @@ module internal ModelFieldCheck =
         | PendingDefinition -> invalidArg (nameof schema) "Expected a built model schema."
         | ValueDefinition valueSchema ->
             validateValue valueSchema [] [] (box model)
-            |> Axial.Validation.Validation.map unbox<'model>
+            |> SchemaResult.map unbox<'model>
         | ModelDefinition modelSchema ->
             let validatedFields = modelSchema.Fields |> List.map (validateRootField model)
             let errors =
                 validatedFields
                 |> List.choose (fun validation ->
-                    match Axial.Validation.Validation.toResult validation with
+                    match SchemaResult.toResult validation with
                     | Ok _ -> None
                     | Error diagnostics -> Some diagnostics)
 
             match errors with
-            | [] -> Axial.Validation.Validation.ok model
-            | diagnostics -> diagnostics |> mergeErrors |> Axial.Validation.Validation.error
+            | [] -> SchemaResult.ok model
+            | diagnostics -> diagnostics |> mergeErrors |> SchemaResult.error
