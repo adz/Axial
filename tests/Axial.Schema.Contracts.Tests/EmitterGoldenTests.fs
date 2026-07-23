@@ -98,9 +98,10 @@ type Order =
 
         let emitted = Emitter.emit "Ns" [ parsed ] parsed
 
-        test <@ emitted.Contains "|> field \"sku\" _.Sku" @>
-        test <@ emitted.Contains "|> field \"quantity\" _.Quantity" @>
-        test <@ not (emitted.Contains "|> fieldWith Schema.text") @>
-        test <@ not (emitted.Contains "|> fieldWith Schema.int") @>
-        test <@ emitted.Contains "|> construct (fun sku quantity -> Order.create sku quantity)" @>
+        test <@ emitted.Contains "SchemaCE.schema<Order> {" @>
+        test <@ emitted.Contains "SchemaCE.field \"sku\" (fun (value: Order) -> value.Sku)" @>
+        test <@ emitted.Contains "SchemaCE.field \"quantity\" (fun (value: Order) -> value.Quantity)" @>
+        test <@ not (emitted.Contains "withSchema Schema.text") @>
+        test <@ not (emitted.Contains "withSchema Schema.int") @>
+        test <@ emitted.Contains "SchemaCE.construct (fun sku quantity -> Order.create sku quantity)" @>
         test <@ not (emitted.Contains "{ Sku = sku") @>

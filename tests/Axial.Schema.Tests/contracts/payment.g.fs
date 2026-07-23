@@ -23,12 +23,14 @@ module Card =
 
     /// The schema declared by payment.contract (Card.v1).
     let schema : Schema<Card> =
-        Schema.define<Card>
-        |> field "number" _.Number
-        |> constrain (minLength 12)
-        |> constrain (maxLength 19)
-        |> construct (fun number ->
-            { Number = number })
+        SchemaCE.schema<Card> {
+            SchemaCE.field "number" (fun (value: Card) -> value.Number) {
+                constrain (minLength 12)
+                constrain (maxLength 19)
+            }
+            SchemaCE.construct (fun number ->
+                { Number = number })
+        }
         |> Schema.describe "A card payment source."
 
     /// Checks a draft built with an ordinary record literal.
@@ -54,11 +56,13 @@ module Invoice =
 
     /// The schema declared by payment.contract (Invoice.v1).
     let schema : Schema<Invoice> =
-        Schema.define<Invoice>
-        |> field "reference" _.Reference
-        |> constrain (minLength 1)
-        |> construct (fun reference ->
-            { Reference = reference })
+        SchemaCE.schema<Invoice> {
+            SchemaCE.field "reference" (fun (value: Invoice) -> value.Reference) {
+                constrain (minLength 1)
+            }
+            SchemaCE.construct (fun reference ->
+                { Reference = reference })
+        }
         |> Schema.describe "An invoice payment source."
 
     /// Checks a draft built with an ordinary record literal.
@@ -94,10 +98,13 @@ module Payment =
 
     /// The schema declared by payment.contract (Payment.v1).
     let schema : Schema<Payment> =
-        Schema.define<Payment>
-        |> fieldWith (Schema.inlineUnion "kind" sourceCases) "source" _.Source
-        |> construct (fun source ->
-            { Source = source })
+        SchemaCE.schema<Payment> {
+            SchemaCE.field "source" (fun (value: Payment) -> value.Source) {
+                withSchema (Schema.inlineUnion "kind" sourceCases)
+            }
+            SchemaCE.construct (fun source ->
+                { Source = source })
+        }
         |> Schema.describe "A payment method choice."
 
     /// Checks a draft built with an ordinary record literal.

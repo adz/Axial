@@ -24,16 +24,19 @@ module Geo =
 
     /// The schema declared by geo.contract (Geo.v1).
     let schema : Schema<Geo> =
-        Schema.define<Geo>
-        |> field "lat" _.Lat
-        |> constrain (atLeast (-90m))
-        |> constrain (atMost 90m)
-        |> field "lon" _.Lon
-        |> constrain (atLeast (-180m))
-        |> constrain (atMost 180m)
-        |> construct (fun lat lon ->
-            { Lat = lat
-              Lon = lon })
+        SchemaCE.schema<Geo> {
+            SchemaCE.field "lat" (fun (value: Geo) -> value.Lat) {
+                constrain (atLeast (-90m))
+                constrain (atMost 90m)
+            }
+            SchemaCE.field "lon" (fun (value: Geo) -> value.Lon) {
+                constrain (atLeast (-180m))
+                constrain (atMost 180m)
+            }
+            SchemaCE.construct (fun lat lon ->
+                { Lat = lat
+                  Lon = lon })
+        }
         |> Schema.describe "A geographic coordinate."
 
     /// Checks a draft built with an ordinary record literal.

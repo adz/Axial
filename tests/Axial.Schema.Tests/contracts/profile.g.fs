@@ -24,15 +24,18 @@ module ProfileV1 =
 
     /// The schema declared by profile.contract (Profile.v1).
     let schema : Schema<ProfileV1> =
-        Schema.define<ProfileV1>
-        |> field "name" _.Name
-        |> constrain (minLength 1)
-        |> constrain (maxLength 100)
-        |> field "email" _.Email
-        |> constrain emailFormat
-        |> construct (fun name email ->
-            { Name = name
-              Email = email })
+        SchemaCE.schema<ProfileV1> {
+            SchemaCE.field "name" (fun (value: ProfileV1) -> value.Name) {
+                constrain (minLength 1)
+                constrain (maxLength 100)
+            }
+            SchemaCE.field "email" (fun (value: ProfileV1) -> value.Email) {
+                constrain emailFormat
+            }
+            SchemaCE.construct (fun name email ->
+                { Name = name
+                  Email = email })
+        }
         |> Schema.describe "A user profile as first stored."
 
     /// Checks a draft built with an ordinary record literal.
@@ -60,17 +63,22 @@ module Profile =
 
     /// The schema declared by profile.contract (Profile.v2).
     let schema : Schema<Profile> =
-        Schema.define<Profile>
-        |> field "name" _.Name
-        |> constrain (minLength 1)
-        |> constrain (maxLength 100)
-        |> field "email" _.Email
-        |> constrain emailFormat
-        |> fieldWith (Schema.bool |> Schema.withDefault false) "marketing_opt_in" _.MarketingOptIn
-        |> construct (fun name email marketingOptIn ->
-            { Name = name
-              Email = email
-              MarketingOptIn = marketingOptIn })
+        SchemaCE.schema<Profile> {
+            SchemaCE.field "name" (fun (value: Profile) -> value.Name) {
+                constrain (minLength 1)
+                constrain (maxLength 100)
+            }
+            SchemaCE.field "email" (fun (value: Profile) -> value.Email) {
+                constrain emailFormat
+            }
+            SchemaCE.field "marketing_opt_in" (fun (value: Profile) -> value.MarketingOptIn) {
+                withSchema (Schema.bool |> Schema.withDefault false)
+            }
+            SchemaCE.construct (fun name email marketingOptIn ->
+                { Name = name
+                  Email = email
+                  MarketingOptIn = marketingOptIn })
+        }
         |> Schema.describe "A user profile with an explicit marketing consent decision."
 
     /// Checks a draft built with an ordinary record literal.

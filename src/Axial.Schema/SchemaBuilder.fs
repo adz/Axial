@@ -26,6 +26,15 @@ type FieldWorking<'model, 'target, 'current> internal
     member internal _.Schema = schema
 
 [<EditorBrowsable(EditorBrowsableState.Never)>]
+type FieldConfigured<'model, 'target> internal
+    (
+        initial: FieldInitial<'model, 'target>,
+        configure: Schema<'target> -> Schema<'target>
+    ) =
+    member _.Initial = initial
+    member _.Configure = configure
+
+[<EditorBrowsable(EditorBrowsableState.Never)>]
 type FieldRefining<'model, 'target, 'raw> internal
     (
         initial: FieldInitial<'model, 'target>,
@@ -39,6 +48,15 @@ type FieldRefining<'model, 'target, 'raw> internal
 [<EditorBrowsable(EditorBrowsableState.Never)>]
 type FieldDeclaration<'model, 'value> internal (definition: FieldDefinition<'model, 'value>) =
     member internal _.Definition = definition
+
+[<EditorBrowsable(EditorBrowsableState.Never)>]
+type ConfiguredFieldDeclaration<'model, 'target> internal
+    (
+        initial: FieldInitial<'model, 'target>,
+        configure: Schema<'target> -> Schema<'target>
+    ) =
+    member _.Initial = initial
+    member _.Configure = configure
 
 [<EditorBrowsable(EditorBrowsableState.Never)>]
 type RefiningFieldDeclaration<'model, 'raw, 'target> internal
@@ -75,6 +93,29 @@ type FieldBuilder<'model, 'target> internal (name: string, getter: 'model -> 'ta
     [<CustomOperation("constrain")>]
     member _.Constrain
         (
+            initial: FieldInitial<'model, 'target>,
+            constraint': Constraint<'target>
+        ) : FieldConfigured<'model, 'target> =
+        if isNull (box constraint') then nullArg (nameof constraint')
+        FieldConfigured(initial, SchemaCore.constrain constraint'.Untyped)
+
+    /// <summary>Adds another portable constraint to an inferred field schema.</summary>
+    [<CustomOperation("constrain")>]
+    member _.Constrain
+        (
+            field: FieldConfigured<'model, 'target>,
+            constraint': Constraint<'target>
+        ) : FieldConfigured<'model, 'target> =
+        if isNull (box constraint') then nullArg (nameof constraint')
+        FieldConfigured(
+            field.Initial,
+            field.Configure >> SchemaCore.constrain constraint'.Untyped
+        )
+
+    /// <summary>Adds a portable constraint to the field's current schema value.</summary>
+    [<CustomOperation("constrain")>]
+    member _.Constrain
+        (
             field: FieldWorking<'model, 'target, 'current>,
             constraint': Constraint<'current>
         ) : FieldWorking<'model, 'target, 'current> =
@@ -87,6 +128,24 @@ type FieldBuilder<'model, 'target> internal (name: string, getter: 'model -> 'ta
         (field: FieldWorking<'model, 'target, 'raw>)
         : FieldRefining<'model, 'target, 'raw> =
         FieldRefining(field.Initial, field.Schema, [])
+
+    /// <summary>Adds executable validation to the field's current schema value.</summary>
+    [<CustomOperation("validate")>]
+    member _.Validate
+        (
+            initial: FieldInitial<'model, 'target>,
+            validation: 'target -> Result<unit, SchemaError>
+        ) : FieldConfigured<'model, 'target> =
+        FieldConfigured(initial, SchemaCore.validate validation)
+
+    /// <summary>Adds another executable validation to an inferred field schema.</summary>
+    [<CustomOperation("validate")>]
+    member _.Validate
+        (
+            field: FieldConfigured<'model, 'target>,
+            validation: 'target -> Result<unit, SchemaError>
+        ) : FieldConfigured<'model, 'target> =
+        FieldConfigured(field.Initial, field.Configure >> SchemaCore.validate validation)
 
     /// <summary>Adds executable validation to the field's current schema value.</summary>
     [<CustomOperation("validate")>]
@@ -116,6 +175,11 @@ type FieldBuilder<'model, 'target> internal (name: string, getter: 'model -> 'ta
               ValueSchema = field.Schema.ValueDefinition
               Constraints = [] }
         )
+
+    member _.Run
+        (field: FieldConfigured<'model, 'target>)
+        : ConfiguredFieldDeclaration<'model, 'target> =
+        ConfiguredFieldDeclaration(field.Initial, field.Configure)
 
     member _.Run
         (field: FieldRefining<'model, 'target, 'raw>)
@@ -280,12 +344,28 @@ type SchemaBuilder<'model>() =
               Constraints = [] }
         )
 
+    static member ConfiguredField
+        (
+            field: ConfiguredFieldDeclaration<'model, 'target>,
+            schema: Schema<'target>
+        ) : FieldStep<'model, 'target> =
+        SchemaBuilder<'model>.DefaultField(
+            FieldBuilder(field.Initial.Name, field.Initial.Getter),
+            field.Configure schema
+        )
+
     member inline _.Yield(field: FieldBuilder<'model, ^value>) : FieldStep<'model, ^value> =
         let schema: Schema< ^value> = SchemaDefaults.Resolve()
         SchemaBuilder<'model>.DefaultField(field, schema)
 
     member _.Yield(field: FieldDeclaration<'model, 'value>) =
         FieldStep(field.Definition)
+
+    member inline _.Yield
+        (field: ConfiguredFieldDeclaration<'model, ^target>)
+        : FieldStep<'model, ^target> =
+        let schema: Schema< ^target> = SchemaDefaults.Resolve()
+        SchemaBuilder<'model>.ConfiguredField(field, schema)
 
     member inline _.Yield
         (field: RefiningFieldDeclaration<'model, ^raw, ^target>)
@@ -340,6 +420,7 @@ type SchemaBuilder<'model>() =
         SchemaBuilderInternals.close plan.Constructor fields plan.Finish
 
 /// <summary>Record-schema computation-expression vocabulary.</summary>
+[<AutoOpen>]
 module SchemaCE =
     /// <summary>Record-schema computation expression.</summary>
     let schema<'model> = SchemaBuilder<'model>()

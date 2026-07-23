@@ -17,10 +17,11 @@ module PickupPoint =
 
     /// The schema declared by shipment.fs (PickupPoint.v1).
     let schema : Schema<PickupPoint> =
-        Schema.define<PickupPoint>
-        |> field "code" _.Code
-        |> construct (fun code ->
-            { Code = code })
+        SchemaCE.schema<PickupPoint> {
+            SchemaCE.field "code" (fun (value: PickupPoint) -> value.Code)
+            SchemaCE.construct (fun code ->
+                { Code = code })
+        }
         |> Schema.describe "A named pickup location."
 
     /// Checks a draft built with an ordinary record literal.
@@ -40,10 +41,11 @@ module CourierDelivery =
 
     /// The schema declared by shipment.fs (CourierDelivery.v1).
     let schema : Schema<CourierDelivery> =
-        Schema.define<CourierDelivery>
-        |> field "trackingUrl" _.TrackingUrl
-        |> construct (fun trackingUrl ->
-            { TrackingUrl = trackingUrl })
+        SchemaCE.schema<CourierDelivery> {
+            SchemaCE.field "trackingUrl" (fun (value: CourierDelivery) -> value.TrackingUrl)
+            SchemaCE.construct (fun trackingUrl ->
+                { TrackingUrl = trackingUrl })
+        }
         |> Schema.describe "A courier delivery with tracking."
 
     /// Checks a draft built with an ordinary record literal.
@@ -63,16 +65,22 @@ module ShipmentV1 =
 
     /// The schema declared by shipment.fs (Shipment.v1).
     let schema : Schema<ShipmentV1> =
-        Schema.define<ShipmentV1>
-        |> fieldWith (Schema.text |> Schema.describe "Public shipment reference.") "reference" _.Reference
-        |> constrain (pattern "^SH-[0-9]+$")
-        |> field "notifyEmail" _.NotifyEmail
-        |> constrain emailFormat
-        |> field "items" _.Items
-        |> construct (fun reference notifyEmail items ->
-            { Reference = reference
-              NotifyEmail = notifyEmail
-              Items = items })
+        SchemaCE.schema<ShipmentV1> {
+            SchemaCE.field "reference" (fun (value: ShipmentV1) -> value.Reference) {
+                withSchema (Schema.text |> Schema.describe "Public shipment reference.")
+                constrain (pattern "^SH-[0-9]+$")
+            }
+            SchemaCE.field "notifyEmail" (fun (value: ShipmentV1) -> value.NotifyEmail) {
+                constrain emailFormat
+            }
+            SchemaCE.field "items" (fun (value: ShipmentV1) -> value.Items) {
+                withSchema (Schema.mapWith Schema.int)
+            }
+            SchemaCE.construct (fun reference notifyEmail items ->
+                { Reference = reference
+                  NotifyEmail = notifyEmail
+                  Items = items })
+        }
         |> Schema.describe "A shipment as first stored."
 
     /// Checks a draft built with an ordinary record literal.
@@ -101,32 +109,49 @@ module Shipment =
 
     /// The schema declared by shipment.fs (Shipment.v2).
     let schema : Schema<Shipment> =
-        Schema.define<Shipment>
-        |> fieldWith (Schema.text |> Schema.describe "Public shipment reference.") "reference" _.Reference
-        |> constrain (pattern "^SH-[0-9]+$")
-        |> field "notify_email" _.NotifyEmail
-        |> constrain emailFormat
-        |> field "items" _.Items
-        |> field "tags" _.Tags
-        |> constrain (minCount 1)
-        |> constrain distinct
-        |> field "weightKg" _.WeightKg
-        |> constrain (atLeast 0.5m)
-        |> fieldWith (Schema.enum priorityCases |> Schema.withDefault ShipmentPriority.Express) "priority" _.Priority
-        |> fieldWith (Schema.inlineUnion "kind" deliveryCases) "delivery" _.Delivery
-        |> fieldWith (Schema.option PickupPoint.schema) "origin" _.Origin
-        |> fieldWith (Schema.int |> Schema.withDefault 1) "boxes" _.Boxes
-        |> constrain (atLeast 1)
-        |> construct (fun reference notifyEmail items tags weightKg priority delivery origin boxes ->
-            { Reference = reference
-              NotifyEmail = notifyEmail
-              Items = items
-              Tags = tags
-              WeightKg = weightKg
-              Priority = priority
-              Delivery = delivery
-              Origin = origin
-              Boxes = boxes })
+        SchemaCE.schema<Shipment> {
+            SchemaCE.field "reference" (fun (value: Shipment) -> value.Reference) {
+                withSchema (Schema.text |> Schema.describe "Public shipment reference.")
+                constrain (pattern "^SH-[0-9]+$")
+            }
+            SchemaCE.field "notify_email" (fun (value: Shipment) -> value.NotifyEmail) {
+                constrain emailFormat
+            }
+            SchemaCE.field "items" (fun (value: Shipment) -> value.Items) {
+                withSchema (Schema.mapWith Schema.int)
+            }
+            SchemaCE.field "tags" (fun (value: Shipment) -> value.Tags) {
+                withSchema (Schema.listWith Schema.text)
+                constrain (minCount 1)
+                constrain distinct
+            }
+            SchemaCE.field "weightKg" (fun (value: Shipment) -> value.WeightKg) {
+                constrain (atLeast 0.5m)
+            }
+            SchemaCE.field "priority" (fun (value: Shipment) -> value.Priority) {
+                withSchema (Schema.enum priorityCases |> Schema.withDefault ShipmentPriority.Express)
+            }
+            SchemaCE.field "delivery" (fun (value: Shipment) -> value.Delivery) {
+                withSchema (Schema.inlineUnion "kind" deliveryCases)
+            }
+            SchemaCE.field "origin" (fun (value: Shipment) -> value.Origin) {
+                withSchema (Schema.option PickupPoint.schema)
+            }
+            SchemaCE.field "boxes" (fun (value: Shipment) -> value.Boxes) {
+                withSchema (Schema.int |> Schema.withDefault 1)
+                constrain (atLeast 1)
+            }
+            SchemaCE.construct (fun reference notifyEmail items tags weightKg priority delivery origin boxes ->
+                { Reference = reference
+                  NotifyEmail = notifyEmail
+                  Items = items
+                  Tags = tags
+                  WeightKg = weightKg
+                  Priority = priority
+                  Delivery = delivery
+                  Origin = origin
+                  Boxes = boxes })
+        }
         |> Schema.describe "A shipment with delivery method, priority, and weight."
 
     /// Checks a draft built with an ordinary record literal.

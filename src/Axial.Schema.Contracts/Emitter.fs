@@ -228,8 +228,8 @@ module Emitter =
     let rec private hasCanonicalSchema fieldType =
         match fieldType with
         | Primitive _ -> true
-        | ListOf item
-        | MapOf item -> hasCanonicalSchema item
+        | ListOf _
+        | MapOf _ -> false
         | Reference _
         | LiteralUnion _
         | UnionBlock _
@@ -435,32 +435,41 @@ module Emitter =
                 |> List.map (fun field -> escapeIdent (camel field.FieldName))
                 |> fun names -> String.Join(" ", names)
 
-            line $"        Schema.define<{contractTypeName}>"
+            line $"        SchemaCE.schema<{contractTypeName}> {{"
 
             for field in contract.Fields do
                 let wire = FieldDecl.wireName field
-                let getter = $"_.{escapeIdent (fsFieldName field)}"
+                let getter =
+                    $"(fun (value: {contractTypeName}) -> value.{escapeIdent (fsFieldName field)})"
+                let constraints = fieldLevelConstraints field
 
-                if canInferField field then
-                    line $"        |> field \"{escapeString wire}\" {getter}"
+                if canInferField field && List.isEmpty constraints then
+                    line $"            SchemaCE.field \"{escapeString wire}\" {getter}"
                 else
-                    let value = valueExpr refTypeName (contract.ContractName, contract.Version, contractTypeName) field
-                    line $"        |> fieldWith {parenthesize value} \"{escapeString wire}\" {getter}"
+                    line $"            SchemaCE.field \"{escapeString wire}\" {getter} {{"
 
-                for constraint' in fieldLevelConstraints field do
-                    line $"        |> constrain {parenthesize constraint'}"
+                    if not (canInferField field) then
+                        let value = valueExpr refTypeName (contract.ContractName, contract.Version, contractTypeName) field
+                        line $"                withSchema {parenthesize value}"
+
+                    for constraint' in constraints do
+                        line $"                constrain {parenthesize constraint'}"
+
+                    line "            }"
 
             match contract.Constructor with
             | Some constructorName ->
-                line $"        |> construct (fun {parameters} -> {constructorName} {parameters})"
+                line $"            SchemaCE.construct (fun {parameters} -> {constructorName} {parameters})"
             | None ->
-                line $"        |> construct (fun {parameters} ->"
+                line $"            SchemaCE.construct (fun {parameters} ->"
 
                 contract.Fields
                 |> List.iteri (fun index field ->
                     let opener = if index = 0 then "{ " else "  "
                     let closer = if index = List.length contract.Fields - 1 then " })" else ""
-                    line $"            {opener}{escapeIdent (fsFieldName field)} = {escapeIdent (camel field.FieldName)}{closer}")
+                    line $"                {opener}{escapeIdent (fsFieldName field)} = {escapeIdent (camel field.FieldName)}{closer}")
+
+            line "        }"
 
             match contract.Doc with
             | [] -> ()
