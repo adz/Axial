@@ -50,10 +50,13 @@ module SchemaErrorTests =
     [<Fact>]
     let ``parsed input renders failed parse diagnostics with paths`` () =
         let schema =
-            Schema.define<Signup>
-            |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "email" _.Email
-            |> fieldWith Schema.int "age" _.Age
-            |> construct (fun email age -> { Email = email; Age = age })
+            SchemaCE.schema<Signup> {
+                SchemaCE.field "email" _.Email {
+                    withSchema (Schema.text |> Schema.constrain Constraint.required)
+                }
+                SchemaCE.field "age" _.Age
+                SchemaCE.construct (fun email age -> { Email = email; Age = age })
+            }
 
         let raw =
             Data.objectOfMap (Map.ofList
@@ -69,10 +72,13 @@ module SchemaErrorTests =
     [<Fact>]
     let ``parsed input maps schema boundary errors to user owned errors with one function`` () =
         let schema =
-            Schema.define<Signup>
-            |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "email" _.Email
-            |> fieldWith Schema.int "age" _.Age
-            |> construct (fun email age -> { Email = email; Age = age })
+            SchemaCE.schema<Signup> {
+                SchemaCE.field "email" _.Email {
+                    withSchema (Schema.text |> Schema.constrain Constraint.required)
+                }
+                SchemaCE.field "age" _.Age
+                SchemaCE.construct (fun email age -> { Email = email; Age = age })
+            }
 
         let parsed =
             Data.objectOfMap (Map.ofList [ "email", Data.Null; "age", Data.Text "42" ])

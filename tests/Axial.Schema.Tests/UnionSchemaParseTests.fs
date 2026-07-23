@@ -27,9 +27,12 @@ module UnionSchemaParseTests =
         }
 
     let private cardSchema () =
-        Schema.define<CardDetails>
-        |> fieldWith RefinedSchemas.nonBlankString "number" _.Number
-        |> construct (fun number -> { Number = number })
+        SchemaCE.schema<CardDetails> {
+            SchemaCE.field "number" _.Number {
+                withSchema RefinedSchemas.nonBlankString
+            }
+            SchemaCE.construct (fun number -> { Number = number })
+        }
 
     let private paymentValue () =
         Schema.union
@@ -39,9 +42,12 @@ module UnionSchemaParseTests =
               UnionCase.create "invoice" Invoice (function Invoice slug -> Some slug | _ -> None) RefinedSchemas.slug ]
 
     let private checkoutSchema () =
-        Schema.define<Checkout>
-        |> fieldWith (paymentValue ()) "payment" _.Payment
-        |> construct (fun payment -> { Payment = payment })
+        SchemaCE.schema<Checkout> {
+            SchemaCE.field "payment" _.Payment {
+                withSchema (paymentValue ())
+            }
+            SchemaCE.construct (fun payment -> { Payment = payment })
+        }
 
     [<Fact>]
     let ``parse builds tagged union cases from discriminator and payload`` () =
