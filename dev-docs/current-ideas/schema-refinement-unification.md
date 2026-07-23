@@ -1,6 +1,6 @@
 # Schema And Refinement Unification
 
-Status: proposed pre-1.0 refactor.
+Status: accepted pre-1.0 refactor; implementation in progress.
 
 This proposal makes one refinement definition usable by direct type-directed refinement and by Schema. It also makes
 Schema the only public API that accumulates path-aware validation failures. The standalone Diagnostics package,
@@ -148,7 +148,7 @@ type Email with
 `Refine.from` resolves the contributed `Refinement<'raw, 'value>` and calls `Refinement.create`:
 
 ```fsharp
-let email: Email =
+let email: Result<Email, RefinementError> =
     Refine.from rawEmail
 ```
 
@@ -196,10 +196,11 @@ type Email with
 That makes an ordinary field declaration sufficient:
 
 ```fsharp
-Schema.define<Signup>
-|> field "email" _.Email
-|> field "phone" _.Phone
-|> construct Signup.create
+schema<Signup> {
+    field "email" _.Email
+    field "phone" _.Phone
+    construct Signup.create
+}
 ```
 
 ## Schema Validation
@@ -325,86 +326,195 @@ Schema interpreters stop converting through `Validation.fromResult`, `Validation
 Dependent stages remain fail-fast. In particular, a model constructor runs only after every independent field has
 succeeded. Constructor-level validation cannot observe invalid or missing field values.
 
-## Field Pipelines
+## Schema Computation Expression
 
-`fieldWith` is removed. `field` declares the external name, getter, and expected model field type. Schema selection and
-value operations follow through the current-field cursor.
-
-The default form remains short:
-
-```fsharp
-Schema.define<Person>
-|> field "name" _.Name
-|> field "age" _.Age
-|> construct Person.create
-```
-
-The next `field` or `construct` commits the current field and resolves its canonical schema.
-
-`withSchema` supplies a local schema:
+Record schemas use one computation expression whose job is to separate fields and retain their typed constructor
+arguments. Each field block transforms one `Schema<_>` value. Operations in one block cannot attach to the next field,
+and Fantomas preserves the block structure.
 
 ```fsharp
-Schema.define<Node>
-|> field "children" _.Children
-|> withSchema (Schema.listWith nodeSchema)
-|> construct Node.create
+let signupSchema =
+    schema<Signup> {
+        field "email" _.Email {
+            withSchema Schema.text
+            constrain required
+            refine
+            validate validateCompanyEmail
+        }
+
+        field "company-phone" _.Phone
+        field "age" _.Age
+        construct Signup.create
+    }
 ```
 
-Field-level refinement can infer the default raw schema from the refinement's raw type:
+The CE uses implicit yield. `field ...` and `construct ...` are expressions accepted by `SchemaBuilder.Yield`; users do
+not write `yield`. This is the same F# computation-expression mechanism that permits expression-oriented builders such
+as `seq { 1; 2 }`.
+
+The outer builder handles only:
+
+- ordered field declarations;
+- the typed constructor argument chain;
+- total or checked construction;
+- creation of the erased field metadata and retained compiled record plan.
+
+The optional inner field builder handles:
+
+- selecting a schema with `withSchema`;
+- applying portable constraints;
+- applying a type-directed refinement;
+- applying executable validation.
+
+It is not a generic validation builder and has no `let!`, `and!`, or `return`.
+
+### Fields Without A Block
+
+The common declaration has no block:
 
 ```fsharp
-Schema.define<Signup>
-|> field "email" _.Email
-|> refine Email.refinement
-|> construct Signup.create
+schema<Person> {
+    field "name" _.Name
+    field "age" _.Age
+    construct Person.create
+}
 ```
 
-Here `Email.refinement : Refinement<string, Email>` supplies `string`, so the cursor resolves `Schema.text`.
+The getter fixes the field type. The field resolves that type's canonical schema through `SchemaDefaults`, including a
+type's contributed static `Schema` member. Moving to the next field commits the completed field.
 
-`withSchema` is only needed when the raw schema differs from its default or carries local configuration:
+The .NET-only name-inferred form remains available:
 
 ```fsharp
-Schema.define<Signup>
-|> field "email" _.Email
-|> withSchema configuredEmailText
-|> refine Email.refinement
-|> validate validateCompanyEmail
-|> construct Signup.create
+schema<Person> {
+    field _.Name
+    field _.Age
+    construct Person.create
+}
 ```
 
-Pipeline order identifies the layer being configured:
+Fable declarations use explicit wire names because Fable cannot perform the quotation operation used to derive a
+property name:
 
 ```fsharp
-Schema.define<Signup>
-|> field "email" _.Email
-|> withSchema Schema.text
-|> constrain required
-|> refine Email.refinement
-|> validate validateCompanyEmail
-|> construct Signup.create
+schema<Person> {
+    field "name" _.Name
+    field "age" _.Age
+    construct Person.create
+}
 ```
 
-In this example, `required` applies to the raw string and `validateCompanyEmail` applies to `Email`.
+### Refinement Is Conditional
 
-The cursor tracks the selected schema's output type and the model getter's type. Moving to another field or calling
-`construct` fails to compile while those types differ.
-
-### Formatting Constraint
-
-A flat pipeline contains no syntax-level grouping. Fantomas can align all pipeline operators even if a developer
-manually indents `refine`, `validate`, or `constrain` under the preceding field. The API must not assign meaning to that
-indentation.
-
-Canonical domain schemas keep the common declaration free of field sub-pipelines:
+A field does not require a refinement when its selected schema already produces the getter type:
 
 ```fsharp
-Schema.define<Signup>
-|> field "email" _.Email
-|> field "phone" _.Phone
-|> construct Signup.create
+field "age" _.Age {
+    withSchema Schema.int
+    constrain (atLeast 18)
+}
 ```
 
-Long local configurations should use a named schema value so formatting reflects real nesting:
+`Schema.int` produces `int`, and `_.Age` returns `int`, so the field is complete.
+
+A refinement is required when the selected raw schema and getter have different result types:
+
+```fsharp
+field "email" _.Email {
+    withSchema Schema.text
+    constrain required
+    refine
+    validate validateCompanyEmail
+}
+```
+
+Before `refine`, the current schema is `Schema<string>`. The parameterless `refine` operation uses the getter's
+`Email` result type to resolve `Refinement<string, Email>`. After it runs, the current schema is `Schema<Email>`, so
+`validateCompanyEmail` receives `Email`.
+
+If `Email` contributes a canonical `Schema<Email>`, the entire block is unnecessary:
+
+```fsharp
+field "email" _.Email
+```
+
+### Field State And Operation Order
+
+The field builder tracks three types:
+
+- the record model;
+- the getter's final field type;
+- the current schema's output type.
+
+`withSchema` establishes the current schema. `constrain` preserves its type. `refine` changes the current type from the
+raw type to the getter type. `validate` preserves the current type.
+
+This makes order visible and checked:
+
+```fsharp
+field "email" _.Email {
+    withSchema Schema.text
+    constrain required             // Constraint<string>
+    refine                         // Schema<string> -> Schema<Email>
+    validate validateCompanyEmail  // Email -> Result<unit, SchemaError>
+}
+```
+
+A field block may finish without `refine` only when the current schema type equals the getter type. Otherwise the
+compiler reports:
+
+```text
+A field block must finish with the getter type. Add `refine` after raw-schema operations.
+```
+
+Calling `refine` without a contributed `Refinement<'raw,'field>` fails at compile time. The error contains the missing
+static `Refinement` signature. Compile-negative tests retain the exact diagnostic so later API changes cannot make this
+failure silent or defer it to runtime.
+
+### Type-Directed Refinement Resolution
+
+F# cannot reliably resolve the static refinement inside the generic `refine` custom operation; doing so causes
+non-uniform generic instantiation (`FS1198`). The operation therefore records a pending
+`RefiningFieldDeclaration<'model,'raw,'field>`. The outer builder's inline `Yield` receives concrete raw and getter
+types, resolves `Refinement<'raw,'field>`, and builds the final field schema.
+
+This delay is an implementation detail. The public syntax remains parameterless:
+
+```fsharp
+refine
+```
+
+The design does not use reflection, a runtime registry, or an operator overload.
+
+### Total And Checked Constructors
+
+Both constructor forms close the same typed field chain:
+
+```fsharp
+schema<Signup> {
+    field "email" _.Email
+    field "age" _.Age
+    construct Signup.create
+}
+
+schema<Signup> {
+    field "email" _.Email
+    field "age" _.Age
+    constructResult Signup.createChecked
+}
+```
+
+`construct` requires the fields to consume a constructor ending in `Signup`.
+`constructResult` requires the fields to consume a constructor ending in `Result<Signup,string>`. Constructor
+execution begins only after all independent field parsing, constraints, refinements, and validations succeed.
+
+The field chain is recursive rather than arity-specific. The spike compiled a 12-field schema through the real JSON
+interpreter; the representation has no fixed maximum.
+
+### The Plain Function Model
+
+The field operations correspond to ordinary `Schema<'value>` transformations. These functions remain public because
+schemas are also built and reused outside records:
 
 ```fsharp
 let companyEmailSchema =
@@ -412,17 +522,63 @@ let companyEmailSchema =
     |> Schema.constrain required
     |> Schema.refine Email.refinement
     |> Schema.validate validateCompanyEmail
-
-let signupSchema =
-    Schema.define<Signup>
-    |> field "email" _.Email
-    |> withSchema companyEmailSchema
-    |> field "phone" _.Phone
-    |> construct Signup.create
 ```
 
-Before the field cursor is finalized, run a Fantomas spike over flat, parenthesized, and lambda-based configurations.
-All user-facing examples must survive automatic formatting without manual indentation.
+The field block:
+
+```fsharp
+field "email" _.Email {
+    withSchema Schema.text
+    constrain required
+    refine
+    validate validateCompanyEmail
+}
+```
+
+means:
+
+```fsharp
+Schema.text
+|> Schema.constrain required
+|> Schema.refine Email.refinement
+|> Schema.validate validateCompanyEmail
+```
+
+followed by attaching that `Schema<Email>` to the `"email"` field and its getter.
+
+This relationship is part of the public documentation. It explains the CE without exposing its internal field-chain
+types. The record CE remains the sole record authoring syntax; Axial does not retain a second pipe-based record builder.
+
+### `fieldWith` And `withSchema`
+
+`fieldWith` is removed. Explicit schema selection uses the same `withSchema` operation in every field block:
+
+```fsharp
+schema<Node> {
+    field "children" _.Children {
+        withSchema (Schema.listWith nodeSchema)
+    }
+
+    construct Node.create
+}
+```
+
+The name reads as an operation on the current field rather than a second kind of field declaration.
+
+### Proven Portability
+
+The spike established:
+
+- exact nested syntax with implicit yield on .NET and Fable 5.6;
+- optional field blocks;
+- type-directed parameterless refinement;
+- total and checked constructors through one field chain;
+- successful parsing with the real Schema interpreter;
+- JSON compilation, serialization, and deserialization through the retained typed record plan;
+- a 12-field compiled record plan without arity overloads;
+- NativeAOT publication and execution without CE-specific trim or reflection warnings.
+
+The existing Fable rule remains: explicit wire names compile everywhere; quotation-derived names remain .NET-only.
 
 ## Constructor Validation
 
@@ -508,24 +664,51 @@ Introduce the private Schema accumulator. Migrate primitive parsing, records, ne
 unions, enums, refinements, constraints, and constructors. Delete all Schema references to public Validation and
 Diagnostics.
 
-### 9. Introduce The Typed Current-Field Cursor
+### 9. Add The Schema Computation Expression
 
-Delay default-schema resolution until a field is committed. Add `withSchema`. Support inferred fields, explicit
-matching schemas, inferred raw schemas followed by refinement, configured raw schemas followed by refinement, and
-value-preserving validation.
+Add `schema<'model> { }`, the outer typed field chain, implicit-yield field and constructor expressions, and the optional
+inner field builder. Preserve the existing erased `FieldDescriptor` view and retained `ICompiledRecordPlan` view.
 
-Add compile-time tests proving that an incomplete raw-to-model field cannot be committed.
+Support:
 
-### 10. Migrate Schema Declarations And Remove `fieldWith`
+- explicit field names on every target;
+- quotation-derived field names on .NET;
+- fields without blocks through canonical schema resolution;
+- `withSchema` blocks whose schema already returns the getter type;
+- total and checked constructors;
+- any field count through the recursive typed chain.
+
+Add parse and compiled-codec tests before migrating declarations.
+
+### 10. Add Field `constrain`, `refine`, And `validate`
+
+Give the field builder typed state for its getter type and current schema type. `constrain` preserves the current type.
+Parameterless `refine` records a pending raw-to-field conversion; the outer inline `Yield` resolves the contributed
+`Refinement<'raw,'field>` after both types are concrete. `validate` preserves and checks the current type.
+
+Add compile-negative tests for:
+
+- a raw field block committed without `refine`;
+- a missing contributed refinement;
+- a constraint applied before or after the wrong transition;
+- a validation function accepting the wrong stage;
+- constructor order, arity, and argument type mismatches.
+
+### 11. Migrate Schema Declarations And Remove The Pipe Builder
 
 Update hand-written schemas, generated contracts, generator output, examples, tests, benchmarks, and reference
-applications. Run Fantomas over the migrated declarations. Remove `fieldWith` once no source uses it.
+applications to `schema<'model> { }`. Emit explicit field names from generators so generated declarations compile on
+.NET and Fable. Run Fantomas over migrated declarations.
 
-### 11. Add Field-Level `refine` And `validate`
+Remove:
 
-Make the current-field cursor apply the same refinement definition as `Schema.refine`. Make field-level `validate`
-apply to the current completed value schema. Test operation ordering across raw constraints, refinement, and refined
-value validation.
+- `Schema.define`;
+- `DefineShape` and `ObjectShape`;
+- pipe-level `field`, `fieldWith`, `withSchema`, `constrain`, `construct`, and `constructResult`;
+- the old shape chain after the CE's typed record plan has equivalent interpreter coverage.
+
+Keep ordinary `Schema.constrain`, `Schema.refine`, and `Schema.validate` transformations for standalone and reusable
+value schemas.
 
 ### 12. Remove Public Validation
 
@@ -643,14 +826,14 @@ Main benefit: construction and inspection cannot drift between Refined and Schem
 Before:
 
 ```fsharp
-let email: Email =
+let email: Result<Email, RefinementError> =
     Refine.from rawEmail
 ```
 
 After:
 
 ```fsharp
-let email: Email =
+let email: Result<Email, RefinementError> =
     Refine.from rawEmail
 ```
 
@@ -715,10 +898,11 @@ Schema.define<Signup>
 After:
 
 ```fsharp
-Schema.define<Signup>
-|> field "email" _.Email
-|> field "phone" _.Phone
-|> construct Signup.create
+schema<Signup> {
+    field "email" _.Email
+    field "phone" _.Phone
+    construct Signup.create
+}
 ```
 
 Main benefit: domain types contribute their canonical schemas once, so object declarations contain only object
@@ -737,13 +921,43 @@ Schema.define<Node>
 After:
 
 ```fsharp
-Schema.define<Node>
-|> field "children" _.Children
-|> withSchema (Schema.listWith nodeSchema)
-|> construct Node.create
+schema<Node> {
+    field "children" _.Children {
+        withSchema (Schema.listWith nodeSchema)
+    }
+
+    construct Node.create
+}
 ```
 
-Main benefit: declaring the field and configuring its schema use separate, regularly composable operations.
+Main benefit: the field's local schema is visibly grouped and remains grouped after formatting.
+
+### Plain Field With Constraints
+
+Before:
+
+```fsharp
+Schema.define<Signup>
+|> fieldWith Schema.int "age" _.Age
+|> constrain (atLeast 18)
+|> construct Signup.createForAge
+```
+
+After:
+
+```fsharp
+schema<Signup> {
+    field "age" _.Age {
+        withSchema Schema.int
+        constrain (atLeast 18)
+    }
+
+    construct Signup.createForAge
+}
+```
+
+Main benefit: `refine` is absent because `Schema.int` already produces the getter's `int` type. The block groups local
+configuration without adding a conversion stage.
 
 ### Local Field Refinement With An Inferred Raw Schema
 
@@ -762,13 +976,18 @@ Schema.define<Signup>
 After:
 
 ```fsharp
-Schema.define<Signup>
-|> field "email" _.Email
-|> refine Email.refinement
-|> construct Signup.create
+schema<Signup> {
+    field "email" _.Email {
+        withSchema Schema.text
+        refine
+    }
+
+    construct Signup.create
+}
 ```
 
-Main benefit: `Refinement<string, Email>` supplies the raw type, allowing Schema to infer `Schema.text`.
+Main benefit: the getter supplies `Email`, the raw schema supplies `string`, and the parameterless operation resolves
+`Refinement<string, Email>`.
 
 ### Local Field Refinement With A Configured Raw Schema
 
@@ -788,15 +1007,43 @@ Schema.define<Signup>
 After:
 
 ```fsharp
-Schema.define<Signup>
-|> field "email" _.Email
-|> withSchema Schema.text
-|> constrain required
-|> refine Email.refinement
-|> construct Signup.create
+schema<Signup> {
+    field "email" _.Email {
+        withSchema Schema.text
+        constrain required
+        refine
+    }
+
+    construct Signup.create
+}
 ```
 
-Main benefit: pipeline order shows that `required` applies to raw text before construction of `Email`.
+Main benefit: operation order shows that `required` applies to raw text before construction of `Email`, while the block
+prevents later field operations from joining this field.
+
+### Checked Record Construction
+
+Before:
+
+```fsharp
+Schema.define<Signup>
+|> field "email" _.Email
+|> field "age" _.Age
+|> constructResult Signup.createChecked
+```
+
+After:
+
+```fsharp
+schema<Signup> {
+    field "email" _.Email
+    field "age" _.Age
+    constructResult Signup.createChecked
+}
+```
+
+Main benefit: total and checked construction use the same field syntax and retained compiled plan. The checked
+constructor runs only after every field succeeds.
 
 ### Value-Preserving Schema Validation
 
@@ -1076,9 +1323,10 @@ validate.at path { ... }
 After:
 
 ```fsharp
-Schema.define<Signup>
-|> field "email" _.Email
-|> construct Signup.create
+schema<Signup> {
+    field "email" _.Email
+    construct Signup.create
+}
 
 Schema.listWith itemSchema
 Schema.mapWith valueSchema
@@ -1138,10 +1386,11 @@ After:
 
 ```fsharp
 let signupSchema =
-    Schema.define<Signup>
-    |> field "email" _.Email
-    |> field "phone" _.Phone
-    |> construct Signup.create
+    schema<Signup> {
+        field "email" _.Email
+        field "phone" _.Phone
+        construct Signup.create
+    }
 
 let parseSignup rawEmail rawPhone =
     data [
