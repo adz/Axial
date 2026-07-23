@@ -61,36 +61,36 @@ module Signup =
     open Axial.Schema.Syntax
 
     let addressSchema =
-        SchemaCE.schema<Address> {
-            SchemaCE.field "street" _.Street {
+        schema<Address> {
+            field "street" _.Street {
                 constrain (minLength 1)
                 constrain (maxLength 120)
             }
-            SchemaCE.field "city" _.City {
+            field "city" _.City {
                 constrain (minLength 1)
                 constrain (maxLength 80)
             }
-            SchemaCE.construct (fun street city -> { Street = street; City = city })
+            construct (fun street city -> { Street = street; City = city })
         }
 
     let schema =
-        SchemaCE.schema<Signup> {
-            SchemaCE.field "name" _.Name {
+        schema<Signup> {
+            field "name" _.Name {
                 constrain (minLength 1)
                 constrain (maxLength 80)
             }
-            SchemaCE.field "email" _.Email
-            SchemaCE.field "age" _.Age {
+            field "email" _.Email
+            field "age" _.Age {
                 constrain (between 13 120)
             }
-            SchemaCE.field "address" _.Address {
+            field "address" _.Address {
                 withSchema (addressSchema |> Schema.constrain Constraint.required)
             }
-            SchemaCE.field "tags" _.Tags {
+            field "tags" _.Tags {
                 withSchema (Schema.listWith Schema.text)
                 constrain (maxCount 5)
             }
-            SchemaCE.construct (fun name email age address tags ->
+            construct (fun name email age address tags ->
                 { Name = name
                   Email = email
                   Age = age

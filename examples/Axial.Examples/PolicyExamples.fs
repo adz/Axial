@@ -30,10 +30,10 @@ type OrderLine =
       Quantity: Quantity }
 
 let orderLineSchema =
-    SchemaCE.schema<OrderLine> {
-        SchemaCE.field "sku" _.Sku
-        SchemaCE.field "quantity" _.Quantity
-        SchemaCE.construct (fun sku quantity ->
+    schema<OrderLine> {
+        field "sku" _.Sku
+        field "quantity" _.Quantity
+        construct (fun sku quantity ->
             { Sku = sku
               Quantity = quantity })
     }

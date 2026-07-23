@@ -32,18 +32,18 @@ module Signup =
     open Axial.Schema.Syntax
 
     let schema =
-        SchemaCE.schema<Signup> {
-            SchemaCE.field "name" _.Name {
+        schema<Signup> {
+            field "name" _.Name {
                 constrain (minLength 1)
                 constrain (maxLength 80)
             }
-            SchemaCE.field "email" _.Email {
+            field "email" _.Email {
                 constrain emailFormat
             }
-            SchemaCE.field "age" _.Age {
+            field "age" _.Age {
                 constrain (between 13 120)
             }
-            SchemaCE.construct (fun name email age -> { Name = name; Email = email; Age = age })
+            construct (fun name email age -> { Name = name; Email = email; Age = age })
         }
 
 module Boundary =

@@ -76,12 +76,12 @@ type Contact =
       Balance: Balance }
 
 let contactSchema =
-    SchemaCE.schema<Contact> {
-        SchemaCE.field "email" _.Email
-        SchemaCE.field "name" _.Name
-        SchemaCE.field "quantity" _.Quantity
-        SchemaCE.field "balance" _.Balance
-        SchemaCE.construct (fun email name quantity balance ->
+    schema<Contact> {
+        field "email" _.Email
+        field "name" _.Name
+        field "quantity" _.Quantity
+        field "balance" _.Balance
+        construct (fun email name quantity balance ->
             { Email = email
               Name = name
               Quantity = quantity
