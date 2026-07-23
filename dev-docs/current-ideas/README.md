@@ -8,6 +8,9 @@ rather than keeping a historical spec that no longer matches the codebase.
 
 Active sketches:
 
+- `schema-refinement-unification.md` — proposal to make bidirectional refinements first-class, make Schema the only
+  public path-aware accumulating validation system, replace `fieldWith` with field pipelines, and remove the public
+  Diagnostics and Validation packages and APIs.
 - `architecture-guardrails.md` — proposed adopter-facing architecture guidance and a staged tooling direction for
   schema laws, compile-negative proofs, project roles, and compiled-code/public-surface audits.
 - `project-split.md` — proposal to separate Schema/ErrorHandling and Flow repositories, keep formats in separate Schema
