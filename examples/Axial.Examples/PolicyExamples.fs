@@ -45,7 +45,7 @@ type OrderEnv =
 type OrderError =
     | QuantityNotANumber
     | QuantityNotPositive
-    | LineRejected of Diagnostic<SchemaError> list
+    | LineRejected of SchemaIssue list
     | QuantityOverCap of int
 
 // 1. Parsing: adapt a raw text parser, replacing its ParseError with a workflow error.
@@ -60,13 +60,13 @@ let refinePositive : Policy<OrderEnv, OrderError, int, PositiveInt> =
 let parseOrderLine : Policy<OrderEnv, OrderError, Data, OrderLine> =
     Policy.lift
         (fun raw -> (Schema.parse orderLineSchema raw))
-        (Diagnostics.flatten >> LineRejected)
+        (SchemaErrors.toList >> LineRejected)
 
 // 4. Validation result: adapt intrinsic validation of an existing model.
 let validateOrderLine : Policy<OrderEnv, OrderError, OrderLine, OrderLine> =
     Policy.lift
         (fun line -> Schema.check orderLineSchema line)
-        (Diagnostics.flatten >> LineRejected)
+        (SchemaErrors.toList >> LineRejected)
 
 let underQuantityCap : Policy<OrderEnv, OrderError, OrderLine, OrderLine> =
     Policy.context

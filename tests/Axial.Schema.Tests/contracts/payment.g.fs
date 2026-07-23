@@ -5,7 +5,6 @@
 namespace Axial.Tests.Generated
 
 open Axial
-open Axial.Validation
 open Axial.Schema
 
 /// A card payment source.
@@ -23,22 +22,22 @@ module Card =
 
     /// The schema declared by payment.contract (Card.v1).
     let schema : Schema<Card> =
-        SchemaCE.schema<Card> {
-            SchemaCE.field "number" (fun (value: Card) -> value.Number) {
+        schema<Card> {
+            field "number" (fun (value: Card) -> value.Number) {
                 constrain (minLength 12)
                 constrain (maxLength 19)
             }
-            SchemaCE.construct (fun number ->
+            construct (fun number ->
                 { Number = number })
         }
         |> Schema.describe "A card payment source."
 
     /// Checks a draft built with an ordinary record literal.
-    let validate (draft: Card) : Result<Card, Diagnostics<SchemaError>> =
+    let validate (draft: Card) : Result<Card, SchemaErrors> =
         Schema.check schema draft
 
     /// Parses structured boundary data through the schema.
-    let parse (input: Data) : Result<Card, Diagnostics<SchemaError>> =
+    let parse (input: Data) : Result<Card, SchemaErrors> =
         Schema.parse schema input
 
 /// An invoice payment source.
@@ -56,21 +55,21 @@ module Invoice =
 
     /// The schema declared by payment.contract (Invoice.v1).
     let schema : Schema<Invoice> =
-        SchemaCE.schema<Invoice> {
-            SchemaCE.field "reference" (fun (value: Invoice) -> value.Reference) {
+        schema<Invoice> {
+            field "reference" (fun (value: Invoice) -> value.Reference) {
                 constrain (minLength 1)
             }
-            SchemaCE.construct (fun reference ->
+            construct (fun reference ->
                 { Reference = reference })
         }
         |> Schema.describe "An invoice payment source."
 
     /// Checks a draft built with an ordinary record literal.
-    let validate (draft: Invoice) : Result<Invoice, Diagnostics<SchemaError>> =
+    let validate (draft: Invoice) : Result<Invoice, SchemaErrors> =
         Schema.check schema draft
 
     /// Parses structured boundary data through the schema.
-    let parse (input: Data) : Result<Invoice, Diagnostics<SchemaError>> =
+    let parse (input: Data) : Result<Invoice, SchemaErrors> =
         Schema.parse schema input
 
 /// The "source" cases of Payment (payment.contract, Payment.v1).
@@ -98,19 +97,19 @@ module Payment =
 
     /// The schema declared by payment.contract (Payment.v1).
     let schema : Schema<Payment> =
-        SchemaCE.schema<Payment> {
-            SchemaCE.field "source" (fun (value: Payment) -> value.Source) {
+        schema<Payment> {
+            field "source" (fun (value: Payment) -> value.Source) {
                 withSchema (Schema.inlineUnion "kind" sourceCases)
             }
-            SchemaCE.construct (fun source ->
+            construct (fun source ->
                 { Source = source })
         }
         |> Schema.describe "A payment method choice."
 
     /// Checks a draft built with an ordinary record literal.
-    let validate (draft: Payment) : Result<Payment, Diagnostics<SchemaError>> =
+    let validate (draft: Payment) : Result<Payment, SchemaErrors> =
         Schema.check schema draft
 
     /// Parses structured boundary data through the schema.
-    let parse (input: Data) : Result<Payment, Diagnostics<SchemaError>> =
+    let parse (input: Data) : Result<Payment, SchemaErrors> =
         Schema.parse schema input

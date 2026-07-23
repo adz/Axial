@@ -86,7 +86,7 @@ module InputParseTests =
         test <@ not parsed.IsValid @>
         test <@ parsed.TryValue = None @>
         test <@ parsed.ErrorsFor "age" = [ SchemaError.InvalidFormat "int" ] @>
-        test <@ parsed.Errors = [ { Path = [ PathSegment.Name "age" ]; Error = SchemaError.InvalidFormat "int" } ] @>
+        test <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "age" ]; Error = SchemaError.InvalidFormat "int" } ] @>
 
     [<Fact>]
     let ``parse accumulates diagnostics for every failing sibling field`` () =
@@ -104,8 +104,8 @@ module InputParseTests =
         test <@ parsed.ErrorsFor "age" = [ SchemaError.InvalidFormat "int" ] @>
 
         test
-            <@ parsed.Errors = [ { Path = [ PathSegment.Name "age" ]; Error = SchemaError.InvalidFormat "int" }
-                                 { Path = [ PathSegment.Name "email" ]; Error = SchemaError.Required } ] @>
+            <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "age" ]; Error = SchemaError.InvalidFormat "int" }
+                                 { Path = TestPath.fromLegacy [ PathSegment.Name "email" ]; Error = SchemaError.Required } ] @>
 
     [<Fact>]
     let ``parse surfaces a constraint's custom message in place of the default error`` () =
@@ -154,7 +154,7 @@ module InputParseTests =
 
         test <@ parsed.Input = raw @>
         test <@ not parsed.IsValid @>
-        test <@ parsed.Errors = [ { Path = []; Error = SchemaError.ExpectedObject } ] @>
+        test <@ parsed.Errors = [ { Path = TestPath.fromLegacy []; Error = SchemaError.ExpectedObject } ] @>
 
     [<Fact>]
     let ``required reports missing raw field as required`` () =
@@ -165,7 +165,7 @@ module InputParseTests =
         test <@ parsed.Input = raw @>
         test <@ not parsed.IsValid @>
         test <@ parsed.ErrorsFor "email" = [ SchemaError.Required ] @>
-        test <@ parsed.Errors = [ { Path = [ PathSegment.Name "email" ]; Error = SchemaError.Required } ] @>
+        test <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "email" ]; Error = SchemaError.Required } ] @>
 
     [<Fact>]
     let ``parse retains structured data on failure`` () =
@@ -293,7 +293,7 @@ module InputParseTests =
 
         test <@ not parsed.IsValid @>
         test <@ parsed.TryValue = None @>
-        test <@ parsed.Errors = [ { Path = []; Error = SchemaError.ConstructorFailed "Age must be at least 18." } ] @>
+        test <@ parsed.Errors = [ { Path = TestPath.fromLegacy []; Error = SchemaError.ConstructorFailed "Age must be at least 18." } ] @>
 
     [<Fact>]
     let ``parse can attach a constructor error to a field path`` () =
@@ -314,7 +314,7 @@ module InputParseTests =
 
         test <@ not parsed.IsValid @>
         test
-            <@ parsed.Errors = [ { Path = [ PathSegment.Name "age" ]
+            <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "age" ]
                                    Error = SchemaError.ConstructorFailed "Age must be at least 18." } ] @>
         test <@ parsed.ErrorsFor "age" = [ SchemaError.ConstructorFailed "Age must be at least 18." ] @>
 
@@ -343,7 +343,7 @@ module InputParseTests =
         test <@ constructorCalls = 0 @>
         test
             <@
-                parsed.Errors = [ { Path = [ PathSegment.Name "age" ]
+                parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "age" ]
                                     Error = SchemaError.OutOfRange(CheckRangeExpectation.AtLeast "0", Some "-1") } ]
             @>
 
@@ -364,7 +364,7 @@ module InputParseTests =
 
         let parsed = Schema.parseRetainingInput ageSchema raw
 
-        test <@ parsed.Errors = [ { Path = []; Error = SchemaError.ConstructorFailed "Adult age is required." } ] @>
+        test <@ parsed.Errors = [ { Path = TestPath.fromLegacy []; Error = SchemaError.ConstructorFailed "Adult age is required." } ] @>
 
     [<Fact>]
     let ``parse builds a DateRange when cross-field constructor invariant passes`` () =
@@ -406,7 +406,7 @@ module InputParseTests =
 
         test <@ not parsed.IsValid @>
         test <@ parsed.TryValue = None @>
-        test <@ parsed.Errors = [ { Path = []; Error = SchemaError.ConstructorFailed "End date must be on or after start date." } ] @>
+        test <@ parsed.Errors = [ { Path = TestPath.fromLegacy []; Error = SchemaError.ConstructorFailed "End date must be on or after start date." } ] @>
 
     [<Fact>]
     let ``parse can attach DateRange constructor invariant errors to the end field`` () =
@@ -429,7 +429,7 @@ module InputParseTests =
 
         test <@ not parsed.IsValid @>
         test
-            <@ parsed.Errors = [ { Path = [ PathSegment.Name "end" ]
+            <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "end" ]
                                    Error = SchemaError.ConstructorFailed "End date must be on or after start date." } ] @>
         test <@ parsed.ErrorsFor "end" = [ SchemaError.ConstructorFailed "End date must be on or after start date." ] @>
 
@@ -456,7 +456,7 @@ module InputParseTests =
 
         test <@ not parsed.IsValid @>
         test <@ constructorCalls = 0 @>
-        test <@ parsed.Errors = [ { Path = [ PathSegment.Name "start" ]; Error = SchemaError.InvalidFormat "date" } ] @>
+        test <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "start" ]; Error = SchemaError.InvalidFormat "date" } ] @>
 
     [<Fact>]
     let ``parse retains structured data for redisplay after a failed parse`` () =

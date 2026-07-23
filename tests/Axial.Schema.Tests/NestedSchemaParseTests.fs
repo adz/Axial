@@ -96,7 +96,7 @@ module NestedSchemaParseTests =
         let parsed = Schema.parseRetainingInput customerSchema raw
 
         test <@ not parsed.IsValid @>
-        test <@ parsed.Errors = [ { Path = [ PathSegment.Name "address"; PathSegment.Name "city" ]; Error = SchemaError.Required } ] @>
+        test <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "address"; PathSegment.Name "city" ]; Error = SchemaError.Required } ] @>
 
     [<Fact>]
     let ``parse attaches nested constructor errors to the nested object root by default`` () =
@@ -111,7 +111,7 @@ module NestedSchemaParseTests =
         test <@ not parsed.IsValid @>
         test
             <@
-                parsed.Errors = [ { Path = [ PathSegment.Name "address" ]
+                parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "address" ]
                                     Error = SchemaError.ConstructorFailed "Street and city must differ." } ]
             @>
 
@@ -123,7 +123,7 @@ module NestedSchemaParseTests =
         let parsed = Schema.parseRetainingInput customerSchema raw
 
         test <@ not parsed.IsValid @>
-        test <@ parsed.Errors = [ { Path = [ PathSegment.Name "address" ]; Error = SchemaError.ExpectedObject } ] @>
+        test <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "address" ]; Error = SchemaError.ExpectedObject } ] @>
 
     [<Fact>]
     let ``parse reports expected object when nested structured data is a collection`` () =
@@ -134,7 +134,7 @@ module NestedSchemaParseTests =
         let parsed = Schema.parseRetainingInput customerSchema raw
 
         test <@ not parsed.IsValid @>
-        test <@ parsed.Errors = [ { Path = [ PathSegment.Name "address" ]; Error = SchemaError.ExpectedObject } ] @>
+        test <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "address" ]; Error = SchemaError.ExpectedObject } ] @>
 
     [<Fact>]
     let ``parse reports required when the nested raw field is missing`` () =
@@ -143,7 +143,7 @@ module NestedSchemaParseTests =
         let parsed = Schema.parseRetainingInput customerSchema raw
 
         test <@ not parsed.IsValid @>
-        test <@ parsed.Errors = [ { Path = [ PathSegment.Name "address" ]; Error = SchemaError.Required } ] @>
+        test <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "address" ]; Error = SchemaError.Required } ] @>
 
     [<Fact>]
     let ``parse accumulates every failing nested field alongside sibling failures`` () =
@@ -157,11 +157,11 @@ module NestedSchemaParseTests =
 
         let sortedErrors =
             parsed.Errors
-            |> List.sortBy (fun error -> error.Path |> List.map string |> String.concat ".")
+            |> List.sortBy (fun error -> Path.format error.Path)
 
         test <@ not parsed.IsValid @>
 
         test
-            <@ sortedErrors = [ { Path = [ PathSegment.Name "address"; PathSegment.Name "city" ]; Error = SchemaError.Required }
-                                { Path = [ PathSegment.Name "address"; PathSegment.Name "street" ]; Error = SchemaError.Required }
-                                { Path = [ PathSegment.Name "name" ]; Error = SchemaError.Required } ] @>
+            <@ sortedErrors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "address"; PathSegment.Name "city" ]; Error = SchemaError.Required }
+                                { Path = TestPath.fromLegacy [ PathSegment.Name "address"; PathSegment.Name "street" ]; Error = SchemaError.Required }
+                                { Path = TestPath.fromLegacy [ PathSegment.Name "name" ]; Error = SchemaError.Required } ] @>

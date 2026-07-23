@@ -15,14 +15,14 @@ open Axial.Flow
 [<RequireQualifiedAccess>]
 module SchemaRequest =
     /// <summary>Parses the JSON request body through the schema.</summary>
-    let json (schema: Schema<'model>) (request: HttpRequest) : Task<RetainedParseResult<'model, SchemaError>> =
+    let json (schema: Schema<'model>) (request: HttpRequest) : Task<RetainedParseResult<'model>> =
         task {
             use! document = JsonDocument.ParseAsync request.Body
             return Schema.parseRetainingInput schema (Data.ofJsonDocument document)
         }
 
     /// <summary>Parses the posted form through the schema; dotted field names such as <c>address.street</c> nest.</summary>
-    let form (schema: Schema<'model>) (request: HttpRequest) : Task<RetainedParseResult<'model, SchemaError>> =
+    let form (schema: Schema<'model>) (request: HttpRequest) : Task<RetainedParseResult<'model>> =
         task {
             let! form = request.ReadFormAsync()
 
@@ -34,7 +34,7 @@ module SchemaRequest =
         }
 
     /// <summary>Parses the query string through the schema.</summary>
-    let query (schema: Schema<'model>) (request: HttpRequest) : RetainedParseResult<'model, SchemaError> =
+    let query (schema: Schema<'model>) (request: HttpRequest) : RetainedParseResult<'model> =
         let pairs =
             request.Query
             |> Seq.collect (fun pair -> pair.Value |> Seq.map (fun value -> pair.Key, value))
@@ -59,7 +59,7 @@ type private CodecResult<'model>(codec: JsonCodec<'model>, value: 'model, status
 [<RequireQualifiedAccess>]
 module SchemaResult =
     /// <summary>A 400 <c>application/problem+json</c> response rendering the failed parse's diagnostics.</summary>
-    let problem (parsed: RetainedParseResult<'model, SchemaError>) : IResult =
+    let problem (parsed: RetainedParseResult<'model>) : IResult =
         match ProblemDetails.ofParsed parsed with
         | Some details -> Results.Text(ProblemDetails.toJson details, ProblemDetails.ContentType, statusCode = details.Status)
         | None -> Results.StatusCode 500
@@ -75,7 +75,7 @@ module SchemaResult =
     /// <summary>Runs the handler with the trusted model, or short-circuits to the problem-details response.</summary>
     let handleParsed
         (handler: 'model -> Task<IResult>)
-        (parsed: RetainedParseResult<'model, SchemaError>)
+        (parsed: RetainedParseResult<'model>)
         : Task<IResult> =
         match parsed.Result with
         | Ok model -> handler model
@@ -101,14 +101,14 @@ type EndpointError<'error> =
 /// <summary>Request decoders that contribute trusted values to an endpoint Flow.</summary>
 [<RequireQualifiedAccess>]
 module Request =
-    let private fromParsed (parsed: RetainedParseResult<'model, SchemaError>) =
+    let private fromParsed (parsed: RetainedParseResult<'model>) =
         match parsed.Result with
         | Ok model -> Flow.succeed model
         | Error diagnostics ->
-            Flow.fail (EndpointError.InvalidRequest(ProblemDetails.ofDiagnostics diagnostics))
+            Flow.fail (EndpointError.InvalidRequest(ProblemDetails.ofErrors diagnostics))
 
     let private parsed
-        (parse: HttpRequest -> Task<RetainedParseResult<'model, SchemaError>>)
+        (parse: HttpRequest -> Task<RetainedParseResult<'model>>)
         : Flow<HttpEndpointEnv<'app>, EndpointError<'error>, 'model> =
         Flow.read _.Request
         |> Flow.bind (fun request ->

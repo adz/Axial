@@ -14,6 +14,9 @@ open Axial.Schema.Syntax
 module SchemaValidationTests =
     type private Signup = { Email: string; Age: int }
 
+    let private issues result =
+        result |> Result.mapError SchemaErrors.toList
+
     type private IGeneratedBuilder<'model> =
         abstract member Build: obj array -> 'model
 
@@ -169,20 +172,12 @@ module SchemaValidationTests =
 
         test
             <@
-                validation =
+                issues validation =
                     Error
-                        {
-                            Errors = []
-                            Children =
-                                Map.ofList
-                                    [ PathSegment.Name "age",
-                                      Diagnostics.singleton (SchemaError.OutOfRange(CheckRangeExpectation.AtLeast "18", Some "10"))
-                                      PathSegment.Name "email",
-                                      {
-                                          Errors = [ SchemaError.Required; SchemaError.InvalidFormat "email" ]
-                                          Children = Map.empty
-                                      } ]
-                        }
+                        [ { Path = Path.key "age"
+                            Error = SchemaError.OutOfRange(CheckRangeExpectation.AtLeast "18", Some "10") }
+                          { Path = Path.key "email"; Error = SchemaError.Required }
+                          { Path = Path.key "email"; Error = SchemaError.InvalidFormat "email" } ]
             @>
 
     [<Fact>]
@@ -193,17 +188,11 @@ module SchemaValidationTests =
 
         test
             <@
-                validation =
+                issues validation =
                     Error
-                        {
-                            Errors = []
-                            Children =
-                                Map.ofList
-                                    [ PathSegment.Name "age",
-                                      Diagnostics.singleton (SchemaError.OutOfRange(CheckRangeExpectation.AtLeast "18", Some "16"))
-                                      PathSegment.Name "email",
-                                      Diagnostics.singleton (SchemaError.InvalidFormat "email") ]
-                        }
+                        [ { Path = Path.key "age"
+                            Error = SchemaError.OutOfRange(CheckRangeExpectation.AtLeast "18", Some "16") }
+                          { Path = Path.key "email"; Error = SchemaError.InvalidFormat "email" } ]
             @>
 
     [<Fact>]
@@ -230,17 +219,12 @@ module SchemaValidationTests =
 
         test
             <@
-                validation =
+                issues validation =
                     Error
-                        {
-                            Errors = []
-                            Children =
-                                Map.ofList
-                                    [ PathSegment.Name "age",
-                                      Diagnostics.singleton (SchemaError.Custom("atLeast", Some "Must be an adult."))
-                                      PathSegment.Name "email",
-                                      Diagnostics.singleton (SchemaError.Custom("required", Some "Email is required.")) ]
-                        }
+                        [ { Path = Path.key "age"
+                            Error = SchemaError.Custom("atLeast", Some "Must be an adult.") }
+                          { Path = Path.key "email"
+                            Error = SchemaError.Custom("required", Some "Email is required.") } ]
             @>
 
     [<Fact>]
@@ -266,15 +250,10 @@ module SchemaValidationTests =
 
         test
             <@
-                validation =
+                issues validation =
                     Error
-                        {
-                            Errors = []
-                            Children =
-                                Map.ofList
-                                    [ PathSegment.Name "primary-on-wire",
-                                      Diagnostics.singleton (SchemaError.NotOneOf "secondary-value") ]
-                        }
+                        [ { Path = Path.key "primary-on-wire"
+                            Error = SchemaError.NotOneOf "secondary-value" } ]
             @>
 
     [<Fact>]
@@ -309,21 +288,10 @@ module SchemaValidationTests =
 
         test
             <@
-                validation =
+                issues validation =
                     Error
-                        {
-                            Errors = []
-                            Children =
-                                Map.ofList
-                                    [ PathSegment.Name "address",
-                                      {
-                                          Errors = []
-                                          Children =
-                                              Map.ofList
-                                                  [ PathSegment.Name "city",
-                                                    Diagnostics.singleton SchemaError.Required ]
-                                      } ]
-                        }
+                        [ { Path = Path.append (Path.key "address") (Path.key "city")
+                            Error = SchemaError.Required } ]
             @>
 
     [<Fact>]
@@ -339,35 +307,20 @@ module SchemaValidationTests =
 
         test
             <@
-                validation =
+                issues validation =
                     Error
-                        {
-                            Errors = []
-                            Children =
-                                Map.ofList
-                                    [ PathSegment.Name "contacts",
-                                      {
-                                          Errors = []
-                                          Children =
-                                              Map.ofList
-                                                  [ PathSegment.Index 0,
-                                                    {
-                                                        Errors = []
-                                                        Children =
-                                                            Map.ofList
-                                                                [ PathSegment.Name "kind",
-                                                                  Diagnostics.singleton SchemaError.Required ]
-                                                    }
-                                                    PathSegment.Index 1,
-                                                    {
-                                                        Errors = []
-                                                        Children =
-                                                            Map.ofList
-                                                                [ PathSegment.Name "value",
-                                                                  Diagnostics.singleton SchemaError.Required ]
-                                                    } ]
-                                      } ]
-                        }
+                        [ { Path =
+                                TestPath.fromLegacy
+                                    [ PathSegment.Name "contacts"
+                                      PathSegment.Index 0
+                                      PathSegment.Name "kind" ]
+                            Error = SchemaError.Required }
+                          { Path =
+                                TestPath.fromLegacy
+                                    [ PathSegment.Name "contacts"
+                                      PathSegment.Index 1
+                                      PathSegment.Name "value" ]
+                            Error = SchemaError.Required } ]
             @>
 
     [<Fact>]
@@ -384,15 +337,10 @@ module SchemaValidationTests =
 
         test
             <@
-                validation =
+                issues validation =
                     Error
-                        {
-                            Errors = []
-                            Children =
-                                Map.ofList
-                                    [ PathSegment.Name "contacts",
-                                      Diagnostics.singleton (SchemaError.InvalidCount(CheckCountExpectation.MaximumCount 2, Some 3)) ]
-                        }
+                        [ { Path = Path.key "contacts"
+                            Error = SchemaError.InvalidCount(CheckCountExpectation.MaximumCount 2, Some 3) } ]
             @>
 
     [<Fact>]
@@ -410,20 +358,10 @@ module SchemaValidationTests =
 
         test
             <@
-                validation =
+                issues validation =
                     Error
-                        {
-                            Errors = []
-                            Children =
-                                Map.ofList
-                                    [ PathSegment.Name "values",
-                                      {
-                                          Errors = []
-                                          Children =
-                                              Map.ofList
-                                                  [ PathSegment.Index 1, Diagnostics.singleton SchemaError.Required ]
-                                      } ]
-                        }
+                        [ { Path = Path.append (Path.key "values") (Path.index 1)
+                            Error = SchemaError.Required } ]
             @>
 
     [<Fact>]
@@ -459,20 +397,12 @@ module SchemaValidationTests =
 
         test
             <@
-                validation =
+                issues validation =
                     Error
-                        {
-                            Errors = []
-                            Children =
-                                Map.ofList
-                                    [ PathSegment.Name "age",
-                                      Diagnostics.singleton (SchemaError.OutOfRange(CheckRangeExpectation.AtLeast "18", Some "17"))
-                                      PathSegment.Name "email",
-                                      {
-                                          Errors = [ SchemaError.Required; SchemaError.InvalidFormat "email" ]
-                                          Children = Map.empty
-                                      } ]
-                        }
+                        [ { Path = Path.key "age"
+                            Error = SchemaError.OutOfRange(CheckRangeExpectation.AtLeast "18", Some "17") }
+                          { Path = Path.key "email"; Error = SchemaError.Required }
+                          { Path = Path.key "email"; Error = SchemaError.InvalidFormat "email" } ]
             @>
 
     [<Fact>]

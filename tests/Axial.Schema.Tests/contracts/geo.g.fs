@@ -5,7 +5,6 @@
 namespace Axial.Tests.Generated
 
 open Axial
-open Axial.Validation
 open Axial.Schema
 
 /// A geographic coordinate.
@@ -24,25 +23,25 @@ module Geo =
 
     /// The schema declared by geo.contract (Geo.v1).
     let schema : Schema<Geo> =
-        SchemaCE.schema<Geo> {
-            SchemaCE.field "lat" (fun (value: Geo) -> value.Lat) {
+        schema<Geo> {
+            field "lat" (fun (value: Geo) -> value.Lat) {
                 constrain (atLeast (-90m))
                 constrain (atMost 90m)
             }
-            SchemaCE.field "lon" (fun (value: Geo) -> value.Lon) {
+            field "lon" (fun (value: Geo) -> value.Lon) {
                 constrain (atLeast (-180m))
                 constrain (atMost 180m)
             }
-            SchemaCE.construct (fun lat lon ->
+            construct (fun lat lon ->
                 { Lat = lat
                   Lon = lon })
         }
         |> Schema.describe "A geographic coordinate."
 
     /// Checks a draft built with an ordinary record literal.
-    let validate (draft: Geo) : Result<Geo, Diagnostics<SchemaError>> =
+    let validate (draft: Geo) : Result<Geo, SchemaErrors> =
         Schema.check schema draft
 
     /// Parses structured boundary data through the schema.
-    let parse (input: Data) : Result<Geo, Diagnostics<SchemaError>> =
+    let parse (input: Data) : Result<Geo, SchemaErrors> =
         Schema.parse schema input

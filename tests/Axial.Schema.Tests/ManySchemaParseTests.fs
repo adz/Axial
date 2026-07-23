@@ -145,7 +145,7 @@ module ManySchemaParseTests =
         test <@ not parsed.IsValid @>
         test
             <@
-                parsed.Errors = [ { Path = [ PathSegment.Name "contacts" ]
+                parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "contacts" ]
                                     Error = SchemaError.InvalidCount(CheckCountExpectation.MinimumCount 1, Some 0) } ]
             @>
 
@@ -166,7 +166,7 @@ module ManySchemaParseTests =
         test <@ not parsed.IsValid @>
         test
             <@
-                parsed.Errors = [ { Path = [ PathSegment.Name "contacts" ]
+                parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "contacts" ]
                                     Error = SchemaError.InvalidCount(CheckCountExpectation.MaximumCount 2, Some 3) } ]
             @>
 
@@ -179,7 +179,7 @@ module ManySchemaParseTests =
         let parsed = Schema.parseRetainingInput customerSchema raw
 
         test <@ not parsed.IsValid @>
-        test <@ parsed.Errors = [ { Path = [ PathSegment.Name "contacts" ]; Error = SchemaError.ExpectedMany } ] @>
+        test <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "contacts" ]; Error = SchemaError.ExpectedMany } ] @>
 
     [<Fact>]
     let ``parse reports expected collection when the collection field structured data is a scalar`` () =
@@ -189,7 +189,7 @@ module ManySchemaParseTests =
         let parsed = Schema.parseRetainingInput customerSchema raw
 
         test <@ not parsed.IsValid @>
-        test <@ parsed.Errors = [ { Path = [ PathSegment.Name "contacts" ]; Error = SchemaError.ExpectedMany } ] @>
+        test <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "contacts" ]; Error = SchemaError.ExpectedMany } ] @>
 
     [<Fact>]
     let ``parse reports expected object for an item that is not object-shaped`` () =
@@ -202,7 +202,7 @@ module ManySchemaParseTests =
         test <@ not parsed.IsValid @>
         test
             <@
-                parsed.Errors = [ { Path = [ PathSegment.Name "contacts"; PathSegment.Index 0 ]
+                parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "contacts"; PathSegment.Index 0 ]
                                     Error = SchemaError.ExpectedObject } ]
             @>
 
@@ -239,7 +239,7 @@ module ManySchemaParseTests =
         let parsed = Schema.parseRetainingInput schema raw
 
         test
-            <@ parsed.Errors = [ { Path = [ PathSegment.Name "values"; PathSegment.Index 1 ]
+            <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "values"; PathSegment.Index 1 ]
                                    Error = SchemaError.Required } ] @>
 
     [<Fact>]
@@ -262,9 +262,9 @@ module ManySchemaParseTests =
                 parsed.Errors
                 |> List.sortBy (fun diagnostic -> diagnostic.Path)
                 |> (=)
-                    [ { Path = [ PathSegment.Name "contacts"; PathSegment.Index 0; PathSegment.Name "kind" ]
+                    [ { Path = TestPath.fromLegacy [ PathSegment.Name "contacts"; PathSegment.Index 0; PathSegment.Name "kind" ]
                         Error = SchemaError.Required }
-                      { Path = [ PathSegment.Name "contacts"; PathSegment.Index 1; PathSegment.Name "value" ]
+                      { Path = TestPath.fromLegacy [ PathSegment.Name "contacts"; PathSegment.Index 1; PathSegment.Name "value" ]
                         Error = SchemaError.Required } ]
             @>
 
@@ -285,7 +285,7 @@ module ManySchemaParseTests =
 
         test
             <@
-                parsed.Errors = [ { Path = [ PathSegment.Name "contacts"; PathSegment.Index 1 ]
+                parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "contacts"; PathSegment.Index 1 ]
                                     Error = SchemaError.ConstructorFailed "Kind and value must differ." } ]
             @>
 
@@ -309,8 +309,8 @@ module ManySchemaParseTests =
                 parsed.Errors
                 |> List.sortBy (fun diagnostic -> diagnostic.Path)
                 |> (=)
-                    [ { Path = [ PathSegment.Name "contacts"; PathSegment.Index 1; PathSegment.Name "kind" ]
+                    [ { Path = TestPath.fromLegacy [ PathSegment.Name "contacts"; PathSegment.Index 1; PathSegment.Name "kind" ]
                         Error = SchemaError.Required }
-                      { Path = [ PathSegment.Name "contacts"; PathSegment.Index 1; PathSegment.Name "value" ]
+                      { Path = TestPath.fromLegacy [ PathSegment.Name "contacts"; PathSegment.Index 1; PathSegment.Name "value" ]
                         Error = SchemaError.Required } ]
             @>

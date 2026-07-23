@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="SchemaTestSupport.fs" />
     <Compile Include="SchemaConstraintInspectionTests.fs" />
     <Compile Include="SchemaConstructorGetterAlignmentTests.fs" />
     <Compile Include="ShapeSyntaxTests.fs" />

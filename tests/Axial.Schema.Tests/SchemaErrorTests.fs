@@ -12,7 +12,6 @@ open Axial.Schema.Syntax
 
 module SchemaErrorTests =
     type private Signup = { Email: string; Age: int }
-    type private SignupError = Boundary of SchemaError
     type private Ticket = { Priority: int; HasAssignee: bool }
 
     [<Fact>]
@@ -70,7 +69,7 @@ module SchemaErrorTests =
             <@ RetainedParseResult.renderErrors parsed = [ "age: Expected int format."; "email: This value is required." ] @>
 
     [<Fact>]
-    let ``parsed input maps schema boundary errors to user owned errors with one function`` () =
+    let ``schema issues can be mapped into application errors after parsing`` () =
         let schema =
             SchemaCE.schema<Signup> {
                 SchemaCE.field "email" _.Email {
@@ -80,9 +79,13 @@ module SchemaErrorTests =
                 SchemaCE.construct (fun email age -> { Email = email; Age = age })
             }
 
-        let parsed =
+        let result =
             Data.objectOfMap (Map.ofList [ "email", Data.Null; "age", Data.Text "42" ])
-            |> Schema.parseRetainingInput schema
-            |> RetainedParseResult.mapErrors Boundary
+            |> Schema.parse schema
 
-        test <@ parsed.ErrorsFor "email" = [ Boundary SchemaError.Required ] @>
+        let applicationErrors =
+            match result with
+            | Ok _ -> []
+            | Error errors -> errors |> SchemaErrors.toList |> List.map (fun issue -> issue.Error)
+
+        test <@ applicationErrors = [ SchemaError.Required ] @>

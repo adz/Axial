@@ -63,8 +63,8 @@ module ShapeSyntaxTests =
         match (Schema.parse personSchema input) with
         | Ok person -> failwithf "Expected a minLength diagnostic, parsed %A" person
         | Error errors ->
-            let flattened = Diagnostics.flatten errors
-            test <@ flattened |> List.exists (fun diagnostic -> diagnostic.Path = [ PathSegment.Name "firstName" ]) @>
+            let flattened = SchemaErrors.toList errors
+            test <@ flattened |> List.exists (fun diagnostic -> diagnostic.Path = TestPath.fromLegacy [ PathSegment.Name "firstName" ]) @>
 
     [<Fact>]
     let ``check accepts a trusted draft through the same schema`` () =
@@ -112,7 +112,7 @@ module ShapeSyntaxTests =
         match (Schema.parse rangeSchema input) with
         | Ok range -> failwithf "Expected a constructor rejection, parsed %A" range
         | Error errors ->
-            let flattened = Diagnostics.flatten errors
+            let flattened = SchemaErrors.toList errors
             test <@ flattened |> List.exists (fun diagnostic -> diagnostic.Error = SchemaError.ConstructorFailed "high must not precede low") @>
 
     // ---- fieldWith and inferred containers ----
@@ -268,7 +268,7 @@ module ShapeSyntaxTests =
         match (Schema.parse bookingSchema input) with
         | Ok booking -> failwithf "Expected an admission failure, parsed %A" booking
         | Error errors ->
-            let flattened = Diagnostics.flatten errors
+            let flattened = SchemaErrors.toList errors
             test <@ flattened |> List.exists (fun diagnostic -> diagnostic.Error = SchemaError.ConstructorFailed "End must not precede start") @>
 
     [<Fact>]

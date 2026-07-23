@@ -6,13 +6,11 @@ namespace Axial.Schema
 open Axial
 
 open System
-open Axial.Validation
-
 /// A failure produced while migrating an older wire representation.
 [<RequireQualifiedAccess>]
 type MigrationError =
     | MigrationFailed of message: string
-    | RevalidationFailed of Diagnostics<SchemaError>
+    | RevalidationFailed of SchemaErrors
 
 /// The explicit source of a contract version.
 [<RequireQualifiedAccess>]
@@ -27,13 +25,13 @@ type ContractError =
     | VersionMissing
     | VersionUnrecognized of version: int
     | VersionTooNew of detected: int * highestSupported: int
-    | ParseFailed of version: int * Diagnostics<SchemaError>
+    | ParseFailed of version: int * SchemaErrors
     | Migration of MigrationError
 
 type private ContractVersion =
     {
         Version: int
-        Parse: Data -> Result<obj, Diagnostics<SchemaError>>
+        Parse: Data -> Result<obj, SchemaErrors>
         MigrateToNext: (obj -> Result<obj, MigrationError>) option
     }
 

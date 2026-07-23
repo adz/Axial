@@ -5,7 +5,6 @@
 namespace Axial.Tests.Generated
 
 open Axial
-open Axial.Validation
 open Axial.Schema
 
 /// The "plan" cases of Signup (signup.contract, Signup.v1).
@@ -40,33 +39,33 @@ module Signup =
 
     /// The schema declared by signup.contract (Signup.v1).
     let schema : Schema<Signup> =
-        SchemaCE.schema<Signup> {
-            SchemaCE.field "email" (fun (value: Signup) -> value.Email) {
+        schema<Signup> {
+            field "email" (fun (value: Signup) -> value.Email) {
                 withSchema (Schema.text |> Schema.describe "Primary contact address.")
                 constrain emailFormat
                 constrain (maxLength 254)
             }
-            SchemaCE.field "display_name" (fun (value: Signup) -> value.DisplayName) {
+            field "display_name" (fun (value: Signup) -> value.DisplayName) {
                 withSchema (Schema.option (Schema.text |> Schema.constrainAll [ Constraint.minLength (1); Constraint.maxLength (64) ]))
             }
-            SchemaCE.field "age" (fun (value: Signup) -> value.Age) {
+            field "age" (fun (value: Signup) -> value.Age) {
                 constrain (atLeast 13)
             }
-            SchemaCE.field "plan" (fun (value: Signup) -> value.Plan) {
+            field "plan" (fun (value: Signup) -> value.Plan) {
                 withSchema (Schema.enum planCases |> Schema.withDefault SignupPlan.Free)
             }
-            SchemaCE.field "tags" (fun (value: Signup) -> value.Tags) {
+            field "tags" (fun (value: Signup) -> value.Tags) {
                 withSchema (Schema.listWith Schema.text)
                 constrain (maxCount 8)
                 constrain distinct
             }
-            SchemaCE.field "limits" (fun (value: Signup) -> value.Limits) {
+            field "limits" (fun (value: Signup) -> value.Limits) {
                 withSchema (Schema.mapWith Schema.int)
             }
-            SchemaCE.field "location" (fun (value: Signup) -> value.Location) {
+            field "location" (fun (value: Signup) -> value.Location) {
                 withSchema (Schema.option Geo.schema)
             }
-            SchemaCE.construct (fun email displayName age plan tags limits location ->
+            construct (fun email displayName age plan tags limits location ->
                 { Email = email
                   DisplayName = displayName
                   Age = age
@@ -78,9 +77,9 @@ module Signup =
         |> Schema.describe "A new account request."
 
     /// Checks a draft built with an ordinary record literal.
-    let validate (draft: Signup) : Result<Signup, Diagnostics<SchemaError>> =
+    let validate (draft: Signup) : Result<Signup, SchemaErrors> =
         Schema.check schema draft
 
     /// Parses structured boundary data through the schema.
-    let parse (input: Data) : Result<Signup, Diagnostics<SchemaError>> =
+    let parse (input: Data) : Result<Signup, SchemaErrors> =
         Schema.parse schema input

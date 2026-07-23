@@ -478,7 +478,11 @@ module internal SchemaParsing =
         parseValue options field.ValueSchema field.Constraints path raw
 
     /// <summary>Parses structured boundary data through a trusted model schema using custom input parser options.</summary>
-    let parseWith (configure: SchemaParseOptions -> SchemaParseOptions) (schema: Schema<'model>) (input: Data) : Result<'model, Diagnostics<SchemaError>> =
+    let private parseWithDiagnostics
+        (configure: SchemaParseOptions -> SchemaParseOptions)
+        (schema: Schema<'model>)
+        (input: Data)
+        : Result<'model, Diagnostics<SchemaError>> =
         if isNull (box configure) then
             nullArg (nameof configure)
 
@@ -517,13 +521,22 @@ module internal SchemaParsing =
 
         result
 
+    /// <summary>Parses structured boundary data through a trusted model schema using custom input parser options.</summary>
+    let parseWith
+        (configure: SchemaParseOptions -> SchemaParseOptions)
+        (schema: Schema<'model>)
+        (input: Data)
+        : Result<'model, SchemaErrors> =
+        parseWithDiagnostics configure schema input
+        |> Result.mapError SchemaErrors.ofDiagnostics
+
     /// <summary>Parses structured boundary data through a trusted model schema.</summary>
-    let parse (schema: Schema<'model>) (input: Data) : Result<'model, Diagnostics<SchemaError>> =
+    let parse (schema: Schema<'model>) (input: Data) : Result<'model, SchemaErrors> =
         parseWith id schema input
 
     /// <summary>Parses structured boundary data while retaining that input for redisplay and error lookup.</summary>
-    let parseRetainingInput (schema: Schema<'model>) (input: Data) : RetainedParseResult<'model, SchemaError> =
-        RetainedParseResult.create input (parse schema input)
+    let parseRetainingInput (schema: Schema<'model>) (input: Data) : RetainedParseResult<'model> =
+        parse schema input |> RetainedParseResult.create input
 
     /// <summary>
     /// Parses structured boundary data through a trusted model schema using custom input parser options, expressed as a
@@ -538,7 +551,7 @@ module internal SchemaParsing =
         (configure: System.Func<SchemaParseOptions, SchemaParseOptions>)
         (schema: Schema<'model>)
         (input: Data)
-        : Result<'model, Diagnostics<SchemaError>> =
+        : Result<'model, SchemaErrors> =
         if isNull (box configure) then
             nullArg (nameof configure)
 
@@ -562,23 +575,26 @@ module internal SchemaParsing =
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
     /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="schema" /> is not a built model schema.</exception>
-    let check (schema: Schema<'model>) (model: 'model) : Result<'model, Diagnostics<SchemaError>> =
+    let check (schema: Schema<'model>) (model: 'model) : Result<'model, SchemaErrors> =
         if isNull (box schema) then
             nullArg (nameof schema)
 
-        match schema.Definition with
-        | PendingDefinition -> invalidArg (nameof schema) "Expected a built model schema."
-        | ValueDefinition _ ->
-            ModelFieldCheck.check schema model |> Axial.Validation.Validation.toResult
-        | ModelDefinition modelSchema ->
-            match ModelFieldCheck.check schema model |> Axial.Validation.Validation.toResult with
-            | Error diagnostics -> Error diagnostics
-            | Ok checkedModel ->
-                let arguments =
-                    modelSchema.Fields
-                    |> List.map (fun field -> field.Getter checkedModel)
-                    |> List.toArray
+        let result =
+            match schema.Definition with
+            | PendingDefinition -> invalidArg (nameof schema) "Expected a built model schema."
+            | ValueDefinition _ ->
+                ModelFieldCheck.check schema model |> Axial.Validation.Validation.toResult
+            | ModelDefinition modelSchema ->
+                match ModelFieldCheck.check schema model |> Axial.Validation.Validation.toResult with
+                | Error diagnostics -> Error diagnostics
+                | Ok checkedModel ->
+                    let arguments =
+                        modelSchema.Fields
+                        |> List.map (fun field -> field.Getter checkedModel)
+                        |> List.toArray
 
-                match modelSchema.Constructor.TryApplyTrusted arguments with
-                | Ok _ -> Ok model
-                | Error message -> errorAtConstructor defaults [] message
+                    match modelSchema.Constructor.TryApplyTrusted arguments with
+                    | Ok _ -> Ok model
+                    | Error message -> errorAtConstructor defaults [] message
+
+        result |> Result.mapError SchemaErrors.ofDiagnostics

@@ -125,11 +125,11 @@ module SchemaCeTests =
 
         let parseErrors =
             parseResult
-            |> Result.mapError (Axial.Validation.Diagnostics.flatten >> List.map (fun issue -> issue.Path, issue.Error))
+            |> Result.mapError (SchemaErrors.toList >> List.map (fun issue -> issue.Path, issue.Error))
 
         let checkErrors =
             checkResult
-            |> Result.mapError (Axial.Validation.Diagnostics.flatten >> List.map (fun issue -> issue.Path, issue.Error))
+            |> Result.mapError (SchemaErrors.toList >> List.map (fun issue -> issue.Path, issue.Error))
 
         let parseIssues =
             match parseErrors with
@@ -142,7 +142,7 @@ module SchemaCeTests =
             | Ok _ -> []
 
         let expected =
-            [ [ Axial.Validation.PathSegment.Name "email" ],
+            [ Path.key "email",
               SchemaError.Custom("company-email", Some "Expected an example.com address.") ]
 
         test <@ parseIssues = expected @>

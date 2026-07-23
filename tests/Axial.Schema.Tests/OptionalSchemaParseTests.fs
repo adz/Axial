@@ -80,7 +80,7 @@ module OptionalSchemaParseTests =
         test <@ not parsed.IsValid @>
 
         test
-            <@ parsed.Errors = [ { Path = [ PathSegment.Name "nickname" ]
+            <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "nickname" ]
                                    Error = SchemaError.InvalidLength(CheckLengthExpectation.MinimumLength 2, Some 1) } ] @>
 
     [<Fact>]
@@ -99,15 +99,12 @@ module OptionalSchemaParseTests =
 
         let validation = Schema.check schema invalid
 
+        let issues = validation |> Result.mapError SchemaErrors.toList
+
         test
             <@
-                validation =
+                issues =
                     Error
-                        {
-                            Errors = []
-                            Children =
-                                Map.ofList
-                                    [ PathSegment.Name "nickname",
-                                      Diagnostics.singleton (SchemaError.InvalidLength(CheckLengthExpectation.MinimumLength 2, Some 1)) ]
-                        }
+                        [ { Path = Path.key "nickname"
+                            Error = SchemaError.InvalidLength(CheckLengthExpectation.MinimumLength 2, Some 1) } ]
             @>

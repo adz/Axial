@@ -89,8 +89,8 @@ module SchemaRefinedValueTests =
         match parsed.Result with
         | Ok _ -> failwith "Expected refinement to reject the value."
         | Error diagnostics ->
-            let errors = diagnostics |> Axial.Validation.Diagnostics.flatten
-            test <@ errors |> List.map _.Path = [ [] ] @>
+            let errors = diagnostics |> SchemaErrors.toList
+            test <@ errors |> List.map _.Path = [ Path.root ] @>
             test <@ errors |> List.map _.Error = [ SchemaError.Custom("email.blocked", Some "This address is blocked.") ] @>
 
     [<Fact>]

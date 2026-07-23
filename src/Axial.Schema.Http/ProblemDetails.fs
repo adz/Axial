@@ -2,7 +2,6 @@ namespace Axial.Schema.Http
 
 open System.IO
 open System.Text.Json
-open Axial.Validation
 open Axial.Schema
 
 /// <summary>Renders diagnostics paths as RFC 6901 JSON pointers such as <c>/address/street</c> or <c>/tags/0</c>.</summary>
@@ -14,11 +13,10 @@ module JsonPointer =
     /// <summary>Renders a diagnostics path as a JSON pointer. The empty path renders as <c>""</c> (the whole document).</summary>
     let ofPath (path: Path) : string =
         path
-        |> List.map (function
-            | PathSegment.Index index -> "/" + string index
-            | PathSegment.Key key -> "/" + escape key
-            | PathSegment.Name name -> "/" + escape name)
-        |> String.concat ""
+        |> Path.fold
+            (fun pointer key -> pointer + "/" + escape key)
+            (fun pointer index -> pointer + "/" + string index)
+            ""
 
 /// <summary>One boundary error: a JSON pointer into the request body plus a rendered message.</summary>
 type ProblemError =
@@ -47,27 +45,23 @@ module ProblemDetails =
     [<Literal>]
     let ContentType = "application/problem+json"
 
-    /// <summary>Builds a 400 problem-details value from parse diagnostics, rendering each error with <paramref name="render" />.</summary>
-    let ofDiagnosticsWith (render: 'error -> string) (diagnostics: Diagnostics<'error>) : ProblemDetails =
+    /// <summary>Builds a 400 problem-details value from accumulated schema errors.</summary>
+    let ofErrors (errors: SchemaErrors) : ProblemDetails =
         { Type = "https://datatracker.ietf.org/doc/html/rfc9457"
           Title = "The request input could not be parsed."
           Status = 400
           Detail = None
           Errors =
-            Diagnostics.flatten diagnostics
-            |> List.map (fun diagnostic ->
-                { Pointer = JsonPointer.ofPath diagnostic.Path
-                  Message = render diagnostic.Error }) }
-
-    /// <summary>Builds a 400 problem-details value from failed schema parse diagnostics.</summary>
-    let ofDiagnostics (diagnostics: Diagnostics<SchemaError>) : ProblemDetails =
-        ofDiagnosticsWith SchemaError.render diagnostics
+            SchemaErrors.toList errors
+            |> List.map (fun issue ->
+                { Pointer = JsonPointer.ofPath issue.Path
+                  Message = SchemaError.render issue.Error }) }
 
     /// <summary>Builds a 400 problem-details value from a failed parse, or <c>None</c> when parsing succeeded.</summary>
-    let ofParsed (parsed: RetainedParseResult<'model, SchemaError>) : ProblemDetails option =
+    let ofParsed (parsed: RetainedParseResult<'model>) : ProblemDetails option =
         match parsed.Result with
         | Ok _ -> None
-        | Error diagnostics -> Some(ofDiagnostics diagnostics)
+        | Error errors -> Some(ofErrors errors)
 
     /// <summary>Builds a 400 problem-details value for a syntactically invalid JSON request body.</summary>
     let malformedJson : ProblemDetails =

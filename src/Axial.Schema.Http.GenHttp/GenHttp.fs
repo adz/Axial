@@ -16,20 +16,20 @@ open Axial.Flow
 [<RequireQualifiedAccess>]
 module SchemaRequest =
     /// <summary>Parses the JSON request body through the schema; a missing body parses as missing input.</summary>
-    let json (schema: Schema<'model>) (request: IRequest) : ValueTask<RetainedParseResult<'model, SchemaError>> =
+    let json (schema: Schema<'model>) (request: IRequest) : ValueTask<RetainedParseResult<'model>> =
         match request.Content with
         | null -> ValueTask<_>(Schema.parseRetainingInput schema Data.Null)
         | content ->
-            let parse: Task<RetainedParseResult<'model, SchemaError>> =
+            let parse: Task<RetainedParseResult<'model>> =
                 task {
                     use! document = JsonDocument.ParseAsync content
                     return Schema.parseRetainingInput schema (Data.ofJsonDocument document)
                 }
 
-            ValueTask<RetainedParseResult<'model, SchemaError>> parse
+            ValueTask<RetainedParseResult<'model>> parse
 
     /// <summary>Parses the query string through the schema.</summary>
-    let query (schema: Schema<'model>) (request: IRequest) : RetainedParseResult<'model, SchemaError> =
+    let query (schema: Schema<'model>) (request: IRequest) : RetainedParseResult<'model> =
         let pairs = request.Query |> Seq.map (fun pair -> pair.Key, pair.Value)
         Schema.parseRetainingInput schema (BoundaryInput.ofQuery pairs)
 
@@ -37,7 +37,7 @@ module SchemaRequest =
 [<RequireQualifiedAccess>]
 module SchemaResponse =
     /// <summary>A 400 <c>application/problem+json</c> response rendering the failed parse's diagnostics.</summary>
-    let problem (request: IRequest) (parsed: RetainedParseResult<'model, SchemaError>) : IResponse =
+    let problem (request: IRequest) (parsed: RetainedParseResult<'model>) : IResponse =
         match ProblemDetails.ofParsed parsed with
         | Some details ->
             request
@@ -65,7 +65,7 @@ module SchemaResponse =
     let handleParsed
         (request: IRequest)
         (handler: 'model -> ValueTask<IResponse>)
-        (parsed: RetainedParseResult<'model, SchemaError>)
+        (parsed: RetainedParseResult<'model>)
         : ValueTask<IResponse> =
         match parsed.Result with
         | Ok model -> handler model
@@ -95,11 +95,11 @@ type HttpResponse = private HttpResponse of (IRequest -> IResponse)
 /// <summary>Request decoders that contribute trusted values to an endpoint Flow.</summary>
 [<RequireQualifiedAccess>]
 module Request =
-    let private fromParsed (parsed: RetainedParseResult<'model, SchemaError>) =
+    let private fromParsed (parsed: RetainedParseResult<'model>) =
         match parsed.Result with
         | Ok model -> Flow.succeed model
         | Error diagnostics ->
-            Flow.fail (EndpointError.InvalidRequest(ProblemDetails.ofDiagnostics diagnostics))
+            Flow.fail (EndpointError.InvalidRequest(ProblemDetails.ofErrors diagnostics))
 
     /// <summary>Reads and schema-parses a JSON request body; malformed JSON and schema diagnostics become invalid-request failures.</summary>
     /// <param name="schema">The schema that establishes the trusted input type.</param>

@@ -81,9 +81,9 @@ module RefinedCatalogSchemaTests =
         test <@ Refine.positiveInt 0 |> Result.mapError SchemaError.ofRefinementError = Error [ SchemaError.OutOfRange(CheckRangeExpectation.GreaterThan "0", Some "0") ] @>
 
         test
-            <@ parsed.Errors = [ { Path = [ PathSegment.Name "name" ]; Error = SchemaError.Required }
-                                 { Path = [ PathSegment.Name "quantity" ]; Error = SchemaError.OutOfRange(CheckRangeExpectation.GreaterThan "0", Some "0") }
-                                 { Path = [ PathSegment.Name "slug" ]; Error = SchemaError.InvalidFormat "^[a-z0-9]+(-[a-z0-9]+)*$" } ] @>
+            <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "name" ]; Error = SchemaError.Required }
+                                 { Path = TestPath.fromLegacy [ PathSegment.Name "quantity" ]; Error = SchemaError.OutOfRange(CheckRangeExpectation.GreaterThan "0", Some "0") }
+                                 { Path = TestPath.fromLegacy [ PathSegment.Name "slug" ]; Error = SchemaError.InvalidFormat "^[a-z0-9]+(-[a-z0-9]+)*$" } ] @>
 
     [<Fact>]
     let ``bounded string schema carries caller supplied bounds`` () =
@@ -123,8 +123,8 @@ module RefinedCatalogSchemaTests =
                 Error [ SchemaError.Custom("notEqualTo:0", None) ] @>
 
         test
-            <@ parsed.Errors = [ { Path = [ PathSegment.Name "command" ]; Error = SchemaError.InvalidFormat "trimmed" }
-                                 { Path = [ PathSegment.Name "offset" ]; Error = SchemaError.Custom("notEqualTo:0", None) } ] @>
+            <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "command" ]; Error = SchemaError.InvalidFormat "trimmed" }
+                                 { Path = TestPath.fromLegacy [ PathSegment.Name "offset" ]; Error = SchemaError.Custom("notEqualTo:0", None) } ] @>
 
     [<Fact>]
     let ``refined collection catalog schemas parse trusted values`` () =
@@ -174,9 +174,9 @@ module RefinedCatalogSchemaTests =
         let parsed = Schema.parseRetainingInput schema raw
 
         test
-            <@ parsed.Errors = [ { Path = [ PathSegment.Name "codes" ]
+            <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "codes" ]
                                    Error = SchemaError.Duplicate }
-                                 { Path = [ PathSegment.Name "tags" ]
+                                 { Path = TestPath.fromLegacy [ PathSegment.Name "tags" ]
                                    Error = SchemaError.InvalidCount(CheckCountExpectation.MinimumCount 1, Some 0) } ] @>
 
     [<Fact>]
@@ -208,7 +208,7 @@ module RefinedCatalogSchemaTests =
         let parsed = Schema.parseRetainingInput RefinedSchemas.dateTimeOffsetRange raw
 
         test
-            <@ parsed.Errors = [ { Path = []
+            <@ parsed.Errors = [ { Path = TestPath.fromLegacy []
                                    Error =
                                      SchemaError.ConstructorFailed
                                          "DateTimeOffsetRange: Expected Start to be less than or equal to End." } ] @>

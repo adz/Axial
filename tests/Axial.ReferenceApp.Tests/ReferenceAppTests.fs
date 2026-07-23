@@ -50,7 +50,7 @@ module ReferenceAppTests =
         let invalid =
             Schema.parseRetainingInput Contracts.workspaceV2
                 (object' [ "version", scalar 2; "id", scalar(Guid.NewGuid()); "name", scalar " "; "members", Data.List []; "items", Data.List [] ])
-        test <@ invalid.Errors |> List.map _.Path = [ [ Axial.Validation.PathSegment.Name "name" ] ] @>
+        test <@ invalid.Errors |> List.map _.Path = [ Path.key "name" ] @>
 
     [<Fact>]
     let ``v1 files migrate and subsequent saves write only v2`` () =

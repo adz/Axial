@@ -5,7 +5,6 @@
 namespace Axial.Tests.Generated
 
 open Axial
-open Axial.Validation
 open Axial.Schema
 
 /// Schema and boundary functions for PickupPoint (shipment.fs, PickupPoint.v1).
@@ -17,19 +16,19 @@ module PickupPoint =
 
     /// The schema declared by shipment.fs (PickupPoint.v1).
     let schema : Schema<PickupPoint> =
-        SchemaCE.schema<PickupPoint> {
-            SchemaCE.field "code" (fun (value: PickupPoint) -> value.Code)
-            SchemaCE.construct (fun code ->
+        schema<PickupPoint> {
+            field "code" (fun (value: PickupPoint) -> value.Code)
+            construct (fun code ->
                 { Code = code })
         }
         |> Schema.describe "A named pickup location."
 
     /// Checks a draft built with an ordinary record literal.
-    let validate (draft: PickupPoint) : Result<PickupPoint, Diagnostics<SchemaError>> =
+    let validate (draft: PickupPoint) : Result<PickupPoint, SchemaErrors> =
         Schema.check schema draft
 
     /// Parses structured boundary data through the schema.
-    let parse (input: Data) : Result<PickupPoint, Diagnostics<SchemaError>> =
+    let parse (input: Data) : Result<PickupPoint, SchemaErrors> =
         Schema.parse schema input
 
 /// Schema and boundary functions for CourierDelivery (shipment.fs, CourierDelivery.v1).
@@ -41,19 +40,19 @@ module CourierDelivery =
 
     /// The schema declared by shipment.fs (CourierDelivery.v1).
     let schema : Schema<CourierDelivery> =
-        SchemaCE.schema<CourierDelivery> {
-            SchemaCE.field "trackingUrl" (fun (value: CourierDelivery) -> value.TrackingUrl)
-            SchemaCE.construct (fun trackingUrl ->
+        schema<CourierDelivery> {
+            field "trackingUrl" (fun (value: CourierDelivery) -> value.TrackingUrl)
+            construct (fun trackingUrl ->
                 { TrackingUrl = trackingUrl })
         }
         |> Schema.describe "A courier delivery with tracking."
 
     /// Checks a draft built with an ordinary record literal.
-    let validate (draft: CourierDelivery) : Result<CourierDelivery, Diagnostics<SchemaError>> =
+    let validate (draft: CourierDelivery) : Result<CourierDelivery, SchemaErrors> =
         Schema.check schema draft
 
     /// Parses structured boundary data through the schema.
-    let parse (input: Data) : Result<CourierDelivery, Diagnostics<SchemaError>> =
+    let parse (input: Data) : Result<CourierDelivery, SchemaErrors> =
         Schema.parse schema input
 
 /// Schema and boundary functions for ShipmentV1 (shipment.fs, Shipment.v1).
@@ -65,18 +64,18 @@ module ShipmentV1 =
 
     /// The schema declared by shipment.fs (Shipment.v1).
     let schema : Schema<ShipmentV1> =
-        SchemaCE.schema<ShipmentV1> {
-            SchemaCE.field "reference" (fun (value: ShipmentV1) -> value.Reference) {
+        schema<ShipmentV1> {
+            field "reference" (fun (value: ShipmentV1) -> value.Reference) {
                 withSchema (Schema.text |> Schema.describe "Public shipment reference.")
                 constrain (pattern "^SH-[0-9]+$")
             }
-            SchemaCE.field "notifyEmail" (fun (value: ShipmentV1) -> value.NotifyEmail) {
+            field "notifyEmail" (fun (value: ShipmentV1) -> value.NotifyEmail) {
                 constrain emailFormat
             }
-            SchemaCE.field "items" (fun (value: ShipmentV1) -> value.Items) {
+            field "items" (fun (value: ShipmentV1) -> value.Items) {
                 withSchema (Schema.mapWith Schema.int)
             }
-            SchemaCE.construct (fun reference notifyEmail items ->
+            construct (fun reference notifyEmail items ->
                 { Reference = reference
                   NotifyEmail = notifyEmail
                   Items = items })
@@ -84,11 +83,11 @@ module ShipmentV1 =
         |> Schema.describe "A shipment as first stored."
 
     /// Checks a draft built with an ordinary record literal.
-    let validate (draft: ShipmentV1) : Result<ShipmentV1, Diagnostics<SchemaError>> =
+    let validate (draft: ShipmentV1) : Result<ShipmentV1, SchemaErrors> =
         Schema.check schema draft
 
     /// Parses structured boundary data through the schema.
-    let parse (input: Data) : Result<ShipmentV1, Diagnostics<SchemaError>> =
+    let parse (input: Data) : Result<ShipmentV1, SchemaErrors> =
         Schema.parse schema input
 
 /// Schema and boundary functions for Shipment (shipment.fs, Shipment.v2).
@@ -109,39 +108,39 @@ module Shipment =
 
     /// The schema declared by shipment.fs (Shipment.v2).
     let schema : Schema<Shipment> =
-        SchemaCE.schema<Shipment> {
-            SchemaCE.field "reference" (fun (value: Shipment) -> value.Reference) {
+        schema<Shipment> {
+            field "reference" (fun (value: Shipment) -> value.Reference) {
                 withSchema (Schema.text |> Schema.describe "Public shipment reference.")
                 constrain (pattern "^SH-[0-9]+$")
             }
-            SchemaCE.field "notify_email" (fun (value: Shipment) -> value.NotifyEmail) {
+            field "notify_email" (fun (value: Shipment) -> value.NotifyEmail) {
                 constrain emailFormat
             }
-            SchemaCE.field "items" (fun (value: Shipment) -> value.Items) {
+            field "items" (fun (value: Shipment) -> value.Items) {
                 withSchema (Schema.mapWith Schema.int)
             }
-            SchemaCE.field "tags" (fun (value: Shipment) -> value.Tags) {
+            field "tags" (fun (value: Shipment) -> value.Tags) {
                 withSchema (Schema.listWith Schema.text)
                 constrain (minCount 1)
                 constrain distinct
             }
-            SchemaCE.field "weightKg" (fun (value: Shipment) -> value.WeightKg) {
+            field "weightKg" (fun (value: Shipment) -> value.WeightKg) {
                 constrain (atLeast 0.5m)
             }
-            SchemaCE.field "priority" (fun (value: Shipment) -> value.Priority) {
+            field "priority" (fun (value: Shipment) -> value.Priority) {
                 withSchema (Schema.enum priorityCases |> Schema.withDefault ShipmentPriority.Express)
             }
-            SchemaCE.field "delivery" (fun (value: Shipment) -> value.Delivery) {
+            field "delivery" (fun (value: Shipment) -> value.Delivery) {
                 withSchema (Schema.inlineUnion "kind" deliveryCases)
             }
-            SchemaCE.field "origin" (fun (value: Shipment) -> value.Origin) {
+            field "origin" (fun (value: Shipment) -> value.Origin) {
                 withSchema (Schema.option PickupPoint.schema)
             }
-            SchemaCE.field "boxes" (fun (value: Shipment) -> value.Boxes) {
+            field "boxes" (fun (value: Shipment) -> value.Boxes) {
                 withSchema (Schema.int |> Schema.withDefault 1)
                 constrain (atLeast 1)
             }
-            SchemaCE.construct (fun reference notifyEmail items tags weightKg priority delivery origin boxes ->
+            construct (fun reference notifyEmail items tags weightKg priority delivery origin boxes ->
                 { Reference = reference
                   NotifyEmail = notifyEmail
                   Items = items
@@ -155,11 +154,11 @@ module Shipment =
         |> Schema.describe "A shipment with delivery method, priority, and weight."
 
     /// Checks a draft built with an ordinary record literal.
-    let validate (draft: Shipment) : Result<Shipment, Diagnostics<SchemaError>> =
+    let validate (draft: Shipment) : Result<Shipment, SchemaErrors> =
         Schema.check schema draft
 
     /// Parses structured boundary data through the schema.
-    let parse (input: Data) : Result<Shipment, Diagnostics<SchemaError>> =
+    let parse (input: Data) : Result<Shipment, SchemaErrors> =
         Schema.parse schema input
 
     /// Builds the versioned wire contract; supply each n-1 -> n migration and the version-detection source.

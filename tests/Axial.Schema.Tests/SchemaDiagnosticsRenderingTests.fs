@@ -5,7 +5,6 @@ open Axial
 open Axial.ErrorHandling
 
 open Axial.Schema
-open Axial.Validation
 open Swensen.Unquote
 open Xunit
 open Axial.Schema.Syntax
@@ -31,12 +30,10 @@ module SchemaDiagnosticsRenderingTests =
 
         let text =
             match parsed.Result with
-            | Error diagnostics -> Diagnostics.toString diagnostics
+            | Error diagnostics -> SchemaErrors.toString diagnostics
             | Ok _ -> failwith "Expected a failed parse."
 
-        test <@ text.Contains("email:") @>
-        test <@ text.Contains($"- {string SchemaError.Required}") @>
-        test <@ text.Contains("Errors:") |> not @>
+        test <@ text = "email: This value is required." @>
 
     [<Fact>]
     let ``toString renders sibling field paths for every failing field`` () =
@@ -50,14 +47,11 @@ module SchemaDiagnosticsRenderingTests =
 
         let text =
             match parsed.Result with
-            | Error diagnostics -> Diagnostics.toString diagnostics
+            | Error diagnostics -> SchemaErrors.toString diagnostics
             | Ok _ -> failwith "Expected a failed parse."
 
-        test <@ text.Contains("email:") @>
-        test <@ text.Contains("age:") @>
-        let invalidAge = string (SchemaError.InvalidFormat "int")
-        test <@ text.Contains($"- {string SchemaError.Required}") @>
-        test <@ text.Contains($"- {invalidAge}") @>
+        test <@ text.Contains("email: This value is required.") @>
+        test <@ text.Contains("age: Expected int format.") @>
 
     [<Fact>]
     let ``toString renders a root path error without a nested branch when input is not an object`` () =
@@ -66,12 +60,10 @@ module SchemaDiagnosticsRenderingTests =
 
         let text =
             match parsed.Result with
-            | Error diagnostics -> Diagnostics.toString diagnostics
+            | Error diagnostics -> SchemaErrors.toString diagnostics
             | Ok _ -> failwith "Expected a failed parse."
 
-        let expectedObject = string SchemaError.ExpectedObject
-        test <@ text.Contains($"- {expectedObject}") @>
-        test <@ text.Contains(":") |> not @>
+        test <@ text = "Expected an object." @>
 
     [<Fact>]
     let ``flatten preserves one diagnostic per failing field with its own path`` () =
@@ -85,12 +77,12 @@ module SchemaDiagnosticsRenderingTests =
 
         let flattened =
             match parsed.Result with
-            | Error diagnostics -> Diagnostics.flatten diagnostics
+            | Error diagnostics -> SchemaErrors.toList diagnostics
             | Ok _ -> failwith "Expected a failed parse."
 
         let expected =
-            [ { Path = [ PathSegment.Name "age" ]; Error = SchemaError.InvalidFormat "int" }
-              { Path = [ PathSegment.Name "email" ]; Error = SchemaError.Required } ]
+            [ { Path = Path.key "age"; Error = SchemaError.InvalidFormat "int" }
+              { Path = Path.key "email"; Error = SchemaError.Required } ]
 
         test <@ flattened = expected @>
         test <@ parsed.Errors = expected @>
@@ -102,10 +94,10 @@ module SchemaDiagnosticsRenderingTests =
 
         let flattened =
             match parsed.Result with
-            | Error diagnostics -> Diagnostics.flatten diagnostics
+            | Error diagnostics -> SchemaErrors.toList diagnostics
             | Ok _ -> failwith "Expected a failed parse."
 
-        test <@ flattened = [ { Path = []; Error = SchemaError.ExpectedObject } ] @>
+        test <@ flattened = [ { Path = Path.root; Error = SchemaError.ExpectedObject } ] @>
 
     [<Fact>]
     let ``flatten and toString agree on which fields failed`` () =
@@ -119,17 +111,11 @@ module SchemaDiagnosticsRenderingTests =
 
         match parsed.Result with
         | Error diagnostics ->
-            let flattened = Diagnostics.flatten diagnostics
-            let text = Diagnostics.toString diagnostics
+            let flattened = SchemaErrors.toList diagnostics
+            let text = SchemaErrors.toString diagnostics
 
             let flattenedFieldNames =
-                flattened
-                |> List.collect (fun diagnostic -> diagnostic.Path)
-                |> List.choose (function
-                    | PathSegment.Name name -> Some name
-                    | _ -> None)
-                |> List.distinct
-                |> List.sort
+                flattened |> List.map (fun issue -> Path.format issue.Path) |> List.distinct |> List.sort
 
             test <@ flattenedFieldNames = [ "age"; "email" ] @>
             test <@ text.Contains("email:") @>

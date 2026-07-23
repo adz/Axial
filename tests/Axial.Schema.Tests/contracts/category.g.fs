@@ -5,7 +5,6 @@
 namespace Axial.Tests.Generated
 
 open Axial
-open Axial.Validation
 open Axial.Schema
 
 /// A recursive category tree used to prove self-references in generated schemas.
@@ -27,23 +26,23 @@ module Category =
     /// The schema declared by category.contract (Category.v1).
     let rec schema : Schema<Category> =
         SchemaCE.schema<Category> {
-            SchemaCE.field "name" (fun (value: Category) -> value.Name) {
+            field "name" (fun (value: Category) -> value.Name) {
                 withSchema (Schema.text |> Schema.describe "Stable display name.")
                 constrain (minLength 1)
             }
-            SchemaCE.field "children" (fun (value: Category) -> value.Children) {
+            field "children" (fun (value: Category) -> value.Children) {
                 withSchema (Schema.listWith (Schema.defer (fun () -> schema)) |> Schema.describe "Child categories use the same wire contract.")
             }
-            SchemaCE.construct (fun name children ->
+            construct (fun name children ->
                 { Name = name
                   Children = children })
         }
         |> Schema.describe "A recursive category tree used to prove self-references in generated schemas."
 
     /// Checks a draft built with an ordinary record literal.
-    let validate (draft: Category) : Result<Category, Diagnostics<SchemaError>> =
+    let validate (draft: Category) : Result<Category, SchemaErrors> =
         Schema.check schema draft
 
     /// Parses structured boundary data through the schema.
-    let parse (input: Data) : Result<Category, Diagnostics<SchemaError>> =
+    let parse (input: Data) : Result<Category, SchemaErrors> =
         Schema.parse schema input

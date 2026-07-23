@@ -188,8 +188,8 @@ module SchemaWideShapeTests =
         match Schema.parse contactSchema input with
         | Ok contact -> failwithf "Expected a minLength diagnostic, parsed %A" contact
         | Error errors ->
-            let flattened = Diagnostics.flatten errors
-            test <@ flattened |> List.exists (fun diagnostic -> diagnostic.Path = [ PathSegment.Name "name" ]) @>
+            let flattened = SchemaErrors.toList errors
+            test <@ flattened |> List.exists (fun diagnostic -> diagnostic.Path = TestPath.fromLegacy [ PathSegment.Name "name" ]) @>
 
     [<Fact>]
     let ``the named field form still works under open type`` () =

@@ -58,6 +58,18 @@ module Path =
             | KeyComponent key -> $"{text}.{key}"
             | IndexComponent index -> $"{text}[{index}]") ""
 
+    /// <summary>Folds over string keys and integer indexes without exposing a path-segment type.</summary>
+    let fold keyFolder indexFolder state (path: Path) =
+        if isNull (box keyFolder) then nullArg (nameof keyFolder)
+        if isNull (box indexFolder) then nullArg (nameof indexFolder)
+        if isNull path then nullArg (nameof path)
+
+        path.Components
+        |> List.fold (fun current part ->
+            match part with
+            | KeyComponent key -> keyFolder current key
+            | IndexComponent index -> indexFolder current index) state
+
 /// <summary>One schema failure and its complete structural location.</summary>
 type SchemaIssue =
     {

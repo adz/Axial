@@ -25,14 +25,13 @@ open Axial.Schema.Json
 open Axial.Flow.PlatformService
 open Axial.Flow.Hosting
 open Axial.Flow.Telemetry
-open Axial.Validation
 open Axial.ReferenceApp
 
 let private renderError = function
-    | AppError.InvalidInput diagnostics ->
-        diagnostics
-        |> Diagnostics.flatten
-        |> List.map (fun item -> $"{item.Path}: {SchemaError.render item.Error}")
+    | AppError.InvalidInput errors ->
+        errors
+        |> SchemaErrors.toList
+        |> List.map (fun issue -> $"{Path.format issue.Path}: {SchemaError.render issue.Error}")
         |> String.concat "; "
     | AppError.InvalidValue error -> RefinementError.describe error
     | AppError.ProductionRejected error -> ProductionAdmissionError.describe error
@@ -134,7 +133,7 @@ li { margin: .75rem 0; } code { background: #eee; padding: .15rem .3rem; }
 
         required + maxLength
 
-    let renderNewWorkspace (parsed: RetainedParseResult<NameInput, SchemaError> option) =
+    let renderNewWorkspace (parsed: RetainedParseResult<NameInput> option) =
         let input = parsed |> Option.map _.Input |> Option.defaultValue (Data.Object [])
         let description = Inspect.model Contracts.nameInput
 

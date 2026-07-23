@@ -294,7 +294,6 @@ module Emitter =
         line $"namespace {namespaceName}"
         line ""
         line "open Axial"
-        line "open Axial.Validation"
         line "open Axial.Schema"
 
         for contract in file.Contracts do
@@ -483,11 +482,11 @@ module Emitter =
 
             line ""
             line "    /// Checks a draft built with an ordinary record literal."
-            line $"    let validate (draft: {contractTypeName}) : Result<{contractTypeName}, Diagnostics<SchemaError>> ="
+            line $"    let validate (draft: {contractTypeName}) : Result<{contractTypeName}, SchemaErrors> ="
             line "        Schema.check schema draft"
             line ""
             line "    /// Parses structured boundary data through the schema."
-            line $"    let parse (input: Data) : Result<{contractTypeName}, Diagnostics<SchemaError>> ="
+            line $"    let parse (input: Data) : Result<{contractTypeName}, SchemaErrors> ="
             line "        Schema.parse schema input"
 
             // The latest version of a multi-version chain gets the Contract wiring. Migrations stay

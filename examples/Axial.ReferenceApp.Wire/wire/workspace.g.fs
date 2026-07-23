@@ -5,7 +5,6 @@
 namespace Axial.ReferenceApp.Wire
 
 open Axial
-open Axial.Validation
 open Axial.Schema
 
 /// Schema and boundary functions for WorkspaceCardV1 (workspace.fs, WorkspaceCard.v1).
@@ -31,11 +30,11 @@ module WorkspaceCardV1 =
         |> Schema.describe "A workspace card as first exported: one owner string of the form \"Name <email>\"."
 
     /// Checks a draft built with an ordinary record literal.
-    let validate (draft: WorkspaceCardV1) : Result<WorkspaceCardV1, Diagnostics<SchemaError>> =
+    let validate (draft: WorkspaceCardV1) : Result<WorkspaceCardV1, SchemaErrors> =
         Schema.check schema draft
 
     /// Parses structured boundary data through the schema.
-    let parse (input: Data) : Result<WorkspaceCardV1, Diagnostics<SchemaError>> =
+    let parse (input: Data) : Result<WorkspaceCardV1, SchemaErrors> =
         Schema.parse schema input
 
 /// Schema and boundary functions for WorkspaceCard (workspace.fs, WorkspaceCard.v2).
@@ -73,11 +72,11 @@ module WorkspaceCard =
         |> Schema.describe "A workspace card with a dedicated owner email, visibility, and member emails."
 
     /// Checks a draft built with an ordinary record literal.
-    let validate (draft: WorkspaceCard) : Result<WorkspaceCard, Diagnostics<SchemaError>> =
+    let validate (draft: WorkspaceCard) : Result<WorkspaceCard, SchemaErrors> =
         Schema.check schema draft
 
     /// Parses structured boundary data through the schema.
-    let parse (input: Data) : Result<WorkspaceCard, Diagnostics<SchemaError>> =
+    let parse (input: Data) : Result<WorkspaceCard, SchemaErrors> =
         Schema.parse schema input
 
     /// Builds the versioned wire contract; supply each n-1 -> n migration and the version-detection source.

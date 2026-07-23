@@ -44,7 +44,7 @@ module MapSchemaParseTests =
         let parsed = Schema.parseRetainingInput thresholdsSchema raw
 
         test <@ not parsed.IsValid @>
-        test <@ parsed.Errors = [ { Path = [ PathSegment.Name "values" ]; Error = SchemaError.ExpectedObject } ] @>
+        test <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "values" ]; Error = SchemaError.ExpectedObject } ] @>
 
     [<Fact>]
     let ``parse reports expected object when the map field structured data is a collection`` () =
@@ -53,7 +53,7 @@ module MapSchemaParseTests =
         let parsed = Schema.parseRetainingInput thresholdsSchema raw
 
         test <@ not parsed.IsValid @>
-        test <@ parsed.Errors = [ { Path = [ PathSegment.Name "values" ]; Error = SchemaError.ExpectedObject } ] @>
+        test <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "values" ]; Error = SchemaError.ExpectedObject } ] @>
 
     [<Fact>]
     let ``parse reports entry failures at the entry's key path`` () =
@@ -64,4 +64,8 @@ module MapSchemaParseTests =
         let parsed = Schema.parseRetainingInput thresholdsSchema raw
 
         test <@ not parsed.IsValid @>
-        test <@ parsed.Errors |> List.map (fun d -> d.Path) = [ [ PathSegment.Name "values"; PathSegment.Key "low" ] ] @>
+        test
+            <@
+                parsed.Errors |> List.map (fun issue -> issue.Path) =
+                    [ TestPath.fromLegacy [ PathSegment.Name "values"; PathSegment.Key "low" ] ]
+            @>

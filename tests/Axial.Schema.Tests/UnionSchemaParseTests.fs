@@ -81,7 +81,7 @@ module UnionSchemaParseTests =
         let parsed = Schema.parseRetainingInput (checkoutSchema ()) raw
 
         test
-            <@ parsed.Errors = [ { Path = [ PathSegment.Name "payment"; PathSegment.Name "type" ]
+            <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "payment"; PathSegment.Name "type" ]
                                    Error = SchemaError.NotOneOf "card|invoice" } ] @>
 
     [<Fact>]
@@ -98,7 +98,7 @@ module UnionSchemaParseTests =
         let parsed = Schema.parseRetainingInput (checkoutSchema ()) raw
 
         test
-            <@ parsed.Errors = [ { Path = [ PathSegment.Name "payment"; PathSegment.Name "value"; PathSegment.Name "number" ]
+            <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "payment"; PathSegment.Name "value"; PathSegment.Name "number" ]
                                    Error = SchemaError.Required } ] @>
 
     [<Fact>]

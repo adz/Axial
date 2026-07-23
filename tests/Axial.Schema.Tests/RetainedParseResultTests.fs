@@ -1,24 +1,27 @@
 namespace Axial.Tests
 
 open Axial
-
-open Axial.ErrorHandling
-
-open Axial.Validation
 open Axial.Schema
+open Axial.Schema.Syntax
 open Swensen.Unquote
 open Xunit
 
 module RetainedParseResultTests =
     type private Signup = { Email: string }
 
-    [<Fact>]
-    let ``parsed input retains structured data with successful model result`` () =
-        let raw =
-            Data.objectOfMap (Map.ofList [ "email", Data.Text "ada@example.com" ])
+    let private schema () =
+        schema<Signup> {
+            field "email" _.Email {
+                withSchema (Schema.text |> Schema.constrain Constraint.required)
+            }
 
-        let parsed: RetainedParseResult<Signup, string> =
-            RetainedParseResult.create raw (Ok { Email = "ada@example.com" })
+            construct (fun email -> { Email = email })
+        }
+
+    [<Fact>]
+    let ``retained parse exposes its input and successful value`` () =
+        let raw = Data.objectOfMap (Map.ofList [ "email", Data.Text "ada@example.com" ])
+        let parsed = Schema.parseRetainingInput (schema ()) raw
 
         test <@ parsed.Input = raw @>
         test <@ parsed.Result = Ok { Email = "ada@example.com" } @>
@@ -26,83 +29,26 @@ module RetainedParseResultTests =
         test <@ parsed.Value = { Email = "ada@example.com" } @>
         test <@ parsed.TryValue = Some { Email = "ada@example.com" } @>
         test <@ parsed.Errors = [] @>
-        test <@ parsed.ErrorsFor "email" = [] @>
 
     [<Fact>]
-    let ``parsed input retains structured data with path aware diagnostics`` () =
-        let raw =
-            Data.objectOfMap (Map.ofList [ "email", Data.Text "" ])
-
-        let diagnostics =
-            Validation.fail (Diagnostics.singleton "Required")
-            |> Validation.name "email"
-            |> Validation.toResult
-            |> function
-                | Error diagnostics -> diagnostics
-                | Ok _ -> failwith "Expected diagnostics."
-
-        let parsed: RetainedParseResult<Signup, string> =
-            {
-                Input = raw
-                Result = Error diagnostics
-            }
+    let ``retained parse exposes schema issues and errors at a path`` () =
+        let raw = Data.objectOfMap (Map.ofList [ "email", Data.Text "" ])
+        let parsed = Schema.parseRetainingInput (schema ()) raw
+        let emailPath = Path.key "email"
 
         test <@ parsed.Input = raw @>
-        test <@ parsed.Result = Error diagnostics @>
-        test <@ Diagnostics.flatten diagnostics = [ { Path = [ PathSegment.Name "email" ]; Error = "Required" } ] @>
         test <@ not parsed.IsValid @>
         test <@ parsed.TryValue = None @>
         raises<System.InvalidOperationException> <@ parsed.Value |> ignore @>
-
-        let expectedErrors =
-            [ { Path = [ PathSegment.Name "email" ]; Error = "Required" } ]
-
-        test <@ parsed.Errors = expectedErrors @>
-        test <@ parsed.ErrorsFor [ PathSegment.Name "email" ] = [ "Required" ] @>
-        test <@ parsed.ErrorsFor "email" = [ "Required" ] @>
+        test <@ parsed.Errors = [ { Path = emailPath; Error = SchemaError.Required } ] @>
+        test <@ parsed.ErrorsFor emailPath = [ SchemaError.Required ] @>
+        test <@ parsed.ErrorsFor "email" = [ SchemaError.Required ] @>
         test <@ parsed.ErrorsFor "name" = [] @>
 
-    type private SignupError =
-        | MissingField of string
-
     [<Fact>]
-    let ``mapErrors translates a failed parse's errors while preserving input and paths`` () =
-        let raw =
+    let ``retained parse renders schema errors with paths`` () =
+        let parsed =
             Data.objectOfMap (Map.ofList [ "email", Data.Text "" ])
+            |> Schema.parseRetainingInput (schema ())
 
-        let diagnostics =
-            Validation.fail (Diagnostics.singleton "Required")
-            |> Validation.name "email"
-            |> Validation.toResult
-            |> function
-                | Error diagnostics -> diagnostics
-                | Ok _ -> failwith "Expected diagnostics."
-
-        let parsed: RetainedParseResult<Signup, string> = { Input = raw; Result = Error diagnostics }
-
-        let domainParsed = parsed |> RetainedParseResult.mapErrors MissingField
-
-        test <@ domainParsed.Input = raw @>
-        test <@ not domainParsed.IsValid @>
-
-        let expectedErrors =
-            [ { Path = [ PathSegment.Name "email" ]; Error = MissingField "Required" } ]
-
-        test <@ domainParsed.Errors = expectedErrors @>
-
-    [<Fact>]
-    let ``mapErrors leaves a successful parse's model unchanged`` () =
-        let raw =
-            Data.objectOfMap (Map.ofList [ "email", Data.Text "ada@example.com" ])
-
-        let parsed: RetainedParseResult<Signup, string> =
-            {
-                Input = raw
-                Result = Ok { Email = "ada@example.com" }
-            }
-
-        let domainParsed = parsed |> RetainedParseResult.mapErrors MissingField
-
-        test <@ domainParsed.IsValid @>
-        test <@ domainParsed.Value = { Email = "ada@example.com" } @>
-        test <@ domainParsed.Errors = [] @>
+        test <@ RetainedParseResult.renderErrors parsed = [ "email: This value is required." ] @>

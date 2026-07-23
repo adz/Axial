@@ -158,7 +158,7 @@ module FormPage =
         | _ -> "text"
 
     /// Renders one flat form from the schema description, redisplaying structured data and attaching errors by path.
-    let render (parsed: RetainedParseResult<Signup, SchemaError> option) =
+    let render (parsed: RetainedParseResult<Signup> option) =
         let input =
             parsed |> Option.map _.Input |> Option.defaultValue (Data.Object [])
 

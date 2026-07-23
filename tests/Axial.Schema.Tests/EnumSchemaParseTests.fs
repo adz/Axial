@@ -42,7 +42,7 @@ module EnumSchemaParseTests =
         let parsed = Schema.parseRetainingInput (swatchSchema ()) raw
 
         test
-            <@ parsed.Errors = [ { Path = [ PathSegment.Name "color" ]
+            <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "color" ]
                                    Error = SchemaError.NotOneOf "red|green|blue" } ] @>
 
     [<Fact>]

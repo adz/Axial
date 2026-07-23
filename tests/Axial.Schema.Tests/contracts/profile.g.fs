@@ -5,7 +5,6 @@
 namespace Axial.Tests.Generated
 
 open Axial
-open Axial.Validation
 open Axial.Schema
 
 /// A user profile as first stored.
@@ -24,26 +23,26 @@ module ProfileV1 =
 
     /// The schema declared by profile.contract (Profile.v1).
     let schema : Schema<ProfileV1> =
-        SchemaCE.schema<ProfileV1> {
-            SchemaCE.field "name" (fun (value: ProfileV1) -> value.Name) {
+        schema<ProfileV1> {
+            field "name" (fun (value: ProfileV1) -> value.Name) {
                 constrain (minLength 1)
                 constrain (maxLength 100)
             }
-            SchemaCE.field "email" (fun (value: ProfileV1) -> value.Email) {
+            field "email" (fun (value: ProfileV1) -> value.Email) {
                 constrain emailFormat
             }
-            SchemaCE.construct (fun name email ->
+            construct (fun name email ->
                 { Name = name
                   Email = email })
         }
         |> Schema.describe "A user profile as first stored."
 
     /// Checks a draft built with an ordinary record literal.
-    let validate (draft: ProfileV1) : Result<ProfileV1, Diagnostics<SchemaError>> =
+    let validate (draft: ProfileV1) : Result<ProfileV1, SchemaErrors> =
         Schema.check schema draft
 
     /// Parses structured boundary data through the schema.
-    let parse (input: Data) : Result<ProfileV1, Diagnostics<SchemaError>> =
+    let parse (input: Data) : Result<ProfileV1, SchemaErrors> =
         Schema.parse schema input
 
 /// A user profile with an explicit marketing consent decision.
@@ -63,18 +62,18 @@ module Profile =
 
     /// The schema declared by profile.contract (Profile.v2).
     let schema : Schema<Profile> =
-        SchemaCE.schema<Profile> {
-            SchemaCE.field "name" (fun (value: Profile) -> value.Name) {
+        schema<Profile> {
+            field "name" (fun (value: Profile) -> value.Name) {
                 constrain (minLength 1)
                 constrain (maxLength 100)
             }
-            SchemaCE.field "email" (fun (value: Profile) -> value.Email) {
+            field "email" (fun (value: Profile) -> value.Email) {
                 constrain emailFormat
             }
-            SchemaCE.field "marketing_opt_in" (fun (value: Profile) -> value.MarketingOptIn) {
+            field "marketing_opt_in" (fun (value: Profile) -> value.MarketingOptIn) {
                 withSchema (Schema.bool |> Schema.withDefault false)
             }
-            SchemaCE.construct (fun name email marketingOptIn ->
+            construct (fun name email marketingOptIn ->
                 { Name = name
                   Email = email
                   MarketingOptIn = marketingOptIn })
@@ -82,11 +81,11 @@ module Profile =
         |> Schema.describe "A user profile with an explicit marketing consent decision."
 
     /// Checks a draft built with an ordinary record literal.
-    let validate (draft: Profile) : Result<Profile, Diagnostics<SchemaError>> =
+    let validate (draft: Profile) : Result<Profile, SchemaErrors> =
         Schema.check schema draft
 
     /// Parses structured boundary data through the schema.
-    let parse (input: Data) : Result<Profile, Diagnostics<SchemaError>> =
+    let parse (input: Data) : Result<Profile, SchemaErrors> =
         Schema.parse schema input
 
     /// Builds the versioned wire contract; supply each n-1 -> n migration and the version-detection source.

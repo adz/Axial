@@ -63,11 +63,11 @@ module GeneratedContractTests =
         | Error diagnostics ->
             let paths =
                 diagnostics
-                |> Diagnostics.flatten
+                |> SchemaErrors.toList
                 |> List.map _.Path
 
-            test <@ paths |> List.contains [ PathSegment.Name "email" ] @>
-            test <@ paths |> List.contains [ PathSegment.Name "age" ] @>
+            test <@ paths |> List.contains (Path.key "email") @>
+            test <@ paths |> List.contains (Path.key "age") @>
 
     [<Fact>]
     let ``validate checks nested optional payloads at nested paths`` () =
@@ -76,8 +76,8 @@ module GeneratedContractTests =
             | Ok _ -> failwith "Expected latitude out of range."
             | Error diagnostics -> diagnostics
 
-        let paths = badGeo |> Diagnostics.flatten |> List.map _.Path
-        test <@ paths = [ [ PathSegment.Name "lat" ] ] @>
+        let paths = badGeo |> SchemaErrors.toList |> List.map _.Path
+        test <@ paths = [ Path.key "lat" ] @>
 
         let withLocation =
             Signup.validate
@@ -104,8 +104,8 @@ module GeneratedContractTests =
         match withBadLocation with
         | Ok _ -> failwith "Expected the nested latitude to fail."
         | Error diagnostics ->
-            let paths = diagnostics |> Diagnostics.flatten |> List.map _.Path
-            test <@ paths = [ [ PathSegment.Name "location"; PathSegment.Name "lat" ] ] @>
+            let paths = diagnostics |> SchemaErrors.toList |> List.map _.Path
+            test <@ paths = [ TestPath.fromLegacy [ PathSegment.Name "location"; PathSegment.Name "lat" ] ] @>
 
     [<Fact>]
     let ``parse accepts wire names and enum tags`` () =
@@ -262,10 +262,10 @@ module GeneratedContractTests =
         match Shipment.validate draft with
         | Ok _ -> failwith "Expected constraint failures."
         | Error diagnostics ->
-            let paths = diagnostics |> Diagnostics.flatten |> List.map _.Path
+            let paths = diagnostics |> SchemaErrors.toList |> List.map _.Path
 
             for expected in [ "reference"; "notify_email"; "tags"; "weightKg"; "boxes" ] do
-                test <@ paths |> List.contains [ PathSegment.Name expected ] @>
+                test <@ paths |> List.contains (Path.key expected) @>
 
     [<Fact>]
     let ``record-derived version chains migrate through the generated contract builder`` () =

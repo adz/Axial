@@ -5,7 +5,6 @@ open Axial
 open System.Text.Json
 open Xunit
 open Swensen.Unquote
-open Axial.Validation
 open Axial.Schema
 open Axial.Schema.Http
 open Axial.Schema.Http.Tests.Fixtures
@@ -14,15 +13,16 @@ open Axial.Schema.Syntax
 [<Fact>]
 let ``json pointers render names, keys, and indexes`` () =
     let path =
-        [ PathSegment.Name "address"
-          PathSegment.Key "some/key~x"
-          PathSegment.Index 2 ]
+        Path.root
+        |> fun path -> Path.append path (Path.key "address")
+        |> fun path -> Path.append path (Path.key "some/key~x")
+        |> fun path -> Path.append path (Path.index 2)
 
     test <@ JsonPointer.ofPath path = "/address/some~1key~0x/2" @>
 
 [<Fact>]
 let ``the empty path renders as the whole-document pointer`` () =
-    test <@ JsonPointer.ofPath [] = "" @>
+    test <@ JsonPointer.ofPath Path.root = "" @>
 
 [<Fact>]
 let ``form pairs nest through dotted names and group repeats`` () =

@@ -12,11 +12,10 @@ open Axial.Flow.PlatformService
 open Axial.Schema
 open Axial.Schema.Json
 open Axial.Refined
-open Axial.Validation
 
 [<RequireQualifiedAccess>]
 type AppError =
-    | InvalidInput of Diagnostics<SchemaError>
+    | InvalidInput of SchemaErrors
     | InvalidValue of RefinementError
     | InvalidContract of ContractError
     | ProductionRejected of ProductionAdmissionError
