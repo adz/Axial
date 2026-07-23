@@ -20,15 +20,16 @@ When the same scalar catalog value is used as a schema field, use the schema int
 open Axial.Schema
 
 let productSchema =
-    Schema.define<Product>
-    |> fieldWith RefinedSchemas.nonBlankString "name" _.Name
-    |> fieldWith RefinedSchemas.slug "slug" _.Slug
-    |> fieldWith RefinedSchemas.positiveInt "quantity" _.Quantity
-    |> construct (fun name slug quantity ->
-        { Name = name; Slug = slug; Quantity = quantity })
+    schema<Product> {
+        field "name" _.Name
+        field "slug" _.Slug
+        field "quantity" _.Quantity
+        construct (fun name slug quantity ->
+            { Name = name; Slug = slug; Quantity = quantity })
+    }
 ```
 
-The schema catalog lives outside `Axial.Refined` so the refined-value package stays usable without any schema dependency.
+The canonical schemas live outside `Axial.Refined` so the refined-value package stays usable without any schema dependency.
 Collection schema helpers such as `RefinedSchemas.nonEmptyList RefinedSchemas.slug` and
 `RefinedSchemas.distinctList Schema.text` take an item value schema, so item parsing and item diagnostics stay explicit.
 Temporal range helpers such as `RefinedSchemas.dateTimeOffsetRange` are complete model schemas with `start` and `end`

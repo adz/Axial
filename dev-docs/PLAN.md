@@ -80,29 +80,30 @@ field path when that gives better boundary feedback.
 
 Schema work should prove the portable metadata model before growing broad interpreters. The metadata slice — field
 ordering, primitive value schemas, schema constraints as inspectable metadata, lowering those constraints to `Check`,
-and constructor/getter alignment — is proven. Constructor-last object shapes are the sole public authoring surface:
+and constructor/getter alignment — is proven. Constructor-last computation expressions are the sole public record
+authoring surface:
 
 ```fsharp
-Schema.define<Customer>
-|> field "id" _.Id
-|> field "name" _.Name
-|> construct ctor
+schema<Customer> {
+    field "id" _.Id
+    field "name" _.Name
+    construct ctor
+}
 ```
 
-`Schema.define<'model>` anchors the model type before the first field. `field` infers common primitive, option, and list
-schemas; `fieldWith` accepts an explicit value schema. The shape's phantom type records field types and lets
-`construct` or `constructResult` match the closing constructor by arity and position. Constraints remain beside the
-current field through the typed `constrain` operation.
+`schema<'model>` anchors the model type. `field` resolves canonical schemas; optional field blocks apply `withSchema`,
+`constrain`, type-directed `refine`, and executable `validate`. The typed field chain lets `construct` or
+`constructResult` match the closing constructor by arity and position.
 Build-time generation exists as wire-tier tooling: `[<DeriveSchema>]`-marked records are the
 primary declaration (FCS syntax-only frontend in `src/Axial.Schema.Contracts`, run by `scripts/schemagen` or the
 `Axial.Schema.Contracts.Build` MSBuild package), with `.contract` files as the parked secondary form. Generated contracts
 remain wire-tier records; domain models stay hand-written F# rather than becoming a second generated authoring surface.
 
-The public schema-authoring vocabulary keeps inferred `field`, explicit `fieldWith`, and typed `constrain` operations.
+The public schema-authoring vocabulary keeps `field` plus the field-block operations.
 `Schema.text`, `Schema.int`, `Schema.decimal`, `Schema.bool`,
 `Schema.date`, `Schema.dateTime`, and `Schema.guid` are the primitive `Schema<'value>` values, and composites
 (`Schema.list<'item>()`, `Schema.option`, `Schema.map<'item>()`, `Schema.union`, `Schema.inlineUnion`, `Schema.enum`, `Schema.defer`)
-and refined/domain schemas fill `fieldWith`'s schema slot. Do not introduce competing primitive aliases such as `string`, `integer`,
+and refined/domain schemas fill `withSchema` inside a field block. Do not introduce competing primitive aliases such as `string`, `integer`,
 `boolean`, `uuid`, `dateOnly`, or `Field.text`; the `Value` module is internal implementation, not public vocabulary.
 
 Collection members are type-directed. `field` recursively resolves list item schemas, while standalone lists and

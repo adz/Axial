@@ -1,7 +1,7 @@
 ---
 title: "Schema.Derive.DeriveUnionAttribute"
 linkTitle: "DeriveUnionAttribute"
-weight: 1402
+weight: 1502
 ---
 
 Marks a discriminated union as an internally tagged union in the derived schema. Every case

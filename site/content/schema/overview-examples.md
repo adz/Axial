@@ -1,89 +1,102 @@
 ---
 weight: 3
 title: Schema Overview Examples
-description: Short examples of constructor-last schemas, refined values, recursion, and interpretation.
+description: Short examples of fields, checked construction, refinement, recursion, and interpretation.
 type: docs
 ---
 
 
-Open the constructor-last syntax in the module that owns schema declarations:
+```fsharp
+open Axial
+open Axial.Schema
+open type Axial.Schema.Syntax
+```
+
+## Canonical fields
 
 ```fsharp
-open Axial.Schema
-open Axial.Schema.Syntax
-
 type Address =
     { City: string }
 
     static member Schema(_: Address) : Schema<Address> =
-        Schema.define<Address>
-        |> field "city" _.City
-        |> constrain (minLength 1)
-        |> construct (fun city -> { City = city })
+        schema<Address> {
+            field "city" _.City {
+                constrain (Constraint.minLength 1)
+            }
+            construct (fun city -> { City = city })
+        }
 ```
 
-`field` infers built-in schemas and canonical schemas declared by owned types, recursively through
-option, list, and string-keyed map schemas. Use `fieldWith` when supplying an explicit value schema for that field:
+Canonical schemas resolve through nested records, options, lists, and string-keyed maps:
 
 ```fsharp
-type Customer =
-    { Id: System.Guid
-      Address: Address
-      Labels: Map<string, string>
-      Note: string option }
-
 let customerSchema =
-    Schema.define<Customer>
-    |> field "id" _.Id
-    |> field "address" _.Address
-    |> field "labels" _.Labels
-    |> field "note" _.Note
-    |> construct (fun id address labels note ->
-        { Id = id; Address = address; Labels = labels; Note = note })
+    schema<Customer> {
+        field "id" _.Id
+        field "address" _.Address
+        field "labels" _.Labels
+        field "note" _.Note
+        construct Customer.create
+    }
 ```
 
-Use `constructResult` for an invariant that needs several already-parsed fields:
+## Checked construction
 
 ```fsharp
-type DateRange = { Start: System.DateOnly; End: System.DateOnly }
-
 let rangeSchema =
-    Schema.define<DateRange>
-    |> field "start" _.Start
-    |> field "end" _.End
-    |> constructResult (fun start finish ->
-        if start <= finish then Ok { Start = start; End = finish }
-        else Error "Start must not follow end.")
+    schema<DateRange> {
+        field "start" _.Start
+        field "end" _.End
+        constructResult DateRange.create
+    }
 ```
 
-Refined and union schemas are ordinary `Schema<'value>` values and therefore compose through `fieldWith`:
+The constructor runs only after both fields succeed.
+
+## Refined fields
+
+Built-in refined values have canonical schemas, so the field remains plain:
 
 ```fsharp
-type Account = { Name: Axial.Refined.NonBlankString }
-
 let accountSchema =
-    Schema.define<Account>
-    |> fieldWith RefinedSchemas.nonBlankString "name" _.Name
-    |> construct (fun name -> { Name = name })
+    schema<Account> {
+        field "name" _.Name
+        construct (fun name -> { Name = name })
+    }
 ```
 
-Recursive models defer only the recursive value lookup:
+A local raw schema can instead transition to the getter type:
 
 ```fsharp
-type Category = { Name: string; Children: Category list }
-
-let rec categorySchema () =
-    Schema.define<Category>
-    |> field "name" _.Name
-    |> fieldWith (Schema.listWith (Schema.defer categorySchema)) "children" _.Children
-    |> construct (fun name children -> { Name = name; Children = children })
+field "email" _.Email {
+    withSchema Schema.text
+    constrain Constraint.required
+    refine
+}
 ```
 
-The completed `Schema<'model>` drives parsing, checking, inspection, JSON Schema, codecs, and test generation:
+## Recursion
+
+```fsharp
+let rec schema : Lazy<Schema<Category>> =
+    lazy (
+        SchemaCE.schema<Category> {
+            field "name" _.Name
+            field "children" _.Children {
+                withSchema (Schema.listWith (Schema.defer schema))
+            }
+            construct Category.create
+        })
+```
+
+The qualification is required only because the recursive binding is also named `schema`.
+
+## Interpreters
 
 ```fsharp
 let parsed = Schema.parse customerSchema dataInput
 let checked = Schema.check customerSchema customer
 let description = Inspect.model customerSchema
 let jsonSchema = JsonSchema.generate customerSchema
+let codec = Json.compile customerSchema
 ```

@@ -1,7 +1,7 @@
 ---
 title: "Schema.Derive.DeriveSchemaAttribute"
 linkTitle: "DeriveSchemaAttribute"
-weight: 1400
+weight: 1500
 type: docs
 ---
 

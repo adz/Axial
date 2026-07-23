@@ -18,7 +18,7 @@ Runs the handler with the trusted model, or short-circuits to the problem-detail
 | --- | --- | --- |
 | `request` | <code><a href="https://learn.microsoft.com/dotnet/api/genhttp.api.protocol.irequest">IRequest</a></code> |  |
 | `handler` | <code><span>'model&#32;->&#32;<span><a href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.valuetask-1">ValueTask</a>&lt;<a href="https://learn.microsoft.com/dotnet/api/genhttp.api.protocol.iresponse">IResponse</a>&gt;</span></span></code> |  |
-| `parsed` | <code><span><a href="../../interpreters/t-schema-retainedparseresult.md">RetainedParseResult</a>&lt;<span>'model,&#32;<a href="../../interpreters/t-schema-schemaerror.md">SchemaError</a></span>&gt;</span></code> |  |
+| `parsed` | <code><span><a href="../../interpreters/t-schema-retainedparseresult.md">RetainedParseResult</a>&lt;'model&gt;</span></code> |  |
 
 ## Returns
 

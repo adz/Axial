@@ -107,8 +107,8 @@ match Contract.parse configContract raw with
 | Error (ContractError.Migration failure) -> eprintfn $"migration failed: %A{failure}"
 ```
 
-`ContractError.ParseFailed` and `MigrationError.RevalidationFailed` carry the same path-aware
-`Diagnostics<SchemaError>` as `Schema.parse`, so one renderer displays every boundary failure.
+`ContractError.ParseFailed` and `MigrationError.RevalidationFailed` carry the same path-aware `SchemaErrors` as
+`Schema.parse`, so one renderer displays every boundary failure.
 
 ## Start from a Record
 
@@ -141,19 +141,22 @@ The generated declaration uses the same constructor-last surface as handwritten 
 
 ```fsharp
 let schema : Schema<OrderWire> =
-    Schema.define<OrderWire>
-    |> fieldWith (Schema.text |> Schema.describe "Stock keeping unit.") "sku" _.Sku
-    |> constrain (pattern @"^[A-Z]{3}-\d+$")
-    |> field "quantity" _.Quantity
-    |> constrain (atLeast 1)
-    |> field "note" _.Note
-    |> construct (fun sku quantity note ->
-        { Sku = sku; Quantity = quantity; Note = note })
+    schema<OrderWire> {
+        field "sku" _.Sku {
+            withSchema (Schema.text |> Schema.describe "Stock keeping unit.")
+            constrain (Constraint.pattern @"^[A-Z]{3}-\d+$")
+        }
+        field "quantity" _.Quantity {
+            constrain (Constraint.atLeast 1)
+        }
+        field "note" _.Note
+        construct (fun sku quantity note ->
+            { Sku = sku; Quantity = quantity; Note = note })
+    }
 ```
 
-`Sku` uses `fieldWith` only because its field documentation decorates that particular value schema. Its constraint is
-still adjacent. Undecorated primitives and recursively resolvable options/lists/maps use `field`; unions, recursion,
-defaults, and generated cross-record module schemas remain explicit where the value schema is part of the field.
+`Sku` uses `withSchema` because its description decorates that particular field schema. Undecorated primitives and
+recursively resolvable options, lists, and maps use plain fields.
 
 The details:
 
@@ -323,7 +326,7 @@ call site that constructs the contract fails to compile until the new migration 
   here are code.
 - **No schema algebra.** `allOf` and untagged `anyOf` are absent from the grammar on purpose; unions carry a
   discriminator.
-- **Generated output is ordinary schema code.** The grammar emits `Schema.define`, fields, constraints, and a closing
-  constructor exactly as handwritten schemas do.
+- **Generated output is ordinary schema code.** The grammar emits `schema<Model> { }`, fields, constraints, and a
+  closing constructor exactly as handwritten schemas do.
 
 See [Separate Wire And Domain Models](patterns/wire-and-domain-models/) for a complete build-to-domain pattern.

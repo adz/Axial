@@ -112,8 +112,8 @@ This page shows the `Axial.Refined` surface for turning untrusted boundary data 
 ## Refine facade
 
 - [`Refined.Refine.from`](./refine/m-refined-refine-from.md):
- Runs the <code>RefineFrom</code> implementation for the source value and expected destination type.
- Your destination type participates by defining a static <code>RefineFrom</code> member.
+ Resolves the <code>Refinement</code> definition for the raw value and expected destination type, then runs its smart
+ constructor. A destination type participates by defining a static <code>Refinement</code> member.
 
 - [`Refined.Refine.withCheck`](./refine/m-refined-refine-withcheck.md): Builds a refined value by running a reusable <a href="../../check/t-errorhandling-check.md">Check</a> program
  before calling the constructor. Failures carry the check&#39;s own <a href="../../result/errors/t-errorhandling-checkfailure.md">CheckFailure</a>

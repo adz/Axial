@@ -1,7 +1,7 @@
 ---
 title: "Schema.UnionDescription"
 linkTitle: "UnionDescription"
-weight: 1204
+weight: 1304
 type: docs
 ---
 

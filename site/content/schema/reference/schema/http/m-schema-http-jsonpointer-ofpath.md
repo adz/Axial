@@ -1,7 +1,7 @@
 ---
 title: "Schema.Http.JsonPointer.ofPath"
 linkTitle: "ofPath"
-weight: 2108
+weight: 2107
 type: docs
 ---
 
@@ -17,7 +17,7 @@ Renders a diagnostics path as a JSON pointer. The empty path renders as <code>&q
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `path` | <code><a href="/reference/Axial/axial-validation-path.html">Path</a></code> |  |
+| `path` | <code><a href="../interpreters/t-schema-path.md">Path</a></code> |  |
 
 ## Returns
 

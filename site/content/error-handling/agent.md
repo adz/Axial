@@ -1,26 +1,24 @@
 ---
-title: For AI agents
-description: High-signal Validation guidance for coding agents.
-weight: 100
+title: Agent Guide
+description: Direct guidance for Result, Check, and Refined APIs.
 type: docs
 ---
 
 
-Use this section for `Axial.ErrorHandling` and its focused `Axial.Result`, `Axial.Diagnostics`, and `Axial.Refined`
-packages. They do not require Schema or Flow.
+`Axial.ErrorHandling` installs `Axial.Result` and `Axial.Refined`.
 
-- Prefer `CheckDSL` for modules containing several reusable checks.
-- Define your own error union at public application boundaries.
-- Use `orError` when one application error replaces check details, and `mapError` when those details matter.
-- Use `result {}` for dependent fail-fast steps and `validate {}` with sibling `and!` bindings for independent checks.
-- Use `Diagnostics` when errors need paths, indexes, or names.
-- Use refined types when later code must rely on a value-level rule without checking it again.
-- `Refine.from` runs the type-directed parse or refinement for one source and destination pair. Put the destination in the result annotation:
-  `let id : Result<int, RefinementError> = Refine.from rawId`.
-- In `refine {}`, bind raw input directly and put the parsed or refined target type on the left of `let!`, for example
-  `let! (id: int) = rawId` or `let! (id: NonZeroInt) = parsedId`. Call `Parse.*` or `Refine.*` explicitly only when
-  the operation needs information the target type does not carry.
-- Your own destination type participates by defining `static member RefineFrom(raw, _: Destination)` returning
-  `Result<Destination, RefinementError>`. Two interpretations for the same source and destination require different names.
+- Return ordinary `Result<'value,'error>` from domain functions.
+- Use `result { }` when a later step depends on an earlier success.
+- Use `Check<'value>` for reusable rules over one already-typed value. Checks contain no input paths.
+- Use a private wrapper and smart constructor when success should be visible in the type.
+- Store construction and inspection together with `Refinement.define`.
+- Add a static `Refinement` member to make an application type work with `Refine.from` and `refine { }`.
+- Put accumulated field, index, map-key, and nested failures in Schema. `Schema.parse` and `Schema.check` return
+  `SchemaErrors`.
 
-For compact prompt context, load [`/error-handling/llms.txt`](/error-handling/llms.txt).
+```fsharp
+let customerId : Result<CustomerId, RefinementError> =
+    Refine.from rawCustomerId
+```
+
+For a complete contributed type, start with [Define Refined Types](./refined/domain-values/).

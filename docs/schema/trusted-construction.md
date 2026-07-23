@@ -30,18 +30,19 @@ A library can guarantee the result of its own functions. It cannot prevent a cal
 constructor:
 
 ```fsharp
-open Axial.Schema.Syntax
+open type Axial.Schema.Syntax
 type Booking =
     { Start: DateOnly
       End: DateOnly }
 
 let bookingSchema =
-    Schema.define<Booking>
-    |> field "start" _.Start
-    |> field "end" _.End
-    |> constructResult (fun start finish ->
-        if start <= finish then Ok { Start = start; End = finish }
-        else Error "Start must not be after end.")
+    schema<Booking> {
+        field "start" _.Start
+        field "end" _.End
+        constructResult (fun start finish ->
+            if start <= finish then Ok { Start = start; End = finish }
+            else Error "Start must not be after end.")
+    }
 
 let invalidAnyway =
     { Start = DateOnly(2026, 7, 20)
@@ -98,10 +99,11 @@ module Booking =
     let finish booking = booking.End
 
     let schema =
-        Schema.define<Booking>
-        |> field "start" start
-        |> field "end" finish
-        |> constructResult create
+        schema<Booking> {
+            field "start" start
+            field "end" finish
+            constructResult create
+        }
 ```
 
 The record schema invokes `Booking.create`, and ordinary callers cannot use a record literal. Updates must also go
@@ -137,10 +139,11 @@ module Booking =
         { Start = booking.Start; End = booking.End }
 
     let schema =
-        Schema.define<Booking>
-        |> field "start" (fun b -> b.Start)
-        |> field "end" (fun b -> b.End)
-        |> constructResult (fun start finish -> create { Start = start; End = finish })
+        schema<Booking> {
+            field "start" (fun b -> b.Start)
+            field "end" (fun b -> b.End)
+            constructResult (fun start finish -> create { Start = start; End = finish })
+        }
 ```
 
 Construction keeps field names without exposing the representation:

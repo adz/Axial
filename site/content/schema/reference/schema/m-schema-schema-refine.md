@@ -1,33 +1,31 @@
 ---
 title: "Schema.refine"
 linkTitle: "refine"
-weight: 2108
+weight: 2109
 type: docs
 ---
 
-Maps a schema through a fallible smart constructor and lowers its failures to schema errors.
+Maps a raw schema through a reusable bidirectional refinement.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Schema.Schema.refine&#32;<span>construct&#32;mapError&#32;inspect&#32;schema</span></span></code>
+<code><span>Schema.Schema.refine&#32;<span>refinement&#32;schema</span></span></code>
 </div>
 
 ## Parameters
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `construct` | <code><span>'a&#32;->&#32;<span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'b,&#32;'c</span>&gt;</span></span></code> |  |
-| `mapError` | <code><span>'c&#32;->&#32;<span><a href="interpreters/t-schema-schemaerror.md">SchemaError</a>&#32;list</span></span></code> |  |
-| `inspect` | <code><span>'b&#32;->&#32;'a</span></code> |  |
-| `schema` | <code><span><a href="t-schema-schema.md">Schema</a>&lt;'a&gt;</span></code> |  |
+| `refinement` | <code><span><a href="/reference/Axial/axial-refined-refinement-2.html">Refinement</a>&lt;<span>'raw,&#32;'value</span>&gt;</span></code> |  |
+| `schema` | <code><span><a href="t-schema-schema.md">Schema</a>&lt;'raw&gt;</span></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="t-schema-schema.md">Schema</a>&lt;'b&gt;</span></code> |  |
+| <code><span><a href="t-schema-schema.md">Schema</a>&lt;'value&gt;</span></code> |  |
 
 ## Remarks
 
-Use this for intrinsic domain constraints. <span class="fsdocs-param-name">inspect</span> supplies the raw representation to checking, encoding, and metadata interpreters.
+The smart constructor runs during parsing. Inspection supplies the raw representation during checking and encoding.

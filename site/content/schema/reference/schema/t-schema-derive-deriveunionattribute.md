@@ -1,7 +1,7 @@
 ---
 title: "Schema.Derive.DeriveUnionAttribute"
 linkTitle: "DeriveUnionAttribute"
-weight: 1402
+weight: 1502
 type: docs
 ---
 

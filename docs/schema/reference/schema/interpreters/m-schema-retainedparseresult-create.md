@@ -4,7 +4,7 @@ linkTitle: "create"
 weight: 2105
 ---
 
-Retains structured data alongside an existing parse result.
+Retains structured data alongside an existing schema parse result.
 
 ## Signature
 
@@ -17,10 +17,10 @@ Retains structured data alongside an existing parse result.
 | Name | Type | Description |
 | --- | --- | --- |
 | `input` | <code><a href="../../data/t-data.md">Data</a></code> |  |
-| `result` | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'value,&#32;<span><a href="../../../../error-handling/reference/diagnostics/t-validation-diagnostics.md">Diagnostics</a>&lt;'error&gt;</span></span>&gt;</span></code> |  |
+| `result` | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'value,&#32;<a href="t-schema-schemaerrors.md">SchemaErrors</a></span>&gt;</span></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="t-schema-retainedparseresult.md">RetainedParseResult</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> |  |
+| <code><span><a href="t-schema-retainedparseresult.md">RetainedParseResult</a>&lt;'value&gt;</span></code> |  |

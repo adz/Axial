@@ -14,7 +14,7 @@ package, useful beyond schemas — see [its docs]({{< relref "/schema/data/" >}}
 ## The Schema
 
 ```fsharp
-open Axial.Schema.Syntax
+open type Axial.Schema.Syntax
 type Contact = { Kind: string; Value: string }
 
 type Customer =
@@ -23,13 +23,18 @@ type Customer =
       Contacts: Contact list }
 
 let customerSchema =
-    Schema.define<Customer>
-    |> field "name" _.Name
-    |> fieldWith addressSchema "address" _.Address
-    |> fieldWith (Schema.listWith contactSchema) "contacts" _.Contacts
-    |> constrain (minCount 1)
-    |> construct (fun name address contacts ->
-        { Name = name; Address = address; Contacts = contacts })
+    schema<Customer> {
+        field "name" _.Name
+        field "address" _.Address {
+            withSchema addressSchema
+        }
+        field "contacts" _.Contacts {
+            withSchema (Schema.listWith contactSchema)
+            constrain (Constraint.minCount 1)
+        }
+        construct (fun name address contacts ->
+            { Name = name; Address = address; Contacts = contacts })
+    }
 ```
 
 Here `addressSchema` and `contactSchema` are intentionally local value schemas. If `Address` and `Contact` declare

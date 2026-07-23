@@ -18,7 +18,7 @@ natively to prove it.
 
 ## Why It Holds By Construction
 
-- **Schemas declare construction explicitly.** `Schema.define<Customer> |> field ... |> construct ctor`
+- **Schemas declare construction explicitly.** `schema<Customer> { field ...; construct ctor }`
   captures the real constructor and typed getters as values. There is no property discovery, no attribute scanning,
   and no `Activator.CreateInstance`.
 - **Codecs compile from the typed shape.** `Json.compile` turns the schema's retained typed constructor and fields
@@ -41,8 +41,8 @@ introduced reflection the trimmer could not prove safe, CI fails.
 
 ## Fable
 
-The same explicitness is what makes Fable compilation work: `Axial.Flow`, `Axial.ErrorHandling` (including
-`Validation`), and `Axial.Schema` (including `Refined`) all compile to JavaScript, so a browser front end can parse
+The same explicitness is what makes Fable compilation work: `Axial.Flow`, `Axial.ErrorHandling`, `Axial.Refined`, and
+`Axial.Schema` all compile to JavaScript, so a browser front end can parse
 and redisplay through the same schema declaration the server uses. CI compiles the Fable JavaScript surface
 (`bash scripts/check-fable-js-surface.sh`), and the [benchmarks]({{< relref "/schema/benchmarks.md" >}}) include
 Node and Erlang runs of the same workloads. .NET-only conveniences — such as `Data.ofJsonDocument` and the

@@ -55,8 +55,8 @@ createOrderReference "42" "Acme North"   // Error — not a slug
 createOrderReference "many" "acme-north" // Error (ParseFailed) — not an int
 ```
 
-The first failure stops the pipeline. When several independent fields should all report their failures together, lift
-the same helpers into `validate {}` — see the [Validation tutorials]({{< relref "/error-handling/diagnostics/tutorials/" >}}).
+The first failure stops the pipeline. A Schema record declaration applies the same refinements independently to
+boundary fields and returns their path-aware failures together.
 
 ## Read The Value Back Out
 

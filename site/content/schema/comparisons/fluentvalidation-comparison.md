@@ -31,22 +31,25 @@ The `Customer` had to be constructed first — usually by a model binder filling
 Between construction and validation (and anywhere a code path forgets to call the validator) an invalid `Customer`
 exists and can leak.
 
-An Axial schema owns construction. Parsing either produces a trusted model or path-aware diagnostics; there is no
+An Axial schema owns construction. Parsing either produces a trusted model or path-aware issues; there is no
 intermediate invalid object:
 
 ```fsharp
-open Axial.Schema.Syntax
+open type Axial.Schema.Syntax
 let customerSchema =
-    Schema.define<Customer>
-    |> field "name" _.Name
-    |> constrain (maxLength 80)
-    |> field "age" _.Age
-    |> constrain (between 13 120)
-    |> construct (fun name age -> { Name = name; Age = age })
+    schema<Customer> {
+        field "name" _.Name {
+            constrain (Constraint.maxLength 80)
+        }
+        field "age" _.Age {
+            constrain (Constraint.between 13 120)
+        }
+        construct (fun name age -> { Name = name; Age = age })
+    }
 
 match (Schema.parse customerSchema raw) with
 | Ok customer -> customer          // every Customer in the program passed the boundary
-| Error diagnostics -> reject diagnostics
+| Error errors -> reject errors
 ```
 
 Pair that with refined field types (an `Email` with a private constructor) and "did anyone validate this?" stops being
@@ -65,10 +68,8 @@ errors. With FluentValidation, each of those is a separate artifact to keep in s
 - Validation of objects you genuinely do not construct (third-party types, EF entities mid-flight).
 - Teams that want C#-first fluent syntax rather than F# declarations.
 
-Axial's equivalent of "validate an existing object" exists — `Schema.check schema model` (the
-`Axial.Schema` module, not [`Axial.Validation.Validation`]({{< relref "/error-handling/diagnostics/" >}}) from Error
-Handling, which it's built on) re-checks a trusted model, and `Rules` add contextual requirements — but they run
-against schema metadata, not a second rulebook.
+`Schema.check schema model` re-checks an existing value against the same field schemas and constructor. It returns
+`SchemaErrors` with the same paths as parsing.
 
 ## Side By Side
 

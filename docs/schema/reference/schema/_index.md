@@ -25,11 +25,20 @@ This page shows `Schema<'value>`, the universal catalog for primitive, collectio
 - [`Schema.guid`](./p-schema-schema-guid.md): Describes a GUID.
 - [`Schema.list`](./m-schema-schema-list.md): Describes a list by resolving its item schema from <typeparamref name="'item" />.
 - [`Schema.option`](./m-schema-schema-option.md): Describes an optional value.
-- [`Schema.refine`](./m-schema-schema-refine.md): Maps a schema through a fallible smart constructor and lowers its failures to schema errors.
+- [`Schema.constrain`](./m-schema-schema-constrain.md): Adds one portable constraint to a schema.
+- [`Schema.refine`](./m-schema-schema-refine.md): Maps a raw schema through a reusable bidirectional refinement.
+- [`Schema.validate`](./m-schema-schema-validate.md): Adds executable value validation to a schema.
 - [`Schema.union`](./m-schema-schema-union.md): Describes an externally tagged union.
 - [`Schema.UnionCase.create`](./m-schema-unioncase-create.md):
  Describes one tagged union case from a tag, a payload constructor, a payload extractor, and a payload schema.
 
+
+## Record builder
+
+- [`schema`](./p-schema-schemace-schema.md): Record-schema computation expression.
+- [`field`](./m-schema-schemace-field.md): Declares a field with an explicit wire name.
+- [`construct`](./m-schema-schemace-construct.md): Closes a record schema with a total constructor.
+- [`constructResult`](./m-schema-schemace-constructresult.md): Closes a record schema with a checked constructor.
 
 ## Inspection
 

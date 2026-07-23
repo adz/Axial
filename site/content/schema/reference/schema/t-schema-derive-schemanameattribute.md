@@ -1,7 +1,7 @@
 ---
 title: "Schema.Derive.SchemaNameAttribute"
 linkTitle: "SchemaNameAttribute"
-weight: 1401
+weight: 1501
 type: docs
 ---
 

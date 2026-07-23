@@ -23,4 +23,4 @@ Parses source-neutral structured data while retaining it for redisplay and error
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="t-schema-retainedparseresult.md">RetainedParseResult</a>&lt;<span>'a,&#32;<a href="t-schema-schemaerror.md">SchemaError</a></span>&gt;</span></code> |  |
+| <code><span><a href="t-schema-retainedparseresult.md">RetainedParseResult</a>&lt;'a&gt;</span></code> |  |

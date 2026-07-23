@@ -1,90 +1,51 @@
 ---
-weight: 2
+weight: 10
 title: Getting Started
-description: Choosing among Result helpers, Check, Validation, Refined, and Predicate.
+description: Use Result, Check, and Refined values for typed failures and domain construction.
 type: docs
 ---
 
 
-Start with the return type that communicates the behavior your function needs. `Axial.ErrorHandling` offers several
-related tools, but an application does not need to adopt all of them.
+Install the combined package:
 
-## Installation
-
-Error Handling installs as part of `Axial`.
-
-Or install the Error Handling meta-package individually:
-
-```sh
+```bash
 dotnet add package Axial.ErrorHandling
 ```
 
-For a smaller dependency, install only what the project uses: `Axial.Result`, `Axial.Diagnostics`, or `Axial.Refined`.
-
-Start with `Check` when the same rule is used in more than one place. Open `CheckDSL` in a module that contains several
-checks:
+It installs `Axial.Result` and `Axial.Refined`. A project that only needs one part can reference that package directly.
 
 ```fsharp
-open Axial
-open Axial.ErrorHandling.CheckDSL
-
-let checkName (name: string) =
-    name |> minLength 3
-
-let result = checkName "Ad"
-// Error [InvalidLength (MinimumLength 3, Some 2)]
+open Axial.ErrorHandling
+open Axial.Refined
 ```
 
-The result keeps the original value when the check passes and returns `CheckFailure` values when it fails. At the
-application boundary, `orError` can replace those details with one error, while `mapError` can carry them forward.
+## The three layers
 
-```fsharp
-let requireName name = name |> present |> orError NameRequired
-let checkAge age = age |> atLeast 18 |> mapError InvalidAge
-```
-
-## Choose by behavior
-
-| You need | Reach for | Shape |
+| Problem | API | Result |
 | --- | --- | --- |
-| A reusable value constraint | [`Check`](./checks/) | `Result<'value, CheckFailure list>` |
-| A type that records successful construction | [`Refined`](./refined/) | A refined value type |
-| All independent failures, with locations | [`Diagnostics`](./diagnostics/) | `Validation<'value, 'error>` |
-| Fail-fast composition over ordinary F# results | [`Result` helpers and `result {}`](./result-builder/) | `Result<'value, 'error>` |
-| A local fact for an `if` or `match` | [`Predicate`](./predicates/) | `bool` |
+| Sequence dependent operations that may fail | `result { }` | `Result<'value, 'error>` |
+| Describe and run reusable rules over one typed value | `Check<'value>` | `Result<'value, CheckFailure list>` |
+| Construct a type that cannot contain an invalid value | `Refinement<'raw,'value>`, `Refine.from`, `refine { }` | `Result<'value, RefinementError>` |
 
-The tools interoperate, but the table is not a ladder. For example, a `Check` can feed a Result-returning function,
-while a `Validation` block can accumulate several existing Results. Use the smallest shape that preserves the
-semantics callers need.
-
-## Validation and Diagnostics belong together
-
-`Validation<'value, 'error>` represents either a successful value or accumulated failures. Those failures are always
-stored in `Diagnostics<'error>`.
-
-Diagnostics records both the error and where it occurred. This lets two failed sibling checks become one error value
-with separate `name` and `email` branches instead of an unstructured list.
+`Result` is the common return type. `Check` preserves the checked value and can report several failures about that one
+value. A refinement changes the type, so later code knows construction succeeded.
 
 ```fsharp
-let registration =
-    validate {
-        let! name = validate.name "name" { return! validateName input.Name }
-        and! email = validate.name "email" { return! validateEmail input.Email }
-        return name, email
+let parseQuantity raw : Result<PositiveInt, RefinementError> =
+    refine {
+        let! (number: int) = raw
+        let! (quantity: PositiveInt) = number
+        return quantity
     }
-
-// Validation<(string * string), RegistrationError>
-// A failure contains Diagnostics<RegistrationError>.
 ```
 
-Use `Validation.toResult` when the caller needs a normal Result. Use `Diagnostics.flatten` when the boundary needs a
-flat list of path-bearing errors.
+Path-aware accumulation belongs to Schema because Schema already knows field names, collection indexes, map keys, and
+nested structure. `Schema.parse` and `Schema.check` return `SchemaErrors`; application code does not attach paths by
+hand.
 
-## Guides
+## Continue
 
-- [Result Builder](./result-builder/) covers `result {}` for sequencing dependent fail-fast steps.
-- [Checks](./checks/) covers the full `Check` surface, the `CheckDSL`, and composition with `Check.all`/`Check.any`.
-- [Diagnostics](./diagnostics/) covers accumulated failures and structured diagnostics.
-- [Refined](./refined/) covers types constructed from checked values.
-- [Predicates](./predicates/) covers `bool` facts for local branching.
-- The [tutorial](./tutorials/) walks through building a small validation flow end to end.
+- [Result](./result/): fail-fast composition and extraction helpers.
+- [Check](./checks/): reusable constraints over one value.
+- [Refined](./refined/): wrappers, smart constructors, contributed refinements, and Schema integration.
+- [Schema]({{< relref "/schema/" >}}): structured input and complete path-aware boundary failures.

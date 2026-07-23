@@ -1,7 +1,7 @@
 ---
 title: "Schema.Derive.SchemaConstructorAttribute"
 linkTitle: "SchemaConstructorAttribute"
-weight: 1403
+weight: 1503
 type: docs
 ---
 

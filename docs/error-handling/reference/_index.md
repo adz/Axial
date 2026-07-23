@@ -1,26 +1,14 @@
 ---
-title: Reference
-type: docs
-notoc: true
+title: API Reference
 weight: 100
 ---
 
-API reference for the packages installed by `Axial.ErrorHandling`: checks and Results from `Axial.Result`,
-accumulated diagnostics from `Axial.Diagnostics`, and refined values from `Axial.Refined`. Their public namespaces
-remain `Axial.ErrorHandling`, `Axial.Validation`, and `Axial.Refined` respectively.
+# ErrorHandling API Reference
 
-## `Axial.Result`
+`Axial.ErrorHandling` installs two focused packages:
 
-- [`Check`](./check/) — reusable structured value constraints returning `Result<unit, CheckFailure list>`.
-- [`Predicate`](./predicate/) — plain `bool` facts for local branching, including the `PredicateExtensions` members.
-- [`Result`](./result/) — focused helpers, guards, and the `result {}` builder over standard F# `Result`.
+- [`Axial.Result`](./result/): `Result` helpers, `Check`, predicates, and `result { }`.
+- [`Axial.Refined`](./refined/): parsing, refinements, built-in refined values, `Refine.from`, and `refine { }`.
 
-## `Axial.Diagnostics`
-
-- [`Validation`](./validation/) — accumulating validation and the `validate {}` builder (namespace `Axial.Validation`).
-- [`Diagnostics`](./diagnostics/) — path-aware error trees: inspection, merging, and rendering.
-
-## `Axial.Refined`
-
-- [`Refined`](./refined/) — parse and refine single values into types that carry their own proof (namespace
-  `Axial.Refined`).
+Schema error paths and accumulated boundary failures are documented under the
+[Schema reference]({{< relref "/schema/reference/" >}}).

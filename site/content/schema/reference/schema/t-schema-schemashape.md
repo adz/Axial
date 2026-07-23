@@ -1,7 +1,7 @@
 ---
 title: "Schema.SchemaShape"
 linkTitle: "SchemaShape"
-weight: 1200
+weight: 1300
 type: docs
 ---
 

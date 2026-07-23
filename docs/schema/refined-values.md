@@ -2,126 +2,108 @@
 weight: 40
 title: Refined Schemas
 type: docs
-description: Turn a fallible refined-value constructor into an ordinary schema.
+description: Reuse one bidirectional refinement in direct construction, schema parsing, checking, and encoding.
 ---
 
-# Refined schemas
+# Refined Schemas
 
-This page shows how a fallible refined-value constructor becomes an ordinary `Schema<'value>`.
-
-`Axial.Refined` owns parsing and smart construction. `Axial.Schema` owns boundary shape, metadata, paths, and
-interpreters. `Schema.refine` connects them without making either package depend in the opposite direction.
+`Axial.Refined` owns the domain construction definition. Schema applies that definition at a structured boundary.
 
 ```fsharp
 type Email =
     private
     | Email of string
 
-    static member Schema(_: Email) : Schema<Email> =
-        let create raw =
-            if System.Net.Mail.MailAddress.TryCreate raw |> fst then Ok(Email raw)
-            else Error "email.invalid"
-
-        Schema.text
-        |> Schema.constrainAll [ Constraint.required; Constraint.email ]
-        |> Schema.refine
-            create
-            (fun code -> [ SchemaError.Custom(code, None) ])
-            (fun (Email raw) -> raw)
-        |> Schema.withFormat SchemaFormat.email
-
 module Email =
     let create raw =
-        if System.Net.Mail.MailAddress.TryCreate raw |> fst then Ok(Email raw)
-        else Error "email.invalid"
+        if System.Net.Mail.MailAddress.TryCreate raw |> fst then
+            Ok(Email raw)
+        else
+            Error(RefinementError.custom "email" "Expected an email address.")
 
     let value (Email raw) = raw
+    let refinement = Refinement.define create value
 
+type Email with
+    static member Refinement(_: string, _: Email) =
+        Email.refinement
 ```
 
-Because `Email` owns that canonical schema, object declarations use `field "email" _.Email`. The same inference works
-for `Email option`, `Email list`, and `Map<string, Email>`.
+The descriptor contains both directions. Parsing calls its fallible constructor; checking and encoding inspect an
+existing `Email` back to `string`.
 
-The arguments are:
+## A standalone value schema
 
 ```fsharp
-Schema.refine
-    (construct : 'raw -> Result<'value, 'error>)
-    (mapError : 'error -> SchemaError list)
-    (inspect : 'value -> 'raw)
-    (raw : Schema<'raw>)
+let emailSchema : Schema<Email> =
+    Schema.text
+    |> Schema.constrainAll [ Constraint.required; Constraint.email ]
+    |> Schema.refine Email.refinement
+    |> Schema.withFormat SchemaFormat.email
 ```
 
-Construction interpreters call `construct`. Inspection, encoding, generation, and checking use `inspect`. Both
-directions are required because a schema is more than an input parser.
+`Schema.refine` receives one named value instead of separate construction, error mapping, and inspection functions.
 
-`Schema.convert` remains appropriate for total, information-preserving domain conversions:
+## A type-directed field
 
 ```fsharp
-type UserId = private UserId of Guid
+let contactSchema =
+    schema<Contact> {
+        field "email" _.Email {
+            withSchema Schema.text
+            constrain Constraint.required
+            constrain Constraint.email
+            refine
+        }
 
-let userIdSchema =
-    Schema.guid |> Schema.convert UserId (fun (UserId value) -> value)
+        construct Contact.create
+    }
 ```
 
-Do not hide a fallible constructor behind `failwith` or an internal unchecked constructor merely to use `convert`.
-Use `refine` and preserve the error path.
+Before `refine`, the current field type is `string`. The getter returns `Email`, so the operation resolves
+`Refinement<string,Email>`. The block must finish at `Email`.
 
-## The built-in catalog
-
-`RefinedSchemas` is a sibling catalog whose members all return `Schema<_>`:
+If `Email` contributes a canonical schema, the field is shorter:
 
 ```fsharp
-RefinedSchemas.nonBlankString
+type Email with
+    static member Schema(_: Email) =
+        emailSchema
+
+schema<Contact> {
+    field "email" _.Email
+    construct Contact.create
+}
+```
+
+Options, lists, and string-keyed maps resolve the canonical item schema recursively.
+
+## Portable constraints and executable validation
+
+```fsharp
+field "email" _.Email {
+    withSchema Schema.text
+    constrain Constraint.required       // portable raw text rule
+    refine                              // string -> Email
+    validate validateCompanyEmail       // executable Email rule
+}
+```
+
+Constraints can become JSON Schema, HTML attributes, documentation, or generators. An arbitrary `validate` function
+runs during parsing and checking but cannot be translated automatically.
+
+The smart constructor must still enforce the intrinsic domain invariant. Direct `Refine.from` calls do not pass
+through Schema constraints.
+
+## Built-in schemas
+
+Built-in refined types have canonical schemas. `RefinedSchemas` also exposes configured forms:
+
+```fsharp
 RefinedSchemas.boundedString 2 80
-RefinedSchemas.trimmedString
-RefinedSchemas.slug
-RefinedSchemas.positiveInt
-RefinedSchemas.nonNegativeInt
-RefinedSchemas.nonZeroInt
-RefinedSchemas.negativeInt
-RefinedSchemas.nonPositiveInt
-RefinedSchemas.nonEmptyList RefinedSchemas.slug
-RefinedSchemas.distinctList Schema.text
 RefinedSchemas.boundedList 1 10 Schema.guid
+RefinedSchemas.dateTimeOffsetRange
 ```
 
-`RefinedSchemas.dateTimeOffsetRange` and, on supported targets, `dateOnlyRange` are record schemas whose constructors
-enforce range ordering.
-
-## Where constraints belong
-
-Raw constraints describe the boundary representation and provide portable metadata:
-
-```fsharp
-Schema.text
-|> Schema.constrainAll [ Constraint.required; Constraint.maxLength 80 ]
-|> Schema.refine WorkspaceName.create SchemaError.ofRefinementError WorkspaceName.value
-```
-
-The smart constructor describes the intrinsic domain invariant. Repeating an intrinsic rule as a raw constraint is
-useful when it supplies standard error codes, HTML attributes, JSON Schema output, or generators. The constructor
-must still reject invalid input independently; otherwise direct construction and schema construction disagree.
-
-Constraints added after refinement describe the refined value and run through its inspected representation. Use
-`Schema.rawConstraints`, `Schema.constraints`, `Schema.underlyingPrimitiveKind`, and `Schema.inspectUnderlying` when
-writing an interpreter that needs to distinguish those layers.
-
-## Nested and collection refinements
-
-Because every member returns `Schema<_>`, composition needs no adapter:
-
-```fsharp
-open Axial.Schema.Syntax
-let tags =
-    RefinedSchemas.nonEmptyList RefinedSchemas.slug
-
-let request =
-    Schema.define<Request>
-    |> fieldWith RefinedSchemas.nonBlankString "name" _.Name
-    |> fieldWith tags "tags" _.Tags
-    |> construct (fun name tags -> { Name = name; Tags = tags })
-```
-
-A refinement can also wrap a record, union, list, option, or map schema. Its constructor receives the successfully
-parsed raw value; its inspection function returns that representation for other interpreters.
+See [Define Refined Types]({{< relref "/error-handling/refined/domain-values/" >}}) for the complete domain-side
+definition.

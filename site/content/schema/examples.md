@@ -13,211 +13,6 @@ The examples below are built from the repository projects, run with the current 
 The code blocks keep the important API calls on the same lines as the values they bind, with trailing comments where that makes the signature easier to read.
 The examples prefer the normal direct-bind style inside computation expressions, so the docs reflect the recommended day-to-day usage.
 
-## Diagnostics Example
-
-This example shows a JSON-shaped request boundary with a root-level error, nested child branches, and a display-friendly diagnostics tree.
-
-Run it:
-
-```bash
-AXIAL_EXAMPLE=diagnostics dotnet run --project examples/Axial.Examples/Axial.Examples.fsproj --nologo
-```
-
-Source:
-
-- [DiagnosticsExample.fs](https://github.com/adz/Axial/blob/main/examples/Axial.Examples/DiagnosticsExample.fs)
-
-Source code:
-
-```fsharp
-module DiagnosticsExample
-
-open System.Text.Json
-open Axial.Flow
-open Axial.ErrorHandling
-open Axial.Validation
-
-type CustomerLine =
-    { Name: string }
-
-type CustomerAddress =
-    { City: string }
-
-type Customer =
-    { Name: string
-      Address: CustomerAddress
-      Lines: CustomerLine list }
-
-type CreateCustomerRequest =
-    { RequestId: string
-      Customer: Customer }
-
-type ApiError =
-    { path: string
-      message: string }
-
-type ApiErrorResponse =
-    { errors: ApiError list }
-
-let jsonOptions = JsonSerializerOptions(WriteIndented = true)
-
-let private required message value =
-    value
-    |> Check.present
-    |> Result.mapError (fun _ -> message)
-
-let validateAddressWithoutCEOrPipe address =
-    Validation.at [PathSegment.Key "address"] (
-        Validation.at [PathSegment.Name "City"] (
-            Validation.fromResult (
-                address.City |> required "City required"
-            )
-        )
-        |> Validation.map (fun city -> {address with City = city })
-    )
-
-let validateAddressWithoutCE address =
-    let cityResult =
-        address.City
-        |> required "City required"
-
-    cityResult
-    |> Validation.fromResult
-    |> Validation.at [PathSegment.Name "City"]
-    |> Validation.map (fun city -> {address with City = city })
-    |> Validation.at [PathSegment.Key "address"]
-
-// Equivalent using CE
-let validateAddress address =
-    validate.key "address" {
-        let! city = validate.name "city" {
-            return! address.City |> required "City required"
-        }
-        return { address with City = city }
-    }
-
-let validateCustomer customer =
-    validate {
-        let! name =
-            validate.name "Name" {
-                return! customer.Name |> required "Name required"
-            }
-
-        and! address = validateAddress customer.Address
-
-        and! lines =
-            validate.key "lines" {
-                return!
-                    customer.Lines
-                    |> Validation.traverseIndexed (fun index line ->
-                        validate.name "Name" {
-                            let! name =
-                                line.Name |> required $"Line {index} name required"
-
-                            return { Name = name }
-                        }
-                    )
-            }
-
-        return
-            { customer with
-                Name = name
-                Address = address
-                Lines = lines }
-    }
-
-let renderPath (path: PathSegment list) =
-    path
-    |> List.map (function
-        | PathSegment.Key value
-        | PathSegment.Name value -> value
-        | PathSegment.Index index -> $"[{index}]")
-    |> String.concat "."
-
-let toApiErrors (graph: Diagnostics<'error>) =
-    { errors =
-        graph
-        |> Diagnostics.flatten
-        |> List.map (fun diagnostic ->
-            { path = renderPath diagnostic.Path
-              message = string diagnostic.Error }) }
-
-let validateCreateCustomerRequest request =
-    validate {
-        let! requestId =
-            validate.name "RequestId" {
-                return! request.RequestId |> required "RequestId required"
-            }
-
-        and! customer =
-            validate.key "customer" {
-                return! validateCustomer request.Customer
-            }
-
-        return { request with RequestId = requestId; Customer = customer }
-    }
-
-let run () =
-    let requestJson =
-        """{
-  "requestId": "",
-  "customer": {
-    "name": "",
-    "address": { "city": "" },
-    "lines": [ { "name": "" } ]
-  }
-}"""
-
-    let badRequest =
-        { RequestId = ""
-          Customer =
-            { Name = ""
-              Address = { City = "" }
-              Lines = [ { Name = "" } ] } }
-
-    let diagnosticsText =
-        validateCreateCustomerRequest badRequest
-        |> Validation.toResult
-        |> Result.mapError (toApiErrors >> fun payload -> JsonSerializer.Serialize(payload, jsonOptions))
-        |> function
-            | Ok _ -> "Ok"
-            | Error text -> text
-
-    printfn "Request JSON:\n%s" requestJson
-    printfn "API error JSON:\n%s" diagnosticsText
-    // Request JSON:
-    // {
-    //   "requestId": "",
-    //   "customer": {
-    //     "name": "",
-    //     "address": { "city": "" },
-    //     "lines": [ { "name": "" } ]
-    //   }
-    // }
-    // API error JSON:
-    // {
-    //   "errors": [
-    //     {
-    //       "path": "customer.address.City",
-    //       "message": "City required"
-    //     },
-    //     {
-    //       "path": "customer.lines.[0].Name",
-    //       "message": "Line 0 name required"
-    //     },
-    //     {
-    //       "path": "customer.Name",
-    //       "message": "Name required"
-    //     },
-    //     {
-    //       "path": "RequestId",
-    //       "message": "RequestId required"
-    //     }
-    //   ]
-    // }
-
-```
-
 ## Refined Catalog Example
 
 This example shows a request boundary that parses strings, builds refined numeric/text/collection values, chooses a domain union case, and rejects invalid input before the domain record is created.
@@ -510,16 +305,17 @@ type Contact =
       Balance: Balance }
 
 let contactSchema =
-    Schema.define<Contact>
-    |> field "email" _.Email
-    |> field "name" _.Name
-    |> field "quantity" _.Quantity
-    |> field "balance" _.Balance
-    |> construct (fun email name quantity balance ->
-        { Email = email
-          Name = name
-          Quantity = quantity
-          Balance = balance })
+    schema<Contact> {
+        field "email" _.Email
+        field "name" _.Name
+        field "quantity" _.Quantity
+        field "balance" _.Balance
+        construct (fun email name quantity balance ->
+            { Email = email
+              Name = name
+              Quantity = quantity
+              Balance = balance })
+    }
 
 let run () =
     let contact =
@@ -625,32 +421,42 @@ module Signup =
     open Axial.Schema.Syntax
 
     let addressSchema =
-        Schema.define<Address>
-        |> field "street" _.Street
-        |> constrain (minLength 1)
-        |> constrain (maxLength 120)
-        |> field "city" _.City
-        |> constrain (minLength 1)
-        |> constrain (maxLength 80)
-        |> construct (fun street city -> { Street = street; City = city })
+        schema<Address> {
+            field "street" _.Street {
+                constrain (minLength 1)
+                constrain (maxLength 120)
+            }
+            field "city" _.City {
+                constrain (minLength 1)
+                constrain (maxLength 80)
+            }
+            construct (fun street city -> { Street = street; City = city })
+        }
 
     let schema =
-        Schema.define<Signup>
-        |> field "name" _.Name
-        |> constrain (minLength 1)
-        |> constrain (maxLength 80)
-        |> field "email" _.Email
-        |> field "age" _.Age
-        |> constrain (between 13 120)
-        |> fieldWith (addressSchema |> Schema.constrain Constraint.required) "address" _.Address
-        |> field "tags" _.Tags
-        |> constrain (maxCount 5)
-        |> construct (fun name email age address tags ->
-            { Name = name
-              Email = email
-              Age = age
-              Address = address
-              Tags = tags })
+        schema<Signup> {
+            field "name" _.Name {
+                constrain (minLength 1)
+                constrain (maxLength 80)
+            }
+            field "email" _.Email
+            field "age" _.Age {
+                constrain (between 13 120)
+            }
+            field "address" _.Address {
+                withSchema (addressSchema |> Schema.constrain Constraint.required)
+            }
+            field "tags" _.Tags {
+                withSchema (Schema.listWith Schema.text)
+                constrain (maxCount 5)
+            }
+            construct (fun name email age address tags ->
+                { Name = name
+                  Email = email
+                  Age = age
+                  Address = address
+                  Tags = tags })
+        }
 
 // ---------------------------------------------------------------------------
 // Interpreters compiled once from the declaration above.
@@ -712,7 +518,7 @@ module FormPage =
         | _ -> "text"
 
     /// Renders one flat form from the schema description, redisplaying structured data and attaching errors by path.
-    let render (parsed: RetainedParseResult<Signup, SchemaError> option) =
+    let render (parsed: RetainedParseResult<Signup> option) =
         let input =
             parsed |> Option.map _.Input |> Option.defaultValue (Data.Object [])
 
@@ -900,7 +706,6 @@ open Axial
 open Axial.Flow
 open Axial.Refined
 open Axial.Schema
-open Axial.Validation
 open Axial.Schema.Syntax
 
 type Quantity =
@@ -923,12 +728,13 @@ type OrderLine =
       Quantity: Quantity }
 
 let orderLineSchema =
-    Schema.define<OrderLine>
-    |> field "sku" _.Sku
-    |> field "quantity" _.Quantity
-    |> construct (fun sku quantity ->
-        { Sku = sku
-          Quantity = quantity })
+    schema<OrderLine> {
+        field "sku" _.Sku
+        field "quantity" _.Quantity
+        construct (fun sku quantity ->
+            { Sku = sku
+              Quantity = quantity })
+    }
 
 type OrderEnv =
     { MaxLineQuantity: int
@@ -937,7 +743,7 @@ type OrderEnv =
 type OrderError =
     | QuantityNotANumber
     | QuantityNotPositive
-    | LineRejected of Diagnostic<SchemaError> list
+    | LineRejected of SchemaIssue list
     | QuantityOverCap of int
 
 // 1. Parsing: adapt a raw text parser, replacing its ParseError with a workflow error.
@@ -952,13 +758,13 @@ let refinePositive : Policy<OrderEnv, OrderError, int, PositiveInt> =
 let parseOrderLine : Policy<OrderEnv, OrderError, Data, OrderLine> =
     Policy.lift
         (fun raw -> (Schema.parse orderLineSchema raw))
-        (Diagnostics.flatten >> LineRejected)
+        (SchemaErrors.toList >> LineRejected)
 
 // 4. Validation result: adapt intrinsic validation of an existing model.
 let validateOrderLine : Policy<OrderEnv, OrderError, OrderLine, OrderLine> =
     Policy.lift
         (fun line -> Schema.check orderLineSchema line)
-        (Diagnostics.flatten >> LineRejected)
+        (SchemaErrors.toList >> LineRejected)
 
 let underQuantityCap : Policy<OrderEnv, OrderError, OrderLine, OrderLine> =
     Policy.context

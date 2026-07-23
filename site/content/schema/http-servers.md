@@ -51,8 +51,8 @@ its path as an RFC 6901 JSON pointer, so clients can attach errors to fields mec
 }
 ```
 
-`ProblemDetails.ofParsed` builds that value from any failed `RetainedParseResult`; `ProblemDetails.ofDiagnosticsWith` does
-the same for your own error type with your own renderer. `ProblemDetails.malformedJson` is the stable 400 value used
+`ProblemDetails.ofParsed` builds that value from any failed `RetainedParseResult`; `ProblemDetails.ofErrors` accepts
+`SchemaErrors` directly. `ProblemDetails.malformedJson` is the stable 400 value used
 when a JSON body is not syntactically valid. Schema diagnostics and malformed JSON therefore share one media type and
 response shape.
 

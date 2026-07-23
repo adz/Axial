@@ -4,7 +4,7 @@ weight: 500
 type: docs
 ---
 
-This page shows structured boundary data, universal schema parsing into `Result`, opt-in input retention with `RetainedParseResult`, checking of existing values, and refined schemas. Core schema metadata stays in [Schema](../); interpreters attach diagnostics and optional redisplay behavior to it.
+This page shows structured boundary data, universal schema parsing into `Result`, opt-in input retention with `RetainedParseResult`, checking of existing values, and refined schemas. Core schema metadata stays in [Schema](../); interpreters attach path-aware `SchemaErrors` and optional redisplay behavior to it.
 
 ## Structured data
 
@@ -30,16 +30,26 @@ This page shows structured boundary data, universal schema parsing into `Result`
 - [`Schema.parseRetainingInput`](./m-schema-schema-parseretaininginput.md): Parses source-neutral structured data while retaining it for redisplay and error lookup.
 - [`Schema.parseWith`](./m-schema-schema-parsewith.md): Parses structured data after configuring parser options.
 - [`Schema.SchemaParseOptions`](./t-schema-schemaparseoptions.md): Options that customize how structured data is parsed through a schema.
-- [`Schema.RetainedParseResult`](./t-schema-retainedparseresult.md):
- A parse result that retains the original structured data for redisplay and error lookup.
-
-- [`Schema.RetainedParseResult.create`](./m-schema-retainedparseresult-create.md): Retains structured data alongside an existing parse result.
-- [`Schema.RetainedParseResult.mapErrors`](./m-schema-retainedparseresult-maperrors.md): Maps a failed parse&#39;s errors to a domain or application error type, preserving the structured data and paths.
-- [`Schema.RetainedParseResult.renderErrors`](./m-schema-retainedparseresult-rendererrors.md): Renders a failed schema parse as default English display strings, preserving diagnostics paths.
+- [`Schema.RetainedParseResult`](./t-schema-retainedparseresult.md): A schema parse result that retains its original structured input.
+- [`Schema.RetainedParseResult.create`](./m-schema-retainedparseresult-create.md): Retains structured data alongside an existing schema parse result.
+- [`Schema.RetainedParseResult.renderErrors`](./m-schema-retainedparseresult-rendererrors.md): Renders one line for every failed schema issue.
 
 ## Errors
 
 - [`Schema.SchemaError`](./t-schema-schemaerror.md): Schema input, checking, and contextual rule failures attached to diagnostics paths.
+- [`Schema.Path`](./t-schema-path.md): An immutable location within structured schema input.
+- [`Schema.Path.root`](./m-schema-path-root.md): The root of a schema value.
+- [`Schema.Path.key`](./m-schema-path-key.md): A string field or map-key location.
+- [`Schema.Path.index`](./m-schema-path-index.md): A zero-based collection-item location.
+- [`Schema.Path.append`](./m-schema-path-append.md): Appends a relative path to a parent path.
+- [`Schema.Path.format`](./m-schema-path-format.md): Formats a path with dot-separated keys and bracketed indexes.
+- [`Schema.Path.fold`](./m-schema-path-fold.md): Folds over string keys and integer indexes without exposing a path-segment type.
+- [`Schema.SchemaIssue`](./t-schema-schemaissue.md): One schema failure and its complete structural location.
+- [`Schema.SchemaErrors`](./t-schema-schemaerrors.md): One or more accumulated schema failures.
+- [`Schema.SchemaErrors.toList`](./m-schema-schemaerrors-tolist.md): Returns failures in deterministic path order.
+- [`Schema.SchemaErrors.count`](./m-schema-schemaerrors-count.md): Returns the number of accumulated failures.
+- [`Schema.SchemaErrors.isEmpty`](./m-schema-schemaerrors-isempty.md): Reports whether the collection contains no failures.
+- [`Schema.SchemaErrors.toString`](./m-schema-schemaerrors-tostring.md): Renders one line per failure.
 
 ## Refined catalog schemas
 

@@ -27,9 +27,8 @@ Computes a fallback result from the source error when the result fails.
 
 ## Remarks
 
-The lazy counterpart to <code>orElse</code>, matching the <code>Flow.orElseWith</code> and
- <code>Validation.orElseWith</code> naming and shape: the fallback runs only on failure, and can inspect the error
- that caused it.
+The lazy counterpart to <code>orElse</code>, matching the <code>Flow.orElseWith</code> naming and shape:
+ the fallback runs only on failure and can inspect the error that caused it.
 
 ## Examples
 

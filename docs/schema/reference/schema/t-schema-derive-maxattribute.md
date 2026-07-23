@@ -1,7 +1,7 @@
 ---
 title: "Schema.Derive.MaxAttribute"
 linkTitle: "MaxAttribute"
-weight: 1406
+weight: 1506
 ---
 
 Bounds the natural size of the field's type from above: text length, list count, or map count.

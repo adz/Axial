@@ -16,8 +16,7 @@ This page shows the host-neutral server boundary in `Axial.Schema.Http`: `Bounda
 - [`Schema.Http.ProblemError`](./t-schema-http-problemerror.md): One boundary error: a JSON pointer into the request body plus a rendered message.
 - [`Schema.Http.ProblemDetails.malformedJson`](./p-schema-http-problemdetails-malformedjson.md): Builds a 400 problem-details value for a syntactically invalid JSON request body.
 - [`Schema.Http.ProblemDetails.ofParsed`](./m-schema-http-problemdetails-ofparsed.md): Builds a 400 problem-details value from a failed parse, or <code>None</code> when parsing succeeded.
-- [`Schema.Http.ProblemDetails.ofDiagnostics`](./m-schema-http-problemdetails-ofdiagnostics.md): Builds a 400 problem-details value from failed schema parse diagnostics.
-- [`Schema.Http.ProblemDetails.ofDiagnosticsWith`](./m-schema-http-problemdetails-ofdiagnosticswith.md): Builds a 400 problem-details value from parse diagnostics, rendering each error with <span class="fsdocs-param-name">render</span>.
+- [`Schema.Http.ProblemDetails.ofErrors`](./m-schema-http-problemdetails-oferrors.md): Builds a 400 problem-details value from accumulated schema errors.
 - [`Schema.Http.ProblemDetails.toJson`](./m-schema-http-problemdetails-tojson.md): Renders the problem-details JSON body as a string.
 - [`Schema.Http.ProblemDetails.writeTo`](./m-schema-http-problemdetails-writeto.md): Writes the problem-details JSON body to a stream.
 - [`Schema.Http.JsonPointer.ofPath`](./m-schema-http-jsonpointer-ofpath.md): Renders a diagnostics path as a JSON pointer. The empty path renders as <code>&quot;&quot;</code> (the whole document).

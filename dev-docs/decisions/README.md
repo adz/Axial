@@ -3,7 +3,7 @@
 This folder keeps only high-level durable decisions. Detailed historical specs are deleted once their useful rules have
 been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 
-## 2026-07-22: Error Handling, Schema, and Flow are separate public identities
+## 2026-07-22: Error Handling, Schema, and Flow are separate public identities (package details superseded 2026-07-24)
 
 - `/error-handling/`, `/schema/`, and `/flow/` each have their own homepage, guides, generated reference, `llms.txt`, and
   agent context. Validation and Schema can remain in one repository initially; Flow can move independently.
@@ -12,6 +12,16 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
   `Axial.Validation`, and `Axial.Refined`.
 - The `Axial` umbrella installs Validation, Schema, and the core Schema interpreters. `Axial.Flow` remains an
   independent package and is not re-exported by the umbrella.
+
+## 2026-07-24: Schema owns accumulated path-aware validation
+
+- `Axial.Diagnostics`, `Validation<'value,'error>`, `Diagnostics<'error>`, `PathSegment`, and `validate { }` are
+  removed. Schema owns opaque `Path`, `SchemaIssue`, and `SchemaErrors`.
+- `Axial.ErrorHandling` installs Result and Refined. `Axial.Schema` depends on Data, Result, and Refined.
+- One `Refinement<'raw,'value>` contains fallible construction and total inspection. `Refine.from`, `refine { }`, and
+  `Schema.refine` use the same definition.
+- Record schemas use `schema<Model> { }`. Field blocks contain `withSchema`, `constrain`, type-directed `refine`, and
+  `validate`; the old pipe record builder and `fieldWith` are removed.
 
 ## 2026-07-21: Documentation had two product homes (superseded 2026-07-22)
 
@@ -144,7 +154,7 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
   frozen schema, composes typed contiguous n-1 → n migrations, and reconstructs against the head schema.
 - `Contract.parse` and `Contract.parseVersion` return the ordinary `'model` in `Result<'model, ContractError>`.
   A successful contract parse has passed the head schema's field and constructor gates.
-- `ContractError.ParseFailed` and `MigrationError.RevalidationFailed` carry `Diagnostics<SchemaError>`. The earlier
+- `ContractError.ParseFailed` and `MigrationError.RevalidationFailed` carry `SchemaErrors`. The earlier
   sketch used one `SchemaError`, but `Schema.parse` and `Schema.check` can report several path-bearing failures;
   selecting one would discard boundary information.
 - Version labels are positive and contiguous. `supersedes` registers only the immediately preceding version, matching
@@ -204,9 +214,9 @@ required update abstraction before it becomes public API again.
 
 - `Flow<'env, 'error, 'value>` is the public workflow model. Platform carriers are execution/adaptation boundaries, not
   user-facing workflow types.
-- `Axial.Result` and `Axial.Flow` are independent leaves. `Axial.Diagnostics` and `Axial.Refined` depend only on
-  `Axial.Result`; `Axial.ErrorHandling` is their meta-package. `Axial.Schema` depends on Result, Diagnostics, and
-  Refined for constraints, parse diagnostics, and refined fields. Flow stays independent of the whole group.
+- `Axial.Result` and `Axial.Flow` are independent leaves. `Axial.Refined` depends only on `Axial.Result`;
+  `Axial.ErrorHandling` installs both. `Axial.Schema` depends on Data, Result, and Refined. Flow stays independent of
+  the whole group.
 - Explicit dependencies live in `'env`. The ambient runtime is reserved for closed executor mechanics such as
   cancellation, scope, scheduling, interruption, and trace metadata.
 - Operational services are explicit services provisioned through records, nominal `IHas<'service>` contracts, host-edge
@@ -216,9 +226,8 @@ required update abstraction before it becomes public API again.
   is the only place target-specific implementations may use `FABLE_COMPILER`; the public operation layer stays
   portable and host-specific capabilities such as process environment access are injected at the boundary.
 - `Check` and `Result` helpers belong to the `Axial.ErrorHandling` namespace; `Parse`, `Refine`, and the `refine { }`
-  builder belong to `Axial.Refined`; `Validation` and `Diagnostics` belong to `Axial.Validation`; `Policy`, `Bind`,
-  and `BindError` belong to `Axial.Flow`. The first three ship in `Axial.Result`, `Axial.Diagnostics`, and
-  `Axial.Refined`, with `Axial.ErrorHandling` as their meta-package.
+  builder belong to `Axial.Refined`; path-aware accumulated errors belong to `Axial.Schema`; `Policy`, `Bind`, and
+  `BindError` belong to `Axial.Flow`.
 - `Check` is a complete typed value-constraint subsystem:
   `Check<'value> = 'value -> Result<'value, CheckFailure list>`. Checks are path-free, raw-input-free value programs;
   value-preserving guards and extraction helpers belong in `Result`, and parsing and refined value construction belong in
@@ -245,19 +254,18 @@ required update abstraction before it becomes public API again.
 - First-pass ordered range checks stay in generic `Check.Number` helpers over comparable values. Do not add separate
   `Check.Int`, `Check.Decimal`, `Check.Float`, or date/time check modules until a schema, refined value, or diagnostics
   requirement needs type-specific semantics beyond plain ordering.
-- `Axial.Schema` starts as its own package and project as soon as schema source work begins. Do not incubate schema
-  definitions inside `Axial.Validation`; keep schema definitions independent and put input, validation, diagnostics, and
-  rules integration in `Axial.Schema`.
-- Constructor-last object shapes are the sole public schema-authoring surface:
-  `Schema.define<Customer> |> field "name" _.Name |> ... |> construct ctor`. The shape phantom records field types;
-  `construct` and `constructResult` check the closing constructor by position and arity. Completed schemas retain a
-  typed record plan beside erased metadata so codecs apply constructors directly without `obj array` dispatch.
+- `Axial.Schema` owns structured input, executable validation, paths, accumulated errors, and schema interpreters.
+- Constructor-last `schema<Customer> { }` declarations are the sole public record-schema authoring surface. Field
+  blocks use `withSchema`, `constrain`, type-directed `refine`, and `validate`. `construct` and `constructResult` check
+  the closing constructor by position and arity. Completed schemas retain a typed record plan beside erased metadata
+  so codecs apply constructors directly without `obj array` dispatch.
 - Primitive value schemas use the primitive names directly: `Schema.text`, `Schema.int`, `Schema.decimal`,
   `Schema.bool`, `Schema.date`, `Schema.dateTime`, and `Schema.guid`. They are `Schema<'value>` values supplied as
-  the explicit argument to `fieldWith Schema.text "name" _.Name`, alongside composites (`Schema.list`,
+  the explicit argument to `withSchema Schema.text` inside a field block, alongside composites (`Schema.list`,
   `Schema.option`, `Schema.map`, `Schema.union`, `Schema.inlineUnion`, `Schema.enum`, `Schema.defer`) and custom
-  refined/domain schemas. Common primitive, option, and list fields use inferred `field`; other schemas use
-  `fieldWith`. Do not add competing aliases such as `string`, `integer`, `boolean`, `uuid`, `dateOnly`, or `Field.text`;
+  refined/domain schemas. Common primitive, option, list, map, and contributed domain schemas use plain `field`;
+  explicit local schemas use `withSchema` inside a field block. Do not add competing aliases such as `string`,
+  `integer`, `boolean`, `uuid`, `dateOnly`, or `Field.text`;
   the `Value` module is internal and is not public vocabulary.
 - Non-validation interpreters start from the public `Inspect` API (`Inspect.model`, `Inspect.schema`, `Inspect.field`),
   which describes a built schema as plain metadata trees (`ModelDescription`, `FieldDescription`, `SchemaDescription`,
@@ -319,8 +327,7 @@ required update abstraction before it becomes public API again.
 - `Data.ofJsonElement`/`ofJsonDocument` stay gated to `net8.0 && !FABLE_COMPILER`. If a netstandard2.1 consumer
   ever asks, the pre-chosen answer is a TFM-conditional `System.Text.Json` package reference on netstandard2.1 only —
   not a split adapter package, which would force a different module name.
-- The `Schema` module starts declarations with `Schema.define`; `Axial.Schema.Syntax` provides fields and closing
-  constructors. `Schema` also hosts the model
+- The `schema<'model> { }` computation expression provides fields and closing constructors. `Schema` also hosts the model
   operations that use a schema as authority: `Schema.parse` / `Schema.parseWith` / `Schema.parseWithOptions`
   (untyped `Data` → `RetainedParseResult<'model, SchemaError>`) and `Schema.check` (an already-existing model value,
   re-checked through its field constraints and its constructor so cross-field invariants aren't silently skipped).

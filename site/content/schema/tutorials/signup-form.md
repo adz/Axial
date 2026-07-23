@@ -18,22 +18,25 @@ The schema declares each field once: external name, getter, and constraints.
 
 ```fsharp
 open Axial.Schema
-open Axial.Schema.Syntax
+open type Axial.Schema.Syntax
 
 type Signup = { Email: string; Age: int }
 
 let signupSchema =
-    Schema.define<Signup>
-    |> field "email" _.Email
-    |> constrain emailFormat
-    |> constrain (maxLength 254)
-    |> field "age" _.Age
-    |> constrain (atLeast 13)
-    |> construct (fun email age -> { Email = email; Age = age })
+    schema<Signup> {
+        field "email" _.Email {
+            constrain Constraint.email
+            constrain (Constraint.maxLength 254)
+        }
+        field "age" _.Age {
+            constrain (Constraint.atLeast 13)
+        }
+        construct (fun email age -> { Email = email; Age = age })
+    }
 ```
 
-`Schema.define<Signup>` anchors the model type so getters can use shorthand member access. The closing constructor must
-match every field in declaration order, so missing or mistyped arguments fail at `construct`.
+`schema<Signup>` anchors the model type. The closing constructor must match every field in declaration order, so
+missing or mistyped arguments fail at `construct`.
 
 ## Adapt The structured data
 
@@ -49,7 +52,7 @@ let raw =
 ## Parse
 
 ```fsharp
-let parsed = Schema.parse signupSchema raw
+let parsed = Schema.parseRetainingInput signupSchema raw
 ```
 
 `parsed` is a `RetainedParseResult<Signup, SchemaError>`. On success `parsed.Result` is `Ok signup` and every constraint

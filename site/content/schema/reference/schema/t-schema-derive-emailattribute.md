@@ -1,7 +1,7 @@
 ---
 title: "Schema.Derive.EmailAttribute"
 linkTitle: "EmailAttribute"
-weight: 1413
+weight: 1513
 type: docs
 ---
 

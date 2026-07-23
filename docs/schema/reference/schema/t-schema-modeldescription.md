@@ -1,7 +1,7 @@
 ---
 title: "Schema.ModelDescription"
 linkTitle: "ModelDescription"
-weight: 1203
+weight: 1303
 ---
 
 Describes a built model schema as an ordered list of field descriptions.

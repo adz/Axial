@@ -11,7 +11,7 @@ Construction is only the first guard. A valid value can become invalid when appl
 A **transition** is a named operation that changes one valid state into another, such as completing an order or moving a
 booking. It may return an error when the requested change is not allowed.
 
-Keep updates in the aggregate module and name them after the business action. Callers then choose from operations such
+Keep updates in the aggregate module and name them after the business action. Callers use operations such
 as `changeEnd`, `cancel`, or `complete` instead of modifying storage fields.
 
 ## Make uncertain changes fallible

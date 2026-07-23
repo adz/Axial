@@ -13,37 +13,42 @@ own their canonical schemas, so `Order` can infer both the nested field and the 
 
 ```fsharp
 open Axial.Schema
-open Axial.Schema.Syntax
+open type Axial.Schema.Syntax
 
 type Address =
     { Street: string; City: string }
 
     static member Schema(_: Address) : Schema<Address> =
-        Schema.define<Address>
-        |> field "street" _.Street
-        |> field "city" _.City
-        |> construct (fun street city -> { Street = street; City = city })
+        schema<Address> {
+            field "street" _.Street
+            field "city" _.City
+            construct (fun street city -> { Street = street; City = city })
+        }
 
 type Item =
     { Sku: string; Quantity: int }
 
     static member Schema(_: Item) : Schema<Item> =
-        Schema.define<Item>
-        |> field "sku" _.Sku
-        |> field "quantity" _.Quantity
-        |> constrain (greaterThan 0)
-        |> construct (fun sku quantity -> { Sku = sku; Quantity = quantity })
+        schema<Item> {
+            field "sku" _.Sku
+            field "quantity" _.Quantity {
+                constrain (Constraint.greaterThan 0)
+            }
+            construct (fun sku quantity -> { Sku = sku; Quantity = quantity })
+        }
 
 type Order =
     { Address: Address
       Items: Item list }
 
 let orderSchema =
-    Schema.define<Order>
-    |> field "address" _.Address
-    |> field "items" _.Items
-    |> constrain (minCount 1)
-    |> construct (fun address items -> { Address = address; Items = items })
+    schema<Order> {
+        field "address" _.Address
+        field "items" _.Items {
+            constrain (Constraint.minCount 1)
+        }
+        construct (fun address items -> { Address = address; Items = items })
+    }
 ```
 
 ## Adapt Nested Input
@@ -67,7 +72,7 @@ let raw =
 Every item is parsed and every item error is kept — one bad line item does not hide the others:
 
 ```fsharp
-let parsed = Schema.parse orderSchema raw
+let parsed = Schema.parseRetainingInput orderSchema raw
 
 parsed.ErrorsFor "items[1].quantity"   // quantity 0 fails greaterThan 0
 parsed.ErrorsFor "items[0].sku"        // [] — the first item is fine
@@ -85,7 +90,7 @@ Data.redisplayPath "items[1].quantity" parsed.Input   // "0"
 Collection constraints (`minCount`, `maxCount`, `count`, `distinct`) attach to the collection field itself and report
 on the collection path (`items`), separately from per-item errors.
 
-Use `fieldWith` instead when a nested field needs a schema that is local to its parent, when wrapping a third-party
+Use a field block with `withSchema` when a nested field needs a schema local to its parent, when wrapping a third-party
 type, or for recursive composition with `Schema.defer`.
 
 ## Next

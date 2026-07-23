@@ -1,28 +1,38 @@
-# Axial Error Handling: LLM context
+# Axial ErrorHandling
 
-## Product boundary
+- `Axial.ErrorHandling` installs `Axial.Result` and `Axial.Refined`.
+- `result { }` sequences dependent fail-fast `Result` operations.
+- `Check<'value>` is path-free and validates one typed value.
+- A refined domain type starts with a private wrapper, smart constructor, and inspection function.
+- `Refinement.define create inspect` stores both directions.
+- A static `Refinement` member makes a type available to `Refine.from` and type-directed `let!` in `refine { }`.
+- `Refine.from` uses the source type and expected destination type; it does not use reflection.
+- `refine { }` stops at the first failure because later construction can depend on earlier values.
+- Schema owns accumulated path-aware failures. Use `Schema.parse` or `Schema.check` when field names, indexes, map
+  keys, or nested paths must be reported together.
 
-- `Axial.ErrorHandling` is the meta-package for `Axial.Result`, `Axial.Diagnostics`, and `Axial.Refined`.
-- It does not depend on `Axial.Schema` or `Axial.Flow`.
-- `Axial.Schema` depends on it for value constraints, diagnostics, and refined fields.
+Golden path:
 
-## Choosing a shape
+```fsharp
+type CustomerId =
+    private
+    | CustomerId of PositiveInt
 
-- Use `Check<'value>` for a reusable rule that returns the original value or `CheckFailure list`.
-- Open `Axial.ErrorHandling.CheckDSL` inside modules that define several checks.
-- Use plain `Result<'value, 'error>` and `result {}` for dependent fail-fast operations.
-- Use `Validation<'value, 'error>` and `validate { let! ... and! ... }` when independent failures should accumulate.
-- Use `Diagnostics<'error>` when failures need paths, indexes, or names.
-- Use `Parse` for serialized primitives and `Refine` for values whose type should record a successful check.
-- `Refine.from` runs the conversion defined for its source and annotated `Result` destination types. Your destination
-  type participates through a static `RefineFrom` member.
+module CustomerId =
+    let create raw =
+        refine {
+            let! (parsed: int) = raw
+            let! (positive: PositiveInt) = parsed
+            return CustomerId positive
+        }
 
-## Computation expressions
+    let value (CustomerId value) = string value.Value
+    let refinement = Refinement.define create value
 
-- In `result {}`, `let!` binds the value inside `Ok`; `do!` binds `Result<unit, _>`; `return!` returns another Result.
-- In `validate {}`, sibling `and!` bindings run independently and collect their diagnostics.
-- In `refine {}`, the type on the left of `let!` selects parsing or refinement for raw input. Add an explicit left-hand
-  annotation when several targets share the same raw type. Parse failures become `RefinementError.ParseFailed`; refinement
-  failures remain structured.
+type CustomerId with
+    static member Refinement(_: string, _: CustomerId) =
+        CustomerId.refinement
 
-See `/error-handling/getting-started/` for the main guide and `/error-handling/reference/` for generated API documentation.
+let customerId : Result<CustomerId, RefinementError> =
+    Refine.from rawCustomerId
+```

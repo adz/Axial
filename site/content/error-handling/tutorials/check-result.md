@@ -162,4 +162,4 @@ See [Checks](../checks/) and [Predicates](../predicates/) for the full surface e
 [Result Builder](../result-builder/) for more on `result {}`.
 
 When independent fields should report all sibling failures together instead of stopping at the first one, move to
-the [Validation tutorial]({{< relref "/error-handling/diagnostics/tutorials/registration-form.md" >}}).
+the [Schema tutorials]({{< relref "/schema/tutorials/" >}}).

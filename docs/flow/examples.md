@@ -37,7 +37,6 @@ open System.Threading
 open System.Threading.Tasks
 open Axial.Flow
 open Axial.ErrorHandling
-open Axial.Validation
 
 type User =
     { Id: int
@@ -134,7 +133,6 @@ open System.Threading
 open System.Threading.Tasks
 open Axial.Flow
 open Axial.ErrorHandling
-open Axial.Validation
 
 type AppEnv =
     { Prefix: string
@@ -214,7 +212,6 @@ open System.Threading
 open System.Threading.Tasks
 open Axial.Flow
 open Axial.ErrorHandling
-open Axial.Validation
 
 let runFlow label env (workflow: Flow<'env, 'error, 'value>) =
     let result = workflow.RunSynchronously(env)

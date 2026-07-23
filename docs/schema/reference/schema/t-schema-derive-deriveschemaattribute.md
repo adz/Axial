@@ -1,7 +1,7 @@
 ---
 title: "Schema.Derive.DeriveSchemaAttribute"
 linkTitle: "DeriveSchemaAttribute"
-weight: 1400
+weight: 1500
 ---
 
 Marks a plain record for schema derivation: <code>schemagen</code> generates its permissive schema.

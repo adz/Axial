@@ -1,7 +1,7 @@
 ---
 title: "Schema.JsonSchema.generateValue"
 linkTitle: "generateValue"
-weight: 2301
+weight: 2401
 ---
 
 Generates a compact JSON Schema document for a standalone value schema.

@@ -126,8 +126,8 @@ refine {
 
 After this function succeeds, the `Product` fields hold refined types instead of unchecked primitives.
 
-`refine {}` stops at the first failure, so a later step can depend on every earlier success. `validate {}` from
-`Axial.Validation` runs independent sibling fields and reports all of their diagnostics together.
+`refine {}` stops at the first failure, so a later step can depend on every earlier success. Schema handles independent
+field parsing and returns all path-aware boundary failures together.
 
 ## Guides
 

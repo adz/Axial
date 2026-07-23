@@ -30,9 +30,8 @@ module Result =
         | Error failure -> Error failure
 
     /// <summary>Computes a fallback result from the source error when the result fails.</summary>
-    /// <remarks>The lazy counterpart to <c>orElse</c>, matching the <c>Flow.orElseWith</c> and
-    /// <c>Validation.orElseWith</c> naming and shape: the fallback runs only on failure, and can inspect the error
-    /// that caused it.</remarks>
+    /// <remarks>The lazy counterpart to <c>orElse</c>, matching the <c>Flow.orElseWith</c> naming and shape:
+    /// the fallback runs only on failure and can inspect the error that caused it.</remarks>
     /// <example>
     /// <code>
     /// let result = Error "boom"

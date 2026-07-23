@@ -5,8 +5,8 @@ weight: 2900
 ---
 
 
- Runs the <code>RefineFrom</code> implementation for the source value and expected destination type.
- Your destination type participates by defining a static <code>RefineFrom</code> member.
+ Resolves the <code>Refinement</code> definition for the raw value and expected destination type, then runs its smart
+ constructor. A destination type participates by defining a static <code>Refinement</code> member.
 
 
 ## Signature

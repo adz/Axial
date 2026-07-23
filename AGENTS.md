@@ -26,7 +26,7 @@ Refer to [`dev-docs/PLAN.md`](dev-docs/PLAN.md) for architectural direction and
 - Apply the same rule to randomness, GUID generation, environment variables, filesystem, console, and other operational effects: use the appropriate explicit service from `Axial.Flow.PlatformService` or another package whose core type is present in the signature.
 
 - `Flow<'env, 'error, 'value>` is the public workflow model. Do not reintroduce public `Effect`, `EffectFlow`, `AsyncFlow`, `TaskFlow`, or carrier-specific workflow concepts.
-- Keep `Axial.Flow` and `Axial.Validation` independent; neither package may depend on the other.
+- Keep `Axial.Flow` and `Axial.Schema` independent; neither package may depend on the other.
 - Model application and operational dependencies explicitly in `'env`; keep the ambient runtime for executor mechanics only.
 - Keep `Check` as a complete typed value-constraint subsystem: `Check<'value> = 'value -> Result<unit, CheckFailure list>`. Checks are path-free, raw-input-free value programs; value-preserving guards and extraction helpers belong in `Result`, and parsing and refined value construction belong in `Axial.Refined`.
 - Use `BindError` only at a `flow { }` bind site when a source error must be assigned or mapped immediately before binding.

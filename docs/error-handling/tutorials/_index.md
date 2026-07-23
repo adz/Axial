@@ -12,4 +12,5 @@ These tutorials stay in pure F# code. Use them when one failure should stop the 
 
 - [Check and Result](./check-result/): attach domain errors to `Check` results, then compose with `result {}`.
 
-Move to [Validation tutorials]({{< relref "/error-handling/diagnostics/tutorials/" >}}) when independent fields should report all sibling failures together.
+Move to [Schema tutorials]({{< relref "/schema/tutorials/" >}}) when independent fields should report all sibling
+failures together.

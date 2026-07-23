@@ -21,7 +21,7 @@ menu:
 Validators start with an object that already exists. That leaves application code to track whether validation ran,
 keep field paths aligned with checks, and repeat the same rules for parsing, forms, codecs, and contract documents.
 Axial starts one step earlier: a <code>Schema</code> describes how untrusted boundary values become a model. If a field
-or constructor invariant fails, parsing returns diagnostics and does not return the model.
+or constructor invariant fails, parsing returns `SchemaErrors` and does not return the model.
 </div>
 
 <div class="lede">
@@ -52,7 +52,7 @@ The Schema documentation covers the core package and its focused input, codec, c
 | Package | Use it for | Documentation |
 | --- | --- | --- |
 | `Axial.Data` | Source-neutral structured input values | [Data](./data/) |
-| `Axial.Schema` | Model schemas, parsing, checking, rules, and inspection | [Getting Started](./getting-started/) |
+| `Axial.Schema` | Model schemas, parsing, checking, accumulated errors, and inspection | [Getting Started](./getting-started/) |
 | `Axial.Schema.Json` | Compiled JSON codecs | [JSON Codec](./json-codec/) |
 | `Axial.Schema.JsonSchema` | JSON Schema generation | [JSON Schema reference]({{< relref "/schema/reference/schema/m-schema-jsonschema-generate" >}}) |
 | `Axial.Schema.Contracts.Build` | Build-time checks for versioned contracts | [Versioned Contracts](./contracts/) |
@@ -67,8 +67,8 @@ One schema declaration, several interpreters:
 
 | Input | Interpreter | Result |
 | --- | --- | --- |
-| `Data` | `Schema.parse schema` | model or `Diagnostics` |
-| draft or imported value | `Schema.check schema` | the same value or `Diagnostics` |
+| `Data` | `Schema.parse schema` | model or `SchemaErrors` |
+| draft or imported value | `Schema.check schema` | the same value or `SchemaErrors` |
 | schema | `Inspect.model` | finite metadata without execution |
 | schema | `Json.compile` | reusable compiled JSON codec |
 | schema | `JsonSchema.generate` | JSON Schema document |
@@ -93,12 +93,12 @@ current domain model.
 - [Schema Overview Examples](./overview-examples/) — short examples of inference, checked construction, refinement,
   recursion, and core interpreters.
 - [Tutorials](./tutorials/) — parse a signup form, nest models, apply rules, and inspect metadata.
-- [Schema Syntax](./syntax/) — constructor-last declarations, inferred fields, explicit schemas, and adjacent constraints.
-- [How Inferred Fields Expand](./field-desugaring/) — the exact relationship between `field`, `fieldWith`, and
-  standalone value schemas.
+- [Schema Syntax](./syntax/) — constructor-last declarations and field blocks.
+- [Field Blocks and Plain Functions](./field-desugaring/) — how `withSchema`, `constrain`, `refine`, and `validate`
+  correspond to ordinary schema transformations.
 - [Input Sources](./input-sources/) — HTTP form-like, CLI, JSON-like, and configuration input.
 - [Redisplay And Field Errors](./redisplay-and-field-errors/) — failed parses that keep the user's input.
-- [Trusted Construction](./trusted-construction/) — choose between checked public records, refined fields, and private aggregates.
+- [Trusted Construction](./trusted-construction/) — checked public records, refined fields, and private aggregates.
 - [Refined Value Schemas](./refined-values/) — domain values like `Email` as portable field schemas.
 - [Union Schemas](./union-schemas/) — tagged discriminated unions as schema fields.
 - [JSON Codec](./json-codec/) — compile the same declaration into a runtime-reflection-free JSON codec for trusted payloads.
@@ -117,7 +117,7 @@ current domain model.
 
 ## Related Products
 
-[Error Handling]({{< relref "/error-handling/" >}}) provides the reusable checks, diagnostics, and refined values that Schema
+[Error Handling]({{< relref "/error-handling/" >}}) provides the reusable checks and refined values that Schema
 uses. It can also be installed and used on its own. [Flow]({{< relref "/flow/" >}}) models effects and dependencies;
 Schema does not require it.
 
@@ -127,8 +127,8 @@ Schema installs as part of `Axial`.
 
 Or install it individually with `dotnet add package Axial.Schema`.
 
-Schema metadata, input parsing, checking, and rules live in this package. Checks, diagnostics, and refined values
-arrive through its focused package dependencies, so Schema users do not need a second install.
+Schema metadata, input parsing, checking, accumulated errors, and executable validation live in this package. Checks
+and refined values arrive through its focused package dependencies, so Schema users do not need a second install.
 
 `Axial.Schema.Json` is separate and optional: add it only if you want a compiled, runtime-reflection-free JSON codec generated from
 your schema (`Json.compile`). `Axial.Schema.JsonSchema` is also separate and optional; it supplies

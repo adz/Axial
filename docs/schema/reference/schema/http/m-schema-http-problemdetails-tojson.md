@@ -1,7 +1,7 @@
 ---
 title: "Schema.Http.ProblemDetails.toJson"
 linkTitle: "toJson"
-weight: 2106
+weight: 2105
 ---
 
 Renders the problem-details JSON body as a string.

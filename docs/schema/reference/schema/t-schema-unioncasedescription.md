@@ -1,7 +1,7 @@
 ---
 title: "Schema.UnionCaseDescription"
 linkTitle: "UnionCaseDescription"
-weight: 1205
+weight: 1305
 ---
 
 Describes one case in a tagged union value schema.

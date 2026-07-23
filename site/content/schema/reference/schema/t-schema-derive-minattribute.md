@@ -1,7 +1,7 @@
 ---
 title: "Schema.Derive.MinAttribute"
 linkTitle: "MinAttribute"
-weight: 1405
+weight: 1505
 type: docs
 ---
 

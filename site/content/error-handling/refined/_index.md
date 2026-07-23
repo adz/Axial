@@ -44,28 +44,39 @@ Untrusted Input -> Parse -> Refine -> Strongly-Typed Value
 
 ## Define your own refinement
 
-Your destination type joins `Refine.from` by defining a static `RefineFrom` member:
+Define the wrapper, smart constructor, raw projection, and reusable descriptor together:
 
 ```fsharp
 type CustomerId =
     private
     | CustomerId of PositiveInt
 
-    static member RefineFrom(raw: string, _: CustomerId) : Result<CustomerId, RefinementError> =
+module CustomerId =
+    let create raw : Result<CustomerId, RefinementError> =
         refine {
             let! (parsed: int) = raw
             let! (positive: PositiveInt) = parsed
             return CustomerId positive
         }
 
+    let value (CustomerId value) = string value.Value
+
+    let refinement =
+        Refinement.define create value
+
+type CustomerId with
+    static member Refinement(_: string, _: CustomerId) =
+        CustomerId.refinement
+
 let customerId : Result<CustomerId, RefinementError> =
     Refine.from rawCustomerId
 ```
 
-Define one `RefineFrom` member for each source and destination pair. Two interpretations with the same pair have no
-type-level distinction; expose them as named functions such as `CustomerId.fromHexText`.
+The descriptor also supplies the reverse projection used by Schema and encoders. The static member makes that
+descriptor available to `Refine.from` and `refine {}`. One source and destination pair has one unnamed descriptor;
+additional interpretations need different result types or named functions.
 
-By parsing and refining values before executing core business logic, you prevent invalid states from corrupting your domain model.
+See [Define Refined Types](./domain-values/) for the complete definition and its Schema field form.
 
 ## Tutorial
 
@@ -114,8 +125,8 @@ refine {
 
 After this function succeeds, the `Product` fields hold refined types instead of unchecked primitives.
 
-`refine {}` stops at the first failure, so a later step can depend on every earlier success. `validate {}` from
-`Axial.Validation` runs independent sibling fields and reports all of their diagnostics together.
+`refine {}` stops at the first failure, so a later step can depend on every earlier success. Schema handles independent
+field parsing and returns all path-aware boundary failures together.
 
 ## Guides
 

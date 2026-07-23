@@ -16,7 +16,7 @@ A 400 <code>application/problem+json</code> response rendering the failed parse&
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `parsed` | <code><span><a href="../../interpreters/t-schema-retainedparseresult.md">RetainedParseResult</a>&lt;<span>'model,&#32;<a href="../../interpreters/t-schema-schemaerror.md">SchemaError</a></span>&gt;</span></code> |  |
+| `parsed` | <code><span><a href="../../interpreters/t-schema-retainedparseresult.md">RetainedParseResult</a>&lt;'model&gt;</span></code> |  |
 
 ## Returns
 

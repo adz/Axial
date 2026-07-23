@@ -23,7 +23,7 @@ Each case supplies a tag, a constructor, a payload extractor, and a payload sche
 ```fsharp
 open Axial.Refined
 open Axial.Schema
-open Axial.Schema.Syntax
+open type Axial.Schema.Syntax
 
 type CardDetails =
     {
@@ -35,9 +35,10 @@ type Payment =
     | Invoice of Slug
 
 let cardSchema =
-    Schema.define<CardDetails>
-    |> fieldWith RefinedSchemas.nonBlankString "number" _.Number
-    |> construct (fun number -> { Number = number })
+    schema<CardDetails> {
+        field "number" _.Number
+        construct (fun number -> { Number = number })
+    }
 
 let paymentValue =
     Schema.union
@@ -51,19 +52,22 @@ The extractor is what lets validation and metadata/codecs inspect an existing tr
 
 ## Use As A Field
 
-Union value schemas are ordinary `Schema<'value>` values, so attach them with `fieldWith`:
+Union value schemas are ordinary `Schema<'value>` values, so select one inside the field block:
 
 ```fsharp
-open Axial.Schema.Syntax
+open type Axial.Schema.Syntax
 type Checkout =
     {
         Payment: Payment
     }
 
 let checkoutSchema =
-    Schema.define<Checkout>
-    |> fieldWith paymentValue "payment" _.Payment
-    |> construct (fun payment -> { Payment = payment })
+    schema<Checkout> {
+        field "payment" _.Payment {
+            withSchema paymentValue
+        }
+        construct (fun payment -> { Payment = payment })
+    }
 ```
 
 Parsing attaches diagnostics to the discriminator or payload path:
@@ -77,7 +81,7 @@ let raw =
                 "value", Data.Object [ "number", Data.Text "" ] ] ]
 
 let parsed = Schema.parse checkoutSchema raw
-let errors = parsed |> Result.mapError Diagnostics.flatten
+let issues = parsed |> Result.mapError SchemaErrors.toList
 ```
 
 The failing payload field reports at `payment.value.number`. An unknown tag reports at `payment.type`.

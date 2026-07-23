@@ -16,16 +16,17 @@ separates declaration from interpreter.
 
 ## Interpreters
 
-Schemas are consumed by interpreters that stay independent of workflow execution and diagnostics:
+Schemas are consumed by interpreters that stay independent of workflow execution:
 
 - [`Schema Interpreters`](./schema/interpreters/) — the boundary-parsing and rule-evaluation surface:
   - [`Data`](./schema/interpreters/#raw-input) — source-agnostic structured data captured at a data boundary.
   - [`Schema.parse` / `Schema.parseRetainingInput`](./schema/interpreters/#input-parsing) — parsing boundary input through
     a schema, with `RetainedParseResult` for redisplay, plus `Schema.check` for giving an already-existing value (a draft
     or an import) the same trust guarantee.
-  - [`SchemaError`](./schema/interpreters/#errors) — schema input, checking, and rule failures.
+  - [`SchemaError`, `Path`, and `SchemaErrors`](./schema/interpreters/#errors) — schema input, checking, and executable
+    validation failures with complete structural locations.
   - [`RefinedSchemas`](./schema/interpreters/#refined-catalog-schemas) — bridges `Axial.Refined` types (see the
-    [Validation reference]({{< relref "/error-handling/reference/" >}})) into schema field declarations.
+    [Refined reference]({{< relref "/error-handling/reference/refined/" >}})) into schema field declarations.
 
 ## Axial.Schema.JsonSchema
 
@@ -50,6 +51,4 @@ See the [HTTP servers guide]({{< relref "/schema/http-servers/" >}}) for the com
 - [`Codec`](./codec/) — compiled JSON codecs from the same declaration (namespace `Axial.Schema.Json`). Optional:
   install it alongside `Axial.Schema` only when you need the compiled hot path.
 
-`Axial.Refined`, `Validation`, and `Diagnostics` arrive through the focused `Axial.Refined` and
-`Axial.Diagnostics` dependencies. See the
-[Validation reference]({{< relref "/error-handling/reference/" >}}).
+`Axial.Refined` supplies the refinement descriptors used by refined fields. Schema owns its accumulated error type.

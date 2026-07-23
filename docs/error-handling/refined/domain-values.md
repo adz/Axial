@@ -106,6 +106,10 @@ The dispatch key is the pair of types: `string -> ContactEmail`. There can be on
 pair. If an application accepts both a strict company address and a general address, model them as different result
 types or expose named functions such as `ContactEmail.createCompany`.
 
+Two static contributions for the same source and destination make resolution ambiguous and fail compilation. Axial
+does not select one by declaration order. Built-in `string -> int` parsing follows the same rule; a different integer
+interpretation needs a different destination type or an explicitly named parser.
+
 ## Use it in `refine {}`
 
 The computation expression uses the same static descriptor:
@@ -165,3 +169,20 @@ metadata. `refine` then changes the field value from `string` to `ContactEmail`.
 One descriptor now covers direct construction, type-directed construction, dependent construction, schema parsing,
 schema checking, and encoding. Adding another refined type repeats this small definition instead of adding adapters to
 each boundary.
+
+## What changes across the codebase
+
+Without the wrapper, each consumer receives `string` and must remember which checks ran. Form parsing, JSON decoding,
+command construction, database imports, and tests can each grow another copy of the rule.
+
+With `ContactEmail`:
+
+- boundary code constructs it through `ContactEmail.create`, `Refine.from`, `refine { }`, or Schema;
+- application functions accept `ContactEmail` and contain no email-format branch;
+- encoders use `Refinement.inspect` through the same descriptor that parsed the value;
+- a changed invariant is implemented in `ContactEmail.create`;
+- tests for application functions construct valid emails once and focus on application behavior;
+- tests for invalid email text stay beside the refinement and Schema boundary tests.
+
+The type removes the unchecked state from function signatures. The descriptor removes the adapter duplication between
+the places that construct and inspect that type.

@@ -1,6 +1,6 @@
 # Schema And Refinement Unification
 
-Status: accepted pre-1.0 refactor; implementation in progress.
+Status: implemented.
 
 This proposal makes one refinement definition usable by direct type-directed refinement and by Schema. It also makes
 Schema the only public API that accumulates path-aware validation failures. The standalone Diagnostics package,
@@ -295,10 +295,19 @@ module Path =
     val index : int -> Path
     val append : Path -> Path -> Path
     val format : Path -> string
+    val fold :
+        ('state -> string -> 'state) ->
+        ('state -> int -> 'state) ->
+        'state ->
+        Path ->
+        'state
 ```
 
 There is no `Name` versus `Key` distinction. Both represent a string component. Schema knows whether a string came
 from an object field or a map entry, but error lookup and rendering do not need different path cases.
+
+`Path.fold` lets HTTP and other structural renderers distinguish keys from indexes without exposing a public segment
+union.
 
 Schema may retain a tree or non-empty collection internally for efficient prefixing and merging. That representation
 is not a second public validation model.
@@ -319,7 +328,7 @@ Private helpers provide:
 - combining two or more independent results;
 - traversing lists and maps;
 - prefixing paths;
-- merging failures in deterministic declaration order.
+- merging failures in deterministic path order while preserving multiple failures at the same path.
 
 Schema interpreters stop converting through `Validation.fromResult`, `Validation.at`, and `Validation.toResult`.
 
@@ -564,6 +573,35 @@ schema<Node> {
 ```
 
 The name reads as an operation on the current field rather than a second kind of field declaration.
+
+### Qualification
+
+Normal schema code uses the opened builders directly:
+
+```fsharp
+let signupSchema =
+    schema<Signup> {
+        field "email" _.Email
+        construct Signup.create
+    }
+```
+
+`SchemaCE.schema` is only needed when a binding named `schema` hides the builder. Recursive definitions are the common
+case:
+
+```fsharp
+let rec schema =
+    Schema.delay (fun () ->
+        SchemaCE.schema<Category> {
+            field "children" _.Children {
+                withSchema (Schema.listWith schema)
+            }
+
+            construct Category.create
+        })
+```
+
+`field` and `construct` remain unqualified because the local binding does not hide them.
 
 ### Proven Portability
 

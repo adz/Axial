@@ -1,7 +1,7 @@
 ---
 title: "Schema.Derive.MaxAttribute"
 linkTitle: "MaxAttribute"
-weight: 1406
+weight: 1506
 type: docs
 ---
 

@@ -1,7 +1,7 @@
 ---
 title: "Schema.Derive.MinAttribute"
 linkTitle: "MinAttribute"
-weight: 1405
+weight: 1505
 ---
 
 Bounds the natural size of the field's type from below: text length, list count, or map count.

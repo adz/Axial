@@ -1,176 +1,128 @@
 ---
-weight: 15
+weight: 20
 title: Schema Syntax
+description: Record fields, field blocks, canonical schemas, and checked constructors.
 type: docs
-description: Constructor-last object schema declarations with inferred fields and adjacent constraints.
 ---
 
 
-Open `Axial.Schema.Syntax` in the module that owns object-schema declarations:
+A record schema is one constructor-last computation expression:
 
 ```fsharp
-module SignupSchemas =
-    open Axial.Schema
-    open Axial.Schema.Syntax
-
-    let schema =
-        Schema.define<Signup>
-        |> field "email" _.Email
-        |> constrain emailFormat
-        |> field "age" _.Age
-        |> constrain (atLeast 13)
-        |> construct (fun email age -> { Email = email; Age = age })
+schema<Signup> {
+    field "email" _.Email
+    field "age" _.Age
+    construct Signup.create
+}
 ```
 
-`Schema.define<Signup>` describes structure but cannot construct a `Signup`. Each `field` adds one
-typed field, and `construct` closes the declaration only when the constructor's argument order and
-types match what the fields declared — checked by the compiler, at any field count. There is no
-arity limit: a two-field schema and a thirty-field schema close the same way.
+`field` and `construct` use implicit yield. Do not write `yield`.
 
-## Constraints sit beside their field
+## Fields without blocks
 
-`constrain` applies to the field directly above it, and constraints are typed against that field's
-value type — a text constraint after an `int` field fails to compile on the `constrain` line.
-Constraints stack:
+The getter fixes the field type. Schema resolves that type's canonical schema:
 
 ```fsharp
-|> field "name" _.Name
-|> constrain (minLength 1)
-|> constrain (maxLength 100)
-|> constrain trimmed
+field "name" _.Name
+field "age" _.Age
+field "tags" _.Tags
 ```
 
-## Inferred fields
+This works for built-in primitives and composites, built-in refined values, and application types that contribute a
+static `Schema` member.
 
-Primitive `string`, `int`, `decimal`, `bool`, `DateOnly`, `DateTimeOffset`, and `Guid` fields are
-inferred from the getter. An owned type joins the inference by declaring its canonical schema as a
-static member:
+On .NET, a quotation can supply the default wire name:
 
 ```fsharp
-type EmailAddress =
-    private
-    | EmailAddress of string
-
-    static member Schema(_: EmailAddress) : Schema<EmailAddress> =
-        Schema.convert EmailAddress (fun (EmailAddress value) -> value) Schema.text
+field _.Name
 ```
 
-The marker argument lets F# select the member by field type at compile time. `field` then infers
-`EmailAddress` directly and recursively through `EmailAddress option`, `EmailAddress list`, and
-`Map<string, EmailAddress>`:
+Use the explicit form in portable code:
 
 ```fsharp
-type Signup =
-    { Email: EmailAddress option }
-
-let schema =
-    Schema.define<Signup>
-    |> field "email" _.Email
-    |> construct (fun email -> { Email = email })
+field "name" _.Name
 ```
 
-F# optional type extensions do not satisfy static member constraints, so a type from another library
-needs a nominal wrapper or an explicit `fieldWith` schema.
+Fable cannot perform the quotation operation that derives the member name. Explicit wire names compile on .NET and
+Fable.
 
-## Explicit schemas: `fieldWith`
+## Field blocks
 
-Use `fieldWith` when a field intentionally supplies a local schema instead of its type's canonical
-one — or when the type has no canonical schema to infer:
+A block groups transformations for one field:
 
 ```fsharp
-let inviteEmail =
-    Schema.option (Schema.text |> Schema.constrain Constraint.email)
-
-let schema =
-    Schema.define<Signup>
-    |> fieldWith inviteEmail "email" _.Email
-    |> construct (fun email -> { Email = email })
+field "email" _.Email {
+    withSchema Schema.text
+    constrain Constraint.required
+    refine
+    validate validateCompanyEmail
+}
 ```
 
-Typed constraints still apply to the current field:
+Operations run from top to bottom:
+
+1. `withSchema` sets the current raw schema.
+2. `constrain` adds portable metadata and an executable check without changing the value type.
+3. `refine` changes the current schema from its raw type to the getter type.
+4. `validate` runs executable value-preserving logic over the current type.
+
+The block must finish with the getter type. A plain `int` field does not need refinement:
 
 ```fsharp
-fieldWith (Schema.listWith memberSchema) "members" _.Members
-|> constrain (minCount 1)
+field "age" _.Age {
+    withSchema Schema.int
+    constrain (Constraint.atLeast 18)
+}
 ```
 
-## Bare getters: deriving the wire name
-
-Adding `open type Axial.Schema.Syntax` (note the `open type`) overloads `field` with a bare form that
-derives the wire name from the property, camelCased:
+## Refinement changes the stage
 
 ```fsharp
-module ContactSchemas =
-    open Axial.Schema
-    open Axial.Schema.Syntax
-    open type Axial.Schema.Syntax
-
-    let schema =
-        Schema.define<Contact>
-        |> field _.Name          // wire name "name"
-        |> constrain (minLength 1)
-        |> field _.Age           // wire name "age"
-        |> construct (fun name age -> { Name = name; Age = age })
+field "email" _.Email {
+    withSchema Schema.text
+    constrain Constraint.required       // operates on string
+    refine                              // string -> ContactEmail
+    validate validateCompanyEmail       // operates on ContactEmail
+}
 ```
 
-Two rules keep this predictable:
+The parameterless operation resolves `Refinement<string,ContactEmail>` at compile time. A missing contribution is a
+compile error; Schema does not use reflection or a runtime registry.
 
-- An explicit name is never transformed — `field "Name" _.Name` puts `Name` on the wire exactly.
-- The camelCase policy applies only to derived names, and derivation happens once when the schema
-  value is built (the property name is read from the getter expression; the compiled getter itself is
-  used for parsing and checking, so there is no reflection on any per-value path).
+## Constructors
 
-The bare form is .NET-only. It requires a plain property getter (`_.Name`) and reads that getter's F#
-quotation to derive the wire name. Fable cannot interpret the quotation operation used for this name
-extraction. Code compiled with Fable must declare the wire name explicitly:
+`construct` accepts a total constructor:
 
 ```fsharp
-Schema.define<Contact>
-|> field "name" _.Name
-|> field "age" _.Age
-|> construct (fun name age -> { Name = name; Age = age })
+construct (fun email age -> { Email = email; Age = age })
 ```
 
-Computed values and tuple projections also use the explicitly named form on .NET. The named form and
-the rest of the Schema authoring API compile on .NET, NativeAOT, and Fable.
-
-## Checked constructors
-
-When a constructor can reject a combination of otherwise-valid fields, close with `constructResult`:
+`constructResult` accepts cross-field construction that can fail:
 
 ```fsharp
-let rangeSchema =
-    Schema.define<DateRange>
-    |> field "start" _.Start
-    |> field "end" _.End
-    |> constructResult (fun start finish ->
-        if start <= finish then Ok { Start = start; End = finish }
-        else Error "end must not precede start")
+constructResult Signup.createChecked
 ```
 
-The rejection becomes a diagnostic like any field error, placed by the parser's constructor-error
-path option. The [trusted construction guide](trusted-construction.md) builds on this.
+All independent fields must succeed before either constructor runs. A `constructResult` failure attaches to the current
+object path.
 
-## Collections and maps as standalone schemas
+The field chain is recursive and has no fixed arity limit.
 
-Lists and string-keyed maps resolve their member schema from its type when used independently:
+## Recursive schemas
+
+Use `Schema.defer` where a field refers back to the schema being defined:
 
 ```fsharp
-Schema.list<EmailAddress>()
-Schema.map<EmailAddress>()
+let rec schema : Lazy<Schema<Category>> =
+    lazy (
+        SchemaCE.schema<Category> {
+            field "name" _.Name
+            field "children" _.Children {
+                withSchema (Schema.listWith (Schema.defer schema))
+            }
+            construct Category.create
+        })
 ```
 
-Use `Schema.listWith itemSchema` or `Schema.mapWith valueSchema` for a recursive, constrained, or
-otherwise local member schema. Nested constraints are explicit about their level:
-
-```fsharp
-Schema.list<string>()
-|> constrainItems (minLength 1)
-|> Schema.constrain (Constraint.minCount 1)
-
-Schema.map<string>()
-|> constrainValues (minLength 1)
-```
-
-For the exact relationship between `field`, `fieldWith`, adjacent constraints, and standalone value
-schemas, see [How inferred fields expand](field-desugaring.md).
+Only the opening builder is qualified here because the binding named `schema` shadows the unqualified builder.
+Ordinary declarations use unqualified `schema`, `field`, and `construct`.
