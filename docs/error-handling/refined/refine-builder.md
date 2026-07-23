@@ -1,27 +1,19 @@
 ---
 weight: 10
 title: Refine CE
-description: Sequencing parsing and refinement with the refine { } builder.
+description: Use destination types to sequence parsing and refinement with refine { }.
 ---
 
 # Refine CE
 
-Use `refine {}` to parse and refine raw values from the type expected on the left side of `let!`. Each successful step
-passes its value to the next line, and the block stops at the first error.
-
-One value needs no computation expression:
+`Refine.from` constructs one value:
 
 ```fsharp
 let id : Result<int, RefinementError> =
     Refine.from rawId
 ```
 
-`refine {}` sequences several dependent refinements and stops at the first failure.
-
-## What the keywords do
-
-`let!` selects a parser or refined constructor when its right side is raw input. `do!` binds a step whose successful
-value is `unit`. `return!` uses another refinement result as the result of the block.
+`refine {}` sequences several constructions that may fail. It stops at the first `RefinementError`.
 
 ```fsharp
 refine {
@@ -32,57 +24,52 @@ refine {
 }
 ```
 
-Here is the same block with the right-hand types and result-returning steps shown explicitly:
+The type on the left of `let!` is part of the operation. `rawId` is a `string`, and `parsed` is an `int`, so Axial
+resolves the built-in `Refinement<string, int>`. The next line resolves `Refinement<int, PositiveInt>`.
+
+## What each form binds
+
+The builder accepts three forms:
 
 ```fsharp
 refine {
-    let! (parsed: int) = (rawId: string)
-    let! (id: PositiveInt) = (parsed: int)
-    do! (checkAllowed id: Result<unit, RefinementError>)
-    return! (createAccount id: Result<Account, RefinementError>)
+    // Raw value: resolve Refinement<string, int>, then run it.
+    let! (parsed: int) = rawId
+
+    // Parse result: map ParseError into RefinementError.
+    let! count = Parse.int rawCount
+
+    // Refinement result: bind it without another conversion.
+    do! (checkAllowed parsed: Result<unit, RefinementError>)
+
+    return parsed, count
 }
-// Result<Account, RefinementError>
 ```
 
-A parser selected by `let!` returns `RefinementError.ParseFailed` on failure. A selected refinement constructor returns
-its structured `RefinementError` directly. Explicit `Result<_, ParseError>` and `Result<_, RefinementError>` values
-still bind normally.
+`return` wraps a successful value. `return!` uses an existing `Result<_, RefinementError>` as the result of the block.
 
-## Basic Usage
+## Why the annotation is sometimes required
 
-This example builds a domain value from two strings:
+One `string` can become an `int`, `Guid`, `DateTimeOffset`, `NonBlankString`, or an application type. F# must know the
+destination while it resolves `let!`:
 
 ```fsharp
-open Axial
-open Axial.Refined
-
-type UserId = UserId of PositiveInt
-type Email = Email of NonBlankString
-
-type User = { Id: UserId; Email: Email }
-
-let createUser (rawId: string) (rawEmail: string) : Result<User, RefinementError> =
-    refine {
-        let! (parsedId: int) = rawId
-        let! (positiveId: PositiveInt) = parsedId
-        let! (email: NonBlankString) = rawEmail
-        
-        return {
-            Id = UserId positiveId
-            Email = Email email
-        }
-    }
+let! (id: int) = rawId
+let! (email: ContactEmail) = rawEmail
 ```
 
-The annotations are required here because a `string` can target several parsed and refined types, while an `int` can
-target several integer refinements. F# must resolve the `Bind` overload before the final `return` establishes the
-block's result type.
+The final return type arrives too late to disambiguate those bind operations. This is the same reason
+`Refine.from rawId` normally has a result annotation:
 
-## Automatic parsing
+```fsharp
+let id : Result<int, RefinementError> = Refine.from rawId
+```
 
-Bind raw text to any concrete primitive parser target:
+## Built-in parsing
 
-| Left-hand type | Selected parser |
+Raw text can target these primitive types:
+
+| Destination | Parser used by its refinement |
 | --- | --- |
 | `int` | `Parse.int` |
 | `int64` | `Parse.long` |
@@ -95,88 +82,74 @@ Bind raw text to any concrete primitive parser target:
 | `DateOnly` | `Parse.dateOnly` on .NET 8+ |
 | `TimeOnly` | `Parse.timeOnly` on .NET 8+ |
 
-`Parse.enum`, optional parsers, and parsers with caller-supplied defaults need additional information that a target
-type alone cannot provide. Call those functions explicitly; their `Result<_, ParseError>` values bind directly.
+The descriptor wraps `ParseError` as `RefinementError.ParseFailed`. `Parse.enum`, optional parsers, and parsers with a
+supplied default need arguments that a destination type cannot contain, so call those functions directly.
 
-## Automatic refinement
+## Built-in refined values
 
-The refined type on the left selects its matching `Refine` constructor:
+The destination also selects built-in structural refinements:
 
-| Raw right side | Left-hand type | Selected constructor |
-| --- | --- | --- |
-| `string` | `NonBlankString` | `Refine.nonBlankString` |
-| `string` | `TrimmedString` | `Refine.trimmedString` |
-| `string` | `Slug` | `Refine.slug` |
-| `int` | `PositiveInt` | `Refine.positiveInt` |
-| `int` | `NonNegativeInt` | `Refine.nonNegativeInt` |
-| `int` | `NonZeroInt` | `Refine.nonZeroInt` |
-| `int` | `NegativeInt` | `Refine.negativeInt` |
-| `int` | `NonPositiveInt` | `Refine.nonPositiveInt` |
-| `seq<'value>` | `NonEmptyList<'value>` | `Refine.nonEmptyList` |
-| `seq<'value>` | `NonEmptyArray<'value>` | `Refine.nonEmptyArray` |
-| `seq<'value>` | `DistinctList<'value>` | `Refine.distinctList` |
+| Raw value | Destination |
+| --- | --- |
+| `string` | `NonBlankString`, `TrimmedString`, or `Slug` |
+| `int` | `PositiveInt`, `NonNegativeInt`, `NonZeroInt`, `NegativeInt`, or `NonPositiveInt` |
+| `seq<'value>` or a supported concrete collection | `NonEmptyList<'value>`, `NonEmptyArray<'value>`, or `DistinctList<'value>` |
 
-Refinements that need configuration take that configuration beside the raw input:
+Configured refinements include their configuration in the raw input type:
 
 ```fsharp
 refine {
     let! (name: BoundedString) = (rawName, 3, 80)
     let! (items: BoundedList<Item>) = (rawItems, 1, 20)
-    let! (codes: BoundedArray<string>) = (rawCodes, 1, 10)
     let! (window: DateTimeOffsetRange) = (startsAt, endsAt)
-    let! (dates: DateOnlyRange) = (firstDate, lastDate)
-    return name, items, codes, window, dates
+    return name, items, window
 }
 ```
 
-These select `Refine.boundedString`, `Refine.boundedList`, `Refine.boundedArray`,
-`Refine.dateTimeOffsetRange`, and `Refine.dateOnlyRange`. The list form accepts a list, the array form accepts an
-array, and `DateOnlyRange` is available on .NET 8 and later.
+For example, the first line resolves
+`Refinement<string * int * int, BoundedString>`.
 
-Explicit constructors remain useful when a function computes configuration dynamically or when local code reads more
-clearly with the operation named:
+## Application types use the same protocol
 
-```fsharp
-refine {
-    let! name = Refine.boundedString minimum maximum rawName
-    return name
-}
-```
-
-## Define your own destination type
-
-The builder uses the same type selection as `Refine.from`. Define a static `RefineFrom` member on your destination
-type:
+An application type contributes a `Refinement` descriptor:
 
 ```fsharp
 type CustomerId =
     private
     | CustomerId of PositiveInt
 
-    static member RefineFrom(raw: string, _: CustomerId) : Result<CustomerId, RefinementError> =
+module CustomerId =
+    let create raw : Result<CustomerId, RefinementError> =
         refine {
             let! (parsed: int) = raw
             let! (positive: PositiveInt) = parsed
             return CustomerId positive
         }
+
+    let value (CustomerId value) =
+        string value.Value
+
+    let refinement =
+        Refinement.define create value
+
+type CustomerId with
+    static member Refinement(_: string, _: CustomerId) =
+        CustomerId.refinement
 ```
 
-The type then binds like a built-in refinement:
+It then works in both entry points:
 
 ```fsharp
-refine {
-    let! (customerId: CustomerId) = rawCustomerId
-    let! (quantity: PositiveInt) = rawQuantity
-    return customerId, quantity
-}
+let one : Result<CustomerId, RefinementError> =
+    Refine.from rawCustomerId
+
+let pair =
+    refine {
+        let! (customerId: CustomerId) = rawCustomerId
+        let! (quantity: PositiveInt) = rawQuantity
+        return customerId, quantity
+    }
 ```
 
-Define one `RefineFrom` member for each source and destination pair. Two interpretations with the same pair have no
-type-level distinction, so they require explicitly named functions.
-
-## When to use `refine {}`
-
-- **Parsing Strings**: When reading values from query strings, environment variables, or CLI inputs.
-- **Fail-Fast Boundary Validation**: When constructing values where the type system itself guarantees the invariant (e.g. you cannot have a user record with an empty email).
-
-If you need to collect multiple independent errors across fields without failing fast, use [`validate {}`]({{< relref "/error-handling/diagnostics/validate-builder.md" >}}) instead.
+See [Define Refined Types](../domain-values/) for the wrapper, smart constructor, descriptor, and Schema integration
+as one complete definition.
