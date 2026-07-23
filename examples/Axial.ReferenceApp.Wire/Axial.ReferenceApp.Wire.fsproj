@@ -19,8 +19,14 @@
     <ProjectReference Include="..\..\src\Axial.Schema.JsonSchema\Axial.Schema.JsonSchema.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Schema.Json\Axial.Schema.Json.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Data\Axial.Data.fsproj" />
-    <ProjectReference Include="..\..\scripts\schemagen\schemagen.fsproj" ReferenceOutputAssembly="false" PrivateAssets="all" />
   </ItemGroup>
+
+  <Target Name="BuildSourceTreeSchemagen" BeforeTargets="AxialSchemaGen">
+    <MSBuild
+      Projects="..\..\scripts\schemagen\schemagen.fsproj"
+      Targets="Build"
+      Properties="Configuration=$(Configuration)" />
+  </Target>
 
   <Import Project="..\..\src\Axial.Schema.Contracts.Build\build\Axial.Schema.Contracts.Build.targets" />
 
