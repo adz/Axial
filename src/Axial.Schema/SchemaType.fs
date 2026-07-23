@@ -16,8 +16,9 @@ open System.Collections.Generic
 /// </para>
 /// <para>
 /// Primitive, collection, optional, union, refined, and record declarations all produce <c>Schema&lt;'value&gt;</c>.
-/// Object declarations start with <c>Schema.define</c>, add fields through <c>Syntax</c>, and finish with
-/// <c>Syntax.construct</c> or <c>Syntax.constructResult</c>.
+/// Record declarations use the <c>schema&lt;'value&gt; { }</c> computation expression. Each <c>field</c> may contain
+/// <c>withSchema</c>, <c>constrain</c>, <c>refine</c>, and <c>validate</c> operations before the declaration finishes
+/// with <c>construct</c> or <c>constructResult</c>.
 /// </para>
 /// </remarks>
 // No class-level `as this` self-identifier here: combined with the secondary constructor it makes

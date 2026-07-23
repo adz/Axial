@@ -1,7 +1,4 @@
-// The constructor-last authoring surface: DefineShape/ObjectShape build a typed field chain one
-// field at a time (see RecordPlan.fs for the chain itself), Syntax (module and type) is the public
-// field/constrain/construct vocabulary, and Schema.admit rewrites a draft's definition through a
-// checked projection. This is the file schema-definition modules actually open.
+// Shared schema authoring vocabulary and canonical field-schema resolution.
 
 // FS0064: the SRTP witness pattern (`(^w or ^s) : ...` with ^w fixed to a concrete witness class)
 // intentionally constrains the witness type variable; the warning is noise here.
@@ -21,101 +18,8 @@ open Microsoft.FSharp.Quotations.Patterns
 type Constraint<'value> internal (untyped: Constraint) =
     member internal _.Untyped = untyped
 
-/// <summary>
-/// An unfinished structural shape for <typeparamref name="'model" />: committed fields plus one current
-/// field, but no constructor yet. The phantom parameters record the constructor the shape demands:
-/// <typeparamref name="'constructor" /> is the full curried constructor type,
-/// <typeparamref name="'remaining" /> is what is left of it after the declared fields consume their
-/// arguments, and <typeparamref name="'last" /> is the current field's value type — the cursor that
-/// <c>constrain</c> targets.
-/// </summary>
-/// <remarks>
-/// <c>Schema.define</c> starts a definition, <c>field</c>/<c>fieldWith</c> add typed fields (committing
-/// the previous one), <c>constrain</c> attaches a typed constraint to the current field, and
-/// <c>construct</c>/<c>constructResult</c> commit the final field and close the shape into a
-/// <see cref="T:Axial.Schema.Schema`1" /> by supplying the constructor last. Field count is unbounded:
-/// each field peels one curried constructor argument by ordinary type inference.
-/// </remarks>
-[<Sealed>]
-type ObjectShape<'model, 'constructor, 'remaining, 'last> internal (committed: obj, last: obj) =
-    /// The committed chain: an IShapeFields&lt;'model,'constructor,'last -&gt; 'remaining&gt; over the fields
-    /// declared before the current one.
-    member internal _.Committed = committed
-    /// The current field: a boxed FieldDefinition&lt;'model,'last&gt;.
-    member internal _.Last = last
-
-    /// <summary>Infrastructure for <c>field</c>/<c>fieldWith</c>; not intended for direct use.
-    /// Commits the current field and installs the next one as the new cursor.</summary>
-    static member Field
-        (
-            shape: ObjectShape<'model, 'constructor, 'field -> 'next, 'last>,
-            name: string,
-            getter: 'model -> 'field,
-            valueSchema: Schema<'field>
-        ) : ObjectShape<'model, 'constructor, 'next, 'field> =
-        if isNull (box getter) then nullArg (nameof getter)
-        if isNull (box valueSchema) then nullArg (nameof valueSchema)
-        if isNull (box shape) then nullArg (nameof shape)
-
-        let committed =
-            ShapeFieldsAppend<'model, 'constructor, 'last, 'field -> 'next, _>(
-                unbox<IShapeFields<'model, 'constructor, 'last -> 'field -> 'next>> shape.Committed,
-                unbox<FieldDefinition<'model, 'last>> shape.Last
-            )
-            :> IShapeFields<'model, 'constructor, 'field -> 'next>
-
-        let definition =
-            { FieldDefinition.ExternalName = ExternalFieldName.create name
-              Order = FieldOrder.create 0
-              Getter = getter
-              ValueSchema = valueSchema.ValueDefinition
-              Constraints = [] }
-
-        ObjectShape(box committed, box definition)
-
-/// <summary>The starting point produced by <c>Schema.define</c>: a shape for
-/// <typeparamref name="'model" /> with no fields declared yet. The first <c>field</c> or
-/// <c>fieldWith</c> turns it into an <see cref="T:Axial.Schema.ObjectShape`4" />.</summary>
-[<Sealed>]
-type DefineShape<'model> internal () =
-
-    /// <summary>Infrastructure for <c>field</c>/<c>fieldWith</c>; not intended for direct use.
-    /// Declares the first field, fixing the shape's constructor type.</summary>
-    static member Field
-        (
-            shape: DefineShape<'model>,
-            name: string,
-            getter: 'model -> 'field,
-            valueSchema: Schema<'field>
-        ) : ObjectShape<'model, 'field -> 'next, 'next, 'field> =
-        if isNull (box getter) then nullArg (nameof getter)
-        if isNull (box valueSchema) then nullArg (nameof valueSchema)
-        if isNull (box shape) then nullArg (nameof shape)
-
-        let committed =
-            ShapeFieldsEmpty<'model, 'field -> 'next>() :> IShapeFields<'model, 'field -> 'next, 'field -> 'next>
-
-        let definition =
-            { FieldDefinition.ExternalName = ExternalFieldName.create name
-              Order = FieldOrder.create 0
-              Getter = getter
-              ValueSchema = valueSchema.ValueDefinition
-              Constraints = [] }
-
-        ObjectShape(box committed, box definition)
-
 [<RequireQualifiedAccess>]
 module internal ShapeInternals =
-    /// Commits the current field onto the typed chain, yielding the chain for every declared field.
-    let commit
-        (shape: ObjectShape<'model, 'constructor, 'remaining, 'last>)
-        : IShapeFields<'model, 'constructor, 'remaining> =
-        ShapeFieldsAppend<'model, 'constructor, 'last, 'remaining, _>(
-            unbox<IShapeFields<'model, 'constructor, 'last -> 'remaining>> shape.Committed,
-            unbox<FieldDefinition<'model, 'last>> shape.Last
-        )
-        :> IShapeFields<'model, 'constructor, 'remaining>
-
     let camelCase (name: string) =
         if System.String.IsNullOrEmpty name then
             name
@@ -123,9 +27,9 @@ module internal ShapeInternals =
             string (System.Char.ToLowerInvariant name[0]) + name.Substring 1
 
 /// <summary>
-/// Canonical value-schema resolution for the inferred <c>field</c> form. A type participates by exposing
+/// Canonical value-schema resolution for a schema field. A type participates by exposing
 /// <c>static member Schema: T -&gt; Schema&lt;T&gt;</c>; Axial supplies that member for its supported built-in types.
-/// When no member matches, the compile error points at this constraint: use <c>fieldWith</c> with an explicit schema.
+/// When no member matches, define the field with a <c>withSchema</c> operation.
 /// </summary>
 [<Sealed; AbstractClass>]
 type SchemaDefaults =
@@ -177,8 +81,6 @@ type SchemaDefaults =
 
 [<RequireQualifiedAccess>]
 module internal ShapeOps =
-    let define<'model> : DefineShape<'model> = DefineShape<'model>()
-
     /// Model-level trusted construction: maps a permissive draft schema to a domain schema through an
     /// admission function and a projection, preserving fields, wire names, constraints, and metadata.
     let admit (create: 'draft -> Result<'domain, string>) (project: 'domain -> 'draft) (draft: Schema<'draft>) : Schema<'domain> =
@@ -221,45 +123,9 @@ module internal ShapeOps =
         | PendingDefinition -> invalidArg (nameof draft) "Expected a completed schema definition."
 
 /// <summary>
-/// The constructor-last schema authoring vocabulary: <c>field</c>, <c>fieldWith</c>, <c>constrain</c>,
-/// typed constraints, and the closing <c>construct</c>/<c>constructResult</c>. Open this module locally
-/// inside a schema-definition module; start shapes with <c>Schema.define</c>. To also use the bare
-/// getter form (<c>field _.Name</c>), add <c>open type Axial.Schema.Syntax</c>.
+/// Typed constraints and collection-schema operations used by schema definitions.
 /// </summary>
 module Syntax =
-
-    /// <summary>Adds a field using the supplied completed value schema. Prefer <c>field</c> when the field type has a
-    /// canonical schema; use <c>fieldWith</c> for a local override, recursion, or a type that cannot contribute one.</summary>
-    let inline fieldWith (valueSchema: Schema<'value>) (name: string) (getter: 'model -> 'value) (shape: ^shape) : ^shape' =
-        (^shape: (static member Field: ^shape * string * ('model -> 'value) * Schema<'value> -> ^shape') (shape,
-                                                                                                         name,
-                                                                                                         getter,
-                                                                                                         valueSchema))
-
-    /// <summary>Adds a field whose value schema is inferred from the getter's result type. Supported types
-    /// are the <see cref="T:Axial.Schema.SchemaDefaults" /> overload set plus any type exposing
-    /// <c>static member Schema</c>. For anything else, use <c>fieldWith</c> with an explicit schema.</summary>
-    let inline field (name: string) (getter: 'model -> ^value) (shape: ^shape) : ^shape' =
-        fieldWith (SchemaDefaults.Resolve()) name getter shape
-
-    /// <summary>Attaches a typed constraint to the current (most recently declared) field. The constraint's
-    /// value type must match the field's value type, so a misplaced constraint fails to compile.</summary>
-    let constrain
-        (constraint': Constraint<'value>)
-        (shape: ObjectShape<'model, 'constructor, 'remaining, 'value>)
-        : ObjectShape<'model, 'constructor, 'remaining, 'value> =
-        if isNull (box constraint') then nullArg (nameof constraint')
-        if isNull (box shape) then nullArg (nameof shape)
-
-        let definition = unbox<FieldDefinition<'model, 'value>> shape.Last
-
-        ObjectShape(
-            shape.Committed,
-            box
-                { definition with
-                    Constraints = definition.Constraints @ [ constraint'.Untyped ] }
-        )
-
     /// <summary>Adds a typed constraint to every item described by a list schema.</summary>
     let constrainItems (constraint': Constraint<'item>) (schema: Schema<'item list>) : Schema<'item list> =
         if isNull (box constraint') then nullArg (nameof constraint')
@@ -269,26 +135,6 @@ module Syntax =
     let constrainValues (constraint': Constraint<'item>) (schema: Schema<Map<string, 'item>>) : Schema<Map<string, 'item>> =
         if isNull (box constraint') then nullArg (nameof constraint')
         SchemaCore.constrainValues constraint'.Untyped schema
-
-    /// <summary>Closes a shape with a total constructor. The constructor's curried parameters must match the
-    /// declared fields in order and type; any number of fields is supported.</summary>
-    let construct
-        (f: 'constructor)
-        (shape: ObjectShape<'model, 'constructor, 'model, 'last>)
-        : Schema<'model> =
-        if isNull (box f) then nullArg (nameof f)
-        if isNull (box shape) then nullArg (nameof shape)
-        SchemaCore.closeTotal (ShapeClosure(f, ShapeInternals.commit shape))
-
-    /// <summary>Closes a shape with a checked constructor returning <c>Result&lt;'model, string&gt;</c>. The
-    /// error becomes a schema diagnostic; interpreters place it with <c>Schema.constructorErrorAt</c>.</summary>
-    let constructResult
-        (f: 'constructor)
-        (shape: ObjectShape<'model, 'constructor, Result<'model, string>, 'last>)
-        : Schema<'model> =
-        if isNull (box f) then nullArg (nameof f)
-        if isNull (box shape) then nullArg (nameof shape)
-        SchemaCore.closeResult (ShapeClosure(f, ShapeInternals.commit shape))
 
     // ---- typed constraints ----
 

@@ -17,14 +17,14 @@ module WorkspaceCardV1 =
 
     /// The schema declared by workspace.fs (WorkspaceCard.v1).
     let schema : Schema<WorkspaceCardV1> =
-        SchemaCE.schema<WorkspaceCardV1> {
-            SchemaCE.field "name" (fun (value: WorkspaceCardV1) -> value.Name) {
+        schema<WorkspaceCardV1> {
+            field "name" (fun (value: WorkspaceCardV1) -> value.Name) {
                 withSchema (Schema.text |> Schema.describe "Display name of the workspace.")
                 constrain (minLength 1)
                 constrain (maxLength 60)
             }
-            SchemaCE.field "owner" (fun (value: WorkspaceCardV1) -> value.Owner)
-            SchemaCE.construct (fun name owner ->
+            field "owner" (fun (value: WorkspaceCardV1) -> value.Owner)
+            construct (fun name owner ->
                 { Name = name
                   Owner = owner })
         }
@@ -52,23 +52,23 @@ module WorkspaceCard =
 
     /// The schema declared by workspace.fs (WorkspaceCard.v2).
     let schema : Schema<WorkspaceCard> =
-        SchemaCE.schema<WorkspaceCard> {
-            SchemaCE.field "name" (fun (value: WorkspaceCard) -> value.Name) {
+        schema<WorkspaceCard> {
+            field "name" (fun (value: WorkspaceCard) -> value.Name) {
                 withSchema (Schema.text |> Schema.describe "Display name of the workspace.")
                 constrain (minLength 1)
                 constrain (maxLength 60)
             }
-            SchemaCE.field "owner_email" (fun (value: WorkspaceCard) -> value.OwnerEmail) {
+            field "owner_email" (fun (value: WorkspaceCard) -> value.OwnerEmail) {
                 constrain emailFormat
             }
-            SchemaCE.field "visibility" (fun (value: WorkspaceCard) -> value.Visibility) {
+            field "visibility" (fun (value: WorkspaceCard) -> value.Visibility) {
                 withSchema (Schema.enum visibilityCases |> Schema.withDefault Visibility.Private)
             }
-            SchemaCE.field "members" (fun (value: WorkspaceCard) -> value.Members) {
+            field "members" (fun (value: WorkspaceCard) -> value.Members) {
                 withSchema (Schema.listWith Schema.text)
                 constrain distinct
             }
-            SchemaCE.construct (fun name ownerEmail visibility members -> WorkspaceCard.create name ownerEmail visibility members)
+            construct (fun name ownerEmail visibility members -> WorkspaceCard.create name ownerEmail visibility members)
         }
         |> Schema.describe "A workspace card with a dedicated owner email, visibility, and member emails."
 

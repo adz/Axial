@@ -1,8 +1,5 @@
-// The typed record plan retained when a constructor-last shape closes: IShapeFields is the typed
-// field chain (empty + append nodes, one curried constructor argument peeled per field),
-// ShapeClosure pairs a chain with its constructor, and IRecordPlanCompiler/CompiledRecordPlan let
-// interpreters such as Axial.Schema.Json fold the chain into direct typed encode/decode plans
-// without reconstructing types. Shape.fs builds these; interpreters consume them.
+// Interpreter-facing typed record-plan contracts. SchemaBuilder.fs retains the typed field chain
+// and compiles it through these contracts without reflection or obj-array constructor dispatch.
 namespace Axial.Schema
 
 open System
@@ -44,95 +41,8 @@ type IRecordPlanCompiler<'model, 'result> =
         plan: IRecordPlanState<'model, 'constructor, 'constructed> *
         finish: ('constructed -> Result<'model, string>) -> 'result
 
-type IShapeFields<'model, 'constructor, 'remaining> =
-    abstract member GetFields: int -> obj list * int
-    abstract member Apply: constructor: obj * arguments: obj array -> obj
-    abstract member Build<'result> :
-        factory: IRecordPlanCompiler<'model, 'result> -> IRecordPlanState<'model, 'constructor, 'remaining>
-
-type internal ShapeFieldsEmpty<'model, 'constructor>() =
-    interface IShapeFields<'model, 'constructor, 'constructor> with
-        member _.GetFields(index) = [], index
-        member _.Apply(constructor, _) = constructor
-        member _.Build(factory) = factory.OnEnd()
-
-type internal ShapeFieldsAppend<'model, 'constructor, 'field, 'next, 'head
-    when 'head :> IShapeFields<'model, 'constructor, 'field -> 'next>>
-    internal
-    (
-        head: 'head,
-        field: FieldDefinition<'model, 'field>
-    ) =
-
-    interface IShapeFields<'model, 'constructor, 'next> with
-        member _.GetFields(index) =
-            let fields, nextIndex = (head :> IShapeFields<'model, 'constructor, 'field -> 'next>).GetFields index
-
-            let descriptor =
-                { FieldDescriptor.ExternalName = field.ExternalName
-                  Order = FieldOrder.create nextIndex
-                  Getter = fun model -> field.Getter model |> box
-                  ValueSchema = field.ValueSchema
-                  Constraints = field.Constraints }
-
-            fields @ [ box descriptor ], nextIndex + 1
-
-        member _.Apply(constructor, arguments) =
-            let fieldIndex = (head :> IShapeFields<'model, 'constructor, 'field -> 'next>).GetFields(0) |> snd
-            let appliedHead =
-                (head :> IShapeFields<'model, 'constructor, 'field -> 'next>).Apply(constructor, arguments)
-
-            let typedConstructor = unbox<'field -> 'next> appliedHead
-            typedConstructor (unbox<'field> arguments[fieldIndex]) |> box
-
-        member _.Build(factory) =
-            let headNode = head :> IShapeFields<'model, 'constructor, 'field -> 'next>
-            let headResult = headNode.Build(factory)
-            let order = headNode.GetFields(0) |> snd
-
-            let typedField =
-                Field(
-                    { field with
-                        Order = FieldOrder.create order }
-                )
-
-            factory.OnField(order, typedField, headResult)
-
-/// <summary>
-/// Internal closing state that combines a constructor with the typed fields recovered from an object shape.
-/// </summary>
-/// <remarks>
-/// Constructor-last arity dispatch creates this value after matching the shape's phantom field types against the
-/// constructor. It is not an authoring surface; it carries the typed plan into compiled interpreters.
-/// </remarks>
-type internal ShapeClosure<'model, 'constructor, 'remaining, 'chain
-    when 'chain :> IShapeFields<'model, 'constructor, 'remaining>>
-    internal
-    (
-        constructor: 'constructor,
-        fields: 'chain
-    ) =
-    member internal _.Constructor = constructor
-    member internal _.Fields = fields
-
 type internal ICompiledRecordPlan<'model> =
     abstract member CompilePlan<'result> : factory: IRecordPlanCompiler<'model, 'result> -> 'result
-
-type internal CompiledRecordPlan<'model, 'constructor, 'constructed, 'fields
-    when 'fields :> IShapeFields<'model, 'constructor, 'constructed>>
-    (
-        constructor: 'constructor,
-        fields: 'fields,
-        finish: 'constructed -> Result<'model, string>
-    ) =
-
-    interface ICompiledRecordPlan<'model> with
-        member _.CompilePlan(factory) =
-            if isNull (box factory) then
-                nullArg (nameof factory)
-
-            let result = fields.Build(factory)
-            factory.OnComplete(constructor, result, finish)
 
 module internal ModelSchemaDefinition =
     let private ensureContiguousOrders (fields: FieldDescriptor<'model> list) =

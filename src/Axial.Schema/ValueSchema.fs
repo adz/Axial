@@ -55,10 +55,13 @@ module internal ValueSchema =
     /// <example>
     /// <code>
     /// let rec categorySchema () =
-    ///     Schema.define&lt;Category&gt;
-    ///     |&gt; field "name" _.Name
-    ///     |&gt; fieldWith (Schema.listWith (Schema.defer categorySchema)) "children" _.Children
-    ///     |&gt; construct (fun name children -&gt; { Name = name; Children = children })
+    ///     schema&lt;Category&gt; {
+    ///         field "name" _.Name
+    ///         field "children" _.Children {
+    ///             withSchema (Schema.listWith (Schema.defer categorySchema))
+    ///         }
+    ///         construct (fun name children -&gt; { Name = name; Children = children })
+    ///     }
     /// </code>
     /// </example>
     let lazyOf (schema: unit -> Schema<'model>) : Schema<'model> =
@@ -137,8 +140,8 @@ module internal ValueSchema =
     /// </para>
     /// <para>
     /// Refined value schemas built this way are portable metadata, matching primitive value schemas: they can be
-    /// combined with <see cref="M:Axial.Schema.Schema.withConstraint``1" /> and used as the value schema for
-    /// <c>Syntax.fieldWith</c> like any other <see cref="T:Axial.Schema.Schema`1" />.
+    /// combined with <see cref="M:Axial.Schema.Schema.withConstraint``1" /> and attached to a field with
+    /// <c>withSchema</c> like any other <see cref="T:Axial.Schema.Schema`1" />.
     /// </para>
     /// <para>
     /// The everyday raw schema is a primitive value schema, especially <see cref="P:Axial.Schema.Schema.text" /> for

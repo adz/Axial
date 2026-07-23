@@ -435,7 +435,13 @@ module Emitter =
                 |> List.map (fun field -> escapeIdent (camel field.FieldName))
                 |> fun names -> String.Join(" ", names)
 
-            line $"        SchemaCE.schema<{contractTypeName}> {{"
+            let schemaBuilder =
+                if recursion = " rec" then
+                    "SchemaCE.schema"
+                else
+                    "schema"
+
+            line $"        {schemaBuilder}<{contractTypeName}> {{"
 
             for field in contract.Fields do
                 let wire = FieldDecl.wireName field
@@ -444,9 +450,9 @@ module Emitter =
                 let constraints = fieldLevelConstraints field
 
                 if canInferField field && List.isEmpty constraints then
-                    line $"            SchemaCE.field \"{escapeString wire}\" {getter}"
+                    line $"            field \"{escapeString wire}\" {getter}"
                 else
-                    line $"            SchemaCE.field \"{escapeString wire}\" {getter} {{"
+                    line $"            field \"{escapeString wire}\" {getter} {{"
 
                     if not (canInferField field) then
                         let value = valueExpr refTypeName (contract.ContractName, contract.Version, contractTypeName) field
@@ -459,9 +465,9 @@ module Emitter =
 
             match contract.Constructor with
             | Some constructorName ->
-                line $"            SchemaCE.construct (fun {parameters} -> {constructorName} {parameters})"
+                line $"            construct (fun {parameters} -> {constructorName} {parameters})"
             | None ->
-                line $"            SchemaCE.construct (fun {parameters} ->"
+                line $"            construct (fun {parameters} ->"
 
                 contract.Fields
                 |> List.iteri (fun index field ->
