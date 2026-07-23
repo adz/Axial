@@ -15,10 +15,13 @@ module RecursiveSchemaTests =
     let private categorySchema () =
         let rec schema: Lazy<Schema<Category>> =
             lazy
-                (Schema.define<Category>
-                 |> fieldWith Schema.text "name" _.Name
-                 |> fieldWith (Schema.listWith (Schema.defer (fun () -> schema.Value))) "children" _.Children
-                 |> construct (fun name children -> { Name = name; Children = children }))
+                (SchemaCE.schema<Category> {
+                    SchemaCE.field "name" _.Name
+                    SchemaCE.field "children" _.Children {
+                        withSchema (Schema.listWith (Schema.defer (fun () -> schema.Value)))
+                    }
+                    SchemaCE.construct (fun name children -> { Name = name; Children = children })
+                })
 
         schema.Value
 

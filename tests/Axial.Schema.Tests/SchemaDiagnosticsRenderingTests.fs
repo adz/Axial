@@ -14,10 +14,13 @@ module SchemaDiagnosticsRenderingTests =
     type private Signup = { Email: string; Age: int }
 
     let private schema =
-        Schema.define<Signup>
-        |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "email" _.Email
-        |> fieldWith Schema.int "age" _.Age
-        |> construct (fun email age -> { Email = email; Age = age })
+        SchemaCE.schema<Signup> {
+            SchemaCE.field "email" _.Email {
+                withSchema (Schema.text |> Schema.constrain Constraint.required)
+            }
+            SchemaCE.field "age" _.Age
+            SchemaCE.construct (fun email age -> { Email = email; Age = age })
+        }
 
     [<Fact>]
     let ``toString renders a field name path for a single failing field`` () =

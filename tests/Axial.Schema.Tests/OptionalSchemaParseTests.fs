@@ -21,14 +21,19 @@ module OptionalSchemaParseTests =
           Age: int option }
 
     let private profileSchema () =
-        Schema.define<Profile>
-        |> fieldWith Schema.text "name" _.Name
-        |> fieldWith (Schema.option (Schema.text |> Schema.constrain (Constraint.minLength 2))) "nickname" _.Nickname
-        |> fieldWith (Schema.option Schema.int) "age" _.Age
-        |> construct (fun name nickname age ->
-            { Name = name
-              Nickname = nickname
-              Age = age })
+        SchemaCE.schema<Profile> {
+            SchemaCE.field "name" _.Name
+            SchemaCE.field "nickname" _.Nickname {
+                withSchema (Schema.option (Schema.text |> Schema.constrain (Constraint.minLength 2)))
+            }
+            SchemaCE.field "age" _.Age {
+                withSchema (Schema.option Schema.int)
+            }
+            SchemaCE.construct (fun name nickname age ->
+                { Name = name
+                  Nickname = nickname
+                  Age = age })
+        }
 
     [<Fact>]
     let ``parse maps missing optional fields to None`` () =

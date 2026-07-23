@@ -20,9 +20,12 @@ module EnumSchemaParseTests =
         Schema.enum [ EnumCase.create "red" Red; EnumCase.create "green" Green; EnumCase.create "blue" Blue ]
 
     let private swatchSchema () =
-        Schema.define<Swatch>
-        |> fieldWith (colorSchema ()) "color" _.Color
-        |> construct (fun color -> { Color = color })
+        SchemaCE.schema<Swatch> {
+            SchemaCE.field "color" _.Color {
+                withSchema (colorSchema ())
+            }
+            SchemaCE.construct (fun color -> { Color = color })
+        }
 
     [<Fact>]
     let ``parse builds the enum case matching the tag`` () =

@@ -103,10 +103,13 @@ module SchemaFormatTests =
     [<Fact>]
     let ``formatted value schemas compose with an object shape like any other value schema`` () =
         let schema =
-            Schema.define<Contact>
-            |> fieldWith ((Email.schema ()) |> Schema.constrainAll [ Constraint.required ]) "email" _.Email
-            |> fieldWith Schema.text "name" _.Name
-            |> construct (fun email name -> { Email = email; Name = name })
+            SchemaCE.schema<Contact> {
+                SchemaCE.field "email" _.Email {
+                    withSchema ((Email.schema ()) |> Schema.constrainAll [ Constraint.required ])
+                }
+                SchemaCE.field "name" _.Name
+                SchemaCE.construct (fun email name -> { Email = email; Name = name })
+            }
 
         match schema.Definition with
         | ModelDefinition model ->

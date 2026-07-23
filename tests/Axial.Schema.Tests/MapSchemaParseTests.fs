@@ -12,9 +12,12 @@ module MapSchemaParseTests =
     type private Thresholds = { Values: Map<string, decimal> }
 
     let private thresholdsSchema =
-        Schema.define<Thresholds>
-        |> fieldWith (Schema.mapWith (Schema.decimal |> Schema.constrain Constraint.required)) "values" _.Values
-        |> construct (fun values -> { Values = values })
+        SchemaCE.schema<Thresholds> {
+            SchemaCE.field "values" _.Values {
+                withSchema (Schema.mapWith (Schema.decimal |> Schema.constrain Constraint.required))
+            }
+            SchemaCE.construct (fun values -> { Values = values })
+        }
 
     [<Fact>]
     let ``parse builds a Map from object-shaped structured data`` () =
