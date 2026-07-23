@@ -111,19 +111,21 @@ module RefinedSchemas =
 
     /// <summary>Describes a date-time range as a record schema with <c>start</c> and <c>end</c> fields.</summary>
     let dateTimeOffsetRange : Schema<DateTimeOffsetRange> =
-        Schema.define<DateTimeOffsetRange>
-        |> fieldWith Schema.dateTime "start" _.Start
-        |> fieldWith Schema.dateTime "end" _.End
-        |> constructResult (fun start finish ->
-            Refine.dateTimeOffsetRange start finish |> Result.mapError RefinementError.describe)
+        SchemaCE.schema<DateTimeOffsetRange> {
+            SchemaCE.field "start" (fun (value: DateTimeOffsetRange) -> value.Start)
+            SchemaCE.field "end" (fun (value: DateTimeOffsetRange) -> value.End)
+            SchemaCE.constructResult (fun start finish ->
+                Refine.dateTimeOffsetRange start finish |> Result.mapError RefinementError.describe)
+        }
 
 #if NET8_0_OR_GREATER
     /// <summary>Describes a date-only range as a record schema with <c>start</c> and <c>end</c> fields.</summary>
     /// <remarks>netstandard2.1: not available.</remarks>
     let dateOnlyRange : Schema<DateOnlyRange> =
-        Schema.define<DateOnlyRange>
-        |> fieldWith Schema.date "start" _.Start
-        |> fieldWith Schema.date "end" _.End
-        |> constructResult (fun start finish ->
-            Refine.dateOnlyRange start finish |> Result.mapError RefinementError.describe)
+        SchemaCE.schema<DateOnlyRange> {
+            SchemaCE.field "start" (fun (value: DateOnlyRange) -> value.Start)
+            SchemaCE.field "end" (fun (value: DateOnlyRange) -> value.End)
+            SchemaCE.constructResult (fun start finish ->
+                Refine.dateOnlyRange start finish |> Result.mapError RefinementError.describe)
+        }
 #endif
