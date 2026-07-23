@@ -19,25 +19,20 @@ module RefinedSchemas =
     let nonBlankString : Schema<NonBlankString> =
         Schema.text
         |> Schema.constrain Constraint.required
-        |> Schema.refine
-            NonBlankString.create SchemaError.ofRefinementError
-            NonBlankString.value
+        |> Schema.refine (Refinement.define NonBlankString.create NonBlankString.value)
 
     /// <summary>Describes a bounded string as a schema refined value over required text with inclusive length bounds.</summary>
     let boundedString minLength maxLength : Schema<BoundedString> =
         Schema.text
         |> Schema.constrainAll [ Constraint.required; Constraint.lengthBetween minLength maxLength ]
         |> Schema.refine
-            (Refine.boundedString minLength maxLength) SchemaError.ofRefinementError
-            (fun value -> value.Value)
+            (Refinement.define (Refine.boundedString minLength maxLength) _.Value)
 
     /// <summary>Describes a trimmed string as a schema refined value over text with no leading or trailing whitespace.</summary>
     let trimmedString : Schema<TrimmedString> =
         Schema.text
         |> Schema.constrain Constraint.trimmed
-        |> Schema.refine
-            Refine.trimmedString SchemaError.ofRefinementError
-            (fun value -> value.Value)
+        |> Schema.refine (Refinement.define Refine.trimmedString _.Value)
 
     /// <summary>Describes an ASCII slug as a schema refined value over required text with the built-in slug pattern.</summary>
     let slug : Schema<Slug> =
@@ -45,61 +40,50 @@ module RefinedSchemas =
         |> Schema.constrainAll
             [ Constraint.required
               Constraint.pattern "^[a-z0-9]+(-[a-z0-9]+)*$" ]
-        |> Schema.refine Refine.slug SchemaError.ofRefinementError (fun value -> value.Value)
+        |> Schema.refine (Refinement.define Refine.slug _.Value)
 
     /// <summary>Describes a positive integer as a schema refined value over an integer greater than zero.</summary>
     let positiveInt : Schema<PositiveInt> =
         Schema.int
         |> Schema.constrain (Constraint.greaterThan 0)
-        |> Schema.refine PositiveInt.create SchemaError.ofRefinementError PositiveInt.value
+        |> Schema.refine (Refinement.define PositiveInt.create PositiveInt.value)
 
     /// <summary>Describes a non-negative integer as a schema refined value over an integer greater than or equal to zero.</summary>
     let nonNegativeInt : Schema<NonNegativeInt> =
         Schema.int
         |> Schema.constrain (Constraint.atLeast 0)
-        |> Schema.refine
-            Refine.nonNegativeInt SchemaError.ofRefinementError
-            (fun value -> value.Value)
+        |> Schema.refine (Refinement.define Refine.nonNegativeInt _.Value)
 
     /// <summary>Describes a non-zero integer as a schema refined value over an integer not equal to zero.</summary>
     let nonZeroInt : Schema<NonZeroInt> =
         Schema.int
         |> Schema.constrain (Constraint.notEqualTo 0)
-        |> Schema.refine
-            Refine.nonZeroInt SchemaError.ofRefinementError
-            (fun value -> value.Value)
+        |> Schema.refine (Refinement.define Refine.nonZeroInt _.Value)
 
     /// <summary>Describes a negative integer as a schema refined value over an integer less than zero.</summary>
     let negativeInt : Schema<NegativeInt> =
         Schema.int
         |> Schema.constrain (Constraint.lessThan 0)
-        |> Schema.refine
-            Refine.negativeInt SchemaError.ofRefinementError
-            (fun value -> value.Value)
+        |> Schema.refine (Refinement.define Refine.negativeInt _.Value)
 
     /// <summary>Describes a non-positive integer as a schema refined value over an integer less than or equal to zero.</summary>
     let nonPositiveInt : Schema<NonPositiveInt> =
         Schema.int
         |> Schema.constrain (Constraint.atMost 0)
-        |> Schema.refine
-            Refine.nonPositiveInt SchemaError.ofRefinementError
-            (fun value -> value.Value)
+        |> Schema.refine (Refinement.define Refine.nonPositiveInt _.Value)
 
     /// <summary>Describes a non-empty list as a schema refined value over a collection of item schemas.</summary>
     let nonEmptyList (itemSchema: Schema<'value>) : Schema<NonEmptyList<'value>> =
         Schema.listWith itemSchema
         |> Schema.constrain (Constraint.minCount 1)
-        |> Schema.refine
-            Refine.nonEmptyList SchemaError.ofRefinementError
-            NonEmptyList.toList
+        |> Schema.refine (Refinement.define Refine.nonEmptyList NonEmptyList.toList)
 
     /// <summary>Describes a non-empty array as a schema refined value over a collection of item schemas.</summary>
     let nonEmptyArray (itemSchema: Schema<'value>) : Schema<NonEmptyArray<'value>> =
         Schema.listWith itemSchema
         |> Schema.constrain (Constraint.minCount 1)
         |> Schema.refine
-            Refine.nonEmptyArray SchemaError.ofRefinementError
-            (fun value -> value.ToArray() |> Array.toList)
+            (Refinement.define Refine.nonEmptyArray (fun value -> value.ToArray() |> Array.toList))
 
     /// <summary>Describes a distinct list as a schema refined value over a distinct collection of item schemas.</summary>
     let distinctList<'value when 'value: equality>
@@ -107,25 +91,23 @@ module RefinedSchemas =
         : Schema<DistinctList<'value>> =
         Schema.listWith itemSchema
         |> Schema.constrain Constraint.distinct
-        |> Schema.refine
-            Refine.distinctList SchemaError.ofRefinementError
-            (fun value -> value.ToList())
+        |> Schema.refine (Refinement.define Refine.distinctList _.ToList())
 
     /// <summary>Describes a bounded list as a schema refined value over a collection with inclusive count bounds.</summary>
     let boundedList minCount maxCount (itemSchema: Schema<'value>) : Schema<BoundedList<'value>> =
         Schema.listWith itemSchema
         |> Schema.constrain (Constraint.countBetween minCount maxCount)
         |> Schema.refine
-            (Refine.boundedList minCount maxCount) SchemaError.ofRefinementError
-            (fun value -> value.ToList())
+            (Refinement.define (Refine.boundedList minCount maxCount) _.ToList())
 
     /// <summary>Describes a bounded array as a schema refined value over a collection with inclusive count bounds.</summary>
     let boundedArray minCount maxCount (itemSchema: Schema<'value>) : Schema<BoundedArray<'value>> =
         Schema.listWith itemSchema
         |> Schema.constrain (Constraint.countBetween minCount maxCount)
         |> Schema.refine
-            (Refine.boundedArray minCount maxCount) SchemaError.ofRefinementError
-            (fun value -> value.ToArray() |> Array.toList)
+            (Refinement.define
+                (Refine.boundedArray minCount maxCount)
+                (fun value -> value.ToArray() |> Array.toList))
 
     /// <summary>Describes a date-time range as a record schema with <c>start</c> and <c>end</c> fields.</summary>
     let dateTimeOffsetRange : Schema<DateTimeOffsetRange> =

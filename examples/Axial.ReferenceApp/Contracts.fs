@@ -2,6 +2,7 @@ namespace Axial.ReferenceApp
 
 open System
 open Axial.ErrorHandling
+open Axial.Refined
 open Axial.Schema
 
 // Wire records can represent untrusted drafts and old persisted versions.
@@ -35,7 +36,7 @@ module Contracts =
     let private requiredText create inspect maximum : Schema<'value> =
         Schema.text
         |> Schema.constrainAll [ Constraint.required; Constraint.maxLength maximum ]
-        |> Schema.refine create SchemaError.ofRefinementError inspect
+        |> Schema.refine (Refinement.define create inspect)
 
     let workspaceName = requiredText WorkspaceName.create WorkspaceName.value 80
     let personName = requiredText PersonName.create PersonName.value 80

@@ -3,6 +3,8 @@
 // surface can be read top to bottom as a catalog.
 namespace Axial.Schema
 
+open Axial.Refined
+
 /// <summary>Construction, composition, parsing, and checking for universal schemas.</summary>
 [<RequireQualifiedAccess>]
 module Schema =
@@ -37,9 +39,10 @@ module Schema =
     let defer schema = SchemaCore.defer schema
     /// <summary>Maps a schema through a total, reversible domain conversion.</summary>
     let convert construct inspect schema = SchemaCore.convert construct inspect schema
-    /// <summary>Maps a schema through a fallible smart constructor and lowers its failures to schema errors.</summary>
-    /// <remarks>Use this for intrinsic domain constraints. <paramref name="inspect" /> supplies the raw representation to checking, encoding, and metadata interpreters.</remarks>
-    let refine construct mapError inspect schema = SchemaCore.refine construct mapError inspect schema
+    /// <summary>Maps a raw schema through a reusable bidirectional refinement.</summary>
+    /// <remarks>The smart constructor runs during parsing. Inspection supplies the raw representation during checking and encoding.</remarks>
+    let refine (refinement: Refinement<'raw, 'value>) (schema: Schema<'raw>) : Schema<'value> =
+        SchemaCore.refine refinement schema
     /// <summary>Describes an externally tagged union.</summary>
     let union discriminator payload cases = SchemaCore.union discriminator payload cases
     /// <summary>Describes an internally tagged union.</summary>

@@ -5,6 +5,7 @@ namespace Axial.Schema
 
 open System
 open System.Collections.Generic
+open Axial.Refined
 
 /// <summary>Functions for creating and inspecting value schemas.</summary>
 [<RequireQualifiedAccess>]
@@ -179,23 +180,19 @@ module internal ValueSchema =
         )
 
     let refine
-        (construct: 'raw -> Result<'value, 'error>)
-        (mapError: 'error -> SchemaError list)
-        (inspect: 'value -> 'raw)
+        (refinement: Refinement<'raw, 'value>)
         (raw: Schema<'raw>)
         : Schema<'value> =
-        if isNull (box construct) then nullArg (nameof construct)
-        if isNull (box mapError) then nullArg (nameof mapError)
-        if isNull (box inspect) then nullArg (nameof inspect)
+        if isNull (box refinement) then nullArg (nameof refinement)
         if isNull (box raw) then nullArg (nameof raw)
 
         let ops =
             RefinedValueOps(
                 (fun value ->
-                    match construct (unbox<'raw> value) with
+                    match Refinement.create refinement (unbox<'raw> value) with
                     | Ok refined -> Ok(box refined)
-                    | Error error -> Error(mapError error)),
-                (fun value -> value |> unbox<'value> |> inspect |> box)
+                    | Error error -> Error(SchemaError.ofRefinementError error)),
+                (fun value -> value |> unbox<'value> |> Refinement.inspect refinement |> box)
             )
 
         Schema(ValueDefinition

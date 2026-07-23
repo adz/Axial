@@ -726,7 +726,7 @@ module ApiShapeTests =
         raises<ArgumentNullException> <@ Schema.primitiveKind Unchecked.defaultof<Schema<string>> |> ignore @>
 
     [<Fact>]
-    let ``refined value schemas require fallible construction error lowering and inspection`` () =
+    let ``refined value schemas accept one bidirectional refinement descriptor`` () =
         let valueModule = moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.Schema"
 
         let refinedOverloads =
@@ -739,21 +739,20 @@ module ApiShapeTests =
         let parameters = refined.GetParameters()
         let parameterNames = parameters |> Array.map _.Name
 
-        test <@ parameterNames = [| "construct"; "mapError"; "inspect"; "schema" |] @>
+        test <@ parameterNames = [| "refinement"; "schema" |] @>
 
-        let constructArguments = parameters[0].ParameterType.GetGenericArguments()
-        let inspectArguments = parameters[2].ParameterType.GetGenericArguments()
-        let constructIsFunction = parameters[0].ParameterType.GetGenericTypeDefinition() = typedefof<FSharpFunc<_, _>>
-        let inspectIsFunction = parameters[2].ParameterType.GetGenericTypeDefinition() = typedefof<FSharpFunc<_, _>>
-        let rawIsValueSchema = parameters[3].ParameterType.GetGenericTypeDefinition() = typedefof<Schema<_>>
+        let refinementIsDescriptor =
+            parameters[0].ParameterType.GetGenericTypeDefinition() = typedefof<Refinement<_, _>>
+
+        let rawIsValueSchema = parameters[1].ParameterType.GetGenericTypeDefinition() = typedefof<Schema<_>>
         let returnsValueSchema = refined.ReturnType.GetGenericTypeDefinition() = typedefof<Schema<_>>
-        let rawMatchesConstructInput = parameters[3].ParameterType.GetGenericArguments()[0] = constructArguments[0]
+        let rawMatchesDescriptor =
+            parameters[1].ParameterType.GetGenericArguments()[0] = parameters[0].ParameterType.GetGenericArguments()[0]
 
-        test <@ constructIsFunction @>
-        test <@ inspectIsFunction @>
+        test <@ refinementIsDescriptor @>
         test <@ rawIsValueSchema @>
         test <@ returnsValueSchema @>
-        test <@ rawMatchesConstructInput @>
+        test <@ rawMatchesDescriptor @>
 
     [<Fact>]
     let ``schema constraints are inspectable metadata independent of executable checks`` () =
@@ -1563,6 +1562,7 @@ module ApiShapeTests =
             |> publicStaticMemberNames
 
         test <@ typeof<ParseError>.Assembly.GetName().Name = "Axial.Refined" @>
+        test <@ typeof<Refinement<int, PositiveInt>>.Assembly.GetName().Name = "Axial.Refined" @>
         assertModuleAbsentFromAssembly "Axial.Result" "Axial.ErrorHandling.Parse"
         assertModuleAbsentFromAssembly "Axial.Schema" "Axial.Refined.Parse"
 
@@ -1595,6 +1595,10 @@ module ApiShapeTests =
 
         refineMembers
         |> assertContainsAll [ "from"; "nonBlankString"; "positiveInt"; "nonEmptyList"; "exactlyOne"; "atMostOne" ]
+
+        moduleTypeFromAssembly "Axial.Validation" "Axial.Refined.Refinement"
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "define"; "create"; "inspect" ]
 
         moduleType typeof<Flow<unit, unit, unit>> "Axial.Flow.Bind"
         |> publicStaticMemberNames

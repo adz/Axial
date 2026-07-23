@@ -27,9 +27,15 @@ module ParseAndBuilderTests =
                 return CustomerId positive
             }
 
+        let value (CustomerId value) =
+            value.Value.ToString()
+
+        let refinement =
+            Refinement.define create value
+
     type CustomerId with
-        static member RefineFrom(raw: string, _: CustomerId) : Result<CustomerId, RefinementError> =
-            CustomerId.create raw
+        static member Refinement(_: string, _: CustomerId) =
+            CustomerId.refinement
 
     [<Fact>]
     let ``Refine from supports built-in refinements and refinements defined on application types`` () =
@@ -44,6 +50,17 @@ module ParseAndBuilderTests =
         test <@ customerId |> Result.map _.Value = Ok 43 @>
         test <@ invalidInt = Error(ParseFailed(ParseError.InvalidFormat("int", "not-an-int"))) @>
         test <@ invalidCustomerId |> Result.isError @>
+
+    [<Fact>]
+    let ``Refinement exposes the same construction and inspection used by type-directed refinement`` () =
+        let created = Refinement.create CustomerId.refinement "45"
+
+        let inspected =
+            created
+            |> Result.map (Refinement.inspect CustomerId.refinement)
+
+        test <@ created |> Result.map _.Value = Ok 45 @>
+        test <@ inspected = Ok "45" @>
 
     [<Fact>]
     let ``refine computation expression binds refinements defined on application types`` () =

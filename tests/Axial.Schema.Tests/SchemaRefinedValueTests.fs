@@ -3,6 +3,7 @@ namespace Axial.Tests
 open Axial
 
 open System
+open Axial.Refined
 open Axial.Schema
 open Swensen.Unquote
 open Xunit
@@ -73,9 +74,15 @@ module SchemaRefinedValueTests =
         let schema =
             Schema.text
             |> Schema.refine
-                (fun _ -> Error "email.blocked")
-                (fun code -> [ SchemaError.Custom(code, Some "This address is blocked.") ])
-                Email.value
+                (Refinement.define
+                    (fun _ ->
+                        Error(
+                            RefinementError.InvalidStructure(
+                                "email.blocked",
+                                "This address is blocked."
+                            )
+                        ))
+                    Email.value)
 
         let parsed = Schema.parseRetainingInput schema (Data.Text "ada@example.com")
 

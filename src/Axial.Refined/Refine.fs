@@ -4,6 +4,7 @@ namespace Axial.Refined
 
 open System
 open System.Collections.Generic
+open System.Globalization
 open Axial.ErrorHandling
 
 /// <summary>A string that is not null, empty, or whitespace.</summary>
@@ -586,45 +587,92 @@ module Choice =
                 | Some value -> Ok value
                 | None -> Error fallbackError
 
+/// <summary>Defines fallible construction of a refined value and total inspection of its raw representation.</summary>
+[<Sealed>]
+type Refinement<'raw, 'value> internal (create: 'raw -> Result<'value, RefinementError>, inspect: 'value -> 'raw) =
+    member internal _.Create = create
+    member internal _.Inspect = inspect
+
+/// <summary>Creates and applies reusable bidirectional refinement definitions.</summary>
+[<RequireQualifiedAccess>]
+module Refinement =
+    /// <summary>Defines a refinement from its smart constructor and raw-value projection.</summary>
+    /// <example>
+    /// <code>
+    /// let email =
+    ///     Refinement.define Email.create Email.value
+    /// </code>
+    /// </example>
+    let define
+        (create: 'raw -> Result<'value, RefinementError>)
+        (inspect: 'value -> 'raw)
+        : Refinement<'raw, 'value> =
+        if isNull (box create) then nullArg (nameof create)
+        if isNull (box inspect) then nullArg (nameof inspect)
+        Refinement(create, inspect)
+
+    /// <summary>Runs the refinement's smart constructor.</summary>
+    /// <example>
+    /// <code>
+    /// let result = Refinement.create Email.refinement raw
+    /// </code>
+    /// </example>
+    let create (refinement: Refinement<'raw, 'value>) (raw: 'raw) : Result<'value, RefinementError> =
+        if isNull (box refinement) then nullArg (nameof refinement)
+        refinement.Create raw
+
+    /// <summary>Returns the raw representation stored by a refined value.</summary>
+    /// <example>
+    /// <code>
+    /// let raw = Refinement.inspect Email.refinement email
+    /// </code>
+    /// </example>
+    let inspect (refinement: Refinement<'raw, 'value>) (value: 'value) : 'raw =
+        if isNull (box refinement) then nullArg (nameof refinement)
+        refinement.Inspect value
+
 /// <summary>
-/// Compile-time dispatch for type-directed refinements. Your destination type participates by defining one
-/// static <c>RefineFrom</c> member for each supported source type.
+/// Compile-time dispatch for type-directed refinements. A destination type participates by defining one static
+/// <c>Refinement</c> member for each supported raw type.
 /// </summary>
 /// <example>
 /// <code>
 /// type CustomerId = private CustomerId of int
 ///
 /// type CustomerId with
-///     static member RefineFrom(raw: string, _: CustomerId) : Result&lt;CustomerId, RefinementError&gt; =
-///         Parse.int raw
-///         |> Result.mapError RefinementError.ParseFailed
-///         |> Result.map CustomerId
+///     static member Refinement(_: string, _: CustomerId) =
+///         CustomerId.refinement
 /// </code>
 /// </example>
-type RefineFrom =
-    static member inline Invoke(raw: ^raw) : Result<^value, RefinementError> =
+type RefinementFrom =
+    static member inline Resolve() : Refinement<^raw, ^value> =
         let inline call (target: ^value, input: ^raw, dispatch: ^dispatch) =
             ((^value or ^dispatch):
-                (static member RefineFrom:
-                    ^raw * ^value -> Result<^value, RefinementError>)
+                (static member Refinement:
+                    ^raw * ^value -> Refinement<^raw, ^value>)
                     (input, target))
 
-        call (Unchecked.defaultof<^value>, raw, Unchecked.defaultof<RefineFrom>)
+        call (
+            Unchecked.defaultof<^value>,
+            Unchecked.defaultof<^raw>,
+            Unchecked.defaultof<RefinementFrom>
+        )
 
     static member inline Bind
         (
             raw: ^raw,
             binder: ^value -> Result<'next, RefinementError>
         ) : Result<'next, RefinementError> =
-        RefineFrom.Invoke raw
+        let refinement: Refinement<^raw, ^value> = RefinementFrom.Resolve()
+        Refinement.create refinement raw
         |> Result.bind binder
 
 /// <summary>Smart constructors for built-in structural refined values.</summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Refine =
     /// <summary>
-    /// Runs the <c>RefineFrom</c> implementation for the source value and expected destination type.
-    /// Your destination type participates by defining a static <c>RefineFrom</c> member.
+    /// Resolves the <c>Refinement</c> definition for the raw value and expected destination type, then runs its smart
+    /// constructor. A destination type participates by defining a static <c>Refinement</c> member.
     /// </summary>
     /// <example>
     /// <code>
@@ -632,7 +680,8 @@ module Refine =
     /// </code>
     /// </example>
     let inline from (raw: ^raw) : Result<^value, RefinementError> =
-        RefineFrom.Invoke raw
+        let refinement: Refinement<^raw, ^value> = RefinementFrom.Resolve()
+        Refinement.create refinement raw
 
     /// <summary>Builds a refined value by running a reusable <see cref="T:Axial.ErrorHandling.Check`1" /> program
     /// before calling the constructor. Failures carry the check's own <see cref="T:Axial.ErrorHandling.CheckFailure" />
@@ -740,7 +789,7 @@ type RefineBuilder() =
             value: ^raw,
             binder: ^value -> Result<'next, RefinementError>
         ) : Result<'next, RefinementError> =
-        RefineFrom.Bind(value, binder)
+        RefinementFrom.Bind(value, binder)
 
     member _.Delay(factory: unit -> Result<'value, RefinementError>) : Result<'value, RefinementError> =
         factory ()
@@ -760,99 +809,125 @@ module private BuiltInRefinementInternals =
         parser value
         |> Result.mapError RefinementError.ParseFailed
 
+    let parsing parser inspect =
+        Refinement.define (parse parser) inspect
+
 // Keep these instances after Refine.from and RefineBuilder. F# must preserve their inline SRTP constraints before it
 // sees a concrete overload; otherwise it specializes the supposedly generic facade to the first instance.
-type RefineFrom with
-    static member RefineFrom(result: Result<'value, RefinementError>, _: 'value) =
-        result
+type RefinementFrom with
+    static member Refinement(_: Result<'value, RefinementError>, _: 'value) =
+        Refinement.define id Ok
 
-    static member RefineFrom(result: Result<'value, ParseError>, _: 'value) =
-        result
-        |> Result.mapError RefinementError.ParseFailed
+    static member Refinement(_: Result<'value, ParseError>, _: 'value) =
+        Refinement.define
+            (Result.mapError RefinementError.ParseFailed)
+            Ok
 
-    static member RefineFrom(value: string, _: int) =
-        BuiltInRefinementInternals.parse Parse.int value
+    static member Refinement(_: string, _: int) =
+        BuiltInRefinementInternals.parsing Parse.int (fun value -> value.ToString(CultureInfo.InvariantCulture))
 
-    static member RefineFrom(value: string, _: int64) =
-        BuiltInRefinementInternals.parse Parse.long value
+    static member Refinement(_: string, _: int64) =
+        BuiltInRefinementInternals.parsing Parse.long (fun value -> value.ToString(CultureInfo.InvariantCulture))
 
-    static member RefineFrom(value: string, _: decimal) =
-        BuiltInRefinementInternals.parse Parse.decimal value
+    static member Refinement(_: string, _: decimal) =
+        BuiltInRefinementInternals.parsing Parse.decimal (fun value -> value.ToString(CultureInfo.InvariantCulture))
 
-    static member RefineFrom(value: string, _: float) =
-        BuiltInRefinementInternals.parse Parse.float value
+    static member Refinement(_: string, _: float) =
+        BuiltInRefinementInternals.parsing Parse.float (fun value -> value.ToString("R", CultureInfo.InvariantCulture))
 
-    static member RefineFrom(value: string, _: bool) =
-        BuiltInRefinementInternals.parse Parse.bool value
+    static member Refinement(_: string, _: bool) =
+        BuiltInRefinementInternals.parsing Parse.bool (fun value ->
+            if value then "true" else "false")
 
-    static member RefineFrom(value: string, _: Guid) =
-        BuiltInRefinementInternals.parse Parse.guid value
+    static member Refinement(_: string, _: Guid) =
+        BuiltInRefinementInternals.parsing Parse.guid (fun value -> value.ToString("D"))
 
-    static member RefineFrom(value: string, _: DateTime) =
-        BuiltInRefinementInternals.parse Parse.dateTime value
+    static member Refinement(_: string, _: DateTime) =
+        BuiltInRefinementInternals.parsing Parse.dateTime (fun value ->
+            value.ToString("O", CultureInfo.InvariantCulture))
 
-    static member RefineFrom(value: string, _: DateTimeOffset) =
-        BuiltInRefinementInternals.parse Parse.dateTimeOffset value
+    static member Refinement(_: string, _: DateTimeOffset) =
+        BuiltInRefinementInternals.parsing Parse.dateTimeOffset (fun value ->
+            value.ToString("O", CultureInfo.InvariantCulture))
 
 #if NET8_0_OR_GREATER
-    static member RefineFrom(value: string, _: DateOnly) =
-        BuiltInRefinementInternals.parse Parse.dateOnly value
+    static member Refinement(_: string, _: DateOnly) =
+        BuiltInRefinementInternals.parsing Parse.dateOnly (fun value ->
+            value.ToString("O", CultureInfo.InvariantCulture))
 
-    static member RefineFrom(value: string, _: TimeOnly) =
-        BuiltInRefinementInternals.parse Parse.timeOnly value
+    static member Refinement(_: string, _: TimeOnly) =
+        BuiltInRefinementInternals.parsing Parse.timeOnly (fun value ->
+            value.ToString("O", CultureInfo.InvariantCulture))
 #endif
 
-    static member RefineFrom(value: string, _: NonBlankString) =
-        Refine.nonBlankString value
+    static member Refinement(_: string, _: NonBlankString) =
+        Refinement.define Refine.nonBlankString _.Value
 
-    static member RefineFrom(value: string, _: TrimmedString) =
-        Refine.trimmedString value
+    static member Refinement(_: string, _: TrimmedString) =
+        Refinement.define Refine.trimmedString _.Value
 
-    static member RefineFrom(value: string, _: Slug) =
-        Refine.slug value
+    static member Refinement(_: string, _: Slug) =
+        Refinement.define Refine.slug _.Value
 
-    static member RefineFrom(input: string * int * int, _: BoundedString) =
-        let value, minLength, maxLength = input
-        Refine.boundedString minLength maxLength value
+    static member Refinement(_: string * int * int, _: BoundedString) =
+        Refinement.define
+            (fun (value, minLength, maxLength) -> Refine.boundedString minLength maxLength value)
+            (fun value -> value.Value, value.MinLength, value.MaxLength)
 
-    static member RefineFrom(value: int, _: PositiveInt) =
-        Refine.positiveInt value
+    static member Refinement(_: int, _: PositiveInt) =
+        Refinement.define Refine.positiveInt _.Value
 
-    static member RefineFrom(value: int, _: NonNegativeInt) =
-        Refine.nonNegativeInt value
+    static member Refinement(_: int, _: NonNegativeInt) =
+        Refinement.define Refine.nonNegativeInt _.Value
 
-    static member RefineFrom(value: int, _: NonZeroInt) =
-        Refine.nonZeroInt value
+    static member Refinement(_: int, _: NonZeroInt) =
+        Refinement.define Refine.nonZeroInt _.Value
 
-    static member RefineFrom(value: int, _: NegativeInt) =
-        Refine.negativeInt value
+    static member Refinement(_: int, _: NegativeInt) =
+        Refinement.define Refine.negativeInt _.Value
 
-    static member RefineFrom(value: int, _: NonPositiveInt) =
-        Refine.nonPositiveInt value
+    static member Refinement(_: int, _: NonPositiveInt) =
+        Refinement.define Refine.nonPositiveInt _.Value
 
-    static member RefineFrom(values: seq<'value>, _: NonEmptyList<'value>) =
-        Refine.nonEmptyList values
+    static member Refinement(_: seq<'value>, _: NonEmptyList<'value>) =
+        Refinement.define Refine.nonEmptyList (fun value -> value.ToList() :> seq<'value>)
 
-    static member RefineFrom(values: seq<'value>, _: NonEmptyArray<'value>) =
-        Refine.nonEmptyArray values
+    static member Refinement(_: 'value list, _: NonEmptyList<'value>) =
+        Refinement.define Refine.nonEmptyList _.ToList()
 
-    static member RefineFrom(values: seq<'value>, _: DistinctList<'value>) =
-        Refine.distinctList values
+    static member Refinement(_: seq<'value>, _: NonEmptyArray<'value>) =
+        Refinement.define Refine.nonEmptyArray (fun value -> value.ToArray() :> seq<'value>)
 
-    static member RefineFrom(input: 'value list * int * int, _: BoundedList<'value>) =
-        let values, minCount, maxCount = input
-        Refine.boundedList minCount maxCount values
+    static member Refinement(_: 'value list, _: NonEmptyArray<'value>) =
+        Refinement.define Refine.nonEmptyArray (fun value -> value.ToArray() |> Array.toList)
 
-    static member RefineFrom(input: 'value array * int * int, _: BoundedArray<'value>) =
-        let values, minCount, maxCount = input
-        Refine.boundedArray minCount maxCount values
+    static member Refinement(_: 'value array, _: NonEmptyArray<'value>) =
+        Refinement.define Refine.nonEmptyArray _.ToArray()
 
-    static member RefineFrom(input: DateTimeOffset * DateTimeOffset, _: DateTimeOffsetRange) =
-        let start, finish = input
-        Refine.dateTimeOffsetRange start finish
+    static member Refinement(_: seq<'value>, _: DistinctList<'value>) =
+        Refinement.define Refine.distinctList (fun value -> value.ToList() :> seq<'value>)
+
+    static member Refinement(_: 'value list, _: DistinctList<'value>) =
+        Refinement.define Refine.distinctList _.ToList()
+
+    static member Refinement(_: 'value list * int * int, _: BoundedList<'value>) =
+        Refinement.define
+            (fun (values, minCount, maxCount) -> Refine.boundedList minCount maxCount values)
+            (fun value -> value.ToList(), value.MinCount, value.MaxCount)
+
+    static member Refinement(_: 'value array * int * int, _: BoundedArray<'value>) =
+        Refinement.define
+            (fun (values, minCount, maxCount) -> Refine.boundedArray minCount maxCount values)
+            (fun value -> value.ToArray(), value.MinCount, value.MaxCount)
+
+    static member Refinement(_: DateTimeOffset * DateTimeOffset, _: DateTimeOffsetRange) =
+        Refinement.define
+            (fun (start, finish) -> Refine.dateTimeOffsetRange start finish)
+            (fun value -> value.Start, value.End)
 
 #if NET8_0_OR_GREATER
-    static member RefineFrom(input: DateOnly * DateOnly, _: DateOnlyRange) =
-        let start, finish = input
-        Refine.dateOnlyRange start finish
+    static member Refinement(_: DateOnly * DateOnly, _: DateOnlyRange) =
+        Refinement.define
+            (fun (start, finish) -> Refine.dateOnlyRange start finish)
+            (fun value -> value.Start, value.End)
 #endif

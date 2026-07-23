@@ -150,7 +150,7 @@ module internal SchemaCore =
     let defer schema = ValueSchema.lazyOf schema
     /// <summary>Converts a schema through total construction and inspection functions.</summary>
     let convert construct inspect schema = ValueSchema.refined construct inspect schema
-    let refine construct mapError inspect schema = ValueSchema.refine construct mapError inspect schema
+    let refine refinement schema = ValueSchema.refine refinement schema
     /// <summary>Describes a tagged union.</summary>
     let union discriminator payload cases = ValueSchema.union discriminator payload cases
     /// <summary>Describes an internally tagged union.</summary>
