@@ -52,6 +52,21 @@ module ParseAndBuilderTests =
         test <@ invalidCustomerId |> Result.isError @>
 
     [<Fact>]
+    let ``Refine from resolves several raw types for one destination`` () =
+        let fromList: Result<NonEmptyArray<int>, RefinementError> =
+            Refine.from [ 1; 2 ]
+
+        let fromArray: Result<NonEmptyArray<int>, RefinementError> =
+            Refine.from [| 3; 4 |]
+
+        let fromSequence: Result<NonEmptyArray<int>, RefinementError> =
+            Refine.from (seq { 5; 6 })
+
+        test <@ fromList |> Result.map _.ToArray() = Ok [| 1; 2 |] @>
+        test <@ fromArray |> Result.map _.ToArray() = Ok [| 3; 4 |] @>
+        test <@ fromSequence |> Result.map _.ToArray() = Ok [| 5; 6 |] @>
+
+    [<Fact>]
     let ``Refinement exposes the same construction and inspection used by type-directed refinement`` () =
         let created = Refinement.create CustomerId.refinement "45"
 
