@@ -48,6 +48,20 @@ and redisplay through the same schema declaration the server uses. CI compiles t
 Node and Erlang runs of the same workloads. .NET-only conveniences — such as `Data.ofJsonDocument` and the
 `DateOnly` field type — are compile-time gated so the Fable surface never references them.
 
+The quotation-based bare field form is also .NET-only:
+
+```fsharp
+// .NET: derives the wire name "email" from the property quotation
+field _.Email
+
+// .NET and Fable: declares the wire name directly
+field "email" _.Email
+```
+
+Fable does not support the quotation operation that extracts a property name from `_.Email`. This affects only wire-name
+inference; explicit field names, typed getters, schema inference, constraints, constructors, parsing, checking, and
+compiled JavaScript codecs remain available.
+
 ## What This Buys You
 
 - `PublishAot=true` and `PublishTrimmed=true` work without `DynamicDependency` annotations, trimmer XML, or source

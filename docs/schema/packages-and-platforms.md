@@ -27,3 +27,13 @@ that provide the JavaScript primitives they use.
 
 The Fable JavaScript build is a separate compilation of the same F# sources. A `netstandard2.1` target by itself does
 not imply JavaScript support; the table records packages with an intentional Fable surface and repository coverage.
+
+Schema declarations compiled with Fable use explicit field names:
+
+```fsharp
+field "email" _.Email
+```
+
+The shorter `field _.Email` form is .NET-only because it reads an F# quotation to derive the wire name. All field
+typing, schema inference, constraints, constructors, parsing, checking, and codecs remain supported when the explicit
+name is supplied.

@@ -121,9 +121,19 @@ Two rules keep this predictable:
   value is built (the property name is read from the getter expression; the compiled getter itself is
   used for parsing and checking, so there is no reflection on any per-value path).
 
-The bare form requires a plain property getter (`_.Name`); anything else — a computed value, a tuple
-projection — uses the named form. It reads the getter expression, which Fable cannot interpret, so on
-Fable use the named form; everything else on this page compiles for .NET, NativeAOT, and Fable alike.
+The bare form is .NET-only. It requires a plain property getter (`_.Name`) and reads that getter's F#
+quotation to derive the wire name. Fable cannot interpret the quotation operation used for this name
+extraction. Code compiled with Fable must declare the wire name explicitly:
+
+```fsharp
+Schema.define<Contact>
+|> field "name" _.Name
+|> field "age" _.Age
+|> construct (fun name age -> { Name = name; Age = age })
+```
+
+Computed values and tuple projections also use the explicitly named form on .NET. The named form and
+the rest of the Schema authoring API compile on .NET, NativeAOT, and Fable.
 
 ## Checked constructors
 
