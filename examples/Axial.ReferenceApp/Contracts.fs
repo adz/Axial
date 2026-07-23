@@ -46,56 +46,79 @@ module Contracts =
     let workItemId = Schema.guid |> Schema.convert WorkItemId.create WorkItemId.value
 
     let nameInput =
-        Schema.define<NameInput>
-        |> field "name" _.name
-        |> constrain (minLength 1)
-        |> construct (fun name -> { name = name })
+        SchemaCE.schema<NameInput> {
+            SchemaCE.field "name" (fun (value: NameInput) -> value.name) {
+                constrain (minLength 1)
+            }
+            SchemaCE.construct (fun name -> { name = name })
+        }
 
     let titleInput =
-        Schema.define<TitleInput>
-        |> field "title" _.title
-        |> constrain (minLength 1)
-        |> construct (fun title -> { title = title })
+        SchemaCE.schema<TitleInput> {
+            SchemaCE.field "title" (fun (value: TitleInput) -> value.title) {
+                constrain (minLength 1)
+            }
+            SchemaCE.construct (fun title -> { title = title })
+        }
 
     let assignmentInput =
-        Schema.define<AssignmentInput>
-        |> field "memberId" _.memberId
-        |> construct (fun memberId -> { memberId = memberId })
+        SchemaCE.schema<AssignmentInput> {
+            SchemaCE.field "memberId" (fun (value: AssignmentInput) -> value.memberId)
+            SchemaCE.construct (fun memberId -> { memberId = memberId })
+        }
 
     let workspaceV1 =
-        Schema.define<WorkspaceV1>
-        |> field "version" _.version
-        |> field "id" _.id
-        |> field "name" _.name
-        |> constrain (minLength 1)
-        |> constrain (maxLength 80)
-        |> construct (fun version id name -> { version = version; id = id; name = name })
+        SchemaCE.schema<WorkspaceV1> {
+            SchemaCE.field "version" (fun (value: WorkspaceV1) -> value.version)
+            SchemaCE.field "id" (fun (value: WorkspaceV1) -> value.id)
+            SchemaCE.field "name" (fun (value: WorkspaceV1) -> value.name) {
+                constrain (minLength 1)
+                constrain (maxLength 80)
+            }
+            SchemaCE.construct (fun version id name -> { version = version; id = id; name = name })
+        }
 
     let memberV2 =
-        Schema.define<MemberV2>
-        |> field "id" _.id
-        |> fieldWith personName "name" _.name
-        |> construct (fun id name -> { id = id; name = name })
+        SchemaCE.schema<MemberV2> {
+            SchemaCE.field "id" (fun (value: MemberV2) -> value.id)
+            SchemaCE.field "name" (fun (value: MemberV2) -> value.name) {
+                withSchema personName
+            }
+            SchemaCE.construct (fun id name -> { id = id; name = name })
+        }
 
     let workItemV2 =
-        Schema.define<WorkItemV2>
-        |> field "id" _.id
-        |> fieldWith workItemTitle "title" _.title
-        |> field "assignee" _.assignee
-        |> field "state" _.state
-        |> constrain (oneOf [ "todo"; "done" ])
-        |> construct (fun id title assignee state ->
-            { id = id; title = title; assignee = assignee; state = state })
+        SchemaCE.schema<WorkItemV2> {
+            SchemaCE.field "id" (fun (value: WorkItemV2) -> value.id)
+            SchemaCE.field "title" (fun (value: WorkItemV2) -> value.title) {
+                withSchema workItemTitle
+            }
+            SchemaCE.field "assignee" (fun (value: WorkItemV2) -> value.assignee) {
+                withSchema (Schema.option Schema.guid)
+            }
+            SchemaCE.field "state" (fun (value: WorkItemV2) -> value.state) {
+                constrain (oneOf [ "todo"; "done" ])
+            }
+            SchemaCE.construct (fun id title assignee state ->
+                { id = id; title = title; assignee = assignee; state = state })
+        }
 
     let workspaceV2 =
-        Schema.define<WorkspaceV2>
-        |> field "version" _.version
-        |> field "id" _.id
-        |> fieldWith workspaceName "name" _.name
-        |> fieldWith (Schema.listWith memberV2) "members" _.members
-        |> fieldWith (Schema.listWith workItemV2) "items" _.items
-        |> construct (fun version id name members items ->
-            { version = version; id = id; name = name; members = members; items = items })
+        SchemaCE.schema<WorkspaceV2> {
+            SchemaCE.field "version" (fun (value: WorkspaceV2) -> value.version)
+            SchemaCE.field "id" (fun (value: WorkspaceV2) -> value.id)
+            SchemaCE.field "name" (fun (value: WorkspaceV2) -> value.name) {
+                withSchema workspaceName
+            }
+            SchemaCE.field "members" (fun (value: WorkspaceV2) -> value.members) {
+                withSchema (Schema.listWith memberV2)
+            }
+            SchemaCE.field "items" (fun (value: WorkspaceV2) -> value.items) {
+                withSchema (Schema.listWith workItemV2)
+            }
+            SchemaCE.construct (fun version id name members items ->
+                { version = version; id = id; name = name; members = members; items = items })
+        }
 
     let private migrateV1 (value: WorkspaceV1) =
         WorkspaceName.create value.name
