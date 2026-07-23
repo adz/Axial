@@ -145,20 +145,35 @@ type SchemaDefaults =
     static member Schema(_: System.DateOnly) : Schema<System.DateOnly> = SchemaCore.date
 #endif
 
+    static member inline Schema(_: ^item list) : Schema< ^item list> =
+        let inline resolve (witness: ^w, marker: ^value) : Schema< ^value> =
+            ((^w or ^value): (static member Schema: ^value -> Schema< ^value>) marker)
+
+        SchemaDefaults.ListWith(
+            resolve (Unchecked.defaultof<SchemaDefaults>, Unchecked.defaultof< ^item>)
+        )
+
+    static member inline Schema(_: ^item option) : Schema< ^item option> =
+        let inline resolve (witness: ^w, marker: ^value) : Schema< ^value> =
+            ((^w or ^value): (static member Schema: ^value -> Schema< ^value>) marker)
+
+        SchemaDefaults.OptionWith(
+            resolve (Unchecked.defaultof<SchemaDefaults>, Unchecked.defaultof< ^item>)
+        )
+
+    static member inline Schema(_: Map<string, ^item>) : Schema<Map<string, ^item>> =
+        let inline resolve (witness: ^w, marker: ^value) : Schema< ^value> =
+            ((^w or ^value): (static member Schema: ^value -> Schema< ^value>) marker)
+
+        SchemaDefaults.MapWith(
+            resolve (Unchecked.defaultof<SchemaDefaults>, Unchecked.defaultof< ^item>)
+        )
+
     static member inline Resolve() : Schema< ^value> =
         let inline call (witness: ^w, marker: ^v) : Schema< ^v> =
             ((^w or ^v): (static member Schema: ^v -> Schema< ^v>) marker)
 
         call (Unchecked.defaultof<SchemaDefaults>, Unchecked.defaultof< ^value>)
-
-    static member inline Schema(_: ^item list) : Schema< ^item list> =
-        SchemaDefaults.ListWith(SchemaDefaults.Resolve< ^item>())
-
-    static member inline Schema(_: ^item option) : Schema< ^item option> =
-        SchemaDefaults.OptionWith(SchemaDefaults.Resolve< ^item>())
-
-    static member inline Schema(_: Map<string, ^item>) : Schema<Map<string, ^item>> =
-        SchemaDefaults.MapWith(SchemaDefaults.Resolve< ^item>())
 
 [<RequireQualifiedAccess>]
 module internal ShapeOps =

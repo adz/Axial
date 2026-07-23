@@ -31,34 +31,62 @@ module ManySchemaParseTests =
     type private Tags = { Values: string list }
 
     let private contactMethodSchema =
-        Schema.define<ContactMethod>
-        |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "kind" (fun contact -> contact.Kind)
-        |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "value" (fun contact -> contact.Value)
-        |> construct (fun kind value -> ({ Kind = kind; Value = value }: ContactMethod))
+        SchemaCE.schema<ContactMethod> {
+            SchemaCE.field "kind" (fun (contact: ContactMethod) -> contact.Kind) {
+                withSchema (Schema.text |> Schema.constrain Constraint.required)
+            }
+            SchemaCE.field "value" (fun (contact: ContactMethod) -> contact.Value) {
+                withSchema (Schema.text |> Schema.constrain Constraint.required)
+            }
+            SchemaCE.construct (fun kind value -> ({ Kind = kind; Value = value }: ContactMethod))
+        }
 
     let private verifiedContactMethodSchema =
-        Schema.define<VerifiedContactMethod>
-        |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "kind" (fun contact -> contact.Kind)
-        |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "value" (fun contact -> contact.Value)
-        |> constructResult VerifiedContactMethod.Create
+        SchemaCE.schema<VerifiedContactMethod> {
+            SchemaCE.field "kind" (fun (contact: VerifiedContactMethod) -> contact.Kind) {
+                withSchema (Schema.text |> Schema.constrain Constraint.required)
+            }
+            SchemaCE.field "value" (fun (contact: VerifiedContactMethod) -> contact.Value) {
+                withSchema (Schema.text |> Schema.constrain Constraint.required)
+            }
+            SchemaCE.constructResult VerifiedContactMethod.Create
+        }
 
     let private customerSchema =
-        Schema.define<Customer>
-        |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "name" (fun customer -> customer.Name)
-        |> fieldWith (Schema.listWith contactMethodSchema) "contacts" (fun customer -> customer.Contacts)
-        |> construct (fun name contacts -> ({ Name = name; Contacts = contacts }: Customer))
+        SchemaCE.schema<Customer> {
+            SchemaCE.field "name" (fun (customer: Customer) -> customer.Name) {
+                withSchema (Schema.text |> Schema.constrain Constraint.required)
+            }
+            SchemaCE.field "contacts" (fun (customer: Customer) -> customer.Contacts) {
+                withSchema (Schema.listWith contactMethodSchema)
+            }
+            SchemaCE.construct (fun name contacts -> ({ Name = name; Contacts = contacts }: Customer))
+        }
 
     let private verifiedCustomerSchema =
-        Schema.define<VerifiedCustomer>
-        |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "name" (fun customer -> customer.Name)
-        |> fieldWith (Schema.listWith verifiedContactMethodSchema) "contacts" (fun customer -> customer.Contacts)
-        |> construct (fun name contacts -> ({ Name = name; Contacts = contacts }: VerifiedCustomer))
+        SchemaCE.schema<VerifiedCustomer> {
+            SchemaCE.field "name" (fun (customer: VerifiedCustomer) -> customer.Name) {
+                withSchema (Schema.text |> Schema.constrain Constraint.required)
+            }
+            SchemaCE.field "contacts" (fun (customer: VerifiedCustomer) -> customer.Contacts) {
+                withSchema (Schema.listWith verifiedContactMethodSchema)
+            }
+            SchemaCE.construct (fun name contacts -> ({ Name = name; Contacts = contacts }: VerifiedCustomer))
+        }
 
     let private constrainedCustomerSchema =
-        Schema.define<Customer>
-        |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "name" (fun customer -> customer.Name)
-        |> fieldWith (Schema.listWith contactMethodSchema |> Schema.constrainAll [ Constraint.minCount 1; Constraint.maxCount 2 ]) "contacts" (fun customer -> customer.Contacts)
-        |> construct (fun name contacts -> ({ Name = name; Contacts = contacts }: Customer))
+        SchemaCE.schema<Customer> {
+            SchemaCE.field "name" (fun (customer: Customer) -> customer.Name) {
+                withSchema (Schema.text |> Schema.constrain Constraint.required)
+            }
+            SchemaCE.field "contacts" (fun (customer: Customer) -> customer.Contacts) {
+                withSchema (
+                    Schema.listWith contactMethodSchema
+                    |> Schema.constrainAll [ Constraint.minCount 1; Constraint.maxCount 2 ]
+                )
+            }
+            SchemaCE.construct (fun name contacts -> ({ Name = name; Contacts = contacts }: Customer))
+        }
 
     let private validContact kind value =
         Data.objectOfMap (Map.ofList [ "kind", Data.Text kind; "value", Data.Text value ])
@@ -181,9 +209,12 @@ module ManySchemaParseTests =
     [<Fact>]
     let ``parse builds a collection from primitive item schemas`` () =
         let schema =
-            Schema.define<Tags>
-            |> fieldWith (Schema.listWith (Schema.text |> Schema.constrain Constraint.required)) "values" _.Values
-            |> construct (fun values -> { Values = values })
+            SchemaCE.schema<Tags> {
+                SchemaCE.field "values" _.Values {
+                    withSchema (Schema.listWith (Schema.text |> Schema.constrain Constraint.required))
+                }
+                SchemaCE.construct (fun values -> { Values = values })
+            }
 
         let raw =
             Data.objectOfMap (Map.ofList [ "values", Data.List [ Data.Text "fsharp"; Data.Text "typed-errors" ] ])
@@ -195,9 +226,12 @@ module ManySchemaParseTests =
     [<Fact>]
     let ``parse reports primitive item failures at collection index paths`` () =
         let schema =
-            Schema.define<Tags>
-            |> fieldWith (Schema.listWith (Schema.text |> Schema.constrain Constraint.required)) "values" _.Values
-            |> construct (fun values -> { Values = values })
+            SchemaCE.schema<Tags> {
+                SchemaCE.field "values" _.Values {
+                    withSchema (Schema.listWith (Schema.text |> Schema.constrain Constraint.required))
+                }
+                SchemaCE.construct (fun values -> { Values = values })
+            }
 
         let raw =
             Data.objectOfMap (Map.ofList [ "values", Data.List [ Data.Text "fsharp"; Data.Text "   " ] ])

@@ -4,13 +4,11 @@ open Axial
 
 open System
 open Axial.Schema
-open Axial.Schema.Syntax
 open Axial.Validation
 open Swensen.Unquote
 open Xunit
 
-/// Specs for the constructor-last authoring surface: Schema.define + field/constrain pipelines closed by
-/// construct/constructResult, and Schema.admit for trusted domain construction over a draft schema.
+/// Specs for the schema computation expression and Schema.admit over a draft schema.
 module ShapeSyntaxTests =
 
     type private Person =
@@ -24,13 +22,16 @@ module ShapeSyntaxTests =
               BirthDate = birthDate }
 
     let private personSchema =
-        Schema.define<Person>
-        |> field "firstName" _.FirstName
-        |> constrain (minLength 1)
-        |> field "lastName" _.LastName
-        |> constrain (minLength 1)
-        |> field "birthDate" _.BirthDate
-        |> construct Person.Create
+        schema<Person> {
+            field "firstName" _.FirstName {
+                constrain (Syntax.minLength 1)
+            }
+            field "lastName" _.LastName {
+                constrain (Syntax.minLength 1)
+            }
+            field "birthDate" _.BirthDate
+            construct Person.Create
+        }
 
     [<Fact>]
     let ``the target handwritten syntax parses valid input`` () =
@@ -90,10 +91,11 @@ module ShapeSyntaxTests =
         member this.Bounds = this.Low, this.High
 
     let private rangeSchema =
-        Schema.define<Range>
-        |> field "low" (fun range -> fst range.Bounds)
-        |> field "high" (fun range -> snd range.Bounds)
-        |> constructResult Range.Create
+        schema<Range> {
+            field "low" (fun (range: Range) -> fst range.Bounds)
+            field "high" (fun (range: Range) -> snd range.Bounds)
+            constructResult Range.Create
+        }
 
     [<Fact>]
     let ``constructResult admits values the constructor accepts`` () =
@@ -123,12 +125,14 @@ module ShapeSyntaxTests =
         static member Create name tags note = { Name = name; Tags = tags; Note = note }
 
     let private taggedSchema =
-        Schema.define<Tagged>
-        |> field "name" _.Name
-        |> field "tags" _.Tags
-        |> constrain (minCount 1)
-        |> field "note" _.Note
-        |> construct Tagged.Create
+        schema<Tagged> {
+            field "name" _.Name
+            field "tags" _.Tags {
+                constrain (Syntax.minCount 1)
+            }
+            field "note" _.Note
+            construct Tagged.Create
+        }
 
     [<Fact>]
     let ``option and list fields infer their schemas`` () =
@@ -166,11 +170,12 @@ module ShapeSyntaxTests =
     [<Fact>]
     let ``field recursively infers domain schemas through collections and options`` () =
         let schema =
-            Schema.define<ContactBook>
-            |> field "emails" _.Emails
-            |> field "contacts" _.Contacts
-            |> field "preferred" _.Preferred
-            |> construct ContactBook.Create
+            schema<ContactBook> {
+                field "emails" _.Emails
+                field "contacts" _.Contacts
+                field "preferred" _.Preferred
+                construct ContactBook.Create
+            }
 
         let input =
             (
@@ -198,8 +203,8 @@ module ShapeSyntaxTests =
 
     [<Fact>]
     let ``nested constraints apply to list items and map values`` () =
-        let names = Schema.list<string>() |> constrainItems (minLength 2)
-        let labels = Schema.map<string>() |> constrainValues (minLength 2)
+        let names = Schema.list<string>() |> Syntax.constrainItems (Syntax.minLength 2)
+        let labels = Schema.map<string>() |> Syntax.constrainValues (Syntax.minLength 2)
         let nameInput = (Data.List [ Data.Text "x" ])
         let labelInput = (Data.objectOfMap (Map.ofList [ "short", Data.Text "x" ]))
 
@@ -229,10 +234,11 @@ module ShapeSyntaxTests =
         member this.Nights = (this.End - this.Start).Days
 
     let private bookingDraftSchema =
-        Schema.define<BookingDraft>
-        |> field "start" _.Start
-        |> field "end" _.End
-        |> construct BookingDraft.Create
+        schema<BookingDraft> {
+            field "start" (fun (value: BookingDraft) -> value.Start)
+            field "end" (fun (value: BookingDraft) -> value.End)
+            construct BookingDraft.Create
+        }
 
     let private bookingSchema =
         bookingDraftSchema |> Schema.admit Booking.Create _.ToDraft
