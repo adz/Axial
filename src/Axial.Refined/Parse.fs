@@ -79,12 +79,18 @@ module Parse =
 #endif
 
     /// <summary>Parses an enum value by name or numeric text.</summary>
-    let enum<'enum when 'enum: struct and 'enum : (new: unit -> 'enum) and 'enum :> ValueType>
+    let inline enum<'enum when 'enum: struct and 'enum : (new: unit -> 'enum) and 'enum :> ValueType>
         (text: string)
         : Result<'enum, ParseError> =
         match Enum.TryParse<'enum>(text, true) with
         | true, value -> Ok value
-        | false, _ -> Error(parseFailure typeof<'enum>.Name text)
+        | false, _ ->
+            let target = typeof<'enum>.Name
+
+            if String.IsNullOrWhiteSpace text then
+                Error(ParseError.MissingValue target)
+            else
+                Error(ParseError.InvalidFormat(target, text))
 
     /// <summary>Parses an optional input, preserving a present input's parsing failure.</summary>
     /// <example>

@@ -43,7 +43,12 @@ type Data =
     /// <summary>Converts a decimal using invariant formatting.</summary>
     static member From(value: decimal) : Data = Data.Number(value.ToString(CultureInfo.InvariantCulture))
     /// <summary>Converts a double using invariant round-trip formatting.</summary>
-    static member From(value: float) : Data = Data.Number(value.ToString("R", CultureInfo.InvariantCulture))
+    static member From(value: float) : Data =
+#if FABLE_COMPILER
+        Data.Number(string value)
+#else
+        Data.Number(value.ToString("R", CultureInfo.InvariantCulture))
+#endif
     /// <summary>Converts a GUID to canonical text.</summary>
     static member From(value: Guid) : Data = Data.Text(value.ToString("D"))
     /// <summary>Converts a timestamp to round-trip ISO text.</summary>

@@ -833,7 +833,13 @@ type RefinementFrom with
         BuiltInRefinementInternals.parsing Parse.decimal (fun value -> value.ToString(CultureInfo.InvariantCulture))
 
     static member Refinement(_: string, _: float) =
-        BuiltInRefinementInternals.parsing Parse.float (fun value -> value.ToString("R", CultureInfo.InvariantCulture))
+        BuiltInRefinementInternals.parsing Parse.float (fun value ->
+#if FABLE_COMPILER
+            string value
+#else
+            value.ToString("R", CultureInfo.InvariantCulture)
+#endif
+        )
 
     static member Refinement(_: string, _: bool) =
         BuiltInRefinementInternals.parsing Parse.bool (fun value ->
