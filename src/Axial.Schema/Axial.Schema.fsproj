@@ -53,6 +53,7 @@
     <Compile Include="SchemaCore.fs" />
     <Compile Include="Shape.fs" />
     <Compile Include="SchemaBuilder.fs" />
+    <Compile Include="SchemaErrors.fs" />
     <Compile Include="SchemaValidation.fs" />
     <Compile Include="RetainedParseResult.fs" />
     <Compile Include="Parsing.fs" />
