@@ -52,41 +52,52 @@ module JsonCodecTests =
         |> Schema.convert (fun raw -> EmailValue raw) (fun (EmailValue raw) -> raw)
 
     let private addressSchema () =
-        Schema.define<Address>
-        |> fieldWith Schema.text "street" _.Street
-        |> fieldWith Schema.text "city" _.City
-        |> construct (fun street city -> { Street = street; City = city })
+        SchemaCE.schema<Address> {
+            SchemaCE.field "street" _.Street
+            SchemaCE.field "city" _.City
+            SchemaCE.construct (fun street city -> { Street = street; City = city })
+        }
 
     let private tagSchema () =
-        Schema.define<Tag>
-        |> fieldWith Schema.text "label" _.Label
-        |> construct (fun label -> { Label = label })
+        SchemaCE.schema<Tag> {
+            SchemaCE.field "label" _.Label
+            SchemaCE.construct (fun label -> { Label = label })
+        }
 
     let private customerSchema () =
-        Schema.define<Customer>
-        |> fieldWith Schema.guid "id" _.Id
-        |> fieldWith Schema.text "name" _.Name
-        |> fieldWith (emailSchema ()) "email" _.Email
-        |> fieldWith Schema.int "age" _.Age
-        |> fieldWith Schema.decimal "balance" _.Balance
-        |> fieldWith Schema.bool "newsletter" _.Newsletter
-        |> fieldWith Schema.date "joined" _.Joined
-        |> fieldWith Schema.dateTime "lastSeen" _.LastSeen
-        |> fieldWith (addressSchema ()) "address" _.Address
-        |> fieldWith (Schema.listWith (tagSchema ())) "tags" _.Tags
-        |> fieldWith (Schema.listWith Schema.int) "scores" _.Scores
-        |> construct (fun id name email age balance newsletter joined lastSeen address tags scores ->
-            { Id = id
-              Name = name
-              Email = email
-              Age = age
-              Balance = balance
-              Newsletter = newsletter
-              Joined = joined
-              LastSeen = lastSeen
-              Address = address
-              Tags = tags
-              Scores = scores })
+        SchemaCE.schema<Customer> {
+            SchemaCE.field "id" _.Id
+            SchemaCE.field "name" _.Name
+            SchemaCE.field "email" _.Email {
+                withSchema (emailSchema ())
+            }
+            SchemaCE.field "age" _.Age
+            SchemaCE.field "balance" _.Balance
+            SchemaCE.field "newsletter" _.Newsletter
+            SchemaCE.field "joined" _.Joined
+            SchemaCE.field "lastSeen" _.LastSeen
+            SchemaCE.field "address" _.Address {
+                withSchema (addressSchema ())
+            }
+            SchemaCE.field "tags" _.Tags {
+                withSchema (Schema.listWith (tagSchema ()))
+            }
+            SchemaCE.field "scores" _.Scores {
+                withSchema (Schema.listWith Schema.int)
+            }
+            SchemaCE.construct (fun id name email age balance newsletter joined lastSeen address tags scores ->
+                { Id = id
+                  Name = name
+                  Email = email
+                  Age = age
+                  Balance = balance
+                  Newsletter = newsletter
+                  Joined = joined
+                  LastSeen = lastSeen
+                  Address = address
+                  Tags = tags
+                  Scores = scores })
+        }
 
     let private sampleCustomer () =
         { Id = Guid.Parse "7d9a2f5e-95c8-4f2b-b1e3-2f6d3a1c9b42"
@@ -103,15 +114,17 @@ module JsonCodecTests =
 
     let private paymentSchema () =
         let cardSchema =
-            Schema.define<CardDetails>
-            |> fieldWith Schema.text "number" _.Number
-            |> fieldWith Schema.text "expiry" _.Expiry
-            |> construct (fun number expiry -> { Number = number; Expiry = expiry })
+            SchemaCE.schema<CardDetails> {
+                SchemaCE.field "number" _.Number
+                SchemaCE.field "expiry" _.Expiry
+                SchemaCE.construct (fun number expiry -> { Number = number; Expiry = expiry })
+            }
 
         let invoiceSchema =
-            Schema.define<InvoiceDetails>
-            |> fieldWith Schema.text "reference" _.Reference
-            |> construct (fun reference -> { Reference = reference })
+            SchemaCE.schema<InvoiceDetails> {
+                SchemaCE.field "reference" (fun (value: InvoiceDetails) -> value.Reference)
+                SchemaCE.construct (fun reference -> { Reference = reference })
+            }
 
         Schema.union
             "type"
@@ -136,22 +149,27 @@ module JsonCodecTests =
           Payment: Payment }
 
     let private orderSchema () =
-        Schema.define<Order>
-        |> fieldWith Schema.text "reference" _.Reference
-        |> fieldWith (paymentSchema ()) "payment" _.Payment
-        |> construct (fun reference payment -> { Order.Reference = reference; Payment = payment })
+        SchemaCE.schema<Order> {
+            SchemaCE.field "reference" (fun (value: Order) -> value.Reference)
+            SchemaCE.field "payment" _.Payment {
+                withSchema (paymentSchema ())
+            }
+            SchemaCE.construct (fun reference payment -> { Order.Reference = reference; Payment = payment })
+        }
 
     let private paymentInlineSchema () =
         let cardSchema =
-            Schema.define<CardDetails>
-            |> fieldWith Schema.text "number" _.Number
-            |> fieldWith Schema.text "expiry" _.Expiry
-            |> construct (fun number expiry -> { Number = number; Expiry = expiry })
+            SchemaCE.schema<CardDetails> {
+                SchemaCE.field "number" _.Number
+                SchemaCE.field "expiry" _.Expiry
+                SchemaCE.construct (fun number expiry -> { Number = number; Expiry = expiry })
+            }
 
         let invoiceSchema =
-            Schema.define<InvoiceDetails>
-            |> fieldWith Schema.text "reference" _.Reference
-            |> construct (fun reference -> { Reference = reference })
+            SchemaCE.schema<InvoiceDetails> {
+                SchemaCE.field "reference" (fun (value: InvoiceDetails) -> value.Reference)
+                SchemaCE.construct (fun reference -> { Reference = reference })
+            }
 
         Schema.inlineUnion
             "type"
@@ -175,11 +193,14 @@ module JsonCodecTests =
           Payment: Payment }
 
     let private inlineOrderSchema () =
-        Schema.define<InlineOrder>
-        |> fieldWith Schema.text "reference" _.Reference
-        |> fieldWith (paymentInlineSchema ()) "payment" _.Payment
-        |> construct (fun reference payment ->
-            { InlineOrder.Reference = reference; Payment = payment })
+        SchemaCE.schema<InlineOrder> {
+            SchemaCE.field "reference" (fun (value: InlineOrder) -> value.Reference)
+            SchemaCE.field "payment" _.Payment {
+                withSchema (paymentInlineSchema ())
+            }
+            SchemaCE.construct (fun reference payment ->
+                { InlineOrder.Reference = reference; Payment = payment })
+        }
 
     type private Color =
         | Red
@@ -189,9 +210,12 @@ module JsonCodecTests =
     type private Swatch = { Color: Color }
 
     let private swatchSchema () =
-        Schema.define<Swatch>
-        |> fieldWith (Schema.enum [ EnumCase.create "red" Red; EnumCase.create "green" Green; EnumCase.create "blue" Blue ]) "color" _.Color
-        |> construct (fun color -> { Color = color })
+        SchemaCE.schema<Swatch> {
+            SchemaCE.field "color" _.Color {
+                withSchema (Schema.enum [ EnumCase.create "red" Red; EnumCase.create "green" Green; EnumCase.create "blue" Blue ])
+            }
+            SchemaCE.construct (fun color -> { Color = color })
+        }
 
     [<Fact>]
     let ``round trips every value shape through one schema declaration`` () =
@@ -218,10 +242,11 @@ module JsonCodecTests =
     [<Fact>]
     let ``decoding tolerates whitespace unknown fields reordering and escaped keys`` () =
         let schema =
-            Schema.define<Address>
-            |> fieldWith Schema.text "street" _.Street
-            |> fieldWith Schema.text "city" _.City
-            |> construct (fun street city -> { Street = street; City = city })
+            SchemaCE.schema<Address> {
+                SchemaCE.field "street" _.Street
+                SchemaCE.field "city" _.City
+                SchemaCE.construct (fun street city -> { Street = street; City = city })
+            }
 
         let codec = Json.compile schema
 
@@ -309,14 +334,15 @@ module JsonCodecTests =
     [<Fact>]
     let ``constructor results from buildResult schemas surface as decode failures`` () =
         let schema =
-            Schema.define<Address>
-            |> fieldWith Schema.text "street" _.Street
-            |> fieldWith Schema.text "city" _.City
-            |> constructResult (fun (street: string) (city: string) ->
-                if street = "" then
-                    Error "street must not be blank"
-                else
-                    Ok { Street = street; City = city })
+            SchemaCE.schema<Address> {
+                SchemaCE.field "street" _.Street
+                SchemaCE.field "city" _.City
+                SchemaCE.constructResult (fun (street: string) (city: string) ->
+                    if street = "" then
+                        Error "street must not be blank"
+                    else
+                        Ok { Street = street; City = city })
+            }
 
         let codec = Json.compile schema
 
@@ -387,16 +413,23 @@ module JsonCodecTests =
           Ratings: int option list }
 
     let private optionalProfileSchema () =
-        Schema.define<OptionalProfile>
-        |> fieldWith (Schema.option Schema.text) "nickname" _.Nickname
-        |> fieldWith Schema.text "name" _.Name
-        |> fieldWith (Schema.option Schema.int) "age" _.Age
-        |> fieldWith (Schema.listWith (Schema.option Schema.int)) "ratings" _.Ratings
-        |> construct (fun nickname name age ratings ->
-            { Nickname = nickname
-              Name = name
-              Age = age
-              Ratings = ratings })
+        SchemaCE.schema<OptionalProfile> {
+            SchemaCE.field "nickname" _.Nickname {
+                withSchema (Schema.option Schema.text)
+            }
+            SchemaCE.field "name" _.Name
+            SchemaCE.field "age" _.Age {
+                withSchema (Schema.option Schema.int)
+            }
+            SchemaCE.field "ratings" _.Ratings {
+                withSchema (Schema.listWith (Schema.option Schema.int))
+            }
+            SchemaCE.construct (fun nickname name age ratings ->
+                { Nickname = nickname
+                  Name = name
+                  Age = age
+                  Ratings = ratings })
+        }
 
     [<Fact>]
     let ``encodes None optional fields as omitted even in first position`` () =

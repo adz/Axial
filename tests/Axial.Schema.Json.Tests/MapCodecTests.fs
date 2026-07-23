@@ -11,9 +11,12 @@ module MapCodecTests =
     type private Thresholds = { Values: Map<string, decimal> }
 
     let private thresholdsSchema () =
-        Schema.define<Thresholds>
-        |> fieldWith (Schema.mapWith Schema.decimal) "values" _.Values
-        |> construct (fun values -> { Values = values })
+        SchemaCE.schema<Thresholds> {
+            SchemaCE.field "values" _.Values {
+                withSchema (Schema.mapWith Schema.decimal)
+            }
+            SchemaCE.construct (fun values -> { Values = values })
+        }
 
     [<Fact>]
     let ``round trips a Map field through the compiled codec`` () =
