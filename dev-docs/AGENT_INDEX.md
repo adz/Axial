@@ -83,6 +83,7 @@ artifacts, or build artifacts.
 ## Validation Commands
 
 - Source/package moves: `bash scripts/check-source-inventory.sh`.
+- Schema CE type-state changes: `bash scripts/check-schema-ce-errors.sh`.
 - Focused .NET tests: `dotnet test <project> --nologo -v minimal`.
 - Public API/doc generator impact: update source comments or generator inputs first, regenerate affected docs, and defer
   `bash scripts/validate-docs.sh` until a phase or release checkpoint unless the task asks for full validation.

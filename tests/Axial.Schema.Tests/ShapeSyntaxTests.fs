@@ -114,7 +114,7 @@ module ShapeSyntaxTests =
             let flattened = SchemaErrors.toList errors
             test <@ flattened |> List.exists (fun diagnostic -> diagnostic.Error = SchemaError.ConstructorFailed "high must not precede low") @>
 
-    // ---- fieldWith and inferred containers ----
+    // ---- explicit field schemas and inferred containers ----
 
     type private Tagged =
         { Name: string

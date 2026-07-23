@@ -46,6 +46,10 @@ The `Axial.Flow.*` add-on packages depend on `Axial.Flow`, not the umbrella `Axi
 ```bash
 dotnet build Axial.slnx --configuration Release --nologo -v minimal
 dotnet test Axial.slnx --configuration Release --no-build --nologo -v minimal
+bash scripts/check-source-inventory.sh
+bash scripts/check-schema-ce-errors.sh
+bash scripts/check-fable-js-surface.sh
+bash scripts/run-aot-probe.sh
 bash scripts/pack.sh
 bash scripts/validate-docs.sh
 ```

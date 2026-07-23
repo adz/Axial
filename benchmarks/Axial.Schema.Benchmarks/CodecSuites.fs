@@ -28,38 +28,38 @@ module CodecModel =
           Scores: int list }
 
     let addressSchema =
-        SchemaCE.schema<Address> {
-            SchemaCE.field "street" _.Street
-            SchemaCE.field "city" _.City
-            SchemaCE.construct (fun street city -> { Street = street; City = city })
+        schema<Address> {
+            field "street" _.Street
+            field "city" _.City
+            construct (fun street city -> { Street = street; City = city })
         }
 
     let contactSchema =
-        SchemaCE.schema<Contact> {
-            SchemaCE.field "label" _.Label
-            SchemaCE.field "value" _.Value
-            SchemaCE.construct (fun label value -> { Label = label; Value = value })
+        schema<Contact> {
+            field "label" _.Label
+            field "value" _.Value
+            construct (fun label value -> { Label = label; Value = value })
         }
 
     let customerSchema =
-        SchemaCE.schema<Customer> {
-            SchemaCE.field "id" _.Id
-            SchemaCE.field "name" _.Name
-            SchemaCE.field "age" _.Age
-            SchemaCE.field "balance" _.Balance
-            SchemaCE.field "newsletter" _.Newsletter
-            SchemaCE.field "joined" _.Joined
-            SchemaCE.field "lastSeen" _.LastSeen
-            SchemaCE.field "address" _.Address {
+        schema<Customer> {
+            field "id" _.Id
+            field "name" _.Name
+            field "age" _.Age
+            field "balance" _.Balance
+            field "newsletter" _.Newsletter
+            field "joined" _.Joined
+            field "lastSeen" _.LastSeen
+            field "address" _.Address {
                 withSchema addressSchema
             }
-            SchemaCE.field "contacts" _.Contacts {
+            field "contacts" _.Contacts {
                 withSchema (Schema.listWith contactSchema)
             }
-            SchemaCE.field "scores" _.Scores {
+            field "scores" _.Scores {
                 withSchema (Schema.listWith Schema.int)
             }
-            SchemaCE.construct (fun id name age balance newsletter joined lastSeen address contacts scores ->
+            construct (fun id name age balance newsletter joined lastSeen address contacts scores ->
                 { Id = id
                   Name = name
                   Age = age

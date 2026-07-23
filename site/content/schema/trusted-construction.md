@@ -68,12 +68,12 @@ module WorkspaceName =
     let schema : Schema<WorkspaceName> =
         Schema.text
         |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 80 ]
-        |> Schema.refine create SchemaError.ofRefinementError value
+        |> Schema.refine (Refinement.define create value)
 ```
 
-`Schema.refine` takes the real fallible smart constructor. Raw constraints can report common failures with familiar
-codes and metadata; the smart constructor remains authoritative. If the two declarations drift, refinement returns
-diagnostics instead of throwing.
+`Refinement.define` keeps the fallible smart constructor beside the projection back to raw text. `Schema.refine`
+applies that definition. Raw constraints can report common failures with familiar codes and metadata; the smart
+constructor remains authoritative. If the two declarations drift, refinement returns an error instead of throwing.
 
 Any `WorkspaceName` is valid because its representation is private and every exposed constructor returns `Result`.
 The schema participates in that construction; it is not the sole guardian.

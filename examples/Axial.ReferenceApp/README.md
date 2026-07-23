@@ -89,7 +89,7 @@ schemas use the same constructors through `Schema.refine`:
 let private requiredText refine inspect maximum =
     Schema.text
     |> Schema.constrainAll [ Constraint.required; Constraint.maxLength maximum ]
-    |> Schema.refine refine SchemaError.ofRefinementError inspect
+    |> Schema.refine (Refinement.define refine inspect)
 ```
 
 The raw constraints supply portable metadata and standard boundary diagnostics. The smart constructor supplies the
@@ -112,17 +112,24 @@ RefinedSchemas.nonBlankString
 workspaceV2
 ```
 
-Record fields infer built-ins and canonical type schemas. `fieldWith` remains for the deliberately local refined and
-nested schemas in this application:
+Record fields infer built-ins and canonical type schemas. A field block supplies a local refined or nested schema:
 
 ```fsharp
-Schema.define<WorkspaceV2>
-|> fieldWith workspaceName "name" _.name
-|> fieldWith (Schema.listWith memberV2) "members" _.members
-|> construct constructor
+schema<WorkspaceV2> {
+    field "name" _.name {
+        withSchema workspaceName
+    }
+
+    field "members" _.members {
+        withSchema (Schema.listWith memberV2)
+    }
+
+    construct constructor
+}
 ```
 
-`Axial.Schema.Syntax` supplies the constructor-last shape operations. Value schemas remain qualified under `Schema`.
+`Axial.Schema.Syntax` supplies field constraints and the constructor-last record syntax. Value schemas remain
+qualified under `Schema`.
 
 ## Rules at the right level
 
