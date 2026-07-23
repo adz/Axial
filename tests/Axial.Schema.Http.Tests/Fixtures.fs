@@ -12,22 +12,36 @@ type Signup =
       Tags: string list }
 
 let addressSchema () =
-    Schema.define<Address>
-    |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 120 ]) "street" _.Street
-    |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 80 ]) "city" _.City
-    |> construct (fun street city -> { Street = street; City = city })
+    SchemaCE.schema<Address> {
+        SchemaCE.field "street" _.Street {
+            withSchema (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 120 ])
+        }
+        SchemaCE.field "city" _.City {
+            withSchema (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 80 ])
+        }
+        SchemaCE.construct (fun street city -> { Street = street; City = city })
+    }
 
 let signupSchema () =
-    Schema.define<Signup>
-    |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 80 ]) "name" _.Name
-    |> fieldWith (Schema.int |> Schema.constrainAll [ Constraint.between 13 120 ]) "age" _.Age
-    |> fieldWith (addressSchema () |> Schema.constrainAll [ Constraint.required ]) "address" _.Address
-    |> fieldWith (Schema.listWith Schema.text |> Schema.constrainAll [ Constraint.maxCount 5 ]) "tags" _.Tags
-    |> construct (fun name age address tags ->
-        { Name = name
-          Age = age
-          Address = address
-          Tags = tags })
+    SchemaCE.schema<Signup> {
+        SchemaCE.field "name" _.Name {
+            withSchema (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 80 ])
+        }
+        SchemaCE.field "age" _.Age {
+            withSchema (Schema.int |> Schema.constrainAll [ Constraint.between 13 120 ])
+        }
+        SchemaCE.field "address" _.Address {
+            withSchema (addressSchema () |> Schema.constrainAll [ Constraint.required ])
+        }
+        SchemaCE.field "tags" _.Tags {
+            withSchema (Schema.listWith Schema.text |> Schema.constrainAll [ Constraint.maxCount 5 ])
+        }
+        SchemaCE.construct (fun name age address tags ->
+            { Name = name
+              Age = age
+              Address = address
+              Tags = tags })
+    }
 
 let validJson =
     """{"name":"Ada Lovelace","age":36,"address":{"street":"12 Analytical Way","city":"London"},"tags":["vip"]}"""

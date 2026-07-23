@@ -58,10 +58,13 @@ let ``indexed form names become ordered collections`` () =
 [<Fact>]
 let ``query pairs parse flat models`` () =
     let schema =
-        Schema.define<{| Page: int; Terms: string list |}>
-        |> fieldWith Schema.int "page" (fun value -> value.Page)
-        |> fieldWith (Schema.listWith Schema.text) "terms" (fun value -> value.Terms)
-        |> construct (fun page terms -> {| Page = page; Terms = terms |})
+        SchemaCE.schema<{| Page: int; Terms: string list |}> {
+            SchemaCE.field "page" (fun (value: {| Page: int; Terms: string list |}) -> value.Page)
+            SchemaCE.field "terms" (fun (value: {| Page: int; Terms: string list |}) -> value.Terms) {
+                withSchema (Schema.listWith Schema.text)
+            }
+            SchemaCE.construct (fun page terms -> {| Page = page; Terms = terms |})
+        }
 
     let parsed =
         Schema.parseRetainingInput schema (BoundaryInput.ofQuery [ "page", "3"; "terms", "one"; "terms", "two" ])
