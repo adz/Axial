@@ -8,7 +8,6 @@
   <ItemGroup>
     <Compile Include="ServiceExamples.fs" />
     <Compile Include="RequestBoundaryExample.fs" />
-    <Compile Include="DiagnosticsExample.fs" />
     <Compile Include="RefinedCatalogExample.fs" />
     <Compile Include="RefinedValueSchemaExample.fs" />
     <Compile Include="PolicyExamples.fs" />

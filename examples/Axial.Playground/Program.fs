@@ -3,7 +3,6 @@ open System.Threading
 open System.Threading.Tasks
 open Axial.Flow
 open Axial.ErrorHandling
-open Axial.Validation
 
 type AppEnv =
     { Prefix: string

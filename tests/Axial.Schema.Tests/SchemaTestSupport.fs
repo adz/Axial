@@ -1,7 +1,12 @@
 namespace Axial
 
 open Axial.Schema
-open Axial.Validation
+
+[<RequireQualifiedAccess>]
+type PathSegment =
+    | Key of string
+    | Index of int
+    | Name of string
 
 [<RequireQualifiedAccess>]
 module TestPath =

@@ -4,17 +4,16 @@
     <PackageId>Axial.ErrorHandling</PackageId>
     <AssemblyName>Axial.ErrorHandling</AssemblyName>
     <Authors>Adam Davies</Authors>
-    <Description>Umbrella package for Axial.Result, Axial.Diagnostics, and Axial.Refined.</Description>
+    <Description>Umbrella package for Axial.Result and Axial.Refined.</Description>
     <PackageProjectUrl>https://github.com/adz/Axial</PackageProjectUrl>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageTags>fsharp;error-handling;result;diagnostics;refined-types</PackageTags>
+    <PackageTags>fsharp;error-handling;result;refined-types</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Axial.Result\Axial.Result.fsproj" />
-    <ProjectReference Include="..\Axial.Diagnostics\Axial.Diagnostics.fsproj" />
     <ProjectReference Include="..\Axial.Refined\Axial.Refined.fsproj" />
   </ItemGroup>
 </Project>

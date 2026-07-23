@@ -12,7 +12,6 @@ open Axial.ErrorHandling
 open Axial.Refined
 open Axial.Schema
 open Axial.Schema.Syntax
-open Axial.Validation
 open Axial.Flow.Hosting
 open Axial.Flow.Telemetry
 open Microsoft.FSharp.Reflection
@@ -108,14 +107,7 @@ module ApiShapeTests =
         | _, found -> found
 
     let private moduleTypeFromAssembly (assemblyName: string) (fullName: string) =
-        let resolvedAssemblyName =
-            match assemblyName, fullName with
-            | "Axial.Validation", name when name.StartsWith("Axial.ErrorHandling", StringComparison.Ordinal) -> "Axial.Result"
-            | "Axial.Validation", name when name.StartsWith("Axial.Refined", StringComparison.Ordinal) -> "Axial.Refined"
-            | "Axial.Validation", _ -> "Axial.Diagnostics"
-            | _ -> assemblyName
-
-        let assembly = Assembly.Load resolvedAssemblyName
+        let assembly = Assembly.Load assemblyName
 
         match assembly.GetType(fullName, false), assembly.GetType(fullName + "Module", false) with
         | null, null -> failwithf "Could not find module type %s in %s." fullName assembly.FullName
@@ -366,31 +358,7 @@ module ApiShapeTests =
         assertContainsAll [ "ColdTask`1"; "Task`1"; "ValueTask`1"; "FSharpAsync`1"; "Flow`3" ] argumentTypeNames
 
     [<Fact>]
-    let ``validation modules and builders keep expected public shape`` () =
-        moduleType typeof<Validation<int, string>> "Axial.Validation.Validation"
-        |> publicStaticMemberNames
-        |> fun validationMembers ->
-            validationMembers
-            |> assertContainsAll
-                [ "ok"
-                  "fail"
-                  "fromResult"
-                  "toResult"
-                  "map"
-                  "bind"
-                  "map2"
-                  "map3"
-                  "collect"
-                  "sequence"
-                  "at"
-                  "traverseIndexed" ]
-
-            test <@ validationMembers |> Set.contains "ofResult" |> not @>
-
-        typeof<ValidateBuilder>
-        |> publicInstanceMethodNames
-        |> assertContainsAll [ "Return"; "ReturnFrom"; "Bind"; "MergeSources"; "Run"; "at" ]
-
+    let ``result and refinement builders keep expected public shape`` () =
         typeof<ResultBuilder>
         |> publicInstanceMethodNames
         |> assertContainsAll [ "Return"; "ReturnFrom"; "Bind"; "Delay"; "Run"; "Combine"; "TryWith"; "TryFinally"; "Using"; "While"; "For" ]
@@ -427,7 +395,7 @@ module ApiShapeTests =
 
         moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.RetainedParseResult"
         |> publicStaticMemberNames
-        |> assertContainsAll [ "create"; "mapErrors"; "renderErrors" ]
+        |> assertContainsAll [ "create"; "renderErrors" ]
 
     [<Fact>]
     let ``codec compiles json codecs from schemas without extra package coupling`` () =
@@ -479,25 +447,15 @@ module ApiShapeTests =
 
     [<Fact>]
     let ``schema validation interpreters live alongside schema in the consolidated schema package`` () =
-        // Axial.Validation hosts the ErrorHandling, Validation, and Refined namespaces. The old cross-package
-        // "stays out of core validation" boundary no longer exists as a package boundary, but the
-        // schema-specific interpreter modules should still not leak into the (schema-independent)
-        // Axial.Validation assembly.
-        let errorHandlingAssembly = typeof<Validation<int, string>>.Assembly
         let schemaAssembly = Assembly.Load "Axial.Schema"
         let schemaReferences = referencedAssemblyNames schemaAssembly
-
-        test <@ errorHandlingAssembly.GetName().Name = "Axial.Diagnostics" @>
-
-        assertModuleAbsentFromAssembly "Axial.Diagnostics" "Axial.Schema.SchemaValidation"
-        assertModuleAbsentFromAssembly "Axial.Diagnostics" "Axial.Schema.ConstraintCheck"
-        assertModuleAbsentFromAssembly "Axial.Diagnostics" "Axial.Schema.SchemaCheck"
-        assertModuleAbsentFromAssembly "Axial.Diagnostics" "Axial.Schema.ModelModule"
 
         test <@ schemaAssembly.GetName().Name = "Axial.Schema" @>
 
         schemaReferences
-        |> assertContainsAll [ "Axial.Result"; "Axial.Diagnostics"; "Axial.Refined" ]
+        |> assertContainsAll [ "Axial.Result"; "Axial.Refined" ]
+
+        schemaReferences |> assertContainsNone [ "Axial.Diagnostics" ]
 
         moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.SchemaValidation"
         |> publicStaticMemberNames
@@ -581,8 +539,7 @@ module ApiShapeTests =
         let schemaMembers = schemaModule |> publicStaticMemberNames
         schemaMembers
         |> assertContainsAll
-            [ "define"
-              "text"
+            [ "text"
               "int"
               "decimal"
               "bool"
@@ -689,8 +646,7 @@ module ApiShapeTests =
         test <@ orderProperty.PropertyType = fieldOrderType @>
         test <@ getterProperty.PropertyType.GetGenericTypeDefinition() = typedefof<FSharpFunc<_, _>> @>
         test <@ schemaAssembly.GetName().Name = "Axial.Schema" @>
-        // Axial.Schema legitimately depends on Axial.Validation (for Check-based constraint
-        // lowering and the Axial.Refined bridge) but must stay independent of Axial.Flow.
+        // Schema uses Result and Refined directly and stays independent of Flow.
         references
         |> assertContainsNone [ "Axial.Flow" ]
 
@@ -1254,7 +1210,7 @@ module ApiShapeTests =
             set [ "Path"; "Raw"; "Data"; "Input"; "Schema"; "Diagnostic"; "Diagnostics" ]
 
         let forbiddenCheckFailureTypeNamespaces =
-            [ "Axial.Schema"; "Axial.Validation"; "Axial.Refined" ]
+            [ "Axial.Schema"; "Axial.Refined" ]
 
         let publicCheckFailureFields =
             FSharpType.GetUnionCases(typeof<CheckFailure>, BindingFlags.Public)
@@ -1275,7 +1231,7 @@ module ApiShapeTests =
         test <@ Array.isEmpty forbiddenFields @>
 
         let checkModule =
-            moduleTypeFromAssembly "Axial.Validation" "Axial.ErrorHandling.Check"
+            moduleTypeFromAssembly "Axial.Result" "Axial.ErrorHandling.Check"
 
         let checkMembers =
             checkModule
@@ -1328,7 +1284,7 @@ module ApiShapeTests =
         |> assertNoMethodsReturnBool
 
         let checkStringModule =
-            moduleTypeFromAssembly "Axial.Validation" "Axial.ErrorHandling.CheckModule+String"
+            moduleTypeFromAssembly "Axial.Result" "Axial.ErrorHandling.CheckModule+String"
 
         checkStringModule
         |> publicStaticMemberNames
@@ -1338,7 +1294,7 @@ module ApiShapeTests =
         |> assertMethodsReturnCheckResult [ "present"; "minLength"; "maxLength"; "lengthBetween"; "length"; "exactLength"; "email"; "matches"; "oneOf" ]
 
         let checkNumberModule =
-            moduleTypeFromAssembly "Axial.Validation" "Axial.ErrorHandling.CheckModule+Number"
+            moduleTypeFromAssembly "Axial.Result" "Axial.ErrorHandling.CheckModule+Number"
 
         checkNumberModule
         |> publicStaticMemberNames
@@ -1348,7 +1304,7 @@ module ApiShapeTests =
         |> assertMethodsReturnCheckResult [ "between"; "greaterThan"; "lessThan"; "atLeast"; "atMost"; "positive"; "nonNegative"; "negative"; "nonPositive" ]
 
         let checkSeqModule =
-            moduleTypeFromAssembly "Axial.Validation" "Axial.ErrorHandling.CheckModule+Seq"
+            moduleTypeFromAssembly "Axial.Result" "Axial.ErrorHandling.CheckModule+Seq"
 
         checkSeqModule
         |> publicStaticMemberNames
@@ -1388,7 +1344,7 @@ module ApiShapeTests =
         assertModuleAbsentFromAssembly "Axial.Result" "Axial.ErrorHandling.CheckModule+Collection"
 
         let checkOptionModule =
-            moduleTypeFromAssembly "Axial.Validation" "Axial.ErrorHandling.CheckModule+Option"
+            moduleTypeFromAssembly "Axial.Result" "Axial.ErrorHandling.CheckModule+Option"
 
         checkOptionModule
         |> publicStaticMemberNames
@@ -1398,7 +1354,7 @@ module ApiShapeTests =
         |> assertMethodsReturnCheckResult [ "some"; "none" ]
 
         let checkValueOptionModule =
-            moduleTypeFromAssembly "Axial.Validation" "Axial.ErrorHandling.CheckModule+ValueOption"
+            moduleTypeFromAssembly "Axial.Result" "Axial.ErrorHandling.CheckModule+ValueOption"
 
         checkValueOptionModule
         |> publicStaticMemberNames
@@ -1408,7 +1364,7 @@ module ApiShapeTests =
         |> assertMethodsReturnCheckResult [ "some"; "none"; "present"; "empty"; "notEmpty" ]
 
         let checkNullableModule =
-            moduleTypeFromAssembly "Axial.Validation" "Axial.ErrorHandling.CheckModule+Nullable"
+            moduleTypeFromAssembly "Axial.Result" "Axial.ErrorHandling.CheckModule+Nullable"
 
         checkNullableModule
         |> publicStaticMemberNames
@@ -1418,7 +1374,7 @@ module ApiShapeTests =
         |> assertMethodsReturnCheckResult [ "hasValue"; "hasNoValue"; "present"; "empty"; "notEmpty" ]
 
         let checkResultModule =
-            moduleTypeFromAssembly "Axial.Validation" "Axial.ErrorHandling.CheckModule+Result"
+            moduleTypeFromAssembly "Axial.Result" "Axial.ErrorHandling.CheckModule+Result"
 
         checkResultModule
         |> publicStaticMemberNames
@@ -1512,7 +1468,7 @@ module ApiShapeTests =
               "orError" ]
 
         let predicateModule =
-            moduleTypeFromAssembly "Axial.Validation" "Axial.ErrorHandling.Predicate"
+            moduleTypeFromAssembly "Axial.Result" "Axial.ErrorHandling.Predicate"
 
         predicateModule
         |> publicStaticMemberNames
@@ -1521,10 +1477,10 @@ module ApiShapeTests =
         predicateModule
         |> assertMethodsReturnBool [ "present"; "empty"; "notEmpty" ]
 
-        moduleTypeFromAssembly "Axial.Validation" "Axial.ErrorHandling.PredicateModule+Reference"
+        moduleTypeFromAssembly "Axial.Result" "Axial.ErrorHandling.PredicateModule+Reference"
         |> assertMethodsReturnBool [ "isNull"; "notNull" ]
 
-        moduleTypeFromAssembly "Axial.Validation" "Axial.ErrorHandling.PredicateModule+Number"
+        moduleTypeFromAssembly "Axial.Result" "Axial.ErrorHandling.PredicateModule+Number"
         |> assertMethodsReturnBool
             [ "greaterThan"
               "lessThan"
@@ -1540,7 +1496,7 @@ module ApiShapeTests =
         // members directly on those types (see PredicateExtensions), not as PredicateModule submodules.
 
         let resultMembers =
-            moduleTypeFromAssembly "Axial.Validation" "Axial.ErrorHandling.Result"
+            moduleTypeFromAssembly "Axial.Result" "Axial.ErrorHandling.Result"
             |> publicStaticMemberNames
 
         resultMembers
@@ -1572,7 +1528,7 @@ module ApiShapeTests =
               "headOr" ]
 
         let parseMembers =
-            moduleTypeFromAssembly "Axial.Validation" "Axial.Refined.Parse"
+            moduleTypeFromAssembly "Axial.Refined" "Axial.Refined.Parse"
             |> publicStaticMemberNames
 
         test <@ typeof<ParseError>.Assembly.GetName().Name = "Axial.Refined" @>
@@ -1604,13 +1560,13 @@ module ApiShapeTests =
               "decimalOrDefault" ]
 
         let refineMembers =
-            moduleTypeFromAssembly "Axial.Validation" "Axial.Refined.Refine"
+            moduleTypeFromAssembly "Axial.Refined" "Axial.Refined.Refine"
             |> publicStaticMemberNames
 
         refineMembers
         |> assertContainsAll [ "from"; "nonBlankString"; "positiveInt"; "nonEmptyList"; "exactlyOne"; "atMostOne" ]
 
-        moduleTypeFromAssembly "Axial.Validation" "Axial.Refined.Refinement"
+        moduleTypeFromAssembly "Axial.Refined" "Axial.Refined.Refinement"
         |> publicStaticMemberNames
         |> assertContainsAll [ "define"; "create"; "inspect" ]
 
@@ -1634,10 +1590,6 @@ module ApiShapeTests =
 
         bindErrorWithErrorSources
         |> assertContainsNone [ typeof<bool>.FullName; typeof<Async<bool>>.FullName; typeof<Task<bool>>.FullName; typeof<ValueTask<bool>>.FullName ]
-
-        moduleType typeof<Diagnostics<string>> "Axial.Validation.Diagnostics"
-        |> publicStaticMemberNames
-        |> assertContainsAll [ "empty"; "singleton"; "merge"; "toString"; "flatten" ]
 
         moduleType typeof<Ref<int>> "Axial.Flow.Ref"
         |> publicStaticMemberNames
@@ -1850,16 +1802,13 @@ module ApiShapeTests =
     let ``option and valueoption implicit binding requires unit workflow errors`` () =
         let flowAssemblyPath = typeof<FlowBuilder>.Assembly.Location
         let resultAssemblyPath = typeof<ResultBuilder>.Assembly.Location
-        let validationAssemblyPath = typeof<Validation<unit, unit>>.Assembly.Location
 
         let flowProbe =
             $"""
 #r @"{flowAssemblyPath}"
 #r @"{resultAssemblyPath}"
-#r @"{validationAssemblyPath}"
 open Axial.Flow
 open Axial.ErrorHandling
-open Axial.Validation
 
 let probe : Flow<unit, string, int> =
     flow {{
@@ -1872,10 +1821,8 @@ let probe : Flow<unit, string, int> =
             $"""
 #r @"{flowAssemblyPath}"
 #r @"{resultAssemblyPath}"
-#r @"{validationAssemblyPath}"
 open Axial.Flow
 open Axial.ErrorHandling
-open Axial.Validation
 
 let probe : Flow<unit, string, int> =
     flow {{

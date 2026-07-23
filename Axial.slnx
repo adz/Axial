@@ -6,7 +6,6 @@
   </Configurations>
   <Folder Name="/examples/">
     <Project Path="examples/Axial.Result.AotProbe/Axial.Result.AotProbe.fsproj" />
-    <Project Path="examples/Axial.Diagnostics.AotProbe/Axial.Diagnostics.AotProbe.fsproj" />
     <Project Path="examples/Axial.Refined.AotProbe/Axial.Refined.AotProbe.fsproj" />
     <Project Path="examples/Axial.Schema.AotProbe/Axial.Schema.AotProbe.fsproj" />
     <Project Path="examples/Axial.Flow.AotProbe/Axial.Flow.AotProbe.fsproj" />
@@ -43,7 +42,6 @@
     <Project Path="src/Axial.Flow/Axial.Flow.fsproj" />
     <Project Path="src/Axial.Data/Axial.Data.fsproj" />
     <Project Path="src/Axial.Result/Axial.Result.fsproj" />
-    <Project Path="src/Axial.Diagnostics/Axial.Diagnostics.fsproj" />
     <Project Path="src/Axial.Refined/Axial.Refined.fsproj" />
     <Project Path="src/Axial.ErrorHandling/Axial.ErrorHandling.fsproj" />
     <Project Path="src/Axial.Schema.Json/Axial.Schema.Json.fsproj" />

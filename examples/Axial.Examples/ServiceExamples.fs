@@ -4,7 +4,6 @@ open System
 open System.Threading.Tasks
 open Axial.Flow
 open Axial.ErrorHandling
-open Axial.Validation
 open Microsoft.Extensions.DependencyInjection
 
 // --- DOMAIN TYPES ---

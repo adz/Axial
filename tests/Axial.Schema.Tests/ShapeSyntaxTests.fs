@@ -4,7 +4,6 @@ open Axial
 
 open System
 open Axial.Schema
-open Axial.Validation
 open Swensen.Unquote
 open Xunit
 

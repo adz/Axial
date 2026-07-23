@@ -10,7 +10,6 @@
 
   <ItemGroup>
     <Compile Include="CheckResultTests.fs" />
-    <Compile Include="ValidationTests.fs" />
     <Compile Include="ParseAndBuilderTests.fs" />
     <Compile Include="CatalogTests.fs" />
   </ItemGroup>

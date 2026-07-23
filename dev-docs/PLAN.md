@@ -6,7 +6,7 @@ Speculative sketches live in `dev-docs/current-ideas/`, but this file is the liv
 
 ## Release Strategy
 
-Per `prd.md`: the boundary stack — `Axial.Result`, `Axial.Diagnostics`, and `Axial.Refined` under the
+Per `prd.md`: the boundary stack — `Axial.Result` and `Axial.Refined` under the
 `Axial.ErrorHandling` meta-package, plus `Axial.Schema` and `Axial.Schema.Json` — is the 1.0 gate, driven by
 a real adoption target (a ~100-variant versioned config system). The Flow group's remaining pre-1.0 scope in
 `LATER_TODO.md` is demand-driven — pulled forward when a concrete application needs it. The contract-declaration
@@ -21,12 +21,13 @@ and contracts) and should be treated as settling rather than settled.
 Axial began as a Reader-Async-Result workflow monad in the ZIO tradition; the result side has since expanded into a
 full input and value toolkit. The public surface has three identities:
 
-- **Error Handling**: checks and ordinary `Result` in `Axial.Result`, accumulated diagnostics in
-  `Axial.Diagnostics`, and refined values in `Axial.Refined`. `Axial.ErrorHandling` installs all three.
-- **Schema**: structured input, model construction, codecs, contracts, and boundary interpreters.
+- **Error Handling**: checks and ordinary `Result` in `Axial.Result`, and refined values in `Axial.Refined`.
+  `Axial.ErrorHandling` installs both.
+- **Schema**: structured input, accumulated path-aware errors, model construction, codecs, contracts, and boundary
+  interpreters.
 - **Flow**: effectful workflows. Useful with or without Schema, and always installed separately.
 
-The `Axial` umbrella installs Validation and Schema together. It does not install or re-export Flow.
+The `Axial` umbrella installs ErrorHandling and Schema together. It does not install or re-export Flow.
 
 Within the effects group, Axial has one fully expanded workflow shape:
 

@@ -6,12 +6,11 @@
 //   1. single-field checks that stay ordinary Result values
 //   2. a fail-fast result {} pipeline for dependent steps
 //   3. refine {} constructing refined domain values from raw strings
-//   4. validate {} accumulating every sibling failure with named paths
+// Schema owns accumulated, path-aware input failures; the next reference app adds it.
 
 open Axial
 open Axial.ErrorHandling
 open Axial.ErrorHandling.CheckDSL
-open Axial.Validation
 open Axial.Refined
 
 // ---------------------------------------------------------------------------
@@ -76,56 +75,6 @@ let createContact (rawId: string) (rawEmail: string) : Result<Contact, Refinemen
     }
 
 // ---------------------------------------------------------------------------
-// 4. validate {}: independent fields report every failure together, with paths.
-// ---------------------------------------------------------------------------
-
-type RegistrationForm =
-    { Name: string
-      Email: string
-      Company: string
-      Tier: string
-      Quantity: string }
-
-type FormError =
-    | Required
-    | InvalidEmail
-    | BadName of BadgeError
-    | BadTicket of TicketError
-
-type Registration =
-    { BadgeName: string
-      Email: string
-      Company: string option
-      Tier: Tier
-      Quantity: int }
-
-/// One pass over the form returns every field failure, each attached to its field name.
-let validateRegistration (form: RegistrationForm) : Validation<Registration, FormError> =
-    validate {
-        let! name =
-            validate.name "name" { return! validateBadgeName form.Name |> mapError BadName }
-
-        and! email =
-            validate.name "email" {
-                let! presentEmail = form.Email |> present |> orError Required
-                return! presentEmail |> email |> orError InvalidEmail
-            }
-
-        and! ticket =
-            validate.name "ticket" { return! parseTicketRequest form.Tier form.Quantity |> mapError BadTicket }
-
-        let company = if form.Company.Trim() = "" then None else Some(form.Company.Trim())
-        let tier, quantity = ticket
-
-        return
-            { BadgeName = name
-              Email = email
-              Company = company
-              Tier = tier
-              Quantity = quantity }
-    }
-
-// ---------------------------------------------------------------------------
 // Demo driver: run each stage over good and bad inputs and print the outcomes.
 // ---------------------------------------------------------------------------
 
@@ -143,27 +92,5 @@ let main _ =
 
     show "refine {} (valid contact):" (createContact "41" "ada@example.org")
     show "refine {} (zero id fails fast):" (createContact "0" "ada@example.org")
-
-    let goodForm =
-        { Name = "Ada Lovelace"
-          Email = "ada@example.org"
-          Company = "Analytical Engines Ltd"
-          Tier = "speaker"
-          Quantity = "1" }
-
-    let badForm =
-        { Name = "Al"
-          Email = "not-an-email"
-          Company = ""
-          Tier = "general"
-          Quantity = "9" }
-
-    show "validate {} (valid form):" (validateRegistration goodForm)
-
-    match validateRegistration badForm |> Validation.toResult with
-    | Ok registration -> show "validate {} unexpectedly succeeded:" registration
-    | Error diagnostics ->
-        printfn "validate {} (bad form) reports every field at once:"
-        printfn "%s" (Diagnostics.toString diagnostics)
 
     0

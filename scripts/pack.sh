@@ -23,7 +23,6 @@ projects=(
   "src/Axial.Flow/Axial.Flow.fsproj"
   "src/Axial.Data/Axial.Data.fsproj"
   "src/Axial.Result/Axial.Result.fsproj"
-  "src/Axial.Diagnostics/Axial.Diagnostics.fsproj"
   "src/Axial.Refined/Axial.Refined.fsproj"
   "src/Axial.ErrorHandling/Axial.ErrorHandling.fsproj"
   "src/Axial.Schema/Axial.Schema.fsproj"

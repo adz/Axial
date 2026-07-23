@@ -4,7 +4,6 @@ open Axial
 
 open Axial.Schema.Json
 open Axial.Schema
-open Axial.Validation
 open Swensen.Unquote
 open Xunit
 open Axial.Schema.Syntax

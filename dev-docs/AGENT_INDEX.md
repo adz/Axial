@@ -20,14 +20,12 @@ Working on `src/Axial.Schema`? Read `dev-docs/schema/internals.md` first (implem
   `Axial.Schema`.
 - `Axial.Result` (`src/Axial.Result/`): `Check`, `Predicate`, Result helpers, and `result { }` in the
   `Axial.ErrorHandling` namespace. Independent leaf.
-- `Axial.Diagnostics` (`src/Axial.Diagnostics/`): `Validation`, `Diagnostics`, paths, and `validate { }` in the
-  `Axial.Validation` namespace. Depends only on `Axial.Result`.
 - `Axial.Refined` (`src/Axial.Refined/`): parsing, refined types, and `refine { }`. Depends only on `Axial.Result`.
-- `Axial.ErrorHandling` (`src/Axial.ErrorHandling/`): meta-package installing Result, Diagnostics, and Refined.
+- `Axial.ErrorHandling` (`src/Axial.ErrorHandling/`): meta-package installing Result and Refined.
 - `Axial.Schema` (`src/Axial.Schema/`): schema declaration (`Schema` module), parsing and checking (`Schema.parse`,
   `Schema.parseRetainingInput`, `Schema.check`), inspection (`Inspect`), contracts,
-  and refined schema adapters (`RefinedSchemas`) in one package. Depends on `Axial.Data`, `Axial.Result`,
-  `Axial.Diagnostics`, and `Axial.Refined`.
+  and refined schema adapters (`RefinedSchemas`) in one package. Depends on `Axial.Data`, `Axial.Result`, and
+  `Axial.Refined`. Schema owns path-aware accumulated errors.
 - `Axial.Schema.JsonSchema` (`src/Axial.Schema.JsonSchema/`): JSON Schema generation (`JsonSchema.generate`) in the
   `Axial.Schema` namespace. Depends on `Axial.Schema`.
 - `Axial.Schema.Json` (`src/Axial.Schema.Json/`): compiled JSON codecs. Depends on `Axial.Schema`.
@@ -47,7 +45,7 @@ Working on `src/Axial.Schema`? Read `dev-docs/schema/internals.md` first (implem
 - `Axial.Schema.Contracts.Build` (`src/Axial.Schema.Contracts.Build/`): packable targets-only MSBuild package
   running `scripts/schemagen` before compile over `<AxialDeriveSchema>`/`<AxialContract>` items.
 - `Axial.Flow.*` add-on packages depend on `Axial.Flow`.
-- `Axial` umbrella package references Validation, Schema, and the Schema add-ons for convenience. Flow remains a
+- `Axial` umbrella package references ErrorHandling, Schema, and the Schema add-ons for convenience. Flow remains a
   separate install.
 
 ## Open These First
@@ -58,8 +56,6 @@ Working on `src/Axial.Schema`? Read `dev-docs/schema/internals.md` first (implem
   `tests/Axial.ErrorHandling.Tests/CheckResultTests.fs`, `tests/Axial.ApiShape.Tests/ApiShapeTests.fs`, and `dev-docs/PLAN.md`.
 - Refined values: `src/Axial.Refined/Refine.fs`, `src/Axial.Refined/Parse.fs`,
   `tests/Axial.ErrorHandling.Tests/{ParseAndBuilderTests,CatalogTests}.fs`, and the Check/Result files only as needed.
-- Validation/diagnostics: `src/Axial.Diagnostics/{Validation,Diagnostics,ValidateBuilder}.fs`,
-  `tests/Axial.ErrorHandling.Tests/ValidationTests.fs`, and `dev-docs/PLAN.md`.
 - Schema metadata/builder: `src/Axial.Schema/Schema.fs`, `tests/Axial.Schema.Tests/Schema*Tests.fs`, and the schema section in
   `dev-docs/PLAN.md`.
 - Schema input/rules/interpreters: `src/Axial.Schema/{Model,Data,SchemaValidation,RetainedParseResult,Rules}.fs` and

@@ -7,7 +7,6 @@ open Axial
 open Axial.Flow
 open Axial.Refined
 open Axial.Schema
-open Axial.Validation
 open Axial.Schema.Syntax
 
 type Quantity =

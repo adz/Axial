@@ -3,7 +3,6 @@ open System.IO
 open System.Threading
 open Axial.Flow
 open Axial.ErrorHandling
-open Axial.Validation
 
 type ReadmeEnv =
     { Root: string }

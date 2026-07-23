@@ -114,15 +114,6 @@ fi
 if $emit_schema; then
 output_file="$schema_staging"
 render_example_section \
-  "Diagnostics Example" \
-  "This example shows a JSON-shaped request boundary with a root-level error, nested child branches, and a display-friendly diagnostics tree." \
-  "$root_dir/examples/Axial.Examples/Axial.Examples.fsproj" \
-  "$root_dir/examples/Axial.Examples/DiagnosticsExample.fs" \
-  "https://github.com/adz/Axial/blob/main/examples/Axial.Examples/DiagnosticsExample.fs" \
-  "AXIAL_EXAMPLE=diagnostics dotnet run --project examples/Axial.Examples/Axial.Examples.fsproj --nologo" \
-  "diagnostics"
-
-render_example_section \
   "Refined Catalog Example" \
   "This example shows a request boundary that parses strings, builds refined numeric/text/collection values, chooses a domain union case, and rejects invalid input before the domain record is created." \
   "$root_dir/examples/Axial.Examples/Axial.Examples.fsproj" \

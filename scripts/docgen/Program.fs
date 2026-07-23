@@ -621,32 +621,10 @@ let pageSpecs = [
         OutPath = ["bind"; "_index.md"]
         Title = "Bind"
         Description = "Source-documented flow bind-site error adaptation for Axial."
-        Intro = "This page shows the `Bind` helpers used when a source needs its error assigned or mapped immediately before `flow { }` binds it. Use `Bind.error` for option or value-option absence and unit-error failures such as `Result<'value, unit>` or `Flow<'env, unit, 'value>`. Use `Bind.mapError` when the source already carries a meaningful error that must be wrapped or translated into the surrounding flow error. The helpers return a `BindError` marker for the flow builder. Do not use `Bind` as a general Result adapter; in pure code use `Result.mapError`, `Result.orError`, or `Validation.mapError`."
+        Intro = "This page shows the `Bind` helpers used when a source needs its error assigned or mapped immediately before `flow { }` binds it. Use `Bind.error` for option or value-option absence and unit-error failures such as `Result<'value, unit>` or `Flow<'env, unit, 'value>`. Use `Bind.mapError` when the source already carries a meaningful error that must be wrapped or translated into the surrounding flow error. The helpers return a `BindError` marker for the flow builder. Do not use `Bind` as a general Result adapter; in pure code use `Result.mapError` or `Result.orError`."
         SymbolIds = [
             "Core type", ["T:Axial.Flow.BindError`3"]
             "Module functions", ["M:Axial.Flow.Bind.error"; "M:Axial.Flow.Bind.mapError"]
-        ]
-        Alias = None
-    }
-    {
-        OutPath = ["validation"; "_index.md"]
-        Title = "Validation"
-        Description = "Source-documented accumulating validation for Axial."
-        Intro = "This page shows the `Validation<'value, 'error>` surface for accumulating several failures into one diagnostics graph. Unlike `Result`, validation does not stop at the first independent error; functions such as `map2`, `map3`, `apply`, `collect`, and `traverseIndexed` combine sibling checks and preserve all reported problems. Use `Validation.fromResult` as the canonical bridge from fail-fast `Result` values into validation, and use `Validation.toResult` when a boundary expects ordinary `Result`. Use path helpers such as `name`, `key`, `index`, and `at` to attach errors to fields, map entries, list positions, or nested structures. Use `Validation` for input decoding, command validation, configuration checks, and any boundary where users need a complete error report."
-        SymbolIds = [
-            "Core type", ["T:Axial.Validation.Validation`2"]
-            "Module functions", ["M:Axial.Validation.Validation.toResult"; "M:Axial.Validation.Validation.ok"; "M:Axial.Validation.Validation.error"; "M:Axial.Validation.Validation.succeed"; "M:Axial.Validation.Validation.fail"; "M:Axial.Validation.Validation.fromResult"; "M:Axial.Validation.Validation.map"; "M:Axial.Validation.Validation.bind"; "M:Axial.Validation.Validation.mapError"; "M:Axial.Validation.Validation.map2"; "M:Axial.Validation.Validation.map3"; "M:Axial.Validation.Validation.apply"; "M:Axial.Validation.Validation.ignore"; "M:Axial.Validation.Validation.orElse"; "M:Axial.Validation.Validation.orElseWith"; "M:Axial.Validation.Validation.collect"; "M:Axial.Validation.Validation.sequence"; "M:Axial.Validation.Validation.traverseIndexed"; "M:Axial.Validation.Validation.merge"]
-            "Path scoping", ["M:Axial.Validation.Validation.at"; "M:Axial.Validation.Validation.key"; "M:Axial.Validation.Validation.index"; "M:Axial.Validation.Validation.name"]
-        ]
-        Alias = None
-    }
-    {
-        OutPath = ["validation"; "builders-validate.md"]
-        Title = "validate { }"
-        Description = "Documentation for the validate { } computation expression."
-        Intro = "This page shows the `validate { }` computation expression for writing validation logic with direct, sequential syntax. The builder is best for validation steps that read clearly as a block while still returning `Validation<'value, 'error>`. Use it when each bound step depends on earlier successful values. For independent sibling fields where you want maximum error accumulation, prefer `Validation.map2`, `map3`, `apply`, `collect`, or `traverseIndexed` so all branches are evaluated and all diagnostics are retained."
-        SymbolIds = [
-            "Builder", ["P:Axial.Validation.Builders.validate"]
         ]
         Alias = None
     }
@@ -688,17 +666,6 @@ let pageSpecs = [
             "Re-certifying helpers", ["M:Axial.Refined.NonBlankString.value"; "M:Axial.Refined.NonBlankString.create"; "M:Axial.Refined.NonBlankString.map"; "M:Axial.Refined.PositiveInt.value"; "M:Axial.Refined.PositiveInt.create"; "M:Axial.Refined.PositiveInt.map"; "M:Axial.Refined.PositiveInt.replace"; "M:Axial.Refined.NonEmptyList.toList"; "M:Axial.Refined.NonEmptyList.create"; "M:Axial.Refined.NonEmptyList.cons"; "M:Axial.Refined.NonEmptyList.map"; "M:Axial.Refined.NonEmptyList.filter"; "M:Axial.Refined.NonEmptyList.tryFilter"]
             "Refine facade", ["M:Axial.Refined.Refine.from"; "M:Axial.Refined.Refine.withCheck"; "M:Axial.Refined.Refine.withChecks"; "M:Axial.Refined.Refine.nonBlankString"; "M:Axial.Refined.Refine.trimmedString"; "M:Axial.Refined.Refine.boundedString"; "M:Axial.Refined.Refine.slug"; "M:Axial.Refined.Refine.positiveInt"; "M:Axial.Refined.Refine.nonNegativeInt"; "M:Axial.Refined.Refine.nonZeroInt"; "M:Axial.Refined.Refine.negativeInt"; "M:Axial.Refined.Refine.nonPositiveInt"; "M:Axial.Refined.Refine.nonEmptyList"; "M:Axial.Refined.Refine.nonEmptyArray"; "M:Axial.Refined.Refine.distinctList"; "M:Axial.Refined.Refine.boundedList"; "M:Axial.Refined.Refine.boundedArray"; "M:Axial.Refined.Refine.dateTimeOffsetRange"; "M:Axial.Refined.Refine.dateOnlyRange"; "M:Axial.Refined.Refine.exactlyOne"; "M:Axial.Refined.Refine.atMostOne"]
             "Builder", ["P:Axial.Refined.Builders.refine"]
-        ]
-        Alias = None
-    }
-    {
-        OutPath = ["diagnostics"; "_index.md"]
-        Title = "Diagnostics"
-        Description = "Source-documented validation diagnostics graph for Axial."
-        Intro = "This page shows the diagnostics graph used by `Validation`. A `Diagnostics<'error>` value stores errors at the current node and at named, keyed, or indexed child paths, so validation can report both what failed and where it failed. Use `Diagnostics.singleton` for one error, `merge` to combine sibling reports, `flatten` when callers need path-bearing diagnostics, and `toString` for compact human-readable output. Keep diagnostics at the validation boundary; convert them to domain responses or UI messages at the edge."
-        SymbolIds = [
-            "Graph types", ["T:Axial.Validation.PathSegment"; "T:Path"; "T:Axial.Validation.Diagnostic`1"; "T:Axial.Validation.Diagnostics`1"]
-            "Module functions", ["M:Axial.Validation.Diagnostics.empty"; "M:Axial.Validation.Diagnostics.singleton"; "M:Axial.Validation.Diagnostics.merge"; "M:Axial.Validation.Diagnostics.toString"; "M:Axial.Validation.Diagnostics.flatten"]
         ]
         Alias = None
     }
@@ -1289,7 +1256,6 @@ let main argv =
     // silently drop those members from the docs instead of describing them as unavailable there.
     let validationDllPaths = [
         Path.Combine(artifactsDir, "Axial.Result/debug_net8.0/Axial.Result.dll")
-        Path.Combine(artifactsDir, "Axial.Diagnostics/debug_net8.0/Axial.Diagnostics.dll")
         Path.Combine(artifactsDir, "Axial.Refined/debug_net8.0/Axial.Refined.dll")
     ]
 
@@ -1425,17 +1391,14 @@ let main argv =
             formatterApiSlug "Axial.PolicyModule", Path.Combine(outRoot, "flow", "_index.md")
             formatterApiSlug "Axial.LayerBuilder", Path.Combine(outRoot, "layer", "p-layer.md")
             formatterApiSlug "Axial.FlowBuilder", Path.Combine(outRoot, "flow", "builders-flow.md")
-            formatterApiSlug "Axial.ValidateBuilder", Path.Combine(outRoot, "validation", "builders-validate.md")
             formatterApiSlug "Axial.ResultBuilder", Path.Combine(outRoot, "result", "result-ce", "p-errorhandling--result.md")
             formatterApiSlug "Axial.RefineBuilder", Path.Combine(outRoot, "refined", "refine-ce", "p-refined--refine.md")
             formatterApiSlug "Axial.Flow.LayerBuilder", Path.Combine(outRoot, "layer", "p-flow--layer.md")
             formatterApiSlug "Axial.Flow.FlowBuilder", Path.Combine(outRoot, "flow", "builders-flow.md")
-            formatterApiSlug "Axial.Validation.ValidateBuilder", Path.Combine(outRoot, "validation", "builders-validate.md")
             formatterApiSlug "Axial.ErrorHandling.ResultBuilder", Path.Combine(outRoot, "result", "result-ce", "p-errorhandling--result.md")
             formatterApiSlug "Axial.Refined.RefineBuilder", Path.Combine(outRoot, "refined", "refine-ce", "p-refined--refine.md")
             formatterApiSlug "Axial.StmBuilder", Path.Combine(outRoot, "stm", "t-flow-stmbuilder.md")
             formatterApiSlug "Axial.BindError`3", Path.Combine(outRoot, "bind", "t-binderror.md")
-            formatterApiSlug "Axial.Path", Path.Combine(outRoot, "diagnostics", "t-path.md")
             formatterApiSlug "Axial.LogLevel", Path.Combine(outRoot, "service", "core", "t-flow-loglevel.md")
             formatterApiSlug "Axial.RetryPolicy`1", Path.Combine(outRoot, "flow", "runtime", "t-flow-retrypolicy.md")
             formatterApiSlug "Axial.SupervisePolicy", Path.Combine(outRoot, "flow", "runtime", "t-flow-supervisepolicy.md")

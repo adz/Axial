@@ -2,7 +2,6 @@ namespace Axial.Tests
 
 open Axial
 open Axial.Schema
-open Axial.Validation
 open Swensen.Unquote
 open Xunit
 

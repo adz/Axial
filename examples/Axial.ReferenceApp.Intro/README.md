@@ -23,10 +23,9 @@ Read `Program.fs` top to bottom:
    ordinary `Result<Tier * int, TicketError>`.
 3. **`refine {}`** — raw strings become refined domain values (`PositiveInt`, `NonBlankString`) wrapped in
    domain types; a `Contact` cannot exist unless every parse succeeded.
-4. **`validate {}`** — independent form fields accumulate every sibling failure, each attached to its field name
-   through `validate.name`, and render with `Diagnostics.toString`.
 
 ## What it deliberately avoids
 
-No `Schema`, no `Flow`, no persistence. When boundary parsing needs redisplay, JSON, metadata, or versioning,
+No `Schema`, no accumulated path-aware boundary errors, no `Flow`, and no persistence. When boundary parsing needs
+complete error reports, redisplay, JSON, metadata, or versioning,
 graduate to the schema tier; when workflows need dependencies, cancellation, or resources, graduate to Flow.
