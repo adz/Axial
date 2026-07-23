@@ -29,28 +29,48 @@ module NestedSchemaParseTests =
     type private VerifiedCustomer = { Name: string; Address: VerifiedAddress }
 
     let private addressSchema =
-        Schema.define<Address>
-        |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "street" (fun address -> address.Street)
-        |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "city" (fun address -> address.City)
-        |> construct (fun street city -> ({ Street = street; City = city }: Address))
+        SchemaCE.schema<Address> {
+            SchemaCE.field "street" (fun (address: Address) -> address.Street) {
+                withSchema (Schema.text |> Schema.constrain Constraint.required)
+            }
+            SchemaCE.field "city" (fun (address: Address) -> address.City) {
+                withSchema (Schema.text |> Schema.constrain Constraint.required)
+            }
+            SchemaCE.construct (fun street city -> ({ Street = street; City = city }: Address))
+        }
 
     let private customerSchema =
-        Schema.define<Customer>
-        |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "name" (fun customer -> customer.Name)
-        |> fieldWith (addressSchema |> Schema.constrain Constraint.required) "address" (fun customer -> customer.Address)
-        |> construct (fun name address -> ({ Name = name; Address = address }: Customer))
+        SchemaCE.schema<Customer> {
+            SchemaCE.field "name" (fun (customer: Customer) -> customer.Name) {
+                withSchema (Schema.text |> Schema.constrain Constraint.required)
+            }
+            SchemaCE.field "address" (fun (customer: Customer) -> customer.Address) {
+                withSchema (addressSchema |> Schema.constrain Constraint.required)
+            }
+            SchemaCE.construct (fun name address -> ({ Name = name; Address = address }: Customer))
+        }
 
     let private verifiedAddressSchema =
-        Schema.define<VerifiedAddress>
-        |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "street" (fun address -> address.Street)
-        |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "city" (fun address -> address.City)
-        |> constructResult VerifiedAddress.Create
+        SchemaCE.schema<VerifiedAddress> {
+            SchemaCE.field "street" (fun (address: VerifiedAddress) -> address.Street) {
+                withSchema (Schema.text |> Schema.constrain Constraint.required)
+            }
+            SchemaCE.field "city" (fun (address: VerifiedAddress) -> address.City) {
+                withSchema (Schema.text |> Schema.constrain Constraint.required)
+            }
+            SchemaCE.constructResult VerifiedAddress.Create
+        }
 
     let private verifiedCustomerSchema =
-        Schema.define<VerifiedCustomer>
-        |> fieldWith (Schema.text |> Schema.constrain Constraint.required) "name" (fun customer -> customer.Name)
-        |> fieldWith (verifiedAddressSchema |> Schema.constrain Constraint.required) "address" (fun customer -> customer.Address)
-        |> construct (fun name address -> ({ Name = name; Address = address }: VerifiedCustomer))
+        SchemaCE.schema<VerifiedCustomer> {
+            SchemaCE.field "name" (fun (customer: VerifiedCustomer) -> customer.Name) {
+                withSchema (Schema.text |> Schema.constrain Constraint.required)
+            }
+            SchemaCE.field "address" (fun (customer: VerifiedCustomer) -> customer.Address) {
+                withSchema (verifiedAddressSchema |> Schema.constrain Constraint.required)
+            }
+            SchemaCE.construct (fun name address -> ({ Name = name; Address = address }: VerifiedCustomer))
+        }
 
     let private validAddress =
         Data.objectOfMap (Map.ofList [ "street", Data.Text "1 Infinite Loop"; "city", Data.Text "Cupertino" ])

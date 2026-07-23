@@ -15,24 +15,31 @@ module ContractTests =
     type Config = { Version: int; Label: string; Port: int }
 
     let private v1Schema () =
-        Schema.define<ConfigV1>
-        |> fieldWith Schema.int "version" _.Version
-        |> fieldWith Schema.text "name" _.Name
-        |> construct (fun version name -> { Version = version; Name = name })
+        SchemaCE.schema<ConfigV1> {
+            SchemaCE.field "version" (fun (value: ConfigV1) -> value.Version)
+            SchemaCE.field "name" (fun (value: ConfigV1) -> value.Name)
+            SchemaCE.construct (fun version name -> { Version = version; Name = name })
+        }
 
     let private v2Schema () =
-        Schema.define<ConfigV2>
-        |> fieldWith Schema.int "version" _.Version
-        |> fieldWith Schema.text "name" _.Name
-        |> fieldWith Schema.int "port" _.Port
-        |> construct (fun version name port -> { Version = version; Name = name; Port = port })
+        SchemaCE.schema<ConfigV2> {
+            SchemaCE.field "version" (fun (value: ConfigV2) -> value.Version)
+            SchemaCE.field "name" (fun (value: ConfigV2) -> value.Name)
+            SchemaCE.field "port" (fun (value: ConfigV2) -> value.Port)
+            SchemaCE.construct (fun version name port -> { Version = version; Name = name; Port = port })
+        }
 
     let private currentSchema () =
-        Schema.define<Config>
-        |> fieldWith Schema.int "version" _.Version
-        |> fieldWith (Schema.text |> Schema.constrainAll [ Constraint.minLength 3 ]) "label" _.Label
-        |> fieldWith (Schema.int |> Schema.constrainAll [ Constraint.between 1 65535 ]) "port" _.Port
-        |> construct (fun version label port -> { Version = version; Label = label; Port = port })
+        SchemaCE.schema<Config> {
+            SchemaCE.field "version" (fun (value: Config) -> value.Version)
+            SchemaCE.field "label" _.Label {
+                withSchema (Schema.text |> Schema.constrainAll [ Constraint.minLength 3 ])
+            }
+            SchemaCE.field "port" (fun (value: Config) -> value.Port) {
+                withSchema (Schema.int |> Schema.constrainAll [ Constraint.between 1 65535 ])
+            }
+            SchemaCE.construct (fun version label port -> { Version = version; Label = label; Port = port })
+        }
 
     let private migrateV1 (value: ConfigV1) : Result<ConfigV2, MigrationError> =
         Ok { Version = 2; Name = value.Name; Port = 8080 }
