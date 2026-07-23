@@ -10,8 +10,9 @@ This page lists the built-in refined values in `Axial.Refined`, together with th
 
 `Axial.Refined` is not only a type catalog: it also owns primitive parsing, smart constructors, the `refine {}` builder, and parser-choice helpers.
 
-For your own domain values, use the single authoring pattern in [Domain Values](../domain-values/): private
-constructor, smart constructor, optional standalone helper, and `Schema.refine` schema when the type appears in a model.
+For your own domain values, use the pattern in [Define Refined Types](../domain-values/): private wrapper, smart
+constructor, raw projection, `Refinement.define`, and a static `Refinement` contribution. The same definition then
+works with `Refine.from`, `refine {}`, and `Schema.refine`.
 
 When the same scalar catalog value is used as a schema field, use the schema integration catalog in
 `Axial.Schema`:
