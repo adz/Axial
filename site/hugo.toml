@@ -41,6 +41,7 @@ defaultContentLanguage = "en"
     guessSyntax = true
     lineNoStart = 1
     lineNos = false
+    noClasses = false
     style = "tango"
 
 [params]

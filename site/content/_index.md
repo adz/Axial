@@ -8,7 +8,23 @@ description: Independent Error Handling, Schema, and Flow libraries for F# on .N
 <div style="max-width: 68ch; padding-top: 3.5rem;">
 <span class="eyebrow">F# libraries for .NET and Fable JavaScript</span>
 
-<h1>Choose the package for the problem.</h1>
+<h1 id="axial-tagline">If it compiles, the invariant already held.</h1>
+<script>
+(function () {
+  var taglines = [
+    "If it compiles, the invariant already held.",
+    "Types that prove it, not comments that promise it.",
+    "Stop trusting that the check ran. Make the type carry it.",
+    "Untrusted in, proven out.",
+    "Dependencies and failures belong in the signature, not in your head.",
+    "Make illegal states unrepresentable — for values, boundaries, and effects."
+  ];
+  var el = document.getElementById("axial-tagline");
+  if (el) {
+    el.textContent = taglines[Math.floor(Math.random() * taglines.length)];
+  }
+})();
+</script>
 
 <div class="lede">
 Axial has three entry points. Error Handling covers Results, diagnostics, and refined values; Schema describes structured data boundaries; and
