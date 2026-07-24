@@ -24,7 +24,7 @@
       <div class="td-main" {{- $attr | safeHTMLAttr }}>
         {{ partial "axial-pre1-banner.html" . }}
         <div class="row flex-xl-nowrap">
-          <aside class="col-12 col-md-3 col-xl-2 td-sidebar d-print-none" id="axial-docs-sidebar">
+          <aside class="col-12 col-md-4 col-xl-3 td-sidebar d-print-none" id="axial-docs-sidebar">
             <button class="btn btn-link axial-sidebar-collapse-toggle" type="button"
               data-bs-toggle="collapse" data-bs-target="#axial-sidebar-body"
               aria-controls="axial-sidebar-body" aria-expanded="true">
@@ -39,7 +39,7 @@
             {{ partial "toc.html" . }}
             {{ partial "taxonomy_terms_clouds.html" . }}
           </aside>
-          <main class="col-12 col-md-9 col-xl-8 ps-md-5" role="main">
+          <main class="col-12 col-md-8 col-xl-7 ps-md-5" role="main">
             {{ partial "version-banner.html" . }}
             {{ if not (.Param "ui.breadcrumb_disable") -}}
               {{ partial "breadcrumb.html" . -}}

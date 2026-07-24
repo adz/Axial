@@ -119,3 +119,20 @@
     {{- end -}}
   </nav>
 </div>
+
+<script>
+(function () {
+  var nav = document.getElementById('td-section-nav');
+  if (!nav) return;
+  var key = 'axial-sidebar-scroll';
+  var saved = sessionStorage.getItem(key);
+  if (saved !== null) {
+    nav.scrollTop = parseInt(saved, 10) || 0;
+  }
+  nav.addEventListener('click', function (event) {
+    if (event.target.closest('a')) {
+      sessionStorage.setItem(key, nav.scrollTop);
+    }
+  });
+})();
+</script>

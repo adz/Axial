@@ -1,6 +1,6 @@
 groups:
   - title: Axial.ErrorHandling
-    home: /error-handling/overview
+    home: /error-handling
     kind: primary
     caption: Installs Result, Check, and Refined together.
     descendants: false
@@ -11,6 +11,7 @@ groups:
 
   - title: Axial.Result
     home: /error-handling/result
+    caption: Fail-fast Result helpers, reusable checks, predicates, and the result computation expression.
     descendants: false
     entries:
       - /error-handling/tutorials
@@ -21,6 +22,7 @@ groups:
 
   - title: Axial.Check
     home: /error-handling/check
+    caption: Reusable, named structural checks that attach to Result.
     children_of:
       - /error-handling/check
     reference:
@@ -31,6 +33,7 @@ groups:
 
   - title: Axial.Refined
     home: /error-handling/refined
+    caption: Parse text and construct values whose types record successful checks.
     children_of:
       - /error-handling/refined
     reference:
