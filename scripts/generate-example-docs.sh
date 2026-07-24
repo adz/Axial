@@ -3,7 +3,17 @@
 set -euo pipefail
 
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-product="${1:-all}"
+product="all"
+skip_build=false
+
+for arg in "$@"; do
+  case "$arg" in
+    schema|flow|all) product="$arg" ;;
+    --no-build) skip_build=true ;;
+    *) echo "Usage: $0 [schema|flow|all] [--no-build]" >&2; exit 2 ;;
+  esac
+done
+
 schema_output="${DOCS_SCHEMA_EXAMPLES_OUTPUT:-$root_dir/docs/schema/examples.md}"
 flow_output="${DOCS_FLOW_EXAMPLES_OUTPUT:-$root_dir/docs/flow/examples.md}"
 
@@ -11,8 +21,13 @@ case "$product" in
   schema) emit_schema=true; emit_flow=false ;;
   flow) emit_schema=false; emit_flow=true ;;
   all) emit_schema=true; emit_flow=true ;;
-  *) echo "Usage: $0 [schema|flow|all]" >&2; exit 2 ;;
+  *) echo "Usage: $0 [schema|flow|all] [--no-build]" >&2; exit 2 ;;
 esac
+
+if ! $skip_build; then
+  dotnet msbuild "$root_dir/scripts/docs-build.proj" \
+    -t:Build -m -nologo -verbosity:minimal -p:DocsBuildScope=Examples
+fi
 
 mkdir -p "$(dirname "$schema_output")" "$(dirname "$flow_output")"
 
@@ -35,7 +50,6 @@ run_example() {
   local project_path="$1"
   local example_filter="${2:-}"
 
-  dotnet build "$project_path" --nologo --verbosity quiet --disable-build-servers -p:UseSharedCompilation=false
   if [[ -n "$example_filter" ]]; then
     AXIAL_EXAMPLE="$example_filter" dotnet run --project "$project_path" --no-build --no-restore --nologo 2>&1
   else

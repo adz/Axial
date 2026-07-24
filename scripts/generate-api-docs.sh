@@ -3,39 +3,57 @@
 set -euo pipefail
 
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+product="all"
+skip_build=false
 
-product="${1:-all}"
+for arg in "$@"; do
+  case "$arg" in
+    validation|schema|flow|all) product="$arg" ;;
+    --no-build) skip_build=true ;;
+    *) echo "Usage: $0 [validation|schema|flow|all] [--no-build]" >&2; exit 2 ;;
+  esac
+done
+
+if ! $skip_build; then
+  dotnet msbuild "$root_dir/scripts/docs-build.proj" \
+    -t:Build -m -nologo -verbosity:minimal -p:DocsBuildScope=Api
+fi
+
+run_docgen() {
+  local selected_product="$1"
+  (
+    cd "$root_dir/scripts/docgen"
+    AXIAL_DOCS_PRODUCT="$selected_product" \
+      dotnet run --no-build --no-restore --nologo
+  )
+}
 
 case "$product" in
   validation)
-    dotnet build "$root_dir/src/Axial.ErrorHandling/Axial.ErrorHandling.fsproj" --nologo --verbosity quiet --disable-build-servers -p:UseSharedCompilation=false
-    dotnet build "$root_dir/src/Axial.Check/Axial.Check.fsproj" --nologo --verbosity quiet --disable-build-servers -p:UseSharedCompilation=false
-    cd "$root_dir/scripts/docgen"
-    AXIAL_DOCS_PRODUCT="$product" dotnet run
+    run_docgen "$product"
     ;;
   schema)
-    dotnet build "$root_dir/src/Axial.Schema.Json/Axial.Schema.Json.fsproj" --nologo --verbosity quiet --disable-build-servers -p:UseSharedCompilation=false
-    dotnet build "$root_dir/src/Axial.Schema.JsonSchema/Axial.Schema.JsonSchema.fsproj" --nologo --verbosity quiet --disable-build-servers -p:UseSharedCompilation=false
-    dotnet build "$root_dir/src/Axial.Schema.Http.AspNetCore/Axial.Schema.Http.AspNetCore.fsproj" --nologo --verbosity quiet --disable-build-servers -p:UseSharedCompilation=false
-    dotnet build "$root_dir/src/Axial.Schema.Http.GenHttp/Axial.Schema.Http.GenHttp.fsproj" --nologo --verbosity quiet --disable-build-servers -p:UseSharedCompilation=false
-    cd "$root_dir/scripts/docgen"
-    AXIAL_DOCS_PRODUCT="$product" dotnet run
+    run_docgen "$product"
     ;;
   flow)
-    dotnet build "$root_dir/src/Axial.Flow.Process/Axial.Flow.Process.fsproj" --nologo --verbosity quiet --disable-build-servers -p:UseSharedCompilation=false
-    dotnet build "$root_dir/src/Axial.Flow.Hosting/Axial.Flow.Hosting.fsproj" --nologo --verbosity quiet --disable-build-servers -p:UseSharedCompilation=false
-    dotnet build "$root_dir/src/Axial.Flow.Hosting.Node/Axial.Flow.Hosting.Node.fsproj" --nologo --verbosity quiet --disable-build-servers -p:UseSharedCompilation=false
-    dotnet build "$root_dir/src/Axial.Flow.Hosting.Browser/Axial.Flow.Hosting.Browser.fsproj" --nologo --verbosity quiet --disable-build-servers -p:UseSharedCompilation=false
-    cd "$root_dir/scripts/docgen"
-    AXIAL_DOCS_PRODUCT="$product" dotnet run
+    run_docgen "$product"
     ;;
   all)
-    "$root_dir/scripts/generate-api-docs.sh" validation
-    "$root_dir/scripts/generate-api-docs.sh" schema
-    "$root_dir/scripts/generate-api-docs.sh" flow
+    run_docgen validation &
+    validation_pid=$!
+    run_docgen schema &
+    schema_pid=$!
+    run_docgen flow &
+    flow_pid=$!
+
+    generation_status=0
+    wait "$validation_pid" || generation_status=$?
+    wait "$schema_pid" || generation_status=$?
+    wait "$flow_pid" || generation_status=$?
+    exit "$generation_status"
     ;;
   *)
-    echo "Usage: $0 [validation|schema|flow|all]" >&2
+    echo "Usage: $0 [validation|schema|flow|all] [--no-build]" >&2
     exit 2
     ;;
 esac

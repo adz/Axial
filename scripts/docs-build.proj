@@ -1,0 +1,34 @@
+<Project>
+  <PropertyGroup>
+    <DocsBuildScope Condition="'$(DocsBuildScope)' == ''">All</DocsBuildScope>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(DocsBuildScope)' == 'All' Or '$(DocsBuildScope)' == 'Api'">
+    <DocsProject Include="../src/Axial.ErrorHandling/Axial.ErrorHandling.fsproj" />
+    <DocsProject Include="../src/Axial.Check/Axial.Check.fsproj" />
+    <DocsProject Include="../src/Axial.Schema.Json/Axial.Schema.Json.fsproj" />
+    <DocsProject Include="../src/Axial.Schema.JsonSchema/Axial.Schema.JsonSchema.fsproj" />
+    <DocsProject Include="../src/Axial.Schema.Http.AspNetCore/Axial.Schema.Http.AspNetCore.fsproj" />
+    <DocsProject Include="../src/Axial.Schema.Http.GenHttp/Axial.Schema.Http.GenHttp.fsproj" />
+    <DocsProject Include="../src/Axial.Flow.Process/Axial.Flow.Process.fsproj" />
+    <DocsProject Include="../src/Axial.Flow.Hosting/Axial.Flow.Hosting.fsproj" />
+    <DocsProject Include="../src/Axial.Flow.Hosting.Node/Axial.Flow.Hosting.Node.fsproj" />
+    <DocsProject Include="../src/Axial.Flow.Hosting.Browser/Axial.Flow.Hosting.Browser.fsproj" />
+    <DocsProject Include="docgen/docgen.fsproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(DocsBuildScope)' == 'All' Or '$(DocsBuildScope)' == 'Examples'">
+    <DocsProject Include="../examples/Axial.Examples/Axial.Examples.fsproj" />
+    <DocsProject Include="../examples/Axial.Api/Axial.Api.fsproj" />
+    <DocsProject Include="../examples/Axial.Playground/Axial.Playground.fsproj" />
+    <DocsProject Include="../examples/Axial.MaintenanceExamples/Axial.MaintenanceExamples.fsproj" />
+  </ItemGroup>
+
+  <Target Name="Build">
+    <MSBuild
+      Projects="@(DocsProject)"
+      Targets="Build"
+      BuildInParallel="true"
+      Properties="UseSharedCompilation=true" />
+  </Target>
+</Project>

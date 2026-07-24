@@ -56,7 +56,7 @@ validation. Each command builds only that product's reference inputs and example
 Hugo content, and performs a static render. Run `bash scripts/validate-docs.sh` at a cross-product phase or release
 boundary.
 
-Run `bash scripts/preview-docs.sh` for a local live-reload server at `http://localhost:3000` when you need browser review or screenshots. Stop it with `SIGHUP`, `TERM`, `INT`, or by creating `$AXIAL_DOCS_PREVIEW_STOP_FILE` (default `/tmp/axial-docs-preview.stop`).
+Run `bash scripts/preview-docs.sh` for a local live-reload server at `http://localhost:3000` when you need browser review or screenshots. The preview hashes the source, project, and generator inputs and reuses generated docs when those inputs are unchanged. On a cache miss, it builds the shared docs project graph once, then generates runnable examples and API reference pages concurrently. Use `--force-generate` to ignore the cache or `--no-generate` to start from the existing generated docs without checking generator inputs. Stop the preview with `SIGHUP`, `TERM`, `INT`, or by creating `$AXIAL_DOCS_PREVIEW_STOP_FILE` (default `/tmp/axial-docs-preview.stop`).
 
 Use `bash scripts/build-docs-site.sh` only when preparing or checking deployment output. It builds all projects and writes the deployable site to `/output`, so it is heavier than the normal validation path.
 
