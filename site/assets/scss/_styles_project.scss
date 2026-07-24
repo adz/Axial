@@ -21,6 +21,7 @@ $axial-display: "Rajdhani", "Arial Narrow", $axial-text;
 
 :root,
 [data-bs-theme="light"] {
+  --bs-body-bg: #f1eee8;
   --axial-masthead-bg: var(--bs-body-bg, #fff);
   --axial-masthead-border: #dfe3e5;
   --axial-brand: #303b40;
@@ -37,6 +38,7 @@ $axial-display: "Rajdhani", "Arial Narrow", $axial-text;
 }
 
 [data-bs-theme="dark"] {
+  --bs-body-bg: #1b1b1f;
   --axial-masthead-bg: var(--bs-body-bg, #15191b);
   --axial-masthead-border: #30383c;
   --axial-brand: #d3d8d6;
@@ -55,10 +57,12 @@ $axial-display: "Rajdhani", "Arial Narrow", $axial-text;
 body {
   font-family: $axial-text;
   color: #243041;
+  background: #f1eee8;
 }
 
 [data-bs-theme="dark"] body {
   color: #c4ced2;
+  background: #1b1b1f;
 }
 
 .td-content {
@@ -111,9 +115,11 @@ samp,
   border-bottom: 1px solid var(--axial-masthead-border);
   background: var(--axial-masthead-bg);
   box-shadow: none;
+  overflow: visible;
 
   .td-navbar-container {
     min-height: 4rem;
+    overflow: visible;
   }
 
   .navbar-brand {
@@ -124,6 +130,7 @@ samp,
     padding: 0 0.5rem;
     color: var(--axial-brand);
     text-decoration: none;
+    overflow: visible;
 
     &:hover {
       color: var(--axial-nav-active);
@@ -132,66 +139,14 @@ samp,
 
   .navbar-brand__logo {
     display: block;
-    width: 2.3rem;
-    height: 2.45rem;
+    height: 4.725rem;
+    width: auto;
+    overflow: visible;
 
-    svg {
-      display: block;
-      width: 100%;
-      height: 100%;
-      overflow: visible;
+    .hero-lockup {
+      height: 4.725rem;
+      width: auto;
     }
-
-    .axial-lettermark__axis-shadow {
-      fill: none;
-      stroke: var(--axial-mark-shadow);
-      stroke-width: 2.8;
-      opacity: 0.35;
-    }
-
-    .axial-lettermark__axis {
-      fill: none;
-      stroke: var(--axial-mark-highlight);
-      stroke-width: 1.15;
-      stroke-linecap: square;
-      stroke-linejoin: miter;
-      opacity: 0.82;
-    }
-
-    .axial-lettermark__beam-shadow {
-      fill: none;
-      stroke: var(--axial-mark-shadow);
-      stroke-width: 6.8;
-      stroke-linecap: square;
-      stroke-linejoin: miter;
-      opacity: 0.42;
-      transform: translateY(1px);
-    }
-
-    .axial-lettermark__beam {
-      fill: none;
-      stroke: url("#axial-letter-metal");
-      stroke-width: 5.2;
-      stroke-linecap: square;
-      stroke-linejoin: miter;
-    }
-
-    .axial-lettermark__joint {
-      fill: var(--axial-core);
-      stroke: var(--axial-mark-highlight);
-      stroke-width: 0.75;
-    }
-  }
-
-  .navbar-brand__name {
-    color: inherit;
-    font-family: $axial-display;
-    font-size: 1.72rem;
-    font-weight: 600;
-    letter-spacing: 0.075em;
-    line-height: 1;
-    margin-left: -0.2rem;
-    text-shadow: none;
   }
 
   .navbar-nav {
@@ -254,12 +209,12 @@ samp,
     padding: 0.25rem 0.4rem;
 
     .navbar-brand__logo {
-      width: 2.15rem;
-      height: 2.3rem;
-    }
+      height: 4.05rem;
+      overflow: visible;
 
-    .navbar-brand__name {
-      font-size: 1.35rem;
+      .hero-lockup {
+        height: 4.05rem;
+      }
     }
 
     .navbar-nav {
@@ -361,8 +316,8 @@ samp,
   .axial-lane,
   .coord-pill,
   .coord-hub {
-    border-color: #384247;
-    background: #202629;
+    border-color: #35353b;
+    background: #1b1b1f;
   }
 }
 
@@ -372,8 +327,6 @@ samp,
   gap: 4rem;
   align-items: center;
   padding: 5rem 0 3rem;
-  border-bottom: 1px solid rgba(0,0,0,0.05);
-  margin-bottom: 0.75rem;
 }
 
 .docs-home-copy h1 {
@@ -746,6 +699,135 @@ $axial-parse: #0b55d9;
 $axial-flow: #6d4fc4;
 $axial-result: #0a7d62;
 
+// Homepage: no navbar, hero fills the viewport.
+body.axial-home header {
+  display: none;
+}
+
+body.axial-home .td-main {
+  padding-top: 0;
+}
+
+body.axial-home .docs-home-hero {
+  grid-template-columns: 1fr;
+  justify-items: center;
+  text-align: center;
+  gap: 1.5rem;
+  padding-top: 2rem;
+  padding-bottom: 0;
+}
+
+body.axial-home .docs-home-hero-visual {
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+body.axial-home .lede {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+body.axial-home .axial-doors {
+  margin-top: 2rem;
+}
+
+// Right-hand graphic column of .docs-home-hero, used on the homepage and
+// each package landing page.
+.docs-home-hero-visual {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero-lockup {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.hero-lockup--dark {
+  display: none;
+}
+
+[data-bs-theme="dark"] {
+  .hero-lockup--light {
+    display: none;
+  }
+
+  .hero-lockup--dark {
+    display: block;
+  }
+}
+
+.docs-home-hero-visual svg {
+  color: #0f172a;
+}
+
+[data-bs-theme="dark"] .docs-home-hero-visual svg {
+  color: #e4ebed;
+}
+
+// Compact variant of .axial-coord for use inside .docs-home-hero-visual.
+.axial-coord--sidebar {
+  grid-template-columns: auto;
+  grid-template-rows: auto auto auto;
+  gap: 1rem;
+  margin: 0;
+  width: 100%;
+
+  .axial-coord-col {
+    gap: 0.4rem;
+  }
+
+  .axial-coord-col--left .coord-row,
+  .axial-coord-col--right .coord-row {
+    justify-content: center;
+  }
+
+  .axial-coord-col--left .axial-coord-label,
+  .axial-coord-col--right .axial-coord-label {
+    text-align: center;
+  }
+
+  .coord-line {
+    display: none;
+  }
+
+  .coord-pill {
+    padding: 0.32rem 0.7rem;
+    font-size: 0.72rem;
+  }
+
+  .axial-coord-mid {
+    padding: 0.75rem 0;
+    border-left: 0;
+    border-right: 0;
+    border-top: 1px dashed rgba(100, 116, 139, 0.35);
+    border-bottom: 1px dashed rgba(100, 116, 139, 0.35);
+  }
+
+  .coord-hub {
+    padding: 0.9rem 1.4rem;
+
+    img {
+      width: 24px;
+      height: 24px;
+    }
+
+    .coord-hub-name {
+      font-size: 0.8rem;
+    }
+  }
+}
+
+@media (max-width: 996px) {
+  .docs-home-hero-visual {
+    max-width: 420px;
+    margin: 0 auto;
+  }
+}
+
 .axial-doors {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -759,7 +841,7 @@ $axial-result: #0a7d62;
   border: 1px solid rgba(0,0,0,0.08);
   border-top: 3px solid #94a3b8;
   border-radius: 10px;
-  background: #fff;
+  background: #f1eee8;
   box-shadow: 0 10px 30px rgba(0,0,0,0.04);
   text-decoration: none;
   color: inherit;

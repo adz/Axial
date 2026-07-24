@@ -1,11 +1,19 @@
 ---
 title: Axial
 description: Independent Error Handling, Schema, and Flow libraries for F# on .NET and Fable JavaScript.
+body_class: axial-home
 ---
 
 <div class="docs-home-container axial-landing">
 
-<div style="max-width: 68ch; padding-top: 3.5rem;">
+<div class="docs-home-hero">
+
+<div class="docs-home-hero-visual">
+<img class="hero-lockup hero-lockup--light" src="/content/img/hero-lockup-light.png" alt="Axial" width="1560" height="600" />
+<img class="hero-lockup hero-lockup--dark" src="/content/img/hero-lockup-dark.png" alt="Axial" width="1560" height="600" />
+</div>
+
+<div class="docs-home-copy" style="max-width: 78ch; margin: 0 auto;">
 <span class="eyebrow">F# libraries for .NET and Fable JavaScript</span>
 
 <h1 id="axial-tagline">If it compiles, the invariant already held.</h1>
@@ -27,9 +35,10 @@ description: Independent Error Handling, Schema, and Flow libraries for F# on .N
 </script>
 
 <div class="lede">
-Axial has three entry points. Error Handling covers Results, diagnostics, and refined values; Schema describes structured data boundaries; and
-Flow runs effectful work with explicit dependencies, typed failures, cancellation, and resources.
+Axial's goal is to push what you'd otherwise check at runtime into a type that can't be ignored, and keep the diagnostics when reality disagrees.
 </div>
+</div>
+
 </div>
 
 <div class="axial-doors">
@@ -37,24 +46,26 @@ Flow runs effectful work with explicit dependencies, typed failures, cancellatio
 <a class="axial-door axial-door--validation" href="{{< relref "/error-handling/" >}}">
 <span class="axial-door-kicker">Checks and typed failures</span>
 <h2>Axial.ErrorHandling</h2>
-<p>Compose ordinary Results, reuse value checks, collect path-aware diagnostics, and construct refined values. Use it
-without Schema or Flow.</p>
+<p>Compose ordinary Results and reuse value checks with preset CheckError types.
+Parse and construct refined values, so an invalid value can't reach your
+domain types in the first place.</p>
 <span class="axial-door-cta">Error Handling documentation &rarr;</span>
 </a>
 
 <a class="axial-door axial-door--parse" href="{{< relref "/schema/" >}}">
 <span class="axial-door-kicker">Input and domain values</span>
 <h2>Axial.Schema</h2>
-<p>Declare how structured input becomes a model, compile JSON codecs, generate contracts, and reuse the same field
-structure across parsers, documentation, forms, and tests.</p>
+<p>Declare how structured input becomes a model once, and get JSON codecs, contracts, and validation from that single
+definition, so parsers, docs, forms, and tests can't drift out of sync with each other.</p>
 <span class="axial-door-cta">Schema documentation &rarr;</span>
 </a>
 
 <a class="axial-door axial-door--flow" href="{{< relref "/flow/" >}}">
-<span class="axial-door-kicker">Effects and application execution</span>
+<span class="axial-door-kicker">Effects and execution</span>
 <h2>Axial.Flow</h2>
-<p>Describe async work with its required environment and expected failure type. Add packages for platform services,
-HTTP, processes, telemetry, and .NET, Node, or browser hosting.</p>
+<p>Describe async work with its required environment and expected failure type in the signature, so missing
+dependencies and unhandled failures show up at compile time instead of in production. 
+</p>
 <span class="axial-door-cta">Flow documentation &rarr;</span>
 </a>
 
