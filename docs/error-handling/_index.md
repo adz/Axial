@@ -48,23 +48,21 @@ result {
 
 ## Refined values
 
-Use a refined type when later code must know construction succeeded:
+Parse text with a named parser:
+
+```fsharp
+let parsed : Result<int, ParseError> =
+    Parse.int "42"
+```
+
+Refine an ordinary value with a named constructor:
 
 ```fsharp
 let quantity : Result<PositiveInt, RefinementError> =
-    Refine.from parsedQuantity
+    Refine.positiveInt 42
 ```
 
-Application types can contribute the same bidirectional `Refinement<'raw,'value>` to `Refine.from`, `refine { }`, and
-Schema. See [Define Refined Types](./refined/domain-values/).
-
-## Accumulated boundary failures
-
-Schema owns path-aware accumulation. It already knows object field names, list indexes, map keys, nested structure, and
-the constructor. `Schema.parse` and `Schema.check` return `SchemaErrors` without requiring application code to repeat
-paths.
-
-Error Handling remains independent of Schema and Flow.
+See [Refined](./refined/) for the supplied types, dependent construction, and application-defined refined types.
 
 ## Guides
 

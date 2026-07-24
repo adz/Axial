@@ -55,8 +55,7 @@ createOrderReference "42" "Acme North"   // Error — not a slug
 createOrderReference "many" "acme-north" // Error (ParseFailed) — not an int
 ```
 
-The first failure stops the pipeline. A Schema record declaration applies the same refinements independently to
-boundary fields and returns their path-aware failures together.
+The first failure stops the pipeline.
 
 ## Read The Value Back Out
 
@@ -69,6 +68,7 @@ let rawId = PositiveInt.value id
 
 ## Next
 
-- [Catalog](../../catalog/) for every built-in refined type.
-- [Refine CE](../../refine-builder/) for the full builder reference.
-- [Refined Value Schemas]({{< relref "/schema/refined-values/" >}}) to use refined values as schema fields.
+- [Parse](../../parse/) for the primitive parsers.
+- [Built-in Refined Values](../../catalog/) for every supplied refined type.
+- [Refine Computation Expression](../../refine-builder/) for the builder operations and type-directed form.
+- [Define Refined Types](../../domain-values/) to add a private wrapper and smart constructor.

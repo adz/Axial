@@ -2,7 +2,7 @@
 title: "Character"
 ---
 
-This page shows character predicates used by refinements.
+`Character` functions test individual characters.
 
 - [`Refined.Character.isAsciiDigit`](./m-refined-character-isasciidigit.md): Returns true when the character is an ASCII digit.
 - [`Refined.Character.isAsciiHexDigit`](./m-refined-character-isasciihexdigit.md): Returns true when the character is an ASCII hexadecimal digit.

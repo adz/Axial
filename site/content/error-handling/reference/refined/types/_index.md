@@ -3,7 +3,7 @@ title: "Types"
 type: docs
 ---
 
-This page shows the error and refined value types in `Axial.Refined`.
+Errors and refined value types defined by `Axial.Refined`.
 
 - [`Refined.ParseError`](./t-refined-parseerror.md): Primitive parse failures returned by <code>Parse</code> helpers.
 - [`Refined.RefinementError`](./t-refined-refinementerror.md): Structural failures returned by built-in refinement constructors and the <code>refine { }</code> builder.

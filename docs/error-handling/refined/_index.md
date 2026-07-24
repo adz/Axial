@@ -2,141 +2,128 @@
 weight: 40
 title: Refined
 type: docs
-description: Type-safe boundaries with Parse, Refine, and the refine {} builder.
+description: Parse text and construct values whose types record successful checks.
 ---
 
 # Refined
 
-Plain primitives often allow values your domain rejects: a blank name still fits in `string`, and zero still fits in
-`int`. Checking at the boundary helps, but the primitive type does not show that the check happened.
+Boundary values usually begin as strings and ordinary F# values. `Axial.Refined` provides two direct sets of
+functions for making those values safer:
 
-A refined type records that fact. A `PositiveInt` or `NonBlankString` can only be built after its rule passes, so code
-receiving the refined value does not need to repeat the check.
+- `Parse` converts serialized text to an F# type.
+- `Refine` checks a value and returns a type that records the check.
 
-Refined values live in ErrorHandling and can be used on their own.
-
-`Refine.from` is the type-directed entry point. Its source type and expected result type determine the parser or
-refined constructor at compile time:
-
-```fsharp
-let id : Result<int, RefinementError> =
-    Refine.from rawId
-
-let quantity : Result<PositiveInt, RefinementError> =
-    Refine.from parsedQuantity
-```
-
-Named `Parse` and `Refine` functions handle operations that require parameters or share the same source and destination
-types. `refine {}` applies type-directed refinement at each `let!` while sequencing dependent steps.
-
-## Install
-
-Install Refined on its own:
+Install the package and open its namespace:
 
 ```sh
 dotnet add package Axial.Refined
 ```
 
-## Mental Model
-
-```text
-Untrusted Input -> Parse -> Refine -> Strongly-Typed Value
-```
-
-## Define your own refinement
-
-Define the wrapper, smart constructor, raw projection, and reusable descriptor together:
-
-```fsharp
-type CustomerId =
-    private
-    | CustomerId of PositiveInt
-
-module CustomerId =
-    let create raw : Result<CustomerId, RefinementError> =
-        refine {
-            let! (parsed: int) = raw
-            let! (positive: PositiveInt) = parsed
-            return CustomerId positive
-        }
-
-    let value (CustomerId value) = string value.Value
-
-    let refinement =
-        Refinement.define create value
-
-type CustomerId with
-    static member Refinement(_: string, _: CustomerId) =
-        CustomerId.refinement
-
-let customerId : Result<CustomerId, RefinementError> =
-    Refine.from rawCustomerId
-```
-
-The descriptor also supplies the reverse projection used by Schema and encoders. The static member makes that
-descriptor available to `Refine.from` and `refine {}`. One source and destination pair has one unnamed descriptor;
-additional interpretations need different result types or named functions.
-
-See [Define Refined Types](./domain-values/) for the complete definition and its Schema field form.
-
-## Tutorial
-
-Start at a boundary where everything is still a string:
-
-`let!` takes the value from a successful parse or refinement. `do!` runs a step returning `unit`.
-`return!` uses another refinement result as the result of the block.
-
 ```fsharp
 open Axial.Refined
+```
 
-type ProductId = ProductId of NonZeroInt
-type ProductSlug = ProductSlug of Slug
-type Quantity = Quantity of PositiveInt
+## Parse text
 
-type Product =
-    { Id: ProductId
-      Slug: ProductSlug
-      Quantity: Quantity }
+`Parse.int` converts text to an `int`:
 
-let createProduct rawId rawSlug rawQuantity : Result<Product, RefinementError> =
+```fsharp
+let count : Result<int, ParseError> =
+    Parse.int "42"
+// Ok 42
+
+let invalidCount : Result<int, ParseError> =
+    Parse.int "many"
+// Error (InvalidFormat ("int", "many"))
+```
+
+The function returns `Result` because any string can be passed to it. `Parse.guid`, `Parse.decimal`,
+`Parse.dateTimeOffset`, and the other parsing functions follow the same form.
+
+## Refine a value
+
+`Refine.nonBlankString` checks a string and returns `NonBlankString`:
+
+```fsharp
+let name : Result<NonBlankString, RefinementError> =
+    Refine.nonBlankString "Ada"
+// Ok ...
+
+let missingName : Result<NonBlankString, RefinementError> =
+    Refine.nonBlankString "   "
+// Error ...
+```
+
+The result contains a `NonBlankString`, not another `string`. Code that accepts `NonBlankString` therefore cannot
+receive an unchecked string.
+
+Other constructors work the same way:
+
+```fsharp
+let quantity = Refine.positiveInt 3
+// Result<PositiveInt, RefinementError>
+
+let items = Refine.nonEmptyList [ "first"; "second" ]
+// Result<NonEmptyList<string>, RefinementError>
+
+let slug = Refine.slug "release-notes"
+// Result<Slug, RefinementError>
+```
+
+Read the underlying value through the matching type module:
+
+```fsharp
+let printName (name: NonBlankString) =
+    printfn "%s" (NonBlankString.value name)
+```
+
+## Parse, then refine
+
+Parsing and refinement are separate operations. Parsing answers whether `"12"` is an integer. Refinement answers
+whether that integer is positive.
+
+```fsharp
+let quantity (raw: string) : Result<PositiveInt, RefinementError> =
     refine {
-        let! (parsedId: int) = rawId
-        let! (id: NonZeroInt) = parsedId
-        let! (slug: Slug) = rawSlug
-        let! (parsedQuantity: int) = rawQuantity
-        let! (quantity: PositiveInt) = parsedQuantity
-
-        return {
-            Id = ProductId id
-            Slug = ProductSlug slug
-            Quantity = Quantity quantity
-        }
+        let! parsed = Parse.int raw
+        return! Refine.positiveInt parsed
     }
 ```
 
-```fsharp
-refine {
-    let! (parsedId: int) = (rawId: string)
-    let! (id: NonZeroInt) = (parsedId: int)
+`refine { }` converts `ParseError` to `RefinementError` and stops at the first failure. Named `Parse` and `Refine`
+functions remain visible, so this form is useful before learning type-directed refinement.
 
-    return { ... }
-}
-// Result<Product, RefinementError>
+After the direct functions are familiar, destination types can remove repeated function names:
+
+```fsharp
+let quantity (raw: string) : Result<PositiveInt, RefinementError> =
+    refine {
+        let! (parsed: int) = raw
+        let! (positive: PositiveInt) = parsed
+        return positive
+    }
 ```
 
-After this function succeeds, the `Product` fields hold refined types instead of unchecked primitives.
+The annotation on each `let!` tells the builder which built-in operation to run. The first line uses the same
+conversion as `Parse.int`; the second uses the same check as `Refine.positiveInt`.
 
-`refine {}` stops at the first failure, so a later step can depend on every earlier success. Schema handles independent
-field parsing and returns all path-aware boundary failures together.
+For one type-directed operation, use `Refine.from`:
 
-## Guides
+```fsharp
+let parsed : Result<int, RefinementError> =
+    Refine.from "42"
 
-- [Tutorials](./tutorials/): parse strings into refined values and your own domain type.
-- [Refine Builder](./refine-builder/): fail-fast parsing and refinement with `refine {}`.
-- [Refined Catalog](./catalog/): built-in numeric, text, collection, temporal, character, and choice helpers.
-- [Domain Values](./domain-values/): define your own refined values for standalone use.
-- [Relation to Schema](./schema/): use refined values as fields in an `Axial.Schema` model.
+let positive : Result<PositiveInt, RefinementError> =
+    Refine.from 42
+```
 
-## Reference
+## Read next
 
-- [Refined API]({{< relref "/error-handling/reference/refined/" >}})
+1. [Parse](./parse/) lists the direct parsing forms and their errors.
+2. [Built-in Refined Values](./catalog/) covers the supplied refined types and constructors.
+3. [Refine Computation Expression](./refine-builder/) explains explicit and type-directed `let!`.
+4. [Define Refined Types](./domain-values/) builds a private wrapper and smart constructor, then makes it available to
+   `Refine.from`.
+5. [Schema Integration](./schema/) shows how a refinement is used in an `Axial.Schema` declaration.
+
+The [Refined API reference]({{< relref "/error-handling/reference/refined/" >}}) lists every public type and function.

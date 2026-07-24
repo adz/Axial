@@ -683,14 +683,12 @@ module Refine =
         let refinement: Refinement<^raw, ^value> = RefinementFrom.Resolve()
         Refinement.create refinement raw
 
-    /// <summary>Builds a refined value by running a reusable <see cref="T:Axial.ErrorHandling.Check`1" /> program
-    /// before calling the constructor. Failures carry the check's own <see cref="T:Axial.ErrorHandling.CheckFailure" />
-    /// values, so callers never need to reinterpret or re-describe them.</summary>
+    /// <summary>Runs a <see cref="T:Axial.ErrorHandling.Check`1" /> and calls the constructor when the check succeeds.</summary>
     let withCheck (target: string) (check: Check<'raw>) (construct: 'raw -> 'refined) (value: 'raw) : Result<'refined, RefinementError> =
         Checked.withCheck target check construct value
 
-    /// <summary>Builds a refined value by running every supplied <see cref="T:Axial.ErrorHandling.Check`1" /> program
-    /// before calling the constructor, accumulating all failures via <c>Check.all</c>.</summary>
+    /// <summary>Runs the supplied <see cref="T:Axial.ErrorHandling.Check`1" /> values with <c>Check.all</c> and calls the
+    /// constructor when every check succeeds.</summary>
     let withChecks (target: string) (checks: Check<'raw> list) (construct: 'raw -> 'refined) (value: 'raw) : Result<'refined, RefinementError> =
         Checked.withChecks target checks construct value
 

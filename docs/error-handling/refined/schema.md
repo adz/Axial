@@ -1,10 +1,10 @@
 ---
 weight: 50
-title: Relation to Schema
+title: Schema Integration
 description: Apply the same refinement descriptor during schema parsing, checking, and encoding.
 ---
 
-# Relation to Schema
+# Schema Integration
 
 `Axial.Refined` does not depend on `Axial.Schema`. A refined type and its smart constructor can live in a domain
 package with no serialization or input-model dependency.

@@ -3,7 +3,7 @@ title: "Numeric"
 type: docs
 ---
 
-This page shows the `Numeric` refinement constructors.
+`Numeric` functions construct refined numeric values.
 
 - [`Refined.Numeric.positiveInt`](./m-refined-numeric-positiveint.md): Builds a positive integer.
 - [`Refined.Numeric.nonNegativeInt`](./m-refined-numeric-nonnegativeint.md): Builds a non-negative integer.

@@ -1,6 +1,6 @@
 ---
 weight: 50
-title: Relation to Schema
+title: Schema Integration
 description: Apply the same refinement descriptor during schema parsing, checking, and encoding.
 type: docs
 ---

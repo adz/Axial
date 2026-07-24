@@ -3,7 +3,7 @@ title: "Collection"
 type: docs
 ---
 
-This page shows collection helpers and refinements.
+Functions in this section operate on collections.
 
 - [`Refined.Collection.nonEmptyList`](./m-refined-collection-nonemptylist.md): Builds a non-empty list from a sequence.
 - [`Refined.Collection.nonEmptyArray`](./m-refined-collection-nonemptyarray.md): Builds a non-empty array from a sequence.

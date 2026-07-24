@@ -2,7 +2,7 @@
 title: "Parse"
 ---
 
-This page shows the `Parse` module for converting serialized strings into primitive values.
+`Parse` functions convert serialized strings into primitive values.
 
 - [`Refined.Parse.int`](./m-refined-parse-int.md): Parses a 32-bit integer.
 - [`Refined.Parse.long`](./m-refined-parse-long.md): Parses a 64-bit integer.

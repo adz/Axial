@@ -5,9 +5,7 @@ weight: 2901
 type: docs
 ---
 
-Builds a refined value by running a reusable <a href="../../check/t-errorhandling-check.md">Check</a> program
- before calling the constructor. Failures carry the check&#39;s own <a href="../../result/errors/t-errorhandling-checkfailure.md">CheckFailure</a>
- values, so callers never need to reinterpret or re-describe them.
+Runs a <a href="../../check/t-errorhandling-check.md">Check</a> and calls the constructor when the check succeeds.
 
 ## Signature
 

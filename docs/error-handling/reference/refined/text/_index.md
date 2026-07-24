@@ -2,7 +2,7 @@
 title: "Text"
 ---
 
-This page shows the `Text` refinement constructors.
+`Text` functions construct refined string values.
 
 - [`Refined.Text.nonBlankString`](./m-refined-text-nonblankstring.md): Builds a non-blank string.
 - [`Refined.Text.trimmedString`](./m-refined-text-trimmedstring.md): Builds a string that has no leading or trailing whitespace.

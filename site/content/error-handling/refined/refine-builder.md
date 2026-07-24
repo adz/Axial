@@ -1,33 +1,39 @@
 ---
-weight: 10
-title: Refine CE
+weight: 30
+title: Refine Computation Expression
 description: Use destination types to sequence parsing and refinement with refine { }.
 type: docs
 ---
 
 
-`Refine.from` constructs one value:
+The direct form names every operation:
 
 ```fsharp
-let id : Result<int, RefinementError> =
-    Refine.from rawId
+let quantity (raw: string) : Result<PositiveInt, RefinementError> =
+    refine {
+        let! parsed = Parse.int raw
+        return! Refine.positiveInt parsed
+    }
 ```
 
-`refine {}` sequences several constructions that may fail. It stops at the first `RefinementError`.
+`let!` takes the value from a successful `Parse` or `Refine` result. `return!` returns an existing refinement result.
+`refine {}` converts `ParseError` into `RefinementError` and stops at the first failure.
+
+The builder also supports type-directed operations:
 
 ```fsharp
-refine {
-    let! (parsed: int) = rawId
-    let! (id: PositiveInt) = parsed
-    do! checkAllowed id
-    return! createAccount id
-}
+let quantity (raw: string) : Result<PositiveInt, RefinementError> =
+    refine {
+        let! (parsed: int) = raw
+        let! (positive: PositiveInt) = parsed
+        return positive
+    }
 ```
 
-The type on the left of `let!` is part of the operation. `rawId` is a `string`, and `parsed` is an `int`, so Axial
+The type on the left of `let!` is part of the operation. `raw` is a `string`, and `parsed` is an `int`, so Axial
 resolves the built-in `Refinement<string, int>`. The next line resolves `Refinement<int, PositiveInt>`.
 
-## What each form binds
+## Builder operations
 
 The builder accepts three forms:
 
@@ -42,11 +48,23 @@ refine {
     // Refinement result: bind it without another conversion.
     do! (checkAllowed parsed: Result<unit, RefinementError>)
 
-    return parsed, count
+    // Existing refinement result: use it as the result of the block.
+    return! createAccount parsed count
 }
 ```
 
-`return` wraps a successful value. `return!` uses an existing `Result<_, RefinementError>` as the result of the block.
+`return` produces `Ok value`. `do!` requires a successful `unit` result before continuing.
+
+The same block with the relevant types made explicit is:
+
+```fsharp
+refine {
+    let! (parsed: int) = (rawId: string)
+    let! (count: int) = (Parse.int rawCount: Result<int, ParseError>)
+    do! (checkAllowed parsed: Result<unit, RefinementError>)
+    return! (createAccount parsed count: Result<Account, RefinementError>)
+}
+```
 
 ## Why the annotation is sometimes required
 
@@ -151,5 +169,4 @@ let pair =
     }
 ```
 
-See [Define Refined Types](../domain-values/) for the wrapper, smart constructor, descriptor, and Schema integration
-as one complete definition.
+Continue with [Define Refined Types](../domain-values/) to add type-directed construction to an application type.

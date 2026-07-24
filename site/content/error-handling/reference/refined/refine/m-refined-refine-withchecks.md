@@ -5,8 +5,8 @@ weight: 2902
 type: docs
 ---
 
-Builds a refined value by running every supplied <a href="../../check/t-errorhandling-check.md">Check</a> program
- before calling the constructor, accumulating all failures via <code>Check.all</code>.
+Runs the supplied <a href="../../check/t-errorhandling-check.md">Check</a> values with <code>Check.all</code> and calls the
+ constructor when every check succeeds.
 
 ## Signature
 

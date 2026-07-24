@@ -1,17 +1,13 @@
 ---
-weight: 5
+weight: 60
 title: Refined Tutorials
 description: Tutorials for parsing and refining boundary values into domain types.
 ---
 
 # Refined Tutorials
 
-These tutorials use `Parse`, `Refine`, and `refine {}` to turn untrusted boundary values into typed domain values,
-preferring "parse" over "error handling".
+These tutorials use `Parse`, `Refine`, and `refine {}` to turn boundary values into typed domain values.
 
 ## Guides
 
-- [Order Reference](./order-reference/): parse strings into refined values and your own domain type.
-
-Use [Schema tutorials]({{< relref "/schema/tutorials/" >}}) when the input is a whole model rather than individual values, and
-[Error Handling tutorials]({{< relref "/error-handling/tutorials/" >}}) for plain fail-fast checks.
+- [Order Reference](./order-reference/): parse strings, apply built-in refinements, and construct a domain record.

@@ -3,7 +3,7 @@ title: "PositiveInt"
 type: docs
 ---
 
-This page shows the `PositiveInt` value helpers.
+`PositiveInt` functions construct, inspect, and transform positive integers.
 
 - [`Refined.PositiveInt.value`](./m-refined-positiveint-value.md): Returns the underlying integer value.
 - [`Refined.PositiveInt.create`](./m-refined-positiveint-create.md): Builds a positive integer.

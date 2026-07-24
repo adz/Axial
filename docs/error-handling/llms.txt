@@ -3,17 +3,20 @@
 - `Axial.ErrorHandling` installs `Axial.Result` and `Axial.Refined`.
 - `result { }` sequences dependent fail-fast `Result` operations.
 - `Check<'value>` is path-free and validates one typed value.
+- `Parse.int`, `Parse.guid`, and the other `Parse` functions convert serialized strings into primitive F# values.
+- `Refine.nonBlankString`, `Refine.positiveInt`, and the other `Refine` functions construct built-in refined values.
+- `refine { }` binds explicit `Parse` and `Refine` results and stops at the first failure.
 - A refined domain type starts with a private wrapper, smart constructor, and inspection function.
 - `Refinement.define create inspect` stores both directions.
 - A static `Refinement` member makes a type available to `Refine.from` and type-directed `let!` in `refine { }`.
 - `Refine.from` uses the source type and expected destination type; it does not use reflection.
-- `refine { }` stops at the first failure because later construction can depend on earlier values.
-- Schema owns accumulated path-aware failures. Use `Schema.parse` or `Schema.check` when field names, indexes, map
-  keys, or nested paths must be reported together.
 
 Golden path:
 
 ```fsharp
+let count = Parse.int "42"
+let name = Refine.nonBlankString "Ada"
+
 type CustomerId =
     private
     | CustomerId of PositiveInt

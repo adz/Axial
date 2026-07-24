@@ -1,40 +1,13 @@
 ---
 weight: 20
-title: Refined Catalog
+title: Built-in Refined Values
 description: Built-in refined values and helper modules in Axial.Refined.
 ---
 
-# Refined Catalog
+# Built-in Refined Values
 
-This page lists the built-in refined values in `Axial.Refined`, together with the input and output type of each helper.
-
-`Axial.Refined` is not only a type catalog: it also owns primitive parsing, smart constructors, the `refine {}` builder, and parser-choice helpers.
-
-For your own domain values, use the pattern in [Define Refined Types](../domain-values/): private wrapper, smart
-constructor, raw projection, `Refinement.define`, and a static `Refinement` contribution. The same definition then
-works with `Refine.from`, `refine {}`, and `Schema.refine`.
-
-When the same scalar catalog value is used as a schema field, use the schema integration catalog in
-`Axial.Schema`:
-
-```fsharp
-open Axial.Schema
-
-let productSchema =
-    schema<Product> {
-        field "name" _.Name
-        field "slug" _.Slug
-        field "quantity" _.Quantity
-        construct (fun name slug quantity ->
-            { Name = name; Slug = slug; Quantity = quantity })
-    }
-```
-
-The canonical schemas live outside `Axial.Refined` so the refined-value package stays usable without any schema dependency.
-Collection schema helpers such as `RefinedSchemas.nonEmptyList RefinedSchemas.slug` and
-`RefinedSchemas.distinctList Schema.text` take an item value schema, so item parsing and item diagnostics stay explicit.
-Temporal range helpers such as `RefinedSchemas.dateTimeOffsetRange` are complete model schemas with `start` and `end`
-fields. `RefinedSchemas.dateOnlyRange` is available when targeting frameworks that support `DateOnly`.
+The built-in types represent common rules such as positive integers, non-blank strings, and non-empty collections.
+Each `Refine` function takes an ordinary F# value and returns a refined value in `Result`.
 
 ## Module Layout
 
@@ -48,7 +21,8 @@ let sameName = Text.nonBlankString "Ada"
 let count = Numeric.positiveInt 3
 ```
 
-Use `Refine` as the convenience facade. Use `Text`, `Numeric`, `Collection`, `Temporal`, `Character`, and `Choice` when grouping matters in larger code.
+`Refine` contains the common constructors. The same functions are grouped under `Text`, `Numeric`, `Collection`, and
+`Temporal` for API discovery.
 
 ## Numeric
 
@@ -252,6 +226,7 @@ let parseContact raw =
 
 Prefer this style over exposing a generic `Or<'Left, 'Right>` in domain models. The result should speak your domain language.
 
-## Runnable Example
+## Next
 
-The generated [Runnable Examples]({{< relref "/schema/examples.md" >}}) page includes a refined catalog example that is built and executed during docs validation.
+[Refine Computation Expression](../refine-builder/) shows how to combine these constructors with parsing.
+[Define Refined Types](../domain-values/) applies the same pattern to an application type.

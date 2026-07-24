@@ -2,17 +2,15 @@
 title: "Refine"
 ---
 
-This page shows the `Refine` facade over the focused refinement modules.
+`Refine` contains type-directed construction and the common built-in refinement functions.
 
 - [`Refined.Refine.from`](./m-refined-refine-from.md):
  Resolves the <code>Refinement</code> definition for the raw value and expected destination type, then runs its smart
  constructor. A destination type participates by defining a static <code>Refinement</code> member.
 
-- [`Refined.Refine.withCheck`](./m-refined-refine-withcheck.md): Builds a refined value by running a reusable <a href="../../check/t-errorhandling-check.md">Check</a> program
- before calling the constructor. Failures carry the check&#39;s own <a href="../../result/errors/t-errorhandling-checkfailure.md">CheckFailure</a>
- values, so callers never need to reinterpret or re-describe them.
-- [`Refined.Refine.withChecks`](./m-refined-refine-withchecks.md): Builds a refined value by running every supplied <a href="../../check/t-errorhandling-check.md">Check</a> program
- before calling the constructor, accumulating all failures via <code>Check.all</code>.
+- [`Refined.Refine.withCheck`](./m-refined-refine-withcheck.md): Runs a <a href="../../check/t-errorhandling-check.md">Check</a> and calls the constructor when the check succeeds.
+- [`Refined.Refine.withChecks`](./m-refined-refine-withchecks.md): Runs the supplied <a href="../../check/t-errorhandling-check.md">Check</a> values with <code>Check.all</code> and calls the
+ constructor when every check succeeds.
 - [`Refined.Refine.nonBlankString`](./m-refined-refine-nonblankstring.md): Builds a non-blank string.
 - [`Refined.Refine.trimmedString`](./m-refined-refine-trimmedstring.md): Builds a string that has no leading or trailing whitespace.
 - [`Refined.Refine.boundedString`](./m-refined-refine-boundedstring.md): Builds a string whose length is within an inclusive range.

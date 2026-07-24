@@ -4,7 +4,7 @@ weight: 50
 type: docs
 ---
 
-This page shows the `Axial.Refined` surface for turning untrusted boundary data into stronger structural values. `Refine.from` runs the refinement defined for its source and destination types. `Parse` converts serialized strings into primitive values. Focused modules such as `Text`, `Numeric`, `Collection`, and `Temporal` construct named refined values such as `Slug`, `NonZeroInt`, and `DateTimeOffsetRange`. `refine { }` sequences dependent parsing and refinement and stops at the first failure.
+`Parse` converts serialized strings into primitive values. `Refine` constructs the built-in refined values. `Refine.from` runs the `Refinement` defined for its source and expected destination types. `refine { }` binds parsing and refinement results and stops at the first failure.
 
 ## Errors and refined types
 
@@ -115,11 +115,9 @@ This page shows the `Axial.Refined` surface for turning untrusted boundary data 
  Resolves the <code>Refinement</code> definition for the raw value and expected destination type, then runs its smart
  constructor. A destination type participates by defining a static <code>Refinement</code> member.
 
-- [`Refined.Refine.withCheck`](./refine/m-refined-refine-withcheck.md): Builds a refined value by running a reusable <a href="../../check/t-errorhandling-check.md">Check</a> program
- before calling the constructor. Failures carry the check&#39;s own <a href="../../result/errors/t-errorhandling-checkfailure.md">CheckFailure</a>
- values, so callers never need to reinterpret or re-describe them.
-- [`Refined.Refine.withChecks`](./refine/m-refined-refine-withchecks.md): Builds a refined value by running every supplied <a href="../../check/t-errorhandling-check.md">Check</a> program
- before calling the constructor, accumulating all failures via <code>Check.all</code>.
+- [`Refined.Refine.withCheck`](./refine/m-refined-refine-withcheck.md): Runs a <a href="../../check/t-errorhandling-check.md">Check</a> and calls the constructor when the check succeeds.
+- [`Refined.Refine.withChecks`](./refine/m-refined-refine-withchecks.md): Runs the supplied <a href="../../check/t-errorhandling-check.md">Check</a> values with <code>Check.all</code> and calls the
+ constructor when every check succeeds.
 - [`Refined.Refine.nonBlankString`](./refine/m-refined-refine-nonblankstring.md): Builds a non-blank string.
 - [`Refined.Refine.trimmedString`](./refine/m-refined-refine-trimmedstring.md): Builds a string that has no leading or trailing whitespace.
 - [`Refined.Refine.boundedString`](./refine/m-refined-refine-boundedstring.md): Builds a string whose length is within an inclusive range.

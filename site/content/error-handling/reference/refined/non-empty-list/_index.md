@@ -3,7 +3,7 @@ title: "NonEmptyList"
 type: docs
 ---
 
-This page shows the `NonEmptyList` value helpers.
+`NonEmptyList` functions construct, inspect, and transform non-empty lists.
 
 - [`Refined.NonEmptyList.toList`](./m-refined-nonemptylist-tolist.md): Returns the refined value as a standard list.
 - [`Refined.NonEmptyList.create`](./m-refined-nonemptylist-create.md): Builds a non-empty list from a sequence.

@@ -25,27 +25,19 @@ open Axial.Refined
 | --- | --- | --- |
 | Sequence dependent operations that may fail | `result { }` | `Result<'value, 'error>` |
 | Describe and run reusable rules over one typed value | `Check<'value>` | `Result<'value, CheckFailure list>` |
-| Construct a type that cannot contain an invalid value | `Refinement<'raw,'value>`, `Refine.from`, `refine { }` | `Result<'value, RefinementError>` |
+| Parse serialized text | `Parse.int`, `Parse.guid`, and other `Parse` functions | `Result<'value, ParseError>` |
+| Construct a type that records a successful check | `Refine.nonBlankString`, `Refine.positiveInt`, and other `Refine` functions | `Result<'value, RefinementError>` |
 
 `Result` is the common return type. `Check` preserves the checked value and can report several failures about that one
 value. A refinement changes the type, so later code knows construction succeeded.
 
 ```fsharp
-let parseQuantity raw : Result<PositiveInt, RefinementError> =
-    refine {
-        let! (number: int) = raw
-        let! (quantity: PositiveInt) = number
-        return quantity
-    }
+let parsed = Parse.int "12"
+let refined = Refine.positiveInt 12
 ```
-
-Path-aware accumulation belongs to Schema because Schema already knows field names, collection indexes, map keys, and
-nested structure. `Schema.parse` and `Schema.check` return `SchemaErrors`; application code does not attach paths by
-hand.
 
 ## Continue
 
 - [Result](./result/): fail-fast composition and extraction helpers.
 - [Check](./checks/): reusable constraints over one value.
-- [Refined](./refined/): wrappers, smart constructors, contributed refinements, and Schema integration.
-- [Schema]({{< relref "/schema/" >}}): structured input and complete path-aware boundary failures.
+- [Refined](./refined/): parsing, built-in refined values, dependent construction, and application-defined types.

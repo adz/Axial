@@ -1,7 +1,7 @@
 ---
-weight: 25
+weight: 40
 title: Define Refined Types
-description: Wrap a raw value, enforce its invariant, and reuse the same refinement in functions, Refine.from, refine {}, and Schema.
+description: Wrap a raw value, enforce its invariant, and make it available to Refine.from and refine {}.
 ---
 
 # Define Refined Types
@@ -9,7 +9,8 @@ description: Wrap a raw value, enforce its invariant, and reuse the same refinem
 A refined type prevents invalid values from entering ordinary application code. Its union case is private, and its
 smart constructor is the only function that can create it.
 
-This guide builds one refinement and then uses it through every Axial entry point. The invariant stays in one place.
+This guide starts with an ordinary F# wrapper and smart constructor. It then makes that constructor available to
+`Refine.from` and `refine { }`.
 
 ## Wrap the raw value
 
@@ -61,9 +62,9 @@ let email : Result<ContactEmail, RefinementError> =
 Functions that accept `ContactEmail` no longer repeat blank, format, or length checks. A successful construction is the
 evidence those checks ran.
 
-## Describe both directions once
+## Define a reusable refinement
 
-`Refinement<'raw, 'value>` stores the smart constructor and the projection back to its raw representation:
+`Refinement<'raw, 'value>` stores the smart constructor and the function that reads its raw representation:
 
 ```fsharp
 module ContactEmail =
@@ -73,17 +74,14 @@ module ContactEmail =
         Refinement.define create value
 ```
 
-The two directions serve different work:
+The functions can also be called through the refinement:
 
 - `Refinement.create ContactEmail.refinement rawEmail` runs `ContactEmail.create`.
-- `Refinement.inspect ContactEmail.refinement email` returns the string needed for encoding, redisplay, and schema
-  checking.
-
-Keeping them together prevents parsers and encoders from growing separate, loosely related adapters.
+- `Refinement.inspect ContactEmail.refinement email` returns the stored string.
 
 ## Add type-directed refinement
 
-Expose the descriptor through a static `Refinement` member:
+Expose the refinement through a static `Refinement` member:
 
 ```fsharp
 type ContactEmail with
@@ -99,7 +97,7 @@ let email : Result<ContactEmail, RefinementError> =
     Refine.from rawEmail
 ```
 
-`Refine.from` resolves `Refinement<string, ContactEmail>` at compile time and runs its `create` direction. It does not
+`Refine.from` resolves `Refinement<string, ContactEmail>` at compile time and runs `ContactEmail.create`. It does not
 scan assemblies or use runtime reflection.
 
 The dispatch key is the pair of types: `string -> ContactEmail`. There can be only one unnamed refinement for that
@@ -112,7 +110,7 @@ interpretation needs a different destination type or an explicitly named parser.
 
 ## Use it in `refine {}`
 
-The computation expression uses the same static descriptor:
+The computation expression uses the same static refinement:
 
 ```fsharp
 let createContact rawEmail rawPriority =
@@ -129,47 +127,6 @@ on the first `RefinementError`.
 `Refine.from` remains the shorter form for one value. `refine {}` is useful when later construction depends on several
 successful values.
 
-## Use the same descriptor in Schema
-
-`Schema.refine` accepts the descriptor directly:
-
-```fsharp
-open Axial.Schema
-
-let contactEmailSchema : Schema<ContactEmail> =
-    Schema.text
-    |> Schema.refine ContactEmail.refinement
-```
-
-Inside a record schema, the parameterless `refine` operation resolves the same descriptor from the raw field schema
-and the getter's result type:
-
-```fsharp
-type Signup =
-    { Email: ContactEmail
-      Age: int }
-
-let signupSchema =
-    schema<Signup> {
-        field "email" _.Email {
-            withSchema Schema.text
-            constrain Constraint.required
-            refine
-        }
-
-        field "age" _.Age
-        construct (fun email age -> { Email = email; Age = age })
-    }
-```
-
-The email field starts as text because that is the boundary representation. `constrain` records portable text
-metadata. `refine` then changes the field value from `string` to `ContactEmail`. The constructor receives
-`ContactEmail`, so invalid text cannot reach `Signup`.
-
-One descriptor now covers direct construction, type-directed construction, dependent construction, schema parsing,
-schema checking, and encoding. Adding another refined type repeats this small definition instead of adding adapters to
-each boundary.
-
 ## What changes across the codebase
 
 Without the wrapper, each consumer receives `string` and must remember which checks ran. Form parsing, JSON decoding,
@@ -177,12 +134,14 @@ command construction, database imports, and tests can each grow another copy of 
 
 With `ContactEmail`:
 
-- boundary code constructs it through `ContactEmail.create`, `Refine.from`, `refine { }`, or Schema;
+- boundary code constructs it through `ContactEmail.create`, `Refine.from`, or `refine { }`;
 - application functions accept `ContactEmail` and contain no email-format branch;
-- encoders use `Refinement.inspect` through the same descriptor that parsed the value;
+- code that needs the original representation uses `Refinement.inspect`;
 - a changed invariant is implemented in `ContactEmail.create`;
 - tests for application functions construct valid emails once and focus on application behavior;
-- tests for invalid email text stay beside the refinement and Schema boundary tests.
+- tests for invalid email text stay beside the refinement.
 
-The type removes the unchecked state from function signatures. The descriptor removes the adapter duplication between
-the places that construct and inspect that type.
+The type removes the unchecked state from function signatures. The refinement keeps construction and inspection
+together.
+
+Continue with [Schema Integration](../schema/) if the refined type is a field in an `Axial.Schema` model.
