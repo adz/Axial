@@ -1,0 +1,26 @@
+---
+title: "Check.notEmpty"
+linkTitle: "notEmpty"
+weight: 2202
+type: docs
+---
+
+ Runs the type-directed non-empty check for an already parsed optional, nullable, text, or supported sequence-shaped value.
+
+## Signature
+
+<div class="fsdocs-usage">
+<code><span>Check.Check.notEmpty&#32;<span>value</span></span></code>
+</div>
+
+## Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `value` | <code>^value</code> |  |
+
+## Returns
+
+| Type | Description |
+| --- | --- |
+| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>^value,&#32;<span><a href="../result/errors/t-check-checkfailure.md">CheckFailure</a>&#32;list</span></span>&gt;</span></code> |  |

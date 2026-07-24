@@ -9,7 +9,7 @@ description: Plain bool facts for local branching, distinct from Check.
 `Predicate` and `PredicateExtensions` give you the same structural facts as `Check`, but as plain `bool`.
 
 ```fsharp
-open Axial
+open Axial.Check
 
 if name.IsBlank then
     failwith "name is required"
@@ -87,7 +87,7 @@ let describeName name =
     if name.IsBlank then "unnamed" else name
 
 // Check: the failure needs to become a typed Result for a caller.
-open Axial.ErrorHandling.CheckDSL
+open Axial.Check.CheckDSL
 
 let validateName name : Result<string, NameError> =
     name |> present |> orError NameMissing

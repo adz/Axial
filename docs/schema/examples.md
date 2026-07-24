@@ -33,8 +33,9 @@ Source code:
 module RefinedCatalogExample
 
 open System
-open Axial.ErrorHandling
-open Axial.ErrorHandling.CheckDSL
+open Axial.Result
+open Axial.Check
+open Axial.Check.CheckDSL
 open Axial.Refined
 
 type ProductId = ProductId of NonZeroInt

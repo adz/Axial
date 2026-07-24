@@ -1156,6 +1156,44 @@ $axial-result: #0a7d62;
   }
 }
 
+// Primary packages (a product's meta-package or core package) get a
+// visually heavier header so they read as the entry point, not a peer
+// of the focused packages listed below them.
+.axial-package-nav--primary {
+  margin-bottom: 1.05rem;
+  border-radius: 0.4rem;
+  background: rgba(11, 85, 217, 0.06);
+
+  .axial-package-nav__title {
+    border-bottom-color: rgba(11, 85, 217, 0.25);
+
+    a {
+      padding: 0.6rem 0.75rem 0.3rem;
+      font-size: 1rem;
+      font-weight: 800;
+    }
+  }
+}
+
+.axial-package-nav__caption {
+  margin: -0.2rem 0 0.4rem;
+  padding: 0 0.75rem 0.5rem;
+  color: #64748b;
+  font-size: 0.74rem;
+  font-style: italic;
+  line-height: 1.3;
+}
+
+[data-bs-theme="dark"] {
+  .axial-package-nav--primary {
+    background: rgba(143, 184, 255, 0.09);
+  }
+
+  .axial-package-nav__caption {
+    color: #aebbc0;
+  }
+}
+
 .axial-package-nav__items {
   margin: 0;
   padding: 0;

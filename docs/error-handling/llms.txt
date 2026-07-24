@@ -1,8 +1,13 @@
 # Axial ErrorHandling
 
-- `Axial.ErrorHandling` installs `Axial.Result` and `Axial.Refined`.
+- Error Handling is three focused packages: `Axial.Result`, `Axial.Check`, and `Axial.Refined`. `Axial.ErrorHandling`
+  installs all three and exposes no API of its own.
+- `open Axial.Result` for `result { }` and Result composition; `open Axial.Check` (and `Axial.Check.CheckDSL`) for
+  reusable checks; `open Axial.Refined` for parsing and refined values.
+- `Axial.Check` does not depend on `Axial.Result`: a project can add Check and Refined without opening Result, and
+  coexists with FsToolkit.ErrorHandling without builder or module ambiguity.
 - `result { }` sequences dependent fail-fast `Result` operations.
-- `Check<'value>` is path-free and validates one typed value.
+- `Check<'value>` is path-free and validates one typed value; it returns the standard F# `Result` type.
 - `Parse.int`, `Parse.guid`, and the other `Parse` functions convert serialized strings into primitive F# values.
 - `Refine.nonBlankString`, `Refine.positiveInt`, and the other `Refine` functions construct built-in refined values.
 - `refine { }` binds explicit `Parse` and `Refine` results and stops at the first failure.

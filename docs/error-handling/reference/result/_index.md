@@ -7,47 +7,47 @@ This page shows Axial's fail-fast helpers over the standard F# `Result<'value, '
 
 ## Structured errors
 
-- [`ErrorHandling.CheckFailure`](./errors/t-errorhandling-checkfailure.md): Describes why an executable value check failed, without attaching source paths or structured data.
+- [`Check.CheckFailure`](./errors/t-check-checkfailure.md): Describes why an executable value check failed, without attaching source paths or structured data.
 
 ## Core helpers
 
-- [`ErrorHandling.Result.ok`](./result/m-errorhandling-result-ok.md): Creates an <code>Ok</code> result.
-- [`ErrorHandling.Result.error`](./result/m-errorhandling-result-error.md): Creates an <code>Error</code> result.
-- [`ErrorHandling.Result.map`](./result/m-errorhandling-result-map.md): Maps the success value of a result.
-- [`ErrorHandling.Result.mapError`](./result/m-errorhandling-result-maperror.md): Maps the error value of a result.
-- [`ErrorHandling.Result.bind`](./result/m-errorhandling-result-bind.md): Binds a result to the next fail-fast operation.
-- [`ErrorHandling.Result.orElse`](./result/m-errorhandling-result-orelse.md): Falls back to another result when the source result fails.
-- [`ErrorHandling.Result.orElseWith`](./result/m-errorhandling-result-orelsewith.md): Computes a fallback result from the source error when the result fails.
+- [`Result.ok`](./result/m-result-result-ok.md): Creates an <code>Ok</code> result.
+- [`Result.error`](./result/m-result-result-error.md): Creates an <code>Error</code> result.
+- [`Result.map`](./result/m-result-result-map.md): Maps the success value of a result.
+- [`Result.mapError`](./result/m-result-result-maperror.md): Maps the error value of a result.
+- [`Result.bind`](./result/m-result-result-bind.md): Binds a result to the next fail-fast operation.
+- [`Result.orElse`](./result/m-result-result-orelse.md): Falls back to another result when the source result fails.
+- [`Result.orElseWith`](./result/m-result-result-orelsewith.md): Computes a fallback result from the source error when the result fails.
 
 ## Lifts and conversions
 
-- [`ErrorHandling.Result.requireTrue`](./result/m-errorhandling-result-requiretrue.md): Returns <code>Ok ()</code> when the condition is true, or the supplied error when it is false.
-- [`ErrorHandling.Result.okIf`](./result/m-errorhandling-result-okif.md): Keeps the input value when the predicate holds, or returns the supplied error.
-- [`ErrorHandling.Result.failIf`](./result/m-errorhandling-result-failif.md): Keeps the input value when the predicate does not hold, or returns the supplied error.
-- [`ErrorHandling.Result.orError`](./result/m-errorhandling-result-orerror.md): Replaces whatever error a result carries with the supplied typed error. <code>Ok</code> passes through unchanged.
-- [`ErrorHandling.Result.fromTry`](./result/m-errorhandling-result-fromtry.md): Converts a .NET <code>Try*</code> tuple into a unit-error result.
-- [`ErrorHandling.Result.fromChoice`](./result/m-errorhandling-result-fromchoice.md): Converts an F# <code>Choice</code> into a result.
-- [`ErrorHandling.Result.toOption`](./result/m-errorhandling-result-tooption.md): Drops the error channel and returns <code>Some</code> for success.
-- [`ErrorHandling.Result.toValueOption`](./result/m-errorhandling-result-tovalueoption.md): Drops the error channel and returns <code>ValueSome</code> for success.
-- [`ErrorHandling.Result.defaultValue`](./result/m-errorhandling-result-defaultvalue.md): Returns the success value or the supplied fallback value.
+- [`Result.requireTrue`](./result/m-result-result-requiretrue.md): Returns <code>Ok ()</code> when the condition is true, or the supplied error when it is false.
+- [`Result.okIf`](./result/m-result-result-okif.md): Keeps the input value when the predicate holds, or returns the supplied error.
+- [`Result.failIf`](./result/m-result-result-failif.md): Keeps the input value when the predicate does not hold, or returns the supplied error.
+- [`Result.orError`](./result/m-result-result-orerror.md): Replaces whatever error a result carries with the supplied typed error. <code>Ok</code> passes through unchanged.
+- [`Result.fromTry`](./result/m-result-result-fromtry.md): Converts a .NET <code>Try*</code> tuple into a unit-error result.
+- [`Result.fromChoice`](./result/m-result-result-fromchoice.md): Converts an F# <code>Choice</code> into a result.
+- [`Result.toOption`](./result/m-result-result-tooption.md): Drops the error channel and returns <code>Some</code> for success.
+- [`Result.toValueOption`](./result/m-result-result-tovalueoption.md): Drops the error channel and returns <code>ValueSome</code> for success.
+- [`Result.defaultValue`](./result/m-result-result-defaultvalue.md): Returns the success value or the supplied fallback value.
 
 ## Extraction helpers
 
-- [`ErrorHandling.Result.someOr`](./result/m-errorhandling-result-someor.md): Takes the value from an option when it is <code>Some</code>, or returns the supplied error.
-- [`ErrorHandling.Result.noneOr`](./result/m-errorhandling-result-noneor.md): Returns success when the option is <code>None</code>, or returns the supplied error.
-- [`ErrorHandling.Result.valueSomeOr`](./result/m-errorhandling-result-valuesomeor.md): Takes the value from a value option when it is <code>ValueSome</code>, or returns the supplied error.
-- [`ErrorHandling.Result.valueNoneOr`](./result/m-errorhandling-result-valuenoneor.md): Returns success when the value option is <code>ValueNone</code>, or returns the supplied error.
-- [`ErrorHandling.Result.nullableOr`](./result/m-errorhandling-result-nullableor.md): Takes the value from a nullable when it has a value, or returns the supplied error.
-- [`ErrorHandling.Result.notNullOr`](./result/m-errorhandling-result-notnullor.md): Keeps a non-null reference, or returns the supplied error.
-- [`ErrorHandling.Result.okOr`](./result/m-errorhandling-result-okor.md): Takes the successful value from a result, or returns the supplied error.
-- [`ErrorHandling.Result.errorOr`](./result/m-errorhandling-result-erroror.md): Takes the error value from a result, or returns the supplied error when the result is successful.
-- [`ErrorHandling.Result.headOr`](./result/m-errorhandling-result-heador.md): Takes the first item from a sequence, or returns the supplied error.
+- [`Result.someOr`](./result/m-result-result-someor.md): Takes the value from an option when it is <code>Some</code>, or returns the supplied error.
+- [`Result.noneOr`](./result/m-result-result-noneor.md): Returns success when the option is <code>None</code>, or returns the supplied error.
+- [`Result.valueSomeOr`](./result/m-result-result-valuesomeor.md): Takes the value from a value option when it is <code>ValueSome</code>, or returns the supplied error.
+- [`Result.valueNoneOr`](./result/m-result-result-valuenoneor.md): Returns success when the value option is <code>ValueNone</code>, or returns the supplied error.
+- [`Result.nullableOr`](./result/m-result-result-nullableor.md): Takes the value from a nullable when it has a value, or returns the supplied error.
+- [`Result.notNullOr`](./result/m-result-result-notnullor.md): Keeps a non-null reference, or returns the supplied error.
+- [`Result.okOr`](./result/m-result-result-okor.md): Takes the successful value from a result, or returns the supplied error.
+- [`Result.errorOr`](./result/m-result-result-erroror.md): Takes the error value from a result, or returns the supplied error when the result is successful.
+- [`Result.headOr`](./result/m-result-result-heador.md): Takes the first item from a sequence, or returns the supplied error.
 
 ## Traversal
 
-- [`ErrorHandling.Collection.traverseResult`](./collection/m-errorhandling-collection-traverseresult.md): Maps each value with a result-returning function, stopping at the first error.
-- [`ErrorHandling.Collection.sequenceResult`](./collection/m-errorhandling-collection-sequenceresult.md): Turns a sequence of results into one fail-fast result containing all successes.
+- [`Result.Collection.traverseResult`](./collection/m-result-collection-traverseresult.md): Maps each value with a result-returning function, stopping at the first error.
+- [`Result.Collection.sequenceResult`](./collection/m-result-collection-sequenceresult.md): Turns a sequence of results into one fail-fast result containing all successes.
 
 ## Builder
 
-- [`result`](./result-ce/p-errorhandling--result.md): The fail-fast <code>result { }</code> computation expression.
+- [`result`](./result-ce/p-result--result.md): The fail-fast <code>result { }</code> computation expression.

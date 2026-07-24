@@ -17,8 +17,8 @@ This guide starts with an ordinary F# wrapper and smart constructor. It then mak
 Start with a private wrapper and a function that returns the stored representation:
 
 ```fsharp
-open Axial.ErrorHandling
-open Axial.ErrorHandling.CheckDSL
+open Axial.Check
+open Axial.Check.CheckDSL
 open Axial.Refined
 
 type ContactEmail =

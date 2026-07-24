@@ -8,7 +8,9 @@ groups:
         - /schema/reference/data
 
   - title: Axial.Schema
-    home: /schema
+    home: /schema/overview
+    kind: primary
+    caption: The core package. Data, JSON, HTTP, and testing packages extend it.
     descendants: false
     entries:
       - /schema/getting-started

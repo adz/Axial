@@ -6,18 +6,26 @@ type: docs
 ---
 
 
-Install the combined package:
+Install the focused package you need, or the combined package for all three:
 
 ```bash
-dotnet add package Axial.ErrorHandling
+dotnet add package Axial.Result    # Result composition and result { }
+dotnet add package Axial.Check     # reusable, path-free value checks
+dotnet add package Axial.Refined   # parsing and refined domain values
+dotnet add package Axial.ErrorHandling   # installs all three
 ```
 
-It installs `Axial.Result` and `Axial.Refined`. A project that only needs one part can reference that package directly.
+`Axial.ErrorHandling` installs `Axial.Result`, `Axial.Check`, and `Axial.Refined` and exposes no API of its own —
+open the package you need directly.
 
 ```fsharp
-open Axial.ErrorHandling
+open Axial.Result
+open Axial.Check
 open Axial.Refined
 ```
+
+Already use FsToolkit.ErrorHandling or your own Result helpers? `Axial.Check` and `Axial.Refined` do not depend on
+`Axial.Result`, so you can add either (or both) without opening `Axial.Result` or creating builder/module ambiguity.
 
 ## The three layers
 
@@ -39,5 +47,5 @@ let refined = Refine.positiveInt 12
 ## Continue
 
 - [Result](./result/): fail-fast composition and extraction helpers.
-- [Check](./checks/): reusable constraints over one value.
+- [Check](./check/): reusable constraints over one value.
 - [Refined](./refined/): parsing, built-in refined values, dependent construction, and application-defined types.

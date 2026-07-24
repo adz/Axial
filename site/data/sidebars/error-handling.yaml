@@ -1,6 +1,8 @@
 groups:
   - title: Axial.ErrorHandling
-    home: /error-handling
+    home: /error-handling/overview
+    kind: primary
+    caption: Installs Result, Check, and Refined together.
     descendants: false
     entries:
       - /error-handling/getting-started
@@ -13,23 +15,19 @@ groups:
     entries:
       - /error-handling/tutorials
       - /error-handling/result-builder
-      - /error-handling/checks
-      - /error-handling/predicates
     reference:
       children_of:
         - /error-handling/reference/result
-      entries:
-        - /error-handling/reference/check
-        - /error-handling/reference/predicate
 
-  - title: Axial.Diagnostics
-    home: /error-handling/diagnostics
+  - title: Axial.Check
+    home: /error-handling/check
     children_of:
-      - /error-handling/diagnostics
+      - /error-handling/check
     reference:
+      children_of:
+        - /error-handling/reference/check
       entries:
-        - /error-handling/reference/validation
-        - /error-handling/reference/diagnostics
+        - /error-handling/reference/predicate
 
   - title: Axial.Refined
     home: /error-handling/refined

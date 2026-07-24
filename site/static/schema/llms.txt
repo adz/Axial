@@ -1,7 +1,9 @@
 # Axial Schema
 
-- `Axial.Schema` depends on `Axial.Data`, `Axial.Result`, and `Axial.Refined`. It does not depend on Flow.
-- Schema owns path-aware accumulated boundary errors through `Path`, `SchemaIssue`, and `SchemaErrors`.
+- `Axial.Schema` depends on `Axial.Data`, `Axial.Check`, and `Axial.Refined`. It does not depend on `Axial.Result` or
+  Flow.
+- Schema owns path-aware accumulated boundary errors through `Path`, `SchemaIssue`, and `SchemaErrors`. `Axial.Check`
+  and `Axial.Refined` never claim path-aware accumulation; that is Schema's role.
 - Declare records with `schema<Model> { field ...; construct ... }`.
 - `field "wire-name" _.Member` resolves the member type's canonical schema.
 - `field _.Member` derives the wire name from a quotation and is .NET-only. Use explicit names for Fable.

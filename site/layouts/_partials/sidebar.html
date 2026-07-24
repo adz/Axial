@@ -46,10 +46,13 @@
               {{- end -}}
             {{- end -}}
           {{- end -}}
-          <section class="axial-package-nav{{ if $activeGroup }} active-path{{ end }}">
+          <section class="axial-package-nav{{ if $activeGroup }} active-path{{ end }}{{ if eq .kind "primary" }} axial-package-nav--primary{{ end }}">
             <h2 class="axial-package-nav__title">
               <a href="{{ $home.RelPermalink }}"{{ if eq $context $home }} class="active"{{ end }}>{{ .title }}</a>
             </h2>
+            {{- with .caption }}
+            <p class="axial-package-nav__caption">{{ . }}</p>
+            {{- end }}
             {{- if $activeGroup -}}
             <div class="td-sidebar-nav__section">
             <ul class="axial-package-nav__items ul-1">

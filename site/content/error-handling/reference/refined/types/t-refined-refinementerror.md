@@ -18,9 +18,9 @@ Structural failures returned by built-in refinement constructors and the <code>r
 | Case | Description |
 | --- | --- |
 | `ParseFailed` | A primitive parse operation failed before refinement. |
-| `CheckFailed` | An executable <a href="../../check/t-errorhandling-check.md">Check</a> program run against the target refined type
- failed. Carries the same structured <a href="../../result/errors/t-errorhandling-checkfailure.md">CheckFailure</a> values the check program
+| `CheckFailed` | An executable <a href="../../check/t-check-check.md">Check</a> program run against the target refined type
+ failed. Carries the same structured <a href="../../result/errors/t-check-checkfailure.md">CheckFailure</a> values the check program
  produced, so callers never need to reinterpret or re-describe them. |
 | `InvalidStructure` | The value had an invalid structure for the target refined type that a single-value
- <a href="../../check/t-errorhandling-check.md">Check</a> program cannot express, such as a cross-field ordering
+ <a href="../../check/t-check-check.md">Check</a> program cannot express, such as a cross-field ordering
  invariant. |

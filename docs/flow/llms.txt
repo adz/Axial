@@ -3,7 +3,8 @@
 ## Product boundary
 
 - `Flow<'env,'error,'value>` is a cold workflow description with explicit dependencies and typed expected failures.
-- Flow does not depend on `Axial.Schema` or `Axial.ErrorHandling`; it binds standard F# `Result` and `Option` directly.
+- Flow does not depend on `Axial.Schema`, `Axial.Result`, `Axial.Check`, `Axial.Refined`, or `Axial.ErrorHandling`; it
+  binds standard F# `Result` and `Option` directly.
 - Use `Flow<'value>`, `Flow<'error,'value>`, `EnvFlow<'env,'value>`, `ExnFlow<'value>`, or
   `ExnEnvFlow<'env,'value>` when the shorter channel combination is sufficient.
 

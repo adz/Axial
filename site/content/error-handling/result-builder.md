@@ -50,7 +50,7 @@ result {
 type UserError = | MissingName | MissingEmail
 type User = { Name: string; Email: string }
 
-open Axial.ErrorHandling.CheckDSL
+open Axial.Check.CheckDSL
 
 let validateUser name email : Result<User, UserError> =
     result {

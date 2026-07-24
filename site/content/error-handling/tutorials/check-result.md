@@ -17,7 +17,7 @@ The raw request is untyped strings and a bool — exactly what arrives from a fo
 
 ```fsharp
 open Axial
-open Axial.ErrorHandling.CheckDSL
+open Axial.Check.CheckDSL
 
 type SignupRequest =
     { Name: string
@@ -158,7 +158,7 @@ be unit-tested by calling `validateSignup` directly.
 - **`Result`** (`validatePasswords`, `validateTerms`) — conditions bespoke to this workflow, via
   `Result.requireTrue`, composed with the `Check`-backed steps in one `result {}`.
 
-See [Checks](../checks/) and [Predicates](../predicates/) for the full surface each one exposes, and
+See [Checks](../check/) and [Predicates](../check/predicates/) for the full surface each one exposes, and
 [Result Builder](../result-builder/) for more on `result {}`.
 
 When independent fields should report all sibling failures together instead of stopping at the first one, move to

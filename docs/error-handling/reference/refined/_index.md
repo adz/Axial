@@ -114,8 +114,8 @@ weight: 500
  Resolves the <code>Refinement</code> definition for the raw value and expected destination type, then runs its smart
  constructor. A destination type participates by defining a static <code>Refinement</code> member.
 
-- [`Refined.Refine.withCheck`](./refine/m-refined-refine-withcheck.md): Runs a <a href="../../check/t-errorhandling-check.md">Check</a> and calls the constructor when the check succeeds.
-- [`Refined.Refine.withChecks`](./refine/m-refined-refine-withchecks.md): Runs the supplied <a href="../../check/t-errorhandling-check.md">Check</a> values with <code>Check.all</code> and calls the
+- [`Refined.Refine.withCheck`](./refine/m-refined-refine-withcheck.md): Runs a <a href="../../check/t-check-check.md">Check</a> and calls the constructor when the check succeeds.
+- [`Refined.Refine.withChecks`](./refine/m-refined-refine-withchecks.md): Runs the supplied <a href="../../check/t-check-check.md">Check</a> values with <code>Check.all</code> and calls the
  constructor when every check succeeds.
 - [`Refined.Refine.nonBlankString`](./refine/m-refined-refine-nonblankstring.md): Builds a non-blank string.
 - [`Refined.Refine.trimmedString`](./refine/m-refined-refine-trimmedstring.md): Builds a string that has no leading or trailing whitespace.

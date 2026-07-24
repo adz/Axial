@@ -5,7 +5,7 @@ weight: 2902
 type: docs
 ---
 
-Runs the supplied <a href="../../check/t-errorhandling-check.md">Check</a> values with <code>Check.all</code> and calls the
+Runs the supplied <a href="../../check/t-check-check.md">Check</a> values with <code>Check.all</code> and calls the
  constructor when every check succeeds.
 
 ## Signature
@@ -19,7 +19,7 @@ Runs the supplied <a href="../../check/t-errorhandling-check.md">Check</a> value
 | Name | Type | Description |
 | --- | --- | --- |
 | `target` | <code>string</code> |  |
-| `checks` | <code><span><span><a href="../../check/t-errorhandling-check.md">Check</a>&lt;'raw&gt;</span>&#32;list</span></code> |  |
+| `checks` | <code><span><span><a href="../../check/t-check-check.md">Check</a>&lt;'raw&gt;</span>&#32;list</span></code> |  |
 | `construct` | <code><span>'raw&#32;->&#32;'refined</span></code> |  |
 | `value` | <code>'raw</code> |  |
 

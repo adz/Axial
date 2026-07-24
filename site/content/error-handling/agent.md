@@ -5,7 +5,8 @@ type: docs
 ---
 
 
-`Axial.ErrorHandling` installs `Axial.Result` and `Axial.Refined`.
+`Axial.ErrorHandling` installs `Axial.Result`, `Axial.Check`, and `Axial.Refined` and exposes no API of its own.
+`Axial.Check` and `Axial.Refined` do not depend on `Axial.Result`.
 
 - Return ordinary `Result<'value,'error>` from domain functions.
 - Use `result { }` when a later step depends on an earlier success.

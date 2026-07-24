@@ -25,5 +25,5 @@ dotnet add package Axial.Result
 
 - [Result](../reference/result/): helpers for creating, transforming, extracting, and traversing Results.
 - [Result CE](../result-builder/): sequence dependent Result-returning operations with `result {}`.
-- [Check](../checks/): reusable constraints that preserve their input on success.
-- [Predicate](../predicates/): boolean facts for local branching and checks.
+- [Check](../check/): reusable constraints that preserve their input on success.
+- [Predicate](../check/predicates/): boolean facts for local branching and checks.

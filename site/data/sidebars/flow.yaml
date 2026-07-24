@@ -1,6 +1,8 @@
 groups:
   - title: Axial.Flow
-    home: /flow
+    home: /flow/overview
+    kind: primary
+    caption: The core package. Platform-service, console, filesystem, HTTP, process, and hosting packages extend it.
     descendants: false
     entries:
       - /flow/getting-started

@@ -5,7 +5,7 @@ weight: 2901
 type: docs
 ---
 
-Runs a <a href="../../check/t-errorhandling-check.md">Check</a> and calls the constructor when the check succeeds.
+Runs a <a href="../../check/t-check-check.md">Check</a> and calls the constructor when the check succeeds.
 
 ## Signature
 
@@ -18,7 +18,7 @@ Runs a <a href="../../check/t-errorhandling-check.md">Check</a> and calls the co
 | Name | Type | Description |
 | --- | --- | --- |
 | `target` | <code>string</code> |  |
-| `check` | <code><span><a href="../../check/t-errorhandling-check.md">Check</a>&lt;'raw&gt;</span></code> |  |
+| `check` | <code><span><a href="../../check/t-check-check.md">Check</a>&lt;'raw&gt;</span></code> |  |
 | `construct` | <code><span>'raw&#32;->&#32;'refined</span></code> |  |
 | `value` | <code>'raw</code> |  |
 

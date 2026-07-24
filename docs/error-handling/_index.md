@@ -12,62 +12,23 @@ menu:
 
 # Error Handling
 
-`Axial.ErrorHandling` installs two focused packages:
+Most F# code already returns `Result<'value,'error>`. The gap is everything around it: rules you want to reuse
+across several fields, and values whose type should record that a rule already passed. Axial splits that gap into
+three small, independently installable packages instead of one large validation library:
 
 | Package | Use it for | Documentation |
 | --- | --- | --- |
-| `Axial.Result` | Fail-fast Results, reusable checks, predicates, and `result {}` | [Result](./result/) |
+| `Axial.Result` | Fail-fast `Result` composition, conversions, extraction helpers, and `result { }` | [Result](./result/) |
+| `Axial.Check` | Reusable, path-free constraints over one typed value, returning the standard F# `Result` | [Check](./check/) |
 | `Axial.Refined` | Parsing and constructing values whose types record successful checks | [Refined](./refined/) |
 
-Install either focused package directly, or install `Axial.ErrorHandling` for both.
+None of the three requires the others. `Axial.Check` and `Axial.Refined` do not depend on `Axial.Result` — already
+use FsToolkit.ErrorHandling, or your own `Result` helpers? Add Check and/or Refined on their own, with no builder or
+module ambiguity.
 
-## Result and Check
+[Axial.Schema]({{< relref "/schema/" >}}) builds on Check and Refined for structured, path-aware boundaries.
+[Axial.Flow]({{< relref "/flow/" >}}) uses ordinary `Result` for typed workflow failures; neither depends on Result,
+Check, or Refined.
 
-Use ordinary `Result<'value,'error>` for operations that stop at the first failure. `Check<'value>` describes reusable
-rules over one typed value and returns the original value after success.
-
-```fsharp
-open Axial.ErrorHandling
-open Axial.ErrorHandling.CheckDSL
-
-let validateName name =
-    name
-    |> minLength 3
-    |> Result.orError NameTooShort
-```
-
-`result { }` keeps dependent steps linear:
-
-```fsharp
-result {
-    let! quantity = Parse.int rawQuantity |> Result.mapError InvalidQuantity
-    do! quantity > 0 |> Result.requireTrue QuantityMustBePositive
-    return quantity
-}
-```
-
-## Refined values
-
-Parse text with a named parser:
-
-```fsharp
-let parsed : Result<int, ParseError> =
-    Parse.int "42"
-```
-
-Refine an ordinary value with a named constructor:
-
-```fsharp
-let quantity : Result<PositiveInt, RefinementError> =
-    Refine.positiveInt 42
-```
-
-See [Refined](./refined/) for the supplied types, dependent construction, and application-defined refined types.
-
-## Guides
-
-- [Getting Started](./getting-started/)
-- [Checks](./checks/)
-- [Result Builder](./result-builder/)
-- [Refined](./refined/)
-- [Introductory Reference App](./reference-app/)
+See [Result, Check, and Refined](./overview/) for installation commands and a first look at each package, or go
+straight to the one you need.
