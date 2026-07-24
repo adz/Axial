@@ -17,11 +17,11 @@ menu:
 <div class="docs-home-copy">
 <span class="eyebrow" style="color:#6d4fc4">Axial.Flow &middot; Effects</span>
 
-<h1>Structured workflows without framework lock-in.</h1>
+<h1>A type, not a framework.</h1>
 
 <div class="lede">
-Application functions often need the same dependencies passed through several callers before they reach the code that
-uses them. Async code also needs one owner for cancellation, resources, retries, and background work.
+It fits your app, not the other way around. Without it, dependencies get threaded through call after call by hand,
+and cancellation, retries, and cleanup get scattered across whatever async code happens to touch them.
 </div>
 
 <div class="lede">
