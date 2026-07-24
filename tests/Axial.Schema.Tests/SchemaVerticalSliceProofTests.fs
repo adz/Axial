@@ -4,7 +4,7 @@ open Axial
 
 open System
 open System.Text
-open Axial.ErrorHandling
+open Axial.Check
 open Axial.Schema
 open Swensen.Unquote
 open Xunit

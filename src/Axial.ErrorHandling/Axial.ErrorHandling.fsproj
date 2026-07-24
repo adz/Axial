@@ -4,16 +4,22 @@
     <PackageId>Axial.ErrorHandling</PackageId>
     <AssemblyName>Axial.ErrorHandling</AssemblyName>
     <Authors>Adam Davies</Authors>
-    <Description>Umbrella package for Axial.Result and Axial.Refined.</Description>
+    <Description>Dependency-only meta-package installing Axial.Result, Axial.Check, and Axial.Refined together.</Description>
     <PackageProjectUrl>https://github.com/adz/Axial</PackageProjectUrl>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageTags>fsharp;error-handling;result;refined-types</PackageTags>
+    <PackageTags>fsharp;error-handling;result;validation;checks;refined-types</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <!-- Dependency-only meta-package: no source, no runtime assembly. dotnet pack still emits an
+         empty lib output per TFM; IncludeBuildOutput=false keeps it out of the .nupkg so the package
+         carries only the three NuGet dependency edges below. -->
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Axial.Result\Axial.Result.fsproj" />
+    <ProjectReference Include="..\Axial.Check\Axial.Check.fsproj" />
     <ProjectReference Include="..\Axial.Refined\Axial.Refined.fsproj" />
   </ItemGroup>
 </Project>

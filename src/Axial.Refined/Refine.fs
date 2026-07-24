@@ -5,7 +5,7 @@ namespace Axial.Refined
 open System
 open System.Collections.Generic
 open System.Globalization
-open Axial.ErrorHandling
+open Axial.Check
 
 /// <summary>A string that is not null, empty, or whitespace.</summary>
 type NonBlankString =
@@ -291,9 +291,9 @@ type DateOnlyRange =
         this.EndValue
 #endif
 
-/// <summary>Runs an executable <see cref="T:Axial.ErrorHandling.Check`1" /> program before calling a refined value
-/// constructor, reusing <see cref="T:Axial.ErrorHandling.CheckFailure" /> as the sole failure vocabulary so refined
-/// constructors never reimplement the small checks <c>Axial.ErrorHandling.Check</c> already provides.</summary>
+/// <summary>Runs an executable <see cref="T:Axial.Check.Check`1" /> program before calling a refined value
+/// constructor, reusing <see cref="T:Axial.Check.CheckFailure" /> as the sole failure vocabulary so refined
+/// constructors never reimplement the small checks <c>Axial.Check.Check</c> already provides.</summary>
 module private Checked =
     let withCheck (target: string) (check: Check<'raw>) (construct: 'raw -> 'refined) (value: 'raw) : Result<'refined, RefinementError> =
         match check value with
@@ -683,11 +683,11 @@ module Refine =
         let refinement: Refinement<^raw, ^value> = RefinementFrom.Resolve()
         Refinement.create refinement raw
 
-    /// <summary>Runs a <see cref="T:Axial.ErrorHandling.Check`1" /> and calls the constructor when the check succeeds.</summary>
+    /// <summary>Runs a <see cref="T:Axial.Check.Check`1" /> and calls the constructor when the check succeeds.</summary>
     let withCheck (target: string) (check: Check<'raw>) (construct: 'raw -> 'refined) (value: 'raw) : Result<'refined, RefinementError> =
         Checked.withCheck target check construct value
 
-    /// <summary>Runs the supplied <see cref="T:Axial.ErrorHandling.Check`1" /> values with <c>Check.all</c> and calls the
+    /// <summary>Runs the supplied <see cref="T:Axial.Check.Check`1" /> values with <c>Check.all</c> and calls the
     /// constructor when every check succeeds.</summary>
     let withChecks (target: string) (checks: Check<'raw> list) (construct: 'raw -> 'refined) (value: 'raw) : Result<'refined, RefinementError> =
         Checked.withChecks target checks construct value

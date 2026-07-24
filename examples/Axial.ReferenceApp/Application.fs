@@ -5,7 +5,8 @@ open Axial
 open System
 open System.IO
 open System.Text.Json
-open Axial.ErrorHandling
+open Axial.Result
+open Axial.Check
 open Axial.Flow
 open Axial.Flow.FileSystem
 open Axial.Flow.PlatformService

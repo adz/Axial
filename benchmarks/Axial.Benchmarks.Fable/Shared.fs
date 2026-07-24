@@ -3,7 +3,7 @@ namespace Axial.Benchmarks.Fable
 open System
 open System.Threading
 open Axial.Flow
-open Axial.ErrorHandling
+open Axial.Result
 open Axial.Schema
 open Axial.Schema.Syntax
 open Axial.Schema.Json

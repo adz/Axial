@@ -18,14 +18,17 @@ Working on `src/Axial.Schema`? Read `dev-docs/schema/internals.md` first (implem
 
 - `Axial.Flow`: independent workflow package (`src/Axial.Flow/`). Must not depend on the ErrorHandling packages or
   `Axial.Schema`.
-- `Axial.Result` (`src/Axial.Result/`): `Check`, `Predicate`, Result helpers, and `result { }` in the
-  `Axial.ErrorHandling` namespace. Independent leaf.
-- `Axial.Refined` (`src/Axial.Refined/`): parsing, refined types, and `refine { }`. Depends only on `Axial.Result`.
-- `Axial.ErrorHandling` (`src/Axial.ErrorHandling/`): meta-package installing Result and Refined.
+- `Axial.Result` (`src/Axial.Result/`): generic Result combinators, conversions/extraction helpers, and `result { }`
+  in the `Axial.Result` namespace. Independent leaf.
+- `Axial.Check` (`src/Axial.Check/`): `Check`, `Predicate`, and `CheckDSL` in the `Axial.Check` namespace. Returns
+  the standard F# `Result` type; does not depend on `Axial.Result`. Independent leaf.
+- `Axial.Refined` (`src/Axial.Refined/`): parsing, refined types, and `refine { }`. Depends only on `Axial.Check`.
+- `Axial.ErrorHandling` (`src/Axial.ErrorHandling/`): dependency-only meta-package installing Result, Check, and
+  Refined. No source files, no public API, `IncludeBuildOutput=false` so its `.nupkg` carries no assembly.
 - `Axial.Schema` (`src/Axial.Schema/`): schema declaration (`Schema` module), parsing and checking (`Schema.parse`,
   `Schema.parseRetainingInput`, `Schema.check`), inspection (`Inspect`), contracts,
-  and refined schema adapters (`RefinedSchemas`) in one package. Depends on `Axial.Data`, `Axial.Result`, and
-  `Axial.Refined`. Schema owns path-aware accumulated errors.
+  and refined schema adapters (`RefinedSchemas`) in one package. Depends on `Axial.Data`, `Axial.Check`, and
+  `Axial.Refined` (never `Axial.Result`). Schema owns path-aware accumulated errors.
 - `Axial.Schema.JsonSchema` (`src/Axial.Schema.JsonSchema/`): JSON Schema generation (`JsonSchema.generate`) in the
   `Axial.Schema` namespace. Depends on `Axial.Schema`.
 - `Axial.Schema.Json` (`src/Axial.Schema.Json/`): compiled JSON codecs. Depends on `Axial.Schema`.
@@ -52,10 +55,11 @@ Working on `src/Axial.Schema`? Read `dev-docs/schema/internals.md` first (implem
 
 - Flow/runtime/layers/services: `src/Axial.Flow/**`, relevant `src/Axial.Flow.*/*`, `tests/Axial.Flow.Tests/*Workflow*`,
   `tests/Axial.Flow.PlatformService.Tests/**`, and `dev-docs/PLAN.md`.
-- Check/Result: `src/Axial.Result/Check.fs`, `src/Axial.Result/Result.fs`,
-  `tests/Axial.ErrorHandling.Tests/CheckResultTests.fs`, `tests/Axial.ApiShape.Tests/ApiShapeTests.fs`, and `dev-docs/PLAN.md`.
+- Check/Result: `src/Axial.Check/Check.fs`, `src/Axial.Result/Result.fs`,
+  `tests/Axial.Check.Tests/CheckTests.fs`, `tests/Axial.Result.Tests/ResultTests.fs`,
+  `tests/Axial.ApiShape.Tests/ApiShapeTests.fs`, and `dev-docs/PLAN.md`.
 - Refined values: `src/Axial.Refined/Refine.fs`, `src/Axial.Refined/Parse.fs`,
-  `tests/Axial.ErrorHandling.Tests/{ParseAndBuilderTests,CatalogTests}.fs`, and the Check/Result files only as needed.
+  `tests/Axial.Refined.Tests/{ParseAndBuilderTests,CatalogTests}.fs`, and the Check/Result files only as needed.
 - Schema metadata/builder: `src/Axial.Schema/Schema.fs`, `tests/Axial.Schema.Tests/Schema*Tests.fs`, and the schema section in
   `dev-docs/PLAN.md`.
 - Schema input/rules/interpreters: `src/Axial.Schema/{Model,Data,SchemaValidation,RetainedParseResult,Rules}.fs` and

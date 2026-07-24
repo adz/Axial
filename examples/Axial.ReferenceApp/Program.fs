@@ -14,7 +14,8 @@ open OpenTelemetry.Logs
 open OpenTelemetry.Metrics
 open OpenTelemetry.Resources
 open OpenTelemetry.Trace
-open Axial.ErrorHandling
+open Axial.Result
+open Axial.Check
 open Axial.Flow
 open Axial.Flow.FileSystem
 open Axial.Refined

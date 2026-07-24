@@ -1,4 +1,4 @@
-namespace Axial.ErrorHandling
+namespace Axial.Check
 
 /// <summary>
 /// Check functions that can be used without the <c>Check.</c> prefix inside a module that checks values.
@@ -23,7 +23,7 @@ namespace Axial.ErrorHandling
 /// </para>
 /// <code>
 /// module SignupChecks =
-///     open Axial.ErrorHandling.CheckDSL
+///     open Axial.Check.CheckDSL
 ///
 ///     let validateAge : Check&lt;int&gt; = atLeast 13
 ///     let validateEmail : Check&lt;string&gt; = Check.all [ present; email ]
@@ -31,82 +31,88 @@ namespace Axial.ErrorHandling
 /// </code>
 /// </remarks>
 module CheckDSL =
-    /// <summary>Alias for <see cref="M:Axial.ErrorHandling.Check.present" />.</summary>
+    /// <summary>Alias for <see cref="M:Axial.Check.Check.present" />.</summary>
     let inline present value = Check.present value
 
-    /// <summary>Alias for <see cref="M:Axial.ErrorHandling.Check.empty" />.</summary>
+    /// <summary>Alias for <see cref="M:Axial.Check.Check.empty" />.</summary>
     let inline empty value = Check.empty value
 
-    /// <summary>Alias for <see cref="M:Axial.ErrorHandling.Check.notEmpty" />.</summary>
+    /// <summary>Alias for <see cref="M:Axial.Check.Check.notEmpty" />.</summary>
     let inline notEmpty value = Check.notEmpty value
 
-    /// <summary>Alias for <see cref="M:Axial.ErrorHandling.Check.minLength" />.</summary>
+    /// <summary>Alias for <see cref="M:Axial.Check.Check.minLength" />.</summary>
     let minLength = Check.minLength
 
-    /// <summary>Alias for <see cref="M:Axial.ErrorHandling.Check.maxLength" />.</summary>
+    /// <summary>Alias for <see cref="M:Axial.Check.Check.maxLength" />.</summary>
     let maxLength = Check.maxLength
 
-    /// <summary>Alias for <see cref="M:Axial.ErrorHandling.Check.lengthBetween" />.</summary>
+    /// <summary>Alias for <see cref="M:Axial.Check.Check.lengthBetween" />.</summary>
     let lengthBetween = Check.lengthBetween
 
-    /// <summary>Alias for <see cref="M:Axial.ErrorHandling.Check.exactLength" />.</summary>
+    /// <summary>Alias for <see cref="M:Axial.Check.Check.exactLength" />.</summary>
     let exactLength = Check.String.exactLength
 
-    /// <summary>Alias for <see cref="M:Axial.ErrorHandling.Check.email" />.</summary>
+    /// <summary>Alias for <see cref="M:Axial.Check.Check.email" />.</summary>
     let email = Check.email
 
-    /// <summary>Alias for <see cref="M:Axial.ErrorHandling.Check.matches" />.</summary>
+    /// <summary>Alias for <see cref="M:Axial.Check.Check.matches" />.</summary>
     let matches = Check.matches
 
-    /// <summary>Alias for <see cref="M:Axial.ErrorHandling.Check.oneOf" />.</summary>
+    /// <summary>Alias for <see cref="M:Axial.Check.Check.oneOf" />.</summary>
     let oneOf = Check.oneOf
 
-    /// <summary>Alias for <see cref="M:Axial.ErrorHandling.Check.greaterThan" />.</summary>
+    /// <summary>Alias for <see cref="M:Axial.Check.Check.greaterThan" />.</summary>
     let inline greaterThan minimum = Check.greaterThan minimum
 
-    /// <summary>Alias for <see cref="M:Axial.ErrorHandling.Check.lessThan" />.</summary>
+    /// <summary>Alias for <see cref="M:Axial.Check.Check.lessThan" />.</summary>
     let inline lessThan maximum = Check.lessThan maximum
 
-    /// <summary>Alias for <see cref="M:Axial.ErrorHandling.Check.atLeast" />.</summary>
+    /// <summary>Alias for <see cref="M:Axial.Check.Check.atLeast" />.</summary>
     let inline atLeast minimum = Check.atLeast minimum
 
-    /// <summary>Alias for <see cref="M:Axial.ErrorHandling.Check.atMost" />.</summary>
+    /// <summary>Alias for <see cref="M:Axial.Check.Check.atMost" />.</summary>
     let inline atMost maximum = Check.atMost maximum
 
-    /// <summary>Alias for <see cref="M:Axial.ErrorHandling.Check.positive" />.</summary>
+    /// <summary>Alias for <see cref="M:Axial.Check.Check.positive" />.</summary>
     let inline positive value = Check.positive value
 
-    /// <summary>Alias for <see cref="M:Axial.ErrorHandling.Check.nonNegative" />.</summary>
+    /// <summary>Alias for <see cref="M:Axial.Check.Check.nonNegative" />.</summary>
     let inline nonNegative value = Check.nonNegative value
 
-    /// <summary>Alias for <see cref="M:Axial.ErrorHandling.Check.negative" />.</summary>
+    /// <summary>Alias for <see cref="M:Axial.Check.Check.negative" />.</summary>
     let inline negative value = Check.negative value
 
-    /// <summary>Alias for <see cref="M:Axial.ErrorHandling.Check.nonPositive" />.</summary>
+    /// <summary>Alias for <see cref="M:Axial.Check.Check.nonPositive" />.</summary>
     let inline nonPositive value = Check.nonPositive value
 
-    /// <summary>Alias for <see cref="M:Axial.ErrorHandling.Check.minCount" />.</summary>
+    /// <summary>Alias for <see cref="M:Axial.Check.Check.minCount" />.</summary>
     let minCount = Check.minCount
 
-    /// <summary>Alias for <see cref="M:Axial.ErrorHandling.Check.maxCount" />.</summary>
+    /// <summary>Alias for <see cref="M:Axial.Check.Check.maxCount" />.</summary>
     let maxCount = Check.maxCount
 
-    /// <summary>Alias for <see cref="M:Axial.ErrorHandling.Check.countBetween" />.</summary>
+    /// <summary>Alias for <see cref="M:Axial.Check.Check.countBetween" />.</summary>
     let countBetween = Check.countBetween
 
-    /// <summary>Alias for <see cref="M:Axial.ErrorHandling.Check.equalTo" />.</summary>
+    /// <summary>Alias for <see cref="M:Axial.Check.Check.equalTo" />.</summary>
     let equalTo = Check.equalTo
 
-    /// <summary>Alias for <see cref="M:Axial.ErrorHandling.Check.notEqualTo" />.</summary>
+    /// <summary>Alias for <see cref="M:Axial.Check.Check.notEqualTo" />.</summary>
     let notEqualTo = Check.notEqualTo
 
-    /// <summary>Alias for <see cref="M:Axial.ErrorHandling.Check.mapFailure" />.</summary>
+    /// <summary>Alias for <see cref="M:Axial.Check.Check.mapFailure" />.</summary>
     let mapFailure = Check.mapFailure
 
     /// <summary>Replaces a failed check's errors with the supplied error.</summary>
     /// <example><code>value |> present |> orError NameRequired</code></example>
-    let inline orError failure result = global.Axial.ErrorHandling.Result.orError failure result
+    let inline orError failure result =
+        match result with
+        | Ok value -> Ok value
+        | Error _ -> Error failure
 
     /// <summary>Changes a failed check's errors with the supplied function.</summary>
     /// <example><code>value |> positive |> mapError InvalidQuantity</code></example>
-    let inline mapError mapper result = global.Axial.ErrorHandling.Result.mapError mapper result
+    let inline mapError mapper result =
+        match result with
+        | Ok value -> Ok value
+        | Error failure -> Error(mapper failure)

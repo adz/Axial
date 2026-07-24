@@ -1,7 +1,7 @@
 namespace Axial.Refined.Tests
 
 open System
-open Axial.ErrorHandling
+open Axial.Check
 open Axial.Refined
 open Swensen.Unquote
 open Xunit

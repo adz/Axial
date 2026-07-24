@@ -1,4 +1,4 @@
-namespace Axial.ErrorHandling
+namespace Axial.Check
 
 open System
 open System.Text.RegularExpressions
@@ -62,13 +62,13 @@ type CheckFailure =
     | Custom of code: string
 
 /// <summary>
-/// A localizable set of message templates for rendering <see cref="T:Axial.ErrorHandling.CheckFailure" /> values.
+/// A localizable set of message templates for rendering <see cref="T:Axial.Check.CheckFailure" /> values.
 /// </summary>
 /// <remarks>
 /// Each function receives only the already-formatted operand(s) (a length, a count, a bound, an actual value) and
 /// returns the complete phrase for that piece of the message. A translation supplies grammar and word order; it
 /// never needs to reimplement the traversal over every <c>CheckFailure</c>/expectation case, since
-/// <see cref="M:Axial.ErrorHandling.CheckFailure.describeWith" /> owns that traversal and calls into these functions.
+/// <see cref="M:Axial.Check.CheckFailure.describeWith" /> owns that traversal and calls into these functions.
 /// </remarks>
 type CheckFailureResources =
     { /// <summary>Renders a length expectation, e.g. "at least 3 characters".</summary>
@@ -94,12 +94,12 @@ type CheckFailureResources =
       /// <summary>Renders a custom-code failure given the application-defined code.</summary>
       Custom: string -> string }
 
-/// <summary>Renders <see cref="T:Axial.ErrorHandling.CheckFailure" /> values as human-readable sentence fragments.</summary>
+/// <summary>Renders <see cref="T:Axial.Check.CheckFailure" /> values as human-readable sentence fragments.</summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module CheckFailure =
-    /// <summary>The default English <see cref="T:Axial.ErrorHandling.CheckFailureResources" />, used by
-    /// <see cref="M:Axial.ErrorHandling.CheckFailure.describe" /> and
-    /// <see cref="M:Axial.ErrorHandling.CheckFailure.describeAll" />.</summary>
+    /// <summary>The default English <see cref="T:Axial.Check.CheckFailureResources" />, used by
+    /// <see cref="M:Axial.Check.CheckFailure.describe" /> and
+    /// <see cref="M:Axial.Check.CheckFailure.describeAll" />.</summary>
     let english : CheckFailureResources =
         { Length =
             function
@@ -142,7 +142,7 @@ module CheckFailure =
           Duplicate = "duplicate values are not allowed"
           Custom = fun code -> $"failed custom check '{code}'" }
 
-    /// <summary>Renders a single check failure using the supplied <see cref="T:Axial.ErrorHandling.CheckFailureResources" />,
+    /// <summary>Renders a single check failure using the supplied <see cref="T:Axial.Check.CheckFailureResources" />,
     /// with no trailing punctuation, e.g. <c>"expected a value greater than zero, but was 0"</c>.</summary>
     let describeWith (resources: CheckFailureResources) (failure: CheckFailure) : string =
         match failure with
@@ -159,12 +159,12 @@ module CheckFailure =
     let describeAllWith (resources: CheckFailureResources) (failures: CheckFailure list) : string =
         failures |> List.map (describeWith resources) |> String.concat "; "
 
-    /// <summary>Renders a single check failure using <see cref="P:Axial.ErrorHandling.CheckFailure.english" />.</summary>
+    /// <summary>Renders a single check failure using <see cref="P:Axial.Check.CheckFailure.english" />.</summary>
     let describe (failure: CheckFailure) : string =
         describeWith english failure
 
     /// <summary>Joins multiple check failures into one semicolon-separated message using
-    /// <see cref="P:Axial.ErrorHandling.CheckFailure.english" />.</summary>
+    /// <see cref="P:Axial.Check.CheckFailure.english" />.</summary>
     let describeAll (failures: CheckFailure list) : string =
         describeAllWith english failures
 
@@ -173,7 +173,7 @@ module CheckFailure =
 /// </summary>
 /// <remarks>
 /// A check succeeds with the original value (<c>Ok value</c>, unchanged) or returns one or more structured
-/// <see cref="T:Axial.ErrorHandling.CheckFailure" /> values. A passing check never transforms its input — the same
+/// <see cref="T:Axial.Check.CheckFailure" /> values. A passing check never transforms its input — the same
 /// value that went in comes back out — so a check result is directly pipeable into the next step without a separate
 /// "keep the value" helper. Checks do not carry input paths, structured data, schema metadata, or refined-value
 /// construction; keep those concerns in validation, parsing, schema, or refinement layers.

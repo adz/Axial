@@ -1,12 +1,17 @@
-open Axial.ErrorHandling
-open Axial.ErrorHandling.CheckDSL
+open Axial.Result
 
 [<EntryPoint>]
 let main _ =
-    "Ada"
-    |> present
-    |> Result.bind (minLength 3)
-    |> Result.orError "invalid name"
+    let workflow =
+        result {
+            let! value = Ok 20
+            let! divisor = Ok 2
+            return value / divisor
+        }
+
+    workflow
+    |> Result.map ((+) 1)
+    |> Result.orError "invalid workflow"
     |> function
-        | Ok "Ada" -> 0
-        | other -> failwithf "Unexpected Validation probe result: %A" other
+        | Ok 11 -> 0
+        | other -> failwithf "Unexpected Result probe result: %A" other

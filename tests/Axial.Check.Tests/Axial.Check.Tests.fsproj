@@ -9,9 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="CheckResultTests.fs" />
-    <Compile Include="ParseAndBuilderTests.fs" />
-    <Compile Include="CatalogTests.fs" />
+    <Compile Include="CheckTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -25,7 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Axial.ErrorHandling\Axial.ErrorHandling.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Check\Axial.Check.fsproj" />
   </ItemGroup>
 
 </Project>

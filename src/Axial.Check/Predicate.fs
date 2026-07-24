@@ -1,4 +1,4 @@
-namespace Axial.ErrorHandling
+namespace Axial.Check
 
 open System
 open System.Text.RegularExpressions
@@ -8,9 +8,9 @@ open System.Text.RegularExpressions
 /// </summary>
 /// <remarks>
 /// These members return <c>bool</c> and intentionally live outside the <c>Check</c> module, where public helpers
-/// return structured <see cref="T:Axial.ErrorHandling.Check`1" /> results. Use predicates for local branching and
+/// return structured <see cref="T:Axial.Check.Check`1" /> results. Use predicates for local branching and
 /// <c>Check</c> programs when callers need typed failure details. This module is <c>AutoOpen</c> so the extension
-/// members are available wherever <c>Axial.ErrorHandling</c> is opened.
+/// members are available wherever <c>Axial.Check</c> is opened.
 /// </remarks>
 [<AutoOpen>]
 module PredicateExtensions =

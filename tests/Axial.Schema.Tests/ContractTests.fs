@@ -2,7 +2,7 @@ namespace Axial.Schema.Tests
 
 open Axial
 
-open Axial.ErrorHandling
+open Axial.Check
 open Axial.Schema
 open Swensen.Unquote
 open Xunit

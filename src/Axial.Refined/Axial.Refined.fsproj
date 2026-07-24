@@ -13,7 +13,7 @@
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
-    <PackageTags>fsharp;refined-types;parsing;validation</PackageTags>
+    <PackageTags>fsharp;refined-types;refinement-types;domain-types;value-objects;smart-constructors;parse-dont-validate</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -21,7 +21,7 @@
   <ItemGroup>
     <PackageReference Include="Fable.Core" Version="4.3.0" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
-    <ProjectReference Include="..\Axial.Result\Axial.Result.fsproj" />
+    <ProjectReference Include="..\Axial.Check\Axial.Check.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Errors.fs" />

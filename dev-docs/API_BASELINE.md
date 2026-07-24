@@ -22,7 +22,8 @@ bash scripts/check-source-inventory.sh
 => Source inventory covers src/tests .fs and .fsproj files.
 
 dotnet build tests/Axial.ApiShape.Tests/Axial.ApiShape.Tests.fsproj --no-restore --nologo -v minimal
-dotnet build tests/Axial.ErrorHandling.Tests/Axial.ErrorHandling.Tests.fsproj --no-restore --nologo -v minimal
+dotnet build tests/Axial.Result.Tests/Axial.Result.Tests.fsproj --no-restore --nologo -v minimal
+dotnet build tests/Axial.Check.Tests/Axial.Check.Tests.fsproj --no-restore --nologo -v minimal
 dotnet build tests/Axial.Flow.FileSystem.Tests/Axial.Flow.FileSystem.Tests.fsproj --no-restore --nologo -v minimal
 dotnet build tests/Axial.Flow.Hosting.Tests/Axial.Flow.Hosting.Tests.fsproj --no-restore --nologo -v minimal
 dotnet build tests/Axial.Flow.Integration.Tests/Axial.Flow.Integration.Tests.fsproj --no-restore --nologo -v minimal
@@ -32,7 +33,8 @@ dotnet build tests/Axial.Flow.Tests/Axial.Flow.Tests.fsproj --no-restore --nolog
 dotnet build tests/Axial.Refined.Tests/Axial.Refined.Tests.fsproj --no-restore --nologo -v minimal
 dotnet build tests/Axial.Schema.Tests/Axial.Schema.Tests.fsproj --no-restore --nologo -v minimal
 dotnet build tests/Axial.Schema.Tests/Axial.Schema.Tests.fsproj --no-restore --nologo -v minimal
-dotnet build tests/Axial.ErrorHandling.Tests/Axial.ErrorHandling.Tests.fsproj --no-restore --nologo -v minimal
+dotnet build tests/Axial.Result.Tests/Axial.Result.Tests.fsproj --no-restore --nologo -v minimal
+dotnet build tests/Axial.Check.Tests/Axial.Check.Tests.fsproj --no-restore --nologo -v minimal
 => Build succeeded for each package-boundary test project.
 
 bash scripts/run-aot-probe.sh
@@ -66,7 +68,9 @@ The old monolithic `tests/Axial.Tests/Axial.Tests.fsproj` harness has been repla
 
 - `tests/Axial.ApiShape.Tests/Axial.ApiShape.Tests.fsproj`
 - `tests/Axial.Schema.Json.Tests/Axial.Schema.Json.Tests.fsproj`
-- `tests/Axial.ErrorHandling.Tests/Axial.ErrorHandling.Tests.fsproj`
+- `tests/Axial.Result.Tests/Axial.Result.Tests.fsproj`
+- `tests/Axial.Check.Tests/Axial.Check.Tests.fsproj`
+- `tests/Axial.Refined.Tests/Axial.Refined.Tests.fsproj`
 - `tests/Axial.Flow.FileSystem.Tests/Axial.Flow.FileSystem.Tests.fsproj`
 - `tests/Axial.Flow.Hosting.Tests/Axial.Flow.Hosting.Tests.fsproj`
 - `tests/Axial.Flow.HttpClient.Tests/Axial.Flow.HttpClient.Tests.fsproj`

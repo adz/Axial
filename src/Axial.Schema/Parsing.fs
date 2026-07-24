@@ -8,7 +8,7 @@ open Axial
 
 open System
 open System.Globalization
-open Axial.ErrorHandling
+open Axial.Check
 open Axial.Refined
 open Axial.Schema
 

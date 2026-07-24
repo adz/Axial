@@ -4,7 +4,7 @@
 namespace Axial.Schema
 
 open System
-open Axial.ErrorHandling
+open Axial.Check
 open Axial.Refined
 open Axial.Schema
 
@@ -25,7 +25,7 @@ module SchemaValidation =
 /// <remarks>
 /// <para>
 /// Schema constraints stay inspectable in <c>Axial.Schema</c>. This integration module turns the subset that has
-/// value-level meaning into path-free <see cref="T:Axial.ErrorHandling.Check`1" /> programs.
+/// value-level meaning into path-free <see cref="T:Axial.Check.Check`1" /> programs.
 /// </para>
 /// <para>
 /// Constraints such as <c>optional</c> remain metadata-only. Constraints that belong to another value shape return
@@ -231,7 +231,7 @@ module internal SchemaCheckFailure =
 /// <para>
 /// Refined value schemas describe named domain values, such as an <c>Email</c> refined over raw text, while their
 /// executable constraints are expressed against the underlying primitive representation. This interpreter runs
-/// <see cref="T:Axial.ErrorHandling.Check`1" /> programs against a schema's values by projecting each trusted value
+/// <see cref="T:Axial.Check.Check`1" /> programs against a schema's values by projecting each trusted value
 /// through the schema's refinement layers with <see cref="M:Axial.Schema.Schema.inspectUnderlying``2" /> and running
 /// the primitive-level check on the result. Primitive value schemas work the same way with an identity projection.
 /// </para>
@@ -248,7 +248,7 @@ module SchemaCheck =
     /// Adapts a check over a schema's underlying primitive representation into a check over the schema's values.
     /// </summary>
     /// <remarks>
-    /// This is the general adapter for arbitrary <see cref="T:Axial.ErrorHandling.Check`1" /> programs, including
+    /// This is the general adapter for arbitrary <see cref="T:Axial.Check.Check`1" /> programs, including
     /// programs composed with <c>Check.all</c>, <c>Check.any</c>, and <c>Check.not</c>. The projection to the
     /// underlying primitive representation is created eagerly, so a projection type that does not match the schema's
     /// underlying primitive kind fails here rather than on each checked value.
@@ -578,7 +578,7 @@ module internal ModelFieldCheck =
     /// <summary>Checks an existing trusted model value's field constraints through a built model schema.</summary>
     /// <remarks>
     /// Reads values with schema getters, runs schema constraints through the same executable
-    /// <see cref="T:Axial.ErrorHandling.Check`1" /> lowering used by input parsing, and recursively checks nested
+    /// <see cref="T:Axial.Check.Check`1" /> lowering used by input parsing, and recursively checks nested
     /// models and collection items. Does not re-invoke the model's constructor; <c>Schema.check</c> does that
     /// separately once every field's constraints have passed.
     /// </remarks>

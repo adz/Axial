@@ -1,7 +1,7 @@
 namespace Axial.Tests
 
 open System
-open Axial.ErrorHandling
+open Axial.Check
 open Axial.Schema
 open Swensen.Unquote
 open Xunit

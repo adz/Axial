@@ -9,8 +9,9 @@
 // Schema owns accumulated, path-aware input failures; the next reference app adds it.
 
 open Axial
-open Axial.ErrorHandling
-open Axial.ErrorHandling.CheckDSL
+open Axial.Result
+open Axial.Check
+open Axial.Check.CheckDSL
 open Axial.Refined
 
 // ---------------------------------------------------------------------------

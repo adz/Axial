@@ -8,12 +8,14 @@
 
 Axial is a set of F# libraries with three entry points:
 
-- Error Handling for reusable checks, ordinary Results, diagnostics, and refined values;
-- Schema for turning structured input into domain values;
+- Error Handling — three focused packages: `Axial.Result` (Result composition and `result { }`),
+  `Axial.Check` (reusable, path-free value checks), and `Axial.Refined` (parsing and invariant-carrying domain
+  values);
+- Schema for turning structured input into domain values, with path-aware accumulated diagnostics;
 - Flow for async work with explicit dependencies and expected failures.
 
-Use each package on its own, install `Axial.ErrorHandling` for Result, Diagnostics, and Refined together, or install
-`Axial` for Error Handling and Schema together.
+Install each focused package on its own, install `Axial.ErrorHandling` for Result, Check, and Refined together, or
+install `Axial` for Error Handling and Schema together.
 
 [![ci](https://github.com/adz/Axial/actions/workflows/ci.yml/badge.svg)](https://github.com/adz/Axial/actions/workflows/ci.yml)
 [![NuGet](https://img.shields.io/nuget/v/Axial.svg)](https://www.nuget.org/packages/Axial)
@@ -25,12 +27,14 @@ Use each package on its own, install `Axial.ErrorHandling` for Result, Diagnosti
 
 ## Handle expected errors and refine values
 
-`Axial.ErrorHandling` installs reusable checks, focused Result helpers, diagnostics, and refined values while keeping ordinary
-`Result<'value, 'error>` in your interfaces.
+Error Handling is three focused packages that keep ordinary `Result<'value, 'error>` in your interfaces: `Axial.Result`
+for Result composition, `Axial.Check` for reusable path-free value checks, and `Axial.Refined` for parsing into
+invariant-carrying domain values. Already use FsToolkit.ErrorHandling or your own Result helpers? Add `Axial.Check`
+and/or `Axial.Refined` on their own — neither depends on `Axial.Result`.
 
 ```fsharp
-open Axial.ErrorHandling
-open Axial.ErrorHandling.CheckDSL
+open Axial.Check
+open Axial.Check.CheckDSL
 
 let requireName value =
     value
@@ -43,7 +47,10 @@ let requireName value =
 - [Refined domain values](docs/error-handling/refined/domain-values.md)
 
 ```bash
-dotnet add package Axial.ErrorHandling
+dotnet add package Axial.Result    # Result composition and result { }
+dotnet add package Axial.Check     # reusable, path-free value checks
+dotnet add package Axial.Refined   # parsing and refined domain values
+dotnet add package Axial.ErrorHandling   # installs all three
 ```
 
 ## Parse input into domain values

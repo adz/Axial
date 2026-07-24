@@ -1,4 +1,4 @@
-namespace Axial.ErrorHandling
+namespace Axial.Result
 
 open System
 

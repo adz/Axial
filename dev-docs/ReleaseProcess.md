@@ -4,8 +4,8 @@ This project uses a coordinated pre-1.0 release train.
 
 ## Versioning policy
 
-- `Axial.Flow`, `Axial.ErrorHandling`, `Axial.Result`, `Axial.Refined`, `Axial.Schema`, the umbrella `Axial` package,
-  and the add-on packages share one package version before 1.0.
+- `Axial.Flow`, `Axial.ErrorHandling`, `Axial.Result`, `Axial.Check`, `Axial.Refined`, `Axial.Schema`, the umbrella
+  `Axial` package, and the add-on packages share one package version before 1.0.
 - The shared version is declared once in `Directory.Build.props`.
 - Packable project files must not declare their own `<Version>`.
 - A tag such as `v0.7.0` produces every public Axial package at version `0.7.0`.
@@ -18,8 +18,9 @@ The coordinated release currently packs:
 
 - `Axial.Flow`
 - `Axial.ErrorHandling`
-- `Axial.Refined`
 - `Axial.Result`
+- `Axial.Check`
+- `Axial.Refined`
 - `Axial.Schema`
 - `Axial`
 - `Axial.Flow.Console`
@@ -32,8 +33,8 @@ The coordinated release currently packs:
 - `Axial.Flow.Hosting.Browser`
 - `Axial.Flow.Telemetry`
 
-`Axial` is the umbrella package. It references `Axial.ErrorHandling`, `Axial.Refined`, and `Axial.Schema`. Flow is
-installed separately.
+`Axial` is the umbrella package. It references `Axial.ErrorHandling` and `Axial.Schema`. Flow is installed
+separately.
 
 The `Axial.Flow.*` add-on packages depend on `Axial.Flow`, not the umbrella `Axial` package.
 

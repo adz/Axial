@@ -1,5 +1,5 @@
 open System
-open Axial.ErrorHandling
+open Axial.Check
 open Axial.Schema
 open type Axial.Schema.Syntax
 

@@ -1,4 +1,4 @@
-namespace Axial.ErrorHandling
+namespace Axial.Result
 
 /// <summary>Fail-fast helpers over the standard F# <c>Result</c> type.</summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]

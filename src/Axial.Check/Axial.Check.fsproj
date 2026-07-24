@@ -4,21 +4,21 @@
     <TargetFrameworks>netstandard2.1;net8.0</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IsAotCompatible Condition="'$(TargetFramework)' == 'net8.0'">true</IsAotCompatible>
-    <PackageId>Axial.Result</PackageId>
-    <AssemblyName>Axial.Result</AssemblyName>
-    <RootNamespace>Axial.Result</RootNamespace>
+    <PackageId>Axial.Check</PackageId>
+    <AssemblyName>Axial.Check</AssemblyName>
+    <RootNamespace>Axial.Check</RootNamespace>
     <Authors>Adam Davies</Authors>
-    <Description>Fail-fast Result composition and the result { } computation expression for F#.</Description>
+    <Description>Reusable, path-free value checks and predicates for F#, returning standard Result values.</Description>
     <PackageProjectUrl>https://github.com/adz/Axial</PackageProjectUrl>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
-    <PackageTags>fsharp;result;error-handling;railway-oriented-programming</PackageTags>
+    <PackageTags>fsharp;validation;checks;predicates;result;error-handling</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <FsDocsCollectionName>Axial</FsDocsCollectionName>
     <FsDocsLogoSource>content/img/axial-inline-light.svg</FsDocsLogoSource>
-    <FsDocsLogoAlt>Axial.Result</FsDocsLogoAlt>
+    <FsDocsLogoAlt>Axial.Check</FsDocsLogoAlt>
     <FsDocsLogoLink>https://github.com/adz/Axial</FsDocsLogoLink>
     <FsDocsLicenseLink>https://github.com/adz/Axial/blob/main/LICENSE</FsDocsLicenseLink>
     <FsDocsReleaseNotesLink>https://github.com/adz/Axial/blob/main/RELEASE_NOTES.md</FsDocsReleaseNotesLink>
@@ -33,10 +33,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="Result.fs" />
-    <Compile Include="Collection.fs" />
-    <Compile Include="ResultBuilder.fs" />
-    <Compile Include="Builders.fs" />
+    <Compile Include="Predicate.fs" />
+    <Compile Include="Check.fs" />
+    <Compile Include="CheckDSL.fs" />
   </ItemGroup>
 
 </Project>

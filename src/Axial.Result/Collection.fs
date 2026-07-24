@@ -1,4 +1,4 @@
-namespace Axial.ErrorHandling
+namespace Axial.Result
 
 /// <summary>Small collection helpers for fail-fast result traversal.</summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]

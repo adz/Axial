@@ -3,7 +3,8 @@ namespace Axial.Examples
 open System
 open System.Threading.Tasks
 open Axial.Flow
-open Axial.ErrorHandling
+open Axial.Result
+open Axial.Check
 open Microsoft.Extensions.DependencyInjection
 
 // --- DOMAIN TYPES ---

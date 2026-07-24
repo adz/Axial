@@ -2,7 +2,8 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open Axial.Flow
-open Axial.ErrorHandling
+open Axial.Result
+open Axial.Check
 
 let runFlow label env (workflow: Flow<'env, 'error, 'value>) =
     let result = workflow.RunSynchronously(env)

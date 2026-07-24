@@ -2,7 +2,7 @@ namespace Axial.Tests
 
 open Axial
 
-open Axial.ErrorHandling
+open Axial.Check
 
 open System
 open Axial.Schema

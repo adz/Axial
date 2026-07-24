@@ -1,7 +1,8 @@
 namespace Axial.ReferenceApp
 
 open System
-open Axial.ErrorHandling
+open Axial.Result
+open Axial.Check
 open Axial.Refined
 
 /// Domain values use private representations so successful construction is the durable proof.

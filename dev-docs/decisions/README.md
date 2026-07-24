@@ -3,6 +3,49 @@
 This folder keeps only high-level durable decisions. Detailed historical specs are deleted once their useful rules have
 been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 
+## 2026-07-24: Error Handling splits into Result, Check, and Refined (supersedes the 2026-07-22 and prior 2026-07-24 package details)
+
+- Pre-repository-split reorganization completed in the combined repository. `Axial.Result` (`src/Axial.Result/`,
+  namespace `Axial.Result`) now owns only generic Result combinators, conversions/extraction helpers, and
+  `result { }`. `Check<'value>`, `CheckFailure`, `Predicate`, `CheckDSL`, and their collection helpers moved out of
+  `Axial.Result` into a new `Axial.Check` package (`src/Axial.Check/`, namespace `Axial.Check`,
+  `Axial.Check.CheckDSL`). `Axial.Check` does not depend on `Axial.Result`; it returns the standard F# `Result` type
+  directly, so a project can add `Axial.Check` and/or `Axial.Refined` without opening `Axial.Result` and without
+  builder/module ambiguity when FsToolkit.ErrorHandling is also open.
+- `Axial.Refined` now depends on `Axial.Check` only, not `Axial.Result`. Its own code used only `Check.*` and plain
+  FSharp.Core `Result.bind`/`Result.map`/`Result.mapError`, so dropping `open Axial.ErrorHandling` in favor of
+  `open Axial.Check` removed the `Axial.Result` project reference with no functional change.
+- `Axial.Schema` now depends directly on `Axial.Check` and `Axial.Refined`, not `Axial.Result`. Schema's source used
+  only `Check.*` and plain FSharp.Core `Result` functions, never an `Axial.Result`-specific helper (`orError`,
+  `okIf`, `Collection.*`, etc.), so the same swap applied there.
+- `Axial.ErrorHandling` is now a true dependency-only meta-package: `IncludeBuildOutput=false` keeps its `.nupkg` free
+  of a `lib/` assembly (verified: the packed `.nupkg` contains only `README.md` and metadata), while its nuspec
+  declares direct dependencies on `Axial.Result`, `Axial.Check`, and `Axial.Refined` (verified in the packed nuspec).
+  It exposes no public API and no `Axial.ErrorHandling` namespace.
+- Final dependency edges (verified by `dotnet pack` nuspec inspection and `Axial.ApiShape.Tests`):
+  `Axial.ErrorHandling` → `Axial.Result` + `Axial.Check` + `Axial.Refined`; `Axial.Refined` → `Axial.Check`;
+  `Axial.Schema` → `Axial.Check` + `Axial.Refined` (+ `Axial.Data`); `Axial.Flow` depends on none of the above.
+  `Axial.Result` and `Axial.Check` are independent leaves.
+- The broad `Axial` umbrella package is kept for now: several example projects (`Axial.Examples`,
+  `Axial.MaintenanceExamples`, `Axial.Playground`, `Axial.ReadmeExample`, `Axial.ReferenceApp`,
+  `Axial.ApiShape.Tests`) still reference it for one-package convenience across Error Handling + Schema. Removing it
+  and rewriting every example's dependency list to the narrowest focused set was judged out of scope for this pass;
+  revisit before 1.0 per the standing "remove the umbrella unless a required role remains" rule.
+- Tests reorganized into focused projects: `tests/Axial.Result.Tests`, `tests/Axial.Check.Tests`,
+  `tests/Axial.Refined.Tests` replace the combined `tests/Axial.ErrorHandling.Tests`. `Axial.ApiShape.Tests` gained
+  package-layout assertions for the new graph, including that `Axial.ErrorHandling`'s assembly exports no public
+  types. A dedicated `Axial.Check.AotProbe` example was split out of `Axial.Result.AotProbe`.
+  Package-consumer proof of items 1-3, 5, and 6 from the spec (Result/Check/Refined working independently, Schema's
+  direct dependencies, FsToolkit + Check + Refined + Schema coexistence) is currently covered indirectly through the
+  focused test projects' own project references and `Axial.ApiShape.Tests`, not as separate standalone consumer
+  fixture projects; adding literal minimal consumer-fixture projects for all six items remains open follow-up work.
+- Doc generator inputs (`scripts/docgen/Program.fs`) and `scripts/generate-api-docs.sh` were updated to the new
+  namespaces/assemblies and re-run; `bash scripts/validate-docs.sh` (including the Hugo build) and `cd site &&
+  npm run build` both passed against the regenerated reference pages. Deeper site-navigation and reference-page
+  reshaping (e.g. distinct Check/Refined landing sub-pages under Error Handling, redirects) beyond what the existing
+  generator/content-mirror pipeline already produced from the new source tree is deferred; see
+  `dev-docs/current-ideas/project-split.md`.
+
 ## 2026-07-22: Error Handling, Schema, and Flow are separate public identities (package details superseded 2026-07-24)
 
 - `/error-handling/`, `/schema/`, and `/flow/` each have their own homepage, guides, generated reference, `llms.txt`, and
