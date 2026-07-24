@@ -14,7 +14,7 @@ menu:
 
 <div class="docs-home-hero">
 
-<div class="docs-home-copy" style="max-width: 68ch;">
+<div class="docs-home-copy">
 <span class="eyebrow" style="color:#0a7d62">Axial &middot; Result, Check, Refined</span>
 
 <h1>Fail fast, reuse checks, carry the proof.</h1>

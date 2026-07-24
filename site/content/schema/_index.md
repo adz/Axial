@@ -14,7 +14,7 @@ menu:
 
 <div class="docs-home-hero">
 
-<div class="docs-home-copy" style="max-width: 68ch;">
+<div class="docs-home-copy">
 <span class="eyebrow" style="color:#0b55d9">Axial &middot; Parse-don't-validate</span>
 
 <h1>Parse, don't validate.</h1>

@@ -14,7 +14,7 @@ menu:
 
 <div class="docs-home-hero">
 
-<div class="docs-home-copy" style="max-width: 68ch;">
+<div class="docs-home-copy">
 <span class="eyebrow" style="color:#6d4fc4">Axial.Flow &middot; Effects</span>
 
 <h1>Structured workflows without framework lock-in.</h1>
@@ -37,33 +37,6 @@ services, HTTP, processes, telemetry, and .NET, Node, or browser hosting.
 <a class="docs-chip" href="{{< relref "/flow/getting-started/" >}}">Getting started guide</a>
 <a class="docs-chip" href="{{< relref "/flow/reference/flow/" >}}">Flow API</a>
 <a class="docs-chip" href="{{< relref "/flow/comparisons/task-vs-flow-scenarios.md" >}}">Task vs Flow, seven scenarios</a>
-</div>
-</div>
-
-<div class="docs-home-hero-visual">
-<div class="axial-coord axial-coord--sidebar">
-
-<div class="axial-coord-col axial-coord-col--left">
-<span class="axial-coord-label">Your tools</span>
-<div class="coord-row"><span class="coord-pill">Axial.Schema</span><span class="coord-line"></span></div>
-<div class="coord-row"><span class="coord-pill">Axial.ErrorHandling</span><span class="coord-line"></span></div>
-<div class="coord-row"><span class="coord-pill">Your types</span><span class="coord-line"></span></div>
-</div>
-
-<div class="axial-coord-mid">
-<div class="coord-hub">
-<img src="/content/img/favicon-light.svg" alt="Axial" />
-<span class="coord-hub-name">Axial.Flow</span>
-</div>
-</div>
-
-<div class="axial-coord-col axial-coord-col--right">
-<span class="axial-coord-label">Services &amp; runtimes</span>
-<div class="coord-row"><span class="coord-line"></span><span class="coord-pill">HTTP</span></div>
-<div class="coord-row"><span class="coord-line"></span><span class="coord-pill">Databases</span></div>
-<div class="coord-row"><span class="coord-line"></span><span class="coord-pill">Browser APIs</span></div>
-</div>
-
 </div>
 </div>
 

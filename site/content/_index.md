@@ -14,7 +14,7 @@ body_class: axial-home
 </div>
 
 <div class="docs-home-copy" style="max-width: 78ch; margin: 0 auto;">
-<span class="eyebrow">AOT F# libraries for .NET and Fable JavaScript</span>
+<span class="eyebrow">F# libraries for .NET and Fable JavaScript</span>
 
 <h1 id="axial-tagline">If it compiles, the invariant already held.</h1>
 <script>
@@ -64,7 +64,7 @@ definition, so parsers, docs, forms, and tests can't drift out of sync with each
 <span class="axial-door-kicker">Effects and execution</span>
 <h2>Axial.Flow</h2>
 <p>Describe async work with its required environment and expected failure type in the signature, so missing
-dependencies and unhandled failures show up at compile time instead of in production.
+dependencies and unhandled failures show up at compile time instead of in production. 
 </p>
 <span class="axial-door-cta">Flow documentation &rarr;</span>
 </a>
