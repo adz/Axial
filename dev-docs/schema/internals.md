@@ -95,8 +95,8 @@ a boxed `FieldDefinition<'model,'last>` — the cursor.
 - Each `field`/`fieldWith` commits the cursor onto the chain (`ShapeFieldsAppend`) and installs the
   new field, peeling one curried argument at the type level: a shape at `'f -> 'n` becomes a shape at
   `'n`. This is ordinary unification, so **field count is unbounded** — there is no per-arity code.
-- `constrain (c: Constraint<'v>)` only accepts a shape whose `'last` is `'v` — a misplaced constraint
-  is a type mismatch at the `constrain` line. It rewrites the cursor in place.
+- Field blocks accept `constrain (c: Constraint<'v>)` and `constraints (cs: Constraint<'v> list)`. Both are checked
+  against the field's current value type; the plural form preserves list order.
 - `construct (f: 'constructor)` requires `'remaining = 'model` (`constructResult` requires
   `Result<'model, string>`); both are plain functions that commit the cursor and close via
   `ShapeClosure` into erased metadata plus the typed record plan. A constructor mismatch surfaces at
@@ -118,8 +118,8 @@ a boxed `FieldDefinition<'model,'last>` — the cursor.
   schema for recursion or local configuration. `constrainItems`/`constrainValues` rewrite the nested value definition;
   collection constraints remain on the outer definition.
 - `Axial.Schema.Contracts.Emitter` mirrors handwritten authoring: it emits `field` for canonically resolvable fields,
-  `fieldWith` when a field carries an explicit value schema (documentation, defaults, unions, recursion, or generated
-  references), and adjacent `constrain` lines for non-optional field constraints. Optional constraints stay inside the
+  `withSchema` when a field carries an explicit value schema (documentation, defaults, unions, recursion, or generated
+  references), and one `constrain` line or a grouped `constraints` list for non-optional field constraints. Optional constraints stay inside the
   explicit inner schema because their type is `Constraint<'item>`, not `Constraint<'item option>`.
 
 `Schema.admit create project draft` composes over the draft's `ModelSchemaDefinition`: field getters

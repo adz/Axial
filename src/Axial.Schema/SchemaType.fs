@@ -17,7 +17,7 @@ open System.Collections.Generic
 /// <para>
 /// Primitive, collection, optional, union, refined, and record declarations all produce <c>Schema&lt;'value&gt;</c>.
 /// Record declarations use the <c>schema&lt;'value&gt; { }</c> computation expression. Each <c>field</c> may contain
-/// <c>withSchema</c>, <c>constrain</c>, <c>refine</c>, and <c>validate</c> operations before the declaration finishes
+/// <c>withSchema</c>, <c>constrain</c>, <c>constraints</c>, <c>refine</c>, and <c>validate</c> operations before the declaration finishes
 /// with <c>construct</c> or <c>constructResult</c>.
 /// </para>
 /// </remarks>

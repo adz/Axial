@@ -38,7 +38,7 @@ let signup =
     schema<Signup> {
         field "email" _.Email {
             withSchema Schema.text
-            constrain Constraint.required
+            constrain required
             refine
             validate validateCompanyEmail
         }

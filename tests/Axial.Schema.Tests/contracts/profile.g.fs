@@ -25,11 +25,13 @@ module ProfileV1 =
     let schema : Schema<ProfileV1> =
         schema<ProfileV1> {
             field "name" (fun (value: ProfileV1) -> value.Name) {
-                constrain (minLength 1)
-                constrain (maxLength 100)
+                constraints [
+                    minLength 1
+                    maxLength 100
+                ]
             }
             field "email" (fun (value: ProfileV1) -> value.Email) {
-                constrain emailFormat
+                constrain email
             }
             construct (fun name email ->
                 { Name = name
@@ -64,11 +66,13 @@ module Profile =
     let schema : Schema<Profile> =
         schema<Profile> {
             field "name" (fun (value: Profile) -> value.Name) {
-                constrain (minLength 1)
-                constrain (maxLength 100)
+                constraints [
+                    minLength 1
+                    maxLength 100
+                ]
             }
             field "email" (fun (value: Profile) -> value.Email) {
-                constrain emailFormat
+                constrain email
             }
             field "marketing_opt_in" (fun (value: Profile) -> value.MarketingOptIn) {
                 withSchema (Schema.bool |> Schema.withDefault false)

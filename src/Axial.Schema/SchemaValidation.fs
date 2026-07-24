@@ -25,7 +25,9 @@ module SchemaValidation =
 /// <remarks>
 /// <para>
 /// Schema constraints stay inspectable in <c>Axial.Schema</c>. This integration module turns the subset that has
-/// value-level meaning into path-free <see cref="T:Axial.Check.Check`1" /> programs.
+/// value-level meaning into path-free <see cref="T:Axial.Check.Check`1" /> programs. Built-in lowering matches
+/// <see cref="T:Axial.Schema.ConstraintMetadata" /> directly; stable string codes remain external identities rather
+/// than executable dispatch keys.
 /// </para>
 /// <para>
 /// Constraints such as <c>optional</c> remain metadata-only. Constraints that belong to another value shape return
@@ -51,13 +53,13 @@ module ConstraintCheck =
 
         constraints
 
-    let internal tryArgument<'value> name constraint' =
-        match Constraint.tryFindArgument name constraint' with
-        | Some (:? 'value as value) -> Some value
+    let internal tryValue<'value> (value: obj) =
+        match value with
+        | :? 'value as typed -> Some typed
         | _ -> None
 
-    let private tryBounds<'value> constraint' =
-        match tryArgument<'value> "minimum" constraint', tryArgument<'value> "maximum" constraint' with
+    let private tryBounds<'value> minimum maximum =
+        match tryValue<'value> minimum, tryValue<'value> maximum with
         | Some minimum, Some maximum -> Some(minimum, maximum)
         | _ -> None
 
@@ -65,15 +67,14 @@ module ConstraintCheck =
     let tryText (constraint': Constraint) : Check<string> option =
         ensureConstraint constraint'
 
-        match Constraint.code constraint' with
-        | "required" -> Some Check.String.present
-        | "minLength" -> tryArgument<int> "minimum" constraint' |> Option.map Check.String.minLength
-        | "maxLength" -> tryArgument<int> "maximum" constraint' |> Option.map Check.String.maxLength
-        | "lengthBetween" ->
-            tryBounds<int> constraint'
-            |> Option.map (fun (minimum, maximum) -> Check.String.lengthBetween minimum maximum)
-        | "email" -> Some Check.String.email
-        | "trimmed" ->
+        match Constraint.metadata constraint' with
+        | ConstraintMetadata.Required -> Some Check.String.present
+        | ConstraintMetadata.MinLength minimum -> Some(Check.String.minLength minimum)
+        | ConstraintMetadata.MaxLength maximum -> Some(Check.String.maxLength maximum)
+        | ConstraintMetadata.LengthBetween(minimum, maximum) ->
+            Some(Check.String.lengthBetween minimum maximum)
+        | ConstraintMetadata.Email -> Some Check.String.email
+        | ConstraintMetadata.Trimmed ->
             Some(fun value ->
                 if isNull value then
                     Error [ CheckFailure.Required ]
@@ -81,11 +82,10 @@ module ConstraintCheck =
                     Ok value
                 else
                     Error [ CheckFailure.InvalidFormat "trimmed" ])
-        | "pattern" -> tryArgument<string> "pattern" constraint' |> Option.map Check.String.matches
-        | "oneOf" ->
-            tryArgument<string array> "choices" constraint'
-            |> Option.map (fun choices -> Check.String.oneOf choices)
-        | "notEqualTo" -> tryArgument<string> "unexpected" constraint' |> Option.map Check.notEqualTo
+        | ConstraintMetadata.Pattern pattern -> Some(Check.String.matches pattern)
+        | ConstraintMetadata.OneOf choices -> Some(Check.String.oneOf choices)
+        | ConstraintMetadata.NotEqualTo unexpected ->
+            tryValue<string> unexpected |> Option.map Check.notEqualTo
         | _ -> None
 
     /// <summary>Lowers schema constraints with text-level meaning into one string check.</summary>
@@ -134,15 +134,20 @@ module ConstraintCheck =
     let tryOrdered<'value when 'value: comparison> (constraint': Constraint) : Check<'value> option =
         ensureConstraint constraint'
 
-        match Constraint.code constraint' with
-        | "between" ->
-            tryBounds<'value> constraint'
+        match Constraint.metadata constraint' with
+        | ConstraintMetadata.Between(minimum, maximum) ->
+            tryBounds<'value> minimum maximum
             |> Option.map (fun (minimum, maximum) -> betweenCheck minimum maximum)
-        | "greaterThan" -> tryArgument<'value> "minimum" constraint' |> Option.map greaterThanCheck
-        | "lessThan" -> tryArgument<'value> "maximum" constraint' |> Option.map lessThanCheck
-        | "atLeast" -> tryArgument<'value> "minimum" constraint' |> Option.map atLeastCheck
-        | "atMost" -> tryArgument<'value> "maximum" constraint' |> Option.map atMostCheck
-        | "notEqualTo" -> tryArgument<'value> "unexpected" constraint' |> Option.map Check.notEqualTo
+        | ConstraintMetadata.GreaterThan minimum ->
+            tryValue<'value> minimum |> Option.map greaterThanCheck
+        | ConstraintMetadata.LessThan maximum ->
+            tryValue<'value> maximum |> Option.map lessThanCheck
+        | ConstraintMetadata.AtLeast minimum ->
+            tryValue<'value> minimum |> Option.map atLeastCheck
+        | ConstraintMetadata.AtMost maximum ->
+            tryValue<'value> maximum |> Option.map atMostCheck
+        | ConstraintMetadata.NotEqualTo unexpected ->
+            tryValue<'value> unexpected |> Option.map Check.notEqualTo
         | _ -> None
 
     /// <summary>Lowers schema constraints with range-level meaning into one ordered-value check.</summary>
@@ -167,8 +172,9 @@ module ConstraintCheck =
         : Check<'value> option =
         ensureConstraint constraint'
 
-        match Constraint.code constraint' with
-        | "multipleOf" -> tryArgument<'value> "divisor" constraint' |> Option.map multipleOfCheck<'value>
+        match Constraint.metadata constraint' with
+        | ConstraintMetadata.MultipleOf divisor ->
+            tryValue<'value> divisor |> Option.map multipleOfCheck<'value>
         | _ -> None
 
     /// <summary>Lowers schema constraints with multiple-of meaning into one numeric check.</summary>
@@ -184,15 +190,15 @@ module ConstraintCheck =
     let trySequence<'value when 'value: equality> (constraint': Constraint) : Check<seq<'value>> option =
         ensureConstraint constraint'
 
-        match Constraint.code constraint' with
-        | "count" -> tryArgument<int> "expected" constraint' |> Option.map Check.Seq.count
-        | "minCount" -> tryArgument<int> "minimum" constraint' |> Option.map Check.Seq.minCount
-        | "maxCount" -> tryArgument<int> "maximum" constraint' |> Option.map Check.Seq.maxCount
-        | "countBetween" ->
-            tryBounds<int> constraint'
-            |> Option.map (fun (minimum, maximum) -> Check.Seq.countBetween minimum maximum)
-        | "distinct" -> Some Check.Seq.noDuplicates
-        | "contains" -> tryArgument<'value> "item" constraint' |> Option.map Check.Seq.contains
+        match Constraint.metadata constraint' with
+        | ConstraintMetadata.Count expected -> Some(Check.Seq.count expected)
+        | ConstraintMetadata.MinCount minimum -> Some(Check.Seq.minCount minimum)
+        | ConstraintMetadata.MaxCount maximum -> Some(Check.Seq.maxCount maximum)
+        | ConstraintMetadata.CountBetween(minimum, maximum) ->
+            Some(Check.Seq.countBetween minimum maximum)
+        | ConstraintMetadata.Distinct -> Some Check.Seq.noDuplicates
+        | ConstraintMetadata.Contains item ->
+            tryValue<'value> item |> Option.map Check.Seq.contains
         | _ -> None
 
     /// <summary>Lowers schema constraints with sequence-level meaning into one sequence check.</summary>

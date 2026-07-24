@@ -12,7 +12,7 @@ from joining into one pipeline.
 ```fsharp
 field "email" _.Email {
     withSchema Schema.text
-    constrain Constraint.required
+    constrain required
     refine
     validate validateCompanyEmail
 }
@@ -47,8 +47,7 @@ Portable constraints can be inspected by JSON Schema, documentation, and UI inte
 
 ```fsharp
 field "name" _.Name {
-    constrain Constraint.required
-    constrain (Constraint.maxLength 80)
+    constraints [ required; maxLength 80 ]
 }
 ```
 

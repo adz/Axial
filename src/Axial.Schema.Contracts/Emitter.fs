@@ -218,7 +218,7 @@ module Emitter =
         else
             let emailPrefix =
                 match field.FieldType with
-                | Primitive PEmail -> [ "emailFormat" ]
+                | Primitive PEmail -> [ "email" ]
                 | _ -> []
 
             emailPrefix
@@ -457,8 +457,17 @@ module Emitter =
                         let value = valueExpr refTypeName (contract.ContractName, contract.Version, contractTypeName) field
                         line $"                withSchema {parenthesize value}"
 
-                    for constraint' in constraints do
+                    match constraints with
+                    | [] -> ()
+                    | [ constraint' ] ->
                         line $"                constrain {parenthesize constraint'}"
+                    | constraints ->
+                        line "                constraints ["
+
+                        for constraint' in constraints do
+                            line $"                    {constraint'}"
+
+                        line "                ]"
 
                     line "            }"
 

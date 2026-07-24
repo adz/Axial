@@ -25,12 +25,16 @@ module Geo =
     let schema : Schema<Geo> =
         schema<Geo> {
             field "lat" (fun (value: Geo) -> value.Lat) {
-                constrain (atLeast (-90m))
-                constrain (atMost 90m)
+                constraints [
+                    atLeast (-90m)
+                    atMost 90m
+                ]
             }
             field "lon" (fun (value: Geo) -> value.Lon) {
-                constrain (atLeast (-180m))
-                constrain (atMost 180m)
+                constraints [
+                    atLeast (-180m)
+                    atMost 180m
+                ]
             }
             construct (fun lat lon ->
                 { Lat = lat

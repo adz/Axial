@@ -15,6 +15,7 @@ dotnet add package Axial.Schema
 ```fsharp
 open Axial
 open Axial.Schema
+open Axial.Schema.Syntax
 open type Axial.Schema.Syntax
 ```
 
@@ -28,12 +29,11 @@ type Signup =
 let signupSchema =
     schema<Signup> {
         field "email" _.Email {
-            constrain Constraint.required
-            constrain Constraint.email
+            constraints [ required; email ]
         }
 
         field "age" _.Age {
-            constrain (Constraint.atLeast 18)
+            constrain (atLeast 18)
         }
 
         construct (fun email age ->
@@ -102,7 +102,7 @@ let contactSchema =
     schema<Contact> {
         field "email" _.Email {
             withSchema Schema.text
-            constrain Constraint.required
+            constrain required
             refine
         }
 

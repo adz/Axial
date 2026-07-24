@@ -42,10 +42,9 @@ call — there is no per-arity code anywhere. Runtime state is a boxed committed
 plus the current field as a typed cursor; the phantom lets every operation recover them with `unbox` —
 no runtime reflection.
 
-**`constrain` binds to the current field.** Its signature demands the cursor's type:
-`Constraint<'v> -> ObjectShape<'m,'c,'r,'v> -> ObjectShape<'m,'c,'r,'v>`. Adding another field commits
-the previous one; `construct` commits the last. `constrain (minLength 1)` after an `int` field is a
-type mismatch on the `constrain` line.
+**Constraints bind to the current field.** `constrain` accepts one `Constraint<'v>` and `constraints` accepts a
+`Constraint<'v> list`. Both demand the current field type, and the plural form preserves declaration order.
+`constrain (minLength 1)` after an `int` field is a type mismatch on the constraint line.
 
 **The bare-getter form.** `open type Axial.Schema.Syntax` overloads `field` with a bare form:
 `field _.FirstName` derives the wire name from the property (camelCased) by reading the getter

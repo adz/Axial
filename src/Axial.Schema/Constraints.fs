@@ -12,7 +12,8 @@ open System.Collections.Generic
 /// <para>
 /// Constraint metadata is the interpreter-facing shape for diagnostics, JSON Schema, UI, and documentation generation.
 /// It keeps well-known constraints pattern-matchable without forcing interpreters to decode stable codes and boxed
-/// argument dictionaries for the common cases. The stable code and argument map remain available for wire formats,
+/// argument dictionaries. Built-in interpreters use this typed metadata as the authoritative meaning of a constraint.
+/// The stable code and argument map remain available for wire formats,
 /// custom constraints, and forward-compatible tooling.
 /// </para>
 /// </remarks>

@@ -42,8 +42,10 @@ module Signup =
         schema<Signup> {
             field "email" (fun (value: Signup) -> value.Email) {
                 withSchema (Schema.text |> Schema.describe "Primary contact address.")
-                constrain emailFormat
-                constrain (maxLength 254)
+                constraints [
+                    email
+                    maxLength 254
+                ]
             }
             field "display_name" (fun (value: Signup) -> value.DisplayName) {
                 withSchema (Schema.option (Schema.text |> Schema.constrainAll [ Constraint.minLength (1); Constraint.maxLength (64) ]))
@@ -56,8 +58,10 @@ module Signup =
             }
             field "tags" (fun (value: Signup) -> value.Tags) {
                 withSchema (Schema.listWith Schema.text)
-                constrain (maxCount 8)
-                constrain distinct
+                constraints [
+                    maxCount 8
+                    distinct
+                ]
             }
             field "limits" (fun (value: Signup) -> value.Limits) {
                 withSchema (Schema.mapWith Schema.int)

@@ -144,10 +144,10 @@ let schema : Schema<OrderWire> =
     schema<OrderWire> {
         field "sku" _.Sku {
             withSchema (Schema.text |> Schema.describe "Stock keeping unit.")
-            constrain (Constraint.pattern @"^[A-Z]{3}-\d+$")
+            constrain (pattern @"^[A-Z]{3}-\d+$")
         }
         field "quantity" _.Quantity {
-            constrain (Constraint.atLeast 1)
+            constrain (atLeast 1)
         }
         field "note" _.Note
         construct (fun sku quantity note ->

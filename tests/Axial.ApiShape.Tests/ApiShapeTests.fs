@@ -524,6 +524,91 @@ module ApiShapeTests =
         |> publicStaticMemberNames
         |> assertContainsAll [ "tryText"; "text"; "tryOrdered"; "ordered"; "trySequence"; "sequence" ]
 
+        let typedConstraintMembers =
+            moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.SyntaxModule"
+            |> publicStaticMemberNames
+            |> Set.filter (fun name -> not (name.Contains "$"))
+
+        let expectedTypedConstraintMembers =
+            set
+                [ "constrainItems"
+                  "constrainValues"
+                  "required"
+                  "optional"
+                  "minLength"
+                  "maxLength"
+                  "lengthBetween"
+                  "email"
+                  "trimmed"
+                  "pattern"
+                  "oneOf"
+                  "notEqualTo"
+                  "between"
+                  "greaterThan"
+                  "lessThan"
+                  "atLeast"
+                  "atMost"
+                  "count"
+                  "minCount"
+                  "maxCount"
+                  "countBetween"
+                  "distinct"
+                  "contains"
+                  "multipleOf"
+                  "positive"
+                  "nonNegative"
+                  "negative"
+                  "nonPositive"
+                  "custom"
+                  "customWithArguments"
+                  "withMessage" ]
+
+        test <@ typedConstraintMembers = expectedTypedConstraintMembers @>
+
+        let untypedConstraintMembers =
+            moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.ConstraintModule"
+            |> publicStaticMemberNames
+            |> Set.filter (fun name -> not (name.Contains "$"))
+
+        let expectedUntypedConstraintMembers =
+            set
+                [ "create"
+                  "createWithArguments"
+                  "required"
+                  "optional"
+                  "minLength"
+                  "maxLength"
+                  "lengthBetween"
+                  "email"
+                  "trimmed"
+                  "pattern"
+                  "oneOf"
+                  "notEqualTo"
+                  "between"
+                  "greaterThan"
+                  "lessThan"
+                  "atLeast"
+                  "atMost"
+                  "count"
+                  "minCount"
+                  "maxCount"
+                  "countBetween"
+                  "distinct"
+                  "contains"
+                  "multipleOf"
+                  "positive"
+                  "nonNegative"
+                  "negative"
+                  "nonPositive"
+                  "code"
+                  "metadata"
+                  "arguments"
+                  "tryFindArgument"
+                  "message"
+                  "withMessage" ]
+
+        test <@ untypedConstraintMembers = expectedUntypedConstraintMembers @>
+
         moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.SchemaCheck"
         |> publicStaticMemberNames
         |> assertContainsAll [ "fromUnderlying"; "text"; "ordered" ]

@@ -70,7 +70,7 @@ module ShipmentV1 =
                 constrain (pattern "^SH-[0-9]+$")
             }
             field "notifyEmail" (fun (value: ShipmentV1) -> value.NotifyEmail) {
-                constrain emailFormat
+                constrain email
             }
             field "items" (fun (value: ShipmentV1) -> value.Items) {
                 withSchema (Schema.mapWith Schema.int)
@@ -114,15 +114,17 @@ module Shipment =
                 constrain (pattern "^SH-[0-9]+$")
             }
             field "notify_email" (fun (value: Shipment) -> value.NotifyEmail) {
-                constrain emailFormat
+                constrain email
             }
             field "items" (fun (value: Shipment) -> value.Items) {
                 withSchema (Schema.mapWith Schema.int)
             }
             field "tags" (fun (value: Shipment) -> value.Tags) {
                 withSchema (Schema.listWith Schema.text)
-                constrain (minCount 1)
-                constrain distinct
+                constraints [
+                    minCount 1
+                    distinct
+                ]
             }
             field "weightKg" (fun (value: Shipment) -> value.WeightKg) {
                 constrain (atLeast 0.5m)

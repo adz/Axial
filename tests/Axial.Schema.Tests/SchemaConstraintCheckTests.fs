@@ -110,3 +110,47 @@ module ConstraintCheckTests =
         raises<ArgumentNullException> <@ ConstraintCheck.tryText null |> ignore @>
         raises<ArgumentNullException> <@ ConstraintCheck.text null |> ignore @>
         raises<ArgumentNullException> <@ ConstraintCheck.text [ null ] |> ignore @>
+
+    [<Fact>]
+    let ``every executable metadata case has an explicit Check lowering`` () =
+        let textConstraints =
+            [ Constraint.required
+              Constraint.minLength 1
+              Constraint.maxLength 10
+              Constraint.lengthBetween 1 10
+              Constraint.email
+              Constraint.trimmed
+              Constraint.pattern ".+"
+              Constraint.oneOf [ "a" ]
+              Constraint.notEqualTo "b" ]
+
+        let orderedConstraints =
+            [ Constraint.between 1 10
+              Constraint.greaterThan 0
+              Constraint.lessThan 11
+              Constraint.atLeast 1
+              Constraint.atMost 10
+              Constraint.notEqualTo 5 ]
+
+        let sequenceConstraints =
+            [ Constraint.count 1
+              Constraint.minCount 1
+              Constraint.maxCount 2
+              Constraint.countBetween 1 2
+              Constraint.distinct
+              Constraint.contains 1 ]
+
+        textConstraints
+        |> List.iter (fun constraint' ->
+            test <@ ConstraintCheck.tryText constraint' |> Option.isSome @>)
+
+        orderedConstraints
+        |> List.iter (fun constraint' ->
+            test <@ ConstraintCheck.tryOrdered<int> constraint' |> Option.isSome @>)
+
+        sequenceConstraints
+        |> List.iter (fun constraint' ->
+            test <@ ConstraintCheck.trySequence<int> constraint' |> Option.isSome @>)
+
+        test <@ ConstraintCheck.tryText Constraint.optional |> Option.isNone @>
+        test <@ ConstraintCheck.tryText (Constraint.create "custom") |> Option.isNone @>

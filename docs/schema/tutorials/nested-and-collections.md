@@ -13,6 +13,7 @@ own their canonical schemas, so `Order` can infer both the nested field and the 
 
 ```fsharp
 open Axial.Schema
+open Axial.Schema.Syntax
 open type Axial.Schema.Syntax
 
 type Address =
@@ -32,7 +33,7 @@ type Item =
         schema<Item> {
             field "sku" _.Sku
             field "quantity" _.Quantity {
-                constrain (Constraint.greaterThan 0)
+                constrain (greaterThan 0)
             }
             construct (fun sku quantity -> { Sku = sku; Quantity = quantity })
         }
@@ -45,7 +46,7 @@ let orderSchema =
     schema<Order> {
         field "address" _.Address
         field "items" _.Items {
-            constrain (Constraint.minCount 1)
+            constrain (minCount 1)
         }
         construct (fun address items -> { Address = address; Items = items })
     }

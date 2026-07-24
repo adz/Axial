@@ -1,6 +1,7 @@
 namespace Axial.Tests
 
 open Axial.Schema
+open Microsoft.FSharp.Reflection
 open Swensen.Unquote
 open Xunit
 open Axial.Schema.Syntax
@@ -24,6 +25,89 @@ module ConstraintInspectionTests =
         match schema.Definition with
         | ModelDefinition model -> model
         | PendingDefinition -> failwith "Expected public schema API to create a model definition."
+
+    [<Fact>]
+    let ``typed field DSL supports singular and plural constraints without metadata qualification`` () =
+        let schema =
+            schema<Signup> {
+                field "email" _.Email {
+                    withSchema Schema.text
+                    constraints [ required; email; minLength 3; maxLength 254 ]
+                    constrain trimmed
+                }
+                field "age" _.Age {
+                    constrain (atLeast 13)
+                    constraints [ atMost 120; notEqualTo 99 ]
+                }
+                construct (fun email age -> { Email = email; Age = age })
+            }
+
+        let fields = (modelDefinition schema).Fields
+        let emailField = fields[0]
+        let ageField = fields[1]
+
+        test <@
+            emailField.ValueSchema.Constraints |> List.map Constraint.metadata =
+                [ ConstraintMetadata.Required
+                  ConstraintMetadata.Email
+                  ConstraintMetadata.MinLength 3
+                  ConstraintMetadata.MaxLength 254
+                  ConstraintMetadata.Trimmed ]
+        @>
+
+        test <@
+            ageField.ValueSchema.Constraints |> List.map Constraint.metadata =
+                [ ConstraintMetadata.AtLeast(box 13)
+                  ConstraintMetadata.AtMost(box 120)
+                  ConstraintMetadata.NotEqualTo(box 99) ]
+        @>
+
+    [<Fact>]
+    let ``constraint constructors preserve the complete built-in metadata catalog`` () =
+        let catalog =
+            [ Constraint.required, "required", ConstraintMetadata.Required
+              Constraint.optional, "optional", ConstraintMetadata.Optional
+              Constraint.minLength 2, "minLength", ConstraintMetadata.MinLength 2
+              Constraint.maxLength 20, "maxLength", ConstraintMetadata.MaxLength 20
+              Constraint.lengthBetween 2 20, "lengthBetween", ConstraintMetadata.LengthBetween(2, 20)
+              Constraint.email, "email", ConstraintMetadata.Email
+              Constraint.trimmed, "trimmed", ConstraintMetadata.Trimmed
+              Constraint.pattern "^[a-z]+$", "pattern", ConstraintMetadata.Pattern "^[a-z]+$"
+              Constraint.oneOf [ "a"; "b" ], "oneOf", ConstraintMetadata.OneOf [ "a"; "b" ]
+              Constraint.notEqualTo 3, "notEqualTo", ConstraintMetadata.NotEqualTo(box 3)
+              Constraint.between 1 3, "between", ConstraintMetadata.Between(box 1, box 3)
+              Constraint.greaterThan 1, "greaterThan", ConstraintMetadata.GreaterThan(box 1)
+              Constraint.lessThan 3, "lessThan", ConstraintMetadata.LessThan(box 3)
+              Constraint.atLeast 1, "atLeast", ConstraintMetadata.AtLeast(box 1)
+              Constraint.atMost 3, "atMost", ConstraintMetadata.AtMost(box 3)
+              Constraint.count 2, "count", ConstraintMetadata.Count 2
+              Constraint.minCount 1, "minCount", ConstraintMetadata.MinCount 1
+              Constraint.maxCount 3, "maxCount", ConstraintMetadata.MaxCount 3
+              Constraint.countBetween 1 3, "countBetween", ConstraintMetadata.CountBetween(1, 3)
+              Constraint.distinct, "distinct", ConstraintMetadata.Distinct
+              Constraint.contains 2, "contains", ConstraintMetadata.Contains(box 2)
+              Constraint.multipleOf 2, "multipleOf", ConstraintMetadata.MultipleOf(box 2)
+              Constraint.create "custom", "custom", ConstraintMetadata.Custom "custom" ]
+
+        catalog
+        |> List.iter (fun (constraint', code, metadata) ->
+            test <@ Constraint.code constraint' = code @>
+            test <@ Constraint.metadata constraint' = metadata @>)
+
+        let representedCases =
+            catalog
+            |> List.map (fun (_, _, metadata) ->
+                FSharpValue.GetUnionFields(metadata, typeof<ConstraintMetadata>)
+                |> fst
+                |> fun case -> case.Name)
+            |> Set.ofList
+
+        let declaredCases =
+            FSharpType.GetUnionCases(typeof<ConstraintMetadata>)
+            |> Array.map _.Name
+            |> Set.ofArray
+
+        test <@ representedCases = declaredCases @>
 
     [<Fact>]
     let ``shape schema constraints are inspectable straight from the schema definition`` () =

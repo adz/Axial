@@ -24,8 +24,10 @@ module Card =
     let schema : Schema<Card> =
         schema<Card> {
             field "number" (fun (value: Card) -> value.Number) {
-                constrain (minLength 12)
-                constrain (maxLength 19)
+                constraints [
+                    minLength 12
+                    maxLength 19
+                ]
             }
             construct (fun number ->
                 { Number = number })

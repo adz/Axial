@@ -18,6 +18,7 @@ The schema declares each field once: external name, getter, and constraints.
 
 ```fsharp
 open Axial.Schema
+open Axial.Schema.Syntax
 open type Axial.Schema.Syntax
 
 type Signup = { Email: string; Age: int }
@@ -25,11 +26,10 @@ type Signup = { Email: string; Age: int }
 let signupSchema =
     schema<Signup> {
         field "email" _.Email {
-            constrain Constraint.email
-            constrain (Constraint.maxLength 254)
+            constraints [ email; maxLength 254 ]
         }
         field "age" _.Age {
-            constrain (Constraint.atLeast 13)
+            constrain (atLeast 13)
         }
         construct (fun email age -> { Email = email; Age = age })
     }

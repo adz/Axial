@@ -14,6 +14,7 @@ package, useful beyond schemas — see [its docs]({{< relref "/schema/data/" >}}
 ## The Schema
 
 ```fsharp
+open Axial.Schema.Syntax
 open type Axial.Schema.Syntax
 type Contact = { Kind: string; Value: string }
 
@@ -30,7 +31,7 @@ let customerSchema =
         }
         field "contacts" _.Contacts {
             withSchema (Schema.listWith contactSchema)
-            constrain (Constraint.minCount 1)
+            constrain (minCount 1)
         }
         construct (fun name address contacts ->
             { Name = name; Address = address; Contacts = contacts })

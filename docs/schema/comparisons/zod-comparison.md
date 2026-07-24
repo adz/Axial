@@ -16,7 +16,7 @@ differences come from F# and .NET, not from a different philosophy.
 
 | zod | Axial |
 | --- | --- |
-| `z.object({ name: z.string().max(80) })` | `schema<...> { field "name" _.Name { constrain (Constraint.maxLength 80) }; construct ctor }` |
+| `z.object({ name: z.string().max(80) })` | `schema<...> { field "name" _.Name { constrain (maxLength 80) }; construct ctor }` |
 | `schema.safeParse(input)` | `Schema.parse schema raw` → `Result` |
 | `result.error.issues` with paths | `SchemaErrors.toList errors` and `Path.format issue.Path` |
 | `z.string().email().brand<'Email'>()` | `Schema.refine` over a private representation and fallible constructor |

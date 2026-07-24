@@ -35,14 +35,15 @@ An Axial schema owns construction. Parsing either produces a trusted model or pa
 intermediate invalid object:
 
 ```fsharp
+open Axial.Schema.Syntax
 open type Axial.Schema.Syntax
 let customerSchema =
     schema<Customer> {
         field "name" _.Name {
-            constrain (Constraint.maxLength 80)
+            constrain (maxLength 80)
         }
         field "age" _.Age {
-            constrain (Constraint.between 13 120)
+            constrain (between 13 120)
         }
         construct (fun name age -> { Name = name; Age = age })
     }

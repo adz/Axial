@@ -138,6 +138,12 @@ module Syntax =
 
     // ---- typed constraints ----
 
+    /// <summary>Requires a field value to be supplied by boundary interpreters.</summary>
+    let required<'value> : Constraint<'value> = Constraint<'value> Constraint.required
+
+    /// <summary>Marks a field value as optional for boundary interpreters.</summary>
+    let optional<'value> : Constraint<'value> = Constraint<'value> Constraint.optional
+
     /// <summary>Requires a text field to have at least the supplied length.</summary>
     let minLength minimum : Constraint<string> = Constraint<string>(Constraint.minLength minimum)
 
@@ -149,7 +155,7 @@ module Syntax =
         Constraint<string>(Constraint.lengthBetween minimum maximum)
 
     /// <summary>Requires a text field to match Axial's pragmatic email format.</summary>
-    let emailFormat: Constraint<string> = Constraint<string> Constraint.email
+    let email: Constraint<string> = Constraint<string> Constraint.email
 
     /// <summary>Requires a text field to have no leading or trailing whitespace.</summary>
     let trimmed: Constraint<string> = Constraint<string> Constraint.trimmed
@@ -200,6 +206,29 @@ module Syntax =
 
     /// <summary>Requires a list field to contain the supplied item.</summary>
     let contains (item: 'item) : Constraint<'item list> = Constraint<'item list>(Constraint.contains item)
+
+    /// <summary>Requires a field to be greater than zero.</summary>
+    let inline positive<'value when 'value: (static member Zero: 'value)> : Constraint<'value> =
+        greaterThan LanguagePrimitives.GenericZero<'value>
+
+    /// <summary>Requires a field to be greater than or equal to zero.</summary>
+    let inline nonNegative<'value when 'value: (static member Zero: 'value)> : Constraint<'value> =
+        atLeast LanguagePrimitives.GenericZero<'value>
+
+    /// <summary>Requires a field to be less than zero.</summary>
+    let inline negative<'value when 'value: (static member Zero: 'value)> : Constraint<'value> =
+        lessThan LanguagePrimitives.GenericZero<'value>
+
+    /// <summary>Requires a field to be less than or equal to zero.</summary>
+    let inline nonPositive<'value when 'value: (static member Zero: 'value)> : Constraint<'value> =
+        atMost LanguagePrimitives.GenericZero<'value>
+
+    /// <summary>Creates typed portable metadata for a custom field constraint with no arguments.</summary>
+    let custom code : Constraint<'value> = Constraint<'value>(Constraint.create code)
+
+    /// <summary>Creates typed portable metadata for a custom field constraint with structured arguments.</summary>
+    let customWithArguments code arguments : Constraint<'value> =
+        Constraint<'value>(Constraint.createWithArguments code arguments)
 
     /// <summary>Replaces a typed constraint's user-facing message.</summary>
     let withMessage (message: string) (constraint': Constraint<'value>) : Constraint<'value> =
